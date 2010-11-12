@@ -9,26 +9,35 @@
 #include "RooProduct.h"
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+char *_Format_( const char *fmt, ... ) {
+        va_list ap;
+        size_t size = 128;
+        char *p(0);
+        do { 
+            p = new char[size];
+            if ( p == 0) return 0; // give up, no memory...
+            va_start(ap,fmt);
+            int s = vsnprintf(p,size,fmt,ap)
+            va_end(ap)
+            if (s<size) break;
+            // OOPS -- we truncated... delete p, double size, try again...
+            size *= 2;
+            delete[] p;
+            p = 0;
+        } while ( size < 2048 ) ; // don't continue doubling forever
+        return p;
+}
+
 // pitty: 'asprintf' doesn't work in CINT...
 template <typename X>
-char *Format(const char* fmt,const X&x) {
-   char *buf = new char[1024] ; // let's hope that this is enough....
-   sprintf(buf,fmt, x );
-   return buf;
-}   
+char *Format(const char* fmt,const X&x) { return _Format_(fmt,x) }   
 template <typename X, typename Y>
-char *Format(const char* fmt,const X&x, const Y&y) {
-   char *buf = new char[1024] ; // let's hope that this is enough....
-   sprintf(buf,fmt, x, y );
-   return buf;
-}   
-
+char *Format(const char* fmt,const X&x, const Y&y) { return _Format_(fmt, x, y ); }   
 template <typename X, typename Y, typename Z>
-char *Format(const char* fmt,const X&x, const Y&y, const Z&z) {
-   char *buf = new char[1024] ; // let's hope that this is enough....
-   sprintf(buf,fmt, x, y, z );
-   return buf;
-}   
+char *Format(const char* fmt,const X&x, const Y&y, const Z&z) { return _Format_(fmt,x,y,z); }
 
 template <typename T>
 T& get(RooWorkspace& w, T*(RooWorkspace::*fun)(const char*)const, const char* name) {
