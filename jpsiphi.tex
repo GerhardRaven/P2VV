@@ -1,0 +1,303 @@
+\documentclass[a4paper,9pt,twoside]{article}
+
+
+
+\begin{document}
+
+
+\begin{eqnarray}
+   S &=& \frac{2 \Im \lambda}{1+\lambda^2};\;\; D = \frac{2 \Re \lambda}{1+\lambda^2};\;\; C = \frac{1-\lambda^2 }{1+\lambda^2}\\
+   D^2+S^2 & = & 1 - C^2 \\
+   \lambda & = & \frac{D+iS}{1+C};\;\; \frac{1}{\lambda}  =  \frac{D-iS}{1-C};\;\; \lambda^2 = \frac{ 1-C }{ 1+C }
+\end{eqnarray}
+\begin{equation}
+  \eta_i = \left\{ \begin{array}{l} +1 \;\; \mathrm{if}\;\; i=0,\parallel  \\ -1\;\; \mathrm{if}\;\; i=\perp \end{array} \right. \;\;\;;\;\; \frac{1}{\eta_i}=\eta_i
+\end{equation}
+
+\begin{eqnarray}
+   {\cal A}_i(t)            &=& e^{-t/2\tau} \left[ E_+(t) + \eta_i \lambda E_-(t)  \right] a_i  \\
+                            &=&     e^{-t/2\tau} \left[ E_+(t) +\eta_i \frac{D+iS}{1+C} E_-(t)  \right] a_i  \\
+   {\overline{\cal A}}_i(t) &=& e^{-t/2\tau} \left[ \eta_i E_+(t) + \frac{1}{\lambda} E_-(t)  \right] a_i    \\
+                            &=&     e^{-t/2\tau} \left[\eta_i E_+(t) + \frac{D-iS}{1-C} E_-(t)  \right] a_i   
+\end{eqnarray}
+
+\begin{equation}
+b_\mathrm{tag} \leftrightarrow \overline{b}_\mathrm{tag} \;\;\;\Leftrightarrow\;\;\;  ( S \leftrightarrow -S, C\leftrightarrow -C ) 
+\end{equation}
+\begin{equation}
+(S,C) \rightarrow (q_T S, q_T C) \;\; \mathrm{with}\;\; q_T = \left\{\begin{array}{l} +1 \;\;\; \mathrm{if} b_\mathrm{tag} \\
+                                                                                   -1 \;\;\; \mathrm{if} \overline{b}_\mathrm{tag}
+\end{array} \right.
+\end{equation}
+
+%\begin{equation}
+%   A(q_T=-1,q_\perp=\pm,t) =\left( \frac{1-q_T}{2}q_\perp+\frac{1+q_T}{2}\right) e^{-t/\tau} \left[ E_+(t) +q_\perp e^{2q_Ti\beta_s}E_-(t)  \right] a_i 
+%\end{equation}
+%\begin{eqnarray}
+%   {\cal A}_i(t)            &= \frac{1}{1+C} e^{-t/2\tau} \left[+ (1+C) E_+(t) \pm (D+iS) E_-(t)  \right] a_i  &= A(q_T=+1,q_\perp,t)\\
+%   {\overline{\cal A}}_i(t) &= \frac{1}{D+iS} e^{-t/2\tau} \left[\pm  (D+iS) E_+(t) + (1+C) E_-(t)  \right] a_i  &= A(q_T=-1,q_\perp,t) 
+%\end{eqnarray}
+
+\begin{equation}
+  E_\pm = \frac{1}{2} \left[ e^{+i\omega t } \pm e^{-i\omega t } \right]\;\;\;\;\mathrm{with}\;
+   \omega = \frac{\Delta m}{2} + i\frac{\Delta \Gamma}{4} 
+\end{equation}
+\begin{eqnarray}
+ | E_\pm(t) |^2  &=& \frac{1}{2}\left[ \cosh\left(\frac{\Delta\Gamma}{2}t\right) \pm \cos\left(\Delta m t \right) \right] \\
+ E_+^*(t)E_-(t)  &=& \frac{1}{2}\left[ -\sinh\left(\frac{\Delta\Gamma}{2}t\right) + i \sin\left(\Delta m t \right) \right]
+\end{eqnarray}
+
+
+\begin{eqnarray}
+   |{\cal A}_i(t)|^2  &=& {\cal A}_i^*(t){\cal A}_i(t) \;\; (\mathrm{note: no\; summation!}) \\
+%   |{\cal A}_i(t)|^2  &=& e^{-t/\tau}|a_i|^2 \left| E_+(t) +\eta_{i}\frac{D+iS}{1+C} E_-(t)  \right|^2  \\
+%                      &=& \frac{e^{-t/\tau}|a_i|^2}{1+C} \left[ (1+C)|E_+(t)|^2 + (1-C)| E_-(t)|^2 + 2 \eta_{i}\left( D\Re\left(E_+^*(t)E_-(t)\right)-S\Im\left(E_+^*(t)E_-(t)\right)\right)  \right] \\
+%                      &=& \frac{e^{-t/\tau}|a_i|^2}{1+C} \left[ \cosh\left(\frac{\Delta\Gamma}{2}t\right)
+%                                                              + C\cos(\Delta m t ) 
+%                                                              - \eta_{i} D\sinh\left(\frac{\Delta\Gamma}{2}t\right)
+%                                                              - \eta_{i} S\sin \left(\Delta m t \right)  
+%                                                         \right] \\
+%   |{\cal\overline{A}}_i(t)|^2 % &=& e^{-t/\tau}|a_i|^2 \left| \eta_i E_+(t) +\frac{D-iS}{1-C} E_-(t)  \right|^2  \\
+%                      &=& \frac{e^{-t/\tau}|a_i|^2}{1-C} \left[ \cosh\left(\frac{\Delta\Gamma}{2}t\right)
+%                                                              - C\cos(\Delta m t ) 
+%                                                              - \eta_{i} D\sinh\left(\frac{\Delta\Gamma}{2}t\right)
+%                                                              + \eta_{i} S\sin \left(\Delta m t \right)  
+%                                                         \right] \\
+  {\cal A}_i^*(t) {\cal A}_j(t) &= \frac{ a_i^* a_j e^{-t/\tau}} {1+C}&\left[ (1+C) |E_+(t)|^2  +\eta_i\eta_j (1-C)|E_-(t)|^2 + \eta_j(D+iS)E_+^*E_-+\eta_i(D-iS)E_+E_-^*   \right] \\
+                                &= \frac{ a_i^* a_j e^{-t/\tau}} {1+C}&\Biggl[ \left( \frac{1+\eta_i\eta_j}{2} +  \frac{1-\eta_i\eta_j}{2}C\right) \cosh\left(\frac{\Delta\Gamma}{2}t\right) \\
+                                                                          &&  +\left( \frac{1-\eta_i\eta_j}{2} +  \frac{1+\eta_i\eta_j}{2}C\right) \cos(\Delta m t) \\
+                                                                          &&  +\left(-\frac{\eta_i+\eta_j}{2}D + \frac{\eta_i-\eta_j}{2}iS\right) \sinh\left(\frac{\Delta\Gamma}{2}t\right) \\
+                                                                          &&  +\left(-\frac{\eta_i+\eta_j}{2}S - \frac{\eta_i-\eta_j}{2}iD\right) \sin(\Delta m t) \Biggr] 
+\end{eqnarray}
+
+\begin{equation}
+\begin{array}{|c|| c | c | c | c | c |}
+ \hline
+                                             &                          &  \cosh\left(\frac{\Delta\Gamma}{2}t\right) &  \cos(\Delta m t)  & \sinh\left(\frac{\Delta\Gamma}{2}t\right) &\sin(\Delta m t)  \\
+ \hline
+|{\cal A}_0(t)|^2                           &\frac{  | a_0 |^2 e^{-t/\tau}}{1+C}                  & 1    &   C     &  -D & -S   \\
+|{\cal A}_\parallel(t)|^2                   &\frac{  | a_\parallel |^2 e^{-t/\tau}}{1+C}          & 1    &   C     &  -D & -S   \\
+|{\cal A}_\perp(t)|^2                       &\frac{  | a_\perp |^2 e^{-t/\tau}}{1+C}              & 1    &   C     &  +D & +S   \\
+\Im({\cal A}_\parallel^*(t){\cal A}_\perp(0)) &\frac{  \Re(a_\parallel^* a_\perp)e^{-t/\tau}}{1+C}& 0    &   0     &  +S & -D   \\                         
+                                            &\frac{  \Im(a_\parallel^* a_\perp)e^{-t/\tau}}{1+C}  & C    &   1     &   0 & 0    \\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &\frac{  \Re(a_0^* a_\perp)e^{-t/\tau}}{1+C}        & 0    &   0     &  +S & -D   \\
+                                            &\frac{  \Im(a_0^* a_\perp)e^{-t/\tau}}{1+C}          & C    &   1     &   0 &  0   \\
+\Re({\cal A}_0^*(t){\cal A}_\parallel(t))     &\frac{  \Re(a_0^*a_\parallel)e^{-t/\tau}}{1+C}     & 1    &   C     &  -D & -S   \\
+                                            &\frac{  \Im(a_0^*a_\parallel)e^{-t/\tau}}{1+C}       & 0    &   0     &   0 &  0   \\
+ \hline
+|{\cal\overline{ A}}_0(t)|^2                &\frac{  | a_0 |^2 e^{-t/\tau}}{1-C}                & 1    &  -C     &  -D & +S   \\
+|{\cal\overline{ A}}_\parallel(t)|^2        &\frac{  | a_\parallel |^2 e^{-t/\tau}}{1-C}        & 1    &  -C     &  -D & +S   \\
+|{\cal\overline{ A}}_\perp(t)|^2            &\frac{  | a_\perp |^2 e^{-t/\tau}}{1-C}            & 1    &  -C     &  +D & -S   \\
+\Im({\cal \overline{A}}_\parallel(t){\cal\overline{ A}}_\perp(0)) &\frac{  \Re(a_\parallel^* a_\perp)e^{-t/\tau}}{1-C} &  0    &   0     &  -S & -D               \\                         
+                                            &\frac{  \Im(a_\parallel^* a_\perp)e^{-t/\tau}}{1-C}                       & -C    &   1     &   0 & 0                \\
+\Im({\cal\overline{ A}}_0(t){\cal\overline{ A}}_\perp(t))         &\frac{  \Re(a_0^* a_\perp)e^{-t/\tau}}{1-C}         &  0    &   0     &  -S & -D               \\
+                                            &\frac{  \Im(a_0^* a_\perp)e^{-t/\tau}}{1-C}                               & -C    &   1     &   0 &  0              \\
+\Re({\cal\overline{ A}}_0(t){\cal\overline{ A}}_\parallel(t))     &\frac{  \Re(a_0^*a_\parallel)e^{-t/\tau}}{1-C}      &  1    &   -C    &  -D & +S               \\
+                                            &\frac{  \Im(a_0^*a_\parallel)e^{-t/\tau}}{1-C}                            &  0    &   0     &   0 &  0               \\
+ \hline
+\end{array}
+\end{equation}
+
+
+\pagebreak
+
+
+
+
+\begin{equation}
+  \hat{n} = ( \sin\theta\cos\phi, \sin\theta\sin\phi, \cos\theta )
+\end{equation}
+
+
+
+\begin{eqnarray}
+   {\bf A}(t)            &=&  ( {\cal A}_0(t) \cos\psi          , -\frac{{\cal A}_\parallel(t) \sin\psi}{\sqrt{2}}         ,i\frac{{\cal A}_\perp(t) \sin\psi}{\sqrt{2}}          )  % \\
+%   {\overline{\bf A}}(t) &=&  ( \overline{\cal A}_0(t) \cos\psi), -\frac{\overline{\cal A}_\parallel(t) \sin\psi}{\sqrt{2}},i\frac{\overline{\cal A}_\perp(t) \sin\psi}{\sqrt{2}} )
+\end{eqnarray}
+
+
+\begin{eqnarray}
+  { \bf A}(t) \wedge \hat{n} &=& \left|  \begin{array}{ccc}  
+                                        \hat{e}_x & \hat{e}_y & \hat{e}_z \\
+                                        {\cal A}_0(t) \cos\psi & - \frac{{\cal A}_\parallel(t) \sin\psi }{\sqrt{2}} & i\frac{ {\cal A}_\perp(t)\sin\psi}{\sqrt{2}}\\
+                                        \sin\theta\cos\phi & \sin\theta\sin\phi & \cos\theta 
+                                    \end{array}\right|  \\
+                          &=& \left(\begin{array}{c}
+                                  \frac{-1}{\sqrt{2}} {\cal A}_\parallel(t) \sin\psi \cos\theta  -  \frac{i }{\sqrt{2}}{\cal A}_\perp(t)\sin\psi\sin\theta\sin\phi  \\
+                                   -{\cal A}_0(t) \cos\psi\cos\theta  + \frac{i}{\sqrt{2}} {\cal A}_\perp(t)\sin\psi \sin\theta\cos\phi \\
+                                   {\cal A}_0(t) \cos\psi \sin\theta\sin\phi       + \frac{1}{\sqrt{2}}{\cal A}_\parallel(t) \sin\psi \sin\theta\cos\phi 
+                              \end{array} \right)
+\end{eqnarray}
+
+\begin{eqnarray}
+  |{ \bf A}(t) \wedge \hat{n}|^2 &=& 
+                                  \frac{1}{2} |{\cal A}_\parallel(t)|^2 \sin^2\psi \cos^2\theta  +  \frac{1 }{2}|{\cal A}_\perp(t)|^2\sin^2\psi\sin^2\theta\sin^2\phi  \\
+                              &&+     -\Im({\cal A}_\parallel^*{\cal A}_\perp)\sin^2\psi\cos\theta\sin\theta\sin\phi  \\
+                              &+&     |{\cal A}_0|^2 \cos^2\psi\cos^2\theta  + \frac{1}{2} |{\cal A}_\perp(t)|^2\sin^2\psi \sin^2\theta\cos^2\phi \\
+                              &&+     -\sqrt{2}\Im({\cal A}_\perp^* {\cal A}_0 )\cos\psi\cos\theta\sin\psi\sin\theta\cos\phi \\
+                              &+&     |{\cal A}_0|^2 \cos^2\psi\sin^2\theta\sin^2\phi  + \frac{1}{2}{|\cal A}_\parallel(t)|^2 \sin^2\psi \sin^2\theta\cos^2\phi       \\
+                              &&+     \sqrt{2}\Re({\cal A}_0^*{\cal A}_\parallel  )\cos\psi\sin\psi\sin^2\theta\sin\phi\cos\phi\\
+                              && \\
+                              &=&\frac{1}{2}|{\cal A}_\parallel(t)|^2 \sin^2\psi \left( \cos^2\theta + \sin^2\theta\cos^2\phi    \right)  \\
+                              &+&\frac{1}{2}|{\cal A}_\perp(t)|^2\sin^2\psi\sin^2\theta \\
+                              &+&   |{\cal A}_0(t)|^2 \cos^2\psi\left( \cos^2\theta  +  \sin^2\theta\sin^2\phi\right) \\
+                              &+&     -\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t))\sin^2\psi\cos\theta\sin\theta\sin\phi  \\
+                              &+&     -\sqrt{2}\Im({\cal A}_\perp^*(t) {\cal A}_0(t) )\cos\psi\cos\theta\sin\psi\sin\theta\cos\phi \\
+                              &+&     \sqrt{2}\Re({\cal A}_0^*(t){\cal A}_\parallel(t)  )\cos\psi\sin\psi\sin^2\theta\sin\phi\cos\phi\\
+                              && \\
+                              &=&\frac{1}{2}|{\cal A}_\parallel(t)|^2 \sin^2\psi \left( 1 -  \sin^2\theta\sin^2\phi    \right)  \\
+                              &+&\frac{1}{2}|{\cal A}_\perp(t)|^2\sin^2\psi\sin^2\theta \\
+                              &+&   |{\cal A}_0(t)|^2 \cos^2\psi\left( 1  -  \sin^2\theta\cos^2\phi\right) \\
+                              &+&     -\frac{1}{2}\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t))\sin^2\psi\sin(2\theta)\sin\phi  \\
+                              &+&     \frac{1}{2\sqrt{2}}\Im({\cal A}_0^*(t) {\cal A}_\perp(t) ) \sin(2\psi)\sin(2\theta)\cos\phi \\
+                              &+&     \frac{1}{2\sqrt{2}}\Re({\cal A}_0^*(t) {\cal A}_\parallel(t))\sin(2\psi)\sin^2\theta\sin(2\phi)\\
+\end{eqnarray}
+
+
+\begin{eqnarray}
+P_l^m(x) &=& \\
+%P_l^{-m}(x) & = & (-1)^m \frac{(l-m)!}{(l+m)!}P_l^m(x) \\
+Y_l^m (\theta,\phi) &=& N_{lm} P_l^m(\cos\theta)e^{im\phi}\;\;\mathrm{with}\;N_{lm} =\sqrt{ \frac{2l+1}{4\pi}\frac{(l-m)!}{(l+m)!} } \\
+Y_l^{-m}(\theta,\phi) &=& (-1)^m N_{lm}P_l^m(\cos\theta) e^{-im\phi}
+\end{eqnarray}
+
+\begin{eqnarray}
+Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl} 
+                                             Y_l^0(\theta,\phi) & (m=0) \\
+                                             \frac{1}{\sqrt{2}} \left( Y_l^m + (-1)^m Y_l^{-m}\right)  & (m>0) \\
+                                             \frac{1}{i\sqrt{2}}\left( Y_l^{|m|}-(-1)^{|m|}Y_l^{-|m|} \right) & (m<0)
+                                  \end{array}\right.\\
+                    & = & \left\{ \begin{array}{cl} 
+                                             N_{l0} P_l^0(\cos\theta) & (m=0) \\
+                                             \sqrt{2}N_{lm}P_l^m(\cos\theta)\cos(m\phi) & (m>0) \\
+                                             \sqrt{2}N_{l|m|} P_l^{|m|}(\cos\theta)\sin(|m|\phi)& (m<0)
+                                  \end{array}\right.
+\end{eqnarray}
+
+\begin{eqnarray}
+  \sin^2\theta \cos^2\phi &=& \sqrt{ \frac{4\pi}{9} } Y_{00}(\theta,\phi) - \sqrt{\frac{4\pi}{45} }Y_{20}(\theta,\phi) +\sqrt{\frac{4\pi}{15}} Y_{2,2}(\theta,\phi) \\
+  \sin^2\theta \sin^2\phi &=& \sqrt{ \frac{4\pi}{9} } Y_{00}(\theta,\phi) - \sqrt{\frac{4\pi}{45} }Y_{20}(\theta,\phi) -\sqrt{\frac{4\pi}{15}} Y_{2,2}(\theta,\phi)  \\
+  \cos^2\theta            &=& \sqrt{ \frac{4\pi}{9} } Y_{00}(\theta,\phi) + \sqrt{\frac{16\pi}{45}}Y_{20}(\theta,\phi)\\
+  \sin^2\theta            &=& \sqrt{ \frac{16\pi}{9} } Y_{00}(\theta,\phi) - \sqrt{\frac{16\pi}{45}}Y_{20}(\theta,\phi)\\
+  \sin^2\theta\cos\phi\sin\phi &=& -\sqrt{ \frac{4\pi}{15}} Y_{2,-2}(\theta,\phi) \\
+  \sin\theta\cos\theta\cos\phi &=&  \sqrt{ \frac{4\pi}{15}} Y_{2,1}(\theta,\phi) \\ 
+  \sin\theta\cos\theta\sin\phi &=& -\sqrt{ \frac{4\pi}{15}} Y_{2,-1}(\theta,\phi) 
+\end{eqnarray}
+
+\begin{eqnarray}
+\frac{  |{ \bf A}(t) \wedge \hat{n}|^2 }{\sqrt{4\pi}}
+                              &=&\frac{1}{9}|{\cal A}_\parallel|^2 P_2^2 \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
+                              &+&\frac{1}{9}|{\cal A}_\perp|^2  P_2^2 \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
+                              &+&\frac{1}{9}|{\cal A}_0|^2  (P_0^0+2P_2^0 ) \left( 2 Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
+                              &+&\frac{1}{3}\sqrt{\frac{1}{15}}\Im({\cal A}_\parallel^*{\cal A}_\perp)P_2^2 Y_{2,-1}  \\
+                              &-&\frac{1}{3}\sqrt{ \frac{2}{15}} \Im({\cal A}_0^* {\cal A}_\perp )P_2^1Y_{2,1} \\
+                              &+&\frac{1}{3}\sqrt{ \frac{2}{15}}\Re({\cal A}_0^*{\cal A}_\parallel  )P_2^1 Y_{2,-2} 
+\end{eqnarray}
+
+\begin{equation}
+\begin{array}{|c|| c | c | c | c | c | c |}
+ \hline
+&\multicolumn{6}{|c|}{ P_i^j(\cos\psi)Y_{lm}(\cos\theta,\phi) \times \frac{9}{\sqrt{4\pi}} } \\
+ \hline
+|{\cal A}_\perp(t)|^2                   &  P_2^2 Y_{00} & -\sqrt{\frac{1}{5}} P_2^2 Y_{20} &                                 &&& \\
+|{\cal A}_\parallel(t)|^2               &  P_2^2 Y_{00} &  \sqrt{\frac{1}{20}} P_2^2 Y_{20} & +\sqrt{\frac{3}{20}} P_2^2Y_{22} & && \\
+|{\cal A}_0(t)|^2                       &  2 P_0^0Y_{00}  & \sqrt{\frac{1}{5}} P_0^0 Y_{20} & -\sqrt{\frac{3}{5}} P_0^0 Y_{22}
+                                        &  4 P_2^0Y_{00}  & \sqrt{\frac{4}{5}} P_2^0 Y_{20} & -\sqrt{\frac{12}{5}} P_2^0 Y_{22} \\
+\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &  \sqrt{\frac{3}{5}} P_2^2 Y_{2,-1} &&&&&\\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         & -\sqrt{\frac{6}{5}} P_2^1 Y_{2,1} &&&&&\\
+\Re({\cal A}_0^*(t){\cal A}_\parallel(t))     &  \sqrt{\frac{6}{5}} P_2^1 Y_{2,-2} &&&&&\\
+ \hline
+\end{array}
+\end{equation}
+
+
+
+\pagebreak
+\begin{equation}
+   \epsilon(\psi,\theta,\phi) = c^{i}_{jk} P_i(\cos\psi)Y_{jk}(\theta,\phi)
+   \label{eq:eps_exp}
+\end{equation}
+
+\begin{eqnarray}
+    N(q_T,t)  &=&  \int d\cos\psi\int d\cos\theta \int d\phi \epsilon(\psi,\theta,\phi) |{\bf A}(t,q_T) \wedge \hat{n}|^2 \\
+      &=& c^i_{jk}\sqrt{4\pi} \int d\cos\psi   P_i(\cos\psi)  \int d\cos\theta d\phi Y_{jk}(\theta,\phi) 
+          \biggl[  \\
+          &&                   \frac{1}{9}|{\cal A}_\parallel|^2 P_2^2(\cos\psi) \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
+          &&                  +\frac{1}{9}|{\cal A}_\perp|^2  P_2^2(\cos\psi) \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
+          &&                  +\frac{1}{9}|{\cal A}_0|^2  (P_0^0(\cos\psi)+2P_2^0(\cos\psi) ) \left( 2Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
+          &&                  +\frac{1}{3}\sqrt{\frac{1}{15}}\Im({\cal A}_\parallel^*{\cal A}_\perp)P_2^2(\cos\psi) Y_{2,-1}  \\
+          &&                  +\frac{1}{3}\sqrt{ \frac{2}{15}} \Im({\cal A}_\perp^* {\cal A}_0 )P_2^1(\cos\psi)Y_{2,1} \\
+          &&                  +\frac{1}{3}\sqrt{ \frac{2}{15}}\Re({\cal A}_0^*{\cal A}_\parallel  )P_2^1(\cos\psi) Y_{2,-2} 
+          \biggr] \\
+      &=& \frac{\sqrt{4\pi}}{9}  \int d\cos\psi   P_i(\cos\psi) \biggl[  \\
+          &&                   |{\cal A}_\parallel|^2 P_2^2(\cos\psi)              \left( c^i_{00}  +\sqrt{\frac{1}{20}}c^i_{20}+\sqrt{\frac{3}{20}}c^i_{22}  \right)  \\
+          &&                  +|{\cal A}_\perp|^2  P_2^2(\cos\psi)                 \left( c^i_{00}  -\sqrt{\frac{1}{ 5}}c^i_{20}\right)\\
+          &&                  +|{\cal A}_0|^2  (P_0^0(\cos\psi)+2P_2^0(\cos\psi) ) \left( 2 c^i_{00}+\sqrt{\frac{1}{ 5}}c^i_{20}-\sqrt{\frac{3}{ 5}}c^i_{22} \right) \\
+          &&                  +\sqrt{\frac{3}{5}}\Im({\cal A}_\parallel^*{\cal A}_\perp)P_2^2(\cos\psi) c^i_{2,-1}  \\
+          &&                  -\sqrt{\frac{6}{5}} \Im({\cal A}_0^* {\cal A}_\perp )P_2^1(\cos\psi)c^i_{2,1} \\
+          &&                  +\sqrt{\frac{6}{5}}\Re({\cal A}_0^*{\cal A}_\parallel  )P_2^1(\cos\psi) c^i_{2,-2} 
+      \biggr] \\
+      &=& \frac{8\sqrt{\pi}}{9}  \biggl[ \\
+         &&                    |{\cal A}_\parallel|^2 \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
+         &&                   +|{\cal A}_\perp|^2    \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
+         &&                   +|{\cal A}_0|^2   \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
+         &&                   +\sqrt{\frac{3}{5}}\Im({\cal A}_\parallel^*{\cal A}_\perp)\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
+         &&                   +\frac{3\pi}{32}\sqrt{\frac{6}{5}}\Im({\cal A}_\perp^* {\cal A}_0 )  \left( -c^1_{2,1} +\frac{1}{4}c^3_{2,1}+ \frac{5}{128}c^5_{2,1} +\frac{7}{512}c^7_{2,1} + \frac{105}{16384}c^9_{2,1}+... \right) \\
+         &&                   +\frac{3\pi}{32}\sqrt{\frac{6}{5}}\Re({\cal A}_0^*{\cal A}_\parallel)\left( -c^1_{2,-2}+\frac{1}{4}c^3_{2,-2}+\frac{5}{128}c^5_{2,-2}+\frac{7}{512}c^7_{2,-2} + \frac{105}{16384}c^9_{2,-2}+... \right) \\
+      \biggr]
+\end{eqnarray}
+
+\begin{eqnarray}
+\int_{-1}^1 d\cos\theta \int_0^{2\pi} d\phi \;\;Y_l^m(\theta,\phi) Y_{l'}^{m'*}(\theta,\phi) &=& \delta_{ll'}\delta_{mm'}\\
+\int_{-1}^1 dx  P_k^m P_l^m&=& \frac{2}{2l+1}\frac{(l+m)!}{(l-m)!}\delta_{kl} \\
+\int_{-1}^1 dx \frac{P^m_l P^n_l } { 1 - x^2 }  &=&  \left\{  \begin{array}{l} 0 (m\neq n) \\   \frac{(l+m)!}{m(l-m)!}(m=n\neq 0\\ +\infty (m=n=0) \end{array} \right.
+\end{eqnarray}
+
+
+\begin{equation}
+   \epsilon(\psi,\theta,\phi) = 1 \Rightarrow c^0_{00} = 2\sqrt{\pi} ; c^{i}_{jk} = 0 (i\neq 0, j\neq 0, k \neq 0)
+\end{equation}
+
+%TODO: take into account ${\cal D} = 1-2( <w_i> + q_T \frac{\Delta w_i}{2})$, i.e. sum over $q_T$ may not fully cancel some terms...
+%and the same for the tagging times reconstruction efficiency....
+
+
+We utilize the fact that, for a MC sample generated according to a P.D.F. $g(\vec{x})$,
+and an efficience $\epsilon(\vec{x})$, that we can write a sum over accepted events as:
+\begin{equation}
+  \frac{1}{N_{\mathrm{gen}}} \sum_{\mathrm{accepted events}} f(\vec{x}_i) = \frac{1}{N_{\mathrm{gen}}} \sum_{\mathrm{generated events}} \epsilon(\vec{x}_i) f(\vec{x}_i) =  \int g(\vec{x})dx \epsilon(\vec{x}) f(\vec{x})
+\end{equation}
+
+If we now substitute the expansion of the efficiency in terms of orthonormal basis function,
+i.e. equation \ref{eq:eps_exp}, then we have:
+
+\begin{equation}
+  \frac{1}{N_{\mathrm{gen}}} \sum_{\mathrm{accepted events}} f(\vec{x}_i) = c^i_{jk}  \int g(\vec{x})dx P_i(\cos\psi)Y_{jk}(\cos\theta,\phi)  f(\vec{x})
+\end{equation}
+
+Using the orthonormality of the basis functions, we can now determine the coefficients $c^i_{jk}$ 
+by  choosing $f(\vec{x}$ as follows:
+\begin{eqnarray}
+\frac{1}{N_{\mathrm{gen}}} \sum_{\mathrm{accepted events}} \frac{2i+1}{2}\frac{ P_i(\cos\psi)Y_{jk}(\cos\theta,\phi) }{ g(\vec{x} } \right] &=&\\
+    \int g(\cos\psi,\cos\theta,\phi)d\cos\psi d\cos\theta d\phi c^l_{mn} P_l(\cos\psi)Y_{mn}(\cos\theta,\phi) \left[  \frac{2i+1}{2}\frac{ P_i(\cos\psi)Y_{jk}(\cos\theta,\phi) }{ g(\vec{x} } \right] &=&\\
+    &=& c^i_{jk}
+\end{eqnarray}
+
+\end{document}
+
+
+%%%%%
+%%
+%%  definition of J/psi phi angular distribution: 
+%%  ijkl -> P_i^j Y_kl
+%%
+%%  A||* A||       x [  2200 = 1/9   2220 = 1/9*sqrt(1/20)  2222 = 1/9*sqrt(3/20) ]
+%%  Aperp* Aperp   x [  2200 = 1/9   2220 = 1/9*sqrt(1/ 5) ]
+%%  A0* A0         x [  0000 = 2/9   0020 = 1/9*sqrt(1/ 5)  0022  = 1/9*sqrt(3/5)    2000 = 4/9    2020 = 2/9*sqrt(1/5)   2022 = 2/9*sqrt(3/5) ]
+%%  Im(A//* Aperp) x [  222-1 = 1/3 sqrt(1/15) ]
+%%  Im(Aperp* A0)  x [  2121  = 1/3 sqrt(2/15) ]
+%%  Re(A0*  Apar)  x [  212-2 = 1/3 sqrt(2/15) ]
+%%
+%%  and multiply everything with sqrt(4pi)
+%%
+%%%%%
