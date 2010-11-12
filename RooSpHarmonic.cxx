@@ -118,7 +118,7 @@ Int_t RooSpHarmonic::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
 Double_t RooSpHarmonic::analyticalIntegral(Int_t code, const char* range) const 
 {
   if (code==3) {
-    return (_l1==_l2 && _m1==_m2 ) ? double(4)/M_2_SQRTPI : 0 ;  
+    return (_l1==_l2 && _m1==_m2 ) ? _n : 0 ;  
   } else if (code == 2) {
     if (_sgn1!=0 || _sgn2!=0) return 0;
     return _n*N(_l1,_m1)*N(_l2,_m2)*2*M_PI*RooLegendre::evaluate();
