@@ -1,10 +1,9 @@
 #ifndef _CINT_
-#include <iostream>
+#include "utils.h"
+#include "basis.h"
 #include "RooAbsArg.h"
 #include "RooWorkspace.h"
 #include "RooProduct.h"
-#include "RooLegendre.h"
-#include "RooSpHarmonic.h"
 #include "RooRealVar.h"
 #include "RooCategory.h"
 #include "RooRealSumPdf.h"
@@ -12,7 +11,6 @@
 #include "RooAbsData.h"
 #include "RooDataSet.h"
 #include "RooPlot.h"
-#include "RooResolutionModel.h"
 #include "RooMsgService.h"
 #include "TCanvas.h"
 #endif
@@ -23,147 +21,6 @@ gSystem->Load("libMathMore.so")
 .L RooSpHarmonic.cxx+g
 */
 
-// pitty: 'asprintf' doesn't work in CINT...
-template <typename X>
-char *Format(const char* fmt,const X&x) {
-   char *buf = new char[1024] ; // let's hope that this is enough....
-   sprintf(buf,fmt, x );
-   return buf;
-}   
-template <typename X, typename Y>
-char *Format(const char* fmt,const X&x, const Y&y) {
-   char *buf = new char[1024] ; // let's hope that this is enough....
-   sprintf(buf,fmt, x, y );
-   return buf;
-}   
-
-template <typename X, typename Y, typename Z>
-char *Format(const char* fmt,const X&x, const Y&y, const Z&z) {
-   char *buf = new char[1024] ; // let's hope that this is enough....
-   sprintf(buf,fmt, x, y, z );
-   return buf;
-}   
-
-template <typename T>
-T& get(RooWorkspace& w, T*(RooWorkspace::*fun)(const char*)const, const char* name) {
-    T* x = (w.*fun)(name);
-    if (x==0) {
-        cout << "FAILURE: could not retrieve '" << name << "' from workspace" << endl;
-        assert(1==0);
-    }
-    return *x;
-}
-
-//TODO:  use traits to infer member function from type
-// typedef  T* (RooWorkspace::*fun)(const char* name);
-//    mytraits<RooAbsPdf>::fun  = RooWorkspace::pdf
-//    mytraits<RooAbsReal>::fun = RooWorkspace::function
-
-template <typename T> T&   get(RooWorkspace& w, const char *name) { return dynamic_cast<T&>(*w.obj(name)); }
-template<> RooAbsReal&     get<RooAbsReal>(RooWorkspace& w, const char* name) { return get<RooAbsReal>(w,&RooWorkspace::function,name); }
-template<> RooAbsArg&      get<RooAbsArg>(RooWorkspace& w, const char* name)   { return get<RooAbsArg>(w,&RooWorkspace::arg,name); } // arg(w,name); }
-template<> RooRealVar&     get<RooRealVar>(RooWorkspace& w, const char* name)   { return get<RooRealVar>(w,&RooWorkspace::var, name); } // (w,name); }
-template<> RooFormulaVar&  get<RooFormulaVar>(RooWorkspace& w, const char* name)   { return dynamic_cast<RooFormulaVar&>( get<RooAbsReal>(w,name)); }
-
-template <typename T>
-T& import(RooWorkspace& w, const T& r, const char *n=0) {
-   if (n==0) { w.import(r); return get<T>(w,r.GetName()); }
-   else      { w.import(r,RooFit::RenameVariable(r.GetName(),n)); return get<T>(w,n); }
-}
-
-RooAbsArg& product(RooWorkspace& w, const RooArgList& x) {
-    const char *name(0);
-    for (int i=0;i<x.getSize();++i) {
-        name = name ? Format("%s_%s",name,x[i].GetName()) : x[i].GetName();
-    }
-    RooAbsArg *p = w.function(name);
-    if (p==0) p = &import(w,RooProduct(name,name,x));
-    return *p;
-}
-
-RooAbsArg& product(RooWorkspace& w, RooAbsArg& x, RooAbsArg& y) {
-    return product( w, RooArgList(x,y) );
-}
-
-RooAbsArg& product(RooWorkspace& w, RooAbsArg& x, RooAbsArg& y, RooAbsArg& z) {
-    return product( w, RooArgList(x,y,z) );
-}
-
-RooArgList product(RooWorkspace& w, const RooArgList& x, const RooArgList& y) {
-     RooArgList z;
-     for (int i=0;i<x.getSize();++i) for (int j=0;j<y.getSize();++j) {
-         z.add(product(w,x[i],y[j]));
-     }
-     return z;
-}
-
-class abasis {  //TODO: make this an RooAbsReal implementation, which forwards integrals, 
-                //      supports maxVal for toy generation, 
-                //      and avoids making a constant to put in front of the product
-                //  OR  make this class return a dedicated RooAbsReal implementation which
-                //      does the above, i.e. a RooAbsReal which represents C * P_ij * Y_lm
-public:
-    // TODO: add version which takes RooAbsArg for cpsi, ctheta, phi (and then checks they 
-    //  are in the workspace w!)
-    abasis(RooWorkspace &w, const char *cpsi, const char *ctheta, const char *phi) 
-        : _w(w)
-        , _cpsi( get<RooRealVar>(w,cpsi) )
-        , _ctheta( get<RooRealVar>(w,ctheta) )
-        , _phi( get<RooRealVar>(w,phi) )
-    { }
-
-    RooAbsArg& operator()(const char* label, int i, int j, int k, int l, double c)  {
-         char *name = Format("%s_%d_%d",label,i,j);
-         name = Format( l<0 ? "%s_%d_m%d" : "%s_%d_%d",name,k,l<0?-l:l);
-         _w.factory(Format("%s[%f]",name,c));
-         return product( _w, *_w.var(name), Plm(i,j), Ylm(k,l));
-    }
-private:
-    RooAbsReal& Plm(int i, int j) {
-        char *name = Format( j<0 ? "P_%d_m%d" : "P_%d_%d", i, j<0?-j:j);
-        RooAbsReal *P = _w.function(name);
-        if (P==0) P = &import(_w, RooLegendre(name,name,_cpsi,i,j));
-        return *P;
-    }
-    RooAbsReal& Ylm(int i, int j) {
-        char *name = Format( j<0 ? "Y_%d_m%d" : "Y_%d_%d", i, j<0?-j:j);
-        RooAbsReal *Y = _w.function(name);
-        if (Y==0) Y = &import( _w, RooSpHarmonic(name,name,_ctheta,_phi,i,j));
-        return *Y;
-    }
-    RooWorkspace &_w;
-    RooAbsReal &_cpsi;
-    RooAbsReal &_ctheta;
-    RooAbsReal &_phi;
-};
-
-class tbasis {
-public:
-    tbasis(RooWorkspace& w, RooResolutionModel& r, RooFormulaVar& basis, const char *label) 
-        : _w(w)
-        , _basis(import(w, *r.convolution(&basis,&r.convVar()), label))
-    {  
-    }
-    
-    RooAbsArg& operator()(const char* t1, const char *t2=0, const char *t3=0, const char *t4=0) {
-       RooArgList l;
-       const char *name(0);
-       name = add( name, t1, l);
-       name = add( name, t2, l);
-       name = add( name, t3, l);
-       name = add( name, t4, l);
-       l.add( _basis);
-       return product(_w,l);
-    }
-private:
-    const char *add( const char *name, const char *t, RooArgList& l) {
-        if(t==0) return name;
-        l.add( get<RooAbsArg>(_w, t) );
-        return name ? Format("%s_%s",name,t) : t;
-    }
-    RooWorkspace& _w;
-    RooAbsReal&   _basis;
-};
 
 RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name /*, RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, RooAbsReal& t, RooAbsReal& qtag */) // for now, we stick with a naming convention. In future, pass the actual RooAbsReal, RooAbsArg, ...
 { 
@@ -269,8 +126,27 @@ void p2vv() {
     cout << "PDF:" << endl;
     pdf.printTree(cout);
 
+    if (false) {
+        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),1000000);
+        w.import(*data);
+        w.writeToFile("p2vv.root");
+        return;
+    }
+
+    if (false) { // marginalize to transversity angle pdf..
+        RooAbsPdf &pdf_trans   = import(w,*pdf.createProjection(w.argSet("cpsi,phi")));
+    }
+
+    if (false) { // marginalize to untagged, time integrated 3-angle pdf..
+        RooAbsPdf &pdf_untagged = import(w,*pdf.createProjection(w.argSet("qtag,t")));
+    }
+
+
     RooCmdArg tagAsym = RooFit::Asymmetry( get<RooCategory>(w,"qtag") );
     TCanvas *c = new TCanvas();
+
+
+
     if (false) {
         c->Divide(1,3);
         RooCmdArg red = RooFit::LineColor(kRed);
@@ -282,6 +158,7 @@ void p2vv() {
 
         c->cd(1); RooPlot *p6 = w.var("t")->frame();  
         pdf.plotOn(p6, proj); p6->Draw();
+        // use RooAbsPdf::createProjection( RooArgSet( cpsi,ctheta,phi,qtag) ) to compare this to...
 
         c->cd(2); RooPlot *p5 = w.var("t")->frame();  
         pdf.plotOn(p5, proj,RooFit::Slice(get<RooCategory>(w,"qtag"),"bbar"),blue);  
@@ -308,7 +185,7 @@ void p2vv() {
             w.var(rname[k])->Print();
             w.var(dname[k])->Print();
         }
-        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),100000);
+        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),10000);
         if (i==0) pdf.fitTo(*data,RooFit::NumCPU(8));
         RooPlot *p1 = w.var("cpsi")->frame();   data->plotOn(p1); pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
         RooPlot *p2 = w.var("ctheta")->frame(); data->plotOn(p2); pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
