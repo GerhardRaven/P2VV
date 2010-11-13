@@ -14,14 +14,14 @@
 #include <stdarg.h>
 char *_Format_( const char *fmt, ... ) {
         va_list ap;
-        size_t size = 128;
+        int size = 128;
         char *p(0);
         do { 
             p = new char[size];
             if ( p == 0) return 0; // give up, no memory...
             va_start(ap,fmt);
-            int s = vsnprintf(p,size,fmt,ap)
-            va_end(ap)
+            int s = vsnprintf(p,size,fmt,ap);
+            va_end(ap);
             if (s<size) break;
             // OOPS -- we truncated... delete p, double size, try again...
             size *= 2;
@@ -33,7 +33,7 @@ char *_Format_( const char *fmt, ... ) {
 
 // pitty: 'asprintf' doesn't work in CINT...
 template <typename X>
-char *Format(const char* fmt,const X&x) { return _Format_(fmt,x) }   
+char *Format(const char* fmt,const X&x) { return _Format_(fmt,x); }   
 template <typename X, typename Y>
 char *Format(const char* fmt,const X&x, const Y&y) { return _Format_(fmt, x, y ); }   
 template <typename X, typename Y, typename Z>
