@@ -70,10 +70,6 @@ RooAbsReal& product(RooWorkspace& w, const RooArgList& x) {
     return *p;
 }
 
-RooAbsReal& product(RooWorkspace& w, RooAbsReal& x, RooAbsReal& y) {
-    return product( w, RooArgList(x,y) );
-}
-
 RooAbsReal& product(RooWorkspace& w, RooAbsReal& x, RooAbsReal& y, RooAbsReal& z) {
     return product( w, RooArgList(x,y,z) );
 }
@@ -81,7 +77,7 @@ RooAbsReal& product(RooWorkspace& w, RooAbsReal& x, RooAbsReal& y, RooAbsReal& z
 RooArgList product(RooWorkspace& w, const RooArgList& x, const RooArgList& y) {
      RooArgList z;
      for (int i=0;i<x.getSize();++i) for (int j=0;j<y.getSize();++j) {
-         z.add(product(w,x[i],y[j]));
+         z.add(product(w,RooArgList(x[i],y[j])));
      }
      return z;
 }
