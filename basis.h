@@ -4,6 +4,7 @@
 #include "RooRealVar.h"
 #include "RooLegendre.h"
 #include "RooSpHarmonic.h"
+#include "RooP2VVAngleBasis.h"
 #include "RooResolutionModel.h"
 
 class abasis {  //TODO: make this an RooAbsReal implementation, which forwards integrals, 
@@ -24,22 +25,12 @@ public:
     RooAbsReal& operator()(const char* label, int i, int j, int k, int l, double c)  {
          char *name = Format("%s_%d_%d",label,i,j);
          name = Format( l<0 ? "%s_%d_m%d" : "%s_%d_%d",name,k,l<0?-l:l);
-         _w.factory(Format("%s[%f]",name,c));
-         return product( _w, *_w.var(name), Plm(i,j), Ylm(k,l));
+         RooAbsReal *b = _w.function(name);
+         if (b==0) b = &import(_w, RooP2VVAngleBasis(name,name,_cpsi,_ctheta,_phi,i,j,k,l,c));
+         return *b;
     }
 private:
-    RooAbsReal& Plm(int i, int j) {
-        char *name = Format( j<0 ? "P_%d_m%d" : "P_%d_%d", i, j<0?-j:j);
-        RooAbsReal *P = _w.function(name);
-        if (P==0) P = &import(_w, RooLegendre(name,name,_cpsi,i,j));
-        return *P;
-    }
-    RooAbsReal& Ylm(int i, int j) {
-        char *name = Format( j<0 ? "Y_%d_m%d" : "Y_%d_%d", i, j<0?-j:j);
-        RooAbsReal *Y = _w.function(name);
-        if (Y==0) Y = &import( _w, RooSpHarmonic(name,name,_ctheta,_phi,i,j));
-        return *Y;
-    }
+
     RooWorkspace &_w;
     RooAbsReal &_cpsi;
     RooAbsReal &_ctheta;
