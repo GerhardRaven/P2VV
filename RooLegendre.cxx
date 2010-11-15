@@ -120,3 +120,27 @@ Double_t RooLegendre::analyticalIntegral(Int_t code, const char* ) const
   if ((_m1+_m2)%2==1) r = -r;
   return r;
 }
+
+Int_t RooLegendre::getMaxVal( const RooArgSet& /*vars*/) const {
+    if (_m1==0&&_m2==0) return 1;
+    // does anyone know the analytical expression for the  max values in case m!=0??
+    if (_l1<3&&_l2<3) return 1;
+    return 0;
+}
+
+namespace {
+    inline double maxSingle(int i, int j) {
+        assert(j<=i);
+        //   x0 : 1 (ordinary Legendre)
+        if (j==0) return 1;
+        assert(i<3);
+        //   11: 1
+        if (i<2) return 1;
+        //   21: 3   22: 3
+        static const double m2[3] = { 3,3 };
+        return m2[j-1];
+    }
+}
+Double_t RooLegendre::maxVal( Int_t /*code*/) const {
+    return maxSingle(_l1,_m1)*maxSingle(_l2,_m2);
+}
