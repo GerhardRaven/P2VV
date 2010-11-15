@@ -22,7 +22,13 @@ gSystem->Load("libMathMore.so")
 */
 
 
-RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name /*, RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, RooAbsReal& t, RooAbsReal& qtag */) // for now, we stick with a naming convention. In future, pass the actual RooAbsReal, RooAbsArg, ...
+RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name 
+        // , RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, RooAbsReal& t, RooAbsReal& qtag 
+        // , RooAbsReal& ReAz, RooAbsReal& ImAz, RooAbsReal ReApar, RooAbsReal& ImApar, RooAbsReal& ReAperp, RooAbsReal& ImAperp
+        // , RooAbsReal& tau, RooAbsReal& dGamma, RooAbsReal& dm
+        // , RooAbsReal& C, RooAbsReal& S, RooAbsReal& D,
+        // , RooAbsReal& w, RooResolutionModel& res
+        ) // for now, we stick with a naming convention. In future, pass the actual RooAbsReal, RooAbsArg, ...
 { 
         RooArgSet amp = w.argSet("ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag,C");
         import(w,RooFormulaVar("NAzAz",       "( @0 * @0 + @1 * @1 ) / ( 1+@6*@7 )", amp));
@@ -63,9 +69,9 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name /*, RooAbsReal& cpsi, RooAb
         //       given by the sum of the (absolute) values of the coefficients
         RooArgList *angle[6];
         abasis ab(w, "cpsi", "ctheta", "phi");  // bind workspace and observables
-        angle[0] = new RooArgList( ab("AzAz",       0,0,0, 0, 2.), ab("AzAz",       0,0,2,0, sqrt(1./ 5.)),  ab("AzAz",     0,0,2,2, -sqrt(3. / 5.)) , 
+        angle[0] = new RooArgList( ab("AzAz",       0,0,0, 0, 2.), ab("AzAz",       0,0,2,0, sqrt(1./ 5.)),  ab("AzAz",     0,0,2,2, -sqrt( 3./ 5.)) , 
                                    ab("AzAz",       2,0,0, 0, 4.), ab("AzAz",       2,0,2,0, sqrt(4./ 5.)),  ab("AzAz",     2,0,2,2, -sqrt(12./ 5.)) );
-        angle[1] = new RooArgList( ab("AparApar",   2,2,0, 0, 1.), ab("AparApar",   2,2,2,0, sqrt(1./20.)),  ab("AparApar", 2,2,2,2,  sqrt(3. /20.)) ); 
+        angle[1] = new RooArgList( ab("AparApar",   2,2,0, 0, 1.), ab("AparApar",   2,2,2,0, sqrt(1./20.)),  ab("AparApar", 2,2,2,2,  sqrt( 3./20.)) ); 
         angle[2] = new RooArgList( ab("AperpAperp", 2,2,0, 0, 1.), ab("AperpAperp", 2,2,2,0,-sqrt(1./ 5.)));
         angle[3] = new RooArgList( ab("AparAperp",  2,2,2,-1, sqrt( 9./15.)) );
         angle[4] = new RooArgList( ab("AzAperp",    2,1,2, 1,-sqrt(18./15.)) );
@@ -78,10 +84,9 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name /*, RooAbsReal& cpsi, RooAb
         RooArgList f;
         double max_(0);
         for (int i=0;i<6;++i) {
-            f.add( product(w, *angle[i], *time[i] ) );
+            f.add( product(w, *angle[i], *time[i]) );
             //max_ += tmax[i]*amax[i];
         }
-
         w.factory("One[1]");
         RooArgList dummy;
         for (int i=0; i<f.getSize();++i) dummy.add(*w.var("One"));
@@ -139,6 +144,9 @@ void p2vv() {
 
     if (false) { // marginalize to untagged, time integrated 3-angle pdf..
         RooAbsPdf &pdf_untagged = import(w,*pdf.createProjection(w.argSet("qtag,t")));
+        RooAbsData *data = pdf_untagged.generate(w.argSet("cpsi,ctheta,phi"),100000);
+        data->Print("V");
+        return;
     }
 
 
