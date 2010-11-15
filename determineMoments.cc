@@ -37,9 +37,10 @@ public:
      {}
 
      bool operator()() { 
+         return true;
          // TODO: make it 2D ;-)
-         if (_ctheta.getVal()<0) return true;
-         return drand48()>(0.5+0.5*(_cpsi.getVal()));
+         //if (_ctheta.getVal()<0) return true;
+         //return drand48()>(0.5+0.5*(_cpsi.getVal()));
      }
 private:
     const RooAbsReal& _cpsi;
@@ -56,7 +57,11 @@ void determineMoments() {
    RooAbsData* data = w->data("pdfData") ;
 
    // create moments
-   RooArgSet *pdfObs = pdf->getObservables( data->get() );
+   RooArgSet *allObs = pdf->getObservables( data->get() );
+   RooArgSet *marginalObs = pdf->getObservables( data->get() );
+   marginalObs->remove( w->argSet("cpsi,ctheta,phi") );
+   // marginalize pdf over 'the rest' so we get the normalization right...
+   RooAbsPdf *pdf_marginal = pdf->createProjection(*marginalObs);
    abasis ab(*w,"cpsi","ctheta","phi");
    eps efficiency( get<RooAbsReal>(*w,"cpsi")
                  , get<RooAbsReal>(*w,"ctheta")
@@ -67,17 +72,16 @@ void determineMoments() {
    for (int i=0;i<4;++i) {
      for (int l=0;l<4;++l) {
         for (int m=0;m<=l;++m) {
-            moments.push_back(new moment( ab("mom",i,0,l,m,double(2*i+1)/2 ), *pdf, *pdfObs ) );
+            moments.push_back(new moment( ab("mom",i,0,l,m,double(2*i+1)/2 ), *pdf_marginal, *allObs ) );
         }
      }
    }
 
    data->Print("V"); 
-   pdfObs->Print("V");
    // loop over all data
    for (int i=0;i<data->numEntries(); ++i) {
         const RooArgSet *args = data->get(i);
-        *pdfObs  = *args;
+        *allObs  = *args;
         // apply some fake efficiency, and see how it affects the moments...
         bool accept = efficiency();
         for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->inc(accept);
