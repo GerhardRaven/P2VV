@@ -30,6 +30,9 @@ public:
   virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
   virtual Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
 
+  virtual Int_t getMaxVal( const RooArgSet& vars) const;
+  virtual Double_t maxVal( Int_t code) const;
+
 private:
   RooRealProxy _phi;
   double _n;

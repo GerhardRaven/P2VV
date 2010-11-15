@@ -129,3 +129,14 @@ Double_t RooSpHarmonic::analyticalIntegral(Int_t code, const char* range) const
     return n*RooLegendre::analyticalIntegral(code,range);
   }
 }
+
+Int_t RooSpHarmonic::getMaxVal( const RooArgSet& vars) const {
+    return RooLegendre::getMaxVal(vars);
+}
+
+Double_t RooSpHarmonic::maxVal( Int_t code) const {
+    double n = _n*N(_l1,_m1)*N(_l2,_m2);
+    if (_sgn1!=0) n *= M_SQRT2;
+    if (_sgn2!=0) n *= M_SQRT2;
+    return n*RooLegendre::maxVal(code);
+}
