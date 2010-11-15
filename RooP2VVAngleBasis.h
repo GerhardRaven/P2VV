@@ -20,16 +20,16 @@
 class RooP2VVAngleBasis : public RooProduct {
 public:
   RooP2VVAngleBasis() ;
-  RooP2VVAngleBasis(const char *name, const char *title, RooRealVar& cpsi, RooRealVar& ctheta, RooRealVar& phi, int i, int l, int m, double c);
+  RooP2VVAngleBasis(const char *name, const char *title, RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, int i, int j,int l, int m, double c = 1. );
 
-  RooP2VVAngleBasis(const P2VVAngleBasis& other, const char* name = 0);
+  RooP2VVAngleBasis(const RooP2VVAngleBasis& other, const char* name = 0);
   virtual TObject* clone(const char* newname) const { return new RooP2VVAngleBasis(*this, newname); }
   inline virtual ~RooP2VVAngleBasis() { }
 
   // create a new RooAbsReal which is 'us' multiplied by an efficiency factor
-  RooP2VVAngleBasis* createProduct(int i, int j, int k, double eps_ijk) {
-        return 0; //TODO: implement
-  }
+  //RooP2VVAngleBasis* createProduct(int i, int j, int k, double eps_ijk) {
+        //return 0; //TODO: implement
+  //}
 
 private: 
   int _i,_j,_l,_m;

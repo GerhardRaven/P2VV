@@ -20,10 +20,12 @@
 
 #include "RooFit.h"
 #include "Riostream.h"
-#include <math.h>
+#include <sstream>
 
 #include "RooP2VVAngleBasis.h"
-#include "utils.h"
+#include "RooLegendre.h"
+#include "RooSpHarmonic.h"
+#include "RooConstVar.h"
 
 ClassImp(RooP2VVAngleBasis)
 ;
@@ -36,21 +38,27 @@ RooP2VVAngleBasis::RooP2VVAngleBasis()
 //_____________________________________________________________________________
 // require RooRealVar observables, so that we know they are independent...
 RooP2VVAngleBasis::RooP2VVAngleBasis( const char *name, const char *title
-                                    , RooRealVar& cpsi, RooRealVar& ctheta, RooRealVar& phi
-                                    , int i, int j, int l, int m
-                                    , double c);
- : RooProduct(name, title)
- , _i(i), _j(j), _k(k), _l(l)
+                                    , RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi
+                                    , int i, int j, int l, int m, double c )
+ : RooProduct(name, title,RooArgSet())
+ , _i(i), _j(j), _l(l), _m(m)
 {
-  _compRSet.addOwned( RooConstVar( ..., ..., c )
-  _compRSet.addOwned( RooLegendre( ..., ..., cpsi,i,j) );
-  _compRSet.addOwned( RooSpHarmonic( ..., ..., ctheta,phi,l,m) );
+  if (c!=1) {
+    std::stringstream C;
+    C << name << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c ) ;
+    _compRSet.addOwned(*new RooConstVar( C.str().c_str(), C.str().c_str(), c ) );
+  }
+  std::stringstream P,Y;
+  P << name << "_P_" << i << ( j<0 ? "_m" : "_" )  << (j<0?-j:j) ;
+  _compRSet.addOwned(*new RooLegendre(   P.str().c_str(), P.str().c_str(), cpsi,i,j) );
+  Y << name << "_Y_" << l << ( m<0 ? "_m" : "_" )  << (m<0?-m:m) ;
+  _compRSet.addOwned(*new RooSpHarmonic( Y.str().c_str(), Y.str().c_str(), ctheta,phi,l,m) );
 }
 
 //_____________________________________________________________________________
 RooP2VVAngleBasis::RooP2VVAngleBasis(const RooP2VVAngleBasis& other, const char* name) 
     : RooProduct(other, name)
-    , _i(other._i), _j(other._j), _k(other._k), _l(other._l)
+    , _i(other._i), _j(other._j), _l(other._l), _m(other._m)
 {
 }
 
