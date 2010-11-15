@@ -21,7 +21,7 @@ public:
     ostream& print(ostream& os) const {
         double mu = _m1/_m0;
         double sig2 = _m2/_m0 - mu*mu;
-        return os << "moment("<< _x.GetName() <<"_" << _pdf.GetName() << ") = " << mu << " +- " << sqrt(sig2/_m0) << " significance: " << mu/sqrt(sig2/_m0) << endl;
+        return os << "moment("<< _x.GetName() <<"_" << _pdf.GetName() << ") = " << mu << " +- " << sqrt(sig2/(_m0-1)) << " significance: " << mu/sqrt(sig2/_m0) << endl;
     }
 private:
     const RooAbsReal& _x;
@@ -49,19 +49,20 @@ private:
 };
 
 
-void determineMoments() {
+void determineMoments(const char* fname="p2vv.root", const char* pdfName = "pdf", const char* dataName = "pdfData", const char *workspaceName = "w") {
 
-   TFile *f = new TFile("p2vv.root") ;
-   RooWorkspace* w = (RooWorkspace*) f->Get("w") ;
-   RooAbsPdf* pdf = w->pdf("pdf") ;
-   RooAbsData* data = w->data("pdfData") ;
+   TFile *f = new TFile(fname);
+   RooWorkspace* w = (RooWorkspace*) f->Get(workspaceName) ;
+   RooAbsPdf* pdf = w->pdf(pdfName) ;
+   RooAbsData* data = w->data(dataName) ;
 
-   // create moments
+   // create moments -- for this, we need the PDF used to generate the data
    RooArgSet *allObs = pdf->getObservables( data->get() );
    RooArgSet *marginalObs = pdf->getObservables( data->get() );
    marginalObs->remove( w->argSet("cpsi,ctheta,phi") );
-   // marginalize pdf over 'the rest' so we get the normalization right...
+   // marginalize pdf over 'the rest' so we get the normalization of the moments right...
    RooAbsPdf *pdf_marginal = pdf->createProjection(*marginalObs);
+
    abasis ab(*w,"cpsi","ctheta","phi");
    eps efficiency( get<RooAbsReal>(*w,"cpsi")
                  , get<RooAbsReal>(*w,"ctheta")
@@ -69,15 +70,14 @@ void determineMoments() {
              
    std::vector<moment*> moments;
    typedef std::vector<moment*>::iterator moments_iterator; 
-   for (int i=0;i<4;++i) {
-     for (int l=0;l<4;++l) {
+   for (int i=0;i<5;++i) {
+     for (int l=0;l<5;++l) {
         for (int m=0;m<=l;++m) {
             moments.push_back(new moment( ab("mom",i,0,l,m,double(2*i+1)/2 ), *pdf_marginal, *allObs ) );
         }
      }
    }
 
-   data->Print("V"); 
    // loop over all data
    for (int i=0;i<data->numEntries(); ++i) {
         const RooArgSet *args = data->get(i);
@@ -89,5 +89,4 @@ void determineMoments() {
 
    // and print the results:
    for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->print(cout);
-   
 }
