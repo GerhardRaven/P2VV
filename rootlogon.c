@@ -4,4 +4,5 @@ void rootlogon() {
     gROOT->ProcessLine(".L RooLegendre.cxx+");
     gROOT->ProcessLine(".L RooSpHarmonic.cxx+");
     gROOT->ProcessLine(".L RooP2VVAngleBasis.cxx+");
+    gROOT->ProcessLine(".L RooAddition_.cxx+");
 }
