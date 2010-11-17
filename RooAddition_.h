@@ -18,7 +18,7 @@
 
 #include "RooAbsReal.h"
 #include "RooListProxy.h"
-#include "RooAICRegistry.h"
+#include "RooObjCacheManager.h"
 
 class RooRealVar;
 class RooArgList ;
@@ -44,8 +44,8 @@ public:
       // Force RooRealIntegral to offer all observables for internal integration
       return kTRUE ;
   }
-  Int_t getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& numVars, const RooArgSet* normSet, const char* rangeName=0) const;
-  Double_t analyticalIntegralWN(Int_t code, const RooArgSet* normSet, const char* rangeName=0) const ;
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& numVars, const char* rangeName=0) const;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
      
 
 protected:
@@ -54,7 +54,14 @@ protected:
   RooListProxy _set ;            // set of terms to be summed
   mutable TIterator* _setIter ;  //! Iterator over set
 
-  mutable RooAICRegistry _codeReg;
+  class CacheElem : public RooAbsCacheElement {
+  public:
+      virtual ~CacheElem();
+      // Payload
+      RooArgList _I ;
+      virtual RooArgList containedArgs(Action) ;
+  };
+  mutable RooObjCacheManager _cacheMgr ; // The cache manager
 
   Double_t evaluate() const;
 

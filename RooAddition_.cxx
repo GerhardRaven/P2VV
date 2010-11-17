@@ -36,6 +36,7 @@
 #include "RooAbsReal.h"
 #include "RooErrorHandler.h"
 #include "RooArgSet.h"
+#include "RooNameReg.h"
 #include "RooNLLVar.h"
 #include "RooChi2Var.h"
 #include "RooMsgService.h"
@@ -46,7 +47,6 @@ ClassImp(RooAddition_)
 
 //_____________________________________________________________________________
 RooAddition_::RooAddition_()
-    : _codeReg(10)
 {
   _setIter = _set.createIterator() ;
 }
@@ -57,7 +57,6 @@ RooAddition_::RooAddition_()
 RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet& sumSet, Bool_t takeOwnership) 
   : RooAbsReal(name, title)
   , _set("!set","set of components",this)
-  , _codeReg(10)
 {
   // Constructor with a single set of RooAbsReals. The value of the function will be
   // the sum of the values in sumSet. If takeOwnership is true the RooAddition object
@@ -85,7 +84,6 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet&
 RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList& sumSet1, const RooArgList& sumSet2, Bool_t takeOwnership) 
     : RooAbsReal(name, title)
     , _set("!set","First set of components",this)
-    , _codeReg(10)
 {
   // Constructor with two set of RooAbsReals. The value of the function will be
   //
@@ -135,7 +133,6 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList
 RooAddition_::RooAddition_(const RooAddition_& other, const char* name) 
     : RooAbsReal(other, name)
     , _set("!set",this,other._set)
-    , _codeReg(other._codeReg)
 {
   // Copy constructor
   _setIter = _set.createIterator() ;
@@ -228,74 +225,78 @@ void RooAddition_::printMetaArgs(ostream& os) const
   os << " " ;    
 }
 
-Int_t RooAddition_::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* normSet, const char* rangeName) const
+Int_t RooAddition_::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
-    std::auto_ptr<RooArgSet> allDepVars( getObservables(allVars) );
-    RooArgSet allAnalVars(*allDepVars) ;
+  // we always do things ourselves -- actually, always delegate further down the line ;-)
+  analVars = allVars;
 
-    // check which variables can be analytically integrated over...
-    _setIter->Reset();
-    std::auto_ptr<TIterator> avIter( allVars.createIterator() );
-    RooAbsReal* arg;
-    while((arg=(RooAbsReal*)_setIter->Next())) { // checked in c'tor to be RooAbsReal
-        RooArgSet subAnalVars;
-        arg->getAnalyticalIntegralWN(allVars,subAnalVars,normSet,rangeName);
-        avIter->Reset();
-        RooAbsArg *var;
-        while ( (var=(RooAbsArg*)avIter->Next())) {
-            if (!subAnalVars.find(var->GetName())&& arg->dependsOn(*arg) ) allAnalVars.remove(*arg,kTRUE,kTRUE);
-        }
-    }
-    if (allAnalVars.getSize()==0) return 0;
-
-// Now retrieve codes for integration over common set of analytically integrable observables for each component
-  _setIter->Reset() ;
-  Int_t n=0 ;
-  Int_t* subCode = new Int_t[_set.getSize()];
-  Bool_t allOK(kTRUE) ;
-  while((arg=(RooAbsReal*)_setIter->Next())) {
-    RooArgSet subAnalVars ;
-    std::auto_ptr<RooArgSet> allAnalVars2( arg->getObservables(allAnalVars) );
-    subCode[n] = arg->getAnalyticalIntegralWN(*allAnalVars2,subAnalVars,normSet,rangeName) ;
-    if (subCode[n]==0 && allAnalVars2->getSize()>0) {
-      coutE(InputArguments) << "RooAddition::getAnalyticalIntegral(" << GetName() << ") WARNING: component RooAbsReal " << arg->GetName()
-                << "   advertises inconsistent set of integrals (e.g. (X,Y) but not X or Y individually."
-                << "   Distributed analytical integration disabled. Please fix" << endl ;
-      allOK = kFALSE ;
-    }
-    n++ ;
+  // check if we already have integrals for this combination of factors
+  Int_t sterileIndex(-1);
+  CacheElem* cache = (CacheElem*) _cacheMgr.getObj(&allVars,&sterileIndex,RooNameReg::ptr(rangeName));
+  if (cache!=0) {
+    Int_t code = _cacheMgr.lastIndex();
+    return code;
   }
-  if (!allOK) return 0 ;
 
-  // Mare all analytically integrated observables as such
-  analVars.add(allAnalVars) ;
+  // we don't, so we make it right here....
 
-  // Store set of variables analytically integrated
-  RooArgSet* intSet = new RooArgSet(allAnalVars) ;
-  Int_t masterCode = _codeReg.store(subCode,_set.getSize(),intSet)+1 ;
-  delete[] subCode;
+  cache = new CacheElem;
+  _setIter->Reset();
+  RooAbsReal *arg(0);
+  while( (arg=(RooAbsReal*)_setIter->Next())!=0 ) {  // checked in c'tor that this will work...
+      RooAbsReal *I = arg->createIntegral(allVars,rangeName);
+      cache->_I.addOwned(*I);
+  }
 
-  return masterCode;
+  Int_t code = _cacheMgr.setObj(&allVars,0,(RooAbsCacheElement*)cache,RooNameReg::ptr(rangeName));
+  return 1+code;
 }
 
 Double_t 
-RooAddition_::analyticalIntegralWN(Int_t code, const RooArgSet* normSet, const char* rangeName) const 
+RooAddition_::analyticalIntegral(Int_t code, const char* rangeName) const 
 {
-    if (code==0) return getVal(normSet);
-    // Retrieve analytical integration subCodes and set of observabels integrated over
-    RooArgSet* intSet ;
-    const Int_t* subCode = _codeReg.retrieve(code-1,intSet) ;
-    if (!subCode) {
-      coutE(InputArguments) << "RooAddPdf::analyticalIntegral(" << GetName() << "): ERROR unrecognized integration code, " << code << endl ;
-      assert(0) ;
-    }
-    _setIter->Reset() ;
-    Int_t n(0);
-    double result(0);
-    RooAbsReal *arg;
-    while((arg=(RooAbsReal*)_setIter->Next())) {
-        result += arg->analyticalIntegralWN( subCode[n], normSet, rangeName );
-        ++n;
-    }
-    return result;
+  // Calculate integral internally from appropriate integral cache
+
+  // note: rangeName implicit encoded in code: see _cacheMgr.setObj in getPartIntList...
+  CacheElem *cache = (CacheElem*) _cacheMgr.getObjByIndex(code-1);
+  if (cache==0) {
+    // cache got sterilized, trigger repopulation of this slot, then try again...
+    std::auto_ptr<RooArgSet> vars( getParameters(RooArgSet()) );
+    std::auto_ptr<RooArgSet> iset(  _cacheMgr.nameSet2ByIndex(code-1)->select(*vars) );
+    RooArgSet dummy;
+    Int_t code2 = getAnalyticalIntegral(*iset,dummy,rangeName);
+    assert(code==code2); // must have revived the right (sterilized) slot...
+    return analyticalIntegral(code2,rangeName);
+  }
+  assert(cache!=0);
+
+  // loop over cache, and sum...
+  std::auto_ptr<TIterator> iter( cache->_I.createIterator() );
+  RooAbsReal *I;
+  double result(0);
+  while ( ( I=(RooAbsReal*)iter->Next() ) != 0 ) {
+        result += I->getVal();
+  }
+  return result;
+
 }
+
+//_____________________________________________________________________________
+RooArgList RooAddition_::CacheElem::containedArgs(Action)
+{
+  // Return list of all RooAbsArgs in cache element
+  RooArgList ret(_I) ;
+  return ret ;
+}
+
+RooAddition_::CacheElem::~CacheElem()
+{
+  // Destructor
+}
+
+
+
+
+
+    
+
