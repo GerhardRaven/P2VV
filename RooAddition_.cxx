@@ -28,13 +28,12 @@
 #include "RooFit.h"
 
 #include "Riostream.h"
-#include "Riostream.h"
 #include <math.h>
 #include <memory>
 
 #include "RooAddition_.h"
+#include "RooProduct.h"
 #include "RooAbsReal.h"
-#include "RooAbsPdf.h"
 #include "RooErrorHandler.h"
 #include "RooArgSet.h"
 #include "RooNLLVar.h"
@@ -47,25 +46,24 @@ ClassImp(RooAddition_)
 
 //_____________________________________________________________________________
 RooAddition_::RooAddition_()
+    : _codeReg(10)
 {
-  _setIter1 = _set1.createIterator() ;
-  _setIter2 = _set2.createIterator() ;
+  _setIter = _set.createIterator() ;
 }
 
 
 
 //_____________________________________________________________________________
-RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet& sumSet, Bool_t takeOwnership) :
-  RooAbsReal(name, title),
-  _set1("!set1","First set of components",this),
-  _set2("!set2","Second set of components",this)
+RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet& sumSet, Bool_t takeOwnership) 
+  : RooAbsReal(name, title)
+  , _set("!set","set of components",this)
+  , _codeReg(10)
 {
   // Constructor with a single set of RooAbsReals. The value of the function will be
   // the sum of the values in sumSet. If takeOwnership is true the RooAddition object
   // will take ownership of the arguments in sumSet
 
-  _setIter1 = _set1.createIterator() ;
-  _setIter2 = 0 ;
+  _setIter = _set.createIterator() ;
 
   std::auto_ptr<TIterator> inputIter( sumSet.createIterator() );
   RooAbsArg* comp ;
@@ -75,7 +73,7 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet&
 			    << " is not of type RooAbsReal" << endl ;
       RooErrorHandler::softAbort() ;
     }
-    _set1.add(*comp) ;
+    _set.add(*comp) ;
     if (takeOwnership) _ownedList.addOwned(*comp) ;
   }
 
@@ -84,10 +82,10 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet&
 
 
 //_____________________________________________________________________________
-RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList& sumSet1, const RooArgList& sumSet2, Bool_t takeOwnership) :
-  RooAbsReal(name, title),
-  _set1("!set1","First set of components",this),
-  _set2("!set2","Second set of components",this)
+RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList& sumSet1, const RooArgList& sumSet2, Bool_t takeOwnership) 
+    : RooAbsReal(name, title)
+    , _set("!set","First set of components",this)
+    , _codeReg(10)
 {
   // Constructor with two set of RooAbsReals. The value of the function will be
   //
@@ -95,8 +93,7 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList
   //
   // If takeOwnership is true the RooAddition object will take ownership of the arguments in sumSet
 
-  _setIter1 = _set1.createIterator() ;
-  _setIter2 = _set2.createIterator() ;
+  _setIter = _set.createIterator() ;
 
   if (sumSet1.getSize() != sumSet2.getSize()) {
     coutE(InputArguments) << "RooAddition::ctor(" << GetName() << ") ERROR: input lists should be of equal length" << endl ;
@@ -104,41 +101,44 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList
   }
 
   std::auto_ptr<TIterator> inputIter1( sumSet1.createIterator() );
-  RooAbsArg* comp ;
-  while((comp = (RooAbsArg*)inputIter1->Next())) {
-    if (!dynamic_cast<RooAbsReal*>(comp)) {
-      coutE(InputArguments) << "RooAddition::ctor(" << GetName() << ") ERROR: component " << comp->GetName() 
-			    << " in first list is not of type RooAbsReal" << endl ;
-      RooErrorHandler::softAbort() ;
-    }
-    _set1.add(*comp) ;
-    if (takeOwnership) _ownedList.addOwned(*comp) ;
-  }
-
-
   std::auto_ptr<TIterator> inputIter2( sumSet2.createIterator() );
-  while((comp = (RooAbsArg*)inputIter2->Next())) {
-    if (!dynamic_cast<RooAbsReal*>(comp)) {
-      coutE(InputArguments) << "RooAddition::ctor(" << GetName() << ") ERROR: component " << comp->GetName() 
+  RooAbsArg *comp1(0),*comp2(0) ;
+  while((comp1 = (RooAbsArg*)inputIter1->Next())) {
+    if (!dynamic_cast<RooAbsReal*>(comp1)) {
+      coutE(InputArguments) << "RooAddition::ctor(" << GetName() << ") ERROR: component " << comp1->GetName() 
 			    << " in first list is not of type RooAbsReal" << endl ;
       RooErrorHandler::softAbort() ;
     }
-    _set2.add(*comp) ;
-    if (takeOwnership) _ownedList.addOwned(*comp) ;
+    comp2 = (RooAbsArg*)inputIter2->Next();
+    if (!dynamic_cast<RooAbsReal*>(comp2)) {
+      coutE(InputArguments) << "RooAddition::ctor(" << GetName() << ") ERROR: component " << comp2->GetName() 
+			    << " in first list is not of type RooAbsReal" << endl ;
+      RooErrorHandler::softAbort() ;
+    }
+    // TODO: add flag to RooProduct c'tor to make it assume ownership...
+    TString name(comp1->GetName());
+    name.Append( "_x_");
+    name.Append(comp2->GetName());
+    RooProduct  *prod = new RooProduct( name, name , RooArgSet(*comp1, *comp2) /*, takeOwnership */ ) ;
+    _set.add(*prod);
+    _ownedList.addOwned(*prod) ;
+    if (takeOwnership) {
+        _ownedList.addOwned(*comp1) ;
+        _ownedList.addOwned(*comp2) ;
+    }
   }
 }
 
 
 
 //_____________________________________________________________________________
-RooAddition_::RooAddition_(const RooAddition_& other, const char* name) :
-  RooAbsReal(other, name), 
-  _set1("!set1",this,other._set1),
-  _set2("!set2",this,other._set2)
+RooAddition_::RooAddition_(const RooAddition_& other, const char* name) 
+    : RooAbsReal(other, name)
+    , _set("!set",this,other._set)
+    , _codeReg(other._codeReg)
 {
   // Copy constructor
-  _setIter1 = _set1.createIterator() ;
-  _setIter2 = (other._setIter2!=0)? _set2.createIterator() : 0;
+  _setIter = _set.createIterator() ;
   
   // Member _ownedList is intentionally not copy-constructed -- ownership is not transferred
 }
@@ -148,46 +148,23 @@ RooAddition_::RooAddition_(const RooAddition_& other, const char* name) :
 RooAddition_::~RooAddition_() 
 {
   // Destructor
-  delete _setIter1 ;
-  delete _setIter2 ;
+  delete _setIter ;
 }
-
-
-
 
 //_____________________________________________________________________________
 Double_t RooAddition_::evaluate() const 
 {
   // Calculate and return current value of self
-
   Double_t sum(0);
-  const RooArgSet* nset = _set1.nset() ;
+  const RooArgSet* nset = _set.nset() ;
 
-  _setIter1->Reset() ;
-
-  if (_setIter2 && _set2.getSize()==0) {
-    delete _setIter2 ;
-    _setIter2=0 ;
-  }
-
+  _setIter->Reset() ;
   RooAbsReal* comp ;
-  if (!_setIter2) {
-    while((comp=(RooAbsReal*)_setIter1->Next())) {
+  while((comp=(RooAbsReal*)_setIter->Next())) {
       sum += comp->getVal(nset) ;
-    }
-  } else {
-    RooAbsReal* comp2 ;
-    _setIter2->Reset() ;
-    while((comp=(RooAbsReal*)_setIter1->Next())) {
-      comp2 = (RooAbsReal*)_setIter2->Next() ;
-      sum += comp->getVal(nset)*comp2->getVal(nset) ;
-    }
   }
-  
   return sum ;
 }
-
-
 
 //_____________________________________________________________________________
 Double_t RooAddition_::defaultErrorLevel() const 
@@ -205,25 +182,13 @@ Double_t RooAddition_::defaultErrorLevel() const
 
   RooAbsArg* arg ;
 
-  _setIter1->Reset() ;
-  while((arg=(RooAbsArg*)_setIter1->Next())) {
+  _setIter->Reset() ;
+  while((arg=(RooAbsArg*)_setIter->Next())) {
     if (dynamic_cast<RooNLLVar*>(arg)) {
       nllArg = (RooAbsReal*)arg ;
     }
     if (dynamic_cast<RooChi2Var*>(arg)) {
       chi2Arg = (RooAbsReal*)arg ;
-    }
-  }
-
-  if (_setIter2) {
-    _setIter2->Reset() ;
-    while((arg=(RooAbsArg*)_setIter2->Next())) {
-      if (dynamic_cast<RooNLLVar*>(arg)) {
-	nllArg = (RooAbsReal*)arg ;
-      }
-      if (dynamic_cast<RooChi2Var*>(arg)) {
-	chi2Arg = (RooAbsReal*)arg ;
-      }
     }
   }
 
@@ -250,42 +215,87 @@ Double_t RooAddition_::defaultErrorLevel() const
 //_____________________________________________________________________________
 void RooAddition_::printMetaArgs(ostream& os) const 
 {
-  // Customized printing of arguments of a RooAddition to more intuitively reflect the contents of the
-  // product operator construction
-
-  _setIter1->Reset() ;
-  if (_setIter2) {
-    _setIter2->Reset() ;
-  }
+  _setIter->Reset() ;
 
   Bool_t first(kTRUE) ;
-    
-  RooAbsArg* arg1, *arg2 ;
-  if (_set2.getSize()!=0) { 
-
-    while((arg1=(RooAbsArg*)_setIter1->Next())) {
-      if (!first) {
-	os << " + " ;
-      } else {
-	first = kFALSE ;
-      }
-      arg2=(RooAbsArg*)_setIter2->Next() ;
-      os << arg1->GetName() << " * " << arg2->GetName() ;
+  RooAbsArg* arg;
+  while((arg=(RooAbsArg*)_setIter->Next())) {
+    if (!first) { os << " + " ;
+    } else { first = kFALSE ; 
     }
-
-  } else {
-    
-    while((arg1=(RooAbsArg*)_setIter1->Next())) {
-      if (!first) {
-	os << " + " ;
-      } else {
-	first = kFALSE ;
-      }
-      os << arg1->GetName() ; 
-    }  
-
-  }
-
+    os << arg->GetName() ; 
+  }  
   os << " " ;    
 }
 
+Int_t RooAddition_::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* normSet, const char* rangeName) const
+{
+    std::auto_ptr<RooArgSet> allDepVars( getObservables(allVars) );
+    RooArgSet allAnalVars(*allDepVars) ;
+
+    // check which variables can be analytically integrated over...
+    _setIter->Reset();
+    std::auto_ptr<TIterator> avIter( allVars.createIterator() );
+    RooAbsReal* arg;
+    while((arg=(RooAbsReal*)_setIter->Next())) { // checked in c'tor to be RooAbsReal
+        RooArgSet subAnalVars;
+        arg->getAnalyticalIntegralWN(allVars,subAnalVars,normSet,rangeName);
+        avIter->Reset();
+        RooAbsArg *var;
+        while ( (var=(RooAbsArg*)avIter->Next())) {
+            if (!subAnalVars.find(var->GetName())&& arg->dependsOn(*arg) ) allAnalVars.remove(*arg,kTRUE,kTRUE);
+        }
+    }
+    if (allAnalVars.getSize()==0) return 0;
+
+// Now retrieve codes for integration over common set of analytically integrable observables for each component
+  _setIter->Reset() ;
+  Int_t n=0 ;
+  Int_t* subCode = new Int_t[_set.getSize()];
+  Bool_t allOK(kTRUE) ;
+  while((arg=(RooAbsReal*)_setIter->Next())) {
+    RooArgSet subAnalVars ;
+    std::auto_ptr<RooArgSet> allAnalVars2( arg->getObservables(allAnalVars) );
+    subCode[n] = arg->getAnalyticalIntegralWN(*allAnalVars2,subAnalVars,normSet,rangeName) ;
+    if (subCode[n]==0 && allAnalVars2->getSize()>0) {
+      coutE(InputArguments) << "RooAddition::getAnalyticalIntegral(" << GetName() << ") WARNING: component RooAbsReal " << arg->GetName()
+                << "   advertises inconsistent set of integrals (e.g. (X,Y) but not X or Y individually."
+                << "   Distributed analytical integration disabled. Please fix" << endl ;
+      allOK = kFALSE ;
+    }
+    n++ ;
+  }
+  if (!allOK) return 0 ;
+
+  // Mare all analytically integrated observables as such
+  analVars.add(allAnalVars) ;
+
+  // Store set of variables analytically integrated
+  RooArgSet* intSet = new RooArgSet(allAnalVars) ;
+  Int_t masterCode = _codeReg.store(subCode,_set.getSize(),intSet)+1 ;
+  delete[] subCode;
+
+  return masterCode;
+}
+
+Double_t 
+RooAddition_::analyticalIntegralWN(Int_t code, const RooArgSet* normSet, const char* rangeName) const 
+{
+    if (code==0) return getVal(normSet);
+    // Retrieve analytical integration subCodes and set of observabels integrated over
+    RooArgSet* intSet ;
+    const Int_t* subCode = _codeReg.retrieve(code-1,intSet) ;
+    if (!subCode) {
+      coutE(InputArguments) << "RooAddPdf::analyticalIntegral(" << GetName() << "): ERROR unrecognized integration code, " << code << endl ;
+      assert(0) ;
+    }
+    _setIter->Reset() ;
+    Int_t n(0);
+    double result(0);
+    RooAbsReal *arg;
+    while((arg=(RooAbsReal*)_setIter->Next())) {
+        result += arg->analyticalIntegralWN( subCode[n], normSet, rangeName );
+        ++n;
+    }
+    return result;
+}
