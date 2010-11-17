@@ -143,8 +143,7 @@ RooAddition_::RooAddition_(const RooAddition_& other, const char* name)
 
 //_____________________________________________________________________________
 RooAddition_::~RooAddition_() 
-{
-  // Destructor
+{ // Destructor
   delete _setIter ;
 }
 
@@ -225,14 +224,14 @@ void RooAddition_::printMetaArgs(ostream& os) const
   os << " " ;    
 }
 
-Int_t RooAddition_::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
+Int_t RooAddition_::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* nSet, const char* rangeName) const
 {
   // we always do things ourselves -- actually, always delegate further down the line ;-)
-  analVars = allVars;
+  analVars.add(allVars);
 
   // check if we already have integrals for this combination of factors
   Int_t sterileIndex(-1);
-  CacheElem* cache = (CacheElem*) _cacheMgr.getObj(&allVars,&sterileIndex,RooNameReg::ptr(rangeName));
+  CacheElem* cache = (CacheElem*) _cacheMgr.getObj(&allVars,nSet,&sterileIndex,RooNameReg::ptr(rangeName));
   if (cache!=0) {
     Int_t code = _cacheMgr.lastIndex();
     return code;
@@ -244,16 +243,18 @@ Int_t RooAddition_::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVar
   _setIter->Reset();
   RooAbsReal *arg(0);
   while( (arg=(RooAbsReal*)_setIter->Next())!=0 ) {  // checked in c'tor that this will work...
-      RooAbsReal *I = arg->createIntegral(allVars,rangeName);
+      RooAbsReal *I = arg->createIntegral(allVars,*nSet,rangeName);
       cache->_I.addOwned(*I);
   }
 
-  Int_t code = _cacheMgr.setObj(&allVars,0,(RooAbsCacheElement*)cache,RooNameReg::ptr(rangeName));
+  Int_t code = _cacheMgr.setObj(&allVars,nSet,(RooAbsCacheElement*)cache,RooNameReg::ptr(rangeName));
+  cout << " RooAddition_("<< GetName()<<")::getAnalyticalIntegral -- returning " << 1+code << " and analVars: " <<  endl;
+  analVars.Print("V");
   return 1+code;
 }
 
 Double_t 
-RooAddition_::analyticalIntegral(Int_t code, const char* rangeName) const 
+RooAddition_::analyticalIntegralWN(Int_t code, const RooArgSet* nSet, const char* rangeName) const 
 {
   // Calculate integral internally from appropriate integral cache
 
@@ -264,9 +265,9 @@ RooAddition_::analyticalIntegral(Int_t code, const char* rangeName) const
     std::auto_ptr<RooArgSet> vars( getParameters(RooArgSet()) );
     std::auto_ptr<RooArgSet> iset(  _cacheMgr.nameSet2ByIndex(code-1)->select(*vars) );
     RooArgSet dummy;
-    Int_t code2 = getAnalyticalIntegral(*iset,dummy,rangeName);
+    Int_t code2 = getAnalyticalIntegralWN(*iset,dummy,nSet,rangeName);
     assert(code==code2); // must have revived the right (sterilized) slot...
-    return analyticalIntegral(code2,rangeName);
+    return analyticalIntegralWN(code2,nSet,rangeName);
   }
   assert(cache!=0);
 
@@ -296,7 +297,15 @@ RooAddition_::CacheElem::~CacheElem()
 
 
 
+Bool_t RooAddition_::isJacobianOK(const RooArgSet& ) const 
+{
+    return kTRUE; 
+}
 
+Double_t RooAddition_::jacobian() const
+{
+    return 1.0; 
+}
 
     
 

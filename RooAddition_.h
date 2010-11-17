@@ -44,8 +44,11 @@ public:
       // Force RooRealIntegral to offer all observables for internal integration
       return kTRUE ;
   }
-  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& numVars, const char* rangeName=0) const;
-  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
+  Int_t getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& numVars, const RooArgSet* normSet, const char* rangeName=0) const;
+  Double_t analyticalIntegralWN(Int_t code, const RooArgSet* normSet, const char* rangeName=0) const ;
+
+  Bool_t isJacobianOK(const RooArgSet& depList) const ;
+  Double_t jacobian() const;
      
 
 protected:
