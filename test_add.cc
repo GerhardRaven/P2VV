@@ -23,7 +23,6 @@ gSystem->Load("libMathMore.so")
 .L RooSpHarmonic.cxx+g
 */
 
-
 RooAbsReal& prod(RooWorkspace& w,RooAbsReal* a, RooAbsReal* b, RooAbsReal* c, RooAbsReal* d) {
     assert (a!=0) ;
     if (b==0&&c==0&&d==0) return *a;
@@ -72,14 +71,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name
         import(w,RooFormulaVar("ImAzAperp",   "@12* ( @0 * @3 - @1 * @2 ) / ( 1+@6*@7 )", amp));
         import(w,RooFormulaVar("qtag_",   "@7", amp));
 
-        RooResolutionModel *res = dynamic_cast<RooResolutionModel*>( w.function("res") );
-
-        RooArgList ttdg( get<RooAbsReal>(w,"t"), get<RooAbsReal>(w,"tau"), get<RooAbsReal>(w,"dG"));
-        RooArgList ttdm( get<RooAbsReal>(w,"t"), get<RooAbsReal>(w,"tau"), get<RooAbsReal>(w,"dm"));
-
         w.factory("Minus[-1]");
-        //
-        //
         import(w, RooAddition_("f_cosh","f_cosh",RooArgSet( prod(w, "NAzAz"                 )
                                                           , prod(w, "NAparApar"             )
                                                           , prod(w, "NAperpAperp"           )
@@ -104,6 +96,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name
                                                           , prod(w, "ReAparAperp", "Minus",       "D")
                                                           , prod(w, "ReAzAperp",   "Minus",       "D")
                                                           , prod(w, "ReAzApar",    "Minus","qtag_","S") )));
+        RooResolutionModel *res = dynamic_cast<RooResolutionModel*>( w.function("res") );
         w.import( RooBDecay(name,name,   get<RooRealVar>(w,"t") , get<RooAbsReal>(w,"tau"), get<RooAbsReal>(w,"dG")
                                        , get<RooAbsReal>(w,"f_cosh"), get<RooAbsReal>(w,"f_sinh") , get<RooAbsReal>(w,"f_cos"), get<RooAbsReal>(w,"f_sin")
                                        , get<RooAbsReal>(w,"dm"), *res, RooBDecay::SingleSided) );
