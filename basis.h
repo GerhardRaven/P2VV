@@ -7,11 +7,7 @@
 #include "RooP2VVAngleBasis.h"
 #include "RooResolutionModel.h"
 
-class abasis {  //TODO: make this an RooAbsReal implementation, which forwards integrals, 
-                //      supports maxVal for toy generation, 
-                //      and avoids making a constant to put in front of the product
-                //  OR  make this class return a dedicated RooAbsReal implementation which
-                //      does the above, i.e. a RooAbsReal which represents C * P_ij * Y_lm
+class abasis {
 public:
     // TODO: add version which takes RooAbsArg for cpsi, ctheta, phi (and then checks they 
     //  are in the workspace w!)

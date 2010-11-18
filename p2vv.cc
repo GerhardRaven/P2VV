@@ -132,9 +132,9 @@ void p2vv() {
     pdf.printTree(cout);
 
     if (false) {
-        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),1000000);
+        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),10000);
         w.import(*data);
-        w.writeToFile("p2vv.root");
+        w.writeToFile("p2vv_3.root");
         return;
     }
 
@@ -144,8 +144,10 @@ void p2vv() {
 
     if (false) { // marginalize to untagged, time integrated 3-angle pdf..
         RooAbsPdf &pdf_untagged = import(w,*pdf.createProjection(w.argSet("qtag,t")));
-        RooAbsData *data = pdf_untagged.generate(w.argSet("cpsi,ctheta,phi"),100000);
+        RooAbsData *data = pdf_untagged.generate(w.argSet("cpsi,ctheta,phi"),1000000);
         data->Print("V");
+        w.import(*data);
+        w.writeToFile("p2vv_angles.root");
         return;
     }
 
@@ -194,12 +196,12 @@ void p2vv() {
             w.var(dname[k])->Print();
         }
         RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),10000);
-        if (i==0) pdf.fitTo(*data,RooFit::NumCPU(8));
-        RooPlot *p1 = w.var("cpsi")->frame();   data->plotOn(p1); pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
-        RooPlot *p2 = w.var("ctheta")->frame(); data->plotOn(p2); pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
-        RooPlot *p3 = w.var("phi")->frame();    data->plotOn(p3); pdf.plotOn(p3); c->cd(i*5+3); p3->Draw();
-        RooPlot *p4 = w.var("t")->frame();      data->plotOn(p4); pdf.plotOn(p4); c->cd(i*5+4); p4->Draw();
-        RooPlot *p5 = w.var("t")->frame();      data->plotOn(p5, tagAsym ); pdf.plotOn(p5, tagAsym); c->cd(i*5+5); p5->Draw();
+        if (i==0) pdf.fitTo(*data,RooFit::NumCPU(7));
+        RooPlot *p1 = w.var("cpsi")->frame();   /*data->plotOn(p1);*/ pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
+        RooPlot *p2 = w.var("ctheta")->frame(); /*data->plotOn(p2);*/ pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
+        RooPlot *p3 = w.var("phi")->frame();    /*data->plotOn(p3);*/ pdf.plotOn(p3); c->cd(i*5+3); p3->Draw();
+        RooPlot *p4 = w.var("t")->frame();      /*data->plotOn(p4);*/ pdf.plotOn(p4); c->cd(i*5+4); p4->Draw();
+        RooPlot *p5 = w.var("t")->frame();      /*data->plotOn(p5, tagAsym );*/ pdf.plotOn(p5, tagAsym); c->cd(i*5+5); p5->Draw();
         break;
     }
 }

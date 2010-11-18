@@ -61,6 +61,7 @@ T& import(RooWorkspace& w, const T& r, const char *n=0) {
 }
 
 RooAbsReal& product(RooWorkspace& w, const RooArgList& x) {
+    // if x.getSize = 1, become transparent (but put x[0] into w!)
     const char *name(0);
     for (int i=0;i<x.getSize();++i) {
         name = name ? Format("%s_%s",name,x[i].GetName()) : x[i].GetName();

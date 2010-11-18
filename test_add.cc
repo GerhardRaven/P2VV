@@ -38,14 +38,14 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name
         
         import(w, RooFormulaVar("qtag_","@0",RooArgSet( get<RooCategory>(w,"qtag") ) ) );
         //                                                                   0    1    2       3       4      5      6    7
-        w.factory("expr::NAzAz       ('( @0 * @0 + @1 * @1 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
-        w.factory("expr::NAparApar   ('( @4 * @4 + @5 * @5 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
-        w.factory("expr::NAperpAperp ('( @2 * @2 + @3 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
-        w.factory("expr::ReAparAperp ('( @4 * @2 + @5 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
-        w.factory("expr::ReAzAperp   ('( @0 * @2 + @1 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
-        w.factory("expr::ReAzApar    ('( @0 * @4 + @1 * @5 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
-        w.factory("expr::ImAparAperp ('( @4 * @3 - @5 * @2 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
-        w.factory("expr::ImAzAperp   ('( @0 * @3 - @1 * @2 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::NAparApar  ('( @4 * @4 + @5 * @5 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::NAperpAperp('( @2 * @2 + @3 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ReAparAperp('( @4 * @2 + @5 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ReAzAperp  ('( @0 * @2 + @1 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ReAzApar   ('( @0 * @4 + @1 * @5 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ImAparAperp('( @4 * @3 - @5 * @2 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
 
         w.factory("Minus[-1]");
         import(w, RooAddition_("f_cosh","f_cosh",RooArgSet( *w.factory("prod(NAzAz,                    AzAz_basis)")
@@ -106,8 +106,7 @@ void test_add() {
     // TODO: write things in terms of x & y instead of dG and dm...
     w.factory("{tau[1.5,0.5,2.5],dm[5]}");
     w.factory("RooFormulaVar::dG('@0/@1',{dGG[0],tau})"); 
-    //w.factory("RooGaussModel::res(t,mu[0],sigma[0.05])");
-    w.factory("RooTruthModel::res(t)");
+    w.factory("RooGaussModel::res(t,mu[0],sigma[0.05])");
 
     RooAbsPdf& pdf = jpsiphi(w,"pdf");
     //cout << "PDF:" << endl;
