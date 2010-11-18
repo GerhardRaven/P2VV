@@ -224,6 +224,7 @@ void RooAddition_::printMetaArgs(ostream& os) const
   os << " " ;    
 }
 
+//_____________________________________________________________________________
 Int_t RooAddition_::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* nSet, const char* rangeName) const
 {
   // we always do things ourselves -- actually, always delegate further down the line ;-)
@@ -234,11 +235,10 @@ Int_t RooAddition_::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analV
   CacheElem* cache = (CacheElem*) _cacheMgr.getObj(&allVars,nSet,&sterileIndex,RooNameReg::ptr(rangeName));
   if (cache!=0) {
     Int_t code = _cacheMgr.lastIndex();
-    return code;
+    return code+1;
   }
 
   // we don't, so we make it right here....
-
   cache = new CacheElem;
   _setIter->Reset();
   RooAbsReal *arg(0);
@@ -248,13 +248,11 @@ Int_t RooAddition_::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analV
   }
 
   Int_t code = _cacheMgr.setObj(&allVars,nSet,(RooAbsCacheElement*)cache,RooNameReg::ptr(rangeName));
-  cout << " RooAddition_("<< GetName()<<")::getAnalyticalIntegral -- returning " << 1+code << " and analVars: " <<  endl;
-  analVars.Print("V");
   return 1+code;
 }
 
-Double_t 
-RooAddition_::analyticalIntegralWN(Int_t code, const RooArgSet* nSet, const char* rangeName) const 
+//_____________________________________________________________________________
+Double_t RooAddition_::analyticalIntegralWN(Int_t code, const RooArgSet* nSet, const char* rangeName) const 
 {
   // Calculate integral internally from appropriate integral cache
 
@@ -275,9 +273,7 @@ RooAddition_::analyticalIntegralWN(Int_t code, const RooArgSet* nSet, const char
   std::auto_ptr<TIterator> iter( cache->_I.createIterator() );
   RooAbsReal *I;
   double result(0);
-  while ( ( I=(RooAbsReal*)iter->Next() ) != 0 ) {
-        result += I->getVal();
-  }
+  while ( ( I=(RooAbsReal*)iter->Next() ) != 0 ) result += I->getVal();
   return result;
 
 }
@@ -295,17 +291,4 @@ RooAddition_::CacheElem::~CacheElem()
   // Destructor
 }
 
-
-
-Bool_t RooAddition_::isJacobianOK(const RooArgSet& ) const 
-{
-    return kTRUE; 
-}
-
-Double_t RooAddition_::jacobian() const
-{
-    return 1.0; 
-}
-
-    
 

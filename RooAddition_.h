@@ -13,8 +13,8 @@
  * with or without modification, are permitted according to the terms        *
  * listed in LICENSE (http://roofit.sourceforge.net/license.txt)             *
  *****************************************************************************/
-#ifndef ROO_ADDITION
-#define ROO_ADDITION
+#ifndef ROO_ADDITION__
+#define ROO_ADDITION__
 
 #include "RooAbsReal.h"
 #include "RooListProxy.h"
@@ -47,8 +47,13 @@ public:
   Int_t getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& numVars, const RooArgSet* normSet, const char* rangeName=0) const;
   Double_t analyticalIntegralWN(Int_t code, const RooArgSet* normSet, const char* rangeName=0) const ;
 
-  Bool_t isJacobianOK(const RooArgSet& depList) const ;
-  Double_t jacobian() const;
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& numVars, const char* rangeName=0) const 
+  { return getAnalyticalIntegralWN(allVars,numVars,(RooArgSet*)0,rangeName); }
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const 
+  { return analyticalIntegralWN(code, (RooArgSet*)0, rangeName); }
+
+
+
      
 
 protected:
