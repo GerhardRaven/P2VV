@@ -100,7 +100,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name
 };
 
 void test_add() {
-    RooWorkspace w("w",kTRUE); 
+    RooWorkspace w("w"); 
     // observables...
     w.factory(Format( "{ cpsi[-1,1], ctheta[-1,1], phi[0,%f], t[-1,4], qtag[bbar=+1,b=-1]} ",4*acos(0.))); // bbar=+1, so code corresponds to Bs(t=0)
 
@@ -133,8 +133,8 @@ void test_add() {
     w.factory("RooTruthModel::res(t)");
 
     RooAbsPdf& pdf = jpsiphi(w,"pdf");
-    cout << "PDF:" << endl;
-    pdf.printTree(cout);
+    //cout << "PDF:" << endl;
+    //pdf.printTree(cout);
 
     if (false) {
         RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),10000);
@@ -184,10 +184,10 @@ void test_add() {
         return;
     }
 
-    RooMsgService::instance().addStream(RooFit::DEBUG,Topic(RooFit::Generation));
+    //RooMsgService::instance().addStream(RooFit::DEBUG,Topic(RooFit::Generation));
     //RooMsgService::instance().addStream(RooFit::DEBUG,Topic(RooFit::Plotting));
     RooMsgService::instance().addStream(RooFit::INFO,Topic(RooFit::NumIntegration));
-    RooMsgService::instance().addStream(RooFit::INFO,Topic(RooFit::Integration));
+    //RooMsgService::instance().addStream(RooFit::INFO,Topic(RooFit::Integration));
 
     c->Divide(5,4);
     const char *rname[] = { "rz","rpar","rperp",0 };
