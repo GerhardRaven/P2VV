@@ -18,26 +18,6 @@
 #endif
 using namespace std;
 
-RooAbsReal& prod(RooWorkspace& w,RooAbsReal* a, RooAbsReal* b, RooAbsReal* c, RooAbsReal* d, RooAbsReal* e) {
-    assert (a!=0) ;
-    if (b==0&&c==0&&d==0) return *a;
-    const char *name(0);
-    name = a->GetName(); RooArgList l; l.add(*a);
-    if (b) { name = Format("%s_x_%s",name,b->GetName()); l.add(*b); }
-    if (c) { name = Format("%s_x_%s",name,c->GetName()); l.add(*c); }
-    if (d) { name = Format("%s_x_%s",name,d->GetName()); l.add(*d); }
-    if (e) { name = Format("%s_x_%s",name,e->GetName()); l.add(*e); }
-    return import(w,RooProduct(name,name,l));
-}
-
-RooAbsReal& prod(RooWorkspace& w,const char* a, const char *b=0, const char *c=0, const char *d=0, const char *e=0) {
-    return prod( w,      &get<RooAbsReal>(w,a)
-                  ,  b ? &get<RooAbsReal>(w,b) : 0
-                  ,  c ? &get<RooAbsReal>(w,c) : 0
-                  ,  d ? &get<RooAbsReal>(w,d) : 0
-                  ,  e ? &get<RooAbsReal>(w,e) : 0 );
-}
-
 RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name 
         // , RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, RooAbsReal& t, RooAbsReal& qtag 
         // , RooAbsReal& ReAz, RooAbsReal& ImAz, RooAbsReal ReApar, RooAbsReal& ImApar, RooAbsReal& ReAperp, RooAbsReal& ImAperp
@@ -55,47 +35,44 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name
         import(w, RooAddition_("AparAperp_basis", "AparAperp_basis",  RooArgList( ab("AparAperp",  2,2,2,-1, sqrt( 9./15.)) )));
         import(w, RooAddition_("AzAperp_basis",   "AzAperp_basis",    RooArgList( ab("AzAperp",    2,1,2, 1,-sqrt(18./15.)) )));
         import(w, RooAddition_("AzApar_basis",    "AzApar_basis",     RooArgList( ab("AzApar",     2,1,2,-2, sqrt(18./15.)) )));
-        //                        0    1    2       3       4      5      6    7
-        RooArgSet amp = w.argSet("ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag,C");
-        import(w,RooFormulaVar("NAzAz",       "( @0 * @0 + @1 * @1 ) / ( 1+@6*@7 )", amp));
-        import(w,RooFormulaVar("NAparApar",   "( @4 * @4 + @5 * @5 ) / ( 1+@6*@7 )", amp));
-        import(w,RooFormulaVar("NAperpAperp", "( @2 * @2 + @3 * @3 ) / ( 1+@6*@7 )", amp));
-        import(w,RooFormulaVar("ReAparAperp", "( @4 * @2 + @5 * @3 ) / ( 1+@6*@7 )", amp));
-        import(w,RooFormulaVar("ReAzAperp",   "( @0 * @2 + @1 * @3 ) / ( 1+@6*@7 )", amp));
-        import(w,RooFormulaVar("ReAzApar",    "( @0 * @4 + @1 * @5 ) / ( 1+@6*@7 )", amp));
-        import(w,RooFormulaVar("ImAparAperp", "( @4 * @3 - @5 * @2 ) / ( 1+@6*@7 )", amp));
-        import(w,RooFormulaVar("ImAzAperp",   "( @0 * @3 - @1 * @2 ) / ( 1+@6*@7 )", amp));
-        import(w,RooFormulaVar("qtag_",   "@7", amp)); // make a RooAbsReal corresponding to the RooCategory 'qtag'...
+        
+        import(w, RooFormulaVar("qtag_","@0",RooArgSet( get<RooCategory>(w,"qtag") ) ) );
+        //                                                                   0    1    2       3       4      5      6    7
+        w.factory("expr::NAzAz       ('( @0 * @0 + @1 * @1 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::NAparApar   ('( @4 * @4 + @5 * @5 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::NAperpAperp ('( @2 * @2 + @3 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ReAparAperp ('( @4 * @2 + @5 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ReAzAperp   ('( @0 * @2 + @1 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ReAzApar    ('( @0 * @4 + @1 * @5 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ImAparAperp ('( @4 * @3 - @5 * @2 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
+        w.factory("expr::ImAzAperp   ('( @0 * @3 - @1 * @2 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
 
         w.factory("Minus[-1]");
-        import(w, RooAddition_("f_cosh","f_cosh",RooArgSet( prod(w, "NAzAz",                           "AzAz_basis"      )
-                                                          , prod(w, "NAparApar",                       "AparApar_basis"  )
-                                                          , prod(w, "NAperpAperp",                     "AperpAperp_basis")
-                                                          , prod(w, "ImAparAperp",         "qtag_","C","AparAperp_basis")
-                                                          , prod(w, "ImAzAperp",           "qtag_","C","AzAperp_basis")
-                                                          , prod(w, "ReAzApar",                        "AzApar_basis") )));
-        import(w, RooAddition_("f_cos" ,"f_cos", RooArgSet( prod(w, "NAzAz",               "qtag_","C","AzAz_basis")
-                                                          , prod(w, "NAparApar",           "qtag_","C","AparApar_basis")
-                                                          , prod(w, "NAperpAperp",         "qtag_","C","AperpAperp_basis")
-                                                          , prod(w, "ImAparAperp",                     "AparAperp_basis")
-                                                          , prod(w, "ImAzAperp",                       "AzAperp_basis")
-                                                          , prod(w, "ReAzApar",            "qtag_","C","AzApar_basis") )));
-        import(w, RooAddition_("f_sinh","f_sinh",RooArgSet( prod(w, "NAzAz",       "Minus",        "D","AzAz_basis")
-                                                          , prod(w, "NAparApar",   "Minus",        "D","AparApar_basis")
-                                                          , prod(w, "NAperpAperp",                 "D","AperpAperp_basis")
-                                                          , prod(w, "ReAparAperp",         "qtag_","S","AparAperp_basis")
-                                                          , prod(w, "ReAzAperp",           "qtag_","S","AzAperp_basis")
-                                                          , prod(w, "ReAzApar",    "Minus",        "D","AzApar_basis") )));
-        import(w, RooAddition_("f_sin" ,"f_sin", RooArgSet( prod(w, "NAzAz",       "Minus","qtag_","S","AzAz_basis")
-                                                          , prod(w, "NAparApar",   "Minus","qtag_","S","AparApar_basis")
-                                                          , prod(w, "NAperpAperp",         "qtag_","S","AperpAperp_basis")
-                                                          , prod(w, "ReAparAperp", "Minus",        "D","AparAperp_basis")
-                                                          , prod(w, "ReAzAperp",   "Minus",        "D","AzAperp_basis")
-                                                          , prod(w, "ReAzApar",    "Minus","qtag_","S","AzApar_basis") )));
-        RooResolutionModel *res = dynamic_cast<RooResolutionModel*>( w.function("res") );
-        w.import( RooBDecay(name,name,   get<RooRealVar>(w,"t") , get<RooAbsReal>(w,"tau"), get<RooAbsReal>(w,"dG")
-                                       , get<RooAbsReal>(w,"f_cosh"), get<RooAbsReal>(w,"f_sinh") , get<RooAbsReal>(w,"f_cos"), get<RooAbsReal>(w,"f_sin")
-                                       , get<RooAbsReal>(w,"dm"), *res, RooBDecay::SingleSided) );
+        import(w, RooAddition_("f_cosh","f_cosh",RooArgSet( *w.factory("prod(NAzAz,                    AzAz_basis)")
+                                                          , *w.factory("prod(NAparApar,                AparApar_basis)")
+                                                          , *w.factory("prod(NAperpAperp,              AperpAperp_basis)")
+                                                          , *w.factory("prod(ImAparAperp,      qtag_,C,AparAperp_basis)")
+                                                          , *w.factory("prod(ImAzAperp,        qtag_,C,AzAperp_basis)")
+                                                          , *w.factory("prod(ReAzApar,                 AzApar_basis)") )));
+        import(w, RooAddition_("f_cos" ,"f_cos", RooArgSet( *w.factory("prod(NAzAz,            qtag_,C,AzAz_basis)")
+                                                          , *w.factory("prod(NAparApar,        qtag_,C,AparApar_basis)")
+                                                          , *w.factory("prod(NAperpAperp,      qtag_,C,AperpAperp_basis)")
+                                                          , *w.factory("prod(ImAparAperp,              AparAperp_basis)")
+                                                          , *w.factory("prod(ImAzAperp,                AzAperp_basis)")
+                                                          , *w.factory("prod(ReAzApar,         qtag_,C,AzApar_basis)") )));
+        import(w, RooAddition_("f_sinh","f_sinh",RooArgSet( *w.factory("prod(NAzAz,      Minus,      D,AzAz_basis)")
+                                                          , *w.factory("prod(NAparApar,  Minus,      D,AparApar_basis)")
+                                                          , *w.factory("prod(NAperpAperp,            D,AperpAperp_basis)")
+                                                          , *w.factory("prod(ReAparAperp,      qtag_,S,AparAperp_basis)")
+                                                          , *w.factory("prod(ReAzAperp,        qtag_,S,AzAperp_basis)")
+                                                          , *w.factory("prod(ReAzApar,   Minus,      D,AzApar_basis)") )));
+        import(w, RooAddition_("f_sin" ,"f_sin", RooArgSet( *w.factory("prod(NAzAz,      Minus,qtag_,S,AzAz_basis)")
+                                                          , *w.factory("prod(NAparApar,  Minus,qtag_,S,AparApar_basis)")
+                                                          , *w.factory("prod(NAperpAperp,      qtag_,S,AperpAperp_basis)")
+                                                          , *w.factory("prod(ReAparAperp,Minus,      D,AparAperp_basis)")
+                                                          , *w.factory("prod(ReAzAperp,  Minus,      D,AzAperp_basis)")
+                                                          , *w.factory("prod(ReAzApar,   Minus,qtag_,S,AzApar_basis)") )));
+        w.factory(Format("BDecay::%s(t,tau,dG,f_cosh,f_sinh,f_cos,f_sin,dm,res,SingleSided)",name));
         return *w.pdf(name);
 };
 
@@ -201,7 +178,7 @@ void test_add() {
             w.var(rname[k])->Print();
             w.var(dname[k])->Print();
         }
-        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),10000);
+        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),100000);
         if (i==0) pdf.fitTo(*data,RooFit::NumCPU(7));
         RooPlot *p1 = w.var("cpsi")->frame();   data->plotOn(p1); pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
         RooPlot *p2 = w.var("ctheta")->frame(); data->plotOn(p2); pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
