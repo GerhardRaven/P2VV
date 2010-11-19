@@ -2,10 +2,7 @@
 #define H_BASIS
 #include "utils.h"
 #include "RooRealVar.h"
-#include "RooLegendre.h"
-#include "RooSpHarmonic.h"
 #include "RooP2VVAngleBasis.h"
-#include "RooResolutionModel.h"
 
 class abasis {
 public:
@@ -33,31 +30,4 @@ private:
     RooAbsReal &_phi;
 };
 
-class tbasis {
-public:
-    tbasis(RooWorkspace& w, RooResolutionModel& r, RooFormulaVar& basis, const char *label) 
-        : _w(w)
-        , _basis(import(w, *r.convolution(&basis,&r.convVar()), label))
-    {  
-    }
-    
-    RooAbsArg& operator()(const char* t1, const char *t2=0, const char *t3=0, const char *t4=0) {
-       RooArgList l;
-       const char *name(0);
-       name = add( name, t1, l);
-       name = add( name, t2, l);
-       name = add( name, t3, l);
-       name = add( name, t4, l);
-       l.add( _basis);
-       return product(_w,l);
-    }
-private:
-    const char *add( const char *name, const char *t, RooArgList& l) {
-        if(t==0) return name;
-        l.add( get<RooAbsArg>(_w, t) );
-        return name ? Format("%s_%s",name,t) : t;
-    }
-    RooWorkspace& _w;
-    RooAbsReal&   _basis;
-};
 #endif
