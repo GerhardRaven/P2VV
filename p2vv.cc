@@ -59,14 +59,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name
         time[4] = new RooArgList( _cosh_("ImAzAperp",  "qtag","C"), _cos_( "ImAzAperp"             ), _sinh_("ReAzAperp",          "qtag","S"), _sin_("ReAzAperp",   "Minus",       "D") );
         time[5] = new RooArgList( _cosh_("ReAzApar"              ), _cos_( "ReAzApar",   "qtag","C"), _sinh_("ReAzApar",   "Minus",       "D"), _sin_("ReAzApar",    "Minus","qtag","S") );
         //
-        // for now, hardwire the max value...
-        // double tmax[6] = { abs(get<RooAbsReal>(w,"NAzAz").getVal())*(1+ abs("C")+abs("D")+abs("S") )
-        //                  , get<RooAbsReal>(w,"NAparApar").getVal())*(1+ abs("C")+abs("D")+abs("S") )
-        //                  , sqrt(9./15.), sqrt(18./15.), sqrt(18./15.) }
-
         // definition of the angular part of the PDF in terms of basis functions... 
-        // NOTE: the maximum value of each 'angle' function has an upper limit 
-        //       given by the sum of the (absolute) values of the coefficients
         RooArgList *angle[6];
         abasis ab(w, "cpsi", "ctheta", "phi");  // bind workspace and observables
         angle[0] = new RooArgList( ab("AzAz",       0,0,0, 0, 2.), ab("AzAz",       0,0,2,0, sqrt(1./ 5.)),  ab("AzAz",     0,0,2,2, -sqrt( 3./ 5.)) , 
@@ -76,10 +69,6 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name
         angle[3] = new RooArgList( ab("AparAperp",  2,2,2,-1, sqrt( 9./15.)) );
         angle[4] = new RooArgList( ab("AzAperp",    2,1,2, 1,-sqrt(18./15.)) );
         angle[5] = new RooArgList( ab("AzApar",     2,1,2,-2, sqrt(18./15.)) );
-
-        // for now, hardwire the max value...
-        // double amax[6] = { 3*(2+sqrt(1./5.)+sqrt(3./5.)), 1+sqrt(1./20.)+sqrt(12./5.),1 + sqrt(1./20.)+sqrt(3./20.)
-        //                  , sqrt(9./15.), sqrt(18./15.), sqrt(18./15.) }
 
         RooArgList f;
         double max_(0);
@@ -179,8 +168,8 @@ void p2vv() {
         return;
     }
 
-    RooMsgService::instance().addStream(RooFit::DEBUG,Topic(RooFit::Generation));
-    RooMsgService::instance().addStream(RooFit::DEBUG,Topic(RooFit::Plotting));
+    //RooMsgService::instance().addStream(RooFit::DEBUG,Topic(RooFit::Generation));
+    //RooMsgService::instance().addStream(RooFit::DEBUG,Topic(RooFit::Plotting));
     RooMsgService::instance().addStream(RooFit::DEBUG,Topic(RooFit::NumIntegration));
 
     c->Divide(5,4);
@@ -195,13 +184,13 @@ void p2vv() {
             w.var(rname[k])->Print();
             w.var(dname[k])->Print();
         }
-        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),10000);
+        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),100000);
         if (i==0) pdf.fitTo(*data,RooFit::NumCPU(7));
-        RooPlot *p1 = w.var("cpsi")->frame();   /*data->plotOn(p1);*/ pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
-        RooPlot *p2 = w.var("ctheta")->frame(); /*data->plotOn(p2);*/ pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
-        RooPlot *p3 = w.var("phi")->frame();    /*data->plotOn(p3);*/ pdf.plotOn(p3); c->cd(i*5+3); p3->Draw();
-        RooPlot *p4 = w.var("t")->frame();      /*data->plotOn(p4);*/ pdf.plotOn(p4); c->cd(i*5+4); p4->Draw();
-        RooPlot *p5 = w.var("t")->frame();      /*data->plotOn(p5, tagAsym );*/ pdf.plotOn(p5, tagAsym); c->cd(i*5+5); p5->Draw();
+        RooPlot *p1 = w.var("cpsi")->frame();   data->plotOn(p1); pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
+        RooPlot *p2 = w.var("ctheta")->frame(); data->plotOn(p2); pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
+        RooPlot *p3 = w.var("phi")->frame();    data->plotOn(p3); pdf.plotOn(p3); c->cd(i*5+3); p3->Draw();
+        RooPlot *p4 = w.var("t")->frame();      data->plotOn(p4); pdf.plotOn(p4); c->cd(i*5+4); p4->Draw();
+        RooPlot *p5 = w.var("t")->frame();      data->plotOn(p5, tagAsym ); pdf.plotOn(p5, tagAsym); c->cd(i*5+5); p5->Draw();
         break;
     }
 }
