@@ -48,7 +48,7 @@ T& get(RooWorkspace& w, T*(RooWorkspace::*fun)(const char*)const, const char* na
     return *x;
 }
 
-template <typename T> T&   get(RooWorkspace& w, const char *name) { return dynamic_cast<T&>(*w.obj(name)); }
+template <typename T> T&   get(RooWorkspace& w, const char *name) { return dynamic_cast<T&>(*w.obj(name)); } // TODO: check if T inherits from RooAbsArg -- if so, use arg, else use obj...
 template<> RooAbsReal&     get<RooAbsReal>(RooWorkspace& w, const char* name) { return get<RooAbsReal>(w,&RooWorkspace::function,name); }
 template<> RooAbsArg&      get<RooAbsArg>(RooWorkspace& w, const char* name)   { return get<RooAbsArg>(w,&RooWorkspace::arg,name); } // arg(w,name); }
 template<> RooRealVar&     get<RooRealVar>(RooWorkspace& w, const char* name)   { return get<RooRealVar>(w,&RooWorkspace::var, name); } // (w,name); }
