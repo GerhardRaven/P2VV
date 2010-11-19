@@ -18,16 +18,10 @@
 #endif
 using namespace std;
 
-RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name 
-        // , RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, RooAbsReal& t, RooAbsReal& qtag 
-        // , RooAbsReal& ReAz, RooAbsReal& ImAz, RooAbsReal ReApar, RooAbsReal& ImApar, RooAbsReal& ReAperp, RooAbsReal& ImAperp
-        // , RooAbsReal& tau, RooAbsReal& dGamma, RooAbsReal& dm
-        // , RooAbsReal& C, RooAbsReal& S, RooAbsReal& D,
-        // , RooAbsReal& w, RooResolutionModel& res
-        ) // for now, we stick with a naming convention. In future, pass the actual RooAbsReal, RooAbsArg, ...
+RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name ) 
 { 
         // definition of the angular part of the PDF in terms of basis functions... 
-        abasis ab(w, "cpsi", "ctheta", "phi");  // bind workspace and observables
+        abasis ab(w, "cpsi", "ctheta", "phi");  // bind workspace and observables -- todo: use workspace hooks instead!
         import(w, RooAddition_("AzAz_basis",      "AzAz_basis",       RooArgList( ab("AzAz",       0,0,0, 0, 2.), ab("AzAz",       0,0,2,0, sqrt(1./ 5.)),  ab("AzAz",     0,0,2,2, -sqrt( 3./ 5.)) , 
                                                                                   ab("AzAz",       2,0,0, 0, 4.), ab("AzAz",       2,0,2,0, sqrt(4./ 5.)),  ab("AzAz",     2,0,2,2, -sqrt(12./ 5.)) )));
         import(w, RooAddition_("AparApar_basis",  "AparApar_basis",   RooArgList( ab("AparApar",   2,2,0, 0, 1.), ab("AparApar",   2,2,2,0, sqrt(1./20.)),  ab("AparApar", 2,2,2,2,  sqrt( 3./20.)) ))); 
@@ -37,7 +31,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name
         import(w, RooAddition_("AzApar_basis",    "AzApar_basis",     RooArgList( ab("AzApar",     2,1,2,-2, sqrt(18./15.)) )));
         
         import(w, RooFormulaVar("qtag_","@0",RooArgSet( get<RooCategory>(w,"qtag") ) ) );
-        //                                                                   0    1    2       3       4      5      6    7
+        //                                                                  0    1    2       3       4      5      6    7
         w.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
         w.factory("expr::NAparApar  ('( @4 * @4 + @5 * @5 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
         w.factory("expr::NAperpAperp('( @2 * @2 + @3 * @3 ) / ( 1+@6*@7 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar,qtag_,C})");
