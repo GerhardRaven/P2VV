@@ -6,7 +6,6 @@
 #include "RooGlobalFunc.h"
 #include "RooArgList.h"
 #include "RooAbsReal.h"
-#include "RooProduct.h"
 #endif
 
 #include <stdio.h>
@@ -60,27 +59,5 @@ T& import(RooWorkspace& w, const T& r, const char *n=0) {
    else      { w.import(r,RooFit::RenameVariable(r.GetName(),n)); return get<T>(w,n); }
 }
 
-RooAbsReal& product(RooWorkspace& w, const RooArgList& x) {
-    // if x.getSize = 1, become transparent (but put x[0] into w!)
-    const char *name(0);
-    for (int i=0;i<x.getSize();++i) {
-        name = name ? Format("%s_%s",name,x[i].GetName()) : x[i].GetName();
-    }
-    RooAbsReal *p = w.function(name);
-    if (p==0) p = &import(w,RooProduct(name,name,x));
-    return *p;
-}
-
-RooAbsReal& product(RooWorkspace& w, RooAbsReal& x, RooAbsReal& y, RooAbsReal& z) {
-    return product( w, RooArgList(x,y,z) );
-}
-
-RooArgList product(RooWorkspace& w, const RooArgList& x, const RooArgList& y) {
-     RooArgList z;
-     for (int i=0;i<x.getSize();++i) for (int j=0;j<y.getSize();++j) {
-         z.add(product(w,RooArgList(x[i],y[j])));
-     }
-     return z;
-}
 
 #endif
