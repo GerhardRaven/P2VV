@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "TFile.h"
 #include "RooAbsData.h"
+#include "RooAbsPdf.h"
 #include <stdlib.h>
 
 class moment {
