@@ -5,7 +5,8 @@ CPP = g++
 LD = g++
 ROOTCONFIG = root-config
 CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -march=native -pipe -ggdb
-LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore
+LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
+	-lRooFitCore -lMathCore -lMathMore
 
 SOURCES =				\
 	RooAddition_.cxx		\
