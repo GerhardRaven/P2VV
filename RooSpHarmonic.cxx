@@ -66,7 +66,7 @@ RooSpHarmonic::RooSpHarmonic()
 
 //_____________________________________________________________________________
 RooSpHarmonic::RooSpHarmonic(const char* name, const char* title, RooAbsReal& ctheta, RooAbsReal& phi, int l, int m) 
- : RooLegendre(name, title,ctheta,l,abs(m))
+ : RooLegendre(name, title,ctheta,l,m<0?-m:m)
  , _phi("phi", "phi", this, phi)
  , _n( double(4)/M_2_SQRTPI )
  , _sgn1( m==0 ? 0 : m>0 ? +1 : -1 )
@@ -76,7 +76,7 @@ RooSpHarmonic::RooSpHarmonic(const char* name, const char* title, RooAbsReal& ct
 
 //_____________________________________________________________________________
 RooSpHarmonic::RooSpHarmonic(const char* name, const char* title, RooAbsReal& ctheta, RooAbsReal& phi, int l1, int m1, int l2, int m2) 
- : RooLegendre(name, title,ctheta,l1,abs(m1),l2,abs(m2))
+ : RooLegendre(name, title,ctheta,l1, m1<0?-m1:m1,l2,m2<0?-m2:m2)
  , _phi("phi", "phi", this, phi)
  , _n(1)
  , _sgn1( m1==0 ? 0 : m1>0 ? +1 : -1 )
@@ -98,8 +98,8 @@ RooSpHarmonic::RooSpHarmonic(const RooSpHarmonic& other, const char* name)
 Double_t RooSpHarmonic::evaluate() const 
 {
     double n = _n*N(_l1,_m1)*N(_l2,_m2)*RooLegendre::evaluate();
-    if (_sgn1!=0) n *= M_SQRT2 * (_sgn1<0 ? sin(_m1*_phi) : cos(_m1*_phi) );
-    if (_sgn2!=0) n *= M_SQRT2 * (_sgn2<0 ? sin(_m2*_phi) : cos(_m2*_phi) );
+    if (_sgn1!=0) n *= M_SQRT2 * (_sgn1<0 ? sin(_sgn1*_m1*_phi) : cos(_m1*_phi) );
+    if (_sgn2!=0) n *= M_SQRT2 * (_sgn2<0 ? sin(_sgn1*_m2*_phi) : cos(_m2*_phi) );
     return n;
 }
 
@@ -108,9 +108,10 @@ Int_t RooSpHarmonic::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
 {
   // we don't support indefinite integrals... maybe one day, when there is a use for it.....
   if (rangeName==0 || strlen(rangeName)==0 ) {
-      if (matchArgs(allVars, analVars, _ctheta,_phi)) return 3;
-      if (matchArgs(allVars, analVars, _phi))         return 2;
+      if (matchArgs(allVars, analVars, _ctheta,_phi)) return 3; // OK!
+      if (matchArgs(allVars, analVars, _phi))         return 2; // OK!
   }
+  if (_sgn2==0) return 0; //weird -- if we do _ctheta numerically, it goes OK...
   return RooLegendre::getAnalyticalIntegral(allVars,analVars,rangeName);
 }
 
@@ -118,16 +119,16 @@ Int_t RooSpHarmonic::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
 Double_t RooSpHarmonic::analyticalIntegral(Int_t code, const char* range) const 
 {
   if (code==3) {
-    return (_l1==_l2 && _m1==_m2 ) ? _n : 0 ;  
+    return (_l1==_l2 && _sgn1*_m1==_sgn2*_m2 ) ? _n : 0 ;  
   } else if (code == 2) {
     if (_sgn1!=0 || _sgn2!=0) return 0;
     return _n*N(_l1,_m1)*N(_l2,_m2)*2*M_PI*RooLegendre::evaluate();
   } else {
-    double n = _n*N(_l1,_m1)*N(_l2,_m2);
-    if (_sgn1!=0) n *= M_SQRT2 * (_sgn1<0 ? sin(_m1*_phi) : cos(_m1*_phi) );
-    if (_sgn2!=0) n *= M_SQRT2 * (_sgn2<0 ? sin(_m2*_phi) : cos(_m2*_phi) );
-    return n*RooLegendre::analyticalIntegral(code,range);
-  }
+    double n = _n*N(_l1,_m1)*N(_l2,_m2)*RooLegendre::analyticalIntegral(code,range);
+    if (_sgn1!=0) n *= M_SQRT2 * (_sgn1<0 ? sin(_sgn1*_m1*_phi) : cos(_m1*_phi) );
+    if (_sgn2!=0) n *= M_SQRT2 * (_sgn2<0 ? sin(_sgn1*_m2*_phi) : cos(_m2*_phi) );
+    return n;
+  } 
 }
 
 Int_t RooSpHarmonic::getMaxVal( const RooArgSet& vars) const {
