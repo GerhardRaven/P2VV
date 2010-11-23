@@ -118,7 +118,7 @@ void determineMoments(const char* fname="p2vv.root", const char* pdfName = "pdf"
         for (int m=0;m<=l;++m) {
             // if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
             // moments.push_back(new EffMoment( ab("mom",i,0,l,m,double(2*i+1)/2 ), *pdf_marginal, *allObs ) );
-            moments.push_back(new Moment( ab("mom",i,0,l,m,double(2*i+1)/2.), 2./(2*i+1)  ) );
+            moments.push_back(new Moment( ab("mom",i,0,l,m,1.), double(2*i+1)/2  ) );
         }
      }
    }
