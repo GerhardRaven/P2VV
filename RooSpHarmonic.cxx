@@ -15,21 +15,24 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // BEGIN_HTML
-//   Implementation of the so-called real spherical harmonics,
+//   Implementation of the so-called real spherical harmonics, using the orthonormal normalization,
 // which are related to spherical harmonics as:
 //
 //  Y_{l0} = Y_l^0   (m=0)
-//  Y_{lm} = \frac{1}{\sqrt{2}} \left( Y_l^m + (-1)^m Y_l^{-m} \right)   (m>0)
+//  Y_{lm} = \frac{1}{\sqrt{2}}  \left( Y_l^m     + (-1)^m     Y_l^{-m}   \right) (m>0)
 //  Y_{lm} = \frac{1}{i\sqrt{2}} \left( Y_l^{|m|} - (-1)^{|m|} Y_l^{-|m|} \right) (m<0)
 //
 // which implies:
 //
-// Y_{l0}(\cos\theta,\phi) = N_{l0} P_l^0(\cos\theta)  (m=0)
-// Y_{lm} = \sqrt{2} N_{lm} P_l^m(\cos\theta) cos(|m|\phi) (m>0)
-// Y_{lm} =  \sqrt{2} N_{l|m|} P_l^{|m|}(\cos\theta) sin(|m|\phi) (m<0)
+// Y_{l0}(\cos\theta,\phi) =          N_{l0}   P_l^0    (\cos\theta)              (m=0)
+// Y_{lm}(\cos\theta,\phi) = \sqrt{2} N_{lm}   P_l^m    (\cos\theta) cos(|m|\phi) (m>0)
+// Y_{lm}(\cos\theta,\phi) = \sqrt{2} N_{l|m|} P_l^{|m|}(\cos\theta) sin(|m|\phi) (m<0)
 //
 // where
-//  N_{lm} = \sqrt{ \frac{2l+1}{4\pj} \frac{ (l-m)! }{ (l+m)! } }
+//  N_{lm} = \sqrt{ \frac{2l+1}{4\pi} \frac{ (l-m)! }{ (l+m)! } } 
+//
+// Note that the normalization corresponds to the orthonormal case,
+// and thus we have Int d\cos\theta d\phi Y_{lm} Y_{l'm'} = \delta_{ll'} \delta{mm'}
 //
 // Note that in addition, this code can also represent the product of two
 // (real) spherical harmonics -- it actually uses the fact that Y_{00} = \sqrt{\frac{1}{4\pi}}
@@ -54,8 +57,9 @@ ClassImp(RooSpHarmonic)
 
 //_____________________________________________________________________________
 namespace {
-    inline double N(int l, int m) { 
-        return sqrt( double(2*l+1)/(4*M_PI)*TMath::Factorial(l-m)/TMath::Factorial(l+m) );
+    inline double N(int l, int m=0) { 
+        double n = sqrt( double(2*l+1)/(4*M_PI)*TMath::Factorial(l-m)/TMath::Factorial(l+m) );
+        return m==0 ? n : M_SQRT2 * n;
     }
 }
 
@@ -98,8 +102,8 @@ RooSpHarmonic::RooSpHarmonic(const RooSpHarmonic& other, const char* name)
 Double_t RooSpHarmonic::evaluate() const 
 {
     double n = _n*N(_l1,_m1)*N(_l2,_m2)*RooLegendre::evaluate();
-    if (_sgn1!=0) n *= M_SQRT2 * (_sgn1<0 ? sin(_sgn1*_m1*_phi) : cos(_m1*_phi) );
-    if (_sgn2!=0) n *= M_SQRT2 * (_sgn2<0 ? sin(_sgn1*_m2*_phi) : cos(_m2*_phi) );
+    if (_sgn1!=0) n *= (_sgn1<0 ? sin(_m1*_phi) : cos(_m1*_phi) );
+    if (_sgn2!=0) n *= (_sgn2<0 ? sin(_m2*_phi) : cos(_m2*_phi) );
     return n;
 }
 
@@ -111,7 +115,7 @@ Int_t RooSpHarmonic::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
       if (matchArgs(allVars, analVars, _ctheta,_phi)) return 3; // OK!
       if (matchArgs(allVars, analVars, _phi))         return 2; // OK!
   }
-  if (_sgn2==0) return 0; //weird -- if we do _ctheta numerically, it goes OK...
+  return 0; //weird -- if we do _ctheta numerically, it goes OK...
   return RooLegendre::getAnalyticalIntegral(allVars,analVars,rangeName);
 }
 
@@ -121,12 +125,12 @@ Double_t RooSpHarmonic::analyticalIntegral(Int_t code, const char* range) const
   if (code==3) {
     return (_l1==_l2 && _sgn1*_m1==_sgn2*_m2 ) ? _n : 0 ;  
   } else if (code == 2) {
-    if (_sgn1!=0 || _sgn2!=0) return 0;
-    return _n*N(_l1,_m1)*N(_l2,_m2)*2*M_PI*RooLegendre::evaluate();
+    if (_m1!=0 || _m2!=0) return 0;
+    return _n*N(_l1)*N(_l2)*2*M_PI*RooLegendre::evaluate();
   } else {
     double n = _n*N(_l1,_m1)*N(_l2,_m2)*RooLegendre::analyticalIntegral(code,range);
-    if (_sgn1!=0) n *= M_SQRT2 * (_sgn1<0 ? sin(_sgn1*_m1*_phi) : cos(_m1*_phi) );
-    if (_sgn2!=0) n *= M_SQRT2 * (_sgn2<0 ? sin(_sgn1*_m2*_phi) : cos(_m2*_phi) );
+    if (_sgn1!=0) n *= (_sgn1<0 ? sin(_m1*_phi) : cos(_m1*_phi) );
+    if (_sgn2!=0) n *= (_sgn2<0 ? sin(_m2*_phi) : cos(_m2*_phi) );
     return n;
   } 
 }
@@ -137,7 +141,5 @@ Int_t RooSpHarmonic::getMaxVal( const RooArgSet& vars) const {
 
 Double_t RooSpHarmonic::maxVal( Int_t code) const {
     double n = _n*N(_l1,_m1)*N(_l2,_m2);
-    if (_sgn1!=0) n *= M_SQRT2;
-    if (_sgn2!=0) n *= M_SQRT2;
     return n*RooLegendre::maxVal(code);
 }
