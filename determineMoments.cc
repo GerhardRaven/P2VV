@@ -29,12 +29,18 @@ class IMoment {
             }
           virtual RooAbsReal& basis() { return _basis; }
           virtual double coefficient() const = 0;
+          virtual double significance() const { 
+                double mu = _m1/_m0;
+                double sig2 = _m2/_m0 - mu*mu;
+                return fabs(mu/sqrt(sig2/(_m0-1)));
+          }
           virtual double evaluate(  ) = 0;
     protected:
           RooAbsReal &_basis;
           double _m0,_m1,_m2;
           const char *_name;
 };
+
 
 class Moment : public IMoment {
 public:
@@ -44,6 +50,7 @@ public:
 private:
     double _c;
 };
+
 
 class EffMoment  : public IMoment{
 public:
@@ -55,6 +62,8 @@ private:
     const RooAbsPdf& _pdf;
     const RooArgSet&  _nset;
 };
+
+
 
 class eps {
 public:
@@ -110,6 +119,7 @@ void determineMoments(const char* fname="p2vv.root", const char* pdfName = "pdf"
         }
      }
    }
+
    // create some malformed input data...
    RooDataSet inEffData( "inEffData","inEffData", *allObs );
    for (int i=0;i<data->numEntries(); ++i) {
@@ -135,12 +145,17 @@ void determineMoments(const char* fname="p2vv.root", const char* pdfName = "pdf"
 
    // create a PDF from the moments
    RooArgList coef,fact;
+   int i=0,j=0;
    for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) {
+       ++i;
+       if ( fabs((*m)->significance()) < 2 ) continue;
+       ++j;
        const char *name = Format("C_%f",(*m)->coefficient());
        w->factory(Format("%s[%f]",name,(*m)->coefficient()));
        coef.add(get<RooAbsReal>(*w,name));
        fact.add((*m)->basis());
    }
+   cout << "added " << coef.getSize() << " out of " << moments.size() << " functions" << endl;
    RooAbsPdf *momsum = new RooRealSumPdf("pdf_mom","pdf_mom",fact,coef);
 
    const char *cvar[] = { "cpsi","ctheta","phi" };
