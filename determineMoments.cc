@@ -25,7 +25,7 @@ class IMoment {
           virtual ostream& print(ostream& os) const {
                 double mu = _m1/_m0;
                 double sig2 = _m2/_m0 - mu*mu;
-                return os << "moment("<< _name << ") = " << mu << " +- " << sqrt(sig2/(_m0-1)) << " significance: " << mu/sqrt(sig2/_m0) << endl;
+                return os << "moment("<< _name << ") = " << mu << " +- " << sqrt(sig2/(_m0-1)) << " significance: " << significance() << endl;
             }
           virtual RooAbsReal& basis() { return _basis; }
           virtual double coefficient() const = 0;
