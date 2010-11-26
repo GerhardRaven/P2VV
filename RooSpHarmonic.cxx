@@ -115,7 +115,6 @@ Int_t RooSpHarmonic::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
       if (matchArgs(allVars, analVars, _ctheta,_phi)) return 3; // OK!
       if (matchArgs(allVars, analVars, _phi))         return 2; // OK!
   }
-  // return 0; //weird -- if we do _ctheta numerically, it goes OK...
   return RooLegendre::getAnalyticalIntegral(allVars,analVars,rangeName);
 }
 

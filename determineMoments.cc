@@ -29,12 +29,18 @@ class IMoment {
             }
           virtual RooAbsReal& basis() { return _basis; }
           virtual double coefficient() const = 0;
+          virtual double significance() const { 
+                double mu = _m1/_m0;
+                double sig2 = _m2/_m0 - mu*mu;
+                return fabs(mu/sqrt(sig2/(_m0-1)));
+          }
           virtual double evaluate(  ) = 0;
     protected:
           RooAbsReal &_basis;
           double _m0,_m1,_m2;
           const char *_name;
 };
+
 
 class Moment : public IMoment {
 public:
@@ -44,6 +50,7 @@ public:
 private:
     double _c;
 };
+
 
 class EffMoment  : public IMoment{
 public:
@@ -56,6 +63,8 @@ private:
     const RooArgSet&  _nset;
 };
 
+
+
 class eps {
 public:
      eps(const RooAbsReal& cpsi, const RooAbsReal& ctheta, const RooAbsReal& phi) 
@@ -65,11 +74,11 @@ public:
      bool operator()() { 
          // return true;
          bool acc = true;
-         //acc = acc && drand48()>(0.5+0.5*_cpsi.getVal()) ;
-         //acc = acc && drand48()>(0.5-0.5*_ctheta.getVal());
+         acc = acc && drand48()>(0.5+0.5*_cpsi.getVal()) ;
+         acc = acc && drand48()>(0.5-0.5*_ctheta.getVal());
          double phi = _phi.getVal()/(4*acos(0.));
          phi = -1+2*phi; // [-1,1]
-         return phi<0 || drand48()>phi;
+         //return phi<0 || drand48()>phi;
          return acc && drand48()>(0.5+0.5*fabs(phi));
      }
 private:
@@ -101,7 +110,7 @@ void determineMoments(const char* fname="p2vv_3.root", const char* pdfName = "pd
    std::vector<IMoment*> moments;
    typedef std::vector<IMoment*>::iterator moments_iterator; 
    for (int i=0;i<5;++i) {
-     for (int l=0;l<5;++l) {
+     for (int l=0;l<8;++l) {
         for (int m=-l;m<=l;++m) {
             // if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
             // moments.push_back(new EffMoment( ab("mom",i,0,l,m,double(2*i+1)/2 ), *pdf_marginal, *allObs ) );
@@ -110,15 +119,16 @@ void determineMoments(const char* fname="p2vv_3.root", const char* pdfName = "pd
         }
      }
    }
+
    // create some malformed input data...
-   RooDataSet badData( "effData","effData", *allObs );
+   RooDataSet inEffData( "inEffData","inEffData", *allObs );
    for (int i=0;i<data->numEntries(); ++i) {
         const RooArgSet *args = data->get(i);
         *allObs  = *args;
-       if (efficiency()) badData.add( *allObs );
+       if (efficiency()) inEffData.add( *allObs );
    }
    //
-   data = &badData;
+   data = &inEffData;
 
    // loop over all data, determine moments
    for (int i=0;i<data->numEntries()/10; ++i) {

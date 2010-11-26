@@ -83,6 +83,7 @@ Double_t RooLegendre::evaluate() const
   double r = 1;
   if (_l1!=0||_m1!=0) r *= ROOT::Math::assoc_legendre(_l1,_m1,_ctheta);
   if (_l2!=0||_m2!=0) r *= ROOT::Math::assoc_legendre(_l2,_m2,_ctheta);
+  if ((_m1+_m2)%2==1) r = -r;
   return r;
 }
 

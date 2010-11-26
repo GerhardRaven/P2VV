@@ -1,3 +1,7 @@
 *.d
 *.so
 *.bak
+*.o
+p2vv_dict.*
+*~
+.deps/*
