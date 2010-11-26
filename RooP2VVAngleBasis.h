@@ -22,7 +22,7 @@ public:
   RooP2VVAngleBasis() ;
   RooP2VVAngleBasis(const char *name, const char *title, RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, int i, int j, int l, int m, double c = 1. );
   RooP2VVAngleBasis(const char *name, const char *title, RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, int i1, int j1, int l1, int m1
-                                                                                                              , int i2, int j2, int l1, int m2
+                                                                                                              , int i2, int j2, int l2, int m2
                                                                                                               , double c = 1. );
 
   RooP2VVAngleBasis(const RooP2VVAngleBasis& other, const char* name = 0);
