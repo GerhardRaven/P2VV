@@ -12,6 +12,8 @@
 #include <TKey.h>
 #include <TEventList.h>
 
+#include "utils.h"
+
 // ROOFIT CLASSES
 #include <RooFit.h>
 #include <RooConstVar.h>
@@ -219,8 +221,8 @@ void definePDF(RooWorkspace& ws)
 }
 
 void readParameters(RooWorkspace& ws) {
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws.data("data")) ;
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws.function("pdf")) ; 
+  RooDataSet* data = &get<RooDataSet>(ws,"data") ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(ws,"pdf") ; 
   RooArgSet* pars = pdf->getParameters(*data) ;
   
   TString filename = TString(ws.cat("decaymode")->getLabel()) + "Parameters.txt" ;
@@ -244,8 +246,8 @@ void readParameters(RooWorkspace& ws) {
 }
 
 void writeParameters(RooWorkspace& ws) {
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws.data("data")) ;
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws.function("pdf")) ; 
+  RooDataSet* data = &get<RooDataSet>(ws,"data") ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(ws,"pdf") ; 
   RooArgSet* pars = pdf->getParameters(*data) ;
   TString filename = TString(ws.cat("decaymode")->getLabel()) + "ParametersOut.txt" ;
   pars->writeToFile( filename ) ;
@@ -310,8 +312,8 @@ RooWorkspace* createWS(DecayMode mode, const char* title = "", const char* selec
   
   std::cout << "Defined pdf" << std::endl ;
   {
-    RooDataSet* data = dynamic_cast<RooDataSet*>(ws->data("data")) ;
-    RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws->function("pdf")) ; 
+    RooDataSet* data = &get<RooDataSet>(*ws,"data") ;
+    RooAbsPdf* pdf = &get<RooAbsPdf>(*ws,"pdf") ; 
     RooArgSet* pars = pdf->getParameters(*data) ;
     pars->writeToFile( "parameters.txt") ;
     //pdf->printTree(std::cout) ;
@@ -338,8 +340,8 @@ RooWorkspace* readWorkspace(const char filename[]="fitresult.root")
 void readResolution(const char* resofile) 
 {
   if(!gMyWorkspace) return ;
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(gMyWorkspace->function("pdf")) ; 
-  RooDataSet* data = dynamic_cast<RooDataSet*>(gMyWorkspace->data("data")) ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(*gMyWorkspace,"pdf") ; 
+  RooDataSet* data = &get<RooDataSet>(*gMyWorkspace,"data") ;
   RooArgSet* parameters = pdf->getParameters(*data) ;
   parameters->readFromFile(resofile) ;
   parameters->writeToFile("tmp.txt") ;
@@ -370,8 +372,8 @@ void fit(DecayMode mode, const char* title = "", const char* selection = 0, bool
 {
   RooWorkspace* ws = createWS(mode,title,selection) ;
   
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws->function("pdf")) ; 
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws->data("data")) ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(*ws,"pdf") ; 
+  RooDataSet* data = &get<RooDataSet>(*ws,"data") ;
   //pdf->printCompactTree() ;
   //pdf->Print() ;
 
@@ -404,15 +406,13 @@ void fit(DecayMode mode, const char* title = "", const char* selection = 0, bool
 void fitMassHisto(DecayMode mode)
 {
   RooWorkspace* ws = gMyWorkspace ;
-  if( ws==0 ) {
-    ws = createWS(mode) ;
-  }
+  if( ws==0 ) ws = createWS(mode) ;
   
   //RooRealVar* m = ws->var("m") ;
   RooRealVar* mpsi = ws->var("mdau1") ;
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws->data("data")) ;
-  //RooAbsPdf* masspdf = dynamic_cast<RooAbsPdf*>(ws->function("masspdf")) ;
-  RooAbsPdf* psimasspdf = dynamic_cast<RooAbsPdf*>(ws->function("psimasspdf")) ;
+  RooDataSet* data = &get<RooDataSet>(*ws,"data") ;
+  //RooAbsPdf* masspdf = &get<RooAbsPdf>(*ws,"masspdf") ;
+  RooAbsPdf* psimasspdf = &get<RooAbsPdf>(*ws,"psimasspdf") ;
   ws->var("Nsig")->setConstant() ;
 
   RooDataHist histdata("mhist","",RooArgSet(*mpsi),*data) ;
@@ -445,8 +445,8 @@ void plot( RooWorkspace& ws)
   RooRealVar* m = ws.var("m") ;
   RooRealVar* mpsi = ws.var("mdau1") ;
   RooAbsData* st_data = ws.data("data_sigt") ;
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws.data("data")) ;
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws.function("pdf")) ;
+  RooDataSet* data = &get<RooDataSet>(ws,"data") ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(ws,"pdf") ;
 
   // create some ranges
   double largeTime = 0.20;
@@ -555,14 +555,14 @@ void makeMassSPlots( DecayMode mode, const char* selection=0, bool refit = false
   if(ws == 0) ws = createWS(mode,"",selection) ;
   
   // let's try to make an splot in the time. we need a new pdf first:
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws->function("pdf")) ;
-  RooAbsPdf* masspdf = dynamic_cast<RooAbsPdf*>(ws->function("masspdf")) ;
-  RooAbsPdf* t_prompt_pdf = dynamic_cast<RooAbsPdf*>(ws->function("t_prompt")) ;
-  RooAbsPdf* t_sig_pdf = dynamic_cast<RooAbsPdf*>(ws->function("t_sig")) ;
-  RooAbsPdf* t_bkg_pdf = dynamic_cast<RooAbsPdf*>(ws->function("t_bkg")) ;
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws->data("data")) ;
-  RooRealVar* t = ws->var("t") ;
-  RooRealVar* sigmat = ws->var("sigmat") ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(*ws,"pdf"); 
+  RooAbsPdf* masspdf = &get<RooAbsPdf>(*ws,"masspdf") ;
+  RooAbsPdf* t_prompt_pdf = &get<RooAbsPdf>(*ws,"t_prompt") ;
+  RooAbsPdf* t_sig_pdf = &get<RooAbsPdf>(*ws,"t_sig") ;
+  RooAbsPdf* t_bkg_pdf = &get<RooAbsPdf>(*ws,"t_bkg") ;
+  RooDataSet* data = &get<RooDataSet>(*ws,"data") ;
+  RooRealVar* t = &get<RooRealVar>(*ws,"t");
+  RooRealVar* sigmat = &get<RooRealVar>(*ws,"sigmat") ;
   sigmat->setBinning(RooBinning(20,sigmat->getMin(),sigmat->getMax(),"VarBinning")) ;
 
   // need to choose variable bin size here: very fine around t=0 and much courser are large t ...
@@ -725,9 +725,9 @@ void writeSTuple( DecayMode mode, bool massonly=false )
   if(ws == 0) ws = createWS(mode) ;
   
   // let's try to make an splot in the time. we need a new pdf first:
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws->function("pdf")) ;
-  if(massonly) pdf = dynamic_cast<RooAbsPdf*>(ws->function("masspdf")) ;
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws->data("data")) ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(*ws,"pdf") ;
+  if(massonly) pdf = &get<RooAbsPdf>(*ws,"masspdf") ;
+  RooDataSet* data = &get<RooDataSet>(*ws,"data") ;
 
   if(pdf==0 || data==0) return ;
   
@@ -760,8 +760,8 @@ void makeSPlots( DecayMode mode,
   if(ws == 0) ws = createWS(mode) ;
   
   // let's try to make an splot in the time. we need a new pdf first:
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws->function("pdf")) ;
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws->data("data")) ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(*ws,"pdf") ;
+  RooDataSet* data = &get<RooDataSet>(*ws,"data") ;
 
   if(pdf==0 || data==0) return ;
 
@@ -814,8 +814,8 @@ void makeSPlots( DecayMode mode )
   if(ws == 0) ws = createWS(mode) ;
   
   // let's try to make an splot in the time. we need a new pdf first:
-  RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(ws->function("pdf")) ;
-  RooDataSet* data = dynamic_cast<RooDataSet*>(ws->data("data")) ;
+  RooAbsPdf* pdf = &get<RooAbsPdf>(*ws,"pdf") ;
+  RooDataSet* data = &get<RooDataSet>(*ws,"data") ;
 
   RooRealVar* pt = ws->var("pt") ;
   RooRealVar* mdau2 = ws->var("mdau2") ;
