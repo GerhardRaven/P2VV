@@ -40,7 +40,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name )
         w.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})");
 
         import(w, RooFormulaVar("qtag_","@0",RooArgSet( get<RooCategory>(w,"qtag") ) ) ); //TODO: multiply by dilution
-        w.factory("expr::N('1-@0*@1',{qtag_,C})");
+        w.factory("expr::N('1-@0*@1',{qtag_,C})"); // in J/psi K*, we need to drop this factor...
 
         w.factory("Minus[-1]");
         w.factory("$Alias(Addition_,sum_)") ;
@@ -87,33 +87,41 @@ void p2vv() {
     // Note: initial values from arXiv:0704.0522v2 [hep-ex] BaBar PUB-07-009
     w.factory("{rz[0.556],rpar[0.211,0.,2.],rperp[0.233,0.,2.]}");
     w.factory("{deltaz[0],deltapar[-2.93,-3.15,3.15],deltaperp[2.91,-3.15,3.15]}");
-    w.factory("FormulaVar::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})");
-    w.factory("FormulaVar::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})");
-    w.factory("FormulaVar::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})");
-    w.factory("FormulaVar::ImApar ('rpar  * sin(deltapar)', {rpar,deltapar})");
-    w.factory("FormulaVar::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})");
-    w.factory("FormulaVar::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})");
-
-    // choice: either fit for the three degrees of freedom independently
-    //         i.e. make S,D,C independent parameters
-    //         OR write S,D,C in terms of phi_s
-    w.factory("{phis[0.8]}"); // taken as sin(0.8) \approx 0.72, close to the value of sin(2beta) ;-)
-    w.factory("FormulaVar::S('sin(phis)',{phis})");
-    w.factory("FormulaVar::D('cos(phis)',{phis})");
-    w.factory("C[0]");
-    // w.factory("{C[0],S[0],D[1]}");
-
+    w.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})");
+    w.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})");
+    w.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})");
+    w.factory("expr::ImApar ('rpar  * sin(deltapar)', {rpar,deltapar})");
+    w.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})");
+    w.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})");
+    
     // TODO: write things in terms of x & y instead of dG and dm...
     w.factory("{tau[1.5,0.5,2.5],dm[5]}");
     w.factory("RooFormulaVar::dG('@0/@1',{dGG[0],tau})"); 
     w.factory("RooGaussModel::res(t,mu[0],sigma[0.05])");
+    //
+    RooArgSet obs = w.argSet("qtag,cpsi,ctheta,phi,t");
+
+    // choice: either fit for the three degrees of freedom independently
+    //         i.e. make S,D,C independent parameters
+    // w.factory("{S[0.717,-1,1],D[0.696,-1,1],C[0,-1,1]}");
+    //         or write S,D,C in terms of phi_s
+    w.factory("{expr::S('sin(phis)',{phis[0.8}),expr::D('cos(phis)',{phis}),C[0]}");// taken as sin(0.8) \approx 0.72, close to the value of sin(2beta), just to make it visible ;-)
+    //         The no-CP violation case:
+    // w.factory("{S[0],C[0],D[1]}");
+    // RooArgSet obs = w.argSet("qtag,cpsi,ctheta,phi,t");
+    //         For J/psi K*, C = +1/-1 depending on the final state flavour
+    //w.factory("{S[0],D[0],expr::C('@0',{qrec[jpsikstar=+1,jpsikstarbar=-1]})}");
+    //obs.add(w.argSet("qrec"));
+
+    RooCmdArg tagAsym = RooFit::Asymmetry( get<RooCategory>(w,"qtag") );
+    // RooCmdArg mixAsym = RooFit::Asymmetry( get<RooCategory>(w,"qtag") );
 
     RooAbsPdf& pdf = jpsiphi(w,"pdf");
     //cout << "PDF:" << endl;
     //pdf.printTree(cout);
 
-    if (false) {
-        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),10000);
+    if (true) {
+        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),100000);
         w.import(*data);
         w.writeToFile("p2vv_3.root");
         return;
@@ -133,7 +141,6 @@ void p2vv() {
     }
 
 
-    RooCmdArg tagAsym = RooFit::Asymmetry( get<RooCategory>(w,"qtag") );
     TCanvas *c = new TCanvas();
 
 
@@ -177,13 +184,14 @@ void p2vv() {
             w.var(rname[k])->Print();
             w.var(dname[k])->Print();
         }
-        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),100000);
+        // if J/psi K*, we should _also_ generate qrec...
+        RooAbsData *data = pdf.generate(obs,100000);
         if (i==0) pdf.fitTo(*data,RooFit::NumCPU(7));
         RooPlot *p1 = w.var("cpsi")->frame();   data->plotOn(p1); pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
         RooPlot *p2 = w.var("ctheta")->frame(); data->plotOn(p2); pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
         RooPlot *p3 = w.var("phi")->frame();    data->plotOn(p3); pdf.plotOn(p3); c->cd(i*5+3); p3->Draw();
         RooPlot *p4 = w.var("t")->frame();      data->plotOn(p4); pdf.plotOn(p4); c->cd(i*5+4); p4->Draw();
         RooPlot *p5 = w.var("t")->frame();      data->plotOn(p5, tagAsym ); pdf.plotOn(p5, tagAsym); c->cd(i*5+5); p5->Draw();
-        //break;
+        break;
     }
 }

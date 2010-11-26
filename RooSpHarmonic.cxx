@@ -73,7 +73,7 @@ RooSpHarmonic::RooSpHarmonic(const char* name, const char* title, RooAbsReal& ct
  : RooLegendre(name, title,ctheta,l,m<0?-m:m)
  , _phi("phi", "phi", this, phi)
  , _n( double(4)/M_2_SQRTPI )
- , _sgn1( m==0 ? 0 : m>0 ? +1 : -1 )
+ , _sgn1( m==0 ? 0 : m<0 ? -1 : +1 )
  , _sgn2( 0 )
 {
 }
@@ -83,8 +83,8 @@ RooSpHarmonic::RooSpHarmonic(const char* name, const char* title, RooAbsReal& ct
  : RooLegendre(name, title,ctheta,l1, m1<0?-m1:m1,l2,m2<0?-m2:m2)
  , _phi("phi", "phi", this, phi)
  , _n(1)
- , _sgn1( m1==0 ? 0 : m1>0 ? +1 : -1 )
- , _sgn2( m2==0 ? 0 : m2>0 ? +1 : -1 )
+ , _sgn1( m1==0 ? 0 : m1<0 ? -1 : +1 )
+ , _sgn2( m2==0 ? 0 : m2<0 ? -1 : +1 )
 {
 }
 
