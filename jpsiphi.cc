@@ -76,7 +76,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name )
         return *w.pdf(name);
 };
 
-void p2vv() {
+void jpsiphi() {
     RooWorkspace w("w"); 
     // observables...
     w.factory(Format( "{ cpsi[-1,1], ctheta[-1,1], phi[0,%f], t[-1,4], qtag[bbar=+1,b=-1]} ",4*acos(0.))); // bbar=+1, so code corresponds to Bs(t=0)
