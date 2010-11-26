@@ -1,8 +1,4 @@
 
 void rootlogon() {
-    gSystem->Load("libMathMore.so");
-    gROOT->ProcessLine(".L RooLegendre.cxx+");
-    gROOT->ProcessLine(".L RooSpHarmonic.cxx+");
-    gROOT->ProcessLine(".L RooP2VVAngleBasis.cxx+");
-    gROOT->ProcessLine(".L RooAddition_.cxx+");
+    gSystem->Load("libp2vv.so");
 }
