@@ -109,8 +109,8 @@ void determineMoments(const char* fname="p2vv_3.root", const char* pdfName = "pd
              
    std::vector<IMoment*> moments;
    typedef std::vector<IMoment*>::iterator moments_iterator; 
-   for (int i=0;i<5;++i) {
-     for (int l=0;l<8;++l) {
+   for (int i=0;i<4;++i) {
+     for (int l=0;l<6;++l) {
         for (int m=-l;m<=l;++m) {
             // if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
             // moments.push_back(new EffMoment( ab("mom",i,0,l,m,double(2*i+1)/2 ), *pdf_marginal, *allObs ) );
@@ -128,10 +128,10 @@ void determineMoments(const char* fname="p2vv_3.root", const char* pdfName = "pd
        if (efficiency()) inEffData.add( *allObs );
    }
    //
-   data = &inEffData;
+   // data = &inEffData;
 
    // loop over all data, determine moments
-   for (int i=0;i<data->numEntries()/10; ++i) {
+   for (int i=0;i<data->numEntries(); ++i) {
         const RooArgSet *args = data->get(i);
         *allObs  = *args;
         // apply some fake efficiency, and see how it affects the moments...
@@ -140,17 +140,17 @@ void determineMoments(const char* fname="p2vv_3.root", const char* pdfName = "pd
         for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->inc(accept);
    }
 
-   // and print the results:
-   for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->print(cout);
-
    // create a PDF from the moments
    RooArgList coef,fact;
    for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) {
+       (*m)->print(cout);
+       // if (fabs((*m)->significance())<2) continue; // should _always_ use at least those moments which appear in signal pdf...
        const char *name = Format("C_%f",(*m)->coefficient());
        w->factory(Format("%s[%f]",name,(*m)->coefficient()));
        coef.add(get<RooAbsReal>(*w,name));
        fact.add((*m)->basis());
    }
+   cout << "using " << fact.getSize() << " moments out of " << moments.size() << endl;
    RooAbsPdf *momsum = new RooRealSumPdf("pdf_mom","pdf_mom",fact,coef);
 
    const char *cvar[] = { "cpsi","ctheta","phi" };
