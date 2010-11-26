@@ -44,11 +44,11 @@ class IMoment {
 
 class Moment : public IMoment {
 public:
-    Moment(RooAbsReal& x, double c=1) : IMoment(x), _c(c) {}
+    Moment(RooAbsReal& x, double norm=1) : IMoment(x), _norm(norm) {}
     double evaluate() { return _basis.getVal(); }
-    double coefficient() const { return _c*_m1/_m0; }
+    double coefficient() const { return _norm*_m1/_m0; }
 private:
-    double _c;
+    double _norm;
 };
 
 
@@ -115,6 +115,7 @@ void determineMoments(const char* fname="p2vv_3.root", const char* pdfName = "pd
             // if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
             // moments.push_back(new EffMoment( ab("mom",i,0,l,m,double(2*i+1)/2 ), *pdf_marginal, *allObs ) );
             // here we effectively just want to compute the Fourier coefficients...
+            // Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
             moments.push_back(new Moment( ab("mom",i,0,l,m,1.), double(2*i+1)/2  ) );
         }
      }
@@ -136,7 +137,6 @@ void determineMoments(const char* fname="p2vv_3.root", const char* pdfName = "pd
         *allObs  = *args;
         // apply some fake efficiency, and see how it affects the moments...
         bool accept = true; // efficiency();
-        // if (!efficiency()) continue;
         for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->inc(accept);
    }
 
