@@ -38,7 +38,7 @@ private:
 };
 
 
-void determineEfficiency(const char* fname="p2vv_4.root", const char* pdfName = "pdf", const char* dataName = "pdfData", const char *workspaceName = "w") {
+void determineEfficiency(const char* fname="p2vv_3.root", const char* pdfName = "pdf", const char* dataName = "pdfData", const char *workspaceName = "w") {
 
    TFile *f = new TFile(fname);
    RooWorkspace* w = (RooWorkspace*) f->Get(workspaceName) ;
@@ -63,35 +63,30 @@ void determineEfficiency(const char* fname="p2vv_4.root", const char* pdfName = 
      for (int l=0;l<4;++l) {
         for (int m=-l;m<=l;++m) {
             // if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
-            moments.push_back(new EffMoment( ab("mom",i,0,l,m,1. ),double(2*i+1)/2, *pdf_marginal, *allObs ) );
-            // here we effectively just want to compute the Fourier coefficients...
             // Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
-            // moments.push_back(new Moment( ab("mom",i,0,l,m,1.), double(2*i+1)/2  ) );
+            moments.push_back(new EffMoment( ab("mom",i,0,l,m,1. ),double(2*i+1)/2, *pdf_marginal, *allObs ) );
         }
      }
    }
 
-   // create some malformed input data...
+   // create some inefficient data...
    RooDataSet inEffData( "inEffData","inEffData", *allObs );
    for (int i=0;i<data->numEntries(); ++i) {
-        const RooArgSet *args = data->get(i);
-        *allObs  = *args;
+        *allObs  = *data->get(i);
        if (efficiency()) inEffData.add( *allObs );
    }
-   //
+   // replace input by inefficient data
    data = &inEffData;
 
    // loop over all data, determine moments
    for (int i=0;i<data->numEntries(); ++i) {
-        const RooArgSet *args = data->get(i);
-        *allObs  = *args;
-        // apply some fake efficiency, and see how it affects the moments...
-        bool accept = true; // efficiency();
-        for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->inc(accept);
+        *allObs  = *data->get(i);
+        for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->inc();
    }
 
-   // now we need to multiply all components of "pdf" with the efficiency...
-   RooCustomizer customizer(*pdf,"_eff_");
+   // now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
+   // of "pdf" with their efficiency corrected versions...
+   RooCustomizer customizer(*pdf,"_eff");
    RooArgSet *comp = pdf->getComponents();
    TIterator *iter = comp->createIterator();
    RooAbsArg *j(0);
@@ -101,14 +96,11 @@ void determineEfficiency(const char* fname="p2vv_4.root", const char* pdfName = 
         TString name( orig->GetName() ); name.Append("_eff");
         RooArgList s;
         for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) {
-            // if (fabs((*m)->significance())<2) continue; // should _always_ use at least those moments which appear in signal pdf...
             s.add( *orig->createProduct(dynamic_cast<RooP2VVAngleBasis&>( (*m)->basis() ), (*m)->coefficient()));
         }
-        
-        RooAbsArg& rep = import(*w,RooAddition_( name, name, s, kTRUE)); // hand over ownership...
+        RooAbsArg& rep = import(*w,RooAddition_( name, name, s, kTRUE)); // hand over ownership & put in workspace...
         customizer.replaceArg( *orig, rep );
    }
-
    RooAbsPdf *pdf_eff = (RooAbsPdf*) customizer.build(kTRUE);
 
    const char *cvar[] = { "cpsi","ctheta","phi" };
