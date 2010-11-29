@@ -33,19 +33,12 @@ private:
 };
 
 
-void determineMoments(const char* fname="p2vv_4.root", const char* pdfName = "pdf", const char* dataName = "pdfData", const char *workspaceName = "w") {
+void determineMoments(const char* fname="p2vv_3.root", const char* dataName = "pdfData", const char *workspaceName = "w") {
 
    TFile *f = new TFile(fname);
    RooWorkspace* w = (RooWorkspace*) f->Get(workspaceName) ;
-   RooAbsPdf* pdf = w->pdf(pdfName) ;
    RooAbsData* data = w->data(dataName) ;
-
-   // create moments -- for this, we need the PDF used to generate the data
-   RooArgSet *allObs = pdf->getObservables( data->get() );
-   RooArgSet *marginalObs = pdf->getObservables( data->get() );
-   marginalObs->remove( w->argSet("cpsi,ctheta,phi") );
-   // marginalize pdf over 'the rest' so we get the normalization of the moments right...
-   RooAbsPdf *pdf_marginal = pdf->createProjection(*marginalObs);
+   RooArgSet allObs = w->argSet("cpsi,ctheta,phi"); 
 
    abasis ab(*w,"cpsi","ctheta","phi");
    eps efficiency( get<RooAbsReal>(*w,"cpsi")
@@ -57,9 +50,6 @@ void determineMoments(const char* fname="p2vv_4.root", const char* pdfName = "pd
    for (int i=0;i<4;++i) {
      for (int l=0;l<6;++l) {
         for (int m=-l;m<=l;++m) {
-            // if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
-            // moments.push_back(new EffMoment( ab("mom",i,0,l,m,double(2*i+1)/2 ), *pdf_marginal, *allObs ) );
-            // here we effectively just want to compute the Fourier coefficients...
             // Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
             moments.push_back(new Moment( ab("mom",i,0,l,m,1.), double(2*i+1)/2  ) );
         }
@@ -67,22 +57,18 @@ void determineMoments(const char* fname="p2vv_4.root", const char* pdfName = "pd
    }
 
    // create some malformed input data...
-   RooDataSet inEffData( "inEffData","inEffData", *allObs );
+   RooDataSet inEffData( "inEffData","inEffData", allObs );
    for (int i=0;i<data->numEntries(); ++i) {
-        const RooArgSet *args = data->get(i);
-        *allObs  = *args;
-       if (efficiency()) inEffData.add( *allObs );
+        allObs  = *data->get(i);
+       if (efficiency()) inEffData.add( allObs );
    }
    //
-   // data = &inEffData;
+   data = &inEffData;
 
    // loop over all data, determine moments
    for (int i=0;i<data->numEntries(); ++i) {
-        const RooArgSet *args = data->get(i);
-        *allObs  = *args;
-        // apply some fake efficiency, and see how it affects the moments...
-        bool accept = true; // efficiency();
-        for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->inc(accept);
+        allObs  = *data->get(i);
+        for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) (*m)->inc();
    }
 
    // create a PDF from the moments
@@ -102,6 +88,10 @@ void determineMoments(const char* fname="p2vv_4.root", const char* pdfName = "pd
    TCanvas *c = new TCanvas();
    c->Divide(3,1);
    for (int i = 0; i<3; ++i) {
-        c->cd(1+i); RooPlot *plot = get<RooRealVar>(*w,cvar[i]).frame(); data->plotOn(plot); momsum->plotOn(plot); plot->Draw();
+        c->cd(1+i); 
+        RooPlot *plot = get<RooRealVar>(*w,cvar[i]).frame(); 
+        data->plotOn(plot); 
+        momsum->plotOn(plot); 
+        plot->Draw();
    }
 }
