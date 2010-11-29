@@ -23,12 +23,10 @@ public:
      bool operator()() { 
          // return true;
          bool acc = true;
-         acc = acc && drand48()>(0.5+0.5*_cpsi.getVal()) ;
-         acc = acc && drand48()>(0.5-0.5*_ctheta.getVal());
-         double phi = _phi.getVal()/(4*acos(0.));
-         phi = -1+2*phi; // [-1,1]
-         //return phi<0 || drand48()>phi;
-         acc = acc && drand48()>(0.5+0.5*fabs(phi));
+         double x = _cpsi.getVal();
+         double y = _ctheta.getVal();
+         double z = -1+2*cos(_phi.getVal());
+         acc = acc && drand48()>(x*x*y/(z<0?1.0:1-z));
          return acc;
      }
 private:
@@ -44,21 +42,29 @@ void determineEfficiency(const char* fname="p2vv_3.root", const char* pdfName = 
    RooWorkspace* w = (RooWorkspace*) f->Get(workspaceName) ;
    RooAbsPdf* pdf = w->pdf(pdfName) ;
    RooAbsData* data = w->data(dataName) ;
-
-   // create moments -- for this, we need the PDF used to generate the data
    RooArgSet *allObs = pdf->getObservables( data->get() );
+
+   eps efficiency( get<RooAbsReal>(*w,"cpsi")
+                 , get<RooAbsReal>(*w,"ctheta")
+                 , get<RooAbsReal>(*w,"phi"));
+   // create some inefficient data...
+   RooDataSet inEffData( "inEffData","inEffData", *allObs );
+   for (int i=0;i<data->numEntries(); ++i) {
+        *allObs  = *data->get(i);
+       if (efficiency()) inEffData.add( *allObs );
+   }
+   // replace input by inefficient data
+   data = &inEffData;
+             
+   // define the moments used to describe the efficiency
+   // for this, we need the PDF used to generate the data
    RooArgSet *marginalObs = pdf->getObservables( data->get() );
    marginalObs->remove( w->argSet("cpsi,ctheta,phi") );
    // marginalize pdf over 'the rest' so we get the normalization of the moments right...
    RooAbsPdf *pdf_marginal = pdf->createProjection(*marginalObs);
-
-   abasis ab(*w,"cpsi","ctheta","phi");
-   eps efficiency( get<RooAbsReal>(*w,"cpsi")
-                 , get<RooAbsReal>(*w,"ctheta")
-                 , get<RooAbsReal>(*w,"phi"));
-             
    std::vector<IMoment*> moments;
    typedef std::vector<IMoment*>::iterator moments_iterator; 
+   abasis ab(*w,"cpsi","ctheta","phi");
    for (int i=0;i<4;++i) {
      for (int l=0;l<4;++l) {
         for (int m=-l;m<=l;++m) {
@@ -68,15 +74,6 @@ void determineEfficiency(const char* fname="p2vv_3.root", const char* pdfName = 
         }
      }
    }
-
-   // create some inefficient data...
-   RooDataSet inEffData( "inEffData","inEffData", *allObs );
-   for (int i=0;i<data->numEntries(); ++i) {
-        *allObs  = *data->get(i);
-       if (efficiency()) inEffData.add( *allObs );
-   }
-   // replace input by inefficient data
-   data = &inEffData;
 
    // loop over all data, determine moments
    for (int i=0;i<data->numEntries(); ++i) {
