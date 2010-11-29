@@ -89,9 +89,10 @@ RooP2VVAngleBasis::RooP2VVAngleBasis(const RooP2VVAngleBasis& other, const char*
 }
 
 RooP2VVAngleBasis* 
-RooP2VVAngleBasis::createProduct(int i, int l, int m, double c) const {
-      std::stringstream name; name << this->GetName() << "_x_" << i << "_" << l << ( m<0 ? "_m":"_" ) << (m<0?-m:m) 
-                                                               << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c ) ;
+RooP2VVAngleBasis::createProduct(int i, int j, int l, int m, double c) const {
+      std::stringstream name; name << this->GetName() << "_x_" << i << "_" << j 
+                                                      << "_" << l << ( m<0 ? "_m":"_" ) << (m<0?-m:m) 
+                                                      << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c ) ;
       // grab first function, dynamic_cast to RooLegendre, grab its observable...
       _compRIter->Reset();
       RooLegendre *P = dynamic_cast<RooLegendre*>(_compRIter->Next());
@@ -120,6 +121,6 @@ RooP2VVAngleBasis::createProduct(int i, int l, int m, double c) const {
       return (!_prod) ? new  RooP2VVAngleBasis( name.str().c_str(), name.str().c_str()
                                               , *cpsi, *ctheta, *phi
                                               , _i, _j, _l, _m
-                                              ,  i,  0,  l,  m
+                                              ,  i,  j,  l,  m
                                               , _c * c ) : 0 ;
   }

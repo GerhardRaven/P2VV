@@ -31,7 +31,11 @@ public:
 
   // create a new RooAbsReal which is 'us' multiplied by an efficiency factor
   // Note: we can only multiply once... 
-  RooP2VVAngleBasis* createProduct(int i, int l, int m, double eps_ilm) const;
+  RooP2VVAngleBasis* createProduct(int i, int j, int l, int m, double c) const;
+  RooP2VVAngleBasis* createProduct(const RooP2VVAngleBasis& basis, double c=1.) const
+  { 
+      return !basis._prod ? createProduct( basis._i, basis._j, basis._l, basis._m, c*basis._c ): 0;
+  }
 
 private: 
   double _c;
