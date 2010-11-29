@@ -1,9 +1,9 @@
-
 #ifndef MOMENT_H
 #define MOMENT_H
 
 #include "RooAbsPdf.h"
 
+// TODO: move and/or integrate this code into RooP2VVAngleBasis ???
 class IMoment {
     public:
           IMoment(RooAbsReal &basis, double norm=1, const char *name=0) : _basis(basis), _m0(0),_m1(0),_m2(0),_norm(norm), _name(name ? name : _basis.GetName() ) {}
@@ -11,7 +11,7 @@ class IMoment {
           virtual void inc(bool accepted = true) {
                 double x = evaluate();
                 // TODO: make a histogram of x... (two, one for accept, one for all)
-                ++_m0;
+                _m0 += 1.;
                 if (accepted) {
                     _m1 += x;
                     _m2 += x*x;
@@ -43,7 +43,6 @@ public:
     Moment(RooAbsReal& x, double norm=1) : IMoment(x,norm) {}
 private:
 };
-
 
 class EffMoment  : public IMoment{
 public:
