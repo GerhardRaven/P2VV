@@ -119,9 +119,9 @@ void jpsiphi() {
     //pdf.printTree(cout);
 
     if (true) {
-        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),100000);
+        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),1000000);
         w.import(*data);
-        w.writeToFile("p2vv_3.root");
+        w.writeToFile("p2vv_4.root");
         return;
     }
 
