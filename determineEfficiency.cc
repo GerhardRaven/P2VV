@@ -24,11 +24,11 @@ public:
          // return true;
          bool acc = true;
          acc = acc && drand48()>(0.5+0.5*_cpsi.getVal()) ;
-         //acc = acc && drand48()>(0.5-0.5*_ctheta.getVal());
-         //double phi = _phi.getVal()/(4*acos(0.));
-         //phi = -1+2*phi; // [-1,1]
+         acc = acc && drand48()>(0.5-0.5*_ctheta.getVal());
+         double phi = _phi.getVal()/(4*acos(0.));
+         phi = -1+2*phi; // [-1,1]
          //return phi<0 || drand48()>phi;
-         //acc = acc && drand48()>(0.5+0.5*fabs(phi));
+         acc = acc && drand48()>(0.5+0.5*fabs(phi));
          return acc;
      }
 private:
@@ -98,9 +98,7 @@ void determineEfficiency(const char* fname="p2vv_4.root", const char* pdfName = 
    while ( ( j = (RooAbsArg*)iter->Next() )!=0  ) {
         RooP2VVAngleBasis *orig = dynamic_cast<RooP2VVAngleBasis*>(j);
         if (orig==0) continue;
-        TString name( orig->GetName() );
-        cout << " modifying component " << name  << endl;
-        name.Append("_eff");
+        TString name( orig->GetName() ); name.Append("_eff");
         RooArgList s;
         for ( moments_iterator m = moments.begin(); m!=moments.end(); ++m) {
             // if (fabs((*m)->significance())<2) continue; // should _always_ use at least those moments which appear in signal pdf...
@@ -108,8 +106,6 @@ void determineEfficiency(const char* fname="p2vv_4.root", const char* pdfName = 
         }
         
         RooAbsArg& rep = import(*w,RooAddition_( name, name, s, kTRUE)); // hand over ownership...
-        cout << " new component " << rep.GetName() << endl;
-        rep.Print();
         customizer.replaceArg( *orig, rep );
    }
 
