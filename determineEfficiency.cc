@@ -6,7 +6,7 @@
 #include "RooAbsData.h"
 #include "RooDataSet.h"
 #include "RooAbsPdf.h"
-#include "RooAddition.h"
+#include "RooAddition_.h"
 #include "RooCustomizer.h"
 #include "RooPlot.h"
 #include "RooGlobalFunc.h"
@@ -160,7 +160,7 @@ void determineEfficiency(const char* fname="p2vv_4.root", const char* pdfName = 
             s.add( *orig->createProduct(dynamic_cast<RooP2VVAngleBasis&>( (*m)->basis() ), (*m)->coefficient()));
         }
         
-        RooAbsArg& rep = import(*w,RooAddition( name, name, s, kTRUE)); // hand over ownership...
+        RooAbsArg& rep = import(*w,RooAddition_( name, name, s, kTRUE)); // hand over ownership...
         cout << " new component " << rep.GetName() << endl;
         rep.Print();
         customizer.replaceArg( *orig, rep );
