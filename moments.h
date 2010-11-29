@@ -1,6 +1,9 @@
 
 #ifndef MOMENT_H
 #define MOMENT_H
+
+#include "RooAbsPdf.h"
+
 class IMoment {
     public:
           IMoment(RooAbsReal &basis, const char *name=0) : _basis(basis), _m0(0),_m1(0),_m2(0), _name(name ? name : _basis.GetName() ) {}
