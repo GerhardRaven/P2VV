@@ -29,7 +29,7 @@ all: .deps libp2vv.so
 	-e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
 	rm -f $*.d
 
-p2vv_dict.cxx:
+p2vv_dict.cxx: $(wildcard *.h)
 	rootcint -f p2vv_dict.cxx -c p2vv.h p2vv_LinkDef.h
 
 libp2vv.so: $(OBJECTS)
