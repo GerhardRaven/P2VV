@@ -49,13 +49,14 @@ private:
 
 class EffMoment  : public IMoment{
 public:
-    EffMoment(RooAbsReal& x, const RooAbsPdf& pdf, const RooArgSet& nset) : IMoment(x,Format("%s_%s",x.GetName(),pdf.GetName())),_pdf(pdf), _nset(nset)  {}
+    EffMoment(RooAbsReal& x, double norm, const RooAbsPdf& pdf, const RooArgSet& nset) : IMoment(x,Format("%s_%s",x.GetName(),pdf.GetName())),_pdf(pdf), _nset(nset), _norm(norm)  {}
 
     double evaluate() { return _basis.getVal()/_pdf.getVal(&_nset); }
-    double coefficient() const { return _m1/_m0; }
+    double coefficient() const { return _norm*_m1/_m0; }
 private:
     const RooAbsPdf& _pdf;
     const RooArgSet&  _nset;
+    double _norm;
 };
 
 #endif
