@@ -77,12 +77,13 @@ public:
      bool operator()() { 
          // return true;
          bool acc = true;
-         acc = acc && drand48()>(0.5+0.5*_cpsi.getVal()) ;
+         //acc = acc && drand48()>(0.5+0.5*_cpsi.getVal()) ;
          acc = acc && drand48()>(0.5-0.5*_ctheta.getVal());
-         double phi = _phi.getVal()/(4*acos(0.));
-         phi = -1+2*phi; // [-1,1]
+         //double phi = _phi.getVal()/(4*acos(0.));
+         //phi = -1+2*phi; // [-1,1]
          //return phi<0 || drand48()>phi;
-         return acc && drand48()>(0.5+0.5*fabs(phi));
+         //acc = acc && drand48()>(0.5+0.5*fabs(phi));
+         return acc;
      }
 private:
     const RooAbsReal& _cpsi;
@@ -132,7 +133,7 @@ void determineEfficiency(const char* fname="p2vv_4.root", const char* pdfName = 
        if (efficiency()) inEffData.add( *allObs );
    }
    //
-   // data = &inEffData;
+   data = &inEffData;
 
    // loop over all data, determine moments
    for (int i=0;i<data->numEntries(); ++i) {
