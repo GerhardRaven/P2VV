@@ -1,6 +1,8 @@
 from ROOT import *
+import GaudiPython
+P2VV = GaudiPython.gbl.P2VV
 #to load functions (made with namespace function) like makePVVPdf:
-gSystem.Load("libp2vv.so");
+GaudiPython.loaddict('P2VVDict')
 
 ##############################
 ### Create ws, observables ###
@@ -84,3 +86,4 @@ _tb.SetTitle("")
 _tb.Draw()
 testCanvas.Update()
 ################################################################
+
