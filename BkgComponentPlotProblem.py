@@ -14,13 +14,16 @@ ws = RooWorkspace(wsfile.Get('workspace'))
 
 t = ws.var('t')
 
-m = RooRealVar("m","B mass",5200,5550)
+print 't', t.Print()
+#t.setRange(0.3,12.)
 
-obs = RooArgSet(m)
+ctheta = ws.var('trcostheta')
+cpsi = ws.var('trcospsi')
+phi = ws.var('trphi')
 
-getattr(ws,'import')(obs)
+tagdecision = ws.var('tagdecision')
 
-ws.defineSet("observables","t")
+ws.defineSet("observables","t,trcostheta,trcospsi,trphi,tagdecision")
 
 #################
 ### Load Data ###
@@ -40,7 +43,6 @@ getattr(ws,'import')(data2)
 ### Build the PDF's (can only do that after we have sigmat from data) ###
 #########################################################################
 #Getting the JpsiPhi signal Pdf
-p2vv = ws.pdf('myJpsiphiPdf_noEff')
 
 #background t pdf
 ws.factory("{t_bkg_ml_tau[0.207,0.1,0.5],t_bkg_ll_tau[1.92,1.,2.5]}")
@@ -59,8 +61,9 @@ ws.factory("SUM::pdf(f_sig[0.6,0,1]*myJpsiphiPdf_noEff,t_bkg)")
 #########################
 
 pdf= ws.pdf("pdf")
+p2vv = ws.pdf('myJpsiphiPdf_noEff')
+t_bkg = ws.pdf('t_bkg')
 
-t.setRange(0.3,12.)
 t.setRange('largeTime',0.3,12.)
 
 ###############################################################
@@ -73,17 +76,30 @@ xes = RooCmdArg(RooFit.XErrorSize(0))
 sigcolor = RooFit.kGreen 
 bkgcolor = RooFit.kRed
 
+testCanvas2 = TCanvas('testCanvas2','testCanvas2') 
+gPad.SetLogy()
+_tb = t.frame(RooFit.Bins(100))
+data2.plotOn(_tb,RooFit.MarkerSize(0.5),xes)
+t_bkg.plotOn(_tb,RooFit.Range('largeTime'),RooFit.LineColor(kRed),lw)
+p2vv.plotOn(_tb,RooFit.Range('largeTime'),RooFit.LineColor(kGreen),lw)
+_tb.SetMinimum(0.1) 
+_tb.SetTitle("")
+_tb.Draw()
+testCanvas2.Update()
+
 testCanvas = TCanvas('testCanvas','testCanvas') 
 gPad.SetLogy()
 _tb = t.frame(RooFit.Bins(100))
-data2.plotOn(_tb,RooFit.Invisible())
-pdf.plotOn(_tb,RooFit.NormRange('largeTime'),RooFit.Range('largeTime'),lw)
-pdf.plotOn(_tb,RooFit.NormRange('largeTime'),RooFit.Range('largeTime'),RooFit.Components("myJpsiphiPdf_noEff"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-pdf.plotOn(_tb,RooFit.NormRange('largeTime'),RooFit.Range('largeTime'),RooFit.Components("t_bkg"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
 data2.plotOn(_tb,RooFit.MarkerSize(0.5),xes)
+pdf.plotOn(_tb,RooFit.Range('largeTime'),lw)
+pdf.plotOn(_tb,RooFit.Range('largeTime'),RooFit.Components("myJpsiphiPdf_noEff"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
+pdf.plotOn(_tb,RooFit.Range('largeTime'),RooFit.Components("t_bkg"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
 _tb.SetMinimum(0.1) 
 _tb.SetTitle("")
 _tb.Draw()
 testCanvas.Update()
+
+
+
 ################################################################
 
