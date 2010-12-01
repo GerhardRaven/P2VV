@@ -3,6 +3,7 @@ import GaudiPython
 P2VV = GaudiPython.gbl.P2VV
 #to load functions (made with namespace function) like makePVVPdf:
 GaudiPython.loaddict('P2VVDict')
+gSystem.Load("libp2vv")
 from math import pi
 
 #######################
@@ -401,9 +402,10 @@ def sigplot(ws,sigdata,sigpdf,ctitle):
 ### Create ws, observables ###
 ##############################
 
-wsfile = TFile('OldWSJpsiPhiPdf.root')
+wsfile = TFile('WSJpsiPhiPdf.root')
 
-ws = RooWorkspace(wsfile.Get('workspace'))
+#ws = RooWorkspace(wsfile.Get('workspace'))
+ws = wsfile.Get('workspace')
 
 t = ws.var('t')
 
@@ -428,32 +430,33 @@ ws.defineSet("observables","m,t,trcostheta,trcospsi,trphi,tagdecision")
 file = TFile('duitsedata.root')
 NTupletree = file.Get('Bs2JpsiPhi')
 
-data = RooDataSet('data','data',NTupletree,ws.set('observables'),"t==t && m==m")
-data.table(tagdecision).Print('v')
+realdata = RooDataSet('realdata','realdata',NTupletree,ws.set('observables'),"t==t && m==m")
 
-data2 = data.reduce('t>0.3 && t<12 && m>5200 && m<5550')
-data2.SetNameTitle('data2','data2')
+realdata.table(tagdecision).Print('v')
 
-sigdata = data2.reduce('m>5320 && m<5402')
-sigdata.SetNameTitle('sigdata','sigdata')
+realdata2 = realdata.reduce('t>0.3 && t<12')
+realdata2.SetNameTitle('realdata2','realdata2')
 
-getattr(ws,'import')(data)
-getattr(ws,'import')(data2)
+sigrealdata = realdata2.reduce('m>5320 && m<5402')
+sigrealdata.SetNameTitle('sigrealdata','sigrealdata')
+
+getattr(ws,'import')(realdata)
+getattr(ws,'import')(realdata2)
 
 # make a background dataset for description of angular distributions and to fit the background distribution
-lowbkgdata = data2.reduce('m>5402')
-lowbkgdata.SetNameTitle('lowbkgdata','lowbkgdata')
-highbkgdata = data2.reduce('m<5320')
-highbkgdata.SetNameTitle('highbkgdata','highbkgdata')
-bkgdata = lowbkgdata
-bkgdata.append(highbkgdata)
-bkgdata.SetNameTitle('bkgdata','bkgdata')
+lowbkgrealdata = realdata2.reduce('m>5402')
+lowbkgrealdata.SetNameTitle('lowbkgrealdata','lowbkgrealdata')
+highbkgrealdata = realdata2.reduce('m<5320')
+highbkgrealdata.SetNameTitle('highbkgrealdata','highbkgrealdata')
+bkgrealdata = lowbkgrealdata
+bkgrealdata.append(highbkgrealdata)
+bkgrealdata.SetNameTitle('bkgrealdata','bkgrealdata')
 #repeat to restore lowbkgdata, WHOO, THAT'S UGLY!!!!!!!!
-lowbkgdata = data2.reduce('m>5402')
-lowbkgdata.SetNameTitle('lowbkgdata','lowbkgdata')
-lowbkgdata.Print()
-highbkgdata.Print()
-bkgdata.Print()
+lowbkgrealdata = realdata2.reduce('m>5402')
+lowbkgrealdata.SetNameTitle('lowbkgrealdata','lowbkgrealdata')
+lowbkgrealdata.Print()
+highbkgrealdata.Print()
+bkgrealdata.Print()
 
 #########################################################################
 ### Build the PDF's (can only do that after we have sigmat from data) ###
@@ -464,11 +467,11 @@ ws.factory("Gaussian::m_sig_2(m,m_sig_mean,m_sig_sigma_2[18.,10.,20.])")
 ws.factory("SUM::m_sig(m_sig_f_1[0.85,0,1]*m_sig_1,m_sig_2)")
     
 #Getting the JpsiPhi signal Pdf
-p2vv = ws.pdf('myJpsiphiPdf_noEff')
+p2vv = ws.pdf('jpsiphipdf')
 #p2vv = ws.pdf('myJpsiphiPdf_withWeights')
 
 #Getting the resolution model from the JpsiPhi pdf in the workspace
-tres = ws.pdf('tres')
+tres = ws.pdf('res')
 
 #background B mass pdf
 ws.factory("Exponential::m_bkg(m,m_bkg_exp[-0.001,-0.01,-0.0001])")
@@ -487,18 +490,14 @@ ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*t_bkg_ll,t_bkg_ml)")
 #background angles: 
 ws.factory("Uniform::bkgang({trcostheta,trcospsi,trphi})")
 
-#ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13,-1,1],c1_trcospsi[0.23,-1,1],c2_trcospsi[-0.057,-1,1],c3_trcospsi[-0.0058,-1,1],c4_trcospsi[-0.0154,-1,1]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
-#ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08,-1,1],c1_trcostheta[-0.22,-1,1],c2_trcostheta[-0.022,-1,1],c3_trcostheta[0.21,-1,1],c4_trcostheta[0.0125,-1,1]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
-#ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10,-1,1],c1_trphi[0.328,-1,1],c2_trphi[0.081,-1,1],c3_trphi[0.316,-1,1],c4_trphi[0.044,-1,1]})")#,c5_trphi[-1,1],c6_trphi[-1,1]})")
-
-ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13],c1_trcospsi[0.23],c2_trcospsi[-0.057],c3_trcospsi[-0.0058],c4_trcospsi[-0.0154]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
-ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08],c1_trcostheta[-0.22],c2_trcostheta[-0.022],c3_trcostheta[0.21],c4_trcostheta[0.0125]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
-ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10],c1_trphi[0.328],c2_trphi[0.081],c3_trphi[0.316],c4_trphi[0.044]})")#,c5_trphi[-1,1],c6_trphi[-1,1]})")
+ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-1,1],c1_trcospsi[-1,1],c2_trcospsi[-1,1],c3_trcospsi[-1,1],c4_trcospsi[-1,1]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
+ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[-1,1],c1_trcostheta[-1,1],c2_trcostheta[-1,1],c3_trcostheta[-1,1],c4_trcostheta[-1,1]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
+ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[-1,1],c1_trphi[-1,1],c2_trphi[-1,1],c3_trphi[-1,1],c4_trphi[-1,1]})")#,c5_trphi[-1,1],c6_trphi[-1,1]})")
 
 #ws.factory("PROD::bkgang(bkg_trcostheta,bkg_trcospsi,bkg_trphi)")
 
 #P2VV fit
-ws.factory("PROD::sig_pdf( m_sig, myJpsiphiPdf_noEff)")
+ws.factory("PROD::sig_pdf( m_sig, jpsiphipdf)")
 #ws.factory("PROD::sig_pdf( m_sig, myJpsiphiPdf_withWeights)")
 
 ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, bkgang)")
@@ -526,39 +525,34 @@ pdf_ext = ws.pdf('pdf_ext')
 
 #Parameters to be printed
 
-Aperp_sq_jpsiphi         = ws.var('Aperp_sq_jpsiphi')
-Azero_sq_jpsiphi         = ws.var('Azero_sq_jpsiphi')
-G_s                      = ws.var('G_s')
+rperp                    = ws.var('rperp')
+rz                       = ws.var('rz')
+gamma                    = ws.var('gamma')
+dG                       = ws.var('dG')
+dm                       = ws.var('dm')
 Nbkg                     = ws.var('Nbkg')
 Nsig                     = ws.var('Nsig')
 f_sig                    = ws.var('f_sig')
-Phi_s                    = ws.var('Phi_s')
-dG_s                     = ws.var('dG_s')
-dm_s                     = ws.var('dm_s')
 #m_bkg_exp                = ws.var('m_bkg_exp')
 m_sig_mean               = ws.var('m_sig_mean')
 m_sig_sigma_1            = ws.var('m_sig_sigma_1')
 m_sig_sigma_2            = ws.var('m_sig_sigma_2')
-phi_par_jpsiphi          = ws.var('phi_par_jpsiphi')
-phi_perp_jpsiphi         = ws.var('phi_perp_jpsiphi')
-phi_zero_jpsiphi         = ws.var('phi_zero_jpsiphi')
 t_bkg_fll                = ws.var('t_bkg_fll')
 t_bkg_ll_tau             = ws.var('t_bkg_ll_tau')
 t_bkg_ml_tau             = ws.var('t_bkg_ml_tau')
 
-parameterprintset = RooArgSet(Aperp_sq_jpsiphi)
-parameterprintset.add(Azero_sq_jpsiphi)
+parameterprintset = RooArgSet(rperp)
+parameterprintset.add(rz)
+#parameterprintset.add(gamma)#blinded
+#parameterprintset.add(dG)#blinded
+#parameterprintset.add(dm)#constant
 parameterprintset.add(Nbkg)
 parameterprintset.add(Nsig)
 parameterprintset.add(f_sig)
-#parameterprintset.add(dm_s)
 #parameterprintset.add(m_bkg_exp)
 parameterprintset.add(m_sig_mean)
 parameterprintset.add(m_sig_sigma_1)
 parameterprintset.add(m_sig_sigma_2)
-parameterprintset.add(phi_par_jpsiphi)
-parameterprintset.add(phi_perp_jpsiphi)
-parameterprintset.add(phi_zero_jpsiphi)
 parameterprintset.add(t_bkg_fll)
 parameterprintset.add(t_bkg_ll_tau)
 parameterprintset.add(t_bkg_ml_tau)
@@ -570,32 +564,32 @@ t.setRange('largeTime',0.3,12.)
 
 m= ws.var('m')
 masspdf = ws.pdf('masspdf')
-masspdf.fitTo(data2,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+masspdf.fitTo(realdata2,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
 
 masscanvas = TCanvas('masscanvas','masscanvas')
 massframe = m.frame()
-data2.plotOn(massframe,RooLinkedList())
+realdata2.plotOn(massframe,RooLinkedList())
 masspdf.plotOn(massframe,RooFit.Range('largeTime'),RooFit.NormRange('largeTime'))
 masspdf.paramOn(massframe)
 massframe.Draw()
 ###########################################################################################################################
 #FINALLY, BKG IN T AND M AND UNIFORM ANGLES IS COOL!!!!
-#bkg_pdf.fitTo(bkgdata,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Minos(false),RooFit.Save(true))
-#bkgc = bkgplot(ws,bkgdata,bkg_pdf,'bkgcanvas')
+#bkg_pdf.fitTo(bkgrealdata,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Minos(false),RooFit.Save(true))
+#bkgc = bkgplot(ws,bkgrealdata,bkg_pdf,'bkgcanvas')
 ###########################################################################################################################
 
 ###########################################################################################################################
 #FINALLY, SIG IN T AND M AND ANGLES IS COOL!!!!
 #Fit and plot signal
-#sig_pdf.fitTo(sigdata,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Minos(false),RooFit.Save(true))
-#sigc = sigplot(ws,sigdata,sig_pdf,'sigcanvas')
+#sig_pdf.fitTo(sigrealdata,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Minos(false),RooFit.Save(true))
+#sigc = sigplot(ws,sigrealdata,sig_pdf,'sigcanvas')
 ###########################################################################################################################
 ##########
-result = pdf.fitTo(data2,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Extended(false),RooFit.Minos(false),RooFit.Save(true))
-c = plot(ws,data2,pdf,'c')
+result = pdf.fitTo(realdata2,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Extended(false),RooFit.Minos(false),RooFit.Save(true))
+c = plot(ws,realdata2,pdf,'c')
 ##########
 
 ##########
-#result = pdf_ext.fitTo(data2,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-#cext = plot(ws,data2,pdf_ext,'cext')
+#result = pdf_ext.fitTo(realdata2,RooFit.Range('largeTime'),RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+#cext = plot(ws,realdata2,pdf_ext,'cext')
 ##########
