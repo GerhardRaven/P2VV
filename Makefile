@@ -19,7 +19,7 @@ OBJECTS = $(SOURCES:%.cxx=%.o)
 
 .PHONY: all clean
 
-all: libp2vv.so
+all: .deps libp2vv.so
 
 %.o : %.cxx
 	$(CPP) $(CPPFLAGS) -fPIC -DPIC -MMD -c $<
@@ -37,4 +37,6 @@ libp2vv.so: $(OBJECTS)
 clean:
 	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.*
 
+.deps:
+	mkdir $@
 -include $(SOURCES:%.cxx=$(DEPDIR)/%.P)
