@@ -73,7 +73,7 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet&
       RooErrorHandler::softAbort() ;
     }
     _set.add(*comp) ;
-    if (takeOwnership) _ownedList.addOwned(*comp) ;
+    if (takeOwnership) addOwnedComponents(*comp); 
   }
 
 }
@@ -113,20 +113,16 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList
 			    << " in first list is not of type RooAbsReal" << endl ;
       RooErrorHandler::softAbort() ;
     }
-    // TODO: add flag to RooProduct c'tor to make it assume ownership...
     TString _name(name);
     _name.Append( "_[");
     _name.Append(comp1->GetName());
     _name.Append( "_x_");
     _name.Append(comp2->GetName());
     _name.Append( "]");
-    RooProduct  *prod = new RooProduct( _name, _name , RooArgSet(*comp1, *comp2) /*, takeOwnership */ ) ;
+    RooProduct  *prod = new RooProduct( _name, _name , RooArgSet(*comp1, *comp2) ) ;
     _set.add(*prod);
-    _ownedList.addOwned(*prod) ;
-    if (takeOwnership) {
-        _ownedList.addOwned(*comp1) ;
-        _ownedList.addOwned(*comp2) ;
-    }
+    addOwnedComponents(*prod) ;
+    if (takeOwnership) prod->addOwnedComponents( RooArgSet( *comp1, *comp2 ) ) ;
   }
 }
 
@@ -141,7 +137,6 @@ RooAddition_::RooAddition_(const RooAddition_& other, const char* name)
 {
   // Copy constructor
   
-  // Member _ownedList is intentionally not copy-constructed -- ownership is not transferred
 }
 
 

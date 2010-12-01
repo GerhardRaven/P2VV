@@ -53,7 +53,6 @@ public:
 
 protected:
 
-  RooArgList   _ownedList ;      // List of owned components
   RooListProxy _set ;            // set of terms to be summed
   mutable TIterator* _setIter ;  //! Iterator over set
 
