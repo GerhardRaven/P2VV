@@ -4,7 +4,7 @@ df = $(DEPDIR)/$(*F)
 CPP = g++
 LD = g++
 ROOTCONFIG = root-config
-CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb
+CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -march=native -pipe -ggdb
 LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
 	-lRooFitCore -lMathCore -lMathMore
 
@@ -19,8 +19,7 @@ OBJECTS = $(SOURCES:%.cxx=%.o)
 
 .PHONY: all clean
 
-all: .deps libp2vv.so
-
+all: libp2vv.so
 
 %.o : %.cxx
 	$(CPP) $(CPPFLAGS) -fPIC -DPIC -MMD -c $<
@@ -38,6 +37,4 @@ libp2vv.so: $(OBJECTS)
 clean:
 	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.*
 
-.deps :
-	mkdir $@
 -include $(SOURCES:%.cxx=$(DEPDIR)/%.P)
