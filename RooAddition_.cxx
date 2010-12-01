@@ -47,8 +47,8 @@ ClassImp(RooAddition_)
 
 //_____________________________________________________________________________
 RooAddition_::RooAddition_()
+  : _setIter( _set.createIterator() )
 {
-  _setIter = _set.createIterator() ;
 }
 
 
@@ -57,12 +57,12 @@ RooAddition_::RooAddition_()
 RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet& sumSet, Bool_t takeOwnership) 
   : RooAbsReal(name, title)
   , _set("!set","set of components",this)
+  , _setIter( _set.createIterator() ) // yes, _setIter is defined _after_ _set ;-)
+  , _cacheMgr(this,10)
 {
   // Constructor with a single set of RooAbsReals. The value of the function will be
   // the sum of the values in sumSet. If takeOwnership is true the RooAddition object
   // will take ownership of the arguments in sumSet
-
-  _setIter = _set.createIterator() ;
 
   std::auto_ptr<TIterator> inputIter( sumSet.createIterator() );
   RooAbsArg* comp ;
@@ -83,15 +83,15 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgSet&
 //_____________________________________________________________________________
 RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList& sumSet1, const RooArgList& sumSet2, Bool_t takeOwnership) 
     : RooAbsReal(name, title)
-    , _set("!set","First set of components",this)
+    , _set("!set","set of components",this)
+    , _setIter( _set.createIterator() ) // yes, _setIter is defined _after_ _set ;-)
+    , _cacheMgr(this,10)
 {
   // Constructor with two set of RooAbsReals. The value of the function will be
   //
   //  A = sum_i sumSet1(i)*sumSet2(i) 
   //
   // If takeOwnership is true the RooAddition object will take ownership of the arguments in sumSet
-
-  _setIter = _set.createIterator() ;
 
   if (sumSet1.getSize() != sumSet2.getSize()) {
     coutE(InputArguments) << "RooAddition::ctor(" << GetName() << ") ERROR: input lists should be of equal length" << endl ;
@@ -114,10 +114,13 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList
       RooErrorHandler::softAbort() ;
     }
     // TODO: add flag to RooProduct c'tor to make it assume ownership...
-    TString name(comp1->GetName());
-    name.Append( "_x_");
-    name.Append(comp2->GetName());
-    RooProduct  *prod = new RooProduct( name, name , RooArgSet(*comp1, *comp2) /*, takeOwnership */ ) ;
+    TString _name(name);
+    _name.Append( "_[");
+    _name.Append(comp1->GetName());
+    _name.Append( "_x_");
+    _name.Append(comp2->GetName());
+    _name.Append( "]");
+    RooProduct  *prod = new RooProduct( _name, _name , RooArgSet(*comp1, *comp2) /*, takeOwnership */ ) ;
     _set.add(*prod);
     _ownedList.addOwned(*prod) ;
     if (takeOwnership) {
@@ -133,9 +136,10 @@ RooAddition_::RooAddition_(const char* name, const char* title, const RooArgList
 RooAddition_::RooAddition_(const RooAddition_& other, const char* name) 
     : RooAbsReal(other, name)
     , _set("!set",this,other._set)
+    , _setIter( _set.createIterator() ) // yes, _setIter is defined _after_ _set ;-)
+    , _cacheMgr(other._cacheMgr,this)
 {
   // Copy constructor
-  _setIter = _set.createIterator() ;
   
   // Member _ownedList is intentionally not copy-constructed -- ownership is not transferred
 }
@@ -225,14 +229,15 @@ void RooAddition_::printMetaArgs(ostream& os) const
 }
 
 //_____________________________________________________________________________
-Int_t RooAddition_::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* nSet, const char* rangeName) const
+Int_t RooAddition_::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
+  
   // we always do things ourselves -- actually, always delegate further down the line ;-)
   analVars.add(allVars);
 
   // check if we already have integrals for this combination of factors
   Int_t sterileIndex(-1);
-  CacheElem* cache = (CacheElem*) _cacheMgr.getObj(&allVars,nSet,&sterileIndex,RooNameReg::ptr(rangeName));
+  CacheElem* cache = (CacheElem*) _cacheMgr.getObj(&analVars,&analVars,&sterileIndex,RooNameReg::ptr(rangeName));
   if (cache!=0) {
     Int_t code = _cacheMgr.lastIndex();
     return code+1;
@@ -243,16 +248,16 @@ Int_t RooAddition_::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analV
   _setIter->Reset();
   RooAbsReal *arg(0);
   while( (arg=(RooAbsReal*)_setIter->Next())!=0 ) {  // checked in c'tor that this will work...
-      RooAbsReal *I = arg->createIntegral(allVars,*nSet,rangeName);
+      RooAbsReal *I = arg->createIntegral(analVars,rangeName);
       cache->_I.addOwned(*I);
   }
 
-  Int_t code = _cacheMgr.setObj(&allVars,nSet,(RooAbsCacheElement*)cache,RooNameReg::ptr(rangeName));
+  Int_t code = _cacheMgr.setObj(&analVars,&analVars,(RooAbsCacheElement*)cache,RooNameReg::ptr(rangeName));
   return 1+code;
 }
 
 //_____________________________________________________________________________
-Double_t RooAddition_::analyticalIntegralWN(Int_t code, const RooArgSet* nSet, const char* rangeName) const 
+Double_t RooAddition_::analyticalIntegral(Int_t code, const char* rangeName) const 
 {
   // Calculate integral internally from appropriate integral cache
 
@@ -263,9 +268,9 @@ Double_t RooAddition_::analyticalIntegralWN(Int_t code, const RooArgSet* nSet, c
     std::auto_ptr<RooArgSet> vars( getParameters(RooArgSet()) );
     std::auto_ptr<RooArgSet> iset(  _cacheMgr.nameSet2ByIndex(code-1)->select(*vars) );
     RooArgSet dummy;
-    Int_t code2 = getAnalyticalIntegralWN(*iset,dummy,nSet,rangeName);
+    Int_t code2 = getAnalyticalIntegral(*iset,dummy,rangeName);
     assert(code==code2); // must have revived the right (sterilized) slot...
-    return analyticalIntegralWN(code2,nSet,rangeName);
+    return analyticalIntegral(code2,rangeName);
   }
   assert(cache!=0);
 
