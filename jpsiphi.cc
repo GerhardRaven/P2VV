@@ -16,10 +16,10 @@
 #endif
 using namespace std;
 
-RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name ) 
+RooAbsPdf& _jpsiphi(RooWorkspace& w, const char* name ) 
 { 
         // definition of the angular part of the PDF in terms of basis functions... 
-        abasis ab(w, "cpsi", "ctheta", "phi");  // bind workspace and observables -- todo: use workspace hooks instead!
+        abasis ab(w, "trcospsi", "trcostheta", "trphi");  // bind workspace and observables -- todo: use workspace hooks instead!
         import(w, RooAddition_("AzAz_basis",      "AzAz_basis",       RooArgList( ab("AzAz",       0,0,0, 0, 2.), ab("AzAz",       0,0,2,0, sqrt(1./ 5.)),  ab("AzAz",     0,0,2,2, -sqrt( 3./ 5.)) , 
                                                                                   ab("AzAz",       2,0,0, 0, 4.), ab("AzAz",       2,0,2,0, sqrt(4./ 5.)),  ab("AzAz",     2,0,2,2, -sqrt(12./ 5.)) )));
         import(w, RooAddition_("AparApar_basis",  "AparApar_basis",   RooArgList( ab("AparApar",   2,2,0, 0, 1.), ab("AparApar",   2,2,2,0, sqrt(1./20.)),  ab("AparApar", 2,2,2,2,  sqrt( 3./20.)) ))); 
@@ -37,7 +37,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name )
         w.factory("expr::ImAparAperp('( @4 * @3 - @5 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})");
         w.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})");
 
-        import(w, RooFormulaVar("qtag_","@0",RooArgSet( get<RooCategory>(w,"qtag") ) ) ); //TODO: multiply by dilution
+        import(w, RooFormulaVar("qtag_","@0",RooArgSet( get<RooCategory>(w,"tagdecision") ) ) ); //TODO: multiply by dilution
         w.factory("expr::N('1-@0*@1',{qtag_,C})"); // in J/psi K*, we need to drop this factor...
 
         w.factory("Minus[-1]");
@@ -77,7 +77,7 @@ RooAbsPdf& jpsiphi(RooWorkspace& w, const char* name )
 void jpsiphi() {
     RooWorkspace w("w"); 
     // observables...
-    w.factory(Format( "{ cpsi[-1,1], ctheta[-1,1], phi[0,%f], t[-1,4], qtag[bbar=+1,b=-1]} ",4*acos(0.))); // bbar=+1, so code corresponds to Bs(t=0)
+    w.factory(Format( "{ trcospsi[-1,1], trcostheta[-1,1], trphi[0,%f], t[-3,12], m[5200,5500], tagdecision[bbar=+1,b=-1]} ",4*acos(0.))); // bbar=+1, so code corresponds to Bs(t=0)
 
     // choice: either fit for the Re&Im of the 3 amplitudes (and then
     //         constrain one phase and the sum of magnitudes)
@@ -95,9 +95,11 @@ void jpsiphi() {
     // TODO: write things in terms of x & y instead of dG and dm...
     w.factory("{tau[1.5,0.5,2.5],dm[5]}");
     w.factory("RooFormulaVar::dG('@0/@1',{dGG[0],tau})"); 
+
+    //TODO: get resolution model from Wouter...
     w.factory("RooGaussModel::res(t,mu[0],sigma[0.05])");
     //
-    RooArgSet obs = w.argSet("qtag,cpsi,ctheta,phi,t");
+    RooArgSet obs = w.argSet("tagdecision,trcospsi,trcostheta,trphi,t");
 
     // choice: either fit for the three degrees of freedom independently
     //         i.e. make S,D,C independent parameters
@@ -106,32 +108,42 @@ void jpsiphi() {
     w.factory("{expr::S('sin(phis)',{phis[0.8}),expr::D('cos(phis)',{phis}),C[0]}");// taken as sin(0.8) \approx 0.72, close to the value of sin(2beta), just to make it visible ;-)
     //         The no-CP violation case:
     // w.factory("{S[0],C[0],D[1]}");
-    // RooArgSet obs = w.argSet("qtag,cpsi,ctheta,phi,t");
+    // RooArgSet obs = w.argSet("tagdecision,trcospsi,trcostheta,trphi,t");
     //         For J/psi K*, C = +1/-1 depending on the final state flavour
     //w.factory("{S[0],D[0],expr::C('@0',{qrec[jpsikstar=+1,jpsikstarbar=-1]})}");
     //obs.add(w.argSet("qrec"));
 
-    RooCmdArg tagAsym = RooFit::Asymmetry( get<RooCategory>(w,"qtag") );
-    // RooCmdArg mixAsym = RooFit::Asymmetry( get<RooCategory>(w,"qtag") );
+    RooCmdArg tagAsym = RooFit::Asymmetry( get<RooCategory>(w,"tagdecision") );
 
-    RooAbsPdf& pdf = jpsiphi(w,"pdf");
-    //cout << "PDF:" << endl;
-    //pdf.printTree(cout);
+    RooAbsPdf& pdf = _jpsiphi(w,"pdf");
 
-    if (true) {
-        RooAbsData *data = pdf.generate(w.argSet("qtag,cpsi,ctheta,phi,t"),1000000);
+
+    if (false) {
+        TFile* f = TFile::Open("duitsedata.root"); // does not contain mu+mu- invariant mass???
+        RooAbsPdf &pdf_untagged = import(w,*pdf.createProjection(w.argSet("tagdecision"))); // marginalize to untagged...
+        w.factory("PROD::pdf_sig( Gaussian(m,mass_m[5350,5300,5400],mass_s[10,5,20]),pdf) ")
+        // w.factory("PROD::pdf_bkg( Expo
+
+        
+        // grab background events, fit background propertime shape
+         
+        return;
+    }
+
+    if (false) {
+        RooAbsData *data = pdf.generate(w.argSet("tagdecision,trcospsi,trcostheta,trphi,t"),1000000);
         w.import(*data);
         w.writeToFile("p2vv_4.root");
         return;
     }
 
     if (false) { // marginalize to transversity angle pdf..
-        RooAbsPdf &pdf_trans   = import(w,*pdf.createProjection(w.argSet("cpsi,phi")));
+        RooAbsPdf &pdf_trans   = import(w,*pdf.createProjection(w.argSet("trcospsi,trphi")));
     }
 
     if (false) { // marginalize to untagged, time integrated 3-angle pdf..
-        RooAbsPdf &pdf_untagged = import(w,*pdf.createProjection(w.argSet("qtag,t")));
-        RooAbsData *data = pdf_untagged.generate(w.argSet("cpsi,ctheta,phi"),1000000);
+        RooAbsPdf &pdf_untagged = import(w,*pdf.createProjection(w.argSet("tagdecision,t")));
+        RooAbsData *data = pdf_untagged.generate(w.argSet("trcospsi,trcostheta,trphi"),1000000);
         data->Print("V");
         w.import(*data);
         w.writeToFile("p2vv_angles.root");
@@ -147,18 +159,18 @@ void jpsiphi() {
         c->Divide(1,3);
         RooCmdArg red = RooFit::LineColor(kRed);
         RooCmdArg blue = RooFit::LineColor(kBlue);
-        RooArgSet projset =  w.argSet("cpsi,ctheta,phi,qtag"); 
-        projset.add(get<RooCategory>(w,"qtag"));
+        RooArgSet projset =  w.argSet("trcospsi,trcostheta,trphi,tagdecision"); 
+        projset.add(get<RooCategory>(w,"tagdecision"));
         projset.Print("V");
         RooCmdArg proj = RooFit::Project(projset);
 
         c->cd(1); RooPlot *p6 = w.var("t")->frame();  
         pdf.plotOn(p6, proj); p6->Draw();
-        // use RooAbsPdf::createProjection( RooArgSet( cpsi,ctheta,phi,qtag) ) to compare this to...
+        // use RooAbsPdf::createProjection( RooArgSet( trcospsi,trcostheta,trphi,tagdecision) ) to compare this to...
 
         c->cd(2); RooPlot *p5 = w.var("t")->frame();  
-        pdf.plotOn(p5, proj,RooFit::Slice(get<RooCategory>(w,"qtag"),"bbar"),blue);  
-        pdf.plotOn(p5, proj,RooFit::Slice(get<RooCategory>(w,"qtag"),"b"),red); 
+        pdf.plotOn(p5, proj,RooFit::Slice(get<RooCategory>(w,"tagdecision"),"bbar"),blue);  
+        pdf.plotOn(p5, proj,RooFit::Slice(get<RooCategory>(w,"tagdecision"),"b"),red); 
         p5->Draw();
         c->cd(3); RooPlot *p7 = w.var("t")->frame();    pdf.plotOn(p7, tagAsym);  p7->Draw();
 
@@ -185,9 +197,9 @@ void jpsiphi() {
         // if J/psi K*, we should _also_ generate qrec...
         RooAbsData *data = pdf.generate(obs,100000);
         if (i==0) pdf.fitTo(*data,RooFit::NumCPU(7));
-        RooPlot *p1 = w.var("cpsi")->frame();   data->plotOn(p1); pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
-        RooPlot *p2 = w.var("ctheta")->frame(); data->plotOn(p2); pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
-        RooPlot *p3 = w.var("phi")->frame();    data->plotOn(p3); pdf.plotOn(p3); c->cd(i*5+3); p3->Draw();
+        RooPlot *p1 = w.var("trcospsi")->frame();   data->plotOn(p1); pdf.plotOn(p1); c->cd(i*5+1); p1->Draw();
+        RooPlot *p2 = w.var("trcostheta")->frame(); data->plotOn(p2); pdf.plotOn(p2); c->cd(i*5+2); p2->Draw();
+        RooPlot *p3 = w.var("trphi")->frame();    data->plotOn(p3); pdf.plotOn(p3); c->cd(i*5+3); p3->Draw();
         RooPlot *p4 = w.var("t")->frame();      data->plotOn(p4); pdf.plotOn(p4); c->cd(i*5+4); p4->Draw();
         RooPlot *p5 = w.var("t")->frame();      data->plotOn(p5, tagAsym ); pdf.plotOn(p5, tagAsym); c->cd(i*5+5); p5->Draw();
         break;
