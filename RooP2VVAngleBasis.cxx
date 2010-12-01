@@ -94,6 +94,7 @@ RooP2VVAngleBasis::createProduct(int i, int j, int l, int m, double c) const {
                                                       << "_" << l << ( m<0 ? "_m":"_" ) << (m<0?-m:m) 
                                                       << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c ) ;
       // grab first function, dynamic_cast to RooLegendre, grab its observable...
+      // yes, really bad hacking...
       _compRIter->Reset();
       RooLegendre *P = dynamic_cast<RooLegendre*>(_compRIter->Next());
       RooSpHarmonic *Y = dynamic_cast<RooSpHarmonic*>(_compRIter->Next());
@@ -106,15 +107,12 @@ RooP2VVAngleBasis::createProduct(int i, int j, int l, int m, double c) const {
       TIterator* iter = Po->createIterator();
       RooAbsReal *cpsi = dynamic_cast<RooAbsReal*>(iter->Next());
       assert(cpsi!=0);
-      //cpsi->Print("V");
       delete iter;
       iter = Yo->createIterator();
       RooAbsReal *ctheta = dynamic_cast<RooAbsReal*>(iter->Next());
       assert(ctheta!=0);
-      //ctheta->Print("V");
       RooAbsReal *phi = dynamic_cast<RooAbsReal*>(iter->Next());
       assert(phi!=0);
-      //phi->Print("V");
       delete iter;
 
 
