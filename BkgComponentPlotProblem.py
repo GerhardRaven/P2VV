@@ -52,9 +52,13 @@ ws.factory("FormulaVar::cll('-1/@0',{t_bkg_ll_tau})")
 ws.factory("Exponential::t_bkg_ml(t,cml)")
 ws.factory("Exponential::t_bkg_ll(t,cll)")
 
+ws.factory("Uniform::ang_bkg({trcostheta,trcospsi,trphi})")
+
 ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*t_bkg_ll,t_bkg_ml)")
 
-ws.factory("SUM::pdf(f_sig[0.6,0,1]*myJpsiphiPdf_noEff,t_bkg)")
+ws.factory("PROD::bkg_pdf(t_bkg,ang_bkg)")
+
+ws.factory("SUM::pdf(f_sig[0.6,0,1]*myJpsiphiPdf_noEff,bkg_pdf)")
 
 #########################
 ### What do you want? ###

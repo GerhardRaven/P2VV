@@ -292,7 +292,7 @@ getattr(ws,'import')(tres)
 getattr(ws,'import')(myJpsiphiPdf_noEff)
 #getattr(ws,'import')(myJpsiphiPdf_withWeights)
 
-file = TFile("WSJpsiPhiPdf.root","RECREATE")
+file = TFile("OldWSJpsiPhiPdf.root","RECREATE")
 ws.Write("workspace")
 file.Close()
 
