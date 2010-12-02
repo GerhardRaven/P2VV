@@ -9,11 +9,13 @@ LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
 	-lRooFitCore -lMathCore -lMathMore
 
 SOURCES =				\
-	RooAddition_.cxx		\
-	RooLegendre.cxx			\
-	RooP2VVAngleBasis.cxx		\
-	RooSpHarmonic.cxx		\
-	p2vv_dict.cxx
+    RooAddition_.cxx		\
+    RooLegendre.cxx			\
+    RooP2VVAngleBasis.cxx		\
+    RooSpHarmonic.cxx		\
+    utils.cxx		\
+    basis.cxx		\
+    p2vv_dict.cxx
 
 OBJECTS = $(SOURCES:%.cxx=%.o)
 

@@ -7,8 +7,10 @@
 #include "RooDataSet.h"
 #include "RooAbsPdf.h"
 #include "RooRealSumPdf.h"
+#include "RooRealVar.h"
 #include "RooPlot.h"
 #include <stdlib.h>
+#include <math.h>
 
 class eps {
 public:
@@ -21,8 +23,7 @@ public:
          bool acc = true;
          acc = acc && drand48()>(0.5+0.5*_cpsi.getVal()) ;
          acc = acc && drand48()>(0.5-0.5*_ctheta.getVal());
-         double phi = _phi.getVal()/(4*acos(0.));
-         phi = -1+2*phi; // [-1,1]
+         double phi = _phi.getVal()/M_PI;
          //return phi<0 || drand48()>phi;
          return acc && drand48()>(0.5+0.5*fabs(phi));
      }
@@ -55,7 +56,7 @@ RooAbsPdf *createMomPdf(RooWorkspace &w, const char *name, RooAbsData& data, IMo
 }
 
 
-void determineMoments(const char* fname="p2vv_3.root", const char* dataName = "pdfData", const char *workspaceName = "w") {
+void determineMoments(const char* fname="p2vv_4.root", const char* dataName = "pdfData", const char *workspaceName = "w") {
 
    TFile *f = new TFile(fname);
    RooWorkspace* w = (RooWorkspace*) f->Get(workspaceName) ;
