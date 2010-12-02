@@ -1,4 +1,5 @@
 from ROOT import *
+from itertools import count
 gSystem.Load("libp2vv")
 
 from ModelBuilders import buildJpsiphi,buildJpsikstar
@@ -45,8 +46,8 @@ ws.factory("{expr::S('sin(phis)',{phis[0.8]}),expr::D('cos(phis)',{phis}),C[0]}"
 #######################################################################################################################################
 
 pdf = buildJpsiphi(ws,'jpsiphipdf')  ## for now we rely quite a bit on a naming convention -- 
-                                      ## in future we should pass more information into the builder
-
+                                     ## in future we should pass more information into the builder
+                                     ## maybe a dictionary of what's what...
 
 
 ### let's make some nice plots to show what this PDF looks like...
@@ -65,7 +66,7 @@ for i in  range(len(p)+1) :
             x.setVal( 1 if i==j+1 else 0 )
     for l in p + ['deltaz','deltapar','deltaperp' ] : ws.var(l).Print()
 
-    for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],range(5*i+1,100)) :
+    for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],count(5*i+1)) :
        canvas.cd(k)
        f = ws.var(j).frame() 
        proj = RooArgSet( obs )
