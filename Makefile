@@ -4,7 +4,7 @@ df = $(DEPDIR)/$(*F)
 CPP = g++
 LD = g++
 ROOTCONFIG = root-config
-CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -march=native -pipe -ggdb
+CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb
 LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
 	-lRooFitCore -lMathCore -lMathMore
 
