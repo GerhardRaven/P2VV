@@ -1,4 +1,5 @@
 #ifndef _CINT_
+#include <math.h>
 #include "utils.h"
 #include "basis.h"
 #include "RooAbsArg.h"
@@ -77,7 +78,7 @@ RooAbsPdf& _jpsiphi(RooWorkspace& w, const char* name )
 void jpsiphi() {
     RooWorkspace w("w"); 
     // observables...
-    w.factory(Format( "{ trcospsi[-1,1], trcostheta[-1,1], trphi[0,%f], t[-3,12], m[5200,5500], tagdecision[bbar=+1,b=-1]} ",4*acos(0.))); // bbar=+1, so code corresponds to Bs(t=0)
+    w.factory(Format( "{ trcospsi[-1,1], trcostheta[-1,1], trphi[-%f,%f], t[-3,12], m[5200,5500], tagdecision[bbar=+1,b=-1]} ",-M_PI,M_PI)); // bbar=+1, so code corresponds to Bs(t=0)
 
     // choice: either fit for the Re&Im of the 3 amplitudes (and then
     //         constrain one phase and the sum of magnitudes)
@@ -118,6 +119,7 @@ void jpsiphi() {
     RooAbsPdf& pdf = _jpsiphi(w,"pdf");
 
 
+#if 0
     if (false) {
         TFile* f = TFile::Open("duitsedata.root"); // does not contain mu+mu- invariant mass???
         RooAbsPdf &pdf_untagged = import(w,*pdf.createProjection(w.argSet("tagdecision"))); // marginalize to untagged...
@@ -129,11 +131,12 @@ void jpsiphi() {
          
         return;
     }
+#endif
 
-    if (false) {
+    if (true) {
         RooAbsData *data = pdf.generate(w.argSet("tagdecision,trcospsi,trcostheta,trphi,t"),1000000);
         w.import(*data);
-        w.writeToFile("p2vv_4.root");
+        w.writeToFile("p2vv_6.root");
         return;
     }
 
