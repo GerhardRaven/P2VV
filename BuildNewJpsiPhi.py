@@ -29,13 +29,13 @@ ws.factory("{gamma[0.68,0.4,0.9],dm[17.7],dG[0.075,-0.3,0.3]}")
 ws.factory("expr::tau('1/@0',{gamma})")
 
 ws.factory("RooGaussModel::res(t,mu[0],sigma[0.05])")
-ws.factory("{wmistag[0.5]}")
+ws.factory("{wmistag[0.0]}")
 
 ##choice: either fit for the three degrees of freedom independently
 ##        i.e. make S,D,C independent parameters
 ##ws.factory("{S[0.717,-1,1],D[0.696,-1,1],C[0,-1,1]}")
 ##        or write S,D,C in terms of phi_s
-ws.factory("{expr::S('sin(phis)',{phis[0.]}),expr::D('cos(phis)',{phis}),C[0]}")
+ws.factory("{expr::S('sin(phis)',{phis[0.8]}),expr::D('cos(phis)',{phis}),C[0]}")
 ##        The no-CP violation case:
 ##ws.factory("{S[0],C[0],D[1]}")
 ##obs = ws.argSet("tagdecision,trcospsi,trcostheta,trphi,t")
@@ -43,7 +43,6 @@ ws.factory("{expr::S('sin(phis)',{phis[0.]}),expr::D('cos(phis)',{phis}),C[0]}")
 ##ws.factory("{S[0],D[0],expr::C('@0',{qrec[jpsikstar=+1,jpsikstarbar=-1]})}")
 ##obs.add(w.argSet("qrec"))
 
-tagAsym = RooFit.Asymmetry(ws.cat("tagdecision"))
 
 #######################################################################################################################################
 
@@ -61,7 +60,7 @@ p = [ 'rz','rpar','rperp' ]
 for i in  range(len(p)+1) :
     if i>0 : 
         for j in range(len(p)) : ws.var(p[j]).setVal( 1 if i==j+1 else 0 )
-    #for j in p : ws.var(j).Print()
+    #for l in p : ws.var(l).Print()
 
     for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],range(5*i+1,100)) :
        canvas.cd(k)
@@ -70,4 +69,12 @@ for i in  range(len(p)+1) :
        proj.remove( ws.var(j) )
        pdf.plotOn(f,RooFit.Project(proj))
        f.Draw()
+
+    tagAsym = RooFit.Asymmetry(ws.cat("tagdecision"))
+    canvas.cd(5*i+5)
+    f = ws.var('t').frame(RooFit.Range(-.5,3.5))
+    proj = RooArgSet( obs )
+    proj.remove(ws.var('t'))
+    pdf.plotOn(f,RooFit.Project(proj),tagAsym)
+    f.Draw()
 
