@@ -56,23 +56,26 @@ obs = ws.argSet(','.join(obsNames))
 canvas = TCanvas('canvas','canvas')
 canvas.Divide(5,4)
 
+z= ws.var('trphi').frame()
 
-p = [ 'rz','rpar','rperp' ]
-for i in  range(1) : # range(len(p)+1) :
-    if i>0 : 
-        for j in range(len(p)) : ws.var(p[j]).setVal( 1 if i==j+1 else 0 )
+if true :
+    frames = []
+    p = [ 'rz','rpar','rperp' ]
+    for i in  range(len(p)+1) :
+        if i>0 : 
+            for j in range(len(p)) : ws.var(p[j]).setVal( 1 if i==j+1 else 0 )
 
-    print '*'*100
-    for k in p : ws.var(k).Print()
+        #print '*'*100
+        #for k in p : ws.var(k).Print()
 
-    #data = p2vv.generate(obs,RooFit.NumEvents(100000))
-    #data.Print("V")
+        data = p2vv.generate(obs,RooFit.NumEvents(100000))
+        #data.Print("V")
 
-    for (j,k) in zip(obsNames,range(5*i+1,100)) :
-       pad = canvas.cd(k)
-       print pad
-       f = ws.var(j).frame() 
-       data.plotOn(f)
-       p2vv.plotOn(f)
-       f.Draw()
+        for (j,k) in zip(obsNames,range(5*i+1,100)) :
+           canvas.cd(k)
+           frames.append( ws.var(j).frame()  )
+           #print frames[-1]
+           data.plotOn(frames[-1])
+           p2vv.plotOn(frames[-1])
+           frames[-1].Draw()
 
