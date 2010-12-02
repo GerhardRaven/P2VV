@@ -47,35 +47,27 @@ tagAsym = RooFit.Asymmetry(ws.cat("tagdecision"))
 
 #######################################################################################################################################
 
-p2vv = buildJpsikstar(ws,'jpsikstarpdf')  ## for now we rely quite a bit on a naming convention -- 
+pdf = buildJpsiphi(ws,'jpsiphipdf')  ## for now we rely quite a bit on a naming convention -- 
                                       ## in future we should pass more information into the builder
 
-obsNames =[ 'trcospsi','trcostheta','trphi','t' ]
+obsNames =[ 'trcospsi','trcostheta','trphi','t','tagdecision' ]
 obs = ws.argSet(','.join(obsNames))
 
 canvas = TCanvas('canvas','canvas')
 canvas.Divide(5,4)
 
-z= ws.var('trphi').frame()
 
-if true :
-    frames = []
-    p = [ 'rz','rpar','rperp' ]
-    for i in  range(len(p)+1) :
-        if i>0 : 
-            for j in range(len(p)) : ws.var(p[j]).setVal( 1 if i==j+1 else 0 )
+p = [ 'rz','rpar','rperp' ]
+for i in  range(len(p)+1) :
+    if i>0 : 
+        for j in range(len(p)) : ws.var(p[j]).setVal( 1 if i==j+1 else 0 )
+    #for j in p : ws.var(j).Print()
 
-        #print '*'*100
-        #for k in p : ws.var(k).Print()
-
-        data = p2vv.generate(obs,RooFit.NumEvents(100000))
-        #data.Print("V")
-
-        for (j,k) in zip(obsNames,range(5*i+1,100)) :
-           canvas.cd(k)
-           frames.append( ws.var(j).frame()  )
-           #print frames[-1]
-           data.plotOn(frames[-1])
-           p2vv.plotOn(frames[-1])
-           frames[-1].Draw()
+    for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],range(5*i+1,100)) :
+       canvas.cd(k)
+       f = ws.var(j).frame() 
+       proj = RooArgSet( obs )
+       proj.remove( ws.var(j) )
+       pdf.plotOn(f,RooFit.Project(proj))
+       f.Draw()
 
