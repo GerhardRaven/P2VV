@@ -91,3 +91,19 @@ def buildJpsikstar(ws, name) :
                        "            , { NAzAz,       NAparApar,      NAperpAperp,      ImAparAperp,     ImAzAperp,     ReAzApar } )"
                        ", BDecay(t,tau,Zero,One,Zero,qmix,Zero,dm,res,SingleSided))"%name)
     return ws.pdf(name)
+
+def buildMomentPDF(w,name,data,moments) :
+    if not moments : return None
+    allObs = moments[0].basis().getObservables(data)
+    for i in range( data.numEntries() ) :
+        allObs.assignValueOnly( data.get(i) )
+        for m in moments : m.inc()
+    coef = RooArgList()
+    fact = RooArgList()
+    for m in moments :
+        C = 'C_%f' % m.coefficient()
+        w.factory( '%s[%f]'%(C,m.coefficient() ) )
+        coef.add( w.var( C ) )
+        fact.add( m.basis() )
+    w.put(  RooRealSumPdf(name,name,fact,coef) )
+    return w.pdf(name)
