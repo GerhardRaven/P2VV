@@ -5,16 +5,24 @@ RooWorkspace.put = getattr(RooWorkspace,'import')
 
 def buildAngularBasis(ws, ab) :
     #definition of the angular part of the PDF in terms of basis functions...
-    ws.put(RooAddition_("AzAz_basis",      "AzAz_basis",       RooArgSet( ab("AzAz",       0,0,0, 0, 2.), ab("AzAz",       0,0,2,0, sqrt(1./ 5.)),  ab("AzAz",     0,0,2,2, -sqrt( 3./ 5.)) , 
-                                                                           ab("AzAz",       2,0,0, 0, 4.), ab("AzAz",       2,0,2,0, sqrt(4./ 5.)),  ab("AzAz",     2,0,2,2, -sqrt(12./ 5.)) )))
-    ws.put(RooAddition_("AparApar_basis",  "AparApar_basis",   RooArgSet( ab("AparApar",   2,2,0, 0, 1.), ab("AparApar",   2,2,2,0, sqrt(1./20.)),  ab("AparApar", 2,2,2,2,  sqrt( 3./20.)) ))) 
-    ws.put(RooAddition_("AperpAperp_basis","AperpAperp_basis", RooArgSet( ab("AperpAperp", 2,2,0, 0, 1.), ab("AperpAperp", 2,2,2,0,-sqrt(1./ 5.)))))
-    ws.put(RooAddition_("AparAperp_basis", "AparAperp_basis",  RooArgSet( ab("AparAperp",  2,2,2,-1, sqrt( 9./15.)) )))
-    ws.put(RooAddition_("AzAperp_basis",   "AzAperp_basis",    RooArgSet( ab("AzAperp",    2,1,2, 1,-sqrt(18./15.)) )))
-    ws.put(RooAddition_("AzApar_basis",    "AzApar_basis",     RooArgSet( ab("AzApar",     2,1,2,-2, sqrt(18./15.)) )))
+    def _ba(name,comp) :
+        n = name + '_basis'
+        s = RooArgSet()
+        for c in comp : s.add( ab(name,c[0],c[1],c[2],c[3],c[4]) )
+        ws.put(RooAddition_( n, n, s ) )
+        return ws.function(n)
+
+    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0, sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./ 5.)) 
+                               , ( 2,0,0, 0, 4.), ( 2,0,2,0, sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./ 5.)) ] )
+           , _ba("AparApar",   [ ( 2,2,0, 0, 1.), ( 2,2,2,0, sqrt(1./20.)), ( 2,2,2,2,  sqrt( 3./20.)) ] )
+           , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0,-sqrt(1./ 5.)) ] )
+           , _ba("AparAperp",  [ ( 2,2,2,-1, sqrt( 9./15.)) ] )
+           , _ba("AzAperp",    [ ( 2,1,2, 1,-sqrt(18./15.)) ] )
+           , _ba("AzApar",     [ ( 2,1,2,-2, sqrt(18./15.)) ] )
+           )
 
 def buildJpsiphi(ws, name) :
-    buildAngularBasis(ws, abasis(ws,'trcospsi','trcostheta','trphi') )
+    basis = buildAngularBasis(ws, abasis(ws,'trcospsi','trcostheta','trphi') ) 
 
     # define the relevant combinations of strong amplitudes
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
@@ -26,12 +34,9 @@ def buildJpsiphi(ws, name) :
     ws.factory("expr::ImAparAperp('( @4 * @3 - @5 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
 
-
     ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws.cat('tagdecision'),ws.var('wmistag')) ) )
 
-    #ws.factory("expr::N('1-@0*@1',{qtag_,C})") #in J/psi K*, we need to drop this factor...
-    ws.factory("expr::N('1/(1+@0*@1)',{qtag_,C})") #in J/psi K*, we need to drop this factor...
-
+    ws.factory("expr::N('1-@0*@1',{qtag_,C})") 
     ws.factory("Minus[-1]")
     ws.factory("$Alias(Addition_,sum_)") 
 
@@ -83,6 +88,6 @@ def buildJpsikstar(ws, name) :
     ws.factory("{Minus[-1],Zero[0],One[1]}")
     # in J/psi K*, things factorize because deltaGamma = 0 -- use this !
     ws.factory("PROD::%s( RealSumPdf( { AzAz_basis , AparApar_basis, AperpAperp_basis, AparAperp_basis, AzAperp_basis, AzApar_basis} "
-                       "           , { NAzAz,       NAparApar,      NAperpAperp,      ImAparAperp,     ImAzAperp,     ReAzApar } )"
+                       "            , { NAzAz,       NAparApar,      NAperpAperp,      ImAparAperp,     ImAzAperp,     ReAzApar } )"
                        ", BDecay(t,tau,Zero,One,Zero,qmix,Zero,dm,res,SingleSided))"%name)
     return ws.pdf(name)
