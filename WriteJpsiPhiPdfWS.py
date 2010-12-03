@@ -61,8 +61,8 @@ ws = RooWorkspace("ws")
 ### Observables ###
 ###################
 
-#t      = RooRealVar("t",     "time",        -2., 20. )
-t      = RooRealVar("t",     "time",        0.3, 12. )
+t      = RooRealVar("t",     "time",        -2., 20. )
+#t      = RooRealVar("t",     "time",        0.3, 12. )
 
 #todo: make these variables in the constructor of the xAngles
 #ctheta = RooRealVar("ctheta","cos(#theta)", -1.0,  1.0)
@@ -182,17 +182,32 @@ myAmplitudesAndPhasesListJpsiphi = P2VV.AmplitudesAndPhasesList(Azero_sq_jpsiphi
                                                                 Aperp_Apar_cos_jpsiphi,
                                                                 Aperp_Apar_sin_jpsiphi)
 
-##########################
-### Physics parameters ###
-##########################
+########################################
+### Physics parameters to be blinded ###
+########################################
 
 G_s = RooRealVar('G_s','G_s',_G_s, 0.4, 0.9)
-
-tau_s  = RooFormulaVar("tau_s","#tau_{s}","1/@0",RooArgList(G_s))
-
 dG_s = RooRealVar('dG_s','dG_s',_dG_s, -0.3,0.3)
 
+################
+### Blinding ###
+################
+
+G_s_blindstring = 'BsCalvin'
+dG_s_blindstring = 'BsHobbes'
+
+G_s_blind = RooUnblindUniform('G_s_blind','G_s_blind',G_s_blindstring,0.4,G_s)
+dG_s_blind = RooUnblindUniform('dG_s_blind','dG_s_blind',dG_s_blindstring,0.2,dG_s)
+
+############################################
+### Configuring other physics parameters ###
+############################################
+
+tau_s  = RooFormulaVar("tau_s","#tau_{s}","1/@0",RooArgList(G_s))
+#tau_s  = RooFormulaVar("tau_s","#tau_{s}","1/@0",RooArgList(G_s_blind))
+
 dGG_s  = RooFormulaVar("dGG_s","#Delta#Gamma_{s}/#Gamma_{s}","@0/@1",RooArgList(dG_s,G_s))
+#dGG_s  = RooFormulaVar("dGG_s","#Delta#Gamma_{s}/#Gamma_{s}","@0/@1",RooArgList(dG_s_blind,G_s_blind))
 
 dm_s   = RooRealVar("dm_s", "#Delta m_{s}",
                     _dm_s)#, 15., 25.)
@@ -202,23 +217,6 @@ Phi_s = RooRealVar("Phi_s","Phi_s",_Phi_s)
 
 Sf_s   =  RooFormulaVar("Sf_s", "sin(Phi_s)", "sin(@0)", RooArgList(Phi_s))
 Df_s   =  RooFormulaVar("Df_s", "cos(Phi_s)", "cos(@0)", RooArgList(Phi_s))
-
-################
-### Blinding ###
-################
-
-## G_s_blindstring = 'BsCalvin'
-## dG_s_blindstring = 'BsHobbes'
-## Phi_s_blindstring = 'BsBsGoofy'
-## Sf_s_blindstring = 'BsMickeyMouse'
-## Df_s_blindstring = 'BsMiniMouse'
-
-
-## G_s_blind = RooUnblindUniform('G_s_blind','G_s_blind',G_s_blindstring,0.4,G_s)
-## dG_s_blind = RooUnblindUniform('dG_s_blind','dG_s_blind',dG_s_blindstring,0.2,dG_s)
-## #Phi_s_blind = RooUnblindUniform('Phi_s_blind','Phi_s_blind',Phi_s_blindstring,3,Phi_s)
-## Sf_s_blind = RooUnblindUniform('Sf_s_blind','Sf_s_blind',Sf_s_blindstring,2,Sf_s)
-## Df_s_blind = RooUnblindUniform('Df_s_blind','Df_s_blind',Df_s_blindstring,2,Df_s)
 
 ################################
 ### physics parameters lists ###
