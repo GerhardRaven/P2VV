@@ -5,6 +5,7 @@
 #include "RooLegendre.h"
 #include "RooP2VVAngleBasis.h"
 #include "RooSpHarmonic.h"
+#include "RooBDecay_.h"
 #include "basis.h"
 #include "moments.h"
 

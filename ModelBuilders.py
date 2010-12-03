@@ -40,6 +40,8 @@ def buildJpsiphi(ws, name) :
     ws.factory("Minus[-1]")
     ws.factory("$Alias(Addition_,sum_)") 
 
+    # TODO: move this bit into a derivative of RooBDecay, and do tagdecision explicitly
+    #       -- at that point, FOAM will do the angles, and we avoid the max search
     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
                                    ", prod(N,NAparApar,                AparApar_basis)"
                                    ", prod(N,NAperpAperp,              AperpAperp_basis)"
@@ -68,7 +70,7 @@ def buildJpsiphi(ws, name) :
                                    ", prod(N,ReAzAperp,  Minus,      D,AzAperp_basis)"
                                    ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
                                    "})")
-    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,res,SingleSided)" % name)
+    ws.factory("BDecay_::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,res,SingleSided)" % name)
     return ws.pdf(name)
 
 
@@ -105,5 +107,5 @@ def buildMomentPDF(w,name,data,moments) :
         w.factory( '%s[%f]'%(C,m.coefficient() ) )
         coef.add( w.var( C ) )
         fact.add( m.basis() )
-    w.put(  RooRealSumPdf(name,name,fact,coef) )
+    w.put( RooRealSumPdf(name,name,fact,coef) )
     return w.pdf(name)
