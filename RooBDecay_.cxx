@@ -26,6 +26,9 @@
 #include "RooFit.h"
 
 #include "RooBDecay_.h"
+#include "RooRandom.h"
+#include "RooAbsCategory.h"
+#include "TIterator.h"
 
 ClassImp(RooBDecay_);
 
@@ -41,7 +44,7 @@ RooBDecay_::RooBDecay_(const char *name, const char* title,
 
 //_____________________________________________________________________________
 RooBDecay_::RooBDecay_(const RooBDecay_& other, const char* name) :
-  RooBDecay_(other, name)
+  RooBDecay(other, name)
 {
   //Copy constructor
 }
@@ -53,46 +56,67 @@ RooBDecay_::~RooBDecay_()
 }
 
 //_____________________________________________________________________________
-Int_t RooBDecay_::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK) const
-{
-  if (staticInitOK) {
-      // we will generate _all_ categories, plus any real ones supported by our parent...
-      Int_t sterileIndex(-1);
-      allObs = this->getObservables( directVars );
-      catObs = grab list of categories
-      otherObs( allObs )
-      otherObs.remove( catObs )
-      parentCode = RooBDecay::getGenerator( otherObs, generateVars, staticInitOK)
-      generateVars.add( catObs );
-      // make sure catObs & otherObs stay alive!
-
-      // first time, we will fail ;-)
-      CacheElem *cache = (CacheElem*) _cacheMgr.getObj( &catObs, &generateVars, &sterileIndex)
-      if (cache!=0) {
-         Int_t code = _cacheMgr.lastIndex();
-         return code*100+RooBDecay::getGenerator(directVars,generateVars,staticInitOK);
-      }
-      cache = new CacheElem;
-
-      cache._genObs = &generateVars;
-      cache._catObs = &catObs;
-      cache->iter = new RooMultCatIter( *cache->catObs );
-
-      code = _cacheMgr.setObj( cache._allObs, cache._catObs, cache );
-      return code*100+RooBDecay::getGenerator(directVars,generateVars,staticInitOK);
-  } 
-  return RooBDecay::getGenerator(directVars,generateVars,staticInitOK);
+Int_t RooBDecay_::getMaxVal(const RooArgSet& vars) const {
+  cout << "RooBDecay_("<<GetName()<<")::getMaxVal got request for max over " << vars << endl;
+  return 0;
 }
 
 //_____________________________________________________________________________
-Int_t RooBDecay_::initGenerator(Int_t code)
+Int_t RooBDecay_::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK) const
 {
+  cout << "RooBDecay_("<<GetName()<<")::getGenerator got request to generate " << directVars << endl;
+  Int_t bcode = RooBDecay::getGenerator(directVars,generateVars,staticInitOK);
+  cout << "RooBDecay_("<<GetName()<<")::getGenerator parent returns " << bcode << " and offers " << generateVars << endl;
+  return bcode;
+#if 0
+  if (staticInitOK) {
+      // we will generate _all_ categories, on top of whatever our parent is capable off...
+      Int_t sterileIndex(-1);
+      // we do generateVars + all categories...
+      RooArgSet marginalObs( directVars );  // we need to figure out the marginalization set, which is directVars - generateVars 
+      marginalObs.remove( generateVars );
+      RooArgSet catObs;
+      std::auto_ptr<TIterator> iter( marginalObs.createIterator() );
+      TObject *obj(0);
+      while ( ( obj = iter->Next() ) !=0 ) {
+        RooAbsCategory *cat = dynamic_cast<RooAbsCategory*>(obj);
+        if (cat!=0) catObs.add(*cat);
+      }
+      marginalObs.remove( catObs );
+      generateVars.add( catObs ); 
+
+      // first time, we will fail ;-)
+      CacheElem *cache = (CacheElem*) _cacheMgr.getObj( &generateVars, &generateVars, &sterileIndex);
+      if (cache!=0) {
+         Int_t code = _cacheMgr.lastIndex();
+         return code*100+bcode;
+      }
+      cache = new CacheElem;
+
+      cache->_genObs = &generateVars;
+      cache->_catObs = &catObs;
+      cache->iter = new RooMultiCatIter( *cache->catObs );
+
+      code = _cacheMgr.setObj( cache._allObs, cache._catObs, cache );
+      return code*100+bcode;
+  }  else {
+      return bcode;
+  }
+#endif
+}
+
+//_____________________________________________________________________________
+void RooBDecay_::initGenerator(Int_t code)
+{
+    return;
+#if 0
+    if (code/100==0) return;
     CacheElem *cache = (CacheElem*) _cacheMgr.getObjByIndex(code/100);
     if (cache == 0) { // (re)generate it and try again...
         // resurrect the two relevant sets...
         RooArgSet s = _cacheMgr.nameSet1ByIndex(code/100).select( getObservables() );
         s.add(        _cacheMgr.nameSet2ByIndex(code/100).select( getObservables() ) )
-        getGenerator( s, dummy, true  );
+        getGenerator( s, dummy, true  ); // we can put true, because we got a code/100 != 0
         return initGenerator(code);
     }
     // we have a cache... but get getGenerator can not actually compute the limits, we
@@ -100,35 +124,37 @@ Int_t RooBDecay_::initGenerator(Int_t code)
     if (cache->n==0) {
 
         int ncomb = 0;
-        const TCollection *collection = cache->iter->GetCollection()
+        const TCollection *collection = cache->iter->GetCollection();
         if (collection!=0) {  // is a TIterator always backed up by a collection??
             ncomb = collection.GetSize();
         } else {
             cache->iter.Reset();
-            while ( iter.Next() != 0 ) { ++ncomb; }
+            while ( cache->iter.Next() != 0 ) { ++ncomb; }
         }
         cache->n = new double[ncomb];
 
         std::auto_ptr<RooAbsPdf> marginal( createProjection( cache->otherObs ) );
-        RooArgSet nset( otherObs )
+        RooArgSet nset( otherObs );
         nset.add( catObs );
         std::auto_ptr<RooAbsReal> normInt( createIntegral( nset ) );
-        double norm = normInt->getVal()
+        double norm = normInt->getVal();
         int i=0;
         cache->iter->Reset();
         while ( cache->iter->Next() ) {
             cache->n[i] = marginal->getVal()/norm; // fraction of events in this combination 
-            if (i>0) cache->n[i]+=cache->n[i-1];
+            if (i>0) cache->n[i]+=cache->n[i-1];   // cumulative
             ++i;
         }
     }
+#endif
 }
 
 
 //_____________________________________________________________________________
 void RooBDecay_::generateEvent(Int_t code)
 {
-  if (code>=100) {
+#if 0
+  if (code/100!=0) {
      CacheElem *cache = (CacheElem*) _cacheMgr.getObjByIndex( code/100 );
      if (cache==0) { // repopulate and try again...
             initGenerator(code);
@@ -140,5 +166,6 @@ void RooBDecay_::generateEvent(Int_t code)
      while ( _cache->iter.Next()!=0 ) { if (r < _cache->n[i++]) break; }
      return RooBDecay::generateEvent(code%100);
   }
+#endif
   return RooBDecay::generateEvent(code);
 }

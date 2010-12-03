@@ -17,6 +17,7 @@
 #define ROO_BDECAY_
 
 #include "RooBDecay.h"
+#include "RooMultiCatIter.h"
 
 class RooBDecay_ : public RooBDecay
 {
@@ -30,13 +31,14 @@ public:
 			RooAbsReal& f3, RooAbsReal& dm, 
 			const RooResolutionModel& model,
 			DecayType type);
-  RooBDecay_(const RooBDecay& other, const char* name=0);
+  RooBDecay_(const RooBDecay_& other, const char* name=0);
   virtual TObject* clone(const char* newname) const 
   { 
     return new RooBDecay_(*this,newname);
   }
-  virtual ~RooBDecay();
+  virtual ~RooBDecay_();
 
+  Int_t getMaxVal(const RooArgSet& vars) const;
   Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK=kTRUE) const;
   void initGenerator(Int_t code);
   void generateEvent(Int_t code);
@@ -50,7 +52,7 @@ protected:
         double *n;
         RooMultiCatIter* iter;
         virtual RooArgList containedArgs(Action);
-  }
+  };
 
   ClassDef(RooBDecay_, 1) // P.d.f of general description of B decay time distribution
 };
