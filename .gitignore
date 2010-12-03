@@ -5,3 +5,6 @@
 p2vv_dict.*
 *~
 .deps/*
+*.pyc
+*.log
+*.aux

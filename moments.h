@@ -1,6 +1,6 @@
 #ifndef MOMENT_H
 #define MOMENT_H
-
+#include "utils.h"
 #include "RooAbsPdf.h"
 
 // TODO: move and/or integrate this code into RooP2VVAngleBasis ???

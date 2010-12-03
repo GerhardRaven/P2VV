@@ -5,5 +5,7 @@
 #include "RooLegendre.h"
 #include "RooP2VVAngleBasis.h"
 #include "RooSpHarmonic.h"
+#include "basis.h"
+#include "moments.h"
 
 #endif // P2VV_H

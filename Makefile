@@ -4,22 +4,24 @@ df = $(DEPDIR)/$(*F)
 CPP = g++
 LD = g++
 ROOTCONFIG = root-config
-CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -march=native -pipe -ggdb
+CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb
 LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
 	-lRooFitCore -lMathCore -lMathMore
 
 SOURCES =				\
-	RooAddition_.cxx		\
-	RooLegendre.cxx			\
-	RooP2VVAngleBasis.cxx		\
-	RooSpHarmonic.cxx		\
-	p2vv_dict.cxx
+    RooAddition_.cxx		\
+    RooLegendre.cxx			\
+    RooP2VVAngleBasis.cxx		\
+    RooSpHarmonic.cxx		\
+    utils.cxx		\
+    basis.cxx		\
+    p2vv_dict.cxx
 
 OBJECTS = $(SOURCES:%.cxx=%.o)
 
 .PHONY: all clean
 
-all: libp2vv.so
+all: .deps libp2vv.so
 
 %.o : %.cxx
 	$(CPP) $(CPPFLAGS) -fPIC -DPIC -MMD -c $<
@@ -37,4 +39,6 @@ libp2vv.so: $(OBJECTS)
 clean:
 	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.*
 
+.deps:
+	mkdir $@
 -include $(SOURCES:%.cxx=$(DEPDIR)/%.P)

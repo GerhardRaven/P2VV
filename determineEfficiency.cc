@@ -11,6 +11,7 @@
 #include "RooCustomizer.h"
 #include "RooPlot.h"
 #include "RooGlobalFunc.h"
+#include "RooP2VVAngleBasis.h"
 #include <stdlib.h>
 
 
@@ -36,7 +37,7 @@ private:
 };
 
 
-void determineEfficiency(const char* fname="p2vv_3.root", const char* pdfName = "pdf", const char* dataName = "pdfData", const char *workspaceName = "w") {
+void determineEfficiency(const char* fname="p2vv_5.root", const char* pdfName = "pdf", const char* dataName = "pdfData", const char *workspaceName = "w") {
 
    TFile *f = new TFile(fname);
    RooWorkspace* w = (RooWorkspace*) f->Get(workspaceName) ;
@@ -44,9 +45,9 @@ void determineEfficiency(const char* fname="p2vv_3.root", const char* pdfName = 
    RooAbsData* data = w->data(dataName) ;
    RooArgSet *allObs = pdf->getObservables( data->get() );
 
-   eps efficiency( get<RooAbsReal>(*w,"cpsi")
-                 , get<RooAbsReal>(*w,"ctheta")
-                 , get<RooAbsReal>(*w,"phi"));
+   eps efficiency( get<RooAbsReal>(*w,"trcospsi")
+                 , get<RooAbsReal>(*w,"trcostheta")
+                 , get<RooAbsReal>(*w,"trphi"));
    // create some inefficient data...
    RooDataSet inEffData( "inEffData","inEffData", *allObs );
    for (int i=0;i<data->numEntries(); ++i) {
@@ -59,12 +60,12 @@ void determineEfficiency(const char* fname="p2vv_3.root", const char* pdfName = 
    // define the moments used to describe the efficiency
    // for this, we need the PDF used to generate the data
    RooArgSet *marginalObs = pdf->getObservables( data->get() );
-   marginalObs->remove( w->argSet("cpsi,ctheta,phi") );
+   marginalObs->remove( w->argSet("trcospsi,trcostheta,trphi") );
    // marginalize pdf over 'the rest' so we get the normalization of the moments right...
    RooAbsPdf *pdf_marginal = pdf->createProjection(*marginalObs);
    std::vector<IMoment*> moments;
    typedef std::vector<IMoment*>::iterator moments_iterator; 
-   abasis ab(*w,"cpsi","ctheta","phi");
+   abasis ab(*w,"trcospsi","trcostheta","trphi");
    for (int i=0;i<4;++i) {
      for (int l=0;l<4;++l) {
         for (int m=-l;m<=l;++m) {
@@ -100,7 +101,7 @@ void determineEfficiency(const char* fname="p2vv_3.root", const char* pdfName = 
    }
    RooAbsPdf *pdf_eff = (RooAbsPdf*) customizer.build(kTRUE);
 
-   const char *cvar[] = { "cpsi","ctheta","phi" };
+   const char *cvar[] = { "trcospsi","trcostheta","trphi" };
    TCanvas *c = new TCanvas();
    c->Divide(3,1);
    for (int i = 0; i<3; ++i) {
