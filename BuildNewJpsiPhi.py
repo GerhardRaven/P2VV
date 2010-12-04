@@ -66,7 +66,7 @@ for i in  range(len(p)+1) :
             x.setVal( 1 if i==j+1 else 0 )
     for l in p + ['deltaz','deltapar','deltaperp' ] : ws.var(l).Print()
 
-    data = pdf.generate( obs, 10000)
+    data = pdf.generate( obs, 100000)
 
     for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],count(5*i+1)) :
        canvas.cd(k)
@@ -84,5 +84,6 @@ for i in  range(len(p)+1) :
     proj.remove(ws.var('t'))
     pdf.plotOn(f,RooFit.Project(proj),tagAsym)
     f.Draw()
+    break
 
 canvas.Flush()

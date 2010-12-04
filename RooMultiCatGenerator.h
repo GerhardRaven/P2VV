@@ -44,10 +44,12 @@ public:
   virtual Bool_t canSampleCategories() const { return kTRUE ; }
  
 protected:
+public:
 
   friend class RooNumGenFactory ;
   static void registerSampler(RooNumGenFactory& fact) ;	
 
+protected:
   typedef std::vector<std::pair<double,RooAbsNumGenerator*> > Generators;
   Generators _realGenerators;
   RooSuperCategory _super;
