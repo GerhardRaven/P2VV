@@ -3,6 +3,7 @@ import GaudiPython
 P2VV = GaudiPython.gbl.P2VV
 #to load functions (made with namespace function) like makePVVPdf:
 GaudiPython.loaddict('P2VVDict')
+gSystem.Load("libp2vv")
 from math import pi
 
 #######################
