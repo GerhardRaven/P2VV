@@ -1,6 +1,10 @@
 from ROOT import *
 gSystem.Load("libp2vv")
 
+multicatgen = RooMultiCatGenerator()
+RooNumGenFactory.instance().storeProtoSampler( multicatgen, RooArgSet() )
+RooNumGenConfig.defaultConfig().methodND(True,False).setLabel( multicatgen.IsA().GetName() )
+
 RooWorkspace.put = getattr(RooWorkspace,'import')
 
 def buildAngularBasis(ws, ab) :
