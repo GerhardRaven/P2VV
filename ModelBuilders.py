@@ -1,11 +1,13 @@
 from ROOT import *
 gSystem.Load("libp2vv")
 
-### experimental fast(er) toy generator...
-RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
-RooNumGenConfig.defaultConfig().methodND(False,True).setLabel( "RooMultiCatGenerator" )
-RooNumGenConfig.defaultConfig().methodND(False,True).Print()
-RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
+feelTheNeedForSpeed = False
+if feelTheNeedForSpeed: 
+    ### experimental fast(er) toy generator...
+    RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
+    RooNumGenConfig.defaultConfig().methodND(False,True).setLabel( "RooMultiCatGenerator" )
+    RooNumGenConfig.defaultConfig().methodND(False,True).Print()
+    RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 
 RooWorkspace.put = getattr(RooWorkspace,'import')
 
