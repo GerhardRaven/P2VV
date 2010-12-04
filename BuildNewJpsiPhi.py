@@ -56,7 +56,7 @@ obsNames =[ 'trcospsi','trcostheta','trphi','t','tagdecision' ]
 obs = ws.argSet(','.join(obsNames))
 
 canvas = TCanvas('canvas','canvas')
-canvas.Divide(5,4)
+canvas.Divide(5,1)
 
 p = [ 'rz','rpar','rperp' ]
 for i in  range(len(p)+1) :

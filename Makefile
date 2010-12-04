@@ -13,7 +13,6 @@ SOURCES =				\
     RooLegendre.cxx			\
     RooP2VVAngleBasis.cxx		\
     RooSpHarmonic.cxx		\
-    RooBDecay_.cxx		\
     RooMultiCatGenerator.cxx		\
     utils.cxx		\
     basis.cxx		\
