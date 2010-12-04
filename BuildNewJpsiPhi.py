@@ -66,12 +66,15 @@ for i in  range(len(p)+1) :
             x.setVal( 1 if i==j+1 else 0 )
     for l in p + ['deltaz','deltapar','deltaperp' ] : ws.var(l).Print()
 
+    data = pdf.generate( obs, 10000)
+
     for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],count(5*i+1)) :
        canvas.cd(k)
        f = ws.var(j).frame() 
        proj = RooArgSet( obs )
        proj.remove( ws.var(j) )
-       pdf.plotOn(f,RooFit.Project(proj))
+       data.plotOn(f)
+       pdf.plotOn(f)
        f.Draw()
 
     tagAsym = RooFit.Asymmetry(ws.cat("tagdecision"))

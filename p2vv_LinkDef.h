@@ -9,6 +9,7 @@
 #pragma link C++ class RooLegendre;	
 #pragma link C++ class RooP2VVAngleBasis;
 #pragma link C++ class RooSpHarmonic;
+#pragma link C++ class RooMultiCatGenerator;
 #pragma link C++ class abasis;
 #pragma link C++ class IMoment;
 #pragma link C++ class Moment;
