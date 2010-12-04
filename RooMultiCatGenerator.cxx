@@ -17,8 +17,8 @@
 // 
 // BEGIN_HTML
 // Class RooMultiCatGenerator is a generic toy monte carlo generator that 
-// generates discrete categories, and dispatches any real variables to the
-// underlying PDF generator.
+// generates discrete categories, and dispatches any real variables to 
+// underlying generators -- one for each combination of category values.
 // END_HTML
 //
 
@@ -45,7 +45,6 @@
 
 ClassImp(RooMultiCatGenerator)
   ;
-
 
 //_____________________________________________________________________________
 void RooMultiCatGenerator::registerSampler(RooNumGenFactory& fact)
@@ -83,16 +82,19 @@ RooMultiCatGenerator::RooMultiCatGenerator(const RooAbsReal &func, const RooArgS
 {
   std::auto_ptr<RooAbsReal> marginal( _funcClone->createIntegral( _realVars ) );
   std::auto_ptr<TIterator> superIter( _super.MakeIterator() );
+  // We first compute the marginalized fractions for the combinations of categories.
+  // Next, we create, for each combination, a dedicated sampler for the real observables,
+  // which is conditional on each of the combination of category values.
   while ( superIter->Next() ) {
             _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
             double n = marginal->getVal(); // fraction of events in this combination 
             if (!_realGenerators.empty()) n += _realGenerators.back().first;   // cumulative
-            cxcoutD(Generation) << "RooMultCatGenerator::ctor() creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
+            cxcoutD(Generation) << "RooMultiCatGenerator::ctor() creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
             _realGenerators.push_back(make_pair(n, RooNumGenFactory::instance().createSampler(*_funcClone,_realVars,RooArgSet(),config, true /*verbose*/ ))); 
   }
+  // Given that above we properly marginalized, the next line should be a no-op.
   for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) i->first /= _realGenerators.back().first; // normalize
 }
-
 
 //_____________________________________________________________________________
 RooMultiCatGenerator::~RooMultiCatGenerator() 
@@ -100,8 +102,6 @@ RooMultiCatGenerator::~RooMultiCatGenerator()
   // Destructor
   for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) delete i->second;
 }
-
-
 
 //_____________________________________________________________________________
 const RooArgSet *RooMultiCatGenerator::generateEvent(UInt_t remaining, Double_t& resampleRatio) 
@@ -117,7 +117,8 @@ const RooArgSet *RooMultiCatGenerator::generateEvent(UInt_t remaining, Double_t&
    while ( superIter->Next()!=0 && gen->first < r)  ++gen;
    _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
 
-   // and generate the real vars for this combination of categories
+   // now that've assigned the categories, we can use the 'real' samplers
+   // which are conditional on the categories...
   const RooArgSet* realEvent = gen->second->generateEvent( remaining, resampleRatio);
   _realVars.assignValueOnly( *realEvent );
 
