@@ -1,9 +1,16 @@
 from ROOT import *
 gSystem.Load("libp2vv")
 
-multicatgen = RooMultiCatGenerator()
-RooNumGenFactory.instance().storeProtoSampler( multicatgen, RooArgSet() )
-RooNumGenConfig.defaultConfig().methodND(True,False).setLabel( multicatgen.IsA().GetName() )
+print 'a'
+RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
+print 'b'
+RooNumGenConfig.defaultConfig().methodND(False,True).Print()
+RooNumGenConfig.defaultConfig().methodND(False,True).setLabel( "RooMultiCatGenerator" )
+RooNumGenConfig.defaultConfig().method1D(False,True).Print()
+RooNumGenConfig.defaultConfig().method2D(False,True).Print()
+RooNumGenConfig.defaultConfig().methodND(False,True).Print()
+print 'd'
+RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 
 RooWorkspace.put = getattr(RooWorkspace,'import')
 

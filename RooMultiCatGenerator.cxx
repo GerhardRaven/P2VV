@@ -28,7 +28,6 @@
 
 #include "RooMultiCatGenerator.h"
 #include "RooAbsReal.h"
-#include "RooAbsPdf.h"
 #include "RooCategory.h"
 #include "RooRealVar.h"
 #include "RooDataSet.h"
@@ -81,14 +80,18 @@ RooMultiCatGenerator::RooMultiCatGenerator(const RooAbsReal &func, const RooArgS
   : RooAbsNumGenerator(func,genVars,verbose,maxFuncVal)
   , _super( makeSuper( func, _catVars ) )
 {
-  // could do createIntegral... but for now do brute-force
-  RooAbsPdf& pdf = dynamic_cast<RooAbsPdf&>(*_funcClone);
-  std::auto_ptr<RooAbsPdf> marginal( pdf.createProjection( _realVars ) );
+  std::auto_ptr<RooAbsReal> marginal( _funcClone->createIntegral( _realVars ) );
+  cout << "created marginal " << endl; marginal->Print("V");
   std::auto_ptr<TIterator> superIter( _super.MakeIterator() );
   while ( superIter->Next() ) {
+            _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
+            cout << "computing marginal for " << _catVars << endl;
             double n = marginal->getVal(); // fraction of events in this combination 
+            cout << dynamic_cast<TObjString&>(***superIter).String() << " -> " << n << endl;
             if (!_realGenerators.empty()) n += _realGenerators.back().first;   // cumulative
-            _realGenerators.push_back(make_pair(n, RooNumGenFactory::instance().createSampler(pdf,_realVars,RooArgSet(),*pdf.getGeneratorConfig(), verbose ))); 
+            cout << "creating sampler for " << _realVars << endl;
+            _realGenerators.push_back(make_pair(n, RooNumGenFactory::instance().createSampler(*_funcClone,_realVars,RooArgSet(),config, true /*verbose*/ ))); 
+            cout << "done creating sampler for " << _realVars << endl;
   }
   for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) i->first /= _realGenerators.back().first; // normalize
 }
@@ -115,9 +118,7 @@ const RooArgSet *RooMultiCatGenerator::generateEvent(UInt_t remaining, Double_t&
    // find the right generator, and generate categories at the same time...
    Generators::iterator gen = _realGenerators.begin();
    while ( superIter->Next()!=0 && gen->first < r)  ++gen;
-   _super.setLabel( dynamic_cast<TObjString&>(*superIter).String() ); // this should assign _catVars...
-
-   cout << "RooMultCatGenerator("<<GetName()<<")::generateEvent: " << _catVars << endl;
+   _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
 
    // and generate the real vars for this combination of categories
   gen->second->generateEvent( remaining, resampleRatio);
@@ -125,8 +126,6 @@ const RooArgSet *RooMultiCatGenerator::generateEvent(UInt_t remaining, Double_t&
   // calculate and store our function value at this new point
   Double_t val= _funcClone->getVal();
   _funcValPtr->setVal(val);
-
-   cout << "RooMultCatGenerator("<<GetName()<<")::generateEvent: " << _cloneSet << endl;
 
   // Transfer contents to dataset
   return _cloneSet;
