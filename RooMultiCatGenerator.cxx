@@ -82,13 +82,12 @@ RooMultiCatGenerator::RooMultiCatGenerator(const RooAbsReal &func, const RooArgS
   , _super( makeSuper( func.GetName(), _catVars ) )
 {
   std::auto_ptr<RooAbsReal> marginal( _funcClone->createIntegral( _realVars ) );
-  cout << "created marginal " << endl; marginal->Print("V");
   std::auto_ptr<TIterator> superIter( _super.MakeIterator() );
   while ( superIter->Next() ) {
             _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
             double n = marginal->getVal(); // fraction of events in this combination 
             if (!_realGenerators.empty()) n += _realGenerators.back().first;   // cumulative
-            cout << "creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
+            cxcoutD(Generation) << "RooMultCatGenerator::ctor() creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
             _realGenerators.push_back(make_pair(n, RooNumGenFactory::instance().createSampler(*_funcClone,_realVars,RooArgSet(),config, true /*verbose*/ ))); 
   }
   for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) i->first /= _realGenerators.back().first; // normalize
