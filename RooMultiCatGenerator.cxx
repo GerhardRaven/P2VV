@@ -54,25 +54,26 @@ void RooMultiCatGenerator::registerSampler(RooNumGenFactory& fact)
   fact.storeProtoSampler(new RooMultiCatGenerator,RooArgSet()) ;
 }
 
-
-const char *makeFPName(const char* name, const RooArgSet& terms ) {
-    static TString pname;
-    pname = name;
-    pname.Append("_");
-    std::auto_ptr<TIterator> i( terms.createIterator() );
-    RooAbsArg *arg;
-    Bool_t first(kTRUE);
-    while((arg=(RooAbsArg*)i->Next())) {
-         if (first) { first=kFALSE;}
-         else pname.Append("_X_");
-         pname.Append(arg->GetName());
+namespace {
+    const char *makeName(const char* name, const RooArgSet& terms ) {
+        static TString pname;
+        pname = name;
+        pname.Append("_");
+        std::auto_ptr<TIterator> i( terms.createIterator() );
+        RooAbsArg *arg;
+        Bool_t first(kTRUE);
+        while((arg=(RooAbsArg*)i->Next())) {
+             if (first) { first=kFALSE;}
+             else pname.Append("_X_");
+             pname.Append(arg->GetName());
+        }
+        return pname.Data();
     }
-    return pname.Data();
-}
 
-RooSuperCategory makeSuper(const char* name, const RooArgSet& _catVars  ) {
-  const char *catName =  makeFPName(name, _catVars );
-  return RooSuperCategory(catName,catName,_catVars);
+    RooSuperCategory makeSuper(const char* name, const RooArgSet& _catVars  ) {
+      const char *catName =  makeName(name, _catVars );
+      return RooSuperCategory(catName,catName,_catVars);
+    }
 }
 
 //_____________________________________________________________________________
@@ -85,13 +86,10 @@ RooMultiCatGenerator::RooMultiCatGenerator(const RooAbsReal &func, const RooArgS
   std::auto_ptr<TIterator> superIter( _super.MakeIterator() );
   while ( superIter->Next() ) {
             _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
-            cout << "computing marginal for " << _catVars << endl;
             double n = marginal->getVal(); // fraction of events in this combination 
-            cout << dynamic_cast<TObjString&>(***superIter).String() << " -> " << n << endl;
             if (!_realGenerators.empty()) n += _realGenerators.back().first;   // cumulative
-            cout << "creating sampler for " << _realVars << endl;
+            cout << "creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
             _realGenerators.push_back(make_pair(n, RooNumGenFactory::instance().createSampler(*_funcClone,_realVars,RooArgSet(),config, true /*verbose*/ ))); 
-            cout << "done creating sampler for " << _realVars << endl;
   }
   for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) i->first /= _realGenerators.back().first; // normalize
 }

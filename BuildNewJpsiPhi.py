@@ -80,9 +80,8 @@ for i in  range(len(p)+1) :
     tagAsym = RooFit.Asymmetry(ws.cat("tagdecision"))
     canvas.cd(5*i+5)
     f = ws.var('t').frame(RooFit.Range(-.5,3.5))
-    proj = RooArgSet( obs )
-    proj.remove(ws.var('t'))
-    pdf.plotOn(f,RooFit.Project(proj),tagAsym)
+    data.plotOn(f,tagAsym)
+    pdf.plotOn(f,tagAsym)
     f.Draw()
     break
 
