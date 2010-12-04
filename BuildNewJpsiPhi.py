@@ -56,7 +56,7 @@ obsNames =[ 'trcospsi','trcostheta','trphi','t','tagdecision' ]
 obs = ws.argSet(','.join(obsNames))
 
 canvas = TCanvas('canvas','canvas')
-canvas.Divide(5,1)
+canvas.Divide(5,4)
 
 p = [ 'rz','rpar','rperp' ]
 for i in  range(len(p)+1) :
@@ -67,6 +67,7 @@ for i in  range(len(p)+1) :
     for l in p + ['deltaz','deltapar','deltaperp' ] : ws.var(l).Print()
 
     data = pdf.generate( obs, 100000)
+    pdf.fitTo(data, RooFit.NumCPU(2))
 
     for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],count(5*i+1)) :
        canvas.cd(k)
@@ -83,6 +84,5 @@ for i in  range(len(p)+1) :
     data.plotOn(f,tagAsym)
     pdf.plotOn(f,tagAsym)
     f.Draw()
-    break
 
 canvas.Flush()
