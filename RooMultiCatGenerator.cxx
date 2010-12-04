@@ -18,7 +18,7 @@
 // BEGIN_HTML
 // Class RooMultiCatGenerator is a generic toy monte carlo generator that 
 // generates discrete categories, and dispatches any real variables to the
-// underlying PDF.
+// underlying PDF generator.
 // END_HTML
 //
 
@@ -55,9 +55,9 @@ void RooMultiCatGenerator::registerSampler(RooNumGenFactory& fact)
 }
 
 
-const char *makeFPName(const RooAbsReal& func, const RooArgSet& terms ) {
+const char *makeFPName(const char* name, const RooArgSet& terms ) {
     static TString pname;
-    pname = func.GetName();
+    pname = name;
     pname.Append("_");
     std::auto_ptr<TIterator> i( terms.createIterator() );
     RooAbsArg *arg;
@@ -70,15 +70,15 @@ const char *makeFPName(const RooAbsReal& func, const RooArgSet& terms ) {
     return pname.Data();
 }
 
-RooSuperCategory makeSuper(const RooAbsReal& func, const RooArgSet& _catVars  ) {
-  const char *catName =  makeFPName(func, _catVars );
+RooSuperCategory makeSuper(const char* name, const RooArgSet& _catVars  ) {
+  const char *catName =  makeFPName(name, _catVars );
   return RooSuperCategory(catName,catName,_catVars);
 }
 
 //_____________________________________________________________________________
 RooMultiCatGenerator::RooMultiCatGenerator(const RooAbsReal &func, const RooArgSet &genVars, const RooNumGenConfig& config, Bool_t verbose, const RooAbsReal* maxFuncVal) 
   : RooAbsNumGenerator(func,genVars,verbose,maxFuncVal)
-  , _super( makeSuper( func, _catVars ) )
+  , _super( makeSuper( func.GetName(), _catVars ) )
 {
   std::auto_ptr<RooAbsReal> marginal( _funcClone->createIntegral( _realVars ) );
   cout << "created marginal " << endl; marginal->Print("V");
@@ -121,12 +121,13 @@ const RooArgSet *RooMultiCatGenerator::generateEvent(UInt_t remaining, Double_t&
    _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
 
    // and generate the real vars for this combination of categories
-  gen->second->generateEvent( remaining, resampleRatio);
+  const RooArgSet* realEvent = gen->second->generateEvent( remaining, resampleRatio);
+  _realVars.assignValueOnly( *realEvent );
 
   // calculate and store our function value at this new point
   Double_t val= _funcClone->getVal();
   _funcValPtr->setVal(val);
 
   // Transfer contents to dataset
-  return _cloneSet;
+  return _cache->get();
 }

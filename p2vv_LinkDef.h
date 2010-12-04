@@ -5,7 +5,6 @@
 #pragma link off all functions;
 
 #pragma link C++ class RooAddition_;
-#pragma link C++ class RooBDecay_;
 #pragma link C++ class RooLegendre;	
 #pragma link C++ class RooP2VVAngleBasis;
 #pragma link C++ class RooSpHarmonic;
