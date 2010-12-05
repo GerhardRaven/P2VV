@@ -50,6 +50,20 @@ def buildJpsiphi(ws, name) :
 
     # TODO: move this bit into a derivative of RooBDecay, and do tagdecision explicitly
     #       -- at that point, FOAM will do the angles, and we avoid the max search
+    # generate untagged, then do tag
+    # for this we need to pass qtag into the pdf
+    # this can be done generically if we pass 8 instead of 4 factors
+    # into RooBDecay -- 4 for tag = +1 and 4 for tag = -1
+    # then generate time according to the sum over tag
+    # and do the tag conditionally given the time... 
+    # (i.e. we generate not the time distributions of tagged events,
+    # but first the one for untagged events, and then we generate the 
+    # asymmetry, which is quick...)
+    # Next, how to do Jpsi K* if we do tag,rec instead of (un)mix...?
+    # in that case, we have three asymmetries (of which only one, mix/unmix, 
+    # is non-zero)
+    # Note that we can use a RooCustomizer to automate the replacement of 
+    # C -> -C, S-> -S
     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
                                    ", prod(N,NAparApar,                AparApar_basis)"
                                    ", prod(N,NAperpAperp,              AperpAperp_basis)"
@@ -117,3 +131,6 @@ def buildMomentPDF(w,name,data,moments) :
         fact.add( m.basis() )
     w.put( RooRealSumPdf(name,name,fact,coef) )
     return w.pdf(name)
+
+
+### TODO: make a python version of buildEfficiencyPDF....
