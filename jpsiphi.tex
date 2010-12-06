@@ -317,32 +317,49 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
           &&                  -\Re({\cal A}_0^*{\cal A}_\parallel  )  \sqrt{\frac{6}{5}}P_2^1(\cos\psi) Y_{2,-2} 
           \biggr] \\
       &=& \frac{\sqrt{4\pi}}{9}  \int d\cos\psi   P_i(\cos\psi) \biggl[  \\
-          &&                   |{\cal A}_\parallel|^2 P_2^2(\cos\psi)              \left( c^i_{00}  +\sqrt{\frac{1}{20}}c^i_{20}+\sqrt{\frac{3}{20}}c^i_{22}  \right)  \\
-          &&                  +|{\cal A}_0|^2  (P_0^0(\cos\psi)+2P_2^0(\cos\psi) ) \left( 2 c^i_{00}+\sqrt{\frac{1}{ 5}}c^i_{20}-\sqrt{\frac{3}{ 5}}c^i_{22} \right) \\
-          &&                  +|{\cal A}_\perp|^2  P_2^2(\cos\psi)                 \left( c^i_{00}  -\sqrt{\frac{1}{ 5}}c^i_{20}\right)\\
-          &&                  +\Im({\cal A}_\parallel^*{\cal A}_\perp)\sqrt{\frac{3}{5}}P_2^2(\cos\psi) c^i_{2,-1}  \\
+          &&                   |{\cal A}_\parallel|^2 2( P_0^0(\cos\psi) - P_2^0(\cos\psi)  )           \left( c^i_{00}  +\sqrt{\frac{1}{20}}c^i_{20}+\sqrt{\frac{3}{20}}c^i_{22}  \right)  \\
+          &&                  +|{\cal A}_0|^2 2 (\frac{1}{2}P_0^0(\cos\psi)+P_2^0(\cos\psi) ) \left( 2 c^i_{00}+\sqrt{\frac{1}{ 5}}c^i_{20}-\sqrt{\frac{3}{ 5}}c^i_{22} \right) \\
+          &&                  +|{\cal A}_\perp|^2 2 ( P_0^0(\cos\psi) - P_2^0(\cos\psi)  )              \left( c^i_{00}  -\sqrt{\frac{1}{ 5}}c^i_{20}\right)\\
+          &&                  +\Im({\cal A}_\parallel^*{\cal A}_\perp)2\sqrt{\frac{3}{5}} ( P_0^0(\cos\psi) - P_2^0(\cos\psi)  ) c^i_{2,-1}  \\
           &&                  +\Im({\cal A}_0^* {\cal A}_\perp )      \sqrt{\frac{6}{5}}P_2^1(\cos\psi)c^i_{2,1} \\
           &&                  -\Re({\cal A}_0^*{\cal A}_\parallel  )  \sqrt{\frac{6}{5}}P_2^1(\cos\psi) c^i_{2,-2} 
       \biggr] \\
       &=& \frac{8\sqrt{\pi}}{9}  \biggl[ \\
-         &&                    |{\cal A}_\parallel|^2 \left( 2c^0_{00}-\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{5}}\left(2c^0_{20}-\frac{2}{5}c^2_{20}\right)+\sqrt{\frac{3}{5}}\left(2c^0_{22}-\frac{2}{5}c^2_{22}\right)  \right) (CHECK!) \\
-         &&                   +|{\cal A}_0|^2   \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{5}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{5}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right)(CHECK!) \\
+         &&                    |{\cal A}_\parallel|^2 \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
+         &&                   +|{\cal A}_0|^2   \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
          &&                   +|{\cal A}_\perp|^2    \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
          &&                   +\Im({\cal A}_\parallel^*{\cal A}_\perp)\sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
-         &&                   +\Im({\cal A}_\perp^* {\cal A}_0 )  \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
+         &&                   -\Im({\cal A}_\perp^* {\cal A}_0 )  \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
          &&                   +\Re({\cal A}_0^*{\cal A}_\parallel)\sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+... \right) \\
       \biggr]
 \end{eqnarray}
 
+where we have used 
 \begin{eqnarray}
 \int_{-1}^1 d\cos\theta \int_0^{2\pi} d\phi \;\;Y_l^m(\theta,\phi) Y_{l'}^{m'*}(\theta,\phi) &=& \delta_{ll'}\delta_{mm'}\\
-\int_{-1}^1 dx  P_k^m P_l^m&=& \frac{2}{2l+1}\frac{(l+m)!}{(l-m)!}\delta_{kl} \\
-\int_{-1}^1 dx \frac{P^m_l P^n_l } { 1 - x^2 }  &=&  \left\{  \begin{array}{l} 0 (m\neq n) \\   \frac{(l+m)!}{m(l-m)!}(m=n\neq 0\\ +\infty (m=n=0) \end{array} \right.
+\int_{-1}^1 dx  P_k^m P_l^m&=& \frac{2}{2l+1}\frac{(l+m)!}{(l-m)!}\delta_{kl} %\\
+%\int_{-1}^1 dx \frac{P^m_l P^n_l } { 1 - x^2 }  &=&  \left\{  \begin{array}{l} 0 (m\neq n) \\   \frac{(l+m)!}{m(l-m)!}(m=n\neq 0\\ +\infty (m=n=0) \end{array} \right.
 \end{eqnarray}
 
+At this point, we recognize the equivalence of the following combinations of Fourier coefficients of the efficiency, and the 'efficiency moments',
+i.e.
 
+\begin{eqnarray}
+    \xi_{\parallel\parallel} &=& \frac{8 \sqrt{\pi}}{9} \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
+    \xi_{00}                 &=& \frac{8 \sqrt{\pi}}{9} \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
+    \xi_{\perp\perp}         &=& \frac{8 \sqrt{\pi}}{9} \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
+    \xi_{\parallel\perp}     &=& \frac{8 \sqrt{\pi}}{9} \sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
+    \xi_{\perp 0}            &=& \frac{8 \sqrt{\pi}}{9} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
+    \xi_{0\parallel}         &=& \frac{8 \sqrt{\pi}}{9} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+... \right) 
+\end{eqnarray}
+
+This implies that, if the efficiency is uniform (and $100\%$) in the angles, i.e.
 \begin{equation}
    \epsilon(\psi,\theta,\phi) = 1 \Rightarrow c^0_{00} = 2\sqrt{\pi} ; c^{i}_{jk} = 0 (i\neq 0, j\neq 0, k \neq 0)
+\end{equation}
+we compute the moments as:
+\begin{equation}
+    \xi_{\parallel\parallel}= \xi_{00}= \xi_{\perp\perp}  = \frac{16\pi}{9};\;\; \xi_{\parallel\perp} =\xi_{\perp 0} = \xi_{0\parallel} = 0
 \end{equation}
 
 %TODO: take into account ${\cal D} = 1-2( <w_i> + q_T \frac{\Delta w_i}{2})$, i.e. sum over $q_T$ may not fully cancel some terms...
