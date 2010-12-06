@@ -270,7 +270,7 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
 
 \begin{eqnarray}
 \frac{9 }{\sqrt{4\pi}} |{ \bf A}(t) \wedge \hat{n}|^2 
-                              &=&|{\cal A}_\parallel|^2 P_2^2 \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
+                              &=&|{\cal A}_\parallel|^2 P_2^2 \left( 2Y_{00}+\sqrt{\frac{1}{5}}Y_{20}+\sqrt{\frac{3}{5}}Y_{22}  \right)  \\
                               &+&|{\cal A}_\perp|^2  P_2^2 \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
                               &+&|{\cal A}_0|^2  (P_0^0+2P_2^0 ) \left( 2 Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
                               &+&\Im({\cal A}_\parallel^*{\cal A}_\perp) \sqrt{\frac{3}{5}}P_2^2 Y_{2,-1}  \\
@@ -284,7 +284,7 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
 &\multicolumn{6}{|c|}{ P_i^j(\cos\psi)Y_{lm}(\cos\theta,\phi) \times \frac{9}{\sqrt{4\pi}} } \\
  \hline
 |{\cal A}_\perp(t)|^2                   &  P_2^2 Y_{00} & -\sqrt{\frac{1}{5}} P_2^2 Y_{20} &                                 &&& \\
-|{\cal A}_\parallel(t)|^2               &  P_2^2 Y_{00} &  \sqrt{\frac{1}{20}} P_2^2 Y_{20} & +\sqrt{\frac{3}{20}} P_2^2Y_{22} & && \\
+|{\cal A}_\parallel(t)|^2               &  2 P_2^2Y_{00} &  \sqrt{\frac{1}{5}} P_2^2 Y_{20} & +\sqrt{\frac{3}{5}} P_2^2Y_{22} & && \\
 |{\cal A}_0(t)|^2                       &  2 P_0^0Y_{00}  & \sqrt{\frac{1}{5}} P_0^0 Y_{20} & -\sqrt{\frac{3}{5}} P_0^0 Y_{22}
                                         &  4 P_2^0Y_{00}  & \sqrt{\frac{4}{5}} P_2^0 Y_{20} & -\sqrt{\frac{12}{5}} P_2^0 Y_{22} \\
 \Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &  \sqrt{\frac{3}{5}} P_2^2 Y_{2,-1} &&&&&\\
@@ -306,25 +306,25 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
     N(q_T,t)  &=&  \int d\cos\psi\int d\cos\theta \int d\phi \epsilon(\psi,\theta,\phi) |{\bf A}(t,q_T) \wedge \hat{n}|^2 \\
       &=& c^i_{jk}\frac{\sqrt{4\pi}}{9} \int d\cos\psi   P_i(\cos\psi)  \int d\cos\theta d\phi Y_{jk}(\theta,\phi) 
           \biggl[  \\
-          &&                   |{\cal A}_\parallel|^2 P_2^2(\cos\psi) \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
-          &&                  +|{\cal A}_\perp|^2  P_2^2(\cos\psi) \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
+          &&                   |{\cal A}_\parallel|^2 P_2^2(\cos\psi) \left( 2Y_{00}+\sqrt{\frac{1}{5}}Y_{20}+\sqrt{\frac{3}{5}}Y_{22}  \right)  \\
           &&                  +|{\cal A}_0|^2  (P_0^0(\cos\psi)+2P_2^0(\cos\psi) ) \left( 2Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
+          &&                  +|{\cal A}_\perp|^2  P_2^2(\cos\psi) \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
           &&                  +\Im({\cal A}_\parallel^*{\cal A}_\perp)\sqrt{\frac{3}{5}}P_2^2(\cos\psi) Y_{2,-1}  \\
           &&                  +\Im({\cal A}_\perp^* {\cal A}_0 )      \sqrt{\frac{6}{5}}P_2^1(\cos\psi)Y_{2,1} \\
           &&                  -\Re({\cal A}_0^*{\cal A}_\parallel  )  \sqrt{\frac{6}{5}}P_2^1(\cos\psi) Y_{2,-2} 
           \biggr] \\
       &=& \frac{\sqrt{4\pi}}{9}  \int d\cos\psi   P_i(\cos\psi) \biggl[  \\
-          &&                   |{\cal A}_\parallel|^2 P_2^2(\cos\psi)              \left( c^i_{00}  +\sqrt{\frac{1}{20}}c^i_{20}+\sqrt{\frac{3}{20}}c^i_{22}  \right)  \\
-          &&                  +|{\cal A}_\perp|^2  P_2^2(\cos\psi)                 \left( c^i_{00}  -\sqrt{\frac{1}{ 5}}c^i_{20}\right)\\
+          &&                   |{\cal A}_\parallel|^2 P_2^2(\cos\psi)              \left(2 c^i_{00}  +\sqrt{\frac{1}{5}}c^i_{20}+\sqrt{\frac{3}{5}}c^i_{22}  \right)  \\
           &&                  +|{\cal A}_0|^2  (P_0^0(\cos\psi)+2P_2^0(\cos\psi) ) \left( 2 c^i_{00}+\sqrt{\frac{1}{ 5}}c^i_{20}-\sqrt{\frac{3}{ 5}}c^i_{22} \right) \\
+          &&                  +|{\cal A}_\perp|^2  P_2^2(\cos\psi)                 \left( c^i_{00}  -\sqrt{\frac{1}{ 5}}c^i_{20}\right)\\
           &&                  +\sqrt{\frac{3}{5}}\Im({\cal A}_\parallel^*{\cal A}_\perp)P_2^2(\cos\psi) c^i_{2,-1}  \\
           &&                  +\sqrt{\frac{6}{5}} \Im({\cal A}_0^* {\cal A}_\perp )P_2^1(\cos\psi)c^i_{2,1} \\
           &&                  -\sqrt{\frac{6}{5}}\Re({\cal A}_0^*{\cal A}_\parallel  )P_2^1(\cos\psi) c^i_{2,-2} 
       \biggr] \\
       &=& \frac{8\sqrt{\pi}}{9}  \biggl[ \\
-         &&                    |{\cal A}_\parallel|^2 \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
+         &&                    |{\cal A}_\parallel|^2 \left( 2c^0_{00}-\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{5}}\left(2c^0_{20}-\frac{2}{5}c^2_{20}\right)+\sqrt{\frac{3}{5}}\left(2c^0_{22}-\frac{2}{5}c^2_{22}\right)  \right) (CHECK!) \\
+         &&                   +|{\cal A}_0|^2   \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{5}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{5}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right)(CHECK!) \\
          &&                   +|{\cal A}_\perp|^2    \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
-         &&                   +|{\cal A}_0|^2   \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
          &&                   +\Im({\cal A}_\parallel^*{\cal A}_\perp)\sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
          &&                   +\Im({\cal A}_\perp^* {\cal A}_0 )  \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
          &&                   +\Re({\cal A}_0^*{\cal A}_\parallel)\sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+... \right) \\

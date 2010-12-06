@@ -21,10 +21,10 @@ RooAbsPdf& _jpsiphi(RooWorkspace& w, const char* name )
 { 
         // definition of the angular part of the PDF in terms of basis functions... 
         abasis ab(w, "trcospsi", "trcostheta", "trphi");  // bind workspace and observables -- todo: use workspace hooks instead!
-        import(w, RooAddition_("AzAz_basis",      "AzAz_basis",       RooArgSet( ab("AzAz",       0,0,0, 0, 2.), ab("AzAz",       0,0,2,0, sqrt(1./ 5.)),  ab("AzAz",     0,0,2,2, -sqrt( 3./ 5.)) , 
-                                                                                 ab("AzAz",       2,0,0, 0, 4.), ab("AzAz",       2,0,2,0, sqrt(4./ 5.)),  ab("AzAz",     2,0,2,2, -sqrt(12./ 5.)) )));
-        import(w, RooAddition_("AparApar_basis",  "AparApar_basis",   RooArgSet( ab("AparApar",   2,2,0, 0, 1.), ab("AparApar",   2,2,2,0, sqrt(1./20.)),  ab("AparApar", 2,2,2,2,  sqrt( 3./20.)) ))); 
-        import(w, RooAddition_("AperpAperp_basis","AperpAperp_basis", RooArgSet( ab("AperpAperp", 2,2,0, 0, 1.), ab("AperpAperp", 2,2,2,0,-sqrt(1./ 5.)))));
+        import(w, RooAddition_("AzAz_basis",      "AzAz_basis",       RooArgSet( ab("AzAz",       0,0,0, 0, 2.), ab("AzAz",       0,0,2,0, sqrt(1./5.)),  ab("AzAz",     0,0,2,2, -sqrt( 3./5.)) , 
+                                                                                 ab("AzAz",       2,0,0, 0, 4.), ab("AzAz",       2,0,2,0, sqrt(4./5.)),  ab("AzAz",     2,0,2,2, -sqrt(12./5.)) )));
+        import(w, RooAddition_("AparApar_basis",  "AparApar_basis",   RooArgSet( ab("AparApar",   2,2,0, 0, 2.), ab("AparApar",   2,2,2,0, sqrt(1./5.)),  ab("AparApar", 2,2,2,2,  sqrt( 3./5.)) ))); 
+        import(w, RooAddition_("AperpAperp_basis","AperpAperp_basis", RooArgSet( ab("AperpAperp", 2,2,0, 0, 1.), ab("AperpAperp", 2,2,2,0,-sqrt(1./5.)))));
         import(w, RooAddition_("AparAperp_basis", "AparAperp_basis",  RooArgSet( ab("AparAperp",  2,2,2,-1, sqrt(3./5.)) )));
         import(w, RooAddition_("AzAperp_basis",   "AzAperp_basis",    RooArgSet( ab("AzAperp",    2,1,2, 1, sqrt(6./5.)) )));
         import(w, RooAddition_("AzApar_basis",    "AzApar_basis",     RooArgSet( ab("AzApar",     2,1,2,-2,-sqrt(6./5.)) )));

@@ -1,7 +1,7 @@
 from ROOT import *
 gSystem.Load("libp2vv")
 
-feelTheNeedForSpeed = False
+feelTheNeedForSpeed = True
 if feelTheNeedForSpeed:
     ### experimental fast(er) toy generator...
     RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
@@ -20,13 +20,13 @@ def buildAngularBasis(ws, ab) :
         ws.put(RooAddition_( n, n, s ) )
         return ws.function(n)
 
-    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0, sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./ 5.))
-                               , ( 2,0,0, 0, 4.), ( 2,0,2,0, sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./ 5.)) ] )
-           , _ba("AparApar",   [ ( 2,2,0, 0, 1.), ( 2,2,2,0, sqrt(1./20.)), ( 2,2,2,2,  sqrt( 3./20.)) ] )
-           , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0,-sqrt(1./ 5.)) ] )
+    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0, sqrt(1./5.)), ( 0,0,2,2, -sqrt( 3./5.))
+                               , ( 2,0,0, 0, 4.), ( 2,0,2,0, sqrt(4./5.)), ( 2,0,2,2, -sqrt(12./5.)) ] )
+           , _ba("AparApar",   [ ( 2,2,0, 0, 2.), ( 2,2,2,0, sqrt(1./5.)), ( 2,2,2,2,  sqrt( 3./5.)) ] )
+           , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0,-sqrt(1./5.)) ] )
            , _ba("AparAperp",  [ ( 2,2,2,-1, sqrt(3./5.)) ] )
-           , _ba("AzAperp",    [ ( 2,1,2, 1,-sqrt(6./5.)) ] )
-           , _ba("AzApar",     [ ( 2,1,2,-2,sqrt(6./5.)) ] )
+           , _ba("AzAperp",    [ ( 2,1,2, 1, sqrt(6./5.)) ] )
+           , _ba("AzApar",     [ ( 2,1,2,-2,-sqrt(6./5.)) ] )
            )
 
 def buildJpsiphi(ws, name) :
