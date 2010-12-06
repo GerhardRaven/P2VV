@@ -41,6 +41,7 @@
 #include "RooNumGenFactory.h"
 #include "RooNumGenConfig.h"
 
+#include <memory>
 #include <assert.h>
 
 ClassImp(RooMultiCatGenerator)
