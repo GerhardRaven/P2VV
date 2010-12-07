@@ -255,6 +255,10 @@ for i in  range(len(p)+1) :
 
 canvasold.Flush()
 
+ws.var('rz').setVal(0.463)
+ws.var('rpar').setVal(0.211)
+ws.var('rperp').setVal(0.347)
+
 canvasnew = TCanvas('canvasnew','canvasnew')
 canvasnew.Divide(5,4)
 
