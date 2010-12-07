@@ -15,13 +15,6 @@ gSystem.Load("libp2vv")
 
 from ModelBuilders import buildJpsiphi,buildJpsikstar
 
-
-################################
-### OLDOLDOLDOLDOLDOLDOLDOLD ###
-################################
-
-
-
 ########################
 ### Define workspace ###
 ########################
@@ -182,7 +175,7 @@ res = ws.pdf('res')
 ws.factory("{wmistag[0.37]}")
 wmistag = ws.var('wmistag')
 
-##################################### building the PDFs ###################################
+##################################### building the OLD pdf ###################################
 oldpdf =             P2VV.Functions.makePVVPdf("oldpdf",
                                                "oldpdf",
                                                myThreeAngles,
@@ -197,9 +190,7 @@ oldpdf =             P2VV.Functions.makePVVPdf("oldpdf",
 
 getattr(ws,'import')(oldpdf)
 
-################################
-### NEWNEWNEWNEWNEWNEWNEWNEW ###
-################################
+##################################### building the NEW pdf ###################################
 # create observables
 ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
 ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
