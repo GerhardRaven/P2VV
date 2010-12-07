@@ -36,7 +36,7 @@ def buildJpsiphi(ws, name) :
 
     ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws.cat('tagdecision'),ws.var('wmistag')) ) )
 
-    ws.factory("expr::N('1-@0*@1',{qtag_,C})") 
+    ws.factory("expr::N('1-@0*@1',{qtag_,C})")
     ws.factory("Minus[-1]")
     ws.factory("$Alias(Addition_,sum_)") 
 

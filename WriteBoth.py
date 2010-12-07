@@ -279,3 +279,61 @@ for i in  range(len(p)+1) :
 
 canvasnew.Flush()
 
+canvasmixnew = TCanvas('canvasmixnew','canvasmixnew')
+canvasmixnew.Divide(5,3)
+
+p = [ 'rz','rpar','rperp' ]
+for i in  range(len(p)) :
+    for j in range(len(p)):
+        x = ws.var(p[j])
+        x.setVal( 0.5 if (i==j or i+1==j or i-2==j) else 0 )#this parametrization is ugly, but it works!
+
+    for l in p + ['deltaz','deltapar','deltaperp' ] : ws.var(l).Print()
+
+    for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],count(5*i+1)) :
+       canvasmixnew.cd(k)
+       f = ws.var(j).frame() 
+       proj = RooArgSet( obs )
+       proj.remove( ws.var(j) )
+       newpdf.plotOn(f,RooFit.Project(proj))
+       f.Draw()
+
+    tagAsym = RooFit.Asymmetry(ws.cat("tagdecision"))
+    canvasmixnew.cd(5*i+5)
+    f = ws.var('t').frame(RooFit.Range(-.5,3.5))
+    proj = RooArgSet( obs )
+    proj.remove(ws.var('t'))
+    newpdf.plotOn(f,RooFit.Project(proj),tagAsym,RooFit.LineColor(kBlue))
+    f.Draw()
+
+canvasmixnew.Flush()
+
+canvasmixold = TCanvas('canvasmixold','canvasmixold')
+canvasmixold.Divide(5,3)
+
+p = [ 'rz','rpar','rperp' ]
+for i in  range(len(p)) :
+    for j in range(len(p)):
+        x = ws.var(p[j])
+        x.setVal( 0.5 if (i==j or i+1==j or i-2==j) else 0 )#this parametrization is ugly, but it works!
+
+    for l in p + ['deltaz','deltapar','deltaperp' ] : ws.var(l).Print()
+
+    for (j,k) in zip(['trcospsi','trcostheta','trphi','t'],count(5*i+1)) :
+       canvasmixold.cd(k)
+       f = ws.var(j).frame() 
+       proj = RooArgSet( obs )
+       proj.remove( ws.var(j) )
+       oldpdf.plotOn(f,RooFit.Project(proj),RooFit.LineColor(kRed))
+       f.Draw()
+
+    tagAsym = RooFit.Asymmetry(ws.cat("tagdecision"))
+    canvasmixold.cd(5*i+5)
+    f = ws.var('t').frame(RooFit.Range(-.5,3.5))
+    proj = RooArgSet( obs )
+    proj.remove(ws.var('t'))
+    oldpdf.plotOn(f,RooFit.Project(proj),tagAsym,RooFit.LineColor(kRed))
+    f.Draw()
+
+canvasmixold.Flush()
+
