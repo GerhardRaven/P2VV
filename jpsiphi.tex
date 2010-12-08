@@ -12,21 +12,25 @@
 \end{eqnarray}
 \begin{equation}
   \eta_i = \left\{ \begin{array}{l} +1 \;\; \mathrm{if}\;\; i=0,\parallel  \\ -1\;\; \mathrm{if}\;\; i=\perp \end{array} \right. \;\;\;;\;\; \frac{1}{\eta_i}=\eta_i
+  \label{eq:etadef}
 \end{equation}
+For $B_s\rightarrow J/\psi\phi$, assuming the Standard Model,  we have $S=\sin(2\beta_s),D=\cos(2\beta_s),C=0$.
+In terms of $\phi_s$, we have $S=-\sin(\phi_s),D=\cos(\phi_s),C=0$.
 
 \begin{eqnarray}
    {\cal A}_i(t)            &=& e^{-t/2\tau} \left[ E_+(t) + \eta_i \lambda E_-(t)  \right] a_i  \\
                             &=&     e^{-t/2\tau} \left[ E_+(t) +\eta_i \frac{D+iS}{1+C} E_-(t)  \right] a_i  \\
-   {\overline{\cal A}}_i(t) &=& e^{-t/2\tau} \left[ \eta_i E_+(t) + \frac{1}{\lambda} E_-(t)  \right] a_i    \\
+   {\overline{\cal A}}_i(t) &=& e^{-t/2\tau} \left[  E_+(t) + \frac{1}{\eta_i\lambda} E_-(t)  \right] \eta_i a_i    \\
                             &=&     e^{-t/2\tau} \left[\eta_i E_+(t) + \frac{D-iS}{1-C} E_-(t)  \right] a_i   
 \end{eqnarray}
 we can rewrite this as:
 \begin{eqnarray}
    {\cal A}_i(t)           &=&     \frac{e^{-t/2\tau}}{1+C} \left[ (1+C)E_+(t) +\eta_i (D+iS) E_-(t)  \right] a_i  
 %\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_i(D+iS)(1-C)E_-(t) \right] a_i\\
-\\   {\overline{\cal A}}_i(t) &=&    \frac{e^{-t/2\tau}}{1-C} \left[\eta_i (1-C)E_+(t) + (D-iS) E_-(t)  \right] a_i  
+\\   {\overline{\cal A}}_i(t) &=&    \frac{e^{-t/2\tau}}{1-C} \left[ (1-C)E_+(t) +\eta_i (D-iS) E_-(t)  \right] \eta_i a_i  
 %\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_i(D+iS)(1+C)E_-(t) \right] a_i
 \end{eqnarray}
+where we have used the properties of $\eta_i$ shown in (\ref{eq:etadef}).
 %Since the overall normalzation factor $\frac{1}{1-C^2}$ does not depend on any observable, it can be dropped at this point
 %(which will simplify the case when we later consider $S=D=0,C=\pm 1$!), resulting in:
 %\begin{eqnarray}
@@ -36,16 +40,14 @@ we can rewrite this as:
 
 
 \begin{equation}
-b_\mathrm{tag} \leftrightarrow \overline{b}_\mathrm{tag} \;\;\;\Leftrightarrow\;\;\;  ( S \leftrightarrow -S, C\leftrightarrow -C ) 
+b_\mathrm{tag} \leftrightarrow \overline{b}_\mathrm{tag} \;\;\;\Leftrightarrow\;\;\;  ( S \leftrightarrow -S, C\leftrightarrow -C, a_\perp\leftrightarrow -a_\perp ) 
 \end{equation}
 \begin{equation}
-(S,C) \rightarrow (q_T S, q_T C) \;\; \mathrm{with}\;\; q_T = \left\{\begin{array}{l} +1 \;\;\; \mathrm{if} b_\mathrm{tag} \\
+(S,C,a_\perp) \rightarrow (q_T S, q_T C, q_Ta_\perp) \;\; \mathrm{with}\;\; q_T = \left\{\begin{array}{l} +1 \;\;\; \mathrm{if} b_\mathrm{tag} \\
                                                                                    -1 \;\;\; \mathrm{if} \overline{b}_\mathrm{tag}
 \end{array} \right.
 \end{equation}
 
-For $B_s\rightarrow J/\psi\phi$, assuming the Standard Model,  we have $S=\sin(2\beta_s),D=\cos(2\beta_s),C=0$.
-In terms of $\phi_s$, we have $S=-\sin(\phi_s),D=\cos(\phi_s),C=0$.
 %Note that in case of $B_0\rightarrow J/\psi K^{*0}(K^+\pi^-)$, we have the
 %case where $\lambda=0$, or $S=D=0,C=1$. On the other hand, $B_0\rightarrow J/\psi \overline{K^{*0}}(K^-\pi^+)$, 
 %we have the case where $1/\lambda=0$, or $S=D=0,C=-1$.
