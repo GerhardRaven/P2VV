@@ -23,7 +23,8 @@ In terms of $\phi_s$, we have $S=-\sin(\phi_s),D=\cos(\phi_s),C=0$.
    {\overline{\cal A}}_i(t) &=& e^{-t/2\tau} \left[  E_+(t) + \frac{1}{\eta_i\lambda} E_-(t)  \right] \eta_i a_i    \\
                             &=&     e^{-t/2\tau} \left[\eta_i E_+(t) + \frac{D-iS}{1-C} E_-(t)  \right] a_i   
 \end{eqnarray}
-we can rewrite this as:
+where we have used that, by definition, $\overline{a}_i = \eta_i a_i$. The above can be
+written in a more symmetrical way as:
 \begin{eqnarray}
    {\cal A}_i(t)           &=&     \frac{e^{-t/2\tau}}{1+C} \left[ (1+C)E_+(t) +\eta_i (D+iS) E_-(t)  \right] a_i  
 %\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_i(D+iS)(1-C)E_-(t) \right] a_i\\
@@ -38,13 +39,14 @@ where we have used the properties of $\eta_i$ shown in (\ref{eq:etadef}).
 %   {\overline{\cal A}}_i(t) &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)+\eta_i(D+iS)(1+C)E_-(t) \right] a_i
 %\end{eqnarray}
 
-
+As a result, the expressions for $\overline{b}_\mathrm{tag}$ are related to $b_\mathrm{tag}$ by the following substitution:
 \begin{equation}
 b_\mathrm{tag} \leftrightarrow \overline{b}_\mathrm{tag} \;\;\;\Leftrightarrow\;\;\;  ( S \leftrightarrow -S, C\leftrightarrow -C, a_\perp\leftrightarrow -a_\perp ) 
 \end{equation}
+which can be combined in a single expression by multiplying the relevant terms with the value of flavour tag:
 \begin{equation}
-(S,C,a_\perp) \rightarrow (q_T S, q_T C, q_Ta_\perp) \;\; \mathrm{with}\;\; q_T = \left\{\begin{array}{l} +1 \;\;\; \mathrm{if} b_\mathrm{tag} \\
-                                                                                   -1 \;\;\; \mathrm{if} \overline{b}_\mathrm{tag}
+(S,C,a_\perp) \rightarrow (q_T S, q_T C, q_Ta_\perp) \;\; \mathrm{with}\;\; q_T = \left\{\begin{array}{l} +1 \;\;\; \mathrm{if}\; b_\mathrm{tag} \\
+                                                                                   -1 \;\;\; \mathrm{if}\; \overline{b}_\mathrm{tag}
 \end{array} \right.
 \end{equation}
 
