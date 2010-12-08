@@ -42,7 +42,7 @@ def buildJpsiphi(ws, name) :
     ws.factory("expr::ImAparAperp('( @4 * @3 - @5 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
 
-    ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws.cat('tagdecision'),ws.var('tagomega')) ) )
+    ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws['tagdecision'],ws['tagomega']) ) )
 
     ws.factory("expr::N('1-@0*@1',{qtag_,C})")
     ws.factory("Minus[-1]")
@@ -63,33 +63,33 @@ def buildJpsiphi(ws, name) :
     # in that case, we have three asymmetries (of which only one, mix/unmix,
     # is non-zero)
     # Note that we can use a RooCustomizer to automate the replacement of
-    # C -> -C, S-> -S
+    # fjpsiphi_sinh and fjpsiphi_sin, but the qtag in N is more tricky...
     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
                                    ", prod(N,NAparApar,                AparApar_basis)"
                                    ", prod(N,NAperpAperp,              AperpAperp_basis)"
-                                   ", prod(N,ImAparAperp,      qtag_,C,AparAperp_basis)"
-                                   ", prod(N,ImAzAperp,        qtag_,C,AzAperp_basis)"
+                                   ", prod(N,ImAparAperp,            C,AparAperp_basis)"
+                                   ", prod(N,ImAzAperp,              C,AzAperp_basis)"
                                    ", prod(N,ReAzApar,                 AzApar_basis)"
                                    "})")
     ws.factory("sum_::fjpsiphi_cos ({ prod(N,NAzAz,            qtag_,C,AzAz_basis)"
                                    ", prod(N,NAparApar,        qtag_,C,AparApar_basis)"
                                    ", prod(N,NAperpAperp,      qtag_,C,AperpAperp_basis)"
-                                   ", prod(N,ImAparAperp,              AparAperp_basis)"
-                                   ", prod(N,ImAzAperp,                AzAperp_basis)"
+                                   ", prod(N,ImAparAperp,      qtag_,  AparAperp_basis)"
+                                   ", prod(N,ImAzAperp,        qtag_,  AzAperp_basis)"
                                    ", prod(N,ReAzApar,         qtag_,C,AzApar_basis)"
                                    "})")
     ws.factory("sum_::fjpsiphi_sinh({ prod(N,NAzAz,      Minus,      D,AzAz_basis)"
                                    ", prod(N,NAparApar,  Minus,      D,AparApar_basis)"
                                    ", prod(N,NAperpAperp,            D,AperpAperp_basis)"
-                                   ", prod(N,ReAparAperp,      qtag_,S,AparAperp_basis)"
-                                   ", prod(N,ReAzAperp,        qtag_,S,AzAperp_basis)"
+                                   ", prod(N,ReAparAperp,            S,AparAperp_basis)"
+                                   ", prod(N,ReAzAperp,              S,AzAperp_basis)"
                                    ", prod(N,ReAzApar,   Minus,      D,AzApar_basis)"
                                    "})")
     ws.factory("sum_::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
                                    ", prod(N,NAparApar,  Minus,qtag_,S,AparApar_basis)"
                                    ", prod(N,NAperpAperp,      qtag_,S,AperpAperp_basis)"
-                                   ", prod(N,ReAparAperp,Minus,      D,AparAperp_basis)"
-                                   ", prod(N,ReAzAperp,  Minus,      D,AzAperp_basis)"
+                                   ", prod(N,ReAparAperp,Minus,qtag_,D,AparAperp_basis)"
+                                   ", prod(N,ReAzAperp,  Minus,qtag_,D,AzAperp_basis)"
                                    ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
                                    "})")
     ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,tres_sig,SingleSided)" % name)
@@ -107,7 +107,7 @@ def buildJpsikstar(ws, name) :
     ws.factory("expr::ImAparAperp('( @4 * @3 - @5 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
 
-    ws.put(RooFormulaVar("qmix","@0*@1*(1-2*@2)",RooArgList( ws.cat("qrec"),ws.cat("tagdecision"),ws.var("wmistag") ) ) )
+    ws.put(RooFormulaVar("qmix","@0*@1*(1-2*@2)",RooArgList( ws["qrec"],ws["tagdecision"],ws["wmistag"] ) ) )
 
     ws.factory("{Minus[-1],Zero[0],One[1]}")
     # in J/psi K*, things factorize because deltaGamma = 0 -- use this !
@@ -127,7 +127,7 @@ def buildMomentPDF(w,name,data,moments) :
     for m in moments :
         C = 'C_%f' % m.coefficient()
         w.factory( '%s[%f]'%(C,m.coefficient() ) )
-        coef.add( w.var( C ) )
+        coef.add( w[C] )
         fact.add( m.basis() )
     w.put( RooRealSumPdf(name,name,fact,coef) )
     return w.pdf(name)
@@ -221,6 +221,11 @@ def buildBkgPdf( ws ):
 
 def definePolarAngularAmplitudes(ws):
 
+    ##choice: either fit for the Re&Im of the 3 amplitudes (and then
+    ##        constrain one phase and the sum of magnitudes)
+    ##        or fit in terms of angles and relative magnitudes
+    ##         Note: initial values from arXiv:0704.0522v2 [hep-ex] BaBar PUB-07-009
+    # ws.factory("{rz[0.556],rpar[0.211],rperp[0.233]}")
     ws.factory("{rz[0.463,0.1,0.9],rpar[0.211],rperp[0.347,0.1,0.9]}")
     ws.factory("{deltaz[0],deltapar[-2.93],deltaperp[2.91]}")
     ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
@@ -233,7 +238,14 @@ def definePolarAngularAmplitudes(ws):
     # this doesn't belong here
     ws.factory("{gamma[0.68,0.4,0.9],dm[17.7],dG[0.05,-0.3,0.3]}")
     ws.factory("expr::tau('1/@0',{gamma})")
-    ws.factory("{expr::S('-sin(phis)',{phis[0.]}),expr::D('cos(phis)',{phis}),C[0]}")
+    ##choice: either fit for the three degrees of freedom independently
+    ##        i.e. make S,D,C independent parameters
+    ##ws.factory("{S[0.717,-1,1],D[0.696,-1,1],C[0,-1,1]}")
+    ##        or write S,D,C in terms of phi_s
+    #ws.factory("{expr::S('-sin(phis)',{phis[0.]}),expr::D('cos(phis)',{phis}),C[0]}")
+    ws.factory("{expr::S('-sin(phis)',{phis[0.8]}),expr::D('cos(phis)',{phis}),C[0]}")
+    ##        The no-CP violation case:
+    ##ws.factory("{S[0],C[0],D[1]}")
 
 def buildFullJpsiPhiPdf( ws ):
     # naming convention for pdfnames:
