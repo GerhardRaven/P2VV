@@ -34,7 +34,7 @@ ws.factory("{wmistag[0.0]}")
 ##        i.e. make S,D,C independent parameters
 ##ws.factory("{S[0.717,-1,1],D[0.696,-1,1],C[0,-1,1]}")
 ##        or write S,D,C in terms of phi_s
-ws.factory("{expr::S('sin(phis)',{phis[0.8]}),expr::D('cos(phis)',{phis}),C[0]}")
+ws.factory("{expr::S('-sin(phis)',{phis[0.8]}),expr::D('cos(phis)',{phis}),C[0]}")
 ##        The no-CP violation case:
 ##ws.factory("{S[0],C[0],D[1]}")
 ##obs = ws.argSet("tagdecision,trcospsi,trcostheta,trphi,t")
