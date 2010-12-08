@@ -188,10 +188,8 @@ def buildABkgPdf( ws, name, resname, psimasspdfname ):
     from itertools import repeat
 
     # build the dependencies if needed
-    if ws.function(resname)==0:
-        buildResoModels(ws)
-    if ws.function("m_%s"%name)==0:
-        buildMassPDFs(ws)
+    if not ws.function(resname)     : buildResoModels(ws)
+    if not ws.function("m_%s"%name) : buildMassPDFs(ws)
 
     #background B mass pdf
     ws.factory("Exponential::m_%s(m,m_%s_exp[-0.001,-0.01,-0.0001])"% tuple(repeat(name,2)) )
@@ -232,11 +230,10 @@ def definePolarAngularAmplitudes(ws):
     ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
     ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
     
+    # this doesn't belong here
     ws.factory("{gamma[0.68,0.4,0.9],dm[17.7],dG[0.05,-0.3,0.3]}")
     ws.factory("expr::tau('1/@0',{gamma})")
-
-    # this doesn't belong here
-    ws.factory("{expr::S('sin(phis)',{phis[0.]}),expr::D('cos(phis)',{phis}),C[0]}")
+    ws.factory("{expr::S('-sin(phis)',{phis[0.]}),expr::D('cos(phis)',{phis}),C[0]}")
 
 def buildFullJpsiPhiPdf( ws ):
     # naming convention for pdfnames:
@@ -262,37 +259,20 @@ def buildFullJpsiPhiPdf( ws ):
 
 
 def readParameters( ws, filename, pdfname='pdf_ext'):
-    pdf = ws.pdf(pdfname)
+    pdf = ws[pdfname]
     pdf.getParameters(ws.set('observables')).readFromFile( filename )
-    data = ws.data('data')
+    data = ws['data']
     if not data:
         print 'warning: no dataset in workspace. cannot initialize yields'
     else:
         from math import sqrt
-        fsig = ws.var('Nsig').getVal() /  ws.var('Nbkg').getVal()
+        fsig = ws['Nsig'].getVal() /  ws['Nbkg'].getVal()
         N = data.numEntries()
-        ws.var('Nsig').setVal( N * fsig )
-        ws.var('Nsig').setError( sqrt( N * fsig ) )
-        ws.var('Nbkg').setVal( N * (1-fsig) )
-        ws.var('Nbkg').setError( sqrt( N * (1-fsig) ) )
+        ws['Nsig'].setVal( N * fsig )
+        ws['Nsig'].setError( sqrt( N * fsig ) )
+        ws['Nbkg'].setVal( N * (1-fsig) )
+        ws['Nbkg'].setError( sqrt( N * (1-fsig) ) )
 
-def setConstant(ws, pattern, constant = True, value = 9999.):
-    rc = int(0)
-    arglist = RooArgList(ws.allVars())
-    rexp = TRegexp(pattern,True)
-    for i in range(0,arglist.getSize()) :
-        arg = arglist.at(i) ;
-        if TString(arg.GetName()).Index(rexp)>=0 :
-            arg.setConstant( constant )
-            if constant and value != 9999 :
-                if value < arg.getMin() : 
-                    arg.setMin(value) 
-                elif value > arg.getMax() :
-                    arg.setMax(value) 
-                arg.setVal(value) 
-            rc += 1
-    #print 'number of parameters matching ', pattern, rc
-    return rc
 
 ### TODO: make a python version of buildEfficiencyPDF....
 ### TODO: sample efficiency from 3D angle histogram -- i.e. make a Fourier transform...

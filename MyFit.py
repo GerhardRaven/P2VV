@@ -1,8 +1,5 @@
 from ROOT import *
-import GaudiPython
-P2VV = GaudiPython.gbl.P2VV
-#to load functions (made with namespace function) like makePVVPdf:
-GaudiPython.loaddict('P2VVDict')
+from RooFitDecorators import *
 gSystem.Load("libp2vv")
 from math import pi
 
@@ -321,7 +318,7 @@ pdf_ext.getParameters( ws.set('observables')).writeToFile( 'initialfitparameters
 #file = TFile('duitsedata.root')
 #NTupletree = file.Get('Bs2JpsiPhi')
 
-file = TFile('/data/bfys/wouterh/JpsiXAnalysis/Bs2JpsiPhiTupleReduced.root')
+file = TFile('Bs2JpsiPhiTupleReduced.root')
 NTupletree = file.Get('dataset')
 
 data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m==m')
