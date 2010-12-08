@@ -1,4 +1,5 @@
 from ROOT import *
+import RooFitDecorators
 gSystem.Load("libp2vv")
 
 feelTheNeedForSpeed = True
@@ -9,7 +10,6 @@ if feelTheNeedForSpeed:
     RooNumGenConfig.defaultConfig().methodND(False,True).Print()
     RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 
-RooWorkspace.put = getattr(RooWorkspace,'import')
 
 def buildAngularBasis(ws, ab) :
     #definition of the angular part of the PDF in terms of basis functions...
@@ -20,13 +20,13 @@ def buildAngularBasis(ws, ab) :
         ws.put(RooAddition_( n, n, s ) )
         return ws.function(n)
 
-    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0, sqrt(1./5.)), ( 0,0,2,2, -sqrt( 3./5.))
-                               , ( 2,0,0, 0, 4.), ( 2,0,2,0, sqrt(4./5.)), ( 2,0,2,2, -sqrt(12./5.)) ] )
-           , _ba("AparApar",   [ ( 2,2,0, 0, 1.), ( 2,2,2,0, sqrt(1./20.)), ( 2,2,2,2,  sqrt( 3./20.)) ] )
-           , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0,-sqrt(1./5.)) ] )
-           , _ba("AparAperp",  [ ( 2,2,2,-1, sqrt(3./5.)) ] )
-           , _ba("AzAperp",    [ ( 2,1,2, 1, sqrt(6./5.)) ] )
-           , _ba("AzApar",     [ ( 2,1,2,-2,-sqrt(6./5.)) ] )
+    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./5.))
+                               , ( 2,0,0, 0, 4.), ( 2,0,2,0,  sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./5.)) ] )
+           , _ba("AparApar",   [ ( 2,2,0, 0, 1.), ( 2,2,2,0,  sqrt(1./20.)), ( 2,2,2,2,  sqrt( 3./20.)) ] )
+           , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0, -sqrt(1./ 5.)) ] )
+           , _ba("AparAperp",  [ ( 2,2,2,-1,  sqrt(3./5.)) ] )
+           , _ba("AzAperp",    [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
+           , _ba("AzApar",     [ ( 2,1,2,-2, -sqrt(6./5.)) ] )
            )
 
 def buildJpsiphi(ws, name) :
@@ -134,3 +134,6 @@ def buildMomentPDF(w,name,data,moments) :
 
 
 ### TODO: make a python version of buildEfficiencyPDF....
+### TODO: sample efficiency from 3D angle histogram -- i.e. make a Fourier transform...
+
+
