@@ -13,6 +13,7 @@ SOURCES =				\
     RooLegendre.cxx			\
     RooP2VVAngleBasis.cxx		\
     RooSpHarmonic.cxx		\
+    RooMultiCatGenerator.cxx		\
     utils.cxx		\
     basis.cxx		\
     p2vv_dict.cxx
