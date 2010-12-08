@@ -150,7 +150,7 @@ dGG  = RooFormulaVar("dGG","#Delta#Gamma_{s}/#Gamma_{s}","@0/@1",RooArgList(dG,g
 ws.factory('{phis[0.8]}')
 phis = ws.var('phis')
 
-ws.factory("{expr::S('sin(phis)',{phis}),expr::D('cos(phis)',{phis}),C[0]}")
+ws.factory("{expr::S('-sin(phis)',{phis}),expr::D('cos(phis)',{phis}),C[0]}")
 S = ws.function('S')
 D = ws.function('D')
 
