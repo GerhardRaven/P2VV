@@ -42,7 +42,7 @@ def buildJpsiphi(ws, name) :
     ws.factory("expr::ImAparAperp('( @4 * @3 - @5 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
 
-    ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws.cat('tagdecision'),ws.var('wmistag')) ) )
+    ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws.cat('tagdecision'),ws.var('tagomega')) ) )
 
     ws.factory("expr::N('1-@0*@1',{qtag_,C})")
     ws.factory("Minus[-1]")
@@ -92,7 +92,7 @@ def buildJpsiphi(ws, name) :
                                    ", prod(N,ReAzAperp,  Minus,      D,AzAperp_basis)"
                                    ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
                                    "})")
-    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,res,SingleSided)" % name)
+    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,tres_sig,SingleSided)" % name)
     return ws.pdf(name)
 
 
@@ -113,7 +113,7 @@ def buildJpsikstar(ws, name) :
     # in J/psi K*, things factorize because deltaGamma = 0 -- use this !
     ws.factory("PROD::%s( RealSumPdf( { AzAz_basis , AparApar_basis, AperpAperp_basis, AparAperp_basis, AzAperp_basis, AzApar_basis} "
                        "            , { NAzAz,       NAparApar,      NAperpAperp,      ImAparAperp,     ImAzAperp,     ReAzApar } )"
-                       ", BDecay(t,tau,Zero,One,Zero,qmix,Zero,dm,res,SingleSided))"%name)
+                       ", BDecay(t,tau,Zero,One,Zero,qmix,Zero,dm,tres_sig,SingleSided))"%name)
     return ws.pdf(name)
 
 def buildMomentPDF(w,name,data,moments) :
@@ -132,5 +132,166 @@ def buildMomentPDF(w,name,data,moments) :
     w.put( RooRealSumPdf(name,name,fact,coef) )
     return w.pdf(name)
 
+
+def buildMassPDFs(ws):
+    #signal B mass pdf
+    ws.factory("Gaussian::m_sig(m,m_sig_mean[5280,5200,5400],m_sig_sigma[10,3,30])")
+    
+    # background B mass pdf
+    #ws.factory("Exponential::m_bkg(m,m_bkg_exp[-0.001,-0.1,0.1])")
+    # signal phi mass pdf
+    #ws.factory("Voigtian::mphi_phisig(mKK,mphi_phi_mean[1919.455],mphi_phi_width[4.26],mphi_phi_sigma[1,0.1,10])")
+    # background phi mass pdf (would like to use a nice threshold function here ... RooDstD0BG seems a bit complicated
+    #ws.factory("DstD0BG::mphi_combbkg(mKK,mphi_bkg_m0[987.4],mphi_bkg_C[10,1,30],mphi_bkg_B[1,0.1,10],const_zero)")
+    
+    # signal J/psi mass pdf
+    ws.factory("CBShape::mpsi_sig(mdau1,mpsi_sig_mean[3097,3085,3110],mpsi_sig_sigma[13.1,5,20],"
+               "mpsi_sig_alpha[1.36,0.5,3],mpsi_sig_n[3])")
+    
+    # background J/psi mass pdf
+    ws.factory("Exponential::mpsi_bkg(mdau1,mpsi_bkg_exp[-0.0002,-0.01,0.01])")
+
+def build3GaussianResoModel(ws,name):
+    ws.factory("GaussModel::tres_%s_g1(t,tres_%s_m1[0,-0.2,0.2],tres_%s_s1[1.1,0.3,2], 1, sigmat)" % (name,name,name))
+    ws.factory("GaussModel::tres_%s_g2(t,tres_%s_m1,            tres_%s_s2[2.0,1.5,10],1, sigmat)" % (name,name,name))
+    ws.factory("GaussModel::tres_%s_g3(t,tres_%s_m1,            tres_%s_s3[0.54,0.1,3.0])" % (name,name,name))
+    ws.factory("AddModel::tres_%s({tres_%s_g3,tres_%s_g2,tres_%s_g1},{tres_%s_f3[0.001,0.00,0.01],tres_%s_f2[0.2,0.01,1]})" % (name,name,name,name,name,name))
+    
+def buildResoModels(ws):
+    build3GaussianResoModel(ws,'sig')
+    build3GaussianResoModel(ws,'nonpsi')
+
+def declareObservables( ws ):
+    from math import pi
+
+    # transvercity angles
+    ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f]}"%(-pi,pi))
+    # helicity angles. we can also compute these from the transversity angles and add them as columns
+    # ws.factory("{ helcosthetaL[-1,1], helcosthetaK[-1,1], helphi[%f,%f]}"%(-pi,pi))
+    # tag 
+    ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
+    ws.factory("tagomega[0,0.5]")
+    # B, jpsi, phi mass
+    ws.factory("m[5200,5450]")
+    ws.factory("mdau1[%f,%f]"%(3097-60,3097+60))
+    ws.factory("mdau2[0,2000]")
+    # time , time-error
+    ws.factory("{t[-2,14],sigmat[0.005,0.1]}")
+
+    # define a set for the observables (we can also define this from the pdf and data.
+    ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,tagomega,tagdecision") 
+
+    # the next is something we may need to switch on or off, depending on whether we use a pdf for sigmat
+    ws.defineSet("conditionalobservables","sigmat")
+
+def buildABkgPdf( ws, name, resname, psimasspdfname ):
+    from itertools import repeat
+
+    # build the dependencies if needed
+    if ws.function(resname)==0:
+        buildResoModels(ws)
+    if ws.function("m_%s"%name)==0:
+        buildMassPDFs(ws)
+
+    #background B mass pdf
+    ws.factory("Exponential::m_%s(m,m_%s_exp[-0.001,-0.01,-0.0001])"% tuple(repeat(name,2)) )
+
+    #background propertime
+    ws.factory("RooDecay::t_sl_%s(t,0,%s,SingleSided)"%(name,resname))
+    ws.factory("RooDecay::t_ml_%s(t,t_ml_%s_tau[0.21,0.1,0.5],%s,SingleSided)"%(name,name,resname))
+    ws.factory("RooDecay::t_ll_%s(t,t_ll_%s_tau[1.92,1.,2.5],%s,SingleSided)"%(name,name,resname))
+    ws.factory("SUM::t_%s(t_%s_fll[0.004,0,1]*t_ll_%s,t_%s_fml[0.02,0,1]*t_ml_%s,t_sl_%s)"% tuple(repeat(name,6)))
+    
+    #background angles: 
+    ws.factory("Chebychev::trcospsipdf_%s(trcospsi,{tcp_0_%s[-0.13,-1,1],tcp_1_%s[0.23,-1,1],tcp_2_%s[-0.057,-1,1],tcp_3_%s[-0.0058,-1,1],tcp_4_%s[-0.0154,-1,1]})"% tuple(repeat(name, 6)) )
+    ws.factory("Chebychev::trcosthetapdf_%s(trcostheta,{tct_0_%s[0.08,-1,1],tct_1_%s[-0.22,-1,1],tct_2_%s[-0.022,-1,1],tct_3_%s[0.21,-1,1],tct_4_%s[0.0125,-1,1]})"% tuple(repeat(name, 6)) )
+    ws.factory("Chebychev::trphipdf_%s(trphi,{tp_0_%s[0.10,-1,1],tp_1_%s[0.328,-1,1],tp_2_%s[0.081,-1,1],tp_3_%s[0.316,-1,1],tp_4_%s[0.044,-1,1]})"% tuple(repeat(name, 6)) )
+
+    #now multiply
+    ws.factory("PROD::%s_pdf(trcosthetapdf_%s,trcospsipdf_%s,trphipdf_%s, t_%s, m_%s, %s )"%(tuple(repeat(name,6)) + (psimasspdfname,)))
+
+
+def buildBkgPdf( ws ):
+    
+    # assume that the resolution models and psi mass models have been built     
+    buildABkgPdf(ws,'nonpsi','tres_nonpsi','mpsi_bkg')
+    buildABkgPdf(ws,'psi','tres_sig','mpsi_sig')
+    # add them
+    ws.factory("SUM::bkg_pdf(f_psi[0.5,0.01,1]*psi_pdf,nonpsi_pdf)")
+    
+    return ws.pdf('bkg_pdf')
+
+def definePolarAngularAmplitudes(ws):
+
+    ws.factory("{rz[0.463,0.1,0.9],rpar[0.211],rperp[0.347,0.1,0.9]}")
+    ws.factory("{deltaz[0],deltapar[-2.93],deltaperp[2.91]}")
+    ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
+    ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
+    ws.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})")
+    ws.factory("expr::ImApar ('rpar  * sin(deltapar)', {rpar,deltapar})")
+    ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
+    ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
+    
+    ws.factory("{gamma[0.68,0.4,0.9],dm[17.7],dG[0.05,-0.3,0.3]}")
+    ws.factory("expr::tau('1/@0',{gamma})")
+
+    # this doesn't belong here
+    ws.factory("{expr::S('sin(phis)',{phis[0.]}),expr::D('cos(phis)',{phis}),C[0]}")
+
+def buildFullJpsiPhiPdf( ws ):
+    # naming convention for pdfnames:
+    # pdfname = observable_component
+    # naming convention for pdf params:
+    # parname = pdfname_parname
+
+    declareObservables(ws)
+    buildResoModels(ws)
+    buildMassPDFs(ws)
+    buildBkgPdf(ws)
+
+    # this builds the angular pdf for J/psi phi
+    definePolarAngularAmplitudes(ws)
+    buildJpsiphi(ws,'jpsiphipdf')
+    
+    # still need to combine with the mass
+    ws.factory("PROD::sig_pdf(jpsiphipdf,m_sig)")
+    
+    # make the final pdf
+    ws.factory("SUM::pdf_ext(Nsig[1200,0,1000]*sig_pdf,Nbkg[81200,0,1000000]*bkg_pdf)")
+    ws.factory("SUM::pdf(f_sig[0.01,0.,1.0]*sig_pdf,bkg_pdf)")
+
+
+def readParameters( ws, filename, pdfname='pdf_ext'):
+    pdf = ws.pdf(pdfname)
+    pdf.getParameters(ws.set('observables')).readFromFile( filename )
+    data = ws.data('data')
+    if not data:
+        print 'warning: no dataset in workspace. cannot initialize yields'
+    else:
+        from math import sqrt
+        fsig = ws.var('Nsig').getVal() /  ws.var('Nbkg').getVal()
+        N = data.numEntries()
+        ws.var('Nsig').setVal( N * fsig )
+        ws.var('Nsig').setError( sqrt( N * fsig ) )
+        ws.var('Nbkg').setVal( N * (1-fsig) )
+        ws.var('Nbkg').setError( sqrt( N * (1-fsig) ) )
+
+def setConstant(ws, pattern, constant = True, value = 9999.):
+    rc = int(0)
+    arglist = RooArgList(ws.allVars())
+    rexp = TRegexp(pattern,True)
+    for i in range(0,arglist.getSize()) :
+        arg = arglist.at(i) ;
+        if TString(arg.GetName()).Index(rexp)>=0 :
+            arg.setConstant( constant )
+            if constant and value != 9999 :
+                if value < arg.getMin() : 
+                    arg.setMin(value) 
+                elif value > arg.getMax() :
+                    arg.setMax(value) 
+                arg.setVal(value) 
+            rc += 1
+    #print 'number of parameters matching ', pattern, rc
+    return rc
 
 ### TODO: make a python version of buildEfficiencyPDF....
