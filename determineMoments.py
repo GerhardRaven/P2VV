@@ -6,12 +6,15 @@ from math import pi
 
 
 def doit(name, angles, tree, irange, lrange, mrange ) :
+    # TODO: veto signal mass window... or use sweight to veto signal
+    # TODO: use sweights to split J/psi from mumu combinatoric
+    # TODO: veto insignifcant moments iff i,l,abs(m)>2 (i.e. those not in signal PDF!)
     data = RooDataSet('data','data',tree,angles)
     ab = apybasis(w,angles)
     moments = []
-    #  Warning: the Y_lm are orthonormal, but the P_i are orthogonal, with dot product 2/(2*i+1)
     for (i,l,m) in product(irange,lrange,mrange) :
           if abs(m)>l : continue
+          #  Warning: the Y_lm are orthonormal, but the P_i are orthogonal, with dot product 2/(2*i+1)
           moments.append( Moment( ab.build(name+'_mom',i,0,l,m,1.), float(2*i+1)/2 ) )
     pdf = buildMomentPDF( w, name, data, moments )
 
