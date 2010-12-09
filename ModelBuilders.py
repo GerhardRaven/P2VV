@@ -2,7 +2,7 @@ from ROOT import *
 import RooFitDecorators
 gSystem.Load("libp2vv")
 
-feelTheNeedForSpeed = False
+feelTheNeedForSpeed = True
 if feelTheNeedForSpeed:
     ### experimental fast(er) toy generator...
     RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
@@ -52,7 +52,7 @@ def buildAngularBasis(ws, ab) :
            )
 
 def buildJpsiphi(ws, name) :
-    basis = buildAngularBasis(ws, apybasis(ws,'trcospsi','trcostheta','trphi') )
+    basis = buildAngularBasis(ws, apybasis(ws,ws.set('transversityangles')))
 
     # define the relevant combinations of strong amplitudes
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
@@ -119,7 +119,7 @@ def buildJpsiphi(ws, name) :
 
 
 def buildJpsikstar(ws, name) :
-    buildAngularBasis(ws, apybasis(ws,'trcospsi','trcostheta','trphi') )
+    buildAngularBasis(ws, apybasis(ws,ws.set('transversityangles')))
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::NAparApar  ('( @4 * @4 + @5 * @5 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::NAperpAperp('( @2 * @2 + @3 * @3 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
@@ -188,8 +188,10 @@ def declareObservables( ws ):
 
     # transvercity angles
     ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f]}"%(-pi,pi))
+    ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
     # helicity angles. we can also compute these from the transversity angles and add them as columns
-    # ws.factory("{ helcosthetaL[-1,1], helcosthetaK[-1,1], helphi[%f,%f]}"%(-pi,pi))
+    ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
+    ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
     # tag 
     ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
     ws.factory("tagomega[0,0.5]")
@@ -205,6 +207,7 @@ def declareObservables( ws ):
 
     # the next is something we may need to switch on or off, depending on whether we use a pdf for sigmat
     ws.defineSet("conditionalobservables","sigmat")
+
 
 def buildABkgPdf( ws, name, resname, psimasspdfname ):
     from itertools import repeat
@@ -310,5 +313,3 @@ def readParameters( ws, filename, pdfname='pdf_ext'):
 
 ### TODO: make a python version of buildEfficiencyPDF....
 ### TODO: sample efficiency from 3D angle histogram -- i.e. make a Fourier transform...
-
-
