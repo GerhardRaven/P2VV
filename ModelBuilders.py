@@ -28,8 +28,10 @@ class apybasis : # TODO: can also implement this by returning a 'bound' function
         name = "%s_%d_%d_%d_%d" % (label,i,j,k,l)
         name.replace("-","m")
         b = self.w.function(name) # workaround a bug in ROOT 5.26 -- if name not present, w.obj(name) will SEGV...
-        if not b : self.w.put( RooP2VVAngleBasis(name,name,self.cpsi,self.ctheta,self.phi,i,j,k,l,c) )
-        return self.w.function(name)
+        if not b : 
+            self.w.put( RooP2VVAngleBasis(name,name,self.cpsi,self.ctheta,self.phi,i,j,k,l,c) )
+            b = self.w[name]
+        return b
 
 
 def buildAngularBasis(ws, ab) :
@@ -38,8 +40,7 @@ def buildAngularBasis(ws, ab) :
         n = name + '_basis'
         s = RooArgSet()
         for c in comp : s.add( ab.build(name,c[0],c[1],c[2],c[3],c[4]) )
-        ws.put(RooAddition_( n, n, s ) )
-        return ws.function(n)
+        return ws.put(RooAddition_( n, n, s ) )
 
     return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./5.))
                                , ( 2,0,0, 0, 4.), ( 2,0,2,0,  sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./5.)) ] )
