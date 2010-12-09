@@ -1,6 +1,6 @@
 from ROOT import *
 gSystem.Load('libp2vv')
-from ModelBuilders import buildMomentPDF,apybasis
+from ModelBuilders import buildMomentPDF,apybasis,declareObservables,buildMassPDFs
 from itertools import count,product
 from math import pi
 
@@ -20,14 +20,14 @@ def doit(name, angles, tree, irange, lrange, mrange ) :
 
     c = TCanvas()
     c.Divide(3,2)
-    for (v,i) in zip( angles, count(1) ) : # use enumerate (python >= 2.6)
-        c.cd(i)
+    for (i,v) in enumerate( angles ) :
+        c.cd(1+i)
         frame = v.frame()
         data.plotOn(frame)
         pdf.plotOn(frame)
         frame.Draw()
 
-        c.cd(3+i)
+        c.cd(4+i)
         others = RooArgList( angles )
         others.remove( v )
         hist = pdf.createHistogram( others.names() )
@@ -42,14 +42,14 @@ f = TFile(fname)
 tree = f.Get(dataName)
 
 w = RooWorkspace("w")
-w.factory("{helcosthetaK[-1,1],helcosthetaL[-1,1],helphi[%s,%s]}"%(-pi,pi))
-w.factory("{trcospsi[-1,1],trcostheta[-1,1],trphi[%s,%s]}"%(-pi,pi))
-helangles =  w.argSet('helcosthetaK,helcosthetaL,helphi')
-trangles  =  w.argSet('trcospsi,trcostheta,trphi')
+declareObservables(w)
+
+## TODO: invoke mass fit, and compute SWeights
+#buildMassPDFs(w)
 
 # transversity needs many more trphi moments
-c2 = doit("bkg_trangles_pdf", trangles, tree, range(3), range(21), range(-8,9) )
+c2 = doit("bkg_trangles_pdf", w.set('transversityangles'), tree, range(3), range(21), range(-8,9) )
 # helicity has phi almost flat...
-c1 = doit("bkg_helangles_pdf",  helangles, tree, range(3), range(21), range(-2,3) )
+c1 = doit("bkg_helangles_pdf",w.set('helicityangles'), tree, range(3), range(21), range(-2,3) )
 
 
