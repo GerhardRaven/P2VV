@@ -150,9 +150,10 @@ dGG  = RooFormulaVar("dGG","#Delta#Gamma_{s}/#Gamma_{s}","@0/@1",RooArgList(dG,g
 ws.factory('{phis[0.8]}')
 phis = ws.var('phis')
 
-ws.factory("{expr::S('-sin(phis)',{phis}),expr::D('cos(phis)',{phis}),C[0]}")
-S = ws.function('S')
-D = ws.function('D')
+ws.factory("{expr::S('-1*sin(phis)',{phis}),expr::D('cos(phis)',{phis}),C[0]}")
+ws.factory("{expr::Sold('sin(phis)',{phis}),expr::Dold('cos(phis)',{phis}),Cold[0]}")
+Sold = ws.function('Sold')
+Dold = ws.function('Dold')
 
 ################################
 ### physics parameters lists ###
@@ -161,8 +162,8 @@ D = ws.function('D')
 myPhysicsParametersListJpsiphi = P2VV.PhysParamList(tau,
                                                     dGG,
                                                     dm,
-                                                    S,
-                                                    D)
+                                                    Sold,
+                                                    Dold)
 
 ###############################
 ### Experimental parameters ###
