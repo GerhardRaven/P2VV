@@ -10,13 +10,34 @@ if feelTheNeedForSpeed:
     RooNumGenConfig.defaultConfig().methodND(False,True).Print()
     RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 
+class apybasis : # TODO: can also implement this by returning a 'bound' function instead...
+    def __init__(self,w,*args) :
+       self.w = w
+       (cpsi,cheta,phi) = args if len(args)==3 else args[0]
+
+       def _f(x) :
+            if type(x) is str : x = w[x]
+            if not self.w.function(x.GetName()) :
+                w.put(x)
+            return x
+       self.cpsi   = _f(cpsi)
+       self.ctheta = _f(cheta)
+       self.phi    = _f(phi)
+
+    def build(self,label,i,j,k,l,c) :
+        name = "%s_%d_%d_%d_%d" % (label,i,j,k,l)
+        name.replace("-","m")
+        b = self.w.function(name) # workaround a bug in ROOT 5.26 -- if name not present, w.obj(name) will SEGV...
+        if not b : self.w.put( RooP2VVAngleBasis(name,name,self.cpsi,self.ctheta,self.phi,i,j,k,l,c) )
+        return self.w.function(name)
+
 
 def buildAngularBasis(ws, ab) :
     #definition of the angular part of the PDF in terms of basis functions...
     def _ba(name,comp) :
         n = name + '_basis'
         s = RooArgSet()
-        for c in comp : s.add( ab(name,c[0],c[1],c[2],c[3],c[4]) )
+        for c in comp : s.add( ab.build(name,c[0],c[1],c[2],c[3],c[4]) )
         ws.put(RooAddition_( n, n, s ) )
         return ws.function(n)
 
@@ -30,7 +51,7 @@ def buildAngularBasis(ws, ab) :
            )
 
 def buildJpsiphi(ws, name) :
-    basis = buildAngularBasis(ws, abasis(ws,'trcospsi','trcostheta','trphi') )
+    basis = buildAngularBasis(ws, apybasis(ws,'trcospsi','trcostheta','trphi') )
 
     # define the relevant combinations of strong amplitudes
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
@@ -97,7 +118,7 @@ def buildJpsiphi(ws, name) :
 
 
 def buildJpsikstar(ws, name) :
-    buildAngularBasis(ws, abasis(ws,'trcospsi','trcostheta','trphi') )
+    buildAngularBasis(ws, apybasis(ws,'trcospsi','trcostheta','trphi') )
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::NAparApar  ('( @4 * @4 + @5 * @5 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::NAperpAperp('( @2 * @2 + @3 * @3 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
