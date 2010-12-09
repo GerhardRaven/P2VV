@@ -2,7 +2,7 @@ from ROOT import *
 import RooFitDecorators
 gSystem.Load("libp2vv")
 
-feelTheNeedForSpeed = True
+feelTheNeedForSpeed = False
 if feelTheNeedForSpeed:
     ### experimental fast(er) toy generator...
     RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
