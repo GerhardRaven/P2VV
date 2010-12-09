@@ -1,4 +1,6 @@
 from ROOT import RooArgSet, RooArgList
+from ROOT import gStyle
+gStyle.SetPalette(1)
 
 def _RooArgSetIter(self) :
     z = self.createIterator()
@@ -9,11 +11,16 @@ def _RooArgSetIter(self) :
 
 RooArgList.__iter__ = _RooArgSetIter
 RooArgList.__len__  = lambda s   : s.getSize()
-RooArgSet.__iter__ = _RooArgSetIter
-RooArgSet.__len__  = lambda s   : s.getSize()
 #RooArgSet.__iadd__ = lambda s,y : s.add(y)
 #RooArgSet.__radd__ = lambda y,s : s.add(y)
 #RooArgSet.__add__  = lambda x,y : RooArgSet(x).__iadd__(y)
+RooArgList.nameList = lambda s : [ j.GetName() for j in s ] 
+RooArgList.names    = lambda s : ','.join( s.nameList() )
+
+RooArgSet.__iter__  = _RooArgSetIter
+RooArgSet.__len__   = lambda s   : s.getSize()
+RooArgSet.nameList  = lambda s : [ j.GetName() for j in s ]
+RooArgSet.names     = lambda s : ','.join( s.nameList() )
 
 from ROOT import RooWorkspace
 RooWorkspace.put = getattr(RooWorkspace,'import')
