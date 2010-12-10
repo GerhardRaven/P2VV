@@ -2,7 +2,7 @@ from ROOT import *
 import RooFitDecorators
 gSystem.Load("libp2vv")
 
-feelTheNeedForSpeed = False
+feelTheNeedForSpeed = True
 if feelTheNeedForSpeed:
     ### experimental fast(er) toy generator...
     RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
@@ -27,8 +27,10 @@ class apybasis : # TODO: can also implement this by returning a 'bound' function
         name = "%s_%d_%d_%d_%d" % (label,i,j,k,l)
         name.replace("-","m")
         b = self.w.function(name) # workaround a bug in ROOT 5.26 -- if name not present, w.obj(name) will SEGV...
-        if not b : self.w.put( RooP2VVAngleBasis(name,name,self.cpsi,self.ctheta,self.phi,i,j,k,l,c) )
-        return self.w.function(name)
+        if not b : 
+            self.w.put( RooP2VVAngleBasis(name,name,self.cpsi,self.ctheta,self.phi,i,j,k,l,c) )
+            b = self.w[name]
+        return b
 
 
 def buildAngularBasis(ws, ab) :
@@ -37,8 +39,7 @@ def buildAngularBasis(ws, ab) :
         n = name + '_basis'
         s = RooArgSet()
         for c in comp : s.add( ab.build(name,c[0],c[1],c[2],c[3],c[4]) )
-        ws.put(RooAddition_( n, n, s ) )
-        return ws.function(n)
+        return ws.put(RooAddition_( n, n, s ) )
 
     return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./5.))
                                , ( 2,0,0, 0, 4.), ( 2,0,2,0,  sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./5.)) ] )
@@ -50,7 +51,7 @@ def buildAngularBasis(ws, ab) :
            )
 
 def buildJpsiphi(ws, name) :
-    basis = buildAngularBasis(ws, apybasis(ws,'trcospsi','trcostheta','trphi') )
+    basis = buildAngularBasis(ws, apybasis(ws,ws.set('transversityangles')))
 
     # define the relevant combinations of strong amplitudes
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
@@ -117,7 +118,7 @@ def buildJpsiphi(ws, name) :
 
 
 def buildJpsikstar(ws, name) :
-    buildAngularBasis(ws, apybasis(ws,'trcospsi','trcostheta','trphi') )
+    buildAngularBasis(ws, apybasis(ws,ws.set('transversityangles')))
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::NAparApar  ('( @4 * @4 + @5 * @5 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::NAperpAperp('( @2 * @2 + @3 * @3 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
@@ -210,8 +211,10 @@ def declareObservables( ws ):
 
     # transvercity angles
     ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f]}"%(-pi,pi))
+    ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
     # helicity angles. we can also compute these from the transversity angles and add them as columns
-    # ws.factory("{ helcosthetaL[-1,1], helcosthetaK[-1,1], helphi[%f,%f]}"%(-pi,pi))
+    ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
+    ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
     # tag 
     ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
     ws.factory("tagomega[0,0.5]")
@@ -227,6 +230,7 @@ def declareObservables( ws ):
 
     # the next is something we may need to switch on or off, depending on whether we use a pdf for sigmat
     ws.defineSet("conditionalobservables","sigmat")
+
 
 def buildABkgPdf( ws, name, resname, psimasspdfname ):
     from itertools import repeat
@@ -332,5 +336,3 @@ def readParameters( ws, filename, pdfname='pdf_ext'):
 
 ### TODO: make a python version of buildEfficiencyPDF....
 ### TODO: sample efficiency from 3D angle histogram -- i.e. make a Fourier transform...
-
-
