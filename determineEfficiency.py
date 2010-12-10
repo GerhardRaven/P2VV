@@ -26,13 +26,13 @@ pdf = w[pdfName]
 data = w[dataName] 
 allObs = pdf.getObservables( data.get() )
 
+# TODO: use predefined 'transversityangles' set, never refer to them by explicit name
 angles = w.argSet("trcospsi,trcostheta,trphi")
 
 #replace input by inefficient data
 eps = efficiency( angles )
 inEffData = RooDataSet( "inEffData","inEffData", allObs )
-for (ii,event) in enumerate( data ):
-    # if ii>10000 : break
+for event in  data :
     allObs.assignValueOnly( event )
     if eps.accept() : inEffData.add( allObs )
 data = inEffData;
@@ -57,8 +57,8 @@ pdf_eff = buildEffMomentsPDF(w, "_eff", pdf, data, moments)
 
 c = TCanvas()
 c.Divide(3,1);
-for (var,i) in zip(angles,count(1)) :
-     c.cd(i); 
+for (i,var) in enumerate(angles) :
+     c.cd(1+i) # start argument of enumerate is python >= 2.6...
      plot = var.frame()
      data.plotOn(plot); 
      pdf.plotOn(plot,RooFit.LineColor(kBlue))

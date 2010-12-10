@@ -54,4 +54,19 @@ private:
     const RooArgSet&  _nset;
 };
 
+#include "RooAbsData.h"
+typedef std::vector<IMoment*> IMomentsVector;
+template class std::vector<IMoment*>;
+int _computeMoments(RooAbsData& data, IMomentsVector& moments) {
+   typedef std::vector<IMoment*>::iterator iter;
+   if (moments.empty()) return -1; 
+   RooArgSet *obs = moments.front()->basis().getObservables(data);
+   int i=0;
+   while (i<data.numEntries()) {
+       *obs = *data.get(i++);
+       for ( iter m = moments.begin(); m!=moments.end(); ++m) (*m)->inc();
+   }
+   return i;
+}
+
 #endif

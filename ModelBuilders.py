@@ -139,13 +139,12 @@ def buildJpsikstar(ws, name) :
 
 
 ## Looping over data in python is quite a bit slower than in C++
-## Why?? How to improve this??
+## So we adapt the arguments, and then defer to the C++ _computeMoments
 def computeMoments( data, moments ) :
     if not moments : return None
-    allObs = moments[0].basis().getObservables(data)
-    for event in data : 
-        allObs.assignValueOnly( event )
-        for m in moments : m.inc()
+    vecmom = std.vector('IMoment*')()
+    for m in moments : vecmom.push_back(m)
+    return _computeMoments( data, vecmom )
 
 def buildMomentPDF(w,name,data,moments) :
     if not moments : return None
