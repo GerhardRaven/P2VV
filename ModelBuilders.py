@@ -16,9 +16,8 @@ class apybasis : # TODO: can also implement this by returning a 'bound' function
        (cpsi,cheta,phi) = args if len(args)==3 else args[0]
 
        def _f(x) :
-            if type(x) is str : x = w[x]
-            if not self.w.function(x.GetName()) :
-                w.put(x)
+            if type(x) is str : return w[x]
+            if not self.w.function(x.GetName()) : x = w.put(x)
             return x
        self.cpsi   = _f(cpsi)
        self.ctheta = _f(cheta)
@@ -137,12 +136,19 @@ def buildJpsikstar(ws, name) :
                        ", BDecay(t,tau,Zero,One,Zero,qmix,Zero,dm,tres_sig,SingleSided))"%name)
     return ws.pdf(name)
 
-def buildMomentPDF(w,name,data,moments) :
+
+## Looping over data in python is quite a bit slower than in C++
+## Why?? How to improve this??
+def computeMoments( data, moments ) :
     if not moments : return None
     allObs = moments[0].basis().getObservables(data)
-    for i in range( data.numEntries() ) :
-        allObs.assignValueOnly( data.get(i) )
+    for event in data : 
+        allObs.assignValueOnly( event )
         for m in moments : m.inc()
+
+def buildMomentPDF(w,name,data,moments) :
+    if not moments : return None
+    computeMoments( data, moments ) 
     coef = RooArgList()
     fact = RooArgList()
     for m in moments :
@@ -153,6 +159,23 @@ def buildMomentPDF(w,name,data,moments) :
     w.put( RooRealSumPdf(name,name,fact,coef) )
     return w.pdf(name)
 
+def buildMoment_x_PDF(w,name,pdf,moments) :
+   if not moments : return pdf
+   # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
+   # of "pdf" with their efficiency corrected versions, multiply them with the right moment basis & coefficient...
+   customizer = RooCustomizer(pdf,name)
+   for c in pdf.getComponents() :
+        if c is not RooP2VVAngleBasis : continue
+        name = "%s_eff" % c.GetName()
+        s = RooArgSet()
+        [ s.add( c.createProduct( m.basis() , m.coefficient()) ) for m in moments ]
+        rep = w.put( RooAddition_( name, name, s, True ) )  # hand over ownership & put in workspace...
+        customizer.replaceArg( c, rep )
+   return customizer.build(True)
+
+def buildEffMomentsPDF(w,name,pdf,data,moments) :
+    computeMoments(data,moments)
+    return buildMoment_x_PDF(w,name,pdf,moments)
 
 def buildMassPDFs(ws):
     #signal B mass pdf
