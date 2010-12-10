@@ -15,7 +15,6 @@ SOURCES =				\
     RooSpHarmonic.cxx		\
     RooMultiCatGenerator.cxx		\
     utils.cxx		\
-    basis.cxx		\
     p2vv_dict.cxx
 
 OBJECTS = $(SOURCES:%.cxx=%.o)
