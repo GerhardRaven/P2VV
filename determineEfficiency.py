@@ -31,7 +31,8 @@ angles = w.argSet("trcospsi,trcostheta,trphi")
 #replace input by inefficient data
 eps = efficiency( angles )
 inEffData = RooDataSet( "inEffData","inEffData", allObs )
-for event in data:
+for (ii,event) in enumerate( data ):
+    # if ii>10000 : break
     allObs.assignValueOnly( event )
     if eps.accept() : inEffData.add( allObs )
 data = inEffData;

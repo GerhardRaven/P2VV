@@ -166,11 +166,12 @@ def buildMoment_x_PDF(w,name,pdf,moments) :
    # of "pdf" with their efficiency corrected versions, multiply them with the right moment basis & coefficient...
    customizer = RooCustomizer(pdf,name)
    for c in pdf.getComponents() :
-        if c is not RooP2VVAngleBasis : continue
+        if type(c) is not RooP2VVAngleBasis : continue
         name = "%s_eff" % c.GetName()
         s = RooArgSet()
         [ s.add( c.createProduct( m.basis() , m.coefficient()) ) for m in moments ]
-        rep = w.put( RooAddition_( name, name, s, True ) )  # hand over ownership & put in workspace...
+        w.put( RooAddition_( name, name, s, True ) )  # hand over ownership & put in workspace...
+        rep = w[name]
         customizer.replaceArg( c, rep )
    return customizer.build(True)
 
