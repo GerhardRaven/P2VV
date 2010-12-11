@@ -61,6 +61,16 @@ which can be combined in a single expression by multiplying the relevant terms w
 %   {\overline{\cal A}}_i(t) &= \frac{1}{D+iS} e^{-t/2\tau} \left[\pm  (D+iS) E_+(t) + (1+C) E_-(t)  \right] a_i  &= A(q_T=-1,q_\perp,t) 
 %\end{eqnarray}
 
+Note that we have not assumed that $|\lambda|=1$, but we did assume that all three $|\lambda_i|$ are the same, i.e.
+this implies that there either there is either no, or identical amount of direct CP violation in all three decay amplitudes,
+i.e. $|\overline{A}_i/A_i|$ are all the same. The above does allow for CP violation in mixing, as in that case $|q/p|\ne 1$,
+and all three $|\lambda_i|$ would be, by definition affected identically. As a result, {\em assuming the absence of direct CP},
+we can relate the value  of $C$ to $A_\mathrm{SL}$ as follows:
+\begin{eqnarray}
+ A_\mathrm{SL} &=& \frac{ |q/p|^2 - |p/q|^2 }{ |q/p|^2 + |p/q|^2 }  \\
+               &=& \frac{ - 2 C } { 1 + C^2 } \approx - 2 C
+\end{eqnarray}
+
 \section{Time Dependence}
 
 \begin{equation}
@@ -115,64 +125,84 @@ The result can be summarized as follows (where we have used that $q_T^2=1$):
 \end{equation}
 
 If we introduce the probability of tagging an (initial) $B$ meson as $\overline{B}$ as $w$, and
-the probability to tag an initial $\overline{B}$ meson as $B$ as $\overline{w}$, then the
-PDF for $B$ and $\overline{B}$ tagged events will be:
+the probability to tag an initial $\overline{B}$ meson as $B$ as $\overline{w}$, and the probability
+to tag an $B$ ($\overline{B}$) meson in the $i^\mathrm{th}$ tagging category, then the
+PDF for $B$ and $\overline{B}$ tagged in category $i$ will be:
 \begin{eqnarray}
-   P_{B_\mathrm{tag}} &=& (1-w) P_{B} + \overline{w} P_{\overline{ B} }\\
-   P_{\overline{B}_\mathrm{tag}} &=& (1-\overline{w}) P_{\overline{B}} + w P_{ B }
+   P_{B_\mathrm{tag},i} &\equiv t_i (1-w_i) P_{B} + \overline{t}_i\overline{w}_i P_{\overline{ B} }\\
+   P_{\overline{B}_\mathrm{tag},i} &\equiv \overline{t}_i (1-\overline{w}_i) P_{\overline{B}} + t_i w_i P_{ B }
 \end{eqnarray} 
 Taking into account that $P_{B}$ and $P_{\overline{B}}$ differ in normalization by
-$\frac{1}{1+C}$ and $\frac{1}{1-C}$, and labelling for the time being the CP even 
+$N_+=\frac{1}{1+C}$ and $N_-=\frac{1}{1-C}$, and labelling for the time being the CP even 
 resp. CP odd terms in $P_{B}$ and $P_{\overline{B}}$ as ${\cal E}$
 and ${\cal O}$, we find that:
 \begin{eqnarray}
-   P(q_T=1) &\equiv& (1-w) P_{B} + \overline{w} P_{\overline{ B} } \\
-     &=& (1-w)\frac{{\cal E} + {\cal O}}{1+C} + \overline{w}\frac{{\cal E}-{\cal O}}{1-C}  \\
-     &=& \frac{  \left[ 1-{\cal D}({\cal W}+C) \right]{\cal E}
-                               +\left[ {\cal D}(1 + {\cal W} C) - C \right] {\cal O}
-                     }{1-C^2} \\
-   P(q_T=-1) &\equiv& w P_{B} + (1-\overline{w}) P_{\overline{ B} } \\
-     &=& \frac{  \left[ 1+{\cal D}({\cal W} + C)  \right]{\cal E}
-                               -\left[ {\cal D}(1+{\cal W}C) +  C \right] {\cal O}
-                        }{1-C^2}\ \\
+   P(q_T=1,i) &=& t_i(1-w_i)\frac{{\cal E} + {\cal O}}{N_+} + \overline{t}_i\overline{w}_i\frac{{\cal E}-{\cal O}}{N_-}  \\
+   P(q_T=-1,i) &=& \overline{t}_i(1-\overline{w}_i)\frac{{\cal E} - {\cal O}}{N_-} + t_i w_i\frac{{\cal E}+{\cal O}}{N_-} 
+%   \\
+%     &=& \frac{  \left[ 1-{\cal D}({\cal W}+C) \right]{\cal E}
+%                               +\left[ {\cal D}(1 + {\cal W} C) - C \right] {\cal O}
+%                     }{1-C^2} \\
+%   P(q_T=-1) &=& \frac{  \left[ 1+{\cal D}({\cal W} + C)  \right]{\cal E}
+%                               -\left[ {\cal D}(1+{\cal W}C) +  C \right] {\cal O}
+%                        }{1-C^2}\ \\
 \end{eqnarray} 
-where we have defined
+In order to restore some symmetry to these equations, and to be able to easily reduce these
+equations to the familiar ones where $t_i=\overline{t}_i$ and $w_i=\overline{w}_i$, we introduce 
+the following parameterization:
 \begin{eqnarray}
+\frac{1}{N_\pm} &=& \frac{1}{N}\left( 1 \pm \nu \right) \\
  {\cal D} &=&1-w - \overline{w} \\
- {\cal W} &=& \frac{ w - \overline{w}}{1-w-\overline{w}}
+ {\cal W} &=& \frac{ w - \overline{w}}{1-w-\overline{w}}\\
+t_i &=& \epsilon_i(1+\delta_i)\\
+\overline{t}_i &=& \epsilon_i(1-\delta_i)
 \end{eqnarray}
-and used that under $(w\rightarrow 1-w, \overline{w}\rightarrow 1-\overline{w})$ we have $({\cal D} \rightarrow -{\cal D},{\cal W}\rightarrow{\cal W})$.
-In the limit where $C=0$ and ${\cal W}=0$  this reduces to the expected
-\begin{eqnarray}
-   P_{B_\mathrm{tag}} &=&   {\cal E} +{\cal D} {\cal O} \\
-   P_{\overline{B}_\mathrm{tag}} &=&   {\cal E} -{\cal D} {\cal O} 
-\end{eqnarray}
-
-As a result, we can write
-\begin{eqnarray}
-   P(q_T) &=& \frac{  \left[ 1-q_T{\cal D}({\cal W}+C) \right]{\cal E}
-                               +\left[ q_T{\cal D}(1+{\cal W}C) -  C \right]  {\cal O}
-                     }{1-C^2} 
-\\ &=& \frac{ {\cal E}-C{\cal O} +q_T{\cal D}\left[ ({\cal W}+C){\cal E} + (1-{\cal W}C){\cal O}\right] }{1-C^2}
-\end{eqnarray}
-where, as expected, ${\cal D}$ appears only in combination with $q_T$.
-As a result, if we form the asymmetry in $q_T$, we get:
-\begin{eqnarray}
-   A &\equiv& \frac{P(q_T=1)-P(q_T=-1)}{ P(q_T=1)+P(q_T=-1)}
- \\  & = & {\cal D} \frac{ ({\cal W}+C){\cal E} + ( 1-{\cal WC}) {\cal O} } { {\cal E}-C{\cal O} }
-\end{eqnarray}
-
-Next we extend this to take into acount the tagging efficiency. Let
-$t_i (\overline{t}_i)$ be the probability to tag a $B (\overline{B})$
-in the $i^{\mathrm{th}}$ tagging category. We then write
+Note that under $(w\rightarrow 1-w, \overline{w}\rightarrow 1-\overline{w})$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\cal W}_i\rightarrow{\cal W}_i)$,
+i.e. the quantities $\nu,\delta_i,{\cal D}_i$ are CP odd, whereas $N,\epsilon_i,{\cal W}_i$ are CP even.
 
 \begin{eqnarray}
-   P_{i,B_\mathrm{tag}} &=& t_i(1-w_i) P_{B} + \overline{t}_i\overline{w}_i P_{\overline{ B} }\\
-   P_{i,\overline{B}_\mathrm{tag}} &=& t_i(1-w_i) P_{B} +\overline{t}_i \overline{w}_i P_{\overline{ B} }
-\end{eqnarray} 
+   P(q_T=1,i)  &=&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1+{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)  
+\\             &+&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1-{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)  
+\\ P(q_T=-1,i) &=&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1+{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right) 
+\\             &+&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1-{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
+\end{eqnarray}
+where we have eliminated the overall normalization constant $N$ which is shared by each term.
+Next we assume that $\nu$, $\delta_i$ and ${\cal W}$ are sufficiently small that only the leading 
+terms have to be kept\footnote{Keeping all terms is left as an exercise to the reader. It should be
+noted that given their properties under CP, there is little choice in where those terms can/will appear}. This results in:
+\begin{eqnarray}
+     P(q_T=1,i)  &=&\frac{1}{2}  \epsilon_i\left(1+\nu+\delta_i+{\cal D}_i(1+\nu+\delta_i-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
+\\               &+&\frac{1}{2}  \epsilon_i\left(1-\nu-\delta_i-{\cal D}_i(1-\nu-\delta_i+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)
+\\               &=& \epsilon_i\left(1            +{\cal D}(  \nu+\delta_i-{\cal W}_i) \right){\cal E}
+\\               &+& \epsilon_i\left( \nu+\delta_i+{\cal D}  \right){\cal O}
+\\   P(q_T=-1,i) &=&\frac{1}{2}  \epsilon_i\left(1-\nu-\delta_i+{\cal D}_i(1-\nu-\delta_i+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)
+\\               &+&\frac{1}{2}  \epsilon_i\left(1+\nu+\delta_i-{\cal D}_i(1+\nu+\delta_i-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
+\\               &=& \epsilon_i\left(1-{\cal D}_i(\nu+\delta_i-{\cal W}_i )  \right){\cal E}
+\\               &+& \epsilon_i\left( \nu+\delta_i-{\cal D}_i \right){\cal O}
+\end{eqnarray}
+which can be written in the following compact form:
+\begin{eqnarray}
+     P(q_T,i)  % &=& \epsilon_i\left(1            +q_T{\cal D}(  \nu+\delta_i-{\cal W}) \right){\cal E} \\
+               % &+& \epsilon_i\left( \nu+\delta_i+q_T{\cal D}  \right){\cal O} \\
+               &=& \epsilon_i\left[\left({\cal E}+(\nu+\delta_i){\cal O})  \right) + q_T {\cal D}_i \left({\cal O}+(\nu+\delta_i-{\cal W}_i ){\cal E} \right)\right]
+\end{eqnarray}
+and the (flavour) asymmetry can be written as:
+\begin{equation}
+  {\cal A}(i) =  {\cal D}_i \frac{{\cal O}+(\nu+\delta_i-{\cal W}_i ){\cal E}}
+                               {{\cal E}+(\nu+\delta_i){\cal O} }
+\end{equation}
 
-Note that a difference between $t_i$ and $\overline{t}_i$ is indistinguishable from 
-the case where these two are equal, but there is a non-zero production asymmetry.
+In the limit where $\nu=\delta_i={\cal W}=0$ this reduces to the expected
+\begin{equation}
+   P(q_T,i) = \epsilon_i\left[  {\cal E} +q_T {\cal D} {\cal O}\right] 
+\end{equation}
+
+As $\nu$ and $\delta_i$ always appear as sum, and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
+it becomes impossible to disentangle the difference between differences in tagging efficiency for $b$ and $\overline{b}$
+and a change in the relative normalization. However, when taken into account the fact that the difference in normalization
+is due to the apearance of $1/(1+C)$ vs. $1/(1-C)$, i.e. $\nu = -C$, and $C$ also appears as coefficienct in front of the $\cosh\left(\Delta\Gamma t/2\right)$
+and $q_T\cos(\Delta m t)$ terms, it is expected that there is some residual power left to disentangle the two effects -- i.e. 
+solely due to the time-dependent shape of the distributions, and no longer in their relative normalization, i.e. in the time-integrated yields.
 
 
 \vfill
