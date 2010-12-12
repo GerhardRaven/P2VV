@@ -1,42 +1,48 @@
 \documentclass[a4paper,9pt,twoside]{article}
 
-
+\def\thetatr{\theta_\mathrm{tr}}
+\def\phitr{\phi_\mathrm{tr}}
+\def\psitr{\psi_\mathrm{tr}}
+\def\thetaK{\theta_\mathrm{K}}
+\def\thetaL{\theta_\mathrm{L}}
+\def\phiL{\phi_\mathrm{L}}
 
 \begin{document}
 
 
 \begin{eqnarray}
+   \lambda_f &\equiv& \frac{q}{p}\frac{\overline{\cal A}_f}{{\cal A}_f} = \eta\frac{q}{p} \frac{\overline{\cal A}_{\overline{f}}}{{\cal A}_f}\\
    S &=& \frac{2 \Im \lambda}{1+|\lambda|^2};\;\; D = \frac{2 \Re \lambda}{1+|\lambda|^2};\;\; C = \frac{1-|\lambda|^2 }{1+|\lambda|^2}\\
    D^2+S^2 & = & 1 - C^2 \\
    \lambda & = & \frac{D+iS}{1+C};\;\; \frac{1}{\lambda}  =  \frac{D-iS}{1-C};\;\; |\lambda|^2 = \frac{ 1-C }{ 1+C }
 \end{eqnarray}
 \begin{equation}
-  \eta_i = \left\{ \begin{array}{l} +1 \;\; \mathrm{if}\;\; i=0,\parallel  \\ -1\;\; \mathrm{if}\;\; i=\perp \end{array} \right. \;\;\;;\;\; \frac{1}{\eta_i}=\eta_i
+  \eta_f = \left\{ \begin{array}{l} +1 \;\; \mathrm{if}\;\; i=0,\parallel  \\ -1\;\; \mathrm{if}\;\; i=\perp \end{array} \right. \;\;\;;\;\; \frac{1}{\eta_f}=\eta_f
   \label{eq:etadef}
 \end{equation}
 For $B_s\rightarrow J/\psi\phi$, assuming the Standard Model,  we have $S=\sin(2\beta_s),D=\cos(2\beta_s),C=0$.
 In terms of $\phi_s$, we have $S=-\sin(\phi_s),D=\cos(\phi_s),C=0$.
 
 \begin{eqnarray}
-   {\cal A}_i(t)            &=& e^{-t/2\tau} \left[ E_+(t) + \eta_i \lambda E_-(t)  \right] a_i  \\
-                            &=&     e^{-t/2\tau} \left[ E_+(t) +\eta_i \frac{D+iS}{1+C} E_-(t)  \right] a_i  \\
-   {\overline{\cal A}}_i(t) &=& e^{-t/2\tau} \left[  E_+(t) + \frac{1}{\eta_i\lambda} E_-(t)  \right] \eta_i a_i    \\
-                            &=&     e^{-t/2\tau} \left[\eta_i E_+(t) + \frac{D-iS}{1-C} E_-(t)  \right] a_i   
+   {\cal A}_f(t)            &=& e^{-t/2\tau} \left[ E_+(t) + \eta_f \lambda E_-(t)  \right] a_f  \\
+                            &=&     e^{-t/2\tau} \left[ E_+(t) +\eta_f \frac{D+iS}{1+C} E_-(t)  \right] a_f  \\
+   {\overline{\cal A}}_f(t) &=& e^{-t/2\tau} \left[  E_+(t) + \frac{1}{\eta_f\lambda} E_-(t)  \right] \eta_f a_f    \\
+                            &=&     e^{-t/2\tau} \left[\eta_f E_+(t) + \frac{D-iS}{1-C} E_-(t)  \right] a_f   
 \end{eqnarray}
-where we have used that, by definition, $\overline{a}_i = \eta_i a_i$. The above can be
+where we have used that, by definition, $\overline{a}_f = \eta_f a_f$. The above can be
 written in a more symmetrical way as:
 \begin{eqnarray}
-   {\cal A}_i(t)           &=&     \frac{e^{-t/2\tau}}{1+C} \left[ (1+C)E_+(t) +\eta_i (D+iS) E_-(t)  \right] a_i  
-%\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_i(D+iS)(1-C)E_-(t) \right] a_i\\
-\\   {\overline{\cal A}}_i(t) &=&    \frac{e^{-t/2\tau}}{1-C} \left[ (1-C)E_+(t) +\eta_i (D-iS) E_-(t)  \right] \eta_i a_i  
-%\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_i(D+iS)(1+C)E_-(t) \right] a_i
+   {\cal A}_f(t)           &=&     \frac{e^{-t/2\tau}}{1+C} \left[ (1+C)E_+(t) +\eta_f (D+iS) E_-(t)  \right] a_f  
+%\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_f(D+iS)(1-C)E_-(t) \right] a_f\\
+\\   {\overline{\cal A}}_f(t) &=&    \frac{e^{-t/2\tau}}{1-C} \left[ (1-C)E_+(t) +\eta_f (D-iS) E_-(t)  \right] \eta_f a_f  
+%\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_f(D+iS)(1+C)E_-(t) \right] a_f
 \end{eqnarray}
-where we have used the properties of $\eta_i$ shown in (\ref{eq:etadef}).
+where we have used the properties of $\eta_f$ shown in (\ref{eq:etadef}).
 %Since the overall normalzation factor $\frac{1}{1-C^2}$ does not depend on any observable, it can be dropped at this point
 %(which will simplify the case when we later consider $S=D=0,C=\pm 1$!), resulting in:
 %\begin{eqnarray}
-%   {\cal A}_i(t)            &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)+\eta_i(D+iS)(1-C)E_-(t) \right] a_i\\
-%   {\overline{\cal A}}_i(t) &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)+\eta_i(D+iS)(1+C)E_-(t) \right] a_i
+%   {\cal A}_f(t)            &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)+\eta_f(D+iS)(1-C)E_-(t) \right] a_f\\
+%   {\overline{\cal A}}_f(t) &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)+\eta_f(D+iS)(1+C)E_-(t) \right] a_f
 %\end{eqnarray}
 As a consequence, the expressions for $\overline{b}_\mathrm{tag}$ are related to those for $b_\mathrm{tag}$ by the following substitution:
 \begin{equation}
@@ -54,17 +60,17 @@ which can be combined in a single expression by multiplying the relevant terms w
 %we have the case where $1/\lambda=0$, or $S=D=0,C=-1$.
 
 %\begin{equation}
-%   A(q_T=-1,q_\perp=\pm,t) =\left( \frac{1-q_T}{2}q_\perp+\frac{1+q_T}{2}\right) e^{-t/\tau} \left[ E_+(t) +q_\perp e^{2q_Ti\beta_s}E_-(t)  \right] a_i 
+%   A(q_T=-1,q_\perp=\pm,t) =\left( \frac{1-q_T}{2}q_\perp+\frac{1+q_T}{2}\right) e^{-t/\tau} \left[ E_+(t) +q_\perp e^{2q_Ti\beta_s}E_-(t)  \right] a_f 
 %\end{equation}
 %\begin{eqnarray}
-%   {\cal A}_i(t)            &= \frac{1}{1+C} e^{-t/2\tau} \left[+ (1+C) E_+(t) \pm (D+iS) E_-(t)  \right] a_i  &= A(q_T=+1,q_\perp,t)\\
-%   {\overline{\cal A}}_i(t) &= \frac{1}{D+iS} e^{-t/2\tau} \left[\pm  (D+iS) E_+(t) + (1+C) E_-(t)  \right] a_i  &= A(q_T=-1,q_\perp,t) 
+%   {\cal A}_f(t)            &= \frac{1}{1+C} e^{-t/2\tau} \left[+ (1+C) E_+(t) \pm (D+iS) E_-(t)  \right] a_f  &= A(q_T=+1,q_\perp,t)\\
+%   {\overline{\cal A}}_f(t) &= \frac{1}{D+iS} e^{-t/2\tau} \left[\pm  (D+iS) E_+(t) + (1+C) E_-(t)  \right] a_f  &= A(q_T=-1,q_\perp,t) 
 %\end{eqnarray}
 
-Note that we have not assumed that $|\lambda|=1$, but we did assume that all three $|\lambda_i|$ are the same, i.e.
+Note that we have not assumed that $|\lambda|=1$, but we did assume that all three $|\lambda_f|$ are the same, i.e.
 this implies that there either there is either no, or identical amount of direct CP violation in all three decay amplitudes,
-i.e. $|\overline{A}_i/A_i|$ are all the same. The above does allow for CP violation in mixing, as in that case $|q/p|\ne 1$,
-and all three $|\lambda_i|$ would be, by definition affected identically. As a result, {\em assuming the absence of direct CP},
+i.e. $|\overline{A}_f/A_f|$ are all the same. The above does allow for CP violation in mixing, as in that case $|q/p|\ne 1$,
+and all three $|\lambda_f|$ would be, by definition affected identically. As a result, {\em assuming the absence of direct CP},
 we can relate the value  of $C$ to $A_\mathrm{SL}$ as follows:
 \begin{eqnarray}
  A_\mathrm{SL} &=& \frac{ |q/p|^2 - |p/q|^2 }{ |q/p|^2 + |p/q|^2 }  \\
@@ -138,7 +144,7 @@ resp. CP odd terms in $P_{B}$ and $P_{\overline{B}}$ as ${\cal E}$
 and ${\cal O}$, we find that:
 \begin{eqnarray}
    P(q_T=1,i) &=& t_i(1-w_i)\frac{{\cal E} + {\cal O}}{N_+} + \overline{t}_i\overline{w}_i\frac{{\cal E}-{\cal O}}{N_-}  \\
-   P(q_T=-1,i) &=& \overline{t}_i(1-\overline{w}_i)\frac{{\cal E} - {\cal O}}{N_-} + t_i w_i\frac{{\cal E}+{\cal O}}{N_-} 
+   P(q_T=-1,i) &=& \overline{t}_i(1-\overline{w}_i)\frac{{\cal E} - {\cal O}}{N_-} + t_i w_i\frac{{\cal E}+{\cal O}}{N_+} 
 %   \\
 %     &=& \frac{  \left[ 1-{\cal D}({\cal W}+C) \right]{\cal E}
 %                               +\left[ {\cal D}(1 + {\cal W} C) - C \right] {\cal O}
@@ -158,7 +164,7 @@ t_i &=& \epsilon_i(1+\delta_i)\\
 \overline{t}_i &=& \epsilon_i(1-\delta_i)
 \end{eqnarray}
 Note that under $(w\rightarrow 1-w, \overline{w}\rightarrow 1-\overline{w})$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\cal W}_i\rightarrow{\cal W}_i)$,
-i.e. the quantities $\nu,\delta_i,{\cal D}_i$ are CP odd, whereas $N,\epsilon_i,{\cal W}_i$ are CP even.
+and that the quantities $\nu,\delta_i,{\cal W}_i$ are CP odd, whereas $N,\epsilon_i,{\cal D}_i$ are CP even.
 
 \begin{eqnarray}
    P(q_T=1,i)  &=&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1+{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)  
@@ -168,8 +174,7 @@ i.e. the quantities $\nu,\delta_i,{\cal D}_i$ are CP odd, whereas $N,\epsilon_i,
 \end{eqnarray}
 where we have eliminated the overall normalization constant $N$ which is shared by each term.
 Next we assume that $\nu$, $\delta_i$ and ${\cal W}$ are sufficiently small that only the leading 
-terms have to be kept\footnote{Keeping all terms is left as an exercise to the reader. It should be
-noted that given their properties under CP, there is little choice in where those terms can/will appear}. This results in:
+terms have to be kept\footnote{Keeping all terms is left as an exercise to the reader}. This results in:
 \begin{eqnarray}
      P(q_T=1,i)  &=&\frac{1}{2}  \epsilon_i\left(1+\nu+\delta_i+{\cal D}_i(1+\nu+\delta_i-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
 \\               &+&\frac{1}{2}  \epsilon_i\left(1-\nu-\delta_i-{\cal D}_i(1-\nu-\delta_i+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)
@@ -182,20 +187,20 @@ noted that given their properties under CP, there is little choice in where thos
 \end{eqnarray}
 which can be written in the following compact form:
 \begin{eqnarray}
-     P(q_T,i)  % &=& \epsilon_i\left(1            +q_T{\cal D}(  \nu+\delta_i-{\cal W}) \right){\cal E} \\
-               % &+& \epsilon_i\left( \nu+\delta_i+q_T{\cal D}  \right){\cal O} \\
+     P(q_T,i)  &=& \epsilon_i\left[\left(1            +q_T{\cal D}(  \nu+\delta_i-{\cal W}) \right){\cal E} + \left( q_T{\cal D} +\nu+\delta_i \right){\cal O}\right] \\
                &=& \epsilon_i\left[\left({\cal E}+(\nu+\delta_i){\cal O})  \right) + q_T {\cal D}_i \left({\cal O}+(\nu+\delta_i-{\cal W}_i ){\cal E} \right)\right]
 \end{eqnarray}
-and the (flavour) asymmetry can be written as:
+and the CP asymmetry can be written as:
 \begin{equation}
-  {\cal A}(i) =  {\cal D}_i \frac{{\cal O}+(\nu+\delta_i-{\cal W}_i ){\cal E}}
+  A_{CP}(i) =  {\cal D}_i \frac{{\cal O}+(\nu+\delta_i-{\cal W}_i ){\cal E}}
                                {{\cal E}+(\nu+\delta_i){\cal O} }
 \end{equation}
 
 In the limit where $\nu=\delta_i={\cal W}=0$ this reduces to the expected
-\begin{equation}
-   P(q_T,i) = \epsilon_i\left[  {\cal E} +q_T {\cal D} {\cal O}\right] 
-\end{equation}
+\begin{eqnarray}
+   P(q_T,i) &=& \epsilon_i\left[  {\cal E} +q_T {\cal D} {\cal O}\right]  \\
+   A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
+\end{eqnarray}
 
 As $\nu$ and $\delta_i$ always appear as sum, and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
 it becomes impossible to disentangle the difference between differences in tagging efficiency for $b$ and $\overline{b}$
@@ -210,19 +215,22 @@ solely due to the time-dependent shape of the distributions, and no longer in th
 
 \section{Angular Dependence}
 
-
+If we write the direction of the positive muon (in which reference frame??) in terms of transversity angles,
 \begin{equation}
-  \hat{n} = ( \sin\theta\cos\phi, \sin\theta\sin\phi, \cos\theta )
+  \hat{n} = ( \sin\thetatr\cos\phitr, \sin\thetatr\sin\phitr, \cos\thetatr )
 \end{equation}
-
-
-
+or helicity angles
+\begin{equation}
+  \hat{n} = ( -\cos\thetaL, -\sin\thetaL\cos\phiL, \sin\thetaL\sin\phiL )
+\end{equation}
+%%% TODO: can we trivially connect this to helicity angles at this point??
+%%% i.e. can we write \hat{n} in terms of helicity angles???
+and define transversity amplitudes
 \begin{eqnarray}
    {\bf A}(t)            &=&  ( {\cal A}_0(t) \cos\psi          , -\frac{{\cal A}_\parallel(t) \sin\psi}{\sqrt{2}}         ,i\frac{{\cal A}_\perp(t) \sin\psi}{\sqrt{2}}          )  % \\
 %   {\overline{\bf A}}(t) &=&  ( \overline{\cal A}_0(t) \cos\psi), -\frac{\overline{\cal A}_\parallel(t) \sin\psi}{\sqrt{2}},i\frac{\overline{\cal A}_\perp(t) \sin\psi}{\sqrt{2}} )
 \end{eqnarray}
-
-
+then one can write
 \begin{eqnarray}
   { \bf A}(t) \wedge \hat{n} &=& \left|  \begin{array}{ccc}  
                                         \hat{e}_x & \hat{e}_y & \hat{e}_z \\
@@ -244,14 +252,12 @@ solely due to the time-dependent shape of the distributions, and no longer in th
                               &&+     -\sqrt{2}\Im({\cal A}_\perp^* {\cal A}_0 )\cos\psi\cos\theta\sin\psi\sin\theta\cos\phi \\
                               &+&     |{\cal A}_0|^2 \cos^2\psi\sin^2\theta\sin^2\phi  + \frac{1}{2}{|\cal A}_\parallel(t)|^2 \sin^2\psi \sin^2\theta\cos^2\phi       \\
                               &&+     \sqrt{2}\Re({\cal A}_0^*{\cal A}_\parallel  )\cos\psi\sin\psi\sin^2\theta\sin\phi\cos\phi\\
-%                              && \\
-                              &=&\frac{1}{2}|{\cal A}_\parallel(t)|^2 \sin^2\psi \left( \cos^2\theta + \sin^2\theta\cos^2\phi    \right)  \\
+                              &=&  |{\cal A}_0(t)|^2 \cos^2\psi\left( \cos^2\theta  +  \sin^2\theta\sin^2\phi\right) \\
+                              &+& \frac{1}{2}|{\cal A}_\parallel(t)|^2 \sin^2\psi \left( \cos^2\theta + \sin^2\theta\cos^2\phi    \right)  \\
                               &+&\frac{1}{2}|{\cal A}_\perp(t)|^2\sin^2\psi\sin^2\theta \\
-                              &+&   |{\cal A}_0(t)|^2 \cos^2\psi\left( \cos^2\theta  +  \sin^2\theta\sin^2\phi\right) \\
                               &+&     -\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t))\sin^2\psi\cos\theta\sin\theta\sin\phi  \\
                               &+&     -\sqrt{2}\Im({\cal A}_\perp^*(t) {\cal A}_0(t) )\cos\psi\cos\theta\sin\psi\sin\theta\cos\phi \\
                               &+&     \sqrt{2}\Re({\cal A}_0^*(t){\cal A}_\parallel(t)  )\cos\psi\sin\psi\sin^2\theta\sin\phi\cos\phi\\
-%                              && \\
                               &=&\frac{1}{2}|{\cal A}_\parallel(t)|^2 \sin^2\psi \left( 1 -  \sin^2\theta\sin^2\phi    \right)  \\
                               &+&\frac{1}{2}|{\cal A}_\perp(t)|^2\sin^2\psi\sin^2\theta \\
                               &+&   |{\cal A}_0(t)|^2 \cos^2\psi\left( 1  -  \sin^2\theta\cos^2\phi\right) \\
@@ -298,8 +304,8 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
 
 \begin{eqnarray}
 \frac{9 }{\sqrt{4\pi}} |{ \bf A}(t) \wedge \hat{n}|^2 
-                              &=&|{\cal A}_\parallel|^2 P_2^2 \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
-                              &+&|{\cal A}_0|^2  (P_0^0+2P_2^0 ) \left( 2 Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
+                              &=&|{\cal A}_0|^2  (P_0^0+2P_2^0 ) \left( 2 Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
+                              &+&|{\cal A}_\parallel|^2 P_2^2 \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
                               &+&|{\cal A}_\perp|^2  P_2^2 \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
                               &+&\Im({\cal A}_\parallel^*{\cal A}_\perp) \sqrt{\frac{3}{5}}P_2^2 Y_{2,-1}  \\
                               &+&\Im({\cal A}_0^* {\cal A}_\perp )       \sqrt{\frac{6}{5}}P_2^1Y_{2,1} \\
@@ -309,15 +315,29 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
 \begin{equation}
 \begin{array}{|c|| c | c | c | c | c | c |}
  \hline
-&\multicolumn{6}{|c|}{ P_i^j(\cos\psi)Y_{lm}(\cos\theta,\phi) \times \frac{9}{\sqrt{4\pi}} } \\
+&\multicolumn{6}{|c|}{ P_i^j(\cos\psitr)Y_{lm}(\cos\thetatr,\phitr) \times \frac{9}{\sqrt{4\pi}} } \\
  \hline
-|{\cal A}_\parallel(t)|^2               &    P_2^2Y_{00} &  \sqrt{\frac{1}{20}} P_2^2 Y_{20} & +\sqrt{\frac{3}{20}} P_2^2Y_{22} & && \\
 |{\cal A}_0(t)|^2                       &  2 P_0^0Y_{00}  & \sqrt{\frac{1}{5}} P_0^0 Y_{20} & -\sqrt{\frac{3}{5}} P_0^0 Y_{22}
                                         &  4 P_2^0Y_{00}  & \sqrt{\frac{4}{5}} P_2^0 Y_{20} & -\sqrt{\frac{12}{5}} P_2^0 Y_{22} \\
+|{\cal A}_\parallel(t)|^2               &    P_2^2Y_{00} &  \sqrt{\frac{1}{20}} P_2^2 Y_{20} & +\sqrt{\frac{3}{20}} P_2^2Y_{22} & && \\
 |{\cal A}_\perp(t)|^2                   &  P_2^2 Y_{00} & -\sqrt{\frac{1}{5}} P_2^2 Y_{20} &                                 &&& \\
 \Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &  \sqrt{\frac{3}{5}} P_2^2 Y_{2,-1} &&&&&\\
 \Im({\cal A}_0^*(t){\cal A}_\perp(t))         &  \sqrt{\frac{6}{5}} P_2^1 Y_{2,1} &&&&&\\
 \Re({\cal A}_0^*(t){\cal A}_\parallel(t))     & -\sqrt{\frac{6}{5}} P_2^1 Y_{2,-2} &&&&&\\
+ \hline
+\end{array}
+\end{equation}
+\begin{equation}
+\begin{array}{|c|| c | c | c | c | c | c |}
+ \hline
+&\multicolumn{6}{|c|}{ P_i^j(\cos\thetaK)Y_{lm}(\cos\thetaL,\phiL) \times \frac{9}{\sqrt{4\pi}} } \\
+ \hline
+|{\cal A}_0(t)|^2                       & 2P_2^2Y_{00} & -\sqrt{\frac{4}{5}}P_2^2Y_{20} & 2P_2^0Y_{00} & -\sqrt{\frac{4}{5}} P_2^0Y_{20} & \sqrt{\frac{3}{5}} P_2^1 Y_{2,-1}& \sqrt{\frac{3}{10}}P_2^1Y_{21} \\
+|{\cal A}_\parallel(t)|^2               & P_2^2Y_{00} &\sqrt{\frac{1}{20}} P_2^2Y_{20} &-\sqrt{\frac{3}{20}}P_2^2Y_{22} & \sqrt{\frac{3}{20}}P_2^2Y_{2,-2} & \sqrt{\frac{3}{10}} P_2^1Y_{21}& \\
+|{\cal A}_\perp(t)|^2                   & 2P_2^2Y_{00} & \sqrt{\frac{1}{5}} P_2^2Y_{20} &\sqrt{\frac{3}{5}}P_2^2Y_{22} & \sqrt{\frac{3}{20}}P_2^2Y_{2,-2} &\sqrt{\frac{3}{5}}P_2^1Y_{2,-1}& \\
+\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) & \sqrt{\frac{3}{5}}P_2^2Y_{2,-2}&&&&&\\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         & -\sqrt{\frac{12}{5}}P_2^1Y_{2,-1}&&&&&\\
+\Re({\cal A}_0^*(t){\cal A}_\parallel(t))     & \sqrt{\frac{6}{5}}P_2^1Y_{21}&&&&&\\
  \hline
 \end{array}
 \end{equation}
@@ -383,10 +403,16 @@ This implies that, if the efficiency is uniform (and $100\%$) in the angles, i.e
 \begin{equation}
    \epsilon(\psi,\theta,\phi) = 1 \Rightarrow c^0_{00} = 2\sqrt{\pi} ; c^{i}_{jk} = 0 (i\neq 0, j\neq 0, k \neq 0)
 \end{equation}
-we compute the moments as:
+we can read off the moments as:
 \begin{equation}
     \xi_{\parallel\parallel}= \xi_{00}= \xi_{\perp\perp}  = \frac{16\pi}{9};\;\; \xi_{\parallel\perp} =\xi_{\perp 0} = \xi_{0\parallel} = 0
 \end{equation}
+Given that it is known that  in the likelihood fit only the (relative) normalization of the six angular
+terms matters, it is clear that only a subset the Fourier components needs to be know to
+perform the fit. Of course additional terms will make a improve the visual results when plotting 
+differential distributions. 
+
+
 
 %TODO: take into account ${\cal D} = 1-2( <w_i> + q_T \frac{\Delta w_i}{2})$, i.e. sum over $q_T$ may not fully cancel some terms...
 %and the same for the tagging times reconstruction efficiency....
