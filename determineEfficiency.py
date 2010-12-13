@@ -15,9 +15,9 @@ class efficiency :
         from random import random
         return random() > ( x*x*y/( 1 if z<0 else 1-z ) )
 
-fname="p2vv_5.root"
-pdfName = "pdf"
-dataName = "pdfData"
+fname="p2vv_9.root"
+pdfName = "jpsiphipdf"
+dataName = "jpsiphipdfData"
 workspaceName = "w"
 
 f = TFile(fname)
@@ -45,7 +45,7 @@ marginalObs.remove( angles )
 pdf_marginal = pdf.createProjection(marginalObs)
 moments = []
 
-ab = apybasis(w,angles)
+ab = abasis(w,angles)
 for (i,l) in product(range(4),range(4)) :
     # if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
     # Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2

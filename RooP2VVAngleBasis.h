@@ -34,6 +34,7 @@ public:
   RooP2VVAngleBasis* createProduct(int i, int j, int l, int m, double c) const;
   RooP2VVAngleBasis* createProduct(const RooP2VVAngleBasis& basis, double c=1.) const
   { 
+      // TODO: verify that basis and *this use the same angular observables!!!
       return !basis._prod ? createProduct( basis._i, basis._j, basis._l, basis._m, c*basis._c ): 0;
   }
 

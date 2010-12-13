@@ -10,7 +10,7 @@ if feelTheNeedForSpeed:
     RooNumGenConfig.defaultConfig().methodND(False,True).Print()
     RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 
-class apybasis : # TODO: can also implement this by returning a 'bound' function instead...
+class abasis : # TODO: can also implement this by returning a 'bound' function instead...
     def __init__(self,w,*args) :
        self.w = w
        (cpsi,cheta,phi) = args if len(args)==3 else args[0]
@@ -22,6 +22,7 @@ class apybasis : # TODO: can also implement this by returning a 'bound' function
        self.cpsi   = _f(cpsi)
        self.ctheta = _f(cheta)
        self.phi    = _f(phi)
+       print 'using %s,%s,%s' % (self.cpsi,self.ctheta,self.phi)
 
     def build(self,label,i,j,k,l,c) :
         name = "%s_%d_%d_%d_%d" % (label,i,j,k,l)
@@ -33,16 +34,17 @@ class apybasis : # TODO: can also implement this by returning a 'bound' function
         return b
 
 
-def buildAngularBasis(ws, ab) :
+def buildTransversityBasis(ws, ab) :
     #definition of the angular part of the PDF in terms of basis functions...
+    # transversity amplitudes in terms of transversity angles
     def _ba(name,comp) :
         n = name + '_basis'
         s = RooArgSet()
         for c in comp : s.add( ab.build(name,c[0],c[1],c[2],c[3],c[4]) )
         return ws.put(RooAddition_( n, n, s ) )
 
-    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./5.))
-                               , ( 2,0,0, 0, 4.), ( 2,0,2,0,  sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./5.)) ] )
+    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./ 5.))
+                               , ( 2,0,0, 0, 4.), ( 2,0,2,0,  sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./ 5.)) ] )
            , _ba("AparApar",   [ ( 2,2,0, 0, 1.), ( 2,2,2,0,  sqrt(1./20.)), ( 2,2,2,2,  sqrt( 3./20.)) ] )
            , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0, -sqrt(1./ 5.)) ] )
            , _ba("AparAperp",  [ ( 2,2,2,-1,  sqrt(3./5.)) ] )
@@ -50,18 +52,38 @@ def buildAngularBasis(ws, ab) :
            , _ba("AzApar",     [ ( 2,1,2,-2, -sqrt(6./5.)) ] )
            )
 
-def buildJpsiphi(ws, name) :
-    basis = buildAngularBasis(ws, apybasis(ws,ws.set('transversityangles')))
+def buildHelicityBasis(ws, ab) :
+    #definition of the angular part of the PDF in terms of basis functions...
+    # transversity amplitudes in terms of helicity angles
+    def _ba(name,comp) :
+        n = name + '_basis'
+        s = RooArgSet()
+        for c in comp : s.add( ab.build(name,c[0],c[1],c[2],c[3],c[4]) )
+        return ws.put(RooAddition_( n, n, s ) )
+
+    return ( _ba("AzAz",       [ ( 2,2,0, 0, 2.), (2,2,2,0, -sqrt(4./5.))
+                               , ( 2,0,0, 0, 2.), (2,0,2,0, -sqrt(4./5.)) ] )
+           , _ba("AparApar",   [ ( 2,2,0, 0, 1.), (2,2,2, 0, sqrt(1./20.)), ( 2,2,2,2,  -sqrt(3./20.)) ] )
+           , _ba("AperpAperp", [ ( 2,2,0, 0, 2.), ( 2,2,2,0, sqrt(1./ 5.)), (2,2,2,2,sqrt(3./5.)) ] )
+           , _ba("AparAperp",  [ ( 2,2,2,-2,  sqrt(3./5.)) ] )
+           , _ba("AzAperp",    [ ( 2,1,2,-1, -sqrt(12./5.)) ] )
+           , _ba("AzApar",     [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
+           )
+def buildJpsiphi(ws, name, transversity = True ) :
+    if transversity :
+        basis = buildTransversityBasis(ws, abasis(ws,ws.set('transversityangles')))
+    else :
+        basis = buildHelicityBasis(ws, abasis(ws,ws.set('helicityangles')))
 
     # define the relevant combinations of strong amplitudes
-    ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
-    ws.factory("expr::NAparApar  ('( @4 * @4 + @5 * @5 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
-    ws.factory("expr::NAperpAperp('( @2 * @2 + @3 * @3 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
-    ws.factory("expr::ReAparAperp('( @4 * @2 + @5 * @3 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
-    ws.factory("expr::ReAzAperp  ('( @0 * @2 + @1 * @3 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
-    ws.factory("expr::ReAzApar   ('( @0 * @4 + @1 * @5 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
-    ws.factory("expr::ImAparAperp('( @4 * @3 - @5 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
-    ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
+    ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,    ImAz                      })")  # |A_z|^2
+    ws.factory("expr::NAparApar  ('( @0 * @0 + @1 * @1 )',{ReApar,  ImApar                    })")  # |A_par|^2
+    ws.factory("expr::NAperpAperp('( @0 * @0 + @1 * @1 )',{ReAperp, ImAperp                   })")  # |A_perp|^2
+    ws.factory("expr::ReAparAperp('( @0 * @2 + @1 * @3 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par||A_perp| cos(delta_perp - delta_par)
+    ws.factory("expr::ReAzAperp  ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   cos(delta_perp - delta_z)
+    ws.factory("expr::ReAzApar   ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReApar,  ImApar  })")  # |A_z||A_par|    cos(delta_par  - delta_z)
+    ws.factory("expr::ImAparAperp('( @0 * @3 - @1 * @2 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par|A_perp|  sin(delta_perp - delta_par)
+    ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   sin(delta_perp - delta_z)
 
     ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws['tagdecision'],ws['tagomega']) ) )
 
@@ -82,7 +104,7 @@ def buildJpsiphi(ws, name) :
     # asymmetry, which is quick...)
     # Next, how to do Jpsi K* if we do tag,rec instead of (un)mix...?
     # in that case, we have three asymmetries (of which only one, mix/unmix,
-    # is non-zero)
+    # is normally non-zero)
     # Note that we can use a RooCustomizer to automate the replacement of
     # fjpsiphi_sinh and fjpsiphi_sin, but the qtag in N is more tricky...
     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
@@ -118,7 +140,7 @@ def buildJpsiphi(ws, name) :
 
 
 def buildJpsikstar(ws, name) :
-    buildAngularBasis(ws, apybasis(ws,ws.set('transversityangles')))
+    buildTransversityBasis(ws, abasis(ws,ws.set('transversityangles')))
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::NAparApar  ('( @4 * @4 + @5 * @5 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
     ws.factory("expr::NAperpAperp('( @2 * @2 + @3 * @3 )',{ReAz,ImAz,ReAperp,ImAperp,ReApar,ImApar})")
@@ -216,7 +238,7 @@ def declareObservables( ws ):
     ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
     ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
     # tag 
-    ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
+    ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1]")
     ws.factory("tagomega[0,0.5]")
     # B, jpsi, phi mass
     ws.factory("m[5200,5450]")
@@ -274,7 +296,7 @@ def definePolarAngularAmplitudes(ws):
     ##        or fit in terms of angles and relative magnitudes
     ##         Note: initial values from arXiv:0704.0522v2 [hep-ex] BaBar PUB-07-009
     # ws.factory("{rz[0.556],rpar[0.211],rperp[0.233]}")
-    ws.factory("{rz[0.463,0.1,0.9],rpar[0.211],rperp[0.347,0.1,0.9]}")
+    ws.factory("{rz[0.463,0.0,1.0],rpar[0.211],rperp[0.347,0.0,1.0]}")
     ws.factory("{deltaz[0],deltapar[-2.93],deltaperp[2.91]}")
     ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
     ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")

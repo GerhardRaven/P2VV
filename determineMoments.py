@@ -1,6 +1,6 @@
 from ROOT import *
 gSystem.Load('libp2vv')
-from ModelBuilders import buildMomentPDF,apybasis,declareObservables,buildMassPDFs
+from ModelBuilders import buildMomentPDF,abasis,declareObservables,buildMassPDFs
 from itertools import count,product
 from math import pi
 
@@ -10,7 +10,7 @@ def doit(name, angles, tree, irange, lrange, mrange ) :
     # TODO: use sweights to split J/psi from mumu combinatoric
     # TODO: veto insignifcant moments iff i,l,abs(m)>2 (i.e. those not in signal PDF!)
     data = RooDataSet('data','data',tree,angles)
-    ab = apybasis(w,angles)
+    ab = abasis(w,angles)
     moments = []
     for (i,l,m) in product(irange,lrange,mrange) :
           if abs(m)>l : continue
@@ -51,5 +51,4 @@ declareObservables(w)
 c2 = doit("bkg_trangles_pdf", w.set('transversityangles'), tree, range(3), range(21), range(-8,9) )
 # helicity has phi almost flat...
 c1 = doit("bkg_helangles_pdf",w.set('helicityangles'), tree, range(3), range(21), range(-2,3) )
-
 
