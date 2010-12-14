@@ -97,24 +97,21 @@ RooP2VVAngleBasis::createProduct(int i, int j, int l, int m, double c) const {
       // yes, really bad hacking...
       _compRIter->Reset();
       RooLegendre *P = dynamic_cast<RooLegendre*>(_compRIter->Next());
-      RooSpHarmonic *Y = dynamic_cast<RooSpHarmonic*>(_compRIter->Next());
       assert(P!=0);
-      assert(Y!=0);
       RooArgSet* Po = P->getParameters((RooAbsData*) 0);
-      RooArgSet* Yo = Y->getParameters((RooAbsData*) 0);
       assert(Po->getSize()==1);  
-      assert(Yo->getSize()==2);  
-      TIterator* iter = Po->createIterator();
+      std::auto_ptr<TIterator> iter( Po->createIterator() );
       RooAbsReal *cpsi = dynamic_cast<RooAbsReal*>(iter->Next());
       assert(cpsi!=0);
-      delete iter;
-      iter = Yo->createIterator();
+      RooSpHarmonic *Y = dynamic_cast<RooSpHarmonic*>(_compRIter->Next());
+      assert(Y!=0);
+      RooArgSet* Yo = Y->getParameters((RooAbsData*) 0);
+      assert(Yo->getSize()==2);  
+      iter.reset( Yo->createIterator() );
       RooAbsReal *ctheta = dynamic_cast<RooAbsReal*>(iter->Next());
       assert(ctheta!=0);
       RooAbsReal *phi = dynamic_cast<RooAbsReal*>(iter->Next());
       assert(phi!=0);
-      delete iter;
-
 
       return (!_prod) ? new  RooP2VVAngleBasis( name.str().c_str(), name.str().c_str()
                                               , *cpsi, *ctheta, *phi

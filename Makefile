@@ -2,7 +2,7 @@ DEPDIR = .deps
 df = $(DEPDIR)/$(*F)
 
 CPP = g++
-LD = g++
+LD  = g++
 ROOTCONFIG = root-config
 CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb
 LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
@@ -14,8 +14,6 @@ SOURCES =				\
     RooP2VVAngleBasis.cxx		\
     RooSpHarmonic.cxx		\
     RooMultiCatGenerator.cxx		\
-    utils.cxx		\
-    basis.cxx		\
     p2vv_dict.cxx
 
 OBJECTS = $(SOURCES:%.cxx=%.o)
@@ -40,6 +38,6 @@ libp2vv.so: $(OBJECTS)
 clean:
 	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.*
 
-.deps:
+$DEPDIR:
 	mkdir $@
 -include $(SOURCES:%.cxx=$(DEPDIR)/%.P)

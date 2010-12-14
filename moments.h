@@ -1,12 +1,12 @@
 #ifndef MOMENT_H
 #define MOMENT_H
-#include "utils.h"
 #include "RooAbsPdf.h"
+#include <string>
 
-// TODO: move and/or integrate this code into RooP2VVAngleBasis ???
+// TODO: move and/or integrate this code into RooP2VVAngleBasis !!!
 class IMoment {
     public:
-          IMoment(RooAbsReal &basis, double norm=1, const char *name=0) : _basis(basis), _m0(0),_m1(0),_m2(0),_norm(norm), _name(name ? name : _basis.GetName() ) {}
+          IMoment(RooAbsReal &basis, double norm=1, const std::string& name = std::string()) : _basis(basis), _m0(0),_m1(0),_m2(0),_norm(norm), _name(name.empty() ? _basis.GetName() : name) {}
           virtual ~IMoment() {};
           virtual void inc(bool accepted = true) {
                 double x = evaluate();
@@ -34,7 +34,7 @@ class IMoment {
           RooAbsReal &_basis;
           double _m0,_m1,_m2;
           double _norm;
-          const char *_name;
+          std::string _name;
 };
 
 
@@ -46,12 +46,28 @@ private:
 
 class EffMoment  : public IMoment{
 public:
-    EffMoment(RooAbsReal& x, double norm, const RooAbsPdf& pdf, const RooArgSet& nset) : IMoment(x,norm,Format("%s_%s",x.GetName(),pdf.GetName())),_pdf(pdf), _nset(nset)  {}
+    EffMoment(RooAbsReal& x, double norm, const RooAbsPdf& pdf, const RooArgSet& nset) 
+        : IMoment(x,norm,std::string(x.GetName())+"_"+pdf.GetName()),_pdf(pdf), _nset(nset)  
+    {}
 
     double evaluate() { return _basis.getVal()/_pdf.getVal(&_nset); }
 private:
     const RooAbsPdf& _pdf;
     const RooArgSet&  _nset;
 };
+
+#include "RooAbsData.h"
+typedef std::vector<IMoment*> IMomentsVector;
+int _computeMoments(RooAbsData& data, IMomentsVector& moments) {
+   typedef IMomentsVector::iterator iter;
+   if (moments.empty()) return -1; 
+   RooArgSet *obs = moments.front()->basis().getObservables(data);
+   int i=0;
+   while (i<data.numEntries()) {
+       *obs = *data.get(i++);
+       for ( iter m = moments.begin(); m!=moments.end(); ++m) (*m)->inc();
+   }
+   return i;
+}
 
 #endif
