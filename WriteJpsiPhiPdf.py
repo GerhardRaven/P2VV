@@ -19,7 +19,7 @@ ws = RooWorkspace("ws")
 ###################
 
 ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f], t[-2,20.], tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]}"%(-pi,pi))
-
+ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
 
 ws.factory("{rz2[0.460,0.4,0.7],rperp2[0.347,0.2,0.5]")
 ws.factory("RooFormulaVar::rpar2('1-@0-@1',{rz2,rperp2})")
@@ -28,12 +28,6 @@ ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
 ws.factory("RooFormulaVar::rpar('sqrt(@0)',{rpar2})")
 
 ws.factory("{deltaz[0.],deltapar[-2.93],deltaperp[2.91]}")
-
-t      = ws.var('t')
-ctheta = ws.var('trcostheta')
-cpsi   = ws.var('trcospsi')
-phi    = ws.var('trphi')
-
 
 ##########################
 ### physics parameters ###
