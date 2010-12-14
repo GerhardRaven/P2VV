@@ -54,9 +54,7 @@ ws.factory("{expr::Sold('sin(phis)',{phis}),expr::Dold('cos(phis)',{phis}),Cold[
 
 ws.factory("RooGaussModel::res(t,mu[0],sigma[0.05])")
 
-ws.factory("{wmistag[0.5]}")
-#ws.factory("{wmistag[0.37]}")
-wmistag = ws.var('wmistag')
+ws.factory("{tagomega[0.5]}")
 
 ##################################### building the NEW pdf ###################################
 # create observables
