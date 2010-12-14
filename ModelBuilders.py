@@ -44,8 +44,9 @@ def buildJpsiphi(ws, name) :
 
     ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws['tagdecision'],ws['tagomega']) ) )
 
-    ws.factory("expr::N('1-@0*@1',{qtag_,C})")
+    ws.factory("expr::N('1/1+@0*@1',{tagdecision,C})")
     ws.factory("Minus[-1]")
+    
     ws.factory("$Alias(Addition_,sum_)") 
 ## TODO: move this bit into a derivative of RooBDecay, and do tagdecision explicitly
 ##       -- at that point, FOAM will do the angles, and we avoid the max search
@@ -64,34 +65,6 @@ def buildJpsiphi(ws, name) :
 ## Note that we can use a RooCustomizer to automate the replacement of
 ## fjpsiphi_sinh and fjpsiphi_sin, but the qtag in N is more tricky...
 
-##     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
-##                                      ", prod(N,NAparApar,                AparApar_basis)"
-##                                      ", prod(N,NAperpAperp,              AperpAperp_basis)"
-##                                      ", prod(N,ImAparAperp,      qtag_,C,AparAperp_basis)"
-##                                      ", prod(N,ImAzAperp,        qtag_,C,AzAperp_basis)"
-##                                      ", prod(N,ReAzApar,                 AzApar_basis)"
-##                                      "})")
-##     ws.factory("sum_::fjpsiphi_cos ({ prod(N,NAzAz,            qtag_,C,AzAz_basis)"
-##                                      ", prod(N,NAparApar,        qtag_,C,AparApar_basis)"
-##                                      ", prod(N,NAperpAperp,      qtag_,C,AperpAperp_basis)"
-##                                      ", prod(N,ImAparAperp,              AparAperp_basis)"
-##                                      ", prod(N,ImAzAperp,                AzAperp_basis)"
-##                                      ", prod(N,ReAzApar,         qtag_,C,AzApar_basis)"
-##                                      "})") 
-##     ws.factory("sum_::fjpsiphi_sinh({ prod(N,NAzAz,      Minus,      D,AzAz_basis)"
-##                                      ", prod(N,NAparApar,  Minus,      D,AparApar_basis)"
-##                                      ", prod(N,NAperpAperp,            D,AperpAperp_basis)"
-##                                      ", prod(N,ReAparAperp,      qtag_,S,AparAperp_basis)"
-##                                      ", prod(N,ReAzAperp,        qtag_,S,AzAperp_basis)"
-##                                      ", prod(N,ReAzApar,   Minus,      D,AzApar_basis)"
-##                                      "})")
-##     ws.factory("sum_::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
-##                                      ", prod(N,NAparApar,  Minus,qtag_,S,AparApar_basis)"
-##                                      ", prod(N,NAperpAperp,      qtag_,S,AperpAperp_basis)"
-##                                      ", prod(N,ReAparAperp,Minus,      D,AparAperp_basis)"
-##                                      ", prod(N,ReAzAperp,  Minus,      D,AzAperp_basis)"
-##                                      ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
-##                                      "})")
 
 
     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
@@ -122,7 +95,9 @@ def buildJpsiphi(ws, name) :
                                    ", prod(N,ReAzAperp,  Minus,qtag_,D,AzAperp_basis)"
                                    ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
                                    "})")
-    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,tres_sig,SingleSided)" % name)
+
+    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,res,SingleSided)" % name)
+
     return ws.pdf(name)
 
 
