@@ -18,10 +18,8 @@ pdf = buildJpsiphi(ws,'jpsiphipdf',useTransversityAngles)  ## for now we rely qu
 
 
 ### let's make some nice plots to show what this PDF looks like...
-if useTransversityAngles :
-    obs = ws.argSet('trcospsi,trcostheta,trphi,t,tagdecision')
-else:
-    obs = ws.argSet('helcosthetaK,helcosthetaL,helphi,t,tagdecision')
+obs = ws.set('transversityangles' if useTransversityAngles else 'helicityangles')
+obs.add( ws.argSet('t,tagdecision') )
 
 canvas = TCanvas('canvas','canvas')
 canvas.Divide(5,4)

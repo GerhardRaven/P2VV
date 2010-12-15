@@ -1,5 +1,6 @@
 from ROOT import *
 gSystem.Load('libp2vv')
+gStyle.SetOptStat(0);
 from ModelBuilders import buildMomentPDF,abasis,declareObservables,buildMassPDFs
 from itertools import count,product
 from math import pi
@@ -33,6 +34,7 @@ def doit(name, angles, tree, irange, lrange, mrange ) :
         hist = pdf.createHistogram( others.names() )
         pdf.fillHistogram( hist,others,1., RooArgSet(v))
         hist.Draw('COLZ')
+        # hist.Draw('sinusoidal')
     return c
 
 fname = 'Bs2JpsiPhiTuple.root'
