@@ -310,14 +310,15 @@ p2vv = ws.pdf('newpdf')
 #p2vv = ws.pdf('myJpsiphiPdf_withWeights')
 
 #Getting the resolution model from the JpsiPhi pdf in the workspace
-res = ws.pdf('res')
+res = ws.pdf('tres_sig')
 
 #background B mass pdf
 ws.factory("Exponential::m_bkg(m,m_bkg_exp[-0.001,-0.01,-0.0001])")
 
-#background propertime
-ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.1,0.5],res,SingleSided)")
-ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,1.,2.5],res,SingleSided)")
+#background propertime 
+# TODO: split resolution in tres_sig and tres_nonpsi!!
+ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.1,0.5],tres_sig,SingleSided)")
+ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,1.,2.5],tres_sig,SingleSided)")
 ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
 
 #background angles: 

@@ -46,7 +46,7 @@ ws.factory("{expr::Sold('sin(phis)',{phis}),expr::Dold('cos(phis)',{phis}),Cold[
 ### Experimental parameters ###
 ###############################
 
-ws.factory("RooGaussModel::res(t,mu[0],sigma[0.05])")
+ws.factory("RooGaussModel::tres_sig(t,mu[0],sigma[0.05])")
 
 ws.factory("{tagomega[0.5]}")
 

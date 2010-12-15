@@ -2,7 +2,7 @@ from ROOT import *
 import RooFitDecorators
 gSystem.Load("libp2vv")
 
-feelTheNeedForSpeed = False
+feelTheNeedForSpeed = True
 if feelTheNeedForSpeed:
     ### experimental fast(er) toy generator...
     RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
@@ -87,7 +87,7 @@ def buildJpsiphi(ws, name, transversity = True ) :
 
     ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws['tagdecision'],ws['tagomega']) ) )
 
-    ws.factory("expr::N('1/1+@0*@1',{tagdecision,C})")
+    ws.factory("expr::N('1.0/(1.0+@0*@1)',{tagdecision,C})")
     ws.factory("Minus[-1]")
 
     ws.factory("$Alias(Addition_,sum_)")
@@ -138,7 +138,7 @@ def buildJpsiphi(ws, name, transversity = True ) :
                                    ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
                                    "})")
 
-    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,res,SingleSided)" % name)
+    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,tres_sig,SingleSided)" % name)
 
     return ws.pdf(name)
 
