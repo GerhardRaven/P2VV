@@ -2,7 +2,7 @@ from ROOT import *
 import RooFitDecorators
 gSystem.Load("libp2vv")
 
-feelTheNeedForSpeed = True
+feelTheNeedForSpeed = False
 if feelTheNeedForSpeed:
     ### experimental fast(er) toy generator...
     RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
@@ -87,8 +87,9 @@ def buildJpsiphi(ws, name, transversity = True ) :
 
     ws.put(RooFormulaVar("qtag_","@0*(1-2*@1)",RooArgList( ws['tagdecision'],ws['tagomega']) ) )
 
-    ws.factory("expr::N('1-@0*@1',{qtag_,C})")
+    ws.factory("expr::N('1/1+@0*@1',{tagdecision,C})")
     ws.factory("Minus[-1]")
+
     ws.factory("$Alias(Addition_,sum_)")
 
     # TODO: move this bit into a derivative of RooBDecay, and do tagdecision explicitly
@@ -107,6 +108,7 @@ def buildJpsiphi(ws, name, transversity = True ) :
     # is normally non-zero)
     # Note that we can use a RooCustomizer to automate the replacement of
     # fjpsiphi_sinh and fjpsiphi_sin, but the qtag in N is more tricky...
+
     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
                                    ", prod(N,NAparApar,                AparApar_basis)"
                                    ", prod(N,NAperpAperp,              AperpAperp_basis)"
@@ -135,7 +137,9 @@ def buildJpsiphi(ws, name, transversity = True ) :
                                    ", prod(N,ReAzAperp,  Minus,qtag_,D,AzAperp_basis)"
                                    ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
                                    "})")
-    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,tres_sig,SingleSided)" % name)
+
+    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,res,SingleSided)" % name)
+
     return ws.pdf(name)
 
 

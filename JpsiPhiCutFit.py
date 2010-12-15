@@ -6,6 +6,14 @@ GaudiPython.loaddict('P2VVDict')
 gSystem.Load("libp2vv")
 from math import pi
 
+import rootStyle
+#from ROOT import (gROOT,gStyle,TStyle)
+myStyle = rootStyle.plainstyle()
+gROOT.SetStyle(myStyle.GetName())
+gROOT.ForceStyle()
+gStyle.UseCurrentStyle()
+
+
 #######################
 ### Plot ICHEP Like ###
 #######################
@@ -25,8 +33,6 @@ def plot(ws,data,pdf,title):
     t = ws.var("t") 
     m = ws.var("m") 
 
-    tmin = t.getMin()
-    tmax = t.getMax()
     msigmin = 5345.
     msigmax = 5387.
     mmin = 5200.
@@ -52,8 +58,7 @@ def plot(ws,data,pdf,title):
     hist.SetStats(kFALSE)
     hist.GetXaxis().SetTitle(str(t.getTitle()))
     hist.GetYaxis().SetTitle(str(m.getTitle()))
-    hist.GetYaxis().SetTitleOffset(1.3)
-    hist.SetTitle("")
+    hist.SetTitle('B_{s} mass vs. proper time')
     hist.Draw()
     myline1.Draw('same')
     myline2.Draw('same')
@@ -61,7 +66,7 @@ def plot(ws,data,pdf,title):
 
     #===========================================================================================================
     c.cd(2)
-    _m = m.frame(RooFit.Bins(20),RooFit.Title('m'))
+    _m = m.frame(RooFit.Bins(40),RooFit.Title('B_{s} mass, t>%s ps'%(str(tmin))))
     data.plotOn(_m,RooFit.MarkerSize(0.7),xes)
     pdf.plotOn(_m,RooFit.Components("bkg_pdf"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
     pdf.plotOn(_m,RooFit.Components("sig_pdf"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
@@ -74,12 +79,12 @@ def plot(ws,data,pdf,title):
     gPad.SetLogy()
 
     _tb = t.frame(-1,13,50)
-    data.plotOn(_tb,RooFit.MarkerSize(0.5),xes,err)
+    data.plotOn(_tb,RooFit.MarkerSize(0.5),xes)
     pdf.plotOn(_tb,RooFit.Components("sig_pdf"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
     pdf.plotOn(_tb,RooFit.Components("bkg_pdf"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
     pdf.plotOn(_tb,lw)
 
-    pdf.paramOn(_tb,RooFit.Parameters(parameterprintset))
+    #pdf.paramOn(_tb,RooFit.Parameters(parameterprintset))
 
     _tb.SetMinimum(0.1) 
     _tb.SetTitle("proper time full mass range")
@@ -254,9 +259,8 @@ def plot(ws,data,pdf,title):
 ### Read ws, observables   ###
 ##############################
 
-wsfile = TFile('OldWSJpsiPhiPdf.root')
+wsfile = TFile('NewWS.root')
 
-#ws = RooWorkspace(wsfile.Get('workspace'))
 ws = wsfile.Get('workspace')
 
 t = ws.var('t')
@@ -264,9 +268,9 @@ t = ws.var('t')
 ##############################
 #This sets the range for the events in the dataset that you read, and the range in which you will fit!
 ##############################
-
-t.setRange(0.3,12.)
-t.setRange('largeTime',0.3,12.)
+tmin = 0.3
+tmax = 12.
+t.setRange(tmin,tmax)
 
 cpsi = ws.var('trcospsi')
 ctheta = ws.var('trcostheta')
@@ -274,7 +278,7 @@ phi = ws.var('trphi')
 
 tagdecision = ws.cat('tagdecision')
 
-m = RooRealVar("m","B mass",5200,5550)
+m = RooRealVar("m","B_{s} mass",5200,5550)
 
 obs = RooArgSet(m)
 
@@ -286,7 +290,8 @@ ws.defineSet("observables","m,t,trcostheta,trcospsi,trphi,tagdecision")
 ### Load Data ###
 #################
 
-file = TFile('duitsedata.root')
+#file = TFile('duitsedata.root')
+file = TFile('duitsedata2.root')
 NTupletree = file.Get('Bs2JpsiPhi')
 
 data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcostheta==trcostheta && trcospsi==trcospsi && trphi==trphi && tagdecision==tagdecision')
@@ -301,35 +306,35 @@ getattr(ws,'import')(data)
 ws.factory("Gaussian::m_sig(m,m_sig_mean[5365,5360,5370],m_sig_sigma_1[6.,0.,20.])")
     
 #Getting the JpsiPhi signal Pdf
-p2vv = ws.pdf('myJpsiphiPdf_noEff')
+p2vv = ws.pdf('newpdf')
 #p2vv = ws.pdf('myJpsiphiPdf_withWeights')
 
 #Getting the resolution model from the JpsiPhi pdf in the workspace
-tres = ws.pdf('tres')
+res = ws.pdf('res')
 
 #background B mass pdf
 ws.factory("Exponential::m_bkg(m,m_bkg_exp[-0.001,-0.01,-0.0001])")
 
 #background propertime
-ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.1,0.5],tres,SingleSided)")
-ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,1.,2.5],tres,SingleSided)")
+ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.1,0.5],res,SingleSided)")
+ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,1.,2.5],res,SingleSided)")
 ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
 
 #background angles: 
 #ws.factory("Uniform::bkgang({trcostheta,trcospsi,trphi})")
 
-#ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13,-1,1],c1_trcospsi[0.23,-1,1],c2_trcospsi[-0.057,-1,1],c3_trcospsi[-0.0058,-1,1],c4_trcospsi[-0.0154,-1,1]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
-#ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08,-1,1],c1_trcostheta[-0.22,-1,1],c2_trcostheta[-0.022,-1,1],c3_trcostheta[0.21,-1,1],c4_trcostheta[0.0125,-1,1]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
-#ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10,-1,1],c1_trphi[0.328,-1,1],c2_trphi[0.081,-1,1],c3_trphi[0.316,-1,1],c4_trphi[0.044,-1,1]})")#,c5_trphi[-1,1],c6_trphi[-1,1]})")
+ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13,-1,1],c1_trcospsi[0.23,-1,1],c2_trcospsi[-0.057,-1,1],c3_trcospsi[-0.0058,-1,1],c4_trcospsi[-0.0154,-1,1]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
+ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08,-1,1],c1_trcostheta[-0.22,-1,1],c2_trcostheta[-0.022,-1,1],c3_trcostheta[0.21,-1,1],c4_trcostheta[0.0125,-1,1]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
+ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10,-1,1],c1_trphi[0.328,-1,1],c2_trphi[0.081,-1,1],c3_trphi[0.316,-1,1],c4_trphi[0.044,-1,1]})")#,c5_trphi[-1,1],c6_trphi[-1,1]})")
 
-ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13],c1_trcospsi[0.23],c2_trcospsi[-0.057],c3_trcospsi[-0.0058],c4_trcospsi[-0.0154]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
-ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08],c1_trcostheta[-0.22],c2_trcostheta[-0.022],c3_trcostheta[0.21],c4_trcostheta[0.0125]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
-ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10],c1_trphi[0.328],c2_trphi[0.081],c3_trphi[0.316],c4_trphi[0.044]})")#,c5_trphi[-1,1],c6_trphi[-1,1]})")
+#ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13],c1_trcospsi[0.23],c2_trcospsi[-0.057],c3_trcospsi[-0.0058],c4_trcospsi[-0.0154]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
+#ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08],c1_trcostheta[-0.22],c2_trcostheta[-0.022],c3_trcostheta[0.21],c4_trcostheta[0.0125]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
+#ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10],c1_trphi[0.328],c2_trphi[0.081],c3_trphi[0.316],c4_trphi[0.044]})")#,c5_trphi[-1,1],c6_trphi[-1,1]})")
 
 ws.factory("PROD::bkgang(bkg_trcostheta,bkg_trcospsi,bkg_trphi)")
 
 #P2VV fit
-ws.factory("PROD::sig_pdf( m_sig, myJpsiphiPdf_noEff)")
+ws.factory("PROD::sig_pdf( m_sig, newpdf)")
 
 ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, bkgang)")
 
@@ -352,40 +357,40 @@ masspdf = ws.pdf('masspdf')
 
 #Parameters to be printed
 
-Aperp_sq_jpsiphi         = ws.var('Aperp_sq_jpsiphi')
-Azero_sq_jpsiphi         = ws.var('Azero_sq_jpsiphi')
-G_s                      = ws.var('G_s')
-Nbkg                     = ws.var('Nbkg')
-Nsig                     = ws.var('Nsig')
-f_sig                    = ws.var('f_sig')
-Phi_s                    = ws.var('Phi_s')
-dG_s                     = ws.var('dG_s')
-dm_s                     = ws.var('dm_s')
-m_bkg_exp                = ws.var('m_bkg_exp')
-m_sig_mean               = ws.var('m_sig_mean')
-m_sig_sigma_1            = ws.var('m_sig_sigma_1')
-phi_par_jpsiphi          = ws.var('phi_par_jpsiphi')
-phi_perp_jpsiphi         = ws.var('phi_perp_jpsiphi')
-phi_zero_jpsiphi         = ws.var('phi_zero_jpsiphi')
-t_bkg_fll                = ws.var('t_bkg_fll')
-t_bkg_ll_tau             = ws.var('t_bkg_ll_tau')
-t_bkg_ml_tau             = ws.var('t_bkg_ml_tau')
+## rperp2                   = ws.var('rperp2')
+## rz2                      = ws.var('rz2')
+## gamma                    = ws.var('gamma')
+## Nbkg                     = ws.var('Nbkg')
+## Nsig                     = ws.var('Nsig')
+## f_sig                    = ws.var('f_sig')
+## phis                     = ws.var('phis')
+## dG                       = ws.var('dG')
+## dm                       = ws.var('dm')
+## m_bkg_exp                = ws.var('m_bkg_exp')
+## m_sig_mean               = ws.var('m_sig_mean')
+## m_sig_sigma_1            = ws.var('m_sig_sigma_1')
+## deltapar                 = ws.var('deltapar')
+## deltaperp                = ws.var('deltaperp')
+## deltaz                   = ws.var('deltaz')
+## t_bkg_fll                = ws.var('t_bkg_fll')
+## t_bkg_ll_tau             = ws.var('t_bkg_ll_tau')
+## t_bkg_ml_tau             = ws.var('t_bkg_ml_tau')
 
-parameterprintset = RooArgSet(Aperp_sq_jpsiphi)
-parameterprintset.add(Azero_sq_jpsiphi)
-parameterprintset.add(Nbkg)
-parameterprintset.add(Nsig)
-#parameterprintset.add(f_sig)
-#parameterprintset.add(dm_s)
-parameterprintset.add(m_bkg_exp)
-parameterprintset.add(m_sig_mean)
-parameterprintset.add(m_sig_sigma_1)
-parameterprintset.add(phi_par_jpsiphi)
-parameterprintset.add(phi_perp_jpsiphi)
-parameterprintset.add(phi_zero_jpsiphi)
-parameterprintset.add(t_bkg_fll)
-parameterprintset.add(t_bkg_ll_tau)
-parameterprintset.add(t_bkg_ml_tau)
+## parameterprintset = RooArgSet(rperp2)
+## parameterprintset.add(rz2)
+## parameterprintset.add(Nbkg)
+## parameterprintset.add(Nsig)
+## #parameterprintset.add(f_sig)
+## #parameterprintset.add(dm_s)
+## parameterprintset.add(m_bkg_exp)
+## parameterprintset.add(m_sig_mean)
+## parameterprintset.add(m_sig_sigma_1)
+## parameterprintset.add(deltapar)
+## parameterprintset.add(deltaperp)
+## parameterprintset.add(deltaz)
+## parameterprintset.add(t_bkg_fll)
+## parameterprintset.add(t_bkg_ll_tau)
+## parameterprintset.add(t_bkg_ml_tau)
 
 ####################
 #MASS ONLY
