@@ -36,7 +36,7 @@ libp2vv.so: $(OBJECTS)
 	$(LD) $(LDFLAGS) -shared -o $@ $^
 
 clean:
-	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.*
+	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.* *.pyc *.bak *.aux
 
 $DEPDIR:
 	mkdir $@
