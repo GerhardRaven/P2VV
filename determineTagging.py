@@ -26,20 +26,20 @@ data = RooDataSet('data','data',tree,tags)
 ###       I suspect that Multionial | RooThresholdCategory == RooParametricStep....
 
 tagcat = RooThresholdCategory("tagcat","tagcat",w['tagomega'],"untagged",0)
+pdf = RooThresholdPdf("tageff","tageff",w['tagomega'])
+effs = []
 for (name,upper) in [ ("tag1", 0.2), ("tag2",0.3), ("tag3", 0.45) ] :
+    eff = RooRealVar( name + "_eff", name + "_eff", 0.2, 0., 1.)
+    effs += [ eff ]
     tagcat.addThreshold(upper,name)
+    pdf.addThreshold(upper, eff )
 
-# Make RooThresholdCategory a fundamental, and have it _replace_ tagomega...
-# That way we don't have to generate tagomega when making a toy...
-tagcat = data.addColumn( tagcat )
 
-# Now figure out the tagging efficiencies by creating a multinomial...
-eps = RooRealVar("eps","eps",0.1,0,1)
 # TODO: replace by multinomial....
-x = RooEfficiency("tageff","tageff",eps,tagcat,"untagged")
-x.fitTo(data)
-
-
-
-
-
+#x = RooEfficiency("tageff","tageff",eps,tagcat,"untagged")
+#x.fitTo(data)
+pdf.fitTo(data)
+plot = w['tagomega'].frame()
+data.plotOn( plot )
+pdf.plotOn( plot )
+plot.Draw()

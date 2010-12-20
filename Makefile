@@ -14,6 +14,7 @@ SOURCES =				\
     RooP2VVAngleBasis.cxx		\
     RooSpHarmonic.cxx		\
     RooMultiCatGenerator.cxx		\
+    RooThresholdPdf.cxx		\
     p2vv_dict.cxx
 
 OBJECTS = $(SOURCES:%.cxx=%.o)

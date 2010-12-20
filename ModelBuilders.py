@@ -240,7 +240,9 @@ def declareObservables( ws ):
     ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
     # tag 
     ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
-    ws.factory("tagomega[0,0.5]")
+    ws.factory("tagomega[0,0.5001]")
+
+
     # B, jpsi, phi mass
     ws.factory("m[5200,5450]")
     ws.factory("mdau1[%f,%f]"%(3097-60,3097+60))
@@ -254,6 +256,20 @@ def declareObservables( ws ):
     # the next is something we may need to switch on or off, depending on whether we use a pdf for sigmat
     ws.defineSet("conditionalobservables","sigmat")
 
+def buildTagging( ws ) :
+    # either make PDF conditional on tagomega distribution
+    # and use a fittable version RooHistPdf for tagOmega,
+    # different for sig and bkg
+    pass
+    # or split tagomega distribution in discrete categories,
+    # and multiply by efficiency for each category, seperate 
+    # for signal and background...
+    tagcat = RooThresholdCategory('tagcat','tagcat',ws['tagomega'],'untagged')
+    for i in range( ) :
+        tagcat.addThreshold(i*0.5/len(),'cat%s'%i,i)
+    ws.put(tagcat)
+    # 
+    
 
 def buildABkgPdf( ws, name, resname, psimasspdfname ):
     from itertools import repeat

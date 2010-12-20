@@ -6,6 +6,7 @@
 #pragma link C++ class RooP2VVAngleBasis;
 #pragma link C++ class RooSpHarmonic;
 #pragma link C++ class RooMultiCatGenerator;
+#pragma link C++ class RooThresholdPdf;
 #pragma link C++ class IMoment;
 #pragma link C++ class Moment;
 #pragma link C++ class EffMoment;
