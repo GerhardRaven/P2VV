@@ -239,7 +239,7 @@ def declareObservables( ws ):
     ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
     ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
     # tag 
-    ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1]")
+    ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
     ws.factory("tagomega[0,0.5]")
     # B, jpsi, phi mass
     ws.factory("m[5200,5450]")
