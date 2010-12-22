@@ -41,19 +41,17 @@ def _RooWorkspacePut( self ,x ) :
 RooWorkspace.put = _RooWorkspacePut
 
 def setConstant(ws, pattern, constant = True, value = None):
-    # TODO: replace TRegexp by native python re
-    from ROOT import TRegexp, TString
-    rc = int(0)
-    rexp = TRegexp(pattern,True)
+    rc = 0
+    import re
+    rexp = re.compile(pattern)
     for arg in ws.allVars() :
-        if TString(arg.GetName()).Index(rexp)>=0 :
-            arg.setConstant( constant )
-            if constant and value :
-                if value < arg.getMin() : arg.setMin(value) 
-                if value > arg.getMax() : arg.setMax(value) 
-                arg.setVal(value) 
-            rc += 1
-    #print 'number of parameters matching ', pattern, rc
+        if not rexp.match(arg) : continue
+        arg.setConstant( constant )
+        if constant and value :
+            if value < arg.getMin() : arg.setMin(value) 
+            if value > arg.getMax() : arg.setMax(value) 
+            arg.setVal(value) 
+        rc += 1
     return rc
 
 RooWorkspace.setConstant = setConstant
