@@ -28,7 +28,7 @@ data = RooDataSet('data','data',tree,tags)
 tagcat = RooThresholdCategory("tagcat","tagcat",w['tagomega'],"untagged",0)
 pdf = RooThresholdPdf("tageff","tageff",w['tagomega'])
 effs = []
-for (name,upper) in [ ("tag1", 0.2), ("tag2",0.3), ("tag3", 0.45) ] :
+for (name,upper) in [ ("tag1", 0.3), ("tag2",0.4), ("tag3", 0.45) ] :
     eff = RooRealVar( name + "_eff", name + "_eff", 0.2, 0., 1.)
     effs += [ eff ]
     tagcat.addThreshold(upper,name)
@@ -39,7 +39,19 @@ for (name,upper) in [ ("tag1", 0.2), ("tag2",0.3), ("tag3", 0.45) ] :
 #x = RooEfficiency("tageff","tageff",eps,tagcat,"untagged")
 #x.fitTo(data)
 pdf.fitTo(data)
-plot = w['tagomega'].frame()
-data.plotOn( plot )
-pdf.plotOn( plot )
-plot.Draw()
+
+plot1 = w['tagomega'].frame()
+plot2 = w['tagomega'].frame()
+data.plotOn( plot1 )
+binning = pdf.getBinning() # need to make sure it is not garbage collected too early...
+data.plotOn( plot2, RooFit.Binning( binning ),RooFit.MarkerColor(kRed)  )
+pdf.plotOn( plot1 )
+pdf.plotOn( plot2 )
+
+c = TCanvas()
+c.Divide(1,2)
+c.cd(1)
+plot1.Draw()
+c.cd(2)
+plot2.Draw()
+
