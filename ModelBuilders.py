@@ -240,7 +240,7 @@ def declareObservables( ws ):
     ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
     # tag 
     ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
-    ws.factory("tagomega[0,0.5001]")
+    ws.factory("tagomega[0,0.500000001]")
 
 
     # B, jpsi, phi mass
