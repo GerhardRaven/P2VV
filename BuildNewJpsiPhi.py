@@ -9,6 +9,8 @@ declareObservables(ws)
 definePolarAngularAmplitudes(ws)
 
 ws.factory("RooGaussModel::tres_sig(t,mu[0],sigma[0.05])")
+
+### split by category...
 ws.factory("{wmistag[0.0]}")
 
 useTransversityAngles = False
@@ -16,6 +18,10 @@ pdf = buildJpsiphi(ws,'jpsiphipdf',useTransversityAngles)  ## for now we rely qu
                                      ## in future we should pass more information into the builder
                                      ## maybe a dictionary of what's what...
 
+(tagcat,tagpdf) = buildTagging(w,'sigtag',[0.25,0.35,0.45])
+# split wmistag by tagging category
+# multiply resulting PDF with tagpdf
+# fix mistag for untagged events to 0.5
 
 ### let's make some nice plots to show what this PDF looks like...
 obs = ws.set('transversityangles' if useTransversityAngles else 'helicityangles')
@@ -53,6 +59,7 @@ for i in  range(len(p)+1) :
             pdf.plotOn(f,RooFit.Project(proj))
        f.Draw()
 
+    ## TODO: plot in each tagging category seperately...
     tagAsym = RooFit.Asymmetry(ws["tagdecision"])
     canvas.cd(5*i+5)
     f = ws['t'].frame(RooFit.Range(-.5,3.5))

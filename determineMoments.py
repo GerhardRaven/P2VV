@@ -35,6 +35,12 @@ def doit(name, angles, tree, irange, lrange, mrange ) :
         pdf.fillHistogram( hist,others,1., RooArgSet(v))
         hist.Draw('COLZ')
         # hist.Draw('sinusoidal')
+        datahist = data.createHistogram( others.name() )
+        data.fillHistogram( datahist )
+
+        mat = data.correlationMatrix( angles )
+        print mat
+        # create residuals in 2D
     return c
 
 fname = 'Bs2JpsiPhiTuple.root'

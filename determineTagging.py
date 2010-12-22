@@ -1,5 +1,5 @@
 from ROOT import *
-from ModelBuilders import declareObservables
+from ModelBuilders import declareObservables,buildTagging
 
 fname = 'Bs2JpsiPhiTuple.root'
 dataName = 'dataset'
@@ -25,19 +25,8 @@ data = RooDataSet('data','data',tree,tags)
 ###       and add a Multinomial (with parameters split for b,bbar) to account for the efficiency...
 ###       I suspect that Multionial | RooThresholdCategory == RooParametricStep....
 
-tagcat = RooThresholdCategory("tagcat","tagcat",w['tagomega'],"untagged",0)
-pdf = RooThresholdPdf("tageff","tageff",w['tagomega'])
-effs = []
-for (name,upper) in [ ("tag1", 0.3), ("tag2",0.4), ("tag3", 0.45) ] :
-    eff = RooRealVar( name + "_eff", name + "_eff", 0.2, 0., 1.)
-    effs += [ eff ]
-    tagcat.addThreshold(upper,name)
-    pdf.addThreshold(upper, eff )
+(tagcat,pdf) = buildTagging(w,'sigtag',[0.25,0.35,0.45])
 
-
-# TODO: replace by multinomial....
-#x = RooEfficiency("tageff","tageff",eps,tagcat,"untagged")
-#x.fitTo(data)
 pdf.fitTo(data)
 
 plot1 = w['tagomega'].frame()
@@ -54,4 +43,3 @@ c.cd(1)
 plot1.Draw()
 c.cd(2)
 plot2.Draw()
-
