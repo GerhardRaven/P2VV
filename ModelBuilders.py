@@ -66,6 +66,8 @@ def buildHelicityBasis(ws, ab) :
            , _ba("AzAperp",    [ ( 2,1,2,-1, -sqrt(12./5.)) ] )
            , _ba("AzApar",     [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
            )
+## TODO: replace hardwired use of 'tagomega' with a passable rule, which by default returns 'tagomega'
+##       this is needed when fitting for mistag rate in tagging categories...
 def buildJpsiphi(ws, name, transversity = True ) :
     if transversity :
         basis = buildTransversityBasis(ws, abasis(ws,ws.set('transversityangles')))
@@ -224,6 +226,13 @@ def build3GaussianResoModel(ws,name):
     ws.factory("GaussModel::tres_%s_g2(t,tres_%s_m1,            tres_%s_s2[2.0,1.5,10],1, sigmat)" % (name,name,name))
     ws.factory("GaussModel::tres_%s_g3(t,tres_%s_m1,            tres_%s_s3[0.54,0.1,3.0])" % (name,name,name))
     ws.factory("AddModel::tres_%s({tres_%s_g3,tres_%s_g2,tres_%s_g1},{tres_%s_f3[0.001,0.00,0.01],tres_%s_f2[0.2,0.01,1]})" % (name,name,name,name,name,name))
+    # TODO: build a PDF for sigmat (eg. RooHistPdf... or the sum of two gamma functions....)
+    # gamma = RooRealVar("gamma","gamma",15,10,30)
+    # beta = RooRealVar("beta","beta",2.21456e-03,0,0.1)
+    # mu = RooRealVar("mu","mu",0,0.001,0.01)
+    # pdf = RooGammaPdf("pdf","pdf",st,gamma,beta,mu)
+
+    return (ws['tres_%s'%name],None)
     
 def buildResoModels(ws):
     build3GaussianResoModel(ws,'sig')
@@ -240,7 +249,7 @@ def declareObservables( ws ):
     ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
     # tag 
     ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
-    ws.factory("tagomega[0,0.500000001]")
+    ws.factory("tagomega[0,0.500001]")
 
 
     # B, jpsi, phi mass
@@ -254,9 +263,15 @@ def declareObservables( ws ):
     ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,tagomega,tagdecision") 
 
     # the next is something we may need to switch on or off, depending on whether we use a pdf for sigmat
+    #ws.defineSet("conditionalobservables","sigmat,tagomega")
     ws.defineSet("conditionalobservables","sigmat")
 
-def buildTagging( ws ) :
+##
+## call with buildTagging(ws, name, [ 0.25, 0.35, 0.45 ] ) 
+## to define tagging categories corresponding to the intervals [0,0.25),[0.25,0.35),[0.35,0.45),[0.45,0.5]
+## note that the final interval is defined 'by construction' and that the pdf returned gives 
+## the efficiency to be in the i-th category, with the last category having an efficiency 1-sum_i eff_i
+def buildTagging( ws, name, tagcatdef ) :
     # either make PDF conditional on tagomega distribution
     # and use a fittable version RooHistPdf for tagOmega,
     # different for sig and bkg
@@ -264,10 +279,17 @@ def buildTagging( ws ) :
     # or split tagomega distribution in discrete categories,
     # and multiply by efficiency for each category, seperate 
     # for signal and background...
-    tagcat = RooThresholdCategory('tagcat','tagcat',ws['tagomega'],'untagged')
-    for i in range( ) :
-        tagcat.addThreshold(i*0.5/len(),'cat%s'%i,i)
-    ws.put(tagcat)
+    tagcat = RooThresholdCategory(name+"cat",name+"cat",ws['tagomega'],"untagged",0)
+    pdf = RooThresholdPdf(name+'effpdf',name+'effpdf',ws['tagomega'])
+    for (i,upper) in enumerate( tagcatdef ) :
+        cname = '%s%d' % (name,i)
+        ename = cname + '_eff'
+        ws.put(RooRealVar( ename, ename , 0.2, 0., 1.))
+        eff = ws[ename]
+        tagcat.addThreshold(upper,cname)
+        pdf.addThreshold(upper, eff )
+
+    return (tagcat,pdf)
     # 
     
 
@@ -276,7 +298,7 @@ def buildABkgPdf( ws, name, resname, psimasspdfname ):
 
     # build the dependencies if needed
     if not ws.function(resname)     : buildResoModels(ws)
-    if not ws.function("m_%s"%name) : buildMassPDFs(ws)
+    if not ws.function('m_%s'%name) : buildMassPDFs(ws)
 
     #background B mass pdf
     ws.factory("Exponential::m_%s(m,m_%s_exp[-0.001,-0.01,-0.0001])"% tuple(repeat(name,2)) )
