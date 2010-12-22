@@ -11,7 +11,7 @@
 
 
 \begin{eqnarray}
-   \lambda_f &\equiv& \frac{q}{p}\frac{\overline{\cal A}_f}{{\cal A}_f} = \eta\frac{q}{p} \frac{\overline{\cal A}_{\overline{f}}}{{\cal A}_f}\\
+   \lambda_f &\equiv& \frac{q}{p}\frac{\overline{\cal A}_f}{{\cal A}_f} = \eta_f\frac{q}{p} \frac{\overline{\cal A}_{\overline{f}}}{{\cal A}_f}\\
    S &=& \frac{2 \Im \lambda}{1+|\lambda|^2};\;\; D = \frac{2 \Re \lambda}{1+|\lambda|^2};\;\; C = \frac{1-|\lambda|^2 }{1+|\lambda|^2}\\
    D^2+S^2 & = & 1 - C^2 \\
    \lambda & = & \frac{D+iS}{1+C};\;\; \frac{1}{\lambda}  =  \frac{D-iS}{1-C};\;\; |\lambda|^2 = \frac{ 1-C }{ 1+C }
@@ -29,7 +29,7 @@ In terms of $\phi_s$, we have $S=-\sin(\phi_s),D=\cos(\phi_s),C=0$.
    {\overline{\cal A}}_f(t) &=& e^{-t/2\tau} \left[  E_+(t) + \frac{1}{\eta_f\lambda} E_-(t)  \right] \eta_f a_f    \\
                             &=&     e^{-t/2\tau} \left[\eta_f E_+(t) + \frac{D-iS}{1-C} E_-(t)  \right] a_f   
 \end{eqnarray}
-where we have used that, by definition, $\overline{a}_f = \eta_f a_f$. The above can be
+where we have defined that $a_f \equiv {\cal A}_f(t=0)$ and thus that, by definition, $\overline{a}_f = \eta_f a_f$. The above can be
 written in a more symmetrical way as:
 \begin{eqnarray}
    {\cal A}_f(t)           &=&     \frac{e^{-t/2\tau}}{1+C} \left[ (1+C)E_+(t) +\eta_f (D+iS) E_-(t)  \right] a_f  
@@ -70,14 +70,14 @@ which can be combined in a single expression by multiplying the relevant terms w
 Note that we have not assumed that $|\lambda|=1$, but we did assume that all three $|\lambda_f|$ are the same, i.e.
 this implies that there either there is either no, or identical amount of direct CP violation in all three decay amplitudes,
 i.e. $|\overline{A}_f/A_f|$ are all the same. The above does allow for CP violation in mixing, as in that case $|q/p|\ne 1$,
-and all three $|\lambda_f|$ would be, by definition affected identically. As a result, {\em assuming the absence of direct CP},
+and all three $|\lambda_f|$ would be, by definition, affected identically. As a result, {\em assuming the absence of direct CP},
 we can relate the value  of $C$ to $A_\mathrm{SL}$ as follows:
 \begin{eqnarray}
  A_\mathrm{SL} &=& \frac{ |q/p|^2 - |p/q|^2 }{ |q/p|^2 + |p/q|^2 }  \\
                &=& \frac{ - 2 C } { 1 + C^2 } \approx - 2 C
 \end{eqnarray}
 
-\section{Time Dependence}
+\section{Time Evolution}
 
 \begin{equation}
   E_\pm = \frac{1}{2} \left[ e^{+i\omega t } \pm e^{-i\omega t } \right]\;\;\;\;\mathrm{with}\;
@@ -88,6 +88,12 @@ we can relate the value  of $C$ to $A_\mathrm{SL}$ as follows:
  E_+^*(t)E_-(t)  &=& \frac{1}{2}\left[ -\sinh\left(\frac{\Delta\Gamma}{2}t\right) + i \sin\left(\Delta m t \right) \right]
 \end{eqnarray}
 
+%\begin{eqnarray}
+%   {\cal N}_\pm  &= & \int_0^\infty dt\; e^{-t/\tau}| E_\pm(t) |^2   
+%                  =  \frac{\tau}{2}\left[ \frac{1}{1-(\Delta\Gamma \tau)^2}  \pm \frac{1}{1+\left(\Delta m \tau\right)^2}\right]
+%\\ {\cal N}_{+-} &= & \int_0^\infty dt\; e^{-t/\tau} E_+^*(t)E_-(t)  
+%                  =  \frac{\tau}{2}\left[ -\frac{\Delta\Gamma\tau}{1-(\Delta\Gamma\tau)^2} + i \frac{\Delta m \tau}{1+\left(\Delta m \tau \right)^2}  \right]
+%\end{eqnarray}
 
 \begin{eqnarray}
    |{\cal A}_i(t)|^2  &=& {\cal A}_i^*(t){\cal A}_i(t) \;\; (\mathrm{note: no\; summation!}) \\
@@ -138,6 +144,10 @@ PDF for $B$ and $\overline{B}$ tagged in category $i$ will be:
    P_{B_\mathrm{tag},i} &\equiv t_i (1-w_i) P_{B} + \overline{t}_i\overline{w}_i P_{\overline{ B} }\\
    P_{\overline{B}_\mathrm{tag},i} &\equiv \overline{t}_i (1-\overline{w}_i) P_{\overline{B}} + t_i w_i P_{ B }
 \end{eqnarray} 
+In addition, there will be those events which are untagged, which will be distributed as:
+\begin{equation}
+   P_{\mathrm{untagged}} \equiv \left( 1-\sum_i \overline{t}_i \right) \frac{1}{2} P_{\overline{B}} + \left( 1 - \sum_i t_i \right) \frac{1}{2} P_{ B }
+\end{equation}
 Taking into account that $P_{B}$ and $P_{\overline{B}}$ differ in normalization by
 $N_+=\frac{1}{1+C}$ and $N_-=\frac{1}{1-C}$, and labelling for the time being the CP even 
 resp. CP odd terms in $P_{B}$ and $P_{\overline{B}}$ as ${\cal E}$
@@ -145,6 +155,7 @@ and ${\cal O}$, we find that:
 \begin{eqnarray}
    P(q_T=1,i) &=& t_i(1-w_i)\frac{{\cal E} + {\cal O}}{N_+} + \overline{t}_i\overline{w}_i\frac{{\cal E}-{\cal O}}{N_-}  \\
    P(q_T=-1,i) &=& \overline{t}_i(1-\overline{w}_i)\frac{{\cal E} - {\cal O}}{N_-} + t_i w_i\frac{{\cal E}+{\cal O}}{N_+} 
+   \\ P(q_T=0) &=& \left(1-\sum_i t_i\right)  \frac{ { \cal E } + {\cal O} }{N_+} + \left(1-\sum_i \overline{t}_i\right)  \frac{ { \cal E} - {\cal O} } { N_- }
 %   \\
 %     &=& \frac{  \left[ 1-{\cal D}({\cal W}+C) \right]{\cal E}
 %                               +\left[ {\cal D}(1 + {\cal W} C) - C \right] {\cal O}
@@ -158,21 +169,22 @@ equations to the familiar ones where $t_i=\overline{t}_i$ and $w_i=\overline{w}_
 the following parameterization:
 \begin{eqnarray}
 \frac{1}{N_\pm} &=& \frac{1}{N}\left( 1 \pm \nu \right) \\
- {\cal D} &=&1-w - \overline{w} \\
- {\cal W} &=& \frac{ w - \overline{w}}{1-w-\overline{w}}\\
-t_i &=& \epsilon_i(1+\delta_i)\\
-\overline{t}_i &=& \epsilon_i(1-\delta_i)
+&w_i            = \frac{1}{2}\left[1-{\cal D}_i\left(1-{\cal W}_i\right) \right]; &  {\cal D}_i =1-w_i - \overline{w}_i \\
+&\overline{w}_i = \frac{1}{2}\left[1-{\cal D}_i\left(1+{\cal W}_i\right) \right]; &  {\cal W}_i = \frac{ w_i - \overline{w}_i}{1-w_i-\overline{w}_i}\\
+&t_i            = \frac{1}{2}\epsilon_i(1+\delta_i);                              &  \epsilon_i = t_i + \overline{t}_i\\
+&\overline{t}_i = \frac{1}{2}\epsilon_i(1-\delta_i);                              &  \delta_i = \frac{t_i - \overline{t}_i}{t_i+\overline{t}_i}
 \end{eqnarray}
-Note that under $(w\rightarrow 1-w, \overline{w}\rightarrow 1-\overline{w})$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\cal W}_i\rightarrow{\cal W}_i)$,
+Note that under $(w\rightarrow 1-w_i, \overline{w}_i\rightarrow 1-\overline{w}_i)$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\cal W}_i\rightarrow{\cal W}_i)$,
 and that the quantities $\nu,\delta_i,{\cal W}_i$ are CP odd, whereas $N,\epsilon_i,{\cal D}_i$ are CP even.
 
 \begin{eqnarray}
-   P(q_T=1,i)  &=&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1+{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)  
-\\             &+&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1-{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)  
-\\ P(q_T=-1,i) &=&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1+{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right) 
-\\             &+&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1-{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
+   P(q_T=1,i)  &=&\frac{1}{4} \epsilon_i(1+\nu)(1+\delta_i)\left(1+{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)  
+\\             &+&\frac{1}{4} \epsilon_i(1-\nu)(1-\delta_i)\left(1-{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)  
+\\ P(q_T=-1,i) &=&\frac{1}{4} \epsilon_i(1-\nu)(1-\delta_i)\left(1+{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right) 
+\\             &+&\frac{1}{4} \epsilon_i(1+\nu)(1+\delta_i)\left(1-{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
 \end{eqnarray}
-where we have eliminated the overall normalization constant $N$ which is shared by each term. Combining the factors in front of ${\cal E}$ 
+where we have eliminated the overall normalization constant $N$ which is shared by each term. 
+Combining the factors in front of ${\cal E}$ 
 and ${\cal O}$ results after some tedious algebra in:
 \begin{eqnarray}
      P(q_T=1,i)  
@@ -183,6 +195,7 @@ and ${\cal O}$ results after some tedious algebra in:
            &=& \epsilon_i\left[ (1+\delta_i\nu)  (1+{\cal D}_i {\cal W}_i)  -  (\delta_i+\nu)     {\cal D}_i       \right]{\cal E}
 \\         &-& \epsilon_i\left[ (1+\delta_i\nu)     {\cal D}_i              -  (\delta_i+\nu)  (1+{\cal D}_i{\cal W}_i ) \right]{\cal O}
 \label{eq:substrule_e}
+\\   P(q_T=0)    &=&
 \end{eqnarray}
 If instead we collect all CP even and CP odd terms together, we find instead:
 \begin{eqnarray}
