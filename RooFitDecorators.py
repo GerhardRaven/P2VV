@@ -45,7 +45,7 @@ def setConstant(ws, pattern, constant = True, value = None):
     import re
     rexp = re.compile(pattern)
     for arg in ws.allVars() :
-        if not rexp.match(arg) : continue
+        if not rexp.match(arg.GetName()) : continue
         arg.setConstant( constant )
         if constant and value :
             if value < arg.getMin() : arg.setMin(value) 
