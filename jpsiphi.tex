@@ -172,28 +172,27 @@ and that the quantities $\nu,\delta_i,{\cal W}_i$ are CP odd, whereas $N,\epsilo
 \\ P(q_T=-1,i) &=&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1+{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right) 
 \\             &+&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1-{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
 \end{eqnarray}
-where we have eliminated the overall normalization constant $N$ which is shared by each term.
-Next we assume that $\nu$, $\delta_i$ and ${\cal W}$ are sufficiently small that only the leading 
-terms have to be kept\footnote{Keeping all terms is left as an exercise to the reader}. This results in:
+where we have eliminated the overall normalization constant $N$ which is shared by each term. Combining the factors in front of ${\cal E}$ 
+and ${\cal O}$ results after some tedious algebra in:
 \begin{eqnarray}
-     P(q_T=1,i)  &=&\frac{1}{2}  \epsilon_i\left(1+\nu+\delta_i+{\cal D}_i(1+\nu+\delta_i-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
-\\               &+&\frac{1}{2}  \epsilon_i\left(1-\nu-\delta_i-{\cal D}_i(1-\nu-\delta_i+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)
-\\               &=& \epsilon_i\left(1            +{\cal D}(  \nu+\delta_i-{\cal W}_i) \right){\cal E}
-\\               &+& \epsilon_i\left( \nu+\delta_i+{\cal D}  \right){\cal O}
-\\   P(q_T=-1,i) &=&\frac{1}{2}  \epsilon_i\left(1-\nu-\delta_i+{\cal D}_i(1-\nu-\delta_i+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)
-\\               &+&\frac{1}{2}  \epsilon_i\left(1+\nu+\delta_i-{\cal D}_i(1+\nu+\delta_i-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
-\\               &=& \epsilon_i\left(1-{\cal D}_i(\nu+\delta_i-{\cal W}_i )  \right){\cal E}
-\\               &+& \epsilon_i\left( \nu+\delta_i-{\cal D}_i \right){\cal O}
+     P(q_T=1,i)  
+           &=& \epsilon_i\left[ (1+\delta_i\nu)  (1-{\cal D}_i {\cal W}_i)  +  (\delta_i+\nu)     {\cal D}_i       \right]{\cal E}
+\label{eq:substrule_s}
+\\         &+& \epsilon_i\left[ (1+\delta_i\nu)     {\cal D}_i              +  (\delta_i+\nu)  (1-{\cal D}_i{\cal W}_i ) \right]{\cal O}
+\\   P(q_T=-1,i) 
+           &=& \epsilon_i\left[ (1+\delta_i\nu)  (1+{\cal D}_i {\cal W}_i)  -  (\delta_i+\nu)     {\cal D}_i       \right]{\cal E}
+\\         &-& \epsilon_i\left[ (1+\delta_i\nu)     {\cal D}_i              -  (\delta_i+\nu)  (1+{\cal D}_i{\cal W}_i ) \right]{\cal O}
+\label{eq:substrule_e}
 \end{eqnarray}
-which can be written in the following compact form:
+If instead we collect all CP even and CP odd terms together, we find instead:
 \begin{eqnarray}
-     P(q_T,i)  &=& \epsilon_i\left[\left(1            +q_T{\cal D}(  \nu+\delta_i-{\cal W}) \right){\cal E} + \left( q_T{\cal D} +\nu+\delta_i \right){\cal O}\right] \\
-               &=& \epsilon_i\left[\left({\cal E}+(\nu+\delta_i){\cal O})  \right) + q_T {\cal D}_i \left({\cal O}+(\nu+\delta_i-{\cal W}_i ){\cal E} \right)\right]
+     P(q_T,i)  &=& \epsilon_i\left[ (1+\delta_i\nu){\cal E} + (\delta_i+\nu){\cal O} \right]
+\\             &+& \epsilon_i q_T {\cal D}_i \left[ \left( \delta_i + \nu -{\cal W}_i(1+\delta_i\nu) ]\right) { \cal E} + \left( 1+\delta_i\nu - {\cal W}_i(\delta_i+\nu) \right){\cal O}  \right]
 \end{eqnarray}
 and the CP asymmetry can be written as:
 \begin{equation}
-  A_{CP}(i) =  {\cal D}_i \frac{{\cal O}+(\nu+\delta_i-{\cal W}_i ){\cal E}}
-                               {{\cal E}+(\nu+\delta_i){\cal O} }
+  A_{CP}(i) =  {\cal D}_i \frac{\left( 1+\delta_i\nu - {\cal W}_i(\delta_i+\nu) \right){\cal O}+(\nu+\delta_i-{\cal W}_i ){\cal E}}
+                               {(1+\delta_i\nu){\cal E}+(\nu+\delta_i){\cal O} }
 \end{equation}
 
 In the limit where $\nu=\delta_i={\cal W}=0$ this reduces to the expected
@@ -202,13 +201,30 @@ In the limit where $\nu=\delta_i={\cal W}=0$ this reduces to the expected
    A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
 \end{eqnarray}
 
-As $\nu$ and $\delta_i$ always appear as sum, and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
+As $\nu$ and $\delta_i$ always appear as sum (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
 it becomes impossible to disentangle the difference between differences in tagging efficiency for $b$ and $\overline{b}$
 and a change in the relative normalization. However, when taken into account the fact that the difference in normalization
 is due to the apearance of $1/(1+C)$ vs. $1/(1-C)$, i.e. $\nu = -C$, and $C$ also appears as coefficienct in front of the $\cosh\left(\Delta\Gamma t/2\right)$
 and $q_T\cos(\Delta m t)$ terms, it is expected that there is some residual power left to disentangle the two effects -- i.e. 
 solely due to the time-dependent shape of the distributions, and no longer in their relative normalization, i.e. in the time-integrated yields.
 
+
+Note that these mistag, tagging efficiency and normalization differences result in a fairly 
+straightforward substitution rule, which one can read off from Equations (\ref{eq:substrule_s} - \ref{eq:substrule_e}):
+\begin{enumerate}
+\item
+the initially CP-even terms (i.e. the $\cosh(\Delta\Gamma t/2)$ and $\sinh(\Delta\Gamma t/2)$ terms) obtain an additional
+factor 
+\begin{equation}
+   {\cal E} \rightarrow {\cal E} \left[ (1+\delta_i\nu) + ..... \right]
+\end{equation}
+\item
+the initially CP-odd terms (i.e. the $\cos(\Delta m t) $ and $\sin(\Delta m t)$ terms) obtain an additional
+factor 
+\begin{equation}
+   {\cal O} \rightarrow {\cal O} \left[ ... \right]
+\end{equation}
+\end{enumerate}
 
 \vfill
 \pagebreak
