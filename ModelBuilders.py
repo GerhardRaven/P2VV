@@ -33,15 +33,16 @@ class abasis : # TODO: can also implement this by returning a 'bound' function i
             b = self.w[name]
         return b
 
-
-def buildTransversityBasis(ws, ab) :
-    #definition of the angular part of the PDF in terms of basis functions...
-    # transversity amplitudes in terms of transversity angles
-    def _ba(name,comp) :
+def _buildAngularFunction(ws,ab,name,comp) :
         n = name + '_basis'
         s = RooArgSet()
         for c in comp : s.add( ab.build(name,c[0],c[1],c[2],c[3],c[4]) )
         return ws.put(RooAddition_( n, n, s ) )
+
+def buildTransversityBasis(ws, ab) :
+    #definition of the angular part of the PDF in terms of basis functions...
+    # transversity amplitudes in terms of transversity angles
+    _ba = lambda name,comp : _buildAngularFunction(ws,ab,name,comp)
 
     return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./ 5.))
                                , ( 2,0,0, 0, 4.), ( 2,0,2,0,  sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./ 5.)) ] )
@@ -55,11 +56,7 @@ def buildTransversityBasis(ws, ab) :
 def buildHelicityBasis(ws, ab) :
     #definition of the angular part of the PDF in terms of basis functions...
     # transversity amplitudes in terms of helicity angles
-    def _ba(name,comp) :
-        n = name + '_basis'
-        s = RooArgSet()
-        for c in comp : s.add( ab.build(name,c[0],c[1],c[2],c[3],c[4]) )
-        return ws.put(RooAddition_( n, n, s ) )
+    _ba = lambda name,comp : _buildAngularFunction(ws,ab,name,comp)
 
     return ( _ba("AzAz",       [ ( 2,2,0, 0, 2.), (2,2,2,0, -sqrt(4./5.))
                                , ( 2,0,0, 0, 2.), (2,0,2,0, -sqrt(4./5.)) ] )
