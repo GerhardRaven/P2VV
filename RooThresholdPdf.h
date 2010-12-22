@@ -36,7 +36,7 @@ public:
   Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
 
   Bool_t addThreshold(Double_t upperLimit, RooAbsReal& eps);
-  RooBinning getBinning() const { return _bins; }
+  const RooBinning& getBinning() const { return _bins; }
 
 protected:
 
