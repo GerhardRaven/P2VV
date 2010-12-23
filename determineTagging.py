@@ -13,18 +13,6 @@ declareObservables(w)
 tags = w.argSet('tagdecision,tagomega') 
 data = RooDataSet('data','data',tree,tags)
 
-### TODO: split the tagomega distribution (&parameterization!) according to tagdecision
-###       write dilution used in the fit as Dilution_i(tagomega) ( = 1 - 2 * (alpha_ij P_j(w) )  for i = b,bbar. 
-###       make overall PDF conditional on tagomega distribution...(something like RooEfficiecy( tagdecision 
-### TODO: add a 'parametricstep'-like PDF which uses the (relative) efficiency in each
-###       bin as parameterization -- the will simplify the interpretation of the parameters
-###       esp. in the case of variable binwidth.  Also allow a user to decide which is the
-###       'remainder' bin (eg. would like to use the 'untagged' i.e. tagomega....
-### ALTERNATIVE:
-###       split in categories (using RooThresholdCategory), assign one b, one bbar mistag per catagorie
-###       and add a Multinomial (with parameters split for b,bbar) to account for the efficiency...
-###       I suspect that Multionial | RooThresholdCategory == RooParametricStep....
-
 (tagcat,pdf) = buildTagging(w,'sigtag',[0.25,0.35,0.45])
 
 pdf.fitTo(data)
