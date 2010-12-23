@@ -38,7 +38,7 @@ def doit(name, angles, tree, irange, lrange, mrange ) :
         datahist = data.createHistogram( others.name() )
         data.fillHistogram( datahist )
 
-        mat = data.correlationMatrix( angles )
+        mat = data.correlationMatrix( others )
         print mat
         # create residuals in 2D
     return c
