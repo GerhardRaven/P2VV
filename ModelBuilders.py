@@ -29,8 +29,7 @@ class abasis : # TODO: can also implement this by returning a 'bound' function i
         name.replace("-","m")
         b = self.w.function(name) # workaround a bug in ROOT 5.26 -- if name not present, w.obj(name) will SEGV...
         if not b : 
-            self.w.put( RooP2VVAngleBasis(name,name,self.cpsi,self.ctheta,self.phi,i,j,k,l,c) )
-            b = self.w[name]
+            b = self.w.put( RooP2VVAngleBasis(name,name,self.cpsi,self.ctheta,self.phi,i,j,k,l,c) )
         return b
 
 def _buildAngularFunction(ws,ab,name,comp) :
@@ -181,8 +180,7 @@ def buildMomentPDF(w,name,data,moments) :
         w.factory( '%s[%f]'%(C,m.coefficient() ) )
         coef.add( w[C] )
         fact.add( m.basis() )
-    w.put( RooRealSumPdf(name,name,fact,coef) )
-    return w.pdf(name)
+    return w.put( RooRealSumPdf(name,name,fact,coef) )
 
 def buildMoment_x_PDF(w,name,pdf,moments) :
    if not moments : return pdf
@@ -194,8 +192,7 @@ def buildMoment_x_PDF(w,name,pdf,moments) :
         name = "%s_eff" % c.GetName()
         s = RooArgSet()
         [ s.add( c.createProduct( m.basis() , m.coefficient()) ) for m in moments ]
-        w.put( RooAddition_( name, name, s, True ) )  # hand over ownership & put in workspace...
-        rep = w[name]
+        rep = w.put( RooAddition_( name, name, s, True ) )  # hand over ownership & put in workspace...
         customizer.replaceArg( c, rep )
    return customizer.build(True)
 
@@ -278,14 +275,14 @@ def buildTagging( ws, name, tagcatdef ) :
     pass
     # or split tagomega distribution in discrete categories,
     # and multiply by efficiency for each category, seperate 
-    # for signal and background...
-    tagcat = RooThresholdCategory(name+"cat",name+"cat",ws['tagomega'],"untagged",0)
-    pdf = RooThresholdPdf(name+'effpdf',name+'effpdf',ws['tagomega'])
+    # for signal and background... -- or just make the fit
+    # extended, and treat each bin as Poisson bkg + Poisson sig
+    tagcat = ws.put(RooThresholdCategory(name+"cat",name+"cat",ws['tagomega'],"untagged",0))
+    pdf = ws.put( RooThresholdPdf(name+'effpdf',name+'effpdf',ws['tagomega']) )
     for (i,upper) in enumerate( tagcatdef ) :
         cname = '%s%d' % (name,i)
         ename = cname + '_eff'
-        ws.put(RooRealVar( ename, ename , 0.2, 0., 1.))
-        eff = ws[ename]
+        eff = ws.put(RooRealVar( ename, ename , 0.2, 0., 1.))
         tagcat.addThreshold(upper,cname)
         pdf.addThreshold(upper, eff )
 
@@ -316,17 +313,17 @@ def buildABkgPdf( ws, name, resname, psimasspdfname ):
 
     #now multiply
     ws.factory("PROD::%s_pdf(trcosthetapdf_%s,trcospsipdf_%s,trphipdf_%s, t_%s, m_%s, %s )"%(tuple(repeat(name,6)) + (psimasspdfname,)))
+    return ws['%s_pdf'%name]
 
 
-def buildBkgPdf( ws ):
+def buildBkgPdf( ws, name = 'bkg_pdf' ):
     
     # assume that the resolution models and psi mass models have been built     
-    buildABkgPdf(ws,'nonpsi','tres_nonpsi','mpsi_bkg')
-    buildABkgPdf(ws,'psi','tres_sig','mpsi_sig')
+    nonpsibkg = buildABkgPdf(ws,'nonpsi','tres_nonpsi','mpsi_bkg')
+    psibkg    = buildABkgPdf(ws,'psi',   'tres_sig',   'mpsi_sig')
     # add them
-    ws.factory("SUM::bkg_pdf(f_psi[0.5,0.01,1]*psi_pdf,nonpsi_pdf)")
-    
-    return ws.pdf('bkg_pdf')
+    ws.factory("SUM::%s(f_psi[0.5,0.01,1]*%s,%s)"%(name,psibkg.GetName(),nonpsibkg.GetName()))
+    return ws.pdf(name)
 
 def definePolarAngularAmplitudes(ws):
 
@@ -377,6 +374,7 @@ def buildFullJpsiPhiPdf( ws ):
     # make the final pdf
     ws.factory("SUM::pdf_ext(Nsig[1200,0,1000]*sig_pdf,Nbkg[81200,0,1000000]*bkg_pdf)")
     ws.factory("SUM::pdf(f_sig[0.01,0.,1.0]*sig_pdf,bkg_pdf)")
+    return ws['pdf_ext']
 
 
 def readParameters( ws, filename, pdfname='pdf_ext'):

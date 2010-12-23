@@ -36,16 +36,16 @@ RooWorkspace.__contains__ = lambda s,i : s.obj(i) is not None
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
 def _RooWorkspacePut( self ,x ) :
     _import = getattr(RooWorkspace,'import')
-    if not _import(self,x) : return None
-    return self[x.Getname()]
+    if _import(self,x) : return None
+    return self[x.GetName()]
 RooWorkspace.put = _RooWorkspacePut
 
 def setConstant(ws, pattern, constant = True, value = None):
-    rc = 0
     import re
-    rexp = re.compile(pattern)
+    nrexp = re.compile(pattern)
+    rc = 0
     for arg in ws.allVars() :
-        if not rexp.match(arg) : continue
+        if not nrexp.match(arg.GetName()) : continue
         arg.setConstant( constant )
         if constant and value :
             if value < arg.getMin() : arg.setMin(value) 
