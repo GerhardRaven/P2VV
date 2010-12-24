@@ -187,7 +187,7 @@ stdata = {}
 stpdf = {}
 c = TCanvas()
 for (f,sample) in enumerate([ 'sig','psibkg','nonpsibkg' ]):
-      dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","N%s_sw"%sample) 
+      dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","N_%s_sw"%sample) 
       stdata[sample] = RooDataHist("sigmat_%s_data"%sample,"hist Err Per Ev",RooArgSet(sigmat),dataw)
       stpdf[sample] = ws.put(RooHistPdf("sigmat_%s"%sample,"sigmat_%s"%sample,RooArgSet(sigmat),stdata[sample])) # ,2)
       #stdata[sample].plotOn(p) # python has trouble finding the right plotOn...
