@@ -1,6 +1,8 @@
 from ROOT import RooArgSet, RooArgList, RooDataSet
-from ROOT import gStyle
+from ROOT import gStyle,gROOT
 gStyle.SetPalette(1)
+gROOT.SetStyle("Plain")
+
 
 def _RooDataSetIter(self) :
     for i in range( self.numEntries() ) :
@@ -16,8 +18,10 @@ def _RooArgSetIter(self) :
         yield a
 
 
+
 RooArgList.__iter__ = _RooArgSetIter
 RooArgList.__len__  = lambda s   : s.getSize()
+RooArgList.__contains__  = lambda s,i : s.contains(i)
 #RooArgSet.__iadd__ = lambda s,y : s.add(y)
 #RooArgSet.__radd__ = lambda y,s : s.add(y)
 #RooArgSet.__add__  = lambda x,y : RooArgSet(x).__iadd__(y)
@@ -26,6 +30,7 @@ RooArgList.names    = lambda s : ','.join( s.nameList() )
 
 RooArgSet.__iter__  = _RooArgSetIter
 RooArgSet.__len__   = lambda s   : s.getSize()
+RooArgSet.__contains__  = lambda s,i : s.contains(i)
 RooArgSet.nameList  = lambda s : [ j.GetName() for j in s ]
 RooArgSet.names     = lambda s : ','.join( s.nameList() )
 
