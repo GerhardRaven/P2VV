@@ -130,7 +130,8 @@ Double_t RooThresholdPdf::lastBinValue() const
 Double_t RooThresholdPdf::evaluate() const 
 {
   if (_x < _bins.lowBound() || _x > _bins.highBound() ) return 0;
-  Int_t nr = _bins.rawBinNumber(_x);
+  Int_t nr = _bins.binNumber(_x);
+  assert (nr<_bins.numBins());
   Double_t bw = _bins.binWidth(nr);
   _coefIter->Reset();
   RooAbsReal *x(0);
