@@ -14,20 +14,20 @@ def plot(ws,data,pdf,title):
     c = TCanvas('MassTime_' + title,'MassTime',900,700)
     rootobjects.append(c)
     c.Divide(4,2)
-
     
     lw = RooCmdArg(RooFit.LineWidth(2))
     xes = RooCmdArg(RooFit.XErrorSize(0))
     err = RooCmdArg(RooFit.DrawOption('E'))
+    dashed = RooCmdArg(RooFit.LineStyle(kDashed))
     
-    sigcolor = RooFit.kGreen 
-    bkgcolor = RooFit.kRed
-    nonpsicolor = RooFit.kOrange
+    sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
+    bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
+    nonpsicolor = RooCmdArg(RooFit.LineColor(RooFit.kOrange))
     
-    t = ws.var("t") 
-    m = ws.var("m")
+    t = ws["t"] 
+    m = ws["m"]
     
-    ws.var("sigmat").setBins(40)
+    ws["sigmat"].setBins(40)
     stdata = RooDataHist("data_sigt","hist Err Per Ev",RooArgSet(ws.var("sigmat")),ws.data("data"))
     projst =  RooCmdArg(RooFit.ProjWData(stdata))
 
@@ -69,8 +69,8 @@ def plot(ws,data,pdf,title):
     c.cd(2)
     _m = m.frame(RooFit.Bins(50),RooFit.Title('m'))
     data.plotOn(_m,RooFit.MarkerSize(0.7),xes)
-    pdf.plotOn(_m,RooFit.Components("bkg_pdf"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw,projst)
-    pdf.plotOn(_m,RooFit.Components("sig_pdf"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw,projst)
+    pdf.plotOn(_m,RooFit.Components("bkg_pdf"),bkgcolor,dashed,lw,projst)
+    pdf.plotOn(_m,RooFit.Components("sig_pdf"),sigcolor,dashed,lw,projst)
     pdf.plotOn(_m,lw,projst)
     _m.Draw() 
     c.Update()
@@ -79,10 +79,8 @@ def plot(ws,data,pdf,title):
     c.cd(3)
     _m = m.frame(RooFit.Bins(50),RooFit.Title('m (t>0.3)'))
     data.plotOn(_m,RooFit.MarkerSize(0.7),xes,RooFit.CutRange("largeTime"))
-    pdf.plotOn(_m,RooFit.Components("bkg_pdf"),RooFit.ProjectionRange("largeTime"),
-               RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw,projst)
-    pdf.plotOn(_m,RooFit.Components("sig_pdf"),RooFit.ProjectionRange("largeTime"),
-               RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw,projst)
+    pdf.plotOn(_m,RooFit.Components("bkg_pdf"),RooFit.ProjectionRange("largeTime"), bkgcolor,dashed,lw,projst)
+    pdf.plotOn(_m,RooFit.Components("sig_pdf"),RooFit.ProjectionRange("largeTime"), sigcolor,dashed,lw,projst)
     pdf.plotOn(_m,lw,RooFit.ProjectionRange("largeTime"),projst)
     _m.Draw() 
     c.Update()
@@ -91,9 +89,9 @@ def plot(ws,data,pdf,title):
     c.cd(5)
     _tb = t.frame(-0.4,0.4,100)
     data.plotOn(_tb,RooFit.MarkerSize(0.5),xes,err)
-    pdf.plotOn(_tb,RooFit.Components("sig_pdf"),projst,RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_tb,RooFit.Components("bkg_pdf"),projst,RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_tb,RooFit.Components("nonpsi_pdf"),projst,RooFit.LineColor(nonpsicolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_tb,RooFit.Components("sig_pdf"),projst,sigcolor,dashed,lw)
+    pdf.plotOn(_tb,RooFit.Components("bkg_pdf"),projst,bkgcolor,dashed,lw)
+    pdf.plotOn(_tb,RooFit.Components("nonpsi_pdf"),projst,nonpsicolor,dashed,lw)
     pdf.plotOn(_tb,lw,projst)
 
     #pdf.paramOn(_tb,RooFit.Parameters(parameterprintset))
@@ -109,8 +107,7 @@ def plot(ws,data,pdf,title):
 
     _tb = t.frame(-1,12.,50)
     data.plotOn(_tb,RooFit.CutRange('sigRegion'),RooFit.MarkerSize(0.5),xes)
-    pdf.plotOn(_tb,RooFit.Components("bkg_pdf"),RooFit.ProjectionRange('sigRegion'),
-               projst,RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_tb,RooFit.Components("bkg_pdf"),RooFit.ProjectionRange('sigRegion'), projst,bkgcolor,dashed,lw)
     pdf.plotOn(_tb,lw,RooFit.ProjectionRange('sigRegion'),projst)
 
     _tb.SetMinimum(0.1) 
@@ -125,8 +122,7 @@ def plot(ws,data,pdf,title):
 
     _tb = t.frame(-1,12,50)
     data.plotOn(_tb,RooFit.CutRange('leftSideband'),RooFit.MarkerSize(0.5),xes)
-    pdf.plotOn(_tb,RooFit.Components("nonpsi_pdf"),RooFit.ProjectionRange('leftSideband'),
-               projst,RooFit.LineColor(nonpsicolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_tb,RooFit.Components("nonpsi_pdf"),RooFit.ProjectionRange('leftSideband'), projst,nonpsicolor,dashed,lw)
     pdf.plotOn(_tb,lw,RooFit.ProjectionRange('leftSideband'),projst)
     
     _tb.SetMinimum(0.1) 
@@ -139,8 +135,7 @@ def plot(ws,data,pdf,title):
 
     _tb = t.frame(-1,12,50)
     data.plotOn(_tb,RooFit.CutRange('rightSideband'),RooFit.MarkerSize(0.5),xes)
-    pdf.plotOn(_tb,RooFit.Components("nonpsi_pdf"),RooFit.ProjectionRange('rightSideband'),
-               projst,RooFit.LineColor(nonpsicolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_tb,RooFit.Components("nonpsi_pdf"),RooFit.ProjectionRange('rightSideband'), projst,nonpsicolor,dashed,lw)
     pdf.plotOn(_tb,lw,RooFit.ProjectionRange('rightSideband'),projst)
 
     _tb.SetMinimum(0.1) 
@@ -152,132 +147,52 @@ def plot(ws,data,pdf,title):
     c.cd(4)
     mpsiplot = ws.var('mdau1').frame(RooFit.Bins(50))
     data.plotOn(mpsiplot,RooFit.MarkerSize(0.5),xes)
-    pdf.plotOn(mpsiplot,RooFit.Components("nonpsi_pdf"),projst,RooFit.LineColor(nonpsicolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(mpsiplot,RooFit.Components("nonpsi_pdf"),projst,nonpsicolor,dashed,lw)
     pdf.plotOn(mpsiplot,lw,projst)
     mpsiplot.Draw()
     c.Update()
 
     c.Print("MassTime.eps")
-    return
     
     ####################
     ####################
 
     c2 = TCanvas('Angles','Angles',900,700)
     c2.Divide(3,4)
-    #==========================================================================================================
-    c2.cd(1)
+    for (i,a) in enumerate( ws.set('transversityangles') ) :
+        #==========================================================================================================
+        c2.cd(1+i)
+        _f = a.frame(RooFit.Bins(15),RooFit.Title('%s full mass region' % a.GetTitle() ))
+        data.plotOn(_f)
+        pdf.plotOn(_f,RooFit.Components('sig_pdf'),sigcolor,dashed,lw)
+        pdf.plotOn(_f,RooFit.Components('bkg_pdf'),bkgcolor,dashed,lw)
+        pdf.plotOn(_f,lw)
+        _f.Draw()
+        c2.Update()
+        #==========================================================================================================
+        c2.cd(4+i)
+        _f = a.frame(RooFit.Bins(15),RooFit.Title('%s signal region' % a.GetTitle()))
+        data.plotOn(_f,RooFit.CutRange('sigRegion'))
+        pdf.plotOn(_f,RooFit.ProjectionRange('sigRegion'),RooFit.Components('sig_pdf'),sigcolor,dashed,lw)
+        pdf.plotOn(_f,RooFit.ProjectionRange('sigRegion'),RooFit.Components('bkg_pdf'),bkgcolor,dashed,lw)
+        pdf.plotOn(_f,RooFit.ProjectionRange('sigRegion'),lw)
+        _f.Draw()
+        c2.Update()
+        #==========================================================================================================
+        c2.cd(7+i)
+        _f = a.frame(RooFit.Bins(15),RooFit.Title('%s sidebands'% a.GetTitle()))
+        data.plotOn(_f,RooFit.CutRange('leftSideband,rightSideband'))
+        pdf.plotOn(_f,RooFit.ProjectionRange('leftSideband,rightSideband'),lw)
+        _f.Draw()
+        c2.Update()
+        #==========================================================================================================
+        c2.cd(10+i)
+        _f = a.frame(RooFit.Bins(15),RooFit.Title('%s right sideband'% a.GetTitle() ))
+        data.plotOn(_f,RooFit.CutRange('rightSideband'))
+        pdf.plotOn(_f,RooFit.ProjectionRange('rightSideband'),lw)
+        _f.Draw()
+        c2.Update()
 
-    _cpsi = cpsi.frame(RooFit.Bins(15),RooFit.Title('cpsi full mass region'))
-    data.plotOn(_cpsi)
-    pdf.plotOn(_cpsi,RooFit.Components('sig_pdf'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_cpsi,RooFit.Components('bkg_pdf'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_cpsi,lw)
-    _cpsi.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(2)
-
-    _ctheta = ctheta.frame(RooFit.Bins(15),RooFit.Title('ctheta full mass region'))
-    data.plotOn(_ctheta)
-    pdf.plotOn(_ctheta,RooFit.Components('sig_pdf'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_ctheta,RooFit.Components('bkg_pdf'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_ctheta,lw)
-    _ctheta.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(3)
-
-    _phi = phi.frame(RooFit.Bins(15),RooFit.Title('phi full mass region'))
-    data.plotOn(_phi)
-    pdf.plotOn(_phi,RooFit.Components('sig_pdf'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_phi,RooFit.Components('bkg_pdf'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_phi,lw)
-    _phi.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(4)
-
-    _cpsi = cpsi.frame(RooFit.Bins(15),RooFit.Title('cpsi signal region'))
-    data.plotOn(_cpsi,RooFit.CutRange('sigRegion'))
-    pdf.plotOn(_cpsi,RooFit.ProjectionRange('sigRegion'),lw)
-    _cpsi.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(5)
-
-    _ctheta = ctheta.frame(RooFit.Bins(15),RooFit.Title('ctheta signal region'))
-    data.plotOn(_ctheta,RooFit.CutRange('sigRegion'))
-    pdf.plotOn(_ctheta,RooFit.ProjectionRange('sigRegion'),lw)
-    _ctheta.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(6)
-
-    _phi = phi.frame(RooFit.Bins(15),RooFit.Title('phi signal region'))
-    data.plotOn(_phi,RooFit.CutRange('sigRegion'))
-    pdf.plotOn(_phi,RooFit.ProjectionRange('sigRegion'),lw)
-    _phi.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(7)
-
-    _cpsi = cpsi.frame(RooFit.Bins(15),RooFit.Title('cpsi sidebands'))
-    data.plotOn(_cpsi,RooFit.CutRange('leftSideband,rightSideband'))
-    pdf.plotOn(_cpsi,RooFit.ProjectionRange('leftSideband,rightSideband'),lw)
-    _cpsi.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(8)
-
-    _ctheta = ctheta.frame(RooFit.Bins(15),RooFit.Title('ctheta sidebands'))
-    data.plotOn(_ctheta,RooFit.CutRange('leftSideband,rightSideband'))
-    pdf.plotOn(_ctheta,RooFit.ProjectionRange('leftSideband,rightSideband'),lw)
-    _ctheta.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(9)
-
-    _phi = phi.frame(RooFit.Bins(15),RooFit.Title('phi sidebands'))
-    data.plotOn(_phi,RooFit.CutRange('leftSideband,rightSideband'))
-    pdf.plotOn(_phi,RooFit.ProjectionRange('leftSideband,rightSideband'),lw)
-    _phi.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(10)
-
-    _cpsi = cpsi.frame(RooFit.Bins(15),RooFit.Title('cpsi right sideband'))
-    data.plotOn(_cpsi,RooFit.CutRange('rightSideband'))
-    pdf.plotOn(_cpsi,RooFit.ProjectionRange('rightSideband'),lw)
-    _cpsi.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(11)
-
-    _ctheta = ctheta.frame(RooFit.Bins(15),RooFit.Title('ctheta right sideband'))
-    data.plotOn(_ctheta,RooFit.CutRange('rightSideband'))
-    pdf.plotOn(_ctheta,RooFit.ProjectionRange('rightSideband'),lw)
-    _ctheta.Draw()
-    c2.Update()
-
-    #==========================================================================================================
-    c2.cd(12)
-
-    _phi = phi.frame(RooFit.Bins(15),RooFit.Title('phi right sideband'))
-    data.plotOn(_phi,RooFit.CutRange('rightSideband'))
-    pdf.plotOn(_phi,RooFit.ProjectionRange('rightSideband'),lw)
-    _phi.Draw()
-    c2.Update()
 
     return myline1,myline2,c,c2
 
@@ -293,13 +208,10 @@ from ModelBuilders import *
 
 ws = RooWorkspace('ws')
 
-buildFullJpsiPhiPdf ( ws )
-
-print 'Ready building pdf'
+pdf_ext = buildFullJpsiPhiPdf ( ws )
 
 # first test: dump the pdf parameters to a file
 
-pdf_ext = ws.pdf('pdf_ext')
 pdf_ext.getParameters( ws.set('observables')).writeToFile( 'initialfitparameters.txt' )
 
 
@@ -318,17 +230,15 @@ pdf_ext.getParameters( ws.set('observables')).writeToFile( 'initialfitparameters
 #file = TFile('duitsedata.root')
 #NTupletree = file.Get('Bs2JpsiPhi')
 
-file = TFile('Bs2JpsiPhiTupleReduced.root')
+file = TFile('/data/bfys/wouterh/JpsiXAnalysis/20101208/Bs2JpsiPhiTupleReduced.root')
 NTupletree = file.Get('dataset')
 
 data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m==m')
 data.table(ws.cat('tagdecision')).Print('v')
-
-getattr(ws,'import')(data)
+ws.put(data)
 
 
 # if you want the NL fit to behave reasonable, 
-
 readParameters(ws,'JPsiPhiParameters.txt')
 
 #plot(ws,data,pdf_ext,'joho')
@@ -342,11 +252,11 @@ allobservables.remove(ws.var('mdau1'))
 allobservables.Print()
 masstimepdf = pdf_ext.createProjection( allobservables )
 
-setConstant(ws,"tcp*")
-setConstant(ws,"tct*")
-setConstant(ws,"tp*")
-setConstant(ws,"delta*")
-setConstant(ws,"r*")
+setConstant(ws,"tcp.*")
+setConstant(ws,"tct.*")
+setConstant(ws,"tp.*")
+setConstant(ws,"delta.*")
+setConstant(ws,"r.*")
 setConstant(ws,"dG")
 setConstant(ws,"dm")
 setConstant(ws,"gamma")
@@ -355,8 +265,8 @@ setConstant(ws,"phis")
 pdf_ext.getParameters( ws.set('observables')).writeToFile( 'initialfitparameters.txt' )
 
 #result = pdf_ext.fitTo(data,RooFit.ConditionalObservables(ws.set("conditionalobservables")),
-#                       RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(false),
-#                       RooFit.Save(true),RooFit.Verbose(false))
+#                       #RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(false),
+#                       #RooFit.Save(true),RooFit.Verbose(false))
 #
 #pdf_ext.getParameters( ws.set('observables')).writeToFile( 'fittedparameters.txt' )
 

@@ -40,6 +40,6 @@ libp2vv.so: $(OBJECTS)
 clean:
 	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.* *.pyc *.bak *.aux
 
-$DEPDIR:
+$(DEPDIR):
 	mkdir $@
 -include $(SOURCES:%.cxx=$(DEPDIR)/%.P)

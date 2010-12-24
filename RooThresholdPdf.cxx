@@ -26,13 +26,11 @@
 				
 
 #include "RooFit.h"
-
 #include "Riostream.h"
 
 #include "RooThresholdPdf.h"
 #include "RooAbsRealLValue.h"
 #include "RooRealVar.h"
-#include "RooArgList.h"
 
 ClassImp(RooThresholdPdf)
 ;
@@ -80,16 +78,12 @@ Bool_t RooThresholdPdf::addThreshold(Double_t upperLimit, RooAbsReal& eps) {
     return kTRUE;
 }
 
-
-
 //_____________________________________________________________________________
 Int_t RooThresholdPdf::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* /*rangeName*/) const 
 {
   if (matchArgs(allVars, analVars, _x)) return 1;
   return 0;
 }
-
-
 
 //_____________________________________________________________________________
 Double_t RooThresholdPdf::analyticalIntegral(Int_t code, const char* rangeName) const 
@@ -101,7 +95,7 @@ Double_t RooThresholdPdf::analyticalIntegral(Int_t code, const char* rangeName) 
 
   Double_t sum=0 ;
   for (Int_t i=0 ; i<_bins.numBins() ; ++i) {
-    Double_t binVal = (i<_coefList.getSize()) ? (static_cast<RooRealVar*>(_coefList.at(i))->getVal()) : lastBinValue() ;      
+    Double_t binVal = (i<_coefList.getSize()) ? (static_cast<RooAbsReal*>(_coefList.at(i))->getVal()) : lastBinValue() ;
     // binVal is _area_ (aka efficiency) of this bin!!!
     if ( xmin<=_bins.binLow(i) && _bins.binHigh(i)<=xmax) { // Bin fully in the integration domain
       sum += binVal;
@@ -120,8 +114,6 @@ Double_t RooThresholdPdf::analyticalIntegral(Int_t code, const char* rangeName) 
   return sum;  
 }
 
-
-
 //_____________________________________________________________________________
 Double_t RooThresholdPdf::lastBinValue() const
 {
@@ -138,12 +130,13 @@ Double_t RooThresholdPdf::lastBinValue() const
 Double_t RooThresholdPdf::evaluate() const 
 {
   if (_x < _bins.lowBound() || _x > _bins.highBound() ) return 0;
-  Int_t nr = _bins.rawBinNumber(_x);
+  Int_t nr = _bins.binNumber(_x);
+  assert (nr<_bins.numBins());
   Double_t bw = _bins.binWidth(nr);
-  // cout << " " << (double)_x << " nr " << nr <<  " bw " << bw <<  " xlo " << _bins.binLow(nr) << " xhi " << _bins.binHigh(nr) << endl;
   _coefIter->Reset();
-  // TODO: check for off by one???
   RooAbsReal *x(0);
   do { x = (RooAbsReal*)_coefIter->Next(); } while (nr-->0)  ;
   return (x!=0 ? x->getVal() : lastBinValue())/bw;
 }
+
+// TODO: add custom generator

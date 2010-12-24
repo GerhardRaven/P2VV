@@ -84,3 +84,5 @@ Double_t RooGammaPdf::evaluate() const
     // z^(gamma-1) exp(-z) / ( beta Gamma(gamma) )
     return TMath::GammaDist(_x,_gamma,_mu,_beta);
 }
+
+// TODO: add custom generator...

@@ -8,14 +8,12 @@ class IMoment {
     public:
           IMoment(RooAbsReal &basis, double norm=1, const std::string& name = std::string()) : _basis(basis), _m0(0),_m1(0),_m2(0),_norm(norm), _name(name.empty() ? _basis.GetName() : name) {}
           virtual ~IMoment() {};
-          virtual void inc(bool accepted = true) {
+          virtual void inc(double weight = 1.) {
                 double x = evaluate();
                 // TODO: make a histogram of x... (two, one for accept, one for all)
-                _m0 += 1.;
-                if (accepted) {
-                    _m1 += x;
-                    _m2 += x*x;
-                }
+                _m0 += weight;
+                _m1 += weight*x;
+                _m2 += weight*x*x;
             }
           virtual ostream& print(ostream& os) const {
                 double mu = _m1/_m0;
@@ -65,7 +63,7 @@ int _computeMoments(RooAbsData& data, IMomentsVector& moments) {
    int i=0;
    while (i<data.numEntries()) {
        *obs = *data.get(i++);
-       for ( iter m = moments.begin(); m!=moments.end(); ++m) (*m)->inc();
+       for ( iter m = moments.begin(); m!=moments.end(); ++m) (*m)->inc( data.isWeighted() ? data.weight() : 1.0) ;
    }
    return i;
 }
