@@ -307,13 +307,13 @@ class MassPdfBuilder :
         #### define J/psi mass observable & corresponding PDF
         self._mdau1 = m_dau1
         # signal J/psi mass pdf
-        ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3097,3085,3110],mpsi_sig_sigma[13.1,5,20],mpsi_sig_alpha[1.36,0.5,3],mpsi_sig_n[3])"%m_dau1.GetName())
+        ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3097,3085,3110],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.36,0.5,3],mpsi_sig_n[3])"%m_dau1.GetName())
         self._mdau1_sig = ws['mpsi_sig']
         # background J/psi mass pdf
-        ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0002,-0.01,0.01])"%m_dau1.GetName())
+        ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0003,-0.01,0.01])"%m_dau1.GetName())
         self._mdau1_bkg = ws['mpsi_bkg']
         # overall J/psi mass pdf
-        ws.factory("SUM::mpsi(mpsi_fjpsi[0.5,0.01,0.99]*mpsi_sig,mpsi_bkg)")
+        ws.factory("SUM::mpsi(mpsi_fjpsi[0.5,0.1,0.8]*mpsi_sig,mpsi_bkg)")
         self._mdau1_pdf = ws['mpsi']
 
 
@@ -324,15 +324,24 @@ class MassPdfBuilder :
         # background phi mass pdf (would like to use a nice threshold function here ... RooDstD0BG seems a bit complicated
         # On top of that, someone cut at phi-20 MeV/c^2, so we don't see the KK threshold anyway...
         # so we might as well just do a 2nd order polynomial or so...
-        ws.factory("DstD0BG::mphi_combbkg(%s,mphi_bkg_m0[987.4],mphi_bkg_C[6,1,10],mphi_bkg_B[16,8,30],zero[0])"%m_dau2.GetName())
+        # Even more so, by only using a +- 10 MeV window, we kill half the background ;-)
+        # So until we actually include the phi mass, we take a linear function...
+        #ws.factory("DstD0BG::mphi_combbkg(%s,mphi_bkg_m0[987.4],mphi_bkg_C[6,1,10],mphi_bkg_B[16,8,30],zero[0])"%m_dau2.GetName())
+        ws.factory("Chebychev::mphi_combbkg(%s,{mphi_bkg_1[0.2,-1,1],mphi_bkg_2[-0.01,-0.1,0.1]})"%m_dau2.GetName())
         self._mdau2_bkg = ws['mphi_combbkg']
-        ws.factory("SUM::m_phi(mphi_fphi[0.1,0.01,0.99]*mphi_phisig,mphi_combbkg)")
+        ws.factory("SUM::m_phi(mphi_fphi[0.2,0.05,0.8]*mphi_phisig,mphi_combbkg)")
         self._mdau2_pdf = ws['m_phi']
 
         #########################
         #signal B mass pdf
+        # TODO: can we include sigmam without introducing a Punzi problem?
+        #       note that the background PDF would not include sigmam...
+        #       but both mean and sigma are different for t>0.3 and t<0.3...
+        #       we could just take a sigmam distribution with t>0.3 as signal...
+        #       and t<0.3 as background...
         self._m = m
-        ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),mpsi_sig)"%m.GetName())
+        #ws.factory("PROD::m_psisig(SUM(m_sig_f1[0.9,0.1,0.99]*Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),Gaussian(%s,m_sig_mean,m_sig_sigma2[15,10,30])),mpsi_sig)"%(m.GetName(),m.GetName()))
+        ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),mpsi_sig)"%(m.GetName()))
         ws.factory("PROD::m_nonpsisig(Gaussian(%s,m_sig_mean,m_sig_sigma),mpsi_bkg)"%m.GetName())
         ws.factory("SUM::m_sig(m_sigfpsi[1.0]*m_psisig,m_nonpsisig)")
         self._m_sig = ws['m_sig']
@@ -351,7 +360,7 @@ class MassPdfBuilder :
         ## need to split b sig into phi vs kk...
         #ws.factory("SUM::m_b(m_fb[0.1,0.01,0.99]*m_sig,m_bkg)")
         # we make an extended PDF so that we can make SPlots!
-        ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg[39000,0,100000]*m_psibkg,N_nonpsibkg[41000,0,100000]*m_nonpsibkg)")
+        ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg[22500,0,100000]*m_psibkg,N_nonpsibkg[24500,0,100000]*m_nonpsibkg)")
         self._m_pdf = ws['m_b']
 
         self._yields = RooArgList(ws.argSet('N_sig,N_psibkg,N_nonpsibkg'))
@@ -400,7 +409,8 @@ def declareObservables( ws ):
     # B, jpsi, phi mass
     ws.factory("m[5200,5450]")
     ws.factory("mdau1[%f,%f]"%(3097-60,3097+60))
-    ws.factory("mdau2[%f,%f]"%(1019.455-20,1019.455+20)) ### WHY DO WE CUT ON THE LOWER KK MASS????
+    #ws.factory("mdau2[%f,%f]"%(1019.455-20,1019.455+20)) 
+    ws.factory("mdau2[%f,%f]"%(1019.455-10,1019.455+10)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background!
     # time , time-error
     ws.factory("{t[-4,14],sigmat[0.005,0.1]}")
 

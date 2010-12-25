@@ -133,6 +133,9 @@ if True :
         # mpdf.plotOn(frame,RooFit.Components("*_psi*bkg*"))
         mpdf.plotOn(frame,nonpsicolor,RooFit.Components("*_nonpsi*bkg*"))
         frame.Draw()
+#import sys
+#sys.exit(0)
+
 
 ### Now that we have the masses fitted, let's make angle SPlots...
 ## TODO: move this into the mass PDF builder...
@@ -165,8 +168,6 @@ if True :
         dataw.plotOn(f)
         f.Draw()
 
-# import sys
-# sys.exit(0)
 
 if False :
     # and now, build the angular distributions for psi and non-psi background, using the SWeights we
@@ -202,7 +203,10 @@ ws.factory("PROD:t_sig( Decay(t,t_sig_tau[1.5,1.2,1.8],tres_sig,SingleSided)|sig
 ws.factory("PROD:sig(       m_sig,       t_sig        )")
 ws.factory("PROD:psibkg(    m_psibkg,    t_psibkg     )")
 ws.factory("PROD:nonpsibkg( m_nonpsibkg, t_nonpsibkg  )")
-ws.factory("SUM::pdf(N_sig[1000,0,10000]*sig,N_psibkg[39000,0,100000]*psibkg,N_nonpsibkg[41000,0,100000]*nonpsibkg)")
+# TODO: create an intermediate bkg which is SUM(fpsi*psibkg,nonpsibkg)
+# as we can then make nicer plots -- alternative, we just add psi and nonpsi
+# by hand... which may be faster anyway ;-)
+ws.factory("SUM::pdf(N_sig*sig,N_psibkg*psibkg,N_nonpsibkg*nonpsibkg)")
 pdf = ws['pdf']
 pdf.getParameters(data).readFromFile('initialvalues.txt')
 ### Maybe we should first fit the three time splots with the three components to get them 
