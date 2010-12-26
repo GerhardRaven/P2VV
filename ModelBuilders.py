@@ -69,11 +69,11 @@ def _buildHelicityBasis(ws, ab) :
            )
 ## TODO: replace hardwired use of 'tagomega' with a passable rule, which by default returns 'tagomega'
 ##       this is needed when fitting for mistag rate in tagging categories...
-def buildJpsiphi(ws, name, tagsplit, transversity = True ) :
-    afb = AngleFunctionBuilder( 'transversity' if transversity else 'helicity' )
+def buildJpsiphi(ws, name, transversity ) : # TODO: add tagsplit
+    afb = AngleFunctionBuilder(ws, 'transversity' if transversity else 'helicity' )
     basis = afb.basis()
 
-    (tagcat,tagpdf) = buildTagging(ws,'sigtag',tagsplit)
+    #(tagcat,tagpdf) = buildTagging(ws,'sigtag',tagsplit)
 
     # define the relevant combinations of strong amplitudes
     ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,    ImAz                      })")  # |A_z|^2
@@ -137,7 +137,7 @@ def buildJpsiphi(ws, name, tagsplit, transversity = True ) :
                                    ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
                                    "})")
 
-    ws.factory("BDecay::%s(t,tau,dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,dm,tres_sig,SingleSided)" % name)
+    ws.factory("BDecay::%s(t,t_sig_tau,t_sig_dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,t_sig_dm,tres_sig,SingleSided)" % name)
     return ws.pdf(name)
 
 
@@ -307,7 +307,7 @@ class MassPdfBuilder :
         #### define J/psi mass observable & corresponding PDF
         self._mdau1 = m_dau1
         # signal J/psi mass pdf
-        ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3097,3085,3110],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.36,0.5,3],mpsi_sig_n[3])"%m_dau1.GetName())
+        ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3094,3085,3110],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.39,0.8,2],mpsi_sig_n[3])"%m_dau1.GetName())
         self._mdau1_sig = ws['mpsi_sig']
         # background J/psi mass pdf
         ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0003,-0.01,0.01])"%m_dau1.GetName())
@@ -360,7 +360,11 @@ class MassPdfBuilder :
         ## need to split b sig into phi vs kk...
         #ws.factory("SUM::m_b(m_fb[0.1,0.01,0.99]*m_sig,m_bkg)")
         # we make an extended PDF so that we can make SPlots!
-        ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg[22500,0,100000]*m_psibkg,N_nonpsibkg[24500,0,100000]*m_nonpsibkg)")
+        # but we cannot write the background in terms of fN and (1-f)N and still do splots...
+        #ws.factory("expr::N_psibkg('@0*@1',{N_fpsi[0.5,0,1],N_bkg[20000,0,30000]})")
+        #ws.factory("expr::N_nonpsibkg('(1-@0)*@1',{N_fpsi,N_bkg})")
+        #ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg*m_psibkg,N_nonpsibkg*m_nonpsibkg)")
+        ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg[15000,0,30000]*m_psibkg,N_nonpsibkg[15000,0,30000]*m_nonpsibkg)")
         self._m_pdf = ws['m_b']
 
         self._yields = RooArgList(ws.argSet('N_sig,N_psibkg,N_nonpsibkg'))
@@ -407,8 +411,10 @@ def declareObservables( ws ):
 
 
     # B, jpsi, phi mass
-    ws.factory("m[5200,5450]")
+    #ws.factory("m[5200,5450]")
+    ws.factory("m[5250,5450]")
     ws.factory("mdau1[%f,%f]"%(3097-60,3097+60))
+    #ws.factory("mdau1[%f,%f]"%(3097-60,3097+50))
     #ws.factory("mdau2[%f,%f]"%(1019.455-20,1019.455+20)) 
     ws.factory("mdau2[%f,%f]"%(1019.455-10,1019.455+10)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background!
     # time , time-error
@@ -505,7 +511,6 @@ def buildBkgPdf( ws, name = 'bkg_pdf' ):
     return ws.pdf(name)
 
 def definePolarAngularAmplitudes(ws):
-
     ##choice: either fit for the Re&Im of the 3 amplitudes (and then
     ##        constrain one phase and the sum of magnitudes)
     ##        or fit in terms of angles and relative magnitudes
@@ -520,7 +525,7 @@ def definePolarAngularAmplitudes(ws):
     ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
     ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
     
-    # this doesn't belong here
+def defineJPsiPhiPhysicsParams(ws):
     ws.factory("{gamma[0.68,0.4,0.9],dm[17.7],dG[0.05,-0.3,0.3]}")
     ws.factory("expr::tau('1/@0',{gamma})")
     ##choice: either fit for the three degrees of freedom independently
@@ -551,7 +556,7 @@ def buildFullJpsiPhiPdf( ws ):
     ws.factory("PROD::sig_pdf(jpsiphipdf,m_sig)")
     
     # make the final pdf
-    ws.factory("SUM::pdf_ext(N_sig[1200,0,1000]*sig_pdf,N_bkg[81200,0,1000000]*bkg_pdf)")
+    ws.factory("SUM::pdf_ext(N_sig[1200,0,10000]*sig_pdf,N_bkg[81200,0,1000000]*bkg_pdf)")
     ws.factory("SUM::pdf(f_sig[0.01,0.,1.0]*sig_pdf,bkg_pdf)")
     return ws['pdf_ext']
 

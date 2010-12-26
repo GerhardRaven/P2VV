@@ -23,9 +23,6 @@ def plotPdfComponents( pdf, obs, *args  ) :
     pdf.plotOn(obs,lw)
 
 
-rootobjects = []
-
-
 def plotAngles(data,pdf,angles ) :
     c2 = TCanvas('Angles','Angles',900,700)
     c2.Divide(3,4)
@@ -88,7 +85,17 @@ angles = ws.set('helicityangles')
 obs.add( angles )
 data = RooDataSet('data','data',file.Get('dataset'),obs,'t==t && m==m')
 
-mb = MassPdfBuilder(ws,ws['m'],ws['mdau1'],ws['mdau2']) # todo: make this a J/psi phi builder, so that we can also have a J/psi K* one ;-]
+
+#data
+#sigmam_sigdata  = RooDataSet("sigmam_sig","sigmam_sig",data,data.get(),"(t>0.3)& (5365-15)<m&m<(5365+15)")
+#sigmam_bkgdata  = RooDataSet("sigmam_bkg","sigmam_bkg",data,data.get(),"(t<0.3)& ( m<(5365-20) | (5365+20<m) )
+#sigmam_data = RooDataHist("sigmam_%s_data"%sample,"hist m Err Per Ev",RooArgSet(sigmam),data)
+#sigmat_pdf = ws.put(RooHistPdf("sigmam_%s"%sample,"sigmat_%s"%sample,RooArgSet(sigmat),stdata[sample])) # ,2)
+
+# todo: make this a J/psi phi builder, so that we can also have a J/psi K* one ;-]
+#       and we can tweak the initial values of the masses, set the right mass windows...
+mb = MassPdfBuilder(ws,ws['m'],ws['mdau1'],ws['mdau2']) 
+                                            
 
 ####
 c = TCanvas()
@@ -119,27 +126,32 @@ if True:
 
 if True :
     mpdf = mb.Pdf()
+    ws['N_sig'].setVal(1000)
+    ws['N_psibkg'].setVal( (data.numEntries()- ws['N_sig'].getVal())/2 )
+    ws['N_nonpsibkg'].setVal( (data.numEntries()- ws['N_sig'].getVal())/2 )
     mpdf.fitTo(data,RooFit.NumCPU(7))
     for i in mpdf.getParameters(data) : i.setConstant(True)
     ## TODO: at some point, we need to add the KK mass to the story...
-    for i,obs in enumerate( [ mb.Obs(), mb.dau1Obs() ] ) : # , mb.dau2Obs() ] ):
+    for i,obs in enumerate( [ mb.Obs(), mb.dau1Obs()])  : #  , mb.dau2Obs() ] ):
         # TODO: plot current in signal of other, sideband of other....
         c.cd(3+i)
         frame = obs.frame()
         data.plotOn(frame)
-        mpdf.plotOn(frame,sigcolor)
-        mpdf.plotOn(frame,RooFit.Components("m_sig*"))
-        mpdf.plotOn(frame,RooFit.Components("*bkg*"))
-        # mpdf.plotOn(frame,RooFit.Components("*_psi*bkg*"))
-        mpdf.plotOn(frame,nonpsicolor,RooFit.Components("*_nonpsi*bkg*"))
+        mpdf.plotOn(frame,RooFit.Components("m_sig"), sigcolor,dashed,lw)
+        mpdf.plotOn(frame,RooFit.Components("m_psibkg"), bkgcolor,dashed,lw)
+        mpdf.plotOn(frame,RooFit.Components("m_nonpsibkg"), nonpsicolor,dashed,lw)
+        mpdf.plotOn(frame,lw)
         frame.Draw()
 #import sys
 #sys.exit(0)
 
+c.Print("InitialMassFits.eps")
 
 ### Now that we have the masses fitted, let's make angle SPlots...
 ## TODO: move this into the mass PDF builder...
 for i in mpdf.getParameters(data) : i.setConstant( i not in mb.yields() )
+mpdf.Print("T")
+mpdf.getParameters(data).Print("V")
 splot = RooStats.SPlot("splotdata","splotdata",data,mpdf,mb.yields())
 wdata = splot.GetSDataSet()
 
@@ -168,17 +180,6 @@ if True :
         dataw.plotOn(f)
         f.Draw()
 
-
-if False :
-    # and now, build the angular distributions for psi and non-psi background, using the SWeights we
-    # just got...
-    ab = abasis(ws,angles)
-    x = BkgAnglePdfBuilder( ws, ab, data
-                          , { 'psibkg'    : { 'ranges' : (range(4),range(4),range(-4,5))    , 'weight' : 'N_psibkg_sw'    }
-                            , 'nonpsibkg' : { 'ranges' : (range(4),range(12),range(-12,13)) , 'weight' : 'N_nonpsibkg_sw' } 
-                            } )
-    (c1,c2) = x.makeplots()
-
 ## next, we pick up the sigmat distributions for our three components...
 
 sigmat = ws['sigmat']
@@ -197,15 +198,46 @@ p.Draw()
       
 x = TimeResolutionBuilder(ws)
 y = BkgTimePdfBuilder(ws, x, stpdf)
-# create a dummy signal PDF...
-ws.factory("PROD:t_sig( Decay(t,t_sig_tau[1.5,1.2,1.8],tres_sig,SingleSided)|sigmat,sigmat_sig)")
-### and now multiply and sum together...
-ws.factory("PROD:sig(       m_sig,       t_sig        )")
-ws.factory("PROD:psibkg(    m_psibkg,    t_psibkg     )")
-ws.factory("PROD:nonpsibkg( m_nonpsibkg, t_nonpsibkg  )")
-# TODO: create an intermediate bkg which is SUM(fpsi*psibkg,nonpsibkg)
-# as we can then make nicer plots -- alternative, we just add psi and nonpsi
-# by hand... which may be faster anyway ;-)
+
+if True :
+    # create a dummy signal PDF...
+    ws.factory("PROD:t_sig( Decay(t,t_sig_tau[1.5,1.2,1.8],tres_sig,SingleSided)|sigmat,sigmat_sig)")
+    ### and now multiply and sum together...
+    ws.factory("PROD:sig(       m_sig,       t_sig        )")
+    ws.factory("PROD:psibkg(    m_psibkg,    t_psibkg     )")
+    ws.factory("PROD:nonpsibkg( m_nonpsibkg, t_nonpsibkg  )")
+
+    # TODO: create an intermediate bkg which is SUM(fpsi*psibkg,nonpsibkg)
+    # as we can then make nicer plots -- alternative, we just add psi and nonpsi
+    # by hand... which may be faster anyway ;-)
+else :
+    # and now, build the angular distributions for psi and non-psi background, using the SWeights we
+    # just got...
+    ab = abasis(ws,angles)
+    x = BkgAnglePdfBuilder( ws, ab, data
+                          , { 'psibkg'    : { 'ranges' : (range(4),range(8),range(-4,5))  , 'weight' : 'N_psibkg_sw'    }
+                            , 'nonpsibkg' : { 'ranges' : (range(4),range(12),range(-4,5)) , 'weight' : 'N_nonpsibkg_sw' } 
+                            } )
+    (c1,c2) = x.makeplots()
+    ws.factory("wtag[0.5]")
+    ws.factory("{S[0],D[1],C[0]}")
+    ws.factory("{t_sig_tau[1.4,1.2,1.8],t_sig_dm[17.7],t_sig_dG[0.05,-0.3,0.3]}")
+    definePolarAngularAmplitudes(ws)
+    print 'about to build J/psi phi signal'
+    sigjpsiphi = buildJpsiphi(ws,'jpsiphisignal',False)
+    print 'about to createProjection of J/psi phi signal over tagdecision'
+    t_sig = sigjpsiphi # ws.put(sigjpsiphi.createProjection( ws.argSet('tagdecision') ))
+    print 'about to multiply signal'
+    ws.factory("PROD:ta_sig( %s |sigmat,sigmat_sig)" % t_sig.GetName() )
+    ### and now multiply and sum together...
+    print 'about to multiply background'
+    ws.factory("PROD:sig(       m_sig,       ta_sig         )")
+    ws.factory("PROD:psibkg(    m_psibkg,    t_psibkg,    %s )" % x.psibkgPdf().GetName())
+    ws.factory("PROD:nonpsibkg( m_nonpsibkg, t_nonpsibkg, %s )" % x.nonpsibkgPdf().GetName())
+    ws['N_sig'].setVal(1000)
+    ws['N_psibkg'].setVal( (data.numEntries()- ws['N_sig'].getVal())/2 )
+    ws['N_nonpsibkg'].setVal( (data.numEntries()- ws['N_sig'].getVal())/2 )
+
 ws.factory("SUM::pdf(N_sig*sig,N_psibkg*psibkg,N_nonpsibkg*nonpsibkg)")
 pdf = ws['pdf']
 pdf.getParameters(data).readFromFile('initialvalues.txt')
@@ -213,6 +245,10 @@ pdf.getParameters(data).readFromFile('initialvalues.txt')
 ### to a reasonable starting point??
 result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Save(True),RooFit.Minos(false))
 pdf.getParameters(data).writeToFile('fitresult.txt')
+
+
+
+
 
 t = ws['t']
 m = ws['m']
@@ -312,7 +348,6 @@ _tb.SetMinimum(0.1)
 _tb.SetTitle("proper time right sideband")
 _tb.Draw()
 c.Update()
-
 
 
 
