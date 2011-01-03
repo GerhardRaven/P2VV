@@ -7,6 +7,7 @@ from math import pi
 ### Plot ICHEP Like ###
 #######################
 
+ncpu = RooCmdArg( RooFit.NumCPU(1) )
 sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
 bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
 nonpsicolor = RooCmdArg(RooFit.LineColor(RooFit.kOrange))
@@ -21,51 +22,6 @@ def plotPdfComponents( pdf, obs, *args  ) :
     pdf.plotOn(obs,RooFit.Components("nonpsibkg"),nonpsicolor,dashed,lw)
     pdf.plotOn(obs,RooFit.Components("sig"), sigcolor,dashed,lw)
     pdf.plotOn(obs,lw)
-
-
-def plotAngles(data,pdf,angles ) :
-    c2 = TCanvas('Angles','Angles',900,700)
-    c2.Divide(3,4)
-    for (i,a) in enumerate( angles ) :
-        #==========================================================================================================
-        c2.cd(1+i)
-        _f = a.frame(RooFit.Bins(15),RooFit.Title('%s full mass region' % a.GetTitle() ))
-        data.plotOn(_f)
-        pdf.plotOn(_f,RooFit.Components('sig'),sigcolor,dashed,lw)
-        pdf.plotOn(_f,RooFit.Components('bkg'),bkgcolor,dashed,lw)
-        pdf.plotOn(_f,lw)
-        _f.Draw()
-        c2.Update()
-        #==========================================================================================================
-        c2.cd(4+i)
-        _f = a.frame(RooFit.Bins(15),RooFit.Title('%s signal region' % a.GetTitle()))
-        data.plotOn(_f,RooFit.CutRange('sigRegion'))
-        pdf.plotOn(_f,RooFit.ProjectionRange('sigRegion'),RooFit.Components('sig'),sigcolor,dashed,lw)
-        pdf.plotOn(_f,RooFit.ProjectionRange('sigRegion'),RooFit.Components('bkg'),bkgcolor,dashed,lw)
-        pdf.plotOn(_f,RooFit.ProjectionRange('sigRegion'),lw)
-        _f.Draw()
-        c2.Update()
-        #==========================================================================================================
-        c2.cd(7+i)
-        _f = a.frame(RooFit.Bins(15),RooFit.Title('%s sidebands'% a.GetTitle()))
-        data.plotOn(_f,RooFit.CutRange('leftSideband,rightSideband'))
-        pdf.plotOn(_f,RooFit.ProjectionRange('leftSideband,rightSideband'),lw)
-        _f.Draw()
-        c2.Update()
-        #==========================================================================================================
-        c2.cd(10+i)
-        _f = a.frame(RooFit.Bins(15),RooFit.Title('%s right sideband'% a.GetTitle() ))
-        data.plotOn(_f,RooFit.CutRange('rightSideband'))
-        pdf.plotOn(_f,RooFit.ProjectionRange('rightSideband'),lw)
-        _f.Draw()
-        c2.Update()
-
-
-    return myline1,myline2,c,c2
-
-##############################################################################
-##########################   There we go!!!!! ################################
-##############################################################################
 
 ##################################
 ### Create WS, build the PDF's ###
@@ -105,7 +61,7 @@ c.Divide(2,3)
 if True :
     c.cd(1)
     mdau1pdf = mb.dau1Pdf()
-    mdau1pdf.fitTo(data,RooFit.NumCPU(7))
+    mdau1pdf.fitTo(data,ncpu)
     for i in mdau1pdf.getParameters(data): i.setConstant(True)
     f_dau1 = mb.dau1Obs().frame()
     data.plotOn(f_dau1)
@@ -116,7 +72,7 @@ if True :
 if True:
     c.cd(2)
     mdau2pdf = mb.dau2Pdf()
-    mdau2pdf.fitTo(data,RooFit.NumCPU(7))
+    mdau2pdf.fitTo(data,ncpu)
     for i in mdau2pdf.getParameters(data) : i.setConstant(True)
     f_dau2 = mb.dau2Obs().frame()
     data.plotOn(f_dau2)
@@ -127,9 +83,9 @@ if True:
 if True :
     mpdf = mb.Pdf()
     ws['N_sig'].setVal(1000)
-    ws['N_psibkg'].setVal( (data.numEntries()- ws['N_sig'].getVal())/2 )
-    ws['N_nonpsibkg'].setVal( (data.numEntries()- ws['N_sig'].getVal())/2 )
-    mpdf.fitTo(data,RooFit.NumCPU(7))
+    ws['N_psibkg'].setVal( 0.6*(data.numEntries()- ws['N_sig'].getVal())/2 )
+    ws['N_nonpsibkg'].setVal( 0.4*(data.numEntries()- ws['N_sig'].getVal()) )
+    mpdf.fitTo(data,ncpu)
     for i in mpdf.getParameters(data) : i.setConstant(True)
     ## TODO: at some point, we need to add the KK mass to the story...
     for i,obs in enumerate( [ mb.Obs(), mb.dau1Obs()])  : #  , mb.dau2Obs() ] ):
@@ -150,8 +106,8 @@ c.Print("InitialMassFits.eps")
 ### Now that we have the masses fitted, let's make angle SPlots...
 ## TODO: move this into the mass PDF builder...
 for i in mpdf.getParameters(data) : i.setConstant( i not in mb.yields() )
-mpdf.Print("T")
-mpdf.getParameters(data).Print("V")
+#mpdf.Print("T")
+#mpdf.getParameters(data).Print("V")
 splot = RooStats.SPlot("splotdata","splotdata",data,mpdf,mb.yields())
 wdata = splot.GetSDataSet()
 
@@ -196,7 +152,7 @@ for (f,sample) in enumerate([ 'sig','psibkg','nonpsibkg' ]):
       stpdf[sample].plotOn(p,RooFit.LineColor( [kRed,kBlue,kBlack][f]))
 p.Draw()
       
-x = TimeResolutionBuilder(ws)
+x = TimeResolutionBuilder(ws, ws['t'],ws['sigmat'])
 y = BkgTimePdfBuilder(ws, x, stpdf)
 
 if True :
@@ -234,21 +190,26 @@ else :
     ws.factory("PROD:sig(       m_sig,       ta_sig         )")
     ws.factory("PROD:psibkg(    m_psibkg,    t_psibkg,    %s )" % x.psibkgPdf().GetName())
     ws.factory("PROD:nonpsibkg( m_nonpsibkg, t_nonpsibkg, %s )" % x.nonpsibkgPdf().GetName())
-    ws['N_sig'].setVal(1000)
-    ws['N_psibkg'].setVal( (data.numEntries()- ws['N_sig'].getVal())/2 )
-    ws['N_nonpsibkg'].setVal( (data.numEntries()- ws['N_sig'].getVal())/2 )
 
-ws.factory("SUM::pdf(N_sig*sig,N_psibkg*psibkg,N_nonpsibkg*nonpsibkg)")
+ws['N_sig'].setVal(970)
+ws['N_psibkg'].setVal( 0.6*(data.numEntries()- ws['N_sig'].getVal())/2 )
+ws['N_nonpsibkg'].setVal( 0.4*(data.numEntries()- ws['N_sig'].getVal()) )
+ws.factory("SUM::pdf(f_sig[0.1,0,0.4]*sig, SUM(f_psi[0.5,0.1,0.9]*psibkg,nonpsibkg))")
+
+#ws.factory("SUM::pdf(f_psi[0.5,0.1,0.9]*psibkg,nonpsibkg))")
+#data = data.reduce("( m<(5375-20) ) | (5375+20)<m ) ")
+
 pdf = ws['pdf']
 pdf.getParameters(data).readFromFile('initialvalues.txt')
+#for i in mpdf.getParameters(data) : i.setConstant(False) # bad idea... maybe just float the Bs width....
+ws['m_sig_sigma'].setConstant(False)
+ws['m_sig_sigma2'].setConstant(False)
+ws['m_sig_f1'].setConstant(False)
+ws['m_sig_fpsi'].setConstant(False)
 ### Maybe we should first fit the three time splots with the three components to get them 
 ### to a reasonable starting point??
-result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Save(True),RooFit.Minos(false))
+result = pdf.fitTo(data,ncpu,RooFit.Save(True),RooFit.Minos(false))
 pdf.getParameters(data).writeToFile('fitresult.txt')
-
-
-
-
 
 t = ws['t']
 m = ws['m']
@@ -291,9 +252,20 @@ _m.Draw()
 c.Update()
 
 #===========================================================================================================
+c.cd(4)
+_sigmat = sigmat.frame()# RooFit.Bins(40))
+data.plotOn(_sigmat,RooFit.MarkerSize(0.7),xes)
+pdf.plotOn(_sigmat,RooFit.Components("psibkg"), bkgcolor,dashed,lw)
+pdf.plotOn(_sigmat,RooFit.Components("nonpsibkg"),nonpsicolor,dashed,lw)
+pdf.plotOn(_sigmat,RooFit.Components("sig"), sigcolor,dashed,lw)
+pdf.plotOn(_sigmat,lw)
+_sigmat.Draw() 
+c.Update()
+
+#===========================================================================================================
 c.cd(5)
 _tb = t.frame(-0.4,0.4,100)
-data.plotOn(_tb,RooFit.MarkerSize(0.5),xes,err)
+data.plotOn(_tb,RooFit.MarkerSize(0.7),xes,err)
 pdf.plotOn(_tb,RooFit.Components("sig"),sigcolor,dashed,lw)
 pdf.plotOn(_tb,RooFit.Components("psibkg"),bkgcolor,dashed,lw)
 pdf.plotOn(_tb,RooFit.Components("nonpsibkg"),nonpsicolor,dashed,lw)
@@ -307,7 +279,7 @@ c.Update()
 c.cd(6)
 gPad.SetLogy()
 
-_tb = t.frame(-4,12.,50)
+_tb = t.frame()
 data.plotOn(_tb,RooFit.CutRange('sigRegion'),RooFit.MarkerSize(0.5),xes)
 pdf.plotOn(_tb,RooFit.Components("sig"),RooFit.ProjectionRange('sigRegion'), sigcolor,dashed,lw)
 pdf.plotOn(_tb,RooFit.Components("psibkg"),RooFit.ProjectionRange('sigRegion'), bkgcolor,dashed,lw)
@@ -324,7 +296,7 @@ c.Update()
 c.cd(7)
 gPad.SetLogy()
 
-_tb = t.frame(-4,12,50)
+_tb = t.frame()
 data.plotOn(_tb,RooFit.CutRange('leftSideband'),RooFit.MarkerSize(0.5),xes)
 pdf.plotOn(_tb,RooFit.Components("nonpsibkg"),RooFit.ProjectionRange('leftSideband'), nonpsicolor,dashed,lw)
 pdf.plotOn(_tb,RooFit.Components("psibkg"),RooFit.ProjectionRange('leftSideband'), bkgcolor,dashed,lw)
@@ -338,7 +310,7 @@ c.Update()
 c.cd(8)
 gPad.SetLogy()
 
-_tb = t.frame(-4,12,50)
+_tb = t.frame()
 data.plotOn(_tb,RooFit.CutRange('rightSideband'),RooFit.MarkerSize(0.5),xes)
 pdf.plotOn(_tb,RooFit.Components("nonpsibkg"),RooFit.ProjectionRange('rightSideband'), nonpsicolor,dashed,lw)
 pdf.plotOn(_tb,RooFit.Components("psibkg"),RooFit.ProjectionRange('rightSideband'), bkgcolor,dashed,lw)
@@ -363,6 +335,6 @@ if False :
     ws.factory("SUM::pdf(Nsig[12000,0,1000]*sig,Nbkg[81200,0,1000000]*bkg)")
 
     pdf = ws['pdf']
-    pdf.fitTo(data,RooFit.NumCPU(8))
+    pdf.fitTo(data,ncpu)
     plotAngles( data,pdf, angles )
 

@@ -201,17 +201,23 @@ def buildEffMomentsPDF(w,name,pdf,data,moments) :
     return buildMoment_x_PDF(w,name,pdf,moments)
 
 class TimeResolutionBuilder :
-    # TODO: build a PDF for sigmat (eg. RooHistPdf... or the sum of two gamma functions....)
+    # TODO: build a PDF for sigmat (eg. RooHistPdf, RooThresholdPdf... or the sum of two gamma functions....)
     # gamma = RooRealVar("gamma","gamma",15,10,30)
     # beta = RooRealVar("beta","beta",2.21456e-03,0,0.1)
     # mu = RooRealVar("mu","mu",0,0.001,0.01)
     # pdf = RooGammaPdf("pdf","pdf",st,gamma,beta,mu)
-    def __init__(self,ws ) :
+    def __init__(self,ws, t, sigmat) :
+        if type(t)      is str : t      = ws[t]
+        if type(sigmat) is str : sigmat = ws[sigmat]
         for name in [ 'sig','nonpsi' ] :
-            ws.factory("GaussModel::tres_%s_g1(t,tres_%s_m1[0,-0.2,0.2],tres_%s_s1[1.1,0.3,2], 1, sigmat)" % (name,name,name))
-            ws.factory("GaussModel::tres_%s_g2(t,tres_%s_m1,            tres_%s_s2[2.0,1.5,10],1, sigmat)" % (name,name,name))
-            ws.factory("GaussModel::tres_%s_g3(t,tres_%s_m1,            tres_%s_s3[0.54,0.1,3.0])" % (name,name,name))
+            ws.factory("GaussModel::tres_%s_g1(%s,tres_%s_m[0,-0.2,0.2],tres_%s_s1[1.1,0.3,2 ], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
+            ws.factory("GaussModel::tres_%s_g2(%s,tres_%s_m,            tres_%s_s2[20.,1.5,30], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
+            ws.factory("GaussModel::tres_%s_g3(%s,tres_%s_m,            tres_s3[0.54,0.1,3.0])" % (name,t.GetName(),name) )
             ws.factory("AddModel::tres_%s({tres_%s_g3,tres_%s_g2,tres_%s_g1},{tres_%s_f3[0.001,0.00,0.05],tres_%s_f2[0.2,0.01,1]})" % (name,name,name,name,name,name))
+            ws['tres_%s_f3'%name].setVal(0)
+            ws['tres_%s_f3'%name].setConstant(True)
+            ws['tres_s3'].setVal(1)
+            ws['tres_s3'].setConstant(True)
         self._sigres = ws['tres_sig']
         self._nonpsi = ws['tres_nonpsi']
     def signal(self) : return self._sigres
@@ -221,22 +227,22 @@ class TimeResolutionBuilder :
     def psibkgSigmaT(self) : return self._sigmaT['psibkg']
     def nonpsibkgSigmaT(self) : return self._sigmaT['nonpsibkg']
 
-class BkgTimePdfBuilder :
+class BkgTimePdfBuilder : #background propertime
     def __init__(self, ws, resbuilder, sigmatpdf ) :
-        from itertools import repeat
         for name,resname in { 'nonpsibkg': resbuilder.nonpsi().GetName() , 'psibkg' : resbuilder.signal().GetName() }.iteritems() :
-            #background propertime
-            ws.factory("Decay::t_%s_sl(t,0,%s,SingleSided)"%(name,resname))
-            ws.factory("Decay::t_%s_ml(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)"%(name,name,resname))
-            ws.factory("Decay::t_%s_ll(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)"%(name,name,resname))
-            ws.factory("PROD::t_%s(SUM(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)|sigmat,%s )"% (name,name,name,name,name,name,sigmatpdf[name].GetName()))
-            # fix fraction of  ll and lifetime for nonpsi to zero...
-        ws['t_nonpsibkg_ll_tau'].setConstant(true)
+            ws.factory("PROD::t_%s_sl(Decay(t,0,                        %s,SingleSided)|sigmat,%s)"%(name,     resname,sigmatpdf[name].GetName()))
+            ws.factory("PROD::t_%s_ml(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
+            ws.factory("PROD::t_%s_ll(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
+            ws.factory("SUM::t_%s(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)"% (name,name,name,name,name,name) )
+        # fix fraction of  ll and lifetime for nonpsi to zero...
         ws['t_nonpsibkg_fll'].setVal(0)
-        ws['t_nonpsibkg_fll'].setConstant(true)
-        ws['t_psibkg_ll_tau'].setConstant(true)
+        ws['t_nonpsibkg_fll'].setConstant(True)
+        ws['t_nonpsibkg_ll_tau'].setVal(0)
+        ws['t_nonpsibkg_ll_tau'].setConstant(True)
         ws['t_psibkg_fll'].setVal(0)
-        ws['t_psibkg_fll'].setConstant(true)
+        ws['t_psibkg_fll'].setConstant(True)
+        ws['t_psibkg_ll_tau'].setVal(0)
+        ws['t_psibkg_ll_tau'].setConstant(True)
         self._nonpsi = ws['t_nonpsibkg']
         self._psi = ws['t_psibkg']
 
@@ -307,13 +313,13 @@ class MassPdfBuilder :
         #### define J/psi mass observable & corresponding PDF
         self._mdau1 = m_dau1
         # signal J/psi mass pdf
-        ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3094,3085,3110],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.39,0.8,2],mpsi_sig_n[3])"%m_dau1.GetName())
+        ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3094,3090,3105],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.39,0.8,2],mpsi_sig_n[3])"%m_dau1.GetName())
         self._mdau1_sig = ws['mpsi_sig']
         # background J/psi mass pdf
-        ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0003,-0.01,0.01])"%m_dau1.GetName())
+        ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0005,-0.001,0.0])"%m_dau1.GetName())
         self._mdau1_bkg = ws['mpsi_bkg']
         # overall J/psi mass pdf
-        ws.factory("SUM::mpsi(mpsi_fjpsi[0.5,0.1,0.8]*mpsi_sig,mpsi_bkg)")
+        ws.factory("SUM::mpsi(mpsi_fjpsi[0.5,0.2,0.8]*mpsi_sig,mpsi_bkg)")
         self._mdau1_pdf = ws['mpsi']
 
 
@@ -337,19 +343,24 @@ class MassPdfBuilder :
         # TODO: can we include sigmam without introducing a Punzi problem?
         #       note that the background PDF would not include sigmam...
         #       but both mean and sigma are different for t>0.3 and t<0.3...
-        #       we could just take a sigmam distribution with t>0.3 as signal...
-        #       and t<0.3 as background...
+        #       we could just take a sigmam distribution with t>0.3 and |m-m_bs|<25 as signal...
+        #       and t<0.3 and |m-m_bs|>30 as background...
         self._m = m
-        #ws.factory("PROD::m_psisig(SUM(m_sig_f1[0.9,0.1,0.99]*Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),Gaussian(%s,m_sig_mean,m_sig_sigma2[15,10,30])),mpsi_sig)"%(m.GetName(),m.GetName()))
-        ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),mpsi_sig)"%(m.GetName()))
-        ws.factory("PROD::m_nonpsisig(Gaussian(%s,m_sig_mean,m_sig_sigma),mpsi_bkg)"%m.GetName())
-        ws.factory("SUM::m_sig(m_sigfpsi[1.0]*m_psisig,m_nonpsisig)")
+        #ws.factory("PROD::m_psisig(SUM(m_sig_f1[0.9,0.1,0.99]*Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),Gaussian(%s,m_sig_mean,m_sig_sigma2[15,10,35])),mpsi_sig)"%(m.GetName(),m.GetName()))
+        #ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5366,5350,5380],m_sig_sigma[10,3,30]),mpsi_sig)"%(m.GetName()))
+        #ws.factory("PROD::m_nonpsisig(Gaussian(%s,m_sig_mean,m_sig_sigma),mpsi_bkg)"%m.GetName())
+        #ws.factory("SUM::m_sig(m_sigfpsi[1.0]*m_psisig,m_nonpsisig)")
+        ws.factory("PROD::m_sig(SUM(m_sig_f1[0.2,0.1,0.99]*Gaussian(%s,m_sig_mean[5366,5360,5375],m_sig_sigma[5,3,10]),Gaussian(%s,m_sig_mean,m_sig_sigma2[8,6,14])),SUM(m_sig_fpsi[0.95,0.8,1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
+        ws['m_sig_fpsi'].setVal(1)
+        ws['m_sig_fpsi'].setConstant(True)
         self._m_sig = ws['m_sig']
+        if False :
+            ws.factory("PROD::m_sig(Gaussian(m,m_sig_mean,expr('@0*@1',{m_sig_s[0.5,5],sigmam}))|sigmam)")
         
         #background B mass pdf
-        ws.factory("PROD::m_psibkg(Exponential(%s,m_psibkg_exp[-0.001,-0.01,-0.0001]),mpsi_sig)"% m.GetName() )
+        ws.factory("PROD::m_psibkg(Exponential(%s,m_psibkg_exp[-0.0003,-0.001,-0.0001]),mpsi_sig)"% m.GetName() )
         self._m_psibkg = ws['m_psibkg']
-        ws.factory("PROD::m_nonpsibkg(Exponential(%s,m_nonpsibkg_exp[-0.001,-0.01,-0.0001]),mpsi_bkg)"% m.GetName() )
+        ws.factory("PROD::m_nonpsibkg(Exponential(%s,m_nonpsibkg_exp[-0.0006,-0.001,-0.0001]),mpsi_bkg)"% m.GetName() )
         self._m_nonpsibkg = ws['m_nonpsibkg']
         ws.factory("SUM::m_bkg(m_bkgfpsi[0.1,0.01,0.99]*m_psibkg,m_nonpsibkg)")
         self._m_bkg = ws['m_bkg']
@@ -412,13 +423,14 @@ def declareObservables( ws ):
 
     # B, jpsi, phi mass
     #ws.factory("m[5200,5450]")
-    ws.factory("m[5250,5450]")
-    ws.factory("mdau1[%f,%f]"%(3097-60,3097+60))
+    #ws.factory("m[5250,5450]")
+    ws.factory("m[%f,%f]"%(5366-50,5366+50))
+    ws.factory("mdau1[%f,%f]"%(3097-60,3097+40))
     #ws.factory("mdau1[%f,%f]"%(3097-60,3097+50))
     #ws.factory("mdau2[%f,%f]"%(1019.455-20,1019.455+20)) 
     ws.factory("mdau2[%f,%f]"%(1019.455-10,1019.455+10)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background!
     # time , time-error
-    ws.factory("{t[-4,14],sigmat[0.005,0.1]}")
+    ws.factory("{t[-4,10],sigmat[0.005,0.1]}")
 
     # define a set for the observables (we can also define this from the pdf and data.
     ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,tagomega,tagdecision") 
