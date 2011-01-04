@@ -138,16 +138,17 @@ The result can be summarized as follows (where we have used that $q_T^2=1$):
 
 If we introduce the probability of tagging an (initial) $B$ meson as $\overline{B}$ as $w$, and
 the probability to tag an initial $\overline{B}$ meson as $B$ as $\overline{w}$, and the probability
-to tag an $B$ ($\overline{B}$) meson in the $i^\mathrm{th}$ tagging category, then the
-PDF for $B$ and $\overline{B}$ tagged in category $i$ will be:
+(efficiency) to tag an $B$ ($\overline{B}$) meson in the $i^\mathrm{th}$ tagging category as $t_i$ ($\overline{t}_i$), then the
+PDF for candidates, tagged as $B$ respectively $\overline{B}$, in tagging category $i$ will be:
 \begin{eqnarray}
    P_{B_\mathrm{tag},i} &\equiv t_i (1-w_i) P_{B} + \overline{t}_i\overline{w}_i P_{\overline{ B} }\\
    P_{\overline{B}_\mathrm{tag},i} &\equiv \overline{t}_i (1-\overline{w}_i) P_{\overline{B}} + t_i w_i P_{ B }
 \end{eqnarray} 
 In addition, there will be those events which are untagged, which will be distributed as:
 \begin{equation}
-   P_{\mathrm{untagged}} \equiv \left( 1-\sum_i \overline{t}_i \right) \frac{1}{2} P_{\overline{B}} + \left( 1 - \sum_i t_i \right) \frac{1}{2} P_{ B }
+   P_{\mathrm{untagged}} \equiv \left( 1-\sum_i \overline{t}_i \right)  P_{\overline{B}} + \left( 1 - \sum_i t_i \right)  P_{ B }
 \end{equation}
+where we have assumed that the {\em combination} of $P_{B}+P_{\overline{B}}$ is properly normalized.
 Taking into account that $P_{B}$ and $P_{\overline{B}}$ differ in normalization by
 $N_+=\frac{1}{1+C}$ and $N_-=\frac{1}{1-C}$, and labelling for the time being the CP even 
 resp. CP odd terms in $P_{B}$ and $P_{\overline{B}}$ as ${\cal E}$
