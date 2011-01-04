@@ -138,16 +138,17 @@ The result can be summarized as follows (where we have used that $q_T^2=1$):
 
 If we introduce the probability of tagging an (initial) $B$ meson as $\overline{B}$ as $w$, and
 the probability to tag an initial $\overline{B}$ meson as $B$ as $\overline{w}$, and the probability
-to tag an $B$ ($\overline{B}$) meson in the $i^\mathrm{th}$ tagging category, then the
-PDF for $B$ and $\overline{B}$ tagged in category $i$ will be:
+(efficiency) to tag an $B$ ($\overline{B}$) meson in the $i^\mathrm{th}$ tagging category as $t_i$ ($\overline{t}_i$), then the
+PDF for candidates, tagged as $B$ respectively $\overline{B}$, in tagging category $i$ will be:
 \begin{eqnarray}
    P_{B_\mathrm{tag},i} &\equiv t_i (1-w_i) P_{B} + \overline{t}_i\overline{w}_i P_{\overline{ B} }\\
    P_{\overline{B}_\mathrm{tag},i} &\equiv \overline{t}_i (1-\overline{w}_i) P_{\overline{B}} + t_i w_i P_{ B }
 \end{eqnarray} 
 In addition, there will be those events which are untagged, which will be distributed as:
 \begin{equation}
-   P_{\mathrm{untagged}} \equiv \left( 1-\sum_i \overline{t}_i \right) \frac{1}{2} P_{\overline{B}} + \left( 1 - \sum_i t_i \right) \frac{1}{2} P_{ B }
+   P_{\mathrm{untagged}} \equiv \left( 1-\sum_i \overline{t}_i \right)  P_{\overline{B}} + \left( 1 - \sum_i t_i \right)  P_{ B }
 \end{equation}
+where we have assumed that the {\em combination} of $P_{B}+P_{\overline{B}}$ is properly normalized.
 Taking into account that $P_{B}$ and $P_{\overline{B}}$ differ in normalization by
 $N_+=\frac{1}{1+C}$ and $N_-=\frac{1}{1-C}$, and labelling for the time being the CP even 
 resp. CP odd terms in $P_{B}$ and $P_{\overline{B}}$ as ${\cal E}$
@@ -329,7 +330,7 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
   \sin\theta\cos\theta\sin\phi &=& \sqrt{ \frac{4\pi}{9}}\left( -\sqrt{\frac{3}{5}}Y_{2,-1}(\cos\theta,\phi) \right) \\
   \sin\psi\cos\psi &=& -\frac{1}{3} P_2^1(\cos\psi) \\
   \sin^2 \psi      &=&  \frac{1}{3} P_2^2(\cos\psi) \\
-  \cos^2 \psi      &=&  \frac{1}{3} \left( P_2^2(\cos\psi)+P_2^0(\cos\psi) \right)
+  \cos^2 \psi      &=&  \frac{1}{3} \left( P_0^0(\cos\psi)+2P_2^0(\cos\psi) \right)
 \end{eqnarray}
 
 \begin{eqnarray}
@@ -362,11 +363,11 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
  \hline
 &\multicolumn{4}{|c|}{ P_i^j(\cos\thetaK)Y_{lm}(\cos\thetaL,\phiL) \times \frac{9}{\sqrt{4\pi}} } \\
  \hline
-|{\cal A}_0(t)|^2                       & 2P_2^2Y_{00} & -\sqrt{\frac{4}{5}}P_2^2Y_{20} & 2P_2^0Y_{00} & -\sqrt{\frac{4}{5}} P_2^0Y_{20}  \\
+|{\cal A}_0(t)|^2                       & 2P_0^0Y_{00} & -\sqrt{\frac{4}{5}}P_0^0Y_{20} & 4P_2^0Y_{00} & -\sqrt{\frac{16}{5}} P_2^0Y_{20}  \\
 |{\cal A}_\parallel(t)|^2               & P_2^2Y_{00} &\sqrt{\frac{1}{20}} P_2^2Y_{20} &-\sqrt{\frac{3}{20}}P_2^2Y_{22} & \\
-|{\cal A}_\perp(t)|^2                   & 2P_2^2Y_{00} & \sqrt{\frac{1}{5}} P_2^2Y_{20} &\sqrt{\frac{3}{5}}P_2^2Y_{22} & \\
+|{\cal A}_\perp(t)|^2                   & P_2^2Y_{00} & \sqrt{\frac{1}{20}} P_2^2Y_{20} &\sqrt{\frac{3}{20}}P_2^2Y_{22} & \\
 \Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) & \sqrt{\frac{3}{5}}P_2^2Y_{2,-2}&&&\\
-\Im({\cal A}_0^*(t){\cal A}_\perp(t))         & -\sqrt{\frac{12}{5}}P_2^1Y_{2,-1}&&&\\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         & -\sqrt{\frac{6}{5}}P_2^1Y_{2,-1}&&&\\
 \Re({\cal A}_0^*(t){\cal A}_\parallel(t))     & \sqrt{\frac{6}{5}}P_2^1Y_{21}&&&\\
  \hline
 \end{array}
@@ -439,8 +440,8 @@ we can read off the moments as:
 \end{equation}
 Given that it is known that  in the likelihood fit only the (relative) normalization of the six angular
 terms matters, it is clear that only a subset the Fourier components needs to be know to
-perform the fit. Of course additional terms will make a improve the visual results when plotting 
-differential distributions. 
+perform the fit. Of course additional terms will improve the visual results when plotting 
+differential distributions.
 
 
 

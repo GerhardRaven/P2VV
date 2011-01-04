@@ -3,6 +3,9 @@ from ROOT import gStyle,gROOT
 gStyle.SetPalette(1)
 gROOT.SetStyle("Plain")
 
+# needed to get RooFit.Name, RooFit.Components....
+# how to get just the RooFit namespace ?
+from ROOT import * 
 
 def _RooDataSetIter(self) :
     for i in range( self.numEntries() ) :
@@ -62,15 +65,62 @@ def setConstant(ws, pattern, constant = True, value = None):
 
 RooWorkspace.setConstant = setConstant
 
+# plot -- example usage:
+# _c1 = plot( c.cd(1),mpsi,data,pdf
+#           , { 'psi'    : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) ) 
+#             , 'nonpsi' : ( RooFit.LineColor(RooFit.kBlue),RooFit.LineStyle(kDashed) )
+#             }
+#           , frameOpts = ( RooFit.Bins(30), )
+#           , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) )
+#           , pdfOpts = ( RooFit.LineWidth(2), ) 
+#           )
+def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfOpts = None, logy = False, normalize = False ) :
+    #
+    stash = [] # keep the relevant objects alive by passing them back to caller 
+               # who in turn should assign it to something, and keep that something alive
+    c.cd()
+    hname = obs.GetName() + '_plot1'
+    from ROOT import TPad
+    h = TPad(hname,hname,0,0.2,1,1)
+    if logy: h.SetLogy(1)
+    h.SetNumber(1)
+    h.Draw()
+    c.cd()
+    stash.append(h)
+    _obs = obs.frame( *frameOpts )  if frameOpts else obs.frame()
+    data.plotOn(_obs,RooFit.Name('data'),*dataOpts)
+    for comp,opt in components.iteritems() :
+        z = opt + pdfOpts
+        pdf.plotOn(_obs,RooFit.Components(comp), *z )
+    pdf.plotOn(_obs,RooFit.Name('pdf'),*pdfOpts)
+    _obs.drawAfter('pdf','data')
+    rh = _obs.residHist('data','pdf',normalize)
+    stash.append(rh)
+    xa = _obs.GetXaxis()
+    rh.GetXaxis().SetLimits(xa.GetXmin(),xa.GetXmax())
+    # TODO: symmetrize y axis limits...
+    for i in dataOpts : 
+        if i.opcode() == 'MarkerSize'  : rh.SetMarkerSize(  i.getDouble(0) )
+        if i.opcode() == 'MarkerStyle' : rh.SetMarkerStyle( i.getInt(0) )
+        if i.opcode() == 'MarkerColor' : rh.SetMarkerColor( i.getInt(0) )
 
+    # only now start drawing...
+    c.cd(1)
+    if logy : _obs.SetMinimum(0.1)
+    _obs.Draw()
+    stash.append(_obs)
 
-if False :
-    from ROOT import RooWorkspace
-    w = RooWorkspace('w')
-    w.factory('{x[-1,1],y[0,1],z[-10,10]}')
-    z = w.argSet('x,y')
-    #for i in z : i.Print()
-    #z += w.argSet('z')
-    #for i in z : i.Print()
-
-
+    c.cd()
+    rname = obs.GetName() + '_resid1'
+    r = TPad(rname,rname,0,0,1,0.2)
+    stash.append(r)
+    r.SetNumber(2)
+    r.Draw()
+    c.cd(2)
+    rh.Draw('ap')
+    from ROOT import TLine
+    l = TLine(xa.GetXmin() ,0,xa.GetXmax() ,0)
+    stash.append(l)
+    l.Draw()
+    c.Update()
+    return (c,stash)
