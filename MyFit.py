@@ -209,14 +209,6 @@ from ModelBuilders import *
 ws = RooWorkspace('ws')
 
 pdf_ext = buildFullJpsiPhiPdf ( ws )
-(tagcat,tagpdf) = buildTagging(ws,'sigtag',[0.45])
-
-#pdf_ext.Print("T")
-## TODO: make conditional on tagomega!!
-ws.factory("PROD::mypdf(%s|tagomega,%s)"%(pdf_ext.GetName(),tagpdf.GetName()))
-pdf_ext = ws['mypdf']
-#import sys
-#sys.exit(0)
 
 # first test: dump the pdf parameters to a file
 
@@ -238,7 +230,7 @@ pdf_ext.getParameters( ws.set('observables')).writeToFile( 'initialfitparameters
 #file = TFile('duitsedata.root')
 #NTupletree = file.Get('Bs2JpsiPhi')
 
-file = TFile('Bs2JpsiPhiTupleReduced.root')
+file = TFile('/data/bfys/wouterh/JpsiXAnalysis/20101208/Bs2JpsiPhiTupleReduced.root')
 NTupletree = file.Get('dataset')
 
 data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m==m')

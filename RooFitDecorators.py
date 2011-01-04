@@ -59,6 +59,7 @@ def setConstant(ws, pattern, constant = True, value = None):
         rc += 1
     return rc
 
+
 RooWorkspace.setConstant = setConstant
 
 
