@@ -134,7 +134,6 @@ _c4 = plot( c.cd(4), mpsi, data, pdf, comps
           , dataOpts = ( ms,xes,RooFit.CutRange('nonZeroTime') )
           , pdfOpts = ( lw,RooFit.ProjectionRange('nonZeroTime') )
           )
-
 #===========================================================================================================
 _c5 = plot( c.cd(5), mpsi, data, pdf, comps
           , frameOpts = ( RooFit.Bins(20), RooFit.Title('mpsi (t>0.3)') )
@@ -148,14 +147,12 @@ _c6 = plot( c.cd(6), sigmat, data, pdf, comps
           , pdfOpts = ( lw, )
           )
 #===========================================================================================================
-c.cd(7)
 _c7 = plot( c.cd(7), t, data, pdf, comps
           , frameOpts = ( RooFit.Range(-0.4,0.4), RooFit.Bins(100), RooFit.Title('proper time, full mass range') )
           , dataOpts = ( ms,xes,err )
           , pdfOpts = ( lw, )
           )
 #===========================================================================================================
-pad = c.cd(8)
 _c8 = plot( c.cd(8), t, data, pdf, comps
           , frameOpts = ( RooFit.Title('proper time, lower sideband'), )
           , dataOpts = ( ms,xes,RooFit.CutRange('leftSideband') )
@@ -163,7 +160,6 @@ _c8 = plot( c.cd(8), t, data, pdf, comps
           , logy = True
           )
 #===========================================================================================================
-pad = c.cd(9)
 _c9 = plot( c.cd(9), t, data, pdf, comps
           , frameOpts = ( RooFit.Title('proper time, upper sideband'), )
           , dataOpts = ( ms,xes,RooFit.CutRange('rightSideband') )

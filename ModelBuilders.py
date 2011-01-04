@@ -437,7 +437,8 @@ def declareObservables( ws ):
     ws.factory("mdau1[%f,%f]"%(3097-60,3097+40))
     #ws.factory("mdau1[%f,%f]"%(3097-60,3097+50))
     #ws.factory("mdau2[%f,%f]"%(1019.455-20,1019.455+20)) 
-    ws.factory("mdau2[%f,%f]"%(1019.455-10,1019.455+10)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background!
+    #ws.factory("mdau2[%f,%f]"%(1019.455-10,1019.455+10)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background!
+    ws.factory("mdau2[%f,%f]"%(1019.455-12,1019.455+12)) # Roadmap says +- 12 MeV/c^2
     # time , time-error
     ws.factory("{t[-4,10],sigmat[0.005,0.1]}")
 
