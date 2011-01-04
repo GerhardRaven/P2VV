@@ -9,20 +9,12 @@ sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
 bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
 nonpsicolor = RooCmdArg(RooFit.LineColor(RooFit.kOrange))
 lw = RooCmdArg(RooFit.LineWidth(2))
-ms = RooCmdArg(RooFit.MarkerSize(0.7))
+ms = RooCmdArg(RooFit.MarkerSize(0.4))
 xes = RooCmdArg(RooFit.XErrorSize(0))
 err = RooCmdArg(RooFit.DrawOption('E'))
 dashed = RooCmdArg(RooFit.LineStyle(kDashed))
-stash = []
 
-
-def plotPdfComponents( pdf, obs, *args  ) :
-    pdf.plotOn(obs,RooFit.Components("psibkg"), bkgcolor,dashed,lw)
-    pdf.plotOn(obs,RooFit.Components("nonpsibkg"),nonpsicolor,dashed,lw)
-    pdf.plotOn(obs,RooFit.Components("sig"), sigcolor,dashed,lw)
-    pdf.plotOn(obs,lw)
-
-RooAbsPdf.plotComponenentOn = plotPdfComponents
+#RooAbsPdf.plotComponenentOn = plotPdfComponents
 
 ##################################
 ### Create WS, build the PDF's ###
@@ -113,108 +105,68 @@ t.setRange('largeTime',0.3,t.getMax())
 
 c = TCanvas()
 c.Divide(5,2)
+#===========================================================================================================
+comps = { 'psibkg'    : ( bkgcolor,dashed ) 
+        , 'nonpsibkg' : ( nonpsicolor,dashed )
+        }
 
 #===========================================================================================================
-c.cd(1)
-_mpsi= mpsi.frame(RooFit.Bins(60))
-data.plotOn(_mpsi,ms,xes)
-#pdf.plotComponentsOn(_mpsi)
-pdf.plotOn(_mpsi,RooFit.Components("psibkg"),bkgcolor,dashed,lw)
-pdf.plotOn(_mpsi,RooFit.Components("nonpsibkg"),nonpsicolor,dashed,lw)
-pdf.plotOn(_mpsi,lw)
-_mpsi.Draw()
-c.Update()
+_c1 = plot( c.cd(1),mpsi,data,pdf,comps
+          , frameOpts = ( RooFit.Bins(30), )
+          , dataOpts = ( ms, xes )
+          , pdfOpts = ( lw, ) 
+          )
+#===========================================================================================================
+_c2 = plot( c.cd(2), mpsi, data, pdf, comps
+          , frameOpts = ( RooFit.Bins(20), RooFit.Title('mpsi (t<-0.3)') )
+          , dataOpts  = ( ms, xes, RooFit.CutRange('negativeTime') )
+          , pdfOpts   = ( lw, RooFit.ProjectionRange('negativeTime') )
+          )
+#===========================================================================================================
+_c3 = plot( c.cd(3), mpsi, data, pdf, comps
+          , frameOpts = ( RooFit.Bins(30), RooFit.Title('mpsi (t<-0.1)') )
+          , dataOpts = ( ms,xes,RooFit.CutRange('negativeNonZeroTime') )
+          , pdfOpts = ( lw,RooFit.ProjectionRange('negativeNonZeroTime') )
+          )
+#===========================================================================================================
+_c4 = plot( c.cd(4), mpsi, data, pdf, comps
+          , frameOpts = ( RooFit.Bins(40), RooFit.Title('mpsi (t>0.1)') )
+          , dataOpts = ( ms,xes,RooFit.CutRange('nonZeroTime') )
+          , pdfOpts = ( lw,RooFit.ProjectionRange('nonZeroTime') )
+          )
 
 #===========================================================================================================
-c.cd(2)
-_mpsi = mpsi.frame(RooFit.Bins(40),RooFit.Title('mpsi (t<-0.3)'))
-data.plotOn(_mpsi,ms,xes,RooFit.CutRange("negativeTime"))
-pdf.plotOn(_mpsi,RooFit.ProjectionRange("negativeTime"),lw)
-pdf.plotOn(_mpsi,RooFit.Components("psibkg"),RooFit.ProjectionRange("negativeTime"), bkgcolor,dashed,lw)
-pdf.plotOn(_mpsi,RooFit.Components("nonpsibkg"),RooFit.ProjectionRange("negativeTime"), nonpsicolor,dashed,lw)
-_mpsi.Draw() 
-c.Update()
-
+_c5 = plot( c.cd(5), mpsi, data, pdf, comps
+          , frameOpts = ( RooFit.Bins(20), RooFit.Title('mpsi (t>0.3)') )
+          , dataOpts = ( ms,xes,RooFit.CutRange('largeTime') )
+          , pdfOpts = ( lw,RooFit.ProjectionRange('largeTime') )
+          )
 #===========================================================================================================
-c.cd(3)
-_mpsi = mpsi.frame(RooFit.Bins(40),RooFit.Title('mpsi (t<-0.1)'))
-data.plotOn(_mpsi,ms,xes,RooFit.CutRange("negativeNonZeroTime"))
-pdf.plotOn(_mpsi,RooFit.ProjectionRange("negativeNonZeroTime"),lw)
-pdf.plotOn(_mpsi,RooFit.Components("psibkg"),RooFit.ProjectionRange("negativeNonZeroTime"), bkgcolor,dashed,lw)
-pdf.plotOn(_mpsi,RooFit.Components("nonpsibkg"),RooFit.ProjectionRange("negativeNonZeroTime"), nonpsicolor,dashed,lw)
-_mpsi.Draw() 
-c.Update()
-
-#===========================================================================================================
-c.cd(4)
-_mpsi = mpsi.frame(RooFit.Bins(40),RooFit.Title('mpsi (t>0.1)'))
-data.plotOn(_mpsi,ms,xes,RooFit.CutRange("nonZeroTime"))
-pdf.plotOn(_mpsi,RooFit.ProjectionRange("nonZeroTime"),lw)
-pdf.plotOn(_mpsi,RooFit.Components("psibkg"),RooFit.ProjectionRange("nonZeroTime"), bkgcolor,dashed,lw)
-pdf.plotOn(_mpsi,RooFit.Components("nonpsibkg"),RooFit.ProjectionRange("nonZeroTime"), nonpsicolor,dashed,lw)
-_mpsi.Draw() 
-c.Update()
-
-#===========================================================================================================
-c.cd(5)
-_mpsi = mpsi.frame(RooFit.Bins(20),RooFit.Title('mpsi (t>0.3)'))
-data.plotOn(_mpsi,RooFit.CutRange("largeTime"),ms,xes)
-#pdf.plotComponentsOn(_mpsi,RooFit.ProjectionRange("largeTime"))
-pdf.plotOn(_mpsi,RooFit.ProjectionRange("largeTime"),RooFit.Components("psibkg"),    bkgcolor,dashed,lw)
-pdf.plotOn(_mpsi,RooFit.ProjectionRange("largeTime"),RooFit.Components("nonpsibkg"), nonpsicolor,dashed,lw)
-pdf.plotOn(_mpsi,RooFit.ProjectionRange("largeTime"),                                lw)
-_mpsi.Draw() 
-c.Update()
-
-#===========================================================================================================
-c.cd(6)
-_sigmat = sigmat.frame()
-data.plotOn(_sigmat,RooFit.MarkerSize(0.7),xes)
-pdf.plotOn(_sigmat,RooFit.Components("psibkg"), bkgcolor,dashed,lw)
-pdf.plotOn(_sigmat,RooFit.Components("nonpsibkg"),nonpsicolor,dashed,lw)
-pdf.plotOn(_sigmat,lw)
-_sigmat.Draw() 
-c.Update()
-
+_c6 = plot( c.cd(6), sigmat, data, pdf, comps
+          , frameOpts = None
+          , dataOpts = ( ms,xes )
+          , pdfOpts = ( lw, )
+          )
 #===========================================================================================================
 c.cd(7)
-_tb = t.frame(-0.4,0.4,100)
-data.plotOn(_tb,RooFit.MarkerSize(0.7),xes,err)
-pdf.plotOn(_tb,RooFit.Components("psibkg"),bkgcolor,dashed,lw)
-pdf.plotOn(_tb,RooFit.Components("nonpsibkg"),nonpsicolor,dashed,lw)
-pdf.plotOn(_tb,lw)
-_tb.SetMinimum(0.1) 
-_tb.SetTitle("proper time full mass range")
-_tb.Draw()
-c.Update()
-
+_c7 = plot( c.cd(7), t, data, pdf, comps
+          , frameOpts = ( RooFit.Range(-0.4,0.4), RooFit.Bins(100), RooFit.Title('proper time, full mass range') )
+          , dataOpts = ( ms,xes,err )
+          , pdfOpts = ( lw, )
+          )
 #===========================================================================================================
-c.cd(8)
-gPad.SetLogy()
-
-_tb = t.frame()
-data.plotOn(_tb,RooFit.CutRange('leftSideband'),RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(_tb,RooFit.Components("nonpsibkg"),RooFit.ProjectionRange('leftSideband'), nonpsicolor,dashed,lw)
-pdf.plotOn(_tb,RooFit.Components("psibkg"),RooFit.ProjectionRange('leftSideband'), bkgcolor,dashed,lw)
-pdf.plotOn(_tb,lw,RooFit.ProjectionRange('leftSideband'))
-
-_tb.SetMinimum(0.1) 
-_tb.SetTitle("proper time left sideband")
-_tb.Draw()
-c.Update()
+pad = c.cd(8)
+_c8 = plot( c.cd(8), t, data, pdf, comps
+          , frameOpts = ( RooFit.Title('proper time, lower sideband'), )
+          , dataOpts = ( ms,xes,RooFit.CutRange('leftSideband') )
+          , pdfOpts = ( lw,RooFit.ProjectionRange('leftSideband') )
+          , logy = True
+          )
 #===========================================================================================================
-c.cd(9)
-gPad.SetLogy()
-
-_tb = t.frame()
-data.plotOn(_tb,RooFit.CutRange('rightSideband'),RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(_tb,RooFit.Components("nonpsibkg"),RooFit.ProjectionRange('rightSideband'), nonpsicolor,dashed,lw)
-pdf.plotOn(_tb,RooFit.Components("psibkg"),RooFit.ProjectionRange('rightSideband'), bkgcolor,dashed,lw)
-pdf.plotOn(_tb,lw,RooFit.ProjectionRange('rightSideband'))
-
-_tb.SetMinimum(0.1) 
-_tb.SetTitle("proper time right sideband")
-_tb.Draw()
-c.Update()
-
-
+pad = c.cd(9)
+_c9 = plot( c.cd(9), t, data, pdf, comps
+          , frameOpts = ( RooFit.Title('proper time, upper sideband'), )
+          , dataOpts = ( ms,xes,RooFit.CutRange('rightSideband') )
+          , pdfOpts = ( lw,RooFit.ProjectionRange('rightSideband') )
+          , logy = True
+          )
