@@ -230,9 +230,18 @@ class TimeResolutionBuilder :
 class BkgTimePdfBuilder : #background propertime
     def __init__(self, ws, resbuilder, sigmatpdf ) :
         for name,resname in { 'nonpsibkg': resbuilder.nonpsi().GetName() , 'psibkg' : resbuilder.signal().GetName() }.iteritems() :
-            ws.factory("PROD::t_%s_sl(Decay(t,0,                        %s,SingleSided)|sigmat,%s)"%(name,     resname,sigmatpdf[name].GetName()))
-            ws.factory("PROD::t_%s_ml(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
-            ws.factory("PROD::t_%s_ll(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
+            useCache = False
+            if useCache :
+                # OOPS: wrong idea -- the cache invalidates once the 'other' observables change, i.e. each event...
+                ws['sigmat'].setBinning( ws['sigmat'].getBinning() ,'cache')
+                RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Caching))
+                ws.factory("CachedPdf::t_%s_sl(PROD(Decay(t,0,                        %s,SingleSided)|sigmat,%s),sigmat)"%(name,     resname,sigmatpdf[name].GetName()))
+                ws.factory("CachedPdf::t_%s_ml(PROD(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s),sigmat)"%(name,name,resname,sigmatpdf[name].GetName()))
+                ws.factory("CachedPdf::t_%s_ll(PROD(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s),sigmat)"%(name,name,resname,sigmatpdf[name].GetName()))
+            else :
+                ws.factory("PROD::t_%s_sl(Decay(t,0,                        %s,SingleSided)|sigmat,%s)"%(name,     resname,sigmatpdf[name].GetName()))
+                ws.factory("PROD::t_%s_ml(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
+                ws.factory("PROD::t_%s_ll(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
             ws.factory("SUM::t_%s(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)"% (name,name,name,name,name,name) )
         # fix fraction of  ll and lifetime for nonpsi to zero...
         ws['t_nonpsibkg_fll'].setVal(0)
