@@ -230,19 +230,16 @@ class TimeResolutionBuilder :
 class BkgTimePdfBuilder : #background propertime
     def __init__(self, ws, resbuilder, sigmatpdf ) :
         for name,resname in { 'nonpsibkg': resbuilder.nonpsi().GetName() , 'psibkg' : resbuilder.signal().GetName() }.iteritems() :
-            useCache = False
-            if useCache :
-                # OOPS: wrong idea -- the cache invalidates once the 'other' observables change, i.e. each event...
-                ws['sigmat'].setBinning( ws['sigmat'].getBinning() ,'cache')
-                RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Caching))
-                ws.factory("CachedPdf::t_%s_sl(PROD(Decay(t,0,                        %s,SingleSided)|sigmat,%s),sigmat)"%(name,     resname,sigmatpdf[name].GetName()))
-                ws.factory("CachedPdf::t_%s_ml(PROD(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s),sigmat)"%(name,name,resname,sigmatpdf[name].GetName()))
-                ws.factory("CachedPdf::t_%s_ll(PROD(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s),sigmat)"%(name,name,resname,sigmatpdf[name].GetName()))
+            if False :
+                ws.factory("Decay::t_%s_sl(t,0,                        %s,SingleSided)"%(name,     resname))
+                ws.factory("Decay::t_%s_ml(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)"%(name,name,resname))
+                ws.factory("Decay::t_%s_ll(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)"%(name,name,resname))
+                ws.factory("PROD::t_%s(SUM(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)|sigmat,%s)"% (name,name,name,name,name,name,sigmatpdf[name].GetName()) )
             else :
                 ws.factory("PROD::t_%s_sl(Decay(t,0,                        %s,SingleSided)|sigmat,%s)"%(name,     resname,sigmatpdf[name].GetName()))
                 ws.factory("PROD::t_%s_ml(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
                 ws.factory("PROD::t_%s_ll(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
-            ws.factory("SUM::t_%s(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)"% (name,name,name,name,name,name) )
+                ws.factory("SUM::t_%s(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)"% (name,name,name,name,name,name) )
         # fix fraction of  ll and lifetime for nonpsi to zero...
         ws['t_nonpsibkg_fll'].setVal(0)
         ws['t_nonpsibkg_fll'].setConstant(True)
@@ -436,8 +433,7 @@ def declareObservables( ws ):
     ws.factory("m[%f,%f]"%(5366-50,5366+50))
     ws.factory("mdau1[%f,%f]"%(3097-60,3097+40))
     #ws.factory("mdau1[%f,%f]"%(3097-60,3097+50))
-    #ws.factory("mdau2[%f,%f]"%(1019.455-20,1019.455+20)) 
-    ws.factory("mdau2[%f,%f]"%(1019.455-10,1019.455+10)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background!
+    ws.factory("mdau2[%f,%f]"%(1019.455-12,1019.455+12)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background -- but the roadmap uses +- 12 instead...
     # time , time-error
     ws.factory("{t[-4,10],sigmat[0.005,0.1]}")
 
