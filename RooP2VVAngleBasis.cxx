@@ -18,6 +18,40 @@
 // END_HTML
 //
 
+#if 0
+#include <fenv.h>
+#include <iostream>
+
+static int
+feenableexcept (unsigned int excepts)
+{
+  static fenv_t fenv;
+  unsigned int new_excepts = excepts & FE_ALL_EXCEPT,
+               old_excepts;  // previous masks
+
+  if ( fegetenv (&fenv) ) return -1;
+  old_excepts = fenv.__control & FE_ALL_EXCEPT;
+
+  // unmask
+  fenv.__control &= ~new_excepts;
+  // fenv.__mxcsr   &= ~(new_excepts << 7);
+
+  std::cout  << "calling fesetenv" << std::endl;
+  return ( fesetenv (&fenv) ? -1 : old_excepts );
+}
+
+
+int enable()  {
+          std::cout << "enabling FPE" << std::endl;
+          feclearexcept(FE_ALL_EXCEPT); // remove any 'stale' exceptions before switching on trapping
+                               // otherwise we immediately trigger an exception...
+          std::cout << "enabling FPE II" << std::endl;
+          return feenableexcept(FE_ALL_EXCEPT);
+}
+//static int enableFPE = enable();
+
+#endif
+
 #include "RooFit.h"
 #include "Riostream.h"
 #include <sstream>
