@@ -55,6 +55,7 @@ int enable()  {
 #include "RooFit.h"
 #include "Riostream.h"
 #include <sstream>
+#include <memory>
 
 #include "RooP2VVAngleBasis.h"
 #include "RooLegendre.h"
