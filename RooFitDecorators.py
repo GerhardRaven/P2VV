@@ -73,7 +73,7 @@ RooWorkspace.setConstant = setConstant
 #           , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) )
 #           , pdfOpts = ( RooFit.LineWidth(2), ) 
 #           )
-def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfOpts = None, logy = False, normalize = False ) :
+def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfOpts = None, logy = False, normalize = True ) :
     #
     stash = [] # keep the relevant objects alive by passing them back to caller 
                # who in turn should assign it to something, and keep that something alive
