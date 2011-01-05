@@ -155,7 +155,6 @@ _c7 = plot( c.cd(7), t, data, pdf, comps
           , pdfOpts = ( lw, )
           )
 #===========================================================================================================
-pad = c.cd(8)
 _c8 = plot( c.cd(8), t, data, pdf, comps
           , frameOpts = ( RooFit.Title('proper time, lower sideband'), )
           , dataOpts = ( ms,xes,RooFit.CutRange('leftSideband') )
@@ -163,7 +162,6 @@ _c8 = plot( c.cd(8), t, data, pdf, comps
           , logy = True
           )
 #===========================================================================================================
-pad = c.cd(9)
 _c9 = plot( c.cd(9), t, data, pdf, comps
           , frameOpts = ( RooFit.Title('proper time, upper sideband'), )
           , dataOpts = ( ms,xes,RooFit.CutRange('rightSideband') )
