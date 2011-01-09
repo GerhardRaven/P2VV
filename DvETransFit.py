@@ -255,7 +255,7 @@ def plot(ws,data,pdf,title):
 ### Read ws, observables   ###
 ##############################
 
-wsfile = TFile('NewWS.root')
+wsfile = TFile('TransWS.root')
 
 ws = wsfile.Get('workspace')
 
@@ -286,9 +286,13 @@ ws.defineSet("observables","m,t,trcostheta,trcospsi,trphi,tagdecision")
 ### Load Data ###
 #################
 
-#file = TFile('duitsedata.root')
-file = TFile('duitsedata2.root')
-NTupletree = file.Get('Bs2JpsiPhi')
+#Using 'common' dataset:
+#file = TFile('duitsedata2.root')
+#NTupletree = file.Get('Bs2JpsiPhi')
+
+#Using Wouters dataset:
+file = TFile('Bs2JpsiPhiTupleReduced.root')
+NTupletree = file.Get('dataset')
 
 data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcostheta==trcostheta && trcospsi==trcospsi && trphi==trphi && tagdecision==tagdecision')
 data.table(tagdecision).Print('v')
@@ -320,9 +324,9 @@ ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
 #background angles: 
 #ws.factory("Uniform::bkgang({trcostheta,trcospsi,trphi})")
 
-ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13,-1,1],c1_trcospsi[0.23,-1,1],c2_trcospsi[-0.057,-1,1],c3_trcospsi[-0.0058,-1,1],c4_trcospsi[-0.0154,-1,1]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
-ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08,-1,1],c1_trcostheta[-0.22,-1,1],c2_trcostheta[-0.022,-1,1],c3_trcostheta[0.21,-1,1],c4_trcostheta[0.0125,-1,1]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
-ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10,-1,1],c1_trphi[0.328,-1,1],c2_trphi[0.081,-1,1],c3_trphi[0.316,-1,1],c4_trphi[0.044,-1,1]})")#,c5_trphi[-1,1],c6_trphi[-1,1]})")
+ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13,-1,1],c1_trcospsi[0.23,-1,1],c2_trcospsi[-0.057,-1,1],c3_trcospsi[-0.0058,-1,1],c4_trcospsi[-0.0154,-1,1],c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
+ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08,-1,1],c1_trcostheta[-0.22,-1,1],c2_trcostheta[-0.022,-1,1],c3_trcostheta[0.21,-1,1],c4_trcostheta[0.0125,-1,1],c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")
+ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10,-1,1],c1_trphi[0.328,-1,1],c2_trphi[0.081,-1,1],c3_trphi[0.316,-1,1],c4_trphi[0.044,-1,1],c5_trphi[-1,1],c6_trphi[-1,1]})")
 
 #ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13],c1_trcospsi[0.23],c2_trcospsi[-0.057],c3_trcospsi[-0.0058],c4_trcospsi[-0.0154]})")#,c5_trcospsi[-1,1],c6_trcospsi[-1,1]})")
 #ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08],c1_trcostheta[-0.22],c2_trcostheta[-0.022],c3_trcostheta[0.21],c4_trcostheta[0.0125]})")#,c5_trcostheta[-1,1],c6_trcostheta[-1,1]})")

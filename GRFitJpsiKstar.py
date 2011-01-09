@@ -29,13 +29,13 @@ sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
 bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
 nonpsicolor = RooCmdArg(RooFit.LineColor(RooFit.kOrange))
 
-declareObservables(ws)
-file = TFile('Bs2JpsiPhiTuple.root')
+declareObservablesNoDau2(ws)
+#file = TFile('Bs2JpsiPhiTuple.root')
+file = TFile('Bd2JpsiKstarTuple.root')
 obs = ws.set('observables')
 angles = ws.set('helicityangles')
 obs.add( angles )
 data = RooDataSet('data','data',file.Get('dataset'),obs,'t==t && m==m')
-
 
 #data
 #sigmam_sigdata  = RooDataSet("sigmam_sig","sigmam_sig",data,data.get(),"(t>0.3)& (5365-15)<m&m<(5365+15)")
@@ -45,9 +45,8 @@ data = RooDataSet('data','data',file.Get('dataset'),obs,'t==t && m==m')
 
 # todo: make this a J/psi phi builder, so that we can also have a J/psi K* one ;-]
 #       and we can tweak the initial values of the masses, set the right mass windows...
-mb = MassPdfBuilder(ws,ws['m'],ws['mdau1'],ws['mdau2']) 
+mb = MassPdfBuilderNoDau2(ws,ws['m'],ws['mdau1']) 
                                             
-
 ####
 c = TCanvas()
 c.Divide(2,3)
@@ -64,20 +63,9 @@ if True :
     mdau1pdf.plotOn(f_dau1,nonpsicolor,RooFit.Components("*bkg*"))
     f_dau1.Draw()
 
-if True:
-    c.cd(2)
-    mdau2pdf = mb.dau2Pdf()
-    mdau2pdf.fitTo(data,ncpu)
-    for i in mdau2pdf.getParameters(data) : i.setConstant(True)
-    f_dau2 = mb.dau2Obs().frame()
-    data.plotOn(f_dau2)
-    mdau2pdf.plotOn(f_dau2,sigcolor)
-    mdau2pdf.plotOn(f_dau2,nonpsicolor,RooFit.Components("*bkg*"))
-    f_dau2.Draw()
-
 if True :
     mpdf = mb.Pdf()
-    ws['N_sig'].setVal(1000)
+    ws['N_sig'].setVal(1000000)
     ws['N_psibkg'].setVal( 0.6*(data.numEntries()- ws['N_sig'].getVal())/2 )
     ws['N_nonpsibkg'].setVal( 0.4*(data.numEntries()- ws['N_sig'].getVal()) )
     mpdf.fitTo(data,ncpu)
@@ -115,7 +103,6 @@ if True :
     observables.add(ws['t'])
     observables.add(ws['sigmat'])
     observables.add(ws['tagomega'])
-    observables.add(ws['mdau2'])
     c.Divide(len(observables),3)
     c2.Divide(1,3)
     for (i,sample) in enumerate([ j.GetName() for j in mb.yields() ]):
@@ -151,13 +138,6 @@ x = TimeResolutionBuilder(ws, ws['t'],ws['sigmat'])
 y = BkgTimePdfBuilder(ws, x, stpdf)
 
 if True :
-    #ab = abasis(ws,angles)
-    #x = BkgAnglePdfBuilder( ws, ab, data
-    #                        , { 'psibkg'    : { 'ranges' : (range(4),range(8),range(-4,5))  , 'weight' : 'N_psibkg_sw'    }
-    #                            , 'nonpsibkg' : { 'ranges' : (range(4),range(12),range(-4,5)) , 'weight' : 'N_nonpsibkg_sw' } 
-    #                            } )
-    #(c1,c2) = x.makeplots()
-
     # create a dummy signal PDF...
     ws.factory("PROD:t_sig( Decay(t,t_sig_tau[1.5,1.2,1.8],tres_sig,SingleSided)|sigmat,sigmat_sig)")
     ### and now multiply and sum together...
@@ -194,6 +174,8 @@ else :
     ws.factory("PROD:psibkg(    m_psibkg,    t_psibkg,    %s )" % x.psibkgPdf().GetName())
     ws.factory("PROD:nonpsibkg( m_nonpsibkg, t_nonpsibkg, %s )" % x.nonpsibkgPdf().GetName())
 
+assert False
+
 ws['N_sig'].setVal(970)
 ws['N_psibkg'].setVal( 0.6*(data.numEntries()- ws['N_sig'].getVal())/2 )
 ws['N_nonpsibkg'].setVal( 0.4*(data.numEntries()- ws['N_sig'].getVal()) )
@@ -206,7 +188,6 @@ ws['m_sig_sigma'].setConstant(False)
 ws['m_sig_sigma2'].setConstant(False)
 ws['m_sig_f1'].setConstant(False)
 ws['m_sig_fpsi'].setConstant(False)
-
 ### Maybe we should first fit the three time splots with the three components to get them 
 ### to a reasonable starting point??
 result = pdf.fitTo(data,ncpu,RooFit.Save(True),RooFit.Minos(false))
@@ -293,6 +274,6 @@ if False :
     ws.factory("SUM::pdf(Nsig[12000,0,1000]*sig,Nbkg[81200,0,1000000]*bkg)")
 
     pdf = ws['pdf']
-    pdf.fitTo(data,ncpu)
+    #pdf.fitTo(data,ncpu)
     plotAngles( data,pdf, angles )
 
