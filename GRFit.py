@@ -7,7 +7,7 @@ from math import pi
 ### Plot ICHEP Like ###
 #######################
 
-ncpu = RooCmdArg( RooFit.NumCPU(1) )
+ncpu = RooCmdArg( RooFit.NumCPU(8) )
 sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
 bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
 nonpsicolor = RooCmdArg(RooFit.LineColor(RooFit.kOrange))
@@ -131,6 +131,15 @@ if True :
         dataw.plotOn(f)
         f.Draw()
 
+if False :
+    # and now, build the angular distributions for psi and non-psi background, using the SWeights we
+    # just got...
+    ab = abasis(ws,angles)
+    x = BkgAnglePdfBuilder( ws, ab, data
+                          , { 'psibkg'    : { 'ranges' : (range(3),range(8),range(-3,4))  , 'weight' : 'N_psibkg_sw'    }
+                            , 'nonpsibkg' : { 'ranges' : (range(3),range(12),range(-3,4)) , 'weight' : 'N_nonpsibkg_sw' } 
+                            } )
+    (c1,c2) = x.makeplots()
 ## next, we pick up the sigmat distributions for our three components...
 
 sigmat = ws['sigmat']
@@ -150,6 +159,8 @@ p.Draw()
 x = TimeResolutionBuilder(ws, ws['t'],ws['sigmat'])
 y = BkgTimePdfBuilder(ws, x, stpdf)
 
+tpb = TagPdfBuilder(ws,[0.25,0.35,0.45],ws['tagomega'])
+
 if True :
     #ab = abasis(ws,angles)
     #x = BkgAnglePdfBuilder( ws, ab, data
@@ -159,24 +170,17 @@ if True :
     #(c1,c2) = x.makeplots()
 
     # create a dummy signal PDF...
-    ws.factory("PROD:t_sig( Decay(t,t_sig_tau[1.5,1.2,1.8],tres_sig,SingleSided)|sigmat,sigmat_sig)")
+    ws.factory("PROD::t_sig( Decay(t,t_sig_tau[1.5,1.2,1.8],tres_sig,SingleSided)|sigmat,sigmat_sig)")
     ### and now multiply and sum together...
-    ws.factory("PROD:sig(       m_sig,       t_sig        )")
-    ws.factory("PROD:psibkg(    m_psibkg,    t_psibkg     )")
-    ws.factory("PROD:nonpsibkg( m_nonpsibkg, t_nonpsibkg  )")
+    # now add the flavour tagging -- pretend we are J/psi K+, and just fit for 
+    # tagging efficiency. Nothing more.
+    ws.factory("PROD::sig(       m_sig,       t_sig       , tagcat_sig        )")
+    ws.factory("PROD::psibkg(    m_psibkg,    t_psibkg    , tagcat_psibkg     )")
+    ws.factory("PROD::nonpsibkg( m_nonpsibkg, t_nonpsibkg , tagcat_nonpsibkg  )")
+    ## ws.PROD('foo',(m_sig,t_sig,tagcat_sig),Conditional = sigmat)
 
-    # TODO: create an intermediate bkg which is SUM(fpsi*psibkg,nonpsibkg)
-    # as we can then make nicer plots -- alternative, we just add psi and nonpsi
-    # by hand... which may be faster anyway ;-)
+
 else :
-    # and now, build the angular distributions for psi and non-psi background, using the SWeights we
-    # just got...
-    ab = abasis(ws,angles)
-    x = BkgAnglePdfBuilder( ws, ab, data
-                          , { 'psibkg'    : { 'ranges' : (range(4),range(8),range(-4,5))  , 'weight' : 'N_psibkg_sw'    }
-                            , 'nonpsibkg' : { 'ranges' : (range(4),range(12),range(-4,5)) , 'weight' : 'N_nonpsibkg_sw' } 
-                            } )
-    (c1,c2) = x.makeplots()
     ws.factory("wtag[0.5]")
     ws.factory("{S[0],D[1],C[0]}")
     ws.factory("{t_sig_tau[1.4,1.2,1.8],t_sig_dm[17.7],t_sig_dG[0.05,-0.3,0.3]}")

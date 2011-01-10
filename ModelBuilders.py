@@ -322,6 +322,7 @@ class MassPdfBuilder :
         ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3094,3090,3105],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.39,0.8,2],mpsi_sig_n[3])"%m_dau1.GetName())
         self._mdau1_sig = ws['mpsi_sig']
         # background J/psi mass pdf
+        # given the narrow window, might as well take a 1st (2nd?) order polynomial...
         ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0005,-0.001,0.0])"%m_dau1.GetName())
         self._mdau1_bkg = ws['mpsi_bkg']
         # overall J/psi mass pdf
@@ -356,8 +357,11 @@ class MassPdfBuilder :
         #ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5366,5350,5380],m_sig_sigma[10,3,30]),mpsi_sig)"%(m.GetName()))
         #ws.factory("PROD::m_nonpsisig(Gaussian(%s,m_sig_mean,m_sig_sigma),mpsi_bkg)"%m.GetName())
         #ws.factory("SUM::m_sig(m_sigfpsi[1.0]*m_psisig,m_nonpsisig)")
-        ws.factory("PROD::m_sig(SUM(m_sig_f1[0.2,0.1,0.99]*Gaussian(%s,m_sig_mean[5366,5360,5375],m_sig_sigma[5,3,10]),Gaussian(%s,m_sig_mean,m_sig_sigma2[8,6,14])),SUM(m_sig_fpsi[0.95,0.8,1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
-        #ws.factory("PROD::m_sig(SUM(m_sig_f1[0.2,0.1,0.99]*Gaussian(%s,m_sig_mean[5279,5270,5290],m_sig_sigma[5,3,10]),Gaussian(%s,m_sig_mean,m_sig_sigma2[8,6,14])),SUM(m_sig_fpsi[0.95,0.8,1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
+
+        ws.factory("PROD::m_sig(SUM(m_sig_f1[0.9,0.1,1.0]*Gaussian(%s,m_sig_mean[5366,5360,5375],m_sig_sigma[5,3,10]),Gaussian(%s,m_sig_mean,m_sig_sigma2[8,6,14])),SUM(m_sig_fpsi[0.95,0.8,1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
+        ws['m_sig_f1'].setVal(1)
+        ws['m_sig_f1'].setConstant(True)
+        ws['m_sig_sigma2'].setConstant(True)
         ws['m_sig_fpsi'].setVal(1)
         ws['m_sig_fpsi'].setConstant(True)
         self._m_sig = ws['m_sig']
@@ -556,24 +560,29 @@ def declareObservablesNoDau2( ws ):
 ## note that the final interval is defined 'by construction' and that the pdf returned gives 
 ## the efficiency to be in the i-th category, with the last category having an efficiency 1-sum_i eff_i
 class TagPdfBuilder :
-    def __init__(ws,tagcatdef,tagomega='tagomega')  :
+    def __init__(self,ws,tagcatdef,tagomega='tagomega')  :
         self._ws = ws
-        ws.factory("ThresholdCategory::tagcat('tagomega','untagged',0)" )
+        if type(tagomega) == str : 
+            tagomega = ws[tagomega]
+        elif ws[tagomega.GetName()] != tagomega :
+            raise LogicError('tagomega in ws does not match given RooAbsReal')
+
+        ws.factory("ThresholdCategory::tagcat(%s,'untagged',0)"%tagomega.GetName() ) 
         self._tagcat = ws['tagcat']
-        self._sig = ws.put(RooThresholdPdf('sig_tagcat','sig_tagcat',ws[tagomega]))
-        self._bkg = ws.put(RooThresholdPdf('bkg_tagcat','bkg_tagcat',ws[tagomega]))
+        self._sig = ws.put(RooThresholdPdf('tagcat_sig','tagcat_sig',tagomega))# should we worry about the fact that the value is eff/binwidth, and the binwidth is not constant???
+        self._psibkg = ws.put(RooThresholdPdf('tagcat_psibkg','tagcat_psibkg',tagomega))
+        self._nonpsibkg = ws.put(RooThresholdPdf('tagcat_nonpsibkg','tagcat_nonpsibkg',tagomega))
 
         for (i,upper) in enumerate( tagcatdef ) :
-            cname = 'tagcat_%d' % i
-            tagcat.addThreshold(upper,cname)
-            sname = 'sig_%s' % cname
-            bname = 'bkg_%s' % cname
-            sig_eff = ws.put(RooRealVar( sname, sname , 0.2, 0., 1.))
-            bkg_eff = ws.put(RooRealVar( bname, bname , 0.2, 0., 1.))
-            self._sig.addThreshold(upper, sig_eff )
-            self._bkg.addThreshold(upper, bkg_eff )
+            self._tagcat.addThreshold(upper,'tagcat_%d' % i)
+            for (n,pdf) in [('sig',self._sig),('psibkg',self._psibkg),('nonpsibkg',self._nonpsibkg) ] :
+                name = 'tagcat_%s_eff%s' % (n,i)
+                eff = ws.put(RooRealVar( name, name , float(1)/(1+len(tagcatdef)), 0., 1.))
+                pdf.addThreshold(upper, eff )
 
-    def sigPdf(self) : return self._sig
+    def sigPdf(self)       : return self._sig
+    def psibkgPdf(self)    : return self._bkg
+    def nonpsibkgPdf(self) : return self._bkg
 
     def bkgPdf(self) : return self._bkg
 
