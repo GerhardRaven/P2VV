@@ -315,7 +315,7 @@ class BkgAnglePdfBuilder :
 class MassPdfBuilder :
     ## TODO: investigate use of per-event mass error... or add a 2nd Gaussian to the b-mass
     ## TODO: integrate SPLOT functionality into the MassPdfBuilder...
-    def __init__(self,ws,m,m_dau1,m_dau2) : # assume B-mass, J/psi mass, phi mass
+    def __init__(self,ws,m,m_dau1,m_dau2,mode) : # assume B-mass, J/psi mass, phi mass
         #### define J/psi mass observable & corresponding PDF
         self._mdau1 = m_dau1
         # signal J/psi mass pdf
@@ -330,20 +330,21 @@ class MassPdfBuilder :
         self._mdau1_pdf = ws['mpsi']
 
 
-        # signal phi mass pdf
-        self._mdau2 = m_dau2
-        ws.factory("Voigtian::mphi_phisig(%s,mphi_phi_mean[1019.455],mphi_phi_width[4.26],mphi_phi_sigma[1.2,0.1,5])"%m_dau2.GetName())
-        self._mdau2_sig = ws['mphi_phisig']
-        # background phi mass pdf (would like to use a nice threshold function here ... RooDstD0BG seems a bit complicated
-        # On top of that, someone cut at phi-20 MeV/c^2, so we don't see the KK threshold anyway...
-        # so we might as well just do a 2nd order polynomial or so...
-        # Even more so, by only using a +- 10 MeV window, we kill half the background ;-)
-        # So until we actually include the phi mass, we take a linear function...
-        #ws.factory("DstD0BG::mphi_combbkg(%s,mphi_bkg_m0[987.4],mphi_bkg_C[6,1,10],mphi_bkg_B[16,8,30],zero[0])"%m_dau2.GetName())
-        ws.factory("Chebychev::mphi_combbkg(%s,{mphi_bkg_1[0.2,-1,1],mphi_bkg_2[-0.01,-0.1,0.1]})"%m_dau2.GetName())
-        self._mdau2_bkg = ws['mphi_combbkg']
-        ws.factory("SUM::m_phi(mphi_fphi[0.2,0.05,0.8]*mphi_phisig,mphi_combbkg)")
-        self._mdau2_pdf = ws['m_phi']
+        if mode == 'Bs2Jpsiphi':
+            # signal phi mass pdf
+            self._mdau2 = m_dau2
+            ws.factory("Voigtian::mphi_phisig(%s,mphi_phi_mean[1019.455],mphi_phi_width[4.26],mphi_phi_sigma[1.2,0.1,5])"%m_dau2.GetName())
+            self._mdau2_sig = ws['mphi_phisig']
+            # background phi mass pdf (would like to use a nice threshold function here ... RooDstD0BG seems a bit complicated
+            # On top of that, someone cut at phi-20 MeV/c^2, so we don't see the KK threshold anyway...
+            # so we might as well just do a 2nd order polynomial or so...
+            # Even more so, by only using a +- 10 MeV window, we kill half the background ;-)
+            # So until we actually include the phi mass, we take a linear function...
+            #ws.factory("DstD0BG::mphi_combbkg(%s,mphi_bkg_m0[987.4],mphi_bkg_C[6,1,10],mphi_bkg_B[16,8,30],zero[0])"%m_dau2.GetName())
+            ws.factory("Chebychev::mphi_bkg(%s,{mphi_bkg_1[0.2,-1,1],mphi_bkg_2[-0.01,-0.1,0.1]})"%m_dau2.GetName())
+            self._mdau2_bkg = ws['mphi_bkg']
+            ws.factory("SUM::m_phi(mphi_fphi[0.2,0.05,0.8]*mphi_phisig,mphi_bkg)")
+            self._mdau2_pdf = ws['m_phi']
 
         #########################
         #signal B mass pdf
@@ -357,15 +358,18 @@ class MassPdfBuilder :
         #ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5366,5350,5380],m_sig_sigma[10,3,30]),mpsi_sig)"%(m.GetName()))
         #ws.factory("PROD::m_nonpsisig(Gaussian(%s,m_sig_mean,m_sig_sigma),mpsi_bkg)"%m.GetName())
         #ws.factory("SUM::m_sig(m_sigfpsi[1.0]*m_psisig,m_nonpsisig)")
-        ws.factory("PROD::m_sig(SUM(m_sig_f1[0.9,0.1,1.0]*Gaussian(%s,m_sig_mean[5366,5360,5375],m_sig_sigma[5,3,10]),Gaussian(%s,m_sig_mean,m_sig_sigma2[8,6,14])),SUM(m_sig_fpsi[0.95,0.8,1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
-        ws['m_sig_f1'].setVal(1)
-        ws['m_sig_f1'].setConstant(True)
-        ws['m_sig_sigma2'].setConstant(True)
-        ws['m_sig_fpsi'].setVal(1)
-        ws['m_sig_fpsi'].setConstant(True)
+        if 'Bs' in mode :
+            sigmid = 5367.4
+            sigwid = 15  # in J/psi phi we have a 7 MeV resolution
+        if 'Bu' in mode or 'Bd' in mode:
+            sigmid = 5279.17
+            sigwid = 20  # in J/psi K+ we have a 9 MeV resolution
+
+        ws.factory('m_sig_mean[%s,%s,%s]'%(sigmid,sigmid-0.5*sigwid,sigmid+0.5*sigwid))
+        ws.factory("PROD::m_sig(SUM(m_sig_f1[1]*Gaussian(%s,m_sig_mean,m_sig_sigma[7,4,12]),Gaussian(%s,m_sig_mean,m_sig_sigma2[14])),SUM(m_sig_fpsi[1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
         self._m_sig = ws['m_sig']
-        if False :
-            ws.factory("PROD::m_sig(Gaussian(m,m_sig_mean,expr('@0*@1',{m_sig_s[0.5,5],sigmam}))|sigmam)")
+        #if False :
+        #    ws.factory("PROD::m_sig(Gaussian(m,m_sig_mean,expr('@0*@1',{m_sig_s[0.5,5],sigmam}))|sigmam)")
         
         #background B mass pdf
         ws.factory("PROD::m_psibkg(Exponential(%s,m_psibkg_exp[-0.0003,-0.001,-0.0001]),mpsi_sig)"% m.GetName() )
@@ -379,19 +383,16 @@ class MassPdfBuilder :
         ## we can have various combinations of {sig,bkg} x {sig,bkg} x {sig,bkg} here...
         ## for now, we just split the b bkg into psi vs non-psi, but at some point we
         ## need to split b sig into phi vs kk...
-        #ws.factory("SUM::m_b(m_fb[0.1,0.01,0.99]*m_sig,m_bkg)")
-        # we make an extended PDF so that we can make SPlots!
-        # but we cannot write the background in terms of fN and (1-f)N and still do splots...
-        #ws.factory("expr::N_psibkg('@0*@1',{N_fpsi[0.5,0,1],N_bkg[20000,0,30000]})")
-        #ws.factory("expr::N_nonpsibkg('(1-@0)*@1',{N_fpsi,N_bkg})")
-        #ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg*m_psibkg,N_nonpsibkg*m_nonpsibkg)")
-        ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg[15000,0,30000]*m_psibkg,N_nonpsibkg[15000,0,30000]*m_nonpsibkg)")
+        if mode == 'Bs2Jpsiphi':
+            ws.factory('{N_sig[1000,0,10000],N_psibkg[15000,0,30000],N_nonpsibkg[15000,0,30000]}')
+        if mode == 'Bu2JpsiK' or mode == 'Bd2JpsiKstar' :
+            ws.factory('{N_sig[13000,0,100000],N_psibkg[150000,0,300000],N_nonpsibkg[150000,0,300000]}')
+        
+        ws.factory("SUM::m_b(N_sig*m_sig,N_psibkg*m_psibkg,N_nonpsibkg*m_nonpsibkg)")
         self._m_pdf = ws['m_b']
 
         self._yields = RooArgList(ws.argSet('N_sig,N_psibkg,N_nonpsibkg'))
 
-        sigmid = 5367.4
-        sigwid = 15
         self._m.setRange('sigRegion',sigmid-sigwid,sigmid+sigwid)
         self._m.setRange('leftSideband',self._m.getMin(),sigmid-sigwid)
         self._m.setRange('rightSideband',sigmid+sigwid,self._m.getMax())
@@ -417,36 +418,44 @@ class MassPdfBuilder :
 
 
 
-def declareObservables( ws ):
+def declareObservables( ws, mode ):
     from math import pi
 
-    # transvercity angles
-    ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f]}"%(-pi,pi))
-    ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
-    # helicity angles. we can also compute these from the transversity angles and add them as columns
-    ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
-    ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
+    if mode in [ 'Bs2Jpsiphi', 'Bd2JpsiKstar' ] :
+        # transvercity angles
+        ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f]}"%(-pi,pi))
+        ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
+        # helicity angles. we can also compute these from the transversity angles and add them as columns
+        ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
+        ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
+
     # tag 
-    ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
+    ws.factory("tagdecision[bbar=+1,b=-1,untagged=0]")
     ws.factory("tagomega[0,0.500001]")
+
+    ws.factory("decaytype[JpsiKplus=10,JpsiKmin=11,JpsiKstar0=20,JpsiKstarbar0=21,Jpsiphi=40]")
 
 
     # B, jpsi, phi mass
     #ws.factory("m[5200,5450]")
     #ws.factory("m[5250,5450]")
-    ws.factory("m[%f,%f]"%(5366-50,5366+50))
     ws.factory("mdau1[%f,%f]"%(3097-60,3097+40))
     #ws.factory("mdau1[%f,%f]"%(3097-60,3097+50))
-    ws.factory("mdau2[%f,%f]"%(1019.455-12,1019.455+12)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background -- but the roadmap uses +- 12 instead...
+    if mode == 'Bs2Jpsiphi' :
+        ws.factory("m[%f,%f]"%(5366-50,5366+50))
+        ws.factory("mdau2[%f,%f]"%(1019.455-12,1019.455+12)) ### Note: +- 10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the background -- but the roadmap uses +- 12 instead...
+    if mode == 'Bd2JpsiKstar' :
+        ws.factory("mdau2[%f,%f]"%(892-50,892+50))
+    if mode in [ 'Bu2JpsiK','Bd2JpsiKstar' ]:
+        ws.factory("m[%f,%f]"%(5279-50,5279+50))
     # time , time-error
     ws.factory("{t[-4,10],sigmat[0.005,0.1]}")
 
     # define a set for the observables (we can also define this from the pdf and data.
-    ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,tagomega,tagdecision") 
-
-    # the next is something we may need to switch on or off, depending on whether we use a pdf for sigmat
-    #ws.defineSet("conditionalobservables","sigmat,tagomega")
-    ws.defineSet("conditionalobservables","sigmat")
+    if mode in [ 'Bs2Jpsiphi', 'Bd2JpsiKstar' ] :
+        ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,tagomega,tagdecision,decaytype") 
+    else :
+        ws.defineSet("observables","m,t,sigmat,mdau1,tagomega,tagdecision,decaytype") 
 
 ##
 ## call with buildTagging(ws, name, [ 0.25, 0.35, 0.45 ] ) 
