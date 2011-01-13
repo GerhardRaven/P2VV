@@ -25,78 +25,69 @@ stash = []
 from ModelBuilders import *
 ws = RooWorkspace('ws')
 
-sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
-bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
-nonpsicolor = RooCmdArg(RooFit.LineColor(RooFit.kOrange))
+#mode = 'Bu2JpsiK'
+mode = 'Bs2Jpsiphi'
 
-declareObservables(ws)
-file = TFile('Bs2JpsiPhiTuple.root')
+declareObservables(ws,mode)
+
+files = { 'Bu2JpsiK'  : 'Bu2JpsiKTuple.root'
+        , 'Bs2Jpsiphi': 'Bs2JpsiPhiTuple.root'
+        , 'Bd2JpsiKstar' : 'Bd2JpsiKstarTuple.root'
+        }
 obs = ws.set('observables')
-angles = ws.set('helicityangles')
-obs.add( angles )
+if mode != 'Bu2JpsiK' : 
+    angles = ws.set('helicityangles')
+    obs.add( angles )
+
+file = TFile(files[mode])
 data = RooDataSet('data','data',file.Get('dataset'),obs,'t==t && m==m')
 
 
-#data
-#sigmam_sigdata  = RooDataSet("sigmam_sig","sigmam_sig",data,data.get(),"(t>0.3)& (5365-15)<m&m<(5365+15)")
-#sigmam_bkgdata  = RooDataSet("sigmam_bkg","sigmam_bkg",data,data.get(),"(t<0.3)& ( m<(5365-20) | (5365+20<m) )
-#sigmam_data = RooDataHist("sigmam_%s_data"%sample,"hist m Err Per Ev",RooArgSet(sigmam),data)
-#sigmat_pdf = ws.put(RooHistPdf("sigmam_%s"%sample,"sigmat_%s"%sample,RooArgSet(sigmat),stdata[sample])) # ,2)
-
-# todo: make this a J/psi phi builder, so that we can also have a J/psi K* one ;-]
-#       and we can tweak the initial values of the masses, set the right mass windows...
-mb = MassPdfBuilder(ws,ws['m'],ws['mdau1'],ws['mdau2']) 
+mb = MassPdfBuilder(ws,ws['m'],ws['mdau1'],ws['mdau2'] if mode != 'Bu2JpsiK' else None,mode)
                                             
-
 ####
 c = TCanvas()
 c.Divide(2,3)
 
 ### TODO: move these plots into the mass PDF builder...
 if True :
-    c.cd(1)
     mdau1pdf = mb.dau1Pdf()
     mdau1pdf.fitTo(data,ncpu)
     for i in mdau1pdf.getParameters(data): i.setConstant(True)
-    f_dau1 = mb.dau1Obs().frame()
-    data.plotOn(f_dau1)
-    mdau1pdf.plotOn(f_dau1,sigcolor)
-    mdau1pdf.plotOn(f_dau1,nonpsicolor,RooFit.Components("*bkg*"))
-    f_dau1.Draw()
+    comps = { 'mpsi_sig'       : ( sigcolor,dashed )
+            , 'mpsi_bkg'       : ( bkgcolor,dashed ) 
+            }
+    plot ( c.cd(1), mb.dau1Obs(), data, mdau1pdf, comps, frameOpts = None, dataOpts = (ms,xes), pdfOpts = (lw,) )
 
-if True:
+if True and mode != 'Bu2JpsiK' :
     c.cd(2)
     mdau2pdf = mb.dau2Pdf()
     mdau2pdf.fitTo(data,ncpu)
     for i in mdau2pdf.getParameters(data) : i.setConstant(True)
-    f_dau2 = mb.dau2Obs().frame()
-    data.plotOn(f_dau2)
-    mdau2pdf.plotOn(f_dau2,sigcolor)
-    mdau2pdf.plotOn(f_dau2,nonpsicolor,RooFit.Components("*bkg*"))
-    f_dau2.Draw()
+    comps = { 'mphi_sig'       : ( sigcolor,dashed )
+            , 'mphi_bkg'       : ( bkgcolor,dashed ) 
+            }
+    plot ( c.cd(2), mb.dau2Obs(), data, mdau2pdf, comps, frameOpts = None, dataOpts = (ms,xes), pdfOpts = (lw,) )
 
 if True :
     mpdf = mb.Pdf()
-    ws['N_sig'].setVal(1000)
-    ws['N_psibkg'].setVal( 0.6*(data.numEntries()- ws['N_sig'].getVal())/2 )
+    ws['N_sig'].setVal(1000)  # 13K for J/psi K+
+    ws['N_psibkg'].setVal( 0.6*(data.numEntries()- ws['N_sig'].getVal()) )
     ws['N_nonpsibkg'].setVal( 0.4*(data.numEntries()- ws['N_sig'].getVal()) )
     mpdf.fitTo(data,ncpu)
     for i in mpdf.getParameters(data) : i.setConstant(True)
     ## TODO: at some point, we need to add the KK mass to the story...
     for i,obs in enumerate( [ mb.Obs(), mb.dau1Obs()])  : #  , mb.dau2Obs() ] ):
         # TODO: plot current in signal of other, sideband of other....
-        c.cd(3+i)
-        frame = obs.frame()
-        data.plotOn(frame)
-        mpdf.plotOn(frame,RooFit.Components("m_sig"), sigcolor,dashed,lw)
-        mpdf.plotOn(frame,RooFit.Components("m_psibkg"), bkgcolor,dashed,lw)
-        mpdf.plotOn(frame,RooFit.Components("m_nonpsibkg"), nonpsicolor,dashed,lw)
-        mpdf.plotOn(frame,lw)
-        frame.Draw()
-#import sys
-#sys.exit(0)
+        comps = { 'm_sig'       : ( sigcolor,dashed )
+                , 'm_psibkg'    : ( bkgcolor,dashed ) 
+                , 'm_nonpsibkg' : ( nonpsicolor,dashed )
+                }
+        plot( c.cd(3+i), obs, data, mpdf, comps, frameOpts = None, dataOpts = (ms,xes), pdfOpts = (lw,) )
 
 c.Print("InitialMassFits.eps")
+#import sys
+#sys.exit(0)
 
 ### Now that we have the masses fitted, let's make angle SPlots...
 ## TODO: move this into the mass PDF builder...
@@ -106,7 +97,7 @@ for i in mpdf.getParameters(data) : i.setConstant( i not in mb.yields() )
 splot = RooStats.SPlot("splotdata","splotdata",data,mpdf,mb.yields())
 wdata = splot.GetSDataSet()
 
-if True :
+if False :
     c = TCanvas()
     c2 = TCanvas()
     stash.append(c)
@@ -152,7 +143,7 @@ for (f,sample) in enumerate([ 'sig','psibkg','nonpsibkg' ]):
       dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","N_%s_sw"%sample) 
       stdata[sample] = RooDataHist("sigmat_%s_data"%sample,"hist Err Per Ev",RooArgSet(sigmat),dataw)
       stpdf[sample] = ws.put(RooHistPdf("sigmat_%s"%sample,"sigmat_%s"%sample,RooArgSet(sigmat),stdata[sample])) # ,2)
-      #stdata[sample].plotOn(p) # python has trouble finding the right plotOn...
+      dataw.plotOn(p) # python has trouble finding the right plotOn...
       stpdf[sample].plotOn(p,RooFit.LineColor( [kRed,kBlue,kBlack][f]))
 p.Draw()
       
@@ -171,14 +162,25 @@ if True :
 
     # create a dummy signal PDF...
     ws.factory("PROD::t_sig( Decay(t,t_sig_tau[1.5,1.2,1.8],tres_sig,SingleSided)|sigmat,sigmat_sig)")
+    # map decision=+1,JpsiK+ to correct, decision=-1,J/psiKmin to incorrect
+    #  ws.factory( "MultiCategory({decaytype,tagdecision}")
+    #  ws.factory( "MappedCategory::rmc( JpsiKplus, 0)")
+    #  rmc = ws['rmc']
+    #  rmc.map('{JpsiKplus,bbar},unmix,+1')
+    #  rmc.map('{JpsiKmin,b},unmix,+1')
+    #  rmc.map('{JpsiKplus,b},mix,-1')
+    #  rmc.map('{JpsiKmin,bbar},mix,-1')
+    # ws.factory( Efficiency::tag_sig( unmix,w )
     ### and now multiply and sum together...
     # now add the flavour tagging -- pretend we are J/psi K+, and just fit for 
     # tagging efficiency. Nothing more.
-    ws.factory("PROD::sig(       m_sig,       t_sig       , tagcat_sig        )")
-    ws.factory("PROD::psibkg(    m_psibkg,    t_psibkg    , tagcat_psibkg     )")
-    ws.factory("PROD::nonpsibkg( m_nonpsibkg, t_nonpsibkg , tagcat_nonpsibkg  )")
-    ## ws.PROD('foo',(m_sig,t_sig,tagcat_sig),Conditional = sigmat)
+    #ws.factory("PROD::sig(       m_sig,       t_sig       , tagcat_sig        )")
+    #ws.factory("PROD::psibkg(    m_psibkg,    t_psibkg    , tagcat_psibkg     )")
+    #ws.factory("PROD::nonpsibkg( m_nonpsibkg, t_nonpsibkg , tagcat_nonpsibkg  )")
 
+    ws.factory("PROD::sig(       m_sig,       t_sig         )")
+    ws.factory("PROD::psibkg(    m_psibkg,    t_psibkg      )")
+    ws.factory("PROD::nonpsibkg( m_nonpsibkg, t_nonpsibkg   )")
 
 else :
     ws.factory("wtag[0.5]")
@@ -198,14 +200,10 @@ else :
     ws.factory("PROD:psibkg(    m_psibkg,    t_psibkg,    %s )" % x.psibkgPdf().GetName())
     ws.factory("PROD:nonpsibkg( m_nonpsibkg, t_nonpsibkg, %s )" % x.nonpsibkgPdf().GetName())
 
-ws['N_sig'].setVal(970)
-ws['N_psibkg'].setVal( 0.6*(data.numEntries()- ws['N_sig'].getVal())/2 )
-ws['N_nonpsibkg'].setVal( 0.4*(data.numEntries()- ws['N_sig'].getVal()) )
 ws.factory("SUM::pdf(f_sig[0.1,0,0.4]*sig, SUM(f_psi[0.5,0.1,0.9]*psibkg,nonpsibkg))")
 
 pdf = ws['pdf']
-pdf.getParameters(data).readFromFile('initialvalues.txt')
-#for i in mpdf.getParameters(data) : i.setConstant(False) # bad idea... maybe just float the Bs width....
+pdf.getParameters(data).readFromFile('initialvalues_%s.txt'%mode)
 ws['m_sig_sigma'].setConstant(False)
 ws['m_sig_sigma2'].setConstant(False)
 ws['m_sig_f1'].setConstant(False)
@@ -214,7 +212,7 @@ ws['m_sig_fpsi'].setConstant(False)
 ### Maybe we should first fit the three time splots with the three components to get them 
 ### to a reasonable starting point??
 result = pdf.fitTo(data,ncpu,RooFit.Save(True),RooFit.Minos(false))
-pdf.getParameters(data).writeToFile('fitresult.txt')
+pdf.getParameters(data).writeToFile('fitresult_%s.txt'%mode)
 
 t = ws['t']
 m = ws['m']
@@ -258,7 +256,7 @@ _c4 = plot( c.cd(4),sigmat,data,pdf,comps
 #===========================================================================================================
 _c5 = plot( c.cd(5), t, data, pdf, comps
           , frameOpts = ( RooFit.Range(-0.4,0.4), RooFit.Bins(100), RooFit.Title('proper time, full mass range') )
-          , dataOpts = ( ms,xes,err )
+          , dataOpts = ( ms,xes )
           , pdfOpts = ( lw, )
           )
 #===========================================================================================================
