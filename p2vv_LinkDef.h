@@ -8,6 +8,7 @@
 #pragma link C++ class RooMultiCatGenerator;
 #pragma link C++ class RooThresholdPdf;
 #pragma link C++ class RooGammaPdf;
+#pragma link C++ class RooBTagDecay;
 #pragma link C++ class IMoment;
 #pragma link C++ class Moment;
 #pragma link C++ class EffMoment;

@@ -7,6 +7,7 @@
 #include "RooSpHarmonic.h"
 #include "RooMultiCatGenerator.h"
 #include "RooThresholdPdf.h"
+#include "RooBTagDecay.h"
 #include "RooGammaPdf.h"
 #include "moments.h"
 
