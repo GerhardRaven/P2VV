@@ -25,8 +25,8 @@ stash = []
 from ModelBuilders import *
 ws = RooWorkspace('ws')
 
-#mode = 'Bu2JpsiK'
-mode = 'Bs2Jpsiphi'
+mode = 'Bu2JpsiK'
+#mode = 'Bs2Jpsiphi'
 
 declareObservables(ws,mode)
 
@@ -52,6 +52,7 @@ c.Divide(2,3)
 ### TODO: move these plots into the mass PDF builder...
 if True :
     mdau1pdf = mb.dau1Pdf()
+    mdau1pdf.getParameters(data).readFromFile('initialvalues_%s.txt'%mode,'ReadFromFile','Mass')
     mdau1pdf.fitTo(data,ncpu)
     for i in mdau1pdf.getParameters(data): i.setConstant(True)
     comps = { 'mpsi_sig'       : ( sigcolor,dashed )
@@ -62,6 +63,7 @@ if True :
 if True and mode != 'Bu2JpsiK' :
     c.cd(2)
     mdau2pdf = mb.dau2Pdf()
+    mdau2pdf.getParameters(data).readFromFile('initialvalues_%s.txt'%mode,'ReadFromFile','Mass')
     mdau2pdf.fitTo(data,ncpu)
     for i in mdau2pdf.getParameters(data) : i.setConstant(True)
     comps = { 'mphi_sig'       : ( sigcolor,dashed )
@@ -71,9 +73,7 @@ if True and mode != 'Bu2JpsiK' :
 
 if True :
     mpdf = mb.Pdf()
-    ws['N_sig'].setVal(1000)  # 13K for J/psi K+
-    ws['N_psibkg'].setVal( 0.6*(data.numEntries()- ws['N_sig'].getVal()) )
-    ws['N_nonpsibkg'].setVal( 0.4*(data.numEntries()- ws['N_sig'].getVal()) )
+    mpdf.getParameters(data).readFromFile('initialvalues_%s.txt'%mode,'ReadFromFile','Mass')
     mpdf.fitTo(data,ncpu)
     for i in mpdf.getParameters(data) : i.setConstant(True)
     ## TODO: at some point, we need to add the KK mass to the story...
@@ -196,8 +196,10 @@ else :
 ws.factory("SUM::pdf(f_sig[0.1,0,0.4]*sig, SUM(f_psi[0.5,0.1,0.9]*psibkg,nonpsibkg))")
 
 pdf = ws['pdf']
-pdf.getParameters(data).readFromFile('initialvalues_%s.txt'%mode)
+pdf.getParameters(data).readFromFile('initialvalues_%s.txt'%mode,'ReadFromFile','Time')
 ws['m_sig_sigma'].setConstant(False)
+#ws['m_sig_f1'].setConstant(False)
+#ws['m_sig_sigma2'].setConstant(False)
 result = pdf.fitTo(data,ncpu,RooFit.Save(True),RooFit.Minos(false))
 pdf.getParameters(data).writeToFile('fitresult_%s.txt'%mode)
 
@@ -206,7 +208,7 @@ m = ws['m']
 t.setRange('largeTime',0.3,t.getMax())
 
 c = TCanvas()
-c.Divide(4,2)
+c.Divide(5,2)
 
 #===========================================================================================================
 bkgcomps = { 'psibkg'    : ( bkgcolor,dashed ) 
@@ -224,44 +226,50 @@ _c1 = plot( c.cd(1),ws['mdau1'],data,pdf,comps
           , pdfOpts = ( lw, ) 
           )
 #===========================================================================================================
-_c2 = plot( c.cd(2),m,data,pdf,comps
+_c2 = plot( c.cd(2),ws['mdau1'],data,pdf,comps
+          , frameOpts = ( RooFit.Bins(50), RooFit.Title('m(#mu#mu) (t>0.3)') )
+          , dataOpts = ( ms, xes, RooFit.CutRange('largeTime') )
+          , pdfOpts = ( lw, RooFit.ProjectionRange('largeTime') ) 
+          )
+#===========================================================================================================
+_c3 = plot( c.cd(3),m,data,pdf,comps
           , frameOpts = ( RooFit.Bins(50), RooFit.Title('m') )
           , dataOpts = ( ms, xes )
           , pdfOpts = ( lw, ) 
           )
 #===========================================================================================================
-_c3 = plot( c.cd(3),m,data,pdf,comps
+_c4 = plot( c.cd(4),m,data,pdf,comps
           , frameOpts = ( RooFit.Bins(50), RooFit.Title('m (t>0.3)') )
           , dataOpts = ( ms, xes, RooFit.CutRange('largeTime') )
           , pdfOpts = ( lw, RooFit.ProjectionRange('largeTime') ) 
           )
 #===========================================================================================================
-_c4 = plot( c.cd(4),sigmat,data,pdf,comps
+_c5 = plot( c.cd(5),sigmat,data,pdf,comps
           , dataOpts = ( ms, xes )
           , pdfOpts = ( lw, ) 
           )
 #===========================================================================================================
-_c5 = plot( c.cd(5), t, data, pdf, comps
+_c6 = plot( c.cd(6), t, data, pdf, comps
           , frameOpts = ( RooFit.Range(-0.4,0.4), RooFit.Bins(100), RooFit.Title('proper time, full mass range') )
           , dataOpts = ( ms,xes )
           , pdfOpts = ( lw, )
           )
 #===========================================================================================================
-_c6 = plot( c.cd(6), t, data, pdf, comps
+_c7 = plot( c.cd(7), t, data, pdf, comps
           , frameOpts = ( RooFit.Title('proper time, signal region'), )
           , dataOpts = ( ms,xes,RooFit.CutRange('sigRegion') )
           , pdfOpts = ( lw,RooFit.ProjectionRange('sigRegion') )
           , logy = True
           )
 #===========================================================================================================
-_c7 = plot( c.cd(7), t, data, pdf, bkgcomps
+_c8 = plot( c.cd(8), t, data, pdf, bkgcomps
           , frameOpts = ( RooFit.Title('proper time, lower sideband'), )
           , dataOpts = ( ms,xes,RooFit.CutRange('leftSideband') )
           , pdfOpts = ( lw,RooFit.ProjectionRange('leftSideband') )
           , logy = True
           )
 #===========================================================================================================
-_c8 = plot( c.cd(8), t, data, pdf, bkgcomps
+_c9 = plot( c.cd(9), t, data, pdf, bkgcomps
           , frameOpts = ( RooFit.Title('proper time, upper sideband'), )
           , dataOpts = ( ms,xes,RooFit.CutRange('rightSideband') )
           , pdfOpts = ( lw,RooFit.ProjectionRange('rightSideband') )
@@ -269,6 +277,7 @@ _c8 = plot( c.cd(8), t, data, pdf, bkgcomps
           )
 
 
+c.Print("FinalPlots.eps")
 
 
 if False :
