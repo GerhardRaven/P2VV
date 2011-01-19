@@ -227,8 +227,9 @@ class TimeResolutionBuilder :
                # for now, the mean is forced to zero by the GExpModel code...
                ws.factory("{tres_%s_s2[1.5,0.9,3.0],tres_%s_l[1.,20.0]}"%(name,name))
                # choice: either scale lifetime with error or not... let's first try an absolute lifetime...
-               ws.factory("GExpModel::tres_%s_2_gexpr(%s,tres_%s_s2,tres_%s_l,%s,%s,kFALSE,Normal)"%(name,t.GetName(),name,name,sigmat.GetName(),sigmat.GetName()))
-               ws.factory("GExpModel::tres_%s_2_gexpl(%s,tres_%s_s2,tres_%s_l,%s,%s,kFALSE,Flipped)"%(name,t.GetName(),name,name,sigmat.GetName(),sigmat.GetName()))
+               # try to use the same width as in the first Gaussian!
+               ws.factory("GExpModel::tres_%s_2_gexpr(%s,tres_%s_s1,tres_%s_l,%s,%s,kFALSE,Normal)"%(name,t.GetName(),name,name,sigmat.GetName(),sigmat.GetName()))
+               ws.factory("GExpModel::tres_%s_2_gexpl(%s,tres_%s_s1,tres_%s_l,%s,%s,kFALSE,Flipped)"%(name,t.GetName(),name,name,sigmat.GetName(),sigmat.GetName()))
                ws.factory(" AddModel::tres_%s_2({tres_%s_2_gexpl,tres_%s_2_gexpr},{half[0.5]})"%(name,name,name))
 
             ws.factory("AddModel::tres_%s({tres_3,tres_%s_2,tres_%s_1},{tres_%s_f3[0.001,0.00,0.02],tres_%s_f2[0.2,0.01,1]})" % (name,name,name,name,name))
@@ -456,7 +457,7 @@ def declareObservables( ws, mode ):
     if mode in [ 'Bu2JpsiK','Bd2JpsiKstar' ]:
         ws.factory("m[%f,%f]"%(5279-50,5279+50))
     # time , time-error
-    ws.factory("{t[-4,10],sigmat[0.005,0.1]}")
+    ws.factory("{t[-4,10],sigmat[0.005,0.1]}")  # Note 2 uses [0.3,14] -- so maybe switch to [-4,14] instead...
 
     # define a set for the observables (we can also define this from the pdf and data.
     if mode in [ 'Bs2Jpsiphi', 'Bd2JpsiKstar' ] :
