@@ -26,8 +26,8 @@ pdf = w[pdfName]
 data = w[dataName] 
 allObs = pdf.getObservables( data.get() )
 
-# TODO: use predefined 'transversityangles' set, never refer to them by explicit name
-angles = w.argSet("trcospsi,trcostheta,trphi")
+#angles = w.argSet("transversityangles")
+angles = w.set("helicityangles")
 
 #replace input by inefficient data
 eps = efficiency( angles )

@@ -182,23 +182,24 @@ def buildMomentPDF(w,name,data,moments) :
         fact.add( m.basis() )
     return w.put( RooRealSumPdf(name,name,fact,coef) )
 
-def buildMoment_x_PDF(w,name,pdf,moments) :
-   if not moments : return pdf
+def buildEff_x_PDF(w,name,pdf,eff) :
+   if not eff : return pdf
    # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
-   # of "pdf" with their efficiency corrected versions, multiply them with the right moment basis & coefficient...
+   # of "pdf" with their efficiency corrected versions, multiply them with the right basis fcn & coefficent
+   # those are assumed to be in eff....
    customizer = RooCustomizer(pdf,name)
    for c in pdf.getComponents() :
         if type(c) is not RooP2VVAngleBasis : continue
         name = "%s_eff" % c.GetName()
         s = RooArgSet()
-        [ s.add( c.createProduct( m.basis() , m.coefficient()) ) for m in moments ]
+        [ s.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
         rep = w.put( RooAddition_( name, name, s, True ) )  # hand over ownership & put in workspace...
         customizer.replaceArg( c, rep )
    return customizer.build(True)
 
 def buildEffMomentsPDF(w,name,pdf,data,moments) :
-    computeMoments(data,moments)
-    return buildMoment_x_PDF(w,name,pdf,moments)
+   computeMoments(data,moments)
+   return buildEff_x_PDF(w,name,pdf,[ ( m.basis() , m.coefficient() ) for m in moments ] )
 
 class TimeResolutionBuilder :
     # TODO: build a PDF for sigmat (eg. RooHistPdf, RooThresholdPdf... or the sum of two gamma functions....)
@@ -569,8 +570,8 @@ def definePolarAngularAmplitudes(ws):
     ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
     
 def defineJPsiPhiPhysicsParams(ws):
-    ws.factory("{gamma[0.68,0.4,0.9],dm[17.7],dG[0.05,-0.3,0.3]}")
-    ws.factory("expr::tau('1/@0',{gamma})")
+    ws.factory("{gamma[0.68,0.4,0.9],t_sig_dm[17.7],t_sig_dG[0.05,-0.3,0.3]}")
+    ws.factory("expr::t_sig_tau('1/@0',{gamma})")
     ##choice: either fit for the three degrees of freedom independently
     ##        i.e. make S,D,C independent parameters
     ##ws.factory("{S[0.717,-1,1],D[0.696,-1,1],C[0,-1,1]}")
