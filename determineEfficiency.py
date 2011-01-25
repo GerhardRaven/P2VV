@@ -65,8 +65,7 @@ computeMoments(data,moments)
 
 # compute the 'canonical' moments given the Fourier series
 c = dict()
-for m in moments :
-   c[ ( m.basis().i(),m.basis().l(),m.basis().m() ) ] = m.coefficient()
+for m in moments : c[ ( m.basis().i(),m.basis().l(),m.basis().m() ) ] = m.coefficient()
 
 from math import sqrt,pi
 xi_c = { 'AparApar_basis'   :   ( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
@@ -105,21 +104,3 @@ for (i,var) in enumerate(angles) :
      plot.Draw()
 c.Flush()
 
-#
-#xi = { 'parpar' : 1
-#     , '00'     : 1
-#     , 'perpperp' : 1
-#     , 'perp0'  : 0,
-#     , 'par0'   : 0,
-#     , 'parperp' : 0 ] # TODO: verify signconvention!!!
-#
-#coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 )
-#       , (2,0,0,   ( xi['00']-xi['parpar'] )*float(5)/3      )
-#       , (0,2,0,   ( xi['parpar']-xi['perpperp'] ) * sqrt(float(20)/9) )
-#       , (0,2,-1,  ( xi['parperp'] ) * sqrt(float(5)/3) )
-#       , (1,2,1,   ( xi['perp0'] ) * sqrt(float(5)/6) * float(32)/(3*pi) )
-#       , (1,2,-1 , ( xi['par0'] ) * sqrt(float(5)/6)*float(32)/(3*pi) )
-#       ]
-#
-# pdf = buildEff_x_PDF(w,'eff',pdf,[ ab.build('mom_eff',c[0],0,c[1],c[2],1.), c[3] for c in coef ] )
-       
