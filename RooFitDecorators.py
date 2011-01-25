@@ -8,8 +8,7 @@ gROOT.SetStyle("Plain")
 from ROOT import * 
 
 def _RooDataSetIter(self) :
-    for i in range( self.numEntries() ) :
-        yield self.get(i)
+    for i in range( self.numEntries() ) : yield self.get(i)
 
 RooDataSet.__iter__ = _RooDataSetIter
 

@@ -426,7 +426,7 @@ i.e.
     \xi_{00}                 &=& \frac{8 \sqrt{\pi}}{9} \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
     \xi_{\perp\perp}         &=& \frac{8 \sqrt{\pi}}{9} \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
     \xi_{\parallel\perp}     &=& \frac{8 \sqrt{\pi}}{9} \sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
-    \xi_{\perp 0}            &=& \frac{8 \sqrt{\pi}}{9} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
+    \xi_{\perp 0}            &=& -\frac{8 \sqrt{\pi}}{9} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
     \xi_{0\parallel}         &=& \frac{8 \sqrt{\pi}}{9} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+... \right) 
 \end{eqnarray}
 
@@ -443,6 +443,18 @@ terms matters, it is clear that only a subset the Fourier components needs to be
 perform the fit. Of course additional terms will improve the visual results when plotting 
 differential distributions.
 
+In case only the $\xi_{ab}$ are known, and an equivalent set of $c^i_{jk}$ is required, the 
+following may be used:
+\begin{eqnarray}
+ c^0_{00}  &=&  \frac{1}{3}( \xi_{\parallel \parallel }+\xi_{00}+\xi_{\perp\perp} )     \\
+ c^2_{00}  &=& \frac{5}{3} ( \xi_{00} - \xi_{\parallel \parallel } )    \\
+ c^0_{20}  &=& \frac{2}{3}\sqrt{5} ( \xi_{\parallel \parallel } - \xi_{\perp\perp} )    \\
+ c^0_{2-1} &=& \sqrt{\frac{5}{3}}  \xi_{\parallel \perp}    \\
+ c^1_{21}  &=& - \frac{32}{3\pi}\sqrt{\frac{5}{6}} \xi_{\perp0}    \\
+ c^1_{2-2} &=&   \frac{32}{3\pi}\sqrt{\frac{5}{6}}  \xi_{0\parallel }
+\end{eqnarray}
+Note that this choice is not unique, but will (should)  reproduce the same minimum as a fit which used
+the $\xi_{ab}$.
 
 
 %TODO: take into account ${\cal D} = 1-2( <w_i> + q_T \frac{\Delta w_i}{2})$, i.e. sum over $q_T$ may not fully cancel some terms...
@@ -479,18 +491,3 @@ where
 \end{document}
 
 
-%%%%%
-%%
-%%  definition of J/psi phi angular distribution: 
-%%  ijkl -> P_i^j Y_kl
-%%
-%%  A||* A||       x [  2200 = 1/9   2220 = 1/9*sqrt(1/20)  2222 = 1/9*sqrt(3/20) ]
-%%  Aperp* Aperp   x [  2200 = 1/9   2220 = 1/9*sqrt(1/ 5) ]
-%%  A0* A0         x [  0000 = 2/9   0020 = 1/9*sqrt(1/ 5)  0022  = 1/9*sqrt(3/5)    2000 = 4/9    2020 = 2/9*sqrt(1/5)   2022 = 2/9*sqrt(3/5) ]
-%%  Im(A//* Aperp) x [  222-1 = 1/3 sqrt(1/15) ]
-%%  Im(Aperp* A0)  x [  2121  = 1/3 sqrt(2/15) ]
-%%  Re(A0*  Apar)  x [  212-2 = 1/3 sqrt(2/15) ]
-%%
-%%  and multiply everything with sqrt(4pi)
-%%
-%%%%%
