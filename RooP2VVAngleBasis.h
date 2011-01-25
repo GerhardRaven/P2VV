@@ -38,6 +38,11 @@ public:
       return !basis._prod ? createProduct( basis._i, basis._j, basis._l, basis._m, c*basis._c ): 0;
   }
 
+  int i() const { return _i; }
+  int j() const { return _j; }
+  int l() const { return _l; }
+  int m() const { return _m; }
+
 private: 
   double _c;
   int _i,_j,_l,_m;
