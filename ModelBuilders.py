@@ -89,7 +89,6 @@ def buildJpsiphi(ws, name, transversity ) : # TODO: add tagsplit
     ws.factory("expr::N('1.0/(1.0+@0*@1)',{tagdecision,C})")
     ws.factory("Minus[-1]")
 
-    ws.factory("$Alias(Addition_,sum_)")
 
     # TODO: move this bit into a derivative of RooBDecay, and do tagdecision explicitly
     #       -- at that point, FOAM will do the angles, and we avoid the max search
@@ -108,6 +107,7 @@ def buildJpsiphi(ws, name, transversity ) : # TODO: add tagsplit
     # Note that we can use a RooCustomizer to automate the replacement of
     # fjpsiphi_sinh and fjpsiphi_sin, but the qtag in N is more tricky...
 
+    ws.factory("$Alias(Addition_,sum_)")
     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
                                    ", prod(N,NAparApar,                AparApar_basis)"
                                    ", prod(N,NAperpAperp,              AperpAperp_basis)"
@@ -190,10 +190,10 @@ def buildEff_x_PDF(w,name,pdf,eff) :
    customizer = RooCustomizer(pdf,name)
    for c in pdf.getComponents() :
         if type(c) is not RooP2VVAngleBasis : continue
-        name = "%s_eff" % c.GetName()
+        n = "%s_%s_eff" % (name,c.GetName())
         s = RooArgSet()
         [ s.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
-        rep = w.put( RooAddition_( name, name, s, True ) )  # hand over ownership & put in workspace...
+        rep = w.put( RooAddition_( n, n, s, True ) )  # hand over ownership & put in workspace...
         customizer.replaceArg( c, rep )
    return customizer.build(True)
 
@@ -439,7 +439,7 @@ def declareObservables( ws, mode ):
         ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
 
     # tag 
-    ws.factory("tagdecision[bbar=+1,b=-1,untagged=0]")
+    ws.factory("tagdecision[bbar=+1,b=-1]")
     ws.factory("tagomega[0,0.500001]")
 
     ws.factory("decaytype[JpsiKplus=10,JpsiKmin=11,JpsiKstar0=20,JpsiKstarbar0=21,Jpsiphi=40]")
@@ -560,8 +560,9 @@ def definePolarAngularAmplitudes(ws):
     ##        or fit in terms of angles and relative magnitudes
     ##         Note: initial values from arXiv:0704.0522v2 [hep-ex] BaBar PUB-07-009
     # ws.factory("{rz[0.556],rpar[0.211],rperp[0.233]}")
+    from math import pi
     ws.factory("{rz[0.463,0.0,1.0],rpar[0.211],rperp[0.347,0.0,1.0]}")
-    ws.factory("{deltaz[0],deltapar[-2.93],deltaperp[2.91]}")
+    ws.factory("{deltaz[0],deltapar[-2.93,%s,%s],deltaperp[2.91,%s,%s]}"%(-2*pi,2*pi,-2*pi,2*pi))
     ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
     ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
     ws.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})")
