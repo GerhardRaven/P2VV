@@ -3,6 +3,17 @@ from itertools import product,count
 from ModelBuilders import *
 from ROOT import *
 gSystem.Load("libp2vv.so")
+from math import sqrt,pi
+
+def compute_moments( c ) :
+    return { 'AparApar_basis'   :   ( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
+           , 'AzAz_basis'       :   ( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
+           , 'AperpAperp_basis' :   ( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
+           , 'AparAperp_basis'  :   sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
+           , 'AzAperp_basis'    : - sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 ) # - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16484) 
+           , 'AzApar_basis'     :   sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 ) #- 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16484)
+           }
+
 
 class efficiency :
     def __init__(self,*args) : 
@@ -15,7 +26,7 @@ class efficiency :
         from random import random
         return random() > ( x*x*y ) # /( 1 if z<0 else 1-z ) )
 
-fname="p2vv_9.root"
+fname="p2vv_10.root"
 pdfName = "jpsiphipdf"
 dataName = "jpsiphipdfData"
 workspaceName = "w"
@@ -24,6 +35,8 @@ f = TFile(fname)
 w = f.Get(workspaceName) 
 pdf = w[pdfName]
 data = w[dataName] 
+
+
 allObs = pdf.getObservables( data.get() )
 
 angles = w.set("transversityangles")
@@ -35,6 +48,7 @@ inEffData = RooDataSet( "inEffData","inEffData", allObs )
 for event in  data :
     allObs.assignValueOnly( event )
     if eps.accept() : inEffData.add( allObs )
+origdata = data
 data = inEffData;
           
 # define the moments used to describe the efficiency
@@ -54,7 +68,7 @@ xi_m = dict( [ (m.basis().GetName(),m.coefficient()) for m in sixmom ] )
 # compute the Fourier series for the efficiency
 moments = []
 ab = abasis(w,angles)
-for (i,l) in product(range(10),range(4)) :
+for (i,l) in product(range(4),range(4)) :
     # if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
     # Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
     moments += [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, pdf_marginal, allObs ) for m in range(-l,l+1) ]
@@ -68,15 +82,7 @@ c = dict()
 for m in moments :
    c[ ( m.basis().i(),m.basis().l(),m.basis().m() ) ] = m.coefficient()
 
-from math import sqrt,pi
-xi_c = { 'AparApar_basis'   :   ( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
-       , 'AzAz_basis'       :   ( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
-       , 'AperpAperp_basis' :   ( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
-       , 'AparAperp_basis'  :   sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
-       , 'AzAperp_basis'    : - sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16484) 
-       , 'AzApar_basis'     :   sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 - 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16484)
-       }
-
+xi_c = compute_moments( c )
 # normalize moments and compare
 def norm_xi( d ) :
     n =  (d['AparApar_basis'] + d['AzAz_basis'] + d['AperpAperp_basis'])/3
@@ -89,9 +95,48 @@ for name in xi_c.iterkeys() :
 
 
 ## build PDF using the Fourier series efficiency...
-pdf_eff = buildEff_x_PDF(w,'_eff',pdf,[ ( m.basis() , m.coefficient() ) for m in moments ] )
+## TODO: normalize relative to 0000 so that c_000 = 1
+print 'using the following terms in Fourier expansion: '
+for n,c in [ ( m.basis().GetName() , m.coefficient() ) for m in moments if m.significance()>2] :
+    print '%s : %s ' % (n,c)
+# now compute the six moments with the terms we'll use only (i.e. put the other coefficients to zero)
+c_sup = dict()
+for m in moments :
+   c_sup[ ( m.basis().i(),m.basis().l(),m.basis().m() ) ] = m.coefficient() if m.significance()>2 else 0
+xi_c_sup = compute_moments( c_sup )
+
+pdf_eff = buildEff_x_PDF(w,'fourier_eff',pdf,[ ( m.basis() , m.coefficient() ) for m in moments if m.significance()>2] )
 
 ## build PDF using Fourier coefficients reverse engineered from the six moments...
+#
+coef = [ (0,0,0,   ( xi_m['AparApar_basis']+xi_m['AzAz_basis']+xi_m['AperpAperp_basis'])/3 )
+       , (2,0,0,   ( xi_m['AzAz_basis']-xi_m['AparApar_basis'] )*float(5)/3      )
+       , (0,2,0,   ( xi_m['AparApar_basis']-xi_m['AperpAperp_basis'] ) * sqrt(float(20)/9) )  # 1/[sqrt(1/20) + sqrt(1/5) ] = 1/[ 3/2 sqrt(1/5) ] = 2*sqrt(5)/3
+       , (0,2,-1,  ( xi_m['AparAperp_basis'] ) * sqrt(float(5)/3) ) 
+       , (1,2,1,   ( xi_m['AzAperp_basis'] ) * sqrt(float(5)/6) * float(32)/(3*pi) )
+       , (1,2,-1 , ( xi_m['AzApar_basis'] ) * sqrt(float(5)/6)*float(32)/(3*pi) )
+       ]
+#
+print 'reverse engineerd c_ijk:'
+print coef
+pdf_mom = buildEff_x_PDF(w,'reve_mom_eff',pdf,[ ( ab.build('reve_mom_eff',c[0],0,c[1],c[2],1.), c[3] ) for c in coef ] )
+
+print '*'*80
+print '*'*20 + ' fitting original PDF on original data'
+print '*'*80
+pdf.fitTo(origdata,RooFit.NumCPU(2))
+print '*'*80
+print '*'*20 + ' fitting original PDF on inefficient data'
+print '*'*80
+pdf.fitTo(data,RooFit.NumCPU(2))
+print '*'*80
+print '*'*20 + ' fitting reverse engineerd moment PDF on inefficient data'
+print '*'*80
+pdf_mom.fitTo(data,RooFit.NumCPU(2))
+print '*'*80
+print '*'*20 + ' fitting Fourier expansion efficiency PDF on inefficient data'
+print '*'*80
+pdf_eff.fitTo(data,RooFit.NumCPU(2))
 
 ### make some plots...
 c = TCanvas()
@@ -102,24 +147,6 @@ for (i,var) in enumerate(angles) :
      data.plotOn(plot); 
      pdf.plotOn(plot,RooFit.LineColor(kBlue))
      pdf_eff.plotOn(plot,RooFit.LineColor(kRed))
+     pdf_mom.plotOn(plot,RooFit.LineColor(kOrange))
      plot.Draw()
 c.Flush()
-
-#
-#xi = { 'parpar' : 1
-#     , '00'     : 1
-#     , 'perpperp' : 1
-#     , 'perp0'  : 0,
-#     , 'par0'   : 0,
-#     , 'parperp' : 0 ] # TODO: verify signconvention!!!
-#
-#coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 )
-#       , (2,0,0,   ( xi['00']-xi['parpar'] )*float(5)/3      )
-#       , (0,2,0,   ( xi['parpar']-xi['perpperp'] ) * sqrt(float(20)/9) )
-#       , (0,2,-1,  ( xi['parperp'] ) * sqrt(float(5)/3) )
-#       , (1,2,1,   ( xi['perp0'] ) * sqrt(float(5)/6) * float(32)/(3*pi) )
-#       , (1,2,-1 , ( xi['par0'] ) * sqrt(float(5)/6)*float(32)/(3*pi) )
-#       ]
-#
-# pdf = buildEff_x_PDF(w,'eff',pdf,[ ab.build('mom_eff',c[0],0,c[1],c[2],1.), c[3] for c in coef ] )
-       
