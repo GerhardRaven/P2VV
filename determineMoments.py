@@ -34,9 +34,11 @@ def doit(name, angles, tree, irange, lrange, mrange ) :
         hist = pdf.createHistogram( others.names() )
         pdf.fillHistogram( hist,others,1., RooArgSet(v))
         hist.Draw('COLZ')
+        #if i==0 : hist.Draw('SURF5 SPH') #hrmpf. doesn't work -- and even if it does, ROOT assume during the transformation that the hist is x vs. y, not cos(theta) vs phi...
+        #else : hist.Draw('COLZ')
         # hist.Draw('sinusoidal')
-        datahist = data.createHistogram( others.name() )
-        data.fillHistogram( datahist )
+        #datahist = data.createHistogram( others.names() )
+        #data.fillHistogram( datahist )
 
         mat = data.correlationMatrix( others )
         print mat
@@ -50,7 +52,7 @@ f = TFile(fname)
 tree = f.Get(dataName)
 
 w = RooWorkspace("w")
-declareObservables(w)
+declareObservables(w,'Bs2Jpsiphi')
 
 ## TODO: invoke mass fit, and compute SWeights
 #buildMassPDFs(w)
