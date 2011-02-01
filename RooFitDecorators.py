@@ -3,13 +3,12 @@ from ROOT import gStyle,gROOT
 gStyle.SetPalette(1)
 gROOT.SetStyle("Plain")
 
-# needed to get RooFit.Name, RooFit.Components....
+# needed to get RooFit.Name, RooFit.Components.... kRed
 # how to get just the RooFit namespace ?
 from ROOT import * 
 
 def _RooDataSetIter(self) :
-    for i in range( self.numEntries() ) :
-        yield self.get(i)
+    for i in range( self.numEntries() ) : yield self.get(i)
 
 RooDataSet.__iter__ = _RooDataSetIter
 
@@ -108,8 +107,12 @@ def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfO
         m  = max( abs( rh.getYAxisMin() ),abs( rh.getYAxisMax() ) )
         rp.SetMaximum(  m )
         rp.SetMinimum( -m )
+    if normalize :
+        if rh.getYAxisMin() > -5 : rp.SetMinimum(-5)
+        if rh.getYAxisMax() <  5 : rp.SetMaximum(5)
     xa = rp.GetXaxis()
     l = TLine(xa.GetXmin() ,0,xa.GetXmax() ,0)
+    l.SetLineColor(kRed)
     rp.addObject(l)
     #TODO: improve (remove?) axis labels from rp, move up against the initial plot
 

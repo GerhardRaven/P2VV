@@ -1,24 +1,25 @@
 from itertools import count
 from math import pi
-from ModelBuilders import buildJpsiphi,buildJpsikstar,declareObservables,definePolarAngularAmplitudes
+from ModelBuilders import buildJpsiphi,buildJpsikstar,declareObservables,definePolarAngularAmplitudes,defineJPsiPhiPhysicsParams
 from RooFitDecorators import *
 from ROOT import *
 
 ws = RooWorkspace('ws')
-declareObservables(ws)
+declareObservables(ws,'Bs2Jpsiphi')
 definePolarAngularAmplitudes(ws)
+defineJPsiPhiPhysicsParams(ws)
 
 ws.factory("RooGaussModel::tres_sig(t,mu[0],sigma[0.05])")
 
 ### split by category...
-ws.factory("{wmistag[0.0]}")
+ws.factory("{wtag[0.0]}")
 
 useTransversityAngles = False
 pdf = buildJpsiphi(ws,'jpsiphipdf',useTransversityAngles)  ## for now we rely quite a bit on a naming convention -- 
                                      ## in future we should pass more information into the builder
                                      ## maybe a dictionary of what's what...
 
-(tagcat,tagpdf) = buildTagging(w,'sigtag',[0.25,0.35,0.45])
+#(tagcat,tagpdf) = buildTagging(w,'sigtag',[0.25,0.35,0.45])
 # split wmistag by tagging category
 # multiply resulting PDF with tagpdf
 # fix mistag for untagged events to 0.5
@@ -36,7 +37,7 @@ for i in  range(len(p)+1) :
         for (j,x) in enumerate(p) : x.setVal( 1 if i==j+1 else 0 )
     for l in p.nameList() + ['deltaz','deltapar','deltaperp'] : ws.var(l).Print()
 
-    data = None  # pdf.generate( obs, 100000)
+    data = pdf.generate( obs, 100000)
     if data : 
         if i==0 : 
             ws.put(data)

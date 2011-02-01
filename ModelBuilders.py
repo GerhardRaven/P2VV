@@ -89,7 +89,6 @@ def buildJpsiphi(ws, name, transversity ) : # TODO: add tagsplit
     ws.factory("expr::N('1.0/(1.0+@0*@1)',{tagdecision,C})")
     ws.factory("Minus[-1]")
 
-    ws.factory("$Alias(Addition_,sum_)")
 
     # TODO: move this bit into a derivative of RooBDecay, and do tagdecision explicitly
     #       -- at that point, FOAM will do the angles, and we avoid the max search
@@ -108,6 +107,7 @@ def buildJpsiphi(ws, name, transversity ) : # TODO: add tagsplit
     # Note that we can use a RooCustomizer to automate the replacement of
     # fjpsiphi_sinh and fjpsiphi_sin, but the qtag in N is more tricky...
 
+    ws.factory("$Alias(Addition_,sum_)")
     ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
                                    ", prod(N,NAparApar,                AparApar_basis)"
                                    ", prod(N,NAperpAperp,              AperpAperp_basis)"
@@ -182,23 +182,24 @@ def buildMomentPDF(w,name,data,moments) :
         fact.add( m.basis() )
     return w.put( RooRealSumPdf(name,name,fact,coef) )
 
-def buildMoment_x_PDF(w,name,pdf,moments) :
-   if not moments : return pdf
+def buildEff_x_PDF(w,name,pdf,eff) :
+   if not eff : return pdf
    # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
-   # of "pdf" with their efficiency corrected versions, multiply them with the right moment basis & coefficient...
+   # of "pdf" with their efficiency corrected versions, multiply them with the right basis fcn & coefficent
+   # those are assumed to be in eff....
    customizer = RooCustomizer(pdf,name)
    for c in pdf.getComponents() :
         if type(c) is not RooP2VVAngleBasis : continue
-        name = "%s_eff" % c.GetName()
+        n = "%s_%s_eff" % (name,c.GetName())
         s = RooArgSet()
-        [ s.add( c.createProduct( m.basis() , m.coefficient()) ) for m in moments ]
-        rep = w.put( RooAddition_( name, name, s, True ) )  # hand over ownership & put in workspace...
+        [ s.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
+        rep = w.put( RooAddition_( n, n, s, True ) )  # hand over ownership & put in workspace...
         customizer.replaceArg( c, rep )
    return customizer.build(True)
 
 def buildEffMomentsPDF(w,name,pdf,data,moments) :
-    computeMoments(data,moments)
-    return buildMoment_x_PDF(w,name,pdf,moments)
+   computeMoments(data,moments)
+   return buildEff_x_PDF(w,name,pdf,[ ( m.basis() , m.coefficient() ) for m in moments ] )
 
 class TimeResolutionBuilder :
     # TODO: build a PDF for sigmat (eg. RooHistPdf, RooThresholdPdf... or the sum of two gamma functions....)
@@ -209,15 +210,30 @@ class TimeResolutionBuilder :
     def __init__(self,ws, t, sigmat) :
         if type(t)      is str : t      = ws[t]
         if type(sigmat) is str : sigmat = ws[sigmat]
+        # define outlier catcher
+        if false :
+            ws.factory("GaussModel::tres_3(%s,zero[0],tres_3_s[3,1,5])" % (t.GetName()) )
+        else :
+           ws.factory("{tres_3_l[1.7,0.9,3.0],tres_3_s[1,0.5,2]}")
+           ws.factory("GExpModel::tres_3_gexpr(%s,tres_3_s,tres_3_l,kFALSE,Normal)"%(t.GetName()))
+           ws.factory("GExpModel::tres_3_gexpl(%s,tres_3_s,tres_3_l,kFALSE,Flipped)"%(t.GetName()))
+           ws.factory(" AddModel::tres_3({tres_3_gexpl,tres_3_gexpr},{half[0.5]})")
+
         for name in [ 'sig','nonpsi' ] :
-            ws.factory("GaussModel::tres_%s_g1(%s,tres_%s_m[0,-0.2,0.2],tres_%s_s1[1.1,0.3,2 ], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
-            ws.factory("GaussModel::tres_%s_g2(%s,tres_%s_m,            tres_%s_s2[20.,1.5,30], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
-            ws.factory("GaussModel::tres_%s_g3(%s,tres_%s_m,            tres_s3[0.54,0.1,3.0])" % (name,t.GetName(),name) )
-            ws.factory("AddModel::tres_%s({tres_%s_g3,tres_%s_g2,tres_%s_g1},{tres_%s_f3[0.001,0.00,0.05],tres_%s_f2[0.2,0.01,1]})" % (name,name,name,name,name,name))
-            ws['tres_%s_f3'%name].setVal(0)
-            ws['tres_%s_f3'%name].setConstant(True)
-            ws['tres_s3'].setVal(1)
-            ws['tres_s3'].setConstant(True)
+            ws.factory("GaussModel::tres_%s_1(%s,tres_%s_m[0,-0.2,0.2],tres_%s_s1[1.1,0.3,2 ], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
+            if False :
+               ws.factory("GaussModel::tres_%s_2(%s,tres_%s_m,            tres_%s_s2[20.,1.5,30], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
+            else :
+               # try GExp instead of G2  -- so that the limit GExp -> G (i.e. 'lifetime'->0) it returns to the original
+               # for now, the mean is forced to zero by the GExpModel code...
+               ws.factory("{tres_%s_s2[1.5,0.9,3.0],tres_%s_l[1.,20.0]}"%(name,name))
+               # choice: either scale lifetime with error or not... let's first try an absolute lifetime...
+               # try to use the same width as in the first Gaussian!
+               ws.factory("GExpModel::tres_%s_2_gexpr(%s,tres_%s_s2,tres_%s_l,%s,%s,kFALSE,Normal)"%(name,t.GetName(),name,name,sigmat.GetName(),sigmat.GetName()))
+               ws.factory("GExpModel::tres_%s_2_gexpl(%s,tres_%s_s2,tres_%s_l,%s,%s,kFALSE,Flipped)"%(name,t.GetName(),name,name,sigmat.GetName(),sigmat.GetName()))
+               ws.factory(" AddModel::tres_%s_2({tres_%s_2_gexpl,tres_%s_2_gexpr},{half[0.5]})"%(name,name,name))
+
+            ws.factory("AddModel::tres_%s({tres_3,tres_%s_2,tres_%s_1},{tres_%s_f3[0.001,0.00,0.02],tres_%s_f2[0.2,0.01,1]})" % (name,name,name,name,name))
         self._sigres = ws['tres_sig']
         self._nonpsi = ws['tres_nonpsi']
     def signal(self) : return self._sigres
@@ -231,6 +247,7 @@ class BkgTimePdfBuilder : #background propertime
     def __init__(self, ws, resbuilder, sigmatpdf ) :
         for name,resname in { 'nonpsibkg': resbuilder.nonpsi().GetName() , 'psibkg' : resbuilder.signal().GetName() }.iteritems() :
             if False :
+                # this results in horrible wrong plots....
                 ws.factory("Decay::t_%s_sl(t,0,                        %s,SingleSided)"%(name,     resname))
                 ws.factory("Decay::t_%s_ml(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)"%(name,name,resname))
                 ws.factory("Decay::t_%s_ll(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)"%(name,name,resname))
@@ -240,15 +257,6 @@ class BkgTimePdfBuilder : #background propertime
                 ws.factory("PROD::t_%s_ml(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
                 ws.factory("PROD::t_%s_ll(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
                 ws.factory("SUM::t_%s(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)"% (name,name,name,name,name,name) )
-        # fix fraction of  ll and lifetime for nonpsi to zero...
-        ws['t_nonpsibkg_fll'].setVal(0)
-        ws['t_nonpsibkg_fll'].setConstant(True)
-        ws['t_nonpsibkg_ll_tau'].setVal(0)
-        ws['t_nonpsibkg_ll_tau'].setConstant(True)
-        ws['t_psibkg_fll'].setVal(0)
-        ws['t_psibkg_fll'].setConstant(True)
-        ws['t_psibkg_ll_tau'].setVal(0)
-        ws['t_psibkg_ll_tau'].setConstant(True)
         self._nonpsi = ws['t_nonpsibkg']
         self._psi = ws['t_psibkg']
 
@@ -324,6 +332,7 @@ class MassPdfBuilder :
         # background J/psi mass pdf
         # given the narrow window, might as well take a 1st (2nd?) order polynomial...
         ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0005,-0.001,0.0])"%m_dau1.GetName())
+        #  ws.factory("Chebychev::mpsi_bkg(%s,{mpsi_bkg_p1[0.2,-1,1],mpsi_bkg_p2[-0.01,-0.1,0.1]})"%m_dau1.GetName())
         self._mdau1_bkg = ws['mpsi_bkg']
         # overall J/psi mass pdf
         ws.factory("SUM::mpsi(mpsi_fjpsi[0.5,0.2,0.8]*mpsi_sig,mpsi_bkg)")
@@ -341,7 +350,7 @@ class MassPdfBuilder :
             # Even more so, by only using a +- 10 MeV window, we kill half the background ;-)
             # So until we actually include the phi mass, we take a linear function...
             #ws.factory("DstD0BG::mphi_combbkg(%s,mphi_bkg_m0[987.4],mphi_bkg_C[6,1,10],mphi_bkg_B[16,8,30],zero[0])"%m_dau2.GetName())
-            ws.factory("Chebychev::mphi_bkg(%s,{mphi_bkg_1[0.2,-1,1],mphi_bkg_2[-0.01,-0.1,0.1]})"%m_dau2.GetName())
+            ws.factory("Chebychev::mphi_bkg(%s,{mphi_bkg_p1[0.2,-1,1],mphi_bkg_p2[-0.01,-0.1,0.1]})"%m_dau2.GetName())
             self._mdau2_bkg = ws['mphi_bkg']
             ws.factory("SUM::m_phi(mphi_fphi[0.2,0.05,0.8]*mphi_phisig,mphi_bkg)")
             self._mdau2_pdf = ws['m_phi']
@@ -504,8 +513,10 @@ def declareObservables( ws, mode ):
         ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
         ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
 
+    # trigger
+    ws.factory("unbiased[yes=+1,no=0]")
     # tag 
-    ws.factory("tagdecision[bbar=+1,b=-1,untagged=0]")
+    ws.factory("tagdecision[bbar=+1,b=-1]")
     ws.factory("tagomega[0,0.500001]")
 
     ws.factory("decaytype[JpsiKplus=10,JpsiKmin=11,JpsiKstar0=20,JpsiKstarbar0=21,Jpsiphi=40]")
@@ -524,13 +535,13 @@ def declareObservables( ws, mode ):
     if mode in [ 'Bu2JpsiK','Bd2JpsiKstar' ]:
         ws.factory("m[%f,%f]"%(5279-50,5279+50))
     # time , time-error
-    ws.factory("{t[-4,10],sigmat[0.005,0.1]}")
+    ws.factory("{t[-5,14],sigmat[0.005,0.1]}")  # Note 2 uses [0.3,14] -- so maybe switch to [-4,14] instead...
 
     # define a set for the observables (we can also define this from the pdf and data.
     if mode in [ 'Bs2Jpsiphi', 'Bd2JpsiKstar' ] :
-        ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,tagomega,tagdecision,decaytype") 
+        ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,tagomega,tagdecision,decaytype,unbiased") 
     else :
-        ws.defineSet("observables","m,t,sigmat,mdau1,tagomega,tagdecision,decaytype") 
+        ws.defineSet("observables","m,t,sigmat,mdau1,tagomega,tagdecision,decaytype,unbiased") 
 
 def declareObservablesNoDau2( ws ):
     from math import pi
@@ -657,8 +668,9 @@ def definePolarAngularAmplitudes(ws):
     ##        or fit in terms of angles and relative magnitudes
     ##         Note: initial values from arXiv:0704.0522v2 [hep-ex] BaBar PUB-07-009
     # ws.factory("{rz[0.556],rpar[0.211],rperp[0.233]}")
+    from math import pi
     ws.factory("{rz[0.463,0.0,1.0],rpar[0.211],rperp[0.347,0.0,1.0]}")
-    ws.factory("{deltaz[0],deltapar[-2.93],deltaperp[2.91]}")
+    ws.factory("{deltaz[0],deltapar[-2.93,%s,%s],deltaperp[2.91,%s,%s]}"%(-2*pi,2*pi,-2*pi,2*pi))
     ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
     ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
     ws.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})")
@@ -667,8 +679,8 @@ def definePolarAngularAmplitudes(ws):
     ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
     
 def defineJPsiPhiPhysicsParams(ws):
-    ws.factory("{gamma[0.68,0.4,0.9],dm[17.7],dG[0.05,-0.3,0.3]}")
-    ws.factory("expr::tau('1/@0',{gamma})")
+    ws.factory("{gamma[0.68,0.4,0.9],t_sig_dm[17.7],t_sig_dG[0.05,-0.3,0.3]}")
+    ws.factory("expr::t_sig_tau('1/@0',{gamma})")
     ##choice: either fit for the three degrees of freedom independently
     ##        i.e. make S,D,C independent parameters
     ##ws.factory("{S[0.717,-1,1],D[0.696,-1,1],C[0,-1,1]}")
