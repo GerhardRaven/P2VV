@@ -1,3 +1,7 @@
+# This is the implementation of the Note2 fit. Simple resolution model, flat angular background.
+# Including angular acceptance correction can be set with the acceptance flag.
+# Angular basis can be chosen using the useTransversityAngles flag.
+
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
@@ -488,7 +492,7 @@ from ModelBuilders import *
 
 ws = RooWorkspace("ws")
 
-hel = False
+useTransversityAngles = True
 
 acceptance = True
 
@@ -519,6 +523,14 @@ xi = { 'parpar' :   0.978745*9./(8.*pi)
      , 'par0'   :   0.*9./(8.*pi)
      , 'parperp' :  -0.00211382*9./(8.*pi)
      }
+def norm_xi( d ) :
+    n =  (d['parpar'] + d['00'] + d['perpperp'])/3
+    for i in d.iterkeys() : d[i] = d[i]/n
+
+print 'eerste xi =', xi
+norm_xi(xi)
+
+print 'tweede xi =', xi
 
 coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 ) 
        , (2,0,0,   ( xi['00']     -xi['parpar']   ) *float(5)/3      )
@@ -528,7 +540,9 @@ coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 )
        , (1,2,-1 , ( xi['par0']    )*sqrt(float(5)/6)*float(32)/(3*pi) )
        ]
 
-
+print 'reverse engineerd c_ijk:'
+print coef
+assert False
 ###################
 ### Observables ###
 ###################
@@ -537,13 +551,12 @@ ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f], t[-2,20.], tagdeci
 
 ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f], t[-2,20.], tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]}"%(-pi,pi))
 
-
-if hel:
-    ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
-    angles = ws.set('helicityangles')
-else:
+if useTransversityAngles: 
     ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
     angles = ws.set('transversityangles')
+else:
+    ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
+    angles = ws.set('helicityangles')
 
 ab = abasis(ws,angles)
 
@@ -593,10 +606,10 @@ ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
 ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
 
 #This one imports automatically in the workspace!
-if hel:
-    newpdf = buildJpsiphi(ws,'newpdf', False)
-else:
+if useTransversityAngles:
     newpdf = buildJpsiphi(ws,'newpdf', True) 
+else:
+    newpdf = buildJpsiphi(ws,'newpdf', False)
 
 ##############################
 #This sets the range for the events in the dataset that you read, and the range in which you will fit!
@@ -607,14 +620,14 @@ tmin = 0.3
 tmax = 14.
 t.setRange(tmin,tmax)
 
-if hel:
-    cthetaK = ws.var('helcosthetaK')
-    cthetaL = ws.var('helcosthetaL')
-    phi = ws.var('helphi')
-else:
+if useTransversityAngles:
     trcostheta = ws.var('trcostheta')
     trcospsi = ws.var('trcospsi')
     trphi = ws.var('trphi')
+else:
+    cthetaK = ws.var('helcosthetaK')
+    cthetaL = ws.var('helcosthetaL')
+    phi = ws.var('helphi')
 
 tagdecision = ws.cat('tagdecision')
 
@@ -627,10 +640,10 @@ obs = RooArgSet(m)
 
 getattr(ws,'import')(obs)
 
-if hel:
-    ws.defineSet("observables","m,t,helcosthetaL,helcosthetaK,helphi,tagdecision")
-else:
+if useTransversityAngles:
     ws.defineSet("observables","m,t,trcospsi,trcostheta,trphi,tagdecision")
+else:
+    ws.defineSet("observables","m,t,helcosthetaL,helcosthetaK,helphi,tagdecision")
 
 #################
 ### Load Data ###
@@ -649,13 +662,13 @@ else:
 #NTupletree = file.Get('MyTree')
 
 #Using Edinburgh file
-file = TFile('/tmp/dvaneijk/Edinburgh.root')
+file = TFile('/data/bfys/dveijk/P2VV/Edinburgh.root')
 NTupletree = file.Get('MyTree')
 
-if hel:
-    data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && helcosthetaL==helcosthetaL && helcosthetaK==helcosthetaK && helphi==helphi && tagdecision==tagdecision')
-else:
+if useTransversityAngles:
     data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision')
+else:
+    data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && helcosthetaL==helcosthetaL && helcosthetaK==helcosthetaK && helphi==helphi && tagdecision==tagdecision')
     
 data.table(tagdecision).Print('v')
 
@@ -689,19 +702,20 @@ ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
 #ws.factory("Chebychev::bkg_helcosthetaK(helcosthetaK,{c0_helcosthetaK[-0.13,-1,1],c1_helcosthetaK[0.23,-1,1],c2_helcosthetaK[-0.057,-1,1],c3_helcosthetaK[-0.0058,-1,1],c4_helcosthetaK[-0.0154,-1,1]})")#,c5_helcosthetaK[-1,1],c6_helcosthetaK[-1,1]})")
 #ws.factory("Chebychev::bkg_helcosthetaL(helcosthetaL,{c0_helcosthetaL[0.08,-1,1],c1_helcosthetaL[-0.22,-1,1],c2_helcosthetaL[-0.022,-1,1],c3_helcosthetaL[0.21,-1,1],c4_helcosthetaL[0.0125,-1,1]})")#,c5_helcosthetaL[-1,1],c6_helcosthetaL[-1,1]})")
 #ws.factory("Chebychev::bkg_helphi(helphi,{c0_helphi[0.10,-1,1],c1_helphi[0.328,-1,1],c2_helphi[0.081,-1,1],c3_helphi[0.316,-1,1],c4_helphi[0.044,-1,1]})")#,c5_helphi[-1,1],c6_helphi[-1,1]})")
-if hel:
-    ws.factory("Chebychev::bkg_helcosthetaK(helcosthetaK,{c0_helcosthetaK[-0.13]})")
-    ws.factory("Chebychev::bkg_helcosthetaL(helcosthetaL,{c0_helcosthetaL[0.08]})")
-    ws.factory("Chebychev::bkg_helphi(helphi,{c0_helphi[0.10]})")
-else:
+
+if useTransversityAngles:
     ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13]})")
     ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08]})")
     ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10]})")
-
-if hel:
-    ws.factory("PROD::bkgang(bkg_helcosthetaL,bkg_helcosthetaK,bkg_helphi)")
 else:
+    ws.factory("Chebychev::bkg_helcosthetaK(helcosthetaK,{c0_helcosthetaK[-0.13]})")
+    ws.factory("Chebychev::bkg_helcosthetaL(helcosthetaL,{c0_helcosthetaL[0.08]})")
+    ws.factory("Chebychev::bkg_helphi(helphi,{c0_helphi[0.10]})")
+
+if useTransversityAngles:
     ws.factory("PROD::bkgang(bkg_trcospsi,bkg_trcostheta,bkg_trphi)")
+else:
+    ws.factory("PROD::bkgang(bkg_helcosthetaL,bkg_helcosthetaK,bkg_helphi)")
 
 #P2VV fit
 ws.factory("PROD::sig_pdf( m_sig, newpdf)")
