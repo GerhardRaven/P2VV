@@ -41,6 +41,8 @@ allObs = pdf.getObservables( data.get() )
 
 angles = w.set("transversityangles")
 #angles = w.set("helicityangles")
+angles.remove( w['tagdecision'] )
+angles.remove( w['t'] )
 
 #replace input by inefficient data
 eps = efficiency( angles )

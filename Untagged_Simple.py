@@ -6,6 +6,8 @@ from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
 
+
+import RooFitDecorators
 import rootStyle
 #from ROOT import (gROOT,gStyle,TStyle)
 myStyle = rootStyle.plainstyle()
@@ -523,6 +525,7 @@ xi = { 'parpar' :   0.978745*9./(8.*pi)
      , 'par0'   :   0.*9./(8.*pi)
      , 'parperp' :  -0.00211382*9./(8.*pi)
      }
+
 def norm_xi( d ) :
     n =  (d['parpar'] + d['00'] + d['perpperp'])/3
     for i in d.iterkeys() : d[i] = d[i]/n
@@ -542,7 +545,6 @@ coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 )
 
 print 'reverse engineerd c_ijk:'
 print coef
-assert False
 ###################
 ### Observables ###
 ###################
@@ -611,6 +613,10 @@ if useTransversityAngles:
 else:
     newpdf = buildJpsiphi(ws,'newpdf', False)
 
+print 'GOING TO BUILD THE ACCEPTANCE CORRECTED PDF!'
+corrpdf = buildEff_x_PDF(ws,'eff',newpdf,[ ( ab.build('mom_eff',c[0],0,c[1],c[2],1.), c[3] ) for c in coef ] )
+ws.put(corrpdf)
+
 ##############################
 #This sets the range for the events in the dataset that you read, and the range in which you will fit!
 ##############################
@@ -649,20 +655,8 @@ else:
 ### Load Data ###
 #################
 
-#Using 'common' dataset:
-#file = TFile('duitsedata2.root')
-#NTupletree = file.Get('Bs2JpsiPhi')
-
-#Using Wouters dataset:
-#file = TFile('Bs2JpsiPhiTupleReduced.root')
-#NTupletree = file.Get('dataset')
-
-#Using my Stripping12 NTuple
-#file = TFile('Bs2JpsiPhiStripping12_NoJpsiMassCut.root')
-#NTupletree = file.Get('MyTree')
-
 #Using Edinburgh file
-file = TFile('/data/bfys/dveijk/P2VV/Edinburgh.root')
+file = TFile('/data/bfys/dveijk/Data/Edinburgh.root')
 NTupletree = file.Get('MyTree')
 
 if useTransversityAngles:
@@ -681,7 +675,10 @@ getattr(ws,'import')(data)
 ws.factory("Gaussian::m_sig(m,m_sig_mean[5365,5360,5370],m_sig_sigma_1[6.,0.,20.])")
     
 #Getting the JpsiPhi signal Pdf
-p2vv = ws.pdf('newpdf')
+if acceptance:
+    p2vv = ws.pdf('newpdf_eff')
+else:
+    p2vv = ws.pdf('newpdf')
 #p2vv = ws.pdf('myJpsiphiPdf_withWeights')
 
 #Getting the resolution model from the JpsiPhi pdf in the workspace
@@ -707,26 +704,24 @@ if useTransversityAngles:
     ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13]})")
     ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08]})")
     ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10]})")
+    ws.factory("PROD::bkgang(bkg_trcospsi,bkg_trcostheta,bkg_trphi)")
 else:
     ws.factory("Chebychev::bkg_helcosthetaK(helcosthetaK,{c0_helcosthetaK[-0.13]})")
     ws.factory("Chebychev::bkg_helcosthetaL(helcosthetaL,{c0_helcosthetaL[0.08]})")
     ws.factory("Chebychev::bkg_helphi(helphi,{c0_helphi[0.10]})")
-
-if useTransversityAngles:
-    ws.factory("PROD::bkgang(bkg_trcospsi,bkg_trcostheta,bkg_trphi)")
-else:
     ws.factory("PROD::bkgang(bkg_helcosthetaL,bkg_helcosthetaK,bkg_helphi)")
 
+
 #P2VV fit
-ws.factory("PROD::sig_pdf( m_sig, newpdf)")
+if acceptance:
+    ws.factory("PROD::sig_pdf( m_sig, newpdf_eff)")
+else:
+    ws.factory("PROD::sig_pdf( m_sig, newpdf)")
 
 ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, bkgang)")
 
 ws.factory("SUM::pdf_ext(Nsig[543,0,1000]*sig_pdf,Nbkg[812,0,1000]*bkg_pdf)")
 ws.factory("SUM::pdf(f_sig[0.71,0.,1.0]*sig_pdf,bkg_pdf)")
-
-#also build the full mass-only pdf
-ws.factory("SUM::masspdf(Nsig*m_sig,Nbkg*m_bkg)")
 
 #########################
 ### What do you want? ###
@@ -735,96 +730,16 @@ ws.factory("SUM::masspdf(Nsig*m_sig,Nbkg*m_bkg)")
 #get pdf's from the workspace
 bkg_pdf = ws.pdf('bkg_pdf')
 sig_pdf = ws.pdf('sig_pdf')
-pdf= ws.pdf("pdf")
+pdf= ws.pdf('pdf')
 pdf_ext = ws.pdf('pdf_ext')
-masspdf = ws.pdf('masspdf')
 
-print 'GOING TO BUILD THE ACCEPTANCE CORRECTED PDF!'
-newpdf = buildEff_x_PDF(ws,'eff',pdf_ext,[ ( ab.build('mom_eff',c[0],0,c[1],c[2],1.), c[3] ) for c in coef ] )
+result = pdf_ext.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
 
-#Parameters to be printed
-
-## rperp2                   = ws.var('rperp2')
-## rz2                      = ws.var('rz2')
-## gamma                    = ws.var('gamma')
-## Nbkg                     = ws.var('Nbkg')
-## Nsig                     = ws.var('Nsig')
-## f_sig                    = ws.var('f_sig')
-## phis                     = ws.var('phis')
-## dG                       = ws.var('dG')
-## dm                       = ws.var('dm')
-## m_bkg_exp                = ws.var('m_bkg_exp')
-## m_sig_mean               = ws.var('m_sig_mean')
-## m_sig_sigma_1            = ws.var('m_sig_sigma_1')
-## deltapar                 = ws.var('deltapar')
-## deltaperp                = ws.var('deltaperp')
-## deltaz                   = ws.var('deltaz')
-## t_bkg_fll                = ws.var('t_bkg_fll')
-## t_bkg_ll_tau             = ws.var('t_bkg_ll_tau')
-## t_bkg_ml_tau             = ws.var('t_bkg_ml_tau')
-
-## parameterprintset = RooArgSet(rperp2)
-## parameterprintset.add(rz2)
-## parameterprintset.add(Nbkg)
-## parameterprintset.add(Nsig)
-## #parameterprintset.add(f_sig)
-## #parameterprintset.add(dm_s)
-## parameterprintset.add(m_bkg_exp)
-## parameterprintset.add(m_sig_mean)
-## parameterprintset.add(m_sig_sigma_1)
-## parameterprintset.add(deltapar)
-## parameterprintset.add(deltaperp)
-## parameterprintset.add(deltaz)
-## parameterprintset.add(t_bkg_fll)
-## parameterprintset.add(t_bkg_ll_tau)
-## parameterprintset.add(t_bkg_ml_tau)
-
-####################
-#MASS ONLY
-## m= ws.var('m')
-## masspdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-
-## masscanvas = TCanvas('masscanvas','masscanvas')
-## massframe = m.frame(RooFit.Bins(20))
-## data.plotOn(massframe,RooLinkedList())
-
-## masspdf.plotOn(massframe)
-## masspdf.plotOn(massframe,RooFit.Components('m_sig'),RooFit.LineColor(kGreen),RooFit.LineStyle(kDashed))
-## masspdf.plotOn(massframe,RooFit.Components('m_bkg'),RooFit.LineColor(kRed),RooFit.LineStyle(kDashed))
-
-## masspdf.paramOn(massframe)
-## massframe.Draw()
-####################
-
-####################
-# FIT
-#result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(false),RooFit.Minos(false),RooFit.Save(true))
-#c = plot(ws,data,pdf,'c')
-####################
-
-####################
-# EXTENDED FIT
-#result = pdf_ext.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-#if hel:
-#    cext = plothel(ws,data,pdf_ext,'cext')
-#else:
-#    cext = plottrans(ws,data,pdf_ext,'cext')
-####################
-
-####################
-# EXTENDED FIT TO ACCEPTION CORRECTED PDF
-#result = newpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-#if hel:
-#    cext = plothel(ws,data,newpdf,'cext')
-#else:
-#    cext = plottrans(ws,data,newpdf,'cext')
-####################
-
-if acceptance:
-    result = newpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+if useTransversityAngles:
+    plot = plottrans(ws,data,pdf_ext,'transplot')
 else:
-    result = pdf_ext.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-    
+    plot = plothel(ws,data,pdf_ext,'transplot')
+
 ####################
 # Latex code of the fitted parameters
 paramlist = pdf_ext.getParameters(data)
