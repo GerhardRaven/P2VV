@@ -6,9 +6,9 @@ from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
 
-
 import RooFitDecorators
 import rootStyle
+from ModelBuilders import _buildAngularFunction
 #from ROOT import (gROOT,gStyle,TStyle)
 myStyle = rootStyle.plainstyle()
 gROOT.SetStyle(myStyle.GetName())
@@ -304,8 +304,8 @@ def plottrans(ws,data,pdf,title):
     c.cd(2)
     _m = m.frame(RooFit.Bins(40),RooFit.Title('B_{s} mass, t>%s ps'%(str(tmin))))
     data.plotOn(_m,RooFit.MarkerSize(0.7),xes)
-    pdf.plotOn(_m,RooFit.Components("bkg_pdf"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_m,RooFit.Components("sig_pdf"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_m,RooFit.Components("bkg_pdf_eff"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_m,RooFit.Components("sig_pdf_eff"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
     pdf.plotOn(_m,lw)
     _m.Draw() 
     c.Update()
@@ -316,8 +316,8 @@ def plottrans(ws,data,pdf,title):
 
     _tb = t.frame(-1,13,50)
     data.plotOn(_tb,RooFit.MarkerSize(0.5),xes)
-    pdf.plotOn(_tb,RooFit.Components("sig_pdf"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_tb,RooFit.Components("bkg_pdf"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_tb,RooFit.Components("sig_pdf_eff"),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_tb,RooFit.Components("bkg_pdf_eff"),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
     pdf.plotOn(_tb,lw)
 
     #pdf.paramOn(_tb,RooFit.Parameters(parameterprintset))
@@ -376,8 +376,8 @@ def plottrans(ws,data,pdf,title):
 
     _trcospsi = trcospsi.frame(RooFit.Bins(15),RooFit.Title('trcospsi full mass region'))
     data.plotOn(_trcospsi)
-    pdf.plotOn(_trcospsi,RooFit.Components('sig_pdf'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_trcospsi,RooFit.Components('bkg_pdf'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_trcospsi,RooFit.Components('sig_pdf_eff'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_trcospsi,RooFit.Components('bkg_pdf_eff'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
     pdf.plotOn(_trcospsi,lw)
     _trcospsi.Draw()
     c2.Update()
@@ -387,8 +387,8 @@ def plottrans(ws,data,pdf,title):
 
     _trcostheta = trcostheta.frame(RooFit.Bins(15),RooFit.Title('trcostheta full mass region'))
     data.plotOn(_trcostheta)
-    pdf.plotOn(_trcostheta,RooFit.Components('sig_pdf'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_trcostheta,RooFit.Components('bkg_pdf'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_trcostheta,RooFit.Components('sig_pdf_eff'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_trcostheta,RooFit.Components('bkg_pdf_eff'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
     pdf.plotOn(_trcostheta,lw)
     _trcostheta.Draw()
     c2.Update()
@@ -398,8 +398,8 @@ def plottrans(ws,data,pdf,title):
 
     _trphi = trphi.frame(RooFit.Bins(15),RooFit.Title('trphi full mass region'))
     data.plotOn(_trphi)
-    pdf.plotOn(_trphi,RooFit.Components('sig_pdf'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
-    pdf.plotOn(_trphi,RooFit.Components('bkg_pdf'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_trphi,RooFit.Components('sig_pdf_eff'),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
+    pdf.plotOn(_trphi,RooFit.Components('bkg_pdf_eff'),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
     pdf.plotOn(_trphi,lw)
     _trphi.Draw()
     c2.Update()
@@ -496,7 +496,7 @@ ws = RooWorkspace("ws")
 
 useTransversityAngles = True
 
-acceptance = True
+acceptance = False
 
 #######################
 ### For acceptance: ###
@@ -510,20 +510,20 @@ acceptance = True
 #     , 'parperp' :  0 
 #     }
 
-#xi = { 'parpar' :   1.*9./(8.*pi)
-#     , '00'     :   1.*9./(8.*pi)
-#     , 'perpperp' : 1.*9./(8.*pi)
-#     , 'perp0'  :   0*9./(8.*pi)
-#     , 'par0'   :   0*9./(8.*pi)
-#     , 'parperp' :  0*9./(8.*pi)
+#xi = { 'parpar' :   0.978745*9./(8.*pi)
+#     , '00'     :   1.02973*9./(8.*pi)
+#     , 'perpperp' : 1.03121*9./(8.*pi)
+#     , 'perp0'  :   0.00130478*9./(8.*pi)
+#     , 'par0'   :   0.*9./(8.*pi)
+#     , 'parperp' :  -0.00211382*9./(8.*pi)
 #     }
 
-xi = { 'parpar' :   0.978745*9./(8.*pi)
-     , '00'     :   1.02973*9./(8.*pi)
-     , 'perpperp' : 1.03121*9./(8.*pi)
-     , 'perp0'  :   0.00130478*9./(8.*pi)
-     , 'par0'   :   0.*9./(8.*pi)
-     , 'parperp' :  -0.00211382*9./(8.*pi)
+xi = { 'parpar' :   0.978745
+     , '00'     :   1.02973
+     , 'perpperp' : 1.03121
+     , 'perp0'  :   0.00130478
+     , 'par0'   :   0.
+     , 'parperp' :  -0.00211382
      }
 
 def norm_xi( d ) :
@@ -531,9 +531,18 @@ def norm_xi( d ) :
     for i in d.iterkeys() : d[i] = d[i]/n
 
 print 'eerste xi =', xi
-norm_xi(xi)
 
-print 'tweede xi =', xi
+#norm_xi(xi)
+
+print 'normalized xi =', xi
+
+#coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 ) 
+#       , (2,0,0,   ( xi['00']     -xi['parpar']   ) *float(5)/3      )
+#       , (0,2,0,   ( xi['parpar'] -xi['perpperp'] ) * sqrt(float(20)/9) )
+#       , (0,2,-1,  ( xi['parperp'] )*sqrt(float(5)/3) ) 
+#       , (1,2,1,   ( xi['perp0']   )*sqrt(float(5)/6)*float(32)/(3*pi) )
+#       , (1,2,-1 , ( xi['par0']    )*sqrt(float(5)/6)*float(32)/(3*pi) )
+#       ]
 
 coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 ) 
        , (2,0,0,   ( xi['00']     -xi['parpar']   ) *float(5)/3      )
@@ -545,6 +554,7 @@ coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 )
 
 print 'reverse engineerd c_ijk:'
 print coef
+
 ###################
 ### Observables ###
 ###################
@@ -613,9 +623,9 @@ if useTransversityAngles:
 else:
     newpdf = buildJpsiphi(ws,'newpdf', False)
 
-print 'GOING TO BUILD THE ACCEPTANCE CORRECTED PDF!'
-corrpdf = buildEff_x_PDF(ws,'eff',newpdf,[ ( ab.build('mom_eff',c[0],0,c[1],c[2],1.), c[3] ) for c in coef ] )
-ws.put(corrpdf)
+#print 'GOING TO BUILD THE ACCEPTANCE CORRECTED FULL PDF!'
+#signalcorrpdf = buildEff_x_PDF(ws,'eff',newpdf,[ ( ab.build('mom_eff',c[0],0,c[1],c[2],1.), c[3] ) for c in coef ] )
+#ws.put(signalcorrpdf)
 
 ##############################
 #This sets the range for the events in the dataset that you read, and the range in which you will fit!
@@ -673,16 +683,6 @@ getattr(ws,'import')(data)
 #######################
 
 ws.factory("Gaussian::m_sig(m,m_sig_mean[5365,5360,5370],m_sig_sigma_1[6.,0.,20.])")
-    
-#Getting the JpsiPhi signal Pdf
-if acceptance:
-    p2vv = ws.pdf('newpdf_eff')
-else:
-    p2vv = ws.pdf('newpdf')
-#p2vv = ws.pdf('myJpsiphiPdf_withWeights')
-
-#Getting the resolution model from the JpsiPhi pdf in the workspace
-res = ws.pdf('tres_sig')
 
 #background B mass pdf
 ws.factory("Exponential::m_bkg(m,m_bkg_exp[-0.001,-0.01,-0.0001])")
@@ -694,34 +694,69 @@ ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,0.5,2.5],tres_sig,SingleSided)")
 ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
 
 #background angles: 
-#ws.factory("Uniform::bkgang({helcosthetaL,helcosthetaK,helphi})")
 
-#ws.factory("Chebychev::bkg_helcosthetaK(helcosthetaK,{c0_helcosthetaK[-0.13,-1,1],c1_helcosthetaK[0.23,-1,1],c2_helcosthetaK[-0.057,-1,1],c3_helcosthetaK[-0.0058,-1,1],c4_helcosthetaK[-0.0154,-1,1]})")#,c5_helcosthetaK[-1,1],c6_helcosthetaK[-1,1]})")
-#ws.factory("Chebychev::bkg_helcosthetaL(helcosthetaL,{c0_helcosthetaL[0.08,-1,1],c1_helcosthetaL[-0.22,-1,1],c2_helcosthetaL[-0.022,-1,1],c3_helcosthetaL[0.21,-1,1],c4_helcosthetaL[0.0125,-1,1]})")#,c5_helcosthetaL[-1,1],c6_helcosthetaL[-1,1]})")
-#ws.factory("Chebychev::bkg_helphi(helphi,{c0_helphi[0.10,-1,1],c1_helphi[0.328,-1,1],c2_helphi[0.081,-1,1],c3_helphi[0.316,-1,1],c4_helphi[0.044,-1,1]})")#,c5_helphi[-1,1],c6_helphi[-1,1]})")
+#if useTransversityAngles:
+#    ws.factory("Uniform::bkgang({trcospsi,trcostheta,trphi})")
+#else:
+#    ws.factory("Uniform::bkgang({helcosthetaL,helcosthetaK,helphi})")
 
-if useTransversityAngles:
-    ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13]})")
-    ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08]})")
-    ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10]})")
-    ws.factory("PROD::bkgang(bkg_trcospsi,bkg_trcostheta,bkg_trphi)")
-else:
-    ws.factory("Chebychev::bkg_helcosthetaK(helcosthetaK,{c0_helcosthetaK[-0.13]})")
-    ws.factory("Chebychev::bkg_helcosthetaL(helcosthetaL,{c0_helcosthetaL[0.08]})")
-    ws.factory("Chebychev::bkg_helphi(helphi,{c0_helphi[0.10]})")
-    ws.factory("PROD::bkgang(bkg_helcosthetaL,bkg_helcosthetaK,bkg_helphi)")
+#if useTransversityAngles:
+#    ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13,-1,1]})")
+#    ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08,-1,1]})")
+#    ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10,-1,1]})")
+#    ws.factory("PROD::bkgang(bkg_trcospsi,bkg_trcostheta,bkg_trphi)")
+#else:
+#    ws.factory("Chebychev::bkg_helcosthetaK(helcosthetaK,{c0_helcosthetaK[-0.13,-1,1]})")
+#    ws.factory("Chebychev::bkg_helcosthetaL(helcosthetaL,{c0_helcosthetaL[0.08,-1,1]})")
+#    ws.factory("Chebychev::bkg_helphi(helphi,{c0_helphi[0.10,-1,1]})")
+#    ws.factory("PROD::bkgang(bkg_helcosthetaL,bkg_helcosthetaK,bkg_helphi)")
 
+#Build angular background with RooP2VVAngleBasis
+_ba = lambda name,comp : _buildAngularFunction(ws,ab,name,comp)
 
-#P2VV fit
-if acceptance:
-    ws.factory("PROD::sig_pdf( m_sig, newpdf_eff)")
-else:
-    ws.factory("PROD::sig_pdf( m_sig, newpdf)")
+_ba("Bkg_0000",  [ ( 0,0,0,0,1.) ] )
 
-ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, bkgang)")
+_ba("Bkg_0010",  [ ( 0,0,1,0,1.) ] )
+_ba("Bkg_0011",  [ ( 0,0,1,1,1.) ] )
+_ba("Bkg_001m1",  [ ( 0,0,1,-1,1.) ] )
+
+_ba("Bkg_1000",  [ ( 1,0,0,0,1.) ] )
+_ba("Bkg_2000",  [ ( 2,0,0,0,1.) ] )
+_ba("Bkg_3000",  [ ( 3,0,0,0,1.) ] )
+
+c0000 = RooRealVar('c0000','c0000',1.)
+
+c0010 = RooRealVar('c0010','c0010',0.,-1.,1.)
+c0011 = RooRealVar('c0011','c0011',0.,-1.,1.)
+c001m1 = RooRealVar('c001m1','c001m1',0.,-1.,1.)
+
+c1000 = RooRealVar('c1000','c1000',0.,-1.,1.)
+c2000 = RooRealVar('c2000','c2000',0.,-1.,1.)
+c3000 = RooRealVar('c3000','c3000',0.,-1.,1.)
+
+#Flat background in all angles
+#bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis']),RooArgList(c0000))
+
+#Only higher order in cospsi
+#bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c1000,c2000,c3000))
+
+#Add higher order in costheta
+#bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_0010_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c0010,c1000,c2000,c3000))
+
+#Hiher roder in all angles
+bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_0010_basis'],ws['Bkg_0011_basis'],ws['Bkg_001m1_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c0010,c0011,c001m1,c1000,c2000,c3000))
+
+ws.put(bkg)
+
+#ws.factory("PROD::sig_pdf( m_sig, newpdf)")
+ws.factory("PROD::sig_pdf( m_sig, newpdf)")
+
+#ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, bkgang)")
+ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, bkg)")
 
 ws.factory("SUM::pdf_ext(Nsig[543,0,1000]*sig_pdf,Nbkg[812,0,1000]*bkg_pdf)")
 ws.factory("SUM::pdf(f_sig[0.71,0.,1.0]*sig_pdf,bkg_pdf)")
+
 
 #########################
 ### What do you want? ###
@@ -733,15 +768,23 @@ sig_pdf = ws.pdf('sig_pdf')
 pdf= ws.pdf('pdf')
 pdf_ext = ws.pdf('pdf_ext')
 
-result = pdf_ext.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+print 'GOING TO BUILD THE ACCEPTANCE CORRECTED FULL PDF!'
+fullcorrpdf = buildEff_x_PDF(ws,'eff',pdf_ext,[ ( ab.build('mom_eff',c[0],0,c[1],c[2],1.), c[3] ) for c in coef ] )
+ws.put(fullcorrpdf)
+
+#result = pdf_ext.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+result = fullcorrpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
 
 if useTransversityAngles:
-    plot = plottrans(ws,data,pdf_ext,'transplot')
+    #plot = plottrans(ws,data,pdf_ext,'transplot')
+    plot = plottrans(ws,data,fullcorrpdf,'transplot')
 else:
-    plot = plothel(ws,data,pdf_ext,'transplot')
+    #plot = plothel(ws,data,pdf_ext,'transplot')
+    plot = plothel(ws,data,fullcorrpdf,'transplot')
 
 ####################
 # Latex code of the fitted parameters
-paramlist = pdf_ext.getParameters(data)
+paramlist = fullcorrpdf.getParameters(data)
 paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()))
 ####################
+
