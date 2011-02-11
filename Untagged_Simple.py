@@ -510,14 +510,6 @@ acceptance = False
 #     , 'parperp' :  0 
 #     }
 
-#xi = { 'parpar' :   0.978745*9./(8.*pi)
-#     , '00'     :   1.02973*9./(8.*pi)
-#     , 'perpperp' : 1.03121*9./(8.*pi)
-#     , 'perp0'  :   0.00130478*9./(8.*pi)
-#     , 'par0'   :   0.*9./(8.*pi)
-#     , 'parperp' :  -0.00211382*9./(8.*pi)
-#     }
-
 xi = { 'parpar' :   0.978745
      , '00'     :   1.02973
      , 'perpperp' : 1.03121
@@ -530,26 +522,44 @@ def norm_xi( d ) :
     n =  (d['parpar'] + d['00'] + d['perpperp'])/3
     for i in d.iterkeys() : d[i] = d[i]/n
 
-print 'eerste xi =', xi
-
-#norm_xi(xi)
-
-print 'normalized xi =', xi
+print 'xi =', xi
 
 #coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 ) 
 #       , (2,0,0,   ( xi['00']     -xi['parpar']   ) *float(5)/3      )
 #       , (0,2,0,   ( xi['parpar'] -xi['perpperp'] ) * sqrt(float(20)/9) )
 #       , (0,2,-1,  ( xi['parperp'] )*sqrt(float(5)/3) ) 
 #       , (1,2,1,   ( xi['perp0']   )*sqrt(float(5)/6)*float(32)/(3*pi) )
-#       , (1,2,-1 , ( xi['par0']    )*sqrt(float(5)/6)*float(32)/(3*pi) )
+#       , (1,2,-2 , ( xi['par0']    )*sqrt(float(5)/6)*float(32)/(3*pi) )
 #       ]
 
-coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp'])/3 ) 
-       , (2,0,0,   ( xi['00']     -xi['parpar']   ) *float(5)/3      )
-       , (0,2,0,   ( xi['parpar'] -xi['perpperp'] ) * sqrt(float(20)/9) )
-       , (0,2,-1,  ( xi['parperp'] )*sqrt(float(5)/3) ) 
-       , (1,2,1,   ( xi['perp0']   )*sqrt(float(5)/6)*float(32)/(3*pi) )
-       , (1,2,-1 , ( xi['par0']    )*sqrt(float(5)/6)*float(32)/(3*pi) )
+#The difference between this one and the one above is exactly the factor 8*sqrt(pi)/9....
+
+#coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp']) * (3./(8.*sqrt(pi)))     ) 
+#       , (2,0,0,   ( xi['00']     -xi['parpar']   ) *(15./(8.*sqrt(pi)))            )                     
+#       , (0,2,0,   ( xi['parpar'] -xi['perpperp'] ) * (3./4.) * (sqrt(5./pi))       )
+#       , (0,2,-1,  ( xi['parperp'] ) * (9./(8.*sqrt(pi))) * (sqrt(5./3.))           ) 
+#       , (1,2,1,   ( xi['perp0']   ) * -1. * (12./(pi*sqrt(pi))) * (sqrt(5./6.))     )
+#       , (1,2,-2 , ( xi['par0']    ) * (12/(pi*sqrt(pi))) * (sqrt(5./6.))           )
+#       ]
+
+#Now start messing around with the reverse enigineering in the last three terms...
+
+#coef = [ (0,0,0,   ( xi['parpar']+xi['00']+xi['perpperp']) * (3./(8.*sqrt(pi)))     ) 
+#       , (2,0,0,   ( xi['00']     -xi['parpar']   ) *(15./(8.*sqrt(pi)))            )                     
+#       , (0,2,0,   ( xi['parpar'] -xi['perpperp'] ) * (3./4.) * (sqrt(5./pi))       )
+#       , (2,2,-1,  ( xi['parperp'] ) * -5. * (9./(8.*sqrt(pi))) * (sqrt(5./3.))           ) 
+#       , (3,2,1,   ( xi['perp0']   ) * 1. * (48./(pi*sqrt(pi))) * (sqrt(5./6.))     )
+#       , (3,2,-2 , ( xi['par0']    ) * -1.* (48./(pi*sqrt(pi))) * (sqrt(5./6.))           )
+#       ]
+
+#Now start messing around with the reverse engineering in the first three terms....
+
+coef = [ (2,2,0,   ( xi['perpperp']) * (45./8.) * sqrt(5./pi)                                              ) 
+       , (2,2,2,   ( xi['parpar'] + xi['00'] - 0.5 * xi['perpperp']  ) * (-15./8.) * sqrt(20./(3.*pi))     )                     
+       , (0,2,2,   ( xi['parpar'] -0.5 * xi['00'] + xi['perpperp'] ) * (3./4.) * (20./(3.*pi))             )
+       , (0,2,-1,  ( xi['parperp'] ) * (9./(8.*sqrt(pi))) * (sqrt(5./3.))                                  )  
+       , (1,2,1,   ( xi['perp0']   ) * -1. * (12./(pi*sqrt(pi))) * (sqrt(5./6.))                           )
+       , (1,2,-2 , ( xi['par0']    ) * (12/(pi*sqrt(pi))) * (sqrt(5./6.))                                  )
        ]
 
 print 'reverse engineerd c_ijk:'
@@ -735,7 +745,7 @@ c2000 = RooRealVar('c2000','c2000',0.,-1.,1.)
 c3000 = RooRealVar('c3000','c3000',0.,-1.,1.)
 
 #Flat background in all angles
-#bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis']),RooArgList(c0000))
+bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis']),RooArgList(c0000))
 
 #Only higher order in cospsi
 #bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c1000,c2000,c3000))
@@ -744,7 +754,7 @@ c3000 = RooRealVar('c3000','c3000',0.,-1.,1.)
 #bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_0010_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c0010,c1000,c2000,c3000))
 
 #Hiher roder in all angles
-bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_0010_basis'],ws['Bkg_0011_basis'],ws['Bkg_001m1_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c0010,c0011,c001m1,c1000,c2000,c3000))
+#bkg = RooRealSumPdf('bkg','bkg',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_0010_basis'],ws['Bkg_0011_basis'],ws['Bkg_001m1_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c0010,c0011,c001m1,c1000,c2000,c3000))
 
 ws.put(bkg)
 
@@ -771,16 +781,16 @@ pdf_ext = ws.pdf('pdf_ext')
 print 'GOING TO BUILD THE ACCEPTANCE CORRECTED FULL PDF!'
 fullcorrpdf = buildEff_x_PDF(ws,'eff',pdf_ext,[ ( ab.build('mom_eff',c[0],0,c[1],c[2],1.), c[3] ) for c in coef ] )
 ws.put(fullcorrpdf)
-
+assert False
 #result = pdf_ext.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-result = fullcorrpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+#result = fullcorrpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
 
 if useTransversityAngles:
     #plot = plottrans(ws,data,pdf_ext,'transplot')
     plot = plottrans(ws,data,fullcorrpdf,'transplot')
 else:
     #plot = plothel(ws,data,pdf_ext,'transplot')
-    plot = plothel(ws,data,fullcorrpdf,'transplot')
+    plot = plothel(ws,data,fullcorrpdf,'helplot')
 
 ####################
 # Latex code of the fitted parameters
