@@ -1,3 +1,12 @@
+####################################################################################################
+####################################################################################################
+# This script performs the untagged fit of Note2.
+#    * Flat background, written explicitly as RooP2VVAngleBasis, to have it corrected by signal efficiency.
+#      In general this is not what we want, but we do this to compare with groups that use normalization weights, in that case correcting background with signal efficiency is the only choice you have.
+#    * Angular acceptance is applied using a MC dataset, can be turned off by fitting for pdf_ext instead of angcorrpdf
+#    * Blinding can be turned on/off by setting the blinded flag
+# Daan van Eijk, 02-28-2011
+
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
