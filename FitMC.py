@@ -1,3 +1,5 @@
+# DvE Fits the signal PDF only to MC data, EvtGen only, to see if we understand the .dec file.
+
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi

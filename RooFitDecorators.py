@@ -138,3 +138,70 @@ def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfO
 
     c.Update()
     return c
+
+def writeCorrMatrixLatex(roofitresult):
+    parlist = roofitresult.floatParsFinal()
+    npar = parlist.getSize()
+    corr = []
+    for i in range(npar):
+        corr.append(roofitresult.correlation(parlist[i]))
+
+    layoutstring = '|c'*(npar+1)
+    layoutstring += '|}'
+
+    string = '\\documentclass{article}\n'
+    string += '\\begin{document}\n'
+    string += '\\begin{table}[h]\n'
+    string += '\\begin{center}\n'
+    string += '\\begin{tabular}{'
+    string += layoutstring+'\n' 
+    string += '\\hline\n'
+    string += 'Parameter '
+    for i in range(npar):
+        string += ' & %s'%(parlist[i].GetName())
+    string += ' \\\\\n'
+    string += '\\hline\n\\hline\n'
+
+
+    for j in range(npar):
+        string += parlist[j].GetName() 
+        for i in range(npar):
+            if i>=j:
+                if corr[j][i].getVal() < 0.005:
+                    string += ' & - '
+                else:
+                    string += ' & ' + str(round(corr[j][i].getVal(),3)) 
+            else : 
+                string += ' & '
+        string += ' \\\\\n'
+    string += '\\hline\n'
+    string += '\\end{tabular}\n'
+    string += '\\end{center}\n'
+    string += '\\end{table}\n'
+    string += '\\end{document}\n'
+
+    f = open('corrtable.tex', 'w')
+    f.write(string)
+    f.close
+
+    return {'string':string}
+
+def writeFitParamsLatex(paramlist):
+    import subprocess
+    paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()),RooFit.OutputFile('temp.tex'))
+
+    orig = open('temp.tex','r')
+    f = open('fitparams.tex','w')
+
+    string = '\\documentclass{article}\n'
+    string += '\\begin{document}\n'
+    string += orig.read()
+    string += '\\end{document}\n'
+    
+    f.write(string)
+    orig.close()
+    f.close()
+
+    subprocess.call(['rm', 'temp.tex'])
+    
+    return
