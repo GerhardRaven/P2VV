@@ -10,6 +10,7 @@
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
+from array import array
 
 from RooFitDecorators import *
 import rootStyle
@@ -52,7 +53,7 @@ else:
 
 ab = abasis(ws,angles)
 
-ws.factory("{rz2[0.601,0.4,0.7],rperp2[0.16,0.1,0.5]")
+ws.factory("{rz2[0.601,0.4,0.7],rperp2[0.16,0.1,0.5]}")
 ws.factory("RooFormulaVar::rpar2('1-@0-@1',{rz2,rperp2})")
 ws.factory("RooFormulaVar::rz('sqrt(@0)',{rz2})")
 ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
@@ -627,8 +628,7 @@ if plotting:
                 , logy = False
                 )
 
-gamma = ws.var('#Gamma')
-deltaGamma = ws.var('t_sig_dG')
+
 
 LL = False
 if LL:
@@ -659,104 +659,53 @@ if LL:
     nll.plotOn(deltaGammaframe,RooFit.ShiftToZero())
     deltaGammaframe.Draw()
 
+gamma = ws.var('#Gamma')
+deltaGamma = ws.var('t_sig_dG')
+phis = ws.var('phis')
 
-Profiles = False
-if Profiles:
-    #############################
-    # From Gerhard
-    #############################
+#setting back values
+ws.var('#Gamma').setVal(0.68)
+ws.var('t_sig_dG').setVal(0.060)
+ws.var('phis').setVal(0.0)
 
-    CC=TCanvas("CC","CC",1200,350)
-    CC.Divide(3)
+MakeProfile('ProfiledGamma_Gamma',data,angcorrpdf,2,gamma,0.55,0.85,deltaGamma,-0.35,0.45)
 
-    plc_gamma = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf,RooArgSet(gamma))
-    plot_gamma = RooStats.LikelihoodIntervalPlot(plc_gamma.GetInterval())
-    CC.cd(1)
-    plot_gamma.Draw()
+#setting back values
+ws.var('#Gamma').setVal(0.68)
+ws.var('t_sig_dG').setVal(0.060)
+ws.var('phis').setVal(0.0)
+MakeProfile('ProfiledGamma_phis',data,angcorrpdf,2,phis,-1*pi,pi,deltaGamma,-1,1)
 
-    plc_deltaGamma = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf,RooArgSet(deltaGamma))
-    plot_deltaGamma = RooStats.LikelihoodIntervalPlot(plc_deltaGamma.GetInterval())
-    CC.cd(2)
-    plot_deltaGamma.Draw()
 
-    CC.cd(3)
-    opt = ''
-    plot = dict()
-    for (lvl,col) in zip( [ 0.95, 0.90, 0.68 ],[ kYellow, kOrange, kRed ]) :
-    #for (lvl,col) in zip( [ 0.68 ],[  kRed ]) :
-        iplc = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf, RooArgSet(gamma,deltaGamma) )
-        iplc.SetConfidenceLevel(lvl)
-        plot[lvl] = RooStats.LikelihoodIntervalPlot(  iplc.GetInterval() )
-        plot[lvl].SetNPoints(11)
-        #plot[lvl].SetFillColor(col)
-        plot[lvl].SetContourColor(col)
-        plot[lvl].Draw(','.join(['nominuit',opt]))
-        #plot[lvl].Draw(opt);
-        if not opt : opt = 'same'
+#We might still need this to see if the fits are fine actually, I remember seeing something fits hitting borders.....
 
-#There exists something like this:
-#RooAbsReal* nll = fPdf->createNLL(data, RooFit::CloneData(kFALSE));
-#RooAbsReal* profile = nll->createProfile(paramsOfInterest);
-#Could we use that?
+## for i in range(1,npoints+1):
+##     param1_val = param1_min + (i-1)*(param1_int/npoints)
+##     for j in range(1,npoints+1):
+##         param2_val = param2_min + (j-1)*(param2_int/npoints)
+##         print '***************************************************************************'
+##         print 'At gridpoint i = %i from %i and j = %i from %i'%(i,npoints,j,npoints)
+##         print '%s at current gridpoint ='%(param1.GetName()), param1_val
+##         print '%s at current gridpoint ='%(param2.GetName()), param2_val
+##         print '***************************************************************************'
+##         param1.setVal(param1_val)
+##         #param1.setConstant(kTRUE)
+##         param2.setVal(param2_val)
+##         #param2.setConstant(kTRUE)
+##         #result = angcorrpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+##         #nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8))
+##         #nllval = nll.getVal()
+##         #ProfileLikelihood.SetBinContent(i,j,nllval)
+##         ProfileLikelihood.SetBinContent(i,j,prof.getVal())
+##         #Heights.SetBinContent(i,j,2*(-1*(nllMINval)+nllval))
+        
+## gStyle.SetPalette(1)
+## gStyle.SetOptStat(0)
+## Canvas = TCanvas('Canvas','Canvas')
 
-print 'Start to make ProfileLikelihood'
+## ProfileLikelihood.Draw()
 
-param1 = gamma
-param2 = deltaGamma
-
-param1.setMin(0.55)
-param1.setMax(0.85)
-param2.setMin(-0.35)
-param2.setMax(0.45)
-
-param1_min = param1.getMin()
-param1_max = param1.getMax()
-param1_int = param1_min-param1_max
-
-#get range for param2
-param2_min = param2.getMin()
-param2_max = param2.getMax()
-param2_int = param2_max - param2_min
-
-npoints = 10
-
-nllMIN = nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8))
-nllMINval = nllMIN.getVal()
-
-ProfileLikelihood = TH2D('ProfileLikelihood','ProfileLikelihood',npoints,param1_min,param1_max,npoints,param2_min,param2_max)
-Heights = TH2D('Heights','Heights',npoints,param1_min,param1_max,npoints,param2_min,param2_max)
-for i in range(1,npoints+1):
-    param1_val = param1_min + (i-1)*(param1_int/npoints)
-    for j in range(1,npoints+1):
-        param2_val = param2_min + (j-1)*(param2_int/npoints)
-        print '***************************************************************************'
-        print 'At gridpoint i = %i from %i and j = %i from %i'%(i,npoints,j,npoints)
-        print '%s at current gridpoint ='%(param1.GetName()), param1_val
-        print '%s at current gridpoint ='%(param2.GetName()), param2_val
-        print '***************************************************************************'
-        param1.setVal(param1_val)
-        param1.setConstant(kTRUE)
-        param2.setVal(param2_val)
-        param2.setConstant(kTRUE)
-        result = angcorrpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-        nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8))
-        nllval = nll.getVal()
-        ProfileLikelihood.SetBinContent(i,j,nllval)
-        Heights.SetBinContent(i,j,2*(-1*(nllMINval)+nllval))
-
-gStyle.SetPalette(1)
-gStyle.SetOptStat(0)
-Canvas = TCanvas('Canvas','Canvas')
-Canvas.Divide(2,1)
-
-Canvas.cd(1)
-ProfileLikelihood.Draw('surf2')
-
-Canvas.cd(2)
-Heights.Draw('surf2')
-
-tfile = TFile('profilelikelihood.root','RECREATE')
-ProfileLikelihood.Write()
-Heights.Write()
-tfile.Close()
+## tfile = TFile('profilelikelihood.root','RECREATE')
+## ProfileLikelihood.Write()
+## tfile.Close()
 

@@ -205,3 +205,42 @@ def writeFitParamsLatex(paramlist):
     subprocess.call(['rm', 'temp.tex'])
     
     return
+
+def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max):
+    print '**************************************************'
+    print 'Going to make profile for %s and %s'%(param1.GetName(),param2.GetName())
+    print '**************************************************'
+    param1.setMin(param1min)
+    param1.setMax(param1max)
+    param2.setMin(param2min)
+    param2.setMax(param2max)
+
+    param1_min = param1.getMin()
+    param1_max = param1.getMax()
+    param1_int = param1_min-param1_max
+
+    #get range for param2
+    param2_min = param2.getMin()
+    param2_max = param2.getMax()
+    param2_int = param2_max - param2_min
+
+    nll = pdf.createNLL(data,RooFit.NumCPU(8),RooFit.Extended(true))
+    ProfileLikelihood = TH2D(name,name,npoints,param1_min,param1_max,npoints,param2_min,param2_max)
+    profile = nll.createProfile(RooArgSet( param1,param2))
+    x = ProfileLikelihood.GetXaxis()
+    y = ProfileLikelihood.GetYaxis()
+
+    for i in range(1,x.GetNbins()+1):  # does ROOT  start at 1 or at 0?
+        param1.setVal( x.GetBinCenter(i) )
+        for j in range(1,y.GetNbins()+1):# does ROOT  start at 1 or at 0?
+            param2.setVal( y.GetBinCenter(j) )
+            print '***************************************************************************'
+            print 'At gridpoint i = %i from %i and j = %i from %i'%(i,npoints,j,npoints)
+            print '%s at current gridpoint ='%(param1.GetName()), param1.getVal()
+            print '%s at current gridpoint ='%(param2.GetName()), param2.getVal()
+            print '***************************************************************************'
+            ProfileLikelihood.SetBinContent(i,j,profile.getVal())
+
+    tfile = TFile('%s.root'%(name),'RECREATE')
+    ProfileLikelihood.Write() 
+    tfile.Close()
