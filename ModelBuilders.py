@@ -2,6 +2,16 @@ from ROOT import *
 import RooFitDecorators
 gSystem.Load("libp2vv")
 
+def product(*args, **kwds):
+    # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
+    # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
+    pools = map(tuple, args) * kwds.get('repeat', 1)
+    result = [[]]
+    for pool in pools:
+        result = [x+[y] for x in result for y in pool]
+    for prod in result:
+        yield tuple(prod)
+
 feelTheNeedForSpeed = True
 if feelTheNeedForSpeed:
     ### experimental fast(er) toy generator...
@@ -140,6 +150,101 @@ def buildJpsiphi(ws, name, transversity ) : # TODO: add tagsplit
     ws.factory("BDecay::%s(t,t_sig_tau,t_sig_dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,t_sig_dm,tres_sig,SingleSided)" % name)
     return ws.pdf(name)
 
+#############
+### SWAVE ###
+#############
+
+def _buildTransversityBasisSWave(ws, ab) :
+    #definition of the angular part of the PDF in terms of basis functions...
+    # transversity amplitudes in terms of transversity angles
+    _ba = lambda name,comp : _buildAngularFunction(ws,ab,name,comp)
+
+    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./ 5.))
+                                 , ( 2,0,0, 0, 4.), ( 2,0,2,0,  sqrt(4./ 5.)), ( 2,0,2,2, -sqrt(12./ 5.)) ] )
+             , _ba("AparApar",   [ ( 2,2,0, 0, 1.), ( 2,2,2,0,  sqrt(1./20.)), ( 2,2,2,2,  sqrt( 3./20.)) ] )
+             , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0, -sqrt(1./ 5.)) ] )
+             , _ba("AparAperp",  [ ( 2,2,2,-1,  sqrt(3./5.)) ] )
+             , _ba("AzAperp",    [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
+             , _ba("AzApar",     [ ( 2,1,2,-2, -sqrt(6./5.)) ] )
+             , _ba("AsAs",       [ ( 0,0,0, 0, 4.), ( 0,0,2,0,  2*sqrt(1./ 5.)), ( 0,0,2,2, -2*sqrt( 3./ 5.)) ] )
+             , _ba("AzAs",       [ (1,0,0,0, 8*sqrt(3)),(1,0,2,0, 4*sqrt(3./5.)),(1,0,2,2, 12*sqrt(1./5.))] )
+             , _ba("AparAs",     [ (1,1,2,-2, -6*sqrt(2./5.))] )
+             , _ba("AperpAs",    [ (1,1,2,1, 6*sqrt(2./5.))] )
+             )
+
+def _buildHelicityBasisSWave(ws, ab) :
+    #definition of the angular part of the PDF in terms of basis functions...
+    #transversity amplitudes in terms of helicity angles
+    _ba = lambda name,comp : _buildAngularFunction(ws,ab,name,comp)
+    
+    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), (0,0,2,0, -sqrt(4./5.))
+                                 , ( 2,0,0, 0, 4.), (2,0,2,0, -sqrt(16./5.)) ] )
+             , _ba("AparApar",   [ ( 2,2,0, 0, 1.), (2,2,2, 0, sqrt(1./20.)), ( 2,2,2,2,  -sqrt(3./20.)) ] )
+             , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0, sqrt(1./ 20.)), (2,2,2,2,sqrt(3./20.)) ] )
+             , _ba("AparAperp",  [ ( 2,2,2,-2,  sqrt(3./5.)) ] )
+             , _ba("AzAperp",    [ ( 2,1,2,-1, -sqrt(6./5.)) ] )
+             , _ba("AzApar",     [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
+             , _ba("AsAs",       [ ( 0,0,0, 0, 4.), ( 0,0,2,0,  -4*sqrt(1./ 5.)) ] )
+             , _ba("AzAs",       [ (1,0,0,0, 8*sqrt(3)), (1,0,2,0, -8*sqrt(1./5.)) ] )
+             , _ba("AparAs",     [ (1,1,2,1, 6*sqrt(2./5.)) ] )
+             , _ba("AperpAs",    [ (1,1,2,-1, -6*sqrt(2./5.))] )
+             )
+
+def buildJpsiphiSWave(ws, name, transversity ) : # TODO: add tagsplit
+    afb = AngleFunctionBuilder(ws, 'transversity' if transversity else 'helicity' )
+    basis = afb.basis()
+
+    # define the relevant combinations of strong amplitudes
+    ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,    ImAz                      })")  # |A_z|^2
+    ws.factory("expr::NAparApar  ('( @0 * @0 + @1 * @1 )',{ReApar,  ImApar                    })")  # |A_par|^2
+    ws.factory("expr::NAperpAperp('( @0 * @0 + @1 * @1 )',{ReAperp, ImAperp                   })")  # |A_perp|^2
+    ws.factory("expr::ReAparAperp('( @0 * @2 + @1 * @3 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par||A_perp| cos(delta_perp - delta_par)
+    ws.factory("expr::ReAzAperp  ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   cos(delta_perp - delta_z)
+    ws.factory("expr::ReAzApar   ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReApar,  ImApar  })")  # |A_z||A_par|    cos(delta_par  - delta_z)
+    ws.factory("expr::ImAparAperp('( @0 * @3 - @1 * @2 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par|A_perp|  sin(delta_perp - delta_par)
+    ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   sin(delta_perp - delta_z)
+    ws.factory("expr::NAsAs      ('( @0 * @0 + @1 * @1 )',{ReAs,    ImAs                      })")  # |A_s|^2
+    ws.factory("expr::ReAsAz     ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| cos(delta_s - delta_z)
+    ws.factory("expr::ReAsApar   ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| cos(delta_s - delta_par)
+    ws.factory("expr::ImAsAperp  ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAperp, ImAperp })")  # |A_s||A_perp| sin(delta_s - delta_perp)
+    
+    ws.factory("expr::qtag_('@0*(1-2*@1)',{tagdecision,wtag})")
+    ws.factory("expr::N('1.0/(1.0+@0*@1)',{tagdecision,C})")
+    ws.factory("Minus[-1]")
+
+    ws.factory("$Alias(Addition_,sum_)")
+    ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
+                                   ", prod(N,NAparApar,                AparApar_basis)"
+                                   ", prod(N,NAperpAperp,              AperpAperp_basis)"
+                                   ", prod(N,ImAparAperp,            C,AparAperp_basis)"
+                                   ", prod(N,ImAzAperp,              C,AzAperp_basis)"
+                                   ", prod(N,ReAzApar,                 AzApar_basis)"
+                                   "})")
+    ws.factory("sum_::fjpsiphi_cos ({ prod(N,NAzAz,            qtag_,C,AzAz_basis)"
+                                   ", prod(N,NAparApar,        qtag_,C,AparApar_basis)"
+                                   ", prod(N,NAperpAperp,      qtag_,C,AperpAperp_basis)"
+                                   ", prod(N,ImAparAperp,      qtag_,  AparAperp_basis)"
+                                   ", prod(N,ImAzAperp,        qtag_,  AzAperp_basis)"
+                                   ", prod(N,ReAzApar,         qtag_,C,AzApar_basis)"
+                                   "})")
+    ws.factory("sum_::fjpsiphi_sinh({ prod(N,NAzAz,      Minus,      D,AzAz_basis)"
+                                   ", prod(N,NAparApar,  Minus,      D,AparApar_basis)"
+                                   ", prod(N,NAperpAperp,            D,AperpAperp_basis)"
+                                   ", prod(N,ReAparAperp,            S,AparAperp_basis)"
+                                   ", prod(N,ReAzAperp,              S,AzAperp_basis)"
+                                   ", prod(N,ReAzApar,   Minus,      D,AzApar_basis)"
+                                   "})")
+    ws.factory("sum_::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
+                                   ", prod(N,NAparApar,  Minus,qtag_,S,AparApar_basis)"
+                                   ", prod(N,NAperpAperp,      qtag_,S,AperpAperp_basis)"
+                                   ", prod(N,ReAparAperp,Minus,qtag_,D,AparAperp_basis)"
+                                   ", prod(N,ReAzAperp,  Minus,qtag_,D,AzAperp_basis)"
+                                   ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
+                                   "})")
+
+    ws.factory("BDecay::%s(t,t_sig_tau,t_sig_dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,t_sig_dm,tres_sig,SingleSided)" % name)
+    return ws.pdf(name)
+
 
 def buildJpsikstar(ws, name) :
     _buildTransversityBasis(ws, abasis(ws,ws.set('transversityangles')))
@@ -229,7 +334,7 @@ class TimeResolutionBuilder :
         if type(t)      is str : t      = ws[t]
         if type(sigmat) is str : sigmat = ws[sigmat]
         # define outlier catcher
-        if false :
+        if True :
             ws.factory("GaussModel::tres_3(%s,zero[0],tres_3_s[3,1,5])" % (t.GetName()) )
         else :
            ws.factory("{tres_3_l[1.7,0.9,3.0],tres_3_s[1,0.5,2]}")
@@ -239,7 +344,7 @@ class TimeResolutionBuilder :
 
         for name in [ 'sig','nonpsi' ] :
             ws.factory("GaussModel::tres_%s_1(%s,tres_%s_m[0,-0.2,0.2],tres_%s_s1[1.1,0.3,2 ], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
-            if False :
+            if True :
                ws.factory("GaussModel::tres_%s_2(%s,tres_%s_m,            tres_%s_s2[20.,1.5,30], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
             else :
                # try GExp instead of G2  -- so that the limit GExp -> G (i.e. 'lifetime'->0) it returns to the original
@@ -301,7 +406,7 @@ class BkgAnglePdfBuilder :
             dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0",opt[name]['weight']) # need a dummy cut, as passing a (const char*)0 is kind of difficult...
             self._dataw[name] = dataw
             moments = []
-            from itertools import product
+            #from itertools import product
             ranges = opt[name]['ranges']
             for (i,l,m) in product(ranges[0],ranges[1],ranges[2]) :
                   if abs(m)>l : continue
@@ -317,16 +422,19 @@ class BkgAnglePdfBuilder :
 
         canvas = []
         for i in ['psibkg','nonpsibkg'] : 
-            c = TCanvas('angle_%s'%i)
+            c = TCanvas('angles_%s'%i,'angles_%s'%i)
             canvas.append(c)
             c.Divide(3,2)
             for (f,v) in enumerate( self._angles ) :
                 c.cd(1+f)
                 frame = v.frame()
+                print 'ABOUT TO PLOT SWEIGHTED DATA'
                 self._dataw[i].plotOn(frame)
+                print 'ABOUT TO PLOT PDF'
                 self._pdf[i].plotOn(frame)
                 frame.Draw()
 
+                print 'BEFORE 2D HISTS'
                 c.cd(4+f)
                 others = RooArgList( self._angles )
                 others.remove( v )
@@ -531,14 +639,9 @@ def declareObservables( ws, mode ):
         ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
         ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
 
-    # trigger
-    ws.factory("unbiased[yes=+1,no=0]")
     # tag 
     ws.factory("tagdecision[bbar=+1,b=-1]")
-    ws.factory("tagomega[0,0.500001]")
-
-    ws.factory("decaytype[JpsiKplus=10,JpsiKmin=11,JpsiKstar0=20,JpsiKstarbar0=21,Jpsiphi=40]")
-
+    ws.factory("wtag[0,0.500001]")
 
     # B, jpsi, phi mass
     #ws.factory("m[5200,5450]")
@@ -557,9 +660,9 @@ def declareObservables( ws, mode ):
 
     # define a set for the observables (we can also define this from the pdf and data.
     if mode in [ 'Bs2Jpsiphi', 'Bd2JpsiKstar' ] :
-        ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,tagomega,tagdecision,decaytype,unbiased") 
+        ws.defineSet("observables","m,t,sigmat,mdau1,mdau2,trcostheta,trcospsi,trphi,wtag,tagdecision") 
     else :
-        ws.defineSet("observables","m,t,sigmat,mdau1,tagomega,tagdecision,decaytype,unbiased") 
+        ws.defineSet("observables","m,t,sigmat,mdau1,wtag,tagdecision") 
 
 def declareObservablesNoDau2( ws ):
     from math import pi

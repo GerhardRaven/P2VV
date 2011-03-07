@@ -60,6 +60,14 @@ ws.factory("RooFormulaVar::rpar('sqrt(@0)',{rpar2})")
 
 ws.factory("{deltaz[0.],deltapar[2.5,%f,%f],deltaperp[-0.17]}"%(-2*pi,2*pi))
 
+# create observables
+ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
+ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
+ws.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})")
+ws.factory("expr::ImApar ('rpar  * sin(deltapar)', {rpar,deltapar})")
+ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
+ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
+
 ##########################
 ### physics parameters ###
 ##########################
@@ -73,7 +81,6 @@ ws.factory("{t_sig_dm[17.8]}")
 ws.factory('{phis[-0.04]}')
 
 ws.factory("{expr::S('-1*sin(phis)',{phis}),expr::D('cos(phis)',{phis}),C[0]}")
-ws.factory("{expr::Sold('sin(phis)',{phis}),expr::Dold('cos(phis)',{phis}),Cold[0]}")
 
 ###############################
 ### Experimental parameters ###
@@ -86,14 +93,9 @@ ws.factory("RooGaussModel::tres_sig(t,mu[0],sigma[0.05])")
 # For determination of efficiency from MC, put wtag to 0, later integrate out (or set to 0.5 as I used to do before). Does that imply rebuilding the JpsiPhi pdf?
 ws.factory("{wtag[0.0]}")
 
-##################################### building the NEW pdf ###################################
-# create observables
-ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
-ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
-ws.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})")
-ws.factory("expr::ImApar ('rpar  * sin(deltapar)', {rpar,deltapar})")
-ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
-ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
+########################
+### Building the PDF ###
+########################
 
 if useTransversityAngles:
     newpdf = buildJpsiphi(ws,'newpdf', True) 
@@ -122,23 +124,18 @@ print 'Number of truth matched MC events', MCdata.numEntries()
 
 pdf = ws.pdf('newpdf')
 
-allObs = pdf.getObservables( MCdata.get() )
 
-angles = pdf.getObservables( MCdata.get() )
-angles.remove(ws.var('t'))
-angles.remove(ws.cat('tagdecision'))
-angles.remove(ws.var('m'))
+allObs = pdf.getObservables( MCdata.get() )
 
 print 'angles: ', [ i.GetName() for i in angles ]
 
 print 'observables:', [ i.GetName() for i in allObs ]
 
-# define the moments used to describe the efficiency
-# for this, we need the PDF used to generate the data
 marginalObs = pdf.getObservables( MCdata.get() )
 marginalObs.remove( angles )
 
 print 'marginal obs: ', [i.GetName() for i in marginalObs]
+
 # marginalize pdf over 'the rest' so we get the normalization of the moments right...
 pdf_marginal = pdf.createProjection(marginalObs)
 
@@ -418,277 +415,348 @@ dict = writeCorrMatrixLatex(result)
 ##################
 ###   Plotting ###
 ##################
+plotting = False
 
-msigmin = 5345.
-msigmax = 5387.
-mmin = 5200.
-mmax = 5550
-ws.var('m').setRange('sigRegion',msigmin,msigmax)
-ws.var('m').setRange('leftSideband',mmin,msigmin)
-ws.var('m').setRange('rightSideband',msigmax,mmax)
+if plotting:
+    msigmin = 5345.
+    msigmax = 5387.
+    mmin = 5200.
+    mmax = 5550
+    ws.var('m').setRange('sigRegion',msigmin,msigmax)
+    ws.var('m').setRange('leftSideband',mmin,msigmin)
+    ws.var('m').setRange('rightSideband',msigmax,mmax)
 
-canvas = TCanvas('MassTime','MassTime')
-canvas.Divide(3,2)
+    canvas = TCanvas('MassTime','MassTime')
+    canvas.Divide(3,2)
 
-canvas.cd(1)
-myline1=TLine(tmin,msigmin,tmax,msigmin)
-myline1.SetLineColor(3)
-myline1.SetLineWidth(2)
-myline1.SetLineStyle(1)
-myline2=TLine(tmin,msigmax,tmax,msigmax)
-myline2.SetLineColor(3)
-myline2.SetLineWidth(2)
-myline2.SetLineStyle(1)
+    canvas.cd(1)
+    myline1=TLine(tmin,msigmin,tmax,msigmin)
+    myline1.SetLineColor(3)
+    myline1.SetLineWidth(2)
+    myline1.SetLineStyle(1)
+    myline2=TLine(tmin,msigmax,tmax,msigmax)
+    myline2.SetLineColor(3)
+    myline2.SetLineWidth(2)
+    myline2.SetLineStyle(1)
 
-hist = data.createHistogram(ws.var('t'),ws.var('m'))
-hist.SetMarkerSize(0.3)
-hist.SetMarkerStyle(20)
-hist.SetStats(kFALSE)
-hist.GetXaxis().SetTitle(str(ws.var('t').getTitle()))
-hist.GetYaxis().SetTitle(str(ws.var('m').getTitle()))
-hist.SetTitle('B_{s} mass vs. proper time')
-hist.Draw()
-myline1.Draw('same')
-myline2.Draw('same')
-canvas.Update()
+    hist = data.createHistogram(ws.var('t'),ws.var('m'))
+    hist.SetMarkerSize(0.3)
+    hist.SetMarkerStyle(20)
+    hist.SetStats(kFALSE)
+    hist.GetXaxis().SetTitle(str(ws.var('t').getTitle()))
+    hist.GetYaxis().SetTitle(str(ws.var('m').getTitle()))
+    hist.SetTitle('B_{s} mass vs. proper time')
+    hist.Draw()
+    myline1.Draw('same')
+    myline2.Draw('same')
+    canvas.Update()
 
 
-_c2 = plot( canvas.cd(2),ws.var('m'),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('B_{s} mass'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) )
-            , pdfOpts = ( RooFit.LineWidth(2), ) 
-            , logy = False
-            )
+    _c2 = plot( canvas.cd(2),ws.var('m'),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('B_{s} mass'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) )
+                , pdfOpts = ( RooFit.LineWidth(2), ) 
+                , logy = False
+                )
 
-_c3 = plot( canvas.cd(3),ws.var('t'),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('proper time full mass range'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) )
-            , pdfOpts = ( RooFit.LineWidth(2), ) 
-            , logy = True
-            )
+    _c3 = plot( canvas.cd(3),ws.var('t'),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('proper time full mass range'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) )
+                , pdfOpts = ( RooFit.LineWidth(2), ) 
+                , logy = True
+                )
 
-_c4 = plot( canvas.cd(4),ws.var('t'),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title("proper time signal region") )
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('sigRegion') )
-            , pdfOpts = ( RooFit.LineWidth(2), ) 
-            , logy = True
-            )
+    _c4 = plot( canvas.cd(4),ws.var('t'),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title("proper time signal region") )
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('sigRegion') )
+                , pdfOpts = ( RooFit.LineWidth(2), ) 
+                , logy = True
+                )
 
-_c5 = plot( canvas.cd(5),ws.var('t'),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title("proper time signal region") )
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('leftSideband') )
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('leftSideband')) 
-            , logy = True
-            )
+    _c5 = plot( canvas.cd(5),ws.var('t'),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title("proper time signal region") )
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('leftSideband') )
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('leftSideband')) 
+                , logy = True
+                )
 
-_c6 = plot( canvas.cd(6),ws.var('t'),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title("proper time signal region") )
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('rightSideband') )
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('rightSideband')) 
-            , logy = True
-            )
+    _c6 = plot( canvas.cd(6),ws.var('t'),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title("proper time signal region") )
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('rightSideband') )
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('rightSideband')) 
+                , logy = True
+                )
 
-anglescanvas = TCanvas('Angles','Angles')
-anglescanvas.Divide(3,4)
+    anglescanvas = TCanvas('Angles','Angles')
+    anglescanvas.Divide(3,4)
 
-anglesnamelist = angles.nameList()
+    anglesnamelist = angles.nameList()
 
-_ac1 = plot( anglescanvas.cd(1),ws.var(anglesnamelist[0]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#psi)'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  )
-            , pdfOpts = ( RooFit.LineWidth(2), ) 
-            , logy = False
-            )
+    _ac1 = plot( anglescanvas.cd(1),ws.var(anglesnamelist[0]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#psi)'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  )
+                , pdfOpts = ( RooFit.LineWidth(2), ) 
+                , logy = False
+                )
 
-_ac2 = plot( anglescanvas.cd(2),ws.var(anglesnamelist[1]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#theta)'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  )
-            , pdfOpts = ( RooFit.LineWidth(2), ) 
-            , logy = False
-            )
+    _ac2 = plot( anglescanvas.cd(2),ws.var(anglesnamelist[1]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#theta)'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  )
+                , pdfOpts = ( RooFit.LineWidth(2), ) 
+                , logy = False
+                )
 
-_ac3 = plot( anglescanvas.cd(3),ws.var(anglesnamelist[2]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('#phi'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  )
-            , pdfOpts = ( RooFit.LineWidth(2), ) 
-            , logy = False
-            )
+    _ac3 = plot( anglescanvas.cd(3),ws.var(anglesnamelist[2]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('#phi'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  )
+                , pdfOpts = ( RooFit.LineWidth(2), ) 
+                , logy = False
+                )
 
-_ac4 = plot( anglescanvas.cd(4),ws.var(anglesnamelist[0]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#psi) in signal region'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('sigRegion')  )
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('sigRegion')) 
-            , logy = False
-            )
+    _ac4 = plot( anglescanvas.cd(4),ws.var(anglesnamelist[0]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#psi) in signal region'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('sigRegion')  )
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('sigRegion')) 
+                , logy = False
+                )
 
-_ac5 = plot( anglescanvas.cd(5),ws.var(anglesnamelist[1]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#theta) in signal region'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('sigRegion')  )
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('sigRegion')) 
-            , logy = False
-            )
+    _ac5 = plot( anglescanvas.cd(5),ws.var(anglesnamelist[1]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#theta) in signal region'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('sigRegion')  )
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('sigRegion')) 
+                , logy = False
+                )
 
-_ac6 = plot( anglescanvas.cd(6),ws.var(anglesnamelist[2]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('#phi in signal region'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  RooFit.CutRange('sigRegion'))
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('sigRegion')) 
-            , logy = False
-            )
+    _ac6 = plot( anglescanvas.cd(6),ws.var(anglesnamelist[2]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('#phi in signal region'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  RooFit.CutRange('sigRegion'))
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('sigRegion')) 
+                , logy = False
+                )
 
-_ac7 = plot( anglescanvas.cd(7),ws.var(anglesnamelist[0]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#psi) in left sideband'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('leftSideband')  )
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('leftSideband')) 
-            , logy = False
-            )
+    _ac7 = plot( anglescanvas.cd(7),ws.var(anglesnamelist[0]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#psi) in left sideband'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('leftSideband')  )
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('leftSideband')) 
+                , logy = False
+                )
 
-_ac8 = plot( anglescanvas.cd(8),ws.var(anglesnamelist[1]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#theta) in left sideband'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('leftSideband')  )
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('leftSideband')) 
-            , logy = False
-            )
+    _ac8 = plot( anglescanvas.cd(8),ws.var(anglesnamelist[1]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#theta) in left sideband'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('leftSideband')  )
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('leftSideband')) 
+                , logy = False
+                )
 
-_ac9 = plot( anglescanvas.cd(9),ws.var(anglesnamelist[2]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('#phi in left sideband'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  RooFit.CutRange('leftSideband'))
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('leftSideband')) 
-            , logy = False
-            )
+    _ac9 = plot( anglescanvas.cd(9),ws.var(anglesnamelist[2]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('#phi in left sideband'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  RooFit.CutRange('leftSideband'))
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('leftSideband')) 
+                , logy = False
+                )
 
-_ac10 = plot( anglescanvas.cd(10),ws.var(anglesnamelist[0]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#psi) in right sideband'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('rightSideband')  )
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('rightSideband')) 
-            , logy = False
-            )
+    _ac10 = plot( anglescanvas.cd(10),ws.var(anglesnamelist[0]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#psi) in right sideband'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('rightSideband')  )
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('rightSideband')) 
+                , logy = False
+                )
 
-_ac11 = plot( anglescanvas.cd(11),ws.var(anglesnamelist[1]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#theta) in right sideband'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('rightSideband')  )
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('rightSideband')) 
-            , logy = False
-            )
+    _ac11 = plot( anglescanvas.cd(11),ws.var(anglesnamelist[1]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('cos(#theta) in right sideband'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0), RooFit.CutRange('rightSideband')  )
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('rightSideband')) 
+                , logy = False
+                )
 
-_ac12 = plot( anglescanvas.cd(12),ws.var(anglesnamelist[2]),data,angcorrpdf
-            , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
-                , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
-                }
-            , frameOpts = ( RooFit.Bins(30), RooFit.Title('#phi in right sideband'))
-            , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  RooFit.CutRange('rightSideband'))
-            , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('rightSideband')) 
-            , logy = False
-            )
-
-assert False
+    _ac12 = plot( anglescanvas.cd(12),ws.var(anglesnamelist[2]),data,angcorrpdf
+                , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
+                    , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
+                    }
+                , frameOpts = ( RooFit.Bins(30), RooFit.Title('#phi in right sideband'))
+                , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0),  RooFit.CutRange('rightSideband'))
+                , pdfOpts = ( RooFit.LineWidth(2), RooFit.ProjectionRange('rightSideband')) 
+                , logy = False
+                )
 
 gamma = ws.var('#Gamma')
 deltaGamma = ws.var('t_sig_dG')
 
-########################
-#Try from RooFit tutorial (only for LL plots, not for contour plots, use RooStats for that, otherwise it will miss the other minima...)
-#########################
-CanL = TCanvas('CanL','CanL')
-CanL.Divide(2,1)
+LL = False
+if LL:
+    ########################
+    #Try from RooFit tutorial (only for LL plots, not for contour plots, use RooStats for that, otherwise it will miss the other minima...)
+    #########################
+    CanL = TCanvas('CanL','CanL')
+    CanL.Divide(2,1)
 
-#Construct unbinned likelihood
-nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8)) 
+    #Construct unbinned likelihood
+    nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8)) 
 
-#Minimize likelihood w.r.t all parameters before making plots
-minuit = RooMinuit(nll)
-minuit.migrad()
+    #Minimize likelihood w.r.t all parameters before making plots
+    minuit = RooMinuit(nll)
+    minuit.migrad()
 
-#Plot likelihood scan frac 
-CanL.cd(1)
-gammaframe = gamma.frame(RooFit.Bins(10),RooFit.Title("LL in #Gamma"))#Range(0.01,0.95)
-gammaframe.SetXTitle('#Gamma')
-nll.plotOn(gammaframe,RooFit.ShiftToZero())
-gammaframe.Draw()
+    #Plot likelihood scan frac 
+    CanL.cd(1)
+    gammaframe = gamma.frame(RooFit.Bins(10),RooFit.Title("LL in #Gamma"))#Range(0.01,0.95)
+    gammaframe.SetXTitle('#Gamma')
+    nll.plotOn(gammaframe,RooFit.ShiftToZero())
+    gammaframe.Draw()
 
-#Plot likelihood scan in sigma_g2
-CanL.cd(2)
-deltaGammaframe = deltaGamma.frame(RooFit.Bins(10),RooFit.Title("LL in #Delta #Gamma"))#Range(3.3,5.0),
-deltaGammaframe.SetXTitle('#Delta #Gamma')
-nll.plotOn(deltaGammaframe,RooFit.ShiftToZero())
-deltaGammaframe.Draw()
-
-#############################
-# From Gerhard
-#############################
+    #Plot likelihood scan in sigma_g2
+    CanL.cd(2)
+    deltaGammaframe = deltaGamma.frame(RooFit.Bins(10),RooFit.Title("LL in #Delta #Gamma"))#Range(3.3,5.0),
+    deltaGammaframe.SetXTitle('#Delta #Gamma')
+    nll.plotOn(deltaGammaframe,RooFit.ShiftToZero())
+    deltaGammaframe.Draw()
 
 
-CC=TCanvas("CC","CC",1200,350)
-CC.Divide(3)
+Profiles = False
+if Profiles:
+    #############################
+    # From Gerhard
+    #############################
 
-plc_gamma = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf,RooArgSet(gamma))
-plot_gamma = RooStats.LikelihoodIntervalPlot(plc_phis.GetInterval())
-CC.cd(1)
-plot_gamma.Draw()
+    CC=TCanvas("CC","CC",1200,350)
+    CC.Divide(3)
 
-plc_deltaGamma = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf,RooArgSet(deltaGamma))
-plot_deltaGamma = RooStats.LikelihoodIntervalPlot(plc_deltaGamma.GetInterval())
-CC.cd(2)
-plot_deltaGamma.Draw()
+    plc_gamma = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf,RooArgSet(gamma))
+    plot_gamma = RooStats.LikelihoodIntervalPlot(plc_gamma.GetInterval())
+    CC.cd(1)
+    plot_gamma.Draw()
 
-CC.cd(3)
-opt = ''
-plot = dict()
-for (lvl,col) in zip( [ 0.95, 0.90, 0.68 ],[ kYellow, kOrange, kRed ]) :
-#for (lvl,col) in zip( [ 0.68 ],[  kRed ]) :
-    iplc = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf, RooArgSet(gamma,deltaGamma) )
-    iplc.SetConfidenceLevel(lvl)
-    plot[lvl] = RooStats.LikelihoodIntervalPlot(  iplc.GetInterval() )
-    plot[lvl].SetNPoints(11)
-    #plot[lvl].SetFillColor(col)
-    plot[lvl].SetContourColor(col)
-    plot[lvl].Draw(','.join(['nominuit',opt]))
-    #plot[lvl].Draw(opt);
-    if not opt : opt = 'same'
+    plc_deltaGamma = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf,RooArgSet(deltaGamma))
+    plot_deltaGamma = RooStats.LikelihoodIntervalPlot(plc_deltaGamma.GetInterval())
+    CC.cd(2)
+    plot_deltaGamma.Draw()
+
+    CC.cd(3)
+    opt = ''
+    plot = dict()
+    for (lvl,col) in zip( [ 0.95, 0.90, 0.68 ],[ kYellow, kOrange, kRed ]) :
+    #for (lvl,col) in zip( [ 0.68 ],[  kRed ]) :
+        iplc = RooStats.ProfileLikelihoodCalculator(data,angcorrpdf, RooArgSet(gamma,deltaGamma) )
+        iplc.SetConfidenceLevel(lvl)
+        plot[lvl] = RooStats.LikelihoodIntervalPlot(  iplc.GetInterval() )
+        plot[lvl].SetNPoints(11)
+        #plot[lvl].SetFillColor(col)
+        plot[lvl].SetContourColor(col)
+        plot[lvl].Draw(','.join(['nominuit',opt]))
+        #plot[lvl].Draw(opt);
+        if not opt : opt = 'same'
+
+#There exists something like this:
+#RooAbsReal* nll = fPdf->createNLL(data, RooFit::CloneData(kFALSE));
+#RooAbsReal* profile = nll->createProfile(paramsOfInterest);
+#Could we use that?
+
+print 'Start to make ProfileLikelihood'
+
+param1 = gamma
+param2 = deltaGamma
+
+param1.setMin(0.55)
+param1.setMax(0.85)
+param2.setMin(-0.35)
+param2.setMax(0.45)
+
+param1_min = param1.getMin()
+param1_max = param1.getMax()
+param1_int = param1_min-param1_max
+
+#get range for param2
+param2_min = param2.getMin()
+param2_max = param2.getMax()
+param2_int = param2_max - param2_min
+
+npoints = 10
+
+nllMIN = nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8))
+nllMINval = nllMIN.getVal()
+
+ProfileLikelihood = TH2D('ProfileLikelihood','ProfileLikelihood',npoints,param1_min,param1_max,npoints,param2_min,param2_max)
+Heights = TH2D('Heights','Heights',npoints,param1_min,param1_max,npoints,param2_min,param2_max)
+for i in range(1,npoints+1):
+    param1_val = param1_min + (i-1)*(param1_int/npoints)
+    for j in range(1,npoints+1):
+        param2_val = param2_min + (j-1)*(param2_int/npoints)
+        print '***************************************************************************'
+        print 'At gridpoint i = %i from %i and j = %i from %i'%(i,npoints,j,npoints)
+        print '%s at current gridpoint ='%(param1.GetName()), param1_val
+        print '%s at current gridpoint ='%(param2.GetName()), param2_val
+        print '***************************************************************************'
+        param1.setVal(param1_val)
+        param1.setConstant(kTRUE)
+        param2.setVal(param2_val)
+        param2.setConstant(kTRUE)
+        result = angcorrpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+        nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8))
+        nllval = nll.getVal()
+        ProfileLikelihood.SetBinContent(i,j,nllval)
+        Heights.SetBinContent(i,j,2*(-1*(nllMINval)+nllval))
+
+gStyle.SetPalette(1)
+gStyle.SetOptStat(0)
+Canvas = TCanvas('Canvas','Canvas')
+Canvas.Divide(2,1)
+
+Canvas.cd(1)
+ProfileLikelihood.Draw('surf2')
+
+Canvas.cd(2)
+Heights.Draw('surf2')
+
+tfile = TFile('profilelikelihood.root','RECREATE')
+ProfileLikelihood.Write()
+Heights.Write()
+tfile.Close()
+
