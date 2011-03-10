@@ -668,13 +668,19 @@ ws.var('#Gamma').setVal(0.68)
 ws.var('t_sig_dG').setVal(0.060)
 ws.var('phis').setVal(0.0)
 
-MakeProfile('ProfiledGamma_Gamma',data,angcorrpdf,2,gamma,0.55,0.85,deltaGamma,-0.35,0.45)
+#MakeProfile('ProfiledGamma_Gamma',data,angcorrpdf,12,gamma,0.55,0.85,deltaGamma,-0.35,0.45)
 
 #setting back values
 ws.var('#Gamma').setVal(0.68)
 ws.var('t_sig_dG').setVal(0.060)
 ws.var('phis').setVal(0.0)
-MakeProfile('ProfiledGamma_phis',data,angcorrpdf,2,phis,-1*pi,pi,deltaGamma,-1,1)
+ws.var('phis').setConstant(kFALSE)
+#With phis unconstrained we now also have sensitivity to deltaperp!!!! 
+ws.var('deltaperp').setMin(-2*pi)
+ws.var('deltaperp').setMax(2*pi)
+ws.var('deltaperp').setConstant(kFALSE)
+
+MakeProfile('ProfiledGamma_phis_untagged',data,angcorrpdf,15,phis,-pi,pi,deltaGamma,-1,1)
 
 
 #We might still need this to see if the fits are fine actually, I remember seeing something fits hitting borders.....

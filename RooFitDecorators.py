@@ -207,6 +207,7 @@ def writeFitParamsLatex(paramlist):
     return
 
 def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max):
+    import time
     print '**************************************************'
     print 'Going to make profile for %s and %s'%(param1.GetName(),param2.GetName())
     print '**************************************************'
@@ -230,6 +231,8 @@ def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2mi
     x = ProfileLikelihood.GetXaxis()
     y = ProfileLikelihood.GetYaxis()
 
+    sumtime = 0
+    
     for i in range(1,x.GetNbins()+1):  # does ROOT  start at 1 or at 0?
         param1.setVal( x.GetBinCenter(i) )
         for j in range(1,y.GetNbins()+1):# does ROOT  start at 1 or at 0?
@@ -239,8 +242,17 @@ def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2mi
             print '%s at current gridpoint ='%(param1.GetName()), param1.getVal()
             print '%s at current gridpoint ='%(param2.GetName()), param2.getVal()
             print '***************************************************************************'
+            timestart = time.time()
             ProfileLikelihood.SetBinContent(i,j,profile.getVal())
-
+            timeend = time.time()
+            elapsedmin = (timeend-timestart)/60.
+            if (i!=1 or (i==1 and j!=1)): 
+                sumtime += elapsedmin
+                avgtime = sumtime/((i-1)*npoints+j-1)#(ij) = is the (i-1)*npoints+j-1 th fit, but we exclude the first one, due the initialization
+                print 'This step took %f min. '%(elapsedmin)
+                print 'Average time per step is now ',avgtime
+                print 'Estimated remaining running time is', ((npoints*npoints)-((i-1)*npoints+j-1))*avgtime
+            
     tfile = TFile('%s.root'%(name),'RECREATE')
     ProfileLikelihood.Write() 
     tfile.Close()

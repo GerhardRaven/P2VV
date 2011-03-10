@@ -167,7 +167,7 @@ def _buildTransversityBasisSWave(ws, ab) :
              , _ba("AzAperp",    [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
              , _ba("AzApar",     [ ( 2,1,2,-2, -sqrt(6./5.)) ] )
              , _ba("AsAs",       [ ( 0,0,0, 0, 4.), ( 0,0,2,0,  2*sqrt(1./ 5.)), ( 0,0,2,2, -2*sqrt( 3./ 5.)) ] )
-             , _ba("AzAs",       [ (1,0,0,0, 8*sqrt(3)),(1,0,2,0, 4*sqrt(3./5.)),(1,0,2,2, 12*sqrt(1./5.))] )
+             , _ba("AzAs",       [ (1,0,0,0, 8*sqrt(3)),(1,0,2,0, 4*sqrt(3./5.)),(1,0,2,2, -12*sqrt(1./5.))] )
              , _ba("AparAs",     [ (1,1,2,-2, -6*sqrt(2./5.))] )
              , _ba("AperpAs",    [ (1,1,2,1, 6*sqrt(2./5.))] )
              )
@@ -185,9 +185,9 @@ def _buildHelicityBasisSWave(ws, ab) :
              , _ba("AzAperp",    [ ( 2,1,2,-1, -sqrt(6./5.)) ] )
              , _ba("AzApar",     [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
              , _ba("AsAs",       [ ( 0,0,0, 0, 4.), ( 0,0,2,0,  -4*sqrt(1./ 5.)) ] )
-             , _ba("AzAs",       [ (1,0,0,0, 8*sqrt(3)), (1,0,2,0, -8*sqrt(1./5.)) ] )
-             , _ba("AparAs",     [ (1,1,2,1, 6*sqrt(2./5.)) ] )
-             , _ba("AperpAs",    [ (1,1,2,-1, -6*sqrt(2./5.))] )
+             , _ba("AsAz",       [ (1,0,0,0, 8*sqrt(3)), (1,0,2,0, -8*sqrt(1./5.)) ] )
+             , _ba("AsApar",     [ (1,1,2,1, 6*sqrt(2./5.)) ] )
+             , _ba("AsAperp",    [ (1,1,2,-1, -6*sqrt(2./5.))] )
              )
 
 def buildJpsiphiSWave(ws, name, transversity ) : # TODO: add tagsplit
@@ -204,42 +204,66 @@ def buildJpsiphiSWave(ws, name, transversity ) : # TODO: add tagsplit
     ws.factory("expr::ImAparAperp('( @0 * @3 - @1 * @2 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par|A_perp|  sin(delta_perp - delta_par)
     ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   sin(delta_perp - delta_z)
     ws.factory("expr::NAsAs      ('( @0 * @0 + @1 * @1 )',{ReAs,    ImAs                      })")  # |A_s|^2
-    ws.factory("expr::ReAsAz     ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| cos(delta_s - delta_z)
-    ws.factory("expr::ReAsApar   ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| cos(delta_s - delta_par)
-    ws.factory("expr::ImAsAperp  ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAperp, ImAperp })")  # |A_s||A_perp| sin(delta_s - delta_perp)
+    ws.factory("expr::ReAsAz     ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| cos(delta_z - delta_s)
+    ws.factory("expr::ReAsApar   ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| cos(delta_par - delta_s)
+    ws.factory("expr::ImAsAperp  ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAperp, ImAperp })")  # |A_s||A_perp| sin(delta_perp - delta_s)
+    ws.factory("expr::ImAsAz     ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| sin(delta_z - delta_s)
+    ws.factory("expr::ImAsApar   ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| sin(delta_par - delta_s)
+    
     
     ws.factory("expr::qtag_('@0*(1-2*@1)',{tagdecision,wtag})")
     ws.factory("expr::N('1.0/(1.0+@0*@1)',{tagdecision,C})")
+    ws.factory("expr::Fp('1-@0',{Fs})")
     ws.factory("Minus[-1]")
 
     ws.factory("$Alias(Addition_,sum_)")
-    ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
-                                   ", prod(N,NAparApar,                AparApar_basis)"
-                                   ", prod(N,NAperpAperp,              AperpAperp_basis)"
-                                   ", prod(N,ImAparAperp,            C,AparAperp_basis)"
-                                   ", prod(N,ImAzAperp,              C,AzAperp_basis)"
-                                   ", prod(N,ReAzApar,                 AzApar_basis)"
+    ws.factory("sum_::fjpsiphi_cosh({ prod(Fp,N,NAzAz,                    AzAz_basis)"
+                                   ", prod(Fp,N,NAparApar,                AparApar_basis)"
+                                   ", prod(Fp,N,NAperpAperp,              AperpAperp_basis)"
+                                   ", prod(Fp,N,ImAparAperp,            C,AparAperp_basis)"
+                                   ", prod(Fp,N,ImAzAperp,              C,AzAperp_basis)"
+                                   ", prod(Fp,N,ReAzApar,                 AzApar_basis)"
+
+                                   ", prod(Fs,N,NAsAs,                    AsAs_basis)"
+                                   ", prod(N,ImAsAperp,                AsAperp_basis)"
+                                   ", prod(N,ReAsApar,               C,AsApar_basis)"
+                                   ", prod(N,ReAsAz,                 C,AsAz_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_cos ({ prod(N,NAzAz,            qtag_,C,AzAz_basis)"
-                                   ", prod(N,NAparApar,        qtag_,C,AparApar_basis)"
-                                   ", prod(N,NAperpAperp,      qtag_,C,AperpAperp_basis)"
-                                   ", prod(N,ImAparAperp,      qtag_,  AparAperp_basis)"
-                                   ", prod(N,ImAzAperp,        qtag_,  AzAperp_basis)"
-                                   ", prod(N,ReAzApar,         qtag_,C,AzApar_basis)"
+    ws.factory("sum_::fjpsiphi_cos ({ prod(Fp,N,NAzAz,            qtag_,C,AzAz_basis)"
+                                   ", prod(Fp,N,NAparApar,        qtag_,C,AparApar_basis)"
+                                   ", prod(Fp,N,NAperpAperp,      qtag_,C,AperpAperp_basis)"
+                                   ", prod(Fp,N,ImAparAperp,      qtag_,  AparAperp_basis)"
+                                   ", prod(Fp,N,ImAzAperp,        qtag_,  AzAperp_basis)"
+                                   ", prod(Fp,N,ReAzApar,         qtag_,C,AzApar_basis)"
+
+                                   ", prod(Fs,N,NAsAs,            qtag_,C,AsAs_basis)"
+                                   ", prod(N,ImAsAperp,        qtag_,C,AsAperp_basis)"
+                                   ", prod(N,ReAsApar,         qtag_,  AsApar_basis)"
+                                   ", prod(N,ReAsAz,           qtag_,  AsAz_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_sinh({ prod(N,NAzAz,      Minus,      D,AzAz_basis)"
-                                   ", prod(N,NAparApar,  Minus,      D,AparApar_basis)"
-                                   ", prod(N,NAperpAperp,            D,AperpAperp_basis)"
-                                   ", prod(N,ReAparAperp,            S,AparAperp_basis)"
-                                   ", prod(N,ReAzAperp,              S,AzAperp_basis)"
-                                   ", prod(N,ReAzApar,   Minus,      D,AzApar_basis)"
+    ws.factory("sum_::fjpsiphi_sinh({ prod(Fp,N,NAzAz,      Minus,      D,AzAz_basis)"
+                                   ", prod(Fp,N,NAparApar,  Minus,      D,AparApar_basis)"
+                                   ", prod(Fp,N,NAperpAperp,            D,AperpAperp_basis)"
+                                   ", prod(Fp,N,ReAparAperp,            S,AparAperp_basis)"
+                                   ", prod(Fp,N,ReAzAperp,              S,AzAperp_basis)"
+                                   ", prod(Fp,N,ReAzApar,   Minus,      D,AzApar_basis)"
+
+                                   ", prod(Fs,N,NAsAs,                  D,AsAs_basis)"
+                                   ", prod(N,ImAsAperp,              D,AsAperp_basis)"
+                                   ", prod(N,ImAsApar,   Minus       S,AsApar_basis)"
+                                   ", prod(N,ImAsAz,     Minus       S,AsAz_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
-                                   ", prod(N,NAparApar,  Minus,qtag_,S,AparApar_basis)"
-                                   ", prod(N,NAperpAperp,      qtag_,S,AperpAperp_basis)"
-                                   ", prod(N,ReAparAperp,Minus,qtag_,D,AparAperp_basis)"
-                                   ", prod(N,ReAzAperp,  Minus,qtag_,D,AzAperp_basis)"
-                                   ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
+    ws.factory("sum_::fjpsiphi_sin ({ prod(Fp,N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
+                                   ", prod(Fp,N,NAparApar,  Minus,qtag_,S,AparApar_basis)"
+                                   ", prod(Fp,N,NAperpAperp,      qtag_,S,AperpAperp_basis)"
+                                   ", prod(Fp,N,ReAparAperp,Minus,qtag_,D,AparAperp_basis)"
+                                   ", prod(Fp,N,ReAzAperp,  Minus,qtag_,D,AzAperp_basis)"
+                                   ", prod(Fp,N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
+
+                                   ", prod(Fs,N,NAsAs,           ,qtag_,S,AsAs_basis)"
+                                   ", prod(N,ImAsAperp,       ,qtag_,S,AsAperp_basis)"
+                                   ", prod(N,ImAsApar,        ,qtag_,D,AsApar_basis)"
+                                   ", prod(N,ImAsAz,          ,qtag_,D,AsAz_basis)"
                                    "})")
 
     ws.factory("BDecay::%s(t,t_sig_tau,t_sig_dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,t_sig_dm,tres_sig,SingleSided)" % name)
