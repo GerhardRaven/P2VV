@@ -57,10 +57,7 @@ ws.factory("expr::t_sig_tau('1/@0',{#Gamma})")
 
 ws.factory("{t_sig_dG[0.060,-2,2]}")
 
-#Fix deltams
-ws.factory("{t_sig_dm[17.8]}")
-#Float deltams
-#ws.factory("{t_sig_dm[17.2,18.4]}")
+ws.factory("{t_sig_dm[17.8,15,20]}")
 
 ws.factory('{phis[-0.04,%f,%f]}'%(-pi,pi))
 

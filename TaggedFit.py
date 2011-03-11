@@ -77,9 +77,14 @@ elif blinded:
 else:
     pdf = ws.pdf('pdf_ext_angcorrpdf')
 
+#Fix deltams
+#ws.var('t_sig_dm').setVal(17.8)
+#ws.var('t_sig_dm').setConstant(kTRUE)
+#result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
 
-
-result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+#Constrain deltams
+ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.77],t_sig_dm_sigma[0.12])")
+result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true),RooFit.ExternalConstraints(RooArgSet(ws.pdf('dmsconstraint'))))
 
 paramlist = pdf.getParameters(data)
 writeFitParamsLatex(paramlist)
@@ -87,16 +92,6 @@ writeFitParamsLatex(paramlist)
 dict = writeCorrMatrixLatex(result)
 
 assert False
-
-#Make PDF conditional on WA deltams
-ws.factory("Gaussian::dmGauss(t_sig_dm,t_sig_dm_mean[17.77],t_sig_dm_sigma[0.12])")
-ws.factory("PROD::condpdf(pdf_ext_fourier_eff_full|t_sig_dm,dmGauss)")
-condpdf = ws.pdf('condpdf')
-
-frame = ws.var('t_sig_dm').frame()
-ws.pdf('dmGauss').plotOn(frame)
-frame.Draw()
-
 
 ################
 ### Profiles ###
@@ -110,4 +105,4 @@ ws.var('phis').setVal(0.0)
 phis = ws.var('phis')
 deltaGamma = ws.var('t_sig_dG')
 
-MakeProfile('ProfiledGamma_phis_tagged',data,angcorrpdf,15,phis,-pi,pi,deltaGamma,-1,1)
+MakeProfile('ProfiledGamma_phis_tagged',data,pdf,15,phis,-pi,pi,deltaGamma,-1,1)
