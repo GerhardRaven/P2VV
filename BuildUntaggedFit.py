@@ -4,7 +4,7 @@
 #    * Flat background, written explicitly as RooP2VVAngleBasis, to have it corrected by signal efficiency.
 #      In general this is not what we want, but we do this to compare with groups that use normalization weights, in that case correcting background with signal efficiency is the only choice you have.
 #    * Angular acceptance is applied using a MC dataset, can be turned off by fitting for pdf_ext instead of angcorrpdf
-#    * Blinding can be turned on/off by setting the blinded flag
+#    * Blinding is handled in the TaggedFit.py script
 # Daan van Eijk, 03-11-2011
 
 from ROOT import *
@@ -25,8 +25,6 @@ gStyle.UseCurrentStyle()
 ##########################   There we go!!!!! ################################
 ##############################################################################
 signif = 1
-
-blinded = False
 
 from ModelBuilders import *
 
@@ -256,31 +254,6 @@ mnarrowmin = 5321.67
 mnarrowmax = 5411.67
 #m.setRange(mnarrowmin,mnarrowmax)
 
-#Set back some values before the fit!
-
-ws['wtag'].setVal(0.5)
-ws['phis'].setVal(0)
-
-if blinded:
-   #Building blinded parameters
-   ws.factory("RooUnblindUniform::#Gamma_unblind('BsCalvin',0.4,#Gamma)")
-   ws.factory("expr::t_sig_tau_blind('1/@0',{#Gamma_unblind})")
-   ws.factory("RooUnblindUniform::t_sig_dG_blind('BsHobbes',0.2,t_sig_dG)")
-
-   customizer = RooCustomizer(pdf,'blinded')
-
-   tau_unblind = ws.function('t_sig_tau')
-   tau_blind = ws.function('t_sig_tau_blind')
-
-   dG_unblind = ws.var('t_sig_dG')
-   dG_blind = ws.function('t_sig_dG_blind')
-
-   customizer.replaceArg( tau_unblind, tau_blind )
-   customizer.replaceArg( dG_unblind, dG_blind )
-
-   blindedpdf = customizer.build()
-   ws.put(blindedpdf)
-
 #################
 ### Load Data ###
 #################
@@ -370,11 +343,7 @@ ang_bkg = RooRealSumPdf('ang_bkg','ang_bkg',RooArgList(ws['Bkg_0000_basis']),Roo
 
 ws.put(ang_bkg)
 
-if blinded:
-    ws.factory("PROD::sig_pdf( m_sig, newpdf_blinded)")
-else:
-    ws.factory("PROD::sig_pdf( m_sig, newpdf)")
-
+ws.factory("PROD::sig_pdf( m_sig, newpdf)")
 
 ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, ang_bkg)")
 

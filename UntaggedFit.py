@@ -22,17 +22,52 @@ ws = wsfile.Get('ws')
 angcorrpdf = ws.pdf('pdf_ext_angcorrpdf')
 data = ws.data('data')
 
+################
+### Blinding ###
+################
+blinded = False
+
+if blinded:
+   #Building blinded parameters
+   ws.factory("RooUnblindUniform::#Gamma_unblind('BsCalvin',0.4,#Gamma)")
+   ws.factory("expr::t_sig_tau_blind('1/@0',{#Gamma_unblind})")
+   ws.factory("RooUnblindUniform::t_sig_dG_blind('BsHobbes',0.2,t_sig_dG)")
+
+   customizer = RooCustomizer(angcorrpdf,'blinded')
+
+   tau_unblind = ws.function('t_sig_tau')
+   tau_blind = ws.function('t_sig_tau_blind')
+
+   dG_unblind = ws.var('t_sig_dG')
+   dG_blind = ws.function('t_sig_dG_blind')
+
+   customizer.replaceArg( tau_unblind, tau_blind )
+   customizer.replaceArg( dG_unblind, dG_blind )
+
+   blindedpdf = customizer.build()
+   ws.put(blindedpdf)
+
+if blinded:
+    pdf = ws.pdf('pdf_ext_angcorrpdf_blinded')
+else:
+    pdf = ws.pdf('pdf_ext_angcorrpdf')
+
 #Proper time acceptance 
 #ptacc = RooFormulaVar('ptacc','ptacc','1-0.025*@0',RooArgList(t))
-#finalpdf = RooEffProd('finalpdf','finalpdf',angcorrpdf,ptacc)
+#finalpdf = RooEffProd('finalpdf','finalpdf',pdf,ptacc)
 
 ###########
 ### Fit ###
 ###########
 
-result = angcorrpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+#Set back some values before the fit!
 
-paramlist = angcorrpdf.getParameters(data)
+ws['wtag'].setVal(0.5)
+ws['phis'].setVal(0)
+
+result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+
+paramlist = pdf.getParameters(data)
 writeFitParamsLatex(paramlist)
 
 dict = writeCorrMatrixLatex(result)
@@ -50,7 +85,7 @@ ws.var('#Gamma').setVal(0.68)
 ws.var('t_sig_dG').setVal(0.060)
 ws.var('phis').setVal(0.0)
 
-#MakeProfile('ProfiledGamma_Gamma',data,angcorrpdf,12,gamma,0.55,0.85,deltaGamma,-0.35,0.45)
+#MakeProfile('ProfiledGamma_Gamma',data,pdf,12,gamma,0.55,0.85,deltaGamma,-0.35,0.45)
 
 #setting back values
 ws.var('#Gamma').setVal(0.68)
@@ -62,7 +97,7 @@ ws.var('deltaperp').setMin(-2*pi)
 ws.var('deltaperp').setMax(2*pi)
 ws.var('deltaperp').setConstant(kFALSE)
 
-#MakeProfile('ProfiledGamma_phis_untagged',data,angcorrpdf,15,phis,-pi,pi,deltaGamma,-0.7,0.7)
+#MakeProfile('ProfiledGamma_phis_untagged',data,pdf,15,phis,-pi,pi,deltaGamma,-0.7,0.7)
 
 
 #We might still need this to see if the fits are fine actually, I remember seeing something fits hitting borders.....
@@ -90,11 +125,11 @@ ws.var('deltaperp').setConstant(kFALSE)
 ## print '**************************************************'
 ## print 'Minimizing NLL'
 ## print '**************************************************'
-## nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8))
+## nll = pdf.createNLL(data,RooFit.NumCPU(8))
 ## m = RooMinuit(nll)
 ## #m.setVerbose(kTRUE)
 ## m.migrad()
-## angcorrpdf.getParameters(data).Print("s")
+## pdf.getParameters(data).Print("s")
 
 ## assert False
 
@@ -111,8 +146,8 @@ ws.var('deltaperp').setConstant(kFALSE)
 ##         #param1.setConstant(kTRUE)
 ##         param2.setVal(param2_val)
 ##         #param2.setConstant(kTRUE)
-##         #result = angcorrpdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-##         #nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8))
+##         #result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
+##         #nll = pdf.createNLL(data,RooFit.NumCPU(8))
 ##         #nllval = nll.getVal()
 ##         #ProfileLikelihood.SetBinContent(i,j,nllval)
 ##         ProfileLikelihood.SetBinContent(i,j,prof.getVal())
@@ -137,7 +172,7 @@ if LL:
     CanL.Divide(2,1)
 
     #Construct unbinned likelihood
-    nll = angcorrpdf.createNLL(data,RooFit.NumCPU(8)) 
+    nll = pdf.createNLL(data,RooFit.NumCPU(8)) 
 
     #Minimize likelihood w.r.t all parameters before making plots
     minuit = RooMinuit(nll)
@@ -160,6 +195,9 @@ if LL:
 ##################
 ###   Plotting ###
 ##################
+
+# Watch out, the names of the signal and background components are hard-coded!!!!
+
 plotting = False
 
 if plotting:
@@ -197,7 +235,7 @@ if plotting:
     canvas.Update()
 
 
-    _c2 = plot( canvas.cd(2),ws.var('m'),data,angcorrpdf
+    _c2 = plot( canvas.cd(2),ws.var('m'),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -207,7 +245,7 @@ if plotting:
                 , logy = False
                 )
 
-    _c3 = plot( canvas.cd(3),ws.var('t'),data,angcorrpdf
+    _c3 = plot( canvas.cd(3),ws.var('t'),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -217,7 +255,7 @@ if plotting:
                 , logy = True
                 )
 
-    _c4 = plot( canvas.cd(4),ws.var('t'),data,angcorrpdf
+    _c4 = plot( canvas.cd(4),ws.var('t'),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -227,7 +265,7 @@ if plotting:
                 , logy = True
                 )
 
-    _c5 = plot( canvas.cd(5),ws.var('t'),data,angcorrpdf
+    _c5 = plot( canvas.cd(5),ws.var('t'),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -237,7 +275,7 @@ if plotting:
                 , logy = True
                 )
 
-    _c6 = plot( canvas.cd(6),ws.var('t'),data,angcorrpdf
+    _c6 = plot( canvas.cd(6),ws.var('t'),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -252,7 +290,7 @@ if plotting:
 
     anglesnamelist = angles.nameList()
 
-    _ac1 = plot( anglescanvas.cd(1),ws.var(anglesnamelist[0]),data,angcorrpdf
+    _ac1 = plot( anglescanvas.cd(1),ws.var(anglesnamelist[0]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -262,7 +300,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac2 = plot( anglescanvas.cd(2),ws.var(anglesnamelist[1]),data,angcorrpdf
+    _ac2 = plot( anglescanvas.cd(2),ws.var(anglesnamelist[1]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -272,7 +310,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac3 = plot( anglescanvas.cd(3),ws.var(anglesnamelist[2]),data,angcorrpdf
+    _ac3 = plot( anglescanvas.cd(3),ws.var(anglesnamelist[2]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -282,7 +320,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac4 = plot( anglescanvas.cd(4),ws.var(anglesnamelist[0]),data,angcorrpdf
+    _ac4 = plot( anglescanvas.cd(4),ws.var(anglesnamelist[0]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -292,7 +330,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac5 = plot( anglescanvas.cd(5),ws.var(anglesnamelist[1]),data,angcorrpdf
+    _ac5 = plot( anglescanvas.cd(5),ws.var(anglesnamelist[1]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -302,7 +340,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac6 = plot( anglescanvas.cd(6),ws.var(anglesnamelist[2]),data,angcorrpdf
+    _ac6 = plot( anglescanvas.cd(6),ws.var(anglesnamelist[2]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -312,7 +350,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac7 = plot( anglescanvas.cd(7),ws.var(anglesnamelist[0]),data,angcorrpdf
+    _ac7 = plot( anglescanvas.cd(7),ws.var(anglesnamelist[0]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -322,7 +360,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac8 = plot( anglescanvas.cd(8),ws.var(anglesnamelist[1]),data,angcorrpdf
+    _ac8 = plot( anglescanvas.cd(8),ws.var(anglesnamelist[1]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -332,7 +370,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac9 = plot( anglescanvas.cd(9),ws.var(anglesnamelist[2]),data,angcorrpdf
+    _ac9 = plot( anglescanvas.cd(9),ws.var(anglesnamelist[2]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -342,7 +380,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac10 = plot( anglescanvas.cd(10),ws.var(anglesnamelist[0]),data,angcorrpdf
+    _ac10 = plot( anglescanvas.cd(10),ws.var(anglesnamelist[0]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -352,7 +390,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac11 = plot( anglescanvas.cd(11),ws.var(anglesnamelist[1]),data,angcorrpdf
+    _ac11 = plot( anglescanvas.cd(11),ws.var(anglesnamelist[1]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
@@ -362,7 +400,7 @@ if plotting:
                 , logy = False
                 )
 
-    _ac12 = plot( anglescanvas.cd(12),ws.var(anglesnamelist[2]),data,angcorrpdf
+    _ac12 = plot( anglescanvas.cd(12),ws.var(anglesnamelist[2]),data,pdf
                 , { 'sig_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) )
                     , 'bkg_pdf_angcorrpdf'  : ( RooFit.LineColor(RooFit.kRed),RooFit.LineStyle(kDashed) )
                     }
