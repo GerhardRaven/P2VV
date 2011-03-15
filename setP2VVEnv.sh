@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export P2VVPATH=$(pwd)
+export LD_LIBRARY_PATH=$P2VVPATH/lib:$LD_LIBRARY_PATH
+export PYTHONPATH=$P2VVPATH/python:$PYTHONPATH
