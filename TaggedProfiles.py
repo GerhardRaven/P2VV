@@ -86,6 +86,8 @@ ws.var('#Gamma').setVal(0.68)
 ws.var('#Gamma').setMax(2.)
 ws.var('t_sig_dG').setVal(0.060)
 ws.var('phis').setVal(pi)
+ws.var('phis').setMin(0.)
+ws.var('phis').setMax(2*pi)
 
 phis = ws.var('phis')
 deltaGamma = ws.var('t_sig_dG')
@@ -102,9 +104,6 @@ valuedeltaGamma = RooRealVar("valuedeltaGamma","valuedeltaGamma",.0)
 
 dlogLLArgSet = RooArgSet(BaseNLL,GridPointNLL,stepphis,valuephis,stepdeltaGamma,valuedeltaGamma)
 dlogLLDataSet = RooDataSet('dlogLLDataSet','dlogLLDataSet',dlogLLArgSet)
-
-phis.setMin(0.)
-phis.setMax(2*pi)
 
 phis_min = 0
 phis_max = 2*pi

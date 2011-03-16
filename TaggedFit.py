@@ -87,9 +87,16 @@ else:
 #ws.var('t_sig_dm').setConstant(kTRUE)
 #result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
 
+ws.var('#Gamma').setVal(0.68)
+ws.var('#Gamma').setMax(2.)
+ws.var('t_sig_dG').setVal(0.060)
+ws.var('phis').setVal(pi)
+ws.var('phis').setMin(0.)
+ws.var('phis').setMax(2*pi)
+
 #Constrain deltams
 ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.77],t_sig_dm_sigma[0.12])")
-result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true),RooFit.ExternalConstraints(RooArgSet(ws.pdf('dmsconstraint'))),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'))),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'))))
+result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'))))
 
 paramlist = pdf.getParameters(data)
 writeFitParamsLatex(paramlist)
