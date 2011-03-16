@@ -4,18 +4,26 @@ from math import sqrt,pi
 from array import array
 
 from RooFitDecorators import *
-import rootStyle
-from ModelBuilders import _buildAngularFunction
+
+#import rootStyle
 #from ROOT import (gROOT,gStyle,TStyle)
-myStyle = rootStyle.plainstyle()
-gROOT.SetStyle(myStyle.GetName())
-gROOT.ForceStyle()
-gStyle.UseCurrentStyle()
+#myStyle = rootStyle.plainstyle()
+#gROOT.SetStyle(myStyle.GetName())
+#gROOT.ForceStyle()
+#gStyle.UseCurrentStyle()
+
+taggingsyst = True
+blinded = False
+reblinded = True
 
 wsfile = TFile('TaggedWS.root')
 ws = wsfile.Get('ws')
 
-angcorrpdf = ws.pdf('pdf_ext_angcorrpdf')
+if taggingsyst:
+    pdfbeforeblinding = ws.pdf('pdf_ext_angcorrpdf_inc_tag_syst')
+else:
+    pdfbeforeblinding = ws.pdf('pdf_ext_angcorrpdf')
+
 data = ws.data('data')
 
 #For tagged fit with phis set to zero:
@@ -28,9 +36,6 @@ data = ws.data('data')
 ### Blinding ###
 ################
 
-blinded = False
-reblinded = True
-
 if blinded:
     #Building blinded parameters
     ws.factory("RooUnblindUniform::#Gamma_unblind('BsCalvin',0.4,#Gamma)")
@@ -41,7 +46,7 @@ if blinded:
     ws.factory("RooUnblindUniform::phis_blind('BsGoofy',3,phis)")
 
     #calling RooCustomizer
-    customizer = RooCustomizer(angcorrpdf,'blinded')
+    customizer = RooCustomizer(pdfbeforeblinding,'blinded')
 
     tau_unblind = ws.function('t_sig_tau')
     tau_blind = ws.function('t_sig_tau_blind')
@@ -60,7 +65,7 @@ if blinded:
 if reblinded:
     ws.factory("RooUnblindUniform::phis_blind('BsOlivier',3,phis)")
 
-    customizer = RooCustomizer(angcorrpdf,'reblinded')
+    customizer = RooCustomizer(pdfbeforeblinding,'reblinded')
 
     phis_unblind = ws.var('phis')
     phis_blind = ws.function('phis_blind')
@@ -71,11 +76,11 @@ if reblinded:
     ws.put(reblindedpdf)
 
 if reblinded:
-    pdf = ws.pdf('pdf_ext_angcorrpdf_reblinded')
+    pdf = reblindedpdf
 elif blinded:
-    pdf = ws.pdf('pdf_ext_angcorrpdf_blinded')
+    pdf = blindedpdf
 else:
-    pdf = ws.pdf('pdf_ext_angcorrpdf')
+    pdf = pdfbeforeblinding
 
 #Fix deltams
 #ws.var('t_sig_dm').setVal(17.8)
@@ -84,14 +89,12 @@ else:
 
 #Constrain deltams
 ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.77],t_sig_dm_sigma[0.12])")
-result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true),RooFit.ExternalConstraints(RooArgSet(ws.pdf('dmsconstraint'))))
+result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true),RooFit.ExternalConstraints(RooArgSet(ws.pdf('dmsconstraint'))),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'))),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'))))
 
 paramlist = pdf.getParameters(data)
 writeFitParamsLatex(paramlist)
 
 dict = writeCorrMatrixLatex(result)
-
-assert False
 
 ################
 ### Profiles ###
@@ -105,4 +108,4 @@ ws.var('phis').setVal(0.0)
 phis = ws.var('phis')
 deltaGamma = ws.var('t_sig_dG')
 
-MakeProfile('ProfiledGamma_phis_tagged',data,pdf,15,phis,-pi,pi,deltaGamma,-1,1)
+#MakeProfile('ProfiledGamma_phis_tagged',data,pdf,15,phis,0,2*pi,deltaGamma,-0.7,0.7)

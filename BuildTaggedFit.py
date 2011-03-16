@@ -72,7 +72,8 @@ ws.factory("{expr::S('-1*sin(@0)',{phis}),expr::D('cos(@0)',{phis}),C[0]}")
 ws.factory("RooGaussModel::tres_sig(t,mu[0],sigma[0.05])")
 
 # For determination of efficiency from MC, put wtag to 0, later integrate out (or set to 0.5 as I used to do before). Does that imply rebuilding the JpsiPhi pdf?
-ws.factory("{wtag[0.5,0.,0.501]}")
+ws.factory("etatag[0.,0.,0.501]")
+ws.factory("expr::wtag('etatag',etatag)")
 
 ##################################### building the NEW pdf ###################################
 # create observables
@@ -108,6 +109,7 @@ MCdata = RooDataSet('MCdata','MCdata',reducedtree,ws.set('observables'),'t==t &&
 ws.put(MCdata)
 print 'Number of truth matched MC events', MCdata.numEntries()
 
+#pdf = ws.pdf('newpdf').createProjection(ws.argSet('wtag'))
 pdf = ws.pdf('newpdf')
 
 allObs = pdf.getObservables( MCdata.get() )
@@ -115,8 +117,6 @@ allObs = pdf.getObservables( MCdata.get() )
 angles = pdf.getObservables( MCdata.get() )
 angles.remove(ws.var('t'))
 angles.remove(ws.cat('tagdecision'))
-angles.remove(ws.var('m'))
-angles.remove(ws.var('wtag'))
 
 print 'angles: ', [ i.GetName() for i in angles ]
 
@@ -263,12 +263,12 @@ mnarrowmax = 5411.67
 datafile = TFile('/data/bfys/dveijk/Data/Bs2JpsiPhiForTaggedFit.root')
 NTupletree = datafile.Get('MyTree')
 
-ws.set('observables').add(ws.var('wtag'))
+ws.set('observables').add(ws.var('etatag'))
 
 if useTransversityAngles:
-    data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision && wtag==wtag')
+    data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision && etatag==etatag')
 else:
-    data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && helcosthetaL==helcosthetaL && helcosthetaK==helcosthetaK && helphi==helphi && tagdecision==tagdecision && wtag ==wtag')
+    data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && helcosthetaL==helcosthetaL && helcosthetaK==helcosthetaK && helphi==helphi && tagdecision==tagdecision && etatag==etatag')
 
 print 'Number of unbiased events', data.numEntries()
 
@@ -360,6 +360,29 @@ print 'GOING TO BUILD THE ACCEPTANCE CORRECTED FULL PDF!'
 angcorrpdf = buildEff_x_PDF(ws,'angcorrpdf',pdf_ext,[ ( m.basis() , m.coefficient()/c_000 ) for m in moments if m.significance()>signif] )
 ws.put(angcorrpdf)
 
+ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.338],p0sigma[0.012])")
+ws.factory("Gaussian::p1(p1var[-4.0,4.0],p1mean[1.01],p1sigma[0.17])")
+ws.factory("expr:wtag_syst('p0var+p1var*(etatag-etamean)',etatag,etamean[0.339],p0var,p1var)")
+
+customizer = RooCustomizer(angcorrpdf,'inc_tag_syst')
+
+wtag = ws.function('wtag')
+wtag_syst = ws.function('wtag_syst')
+
+customizer.replaceArg( wtag, wtag_syst )
+
+taggingpdf = customizer.build()
+getattr(ws,'import')(taggingpdf,RooFit.RecycleConflictNodes())
+
+#etamean = RooRealVar('etamean','etamean',0.339)
+#wtag = RooFormulaVar('wtag','wtag','@0+@1*(@2-@3)',RooArgList(ws.var('p0var'),ws.var('p1var'),ws.var('etatag'),etamean))
+#getattr(ws,'import')(wtag,RooFit.RecycleConflictNodes())
+#print ws.function('wtag').getVal()
+#getattr(ws,'import')(wtag,RooFit.RenameVariable('wtag','wtag'))
+#print ws.function('wtag').getVal()
+
 wsfile = TFile('TaggedWS.root','RECREATE')
 ws.Write()
 wsfile.Close()
+
+

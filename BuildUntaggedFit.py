@@ -79,7 +79,7 @@ ws.factory("{t_sig_dm[17.8]}")
 
 ws.factory('{phis[-0.04]}')
 
-ws.factory("{expr::S('-1*sin(phis)',{phis}),expr::D('cos(phis)',{phis}),C[0]}")
+ws.factory("{expr::S('-1*sin(@0)',{phis}),expr::D('cos(@0)',{phis}),C[0]}")
 
 ###############################
 ### Experimental parameters ###

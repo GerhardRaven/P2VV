@@ -233,9 +233,9 @@ def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2mi
 
     sumtime = 0
     
-    for i in range(1,x.GetNbins()+1):  # does ROOT  start at 1 or at 0?
+    for i in range(1,x.GetNbins()+1):  
         param1.setVal( x.GetBinCenter(i) )
-        for j in range(1,y.GetNbins()+1):# does ROOT  start at 1 or at 0?
+        for j in range(1,y.GetNbins()+1):
             param2.setVal( y.GetBinCenter(j) )
             print '***************************************************************************'
             print 'At gridpoint i = %i from %i and j = %i from %i'%(i,npoints,j,npoints)
