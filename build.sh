@@ -22,10 +22,7 @@ rm -f *.so *.o *.d *.h *.cxx
 
 # compile code
 for SRCFILE in\
-    RooAddition_.cxx\
-    RooLegendre.cxx\
     RooP2VVAngleBasis.cxx\
-    RooSpHarmonic.cxx\
     RooMultiCatGenerator.cxx\
     RooBTagDecay.cxx\
     RooThresholdPdf.cxx\
