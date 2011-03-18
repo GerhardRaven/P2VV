@@ -19,36 +19,46 @@
 
 class RooP2VVAngleBasis : public RooProduct {
 public:
-  RooP2VVAngleBasis() ;
-  RooP2VVAngleBasis(const char *name, const char *title, RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, int i, int j, int l, int m, double c = 1. );
-  RooP2VVAngleBasis(const char *name, const char *title, RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi, int i1, int j1, int l1, int m1
-                                                                                                              , int i2, int j2, int l2, int m2
-                                                                                                              , double c = 1. );
-
+  RooP2VVAngleBasis();
+  RooP2VVAngleBasis(const char *name, const char *title,
+      RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi,
+      Int_t i, Int_t j, Int_t l, Int_t m, Double_t c = 1.);
+  RooP2VVAngleBasis(const char *name, const char *title,
+      RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi,
+      Int_t i1, Int_t j1, Int_t l1, Int_t m1,
+      Int_t i2, Int_t j2, Int_t l2, Int_t m2, Double_t c = 1.);
   RooP2VVAngleBasis(const RooP2VVAngleBasis& other, const char* name = 0);
-  virtual TObject* clone(const char* newname) const { return new RooP2VVAngleBasis(*this, newname); }
+
+  virtual TObject* clone(const char* newname) const
+  {
+    return new RooP2VVAngleBasis(*this, newname);
+  }
+
   inline virtual ~RooP2VVAngleBasis() { }
 
   // create a new RooAbsReal which is 'us' multiplied by an efficiency factor
   // Note: we can only multiply once... 
-  RooP2VVAngleBasis* createProduct(int i, int j, int l, int m, double c) const;
-  RooP2VVAngleBasis* createProduct(const RooP2VVAngleBasis& basis, double c=1.) const
+  RooP2VVAngleBasis* createProduct(Int_t i, Int_t j, Int_t l, Int_t m,
+      Double_t c) const;
+  RooP2VVAngleBasis* createProduct(const RooP2VVAngleBasis& basis,
+      Double_t c = 1.) const
   { 
-      // TODO: verify that basis and *this use the same angular observables!!!
-      return !basis._prod ? createProduct( basis._i, basis._j, basis._l, basis._m, c*basis._c ): 0;
+    // TODO: verify that basis and *this use the same angular observables!!!
+    return !basis._prod ? createProduct(basis._i, basis._j, basis._l,
+        basis._m, c * basis._c) : 0;
   }
 
-  int i() const { return _i; }
-  int j() const { return _j; }
-  int l() const { return _l; }
-  int m() const { return _m; }
+  Int_t i() const {return _i;}
+  Int_t j() const {return _j;}
+  Int_t l() const {return _l;}
+  Int_t m() const {return _m;}
 
 private: 
-  double _c;
-  int _i,_j,_l,_m;
+  Double_t _c;
+  Int_t _i,_j,_l,_m;
   bool _prod;
 
-  ClassDef(RooP2VVAngleBasis,1) // 
+  ClassDef(RooP2VVAngleBasis, 1) // 
 };
 
 #endif
