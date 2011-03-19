@@ -35,15 +35,6 @@ public:
     RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
     Bool_t checkTags = kTRUE);
 
-  // constructor with initial state flavour tag (decay into CP eigenstate)
-  RooBTagDecay(const char *name, const char* title,
-    RooRealVar& time, RooAbsCategory& iTag, RooAbsReal& tau,
-    RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
-    RooAbsReal& ADilMisTag, RooAbsReal& avgCEven, RooAbsReal& avgCOdd,
-    RooAbsReal& coshCoef, RooAbsReal& sinhCoef, RooAbsReal& cosCoef,
-    RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
-    Bool_t checkTags = kTRUE);
-
   // constructor with both initial and final state flavour tags
   RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooAbsCategory& iTag, RooAbsCategory& fTag,
@@ -51,6 +42,15 @@ public:
     RooAbsReal& ADilMisTag, RooAbsReal& ANorm, RooAbsReal& avgCEven,
     RooAbsReal& avgCOdd, RooAbsReal& cosCoef, const RooResolutionModel& model,
     DecayType type, Bool_t checkTags = kTRUE);
+
+  // constructor with only an initial state flavour tag
+  RooBTagDecay(const char *name, const char* title,
+    RooRealVar& time, RooAbsCategory& iTag, RooAbsReal& tau,
+    RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
+    RooAbsReal& ADilMisTag, RooAbsReal& avgCEven, RooAbsReal& avgCOdd,
+    RooAbsReal& coshCoef, RooAbsReal& sinhCoef, RooAbsReal& cosCoef,
+    RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
+    Bool_t checkTags = kTRUE);
 
   RooBTagDecay(const RooBTagDecay& other, const char* name = 0);
 
