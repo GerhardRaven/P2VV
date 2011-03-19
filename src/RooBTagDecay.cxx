@@ -68,43 +68,6 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
 
 //_____________________________________________________________________________
 RooBTagDecay::RooBTagDecay(const char *name, const char* title,
-    RooRealVar& time, RooAbsCategory& iTag, RooAbsReal& tau,
-    RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
-    RooAbsReal& ADilMisTag, RooAbsReal& avgCEven, RooAbsReal& avgCOdd,
-    RooAbsReal& coshCoef, RooAbsReal& sinhCoef, RooAbsReal& cosCoef,
-    RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
-    Bool_t checkVars) :
-  RooAbsAnaConvPdf(name, title, model, time),
-  _time("time", "proper time", this, time),
-  _iTag("iTag", "initial state tag", this, iTag),
-  _fTag("fTag", "final state tag", this),
-  _tau("tau", "average decay time", this, tau),
-  _dGamma("dGamma", "Delta Gamma", this, dGamma),
-  _dm("dm", "Delta mass", this, dm),
-  _dilution("dilution", "mis-tag dilution", this, dilution),
-  _ADilMisTag("ADilMisTag", "dilution/mis-tag asymmetry", this, ADilMisTag),
-  _ANorm("ANorm", "normalization asymmetry", this),
-  _avgCEven("avgCEven", "CP average even coefficients", this, avgCEven),
-  _avgCOdd("avgCOdd", "CP average odd coefficients", this, avgCOdd),
-  _coshCoef("coshCoef", "cosh coefficient", this, coshCoef),
-  _sinhCoef("sinhCoef", "sinh coefficient", this, sinhCoef),
-  _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
-  _sinCoef("sinCoef", "sin coefficient", this, sinCoef),
-  _type(type),
-  _tags(1),
-  _checkVars(checkVars)
-{
-  // constructor with initial state flavour tag (decay into CP eigenstate)
-
-  if (!checkVarDep(time, kTRUE)) assert(0);
-  if (!checkVarDep(iTag, kTRUE)) assert(0);
-  if (!checkTag(iTag, kTRUE)) assert(0);
-
-  declareBases();
-}
-
-//_____________________________________________________________________________
-RooBTagDecay::RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooAbsCategory& iTag, RooAbsCategory& fTag,
     RooAbsReal& tau, RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
     RooAbsReal& ADilMisTag, RooAbsReal& ANorm, RooAbsReal& avgCEven,
@@ -131,12 +94,51 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _checkVars(checkVars)
 {
   // constructor with both initial and final state flavour tags
+  // (decay into flavour specific final state)
 
   if (!checkVarDep(time, kTRUE)) assert(0);
   if (!checkVarDep(iTag, kTRUE)) assert(0);
   if (!checkVarDep(fTag, kTRUE)) assert(0);
   if (!checkTag(iTag, kTRUE)) assert(0);
   if (!checkTag(fTag, kTRUE)) assert(0);
+
+  declareBases();
+}
+
+//_____________________________________________________________________________
+RooBTagDecay::RooBTagDecay(const char *name, const char* title,
+    RooRealVar& time, RooAbsCategory& iTag, RooAbsReal& tau,
+    RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
+    RooAbsReal& ADilMisTag, RooAbsReal& avgCEven, RooAbsReal& avgCOdd,
+    RooAbsReal& coshCoef, RooAbsReal& sinhCoef, RooAbsReal& cosCoef,
+    RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
+    Bool_t checkVars) :
+  RooAbsAnaConvPdf(name, title, model, time),
+  _time("time", "proper time", this, time),
+  _iTag("iTag", "initial state tag", this, iTag),
+  _fTag("fTag", "final state tag", this),
+  _tau("tau", "average decay time", this, tau),
+  _dGamma("dGamma", "Delta Gamma", this, dGamma),
+  _dm("dm", "Delta mass", this, dm),
+  _dilution("dilution", "mis-tag dilution", this, dilution),
+  _ADilMisTag("ADilMisTag", "dilution/mis-tag asymmetry", this, ADilMisTag),
+  _ANorm("ANorm", "normalization asymmetry", this),
+  _avgCEven("avgCEven", "CP average even coefficients", this, avgCEven),
+  _avgCOdd("avgCOdd", "CP average odd coefficients", this, avgCOdd),
+  _coshCoef("coshCoef", "cosh coefficient", this, coshCoef),
+  _sinhCoef("sinhCoef", "sinh coefficient", this, sinhCoef),
+  _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
+  _sinCoef("sinCoef", "sin coefficient", this, sinCoef),
+  _type(type),
+  _tags(1),
+  _checkVars(checkVars)
+{
+  // constructor with only an initial state flavour tag
+  // (decay into CP self-conjugate state)
+
+  if (!checkVarDep(time, kTRUE)) assert(0);
+  if (!checkVarDep(iTag, kTRUE)) assert(0);
+  if (!checkTag(iTag, kTRUE)) assert(0);
 
   declareBases();
 }
@@ -214,7 +216,7 @@ Double_t RooBTagDecay::coefficient(Int_t basisIndex) const
       return (_avgCOdd + _iTag * _dilution
           * (_avgCEven - _avgCOdd * _ADilMisTag)) * coefVal;
     else
-      return _fTag * (1. - _fTag * _ANorm) * (_avgCOdd + _iTag * _dilution
+      return (_fTag - _ANorm) * (_avgCOdd + _iTag * _dilution
           * (_avgCEven - _avgCOdd * _ADilMisTag)) * coefVal;
   }
 
@@ -334,24 +336,26 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   if (_tags > 0) intITag = intVars.remove(_iTag.arg(), kTRUE, kTRUE);
   if (_tags > 1) intFTag = intVars.remove(_fTag.arg(), kTRUE, kTRUE);
 
-  if (coef == _coshBasis) {
-    intCode = 4 * _coshCoef.arg().getAnalyticalIntegral(intVars, analVars,
-        rangeName);
-  } else if (coef == _sinhBasis) {
-    if (_tags > 1)
-      return 0;
-    else
-      intCode = 4 * _sinhCoef.arg().getAnalyticalIntegral(intVars, analVars,
+  if (intVars.getSize() > 0) {
+    if (coef == _coshBasis) {
+      intCode = 4 * _coshCoef.arg().getAnalyticalIntegral(intVars, analVars,
           rangeName);
-  } else if (coef == _cosBasis) {
-    intCode = 4 * _cosCoef.arg().getAnalyticalIntegral(intVars, analVars,
-        rangeName);
-  } else if (coef == _sinBasis) {
-    if (_tags > 1)
-      return 0;
-    else
-      intCode = 4 * _sinCoef.arg().getAnalyticalIntegral(intVars, analVars,
+    } else if (coef == _sinhBasis) {
+      if (_tags > 1)
+        return 0;
+      else
+        intCode = 4 * _sinhCoef.arg().getAnalyticalIntegral(intVars, analVars,
+            rangeName);
+    } else if (coef == _cosBasis) {
+      intCode = 4 * _cosCoef.arg().getAnalyticalIntegral(intVars, analVars,
           rangeName);
+    } else if (coef == _sinBasis) {
+      if (_tags > 1)
+        return 0;
+      else
+        intCode = 4 * _sinCoef.arg().getAnalyticalIntegral(intVars, analVars,
+            rangeName);
+    }
   }
 
   // return the integration code if there are no explicit tags
@@ -401,15 +405,29 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
   // get coefficient's integral
   Double_t coefInt = 0.;
   if (coef == _coshBasis) {
-    coefInt = _coshCoef.arg().analyticalIntegral(coefCode, rangeName);
+    if (coefCode != 0)
+      coefInt = _coshCoef.arg().analyticalIntegral(coefCode, rangeName);
+    else
+      coefInt = _coshCoef.arg().getVal();
   } else if (coef == _sinhBasis) {
-    if (_tags > 1) return 0.;
-    else coefInt = _sinhCoef.arg().analyticalIntegral(coefCode, rangeName);
+    if (_tags > 1)
+      return 0.;
+    else if (coefCode != 0)
+      coefInt = _sinhCoef.arg().analyticalIntegral(coefCode, rangeName);
+    else
+      coefInt = _sinhCoef.arg().getVal();
   } else if (coef == _cosBasis) {
-    coefInt = _cosCoef.arg().analyticalIntegral(coefCode, rangeName);
+    if (coefCode != 0)
+      coefInt = _cosCoef.arg().analyticalIntegral(coefCode, rangeName);
+    else
+      coefInt = _cosCoef.arg().getVal();
   } else if (coef == _sinBasis) {
-    if (_tags > 1) return 0.;
-    else coefInt = _sinCoef.arg().analyticalIntegral(coefCode, rangeName);
+    if (_tags > 1)
+      return 0.;
+    else if (coefCode != 0)
+      coefInt = _sinCoef.arg().analyticalIntegral(coefCode, rangeName);
+    else
+      coefInt = _sinCoef.arg().getVal();
   }
 
   // return the integral if there are no explicit tags
