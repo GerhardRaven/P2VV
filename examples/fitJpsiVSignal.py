@@ -29,7 +29,7 @@ dataSetName  = mode[3:] + 'Data'
 dataFilePath = dataSetName + '.root'
 
 # generate events?
-generate = False
+generate = True
 nEvents = 50000
 
 # read events from NTuple or RooDataset
