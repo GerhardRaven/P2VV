@@ -17,8 +17,8 @@ from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
 
 ###############################################################################
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
-#mode = 'Bd2JpsiKstar'
-mode = 'Bs2Jpsiphi'
+mode = 'Bd2JpsiKstar'
+#mode = 'Bs2Jpsiphi'
 
 # plots file
 plotsFile = mode[3:] + 'Plots.ps'
@@ -57,8 +57,8 @@ config['ReApar'].set(val = -0.6)
 config['ImApar'].set(val = -0.1)
 config['ReAperp'].set(val = -0.6)
 config['ImAperp'].set(val = 0.1)
-config['ReAS'].set(val = 0.)
-config['ImAS'].set(val = 0.)
+config['ReAS'].set(val = -0.2)
+config['ImAS'].set(val = 0.3)
 
 if mode == 'Bd2JpsiKstar' :
   config['dm'].set(min = -1., max = 2.)
