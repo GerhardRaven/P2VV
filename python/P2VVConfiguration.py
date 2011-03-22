@@ -1,21 +1,31 @@
 ###############################################################################
+## P2VVConfiguration: configuration of P2VV settings                         ##
+##                                                                           ##
+## authors:                                                                  ##
+##   JvL, Jeroen van Leerdam, Nikhef, j.van.leerdam@nikhef.nl                ##
+##                                                                           ##
+###############################################################################
+
+
+###############################################################################
 ## function that returns default P2VV configuration for a given mode         ##
 ###############################################################################
 def getP2VVConfig(mode = '', options = [], createWS = True) :
   from math import pi
+  from ROOT import RooFit
 
   # create configuration instance
-  if createWS is True :
+  if createWS :
     config = P2VVConfiguration('', '')
   else :
     config = P2VVConfiguration(False, '')
 
   # check arguments
   if type(mode) is not str :
-    print "ERROR: getP2VVConfig: argument 'mode' is not a string"
+    print "P2VV - ERROR: getP2VVConfig: argument 'mode' is not a string"
     return config
   if type(options) is not list :
-    print "ERROR: getP2VVConfig: argument 'options' is not a list"
+    print "P2VV - ERROR: getP2VVConfig: argument 'options' is not a list"
     return config
 
   # set mode in configuration
@@ -23,13 +33,14 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       'P2VV mode', mode))
 
   # get options
-  optList = []
+  optDict = {}
   for opt in options :
     if type(opt) is str :
-      optList.append(opt.strip())
+      optSplit = opt.split('=')
+      optDict[optSplit[0]] = optSplit[1] if len(optSplit) > 1 else ''
 
   config.addSetting('P2VVOptions', P2VVSetting('options',
-      'P2VV options', optList))
+      'P2VV options', optDict))
 
 
   ######################
@@ -38,12 +49,33 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   config.addSetting('sigPDFName', P2VVSetting('sigPDFName',
       'ROOT name of the signal PDF', mode + 'PDF'))
 
+  onlySignal = False
+  if 'onlySignal' in options : onlySignal = True
+  config.addSetting('onlySignal', P2VVSetting('onlySignal',
+      'build only the signal PDF?', onlySignal))
+
+  if 'noFactFlavSpec' in options :
+    config.addSetting('noFactFlavSpec', P2VVSetting('noFactFlavSpec',
+        'factorize PDF for flavour-specific states?', onlySignal))
+
+  config.addSetting('P2VVFrameDrawOpts', P2VVSetting('P2VVFrameDrawOpts',
+      'options for drawing plot frames', []))
+
+  config.addSetting('P2VVDataPlotOpts', P2VVSetting('P2VVDataPlotOpts',
+      'options for plotting data', [RooFit.MarkerStyle(8),
+      RooFit.MarkerSize(0.4), RooFit.DrawOption("P")]))
+
+  config.addSetting('P2VVPDFPlotOpts', P2VVSetting('P2VVPDFPlotOpts',
+      'options for plotting PDFs', [RooFit.LineWidth(2)]))
+
 
   ###############
   ## constants ##
   ###############
   config.addSetting('zeroConst', RooRealSetting('zero',
       'zero constant', False, 0., '', ''))
+  config.addSetting('halfConst', RooRealSetting('half',
+      'one half constant', False, 0.5, '', ''))
   config.addSetting('oneConst', RooRealSetting('one',
       'one constant', False, 1., '', ''))
   config.addSetting('minusConst', RooRealSetting('minus',
@@ -53,12 +85,12 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   ##################
   ## decay angles ##
   ##################
-  if 'noAngles' in optList\
-      or not mode in ['Bd2mumuKstar', 'Bd2JpsiKstar', 'Bs2Jpsiphi']:
+  if 'noAngles' in optDict\
+      or mode not in ['Bd2mumuKstar', 'Bd2JpsiKstar', 'Bs2Jpsiphi'] :
     anglesType = []
   else :
-    if 'transAngles' in optList :
-      if 'helAngles' in optList :
+    if 'transAngles' in optDict :
+      if 'helAngles' in optDict :
         anglesType = ['hel', 'trans']
       else :
         anglesType = ['trans']
@@ -67,20 +99,20 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
     # helicity angles
     if 'hel' in anglesType :
-      config.addSetting('helcthetaK', RooRealSetting('helcthetaK',
+      config.addSetting('cpsiAng', RooRealSetting('helcthetaK',
           'cosine of kaon polarization angle', True, 0., -1., 1.))
-      config.addSetting('helcthetal', RooRealSetting('helcthetaL',
+      config.addSetting('cthetaAng', RooRealSetting('helcthetaL',
           'cosine of lepton polarization angle', True, 0., -1., 1.))
-      config.addSetting('helphi', RooRealSetting('helphi',
+      config.addSetting('phiAng', RooRealSetting('helphi',
           'angle between decay planes', True, 0., -pi, pi))
 
     # transversity angles
     if 'trans' in anglesType :
-      config.addSetting('trcpsi', RooRealSetting('trcpsi',
+      config.addSetting('cpsiAng', RooRealSetting('trcpsi',
           'cosine of kaon polarization angle', True, 0., -1., 1.))
-      config.addSetting('trctheta', RooRealSetting('trctheta',
+      config.addSetting('cthetaAng', RooRealSetting('trctheta',
           'cosine of transversity polar angle', True, 0., -1., 1.))
-      config.addSetting('trphi', RooRealSetting('trphi',
+      config.addSetting('phiAng', RooRealSetting('trphi',
           'transversity azimuthal angle', True, 0., -pi, pi))
 
   config.addSetting('anglesType', P2VVSetting('anglesType',
@@ -90,7 +122,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   #########################
   ## B0->mumuK* settings ##
   #########################
-  if mode is 'Bd2mumuKstar' :
+  if mode == 'Bd2mumuKstar' :
     # amplitudes
     config.addSetting('incMuMass', P2VVSetting('incMuMass',
       'include finite muon mass?', True))
@@ -107,163 +139,187 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     ### general ###
 
     # RooFit class for time PDF
-    BDecClass = 'RooBTagDecay'
+    if 'RooBDecay' in optDict : BDecClass = 'RooBDecay'
+    else : BDecClass = 'RooBTagDecay'
     config.addSetting('BDecayClass', P2VVSetting('BDecayClass',
         'RooFit class for time PDF', BDecClass))
 
 
     ### observables ###
 
-    # decay type
-    config.addSetting('decayType', RooCatSetting('decaytype',
-        'J/psiX decay type', True, 'Jpsiphi', {10:'JpsiKplus',
-        11:'JpsiKmin', 20:'JpsiKstar0', 21:'JpsiKstarbar0', 40:'Jpsiphi'}))
+    if not onlySignal :
+      # decay type
+      config.addSetting('decayType', RooCatSetting('decaytype',
+          'J/psiX decay type', True, 'Jpsiphi', {10:'JpsiKplus',
+          11:'JpsiKmin', 20:'JpsiKstar0', 21:'JpsiKstarbar0', 40:'Jpsiphi'}))
 
-    # trigger
-    config.addSetting('unbiased', RooCatSetting('unbiased',
-        'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
+      # trigger
+      config.addSetting('unbiased', RooCatSetting('unbiased',
+          'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
 
     # flavour tags
     config.addSetting('iTag', RooCatSetting('iTag',
         'initial state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
     config.addSetting('misTag', RooRealSetting('misTag',
-        'mis-tag fraction', False, 0., 0., 0.5))
-    if mode is 'Bd2JpsiKstar' :
+        'mis-tag fraction', True, 0., 0., 0.5))
+    if mode == 'Bd2JpsiKstar' :
       config.addSetting('fTag', RooCatSetting('fTag',
           'final state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
 
     # B lifetime
+    if onlySignal : tResModel = 'truth'
+    else : tResModel = 'Gauss'
+    if 'tResModel' in optDict and optDict['tResModel'] != '' :
+      tResModel = optDict['tResModel']
+
+    config.addSetting('tResModel', P2VVSetting('tResModel',
+      'time resolution model', tResModel))
+
     config.addSetting('BLifetime', RooRealSetting('t',
         'B lifetime (ps)', True, 0., -5., 14.))
-    # Note 2 uses [0.3,14] -- so maybe switch to [-4,14] instead...
-    config.addSetting('BLifetimeError', RooRealSetting('sigmat',
-        'B lifetime error (ps)', True, 0.005, 0.005, 0.1))
+    if tResModel == 'Gauss' :
+      config.addSetting('BLifetimeError', RooRealSetting('sigmat',
+          'B lifetime error (ps)', False, 0.05, '', ''))
+    elif tResModel[:6] == '3Gauss' :
+      config.addSetting('BLifetimeError', RooRealSetting('sigmat',
+          'B lifetime error (ps)', True, 0.05, 0.005, 0.1))
 
-    # masses
-    config.addSetting('mJpsi', RooRealSetting('mdau1',
-        'J/psi mass (MeV)', True, 3097., 3097. - 60., 3097. + 40.))
-    if mode in ['Bu2JpsiK', 'Bd2JpsiKstar'] :
-      config.addSetting('mB', RooRealSetting('m',
-          'B0 mass (MeV)', True, 5279., 5279. - 50., 5279. + 50.))
-      if mode is 'Bd2JpsiKstar' :
-        config.addSetting('mKstar', RooRealSetting('mdau2',
-            'K*0 mass (MeV)', True, 892., 892. - 50., 892. + 50.))
-    elif mode is 'Bs2Jpsiphi' :
-      config.addSetting('m', RooRealSetting('m',
-          'B_s0 mass (MeV)', True, 5366., 5366. - 50., 5366. + 50.))
-      config.addSetting('mphi', RooRealSetting('mdau2',
-          'phi mass (MeV)', True, 1019.455, 1019.455 - 12., 1019.455 + 12.))
-      # Note: +-10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the
-      # background -- but the roadmap uses +-12 instead...
+    if not onlySignal :
+      # masses
+      config.addSetting('mJpsi', RooRealSetting('mdau1',
+          'J/psi mass (MeV)', True, 3097., 3097. - 60., 3097. + 40.))
+      if mode in ['Bu2JpsiK', 'Bd2JpsiKstar'] :
+        config.addSetting('mB', RooRealSetting('m',
+            'B0 mass (MeV)', True, 5279., 5279. - 50., 5279. + 50.))
+        if mode is 'Bd2JpsiKstar' :
+          config.addSetting('mKstar', RooRealSetting('mdau2',
+              'K*0 mass (MeV)', True, 892., 892. - 50., 892. + 50.))
+      elif mode is 'Bs2Jpsiphi' :
+        config.addSetting('m', RooRealSetting('m',
+            'B_s0 mass (MeV)', True, 5366., 5366. - 50., 5366. + 50.))
+        config.addSetting('mphi', RooRealSetting('mdau2',
+            'phi mass (MeV)', True, 1019.455, 1019.455 - 12., 1019.455 + 12.))
+        # Note: +-10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the
+        # background -- but the roadmap uses +-12 instead...
 
 
     ### physics parameters ###
+
     if mode in ['Bd2JpsiKstar', 'Bs2Jpsiphi'] :
       # amplitudes
       # note: initial values from arXiv:0704.0522v2 [hep-ex] BaBar PUB-07-009
+      if 'noKSWave' in optDict : incKSWave = False
+      else : incKSWave = True
       config.addSetting('incKSWave', P2VVSetting('incKSWave',
-        'include KK or Kpi S-wave?', True))
+        'include KK or Kpi S-wave?', incKSWave))
 
-      config.addSetting('ReA0', RooRealSetting('ReA0',
-          'Re(A_0)', False, 1., '', ''))
-      config.addSetting('ImA0', RooRealSetting('ImA0',
-          'Im(A_0)', False, 0., '', ''))
-      config.addSetting('ReApar', RooRealSetting('ReApar',
-          'Re(A_par)', False, -0.602, -1., 1.))
-      config.addSetting('ImApar', RooRealSetting('ImApar',
-          'Im(A_par)', False, -0.129, -1., 1.))
-      config.addSetting('ReAperp', RooRealSetting('ReAperp',
-          'Re(A_perp)', False, -0.630, -1., 1.))
-      config.addSetting('ImAperp', RooRealSetting('ImAperp',
-          'Im(A_perp)', False, 0.149, -1., 1.))
-      config.addSetting('ReAS', RooRealSetting('ReAS',
-          'Re(A_S)', False, -0.168, -1., 1.))
-      config.addSetting('ImAS', RooRealSetting('ImAS',
-          'Im(A_S)', False, 0.252, -1., 1.))
+      ampsType = 'ReIm'
+      if 'ampsType' in optDict and optDict['ampsType'] is not '' :
+        ampsType = optDict['ampsType']
+      config.addSetting('ampsType', P2VVSetting('ampsType',
+        'type of amplitudes', ampsType))
 
-      #config.addSetting('A0Mag2', RooRealSetting('A0Mag2',
-      #    '|A0|^2', False, 1., '', ''))
-      #config.addSetting('AparMag2', RooRealSetting('AparMag2',
-      #    '|A_par|^2', False, 0.379, 0., 1.2))
-      #config.addSetting('AperpMag2', RooRealSetting('AperpMag2',
-      #    '|A_perp|^2', False, 0.419, 0., 1.2))
-      #config.addSetting('ASMag2', RooRealSetting('ASMag2',
-      #    '|A_S|^2', False, 0.092, 0., 0.6))
+      if ampsType is 'polar' :
+        config.addSetting('A0Mag2', RooRealSetting('A0Mag2',
+            '|A0|^2', False, 0.556, 0., 1.))
+        config.addSetting('AparMag2', RooFormSetting('AparMag2',
+            '|A_par|^2', '1. - @0 - @1', ['A0Mag2', 'AperpMag2']))
+        config.addSetting('AperpMag2', RooRealSetting('AperpMag2',
+            '|A_perp|^2', False, 0.233, 0., 1.))
+        config.addSetting('ASMag2', RooRealSetting('ASMag2',
+            '|A_S|^2', False, 0.092, 0., 1.))
 
-      #config.addSetting('A0Ph', RooRealSetting('deltaz',
-      #    'delta_0', False, 0., '', ''))
-      #config.addSetting('AparPh', RooRealSetting('deltapar',
-      #    'delta_par', False, -2.93, -2. * pi, 2. * pi))
-      #config.addSetting('AperpPh', RooRealSetting('deltaperp',
-      #    'delta_perp', False, 2.91, -2. * pi, 2. * pi))
-      #config.addSetting('ASPh', RooRealSetting('deltas',
-      #    'delta_S', False, 2.2, -2. * pi, 2. * pi))
+        config.addSetting('A0Ph', RooRealSetting('deltaz',
+            'delta_0', False, 0., '', ''))
+        config.addSetting('AparPh', RooRealSetting('deltapar',
+            'delta_par', False, -2.93, -2. * pi, 2. * pi))
+        config.addSetting('AperpPh', RooRealSetting('deltaperp',
+            'delta_perp', False, 2.91, -2. * pi, 2. * pi))
+        config.addSetting('ASPh', RooRealSetting('deltas',
+            'delta_S', False, 2.2, -2. * pi, 2. * pi))
 
-      #config.addSetting('ReA0', RooFormSetting('ReA0',
-      #    'Re(A_0)', 'sqrt(@0) * cos(@1)', ['A0Mag2', 'A0Ph']))
-      #config.addSetting('ImA0', RooFormSetting('ImA0',
-      #    'Im(A_0)', 'sqrt(@0) * sin(@1)', ['A0Mag2', 'A0Ph']))
-      #config.addSetting('ReApar', RooFormSetting('ReApar',
-      #    'Re(A_par)', 'sqrt(@0) * cos(@1)', ['AparMag2', 'AparPh']))
-      #config.addSetting('ImApar', RooFormSetting('ImApar',
-      #    'Im(A_par)', 'sqrt(@0) * sin(@1)', ['AparMag2', 'AparPh']))
-      #config.addSetting('ReAperp', RooFormSetting('ReAperp',
-      #    'Re(A_perp)', 'sqrt(@0) * cos(@1)', ['AperpMag2', 'AperpPh']))
-      #config.addSetting('ImAperp', RooFormSetting('ImAperp',
-      #    'Im(A_perp)', 'sqrt(@0) * sin(@1)', ['AperpMag2', 'AperpPh']))
-      #config.addSetting('ReAS', RooFormSetting('ReAS',
-      #    'Re(A_S)', 'sqrt(@0) * cos(@1)', ['ASMag2', 'ASPh']))
-      #config.addSetting('ImAS', RooFormSetting('ImAS',
-      #    'Im(A_S)', 'sqrt(@0) * sin(@1)', ['ASMag2', 'ASPh']))
+        config.addSetting('ReA0', RooFormSetting('ReA0',
+            'Re(A_0)', 'sqrt(@0) * cos(@1)', ['A0Mag2', 'A0Ph']))
+        config.addSetting('ImA0', RooFormSetting('ImA0',
+            'Im(A_0)', 'sqrt(@0) * sin(@1)', ['A0Mag2', 'A0Ph']))
+        config.addSetting('ReApar', RooFormSetting('ReApar',
+            'Re(A_par)', 'sqrt(@0) * cos(@1)', ['AparMag2', 'AparPh']))
+        config.addSetting('ImApar', RooFormSetting('ImApar',
+            'Im(A_par)', 'sqrt(@0) * sin(@1)', ['AparMag2', 'AparPh']))
+        config.addSetting('ReAperp', RooFormSetting('ReAperp',
+            'Re(A_perp)', 'sqrt(@0) * cos(@1)', ['AperpMag2', 'AperpPh']))
+        config.addSetting('ImAperp', RooFormSetting('ImAperp',
+            'Im(A_perp)', 'sqrt(@0) * sin(@1)', ['AperpMag2', 'AperpPh']))
+        config.addSetting('ReAS', RooFormSetting('ReAS',
+            'Re(A_S)', 'sqrt(@0) * cos(@1)', ['ASMag2', 'ASPh']))
+        config.addSetting('ImAS', RooFormSetting('ImAS',
+            'Im(A_S)', 'sqrt(@0) * sin(@1)', ['ASMag2', 'ASPh']))
+
+      else :
+        config.addSetting('ReA0', RooRealSetting('ReA0',
+            'Re(A_0)', False, 1., '', ''))
+        config.addSetting('ImA0', RooRealSetting('ImA0',
+            'Im(A_0)', False, 0., '', ''))
+        config.addSetting('ReApar', RooRealSetting('ReApar',
+            'Re(A_par)', False, -0.602, -1., 1.))
+        config.addSetting('ImApar', RooRealSetting('ImApar',
+            'Im(A_par)', False, -0.129, -1., 1.))
+        config.addSetting('ReAperp', RooRealSetting('ReAperp',
+            'Re(A_perp)', False, -0.630, -1., 1.))
+        config.addSetting('ImAperp', RooRealSetting('ImAperp',
+            'Im(A_perp)', False, 0.149, -1., 1.))
+        if incKSWave :
+          config.addSetting('ReAS', RooRealSetting('ReAS',
+              'Re(A_S)', False, -0.168, -1., 1.))
+          config.addSetting('ImAS', RooRealSetting('ImAS',
+              'Im(A_S)', False, 0.252, -1., 1.))
 
       # lifetime and mixing
       if mode is 'Bd2JpsiKstar' :
-        config.addSetting('Gamma', RooRealSetting('gamma',
+        config.addSetting('Gamma', RooRealSetting('Gamma',
             'Gamma (ps^-1)', False, 0.65, 0.4, 0.9))
-        config.addSetting('dGamma', RooRealSetting('t_sig_dG',
+        config.addSetting('dGamma', RooRealSetting('dGamma',
             'delta Gamma_s (ps^-1)', False, 0., '', ''))
-        config.addSetting('dm', RooRealSetting('t_sig_dm',
+        config.addSetting('dm', RooRealSetting('dm',
             'delta m_s (ps^-1)', False, 0.51, '', ''))
 
       elif mode is 'Bs2Jpsiphi' :
         config.addSetting('Gamma', RooRealSetting('gamma',
             'Gamma_s (ps^-1)', False, 0.68, 0.4, 0.9))
-        config.addSetting('dGamma', RooRealSetting('t_sig_dG',
+        config.addSetting('dGamma', RooRealSetting('dGamma',
             'delta Gamma_s (ps^-1)', False, 0.05, -0.3, 0.3))
-        config.addSetting('dm', RooRealSetting('t_sig_dm',
+        config.addSetting('dm', RooRealSetting('dm',
             'delta m_s (ps^-1)', False, 17.8, '', ''))
 
       config.addSetting('BMeanLife', RooFormSetting('t_sig_tau',
           'B mean lifetime', '1. / @0', ['Gamma']))
 
       # CP violation
-      if mode is 'Bd2JpsiKstar' and BDecClass is 'RooBTagDecay' :
+      if mode is 'Bd2JpsiKstar' :
         config.addSetting('CCP', RooRealSetting('C',
             'B0 lambda parameter C', False, 0., '', ''))
       elif mode is 'Bs2Jpsiphi' :
         config.addSetting('phiCP', RooRealSetting('phis',
-            'CP violation parameter phi_s', False, 0.8, -pi, pi))
-        if BDecClass is 'RooBTagDecay' :
-          config.addSetting('CCP', RooRealSetting('C',
-              'B0_s lambda parameter C', False, 0., '', ''))
+            'CP violation parameter phi_s', False, -0.7, -2 * pi, 2 * pi))
+        config.addSetting('CCP', RooRealSetting('C',
+            'B0_s lambda parameter C', False, 0., '', ''))
         config.addSetting('DCP', RooFormSetting('D',
-            'B0_s lambda parameter D', 'cos(@0)', ['phis']))
+            'B0_s lambda parameter D', 'cos(@0)', ['phiCP']))
         config.addSetting('SCP', RooFormSetting('S',
-            'B0_s lambda parameter S', '-sin(@0)', ['phis']))
+            'B0_s lambda parameter S', '-sin(@0)', ['phiCP']))
 
       # tagging parameters
-      if BDecClass is 'RooBTagDecay' :
-        config.addSetting('tagDilution', RooFormSetting('tagDilution',
-            'mis-tag dilution', '1 - 2. * @0', ['misTag']))
-        config.addSetting('ADilMisTag', RooRealSetting('ADilMisTag',
-            'dilution/mis-tag asymmetry', False, 0., '', ''))
-        if mode is 'Bd2JpsiKstar' :
-          config.addSetting('ANorm', RooRealSetting('ANorm',
-            'normalization asymmetry', False, 0., '', ''))
-        config.addSetting('avgCEven', RooRealSetting('avgCEven',
-            'CP average even coefficients', False, 1., '', ''))
-        config.addSetting('avgCOdd', RooFormSetting('avgCOdd',
-            'CP average odd coefficients', '-@0', ['C']))
+      config.addSetting('tagDilution', RooFormSetting('tagDilution',
+          'mis-tag dilution', '1 - 2. * @0', ['misTag']))
+      config.addSetting('ADilMisTag', RooRealSetting('ADilMisTag',
+          'dilution/mis-tag asymmetry', False, 0., '', ''))
+      if mode is 'Bd2JpsiKstar' :
+        config.addSetting('ANorm', RooFormSetting('ANorm',
+            'normalization asymmetry', '-@0', ['CCP']))
+      config.addSetting('avgCEven', RooRealSetting('avgCEven',
+          'CP average even coefficients', False, 1., '', ''))
+      config.addSetting('avgCOdd', RooRealSetting('avgCOdd',
+          'CP average odd coefficients', False, 0., '', ''))
 
 
   return config
@@ -328,7 +384,7 @@ class P2VVConfiguration :
   def value(self, key) :
     # check type of the setting key
     if type(key) is not str :
-      print "ERROR: P2VVConfiguration.value: setting key is not of type 'str'"
+      print "P2VV - ERROR: P2VVConfiguration.value: setting key is not of type 'str'"
       return None
 
     # get value of setting
@@ -336,21 +392,40 @@ class P2VVConfiguration :
     if setting : return setting.value()
     else : return None    
 
+  # set a setting
+  def set(self, key, setting) :
+    self.addSetting(key, setting, True)
+
   # add a setting to the settings dictionary or overwrite an old setting
   def addSetting(self, key, setting, overWriteOld = True) :
     # check type of the setting key
     if type(key) is not str :
-      print "ERROR: P2VVConfiguration.addSetting: setting key is not of type 'str'"
+      print "P2VV - ERROR: P2VVConfiguration.addSetting: setting key is not a string"
       return
 
     # check type of the setting
     if not issubclass(setting.__class__, P2VVSetting) :
-      print "ERROR: P2VVConfiguration.addSetting: class of 'setting' does not inherit from 'P2VVSetting'"
+      print "P2VV - ERROR: P2VVConfiguration.addSetting: class of 'setting' does not inherit from 'P2VVSetting'"
       return
 
     # add new setting to settings dictionary or overwrite old setting
     if not key in self._settingsDict or overWriteOld:
       self._settingsDict[key] = setting
+
+  # remove a setting from the settings dictionary
+  def removeSetting(self, key) :
+    # check type of the setting key
+    if type(key) is not str :
+      print "P2VV - ERROR: P2VVConfiguration.removeSetting: setting key is not a string"
+      return
+
+    # check if setting is in dictionary
+    if key not in self._settingsDict :
+      print "P2VV - ERROR: P2VVConfiguration.removeSetting: '%s': no sucth setting"\
+          % key
+      return
+
+    del self._settingsDict[key]
 
 
   ## RooFit workspace methods ##
@@ -371,13 +446,13 @@ class P2VVConfiguration :
       else :
         self._workspace = RooWorkspace(workspace)
     else :
-      print "WARNING: P2VVConfiguration.setWorkspace: argument is not a RooWorkspace: no workspace set"
+      print "P2VV - WARNING: P2VVConfiguration.setWorkspace: argument is not a RooWorkspace: no workspace set"
       self._workspace = ''
 
   # write workspace to ROOT file
   def writeWorkspace(self, WSPath = '') :
     if self._workspace is '' :
-      print "ERROR: P2VVConfiguration.writeWorkspace: no workspace set"
+      print "P2VV - ERROR: P2VVConfiguration.writeWorkspace: no workspace set"
       return
 
     if type(WSPath) is str and len(WSPath) > 0 :
@@ -387,7 +462,7 @@ class P2VVConfiguration :
         and len(self._settingsDict['WSPath'].value()) > 0 :
       self._workspace.writeToFile(self._settingsDict['WSPath'].value())
     else :
-      print "ERROR: P2VVConfiguration.writeWorkspace: no workspace file path set"
+      print "P2VV - ERROR: P2VVConfiguration.writeWorkspace: no workspace file path set"
 
   # get workspace file path
   def WSFilePath(self) :
@@ -402,27 +477,23 @@ class P2VVConfiguration :
       self.addSetting('WSPath', P2VVSetting('WSPath', 'workspace file path',
           WSPath), True)
     else :
-      print "ERROR: P2VVConfiguration.setWSFilePath: argument is not a string or an empty string: no workspace file path set"
+      print "P2VV - ERROR: P2VVConfiguration.setWSFilePath: argument is not a string or an empty string: no workspace file path set"
 
   # declare RooFit variables in settings dictionary and put them in workspace
   def declareRooVars(self, varType = 'var') :
     if self._workspace is '' :
-      print "ERROR: P2VVConfiguration.declareRooVars: no workspace set: can't declare any variables"
+      print "P2VV - ERROR: P2VVConfiguration.declareRooVars: no workspace set: can't declare any variables"
       return
 
     # loop over settings and find RooSettings to put in workspace
-    formSettings     = []
-    obsSettingKeys  = []
+    formSettings   = []
+    obsSettingKeys = []
     for key, setting in self._settingsDict.iteritems() :
       if not issubclass(setting.__class__, RooSetting) : continue
 
       if setting.type() is 'RooFormSetting' and varType in ['var', 'form'] :
         # put RooFormSettings in a list for later declaration
         formSettings.append(setting)
-        for var in setting.variables() :
-          if var not in self._settingsDict :
-            formSettings.remove(setting)
-            break
 
       elif (setting.observable() and varType in ['var', 'obs'])\
           or (not setting.observable() and varType in ['var', 'par']) :
@@ -435,10 +506,10 @@ class P2VVConfiguration :
     if 'anglesType' in self._settingsDict :
       if 'hel' in self._settingsDict['anglesType'].value() :
         self.defineRooSet('helAngles',
-            ['helcthetaK', 'helcthetal', 'helphi'])
+            ['cpsiAng', 'cthetaAng', 'phiAng'])
       if 'trans' in self._settingsDict['anglesType'].value() :
         self.defineRooSet('transAngles',
-            ['trcpsi', 'trctheta', 'trphi'])
+            ['cpsiAng', 'cthetaAng', 'phiAng'])
 
     # declare RooFormulaVars
     if varType in ['var', 'form'] :
@@ -450,7 +521,8 @@ class P2VVConfiguration :
           # check if all the needed variables have been declared
           declare = True
           for var in setting.variables() :
-            if not self._settingsDict[var].declared() :
+            if not var in self._settingsDict\
+                or not self._settingsDict[var].declared() :
               declare = False
               break
 
@@ -464,17 +536,18 @@ class P2VVConfiguration :
 
   def defineRooSet(self, name, settingKeysList) :
     if self._workspace is '' :
-      print "ERROR: P2VVConfiguration.defineRooSet: no workspace set: can't define set"
+      print "P2VV - ERROR: P2VVConfiguration.defineRooSet: no workspace set: can't define set"
       return
 
     if type(name) is not str or len(name) < 1 :
-      print "ERROR: P2VVConfiguration.defineRooSet: 'name' is not a string or an empty string"
+      print "P2VV - ERROR: P2VVConfiguration.defineRooSet: 'name' is not a string or an empty string"
       return
 
     if type(settingKeysList) is not list :
-      print "ERROR: P2VVConfiguration.defineRooSet: 'settingsList' is not a list"
+      print "P2VV - ERROR: P2VVConfiguration.defineRooSet: 'settingsList' is not a list"
       return
 
+    # define set of RooVars in workspace
     varString = ''
     for key in settingKeysList :
       if key in self._settingsDict :
@@ -505,14 +578,14 @@ class P2VVSetting :
     if type(name) is str and len(name) > 0:
       self._name = name
     else :
-      print "ERROR: P2VVSetting.setName: argument 'name' is not a string or an empty string: setting name 'noName'"
+      print "P2VV - ERROR: P2VVSetting.setName: argument 'name' is not a string or an empty string: setting name 'noName'"
       self._name = 'noName'
 
   def setDescription(self, description) :
     if type(description) is str :
       self._description = description
     else :
-      print "ERROR: P2VVSetting.setDescription(%s): argument 'description' is not a string"\
+      print "P2VV - ERROR: P2VVSetting.setDescription(%s): argument 'description' is not a string"\
         % self._name
       self._description = ''
 
@@ -537,7 +610,7 @@ class RooSetting(P2VVSetting) :
 
   def setName(self, name) :
     if self._declared :
-      print "ERROR: RooSetting.setName(%s): variable has already been declared"\
+      print "P2VV - ERROR: RooSetting.setName(%s): variable has already been declared"\
           % self._name
       return
 
@@ -553,12 +626,18 @@ class RooSetting(P2VVSetting) :
     return self._declared
 
   def _declare(self, workspace, factoryString) :
+    import RooFitDecorators
+
+    # check if variable has not been declared yet
     if self._declared :
-      print "ERROR: RooSetting.declare(%s): variable has already been declared"\
+      print "P2VV - ERROR: RooSetting.declare(%s): variable has already been declared"\
           % self._name
       return
 
-    workspace.factory(factoryString)
+    # declare variable if it's not already in workspace
+    if self.name() not in workspace :
+      workspace.factory(factoryString)
+
     self._declared = True
 
 
@@ -578,35 +657,51 @@ class RooRealSetting(RooSetting) :
 
     RooSetting.__init__(self, name, description, False)
     self.setValue(value)
-    self.setRange(minValue, maxValue)
+    self.setMinMax(minValue, maxValue)
     self.setObservable(observable)
 
-  def minValue(self, minValue) :
+  def minValue(self) :
     return self._minValue
 
-  def maxValue(self, maxValue) :
+  def maxValue(self) :
     return self._maxValue
+
+  def set(self, name = '', descr = '', obs = '', val = '', min = 'min',
+      max = 'max') :
+    if self._declared :
+      print "P2VV - ERROR: RooRealSetting.set(%s): variable has already been declared"\
+          % self._name
+      return
+
+    if name  != '' : self.setName(name)
+    if descr != '' : self.setDescription(descr)
+    if obs   != '' : self.setObservable(obs)
+    if val   != '' : self.setValue(val)
+
+    if min != 'min' and max != 'max' : self.setMinMax(min, max)
+    elif min != 'min' : self.setMinMax(min, self.maxValue())
+    elif max != 'max' : self.setMinMax(self.minValue(), max)
 
   def setValue(self, value) :
     if self._declared :
-      print "ERROR: RooRealSetting.setValue(%s): variable has already been declared"\
+      print "P2VV - ERROR: RooRealSetting.setValue(%s): variable has already been declared"\
           % self._name
       return
 
     if type(value) is float or type(value) is int :
       self._value = float(value)
-      self._forceIntoRange()
+      self._forceMinMax()
     else :
-      print "ERROR: RooRealSetting.setValue(%s): value is not a float"\
+      print "P2VV - ERROR: RooRealSetting.setValue(%s): value is not a float"\
           % self._name
       if type(self._minValue) is float :
         self._value = self._minValue
       else :
         self._value = 0.
 
-  def setRange(self, minValue, maxValue) :
+  def setMinMax(self, minValue, maxValue) :
     if self._declared :
-      print "ERROR: RooRealSetting.setRange(%s): variable has already been declared"\
+      print "P2VV - ERROR: RooRealSetting.setMinMax(%s): variable has already been declared"\
           % self._name
       return
 
@@ -617,15 +712,15 @@ class RooRealSetting(RooSetting) :
       self._minValue = float(minValue)
       self._maxValue = float(maxValue)
 
-      # force value into new range
-      self._forceIntoRange()
+      # force value between new minimum and new maximum
+      self._forceMinMax()
     else :
       self._minValue = ''
       self._maxValue = ''
 
       # variable can't be observable without a range
       if self._observable :
-        print "WARNING: RooRealSetting.setRange(%s): a constant variable can't be observable: removing observable flag"\
+        print "P2VV - WARNING: RooRealSetting.setMinMax(%s): a constant variable can't be observable: removing observable flag"\
             % self._name
         self.setObservable(False)
 
@@ -636,25 +731,25 @@ class RooRealSetting(RooSetting) :
           and type(self._maxValue is float) :
         self._observable = True
       else :
-        print "ERROR: RooRealSetting.setObservable(%s): a constant variable can't be observable"\
+        print "P2VV - ERROR: RooRealSetting.setObservable(%s): a constant variable can't be observable"\
             % self._name
         self._observable = False
     else :
       self._observable = False
 
-  def _forceIntoRange(self) :
+  def _forceMinMax(self) :
     if self._declared :
-      print "ERROR: RooRealSetting._forceIntoRange(%s): variable has already been declared"\
+      print "P2VV - ERROR: RooRealSetting._forceMinMax(%s): variable has already been declared"\
           % self._name
       return
 
     if type(self._minValue) is float and type(self._maxValue) is float:
       if self._value < self._minValue :
-        print "WARNING: RooRealSetting._forceIntoRange(%s): value is less than minimum value: forcing value into range"\
+        print "P2VV - WARNING: RooRealSetting._forceMinMax(%s): value is less than minimum value: forcing value into range"\
             % self._name
         self._value = self._minValue
       elif self._value > self._maxValue :
-        print "WARNING: RooRealSetting._forceIntoRange(%s): value is greater than maximum value: forcing value into range"\
+        print "P2VV - WARNING: RooRealSetting._forceMinMax(%s): value is greater than maximum value: forcing value into range"\
             % self._name
         self._value = self._maxValue
 
@@ -689,42 +784,54 @@ class RooCatSetting(RooSetting) :
   def catTypesDict(self) :
     return self._catTypesDict.copy()
 
+  def set(self, name = '', descr = '', obs = '', val = '', dict = '') :
+    if self._declared :
+      print "P2VV - ERROR: RooCatSetting.set(%s): variable has already been declared"\
+          % self._name
+      return
+
+    if name  != '' : self.setName(name)
+    if descr != '' : self.setDescription(descr)
+    if obs   != '' : self.setObservable(obs)
+    if val   != '' : self.setValue(val)
+    if dict  != '' : self.setCatTypesDict(dict)
+
   def setObservable(self, observable) :
     if observable is True :
       # check number of types for a RooCategory
       if len(self._catTypesDict) > 1 :
         self._observable = True
       else :
-        print "ERROR: RooCatSetting.setObservable(%s): a constant variable can't be observable"\
+        print "P2VV - ERROR: RooCatSetting.setObservable(%s): a constant variable can't be observable"\
             % self._name
         self._observable = False
     else :
       self._observable = False
 
   def setCatTypesDict(self, catTypesDict) :
-    # set dictionary of category types and indices
-    self._catTypesDict = {}
-
     if self._declared :
-      print "ERROR: RooCatSetting.setCatTypesDict(%s): variable has already been declared"\
+      print "P2VV - ERROR: RooCatSetting.setCatTypesDict(%s): variable has already been declared"\
           % self._name
       return
 
+    # set dictionary of category types and indices
+    self._catTypesDict = {}
+
     if type(catTypesDict) is not dict :
       # don't define category types if catTypesDict is not a dictionary
-      print "ERROR: RooCatSetting.setCatTypesDict(%s): argument 'catTypesDict' is not a dictionary: not defining any types"\
+      print "P2VV - ERROR: RooCatSetting.setCatTypesDict(%s): argument 'catTypesDict' is not a dictionary: not defining any types"\
           % self._name
     else :
       for catTypeIndex, catType in catTypesDict.iteritems() :
         # check category type
         if type(catType) is not str or len(catType) <= 0 :
-          print "ERROR: RooCatSetting.setCatTypesDict(%s): category type is not a string or an empty string: not defining type"\
+          print "P2VV - ERROR: RooCatSetting.setCatTypesDict(%s): category type is not a string or an empty string: not defining type"\
               % self._name
           continue
 
         # check category index
         if type(catTypeIndex) is not int :
-          print "ERROR: RooCatSetting.setCatTypesDict(%s): index of category type '%s' is not an integer: not defining type"\
+          print "P2VV - ERROR: RooCatSetting.setCatTypesDict(%s): index of category type '%s' is not an integer: not defining type"\
               % (self._name, catType)
           continue
 
@@ -732,8 +839,8 @@ class RooCatSetting(RooSetting) :
         self._catTypesDict[catTypeIndex] = catType
 
     if len(self._catTypesDict) < 2 and self._observable:
-    # variable can't be observable without a range
-      print "WARNING: RooCatSetting.setCatTypesDict(%s): a constant variable can't be observable: removing observable flag"\
+    # variable can't be observable with less than two types
+      print "P2VV - WARNING: RooCatSetting.setCatTypesDict(%s): a constant variable can't be observable: removing observable flag"\
           % catType
       self.setObservable(False)
 
@@ -742,7 +849,7 @@ class RooCatSetting(RooSetting) :
 
   def setValue(self, value) :
     if self._declared :
-      print "ERROR: RooCatSetting.setValue(%s): variable has already been declared"\
+      print "P2VV - ERROR: RooCatSetting.setValue(%s): variable has already been declared"\
           % self._name
       return
 
@@ -780,27 +887,38 @@ class RooFormSetting(RooSetting) :
   def variables(self) :
     return self._variables
 
+  def set(self, name = '', descr = '', val = '', vars = '') :
+    if self._declared :
+      print "P2VV - ERROR: RooCatSetting.set(%s): variable has already been declared"\
+          % self._name
+      return
+
+    if name  != '' : self.setName(name)
+    if descr != '' : self.setDescription(descr)
+    if val   != '' : self.setValue(val)
+    if vars  != '' : self.setVariables(vars)
+
   def setValue(self, value) :
     if self._declared :
-      print "ERROR: RooFormSetting.setValue(%s): formula has already been declared"\
+      print "P2VV - ERROR: RooFormSetting.setValue(%s): formula has already been declared"\
           % self._name
       return
 
     if type(value) is str :
       self._value = value
     else :
-      print "ERROR: RooFormSetting.setValue(%s): value is not a string"\
+      print "P2VV - ERROR: RooFormSetting.setValue(%s): value is not a string"\
           % self._name
       self._value = ''
 
   def setObservable(self, observable) :
     if observable is True :
-      print "ERROR: RooFormSetting.setObservable(%s): a formula cannot be 'observable'"\
+      print "P2VV - ERROR: RooFormSetting.setObservable(%s): a formula cannot be 'observable'"\
           % self._name
 
   def setVariables(self, variables) :
     if self._declared :
-      print "ERROR: RooFormSetting.setVariables(%s): formula has already been declared"\
+      print "P2VV - ERROR: RooFormSetting.setVariables(%s): formula has already been declared"\
           % self._name
       return
 
@@ -811,11 +929,11 @@ class RooFormSetting(RooSetting) :
         if type(var) is str and len(var) > 0 :
           self._variables.append(var)
         else :
-          print "ERROR: RooFormSetting.setVariables(%s): 'variable' is not a string or an empty string"\
+          print "P2VV - ERROR: RooFormSetting.setVariables(%s): 'variable' is not a string or an empty string"\
               % self._name
 
     else :
-      print "ERROR: RooFormSetting.setVariables(%s): variables are not in a list"\
+      print "P2VV - ERROR: RooFormSetting.setVariables(%s): variables are not in a list"\
           % self._name
 
   def declare(self, workspace, settings) :
@@ -825,12 +943,4 @@ class RooFormSetting(RooSetting) :
     factoryString = factoryString[:-2] + '})'
 
     self._declare(workspace, factoryString)
-
-
-###############################################################################
-## test ##
-##########
-config = getP2VVConfig(mode = 'Bs2Jpsiphi', options = 'transAngles', createWS = True)
-config.declareRooVars()
-config.workspace().Print()
 

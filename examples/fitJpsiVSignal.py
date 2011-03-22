@@ -1,0 +1,344 @@
+###############################################################################
+## fitJpsiVSignal: P2VV example script for a fit to signal data              ##
+## (signal only, no experimental effects)                                    ##
+##                                                                           ##
+## decay channels: B0->J/psiK* or B_s0->J/psiphi                             ##
+##                                                                           ##
+## * assumes that $P2VVROOT/python is in $PYTHONPATH                         ##
+## * assumes that $P2VVROOT/lib is in $LD_LIBRARYPATH                        ##
+##                                                                           ##
+## authors:                                                                  ##
+##   JvL, Jeroen van Leerdam, Nikhef, j.van.leerdam@nikhef.nl                ##
+##                                                                           ##
+###############################################################################
+
+import P2VV, P2VVConfiguration, P2VVModelBuilders, P2VVPlots
+from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
+
+###############################################################################
+# specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
+#mode = 'Bd2JpsiKstar'
+mode = 'Bs2Jpsiphi'
+
+# plots file
+plotsFile = mode[3:] + 'Plots.ps'
+
+# data set name and file
+#dataFilePath = '/data/bfys/jleerdam/Bs2Jpsiphi/EvtGen/Gauss-13144008-*.root'
+dataSetName  = mode[3:] + 'Data'
+dataFilePath = dataSetName + '.root'
+
+# generate events?
+generate = False
+nEvents = 50000
+
+# read events from NTuple or RooDataset
+NTuple = False
+
+###############################################################################
+# load the P2VV library
+P2VV.loadP2VVLib()
+
+# create P2VV configuration object
+config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])#, 'transAngles',
+    # 'ampsType=polar', 'noKSWave', 'RooBDecay', 'tResModel=3Gauss'])
+
+# custom settings
+config['cpsiAng'].set(name = 'hel_cthetak')
+config['cthetaAng'].set(name = 'hel_cthetal')
+config['phiAng'].set(name = 'hel_phi')
+config['BLifetime'].set(name = 't', min = 0., max = 4.)
+config['iTag'].set(name = 'tagInitial')
+if mode == 'Bd2JpsiKstar' :
+  config['fTag'].set(name = 'tagFinal')
+config['misTag'].set(obs = False, val = 0., min = '', max = '')
+
+config['ReApar'].set(val = -0.6)
+config['ImApar'].set(val = -0.1)
+config['ReAperp'].set(val = -0.6)
+config['ImAperp'].set(val = 0.1)
+config['ReAS'].set(val = 0.)
+config['ImAS'].set(val = 0.)
+
+if mode == 'Bd2JpsiKstar' :
+  config['dm'].set(min = -1., max = 2.)
+elif mode == 'Bs2Jpsiphi' :
+  config['dm'].set(min = 13., max = 23)
+  config['phiCP'].set(val = -0.7)
+
+# declare RooFit variables and store them in RooWorkspace
+config.declareRooVars()
+
+# get workspace
+ws = config.workspace()
+
+# build the B0->J/psiK* PDF
+pdf = P2VVModelBuilders.getP2VVPDF(config)
+
+# print contents of RooWorkspace to screen
+#config.workspace().Print()
+
+if generate :
+  # generate events
+  print 'fitJpsiVSignal: generating %d events' % nEvents
+  if config.value('BDecayClass') == 'RooBDecay' : P2VV.registerMultiCatGen()
+  data = pdf.generate(ws.set('observables'), nEvents)
+
+  # write events to file
+  print "fitJpsiVSignal: writing RooDataSet '%s' to file '%s'"\
+      % (dataSetName, dataFilePath)
+  file = TFile.Open(dataFilePath, 'RECREATE')
+  data.Write(dataSetName)
+  file.Close()
+
+elif NTuple :
+  # create data set from NTuple file(s)
+  print "fitJpsiVSignal: reading NTuple(s) '%s' from file(s) '%s'"\
+      % (dataSetName, dataFilePath)
+  files = TChain(dataSetName)
+  files.Add(dataFilePath)
+  data = RooDataSet(dataSetName, dataSetName, files, ws.set('observables'))
+
+else :
+  # get data set from file
+  print "fitJpsiVSignal: reading RooDataset '%s' from file '%s'"\
+      % (dataSetName, dataFilePath)
+  file = TFile.Open(dataFilePath, 'READ')
+  data = file.Get(dataSetName)
+  file.Close()
+
+print 'fitJpsiVSignal: %d events in data set' % data.numEntries()
+
+# fit data
+fitResult = pdf.fitTo(data, RooFit.Minos(False), RooFit.Hesse(False),
+    RooFit.NumCPU(8))
+
+# get tags
+itName = config['iTag'].name()
+itPlus = config['iTag'].catTypesDict()[1]
+itMin  = config['iTag'].catTypesDict()[-1]
+if mode == 'Bd2JpsiKstar' :
+  ftName = config['fTag'].name()
+  ftPlus = config['fTag'].catTypesDict()[1]
+  ftMin  = config['fTag'].catTypesDict()[-1]
+
+# lifetime plots
+canv = TCanvas('Lifetime')
+canv.Divide(2, 2)
+
+if mode == 'Bd2JpsiKstar' :
+  P2VVPlots.plot(config, 'BLifetime', canv.cd(1), data, pdf,
+      xTitle = 't (ps)',
+      frameOpts = [RooFit.Title('Lifetime - B / Unoscillated'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
+                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+  P2VVPlots.plot(config, 'BLifetime', canv.cd(2), data, pdf,
+      xTitle = 't (ps)',
+      frameOpts = [RooFit.Title('Lifetime - B / Oscillated'),
+                   RooFit.Bins(30)],
+      dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
+                   RooFit.Slice(ws.cat(ftName), ftMin)])
+  P2VVPlots.plot(config, 'BLifetime', canv.cd(3), data, pdf,
+      xTitle = 't (ps)',
+      frameOpts = [RooFit.Title('Lifetime - #bar{B} / Oscillated'),
+                   RooFit.Bins(30)],
+      dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
+                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+  P2VVPlots.plot(config, 'BLifetime', canv.cd(4), data, pdf,
+      xTitle = 't (ps)',
+      frameOpts = [RooFit.Title('Lifetime - #bar{B} / Unoscillated'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == -1 && %s == -1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
+                   RooFit.Slice(ws.cat(ftName), ftMin)])
+
+elif mode == 'Bs2Jpsiphi' :
+  P2VVPlots.plot(config, 'BLifetime', canv.cd(1), data, pdf,
+      xTitle = 't (ps)',
+      frameOpts = [RooFit.Title('Lifetime - CP Average'),
+                   RooFit.Bins(70)],
+      dataOpts  = [], pdfOpts   = [])
+  P2VVPlots.plot(config, 'BLifetime', canv.cd(3), data, pdf,
+      xTitle = 't (ps)',
+      frameOpts = [RooFit.Title('Lifetime - B'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == 1' % itName)],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus)])
+  P2VVPlots.plot(config, 'BLifetime', canv.cd(4), data, pdf,
+      xTitle = 't (ps)',
+      frameOpts = [RooFit.Title('Lifetime - #bar{B}'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == -1' % itName)],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin)])
+
+canv.Print(plotsFile + '(', 'ps')
+
+# cos(theta_K) plots
+canv = TCanvas('cos(theta_K)')
+canv.Divide(2, 2)
+
+if mode == 'Bd2JpsiKstar' :
+  P2VVPlots.plot(config, 'cpsiAng', canv.cd(1), data, pdf,
+      xTitle = 'cos(#theta_{K})',
+      frameOpts = [RooFit.Title('cos(#theta_{K}) - B / Unoscillated'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
+                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+  P2VVPlots.plot(config, 'cpsiAng', canv.cd(2), data, pdf,
+      xTitle = 'cos(#theta_{K})',
+      frameOpts = [RooFit.Title('cos(#theta_{K}) - B / Oscillated'),
+                   RooFit.Bins(30)],
+      dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
+                   RooFit.Slice(ws.cat(ftName), ftMin)])
+  P2VVPlots.plot(config, 'cpsiAng', canv.cd(3), data, pdf,
+      xTitle = 'cos(#theta_{K})',
+      frameOpts = [RooFit.Title('cos(#theta_{K}) - #bar{B} / Oscillated'),
+                   RooFit.Bins(30)],
+      dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
+                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+  P2VVPlots.plot(config, 'cpsiAng', canv.cd(4), data, pdf,
+      xTitle = 'cos(#theta_{K})',
+      frameOpts = [RooFit.Title('cos(#theta_{K}) - #bar{B} / Unoscillated'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == -1 && %s == -1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
+                   RooFit.Slice(ws.cat(ftName), ftMin)])
+
+elif mode == 'Bs2Jpsiphi' :
+  P2VVPlots.plot(config, 'cpsiAng', canv.cd(1), data, pdf,
+      xTitle = 'cos(#theta_{K})',
+      frameOpts = [RooFit.Title('cos(#theta_{K}) - CP Average'),
+                   RooFit.Bins(70)],
+      dataOpts  = [], pdfOpts   = [])
+  P2VVPlots.plot(config, 'cpsiAng', canv.cd(3), data, pdf,
+      xTitle = 'cos(#theta_{K})',
+      frameOpts = [RooFit.Title('cos(#theta_{K}) - B'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == 1' % itName)],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus)])
+  P2VVPlots.plot(config, 'cpsiAng', canv.cd(4), data, pdf,
+      xTitle = 'cos(#theta_{K})',
+      frameOpts = [RooFit.Title('cos(#theta_{K}) - #bar{B}'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == -1' % itName)],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin)])
+
+canv.Print(plotsFile, 'ps')
+
+# cos(theta_l) plots
+canv = TCanvas('cos(theta_l)')
+canv.Divide(2, 2)
+
+if mode == 'Bd2JpsiKstar' :
+  P2VVPlots.plot(config, 'cthetaAng', canv.cd(1), data, pdf,
+      xTitle = 'cos(#theta_{l})',
+      frameOpts = [RooFit.Title('cos(#theta_{l}) - B / Unoscillated'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
+                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+  P2VVPlots.plot(config, 'cthetaAng', canv.cd(2), data, pdf,
+      xTitle = 'cos(#theta_{l})',
+      frameOpts = [RooFit.Title('cos(#theta_{l}) - B / Oscillated'),
+                   RooFit.Bins(30)],
+      dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
+                   RooFit.Slice(ws.cat(ftName), ftMin)])
+  P2VVPlots.plot(config, 'cthetaAng', canv.cd(3), data, pdf,
+      xTitle = 'cos(#theta_{l})',
+      frameOpts = [RooFit.Title('cos(#theta_{l}) - #bar{B} / Oscillated'),
+                   RooFit.Bins(30)],
+      dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
+                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+  P2VVPlots.plot(config, 'cthetaAng', canv.cd(4), data, pdf,
+      xTitle = 'cos(#theta_{l})',
+      frameOpts = [RooFit.Title('cos(#theta_{l}) - #bar{B} / Unoscillated'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == -1 && %s == -1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
+                   RooFit.Slice(ws.cat(ftName), ftMin)])
+
+elif mode == 'Bs2Jpsiphi' :
+  P2VVPlots.plot(config, 'cthetaAng', canv.cd(1), data, pdf,
+      xTitle = 'cos(#theta_{l})',
+      frameOpts = [RooFit.Title('cos(#theta_{l}) - CP Average'),
+                   RooFit.Bins(70)],
+      dataOpts  = [], pdfOpts   = [])
+  P2VVPlots.plot(config, 'cthetaAng', canv.cd(3), data, pdf,
+      xTitle = 'cos(#theta_{l})',
+      frameOpts = [RooFit.Title('cos(#theta_{l}) - B'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == 1' % itName)],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus)])
+  P2VVPlots.plot(config, 'cthetaAng', canv.cd(4), data, pdf,
+      xTitle = 'cos(#theta_{l})',
+      frameOpts = [RooFit.Title('cos(#theta_{l}) - #bar{B}'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == -1' % itName)],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin)])
+
+canv.Print(plotsFile, 'ps')
+
+# phi plots
+canv = TCanvas('phi')
+canv.Divide(2, 2)
+
+if mode == 'Bd2JpsiKstar' :
+  P2VVPlots.plot(config, 'phiAng', canv.cd(1), data, pdf,
+      xTitle = '#phi',
+      frameOpts = [RooFit.Title('#phi - B / Unoscillated'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
+                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+  P2VVPlots.plot(config, 'phiAng', canv.cd(2), data, pdf,
+      xTitle = '#phi',
+      frameOpts = [RooFit.Title('#phi - B / Oscillated'),
+                   RooFit.Bins(30)],
+      dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
+                   RooFit.Slice(ws.cat(ftName), ftMin)])
+  P2VVPlots.plot(config, 'phiAng', canv.cd(3), data, pdf,
+      xTitle = '#phi',
+      frameOpts = [RooFit.Title('#phi - #bar{B} / Oscillated'),
+                   RooFit.Bins(30)],
+      dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
+                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+  P2VVPlots.plot(config, 'phiAng', canv.cd(4), data, pdf,
+      xTitle = '#phi',
+      frameOpts = [RooFit.Title('#phi - #bar{B} / Unoscillated'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == -1 && %s == -1' % (itName, ftName))],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
+                   RooFit.Slice(ws.cat(ftName), ftMin)])
+
+elif mode == 'Bs2Jpsiphi' :
+  P2VVPlots.plot(config, 'phiAng', canv.cd(1), data, pdf,
+      xTitle = '#phi',
+      frameOpts = [RooFit.Title('#phi - CP Average'),
+                   RooFit.Bins(70)],
+      dataOpts  = [], pdfOpts   = [])
+  P2VVPlots.plot(config, 'phiAng', canv.cd(3), data, pdf,
+      xTitle = '#phi',
+      frameOpts = [RooFit.Title('#phi - B'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == 1' % itName)],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus)])
+  P2VVPlots.plot(config, 'phiAng', canv.cd(4), data, pdf,
+      xTitle = '#phi',
+      frameOpts = [RooFit.Title('#phi - #bar{B}'),
+                   RooFit.Bins(50)],
+      dataOpts  = [RooFit.Cut('%s == -1' % itName)],
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin)])
+
+canv.Print(plotsFile + ')', 'ps')
+

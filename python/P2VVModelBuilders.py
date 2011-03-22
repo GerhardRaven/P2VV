@@ -1,9 +1,46 @@
 ###############################################################################
+## P2VVModelbuilders: P2VV tools that build a RooFit PDF                     ##
+##                                                                           ##
+## authors:                                                                  ##
+##   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl           ##
+##   WH,  Wouter Hulsbergen,  Nikhef,      W.Hulsbergen@nikhef.nl            ##
+##   JvL, Jeroen van Leerdam, Nikhef,      j.van.leerdam@nikhef.nl           ##
+##   DvE, Daan van Eijk,      Nikhef,      D.van.Eijk@nikhef.nl              ##
+##                                                                           ##
+###############################################################################
+
+
+###############################################################################
 ## function that returns a P2VV PDF                           ##
 ## mode and options are specified in the configuration object ##
 ################################################################
 def getP2VVPDF(config) :
+  # get mode
+  mode = config.value('P2VVMode')
+  if type(mode) is not str :
+    print "P2VV - ERROR: getP2VVPDF: 'mode' is not a string"
+    return
 
+  if mode in ['Bd2JpsiKstar', 'Bs2Jpsiphi'] :
+    # build PDF for B0->J/psiK* or B_s0->J/psiphi
+
+    # build angular functions
+    angFuncsBuild = AngleFunctionBuilder(config)
+
+    # build time resolution models
+    timeResBuild = TimeResolutionBuilder(config)
+
+    # build signal PDF
+    sigPDF = buildJpsiV(config)
+
+    # multiply with mass PDF, add background PDF, etc...
+    #                        .
+    #                        .
+    #                        .
+    fullPDF = sigPDF
+
+    # return the PDF
+    return fullPDF
 
 
 #################
@@ -16,12 +53,25 @@ def getP2VVPDF(config) :
 def buildJpsiV(config) :
   # get general settings
   mode = config.value('P2VVMode')
+  if type(mode) is not str :
+    print "P2VV - ERROR: buildJpsiV: 'mode' is not a string"
+    return
+  elif mode not in ['Bd2mumuKstar', 'Bd2JpsiKstar', 'Bs2Jpsiphi'] :
+    print "P2VV - ERROR: buildJpsiV: mode '%s' not implemented" % mode
+    return
+
+  print 'P2VV - INFO: buildJpsiV: decay mode = ' + mode
+
   BDecClass = config.value('BDecayClass')
   pdfName = config.value('sigPDFName')
 
   # get workspace
   ws = config.workspace()
-  ws.factory("$Alias(Addition_, sum_)")
+
+  # get constants
+  zero  = config['zeroConst'].name()
+  one   = config['oneConst'].name()
+  minus = config['minusConst'].name()
 
   # get amplitudes
   ReA0    = config['ReA0'].name()
@@ -35,9 +85,12 @@ def buildJpsiV(config) :
 
   # get observables
   BLifetime = config['BLifetime'].name()
+  cpsiAng   = config['cpsiAng'].name()
+  cthetaAng = config['cthetaAng'].name()
+  phiAng    = config['phiAng'].name()
   iTag      = config['iTag'].name()
   misTag    = config['misTag'].name()
-  if mode is 'Bd2JpsiKstar' : 
+  if mode == 'Bd2JpsiKstar' : 
     fTag = config['fTag'].name()
 
   # get lifetime and mixing parameters
@@ -46,23 +99,18 @@ def buildJpsiV(config) :
   dm        = config['dm'].name()
 
   # get CP violation paramters
-  if BDecClass is 'RooBTagDecay' :
-    CCP = config['CCP'].name()
-  if mode is 'Bs2Jpsiphi' :
+  CCP = config['CCP'].name()
+  if mode == 'Bs2Jpsiphi' :
     DCP = config['DCP'].name()
     SCP = config['SCP'].name()
 
   # get tagging parameters
-  if BDecClass is 'RooBTagDecay' :
-    dilution   = config['tagDilution'].name()
-    ADilMisTag = config['ADilMisTag'].name()
-    avgCEven   = config['avgCEven'].name()
-    avgCOdd    = config['avgCOdd'].name()
-    if mode is 'Bd2JpsiKstar' :
-      ANorm = config['ANorm'].name()
-
-  # build angular functions
-  AngleFunctionBuilder(config)
+  dilution   = config['tagDilution'].name()
+  ADilMisTag = config['ADilMisTag'].name()
+  if mode == 'Bd2JpsiKstar' :
+    ANorm = config['ANorm'].name()
+  avgCEven   = config['avgCEven'].name()
+  avgCOdd    = config['avgCOdd'].name()
 
   # define the relevant combinations of amplitudes
   ws.factory("expr::A0Sq('(@0 * @0 + @1 * @1)', {%s, %s})"\
@@ -92,131 +140,203 @@ def buildJpsiV(config) :
   ws.factory("expr::ImAperpAS('(@0 * @3 - @1 * @2)', {%s, %s, %s, %s})"\
       % (ReAperp, ImAperp, ReAS, ImAS))                # Im(A_perp* A_S)
 
+  # set strings to build time function coefficients
+  coshCStr =\
+      "prod(A0Sq,                {cEven}     A0Sq_angFunc),        "\
+      "prod(AparSq,              {cEven}     AparSq_angFunc),      "\
+      "prod(AperpSq,             {cEven}     AperpSq_angFunc),     "\
+      "prod(ASSq,                {cEven}     ASSq_angFunc),        "\
+      "prod(ReA0Apar,            {cEven}     ReA0Apar_angFunc),    "\
+      "prod(ImA0Aperp,           {cEven} {C} ImA0Aperp_angFunc),   "\
+      "prod(ReA0AS,              {cEven}     ReA0AS_angFunc),      "\
+      "prod(ImAparAperp,         {cEven} {C} ImAparAperp_angFunc), "\
+      "prod(ReAparAS,            {cEven}     ReAparAS_angFunc),    "\
+      "prod(ImAperpAS,           {cEven} {C} ImAperpAS_angFunc)    "
+  cosCStr =\
+      "prod(A0Sq,                {cOdd}  {C} A0Sq_angFunc),        "\
+      "prod(AparSq,              {cOdd}  {C} AparSq_angFunc),      "\
+      "prod(AperpSq,             {cOdd}  {C} AperpSq_angFunc),     "\
+      "prod(ASSq,                {cOdd}  {C} ASSq_angFunc),        "\
+      "prod(ReA0Apar,            {cOdd}  {C} ReA0Apar_angFunc),    "\
+      "prod(ImA0Aperp,           {cOdd}      ImA0Aperp_angFunc),   "\
+      "prod(ReA0AS,              {cOdd}  {C} ReA0AS_angFunc),      "\
+      "prod(ImAparAperp,         {cOdd}      ImAparAperp_angFunc), "\
+      "prod(ReAparAS,            {cOdd}  {C} ReAparAS_angFunc),    "\
+      "prod(ImAperpAS,           {cOdd}      ImAperpAS_angFunc)    "
+  sinhCStr =\
+      "prod(A0Sq,        {minus} {cEven} {D} A0Sq_angFunc),        "\
+      "prod(AparSq,      {minus} {cEven} {D} AparSq_angFunc),      "\
+      "prod(AperpSq,             {cEven} {D} AperpSq_angFunc),     "\
+      "prod(ASSq,        {minus} {cEven} {D} ASSq_angFunc),        "\
+      "prod(ReA0Apar,    {minus} {cEven} {D} ReA0Apar_angFunc),    "\
+      "prod(ReA0Aperp,           {cEven} {S} ImA0Aperp_angFunc),   "\
+      "prod(ReA0AS,      {minus} {cEven} {D} ReA0AS_angFunc),      "\
+      "prod(ReAparAperp,         {cEven} {S} ImAparAperp_angFunc), "\
+      "prod(ReAparAS,    {minus} {cEven} {D} ReAparAS_angFunc),    "\
+      "prod(ReAperpAS,   {minus} {cEven} {S} ImAperpAS_angFunc)    "
+  sinCStr =\
+      "prod(A0Sq,        {minus} {cOdd}  {S} A0Sq_angFunc),        "\
+      "prod(AparSq,      {minus} {cOdd}  {S} AparSq_angFunc),      "\
+      "prod(AperpSq,             {cOdd}  {S} AperpSq_angFunc),     "\
+      "prod(ASSq,        {minus} {cOdd}  {S} ASSq_angFunc),        "\
+      "prod(ReA0Apar,    {minus} {cOdd}  {S} ReA0Apar_angFunc),    "\
+      "prod(ReA0Aperp,   {minus} {cOdd}  {D} ImA0Aperp_angFunc),   "\
+      "prod(ReA0AS,      {minus} {cOdd}  {S} ReA0AS_angFunc),      "\
+      "prod(ReAparAperp, {minus} {cOdd}  {D} ImAparAperp_angFunc), "\
+      "prod(ReAparAS,    {minus} {cOdd}  {S} ReAparAS_angFunc),    "\
+      "prod(ReAperpAS,           {cOdd}  {D} ImAperpAS_angFunc)    "
+
   # build the signal PDF
-  if mode is 'Bd2JpsiKstar' :
-    # B0->J/psiK*
+  print "P2VV - INFO: buildJpsiV: building PDF '%s'" % pdfName
+  if BDecClass == 'RooBDecay' :
+    # use RooBDecay
+    print 'P2VV - INFO: buildJpsiV: using RooBDecay for time PDF'
 
-    # build time function coefficient
-    ws.factory("RealSumPdf::fjpsikstar("
-        "{A0Sq_basis,        AparSq_basis,    AperpSq_basis, ASSq_basis,"
-        " ReA0Apar_basis,    ImA0Aperp_basis, ReA0AS_basis,             "
-        " ImAparAperp_basis, ReAparAS_basis,  ImAperpAS_basis},         "
-        "{A0Sq,              AparSq,          AperpSq,       ASSq,      "
-        " ReA0Apar,          ImA0Aperp,       ReA0AS,                   "
-        " ImAparAperp,       ReAparAS,        ImAperpAS})               ")
+    # define tagging factors for CP even and CP odd terms
+    ws.factory("expr::cTagEven('@0 * (@3 - @2 * @1)', {%s, %s, %s, %s})"\
+        % (dilution, ADilMisTag, avgCEven, avgCOdd))
+    ws.factory("expr::cTagOdd('@0 * (@2 - @3 * @1)', {%s, %s, %s, %s})"\
+        % (dilution, ADilMisTag, avgCEven, avgCOdd))
 
-    if BDecClass is 'RooBDecay' :
-      # use RooBDecay
+    if mode == 'Bd2JpsiKstar' :
+      # B0->J/psiK*
 
-      # define factors that depend on the flavour tags
-      ws.factory("expr::cTag('@0 * @1 * (1. - 2. * @2)', {%s, %s, %s})"\
-          % (iTag, fTag, misTag))
+      # build CP even and CP odd coefficients
+      ws.factory("expr::cEven('(1. - @1 * @2) * (@3 + @0 * @4)',\
+          {%s, %s, %s, %s, cTagEven})" % (iTag, fTag, ANorm, avgCEven))
+      ws.factory("expr::cOdd('(@1 - @2) * (@3 + @0 * @4)',\
+          {%s, %s, %s, %s, cTagOdd})" % (iTag, fTag, ANorm, avgCOdd))
 
-      # build PDF
-      ws.factory("PROD::%s(fjpsikstar,\
-         BDecay(%s, %s, %s, one, zero, cTag, zero, %s, tres_sig, SingleSided)"\
-         % (pdfName, BLifetime, BMeanLife, dGamma, dm))
+      if config.value('noFactFlavSpec') :
+        print 'P2VV - INFO: buildJpsiV: not factorizing time and angular PDFs'
 
-    else :
-      # use RooBTagDecay
-      ws.factory("PROD::%s(fjpsikstar,\
-          BTagDecay(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, one,\
-          tres_sig, SingleSided)"\
-          % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-             ADilMisTag, ANorm, avgCEven, avgCOdd))
+        # format time function strings
+        coshCStr = coshCStr.format(C = '', cEven = 'cEven,')
+        cosCStr  =  cosCStr.format(C = '', cOdd  = 'cOdd,')
 
-  elif mode is 'Bs2Jpsiphi' :
-    # B_s0->J/psiphi
+        # build time function coefficients
+        ws.factory('sum::cCosh(' + coshCStr + ')')
+        ws.factory('sum::cCos( ' + cosCStr  + ')')
+        ws.factory('sum::cZero(P2VVAngleBasis(%s, %s, %s, 0, 0, 0, 0, 1.),\
+          P2VVAngleBasis(%s, %s, %s, 0, 0, 0, 0, -1.))'\
+          % (cpsiAng, cthetaAng, phiAng, cpsiAng, cthetaAng, phiAng))
+          # this is a dirty trick to make sure analytical integrals are used
 
-    # set strings to build time function coefficients
-    coshCStr =\
-        "prod(A0Sq,                          A0Sq_basis),"
-        "prod(AparSq,                        AparSq_basis),"
-        "prod(AperpSq,                       AperpSq_basis),"
-        "prod(ASSq,                          ASSq_basis),"
-        "prod(ReA0Apar,                      ReA0Apar_basis),"
-        "prod(ImA0Aperp,                 {C} ImA0Aperp_basis),"
-        "prod(ReA0AS,                        ReA0AS_basis),"
-        "prod(ImAparAperp,               {C} ImAparAperp_basis),"
-        "prod(ReAparAS,                      ReAparAS_basis),"
-        "prod(ImAperpAS,                 {C} ImAperpAS_basis)"
-    cosCStr =\
-        "prod(A0Sq,               {cTag} {C} A0Sq_basis),"
-        "prod(AparSq,             {cTag} {C} AparSq_basis),"
-        "prod(AperpSq,            {cTag} {C} AperpSq_basis),"
-        "prod(ASSq,               {cTag} {C} ASSq_basis),"
-        "prod(ReA0Apar,           {cTag} {C} ReA0Apar_basis),"
-        "prod(ImA0Aperp,          {cTag}     ImA0Aperp_basis),"
-        "prod(ReA0AS,             {cTag} {C} ReA0AS_basis),"
-        "prod(ImAparAperp,        {cTag}     ImAparAperp_basis),"
-        "prod(ReAparAS,           {cTag} {C} ReAparAS_basis),"
-        "prod(ImAperpAS,          {cTag}     ImAperpAS_basis)"
-    sinhCStr =\
-        "prod(A0Sq,        minus,        {D} A0Sq_basis),"
-        "prod(AparSq,      minus,        {D} AparSq_basis),"
-        "prod(AperpSq,                   {D} AperpSq_basis),"
-        "prod(ASSq,        minus,        {D} ASSq_basis),"
-        "prod(ReA0Apar,    minus,        {D} ReA0Apar_basis),"
-        "prod(ReA0Aperp,                 {S} ImA0Aperp_basis),"
-        "prod(ReA0AS,      minus,        {D} ReA0AS_basis),"
-        "prod(ReAparAperp,               {S} ImAparAperp_basis),"
-        "prod(ReAparAS,    minus,        {D} ReAparAS_basis),"
-        "prod(ReAperpAS,   minus,        {S} ImAperpAS_basis)"
-    sinCStr =\
-        "prod(A0Sq,        minus, {cTag} {S} A0Sq_basis),"
-        "prod(AparSq,      minus, {cTag} {S} AparSq_basis),"
-        "prod(AperpSq,            {cTag} {S} AperpSq_basis),"
-        "prod(ASSq,        minus, {cTag} {S} ASSq_basis),"
-        "prod(ReA0Apar,    minus, {cTag} {S} ReA0Apar_basis),"
-        "prod(ReA0Aperp,   minus, {cTag} {D} ImA0Aperp_basis),"
-        "prod(ReA0AS,      minus, {cTag} {S} ReA0AS_basis),"
-        "prod(ReAparAperp, minus, {cTag} {D} ImAparAperp_basis),"
-        "prod(ReAparAS,    minus, {cTag} {S} ReAparAS_basis),"
-        "prod(ReAperpAS,          {cTag} {D} ImAperpAS_basis)"
+        # build PDF
+        ws.factory("BDecay::%s(%s, %s, %s, cCosh, cZero, cCos, cZero, %s,\
+            tres_sig, SingleSided)"\
+            % (pdfName, BLifetime, BMeanLife, dGamma, dm))
 
-    if BDecClass is 'RooBDecay' :
-      # use RooBDecay
+      else :
+        print 'P2VV - INFO: buildJpsiV: factorizing time and angular PDFs'
 
-      # define factors that depend on initial state flavour tag
-      ws.factory("expr::cTag('@0 * (1. - 2. * @1)', {%s, %s})"\
-          % (iTag, misTag))
+        # format time function strings
+        coefStr = coshCStr.format(C = '', cEven = '')
+
+        # build time function coefficient
+        onesStr = ''
+        for i in range(coefStr.count('prod(')) : onesStr += one + ','
+        ws.factory("RealSumPdf::cCommon({%s}, {%s})"\
+            % (coefStr, onesStr[:-1]))
+
+        # build PDF
+        ws.factory("PROD::%s(cCommon,\
+          BDecay(%s, %s, %s, cEven, %s, cOdd, %s, %s, tres_sig, SingleSided))"\
+          % (pdfName, BLifetime, BMeanLife, dGamma, zero, zero, dm))
+
+
+    elif mode == 'Bs2Jpsiphi' :
+      # B_s0->J/psiphi
+
+      # build CP even and CP odd coefficients
+      #ws.factory('sum::cEven(%s, prod(%s, cTagEven))' % (avgCEven, iTag))
+      #ws.factory('sum::cOdd(%s, prod(%s, cTagOdd))'   % (avgCOdd,  iTag))
+      #
+      # this crashes:
+      # RooProduct.cxx:254:
+      # Int_t RooProduct::getPartIntList(const RooArgSet*, const char*) const:
+      # Assertion `i->second->getSize()==1' failed.
+
+      # build CP even and CP odd coefficients
+      ws.factory("expr::cEven('@1 + @0 * @2', {%s, %s, cTagEven})"\
+          % (iTag, avgCEven))
+      ws.factory("expr::cOdd('@1 + @0 * @2', {%s, %s, cTagOdd})"\
+          % (iTag, avgCOdd))
 
       # format time function strings
-      coshCStr = coshCoefStr.format(C='')
-      cosCStr  =  cosCoefStr.format(C='', cTag='cTag,')
-      sinhCStr = sinhCoefStr.format(D=DCP+',', S=SCP+',')
-      sinCStr  =  sinCoefStr.format(D=DCP+',', S=SCP+',', cTag='cTag,')
+      coshCStr = coshCStr.format(C = CCP + ',', cEven = 'cEven,')
+      cosCStr  =  cosCStr.format(C = CCP + ',', cOdd  = 'cOdd,')
+      sinhCStr = sinhCStr.format(D = DCP + ',', S = SCP + ',',
+          minus = minus + ',', cEven = 'cEven,')
+      sinCStr  =  sinCStr.format(D = DCP + ',', S = SCP + ',',
+          minus = minus + ',', cOdd  = 'cOdd,')
 
       # build time function coefficients
-      ws.factory('sum_::fjpsiphi_cosh({' + coshCStr + '})')
-      ws.factory('sum_::fjpsiphi_cos({'  + cosCStr  + '})')
-      ws.factory('sum_::fjpsiphi_sinh({' + sinhCStr + '})')
-      ws.factory('sum_::fjpsiphi_sin({'  + sinCStr  + '})')
+      ws.factory('sum::cCosh(' + coshCStr + ')')
+      ws.factory('sum::cCos( ' + cosCStr  + ')')
+      ws.factory('sum::cSinh(' + sinhCStr + ')')
+      ws.factory('sum::cSin( ' + sinCStr  + ')')
 
       # build PDF
-      ws.factory("BDecay::%s(%s, %s, %s, fjpsiphi_cosh, fjpsiphi_sinh,\
-                 fjpsiphi_cos, fjpsiphi_sin, %s, tres_sig, SingleSided))"\
-          % (pdfName, BLifetime, BMeanLife, dGamma, dm))
+      ws.factory("BDecay::%s(%s, %s, %s, cCosh, cSinh, cCos, cSin, %s,\
+        tres_sig, SingleSided)" % (pdfName, BLifetime, BMeanLife, dGamma, dm))
 
-    else :
-      # use RooBTagDecay
+  else :
+    # use RooBTagDecay
+
+    if mode == 'Bd2JpsiKstar' :
+      # B0->J/psiK*
+
+      # format time function string
+      coshCStr = coshCStr.format(C = '', cEven = '')
+
+      if config.value('noFactFlavSpec') :
+        print 'P2VV - INFO: buildJpsiV: not factorizing time and angular PDFs'
+
+        # build time function coefficient
+        ws.factory('sum::cCommon(' + coshCStr + ')')
+
+        # build PDF
+        ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,\
+            cCommon, tres_sig, SingleSided, 1)"\
+            % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
+               ADilMisTag, ANorm, avgCEven, avgCOdd))
+
+      else :
+        print 'P2VV - INFO: buildJpsiV: factorizing time and angular PDFs'
+
+        # build time function coefficient
+        onesStr = ''
+        for i in range(coshCStr.count('prod(')) : onesStr += one + ','
+        ws.factory("RealSumPdf::cCommon({%s}, {%s})"\
+            % (coshCStr, onesStr[:-1]))
+
+        # build PDF
+        ws.factory("PROD::%s(cCommon, BTagDecay(%s, %s, %s, %s, %s, %s, %s,\
+            %s, %s, %s, %s, %s, tres_sig, SingleSided, 1))"\
+            % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
+               ADilMisTag, ANorm, avgCEven, avgCOdd, one))
+
+    elif mode == 'Bs2Jpsiphi' :
+      # B_s0->J/psiphi
 
       # format time function strings
-      coshCStr = coshCoefStr.format(C=CCP+',')
-      cosCStr  =  cosCoefStr.format(C=CCP+',', cTag='')
-      sinhCStr = sinhCoefStr.format(D=DCP+',', S=SCP+',')
-      sinCStr  =  sinCoefStr.format(D=DCP+',', S=SCP+',', cTag='')
+      coshCStr = coshCStr.format(C = CCP + ',', cEven = '')
+      cosCStr  =  cosCStr.format(C = CCP + ',', cOdd  = '')
+      sinhCStr = sinhCStr.format(D = DCP + ',', S = SCP + ',',
+          minus = minus + ',', cEven = '')
+      sinCStr  =  sinCStr.format(D = DCP + ',', S = SCP + ',',
+          minus = minus + ',', cOdd  = '')
 
       # build time function coefficients
-      ws.factory('sum_::fjpsiphi_cosh({' + coshCStr + '})')
-      ws.factory('sum_::fjpsiphi_cos({'  + cosCStr  + '})')
-      ws.factory('sum_::fjpsiphi_sinh({' + sinhCStr + '})')
-      ws.factory('sum_::fjpsiphi_sin({'  + sinCStr  + '})')
+      ws.factory('sum::cCosh(' + coshCStr + ')')
+      ws.factory('sum::cCos( ' + cosCStr  + ')')
+      ws.factory('sum::cSinh(' + sinhCStr + ')')
+      ws.factory('sum::cSin( ' + sinCStr  + ')')
 
       # build PDF
       ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s,\
-          fjpsiphi_cosh, fjpsiphi_sinh, fjpsiphi_cos, fjpsiphi_sin,\
-          tres_sig, SingleSided)"\
+          cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, 1)"\
           % (pdfName, BLifetime, iTag, BMeanLife, dGamma, dm, dilution,
              ADilMisTag, avgCEven, avgCOdd))
 
@@ -229,118 +349,224 @@ def buildJpsiV(config) :
 ###############################################################################
 class AngleFunctionBuilder :
   def __init__(self, config) :
+    from math import sqrt
     import RooFitDecorators
-    from ROOT import RooArgSet, RooAddition_, RooP2VVAngleBasis
 
     # set configuration member
     self._config = config
 
     # get type of angles
     angType = self._config.value('anglesType')
-    if angType and angType[0] is 'trans' :
+    if angType and angType[0] == 'trans' :
       self._anglesType = 'trans'
+      print 'P2VV - INFO: AngleFunctionBuilder: using transversity angles'
     else :
       self._anglesType = 'hel'
+      print 'P2VV - INFO: AngleFunctionBuilder: using helicity angles'
+
+    # get workspace
+    workspace = self._config.workspace()
 
     # get angles from workspace
-    workspace = self._config.workspace()
-    if self._anglesType is 'trans' :
-      self._cpsi   = workspace[self._config['trcpsi'].name()]
-      self._ctheta = workspace[self._config['trctheta'].name()]
-      self._phi    = workspace[self._config['trphi'].name()]
-    else :
-      self._cpsi   = workspace[self._config['helcthetaK'].name()]
-      self._ctheta = workspace[self._config['helcthetal'].name()]
-      self._phi    = workspace[self._config['helphi'].name()]
-
-    print 'INFO: AngleFunctionBuilder.__init__(): using %s, %s, %s'\
-        % (self._cpsi, self._ctheta, self._phi)
+    self._cpsi   = self._config['cpsiAng'].name()
+    self._ctheta = self._config['cthetaAng'].name()
+    self._phi    = self._config['phiAng'].name()
 
     # specify components of angular functions
-    angTerms = []
-    if self._anglesType is 'trans' :
+    angFuncs = []
+    if self._anglesType == 'trans' :
       # using transversity angles
-      angTerms.append(('A0Sq',        [(0, 0, 0,  0,  2.             ),
+      angFuncs.append(('A0Sq',        [(0, 0, 0,  0,  2.             ),
                                        (0, 0, 2,  0,  sqrt( 1. /  5.)),
                                        (0, 0, 2,  2, -sqrt( 3. /  5.)),
                                        (2, 0, 0,  0,  4.             ),
                                        (2, 0, 2,  0,  sqrt( 4. /  5.)),
                                        (2, 0, 2,  2, -sqrt(12. /  5.))]))
-      angTerms.append(('AparSq',      [(2, 2, 0,  0,  1.             ),
+      angFuncs.append(('AparSq',      [(2, 2, 0,  0,  1.             ),
                                        (2, 2, 2,  0,  sqrt( 1. / 20.)),
                                        (2, 2, 2,  2,  sqrt( 3. / 20.))]))
-      angTerms.append(('AperpSq',     [(2, 2, 0,  0,  1.             ),
+      angFuncs.append(('AperpSq',     [(2, 2, 0,  0,  1.             ),
                                        (2, 2, 2,  0, -sqrt( 1. /  5.))]))
-      angTerms.append(('ReA0Apar',    [(2, 1, 2, -2, -sqrt( 6. /  5.))]))
-      angTerms.append(('ImA0Aperp',   [(2, 1, 2,  1,  sqrt( 6. /  5.))]))
-      angTerms.append(('ImAparAperp', [(2, 2, 2, -1,  sqrt( 3. /  5.))]))
+      angFuncs.append(('ReA0Apar',    [(2, 1, 2, -2, -sqrt( 6. /  5.))]))
+      angFuncs.append(('ImA0Aperp',   [(2, 1, 2,  1,  sqrt( 6. /  5.))]))
+      angFuncs.append(('ImAparAperp', [(2, 2, 2, -1,  sqrt( 3. /  5.))]))
 
       if self._config.value('incKSWave') :
-        angTerms.append(('ASSq',        [(0, 0, 0,  0,  2.             ),
+        angFuncs.append(('ASSq',        [(0, 0, 0,  0,  2.             ),
                                          (0, 0, 2,  0,  sqrt( 1. /  5.)),
                                          (0, 0, 2,  2, -sqrt( 3. /  5.))]))
-        angTerms.append(('ReA0AS',      [(1, 0, 0,  0,  sqrt(48.      )),
+        angFuncs.append(('ReA0AS',      [(1, 0, 0,  0,  sqrt(48.      )),
                                          (1, 0, 2,  0,  sqrt(12. /  5.)),
                                          (1, 0, 2,  2, -sqrt(36. /  5.))]))
-        angTerms.append(('ReAparAS',    [(1, 1, 2, -2, -sqrt(18. /  5.))]))
-        angTerms.append(('ImAperpAS',   [(1, 1, 2,  1, -sqrt(18. /  5.))]))
+        angFuncs.append(('ReAparAS',    [(1, 1, 2, -2, -sqrt(18. /  5.))]))
+        angFuncs.append(('ImAperpAS',   [(1, 1, 2,  1, -sqrt(18. /  5.))]))
 
     else :
       # using helicity angles
-      angTerms.append(('A0Sq',        [(0, 0, 0,  0,  2.             ),
+      angFuncs.append(('A0Sq',        [(0, 0, 0,  0,  2.             ),
                                        (0, 0, 2,  0, -sqrt( 4. /  5.)),
                                        (2, 0, 0,  0,  4.             ),
                                        (2, 0, 2,  0, -sqrt(16. /  5.))]))
-      angTerms.append(('AparSq',      [(2, 2, 0,  0,  1.             ),
+      angFuncs.append(('AparSq',      [(2, 2, 0,  0,  1.             ),
                                        (2, 2, 2,  0,  sqrt( 1. / 20.)),
                                        (2, 2, 2,  2, -sqrt( 3. / 20.))]))
-      angTerms.append(('AperpSq',     [(2, 2, 0,  0,  1.             ),
+      angFuncs.append(('AperpSq',     [(2, 2, 0,  0,  1.             ),
                                        (2, 2, 2,  0,  sqrt( 1. / 20.)),
                                        (2, 2, 2,  2,  sqrt( 3. / 20.))]))
-      angTerms.append(('ReA0Apar',    [(2, 1, 2,  1,  sqrt( 6. /  5.))]))
-      angTerms.append(('ImA0Aperp',   [(2, 1, 2, -1, -sqrt( 6. /  5.))]))
-      angTerms.append(('ImAparAperp', [(2, 2, 2, -2,  sqrt( 3. /  5.))]))
+      angFuncs.append(('ReA0Apar',    [(2, 1, 2,  1,  sqrt( 6. /  5.))]))
+      angFuncs.append(('ImA0Aperp',   [(2, 1, 2, -1, -sqrt( 6. /  5.))]))
+      angFuncs.append(('ImAparAperp', [(2, 2, 2, -2,  sqrt( 3. /  5.))]))
 
       if self._config.value('incKSWave') :
-        angTerms.append(('ASSq',        [(0, 0, 0,  0,  2.             ),
+        angFuncs.append(('ASSq',        [(0, 0, 0,  0,  2.             ),
                                          (0, 0, 2,  0, -sqrt( 4. /  5.))]))
-        angTerms.append(('ReA0AS',      [(1, 0, 0,  0,  sqrt(48.      )),
+        angFuncs.append(('ReA0AS',      [(1, 0, 0,  0,  sqrt(48.      )),
                                          (1, 0, 2,  0, -sqrt(48. /  5.))]))
-        angTerms.append(('ReAparAS',    [(1, 1, 2,  1,  sqrt(18. /  5.))]))
-        angTerms.append(('ImAperpAS',   [(1, 1, 2, -1,  sqrt(18. /  5.))]))
+        angFuncs.append(('ReAparAS',    [(1, 1, 2,  1,  sqrt(18. /  5.))]))
+        angFuncs.append(('ImAperpAS',   [(1, 1, 2, -1,  sqrt(18. /  5.))]))
 
     # build angular function for each term in the signal PDF
-    self._basis = []
-    for angTerm in angTerms :
-      name = angTerm[0] + '_basis'
-      basesSet = RooArgSet()
-      for comps in angTerm[1] :
-        basesSet.add(self.buildBasisFunc(name, comps[0], comps[1], comps[2],
-            comps[3], comps[4]))
+    self._angFuncs = []
+    for angFunc in angFuncs :
+      name = angFunc[0] + '_angFunc'
 
-      self._basis.append(self._config.workspace().put(RooAddition_(name, name,
-          basesSet))
+      # express angular function in angle basis functions
+      basesSet = ''
+      for comps in angFunc[1] :
+        basesSet += self.buildBasisFunc(name, comps[0], comps[1], comps[2],\
+            comps[3], comps[4]) + ','
+
+      # build angular function
+      self._angFuncs.append(self._config.workspace().factory(\
+          "sum::%s(%s)" % (name, basesSet[:-1])))
 
   def angles(self) : 
-    from ROOT import RooArgList
-    return RooArgList(self._cpsi, self._ctheta, self._phi)
+    return (self._cpsi, self._ctheta, self._phi)
 
-  def basis(self) :
-    return self._basis
+  def angleFunctions(self) :
+    return self._angFuncs
 
   def buildBasisFunc(self, name, i, j, k, l, c) :
     import RooFitDecorators
     from ROOT import RooP2VVAngleBasis
 
-    name = "%s_%d_%d_%d_%d" % (name, i, j, k, l)
-    name.replace("-", "m")
+    # construct name
+    name = '%s_%d_%d_%d_%d' % (name, i, j, k, l)
+    name = name.replace('-', 'm')
 
-    basisFunc = self._config.workspace().function(name)
-    if not basisFunc : 
-      basisFunc = self._config.workspace().put(RooP2VVAngleBasis(name, name,
-          self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
+    # get workspace
+    ws = self._config.workspace()
 
-    return basisFunc
+    # build basis function
+    if not ws.function(name) :
+      ws.factory("P2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)"\
+          % (name, self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
+
+    return name
+
+
+#####################
+## time resolution ##
+###############################################################################
+class TimeResolutionBuilder :
+  # TODO: build a PDF for sigmat (eg. RooHistPdf, RooThresholdPdf...
+  # (or the sum of two gamma functions....)
+  # gamma = RooRealVar("gamma","gamma",15,10,30)
+  # beta = RooRealVar("beta","beta",2.21456e-03,0,0.1)
+  # mu = RooRealVar("mu","mu",0,0.001,0.01)
+  # pdf = RooGammaPdf("pdf","pdf",st,gamma,beta,mu)
+  def __init__(self, config) :
+    import RooFitDecorators
+
+    # set configuration member
+    self._config = config
+
+    # get some settings
+    ws = config.workspace()
+
+    tResModel = config.value('tResModel')
+    time      = config['BLifetime'].name()
+    zero      = config['zeroConst'].name()
+    half      = config['halfConst'].name()
+
+    if tResModel == 'Gauss' :
+      # single Gauss models
+      timeError = config['BLifetimeError'].name()
+      ws.factory("GaussModel::tres_sig(%s,%s,%s)" % (time, zero, timeError))
+      ws.factory("GaussModel::tres_nonpsi(%s,%s,%s)" % (time, zero, timeError))
+
+    elif tResModel[:6] == '3Gauss' :
+      # define models 1 and 2 for both signal and non-psi background
+      timeError = config['BLifetimeError'].name()
+
+      for name in ['sig', 'nonpsi'] :
+        ws.factory("GaussModel::tres_%s_1(%s, tres_%s_m[0., -0.2, 0.2],\
+            tres_%s_s1[1.1, 0.3, 2.], 1, %s)"\
+            % (name, time, name, name, timeError))
+
+        if tResModel == '3GaussSimple' :
+          ws.factory("GaussModel::tres_%s_2(%s, tres_%s_m,\
+              tres_%s_s2[20., 1.5, 30], 1, %s)"\
+              % (name, time, name, name, timeError))
+        else :
+          # try GExp instead of G2  -- so that the limit GExp -> G
+          # (i.e. 'lifetime'->0) it returns to the original
+          # for now, the mean is forced to zero by the GExpModel code...
+          #
+          # choice: either scale lifetime with error or not...
+          # let's first try an absolute lifetime...
+          # try to use the same width as in the first Gaussian!
+          ws.factory("{tres_%s_s2[1.5, 0.9, 3.0], tres_%s_l[1., 20.0]}"\
+              % (name, name))
+          ws.factory("GExpModel::tres_%s_2_gexpr(%s, tres_%s_s2, tres_%s_l, %s,\
+              %s, kFALSE, Normal)"\
+              % (name, time, name, name, timeError, timeError))
+          ws.factory("GExpModel::tres_%s_2_gexpl(%s, tres_%s_s2, tres_%s_l, %s,\
+              %s, kFALSE, Flipped)"\
+              % (name, time, name, name, timeError, timeError))
+          ws.factory("AddModel::tres_%s_2({tres_%s_2_gexpl, tres_%s_2_gexpr},\
+              {%s})" % (name, name, name, half))
+
+      # define outlier catcher (3)
+      if tResModel == '3GaussSimple' :
+        ws.factory("GaussModel::tres_3(%s, %s, tres_3_s[3., 1., 5.])"\
+            % (time, zero))
+      else :
+        ws.factory("{tres_3_l[1.7, 0.9, 3.0], tres_3_s[1., 0.5, 2.]}")
+        ws.factory("GExpModel::tres_3_gexpr(%s, tres_3_s, tres_3_l,\
+            kFALSE, Normal)" % time)
+        ws.factory("GExpModel::tres_3_gexpl(%s, tres_3_s, tres_3_l,\
+            kFALSE, Flipped)" % time)
+        ws.factory("AddModel::tres_3({tres_3_gexpl, tres_3_gexpr}, {%s})" % half)
+
+        # add three models
+        ws.factory("AddModel::tres_%s({tres_3, tres_%s_2, tres_%s_1},\
+            {tres_%s_f3[0.001, 0.00, 0.02], tres_%s_f2[0.2, 0.01, 1]})"\
+            % (name, name, name, name, name))
+
+    else :
+      # no resolution models (delta functions)
+      ws.factory("TruthModel::tres_sig(%s)" % time)
+      ws.factory("TruthModel::tres_nonpsi(%s)" % time)
+
+    self._sigres = ws['tres_sig']
+    self._nonpsi = ws['tres_nonpsi']
+
+  def signal(self) : return self._sigres
+  def nonpsi(self) : return self._nonpsi
+
+  def signalSigmaT(self) : return self._sigmaT['signal']
+  def psibkgSigmaT(self) : return self._sigmaT['psibkg']
+  def nonpsibkgSigmaT(self) : return self._sigmaT['nonpsibkg']
+
+
+###############################################################################
+### backwards compatibility stub    
+global _timeresbuilder
+_timeresbuilder = None
+def buildResoModels(ws):
+    global _timeresbuilder
+    if not _timeresbuilder : _timeresbuilder = TimeResolutionBuilder(ws)
 
 
 #############
@@ -377,7 +603,7 @@ def buildMomentPDF(w,name,data,moments) :
 ###############################################################################
 def buildEff_x_PDF(w,name,pdf,eff) :
    import RooFitDecorators
-   from ROOT import RooArgSet, RooCustomizer, RooP2VVAngleBasis, RooAddition_
+   from ROOT import RooArgSet, RooCustomizer, RooP2VVAngleBasis, RooAddition
 
    if not eff : return pdf
    # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
@@ -389,7 +615,7 @@ def buildEff_x_PDF(w,name,pdf,eff) :
         n = "%s_%s_eff" % (name,c.GetName())
         s = RooArgSet()
         [ s.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
-        rep = w.put( RooAddition_( n, n, s, True ) )  # hand over ownership & put in workspace...
+        rep = w.put( RooAddition( n, n, s, True ) )  # hand over ownership & put in workspace...
         customizer.replaceArg( c, rep )
    return customizer.build(True)
 
@@ -398,63 +624,6 @@ def buildEff_x_PDF(w,name,pdf,eff) :
 def buildEffMomentsPDF(w,name,pdf,data,moments) :
    computeMoments(data,moments)
    return buildEff_x_PDF(w,name,pdf,[ ( m.basis() , m.coefficient() ) for m in moments ] )
-
-
-#####################
-## time resolution ##
-###############################################################################
-class TimeResolutionBuilder :
-  # TODO: build a PDF for sigmat (eg. RooHistPdf, RooThresholdPdf... or the sum of two gamma functions....)
-  # gamma = RooRealVar("gamma","gamma",15,10,30)
-  # beta = RooRealVar("beta","beta",2.21456e-03,0,0.1)
-  # mu = RooRealVar("mu","mu",0,0.001,0.01)
-  # pdf = RooGammaPdf("pdf","pdf",st,gamma,beta,mu)
-  def __init__(self,ws, t, sigmat) :
-    import RooFitDecorators
-
-    if type(t)      is str : t      = ws[t]
-    if type(sigmat) is str : sigmat = ws[sigmat]
-    # define outlier catcher
-    if false :
-        ws.factory("GaussModel::tres_3(%s,zero[0],tres_3_s[3,1,5])" % (t.GetName()) )
-    else :
-       ws.factory("{tres_3_l[1.7,0.9,3.0],tres_3_s[1,0.5,2]}")
-       ws.factory("GExpModel::tres_3_gexpr(%s,tres_3_s,tres_3_l,kFALSE,Normal)"%(t.GetName()))
-       ws.factory("GExpModel::tres_3_gexpl(%s,tres_3_s,tres_3_l,kFALSE,Flipped)"%(t.GetName()))
-       ws.factory(" AddModel::tres_3({tres_3_gexpl,tres_3_gexpr},{half[0.5]})")
-
-    for name in [ 'sig','nonpsi' ] :
-      ws.factory("GaussModel::tres_%s_1(%s,tres_%s_m[0,-0.2,0.2],tres_%s_s1[1.1,0.3,2 ], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
-      if False :
-        ws.factory("GaussModel::tres_%s_2(%s,tres_%s_m,            tres_%s_s2[20.,1.5,30], 1, %s)" % (name,t.GetName(),name,name,sigmat.GetName()))
-      else :
-        # try GExp instead of G2  -- so that the limit GExp -> G (i.e. 'lifetime'->0) it returns to the original
-        # for now, the mean is forced to zero by the GExpModel code...
-        ws.factory("{tres_%s_s2[1.5,0.9,3.0],tres_%s_l[1.,20.0]}"%(name,name))
-        # choice: either scale lifetime with error or not... let's first try an absolute lifetime...
-        # try to use the same width as in the first Gaussian!
-        ws.factory("GExpModel::tres_%s_2_gexpr(%s,tres_%s_s2,tres_%s_l,%s,%s,kFALSE,Normal)"%(name,t.GetName(),name,name,sigmat.GetName(),sigmat.GetName()))
-        ws.factory("GExpModel::tres_%s_2_gexpl(%s,tres_%s_s2,tres_%s_l,%s,%s,kFALSE,Flipped)"%(name,t.GetName(),name,name,sigmat.GetName(),sigmat.GetName()))
-        ws.factory(" AddModel::tres_%s_2({tres_%s_2_gexpl,tres_%s_2_gexpr},{half[0.5]})"%(name,name,name))
-
-      ws.factory("AddModel::tres_%s({tres_3,tres_%s_2,tres_%s_1},{tres_%s_f3[0.001,0.00,0.02],tres_%s_f2[0.2,0.01,1]})" % (name,name,name,name,name))
-    self._sigres = ws['tres_sig']
-    self._nonpsi = ws['tres_nonpsi']
-  def signal(self) : return self._sigres
-  def nonpsi(self) : return self._nonpsi
-
-  def signalSigmaT(self) : return self._sigmaT['signal']
-  def psibkgSigmaT(self) : return self._sigmaT['psibkg']
-  def nonpsibkgSigmaT(self) : return self._sigmaT['nonpsibkg']
-
-
-###############################################################################
-### backwards compatibility stub    
-global _timeresbuilder
-_timeresbuilder = None
-def buildResoModels(ws):
-    global _timeresbuilder
-    if not _timeresbuilder : _timeresbuilder = TimeResolutionBuilder(ws)
 
 
 ###############

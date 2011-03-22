@@ -1,3 +1,12 @@
+###############################################################################
+## P2VV: common tools                                                        ##
+##                                                                           ##
+## authors:                                                                  ##
+##   JvL, Jeroen van Leerdam, Nikhef, j.van.leerdam@nikhef.nl                ##
+##                                                                           ##
+###############################################################################
+
+
 ###################################################
 ## function that loads the P2VV library          ##
 ## (assumes $P2VVPATH/lib is in $LD_LIBRARYPATH) ##
@@ -18,6 +27,6 @@ def registerMultiCatGen() :
     RooNumGenConfig.defaultConfig().methodND(False,True)\
         .setLabel("RooMultiCatGenerator")
     RooNumGenConfig.defaultConfig().methodND(False,True).Print()
-    RooMsgService.instance().addStream(RooFit.DEBUG,\
-        RooFit.Topic(RooFit.Generation))
+    #RooMsgService.instance().addStream(RooFit.DEBUG,\
+    #    RooFit.Topic(RooFit.Generation))
 
