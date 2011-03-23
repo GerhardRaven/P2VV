@@ -346,6 +346,9 @@ class P2VVConfiguration :
     if type(WSFilePath) is str and len(WSFilePath) > 0 :
       self.setWSFilePath(WSFilePath)
 
+    # plots stash
+    self._plotsStash = []
+
 
   ## settings dictionary methods ##
 
@@ -554,6 +557,15 @@ class P2VVConfiguration :
         varString += self._settingsDict[key].name() + ','
 
     self._workspace.defineSet(name, varString[:-1])
+
+
+  ## plot methods ##
+
+  def addPlotObj(self, obj) :
+    if obj: self._plotsStash.append(obj)
+
+  def plotsStash(self) :
+    return self._plotsStash[:]
 
 
 ###############################################################################

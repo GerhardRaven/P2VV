@@ -60,11 +60,6 @@ def plot(config, obs, canv, data, pdf, components = {}, xTitle = '',
   from ROOT import RooFit, TLine, TPad
   from P2VVConfiguration import P2VVSetting
 
-  # keep the relevant plot objects alive by keeping a reference to them
-  if 'P2VVPlotStash' not in config :
-    config.addSetting('P2VVPlotStash', P2VVSetting('P2VVPlotStash',
-        'references to ROOT plot objects', []))
-
   # get observable
   obsVar = config.workspace().function(config[obs].name())
 
@@ -121,7 +116,7 @@ def plot(config, obs, canv, data, pdf, components = {}, xTitle = '',
 
   # create frame for observable
   obsFrame = obsVar.frame(*frameDrawOpts) if frameDrawOpts else obsVar.frame()
-  config.value('P2VVPlotStash').append(obsFrame)
+  config.addPlotObj(obsFrame)
 
   # set title of x-axis
   if type(xTitle) is str and len(xTitle) > 0 :
@@ -148,12 +143,12 @@ def plot(config, obs, canv, data, pdf, components = {}, xTitle = '',
   if drawRes :
     # plot residuals
     resHist = obsFrame.residHist('data', 'pdf', normalize)
-    config.value('P2VVPlotStash').append(resHist)
+    config.addPlotObj(resHist)
     resHist.GetXaxis().SetLimits(obsFrame.GetXaxis().GetXmin(),
         obsFrame.GetXaxis().GetXmax())
 
     resFrame = obsFrame.emptyClone(obsFrame.GetName() + '_resid')
-    config.value('P2VVPlotStash').append(resFrame)
+    config.addPlotObj(resFrame)
 
     if dataPlotOpts :
       for opt in dataPlotOpts : 
@@ -189,7 +184,7 @@ def plot(config, obs, canv, data, pdf, components = {}, xTitle = '',
     # draw plot (data + PDF)
     plotName = obs + '_plot1'
     plotPad = TPad(plotName, plotName, 0, 0.2, 1, 1)
-    config.value('P2VVPlotStash').append(plotPad)
+    config.addPlotObj(plotPad)
     plotPad.SetNumber(1)
     plotPad.Draw()
     canv.cd(1)
@@ -199,7 +194,7 @@ def plot(config, obs, canv, data, pdf, components = {}, xTitle = '',
     canv.cd()
     resName = obs + '_resid1'
     resPad = TPad(resName, resName, 0, 0, 1, 0.2)
-    config.value('P2VVPlotStash').append(resPad)
+    config.addPlotObj(resPad)
     resPad.SetNumber(2)
     resPad.Draw()
     canv.cd(2)

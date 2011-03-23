@@ -123,32 +123,32 @@ if mode == 'Bd2JpsiKstar' :
   ftMin  = config['fTag'].catTypesDict()[-1]
 
 # lifetime plots
-canv = TCanvas('Lifetime')
-canv.Divide(2, 2)
+tCanv = TCanvas('tCanv', 'Lifetime')
+tCanv.Divide(2, 2)
 
 if mode == 'Bd2JpsiKstar' :
-  P2VVPlots.plot(config, 'BLifetime', canv.cd(1), data, pdf,
+  P2VVPlots.plot(config, 'BLifetime', tCanv.cd(1), data, pdf,
       xTitle = 't (ps)',
       frameOpts = [RooFit.Title('Lifetime - B / Unoscillated'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
                    RooFit.Slice(ws.cat(ftName), ftPlus)])
-  P2VVPlots.plot(config, 'BLifetime', canv.cd(2), data, pdf,
+  P2VVPlots.plot(config, 'BLifetime', tCanv.cd(2), data, pdf,
       xTitle = 't (ps)',
       frameOpts = [RooFit.Title('Lifetime - B / Oscillated'),
                    RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
                    RooFit.Slice(ws.cat(ftName), ftMin)])
-  P2VVPlots.plot(config, 'BLifetime', canv.cd(3), data, pdf,
+  P2VVPlots.plot(config, 'BLifetime', tCanv.cd(3), data, pdf,
       xTitle = 't (ps)',
       frameOpts = [RooFit.Title('Lifetime - #bar{B} / Oscillated'),
                    RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
                    RooFit.Slice(ws.cat(ftName), ftPlus)])
-  P2VVPlots.plot(config, 'BLifetime', canv.cd(4), data, pdf,
+  P2VVPlots.plot(config, 'BLifetime', tCanv.cd(4), data, pdf,
       xTitle = 't (ps)',
       frameOpts = [RooFit.Title('Lifetime - #bar{B} / Unoscillated'),
                    RooFit.Bins(50)],
@@ -157,53 +157,53 @@ if mode == 'Bd2JpsiKstar' :
                    RooFit.Slice(ws.cat(ftName), ftMin)])
 
 elif mode == 'Bs2Jpsiphi' :
-  P2VVPlots.plot(config, 'BLifetime', canv.cd(1), data, pdf,
+  P2VVPlots.plot(config, 'BLifetime', tCanv.cd(1), data, pdf,
       xTitle = 't (ps)',
       frameOpts = [RooFit.Title('Lifetime - CP Average'),
                    RooFit.Bins(70)],
       dataOpts  = [], pdfOpts   = [])
-  P2VVPlots.plot(config, 'BLifetime', canv.cd(3), data, pdf,
+  P2VVPlots.plot(config, 'BLifetime', tCanv.cd(3), data, pdf,
       xTitle = 't (ps)',
       frameOpts = [RooFit.Title('Lifetime - B'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1' % itName)],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus)])
-  P2VVPlots.plot(config, 'BLifetime', canv.cd(4), data, pdf,
+  P2VVPlots.plot(config, 'BLifetime', tCanv.cd(4), data, pdf,
       xTitle = 't (ps)',
       frameOpts = [RooFit.Title('Lifetime - #bar{B}'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == -1' % itName)],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin)])
 
-canv.Print(plotsFile + '(', 'ps')
+tCanv.Print(plotsFile + '(', 'ps')
 
 # cos(theta_K) plots
-canv = TCanvas('cos(theta_K)')
-canv.Divide(2, 2)
+cpsiCanv = TCanvas('cpsiCanv', 'cos(theta_K)')
+cpsiCanv.Divide(2, 2)
 
 if mode == 'Bd2JpsiKstar' :
-  P2VVPlots.plot(config, 'cpsiAng', canv.cd(1), data, pdf,
+  P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(1), data, pdf,
       xTitle = 'cos(#theta_{K})',
       frameOpts = [RooFit.Title('cos(#theta_{K}) - B / Unoscillated'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
                    RooFit.Slice(ws.cat(ftName), ftPlus)])
-  P2VVPlots.plot(config, 'cpsiAng', canv.cd(2), data, pdf,
+  P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(2), data, pdf,
       xTitle = 'cos(#theta_{K})',
       frameOpts = [RooFit.Title('cos(#theta_{K}) - B / Oscillated'),
                    RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
                    RooFit.Slice(ws.cat(ftName), ftMin)])
-  P2VVPlots.plot(config, 'cpsiAng', canv.cd(3), data, pdf,
+  P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(3), data, pdf,
       xTitle = 'cos(#theta_{K})',
       frameOpts = [RooFit.Title('cos(#theta_{K}) - #bar{B} / Oscillated'),
                    RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
                    RooFit.Slice(ws.cat(ftName), ftPlus)])
-  P2VVPlots.plot(config, 'cpsiAng', canv.cd(4), data, pdf,
+  P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(4), data, pdf,
       xTitle = 'cos(#theta_{K})',
       frameOpts = [RooFit.Title('cos(#theta_{K}) - #bar{B} / Unoscillated'),
                    RooFit.Bins(50)],
@@ -212,53 +212,53 @@ if mode == 'Bd2JpsiKstar' :
                    RooFit.Slice(ws.cat(ftName), ftMin)])
 
 elif mode == 'Bs2Jpsiphi' :
-  P2VVPlots.plot(config, 'cpsiAng', canv.cd(1), data, pdf,
+  P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(1), data, pdf,
       xTitle = 'cos(#theta_{K})',
       frameOpts = [RooFit.Title('cos(#theta_{K}) - CP Average'),
                    RooFit.Bins(70)],
       dataOpts  = [], pdfOpts   = [])
-  P2VVPlots.plot(config, 'cpsiAng', canv.cd(3), data, pdf,
+  P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(3), data, pdf,
       xTitle = 'cos(#theta_{K})',
       frameOpts = [RooFit.Title('cos(#theta_{K}) - B'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1' % itName)],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus)])
-  P2VVPlots.plot(config, 'cpsiAng', canv.cd(4), data, pdf,
+  P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(4), data, pdf,
       xTitle = 'cos(#theta_{K})',
       frameOpts = [RooFit.Title('cos(#theta_{K}) - #bar{B}'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == -1' % itName)],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin)])
 
-canv.Print(plotsFile, 'ps')
+cpsiCanv.Print(plotsFile, 'ps')
 
 # cos(theta_l) plots
-canv = TCanvas('cos(theta_l)')
-canv.Divide(2, 2)
+cthetaCanv = TCanvas('cthetaCanv', 'cos(theta_l)')
+cthetaCanv.Divide(2, 2)
 
 if mode == 'Bd2JpsiKstar' :
-  P2VVPlots.plot(config, 'cthetaAng', canv.cd(1), data, pdf,
+  P2VVPlots.plot(config, 'cthetaAng', cthetaCanv.cd(1), data, pdf,
       xTitle = 'cos(#theta_{l})',
       frameOpts = [RooFit.Title('cos(#theta_{l}) - B / Unoscillated'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
                    RooFit.Slice(ws.cat(ftName), ftPlus)])
-  P2VVPlots.plot(config, 'cthetaAng', canv.cd(2), data, pdf,
+  P2VVPlots.plot(config, 'cthetaAng', cthetaCanv.cd(2), data, pdf,
       xTitle = 'cos(#theta_{l})',
       frameOpts = [RooFit.Title('cos(#theta_{l}) - B / Oscillated'),
                    RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
                    RooFit.Slice(ws.cat(ftName), ftMin)])
-  P2VVPlots.plot(config, 'cthetaAng', canv.cd(3), data, pdf,
+  P2VVPlots.plot(config, 'cthetaAng', cthetaCanv.cd(3), data, pdf,
       xTitle = 'cos(#theta_{l})',
       frameOpts = [RooFit.Title('cos(#theta_{l}) - #bar{B} / Oscillated'),
                    RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
                    RooFit.Slice(ws.cat(ftName), ftPlus)])
-  P2VVPlots.plot(config, 'cthetaAng', canv.cd(4), data, pdf,
+  P2VVPlots.plot(config, 'cthetaAng', cthetaCanv.cd(4), data, pdf,
       xTitle = 'cos(#theta_{l})',
       frameOpts = [RooFit.Title('cos(#theta_{l}) - #bar{B} / Unoscillated'),
                    RooFit.Bins(50)],
@@ -267,53 +267,53 @@ if mode == 'Bd2JpsiKstar' :
                    RooFit.Slice(ws.cat(ftName), ftMin)])
 
 elif mode == 'Bs2Jpsiphi' :
-  P2VVPlots.plot(config, 'cthetaAng', canv.cd(1), data, pdf,
+  P2VVPlots.plot(config, 'cthetaAng', cthetaCanv.cd(1), data, pdf,
       xTitle = 'cos(#theta_{l})',
       frameOpts = [RooFit.Title('cos(#theta_{l}) - CP Average'),
                    RooFit.Bins(70)],
       dataOpts  = [], pdfOpts   = [])
-  P2VVPlots.plot(config, 'cthetaAng', canv.cd(3), data, pdf,
+  P2VVPlots.plot(config, 'cthetaAng', cthetaCanv.cd(3), data, pdf,
       xTitle = 'cos(#theta_{l})',
       frameOpts = [RooFit.Title('cos(#theta_{l}) - B'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1' % itName)],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus)])
-  P2VVPlots.plot(config, 'cthetaAng', canv.cd(4), data, pdf,
+  P2VVPlots.plot(config, 'cthetaAng', cthetaCanv.cd(4), data, pdf,
       xTitle = 'cos(#theta_{l})',
       frameOpts = [RooFit.Title('cos(#theta_{l}) - #bar{B}'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == -1' % itName)],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin)])
 
-canv.Print(plotsFile, 'ps')
+cthetaCanv.Print(plotsFile, 'ps')
 
 # phi plots
-canv = TCanvas('phi')
-canv.Divide(2, 2)
+phiCanv = TCanvas('phiCanv', 'phi')
+phiCanv.Divide(2, 2)
 
 if mode == 'Bd2JpsiKstar' :
-  P2VVPlots.plot(config, 'phiAng', canv.cd(1), data, pdf,
+  P2VVPlots.plot(config, 'phiAng', phiCanv.cd(1), data, pdf,
       xTitle = '#phi',
       frameOpts = [RooFit.Title('#phi - B / Unoscillated'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
                    RooFit.Slice(ws.cat(ftName), ftPlus)])
-  P2VVPlots.plot(config, 'phiAng', canv.cd(2), data, pdf,
+  P2VVPlots.plot(config, 'phiAng', phiCanv.cd(2), data, pdf,
       xTitle = '#phi',
       frameOpts = [RooFit.Title('#phi - B / Oscillated'),
                    RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
                    RooFit.Slice(ws.cat(ftName), ftMin)])
-  P2VVPlots.plot(config, 'phiAng', canv.cd(3), data, pdf,
+  P2VVPlots.plot(config, 'phiAng', phiCanv.cd(3), data, pdf,
       xTitle = '#phi',
       frameOpts = [RooFit.Title('#phi - #bar{B} / Oscillated'),
                    RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
                    RooFit.Slice(ws.cat(ftName), ftPlus)])
-  P2VVPlots.plot(config, 'phiAng', canv.cd(4), data, pdf,
+  P2VVPlots.plot(config, 'phiAng', phiCanv.cd(4), data, pdf,
       xTitle = '#phi',
       frameOpts = [RooFit.Title('#phi - #bar{B} / Unoscillated'),
                    RooFit.Bins(50)],
@@ -322,23 +322,23 @@ if mode == 'Bd2JpsiKstar' :
                    RooFit.Slice(ws.cat(ftName), ftMin)])
 
 elif mode == 'Bs2Jpsiphi' :
-  P2VVPlots.plot(config, 'phiAng', canv.cd(1), data, pdf,
+  P2VVPlots.plot(config, 'phiAng', phiCanv.cd(1), data, pdf,
       xTitle = '#phi',
       frameOpts = [RooFit.Title('#phi - CP Average'),
                    RooFit.Bins(70)],
       dataOpts  = [], pdfOpts   = [])
-  P2VVPlots.plot(config, 'phiAng', canv.cd(3), data, pdf,
+  P2VVPlots.plot(config, 'phiAng', phiCanv.cd(3), data, pdf,
       xTitle = '#phi',
       frameOpts = [RooFit.Title('#phi - B'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1' % itName)],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus)])
-  P2VVPlots.plot(config, 'phiAng', canv.cd(4), data, pdf,
+  P2VVPlots.plot(config, 'phiAng', phiCanv.cd(4), data, pdf,
       xTitle = '#phi',
       frameOpts = [RooFit.Title('#phi - #bar{B}'),
                    RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == -1' % itName)],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin)])
 
-canv.Print(plotsFile + ')', 'ps')
+phiCanv.Print(plotsFile + ')', 'ps')
 
