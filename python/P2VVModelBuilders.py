@@ -3,9 +3,9 @@
 ##                                                                           ##
 ## authors:                                                                  ##
 ##   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl           ##
-##   WH,  Wouter Hulsbergen,  Nikhef,      W.Hulsbergen@nikhef.nl            ##
+##   WH,  Wouter Hulsbergen,  Nikhef                                         ##
 ##   JvL, Jeroen van Leerdam, Nikhef,      j.van.leerdam@nikhef.nl           ##
-##   DvE, Daan van Eijk,      Nikhef,      D.van.Eijk@nikhef.nl              ##
+##   DvE, Daan van Eijk,      Nikhef                                         ##
 ##                                                                           ##
 ###############################################################################
 
@@ -572,13 +572,18 @@ def buildResoModels(ws):
 #############
 ## moments ##
 ###############################################################################
-## Looping over data in python is quite a bit slower than in C++
-## So we adapt the arguments, and then defer to the C++ _computeMoments
-def computeMoments( data, moments ) :
-    if not moments : return None
-    vecmom = std.vector('IMoment*')()
-    for m in moments : vecmom.push_back(m)
-    return _computeMoments( data, vecmom )
+## function that computes efficiency and background angular moments          ##
+## Looping over data in python is quite a bit slower than in C++             ##
+## So we adapt the arguments, and then defer to the C++ _computeMoments      ##
+###############################################################################
+def computeMoments(data, moments) :
+  from ROOT import std
+
+  if not moments : return None
+
+  vecmom = std.vector('IMoment*')()
+  for m in moments : vecmom.push_back(m)
+  return _computeMoments(data, vecmom)
 
 
 ###############################################################################
