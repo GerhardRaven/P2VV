@@ -577,7 +577,7 @@ def buildResoModels(ws):
 ## So we adapt the arguments, and then defer to the C++ _computeMoments      ##
 ###############################################################################
 def computeMoments(data, moments) :
-  from ROOT import std
+  from ROOT import std, _computeMoments
 
   if not moments : return None
 

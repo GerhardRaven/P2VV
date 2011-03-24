@@ -23,6 +23,7 @@ rm -f *.so *.o *.d *.h *.cxx
 
 # compile code
 for SRCFILE in\
+    P2VV.cxx\
     Moments.cxx\
     RooP2VVAngleBasis.cxx\
     RooMultiCatGenerator.cxx\
@@ -35,7 +36,7 @@ done
 
 # generate dictionary source
 rootcint -f $DICTNAME.cxx -c -I$P2VVROOT/$INCDIR\
-    $P2VVROOT/$DICTDIR/P2VV.h $P2VVROOT/$DICTDIR/P2VVLinkDef.h
+    $P2VVROOT/$DICTDIR/P2VVInc.h $P2VVROOT/$DICTDIR/P2VVLinkDef.h
 
 # compile dictionary
 $CPP $CPPFLAGS -fPIC -DPIC -MMD -c $DICTNAME.cxx

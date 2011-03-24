@@ -20,15 +20,21 @@ public:
   virtual ~IMoment() {};
 
   virtual void inc(double weight = 1.);
-  virtual ostream& print(ostream& os) const;
   virtual RooAbsReal& basis() {return _basis;}
   virtual double coefficient() const {return _norm * _m1 / _m0;}
+  virtual double varmu() const;
   virtual double significance() const;
   virtual double evaluate() {return _basis.getVal();}
 
+  void reset() {_m0 = _m1 = _n0 = _n1 = _n2 = 0.;}
+
+  virtual ostream& print(ostream& os) const;
+  void Print() const {print(std::cout);}
+
 protected:
   RooAbsReal& _basis;
-  double _m0, _m1, _m2;
+  double _m0, _m1;
+  double _n0, _n1, _n2;
   double _norm;
   std::string _name;
 };
@@ -40,7 +46,7 @@ public:
 private:
 };
 
-class EffMoment  : public IMoment {
+class EffMoment : public IMoment {
 public:
   EffMoment(RooAbsReal& x, double norm, const RooAbsPdf& pdf,
       const RooArgSet& nset) :
