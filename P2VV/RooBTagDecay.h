@@ -3,8 +3,8 @@
  * Package: RooFitModels                                                     *
  *    File: $Id$
  * Authors:                                                                  *
- *   JvL, Jeroen van Leerdam, Nikhef,           j.van.leerdam@nikhef.nl      *
- *   GR,  Gerhard Raven,      Nikhef & VU,      Gerhard.Raven@nikhef.nl      *
+ *   JvL, Jeroen van Leerdam, Nikhef,      j.van.leerdam@nikhef.nl           *
+ *   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl           *
  *                                                                           *
  * Copyright (c) 2011, Nikhef. All rights reserved.                          *
  *                                                                           *

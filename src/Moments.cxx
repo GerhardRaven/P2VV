@@ -44,7 +44,7 @@ double IMoment::significance() const
 
 int _computeMoments(RooAbsData& data, IMomentsVector& moments)
 {
-   typedef IMomentsVector::iterator iter;
+   typedef IMomentsVector::iterator IMomIter;
 
    if (moments.empty()) return -1;
 
@@ -52,7 +52,7 @@ int _computeMoments(RooAbsData& data, IMomentsVector& moments)
    int dataIter = 0;
    while (dataIter < data.numEntries()) {
      *obs = *data.get(dataIter++);
-     for (momIter mom = moments.begin(); mom != moments.end(); ++mom)
+     for (IMomIter mom = moments.begin(); mom != moments.end(); ++mom)
        (*mom)->inc(data.isWeighted() ? data.weight() : 1.);
    }
 

@@ -1,9 +1,10 @@
 #!/bin/bash
 
+source setP2VVEnv.sh
+
 LIBNAME=libP2VV
 DICTNAME=P2VVDict
 
-P2VVDIR=$(pwd)
 SRCDIR=src
 INCDIR=P2VV
 DICTDIR=dict
@@ -12,7 +13,7 @@ CPP=g++
 LD=g++
 ROOTCONFIG=root-config
 
-CPPFLAGS="$($ROOTCONFIG --cflags)"" -I$P2VVDIR/$INCDIR -Wall -O2 -pipe -ggdb"
+CPPFLAGS="$($ROOTCONFIG --cflags)"" -I$P2VVROOT/$INCDIR -Wall -O2 -pipe -ggdb"
 LDFLAGS="$($ROOTCONFIG --libs)"" -lRooFit -lFoam -lMinuit -lRooFitCore\
     -lMathCore -lMathMore"
 
@@ -22,18 +23,19 @@ rm -f *.so *.o *.d *.h *.cxx
 
 # compile code
 for SRCFILE in\
+    Moments.cxx\
     RooP2VVAngleBasis.cxx\
     RooMultiCatGenerator.cxx\
     RooBTagDecay.cxx\
     RooThresholdPdf.cxx\
     RooGammaPdf.cxx
 do
-  $CPP $CPPFLAGS -fPIC -DPIC -MMD -c $P2VVDIR/$SRCDIR/$SRCFILE
+  $CPP $CPPFLAGS -fPIC -DPIC -MMD -c $P2VVROOT/$SRCDIR/$SRCFILE
 done
 
 # generate dictionary source
-rootcint -f $DICTNAME.cxx -c -I$P2VVDIR/$INCDIR\
-    $P2VVDIR/$DICTDIR/P2VV.h $P2VVDIR/$DICTDIR/P2VVLinkDef.h
+rootcint -f $DICTNAME.cxx -c -I$P2VVROOT/$INCDIR\
+    $P2VVROOT/$DICTDIR/P2VV.h $P2VVROOT/$DICTDIR/P2VVLinkDef.h
 
 # compile dictionary
 $CPP $CPPFLAGS -fPIC -DPIC -MMD -c $DICTNAME.cxx
