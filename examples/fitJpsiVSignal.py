@@ -51,7 +51,7 @@ config['BLifetime'].set(name = 't', min = 0., max = 4.)
 config['iTag'].set(name = 'tagInitial')
 if mode == 'Bd2JpsiKstar' :
   config['fTag'].set(name = 'tagFinal')
-config['misTag'].set(obs = False, val = 0., min = '', max = '')
+config['misTag'].set(realType = 'par', val = 0., min = '', max = '')
 
 config['ReApar'].set(val = -0.6)
 config['ImApar'].set(val = -0.1)

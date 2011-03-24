@@ -73,13 +73,13 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   ## constants ##
   ###############
   config.addSetting('zeroConst', RooRealSetting('zero',
-      'zero constant', False, 0., '', ''))
+      'zero constant', 'par', 0., '', ''))
   config.addSetting('halfConst', RooRealSetting('half',
-      'one half constant', False, 0.5, '', ''))
+      'one half constant', 'par', 0.5, '', ''))
   config.addSetting('oneConst', RooRealSetting('one',
-      'one constant', False, 1., '', ''))
+      'one constant', 'par', 1., '', ''))
   config.addSetting('minusConst', RooRealSetting('minus',
-      'minus constant', False, -1., '', ''))
+      'minus constant', 'par', -1., '', ''))
 
 
   ##################
@@ -100,20 +100,20 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     # helicity angles
     if 'hel' in anglesType :
       config.addSetting('cpsiAng', RooRealSetting('helcthetaK',
-          'cosine of kaon polarization angle', True, 0., -1., 1.))
+          'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
       config.addSetting('cthetaAng', RooRealSetting('helcthetaL',
-          'cosine of lepton polarization angle', True, 0., -1., 1.))
+          'cosine of lepton polarization angle', 'obs', 0., -1., 1.))
       config.addSetting('phiAng', RooRealSetting('helphi',
-          'angle between decay planes', True, 0., -pi, pi))
+          'angle between decay planes', 'obs', 0., -pi, pi))
 
     # transversity angles
     if 'trans' in anglesType :
       config.addSetting('cpsiAng', RooRealSetting('trcpsi',
-          'cosine of kaon polarization angle', True, 0., -1., 1.))
+          'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
       config.addSetting('cthetaAng', RooRealSetting('trctheta',
-          'cosine of transversity polar angle', True, 0., -1., 1.))
+          'cosine of transversity polar angle', 'obs', 0., -1., 1.))
       config.addSetting('phiAng', RooRealSetting('trphi',
-          'transversity azimuthal angle', True, 0., -pi, pi))
+          'transversity azimuthal angle', 'obs', 0., -pi, pi))
 
   config.addSetting('anglesType', P2VVSetting('anglesType',
       'type of angles: helicity or transversity', anglesType))
@@ -161,7 +161,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     config.addSetting('iTag', RooCatSetting('iTag',
         'initial state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
     config.addSetting('misTag', RooRealSetting('misTag',
-        'mis-tag fraction', True, 0., 0., 0.5))
+        'mis-tag fraction', 'obs', 0., 0., 0.5))
     if mode == 'Bd2JpsiKstar' :
       config.addSetting('fTag', RooCatSetting('fTag',
           'final state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
@@ -176,29 +176,29 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       'time resolution model', tResModel))
 
     config.addSetting('BLifetime', RooRealSetting('t',
-        'B lifetime (ps)', True, 0., -5., 14.))
+        'B lifetime (ps)', 'obs', 0., -5., 14.))
     if tResModel == 'Gauss' :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat',
-          'B lifetime error (ps)', False, 0.05, '', ''))
+          'B lifetime error (ps)', 'obs', 0.05, '', ''))
     elif tResModel[:6] == '3Gauss' :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat',
-          'B lifetime error (ps)', True, 0.05, 0.005, 0.1))
+          'B lifetime error (ps)', 'obs', 0.05, 0.005, 0.1))
 
     if not onlySignal :
       # masses
       config.addSetting('mJpsi', RooRealSetting('mdau1',
-          'J/psi mass (MeV)', True, 3097., 3097. - 60., 3097. + 40.))
+          'J/psi mass (MeV)', 'obs', 3097., 3097. - 60., 3097. + 40.))
       if mode in ['Bu2JpsiK', 'Bd2JpsiKstar'] :
         config.addSetting('mB', RooRealSetting('m',
-            'B0 mass (MeV)', True, 5279., 5279. - 50., 5279. + 50.))
+            'B0 mass (MeV)', 'obs', 5279., 5279. - 50., 5279. + 50.))
         if mode is 'Bd2JpsiKstar' :
           config.addSetting('mKstar', RooRealSetting('mdau2',
-              'K*0 mass (MeV)', True, 892., 892. - 50., 892. + 50.))
+              'K*0 mass (MeV)', 'obs', 892., 892. - 50., 892. + 50.))
       elif mode is 'Bs2Jpsiphi' :
         config.addSetting('m', RooRealSetting('m',
-            'B_s0 mass (MeV)', True, 5366., 5366. - 50., 5366. + 50.))
+            'B_s0 mass (MeV)', 'obs', 5366., 5366. - 50., 5366. + 50.))
         config.addSetting('mphi', RooRealSetting('mdau2',
-            'phi mass (MeV)', True, 1019.455, 1019.455 - 12., 1019.455 + 12.))
+            'phi mass (MeV)', 'obs', 1019.455, 1019.455 - 12., 1019.455 + 12.))
         # Note: +-10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the
         # background -- but the roadmap uses +-12 instead...
 
@@ -221,22 +221,22 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
       if ampsType is 'polar' :
         config.addSetting('A0Mag2', RooRealSetting('A0Mag2',
-            '|A0|^2', False, 0.556, 0., 1.))
+            '|A0|^2', 'par', 0.556, 0., 1.))
         config.addSetting('AparMag2', RooFormSetting('AparMag2',
             '|A_par|^2', '1. - @0 - @1', ['A0Mag2', 'AperpMag2']))
         config.addSetting('AperpMag2', RooRealSetting('AperpMag2',
-            '|A_perp|^2', False, 0.233, 0., 1.))
+            '|A_perp|^2', 'par', 0.233, 0., 1.))
         config.addSetting('ASMag2', RooRealSetting('ASMag2',
-            '|A_S|^2', False, 0.092, 0., 1.))
+            '|A_S|^2', 'par', 0.092, 0., 1.))
 
         config.addSetting('A0Ph', RooRealSetting('deltaz',
-            'delta_0', False, 0., '', ''))
+            'delta_0', 'par', 0., '', ''))
         config.addSetting('AparPh', RooRealSetting('deltapar',
-            'delta_par', False, -2.93, -2. * pi, 2. * pi))
+            'delta_par', 'par', -2.93, -2. * pi, 2. * pi))
         config.addSetting('AperpPh', RooRealSetting('deltaperp',
-            'delta_perp', False, 2.91, -2. * pi, 2. * pi))
+            'delta_perp', 'par', 2.91, -2. * pi, 2. * pi))
         config.addSetting('ASPh', RooRealSetting('deltas',
-            'delta_S', False, 2.2, -2. * pi, 2. * pi))
+            'delta_S', 'par', 2.2, -2. * pi, 2. * pi))
 
         config.addSetting('ReA0', RooFormSetting('ReA0',
             'Re(A_0)', 'sqrt(@0) * cos(@1)', ['A0Mag2', 'A0Ph']))
@@ -257,39 +257,39 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
       else :
         config.addSetting('ReA0', RooRealSetting('ReA0',
-            'Re(A_0)', False, 1., '', ''))
+            'Re(A_0)', 'par', 1., '', ''))
         config.addSetting('ImA0', RooRealSetting('ImA0',
-            'Im(A_0)', False, 0., '', ''))
+            'Im(A_0)', 'par', 0., '', ''))
         config.addSetting('ReApar', RooRealSetting('ReApar',
-            'Re(A_par)', False, -0.602, -1., 1.))
+            'Re(A_par)', 'par', -0.602, -1., 1.))
         config.addSetting('ImApar', RooRealSetting('ImApar',
-            'Im(A_par)', False, -0.129, -1., 1.))
+            'Im(A_par)', 'par', -0.129, -1., 1.))
         config.addSetting('ReAperp', RooRealSetting('ReAperp',
-            'Re(A_perp)', False, -0.630, -1., 1.))
+            'Re(A_perp)', 'par', -0.630, -1., 1.))
         config.addSetting('ImAperp', RooRealSetting('ImAperp',
-            'Im(A_perp)', False, 0.149, -1., 1.))
+            'Im(A_perp)', 'par', 0.149, -1., 1.))
         if incKSWave :
           config.addSetting('ReAS', RooRealSetting('ReAS',
-              'Re(A_S)', False, -0.168, -1., 1.))
+              'Re(A_S)', 'par', -0.168, -1., 1.))
           config.addSetting('ImAS', RooRealSetting('ImAS',
-              'Im(A_S)', False, 0.252, -1., 1.))
+              'Im(A_S)', 'par', 0.252, -1., 1.))
 
       # lifetime and mixing
       if mode is 'Bd2JpsiKstar' :
         config.addSetting('Gamma', RooRealSetting('Gamma',
-            'Gamma (ps^-1)', False, 0.65, 0.4, 0.9))
+            'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
         config.addSetting('dGamma', RooRealSetting('dGamma',
-            'delta Gamma_s (ps^-1)', False, 0., '', ''))
+            'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
         config.addSetting('dm', RooRealSetting('dm',
-            'delta m_s (ps^-1)', False, 0.51, '', ''))
+            'delta m_s (ps^-1)', 'par', 0.51, '', ''))
 
       elif mode is 'Bs2Jpsiphi' :
         config.addSetting('Gamma', RooRealSetting('gamma',
-            'Gamma_s (ps^-1)', False, 0.68, 0.4, 0.9))
+            'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
         config.addSetting('dGamma', RooRealSetting('dGamma',
-            'delta Gamma_s (ps^-1)', False, 0.05, -0.3, 0.3))
+            'delta Gamma_s (ps^-1)', 'par', 0.05, -0.3, 0.3))
         config.addSetting('dm', RooRealSetting('dm',
-            'delta m_s (ps^-1)', False, 17.8, '', ''))
+            'delta m_s (ps^-1)', 'par', 17.8, '', ''))
 
       config.addSetting('BMeanLife', RooFormSetting('t_sig_tau',
           'B mean lifetime', '1. / @0', ['Gamma']))
@@ -297,12 +297,12 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       # CP violation
       if mode is 'Bd2JpsiKstar' :
         config.addSetting('CCP', RooRealSetting('C',
-            'B0 lambda parameter C', False, 0., '', ''))
+            'B0 lambda parameter C', 'par', 0., '', ''))
       elif mode is 'Bs2Jpsiphi' :
         config.addSetting('phiCP', RooRealSetting('phis',
-            'CP violation parameter phi_s', False, -0.7, -2 * pi, 2 * pi))
+            'CP violation parameter phi_s', 'par', -0.7, -2 * pi, 2 * pi))
         config.addSetting('CCP', RooRealSetting('C',
-            'B0_s lambda parameter C', False, 0., '', ''))
+            'B0_s lambda parameter C', 'par', 0., '', ''))
         config.addSetting('DCP', RooFormSetting('D',
             'B0_s lambda parameter D', 'cos(@0)', ['phiCP']))
         config.addSetting('SCP', RooFormSetting('S',
@@ -312,14 +312,14 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('tagDilution', RooFormSetting('tagDilution',
           'mis-tag dilution', '1 - 2. * @0', ['misTag']))
       config.addSetting('ADilMisTag', RooRealSetting('ADilMisTag',
-          'dilution/mis-tag asymmetry', False, 0., '', ''))
+          'dilution/mis-tag asymmetry', 'par', 0., '', ''))
       if mode is 'Bd2JpsiKstar' :
         config.addSetting('ANorm', RooFormSetting('ANorm',
             'normalization asymmetry', '-@0', ['CCP']))
       config.addSetting('avgCEven', RooRealSetting('avgCEven',
-          'CP average even coefficients', False, 1., '', ''))
+          'CP average even coefficients', 'par', 1., '', ''))
       config.addSetting('avgCOdd', RooRealSetting('avgCOdd',
-          'CP average odd coefficients', False, 0., '', ''))
+          'CP average odd coefficients', 'par', 0., '', ''))
 
 
   return config
@@ -617,6 +617,9 @@ class RooSetting(P2VVSetting) :
     self.setObservable(observable)
     self._declared = False
 
+  def name(self, nameSel = '') :
+    return self._name
+
   def observable(self) :
     return self._observable
 
@@ -647,7 +650,7 @@ class RooSetting(P2VVSetting) :
       return
 
     # declare variable if it's not already in workspace
-    if self.name() not in workspace :
+    if self.name('unblind') not in workspace :
       workspace.factory(factoryString)
 
     self._declared = True
@@ -657,20 +660,32 @@ class RooSetting(P2VVSetting) :
 ## RooRealVar setting ##
 ########################
 class RooRealSetting(RooSetting) :
-  def __init__(self, name, description = '', observable = False, value = 0.,
-      minValue = '', maxValue = '') :
+  def __init__(self, name, description = '', realType = '', value = 0.,
+      minValue = '', maxValue = '',
+      blindParams = ('RooUnblindUniform', 'blindString', 1.)) :
     self._declared = False
     self.setName(name)
     self.setDescription(description)
-    self._observable = False
-    self._value      = 0.
-    self._minValue   = ''
-    self._maxValue   = ''
+    self._observable  = False
+    self._blinded     = False
+    self._blindParams = ()
+    self._value       = 0.
+    self._minValue    = ''
+    self._maxValue    = ''
 
     RooSetting.__init__(self, name, description, False)
     self.setValue(value)
     self.setMinMax(minValue, maxValue)
-    self.setObservable(observable)
+    self.setRealType(realType)
+    self.setBlindParams(blindParams)
+
+  def name(self, nameSel = 'blind') :
+    if self._blinded and nameSel == 'blind': return self._name + '_blind'
+    elif self._blinded and nameSel == 'unblind': return self._name + '_unblind'
+    else : return self._name
+
+  def blinded(self) :
+    return self._blinded
 
   def minValue(self) :
     return self._minValue
@@ -678,21 +693,38 @@ class RooRealSetting(RooSetting) :
   def maxValue(self) :
     return self._maxValue
 
-  def set(self, name = '', descr = '', obs = '', val = '', min = 'min',
-      max = 'max') :
+  def set(self, name = '', descr = '', realType = 'type', val = '',
+       min = 'min', max = 'max', blindParams = '') :
     if self._declared :
       print "P2VV - ERROR: RooRealSetting.set(%s): variable has already been declared"\
           % self._name
       return
 
-    if name  != '' : self.setName(name)
-    if descr != '' : self.setDescription(descr)
-    if obs   != '' : self.setObservable(obs)
-    if val   != '' : self.setValue(val)
+    if name  != ''        : self.setName(name)
+    if descr != ''        : self.setDescription(descr)
+    if realType != 'type' : self.setRealType(realType)
+    if val   != ''        : self.setValue(val)
 
     if min != 'min' and max != 'max' : self.setMinMax(min, max)
     elif min != 'min' : self.setMinMax(min, self.maxValue())
     elif max != 'max' : self.setMinMax(self.minValue(), max)
+
+    if blindParams != '' : self.setBlindParams(blindParams)
+
+  def setRealType(self, realType) :
+    if realType == 'obs' :
+      self.setObservable(True)
+    else :
+      self.setObservable(False)
+      if realType == 'blind' : self.setBlinded(True)
+      else : self.setBlinded(False)
+
+  def setBlindParams(self, blindParams) :
+    if type(blindParams) is tuple and len(blindParams) == 3 :
+      self._blindParams = blindParams
+    else :
+      print "P2VV - ERROR: RooRealSetting.setBlindParams(%s): parameters do not have the required format"\
+          % self._name
 
   def setValue(self, value) :
     if self._declared :
@@ -737,11 +769,12 @@ class RooRealSetting(RooSetting) :
         self.setObservable(False)
 
   def setObservable(self, observable) :
-    if observable is True :
+    if observable :
       # check range for a RooRealVar
       if type(self._minValue) is float\
           and type(self._maxValue is float) :
         self._observable = True
+        self.setBlinded(False)
       else :
         print "P2VV - ERROR: RooRealSetting.setObservable(%s): a constant variable can't be observable"\
             % self._name
@@ -765,14 +798,30 @@ class RooRealSetting(RooSetting) :
             % self._name
         self._value = self._maxValue
 
-  def declare(self, workspace) :
-    if self._minValue is not '' and self._maxValue is not '' :
-      factoryString = "%s[%f, %f, %f]"\
-          % (self._name, self._value, self._minValue, self._maxValue)
-    else :
-      factoryString = "%s[%f]" % (self._name, self._value)
+  def setBlinded(self, blind) :
+    if blind :
+      if not self._observable :
+        self._blinded = True
+      else :
+        print "P2VV - ERROR: RooRealSetting.setBlinded(%s): an observable can't be blinded"\
+            % self._name
 
-    self._declare(workspace, factoryString)
+    else :
+      self._blinded = False
+
+  def declare(self, workspace) :
+    if self._minValue != '' and self._maxValue != '' :
+      factStr = "%s[%f, %f, %f]"\
+          % (self.name('blind'), self._value, self._minValue, self._maxValue)
+    else :
+      factStr = "%s[%f]"\
+          % (self.name('blind'), self._value)
+
+    if self._blinded :
+      factStr =  'UnblindUniform::%s(%s, %f, %s)' % (self.name('unblind'),
+          self._blindParams[1], self._blindParams[2], factStr)
+
+    self._declare(workspace, factStr)
 
 
 ###############################################################################
@@ -951,7 +1000,7 @@ class RooFormSetting(RooSetting) :
   def declare(self, workspace, settings) :
     factoryString = "expr::%s('%s', {" % (self._name, self._value)
     for var in self._variables :
-      factoryString += "%s, " % settings[var].name()
+      factoryString += "%s, " % settings[var].name('unblind')
     factoryString = factoryString[:-2] + '})'
 
     self._declare(workspace, factoryString)
