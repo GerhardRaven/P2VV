@@ -6,6 +6,6 @@
 #include "RooThresholdPdf.h"
 #include "RooBTagDecay.h"
 #include "RooGammaPdf.h"
-#include "moments.h"
+#include "Moments.h"
 
 #endif // P2VV_H
