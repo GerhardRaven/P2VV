@@ -10,11 +10,12 @@
 ###############################################################################
 
 
-###############################################################################
-## function that returns a P2VV PDF                           ##
-## mode and options are specified in the configuration object ##
-################################################################
 def getP2VVPDF(config) :
+  """build a P2VV PDF
+
+  mode and options are specified in the configuration object
+  """
+
   # get mode
   mode = config.value('P2VVMode')
   if type(mode) is not str :
@@ -43,14 +44,17 @@ def getP2VVPDF(config) :
     return fullPDF
 
 
-#################
+###############################################################################
 ## signal PDFs ##
-###############################################################################
-## buildJpsiV: function to build B->J/psiV signal PDFs               ##
-##   assumes observables, parameters and resolution model (tres_sig) ##
-##   exist in workspace                                              ##
-###############################################################################
+#################
+
 def buildJpsiV(config) :
+  """build B->J/psiV signal PDFs
+
+  assumes observables, parameters and resolution model (tres_sig) exist in
+  workspace
+  """
+
   # get general settings
   mode = config.value('P2VVMode')
   if type(mode) is not str :
@@ -344,10 +348,14 @@ def buildJpsiV(config) :
   return ws.pdf(pdfName)
 
 
-#######################
-## angular functions ##
 ###############################################################################
+## angular functions ##
+#######################
+
 class AngleFunctionBuilder :
+  """model builder for angular functions
+  """
+
   def __init__(self, config) :
     from math import sqrt
     import RooFitDecorators
@@ -465,16 +473,21 @@ class AngleFunctionBuilder :
     return name
 
 
-#####################
-## time resolution ##
 ###############################################################################
+## time resolution ##
+#####################
+
 class TimeResolutionBuilder :
+  """model builder for time resolution
+  """
+
   # TODO: build a PDF for sigmat (eg. RooHistPdf, RooThresholdPdf...
   # (or the sum of two gamma functions....)
   # gamma = RooRealVar("gamma","gamma",15,10,30)
   # beta = RooRealVar("beta","beta",2.21456e-03,0,0.1)
   # mu = RooRealVar("mu","mu",0,0.001,0.01)
   # pdf = RooGammaPdf("pdf","pdf",st,gamma,beta,mu)
+
   def __init__(self, config) :
     import RooFitDecorators
 
@@ -561,32 +574,25 @@ class TimeResolutionBuilder :
 
 
 ###############################################################################
-### backwards compatibility stub    
-global _timeresbuilder
-_timeresbuilder = None
-def buildResoModels(ws):
-    global _timeresbuilder
-    if not _timeresbuilder : _timeresbuilder = TimeResolutionBuilder(ws)
-
-
-#############
 ## moments ##
-###############################################################################
-## function that computes efficiency and background angular moments          ##
-## Looping over data in python is quite a bit slower than in C++             ##
-## So we adapt the arguments, and then defer to the C++ _computeMoments      ##
-###############################################################################
+#############
+
 def computeMoments(data, moments) :
-  from ROOT import std, _computeMoments
+  """computes efficiency and background angular moments
+
+  Looping over data in python is quite a bit slower than in C++.
+  So we adapt the arguments, and then defer to the C++ _computeMoments.
+  """
 
   if not moments : return None
+
+  from ROOT import std, _computeMoments
 
   vecmom = std.vector('IMoment*')()
   for m in moments : vecmom.push_back(m)
   return _computeMoments(data, vecmom)
 
 
-###############################################################################
 def buildMomentPDF(w,name,data,moments) :
     import RooFitDecorators
     from ROOT import RooArgList, RooRealSumPdf
@@ -603,9 +609,10 @@ def buildMomentPDF(w,name,data,moments) :
     return w.put( RooRealSumPdf(name,name,fact,coef) )
 
 
-##################
-## efficiencies ##
 ###############################################################################
+## efficiencies ##
+##################
+
 def buildEff_x_PDF(w,name,pdf,eff) :
    import RooFitDecorators
    from ROOT import RooArgSet, RooCustomizer, RooP2VVAngleBasis, RooAddition
@@ -625,310 +632,304 @@ def buildEff_x_PDF(w,name,pdf,eff) :
    return customizer.build(True)
 
 
-###############################################################################
 def buildEffMomentsPDF(w,name,pdf,data,moments) :
    computeMoments(data,moments)
    return buildEff_x_PDF(w,name,pdf,[ ( m.basis() , m.coefficient() ) for m in moments ] )
 
 
-###############
+###############################################################################
 ## mass PDFs ##
-###############################################################################
+###############
+
 class MassPdfBuilder :
-    ## TODO: investigate use of per-event mass error... or add a 2nd Gaussian to the b-mass
-    ## TODO: integrate SPLOT functionality into the MassPdfBuilder...
-    def __init__(self,ws,m,m_dau1,m_dau2,mode) : # assume B-mass, J/psi mass, phi mass
-        import RooFitDecorators
-        from ROOT import RooArgList
+  """model builder for mass PDFs
+  """
 
-        #### define J/psi mass observable & corresponding PDF
-        self._mdau1 = m_dau1
-        # signal J/psi mass pdf
-        ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3094,3090,3105],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.39,0.8,2],mpsi_sig_n[3])"%m_dau1.GetName())
-        self._mdau1_sig = ws['mpsi_sig']
-        # background J/psi mass pdf
-        # given the narrow window, might as well take a 1st (2nd?) order polynomial...
-        ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0005,-0.001,0.0])"%m_dau1.GetName())
-        #  ws.factory("Chebychev::mpsi_bkg(%s,{mpsi_bkg_p1[0.2,-1,1],mpsi_bkg_p2[-0.01,-0.1,0.1]})"%m_dau1.GetName())
-        self._mdau1_bkg = ws['mpsi_bkg']
-        # overall J/psi mass pdf
-        ws.factory("SUM::mpsi(mpsi_fjpsi[0.5,0.2,0.8]*mpsi_sig,mpsi_bkg)")
-        self._mdau1_pdf = ws['mpsi']
+  ## TODO: investigate use of per-event mass error... or add a 2nd Gaussian to the b-mass
+  ## TODO: integrate SPLOT functionality into the MassPdfBuilder...
+  def __init__(self,ws,m,m_dau1,m_dau2,mode) : # assume B-mass, J/psi mass, phi mass
+      import RooFitDecorators
+      from ROOT import RooArgList
+
+      #### define J/psi mass observable & corresponding PDF
+      self._mdau1 = m_dau1
+      # signal J/psi mass pdf
+      ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3094,3090,3105],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.39,0.8,2],mpsi_sig_n[3])"%m_dau1.GetName())
+      self._mdau1_sig = ws['mpsi_sig']
+      # background J/psi mass pdf
+      # given the narrow window, might as well take a 1st (2nd?) order polynomial...
+      ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0005,-0.001,0.0])"%m_dau1.GetName())
+      #  ws.factory("Chebychev::mpsi_bkg(%s,{mpsi_bkg_p1[0.2,-1,1],mpsi_bkg_p2[-0.01,-0.1,0.1]})"%m_dau1.GetName())
+      self._mdau1_bkg = ws['mpsi_bkg']
+      # overall J/psi mass pdf
+      ws.factory("SUM::mpsi(mpsi_fjpsi[0.5,0.2,0.8]*mpsi_sig,mpsi_bkg)")
+      self._mdau1_pdf = ws['mpsi']
 
 
-        if mode == 'Bs2Jpsiphi':
-            # signal phi mass pdf
-            self._mdau2 = m_dau2
-            ws.factory("Voigtian::mphi_phisig(%s,mphi_phi_mean[1019.455],mphi_phi_width[4.26],mphi_phi_sigma[1.2,0.1,5])"%m_dau2.GetName())
-            self._mdau2_sig = ws['mphi_phisig']
-            # background phi mass pdf (would like to use a nice threshold function here ... RooDstD0BG seems a bit complicated
-            # On top of that, someone cut at phi-20 MeV/c^2, so we don't see the KK threshold anyway...
-            # so we might as well just do a 2nd order polynomial or so...
-            # Even more so, by only using a +- 10 MeV window, we kill half the background ;-)
-            # So until we actually include the phi mass, we take a linear function...
-            #ws.factory("DstD0BG::mphi_combbkg(%s,mphi_bkg_m0[987.4],mphi_bkg_C[6,1,10],mphi_bkg_B[16,8,30],zero[0])"%m_dau2.GetName())
-            ws.factory("Chebychev::mphi_bkg(%s,{mphi_bkg_p1[0.2,-1,1],mphi_bkg_p2[-0.01,-0.1,0.1]})"%m_dau2.GetName())
-            self._mdau2_bkg = ws['mphi_bkg']
-            ws.factory("SUM::m_phi(mphi_fphi[0.2,0.05,0.8]*mphi_phisig,mphi_bkg)")
-            self._mdau2_pdf = ws['m_phi']
+      if mode == 'Bs2Jpsiphi':
+          # signal phi mass pdf
+          self._mdau2 = m_dau2
+          ws.factory("Voigtian::mphi_phisig(%s,mphi_phi_mean[1019.455],mphi_phi_width[4.26],mphi_phi_sigma[1.2,0.1,5])"%m_dau2.GetName())
+          self._mdau2_sig = ws['mphi_phisig']
+          # background phi mass pdf (would like to use a nice threshold function here ... RooDstD0BG seems a bit complicated
+          # On top of that, someone cut at phi-20 MeV/c^2, so we don't see the KK threshold anyway...
+          # so we might as well just do a 2nd order polynomial or so...
+          # Even more so, by only using a +- 10 MeV window, we kill half the background ;-)
+          # So until we actually include the phi mass, we take a linear function...
+          #ws.factory("DstD0BG::mphi_combbkg(%s,mphi_bkg_m0[987.4],mphi_bkg_C[6,1,10],mphi_bkg_B[16,8,30],zero[0])"%m_dau2.GetName())
+          ws.factory("Chebychev::mphi_bkg(%s,{mphi_bkg_p1[0.2,-1,1],mphi_bkg_p2[-0.01,-0.1,0.1]})"%m_dau2.GetName())
+          self._mdau2_bkg = ws['mphi_bkg']
+          ws.factory("SUM::m_phi(mphi_fphi[0.2,0.05,0.8]*mphi_phisig,mphi_bkg)")
+          self._mdau2_pdf = ws['m_phi']
 
-        #########################
-        #signal B mass pdf
-        # TODO: can we include sigmam without introducing a Punzi problem?
-        #       note that the background PDF would not include sigmam...
-        #       but both mean and sigma are different for t>0.3 and t<0.3...
-        #       we could just take a sigmam distribution with t>0.3 and |m-m_bs|<25 as signal...
-        #       and t<0.3 and |m-m_bs|>30 as background...
-        self._m = m
-        #ws.factory("PROD::m_psisig(SUM(m_sig_f1[0.9,0.1,0.99]*Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),Gaussian(%s,m_sig_mean,m_sig_sigma2[15,10,35])),mpsi_sig)"%(m.GetName(),m.GetName()))
-        #ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5366,5350,5380],m_sig_sigma[10,3,30]),mpsi_sig)"%(m.GetName()))
-        #ws.factory("PROD::m_nonpsisig(Gaussian(%s,m_sig_mean,m_sig_sigma),mpsi_bkg)"%m.GetName())
-        #ws.factory("SUM::m_sig(m_sigfpsi[1.0]*m_psisig,m_nonpsisig)")
-        if 'Bs' in mode :
-            sigmid = 5367.4
-            sigwid = 15  # in J/psi phi we have a 7 MeV resolution
-        if 'Bu' in mode or 'Bd' in mode:
-            sigmid = 5279.17
-            sigwid = 20  # in J/psi K+ we have a 9 MeV resolution
+      #########################
+      #signal B mass pdf
+      # TODO: can we include sigmam without introducing a Punzi problem?
+      #       note that the background PDF would not include sigmam...
+      #       but both mean and sigma are different for t>0.3 and t<0.3...
+      #       we could just take a sigmam distribution with t>0.3 and |m-m_bs|<25 as signal...
+      #       and t<0.3 and |m-m_bs|>30 as background...
+      self._m = m
+      #ws.factory("PROD::m_psisig(SUM(m_sig_f1[0.9,0.1,0.99]*Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),Gaussian(%s,m_sig_mean,m_sig_sigma2[15,10,35])),mpsi_sig)"%(m.GetName(),m.GetName()))
+      #ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5366,5350,5380],m_sig_sigma[10,3,30]),mpsi_sig)"%(m.GetName()))
+      #ws.factory("PROD::m_nonpsisig(Gaussian(%s,m_sig_mean,m_sig_sigma),mpsi_bkg)"%m.GetName())
+      #ws.factory("SUM::m_sig(m_sigfpsi[1.0]*m_psisig,m_nonpsisig)")
+      if 'Bs' in mode :
+          sigmid = 5367.4
+          sigwid = 15  # in J/psi phi we have a 7 MeV resolution
+      if 'Bu' in mode or 'Bd' in mode:
+          sigmid = 5279.17
+          sigwid = 20  # in J/psi K+ we have a 9 MeV resolution
 
-        ws.factory('m_sig_mean[%s,%s,%s]'%(sigmid,sigmid-0.5*sigwid,sigmid+0.5*sigwid))
-        ws.factory("PROD::m_sig(SUM(m_sig_f1[1]*Gaussian(%s,m_sig_mean,m_sig_sigma[7,4,12]),Gaussian(%s,m_sig_mean,m_sig_sigma2[14])),SUM(m_sig_fpsi[1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
-        self._m_sig = ws['m_sig']
-        #if False :
-        #    ws.factory("PROD::m_sig(Gaussian(m,m_sig_mean,expr('@0*@1',{m_sig_s[0.5,5],sigmam}))|sigmam)")
-        
-        #background B mass pdf
-        ws.factory("PROD::m_psibkg(Exponential(%s,m_psibkg_exp[-0.0003,-0.001,-0.0001]),mpsi_sig)"% m.GetName() )
-        self._m_psibkg = ws['m_psibkg']
-        ws.factory("PROD::m_nonpsibkg(Exponential(%s,m_nonpsibkg_exp[-0.0006,-0.001,-0.0001]),mpsi_bkg)"% m.GetName() )
-        self._m_nonpsibkg = ws['m_nonpsibkg']
-        ws.factory("SUM::m_bkg(m_bkgfpsi[0.1,0.01,0.99]*m_psibkg,m_nonpsibkg)")
-        self._m_bkg = ws['m_bkg']
+      ws.factory('m_sig_mean[%s,%s,%s]'%(sigmid,sigmid-0.5*sigwid,sigmid+0.5*sigwid))
+      ws.factory("PROD::m_sig(SUM(m_sig_f1[1]*Gaussian(%s,m_sig_mean,m_sig_sigma[7,4,12]),Gaussian(%s,m_sig_mean,m_sig_sigma2[14])),SUM(m_sig_fpsi[1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
+      self._m_sig = ws['m_sig']
+      #if False :
+      #    ws.factory("PROD::m_sig(Gaussian(m,m_sig_mean,expr('@0*@1',{m_sig_s[0.5,5],sigmam}))|sigmam)")
+      
+      #background B mass pdf
+      ws.factory("PROD::m_psibkg(Exponential(%s,m_psibkg_exp[-0.0003,-0.001,-0.0001]),mpsi_sig)"% m.GetName() )
+      self._m_psibkg = ws['m_psibkg']
+      ws.factory("PROD::m_nonpsibkg(Exponential(%s,m_nonpsibkg_exp[-0.0006,-0.001,-0.0001]),mpsi_bkg)"% m.GetName() )
+      self._m_nonpsibkg = ws['m_nonpsibkg']
+      ws.factory("SUM::m_bkg(m_bkgfpsi[0.1,0.01,0.99]*m_psibkg,m_nonpsibkg)")
+      self._m_bkg = ws['m_bkg']
 
-        ### now it becomes a bit tricky. 
-        ## we can have various combinations of {sig,bkg} x {sig,bkg} x {sig,bkg} here...
-        ## for now, we just split the b bkg into psi vs non-psi, but at some point we
-        ## need to split b sig into phi vs kk...
-        if mode == 'Bs2Jpsiphi':
-            ws.factory('{N_sig[1000,0,10000],N_psibkg[15000,0,30000],N_nonpsibkg[15000,0,30000]}')
-        if mode == 'Bu2JpsiK' or mode == 'Bd2JpsiKstar' :
-            ws.factory('{N_sig[13000,0,100000],N_psibkg[150000,0,300000],N_nonpsibkg[150000,0,300000]}')
-        
-        ws.factory("SUM::m_b(N_sig*m_sig,N_psibkg*m_psibkg,N_nonpsibkg*m_nonpsibkg)")
-        self._m_pdf = ws['m_b']
+      ### now it becomes a bit tricky. 
+      ## we can have various combinations of {sig,bkg} x {sig,bkg} x {sig,bkg} here...
+      ## for now, we just split the b bkg into psi vs non-psi, but at some point we
+      ## need to split b sig into phi vs kk...
+      if mode == 'Bs2Jpsiphi':
+          ws.factory('{N_sig[1000,0,10000],N_psibkg[15000,0,30000],N_nonpsibkg[15000,0,30000]}')
+      if mode == 'Bu2JpsiK' or mode == 'Bd2JpsiKstar' :
+          ws.factory('{N_sig[13000,0,100000],N_psibkg[150000,0,300000],N_nonpsibkg[150000,0,300000]}')
+      
+      ws.factory("SUM::m_b(N_sig*m_sig,N_psibkg*m_psibkg,N_nonpsibkg*m_nonpsibkg)")
+      self._m_pdf = ws['m_b']
 
-        self._yields = RooArgList(ws.argSet('N_sig,N_psibkg,N_nonpsibkg'))
+      self._yields = RooArgList(ws.argSet('N_sig,N_psibkg,N_nonpsibkg'))
 
-        self._m.setRange('sigRegion',sigmid-sigwid,sigmid+sigwid)
-        self._m.setRange('leftSideband',self._m.getMin(),sigmid-sigwid)
-        self._m.setRange('rightSideband',sigmid+sigwid,self._m.getMax())
-        
-    def sigPdf(self)    : return self._m_sig
-    def bkgPdf(self)    : return self._m_bkg
-    def psibkgPdf(self)    : return self._m_psibkg
-    def nonpsibkgPdf(self)    : return self._m_nonpsibkg
-    def Pdf(self)       : return self._m_pdf
-    def Obs(self)       : return self._m
-    def yields(self)    : return self._yields
+      self._m.setRange('sigRegion',sigmid-sigwid,sigmid+sigwid)
+      self._m.setRange('leftSideband',self._m.getMin(),sigmid-sigwid)
+      self._m.setRange('rightSideband',sigmid+sigwid,self._m.getMax())
+      
+  def sigPdf(self)    : return self._m_sig
+  def bkgPdf(self)    : return self._m_bkg
+  def psibkgPdf(self)    : return self._m_psibkg
+  def nonpsibkgPdf(self)    : return self._m_nonpsibkg
+  def Pdf(self)       : return self._m_pdf
+  def Obs(self)       : return self._m
+  def yields(self)    : return self._yields
 
-    def sigDau1Pdf(self) : return self._mdau1_sig
-    def bkgDau1Pdf(self) : return self._mdau1_bkg
-    def dau1Pdf(self)    : return self._mdau1_pdf
-    def dau1Obs(self)    : return self._mdau1
+  def sigDau1Pdf(self) : return self._mdau1_sig
+  def bkgDau1Pdf(self) : return self._mdau1_bkg
+  def dau1Pdf(self)    : return self._mdau1_pdf
+  def dau1Obs(self)    : return self._mdau1
 
-    def sigDau2Pdf(self) : return self._mdau2_sig
-    def bkgDau2Pdf(self) : return self._mdau2_bkg
-    def dau2Pdf(self)    : return self._mdau2_pdf
-    def dau2Obs(self)    : return self._mdau2
+  def sigDau2Pdf(self) : return self._mdau2_sig
+  def bkgDau2Pdf(self) : return self._mdau2_bkg
+  def dau2Pdf(self)    : return self._mdau2_pdf
+  def dau2Obs(self)    : return self._mdau2
 
 
 ###############################################################################
-##### backwards compatibility glue... making this a singleton...
-global _MassPDFBuilder 
-_MassPDFBuilder = None
-def buildMassPDFs(ws) :
-    import RooFitDecorators
-
-    global _MassPDFBuilder
-    if not _MassPDFBuilder :
-        m_B = ws['m']
-        m_mumu = ws['mdau1']
-        m_KK = ws['mdau2']
-        _MassPDFBuilder = MassPdfBuilder(ws,m_B,m_mumu,m_KK) # todo: make this a J/psi phi builder, so that we can also have a J/psi K* one ;-]
-    return _MassPDFBuilder
-
-
-#####################
 ## background PDFs ##
-###############################################################################
-class BkgTimePdfBuilder : #background propertime
-    def __init__(self, ws, resbuilder, sigmatpdf ) :
-        import RooFitDecorators
+#####################
 
-        for name,resname in { 'nonpsibkg': resbuilder.nonpsi().GetName() , 'psibkg' : resbuilder.signal().GetName() }.iteritems() :
-            if False :
-                # this results in horrible wrong plots....
-                ws.factory("Decay::t_%s_sl(t,0,                        %s,SingleSided)"%(name,     resname))
-                ws.factory("Decay::t_%s_ml(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)"%(name,name,resname))
-                ws.factory("Decay::t_%s_ll(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)"%(name,name,resname))
-                ws.factory("PROD::t_%s(SUM(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)|sigmat,%s)"% (name,name,name,name,name,name,sigmatpdf[name].GetName()) )
-            else :
-                ws.factory("PROD::t_%s_sl(Decay(t,0,                        %s,SingleSided)|sigmat,%s)"%(name,     resname,sigmatpdf[name].GetName()))
-                ws.factory("PROD::t_%s_ml(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
-                ws.factory("PROD::t_%s_ll(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
-                ws.factory("SUM::t_%s(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)"% (name,name,name,name,name,name) )
-        self._nonpsi = ws['t_nonpsibkg']
-        self._psi = ws['t_psibkg']
+class BkgTimePdfBuilder :
+  """model builder for background time PDFs
+  """
 
-    def psibkgPdf(self) : return self._psi
-    def nonpsibkgPdf(self) : return self._nonpsi
+  def __init__(self, ws, resbuilder, sigmatpdf ) :
+      import RooFitDecorators
+
+      for name,resname in { 'nonpsibkg': resbuilder.nonpsi().GetName() , 'psibkg' : resbuilder.signal().GetName() }.iteritems() :
+          if False :
+              # this results in horrible wrong plots....
+              ws.factory("Decay::t_%s_sl(t,0,                        %s,SingleSided)"%(name,     resname))
+              ws.factory("Decay::t_%s_ml(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)"%(name,name,resname))
+              ws.factory("Decay::t_%s_ll(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)"%(name,name,resname))
+              ws.factory("PROD::t_%s(SUM(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)|sigmat,%s)"% (name,name,name,name,name,name,sigmatpdf[name].GetName()) )
+          else :
+              ws.factory("PROD::t_%s_sl(Decay(t,0,                        %s,SingleSided)|sigmat,%s)"%(name,     resname,sigmatpdf[name].GetName()))
+              ws.factory("PROD::t_%s_ml(Decay(t,t_%s_ml_tau[0.21,0.1,0.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
+              ws.factory("PROD::t_%s_ll(Decay(t,t_%s_ll_tau[1.92,1.0,2.5],%s,SingleSided)|sigmat,%s)"%(name,name,resname,sigmatpdf[name].GetName()))
+              ws.factory("SUM::t_%s(t_%s_fll[0.004,0,1]*t_%s_ll,t_%s_fml[0.02,0,1]*t_%s_ml,t_%s_sl)"% (name,name,name,name,name,name) )
+      self._nonpsi = ws['t_nonpsibkg']
+      self._psi = ws['t_psibkg']
+
+  def psibkgPdf(self) : return self._psi
+  def nonpsibkgPdf(self) : return self._nonpsi
 
 
-###############################################################################
 class BkgAnglePdfBuilder :
-    def __init__(self,ws,basis,data, opt) : 
-        from ROOT import RooDataSet
+  """model builder for background angular PDFs
+  """
 
-        self._angles = basis.angles()
-        self._dataw = {}
-        self._pdf = {}
-        for name in [ 'psibkg', 'nonpsibkg'] :
-            dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0",opt[name]['weight']) # need a dummy cut, as passing a (const char*)0 is kind of difficult...
-            self._dataw[name] = dataw
-            moments = []
-            from itertools import product
-            ranges = opt[name]['ranges']
-            for (i,l,m) in product(ranges[0],ranges[1],ranges[2]) :
-                  if abs(m)>l : continue
-                  #  Warning: the Y_lm are orthonormal, but the P_i are orthogonal, with dot product 2/(2*i+1)
-                  moments.append( Moment( basis.build(name+'_mom',i,0,l,m,1.), float(2*i+1)/2 ) )
-            self._pdf[name] = buildMomentPDF( ws, 'angles_%s'%name, dataw, moments )
-    def psibkgPdf(self) : return self._pdf['psibkg']
-    def nonpsibkgPdf(self) : return self._pdf['nonpsibkg']    
+  def __init__(self,ws,basis,data, opt) : 
+      from ROOT import RooDataSet
 
-    def makeplots(self) : 
-        from ROOT import gStyle, RooArgList, RooArgSet
-        gStyle.SetOptStat(0)
+      self._angles = basis.angles()
+      self._dataw = {}
+      self._pdf = {}
+      for name in [ 'psibkg', 'nonpsibkg'] :
+          dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0",opt[name]['weight']) # need a dummy cut, as passing a (const char*)0 is kind of difficult...
+          self._dataw[name] = dataw
+          moments = []
+          from itertools import product
+          ranges = opt[name]['ranges']
+          for (i,l,m) in product(ranges[0],ranges[1],ranges[2]) :
+                if abs(m)>l : continue
+                #  Warning: the Y_lm are orthonormal, but the P_i are orthogonal, with dot product 2/(2*i+1)
+                moments.append( Moment( basis.build(name+'_mom',i,0,l,m,1.), float(2*i+1)/2 ) )
+          self._pdf[name] = buildMomentPDF( ws, 'angles_%s'%name, dataw, moments )
+  def psibkgPdf(self) : return self._pdf['psibkg']
+  def nonpsibkgPdf(self) : return self._pdf['nonpsibkg']    
 
-        canvas = []
-        for i in ['psibkg','nonpsibkg'] : 
-            c = TCanvas('angle_%s'%i)
-            canvas.append(c)
-            c.Divide(3,2)
-            for (f,v) in enumerate( self._angles ) :
-                c.cd(1+f)
-                frame = v.frame()
-                self._dataw[i].plotOn(frame)
-                self._pdf[i].plotOn(frame)
-                frame.Draw()
+  def makeplots(self) : 
+      from ROOT import gStyle, RooArgList, RooArgSet
+      gStyle.SetOptStat(0)
 
-                c.cd(4+f)
-                others = RooArgList( self._angles )
-                others.remove( v )
-                hist = self._pdf[i].createHistogram( others.names() )
-                self._pdf[i].fillHistogram( hist,others,1., RooArgSet(v))
-                hist.Draw('COLZ')
-                # create residuals in 2D
-                #datahist = data.createHistogram( others.name() )
-                #self._dataw[i].fillHistogram( datahist )
-        return (canvas[0],canvas[1])
+      canvas = []
+      for i in ['psibkg','nonpsibkg'] : 
+          c = TCanvas('angle_%s'%i)
+          canvas.append(c)
+          c.Divide(3,2)
+          for (f,v) in enumerate( self._angles ) :
+              c.cd(1+f)
+              frame = v.frame()
+              self._dataw[i].plotOn(frame)
+              self._pdf[i].plotOn(frame)
+              frame.Draw()
+
+              c.cd(4+f)
+              others = RooArgList( self._angles )
+              others.remove( v )
+              hist = self._pdf[i].createHistogram( others.names() )
+              self._pdf[i].fillHistogram( hist,others,1., RooArgSet(v))
+              hist.Draw('COLZ')
+              # create residuals in 2D
+              #datahist = data.createHistogram( others.name() )
+              #self._dataw[i].fillHistogram( datahist )
+      return (canvas[0],canvas[1])
 
 
-###############################################################################
 def buildABkgPdf( ws, name, resname, psimasspdfname ):
-    import RooFitDecorators
-    from itertools import repeat
+  import RooFitDecorators
+  from itertools import repeat
 
-    # build the dependencies if needed
-    if not ws.function(resname)     : buildResoModels(ws)
-    if not ws.function('m_%s'%name) : buildMassPDFs(ws)
+  # build the dependencies if needed
+  if not ws.function(resname)     : buildResoModels(ws)
+  if not ws.function('m_%s'%name) : buildMassPDFs(ws)
 
-    #
-    tpb = TimePdfBuilder(ws, name,resname)
-    #background angles: 
-    ws.factory("Chebychev::trcospsipdf_%s(trcospsi,{tcp_0_%s[-0.13,-1,1],tcp_1_%s[0.23,-1,1],tcp_2_%s[-0.057,-1,1],tcp_3_%s[-0.0058,-1,1],tcp_4_%s[-0.0154,-1,1]})"% tuple(repeat(name, 6)) )
-    ws.factory("Chebychev::trcosthetapdf_%s(trcostheta,{tct_0_%s[0.08,-1,1],tct_1_%s[-0.22,-1,1],tct_2_%s[-0.022,-1,1],tct_3_%s[0.21,-1,1],tct_4_%s[0.0125,-1,1]})"% tuple(repeat(name, 6)) )
-    ws.factory("Chebychev::trphipdf_%s(trphi,{tp_0_%s[0.10,-1,1],tp_1_%s[0.328,-1,1],tp_2_%s[0.081,-1,1],tp_3_%s[0.316,-1,1],tp_4_%s[0.044,-1,1]})"% tuple(repeat(name, 6)) )
+  #
+  tpb = TimePdfBuilder(ws, name,resname)
+  #background angles: 
+  ws.factory("Chebychev::trcospsipdf_%s(trcospsi,{tcp_0_%s[-0.13,-1,1],tcp_1_%s[0.23,-1,1],tcp_2_%s[-0.057,-1,1],tcp_3_%s[-0.0058,-1,1],tcp_4_%s[-0.0154,-1,1]})"% tuple(repeat(name, 6)) )
+  ws.factory("Chebychev::trcosthetapdf_%s(trcostheta,{tct_0_%s[0.08,-1,1],tct_1_%s[-0.22,-1,1],tct_2_%s[-0.022,-1,1],tct_3_%s[0.21,-1,1],tct_4_%s[0.0125,-1,1]})"% tuple(repeat(name, 6)) )
+  ws.factory("Chebychev::trphipdf_%s(trphi,{tp_0_%s[0.10,-1,1],tp_1_%s[0.328,-1,1],tp_2_%s[0.081,-1,1],tp_3_%s[0.316,-1,1],tp_4_%s[0.044,-1,1]})"% tuple(repeat(name, 6)) )
 
-    # apb = BkgAnglePdfBuilder(ws, 
-    #now multiply
-    ws.factory("PROD::%s_pdf(trcosthetapdf_%s,trcospsipdf_%s,trphipdf_%s, t_%s, m_%s, %s )"%(tuple(repeat(name,6)) + (psimasspdfname,)))
-    return ws['%s_pdf'%name]
+  # apb = BkgAnglePdfBuilder(ws, 
+  #now multiply
+  ws.factory("PROD::%s_pdf(trcosthetapdf_%s,trcospsipdf_%s,trphipdf_%s, t_%s, m_%s, %s )"%(tuple(repeat(name,6)) + (psimasspdfname,)))
+  return ws['%s_pdf'%name]
 
 
-###############################################################################
 def buildBkgPdf( ws, name = 'bkg_pdf' ):
-    
-    # assume that the resolution models and psi mass models have been built     
-    nonpsibkg = buildABkgPdf(ws,'nonpsi','tres_nonpsi','mpsi_bkg')
-    psibkg    = buildABkgPdf(ws,'psi',   'tres_sig',   'mpsi_sig')
-    # add them
-    ws.factory("SUM::%s(f_psi[0.5,0.01,1]*%s,%s)"%(name,psibkg.GetName(),nonpsibkg.GetName()))
-    return ws.pdf(name)
+  # assume that the resolution models and psi mass models have been built     
+  nonpsibkg = buildABkgPdf(ws,'nonpsi','tres_nonpsi','mpsi_bkg')
+  psibkg    = buildABkgPdf(ws,'psi',   'tres_sig',   'mpsi_sig')
+  # add them
+  ws.factory("SUM::%s(f_psi[0.5,0.01,1]*%s,%s)"%(name,psibkg.GetName(),nonpsibkg.GetName()))
+  return ws.pdf(name)
 
 
-#############
-## tagging ##
 ###############################################################################
+## tagging ##
+#############
+
 ## call with buildTagging(ws, name, [ 0.25, 0.35, 0.45 ] ) 
 ## to define tagging categories corresponding to the intervals [0,0.25),[0.25,0.35),[0.35,0.45),[0.45,0.5]
 ## note that the final interval is defined 'by construction' and that the pdf returned gives 
 ## the efficiency to be in the i-th category, with the last category having an efficiency 1-sum_i eff_i
+
 class TagPdfBuilder :
-    def __init__(self,ws,tagcatdef,tagomega='tagomega')  :
-        import RooFitDecorators
-        from ROOT import RooRealVar, RooThresholdPdf
+  """model builder for tagging
+  """
 
-        self._ws = ws
-        if type(tagomega) == str : 
-            tagomega = ws[tagomega]
-        elif ws[tagomega.GetName()] != tagomega :
-            raise LogicError('tagomega in ws does not match given RooAbsReal')
+  def __init__(self,ws,tagcatdef,tagomega='tagomega')  :
+      import RooFitDecorators
+      from ROOT import RooRealVar, RooThresholdPdf
 
-        ws.factory("ThresholdCategory::tagcat(%s,'untagged',0)"%tagomega.GetName() ) 
-        self._tagcat = ws['tagcat']
-        self._sig = ws.put(RooThresholdPdf('tagcat_sig','tagcat_sig',tagomega))# should we worry about the fact that the value is eff/binwidth, and the binwidth is not constant???
-        self._psibkg = ws.put(RooThresholdPdf('tagcat_psibkg','tagcat_psibkg',tagomega))
-        self._nonpsibkg = ws.put(RooThresholdPdf('tagcat_nonpsibkg','tagcat_nonpsibkg',tagomega))
+      self._ws = ws
+      if type(tagomega) == str : 
+          tagomega = ws[tagomega]
+      elif ws[tagomega.GetName()] != tagomega :
+          raise LogicError('tagomega in ws does not match given RooAbsReal')
 
-        for (i,upper) in enumerate( tagcatdef ) :
-            self._tagcat.addThreshold(upper,'tagcat_%d' % i)
-            for (n,pdf) in [('sig',self._sig),('psibkg',self._psibkg),('nonpsibkg',self._nonpsibkg) ] :
-                name = 'tagcat_%s_eff%s' % (n,i)
-                eff = ws.put(RooRealVar( name, name , float(1)/(1+len(tagcatdef)), 0., 1.))
-                pdf.addThreshold(upper, eff )
+      ws.factory("ThresholdCategory::tagcat(%s,'untagged',0)"%tagomega.GetName() ) 
+      self._tagcat = ws['tagcat']
+      self._sig = ws.put(RooThresholdPdf('tagcat_sig','tagcat_sig',tagomega))# should we worry about the fact that the value is eff/binwidth, and the binwidth is not constant???
+      self._psibkg = ws.put(RooThresholdPdf('tagcat_psibkg','tagcat_psibkg',tagomega))
+      self._nonpsibkg = ws.put(RooThresholdPdf('tagcat_nonpsibkg','tagcat_nonpsibkg',tagomega))
 
-    def sigPdf(self)       : return self._sig
-    def psibkgPdf(self)    : return self._bkg
-    def nonpsibkgPdf(self) : return self._bkg
+      for (i,upper) in enumerate( tagcatdef ) :
+          self._tagcat.addThreshold(upper,'tagcat_%d' % i)
+          for (n,pdf) in [('sig',self._sig),('psibkg',self._psibkg),('nonpsibkg',self._nonpsibkg) ] :
+              name = 'tagcat_%s_eff%s' % (n,i)
+              eff = ws.put(RooRealVar( name, name , float(1)/(1+len(tagcatdef)), 0., 1.))
+              pdf.addThreshold(upper, eff )
 
-    def bkgPdf(self) : return self._bkg
+  def sigPdf(self)       : return self._sig
+  def psibkgPdf(self)    : return self._bkg
+  def nonpsibkgPdf(self) : return self._bkg
 
-    def tagCat(self) : return self._tagCat
+  def bkgPdf(self) : return self._bkg
+
+  def tagCat(self) : return self._tagCat
 
 
-###############################################################################
 def buildTagging( ws, name, tagcatdef ) :
-    # either make PDF conditional on tagomega distribution
-    # and use a fittable version RooHistPdf for tagOmega,
-    # different for sig and bkg
-    #
-    # or split tagomega distribution in discrete categories,
-    # and multiply by efficiency for each category, seperate 
-    # for signal and background... -- or just make the fit
-    # extended, and treat each bin as Poisson bkg + Poisson sig
-    import RooFitDecorators
-    from ROOT import RooRealVar, RooThresholdPdf
+  # either make PDF conditional on tagomega distribution
+  # and use a fittable version RooHistPdf for tagOmega,
+  # different for sig and bkg
+  #
+  # or split tagomega distribution in discrete categories,
+  # and multiply by efficiency for each category, seperate 
+  # for signal and background... -- or just make the fit
+  # extended, and treat each bin as Poisson bkg + Poisson sig
+  import RooFitDecorators
+  from ROOT import RooRealVar, RooThresholdPdf
 
-    ws.factory("misTag[0,0,0.5]")
-    tagcat = ws.factory("ThresholdCategory::%s('tagomega','untagged',0)" % name+"cat")
-    pdf = ws.put( RooThresholdPdf(name+'effpdf',name+'effpdf',ws['tagomega']) )
-    for (i,upper) in enumerate( tagcatdef ) :
-        cname = '%s%d' % (name,i)
-        ename = cname + '_eff'
-        eff = ws.put(RooRealVar( ename, ename , 0.2, 0., 1.))
-        tagcat.addThreshold(upper,cname)
-        pdf.addThreshold(upper, eff )
+  ws.factory("misTag[0,0,0.5]")
+  tagcat = ws.factory("ThresholdCategory::%s('tagomega','untagged',0)" % name+"cat")
+  pdf = ws.put( RooThresholdPdf(name+'effpdf',name+'effpdf',ws['tagomega']) )
+  for (i,upper) in enumerate( tagcatdef ) :
+      cname = '%s%d' % (name,i)
+      ename = cname + '_eff'
+      eff = ws.put(RooRealVar( ename, ename , 0.2, 0., 1.))
+      tagcat.addThreshold(upper,cname)
+      pdf.addThreshold(upper, eff )
 
-    return (tagcat,pdf)
+  return (tagcat,pdf)
 

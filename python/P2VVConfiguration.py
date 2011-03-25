@@ -6,11 +6,10 @@
 ##                                                                           ##
 ###############################################################################
 
-
-###############################################################################
-## function that returns default P2VV configuration for a given mode         ##
-###############################################################################
 def getP2VVConfig(mode = '', options = [], createWS = True) :
+  """function that returns default P2VV configuration for a given mode
+  """
+
   from math import pi
   from ROOT import RooFit
 
@@ -326,10 +325,13 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
 
 ###############################################################################
-## class for configuration of the P2VV framework                   ##
-## contains a dictionary with P2VV settings and a RooFit workspace ##
-#####################################################################
+
 class P2VVConfiguration :
+  """class for configuration of the P2VV framework
+
+  contains a dictionary with P2VV settings and a RooFit workspace
+  """
+
   def __init__(self, workspace = '', WSFilePath = '') :
     from ROOT import RooWorkspace
 
@@ -383,8 +385,10 @@ class P2VVConfiguration :
 
   ## P2VV configuration methods ##
 
-  # get the value of a setting
   def value(self, key) :
+    """get the value of a setting
+    """
+
     # check type of the setting key
     if type(key) is not str :
       print "P2VV - ERROR: P2VVConfiguration.value: setting key is not of type 'str'"
@@ -395,12 +399,15 @@ class P2VVConfiguration :
     if setting : return setting.value()
     else : return None    
 
-  # set a setting
   def set(self, key, setting) :
+    """set a setting
+    """
     self.addSetting(key, setting, True)
 
-  # add a setting to the settings dictionary or overwrite an old setting
   def addSetting(self, key, setting, overWriteOld = True) :
+    """add a setting to the settings dictionary or overwrite an old setting
+    """
+
     # check type of the setting key
     if type(key) is not str :
       print "P2VV - ERROR: P2VVConfiguration.addSetting: setting key is not a string"
@@ -415,8 +422,10 @@ class P2VVConfiguration :
     if not key in self._settingsDict or overWriteOld:
       self._settingsDict[key] = setting
 
-  # remove a setting from the settings dictionary
   def removeSetting(self, key) :
+    """remove a setting from the settings dictionary
+    """
+
     # check type of the setting key
     if type(key) is not str :
       print "P2VV - ERROR: P2VVConfiguration.removeSetting: setting key is not a string"
@@ -433,12 +442,15 @@ class P2VVConfiguration :
 
   ## RooFit workspace methods ##
 
-  # get workspace
   def workspace(self) :
+    """get workspace
+    """
     return self._workspace
 
-  # set workspace
   def setWorkspace(self, workspace = '') :
+    """set workspace
+    """
+
     from ROOT import RooWorkspace
 
     if type(workspace) is RooWorkspace :
@@ -452,8 +464,10 @@ class P2VVConfiguration :
       print "P2VV - WARNING: P2VVConfiguration.setWorkspace: argument is not a RooWorkspace: no workspace set"
       self._workspace = ''
 
-  # write workspace to ROOT file
   def writeWorkspace(self, WSPath = '') :
+    """write workspace to ROOT file
+    """
+
     if self._workspace is '' :
       print "P2VV - ERROR: P2VVConfiguration.writeWorkspace: no workspace set"
       return
@@ -467,23 +481,32 @@ class P2VVConfiguration :
     else :
       print "P2VV - ERROR: P2VVConfiguration.writeWorkspace: no workspace file path set"
 
-  # get workspace file path
   def WSFilePath(self) :
+    """get workspace file path
+    """
+
     if 'WSPath' in self._settingsDict :
       return self._settingsDict['WSPath'].value()
     else :
       return ''
 
-  # set workspace file path
   def setWSFilePath(self, WSPath) :
+    """set workspace file path
+    """
+
     if type(WSPath) is str and len(WSPath) > 0 :
       self.addSetting('WSPath', P2VVSetting('WSPath', 'workspace file path',
           WSPath), True)
     else :
       print "P2VV - ERROR: P2VVConfiguration.setWSFilePath: argument is not a string or an empty string: no workspace file path set"
 
-  # declare RooFit variables in settings dictionary and put them in workspace
   def declareRooVars(self, varType = 'var') :
+    """declares RooFit variables
+
+    declares the RooFit variables that are in the settings dictionary and puts
+    them in workspace
+    """
+
     if self._workspace is '' :
       print "P2VV - ERROR: P2VVConfiguration.declareRooVars: no workspace set: can't declare any variables"
       return
@@ -538,6 +561,9 @@ class P2VVConfiguration :
         if nDeclared == 0 : break
 
   def defineRooSet(self, name, settingKeysList) :
+    """defines a set of RooFit variables in the workspace
+    """
+
     if self._workspace is '' :
       print "P2VV - ERROR: P2VVConfiguration.defineRooSet: no workspace set: can't define set"
       return
@@ -569,9 +595,10 @@ class P2VVConfiguration :
 
 
 ###############################################################################
-## general P2VV setting ##
-##########################
 class P2VVSetting :
+  """general P2VV setting
+  """
+
   def __init__(self, name, description = '', value = '') :
     self.setName(name)
     self.setDescription(description)
@@ -609,9 +636,11 @@ class P2VVSetting :
 
 
 ###############################################################################
-## general RooFit variable setting ##
-#####################################
+
 class RooSetting(P2VVSetting) :
+  """general RooFit variable setting
+  """
+
   def __init__(self, name, description = '', observable = False) :
     P2VVSetting(name, description, '')
     self.setObservable(observable)
@@ -657,9 +686,11 @@ class RooSetting(P2VVSetting) :
 
 
 ###############################################################################
-## RooRealVar setting ##
-########################
+
 class RooRealSetting(RooSetting) :
+  """RooRealVar setting
+  """
+
   def __init__(self, name, description = '', realType = '', value = 0.,
       minValue = '', maxValue = '',
       blindParams = ('RooUnblindUniform', 'blindString', 1.)) :
@@ -825,9 +856,11 @@ class RooRealSetting(RooSetting) :
 
 
 ###############################################################################
-## RooCategory setting ##
-#########################
+
 class RooCatSetting(RooSetting) :
+  """RooCategory setting
+  """
+
   def __init__(self, name, description = '', observable = False, value = '',
       catTypesDict = {}) :
     self._declared = False
@@ -900,7 +933,7 @@ class RooCatSetting(RooSetting) :
         self._catTypesDict[catTypeIndex] = catType
 
     if len(self._catTypesDict) < 2 and self._observable:
-    # variable can't be observable with less than two types
+      # variable can't be observable with less than two types
       print "P2VV - WARNING: RooCatSetting.setCatTypesDict(%s): a constant variable can't be observable: removing observable flag"\
           % catType
       self.setObservable(False)
@@ -932,9 +965,11 @@ class RooCatSetting(RooSetting) :
 
 
 ###############################################################################
-## RooFormulaVar setting ##
-###########################
+
 class RooFormSetting(RooSetting) :
+  """RooFormulaVar setting
+  """
+
   def __init__(self, name, description = '', value = '1.', variables = []) :
     self._declared = False
     self.setName(name)

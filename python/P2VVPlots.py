@@ -8,26 +8,6 @@
 ###############################################################################
 
 
-###############################################################################
-## plot -- example usage:                                                    ##
-##                                                                           ##
-## canv = plot(                                                              ##
-##     config,                                                               ##
-##     'mpsi',                                                               ##
-##     canvas,                                                               ##
-##     data,                                                                 ##
-##     pdf,                                                                  ##
-##     xTitle = 'M (MeV/c)',                                                 ##
-##     components = {'psi'    : [RooFit.LineColor(RooFit.kGreen),            ##
-##                               RooFit.LineStyle(RooFit.kDashed)],          ##
-##                   'nonpsi' : [RooFit.LineColor(RooFit.kBlue),             ##
-##                               RooFit.LineStyle(RooFit.kDashed)]},         ##
-##     frameOpts = [RooFit.Bins(30)],                                        ##
-##     dataOpts  = [RooFit.MarkerSize(0.4), RooFit.XErrorSize(0)],           ##
-##     pdfOpts   = [RooFit.LineWidth(2)])                                    ##
-##                                                                           ##
-###############################################################################
-
 from ROOT import gStyle, gROOT
 
 # set ROOT plot style
@@ -53,10 +33,23 @@ gROOT.ForceStyle()
 gStyle.SetPalette(1)
 gStyle.UseCurrentStyle()
 
-# plot function
 def plot(config, obs, canv, data, pdf, components = {}, xTitle = '',
     frameOpts = None, dataOpts = None, pdfOpts = None, logy = False,
     drawRes = False, normalize = True, symmetrize = True) :
+  """makes a P2VV plot
+
+  example usage:
+
+  canv = plot(config, 'mpsi', canvas, data, pdf, xTitle = 'M (MeV/c)',
+      components = {'psi'    : [RooFit.LineColor(RooFit.kGreen),
+                                RooFit.LineStyle(RooFit.kDashed)],
+                    'nonpsi' : [RooFit.LineColor(RooFit.kBlue),
+                                RooFit.LineStyle(RooFit.kDashed)]},
+      frameOpts = [RooFit.Bins(30)],
+      dataOpts  = [RooFit.MarkerSize(0.4), RooFit.XErrorSize(0)],
+      pdfOpts   = [RooFit.LineWidth(2)])
+  """
+
   from ROOT import RooFit, TLine, TPad
   from P2VVConfiguration import P2VVSetting
 

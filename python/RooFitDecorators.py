@@ -9,6 +9,7 @@
 from ROOT import RooFit, RooArgSet, RooArgList, RooDataSet, RooWorkspace
 
 # RooDataSet functions
+
 def _RooDataSetIter(self) :
     for i in range(self.numEntries()) : yield self.get(i)
 
@@ -16,6 +17,7 @@ RooDataSet.__iter__ = _RooDataSetIter
 
 
 # RooArgSet/RooArgList functions
+
 def _RooArgSetIter(self) :
     z = self.createIterator()
     while True :
@@ -40,6 +42,7 @@ RooArgSet.names         = lambda s    : ','.join(s.nameList())
 
 
 # RooWorkspace functions
+
 def _RooWorkspacePut(self, x) :
   _import = getattr(RooWorkspace, 'import')
 
