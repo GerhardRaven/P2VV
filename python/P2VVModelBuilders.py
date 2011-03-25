@@ -9,7 +9,6 @@
 ##                                                                           ##
 ###############################################################################
 
-
 def getP2VVPDF(config) :
   """build a P2VV PDF
 
@@ -26,10 +25,11 @@ def getP2VVPDF(config) :
     # build PDF for B0->J/psiK* or B_s0->J/psiphi
 
     # build angular functions
-    angFuncsBuild = AngleFunctionBuilder(config)
+    angFuncsBuild = config.modelBuilder('angles')
+    angFuncsBuild.buildAngularFunctions()
 
     # build time resolution models
-    timeResBuild = TimeResolutionBuilder(config)
+    timeResBuild = config.modelBuilder('timeRes')
 
     # build signal PDF
     sigPDF = buildJpsiV(config)
@@ -42,6 +42,14 @@ def getP2VVPDF(config) :
 
     # return the PDF
     return fullPDF
+
+
+###############################################################################
+
+def createModelBuilder(config, MBType) :
+  if   MBType == 'angles'  : return AngleFunctionBuilder(config)
+  elif MBType == 'timeRes' : return TimeResolutionBuilder(config)
+  else : return None
 
 
 ###############################################################################
@@ -357,9 +365,6 @@ class AngleFunctionBuilder :
   """
 
   def __init__(self, config) :
-    from math import sqrt
-    import RooFitDecorators
-
     # set configuration member
     self._config = config
 
@@ -372,13 +377,51 @@ class AngleFunctionBuilder :
       self._anglesType = 'hel'
       print 'P2VV - INFO: AngleFunctionBuilder: using helicity angles'
 
-    # get workspace
-    workspace = self._config.workspace()
+    # set containers for angular functions
+    self._angBasisFuncs = []
+    self._angFuncs = []
 
-    # get angles from workspace
+    # set angles
     self._cpsi   = self._config['cpsiAng'].name()
     self._ctheta = self._config['cthetaAng'].name()
     self._phi    = self._config['phiAng'].name()
+
+  def angles(self) : 
+    return (self._cpsi, self._ctheta, self._phi)
+
+  def angleFunctions(self) :
+    return self._angFuncs
+
+  def buildBasisFunc(self, name, i, j, k, l, c) :
+    """builds an angular basis function
+
+    Creates a RooP2VVAngleBasis object and stores it in the workspace. These
+    functions form a basis for the angular part of a PDF.
+    """
+
+    import RooFitDecorators
+
+    # construct name
+    name = '%s_%d_%d_%d_%d' % (name, i, j, k, l)
+    name = name.replace('-', 'm')
+
+    # get workspace
+    ws = self._config.workspace()
+
+    # build basis function
+    if name not in ws :
+      ws.factory("P2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)"\
+          % (name, self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
+      self._angBasisFuncs.append(name)
+
+    return name
+
+  def buildAngularFunctions(self) :
+    """builds an angular function for each term in the PDF
+    """
+
+    from math import sqrt
+    import RooFitDecorators
 
     # specify components of angular functions
     angFuncs = []
@@ -433,44 +476,23 @@ class AngleFunctionBuilder :
         angFuncs.append(('ReAparAS',    [(1, 1, 2,  1,  sqrt(18. /  5.))]))
         angFuncs.append(('ImAperpAS',   [(1, 1, 2, -1,  sqrt(18. /  5.))]))
 
-    # build angular function for each term in the signal PDF
-    self._angFuncs = []
-    for angFunc in angFuncs :
-      name = angFunc[0] + '_angFunc'
-
-      # express angular function in angle basis functions
-      basesSet = ''
-      for comps in angFunc[1] :
-        basesSet += self.buildBasisFunc(name, comps[0], comps[1], comps[2],\
-            comps[3], comps[4]) + ','
-
-      # build angular function
-      self._angFuncs.append(self._config.workspace().factory(\
-          "sum::%s(%s)" % (name, basesSet[:-1])))
-
-  def angles(self) : 
-    return (self._cpsi, self._ctheta, self._phi)
-
-  def angleFunctions(self) :
-    return self._angFuncs
-
-  def buildBasisFunc(self, name, i, j, k, l, c) :
-    import RooFitDecorators
-    from ROOT import RooP2VVAngleBasis
-
-    # construct name
-    name = '%s_%d_%d_%d_%d' % (name, i, j, k, l)
-    name = name.replace('-', 'm')
-
     # get workspace
     ws = self._config.workspace()
 
-    # build basis function
-    if not ws.function(name) :
-      ws.factory("P2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)"\
-          % (name, self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
+    # build angular function for each term in the signal PDF
+    for angFunc in angFuncs :
+      name = angFunc[0] + '_angFunc'
 
-    return name
+      if name not in ws :
+        # express angular function in angle basis functions
+        basesSet = ''
+        for comps in angFunc[1] :
+          basesSet += self.buildBasisFunc(name, comps[0], comps[1], comps[2],\
+              comps[3], comps[4]) + ','
+
+        # build angular function
+        ws.factory("sum::%s(%s)" % (name, basesSet[:-1]))
+        self._angFuncs.append(name)
 
 
 ###############################################################################

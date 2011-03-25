@@ -348,6 +348,9 @@ class P2VVConfiguration :
     if type(WSFilePath) is str and len(WSFilePath) > 0 :
       self.setWSFilePath(WSFilePath)
 
+    # model builders
+    self._modelBuilders = {}
+
     # plots stash
     self._plotsStash = []
 
@@ -583,6 +586,22 @@ class P2VVConfiguration :
         varString += self._settingsDict[key].name() + ','
 
     self._workspace.defineSet(name, varString[:-1])
+
+
+  ## model builders methods ##
+
+  def modelBuilder(self, MBType) :
+    """returns the model builder of type MBType
+    """
+
+    if MBType in self._modelBuilders :
+      return self._modelBuilders[MBType]
+    else :
+      from P2VVModelBuilders import createModelBuilder
+
+      modelBuilder = createModelBuilder(self, MBType)
+      if modelBuilder : self._modelBuilders[MBType] = modelBuilder
+      return modelBuilder
 
 
   ## plot methods ##
