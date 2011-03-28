@@ -321,6 +321,14 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
           'CP average odd coefficients', 'par', 0., '', ''))
 
 
+    ### efficiencies ###
+
+    if mode != 'Bu2JpsiK' :
+      config.addSetting('effBasisType', P2VVSetting('effBasisType',
+        'type of efficiency basis', 'angular'))
+      config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs',
+        'angular efficiency basis functions', (4, 4)))
+
   return config
 
 
@@ -532,13 +540,7 @@ class P2VVConfiguration :
 
     # define sets of observables
     self.defineRooSet('observables', obsSettingKeys)
-    if 'anglesType' in self._settingsDict :
-      if 'hel' in self._settingsDict['anglesType'].value() :
-        self.defineRooSet('helAngles',
-            ['cpsiAng', 'cthetaAng', 'phiAng'])
-      if 'trans' in self._settingsDict['anglesType'].value() :
-        self.defineRooSet('transAngles',
-            ['cpsiAng', 'cthetaAng', 'phiAng'])
+    self.defineRooSet('angles', ['cpsiAng', 'cthetaAng', 'phiAng'])
 
     # declare RooFormulaVars
     if varType in ['var', 'form'] :

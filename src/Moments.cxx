@@ -63,7 +63,10 @@ int _computeMoments(RooAbsData& data, IMomentsVector& moments)
 {
   typedef IMomentsVector::iterator IMomIter;
 
-  if (moments.empty()) return -1;
+  if (moments.empty()) {
+    cout << "P2VV - ERROR: computeMoments: moments vector is empty" << endl;
+    return -1;
+  }
 
   for (IMomIter mom = moments.begin(); mom != moments.end(); ++mom)
     (*mom)->reset();

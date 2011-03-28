@@ -47,8 +47,9 @@ def getP2VVPDF(config) :
 ###############################################################################
 
 def createModelBuilder(config, MBType) :
-  if   MBType == 'angles'  : return AngleFunctionBuilder(config)
-  elif MBType == 'timeRes' : return TimeResolutionBuilder(config)
+  if   MBType == 'angles'     : return AngleFunctionBuilder(config)
+  elif MBType == 'timeRes'    : return TimeResolutionBuilder(config)
+  elif MBType == 'efficiency' : return EfficiencyPDFBuilder(config)
   else : return None
 
 
@@ -154,49 +155,49 @@ def buildJpsiV(config) :
 
   # set strings to build time function coefficients
   coshCStr =\
-      "prod(A0Sq,                {cEven}     A0Sq_angFunc),        "\
-      "prod(AparSq,              {cEven}     AparSq_angFunc),      "\
-      "prod(AperpSq,             {cEven}     AperpSq_angFunc),     "\
-      "prod(ASSq,                {cEven}     ASSq_angFunc),        "\
-      "prod(ReA0Apar,            {cEven}     ReA0Apar_angFunc),    "\
-      "prod(ImA0Aperp,           {cEven} {C} ImA0Aperp_angFunc),   "\
-      "prod(ReA0AS,              {cEven}     ReA0AS_angFunc),      "\
-      "prod(ImAparAperp,         {cEven} {C} ImAparAperp_angFunc), "\
-      "prod(ReAparAS,            {cEven}     ReAparAS_angFunc),    "\
-      "prod(ImAperpAS,           {cEven} {C} ImAperpAS_angFunc)    "
+      "prod(A0Sq,                {cEven}     A0SqAngFunc),        "\
+      "prod(AparSq,              {cEven}     AparSqAngFunc),      "\
+      "prod(AperpSq,             {cEven}     AperpSqAngFunc),     "\
+      "prod(ASSq,                {cEven}     ASSqAngFunc),        "\
+      "prod(ReA0Apar,            {cEven}     ReA0AparAngFunc),    "\
+      "prod(ImA0Aperp,           {cEven} {C} ImA0AperpAngFunc),   "\
+      "prod(ReA0AS,              {cEven}     ReA0ASAngFunc),      "\
+      "prod(ImAparAperp,         {cEven} {C} ImAparAperpAngFunc), "\
+      "prod(ReAparAS,            {cEven}     ReAparASAngFunc),    "\
+      "prod(ImAperpAS,           {cEven} {C} ImAperpASAngFunc)    "
   cosCStr =\
-      "prod(A0Sq,                {cOdd}  {C} A0Sq_angFunc),        "\
-      "prod(AparSq,              {cOdd}  {C} AparSq_angFunc),      "\
-      "prod(AperpSq,             {cOdd}  {C} AperpSq_angFunc),     "\
-      "prod(ASSq,                {cOdd}  {C} ASSq_angFunc),        "\
-      "prod(ReA0Apar,            {cOdd}  {C} ReA0Apar_angFunc),    "\
-      "prod(ImA0Aperp,           {cOdd}      ImA0Aperp_angFunc),   "\
-      "prod(ReA0AS,              {cOdd}  {C} ReA0AS_angFunc),      "\
-      "prod(ImAparAperp,         {cOdd}      ImAparAperp_angFunc), "\
-      "prod(ReAparAS,            {cOdd}  {C} ReAparAS_angFunc),    "\
-      "prod(ImAperpAS,           {cOdd}      ImAperpAS_angFunc)    "
+      "prod(A0Sq,                {cOdd}  {C} A0SqAngFunc),        "\
+      "prod(AparSq,              {cOdd}  {C} AparSqAngFunc),      "\
+      "prod(AperpSq,             {cOdd}  {C} AperpSqAngFunc),     "\
+      "prod(ASSq,                {cOdd}  {C} ASSqAngFunc),        "\
+      "prod(ReA0Apar,            {cOdd}  {C} ReA0AparAngFunc),    "\
+      "prod(ImA0Aperp,           {cOdd}      ImA0AperpAngFunc),   "\
+      "prod(ReA0AS,              {cOdd}  {C} ReA0ASAngFunc),      "\
+      "prod(ImAparAperp,         {cOdd}      ImAparAperpAngFunc), "\
+      "prod(ReAparAS,            {cOdd}  {C} ReAparASAngFunc),    "\
+      "prod(ImAperpAS,           {cOdd}      ImAperpASAngFunc)    "
   sinhCStr =\
-      "prod(A0Sq,        {minus} {cEven} {D} A0Sq_angFunc),        "\
-      "prod(AparSq,      {minus} {cEven} {D} AparSq_angFunc),      "\
-      "prod(AperpSq,             {cEven} {D} AperpSq_angFunc),     "\
-      "prod(ASSq,        {minus} {cEven} {D} ASSq_angFunc),        "\
-      "prod(ReA0Apar,    {minus} {cEven} {D} ReA0Apar_angFunc),    "\
-      "prod(ReA0Aperp,           {cEven} {S} ImA0Aperp_angFunc),   "\
-      "prod(ReA0AS,      {minus} {cEven} {D} ReA0AS_angFunc),      "\
-      "prod(ReAparAperp,         {cEven} {S} ImAparAperp_angFunc), "\
-      "prod(ReAparAS,    {minus} {cEven} {D} ReAparAS_angFunc),    "\
-      "prod(ReAperpAS,   {minus} {cEven} {S} ImAperpAS_angFunc)    "
+      "prod(A0Sq,        {minus} {cEven} {D} A0SqAngFunc),        "\
+      "prod(AparSq,      {minus} {cEven} {D} AparSqAngFunc),      "\
+      "prod(AperpSq,             {cEven} {D} AperpSqAngFunc),     "\
+      "prod(ASSq,        {minus} {cEven} {D} ASSqAngFunc),        "\
+      "prod(ReA0Apar,    {minus} {cEven} {D} ReA0AparAngFunc),    "\
+      "prod(ReA0Aperp,           {cEven} {S} ImA0AperpAngFunc),   "\
+      "prod(ReA0AS,      {minus} {cEven} {D} ReA0ASAngFunc),      "\
+      "prod(ReAparAperp,         {cEven} {S} ImAparAperpAngFunc), "\
+      "prod(ReAparAS,    {minus} {cEven} {D} ReAparASAngFunc),    "\
+      "prod(ReAperpAS,   {minus} {cEven} {S} ImAperpASAngFunc)    "
   sinCStr =\
-      "prod(A0Sq,        {minus} {cOdd}  {S} A0Sq_angFunc),        "\
-      "prod(AparSq,      {minus} {cOdd}  {S} AparSq_angFunc),      "\
-      "prod(AperpSq,             {cOdd}  {S} AperpSq_angFunc),     "\
-      "prod(ASSq,        {minus} {cOdd}  {S} ASSq_angFunc),        "\
-      "prod(ReA0Apar,    {minus} {cOdd}  {S} ReA0Apar_angFunc),    "\
-      "prod(ReA0Aperp,   {minus} {cOdd}  {D} ImA0Aperp_angFunc),   "\
-      "prod(ReA0AS,      {minus} {cOdd}  {S} ReA0AS_angFunc),      "\
-      "prod(ReAparAperp, {minus} {cOdd}  {D} ImAparAperp_angFunc), "\
-      "prod(ReAparAS,    {minus} {cOdd}  {S} ReAparAS_angFunc),    "\
-      "prod(ReAperpAS,           {cOdd}  {D} ImAperpAS_angFunc)    "
+      "prod(A0Sq,        {minus} {cOdd}  {S} A0SqAngFunc),        "\
+      "prod(AparSq,      {minus} {cOdd}  {S} AparSqAngFunc),      "\
+      "prod(AperpSq,             {cOdd}  {S} AperpSqAngFunc),     "\
+      "prod(ASSq,        {minus} {cOdd}  {S} ASSqAngFunc),        "\
+      "prod(ReA0Apar,    {minus} {cOdd}  {S} ReA0AparAngFunc),    "\
+      "prod(ReA0Aperp,   {minus} {cOdd}  {D} ImA0AperpAngFunc),   "\
+      "prod(ReA0AS,      {minus} {cOdd}  {S} ReA0ASAngFunc),      "\
+      "prod(ReAparAperp, {minus} {cOdd}  {D} ImAparAperpAngFunc), "\
+      "prod(ReAparAS,    {minus} {cOdd}  {S} ReAparASAngFunc),    "\
+      "prod(ReAperpAS,           {cOdd}  {D} ImAperpASAngFunc)    "
 
   # build the signal PDF
   print "P2VV - INFO: buildJpsiV: building PDF '%s'" % pdfName
@@ -412,6 +413,7 @@ class AngleFunctionBuilder :
     if name not in ws :
       ws.factory("P2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)"\
           % (name, self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
+    if name not in self._angBasisFuncs :
       self._angBasisFuncs.append(name)
 
     return name
@@ -481,7 +483,7 @@ class AngleFunctionBuilder :
 
     # build angular function for each term in the signal PDF
     for angFunc in angFuncs :
-      name = angFunc[0] + '_angFunc'
+      name = angFunc[0] + 'AngFunc'
 
       if name not in ws :
         # express angular function in angle basis functions
@@ -492,6 +494,8 @@ class AngleFunctionBuilder :
 
         # build angular function
         ws.factory("sum::%s(%s)" % (name, basesSet[:-1]))
+
+      if name not in self._angFuncs :
         self._angFuncs.append(name)
 
 
@@ -600,40 +604,97 @@ class TimeResolutionBuilder :
 #############
 
 def computeMoments(data, moments) :
-  """computes efficiency and background angular moments
+  """computes moments of data set (wrapper for C++ _computeMoments)
 
-  Looping over data in python is quite a bit slower than in C++.
-  So we adapt the arguments, and then defer to the C++ _computeMoments.
+  Looping over data in python is quite a bit slower than in C++. Hence, we
+  adapt the arguments and then defer to the C++ _computeMoments.
   """
-
-  if not moments : return None
 
   from ROOT import std, _computeMoments
 
-  vecmom = std.vector('IMoment*')()
-  for m in moments : vecmom.push_back(m)
-  return _computeMoments(data, vecmom)
+  momVec = std.vector('IMoment*')()
+  for mom in moments : momVec.push_back(mom)
 
-
-def buildMomentPDF(w,name,data,moments) :
-    import RooFitDecorators
-    from ROOT import RooArgList, RooRealSumPdf
-
-    if not moments : return None
-    computeMoments( data, moments ) 
-    coef = RooArgList()
-    fact = RooArgList()
-    for m in moments :
-        C = 'C_%f' % m.coefficient()
-        w.factory( '%s[%f]'%(C,m.coefficient() ) )
-        coef.add( w[C] )
-        fact.add( m.basis() )
-    return w.put( RooRealSumPdf(name,name,fact,coef) )
+  return _computeMoments(data, momVec)
 
 
 ###############################################################################
 ## efficiencies ##
 ##################
+
+class EfficiencyPDFBuilder :
+  """model builder for efficiencies
+  """
+
+  def __init__(self, config) :
+    # set configuration member
+    self._config = config
+
+    # initialize basis functions and moments
+    self._basis   = []
+    self._moments = []
+    self._coefs   = []
+
+
+  def buildEffBasis(self) :
+    """creates efficiency basis functions
+    """
+
+    if self._config.value('effBasisType') == 'angular' :
+      angFuncs = self._config.value('angEffBasisFuncs')
+
+      # get list of angular basis functions for efficiency
+      if type(angFuncs) is list :
+        funcList = angFuncs
+
+      elif type(angFuncs) is tuple :
+        funcList = []
+        for i in range(angFuncs[0]) :
+          for l in range(angFuncs[1]) :
+            for m in range(-l, l + 1) :
+              funcList.append((i, l, m))
+
+      else :
+        print "P2VV - ERROR: EfficiencyPDFBuilder::buildEffBasis: not a recognized format for 'angEffBasisFuncs' setting"
+        return
+
+      # build basis functions
+      self._basis   = []
+      self._moments = []
+      self._coefs   = []
+      angFuncsBuild = self._config.modelBuilder('angles')
+      ws = self._config.workspace()
+      for func in funcList :
+        name = angFuncsBuild.buildBasisFunc('effBasis', func[0], 0, func[1],
+            func[2], 1.)
+        self._basis.append((name, float(2 * func[0] + 1) / 2.))
+
+
+  def computeEffMoments(self, data, pdf, observables) :
+    """computes efficiency moments of data set
+    """
+
+    import RooFitDecorators
+    from ROOT import EffMoment
+
+    self._moments = []
+    self._coefs   = []
+    ws = self._config.workspace()
+
+    # create efficiency moment objects
+    for func in self._basis :
+      if func[0] not in ws :
+        print "P2VV - ERROR: EfficiencyPDFBuilder::computeEffMoments: basis function '%s' not in workspace"\
+            % func[0]
+        return
+
+      self._moments.append(EffMoment(ws[func[0]], func[1], pdf, observables))
+
+    # compute moments
+    computeMoments(data, self._moments)
+    for mom in self._moments :
+      self._coefs.append(mom.coefficient())
+
 
 def buildEff_x_PDF(w,name,pdf,eff) :
    import RooFitDecorators
@@ -777,6 +838,21 @@ class MassPdfBuilder :
 ###############################################################################
 ## background PDFs ##
 #####################
+
+def buildMomentPDF(w,name,data,moments) :
+    import RooFitDecorators
+    from ROOT import RooArgList, RooRealSumPdf
+
+    if not moments : return None
+    computeMoments( data, moments ) 
+    coef = RooArgList()
+    fact = RooArgList()
+    for m in moments :
+        C = 'C_%f' % m.coefficient()
+        w.factory( '%s[%f]'%(C,m.coefficient() ) )
+        coef.add( w[C] )
+        fact.add( m.basis() )
+    return w.put( RooRealSumPdf(name,name,fact,coef) )
 
 class BkgTimePdfBuilder :
   """model builder for background time PDFs
