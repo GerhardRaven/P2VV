@@ -1,9 +1,9 @@
 ###############################################################################
-## fitJpsiVSignal: P2VV example script for a fit to signal data              ##
-## (signal only, no experimental effects)                                    ##
+## fitJpsiVSignal:                                                           ##
+##   P2VV example script for a fit to signal data (signal only, no           ##
+##   experimental effects)                                                   ##
 ##                                                                           ##
-## decay channels: B0->J/psiK* or B_s0->J/psiphi                             ##
-##                                                                           ##
+## * decay channels: B0->J/psiK* or B_s0->J/psiphi                           ##
 ## * assumes that $P2VVROOT/python is in $PYTHONPATH                         ##
 ## * assumes that $P2VVROOT/lib is in $LD_LIBRARYPATH                        ##
 ##                                                                           ##
@@ -24,9 +24,10 @@ mode = 'Bd2JpsiKstar'
 plotsFile = mode[3:] + 'Plots.ps'
 
 # data set name and file
-#dataFilePath = '/data/bfys/jleerdam/Bs2Jpsiphi/EvtGen/Gauss-13144008-*.root'
 dataSetName  = mode[3:] + 'Data'
 dataFilePath = dataSetName + '.root'
+#dataFilePath = '/data/bfys/jleerdam/Bd2JpsiKst/EvtGen/Gauss-11144000-*.root'
+#dataFilePath = '/data/bfys/jleerdam/Bs2Jpsiphi/EvtGen/Gauss-13144001-*.root'
 
 # generate events?
 generate = True

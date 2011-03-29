@@ -93,8 +93,9 @@ def buildJpsiV(config) :
   ImApar  = config['ImApar'].name()
   ReAperp = config['ReAperp'].name()
   ImAperp = config['ImAperp'].name()
-  ReAS    = config['ReAS'].name()
-  ImAS    = config['ImAS'].name()
+  if config.value('incKSWave') :
+    ReAS    = config['ReAS'].name()
+    ImAS    = config['ImAS'].name()
 
   # get observables
   BLifetime = config['BLifetime'].name()
@@ -132,70 +133,82 @@ def buildJpsiV(config) :
       % (ReApar, ImApar))                              # |A_par|^2
   ws.factory("expr::AperpSq('(@0 * @0 + @1 * @1)', {%s, %s})"\
       % (ReAperp, ImAperp))                            # |A_perp|^2
-  ws.factory("expr::ASSq('(@0 * @0 + @1 * @1)', {%s, %s})"\
-      % (ReAS, ImAS))                                  # |A_S|^2
   ws.factory("expr::ReA0Apar('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
       % (ReA0, ImA0, ReApar, ImApar))                  # Re(A_0* A_par)
   ws.factory("expr::ReA0Aperp('(@0 * @2 + @1 * @3 )', {%s, %s, %s, %s})"\
       % (ReA0, ImA0, ReAperp, ImAperp))                # Re(A_0* A_perp)
   ws.factory("expr::ImA0Aperp('(@0 * @3 - @1 * @2)', {%s, %s, %s, %s})"\
       % (ReA0, ImA0, ReAperp, ImAperp))                # Im(A_0* A_perp)
-  ws.factory("expr::ReA0AS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
-      % (ReA0, ImA0, ReAS, ImAS))                      # Re(A_0* A_S)
   ws.factory("expr::ReAparAperp('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
       % (ReApar, ImApar, ReAperp, ImAperp))            # Re(A_par* A_perp)
   ws.factory("expr::ImAparAperp('(@0 * @3 - @1 * @2)', {%s, %s, %s, %s})"\
       % (ReApar, ImApar, ReAperp, ImAperp))            # Im(A_par* A_perp)
-  ws.factory("expr::ReAparAS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
-      % (ReApar, ImApar, ReAS, ImAS))                  # Re(A_par* A_S)
-  ws.factory("expr::ReAperpAS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
-      % (ReAperp, ImAperp, ReAS, ImAS))                # Re(A_perp* A_S)
-  ws.factory("expr::ImAperpAS('(@0 * @3 - @1 * @2)', {%s, %s, %s, %s})"\
-      % (ReAperp, ImAperp, ReAS, ImAS))                # Im(A_perp* A_S)
+  if config.value('incKSWave') :
+    ws.factory("expr::ASSq('(@0 * @0 + @1 * @1)', {%s, %s})"\
+        % (ReAS, ImAS))                                  # |A_S|^2
+    ws.factory("expr::ReA0AS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
+        % (ReA0, ImA0, ReAS, ImAS))                      # Re(A_0* A_S)
+    ws.factory("expr::ReAparAS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
+        % (ReApar, ImApar, ReAS, ImAS))                  # Re(A_par* A_S)
+    ws.factory("expr::ReAperpAS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
+        % (ReAperp, ImAperp, ReAS, ImAS))                # Re(A_perp* A_S)
+    ws.factory("expr::ImAperpAS('(@0 * @3 - @1 * @2)', {%s, %s, %s, %s})"\
+        % (ReAperp, ImAperp, ReAS, ImAS))                # Im(A_perp* A_S)
 
   # set strings to build time function coefficients
   coshCStr =\
       "prod(A0Sq,                {cEven}     A0SqAngFunc),        "\
       "prod(AparSq,              {cEven}     AparSqAngFunc),      "\
       "prod(AperpSq,             {cEven}     AperpSqAngFunc),     "\
-      "prod(ASSq,                {cEven}     ASSqAngFunc),        "\
       "prod(ReA0Apar,            {cEven}     ReA0AparAngFunc),    "\
       "prod(ImA0Aperp,           {cEven} {C} ImA0AperpAngFunc),   "\
+      "prod(ImAparAperp,         {cEven} {C} ImAparAperpAngFunc), "
+  if config.value('incKSWave') :
+    coshCStr +=\
+      "prod(ASSq,                {cEven}     ASSqAngFunc),        "\
       "prod(ReA0AS,              {cEven}     ReA0ASAngFunc),      "\
-      "prod(ImAparAperp,         {cEven} {C} ImAparAperpAngFunc), "\
       "prod(ReAparAS,            {cEven}     ReAparASAngFunc),    "\
       "prod(ImAperpAS,           {cEven} {C} ImAperpASAngFunc)    "
+
   cosCStr =\
       "prod(A0Sq,                {cOdd}  {C} A0SqAngFunc),        "\
       "prod(AparSq,              {cOdd}  {C} AparSqAngFunc),      "\
       "prod(AperpSq,             {cOdd}  {C} AperpSqAngFunc),     "\
-      "prod(ASSq,                {cOdd}  {C} ASSqAngFunc),        "\
       "prod(ReA0Apar,            {cOdd}  {C} ReA0AparAngFunc),    "\
       "prod(ImA0Aperp,           {cOdd}      ImA0AperpAngFunc),   "\
+      "prod(ImAparAperp,         {cOdd}      ImAparAperpAngFunc), "
+  if config.value('incKSWave') :
+    cosCStr +=\
+      "prod(ASSq,                {cOdd}  {C} ASSqAngFunc),        "\
       "prod(ReA0AS,              {cOdd}  {C} ReA0ASAngFunc),      "\
-      "prod(ImAparAperp,         {cOdd}      ImAparAperpAngFunc), "\
       "prod(ReAparAS,            {cOdd}  {C} ReAparASAngFunc),    "\
       "prod(ImAperpAS,           {cOdd}      ImAperpASAngFunc)    "
+
   sinhCStr =\
       "prod(A0Sq,        {minus} {cEven} {D} A0SqAngFunc),        "\
       "prod(AparSq,      {minus} {cEven} {D} AparSqAngFunc),      "\
       "prod(AperpSq,             {cEven} {D} AperpSqAngFunc),     "\
-      "prod(ASSq,        {minus} {cEven} {D} ASSqAngFunc),        "\
       "prod(ReA0Apar,    {minus} {cEven} {D} ReA0AparAngFunc),    "\
       "prod(ReA0Aperp,           {cEven} {S} ImA0AperpAngFunc),   "\
+      "prod(ReAparAperp,         {cEven} {S} ImAparAperpAngFunc), "
+  if config.value('incKSWave') :
+    sinhCStr +=\
+      "prod(ASSq,        {minus} {cEven} {D} ASSqAngFunc),        "\
       "prod(ReA0AS,      {minus} {cEven} {D} ReA0ASAngFunc),      "\
-      "prod(ReAparAperp,         {cEven} {S} ImAparAperpAngFunc), "\
       "prod(ReAparAS,    {minus} {cEven} {D} ReAparASAngFunc),    "\
       "prod(ReAperpAS,   {minus} {cEven} {S} ImAperpASAngFunc)    "
+
   sinCStr =\
       "prod(A0Sq,        {minus} {cOdd}  {S} A0SqAngFunc),        "\
       "prod(AparSq,      {minus} {cOdd}  {S} AparSqAngFunc),      "\
       "prod(AperpSq,             {cOdd}  {S} AperpSqAngFunc),     "\
-      "prod(ASSq,        {minus} {cOdd}  {S} ASSqAngFunc),        "\
       "prod(ReA0Apar,    {minus} {cOdd}  {S} ReA0AparAngFunc),    "\
       "prod(ReA0Aperp,   {minus} {cOdd}  {D} ImA0AperpAngFunc),   "\
+      "prod(ReAparAperp, {minus} {cOdd}  {D} ImAparAperpAngFunc), "
+  if config.value('incKSWave') :
+    sinCStr +=\
+      "prod(ASSq,        {minus} {cOdd}  {S} ASSqAngFunc),        "\
       "prod(ReA0AS,      {minus} {cOdd}  {S} ReA0ASAngFunc),      "\
-      "prod(ReAparAperp, {minus} {cOdd}  {D} ImAparAperpAngFunc), "\
       "prod(ReAparAS,    {minus} {cOdd}  {S} ReAparASAngFunc),    "\
       "prod(ReAperpAS,           {cOdd}  {D} ImAperpASAngFunc)    "
 
@@ -393,31 +406,6 @@ class AngleFunctionBuilder :
   def angleFunctions(self) :
     return self._angFuncs
 
-  def buildBasisFunc(self, name, i, j, k, l, c) :
-    """builds an angular basis function
-
-    Creates a RooP2VVAngleBasis object and stores it in the workspace. These
-    functions form a basis for the angular part of a PDF.
-    """
-
-    import RooFitDecorators
-
-    # construct name
-    name = '%s_%d_%d_%d_%d' % (name, i, j, k, l)
-    name = name.replace('-', 'm')
-
-    # get workspace
-    ws = self._config.workspace()
-
-    # build basis function
-    if name not in ws :
-      ws.factory("P2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)"\
-          % (name, self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
-    if name not in self._angBasisFuncs :
-      self._angBasisFuncs.append(name)
-
-    return name
-
   def buildAngularFunctions(self) :
     """builds an angular function for each term in the PDF
     """
@@ -481,6 +469,14 @@ class AngleFunctionBuilder :
     # get workspace
     ws = self._config.workspace()
 
+    # check if we need to multiply with an angular efficiency
+    efficiency = False
+    if self._config.value('effBasisType') == 'angular' :
+      effBuilder = self._config.modelBuilder('efficiency')
+      basis = effBuilder.effBasis()
+      coefs = effBuilder.effMomentCoefs()
+      if len(coefs) > 0 : efficiency = True
+
     # build angular function for each term in the signal PDF
     for angFunc in angFuncs :
       name = angFunc[0] + 'AngFunc'
@@ -497,6 +493,45 @@ class AngleFunctionBuilder :
 
       if name not in self._angFuncs :
         self._angFuncs.append(name)
+
+
+
+
+   #eff = [(m.basis(), m.coefficient()) for m in moments]
+   #for c in pdf.getComponents() :
+   #     if type(c) is not RooP2VVAngleBasis : continue
+   #     name = "%s_%s_eff" % (name,c.GetName())
+   #     set = RooArgSet()
+   #     [ set.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
+   #     rep = w.put( RooAddition( name, name, set, True ) )
+   #     customizer.replaceArg( c, rep )
+
+
+
+  def buildBasisFunc(self, name, i, j, k, l, c) :
+    """builds an angular basis function
+
+    Creates a RooP2VVAngleBasis object and stores it in the workspace. These
+    functions form a basis for the angular part of a PDF.
+    """
+
+    import RooFitDecorators
+
+    # construct name
+    name = '%s_%d_%d_%d_%d' % (name, i, j, k, l)
+    name = name.replace('-', 'm')
+
+    # get workspace
+    ws = self._config.workspace()
+
+    # build basis function
+    if name not in ws :
+      ws.factory("P2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)"\
+          % (name, self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
+    if name not in self._angBasisFuncs :
+      self._angBasisFuncs.append(name)
+
+    return name
 
 
 ###############################################################################
@@ -635,6 +670,18 @@ class EfficiencyPDFBuilder :
     self._norms   = {}
     self._moments = {}
     self._coefs   = {}
+
+  def effBasis(self) :
+    return self._basis[:]
+
+  def effMomentNorms(self) :
+    return self._norms.copy()
+
+  def effMoments(self) :
+    return self._moments.copy()
+
+  def effMomentCoefs(self) :
+    return self._coefs.copy()
 
   def buildEffBasis(self) :
     if self._config.value('effBasisType') == 'angular' :
@@ -812,30 +859,6 @@ class EfficiencyPDFBuilder :
 
     print "P2VV - INFO: EfficiencyPDFBuilder::readEffMoments: %d efficiency moment(s) read"\
         % numMoments
-
-
-def buildEff_x_PDF(w,name,pdf,eff) :
-   import RooFitDecorators
-   from ROOT import RooArgSet, RooCustomizer, RooP2VVAngleBasis, RooAddition
-
-   if not eff : return pdf
-   # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
-   # of "pdf" with their efficiency corrected versions, multiply them with the right basis fcn & coefficent
-   # those are assumed to be in eff....
-   customizer = RooCustomizer(pdf,name)
-   for c in pdf.getComponents() :
-        if type(c) is not RooP2VVAngleBasis : continue
-        n = "%s_%s_eff" % (name,c.GetName())
-        s = RooArgSet()
-        [ s.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
-        rep = w.put( RooAddition( n, n, s, True ) )  # hand over ownership & put in workspace...
-        customizer.replaceArg( c, rep )
-   return customizer.build(True)
-
-
-def buildEffMomentsPDF(w,name,pdf,data,moments) :
-   computeMoments(data,moments)
-   return buildEff_x_PDF(w,name,pdf,[ ( m.basis() , m.coefficient() ) for m in moments ] )
 
 
 ###############################################################################
