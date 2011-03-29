@@ -21,15 +21,15 @@ public:
 
   virtual void inc(double weight = 1.);
   virtual RooAbsReal& basis() {return _basis;}
-  virtual double coefficient() const {return _norm * _m1 / _m0;}
-  virtual double varmu() const;
+  virtual double coefficient(bool normalize = true) const;
+  virtual double variance(bool normalize = true) const;
   virtual double significance() const;
   virtual double evaluate() {return _basis.getVal();}
 
   void reset() {_m0 = _m1 = _n0 = _n1 = _n2 = 0.;}
 
-  virtual ostream& print(ostream& os) const;
-  void Print() const {print(std::cout);}
+  virtual ostream& print(ostream& os, bool normalize = true) const;
+  void Print(bool normalize = true) const {print(std::cout, normalize);}
 
 protected:
   RooAbsReal& _basis;

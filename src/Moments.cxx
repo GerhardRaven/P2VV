@@ -22,7 +22,12 @@ void IMoment::inc(double weight)
   _n2 += weight * weight * x * x;
 }
 
-double IMoment::varmu() const {
+double IMoment::coefficient(bool normalize) const {
+  if (normalize) return _m1 / _m0 * _norm;
+  else           return _m1 / _m0;
+}
+
+double IMoment::variance(bool normalize) const {
   // the following formulas follow either from the jackknife method
   // or from error propagation using the following error on weight_j:
   //     sigma^2( weight_j ) = weight_j^2
@@ -36,26 +41,27 @@ double IMoment::varmu() const {
   // single weight to the total in a normalization term
 
   // var(mu) = 1/m0^2 * sum  w_j^2 (x_j - mu)^2
-  double mu    = _m1 / _m0;
-  double varmu = (_n2 - 2. * _n1 * mu + _n0 * mu * mu) / (_m0 * _m0);
+  double mu    = coefficient(false);
+  double varMu = (_n2 - 2. * _n1 * mu + _n0 * mu * mu) / (_m0 * _m0);
 
-  return varmu ;
+  if (normalize) return varMu * _norm * _norm;
+  else           return varMu;
 }
 
 double IMoment::significance() const
 {
-  double mu = _m1 / _m0;
-  double var = varmu() ;
+  double mu  = coefficient(false);
+  double var = variance(false);
   return var > 0 ? std::sqrt(mu * mu / var) : 999;
 }
 
-ostream& IMoment::print(ostream& os) const
+ostream& IMoment::print(ostream& os, bool normalize) const
 {
-  double mu = _m1 / _m0;
-  double var = varmu();
-  double sig = var > 0. ? std::sqrt(var) : 0.;
+  double mu     = coefficient(normalize);
+  double var    = variance(normalize);
+  double stdDev = var > 0. ? std::sqrt(var) : 0.;
 
-  return os << "moment(" << _name << ") = " << mu << " +- " << sig
+  return os << "moment(" << _name << ") = " << mu << " +- " << stdDev
       << " (significance: " << significance() << ")" << endl;
 }
 
