@@ -3,6 +3,7 @@
 ##                                                                           ##
 ## decay channels: B0->J/psiK* or B_s0->J/psiphi                             ##
 ##                                                                           ##
+## * writes moments to ascii file                                            ##
 ## * assumes that $P2VVROOT/python is in $PYTHONPATH                         ##
 ## * assumes that $P2VVROOT/lib is in $LD_LIBRARYPATH                        ##
 ##                                                                           ##
@@ -19,13 +20,16 @@ from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
 mode = 'Bd2JpsiKstar'
 #mode = 'Bs2Jpsiphi'
 
+# efficiency moments file path
+momentsFilePath = '/effMoments'
+
 # data set name and file
 #dataFilePath = '/data/bfys/jleerdam/Bs2Jpsiphi/EvtGen/Gauss-13144008-*.root'
 dataSetName  = mode[3:] + 'Data'
 dataFilePath = dataSetName + '.root'
 
 # generate events?
-generate = True
+generate = False
 nEvents = 1000000
 
 # read events from NTuple or RooDataset
@@ -128,4 +132,8 @@ angPDF = pdf.createProjection(marginalObs)
 effBuilder = config.modelBuilder('efficiency')
 effBuilder.buildEffBasis()
 effBuilder.computeEffMoments(data, angPDF, dataObs)
+
+# print efficiency moments
+effBuilder.printEffMoments()
+effBuilder.writeEffMoments(momentsFilePath)
 

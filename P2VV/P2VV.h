@@ -2,9 +2,11 @@
 ** P2VV:                                                                     **
 ** common P2VV tools                                                         **
 **                                                                           **
+** class "ProgressDisplay" is a modified copy of the class                   **
+** "progress_display" from the Boost C++ Libraries (boost/progress.hpp)      **
+**                                                                           **
 ** authors:                                                                  **
 **   JvL, Jeroen van Leerdam, Nikhef, j.van.leerdam@nikhef.nl                **
-**   WH,  Wouter Hulsbergen,  Nikhef                                         **
 **                                                                           **
 ******************************************************************************/
 
@@ -15,22 +17,15 @@
 
 class ProgressDisplay {
 public:
-  // ProgressDisplay: os is hint;
-  // implementation may ignore, particularly in embedded systems
   explicit ProgressDisplay(unsigned long expCount,
                            std::ostream & os = std::cout,
-                           const std::string& s1 = "\n", // leading strings
+                           const std::string& s1 = "\n",
                            const std::string& s2 = "",
                            const std::string& s3 = "") :
     _os(os), _s1(s1), _s2(s2), _s3(s3) {restart(expCount);}
 
-  // restart effects: display appropriate scale
-  // postconditions: count()==0, expCount()==expCount
   void restart(unsigned long expCount);
 
-  //  increment effects: display appropriate progress tic if needed
-  //  postconditions: count()== original count() + increment
-  //  returns: count().
   unsigned long  increment(unsigned long incr);
 
   unsigned long  operator+=(unsigned long incr) {return increment(incr);}
@@ -41,10 +36,10 @@ public:
 private:
   void displayTic();
 
-  std::ostream &    _os;  // may not be present in all imps
-  const std::string _s1;  // string is more general, safer than 
-  const std::string _s2;  // const char *, and efficiency or size are
-  const std::string _s3;  // not issues
+  std::ostream &    _os;
+  const std::string _s1;
+  const std::string _s2;
+  const std::string _s3;
 
   unsigned long _count, _expCount, _nextTicCount;
   unsigned int  _tic;

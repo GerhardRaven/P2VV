@@ -632,14 +632,11 @@ class EfficiencyPDFBuilder :
 
     # initialize basis functions and moments
     self._basis   = []
-    self._moments = []
-    self._coefs   = []
-
+    self._norms   = {}
+    self._moments = {}
+    self._coefs   = {}
 
   def buildEffBasis(self) :
-    """creates efficiency basis functions
-    """
-
     if self._config.value('effBasisType') == 'angular' :
       angFuncs = self._config.value('angEffBasisFuncs')
 
@@ -660,40 +657,161 @@ class EfficiencyPDFBuilder :
 
       # build basis functions
       self._basis   = []
-      self._moments = []
-      self._coefs   = []
+      self._norms   = {}
+      self._moments = {}
+      self._coefs   = {}
       angFuncsBuild = self._config.modelBuilder('angles')
       ws = self._config.workspace()
       for func in funcList :
         name = angFuncsBuild.buildBasisFunc('effBasis', func[0], 0, func[1],
             func[2], 1.)
-        self._basis.append((name, float(2 * func[0] + 1) / 2.))
+        self._basis.append(name)
+        self._norms[name] =  float(2 * func[0] + 1) / 2.
 
-
-  def computeEffMoments(self, data, pdf, observables) :
-    """computes efficiency moments of data set
-    """
-
+  def computeEffMoments(self, data, pdf, obsSet) :
     import RooFitDecorators
     from ROOT import EffMoment
+    from math import sqrt
 
-    self._moments = []
-    self._coefs   = []
+    self._moments = {}
+    self._coefs   = {}
     ws = self._config.workspace()
 
     # create efficiency moment objects
     for func in self._basis :
-      if func[0] not in ws :
+      if func not in ws :
         print "P2VV - ERROR: EfficiencyPDFBuilder::computeEffMoments: basis function '%s' not in workspace"\
-            % func[0]
+            % func
         return
 
-      self._moments.append(EffMoment(ws[func[0]], func[1], pdf, observables))
+      self._moments[func] = EffMoment(ws[func], self._norms[func], pdf, obsSet)
 
     # compute moments
-    computeMoments(data, self._moments)
-    for mom in self._moments :
-      self._coefs.append(mom.coefficient())
+    computeMoments(data, self._moments.values())
+    for func in self._basis :
+      mom = self._moments[func]
+      self._coefs[func] = (mom.coefficient(), sqrt(mom.variance()),
+          mom.significance())
+
+  def printEffMoments(self) :
+    print 'P2VV - INFO: EfficiencyPDFBuilder::printEffMoments: efficiency moments:'
+    print '  --------------------------------------------------------------------'
+    print '  {0:<23}   {1:<12}   {2:<12}   {3:<12}'\
+        .format('basis function', 'coefficient', 'std. dev.', 'significance')
+    print '  --------------------------------------------------------------------'
+
+    # print moments
+    for func in self._basis :
+      print '  {0:<23}'\
+          .format(func if len(func) < 24 else func[:20] + '...'),
+      if func in self._coefs :
+        coef = self._coefs[func]
+        print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'\
+            .format(coef[0], coef[1], coef[2])
+      else : print
+
+    print '  --------------------------------------------------------------------'
+
+
+  def writeEffMoments(self, filePath = 'effMoments') :
+    if type(filePath) is not str or filePath == '' :
+      filePath = 'effMoments'
+
+    # get file path and name
+    filePath = filePath.strip()
+    fileName = filePath.split('/')[-1]
+
+    # open file
+    try :
+      momFile = open(filePath, 'w')
+    except :
+      print "P2VV - ERROR: EfficiencyPDFBuilder::writeEffMoments: unable to open file '%s'"\
+          % filePath
+      return
+
+    print "P2VV - INFO: EfficiencyPDFBuilder::writeEffMoments: writing efficiency moments to file '%s'"\
+        % filePath
+
+    # write moments to content string
+    cont = '# %s: efficiency moments\n' % fileName\
+         + '# basis type: %s\n'         % self._config.value('effBasisType')\
+         + '#\n'\
+         + '# ------------------------------------------------------------------------\n'\
+         + '# {0:<23}   {1:<14}   {2:<13}   {3:<13}\n'\
+               .format('basis function', 'coefficient', 'std. dev.',\
+               'significance')\
+         + '# ------------------------------------------------------------------------\n'
+
+    numMoments = 0
+    for func in self._basis :
+      cont += '  {0:<23}'.format(func)
+      if func in self._coefs :
+        coef = self._coefs[func]
+        cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'\
+            .format(coef[0], coef[1], coef[2])
+        numMoments += 1
+      else :
+        cont += '\n'
+
+    cont += '# ------------------------------------------------------------------------\n\n'
+
+    # write content to file
+    momFile.write(cont)
+    momFile.close()
+
+    print "P2VV - INFO: EfficiencyPDFBuilder::writeEffMoments: %d efficiency moment(s) written"\
+        % numMoments
+
+  def readEffMoments(self, filePath = 'effMoments') :
+    if type(filePath) is not str or filePath == '' :
+      filePath = 'effMoments'
+
+    # get file path and name
+    filePath = filePath.strip()
+
+    # open file
+    try :
+      momFile = open(filePath, 'r')
+    except :
+      print "P2VV - ERROR: EfficiencyPDFBuilder::readEffMoments: unable to open file '%s'"\
+          % filePath
+      return
+
+    print "P2VV - INFO: EfficiencyPDFBuilder::readEffMoments: reading efficiency moments from file '%s'"\
+        % filePath
+
+    # initialize coefficients
+    self._coefs = {}
+
+    # loop over lines and read moments
+    while True :
+      # read next line
+      line = momFile.readline()
+      if line == '' : break
+
+      # check for empty or comment lines
+      line = line.strip()
+      if len(line) < 1 or line[0] == '#' : continue
+
+      # check moment format
+      numMoments = 0
+      line = line.split()
+      if len(line) < 4 or line[0] not in self._basis : continue
+      try :
+        coef   = float(line[1])
+        stdDev = float(line[2])
+        signif = float(line[3])
+      except :
+        continue
+
+      # get moment
+      self._coefs[line[0]] = (coef, stdDev, signif)
+      numMoments += 1
+
+    momFile.close()
+
+    print "P2VV - INFO: EfficiencyPDFBuilder::readEffMoments: %d efficiency moment(s) read"\
+        % numMoments
 
 
 def buildEff_x_PDF(w,name,pdf,eff) :
