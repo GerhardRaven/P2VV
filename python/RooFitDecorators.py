@@ -47,7 +47,7 @@ def _RooWorkspacePut(self, x) :
   _import = getattr(RooWorkspace, 'import')
 
   if _import(self, x, RooFit.Silence()) : return None
-  return self[x.GetName()]
+  return x.GetName()
 
 def _setConstant(ws, pattern, constant = True, value = None):
   import re

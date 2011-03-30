@@ -73,7 +73,7 @@ config.declareRooVars()
 # get workspace
 ws = config.workspace()
 
-# build the B0->J/psiK* PDF
+# build the PDF
 pdf = P2VVModelBuilders.getP2VVPDF(config)
 
 # print contents of RooWorkspace to screen

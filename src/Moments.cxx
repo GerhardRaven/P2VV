@@ -33,9 +33,8 @@ double IMoment::variance(bool normalize) const {
   //     sigma^2( weight_j ) = weight_j^2
   // (this is also exactly how it works with s-weight).
 
-  // jackknife: sigma2 = (N - 1)/N *
-  // sum_j ( mj1 - m )^2) where .mJ1 is the value of m if you would
-  // leave measurement J away
+  // jackknife: sigma2 = (N - 1)/N * sum_j ( mj1 - m )^2), where mj1 is the
+  // value of m if you would leave measurement j away
 
   // we make one approximation: we ignore the contribution of a
   // single weight to the total in a normalization term

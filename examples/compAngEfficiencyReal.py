@@ -1,7 +1,6 @@
 ###############################################################################
-## compAngEfficiencyToy:                                                     ##
-##   P2VV example script for computing efficiency moments in toy or EvtGen   ##
-##   data (efficiency = 1)                                                   ##
+## compAngEfficiencyReal:                                                    ##
+##   P2VV example script for computing efficiency moments in real data       ##
 ##                                                                           ##
 ## * decay channels: B0->J/psiK* or B_s0->J/psiphi                           ##
 ## * writes moments to ascii file                                            ##
@@ -14,29 +13,20 @@
 ###############################################################################
 
 import P2VV, P2VVConfiguration, P2VVModelBuilders
-from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
+from ROOT import RooDataSet, RooFit, TCanvas, TChain
 from math import sqrt, sin, cos
 
 ###############################################################################
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
-mode = 'Bd2JpsiKstar'
-#mode = 'Bs2Jpsiphi'
+#mode = 'Bd2JpsiKstar'
+mode = 'Bs2Jpsiphi'
 
 # efficiency moments file path
 momentsFilePath = 'effMoments'
 
 # data set name and file
-dataSetName  = mode[3:] + 'Data'
-dataFilePath = dataSetName + '.root'
-#dataFilePath = '/data/bfys/jleerdam/Bd2JpsiKst/EvtGen/Gauss-11144000-*.root'
-#dataFilePath = '/data/bfys/jleerdam/Bs2Jpsiphi/EvtGen/Gauss-13144001-*.root'
-
-# generate events?
-generate = True
-nEvents = 50000
-
-# read events from NTuple or RooDataset
-NTuple = False
+dataSetName  = 'MyTree'
+dataFilePath = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
 
 ###############################################################################
 # load the P2VV library
@@ -47,17 +37,21 @@ config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal', 'noKSWave'])
 
 # adjust efficiency settings
 config['effBasisType'].setValue('angular')
-config['angEffBasisFuncs'].setValue((4, 4))
+config['angEffBasisFuncs'].setValue((10, 4))
 
-# custom settings
-config['cpsiAng'].set(name = 'hel_cthetak')
-config['cthetaAng'].set(name = 'hel_cthetal')
-config['phiAng'].set(name = 'hel_phi')
-config['BLifetime'].set(name = 't', min = 0., max = 4.)
-config['iTag'].set(name = 'tagInitial')
+# custom RooFit variable settings
+config['cpsiAng'].set(name = 'helcosthetaK')
+config['cthetaAng'].set(name = 'helcosthetaL')
+config['phiAng'].set(name = 'helphi')
+config['BLifetime'].set(name = 't', min = -2., max = 20.)
+config['iTag'].set(name = 'tagdecision')
 if mode == 'Bd2JpsiKstar' :
-  config['fTag'].set(name = 'tagFinal')
+  config['fTag'].set(name = 'qrec')
 config['misTag'].set(realType = 'par', val = 0., min = '', max = '')
+
+# allow only positive values for the true lifetime: truth matched events
+config.addSetting('trueBLifetime', P2VVConfiguration.RooRealSetting('TRUEt',
+    'true B lifetime (ps)', 'par', 0., 0., 20.))
 
 if mode == 'Bd2JpsiKstar' :
   ReHp = 0.159 * cos(1.563) / 0.775
@@ -93,36 +87,17 @@ pdf = P2VVModelBuilders.getP2VVPDF(config)
 # print contents of RooWorkspace to screen
 #config.workspace().Print()
 
-if generate :
-  # generate events
-  print 'compAngEfficiencyToy: generating %d events' % nEvents
-  if config.value('BDecayClass') == 'RooBDecay' : P2VV.registerMultiCatGen()
-  data = pdf.generate(ws.set('observables'), nEvents)
+# create data set from NTuple file(s)
+dataObs = ws.set('angles').clone('dataObs')
+dataObs.add(ws.arg(config['trueBLifetime'].name()))
 
-  # write events to file
-  print "compAngEfficiencyToy: writing RooDataSet '%s' to file '%s'"\
-      % (dataSetName, dataFilePath)
-  file = TFile.Open(dataFilePath, 'RECREATE')
-  data.Write(dataSetName)
-  file.Close()
+print "compAngEfficiencyReal: reading NTuple(s) '%s' from file(s) '%s'"\
+    % (dataSetName, dataFilePath)
+files = TChain(dataSetName)
+files.Add(dataFilePath)
+data = RooDataSet(dataSetName, dataSetName, files, dataObs)
 
-elif NTuple :
-  # create data set from NTuple file(s)
-  print "compAngEfficiencyToy: reading NTuple(s) '%s' from file(s) '%s'"\
-      % (dataSetName, dataFilePath)
-  files = TChain(dataSetName)
-  files.Add(dataFilePath)
-  data = RooDataSet(dataSetName, dataSetName, files, ws.set('observables'))
-
-else :
-  # get data set from file
-  print "compAngEfficiencyToy: reading RooDataset '%s' from file '%s'"\
-      % (dataSetName, dataFilePath)
-  file = TFile.Open(dataFilePath, 'READ')
-  data = file.Get(dataSetName)
-  file.Close()
-
-print 'compAngEfficiencyToy: %d events in data set' % data.numEntries()
+print 'compAngEfficiencyReal: %d events in data set' % data.numEntries()
 
 # get sets of observables
 angles = ws.set('angles')
@@ -130,11 +105,11 @@ marginalObs = ws.set('observables').clone('margObs')
 marginalObs.remove(angles)
 dataObs = data.get()
 
-print 'compAngEfficiencyToy: angles:'
+print 'compAngEfficiencyReal: angles:'
 angles.Print()
-print 'compAngEfficiencyToy: marginal observables:'
+print 'compAngEfficiencyReal: marginal observables:'
 marginalObs.Print()
-print 'compAngEfficiencyToy: observables in data set:'
+print 'compAngEfficiencyReal: observables in data set:'
 dataObs.Print()
 
 # integrate over all variables but the angles

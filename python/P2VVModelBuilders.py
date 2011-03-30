@@ -470,12 +470,16 @@ class AngleFunctionBuilder :
     ws = self._config.workspace()
 
     # check if we need to multiply with an angular efficiency
-    efficiency = False
+    effFuncs = []
     if self._config.value('effBasisType') == 'angular' :
       effBuilder = self._config.modelBuilder('efficiency')
-      basis = effBuilder.effBasis()
-      coefs = effBuilder.effMomentCoefs()
-      if len(coefs) > 0 : efficiency = True
+      effBasis = effBuilder.effBasis()
+      effMomentCoefs = effBuilder.effMomentCoefs()
+      effCoefs = {}
+      for effFunc in effBasis :
+        if effFunc in effMomentCoefs :
+          effFuncs.append(effFunc)
+          effCoefs[effFunc] = effMomentCoefs[effFunc][0]
 
     # build angular function for each term in the signal PDF
     for angFunc in angFuncs :
@@ -485,27 +489,23 @@ class AngleFunctionBuilder :
         # express angular function in angle basis functions
         basesSet = ''
         for comps in angFunc[1] :
-          basesSet += self.buildBasisFunc(name, comps[0], comps[1], comps[2],\
-              comps[3], comps[4]) + ','
+          sigFunc = self.buildBasisFunc(name, comps[0], comps[1], comps[2],
+              comps[3], comps[4])
+          if len(effFuncs) > 0:
+            # with efficiency
+            for effFunc in effFuncs :
+              sigEffProd = ws[sigFunc].createProduct(ws[effFunc],\
+                  effCoefs[effFunc])
+              basesSet += ws.put(sigEffProd) + ','
+          else :
+            # without efficiency
+            basesSet += sigFunc + ','
 
         # build angular function
         ws.factory("sum::%s(%s)" % (name, basesSet[:-1]))
 
       if name not in self._angFuncs :
         self._angFuncs.append(name)
-
-
-
-
-   #eff = [(m.basis(), m.coefficient()) for m in moments]
-   #for c in pdf.getComponents() :
-   #     if type(c) is not RooP2VVAngleBasis : continue
-   #     name = "%s_%s_eff" % (name,c.GetName())
-   #     set = RooArgSet()
-   #     [ set.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
-   #     rep = w.put( RooAddition( name, name, set, True ) )
-   #     customizer.replaceArg( c, rep )
-
 
 
   def buildBasisFunc(self, name, i, j, k, l, c) :
@@ -683,7 +683,30 @@ class EfficiencyPDFBuilder :
   def effMomentCoefs(self) :
     return self._coefs.copy()
 
+  def setEffMomentCoefs(self, coefs) :
+    self._moments = {}
+    self._coefs   = {}
+
+    if type(coefs) is not list :
+      print "P2VV - ERROR: EfficiencyPDFBuilder::setEffMomentCoefs: coefficients are not provided as a list"
+      return
+
+    for moment in coefs :
+      if type(moment) is not tuple or len(moment) <= 0\
+          or type(moment[0]) is not str or type(moment[1]) is not float\
+          or type(moment[2]) is not float or type(moment[3]) is not float :
+        print "P2VV - ERROR: EfficiencyPDFBuilder::setEffMomentCoefs: coefficient is not provided in the correct format"
+        continue
+
+      if moment[0] in self._basis :
+        self._coefs[moment[0]] = moment[1:4]
+
   def buildEffBasis(self) :
+    self._basis   = []
+    self._norms   = {}
+    self._moments = {}
+    self._coefs   = {}
+
     if self._config.value('effBasisType') == 'angular' :
       angFuncs = self._config.value('angEffBasisFuncs')
 
@@ -703,10 +726,6 @@ class EfficiencyPDFBuilder :
         return
 
       # build basis functions
-      self._basis   = []
-      self._norms   = {}
-      self._moments = {}
-      self._coefs   = {}
       angFuncsBuild = self._config.modelBuilder('angles')
       ws = self._config.workspace()
       for func in funcList :
@@ -810,10 +829,12 @@ class EfficiencyPDFBuilder :
         % numMoments
 
   def readEffMoments(self, filePath = 'effMoments') :
-    if type(filePath) is not str or filePath == '' :
-      filePath = 'effMoments'
+    self._moments = {}
+    self._coefs   = {}
 
     # get file path and name
+    if type(filePath) is not str or filePath == '' :
+      filePath = 'effMoments'
     filePath = filePath.strip()
 
     # open file
@@ -826,9 +847,6 @@ class EfficiencyPDFBuilder :
 
     print "P2VV - INFO: EfficiencyPDFBuilder::readEffMoments: reading efficiency moments from file '%s'"\
         % filePath
-
-    # initialize coefficients
-    self._coefs = {}
 
     # loop over lines and read moments
     while True :

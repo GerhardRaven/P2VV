@@ -159,7 +159,11 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     # flavour tags
     config.addSetting('iTag', RooCatSetting('iTag',
         'initial state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
-    config.addSetting('misTag', RooRealSetting('misTag',
+    if onlySignal :
+      config.addSetting('misTag', RooRealSetting('misTag',
+        'mis-tag fraction', 'par', 0., '', ''))
+    else :
+      config.addSetting('misTag', RooRealSetting('misTag',
         'mis-tag fraction', 'obs', 0., 0., 0.5))
     if mode == 'Bd2JpsiKstar' :
       config.addSetting('fTag', RooCatSetting('fTag',
@@ -324,10 +328,16 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     ### efficiencies ###
 
     if mode != 'Bu2JpsiK' :
-      config.addSetting('effBasisType', P2VVSetting('effBasisType',
-        'type of efficiency basis', 'angular'))
-      config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs',
-        'angular efficiency basis functions', (4, 4)))
+      if onlySignal :
+        config.addSetting('effBasisType', P2VVSetting('effBasisType',
+          'type of efficiency basis', 'noEff'))
+        config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs',
+          'angular efficiency basis functions', (0, 0)))
+      else :
+        config.addSetting('effBasisType', P2VVSetting('effBasisType',
+          'type of efficiency basis', 'angular'))
+        config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs',
+          'angular efficiency basis functions', (4, 4)))
 
   return config
 
