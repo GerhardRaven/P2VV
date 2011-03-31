@@ -46,7 +46,7 @@ P2VV.loadP2VVLib()
 config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal', 'noKSWave'])
 
 # adjust efficiency settings
-config['effBasisType'].setValue('angular')
+config['effType'].setValue('angular')
 config['angEffBasisFuncs'].setValue((4, 4))
 
 # custom settings

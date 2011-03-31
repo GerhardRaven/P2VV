@@ -143,9 +143,6 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     config.addSetting('BDecayClass', P2VVSetting('BDecayClass',
         'RooFit class for time PDF', BDecClass))
 
-
-    ### observables ###
-
     if not onlySignal :
       # decay type
       config.addSetting('decayType', RooCatSetting('decaytype',
@@ -156,20 +153,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('unbiased', RooCatSetting('unbiased',
           'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
 
-    # flavour tags
-    config.addSetting('iTag', RooCatSetting('iTag',
-        'initial state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
-    if onlySignal :
-      config.addSetting('misTag', RooRealSetting('misTag',
-        'mis-tag fraction', 'par', 0., '', ''))
-    else :
-      config.addSetting('misTag', RooRealSetting('misTag',
-        'mis-tag fraction', 'obs', 0., 0., 0.5))
-    if mode == 'Bd2JpsiKstar' :
-      config.addSetting('fTag', RooCatSetting('fTag',
-          'final state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
-
-    # B lifetime
+    # B lifetime and mixing
     if onlySignal : tResModel = 'truth'
     else : tResModel = 'Gauss'
     if 'tResModel' in optDict and optDict['tResModel'] != '' :
@@ -186,6 +170,24 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     elif tResModel[:6] == '3Gauss' :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat',
           'B lifetime error (ps)', 'obs', 0.05, 0.005, 0.1))
+
+    if mode is 'Bd2JpsiKstar' :
+      config.addSetting('Gamma', RooRealSetting('Gamma',
+          'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
+      config.addSetting('dGamma', RooRealSetting('dGamma',
+          'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
+      config.addSetting('dm', RooRealSetting('dm',
+          'delta m_s (ps^-1)', 'par', 0.51, '', ''))
+    elif mode is 'Bs2Jpsiphi' :
+      config.addSetting('Gamma', RooRealSetting('gamma',
+          'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
+      config.addSetting('dGamma', RooRealSetting('dGamma',
+          'delta Gamma_s (ps^-1)', 'par', 0.05, -0.3, 0.3))
+      config.addSetting('dm', RooRealSetting('dm',
+          'delta m_s (ps^-1)', 'par', 17.8, '', ''))
+
+    config.addSetting('BMeanLife', RooFormSetting('t_sig_tau',
+        'B mean lifetime', '1. / @0', ['Gamma']))
 
     if not onlySignal :
       # masses
@@ -206,9 +208,46 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
         # background -- but the roadmap uses +-12 instead...
 
 
-    ### physics parameters ###
-
     if mode in ['Bd2JpsiKstar', 'Bs2Jpsiphi'] :
+      # CP violation
+      if mode is 'Bd2JpsiKstar' :
+        config.addSetting('CCP', RooRealSetting('C',
+            'B0 lambda parameter C', 'par', 0., '', ''))
+      elif mode is 'Bs2Jpsiphi' :
+        config.addSetting('phiCP', RooRealSetting('phis',
+            'CP violation parameter phi_s', 'par', -0.7, -2 * pi, 2 * pi))
+        config.addSetting('CCP', RooRealSetting('C',
+            'B0_s lambda parameter C', 'par', 0., '', ''))
+        config.addSetting('DCP', RooFormSetting('D',
+            'B0_s lambda parameter D', 'cos(@0)', ['phiCP']))
+        config.addSetting('SCP', RooFormSetting('S',
+            'B0_s lambda parameter S', '-sin(@0)', ['phiCP']))
+
+      # flavour tags
+      config.addSetting('iTag', RooCatSetting('iTag',
+          'initial state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
+      if onlySignal :
+        config.addSetting('misTag', RooRealSetting('misTag',
+          'mis-tag fraction', 'par', 0., '', ''))
+      else :
+        config.addSetting('misTag', RooRealSetting('misTag',
+          'mis-tag fraction', 'obs', 0., 0., 0.5))
+      if mode == 'Bd2JpsiKstar' :
+        config.addSetting('fTag', RooCatSetting('fTag',
+            'final state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
+
+      config.addSetting('tagDilution', RooFormSetting('tagDilution',
+          'mis-tag dilution', '1 - 2. * @0', ['misTag']))
+      config.addSetting('ADilMisTag', RooRealSetting('ADilMisTag',
+          'dilution/mis-tag asymmetry', 'par', 0., '', ''))
+      if mode is 'Bd2JpsiKstar' :
+        config.addSetting('ANorm', RooFormSetting('ANorm',
+            'normalization asymmetry', '-@0', ['CCP']))
+      config.addSetting('avgCEven', RooRealSetting('avgCEven',
+          'CP average even coefficients', 'par', 1., '', ''))
+      config.addSetting('avgCOdd', RooRealSetting('avgCOdd',
+          'CP average odd coefficients', 'par', 0., '', ''))
+
       # amplitudes
       # note: initial values from arXiv:0704.0522v2 [hep-ex] BaBar PUB-07-009
       if 'noKSWave' in optDict : incKSWave = False
@@ -277,67 +316,20 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
           config.addSetting('ImAS', RooRealSetting('ImAS',
               'Im(A_S)', 'par', 0.252, -1., 1.))
 
-      # lifetime and mixing
-      if mode is 'Bd2JpsiKstar' :
-        config.addSetting('Gamma', RooRealSetting('Gamma',
-            'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
-        config.addSetting('dGamma', RooRealSetting('dGamma',
-            'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
-        config.addSetting('dm', RooRealSetting('dm',
-            'delta m_s (ps^-1)', 'par', 0.51, '', ''))
 
-      elif mode is 'Bs2Jpsiphi' :
-        config.addSetting('Gamma', RooRealSetting('gamma',
-            'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
-        config.addSetting('dGamma', RooRealSetting('dGamma',
-            'delta Gamma_s (ps^-1)', 'par', 0.05, -0.3, 0.3))
-        config.addSetting('dm', RooRealSetting('dm',
-            'delta m_s (ps^-1)', 'par', 17.8, '', ''))
+      ### efficiencies ###
 
-      config.addSetting('BMeanLife', RooFormSetting('t_sig_tau',
-          'B mean lifetime', '1. / @0', ['Gamma']))
-
-      # CP violation
-      if mode is 'Bd2JpsiKstar' :
-        config.addSetting('CCP', RooRealSetting('C',
-            'B0 lambda parameter C', 'par', 0., '', ''))
-      elif mode is 'Bs2Jpsiphi' :
-        config.addSetting('phiCP', RooRealSetting('phis',
-            'CP violation parameter phi_s', 'par', -0.7, -2 * pi, 2 * pi))
-        config.addSetting('CCP', RooRealSetting('C',
-            'B0_s lambda parameter C', 'par', 0., '', ''))
-        config.addSetting('DCP', RooFormSetting('D',
-            'B0_s lambda parameter D', 'cos(@0)', ['phiCP']))
-        config.addSetting('SCP', RooFormSetting('S',
-            'B0_s lambda parameter S', '-sin(@0)', ['phiCP']))
-
-      # tagging parameters
-      config.addSetting('tagDilution', RooFormSetting('tagDilution',
-          'mis-tag dilution', '1 - 2. * @0', ['misTag']))
-      config.addSetting('ADilMisTag', RooRealSetting('ADilMisTag',
-          'dilution/mis-tag asymmetry', 'par', 0., '', ''))
-      if mode is 'Bd2JpsiKstar' :
-        config.addSetting('ANorm', RooFormSetting('ANorm',
-            'normalization asymmetry', '-@0', ['CCP']))
-      config.addSetting('avgCEven', RooRealSetting('avgCEven',
-          'CP average even coefficients', 'par', 1., '', ''))
-      config.addSetting('avgCOdd', RooRealSetting('avgCOdd',
-          'CP average odd coefficients', 'par', 0., '', ''))
-
-
-    ### efficiencies ###
-
-    if mode != 'Bu2JpsiK' :
       if onlySignal :
-        config.addSetting('effBasisType', P2VVSetting('effBasisType',
-          'type of efficiency basis', 'noEff'))
+        config.addSetting('effType', P2VVSetting('effType',
+          'type of efficiency', 'noEff'))
         config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs',
-          'angular efficiency basis functions', (0, 0)))
+          'angular efficiency basis functions', ''))
       else :
-        config.addSetting('effBasisType', P2VVSetting('effBasisType',
-          'type of efficiency basis', 'angular'))
+        config.addSetting('effType', P2VVSetting('effType',
+          'type of efficiency', 'angular'))
         config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs',
           'angular efficiency basis functions', (4, 4)))
+
 
   return config
 

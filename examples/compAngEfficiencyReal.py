@@ -36,7 +36,7 @@ P2VV.loadP2VVLib()
 config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal', 'noKSWave'])
 
 # adjust efficiency settings
-config['effBasisType'].setValue('angular')
+config['effType'].setValue('angular')
 config['angEffBasisFuncs'].setValue((10, 4))
 
 # custom RooFit variable settings

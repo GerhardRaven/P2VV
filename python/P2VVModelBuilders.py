@@ -471,7 +471,7 @@ class AngleFunctionBuilder :
 
     # check if we need to multiply with an angular efficiency
     effFuncs = []
-    if self._config.value('effBasisType') == 'angular' :
+    if self._config.value('effType') == 'angular' :
       effBuilder = self._config.modelBuilder('efficiency')
       effBasis = effBuilder.effBasis()
       effMomentCoefs = effBuilder.effMomentCoefs()
@@ -707,7 +707,7 @@ class EfficiencyPDFBuilder :
     self._moments = {}
     self._coefs   = {}
 
-    if self._config.value('effBasisType') == 'angular' :
+    if self._config.value('effType') == 'angular' :
       angFuncs = self._config.value('angEffBasisFuncs')
 
       # get list of angular basis functions for efficiency
@@ -800,7 +800,7 @@ class EfficiencyPDFBuilder :
 
     # write moments to content string
     cont = '# %s: efficiency moments\n' % fileName\
-         + '# basis type: %s\n'         % self._config.value('effBasisType')\
+         + '# basis type: %s\n'         % self._config.value('effType')\
          + '#\n'\
          + '# ------------------------------------------------------------------------\n'\
          + '# {0:<23}   {1:<14}   {2:<13}   {3:<13}\n'\
