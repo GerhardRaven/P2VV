@@ -385,10 +385,10 @@ class AngleFunctionBuilder :
     # get type of angles
     angType = self._config.value('anglesType')
     if angType and angType[0] == 'trans' :
-      self._anglesType = 'trans'
+      self._anglesType = 'Trans'
       print 'P2VV - INFO: AngleFunctionBuilder: using transversity angles'
     else :
-      self._anglesType = 'hel'
+      self._anglesType = 'Hel'
       print 'P2VV - INFO: AngleFunctionBuilder: using helicity angles'
 
     # set containers for angular functions
@@ -415,7 +415,7 @@ class AngleFunctionBuilder :
 
     # specify components of angular functions
     angFuncs = []
-    if self._anglesType == 'trans' :
+    if self._anglesType == 'Trans' :
       # using transversity angles
       angFuncs.append(('A0Sq',        [(0, 0, 0,  0,  2.             ),
                                        (0, 0, 2,  0,  sqrt( 1. /  5.)),
@@ -483,7 +483,7 @@ class AngleFunctionBuilder :
 
     # build angular function for each term in the signal PDF
     for angFunc in angFuncs :
-      name = angFunc[0] + 'AngFunc'
+      name = angFunc[0] + self._anglesType + 'AngFunc'
 
       if name not in ws :
         # express angular function in angle basis functions
