@@ -36,9 +36,9 @@ def registerMultiCatGen() :
 
 ###############################################################################
 
-def convertAmplitudes(amplitudes, covariances = None, inType = 'trans,cart',
-    outType = 'trans,polar', normalize = 3, magnSquared = True) :
-  """converts decay amplitudes (cartesian, polar, helicity and transversity)
+def convertComplexPars(values, covariances = None, inType = 'trans,cart',
+    outType = 'trans,polar', normalize = 0, magnSquared = True) :
+  """converts complex paramters (cartesian, polar, helicity and transversity)
   """
 
   # check input/output arguments
@@ -51,111 +51,158 @@ def convertAmplitudes(amplitudes, covariances = None, inType = 'trans,cart',
   if type(normalize) is not int : normalize = 0
 
   # determine operation
-  inHel   = 'hel'  in inType
-  inCart  = 'cart' in inType
-  outHel  = 'hel'  in outType
-  outCart = 'cart' in outType
+  inHel    = 'hel'   in inType
+  inPolar  = 'polar' in inType
+  outHel   = 'hel'   in outType
+  outPolar = 'polar' in outType
 
   # check if we need to do something
-  if inHel == outHel and inCart == outCart and normalize < 1 :
-    return (amplitudes, covariances)
+  if inHel == outHel and inPolar == outPolar and normalize < 1 :
+    return (values, covariances)
 
-  # check amplitudes
-  nAmps = len(amplitudes)
-  if nAmps < 1 :
-    print "P2VV - ERROR: convertAmplitudes: no amplitudes specified"
+  # check values
+  nPars = len(values)
+  if nPars < 1 :
+    print "P2VV - ERROR: convertAmplitudes: no parameters specified"
     return None
-  if nAmps < 3 and inHel != outHel :
-    print "P2VV - ERROR: convertAmplitudes: less than three amplitudes specified"
+  if nPars < 3 and inHel != outHel :
+    print "P2VV - ERROR: convertAmplitudes: less than three parameters specified"
     return None
-  if covariances and len(covariances) != 2 * nAmps :
-    print "P2VV - ERROR: convertAmplitudes: size of covariance matrix does not correspond to number of amplitudes"
+  if covariances and len(covariances) != 2 * nPars :
+    print "P2VV - ERROR: convertAmplitudes: size of covariance matrix does not correspond to number of parameters"
+    return None
+  if normalize > nPars :
+    print "P2VV - ERROR: convertAmplitudes: numbber of parameters for normalization is larger than total number of parameters"
     return None
 
   from array import array
   from math import sqrt, sin, cos, atan2 
   from ROOT import TMatrixD
 
-  # define array of output amplitudes
-  ampsOut = list([list(amp) for amp in amplitudes])
+  # define array of output values
+  valsOut = list([list(par) for par in values])
 
   # get covariances
   if covariances :
-    transMatrices = []
-    covMatrixIn = TMatrixD(2 * nAmps, 2 * nAmps,
-        array('d', [c_ij for c in covariances for c_ij in c[:2 * nAmps]]))
+    Jacobians = []
+    covMatrixIn = TMatrixD(2 * nPars, 2 * nPars,
+        array('d', [c_ij for c in covariances for c_ij in c[:2 * nPars]]))
 
-  # convert to cartesian amplitudes
-  if not inCart :
+  # convert to cartesian values
+  if inPolar :
     if covariances :
-      TPol2Cart = TMatrixD(2 * nAmps, 2 * nAmps)
+      JacPolToCart = TMatrixD(2 * nPars, 2 * nPars)
+      Jacobians.append(JacPolToCart)
 
-    ampsTemp = [amp[:] for amp in ampsOut]
-    for ampIter, amp in enumerate(ampsTemp) :
+    valsTemp = [par[:] for par in valsOut]
+    for parIter, par in enumerate(valsTemp) :
       if magnSquared :
-        ReA = sqrt(amp[0]) * cos(amp[1])
-        ImA = sqrt(amp[0]) * sin(amp[1])
+        ReA = sqrt(par[0]) * cos(par[1])
+        ImA = sqrt(par[0]) * sin(par[1])
       else :
-        ReA = amp[0] * cos(amp[1])
-        ImA = amp[0] * sin(amp[1])
+        ReA = par[0] * cos(par[1])
+        ImA = par[0] * sin(par[1])
 
-      ampsOut[ampIter][0] = ReA
-      ampsOut[ampIter][1] = ImA
+      valsOut[parIter][0] = ReA
+      valsOut[parIter][1] = ImA
 
       if covariances :
-        TPol2Cart[2 * ampIter][2 * ampIter]         = 0.5 * ReA / amp[0]
-        TPol2Cart[2 * ampIter][2 * ampIter + 1]     = -ImA
-        TPol2Cart[2 * ampIter + 1][2 * ampIter]     = 0.5 * ImA / amp[0]
-        TPol2Cart[2 * ampIter + 1][2 * ampIter + 1] = ReA
-        if not magnSquared :
-          TPol2Cart[2 * ampIter][2 * ampIter]     /= amp[0]
-          TPol2Cart[2 * ampIter + 1][2 * ampIter] /= amp[0]
+        JacPolToCart[2 * parIter][2 * parIter]         = ReA / par[0]
+        JacPolToCart[2 * parIter][2 * parIter + 1]     = -ImA
+        JacPolToCart[2 * parIter + 1][2 * parIter]     = ImA / par[0]
+        JacPolToCart[2 * parIter + 1][2 * parIter + 1] = ReA
+        if magnSquared :
+          JacPolToCart[2 * parIter][2 * parIter]     /= 2.
+          JacPolToCart[2 * parIter + 1][2 * parIter] /= 2.
 
-        transMatrices.append(TPol2Cart)
-
-  # convert to polar amplitudes
-  if not outCart :
+  # normalize
+  if normalize > 0 :
     if covariances :
-      TCart2Pol = TMatrixD(2 * nAmps, 2 * nAmps)
+      JacNorm = TMatrixD(2 * nPars, 2 * nPars)
+      Jacobians.append(JacNorm)
 
-    ampsTemp = [amp[:] for amp in ampsOut]
-    for ampIter, amp in enumerate(ampsTemp) :
-      ASq = amp[0] * amp[0] + amp[1] * amp[1]
-      Aph = atan2(amp[1], amp[0])
+    valsTemp = [par[:] for par in valsOut]
 
-      if magnSquared :
-        ampsOut[ampIter][0] = ASq
-      else :
-        ampsOut[ampIter][0] = sqrt(ASq)
+    norm = 0.
+    for parIter in range(normalize) :
+      norm += valsTemp[parIter][0] * valsTemp[parIter][0]\
+          + valsTemp[parIter][1] * valsTemp[parIter][1]
+    norm = sqrt(norm)
 
-      ampsOut[ampIter][1] = Aph
+    for parIter, par in enumerate(valsTemp) :
+      valsOut[parIter][0] /= norm
+      valsOut[parIter][1] /= norm
 
       if covariances :
-        TCart2Pol[2 * ampIter][2 * ampIter]         = 2. * amp[0]
-        TCart2Pol[2 * ampIter][2 * ampIter + 1]     = 2. * amp[1]
-        TCart2Pol[2 * ampIter + 1][2 * ampIter]     = -amp[1] / ASq
-        TCart2Pol[2 * ampIter + 1][2 * ampIter + 1] =  amp[0] / ASq
+        for newValIter in range(2 * parIter, 2 * parIter + 2) :
+          for oldValIter in range(2 * nPars) :
+            if oldValIter != newValIter :
+              if oldValIter < 2 * normalize :
+                oldVal1 = par[newValIter - 2 * parIter]
+                oldVal2 = valsTemp[int(oldValIter / 2)][int(oldValIter % 2)]
+                oldValNormSq = oldVal1 * oldVal2 / norm / norm
+                JacNorm[newValIter][oldValIter] = -oldValNormSq / norm
 
-        transMatrices.append(TCart2Pol)
+              else :
+                JacNorm[newValIter][oldValIter] = 0.
+
+            else :
+              if oldValIter < 2 * normalize :
+                oldVal = par[newValIter - 2 * parIter]
+                oldValNormSq = oldVal * oldVal / norm / norm
+                JacNorm[newValIter][oldValIter] = (1. - oldValNormSq) / norm
+
+              else :
+                JacNorm[newValIter][oldValIter] = 1. / norm
+
+  # convert to polar values
+  if outPolar :
+    if covariances :
+      JacCartToPol = TMatrixD(2 * nPars, 2 * nPars)
+      Jacobians.append(JacCartToPol)
+
+    valsTemp = [par[:] for par in valsOut]
+    for parIter, par in enumerate(valsTemp) :
+      ASq = par[0] * par[0] + par[1] * par[1]
+      Aph = atan2(par[1], par[0])
+
+      if magnSquared :
+        valsOut[parIter][0] = ASq
+      else :
+        valsOut[parIter][0] = sqrt(ASq)
+
+      valsOut[parIter][1] = Aph
+
+      if covariances :
+        JacCartToPol[2 * parIter][2 * parIter]         = par[0]
+        JacCartToPol[2 * parIter][2 * parIter + 1]     = par[1]
+        JacCartToPol[2 * parIter + 1][2 * parIter]     = -par[1] / ASq
+        JacCartToPol[2 * parIter + 1][2 * parIter + 1] =  par[0] / ASq
+        if magnSquared :
+          JacCartToPol[2 * parIter][2 * parIter]     *= 2.
+          JacCartToPol[2 * parIter][2 * parIter + 1] *= 2.
+        else :
+          JacCartToPol[2 * parIter][2 * parIter]     /= sqrt(ASq)
+          JacCartToPol[2 * parIter][2 * parIter + 1] /= sqrt(ASq)
 
   covariancesOut = None
   if covariances :
     # construct total transformation matrix
-    TMatrix = TMatrixD(2 * nAmps, 2 * nAmps, array('d',
-       [1. if i == j else 0. for j in range(2*nAmps) for i in range(2*nAmps)]))
-    for matrix in transMatrices :
-      TMatrixTemp = TMatrixD(TMatrix)
-      TMatrix.Mult(matrix, TMatrixTemp)
+    fullJacobian = TMatrixD(2 * nPars, 2 * nPars, array('d',
+       [1. if i == j else 0. for j in range(2*nPars) for i in range(2*nPars)]))
+    for Jac in Jacobians :
+      fullJacobianTemp = TMatrixD(fullJacobian)
+      fullJacobian.Mult(Jac, fullJacobianTemp)
 
     # construct output covariance matrix
-    covMatrixTemp = TMatrixD(2 * nAmps, 2 * nAmps)
-    covMatrixOut  = TMatrixD(2 * nAmps, 2 * nAmps)
-    covMatrixTemp.Mult(TMatrix, covMatrixIn)
-    covMatrixOut.MultT(covMatrixTemp, TMatrix)
+    covMatrixTemp = TMatrixD(2 * nPars, 2 * nPars)
+    covMatrixOut  = TMatrixD(2 * nPars, 2 * nPars)
+    covMatrixTemp.Mult(fullJacobian, covMatrixIn)
+    covMatrixOut.MultT(covMatrixTemp, fullJacobian)
 
     # get covariances from matrix
     covariancesOut = tuple([tuple([covMatrixOut[i][j]\
-        for j in range(2 * nAmps)]) for i in range(2 * nAmps)])
+        for j in range(2 * nPars)]) for i in range(2 * nPars)])
 
-  return (tuple([tuple(amp) for amp in ampsOut]), covariancesOut)
+  return (tuple([tuple(par) for par in valsOut]), covariancesOut)
 
