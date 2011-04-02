@@ -50,9 +50,15 @@ config['effType'].setValue('angular')
 config['angEffBasisFuncs'].setValue((4, 4))
 
 # custom settings
-config['cpsiAng'].set(name = 'hel_cthetak')
-config['cthetaAng'].set(name = 'hel_cthetal')
-config['phiAng'].set(name = 'hel_phi')
+if config.value('anglesType')[0] == 'trans' :
+  config['cpsiAng'].set(name = 'tr_cpsi')
+  config['cthetaAng'].set(name = 'tr_ctheta')
+  config['phiAng'].set(name = 'tr_phi')
+else :
+  config['cpsiAng'].set(name = 'hel_cthetak')
+  config['cthetaAng'].set(name = 'hel_cthetal')
+  config['phiAng'].set(name = 'hel_phi')
+
 config['BLifetime'].set(name = 't', min = 0., max = 4.)
 config['iTag'].set(name = 'tagInitial')
 if mode == 'Bd2JpsiKstar' :

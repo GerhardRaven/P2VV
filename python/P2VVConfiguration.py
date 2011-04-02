@@ -171,14 +171,14 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat',
           'B lifetime error (ps)', 'obs', 0.05, 0.005, 0.1))
 
-    if mode is 'Bd2JpsiKstar' :
+    if mode == 'Bd2JpsiKstar' :
       config.addSetting('Gamma', RooRealSetting('Gamma',
           'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
       config.addSetting('dGamma', RooRealSetting('dGamma',
           'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
       config.addSetting('dm', RooRealSetting('dm',
           'delta m_s (ps^-1)', 'par', 0.51, '', ''))
-    elif mode is 'Bs2Jpsiphi' :
+    elif mode == 'Bs2Jpsiphi' :
       config.addSetting('Gamma', RooRealSetting('gamma',
           'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
       config.addSetting('dGamma', RooRealSetting('dGamma',
@@ -196,10 +196,10 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       if mode in ['Bu2JpsiK', 'Bd2JpsiKstar'] :
         config.addSetting('mB', RooRealSetting('m',
             'B0 mass (MeV)', 'obs', 5279., 5279. - 50., 5279. + 50.))
-        if mode is 'Bd2JpsiKstar' :
+        if mode == 'Bd2JpsiKstar' :
           config.addSetting('mKstar', RooRealSetting('mdau2',
               'K*0 mass (MeV)', 'obs', 892., 892. - 50., 892. + 50.))
-      elif mode is 'Bs2Jpsiphi' :
+      elif mode == 'Bs2Jpsiphi' :
         config.addSetting('m', RooRealSetting('m',
             'B_s0 mass (MeV)', 'obs', 5366., 5366. - 50., 5366. + 50.))
         config.addSetting('mphi', RooRealSetting('mdau2',
@@ -210,18 +210,45 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
     if mode in ['Bd2JpsiKstar', 'Bs2Jpsiphi'] :
       # CP violation
-      if mode is 'Bd2JpsiKstar' :
+      lambdaCPType = 'cartesian'
+      if 'lambdaCPType' in optDict and optDict['lambdaCPType'] != '' :
+        lambdaCPType = optDict['lambdaCPType']
+      config.addSetting('lambdaCPType', P2VVSetting('lambdaCPType',
+        'type of lambda (CP violation)', lambdaCPType))
+
+      if mode == 'Bd2JpsiKstar' :
         config.addSetting('CCP', RooRealSetting('C',
-            'B0 lambda parameter C', 'par', 0., '', ''))
-      elif mode is 'Bs2Jpsiphi' :
-        config.addSetting('phiCP', RooRealSetting('phis',
-            'CP violation parameter phi_s', 'par', -0.7, -2 * pi, 2 * pi))
-        config.addSetting('CCP', RooRealSetting('C',
-            'B0_s lambda parameter C', 'par', 0., '', ''))
-        config.addSetting('DCP', RooFormSetting('D',
-            'B0_s lambda parameter D', 'cos(@0)', ['phiCP']))
-        config.addSetting('SCP', RooFormSetting('S',
-            'B0_s lambda parameter S', '-sin(@0)', ['phiCP']))
+            'B0 lambda param. C', 'par', 0., '', ''))
+      elif mode == 'Bs2Jpsiphi' :
+        if lambdaCPType == 'polar' :
+          config.addSetting('lambdaCPSq', RooRealSetting('lambda^2',
+              'CP violation param. |lambda|^2', 'par', 1., 0., 2.))
+          config.addSetting('phiCP', RooRealSetting('phis',
+              'CP violation param. phi_s', 'par', -0.2, -2 * pi, 2 * pi))
+          config.addSetting('CCP', RooFormSetting('C',
+              'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
+          config.addSetting('DCP', RooFormSetting('D',
+              'B0_s lambda param. D', '2. * @0 * cos(@1) / (1. + @0)',
+              ['lambdaCPSq', 'phiCP']))
+          config.addSetting('SCP', RooFormSetting('S',
+              'B0_s lambda param. S', '-2. * @0 * sin(@1) / (1. + @0)',
+              ['lambdaCPSq', 'phiCP']))
+        else :
+          config.addSetting('ReLambdaCP', RooRealSetting('ReLambda',
+              'CP violation param. Re(lambda)', 'par', 0.980, -2., 2.))
+          config.addSetting('ImLambdaCP', RooRealSetting('ImLambda',
+              'CP violation param. Im(lambda)', 'par', 0.199, -2., 2.))
+          config.addSetting('lambdaCPSq', RooFormSetting('lambdaSq',
+              'CP violation param. |lambda|^2', '@0 * @0 + @1 * @1',
+              ['ReLambdaCP', 'ImLambdaCP']))
+          config.addSetting('CCP', RooFormSetting('C',
+              'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
+          config.addSetting('DCP', RooFormSetting('D',
+              'B0_s lambda param. D', '2. * @1 / (1. + @0)',
+              ['lambdaCPSq', 'ReLambdaCP']))
+          config.addSetting('SCP', RooFormSetting('S',
+              'B0_s lambda param. S', '2. * @1 / (1. + @0)',
+              ['lambdaCPSq', 'ImLambdaCP']))
 
       # flavour tags
       config.addSetting('iTag', RooCatSetting('iTag',
@@ -240,7 +267,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
           'mis-tag dilution', '1 - 2. * @0', ['misTag']))
       config.addSetting('ADilMisTag', RooRealSetting('ADilMisTag',
           'dilution/mis-tag asymmetry', 'par', 0., '', ''))
-      if mode is 'Bd2JpsiKstar' :
+      if mode == 'Bd2JpsiKstar' :
         config.addSetting('ANorm', RooFormSetting('ANorm',
             'normalization asymmetry', '-@0', ['CCP']))
       config.addSetting('avgCEven', RooRealSetting('avgCEven',
@@ -255,13 +282,13 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('incKSWave', P2VVSetting('incKSWave',
         'include KK or Kpi S-wave?', incKSWave))
 
-      ampsType = 'ReIm'
-      if 'ampsType' in optDict and optDict['ampsType'] is not '' :
+      ampsType = 'cartesian'
+      if 'ampsType' in optDict and optDict['ampsType'] != '' :
         ampsType = optDict['ampsType']
       config.addSetting('ampsType', P2VVSetting('ampsType',
         'type of amplitudes', ampsType))
 
-      if ampsType is 'polar' :
+      if ampsType == 'polar' :
         config.addSetting('A0Mag2', RooRealSetting('A0Mag2',
             '|A0|^2', 'par', 0.556, 0., 1.))
         config.addSetting('AparMag2', RooFormSetting('AparMag2',
@@ -269,15 +296,15 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
         config.addSetting('AperpMag2', RooRealSetting('AperpMag2',
             '|A_perp|^2', 'par', 0.233, 0., 1.))
         config.addSetting('ASMag2', RooRealSetting('ASMag2',
-            '|A_S|^2', 'par', 0.092, 0., 1.))
+            '|A_S|^2', 'par', 0.05, 0., 1.))
 
-        config.addSetting('A0Ph', RooRealSetting('deltaz',
+        config.addSetting('A0Ph', RooRealSetting('delta0',
             'delta_0', 'par', 0., '', ''))
-        config.addSetting('AparPh', RooRealSetting('deltapar',
+        config.addSetting('AparPh', RooRealSetting('deltaPar',
             'delta_par', 'par', -2.93, -2. * pi, 2. * pi))
-        config.addSetting('AperpPh', RooRealSetting('deltaperp',
+        config.addSetting('AperpPh', RooRealSetting('deltaPerp',
             'delta_perp', 'par', 2.91, -2. * pi, 2. * pi))
-        config.addSetting('ASPh', RooRealSetting('deltas',
+        config.addSetting('ASPh', RooRealSetting('deltaS',
             'delta_S', 'par', 2.2, -2. * pi, 2. * pi))
 
         config.addSetting('ReA0', RooFormSetting('ReA0',
@@ -312,9 +339,9 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
             'Im(A_perp)', 'par', 0.149, -1., 1.))
         if incKSWave :
           config.addSetting('ReAS', RooRealSetting('ReAS',
-              'Re(A_S)', 'par', -0.168, -1., 1.))
+              'Re(A_S)', 'par', -0.176, -1., 1.))
           config.addSetting('ImAS', RooRealSetting('ImAS',
-              'Im(A_S)', 'par', 0.252, -1., 1.))
+              'Im(A_S)', 'par', 0.242, -1., 1.))
 
 
       ### efficiencies ###
@@ -469,7 +496,7 @@ class P2VVConfiguration :
     if type(workspace) is RooWorkspace :
       self._workspace = workspace
     elif type(workspace) is str :
-      if workspace is '' :
+      if workspace == '' :
         self._workspace = RooWorkspace('P2VVRooWS')
       else :
         self._workspace = RooWorkspace(workspace)
@@ -481,7 +508,7 @@ class P2VVConfiguration :
     """write workspace to ROOT file
     """
 
-    if self._workspace is '' :
+    if self._workspace == '' :
       print "P2VV - ERROR: P2VVConfiguration.writeWorkspace: no workspace set"
       return
 
@@ -520,7 +547,7 @@ class P2VVConfiguration :
     them in workspace
     """
 
-    if self._workspace is '' :
+    if self._workspace == '' :
       print "P2VV - ERROR: P2VVConfiguration.declareRooVars: no workspace set: can't declare any variables"
       return
 
@@ -571,7 +598,7 @@ class P2VVConfiguration :
     """defines a set of RooFit variables in the workspace
     """
 
-    if self._workspace is '' :
+    if self._workspace == '' :
       print "P2VV - ERROR: P2VVConfiguration.defineRooSet: no workspace set: can't define set"
       return
 
@@ -684,7 +711,7 @@ class RooSetting(P2VVSetting) :
     P2VVSetting.setName(self, name)
 
   def setObservable(self, observable) :
-    if observable is True :
+    if observable :
       self._observable = True
     else :
       self._observable = False
@@ -914,7 +941,7 @@ class RooCatSetting(RooSetting) :
     if dict  != '' : self.setCatTypesDict(dict)
 
   def setObservable(self, observable) :
-    if observable is True :
+    if observable :
       # check number of types for a RooCategory
       if len(self._catTypesDict) > 1 :
         self._observable = True
@@ -1031,7 +1058,7 @@ class RooFormSetting(RooSetting) :
       self._value = ''
 
   def setObservable(self, observable) :
-    if observable is True :
+    if observable :
       print "P2VV - ERROR: RooFormSetting.setObservable(%s): a formula cannot be 'observable'"\
           % self._name
 

@@ -37,12 +37,18 @@ config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal', 'noKSWave'])
 
 # adjust efficiency settings
 config['effType'].setValue('angular')
-config['angEffBasisFuncs'].setValue((10, 4))
+config['angEffBasisFuncs'].setValue((4, 4))
 
 # custom RooFit variable settings
-config['cpsiAng'].set(name = 'helcosthetaK')
-config['cthetaAng'].set(name = 'helcosthetaL')
-config['phiAng'].set(name = 'helphi')
+if config.value('anglesType')[0] == 'trans' :
+  config['cpsiAng'].set(name = 'trcospsi')
+  config['cthetaAng'].set(name = 'trcostheta')
+  config['phiAng'].set(name = 'trphi')
+else :
+  config['cpsiAng'].set(name = 'helcosthetaK')
+  config['cthetaAng'].set(name = 'helcosthetaL')
+  config['phiAng'].set(name = 'helphi')
+
 config['BLifetime'].set(name = 't', min = -2., max = 20.)
 config['iTag'].set(name = 'tagdecision')
 if mode == 'Bd2JpsiKstar' :

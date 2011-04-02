@@ -483,7 +483,7 @@ class AngleFunctionBuilder :
 
     # build angular function for each term in the signal PDF
     for angFunc in angFuncs :
-      name = angFunc[0] + self._anglesType + 'AngFunc'
+      name = angFunc[0] + 'AngFunc'
 
       if name not in ws :
         # express angular function in angle basis functions
@@ -518,7 +518,7 @@ class AngleFunctionBuilder :
     import RooFitDecorators
 
     # construct name
-    name = '%s_%d_%d_%d_%d' % (name, i, j, k, l)
+    name = '%s_%d_%d_%d_%d' % (name + self._anglesType, i, j, k, l)
     name = name.replace('-', 'm')
 
     # get workspace
@@ -761,22 +761,22 @@ class EfficiencyPDFBuilder :
 
   def printEffMoments(self) :
     print 'P2VV - INFO: EfficiencyPDFBuilder::printEffMoments: efficiency moments:'
-    print '  --------------------------------------------------------------------'
-    print '  {0:<23}   {1:<12}   {2:<12}   {3:<12}'\
+    print '  -----------------------------------------------------------------------------'
+    print '  {0:<32}   {1:<12}   {2:<12}   {3:<12}'\
         .format('basis function', 'coefficient', 'std. dev.', 'significance')
-    print '  --------------------------------------------------------------------'
+    print '  -----------------------------------------------------------------------------'
 
     # print moments
     for func in self._basis :
-      print '  {0:<23}'\
-          .format(func if len(func) < 24 else func[:20] + '...'),
+      print '  {0:<32}'\
+          .format(func if len(func) <= 32 else '...' + func[-29:]),
       if func in self._coefs :
         coef = self._coefs[func]
         print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'\
             .format(coef[0], coef[1], coef[2])
       else : print
 
-    print '  --------------------------------------------------------------------'
+    print '  -----------------------------------------------------------------------------'
 
 
   def writeEffMoments(self, filePath = 'effMoments') :
@@ -802,15 +802,15 @@ class EfficiencyPDFBuilder :
     cont = '# %s: efficiency moments\n' % fileName\
          + '# basis type: %s\n'         % self._config.value('effType')\
          + '#\n'\
-         + '# ------------------------------------------------------------------------\n'\
-         + '# {0:<23}   {1:<14}   {2:<13}   {3:<13}\n'\
+         + '# -----------------------------------------------------------------------------\n'\
+         + '# {0:<28}   {1:<14}   {2:<13}   {3:<13}\n'\
                .format('basis function', 'coefficient', 'std. dev.',\
                'significance')\
-         + '# ------------------------------------------------------------------------\n'
+         + '# -----------------------------------------------------------------------------\n'
 
     numMoments = 0
     for func in self._basis :
-      cont += '  {0:<23}'.format(func)
+      cont += '  {0:<28}'.format(func)
       if func in self._coefs :
         coef = self._coefs[func]
         cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'\
@@ -819,7 +819,7 @@ class EfficiencyPDFBuilder :
       else :
         cont += '\n'
 
-    cont += '# ------------------------------------------------------------------------\n\n'
+    cont += '# -----------------------------------------------------------------------------\n\n'
 
     # write content to file
     momFile.write(cont)

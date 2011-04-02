@@ -41,31 +41,53 @@ NTuple = False
 P2VV.loadP2VVLib()
 
 # create P2VV configuration object
-config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])#, 'transAngles',
-    # 'ampsType=polar', 'noKSWave', 'RooBDecay', 'tResModel=3Gauss'])
+config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])#,
+    # , 'transAngles', 'ampsType=polar', 'lambdaCPType=polar', 'noKSWave'
+    # , 'RooBDecay', 'tResModel=3Gauss'])
 
 # custom settings
-config['cpsiAng'].set(name = 'hel_cthetak')
-config['cthetaAng'].set(name = 'hel_cthetal')
-config['phiAng'].set(name = 'hel_phi')
+if config.value('anglesType')[0] == 'trans' :
+  config['cpsiAng'].set(name = 'tr_cpsi')
+  config['cthetaAng'].set(name = 'tr_ctheta')
+  config['phiAng'].set(name = 'tr_phi')
+else :
+  config['cpsiAng'].set(name = 'hel_cthetak')
+  config['cthetaAng'].set(name = 'hel_cthetal')
+  config['phiAng'].set(name = 'hel_phi')
+
 config['BLifetime'].set(name = 't', min = 0., max = 4.)
 config['iTag'].set(name = 'tagInitial')
 if mode == 'Bd2JpsiKstar' :
   config['fTag'].set(name = 'tagFinal')
 config['misTag'].set(realType = 'par', val = 0., min = '', max = '')
 
-config['ReApar'].set(val = -0.6)
-config['ImApar'].set(val = -0.1)
-config['ReAperp'].set(val = -0.6)
-config['ImAperp'].set(val = 0.1)
-config['ReAS'].set(val = -0.2)
-config['ImAS'].set(val = 0.3)
+if config.value('ampsType') == 'polar' :
+  # A_par^2 = 1 - A_0^2 - A_perp^2 :: Im(A_0) = 0
+  config['A0Mag2'].set(val = 0.556)
+  config['AperpMag2'].set(val = 0.233)
+  config['ASMag2'].set(val = 0.05)
+  config['AparPh'].set(val = -2.93)
+  config['AperpPh'].set(val = 2.91)
+  config['ASPh'].set(val = 2.2)
+else :
+  # Re(A_0) = 1 :: Im(A_0) = 0
+  config['ReApar'].set(val = -0.602)
+  config['ImApar'].set(val = -0.129)
+  config['ReAperp'].set(val = -0.630)
+  config['ImAperp'].set(val = 0.149)
+  config['ReAS'].set(val = -0.176)
+  config['ImAS'].set(val = 0.242)
 
 if mode == 'Bd2JpsiKstar' :
   config['dm'].set(min = -1., max = 2.)
 elif mode == 'Bs2Jpsiphi' :
   config['dm'].set(min = 13., max = 23)
-  config['phiCP'].set(val = -0.7)
+  if config.value('lambdaCPType') == 'polar' :
+    config['phiCP'].set(val = -0.2)
+    config['lambdaCPSq'].set(val = 1.)
+  else :
+    config['ReLambdaCP'].set(val = 0.980)
+    config['ImLambdaCP'].set(val = 0.199)
 
 # declare RooFit variables and store them in RooWorkspace
 config.declareRooVars()
@@ -112,7 +134,7 @@ print 'fitJpsiVSignal: %d events in data set' % data.numEntries()
 
 # fit data
 fitResult = pdf.fitTo(data, RooFit.Minos(False), RooFit.Hesse(False),
-    RooFit.NumCPU(8))
+    RooFit.NumCPU(8), RooFit.Save())
 
 # get tags
 itName = config['iTag'].name()
