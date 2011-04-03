@@ -63,20 +63,20 @@ config['misTag'].set(realType = 'par', val = 0., min = '', max = '')
 
 if config.value('ampsType') == 'polar' :
   # A_par^2 = 1 - A_0^2 - A_perp^2 :: Im(A_0) = 0
-  config['A0Mag2'].set(val = 0.556)
-  config['AperpMag2'].set(val = 0.233)
+  config['A0Mag2'].set(val = 0.60)
+  config['AperpMag2'].set(val = 0.16)
   config['ASMag2'].set(val = 0.05)
-  config['AparPh'].set(val = -2.93)
-  config['AperpPh'].set(val = 2.91)
+  config['AparPh'].set(val = 2.5 )
+  config['AperpPh'].set(val = -0.2)
   config['ASPh'].set(val = 2.2)
 else :
   # Re(A_0) = 1 :: Im(A_0) = 0
-  config['ReApar'].set(val = -0.602)
-  config['ImApar'].set(val = -0.129)
-  config['ReAperp'].set(val = -0.630)
-  config['ImAperp'].set(val = 0.149)
-  config['ReAS'].set(val = -0.176)
-  config['ImAS'].set(val = 0.242)
+  config['ReApar'].set(val = -0.51)
+  config['ImApar'].set(val = 0.38)
+  config['ReAperp'].set(val = 0.51)
+  config['ImAperp'].set(val = -0.10)
+  config['ReAS'].set(val = -0.17)
+  config['ImAS'].set(val = 0.23)
 
 if mode == 'Bd2JpsiKstar' :
   config['dm'].set(min = -1., max = 2.)

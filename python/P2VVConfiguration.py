@@ -273,7 +273,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('avgCEven', RooRealSetting('avgCEven',
           'CP average even coefficients', 'par', 1., '', ''))
       config.addSetting('avgCOdd', RooRealSetting('avgCOdd',
-          'CP average odd coefficients', 'par', 0., -3., 3.))
+          'CP average odd coefficients', 'par', 0., -1., 1.))
 
       # amplitudes
       # note: initial values from arXiv:0704.0522v2 [hep-ex] BaBar PUB-07-009
