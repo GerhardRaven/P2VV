@@ -17,15 +17,19 @@ if amplitudes :
           (0.,   0.,       1.170e-06,    6.763e-06,      1.411e-06,    2.743e-06,      2.061e-05,   -9.360e-06),  # Re(S)
           (0.,   0.,      -2.039e-05,    2.945e-05,      3.162e-05,    4.393e-05,     -9.360e-06,    2.066e-04))  # Im(S)
 
-  # convert amplitudes from cartesian to polar (squared magnitudes)
+  # convert amplitudes from cartesian to polar
   # normalize on first three amplitudes
-  vals1, covs1 = convertComplexPars(vals, covs, inType='cart', outType='polar',
-      normalize = 3, magnSquared = True)
+  vals1, covs1 = convertComplexPars(vals, covs, inType='cart',
+      outType='polar', normalize = 3)
+
+  # convert amplitudes to squared magnitudes
+  vals2, covs2 = convertComplexPars(vals1, covs1, inType='polar',
+      outType='polar,magSq', normalize = 0)
 
   # convert amplitudes from polar (squared magnitudes) to cartesian
   # normalize on first amplitude
-  vals2, covs2 = convertComplexPars(vals1, covs1, inType='polar',
-      outType='cart', normalize = 1, magnSquared = True)
+  vals3, covs3 = convertComplexPars(vals2, covs2, inType='polar,magSq',
+      outType='cart', normalize = 1)
 
 else :
   # lambda CPV
@@ -34,16 +38,20 @@ else :
           (-6.181e-01,  1.824      ))
 
   # convert lambda from cartesian to polar
-  vals1, covs1 = convertComplexPars(vals, covs, inType='cart', outType='polar',
-      normalize = 0, magnSquared = False)
+  vals1, covs1 = convertComplexPars(vals, covs, inType='cart',
+      outType='polar', normalize = 0)
 
-  # convert lambda from polar to cartesian
+  # convert lambda to squared magnitude
   vals2, covs2 = convertComplexPars(vals1, covs1, inType='polar',
-      outType='cart', normalize = 0, magnSquared = False)
+      outType='polar,magSq', normalize = 0)
+
+  # convert lambda from polar (squared magnitude) to cartesian
+  vals3, covs3 = convertComplexPars(vals2, covs2, inType='polar,magSq',
+      outType='cart', normalize = 0)
 
 
-# print initial cartesian values and covariance matrix
-print 'initial cartesian values and covariance matrix'
+# print initial cartesian values and their covariance matrix
+print 'initial cartesian values and their covariance matrix'
 for i, val in enumerate(vals) :
   for j, val in enumerate(val) :
     print '{0:9.3g} +- {1:.1g}  '.format(val, sqrt(covs[2*i+j][2*i+j])),
@@ -57,8 +65,8 @@ for covs_i in covs :
   print ')'
 print
 
-# print polar values and covariance matrix
-print 'polar values and covariance matrix'
+# print polar values and their covariance matrix
+print 'polar values and their covariance matrix'
 for i, val in enumerate(vals1) :
   for j, val in enumerate(val) :
     print '{0:9.3g} +- {1:.1g}  '.format(val, sqrt(covs1[2*i+j][2*i+j])),
@@ -72,8 +80,8 @@ for covs_i in covs1 :
   print ')'
 print
 
-# print final cartesian values and covariance matrix
-print 'final cartesian values and covariance matrix'
+# print polar values with squared magnitudes and their covariance matrix
+print 'polar values with squared magnitudes and their covariance matrix'
 for i, val in enumerate(vals2) :
   for j, val in enumerate(val) :
     print '{0:9.3g} +- {1:.1g}  '.format(val, sqrt(covs2[2*i+j][2*i+j])),
@@ -81,6 +89,21 @@ for i, val in enumerate(vals2) :
 print
 
 for covs_i in covs2 :
+  print '(',
+  for cov in covs_i :
+    print '{0:9.3g}'.format(cov),
+  print ')'
+print
+
+# print final cartesian values and their covariance matrix
+print 'final cartesian values and their covariance matrix'
+for i, val in enumerate(vals3) :
+  for j, val in enumerate(val) :
+    print '{0:9.3g} +- {1:.1g}  '.format(val, sqrt(covs3[2*i+j][2*i+j])),
+  print
+print
+
+for covs_i in covs3 :
   print '(',
   for cov in covs_i :
     print '{0:9.3g}'.format(cov),

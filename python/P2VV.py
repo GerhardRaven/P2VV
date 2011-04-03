@@ -37,8 +37,8 @@ def registerMultiCatGen() :
 ###############################################################################
 
 def convertComplexPars(values, covariances = None, inType = 'trans,cart',
-    outType = 'trans,polar', normalize = 0, magnSquared = True) :
-  """converts complex paramters (cartesian, polar, helicity and transversity)
+    outType = 'trans,polar,magSq', normalize = 0) :
+  """converts complex parameters (cartesian, polar, helicity and transversity)
   """
 
   # check input/output arguments
@@ -53,11 +53,15 @@ def convertComplexPars(values, covariances = None, inType = 'trans,cart',
   # determine operation
   inHel    = 'hel'   in inType
   inPolar  = 'polar' in inType
+  inMagSq  =  inPolar  and 'magsq' in inType
+
   outHel   = 'hel'   in outType
   outPolar = 'polar' in outType
+  outMagSq =  outPolar and 'magsq' in outType
 
   # check if we need to do something
-  if inHel == outHel and inPolar == outPolar and normalize < 1 :
+  if inHel == outHel and inPolar == outPolar and inMagSq == outMagSq\
+      and normalize < 1 :
     return (values, covariances)
 
   # check values
@@ -96,7 +100,7 @@ def convertComplexPars(values, covariances = None, inType = 'trans,cart',
 
     valsTemp = [par[:] for par in valsOut]
     for parIter, par in enumerate(valsTemp) :
-      if magnSquared :
+      if inMagSq :
         ReA = sqrt(par[0]) * cos(par[1])
         ImA = sqrt(par[0]) * sin(par[1])
       else :
@@ -111,7 +115,7 @@ def convertComplexPars(values, covariances = None, inType = 'trans,cart',
         JacPolToCart[2 * parIter][2 * parIter + 1]     = -ImA
         JacPolToCart[2 * parIter + 1][2 * parIter]     = ImA / par[0]
         JacPolToCart[2 * parIter + 1][2 * parIter + 1] = ReA
-        if magnSquared :
+        if inMagSq :
           JacPolToCart[2 * parIter][2 * parIter]     /= 2.
           JacPolToCart[2 * parIter + 1][2 * parIter] /= 2.
 
@@ -166,7 +170,7 @@ def convertComplexPars(values, covariances = None, inType = 'trans,cart',
       ASq = par[0] * par[0] + par[1] * par[1]
       Aph = atan2(par[1], par[0])
 
-      if magnSquared :
+      if outMagSq :
         valsOut[parIter][0] = ASq
       else :
         valsOut[parIter][0] = sqrt(ASq)
@@ -178,7 +182,7 @@ def convertComplexPars(values, covariances = None, inType = 'trans,cart',
         JacCartToPol[2 * parIter][2 * parIter + 1]     = par[1]
         JacCartToPol[2 * parIter + 1][2 * parIter]     = -par[1] / ASq
         JacCartToPol[2 * parIter + 1][2 * parIter + 1] =  par[0] / ASq
-        if magnSquared :
+        if outMagSq :
           JacCartToPol[2 * parIter][2 * parIter]     *= 2.
           JacCartToPol[2 * parIter][2 * parIter + 1] *= 2.
         else :
