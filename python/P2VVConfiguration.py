@@ -301,9 +301,9 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
         config.addSetting('A0Ph', RooRealSetting('delta0',
             'delta_0', 'par', 0., '', ''))
         config.addSetting('AparPh', RooRealSetting('deltaPar',
-            'delta_par', 'par', -2.93, -2. * pi, 2. * pi))
+            'delta_par', 'par', 2.93, -2. * pi, 2. * pi))
         config.addSetting('AperpPh', RooRealSetting('deltaPerp',
-            'delta_perp', 'par', 2.91, -2. * pi, 2. * pi))
+            'delta_perp', 'par', 0.232, -2. * pi, 2. * pi))
         config.addSetting('ASPh', RooRealSetting('deltaS',
             'delta_S', 'par', 2.2, -2. * pi, 2. * pi))
 
@@ -332,9 +332,9 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
         config.addSetting('ReApar', RooRealSetting('ReApar',
             'Re(A_par)', 'par', -0.602, -1., 1.))
         config.addSetting('ImApar', RooRealSetting('ImApar',
-            'Im(A_par)', 'par', -0.129, -1., 1.))
+            'Im(A_par)', 'par', 0.129, -1., 1.))
         config.addSetting('ReAperp', RooRealSetting('ReAperp',
-            'Re(A_perp)', 'par', -0.630, -1., 1.))
+            'Re(A_perp)', 'par', 0.630, -1., 1.))
         config.addSetting('ImAperp', RooRealSetting('ImAperp',
             'Im(A_perp)', 'par', 0.149, -1., 1.))
         if incKSWave :
