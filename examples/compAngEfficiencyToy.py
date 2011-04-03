@@ -85,7 +85,8 @@ elif mode == 'Bs2Jpsiphi' :
   config['Gamma'].set(val = 0.679348)
   config['dGamma'].set(val = 0.0599979)
   config['dm'].set(val = 17.8)
-  config['phiCP'].set(val = -0.04)
+  config['ReLambdaCP'].set(val = cos(0.04))
+  config['ImLambdaCP'].set(val = sin(0.04))
 
 # declare RooFit variables and store them in RooWorkspace
 config.declareRooVars()
