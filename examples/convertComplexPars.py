@@ -1,7 +1,8 @@
 from P2VV import convertComplexPars
 from math import sqrt
 
-amplitudes = True
+#amplitudes = True
+amplitudes = False
 
 if amplitudes :
   # transversity amplitudes:

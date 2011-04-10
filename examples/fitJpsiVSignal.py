@@ -40,8 +40,11 @@ NTuple = False
 # load the P2VV library
 P2VV.loadP2VVLib()
 
+# set RooFit output
+P2VV.setRooFitOutput()
+
 # create P2VV configuration object
-config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])#,
+config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])
     # , 'transAngles', 'ampsType=polar', 'lambdaCPType=polar', 'noKSWave'
     # , 'RooBDecay', 'tResModel=3Gauss'])
 
@@ -136,6 +139,9 @@ print 'fitJpsiVSignal: %d events in data set' % data.numEntries()
 fitResult = pdf.fitTo(data, RooFit.Minos(False), RooFit.Hesse(False),
     RooFit.NumCPU(8), RooFit.Save())
 
+# print polar (cartesian) amplitudes if 'ampsType' is cartesian (polar)
+P2VV.convertAmplitudes(config, fitResult, True)
+
 # get tags
 itName = config['iTag'].name()
 itPlus = config['iTag'].catTypesDict()[1]
@@ -144,6 +150,9 @@ if mode == 'Bd2JpsiKstar' :
   ftName = config['fTag'].name()
   ftPlus = config['fTag'].catTypesDict()[1]
   ftMin  = config['fTag'].catTypesDict()[-1]
+
+# set plot style
+P2VVPlots.setP2VVPlotStyle()
 
 # lifetime plots
 tCanv = TCanvas('tCanv', 'Lifetime')

@@ -19,6 +19,34 @@ def loadP2VVLib() :
 
 ###############################################################################
 
+def setRooFitOutput() :
+  """controls the RooFit output messages
+  """
+
+  from ROOT import RooFit, RooMsgService
+
+  # get message service instance
+  msgServ = RooMsgService.instance()
+
+  # remove all output streams
+  for stream in range(msgServ.numStreams()) :
+    msgServ.deleteStream(stream)
+
+  # add default streams for P2VV
+  msgServ.addStream(RooFit.PROGRESS)
+  msgServ.addStream(RooFit.INFO, RooFit.Topic(RooFit.Minimization))
+  #msgServ.getStream(1).addTopic(RooFit.Plotting)
+  msgServ.getStream(1).addTopic(RooFit.Fitting)
+  msgServ.getStream(1).addTopic(RooFit.Eval)
+  msgServ.getStream(1).addTopic(RooFit.Caching)
+  msgServ.getStream(1).addTopic(RooFit.ObjectHandling)
+  msgServ.getStream(1).addTopic(RooFit.InputArguments)
+  msgServ.getStream(1).addTopic(RooFit.DataHandling)
+  msgServ.getStream(1).addTopic(RooFit.NumIntegration)
+
+
+###############################################################################
+
 def registerMultiCatGen() :
   """registers an experimental fast(er) toy generator
   """
@@ -30,8 +58,140 @@ def registerMultiCatGen() :
   RooNumGenConfig.defaultConfig().methodND(False,True)\
       .setLabel("RooMultiCatGenerator")
   RooNumGenConfig.defaultConfig().methodND(False,True).Print()
-  #RooMsgService.instance().addStream(RooFit.DEBUG,\
-  #    RooFit.Topic(RooFit.Generation))
+
+
+###############################################################################
+
+def convertAmplitudes(config, fitResult, printToScreen = True) :
+  """converts amplitudes from a fit result with 'convertComplexPars'
+  """
+
+  import RooFitDecorators
+
+  if config.value('ampsType') == 'polar' :
+    # convert from polar amplitudes to cartesian amplitudes
+    params = []
+    params.append(config['A0Mag2'].name())
+    params.append(config['AparPh'].name())
+    params.append(config['AperpMag2'].name())
+    params.append(config['AperpPh'].name())
+    if config.value('incKSWave') :
+      params.append(config['ASMag2'].name())
+      params.append(config['ASPh'].name())
+
+    result = fitResult.result(params)
+
+    polVals = [(result[1][0], 0.), (1. - result[1][0] - result[1][2],
+        result[1][1]), (result[1][2], result[1][3])]
+    if config.value('incKSWave') :
+      polVals.append((result[1][4], result[1][5]))
+
+    polCovs = [list(row) for row in result[2]]
+    polCovs.insert(1, [0. for i in range(len(result[2]))])  # A0Ph
+    polCovs.insert(2, [-result[2][0][i] - result[2][2][i]\
+        for i in range(len(result[2]))])                    # AparMag2
+    for rowIter, row in enumerate(polCovs) :
+      row.insert(1, 0.)
+      if rowIter == 1 :
+        row.insert(2, 0.)
+      elif rowIter == 2 :
+        row.insert(2, result[2][0][0] + result[2][2][2] + 2. * result[2][0][2])
+      else :
+        row.insert(2, polCovs[2][rowIter])
+
+    convert = convertComplexPars(polVals, polCovs, 'polar, magSq', 'cart', 1)
+    cartVals = convert[0]
+    cartCovs = convert[1]
+
+  else :
+    # convert from cartesian amplitudes to polar amplitudes
+    params = []
+    params.append(config['ReApar'].name())
+    params.append(config['ImApar'].name())
+    params.append(config['ReAperp'].name())
+    params.append(config['ImAperp'].name())
+    if config.value('incKSWave') :
+      params.append(config['ReAS'].name())
+      params.append(config['ImAS'].name())
+
+    result = fitResult.result(params)
+
+    cartVals = [(1., 0.), (result[1][0], result[1][1]), (result[1][2],
+        result[1][3])]
+    if config.value('incKSWave') :
+      cartVals.append((result[1][4], result[1][5]))
+  
+    cartCovs = [list(row) for row in result[2]]
+    cartCovs.insert(0, [0. for i in range(len(cartCovs[0]))])  # ReA0
+    cartCovs.insert(1, [0. for i in range(len(cartCovs[0]))])  # ImA0
+    for row in cartCovs :
+      row.insert(0, 0.)
+      row.insert(1, 0.)
+
+    convert = convertComplexPars(cartVals, cartCovs, 'cart', 'polar, magSq', 3)
+    polVals = convert[0]
+    polCovs = convert[1]
+
+  if printToScreen :
+    # print cartesian values and covariance matrix to screen
+    params = [('Re(A_0)', 'Im(A_0)'), ('Re(A_par)', 'Im(A_par)'),
+        ('Re(A_perp)', 'Im(A_perp)')]
+    if config.value('incKSWave') :
+      params.append(('Re(A_S)', 'Im(A_S)'))
+
+    print 'P2VV - INFO: convertAmplitudes: cartesian amplitudes:'
+    printComplexParams(params, cartVals, cartCovs)
+
+    # print polar values and covariance matrix to screen
+    params = [('|A_0|^2', 'arg(A_0)'), ('|A_par|^2', 'arg(A_par)'),
+        ('|A_perp|^2', 'arg(A_perp)')]
+    if config.value('incKSWave') :
+      params.append(('|A_S|^2', 'arg(A_S)'))
+
+    print 'P2VV - INFO: convertAmplitudes: polar amplitudes:'
+    printComplexParams(params, polVals, polCovs)
+
+  return convert
+
+
+###############################################################################
+
+def printComplexParams(parameters, values, covariances = None) :
+  """print values and covariances of complex parameters to screen
+  """
+
+  from math import sqrt
+
+  # print values and their errors
+  for parIter, par in enumerate(parameters) :
+    print '  {0:<11} = {1:10.4g} +/- {2:9.4g}'.format(par[0],
+        values[parIter][0], sqrt(covariances[2*parIter][2*parIter]))
+    print '  {0:<11} = {1:10.4g} +/- {2:9.4g}'.format(par[1],
+        values[parIter][1], sqrt(covariances[2*parIter+1][2*parIter+1]))
+
+  if covariances :
+    # print covariance matrix
+    print '\n  covariance matrix:\n              ',
+    for par in parameters :
+      print '{0:>11}  {1:>11} '.format(par[0], par[1]),
+    print
+
+    for parIter0, par in enumerate(parameters) :
+      print '  {0:<11} '.format(par[0]),
+      for parIter1 in range(len(parameters)) :
+        print '{0:11.3e}  {1:11.3e} '.format(\
+            covariances[2*parIter0][2*parIter1],\
+            covariances[2*parIter0][2*parIter1+1]),
+      print
+
+      print '  {0:<11} '.format(par[1]),
+      for parIter1 in range(len(parameters)) :
+        print '{0:11.3e}  {1:11.3e} '.format(\
+            covariances[2*parIter0+1][2*parIter1],\
+            covariances[2*parIter0+1][2*parIter1+1]),
+      print
+
+  print
 
 
 ###############################################################################

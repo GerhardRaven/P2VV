@@ -295,8 +295,9 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
             '|A_par|^2', '1. - @0 - @1', ['A0Mag2', 'AperpMag2']))
         config.addSetting('AperpMag2', RooRealSetting('AperpMag2',
             '|A_perp|^2', 'par', 0.233, 0., 1.))
-        config.addSetting('ASMag2', RooRealSetting('ASMag2',
-            '|A_S|^2', 'par', 0.05, 0., 1.))
+        if incKSWave :
+          config.addSetting('ASMag2', RooRealSetting('ASMag2',
+              '|A_S|^2', 'par', 0.05, 0., 1.))
 
         config.addSetting('A0Ph', RooRealSetting('delta0',
             'delta_0', 'par', 0., '', ''))
@@ -304,8 +305,9 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
             'delta_par', 'par', 2.93, -2. * pi, 2. * pi))
         config.addSetting('AperpPh', RooRealSetting('deltaPerp',
             'delta_perp', 'par', 0.232, -2. * pi, 2. * pi))
-        config.addSetting('ASPh', RooRealSetting('deltaS',
-            'delta_S', 'par', 2.2, -2. * pi, 2. * pi))
+        if incKSWave :
+          config.addSetting('ASPh', RooRealSetting('deltaS',
+              'delta_S', 'par', 2.2, -2. * pi, 2. * pi))
 
         config.addSetting('ReA0', RooFormSetting('ReA0',
             'Re(A_0)', 'sqrt(@0) * cos(@1)', ['A0Mag2', 'A0Ph']))

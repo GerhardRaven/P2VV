@@ -6,12 +6,12 @@
 ##                                                                           ##
 ###############################################################################
 
-from ROOT import RooFit, RooArgSet, RooArgList, RooDataSet, RooWorkspace
+from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult
 
 # RooDataSet functions
 
 def _RooDataSetIter(self) :
-    for i in range(self.numEntries()) : yield self.get(i)
+  for i in range(self.numEntries()) : yield self.get(i)
 
 RooDataSet.__iter__ = _RooDataSetIter
 
@@ -19,21 +19,26 @@ RooDataSet.__iter__ = _RooDataSetIter
 # RooArgSet/RooArgList functions
 
 def _RooArgSetIter(self) :
-    z = self.createIterator()
-    while True :
-        a = z.Next()
-        if not a : return
-        yield a
+  z = self.createIterator()
+  while True :
+    a = z.Next()
+    if not a : return
+    yield a
+
+def _RooArgSetContains(self, name) :
+  for i in self :
+    if i.GetName() == name : return True
+  return False
 
 RooArgList.__iter__     = _RooArgSetIter
+RooArgList.__contains__ = _RooArgSetContains
 RooArgList.__len__      = lambda s    : s.getSize()
-RooArgList.__contains__ = lambda s, i : s.contains(i)
 RooArgList.nameList     = lambda s    : [j.GetName() for j in s] 
 RooArgList.names        = lambda s    : ','.join(s.nameList())
 
 RooArgSet.__iter__      = _RooArgSetIter
+RooArgSet.__contains__  = _RooArgSetContains
 RooArgSet.__len__       = lambda s    : s.getSize()
-RooArgSet.__contains__  = lambda s, i : s.contains(i)
 RooArgSet.nameList      = lambda s    : [j.GetName() for j in s]
 RooArgSet.names         = lambda s    : ','.join(s.nameList())
 #RooArgSet.__iadd__      = lambda s,y  : s.add(y)
@@ -44,6 +49,8 @@ RooArgSet.names         = lambda s    : ','.join(s.nameList())
 # RooWorkspace functions
 
 def _RooWorkspacePut(self, x) :
+  from ROOT import RooFit
+
   _import = getattr(RooWorkspace, 'import')
 
   if _import(self, x, RooFit.Silence()) : return None
@@ -74,4 +81,29 @@ RooWorkspace.__contains__ = lambda s, i    : True if s.obj(i) else False
 #RooWorkspace.__setitem__  = lambda s, k, v : s.put('%s[%s]'%(k,v))
 RooWorkspace.put          = _RooWorkspacePut
 RooWorkspace.setConstant  = _setConstant
+
+
+# RooFitResult functions
+
+def _RooFitResultGet(self, parList) :
+  # get parameter indices in fit result
+  indices = {}
+  floatPars = self.floatParsFinal()
+  for par in parList :
+    index = floatPars.index(par)
+    if index >= 0 :
+      indices[par] = index
+    else :
+      print 'P2VV - ERROR: RooFitResult::result(): fit result does not contain parameter', par
+      return None
+
+  covMatrix = self.covarianceMatrix()
+
+  values = tuple([floatPars[indices[par]].getVal() for par in parList])
+  covariances = tuple([tuple([covMatrix[indices[row]][indices[col]]\
+      for col in parList]) for row in parList])
+
+  return (tuple(parList), values, covariances)
+
+RooFitResult.result = _RooFitResultGet
 
