@@ -97,6 +97,7 @@ def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfO
     rp = _obs.emptyClone( _obs.GetName() + '_resid' )
     _stash.append(rp)
     if logy : _obs.SetMinimum(0.1)
+    #TODO: plot rh as a filled histogram with fillcolor blue...
     for i in dataOpts : 
         if i.opcode() == 'MarkerSize'  : rh.SetMarkerSize(  i.getDouble(0) )
         if i.opcode() == 'MarkerStyle' : rh.SetMarkerStyle( i.getInt(0) )
@@ -139,7 +140,7 @@ def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfO
     c.Update()
     return c
 
-def writeCorrMatrixLatex(roofitresult):
+def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
     parlist = roofitresult.floatParsFinal()
     npar = parlist.getSize()
     corr = []
@@ -157,8 +158,7 @@ def writeCorrMatrixLatex(roofitresult):
     string += layoutstring+'\n' 
     string += '\\hline\n'
     string += 'Parameter '
-    for i in range(npar):
-        string += ' & %s'%(parlist[i].GetName())
+    for i in range(npar): string += ' & %s'%(parlist[i].GetName())
     string += ' \\\\\n'
     string += '\\hline\n\\hline\n'
 
@@ -180,79 +180,41 @@ def writeCorrMatrixLatex(roofitresult):
     string += '\\end{table}\n'
     string += '\\end{document}\n'
 
-    f = open('corrtable.tex', 'w')
-    f.write(string)
-    f.close
+    if fname :
+        f = open(fname)
+        f.write(string)
+        f.close
 
     return {'string':string}
 
-def writeFitParamsLatex(paramlist):
-    import subprocess
-    paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()),RooFit.OutputFile('temp.tex'))
-
-    orig = open('temp.tex','r')
-    f = open('fitparams.tex','w')
-
-    string = '\\documentclass{article}\n'
-    string += '\\begin{document}\n'
-    string += orig.read()
-    string += '\\end{document}\n'
-    
-    f.write(string)
-    orig.close()
+def writeFitParamsLatex(paramlist,fname = 'fitparams.tex'):
+    import tempfile,os
+    tmpfile = tempfile.NamedTemporaryFile()
+    tmpfile.close() 
+    paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()),RooFit.OutputFile(tmpfile.name))
+    tmpfile = open(tmpfile.name,'r')
+    f = open(fname,'w')
+    f.write('\\documentclass{article}\n\\begin{document}\n')
+    f.write( tmpfile.read() )
+    f.write('\\end{document}\n')
+    tmpfile.close()
     f.close()
 
-    subprocess.call(['rm', 'temp.tex'])
+    os.remove(tmpfile.name)
     
-    return
 
 def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max):
-    import time
     print '**************************************************'
     print 'Going to make profile for %s and %s'%(param1.GetName(),param2.GetName())
     print '**************************************************'
-    param1.setMin(param1min)
-    param1.setMax(param1max)
-    param2.setMin(param2min)
-    param2.setMax(param2max)
-
-    param1_min = param1.getMin()
-    param1_max = param1.getMax()
-    param1_int = param1_min-param1_max
-
-    #get range for param2
-    param2_min = param2.getMin()
-    param2_max = param2.getMax()
-    param2_int = param2_max - param2_min
 
     nll = pdf.createNLL(data,RooFit.NumCPU(8),RooFit.Extended(true))
-    ProfileLikelihood = TH2D(name,name,npoints,param1_min,param1_max,npoints,param2_min,param2_max)
     profile = nll.createProfile(RooArgSet( param1,param2))
-    x = ProfileLikelihood.GetXaxis()
-    y = ProfileLikelihood.GetYaxis()
 
-    sumtime = 0
-    
-    for i in range(1,x.GetNbins()+1):  
-        param1.setVal( x.GetBinCenter(i) )
-        for j in range(1,y.GetNbins()+1):
-            param2.setVal( y.GetBinCenter(j) )
-            print '***************************************************************************'
-            print 'At gridpoint i = %i from %i and j = %i from %i'%(i,npoints,j,npoints)
-            print '%s at current gridpoint ='%(param1.GetName()), param1.getVal()
-            print '%s at current gridpoint ='%(param2.GetName()), param2.getVal()
-            print '***************************************************************************'
-            timestart = time.time()
-            ProfileLikelihood.SetBinContent(i,j,profile.getVal())
-            timeend = time.time()
-            elapsedmin = (timeend-timestart)/60.
-            if (i!=1 or (i==1 and j!=1)): 
-                sumtime += elapsedmin
-                avgtime = sumtime/((i-1)*npoints+j-1)#(ij) = is the (i-1)*npoints+j-1 th fit, but we exclude the first one, due the initialization
-                print 'This step took %f min. '%(elapsedmin)
-                print 'Average time per step is now ',avgtime
-                print 'Estimated remaining running time is', ((npoints*npoints)-((i-1)*npoints+j-1))*avgtime
-            
+    ProfileLikelihood = profile.createHistogram(name,         param1, RooFit.Binning(npoints,param1_min,param1_max)
+                                               , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
+                                               , RooFit.Scaling(False)
+                                               )
     tfile = TFile('%s.root'%(name),'RECREATE')
     ProfileLikelihood.Write() 
     tfile.Close()
