@@ -23,13 +23,14 @@ rm -f *.so *.o *.d *.h *.cxx
 
 # compile code
 for SRCFILE in\
-    P2VV.cxx\
     Moments.cxx\
-    RooP2VVAngleBasis.cxx\
-    RooMultiCatGenerator.cxx\
+    P2VV.cxx\
     RooBTagDecay.cxx\
-    RooThresholdPdf.cxx\
-    RooGammaPdf.cxx
+    RooGammaPdf.cxx\
+    RooMultiCatGenerator.cxx\
+    RooMultiMultinomial.cxx\
+    RooP2VVAngleBasis.cxx\
+    RooThresholdPdf.cxx
 do
   $CPP $CPPFLAGS -fPIC -DPIC -MMD -c $P2VVROOT/$SRCDIR/$SRCFILE
 done

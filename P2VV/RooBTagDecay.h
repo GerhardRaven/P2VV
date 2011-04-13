@@ -13,8 +13,8 @@
  * listed in LICENSE (http://roofit.sourceforge.net/license.txt)             *
  *****************************************************************************/
 
-#ifndef ROO_BTAGDECAY
-#define ROO_BTAGDECAY
+#ifndef ROO_B_TAG_DECAY
+#define ROO_B_TAG_DECAY
 
 #include "RooAbsAnaConvPdf.h"
 #include "RooRealProxy.h"
