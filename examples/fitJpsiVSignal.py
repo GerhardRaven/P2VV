@@ -12,10 +12,6 @@
 ##                                                                           ##
 ###############################################################################
 
-import P2VV, P2VVConfiguration, P2VVModelBuilders, P2VVPlots
-from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
-
-###############################################################################
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
 mode = 'Bd2JpsiKstar'
 #mode = 'Bs2Jpsiphi'
@@ -37,6 +33,9 @@ nEvents = 50000
 NTuple = False
 
 ###############################################################################
+import P2VV, P2VVConfiguration, P2VVModelBuilders, P2VVPlots
+from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
+
 # load the P2VV library
 P2VV.loadP2VVLib()
 

@@ -13,11 +13,6 @@
 ##                                                                           ##
 ###############################################################################
 
-import P2VV, P2VVConfiguration, P2VVModelBuilders
-from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
-from math import sqrt, sin, cos
-
-###############################################################################
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
 mode = 'Bd2JpsiKstar'
 #mode = 'Bs2Jpsiphi'
@@ -39,6 +34,10 @@ nEvents = 50000
 NTuple = False
 
 ###############################################################################
+import P2VV, P2VVConfiguration, P2VVModelBuilders
+from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
+from math import sqrt, sin, cos
+
 # load the P2VV library
 P2VV.loadP2VVLib()
 

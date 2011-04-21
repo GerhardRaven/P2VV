@@ -12,11 +12,6 @@
 ##                                                                           ##
 ###############################################################################
 
-import P2VV, P2VVConfiguration, P2VVModelBuilders
-from ROOT import RooDataSet, RooFit, TCanvas, TChain
-from math import sqrt, sin, cos
-
-###############################################################################
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
 #mode = 'Bd2JpsiKstar'
 mode = 'Bs2Jpsiphi'
@@ -29,6 +24,10 @@ dataSetName  = 'MyTree'
 dataFilePath = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
 
 ###############################################################################
+import P2VV, P2VVConfiguration, P2VVModelBuilders
+from ROOT import RooDataSet, RooFit, TCanvas, TChain
+from math import sqrt, sin, cos
+
 # load the P2VV library
 P2VV.loadP2VVLib()
 
