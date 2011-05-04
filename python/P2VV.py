@@ -68,7 +68,7 @@ def convertAmplitudes(config, fitResult, printToScreen = True) :
 
   import RooFitDecorators
 
-  if config.value('ampsType') == 'polar' :
+  if config.value('ampsType') == 'transPolar' :
     # convert from polar amplitudes to cartesian amplitudes
     params = []
     params.append(config['A0Mag2'].name())

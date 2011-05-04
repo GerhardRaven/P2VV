@@ -86,16 +86,62 @@ def buildJpsiV(config) :
   one   = config['oneConst'].name()
   minus = config['minusConst'].name()
 
-  # get amplitudes
-  ReA0    = config['ReA0'].name()
-  ImA0    = config['ImA0'].name()
-  ReApar  = config['ReApar'].name()
-  ImApar  = config['ImApar'].name()
-  ReAperp = config['ReAperp'].name()
-  ImAperp = config['ImAperp'].name()
-  if config.value('incKSWave') :
-    ReAS    = config['ReAS'].name()
-    ImAS    = config['ImAS'].name()
+  # get angular coefficients
+  if mode == 'Bd2JpsiKstar' :
+    J1_c2 = config['J1_c2'].name()
+    J2_s2 = config['J2_s2'].name()
+    J3_s2 = config['J3_s2'].name()
+    J4_sc = config['J4_sc'].name()
+    J8_sc = config['J8_sc'].name()
+    J9_s2 = config['J9_s2'].name()
+    if config.value('incKSWave') :
+      J1_1 = config['J1_1'].name()
+      J1_c = config['J1_c'].name()
+      J4_s = config['J4_s'].name()
+      J8_s = config['J8_s'].name()
+
+  elif mode == 'Bs2Jpsiphi' :
+    J1_c2_cosh = config['J1_c2_cosh'].name()
+    J1_c2_cos  = config['J1_c2_cos'].name()
+    J1_c2_sinh = config['J1_c2_sinh'].name()
+    J1_c2_sin  = config['J1_c2_sin'].name()
+    J2_s2_cosh = config['J2_s2_cosh'].name()
+    J2_s2_cos  = config['J2_s2_cos'].name()
+    J2_s2_sinh = config['J2_s2_sinh'].name()
+    J2_s2_sin  = config['J2_s2_sin'].name()
+    J3_s2_cosh = config['J3_s2_cosh'].name()
+    J3_s2_cos  = config['J3_s2_cos'].name()
+    J3_s2_sinh = config['J3_s2_sinh'].name()
+    J3_s2_sin  = config['J3_s2_sin'].name()
+    J4_sc_cosh = config['J4_sc_cosh'].name()
+    J4_sc_cos  = config['J4_sc_cos'].name()
+    J4_sc_sinh = config['J4_sc_sinh'].name()
+    J4_sc_sin  = config['J4_sc_sin'].name()
+    J8_sc_cosh = config['J8_sc_cosh'].name()
+    J8_sc_cos  = config['J8_sc_cos'].name()
+    J8_sc_sinh = config['J8_sc_sinh'].name()
+    J8_sc_sin  = config['J8_sc_sin'].name()
+    J9_s2_cosh = config['J9_s2_cosh'].name()
+    J9_s2_cos  = config['J9_s2_cos'].name()
+    J9_s2_sinh = config['J9_s2_sinh'].name()
+    J9_s2_sin  = config['J9_s2_sin'].name()
+    if config.value('incKSWave') :
+      J1_1_cosh = config['J1_1_cosh'].name()
+      J1_1_cos  = config['J1_1_cos'].name()
+      J1_1_sinh = config['J1_1_sinh'].name()
+      J1_1_sin  = config['J1_1_sin'].name()
+      J1_c_cosh = config['J1_c_cosh'].name()
+      J1_c_cos  = config['J1_c_cos'].name()
+      J1_c_sinh = config['J1_c_sinh'].name()
+      J1_c_sin  = config['J1_c_sin'].name()
+      J4_s_cosh = config['J4_s_cosh'].name()
+      J4_s_cos  = config['J4_s_cos'].name()
+      J4_s_sinh = config['J4_s_sinh'].name()
+      J4_s_sin  = config['J4_s_sin'].name()
+      J8_s_cosh = config['J8_s_cosh'].name()
+      J8_s_cos  = config['J8_s_cos'].name()
+      J8_s_sinh = config['J8_s_sinh'].name()
+      J8_s_sin  = config['J8_s_sin'].name()
 
   # get observables
   BLifetime = config['BLifetime'].name()
@@ -126,91 +172,40 @@ def buildJpsiV(config) :
   avgCEven   = config['avgCEven'].name()
   avgCOdd    = config['avgCOdd'].name()
 
-  # define the relevant combinations of amplitudes
-  ws.factory("expr::A0Sq('(@0 * @0 + @1 * @1)', {%s, %s})"\
-      % (ReA0, ImA0))                                  # |A_0|^2
-  ws.factory("expr::AparSq('(@0 * @0 + @1 * @1)', {%s, %s})"\
-      % (ReApar, ImApar))                              # |A_par|^2
-  ws.factory("expr::AperpSq('(@0 * @0 + @1 * @1)', {%s, %s})"\
-      % (ReAperp, ImAperp))                            # |A_perp|^2
-  ws.factory("expr::ReA0Apar('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
-      % (ReA0, ImA0, ReApar, ImApar))                  # Re(A_0* A_par)
-  ws.factory("expr::ReA0Aperp('(@0 * @2 + @1 * @3 )', {%s, %s, %s, %s})"\
-      % (ReA0, ImA0, ReAperp, ImAperp))                # Re(A_0* A_perp)
-  ws.factory("expr::ImA0Aperp('(@0 * @3 - @1 * @2)', {%s, %s, %s, %s})"\
-      % (ReA0, ImA0, ReAperp, ImAperp))                # Im(A_0* A_perp)
-  ws.factory("expr::ReAparAperp('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
-      % (ReApar, ImApar, ReAperp, ImAperp))            # Re(A_par* A_perp)
-  ws.factory("expr::ImAparAperp('(@0 * @3 - @1 * @2)', {%s, %s, %s, %s})"\
-      % (ReApar, ImApar, ReAperp, ImAperp))            # Im(A_par* A_perp)
-  if config.value('incKSWave') :
-    ws.factory("expr::ASSq('(@0 * @0 + @1 * @1)', {%s, %s})"\
-        % (ReAS, ImAS))                                  # |A_S|^2
-    ws.factory("expr::ReA0AS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
-        % (ReA0, ImA0, ReAS, ImAS))                      # Re(A_0* A_S)
-    ws.factory("expr::ReAparAS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
-        % (ReApar, ImApar, ReAS, ImAS))                  # Re(A_par* A_S)
-    ws.factory("expr::ReAperpAS('(@0 * @2 + @1 * @3)', {%s, %s, %s, %s})"\
-        % (ReAperp, ImAperp, ReAS, ImAS))                # Re(A_perp* A_S)
-    ws.factory("expr::ImAperpAS('(@0 * @3 - @1 * @2)', {%s, %s, %s, %s})"\
-        % (ReAperp, ImAperp, ReAS, ImAS))                # Im(A_perp* A_S)
-
   # set strings to build time function coefficients
-  coshCStr =\
-      "prod(A0Sq,                {cEven}     A0SqAngFunc),        "\
-      "prod(AparSq,              {cEven}     AparSqAngFunc),      "\
-      "prod(AperpSq,             {cEven}     AperpSqAngFunc),     "\
-      "prod(ReA0Apar,            {cEven}     ReA0AparAngFunc),    "\
-      "prod(ImA0Aperp,           {cEven} {C} ImA0AperpAngFunc),   "\
-      "prod(ImAparAperp,         {cEven} {C} ImAparAperpAngFunc), "
-  if config.value('incKSWave') :
-    coshCStr +=\
-      "prod(ASSq,                {cEven}     ASSqAngFunc),        "\
-      "prod(ReA0AS,              {cEven}     ReA0ASAngFunc),      "\
-      "prod(ReAparAS,            {cEven}     ReAparASAngFunc),    "\
-      "prod(ImAperpAS,           {cEven} {C} ImAperpASAngFunc)    "
+  coshCStr = ''
+  cosCStr  = ''
+  if mode == 'Bs2Jpsiphi' :
+    sinhCStr = ''
+    sinCStr  = ''
 
-  cosCStr =\
-      "prod(A0Sq,                {cOdd}  {C} A0SqAngFunc),        "\
-      "prod(AparSq,              {cOdd}  {C} AparSqAngFunc),      "\
-      "prod(AperpSq,             {cOdd}  {C} AperpSqAngFunc),     "\
-      "prod(ReA0Apar,            {cOdd}  {C} ReA0AparAngFunc),    "\
-      "prod(ImA0Aperp,           {cOdd}      ImA0AperpAngFunc),   "\
-      "prod(ImAparAperp,         {cOdd}      ImAparAperpAngFunc), "
+  coefficients = ['J1_c2', 'J2_s2', 'J3_s2', 'J4_sc', 'J8_sc', 'J9_s2']
   if config.value('incKSWave') :
-    cosCStr +=\
-      "prod(ASSq,                {cOdd}  {C} ASSqAngFunc),        "\
-      "prod(ReA0AS,              {cOdd}  {C} ReA0ASAngFunc),      "\
-      "prod(ReAparAS,            {cOdd}  {C} ReAparASAngFunc),    "\
-      "prod(ImAperpAS,           {cOdd}      ImAperpASAngFunc)    "
+    coefficients += ['J1_1', 'J1_c', 'J4_s', 'J8_s']
 
-  sinhCStr =\
-      "prod(A0Sq,        {minus} {cEven} {D} A0SqAngFunc),        "\
-      "prod(AparSq,      {minus} {cEven} {D} AparSqAngFunc),      "\
-      "prod(AperpSq,             {cEven} {D} AperpSqAngFunc),     "\
-      "prod(ReA0Apar,    {minus} {cEven} {D} ReA0AparAngFunc),    "\
-      "prod(ReA0Aperp,           {cEven} {S} ImA0AperpAngFunc),   "\
-      "prod(ReAparAperp,         {cEven} {S} ImAparAperpAngFunc), "
-  if config.value('incKSWave') :
-    sinhCStr +=\
-      "prod(ASSq,        {minus} {cEven} {D} ASSqAngFunc),        "\
-      "prod(ReA0AS,      {minus} {cEven} {D} ReA0ASAngFunc),      "\
-      "prod(ReAparAS,    {minus} {cEven} {D} ReAparASAngFunc),    "\
-      "prod(ReAperpAS,   {minus} {cEven} {S} ImAperpASAngFunc)    "
+  for coef in coefficients :
+    if mode == 'Bd2JpsiKstar' :
+      coefName = config[coef].name()
 
-  sinCStr =\
-      "prod(A0Sq,        {minus} {cOdd}  {S} A0SqAngFunc),        "\
-      "prod(AparSq,      {minus} {cOdd}  {S} AparSqAngFunc),      "\
-      "prod(AperpSq,             {cOdd}  {S} AperpSqAngFunc),     "\
-      "prod(ReA0Apar,    {minus} {cOdd}  {S} ReA0AparAngFunc),    "\
-      "prod(ReA0Aperp,   {minus} {cOdd}  {D} ImA0AperpAngFunc),   "\
-      "prod(ReAparAperp, {minus} {cOdd}  {D} ImAparAperpAngFunc), "
-  if config.value('incKSWave') :
-    sinCStr +=\
-      "prod(ASSq,        {minus} {cOdd}  {S} ASSqAngFunc),        "\
-      "prod(ReA0AS,      {minus} {cOdd}  {S} ReA0ASAngFunc),      "\
-      "prod(ReAparAS,    {minus} {cOdd}  {S} ReAparASAngFunc),    "\
-      "prod(ReAperpAS,           {cOdd}  {D} ImAperpASAngFunc)    "
+      coshCStr += 'prod({cEven} ' + coefName + ', ' + coef + '_angFunc), '
+      cosCStr  += 'prod({cOdd} '  + coefName + ', ' + coef + '_angFunc), '
+
+    elif mode == 'Bs2Jpsiphi' :
+      coshName = config[coef + '_cosh'].name()
+      cosName  = config[coef + '_cos'].name()
+      sinhName = config[coef + '_sinh'].name()
+      sinName  = config[coef + '_sin'].name()
+
+      coshCStr += 'prod({cEven} ' + coshName + ', ' + coef + '_angFunc), '
+      cosCStr  += 'prod({cOdd} '  + cosName  + ', ' + coef + '_angFunc), '
+      sinhCStr += 'prod({cEven} ' + sinhName + ', ' + coef + '_angFunc), '
+      sinCStr  += 'prod({cOdd} '  + sinName  + ', ' + coef + '_angFunc), '
+
+  coshCStr = coshCStr[:-1]
+  cosCStr  = cosCStr[:-1]
+  if mode == 'Bs2Jpsiphi' :
+    sinhCStr = sinhCStr[:-1]
+    sinCStr  = sinCStr[:-1]
 
   # build the signal PDF
   print "P2VV - INFO: buildJpsiV: building PDF '%s'" % pdfName
@@ -237,8 +232,8 @@ def buildJpsiV(config) :
         print 'P2VV - INFO: buildJpsiV: not factorizing time and angular PDFs'
 
         # format time function strings
-        coshCStr = coshCStr.format(C = '', cEven = 'cEven,')
-        cosCStr  =  cosCStr.format(C = '', cOdd  = 'cOdd,')
+        coshCStr = coshCStr.format(cEven = 'cEven,')
+        cosCStr  =  cosCStr.format(cOdd  = 'cOdd,')
 
         # build time function coefficients
         ws.factory('sum::cCosh(' + coshCStr + ')')
@@ -257,7 +252,7 @@ def buildJpsiV(config) :
         print 'P2VV - INFO: buildJpsiV: factorizing time and angular PDFs'
 
         # format time function strings
-        coefStr = coshCStr.format(C = '', cEven = '')
+        coefStr = coshCStr.format(cEven = '')
 
         # build time function coefficient
         onesStr = ''
@@ -290,12 +285,10 @@ def buildJpsiV(config) :
           % (iTag, avgCOdd))
 
       # format time function strings
-      coshCStr = coshCStr.format(C = CCP + ',', cEven = 'cEven,')
-      cosCStr  =  cosCStr.format(C = CCP + ',', cOdd  = 'cOdd,')
-      sinhCStr = sinhCStr.format(D = DCP + ',', S = SCP + ',',
-          minus = minus + ',', cEven = 'cEven,')
-      sinCStr  =  sinCStr.format(D = DCP + ',', S = SCP + ',',
-          minus = minus + ',', cOdd  = 'cOdd,')
+      coshCStr = coshCStr.format(cEven = 'cEven,')
+      cosCStr  =  cosCStr.format(cOdd  = 'cOdd,')
+      sinhCStr = sinhCStr.format(cEven = 'cEven,')
+      sinCStr  =  sinCStr.format(cOdd  = 'cOdd,')
 
       # build time function coefficients
       ws.factory('sum::cCosh(' + coshCStr + ')')
@@ -314,7 +307,7 @@ def buildJpsiV(config) :
       # B0->J/psiK*
 
       # format time function string
-      coshCStr = coshCStr.format(C = '', cEven = '')
+      coshCStr = coshCStr.format(cEven = '')
 
       if config.value('noFactFlavSpec') :
         print 'P2VV - INFO: buildJpsiV: not factorizing time and angular PDFs'
@@ -347,12 +340,10 @@ def buildJpsiV(config) :
       # B_s0->J/psiphi
 
       # format time function strings
-      coshCStr = coshCStr.format(C = CCP + ',', cEven = '')
-      cosCStr  =  cosCStr.format(C = CCP + ',', cOdd  = '')
-      sinhCStr = sinhCStr.format(D = DCP + ',', S = SCP + ',',
-          minus = minus + ',', cEven = '')
-      sinCStr  =  sinCStr.format(D = DCP + ',', S = SCP + ',',
-          minus = minus + ',', cOdd  = '')
+      coshCStr = coshCStr.format(cEven = '')
+      cosCStr  =  cosCStr.format(cOdd  = '')
+      sinhCStr = sinhCStr.format(cEven = '')
+      sinCStr  =  sinCStr.format(cOdd  = '')
 
       # build time function coefficients
       ws.factory('sum::cCosh(' + coshCStr + ')')
@@ -417,54 +408,54 @@ class AngleFunctionBuilder :
     angFuncs = []
     if self._anglesType == 'Trans' :
       # using transversity angles
-      angFuncs.append(('A0Sq',        [(0, 0, 0,  0,  2.             ),
-                                       (0, 0, 2,  0,  sqrt( 1. /  5.)),
-                                       (0, 0, 2,  2, -sqrt( 3. /  5.)),
-                                       (2, 0, 0,  0,  4.             ),
-                                       (2, 0, 2,  0,  sqrt( 4. /  5.)),
-                                       (2, 0, 2,  2, -sqrt(12. /  5.))]))
-      angFuncs.append(('AparSq',      [(2, 2, 0,  0,  1.             ),
-                                       (2, 2, 2,  0,  sqrt( 1. / 20.)),
-                                       (2, 2, 2,  2,  sqrt( 3. / 20.))]))
-      angFuncs.append(('AperpSq',     [(2, 2, 0,  0,  1.             ),
-                                       (2, 2, 2,  0, -sqrt( 1. /  5.))]))
-      angFuncs.append(('ReA0Apar',    [(2, 1, 2, -2, -sqrt( 6. /  5.))]))
-      angFuncs.append(('ImA0Aperp',   [(2, 1, 2,  1,  sqrt( 6. /  5.))]))
-      angFuncs.append(('ImAparAperp', [(2, 2, 2, -1,  sqrt( 3. /  5.))]))
+      angFuncs.append(('J1_c2',  [(0, 0, 0,  0,  2.             ),
+                                  (0, 0, 2,  0,  sqrt(  1. / 5.)),
+                                  (0, 0, 2,  2, -sqrt(  3. / 5.)),
+                                  (2, 0, 0,  0,  4.             ),
+                                  (2, 0, 2,  0,  sqrt(  4. / 5.)),
+                                  (2, 0, 2,  2, -sqrt( 12. / 5.))]))
+      angFuncs.append(('J2_s2',  [(2, 2, 0,  0,  2.             ),
+                                  (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                  (2, 2, 2,  2,  sqrt(  3. / 5.))]))
+      angFuncs.append(('J3_s2',  [(2, 2, 0,  0,  2.             ),
+                                  (2, 2, 2,  0, -sqrt(  4. / 5.))]))
+      angFuncs.append(('J4_sc',  [(2, 1, 2, -2, -sqrt( 48. / 5.))]))
+      angFuncs.append(('J8_sc',  [(2, 1, 2,  1, -sqrt( 48. / 5.))]))
+      angFuncs.append(('J9_s2',  [(2, 2, 2, -1,  sqrt( 12. / 5.))]))
 
       if self._config.value('incKSWave') :
-        angFuncs.append(('ASSq',        [(0, 0, 0,  0,  2.             ),
-                                         (0, 0, 2,  0,  sqrt( 1. /  5.)),
-                                         (0, 0, 2,  2, -sqrt( 3. /  5.))]))
-        angFuncs.append(('ReA0AS',      [(1, 0, 0,  0,  sqrt(48.      )),
-                                         (1, 0, 2,  0,  sqrt(12. /  5.)),
-                                         (1, 0, 2,  2, -sqrt(36. /  5.))]))
-        angFuncs.append(('ReAparAS',    [(1, 1, 2, -2, -sqrt(18. /  5.))]))
-        angFuncs.append(('ImAperpAS',   [(1, 1, 2,  1, -sqrt(18. /  5.))]))
+        angFuncs.append(('J1_1', [(0, 0, 0,  0,  6.             ),
+                                  (0, 0, 2,  0,  sqrt(  9. / 5.)),
+                                  (0, 0, 2,  2, -sqrt( 27. / 5.))]))
+        angFuncs.append(('J1_c', [(1, 0, 0,  0,  6.             ),
+                                  (1, 0, 2,  0,  sqrt(  9. / 5.)),
+                                  (1, 0, 2,  2, -sqrt( 27. / 5.))]))
+        angFuncs.append(('J4_s', [(1, 1, 2, -2, -sqrt(108. / 5.))]))
+        angFuncs.append(('J8_s', [(1, 1, 2,  1, -sqrt(108. / 5.))]))
 
     else :
       # using helicity angles
-      angFuncs.append(('A0Sq',        [(0, 0, 0,  0,  2.             ),
-                                       (0, 0, 2,  0, -sqrt( 4. /  5.)),
-                                       (2, 0, 0,  0,  4.             ),
-                                       (2, 0, 2,  0, -sqrt(16. /  5.))]))
-      angFuncs.append(('AparSq',      [(2, 2, 0,  0,  1.             ),
-                                       (2, 2, 2,  0,  sqrt( 1. / 20.)),
-                                       (2, 2, 2,  2, -sqrt( 3. / 20.))]))
-      angFuncs.append(('AperpSq',     [(2, 2, 0,  0,  1.             ),
-                                       (2, 2, 2,  0,  sqrt( 1. / 20.)),
-                                       (2, 2, 2,  2,  sqrt( 3. / 20.))]))
-      angFuncs.append(('ReA0Apar',    [(2, 1, 2,  1,  sqrt( 6. /  5.))]))
-      angFuncs.append(('ImA0Aperp',   [(2, 1, 2, -1, -sqrt( 6. /  5.))]))
-      angFuncs.append(('ImAparAperp', [(2, 2, 2, -2,  sqrt( 3. /  5.))]))
+      angFuncs.append(('J1_c2',  [(0, 0, 0,  0,  2.             ),
+                                  (0, 0, 2,  0, -sqrt(  4. / 5.)),
+                                  (2, 0, 0,  0,  4.             ),
+                                  (2, 0, 2,  0, -sqrt( 16. / 5.))]))
+      angFuncs.append(('J2_s2',  [(2, 2, 0,  0,  2.             ),
+                                  (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                  (2, 2, 2,  2, -sqrt(  3. / 5.))]))
+      angFuncs.append(('J3_s2',  [(2, 2, 0,  0,  2.             ),
+                                  (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                  (2, 2, 2,  2,  sqrt(  3. / 5.))]))
+      angFuncs.append(('J4_sc',  [(2, 1, 2,  1,  sqrt( 48. / 5.))]))
+      angFuncs.append(('J8_sc',  [(2, 1, 2, -1,  sqrt( 48. / 5.))]))
+      angFuncs.append(('J9_s2',  [(2, 2, 2, -2,  sqrt( 12. / 5.))]))
 
       if self._config.value('incKSWave') :
-        angFuncs.append(('ASSq',        [(0, 0, 0,  0,  2.             ),
-                                         (0, 0, 2,  0, -sqrt( 4. /  5.))]))
-        angFuncs.append(('ReA0AS',      [(1, 0, 0,  0,  sqrt(48.      )),
-                                         (1, 0, 2,  0, -sqrt(48. /  5.))]))
-        angFuncs.append(('ReAparAS',    [(1, 1, 2,  1,  sqrt(18. /  5.))]))
-        angFuncs.append(('ImAperpAS',   [(1, 1, 2, -1,  sqrt(18. /  5.))]))
+        angFuncs.append(('J1_1', [(0, 0, 0,  0,  6.             ),
+                                  (0, 0, 2,  0, -sqrt( 36. / 5.))]))
+        angFuncs.append(('J1_c', [(1, 0, 0,  0,  6.             ),
+                                  (1, 0, 2,  0, -sqrt( 36. / 5.))]))
+        angFuncs.append(('J4_s', [(1, 1, 2,  1,  sqrt(108. / 5.))]))
+        angFuncs.append(('J8_s', [(1, 1, 2, -1,  sqrt(108. / 5.))]))
 
     # get workspace
     ws = self._config.workspace()
@@ -483,7 +474,7 @@ class AngleFunctionBuilder :
 
     # build angular function for each term in the signal PDF
     for angFunc in angFuncs :
-      name = angFunc[0] + 'AngFunc'
+      name = angFunc[0] + '_angFunc'
 
       if name not in ws :
         # express angular function in angle basis functions

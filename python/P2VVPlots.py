@@ -204,6 +204,17 @@ def plot(config, obs, canv, data, pdf, components = {}, xTitle = '',
   else :
     obsFrame.Draw()
 
+  # set additional plot properties
   canv.Update()
+  for obj in canv.GetListOfPrimitives() :
+    if obj.GetName() == 'title' :
+      obj.SetY1NDC(0.92)
+      obj.SetY2NDC(1.0)
+      #obj.SetX1NDC(1.0 - obj.GetX2NDC() + obj.GetX1NDC())
+      #obj.SetX2NDC(1.0)
+
+  canv.cd()
+  canv.Draw()
+
   return canv
 
