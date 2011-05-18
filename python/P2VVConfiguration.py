@@ -273,16 +273,16 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
       ### flavour tags ###
       config.addSetting('iTag', RooCatSetting('iTag',
-          'initial state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
+          'initial state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
       if onlySignal :
         config.addSetting('misTag', RooRealSetting('misTag',
           'mis-tag fraction', 'par', 0., '', ''))
       else :
         config.addSetting('misTag', RooRealSetting('misTag',
-          'mis-tag fraction', 'obs', 0., 0., 0.5))
+          'mis-tag fraction', 'par', 0., 0., 0.5))
       if mode == 'Bd2JpsiKstar' :
         config.addSetting('fTag', RooCatSetting('fTag',
-            'final state flavour tag', True, 'bbar', {-1 : 'b', +1 : 'bbar'}))
+            'final state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
 
       config.addSetting('tagDilution', RooFormSetting('tagDilution',
           'mis-tag dilution', '1 - 2. * @0', ['misTag']))

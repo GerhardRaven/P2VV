@@ -30,9 +30,24 @@ generate = True
 nEvents = 50000
 
 # read events from NTuple or RooDataset
-NTuple = True
+NTuple = False
+
+# amplitude values
+A0Mag2    = 0.60
+A0Ph      = 0.
+AparMag2  = 0.24
+AparPh    = 2.5
+AperpMag2 = 0.16
+AperpPh   = -0.17
+ASMag2    = 0.05
+ASPh      = 2.2
+
+# lambda
+phiCP      = -0.2
+lambdaCPSq = 1.
 
 ###############################################################################
+from math import sqrt, sin, cos
 import P2VV, P2VVConfiguration, P2VVModelBuilders, P2VVPlots
 from ROOT import RooDataSet, RooFit, TCanvas, TChain, TFile
 
@@ -65,31 +80,31 @@ config['misTag'].set(realType = 'par', val = 0., min = '', max = '')
 
 if config.value('ampsType') == 'transPolar' :
   # A_par^2 = 1 - A_0^2 - A_perp^2 :: Im(A_0) = 0
-  config['A0Mag2'].set(val = 0.60)
-  config['AperpMag2'].set(val = 0.16)
-  config['ASMag2'].set(val = 0.05)
-  config['AparPh'].set(val = 2.5 )
-  config['AperpPh'].set(val = -0.2)
-  config['ASPh'].set(val = 2.2)
+  config['A0Mag2'].set(val = A0Mag2)
+  config['AperpMag2'].set(val = AperpMag2)
+  config['ASMag2'].set(val = ASMag2)
+  config['AparPh'].set(val = PparPh)
+  config['AperpPh'].set(val = AperpPh)
+  config['ASPh'].set(val = ASPh)
 elif config.value('ampsType') == 'transCartesian' :
   # Re(A_0) = 1 :: Im(A_0) = 0
-  config['ReApar'].set(val = -0.51)
-  config['ImApar'].set(val = 0.38)
-  config['ReAperp'].set(val = 0.51)
-  config['ImAperp'].set(val = -0.10)
-  config['ReAS'].set(val = -0.17)
-  config['ImAS'].set(val = 0.23)
+  config['ReApar'].set(val = sqrt(AparMag2 / A0Mag2) * cos(AparPh))
+  config['ImApar'].set(val = sqrt(AparMag2 / A0Mag2) * sin(AparPh))
+  config['ReAperp'].set(val = sqrt(AperpMag2 / A0Mag2) * cos(AperpPh))
+  config['ImAperp'].set(val = sqrt(AperpMag2 / A0Mag2) * sin(AperpPh))
+  config['ReAS'].set(val = sqrt(ASMag2 / A0Mag2) * cos(ASPh))
+  config['ImAS'].set(val = sqrt(ASMag2 / A0Mag2) * sin(ASPh))
 
 if mode == 'Bd2JpsiKstar' :
   config['dm'].set(min = -1., max = 2.)
 elif mode == 'Bs2Jpsiphi' :
   config['dm'].set(min = 13., max = 23)
   if config.value('lambdaCPType') == 'polar' :
-    config['phiCP'].set(val = -0.2)
-    config['lambdaCPSq'].set(val = 1.)
+    config['phiCP'].set(val = phiCP)
+    config['lambdaCPSq'].set(val = lambdaCPSq)
   else :
-    config['ReLambdaCP'].set(val = 0.980)
-    config['ImLambdaCP'].set(val = 0.199)
+    config['ReLambdaCP'].set(val = sqrt(lambdaCPSq) * cos(-phiCP))
+    config['ImLambdaCP'].set(val = sqrt(lambdaCPSq) * sin(-phiCP))
 
 # declare RooFit variables and store them in RooWorkspace
 config.declareRooVars()
