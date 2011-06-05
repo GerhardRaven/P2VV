@@ -1,4 +1,9 @@
-# DvE Fits the signal PDF only to MC data, EvtGen only, to see if we understand the .dec file.
+#######################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: Fits the signal PDF only to MC data (EvtGen only) to see if we understand (that is, fit correctly for the input values of) the .dec file.
+###              I never copied the MC data file to a non-tmp folder, so it's lost.....
+########################################  
 
 from ROOT import *
 gSystem.Load("libp2vv")

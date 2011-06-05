@@ -1,3 +1,12 @@
+########################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script reads the root file with the workspace for the tagged fit and fits
+###              The MakeProfile function is implemented in RooFitDecorators.py, but it makes a DLL profile in one go.
+###              For big grids this becomes too time-consuming. So there are now scripts to make ganga jobs for profile production:
+###              These are TaggedProfiles.py and SubmitTaggedProfiles.py
+########################################
+
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
@@ -14,7 +23,7 @@ from RooFitDecorators import *
 
 taggingsyst = True
 blinded = False
-reblinded = True
+reblinded = False
 
 wsfile = TFile('TaggedWS.root')
 ws = wsfile.Get('ws')
@@ -91,7 +100,7 @@ ws.var('#Gamma').setVal(0.68)
 ws.var('#Gamma').setMax(2.)
 ws.var('t_sig_dG').setVal(0.060)
 ws.var('phis').setVal(pi)
-ws.var('phis').setMin(0.)
+ws.var('phis').setMin(-2*pi)
 ws.var('phis').setMax(2*pi)
 
 #Constrain deltams
@@ -108,11 +117,22 @@ dict = writeCorrMatrixLatex(result)
 ################
 
 #setting back values
-ws.var('#Gamma').setVal(0.68)
-ws.var('t_sig_dG').setVal(0.060)
-ws.var('phis').setVal(0.0)
+#ws.var('#Gamma').setVal(0.68)
+#ws.var('t_sig_dG').setVal(0.060)
+#ws.var('phis').setVal(0.0)
 
 phis = ws.var('phis')
 deltaGamma = ws.var('t_sig_dG')
 
 #MakeProfile('ProfiledGamma_phis_tagged',data,pdf,15,phis,0,2*pi,deltaGamma,-0.7,0.7)
+
+etataghist = RooDataHist('etataghist','etataghist',RooArgSet(ws.var('etatag')),data)
+etatagpdf = RooHistPdf('etatagpdf','etatagpdf',RooArgSet(ws.var('etatag')),etataghist)
+etatagframe = ws.var('etatag').frame(RooFit.Bins(20))
+data.plotOn(etatagframe)
+etatagpdf.plotOn(etatagframe)
+etatagframe.Draw()
+
+
+
+data.table(ws.cat('tagdecision')).Print('v')
