@@ -365,7 +365,6 @@ def buildJpsiphiSWave(ws, name, transversity) : # TODO: add tagsplit
 ##                                    ", prod(N,ImAsApar,        ,qtag_,D,AsApar_basis)"
 ##                                    ", prod(N,ImAsAz,          ,qtag_,D,AsAz_basis)"
 ##                                    "})")
-
     ws.factory("BDecay::%s(t,t_sig_tau,t_sig_dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,t_sig_dm,tres_sig,SingleSided)" % name)
     return ws.pdf(name)
 
