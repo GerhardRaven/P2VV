@@ -454,8 +454,16 @@ class TimeResolutionBuilder :
             ws.factory("AddModel::tres_%s({tres_3,tres_%s_2,tres_%s_1},{tres_%s_f3[0.001,0.00,0.02],tres_%s_f2[0.2,0.01,1]})" % (name,name,name,name,name))
         self._sigres = ws['tres_sig']
         self._nonpsi = ws['tres_nonpsi']
+
+        ws.factory("GaussModel::tres_fit_3(%s,tres_mu_fit[-0.0016],tres_s3_fit[0.183])"% (t.GetName()) )
+        ws.factory("GaussModel::tres_fit_2(%s,tres_mu_fit,tres_s2_fit[0.06464])"% (t.GetName()) )
+        ws.factory("GaussModel::tres_fit_1(%s,tres_mu_fit,tres_s1_fit[0.0337])"% (t.GetName()) )
+        ws.factory("AddModel::tres_fit({tres_fit_3,tres_fit_2,tres_fit_1},{tres_f3_fit[0.017],tres_f2_fit[0.456],tres_f1_fit[0.527]})")
+        self._fitres = ws['tres_fit']
+
     def signal(self) : return self._sigres
     def nonpsi(self) : return self._nonpsi
+    def fitres(self): return self._fitres
 
     def signalSigmaT(self) : return self._sigmaT['signal']
     def psibkgSigmaT(self) : return self._sigmaT['psibkg']
@@ -646,83 +654,6 @@ class MassPdfBuilder :
     def dau2Pdf(self)    : return self._mdau2_pdf
     def dau2Obs(self)    : return self._mdau2
 
-class MassPdfBuilderNoDau2 :
-    ## TODO: investigate use of per-event mass error... or add a 2nd Gaussian to the b-mass
-    ## TODO: integrate SPLOT functionality into the MassPdfBuilder...
-    def __init__(self,ws,m,m_dau1) : # assume B-mass, J/psi mass
-        #### define J/psi mass observable & corresponding PDF
-        self._mdau1 = m_dau1
-        # signal J/psi mass pdf
-        ws.factory("CBShape::mpsi_sig(%s,mpsi_sig_mean[3094,3090,3105],mpsi_sig_sigma[13.2,8,18],mpsi_sig_alpha[1.39,0.8,2],mpsi_sig_n[3])"%m_dau1.GetName())
-        self._mdau1_sig = ws['mpsi_sig']
-        # background J/psi mass pdf
-        ws.factory("Exponential::mpsi_bkg(%s,mpsi_bkg_exp[-0.0005,-0.001,0.0])"%m_dau1.GetName())
-        self._mdau1_bkg = ws['mpsi_bkg']
-        # overall J/psi mass pdf
-        ws.factory("SUM::mpsi(mpsi_fjpsi[0.5,0.2,0.8]*mpsi_sig,mpsi_bkg)")
-        self._mdau1_pdf = ws['mpsi']
-
-        #########################
-        #signal B mass pdf
-        # TODO: can we include sigmam without introducing a Punzi problem?
-        #       note that the background PDF would not include sigmam...
-        #       but both mean and sigma are different for t>0.3 and t<0.3...
-        #       we could just take a sigmam distribution with t>0.3 and |m-m_bs|<25 as signal...
-        #       and t<0.3 and |m-m_bs|>30 as background...
-        self._m = m
-        #ws.factory("PROD::m_psisig(SUM(m_sig_f1[0.9,0.1,0.99]*Gaussian(%s,m_sig_mean[5380,5200,5400],m_sig_sigma[10,3,30]),Gaussian(%s,m_sig_mean,m_sig_sigma2[15,10,35])),mpsi_sig)"%(m.GetName(),m.GetName()))
-        #ws.factory("PROD::m_psisig(Gaussian(%s,m_sig_mean[5366,5350,5380],m_sig_sigma[10,3,30]),mpsi_sig)"%(m.GetName()))
-        #ws.factory("PROD::m_nonpsisig(Gaussian(%s,m_sig_mean,m_sig_sigma),mpsi_bkg)"%m.GetName())
-        #ws.factory("SUM::m_sig(m_sigfpsi[1.0]*m_psisig,m_nonpsisig)")
-        ws.factory("PROD::m_sig(SUM(m_sig_f1[0.2,0.1,0.99]*Gaussian(%s,m_sig_mean[5366,5360,5375],m_sig_sigma[5,3,10]),Gaussian(%s,m_sig_mean,m_sig_sigma2[8,6,14])),SUM(m_sig_fpsi[0.95,0.8,1]*mpsi_sig,mpsi_bkg))"%(m.GetName(),m.GetName()))
-        ws['m_sig_fpsi'].setVal(1)
-        ws['m_sig_fpsi'].setConstant(True)
-        self._m_sig = ws['m_sig']
-        if False :
-            ws.factory("PROD::m_sig(Gaussian(m,m_sig_mean,expr('@0*@1',{m_sig_s[0.5,5],sigmam}))|sigmam)")
-        
-        #background B mass pdf
-        ws.factory("PROD::m_psibkg(Exponential(%s,m_psibkg_exp[-0.0003,-0.001,-0.0001]),mpsi_sig)"% m.GetName() )
-        self._m_psibkg = ws['m_psibkg']
-        ws.factory("PROD::m_nonpsibkg(Exponential(%s,m_nonpsibkg_exp[-0.0006,-0.001,-0.0001]),mpsi_bkg)"% m.GetName() )
-        self._m_nonpsibkg = ws['m_nonpsibkg']
-        ws.factory("SUM::m_bkg(m_bkgfpsi[0.1,0.01,0.99]*m_psibkg,m_nonpsibkg)")
-        self._m_bkg = ws['m_bkg']
-
-        ### now it becomes a bit tricky. 
-        ## we can have various combinations of {sig,bkg} x {sig,bkg} x {sig,bkg} here...
-        ## for now, we just split the b bkg into psi vs non-psi, but at some point we
-        ## need to split b sig into phi vs kk...
-        #ws.factory("SUM::m_b(m_fb[0.1,0.01,0.99]*m_sig,m_bkg)")
-        # we make an extended PDF so that we can make SPlots!
-        # but we cannot write the background in terms of fN and (1-f)N and still do splots...
-        #ws.factory("expr::N_psibkg('@0*@1',{N_fpsi[0.5,0,1],N_bkg[20000,0,30000]})")
-        #ws.factory("expr::N_nonpsibkg('(1-@0)*@1',{N_fpsi,N_bkg})")
-        #ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg*m_psibkg,N_nonpsibkg*m_nonpsibkg)")
-        ws.factory("SUM::m_b(N_sig[1000,0,10000]*m_sig,N_psibkg[15000,0,30000]*m_psibkg,N_nonpsibkg[15000,0,30000]*m_nonpsibkg)")
-        self._m_pdf = ws['m_b']
-
-        self._yields = RooArgList(ws.argSet('N_sig,N_psibkg,N_nonpsibkg'))
-
-        sigmid = 5367.4
-        sigwid = 15
-        self._m.setRange('sigRegion',sigmid-sigwid,sigmid+sigwid)
-        self._m.setRange('leftSideband',self._m.getMin(),sigmid-sigwid)
-        self._m.setRange('rightSideband',sigmid+sigwid,self._m.getMax())
-        
-    def sigPdf(self)    : return self._m_sig
-    def bkgPdf(self)    : return self._m_bkg
-    def psibkgPdf(self)    : return self._m_psibkg
-    def nonpsibkgPdf(self)    : return self._m_nonpsibkg
-    def Pdf(self)       : return self._m_pdf
-    def Obs(self)       : return self._m
-    def yields(self)    : return self._yields
-
-    def sigDau1Pdf(self) : return self._mdau1_sig
-    def bkgDau1Pdf(self) : return self._mdau1_bkg
-    def dau1Pdf(self)    : return self._mdau1_pdf
-    def dau1Obs(self)    : return self._mdau1
-
 def declareObservables( ws, mode ):
     from math import pi
 
@@ -759,42 +690,6 @@ def declareObservables( ws, mode ):
     else :
         ws.defineSet("observables","m,t,sigmat,mdau1,wtag,tagdecision") 
 
-def declareObservablesNoDau2( ws ):
-    from math import pi
-
-    # transvercity angles
-    ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f]}"%(-pi,pi))
-    ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
-    # helicity angles. we can also compute these from the transversity angles and add them as columns
-    ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f]}"%(-pi,pi))
-    ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
-    # tag 
-    ws.factory("tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]")
-    ws.factory("tagomega[0,0.500001]")
-
-
-    # B, jpsi, phi mass
-    #ws.factory("m[5200,5450]")
-    #ws.factory("m[5250,5450]")
-    ws.factory("m[%f,%f]"%(5366-50,5366+50))
-    ws.factory("mdau1[%f,%f]"%(3097-60,3097+40))
-    #ws.factory("mdau1[%f,%f]"%(3097-60,3097+50))
-
-    # time , time-error
-    ws.factory("{t[-4,10],sigmat[0.005,0.1]}")
-
-    # define a set for the observables (we can also define this from the pdf and data.
-    ws.defineSet("observables","m,t,sigmat,mdau1,trcostheta,trcospsi,trphi,tagomega,tagdecision") 
-
-    # the next is something we may need to switch on or off, depending on whether we use a pdf for sigmat
-    #ws.defineSet("conditionalobservables","sigmat,tagomega")
-    ws.defineSet("conditionalobservables","sigmat")
-
-##
-## call with buildTagging(ws, name, [ 0.25, 0.35, 0.45 ] ) 
-## to define tagging categories corresponding to the intervals [0,0.25),[0.25,0.35),[0.35,0.45),[0.45,0.5]
-## note that the final interval is defined 'by construction' and that the pdf returned gives 
-## the efficiency to be in the i-th category, with the last category having an efficiency 1-sum_i eff_i
 class TagPdfBuilder :
     def __init__(self,ws,tagcatdef,tagomega='tagomega')  :
         self._ws = ws
