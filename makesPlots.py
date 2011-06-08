@@ -131,18 +131,28 @@ etatag.setBins(40)
 etatagdata = {}
 etatagpdf = {}
 etatagcanvas = TCanvas()
-etatagcanvas.Divide(3,1)
+etatagcanvas.Divide(2,1)
 for (f,sample) in enumerate([ j.GetName() for j in mb.yields_fit() ]):
       dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","%s_sw"%sample) 
       etatagdata[sample] = RooDataHist("etatag_%s_data"%sample,"hist etatag Per Ev",RooArgSet(etatag),dataw)
-      stpdf[sample] = ws.put(RooHistPdf("etatag_%s"%sample,"etatag_%s"%sample,RooArgSet(etatag),etatagdata[sample])) # ,2)
-      etatagcanvas.cd(f+2)
+      etatagpdf[sample] = ws.put(RooHistPdf("etatag_%s"%sample,"etatag_%s"%sample,RooArgSet(etatag),etatagdata[sample])) # ,2)
+      etatagcanvas.cd(f+1)
       p= etatag.frame()
       dataw.plotOn(p) # python has trouble finding the right plotOn...
-      stpdf[sample].plotOn(p,RooFit.LineColor( [kBlue,kRed,kBlack][f]))
+      etatagpdf[sample].plotOn(p,RooFit.LineColor( [kBlue,kRed,kBlack][f]))
       p.Draw()
 
-etatagcanvas.cd(1)
+summarycanvas = TCanvas('SummaryCanvas','SummaryCanvas')
+summarycanvas.Divide(3,1)
+for (f,sample) in enumerate([ j.GetName() for j in mb.yields_fit() ]):
+      dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","%s_sw"%sample) 
+      summarycanvas.cd(f+2)
+      p= etatag.frame()
+      dataw.plotOn(p) # python has trouble finding the right plotOn...
+      etatagpdf[sample].plotOn(p,RooFit.LineColor( [kBlue,kRed,kBlack][f]))
+      p.Draw()
+
+summarycanvas.cd(1)
 mframe = ws['m'].frame(RooFit.Bins(40))
 data.plotOn(mframe)
 m_pdf_fit.plotOn(mframe)
