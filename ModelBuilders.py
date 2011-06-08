@@ -297,8 +297,8 @@ def buildJpsiphiSWave(ws, name, transversity) : # TODO: add tagsplit
 
                                    ", prod(N,NAsAs,                  D,AsAs_basis)"
                                    ", prod(N,ImAsAperp,              D,AsAperp_basis)"
-                                   ", prod(N,ImAsAz,     Minus,      S,AsAz_basis)"
-                                   ", prod(N,ImAsApar,   Minus,      S,AsApar_basis)"
+                                   ", prod(N,ImAsAz,                 S,AsAz_basis)"
+                                   ", prod(N,ImAsApar,               S,AsApar_basis)"
                                    "})")
     ws.factory("sum_::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
                                    ", prod(N,NAparApar,  Minus,qtag_,S,AparApar_basis)"
@@ -309,8 +309,8 @@ def buildJpsiphiSWave(ws, name, transversity) : # TODO: add tagsplit
 
                                    ", prod(N,NAsAs,           ,qtag_,S,AsAs_basis)"
                                    ", prod(N,ImAsAperp,       ,qtag_,S,AsAperp_basis)"
-                                   ", prod(N,ImAsAz,          ,qtag_,D,AsAz_basis)"
-                                   ", prod(N,ImAsApar,        ,qtag_,D,AsApar_basis)"
+                                   ", prod(N,ImAsAz,     Minus,qtag_,D,AsAz_basis)"
+                                   ", prod(N,ImAsApar,   Minus,qtag_,D,AsApar_basis)"
                                    "})")
     
 ##     ws.factory("expr::Fp('1-@0',{Fs})")
@@ -483,6 +483,7 @@ class TimeResolutionBuilder :
         self._sigres = ws['tres_sig']
         self._nonpsi = ws['tres_nonpsi']
 
+        #This is the resolution model used in the JpsiPhi fit:
         ws.factory("GaussModel::tres_fit_3(%s,tres_mu_fit[-0.0016],tres_s3_fit[0.183])"% (t.GetName()) )
         ws.factory("GaussModel::tres_fit_2(%s,tres_mu_fit,tres_s2_fit[0.06464])"% (t.GetName()) )
         ws.factory("GaussModel::tres_fit_1(%s,tres_mu_fit,tres_s1_fit[0.0337])"% (t.GetName()) )
@@ -663,7 +664,18 @@ class MassPdfBuilder :
         self._m.setRange('sigRegion',sigmid-sigwid,sigmid+sigwid)
         self._m.setRange('leftSideband',self._m.getMin(),sigmid-sigwid)
         self._m.setRange('rightSideband',sigmid+sigwid,self._m.getMax())
-        
+
+        #This is the mass model used in the JpsiPhi fit:
+        ws.factory("Gaussian::m_sig_fit(m,m_sig_mean_fit[5365,5360,5370],m_sig_sigma_fit[6.,0.,20.])")
+        ws.factory("Exponential::m_bkg_fit(m,m_bkg_exp_fit[-0.001,-0.01,-0.0001])")
+        ws.factory('N_bkg[15000,0,300000]')
+        ws.factory("SUM::m_b_fit(N_sig*m_sig_fit,N_bkg*m_bkg_fit)")
+        self._m_pdf_fit = ws['m_b_fit']
+        self._yields_fit = RooArgList(ws.argSet('N_sig,N_bkg'))
+
+    def mpdf_fit(self)     : return self._m_pdf_fit
+    def yields_fit(self)   : return self._yields_fit
+    
     def sigPdf(self)    : return self._m_sig
     def bkgPdf(self)    : return self._m_bkg
     def psibkgPdf(self)    : return self._m_psibkg
@@ -769,9 +781,6 @@ def buildTagging( ws, name, tagcatdef ) :
     return (tagcat,pdf)
     # 
   
-
-
-
 def buildABkgPdf( ws, name, resname, psimasspdfname ):
     from itertools import repeat
 

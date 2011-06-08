@@ -259,7 +259,7 @@ mnarrowmax = 5411.67
 #################
 
 #Using Edinburgh file
-datafile = TFile('/data/bfys/dveijk/Data/Bs2JpsiPhiForTaggedFit.root')
+datafile = TFile('/data/bfys/dveijk/DataJpsiPhi/Bs2JpsiPhiForTaggedFit.root')
 NTupletree = datafile.Get('MyTree')
 
 if useTransversityAngles:

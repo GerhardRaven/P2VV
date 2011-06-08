@@ -282,7 +282,7 @@ mnarrowmax = 5411.67
 #################
 
 #Using My file with latest tagging for tagged fit
-datafile = TFile('/data/bfys/dveijk/Data/Bs2JpsiPhiForTaggedFit.root')
+datafile = TFile('/data/bfys/dveijk/DataJpsiPhi/Bs2JpsiPhiForTaggedFit.root')
 NTupletree = datafile.Get('MyTree')
 
 ws.set('observables').add(ws.var('etatag'))
