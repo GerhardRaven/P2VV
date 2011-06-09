@@ -125,35 +125,72 @@ for (f,sample) in enumerate([ j.GetName() for j in mb.yields_fit() ]):
       stpdf[sample].plotOn(p,RooFit.LineColor( [kBlue,kRed,kBlack][f]))
       p.Draw()
 
-#make etatag RooHistPdf's
+ws['tagdecision'].setRange('B','Bs_Jpsiphi')
+ws['tagdecision'].setRange('Bbar','Bsbar_Jpsiphi')
+ws['tagdecision'].setRange('untagged','untagged')
+
+#make etatag plots from data
 etatag = ws['etatag']
 etatag.setBins(40)
-etatagdata = {}
-etatagpdf = {}
+
 etatagcanvas = TCanvas()
-etatagcanvas.Divide(2,1)
-for (f,sample) in enumerate([ j.GetName() for j in mb.yields_fit() ]):
-      dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","%s_sw"%sample) 
-      etatagdata[sample] = RooDataHist("etatag_%s_data"%sample,"hist etatag Per Ev",RooArgSet(etatag),dataw)
-      etatagpdf[sample] = ws.put(RooHistPdf("etatag_%s"%sample,"etatag_%s"%sample,RooArgSet(etatag),etatagdata[sample])) # ,2)
-      etatagcanvas.cd(f+1)
-      p= etatag.frame()
-      dataw.plotOn(p) # python has trouble finding the right plotOn...
-      etatagpdf[sample].plotOn(p,RooFit.LineColor( [kBlue,kRed,kBlack][f]))
-      p.Draw()
+etatagcanvas.Divide(3,1)
+
+etatagcanvas.cd(1)
+p = etatag.frame(RooFit.Title('tagged as B'))
+data.plotOn(p,RooFit.CutRange('B'))
+p.Draw()
+etatagcanvas.cd(2)
+p = etatag.frame(RooFit.Title('tagged as Bbar'))
+data.plotOn(p,RooFit.CutRange('Bbar'))
+p.Draw()
+etatagcanvas.cd(3)
+p = etatag.frame(RooFit.Title('untagged'))
+data.plotOn(p,RooFit.CutRange('untagged'))
+p.Draw()
+
+#make etatag plots from sdata
+datawsig = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","N_sig_sw") 
+#etatagdatasig = RooDataHist("etatag_N_sig_data","hist etatag Per Ev",RooArgSet(etatag),datawsig)
+#etatagpdfsig = RooHistPdf("etatag_N_sig","etatag_N_sig",RooArgSet(etatag),etatagdatasig)
+
+datawbkg = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","N_bkg_sw") 
+#etatagdatabkg = RooDataHist("etatag_N_bkg_data","hist etatag Per Ev",RooArgSet(etatag),datawbkg)
+#etatagpdfbkg = RooHistPdf("etatag_N_bkg","etatag_N_bkg",RooArgSet(etatag),etatagdatabkg)
 
 summarycanvas = TCanvas('SummaryCanvas','SummaryCanvas')
-summarycanvas.Divide(3,1)
-for (f,sample) in enumerate([ j.GetName() for j in mb.yields_fit() ]):
-      dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","%s_sw"%sample) 
-      summarycanvas.cd(f+2)
-      p= etatag.frame()
-      dataw.plotOn(p) # python has trouble finding the right plotOn...
-      etatagpdf[sample].plotOn(p,RooFit.LineColor( [kBlue,kRed,kBlack][f]))
-      p.Draw()
+summarycanvas.Divide(4,2)
 
 summarycanvas.cd(1)
-mframe = ws['m'].frame(RooFit.Bins(40))
-data.plotOn(mframe)
-m_pdf_fit.plotOn(mframe)
-mframe.Draw()
+p= etatag.frame(RooFit.Title('signal'))
+datawsig.plotOn(p)
+p.Draw()
+summarycanvas.cd(2)
+p= etatag.frame(RooFit.Title('signal, tagged as B'))
+datawsig.plotOn(p,RooFit.CutRange("B"))
+p.Draw()
+summarycanvas.cd(3)
+p= etatag.frame(RooFit.Title('signal, tagged as Bbar'))
+datawsig.plotOn(p,RooFit.CutRange('Bbar'))
+p.Draw()
+summarycanvas.cd(4)
+p= etatag.frame(RooFit.Title('signal, untagged'))
+datawsig.plotOn(p,RooFit.CutRange('untagged'))
+p.Draw()
+
+summarycanvas.cd(5)
+p= etatag.frame(RooFit.Title('bkg'))
+datawbkg.plotOn(p)
+p.Draw()
+summarycanvas.cd(6)
+p= etatag.frame(RooFit.Title('bkg, tagged as B'))
+datawbkg.plotOn(p,RooFit.CutRange("B"))
+p.Draw()
+summarycanvas.cd(7)
+p= etatag.frame(RooFit.Title('bkg, tagged as Bbar'))
+datawbkg.plotOn(p,RooFit.CutRange("Bbar"))
+p.Draw()
+summarycanvas.cd(8)
+p= etatag.frame(RooFit.Title('bkg, untagged'))
+datawbkg.plotOn(p,RooFit.CutRange("untagged"))
+p.Draw()
