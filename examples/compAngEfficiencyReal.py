@@ -13,8 +13,8 @@
 ###############################################################################
 
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
-#mode = 'Bd2JpsiKstar'
-mode = 'Bs2Jpsiphi'
+mode = 'Bd2JpsiKstar'
+#mode = 'Bs2Jpsiphi'
 
 # efficiency moments file path
 momentsFilePath = 'effMoments'
@@ -32,7 +32,7 @@ from math import sqrt, sin, cos
 P2VV.loadP2VVLib()
 
 # create P2VV configuration object
-config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal', 'noKSWave'])
+config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])
 
 # adjust efficiency settings
 config['effType'].setValue('angular')

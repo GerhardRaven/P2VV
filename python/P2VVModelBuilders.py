@@ -77,6 +77,7 @@ def buildJpsiV(config) :
 
   BDecClass = config.value('BDecayClass')
   pdfName = config.value('sigPDFName')
+  KSWave = config.value('KSWave')
 
   # get workspace
   ws = config.workspace()
@@ -94,7 +95,7 @@ def buildJpsiV(config) :
     J4_sc = config['J4_sc'].name()
     J8_sc = config['J8_sc'].name()
     J9_s2 = config['J9_s2'].name()
-    if config.value('incKSWave') :
+    if KSWave :
       J1_1 = config['J1_1'].name()
       J1_c = config['J1_c'].name()
       J4_s = config['J4_s'].name()
@@ -125,7 +126,7 @@ def buildJpsiV(config) :
     J9_s2_cos  = config['J9_s2_cos'].name()
     J9_s2_sinh = config['J9_s2_sinh'].name()
     J9_s2_sin  = config['J9_s2_sin'].name()
-    if config.value('incKSWave') :
+    if KSWave :
       J1_1_cosh = config['J1_1_cosh'].name()
       J1_1_cos  = config['J1_1_cos'].name()
       J1_1_sinh = config['J1_1_sinh'].name()
@@ -180,7 +181,15 @@ def buildJpsiV(config) :
     sinCStr  = ''
 
   coefficients = ['J1_c2', 'J2_s2', 'J3_s2', 'J4_sc', 'J8_sc', 'J9_s2']
-  if config.value('incKSWave') :
+  if KSWave[:7] == 'include' :
+    if mode == 'Bd2JpsiKstar' :
+      print 'P2VV - INFO: buildJpsiV: including a Kpi S-wave'
+    elif mode == 'Bs2Jpsiphi' :
+      if KSWave == 'includeEven' :
+        print 'P2VV - INFO: buildJpsiV: including a CP even KK S-wave'
+      else :
+        print 'P2VV - INFO: buildJpsiV: including a CP odd KK S-wave'
+
     coefficients += ['J1_1', 'J1_c', 'J4_s', 'J8_s']
 
   for coef in coefficients :
@@ -423,7 +432,7 @@ class AngleFunctionBuilder :
       angFuncs.append(('J8_sc',  [(2, 1, 2,  1, -sqrt( 48. / 5.))]))
       angFuncs.append(('J9_s2',  [(2, 2, 2, -1,  sqrt( 12. / 5.))]))
 
-      if self._config.value('incKSWave') :
+      if self._config.value('KSWave') :
         angFuncs.append(('J1_1', [(0, 0, 0,  0,  6.             ),
                                   (0, 0, 2,  0,  sqrt(  9. / 5.)),
                                   (0, 0, 2,  2, -sqrt( 27. / 5.))]))
@@ -449,7 +458,7 @@ class AngleFunctionBuilder :
       angFuncs.append(('J8_sc',  [(2, 1, 2, -1,  sqrt( 48. / 5.))]))
       angFuncs.append(('J9_s2',  [(2, 2, 2, -2,  sqrt( 12. / 5.))]))
 
-      if self._config.value('incKSWave') :
+      if self._config.value('KSWave') :
         angFuncs.append(('J1_1', [(0, 0, 0,  0,  6.             ),
                                   (0, 0, 2,  0, -sqrt( 36. / 5.))]))
         angFuncs.append(('J1_c', [(1, 0, 0,  0,  6.             ),

@@ -68,6 +68,8 @@ def convertAmplitudes(config, fitResult, printToScreen = True) :
 
   import RooFitDecorators
 
+  KSWave = config.value('KSWave')
+
   if config.value('ampsType') == 'transPolar' :
     # convert from polar amplitudes to cartesian amplitudes
     params = []
@@ -75,7 +77,7 @@ def convertAmplitudes(config, fitResult, printToScreen = True) :
     params.append(config['AparPh'].name())
     params.append(config['AperpMag2'].name())
     params.append(config['AperpPh'].name())
-    if config.value('incKSWave') :
+    if KSWave[:7] == 'include' :
       params.append(config['ASMag2'].name())
       params.append(config['ASPh'].name())
 
@@ -83,7 +85,7 @@ def convertAmplitudes(config, fitResult, printToScreen = True) :
 
     polVals = [(result[1][0], 0.), (1. - result[1][0] - result[1][2],
         result[1][1]), (result[1][2], result[1][3])]
-    if config.value('incKSWave') :
+    if KSWave[:7] == 'include' :
       polVals.append((result[1][4], result[1][5]))
 
     polCovs = [list(row) for row in result[2]]
@@ -110,7 +112,7 @@ def convertAmplitudes(config, fitResult, printToScreen = True) :
     params.append(config['ImApar'].name())
     params.append(config['ReAperp'].name())
     params.append(config['ImAperp'].name())
-    if config.value('incKSWave') :
+    if KSWave[:7] == 'include' :
       params.append(config['ReAS'].name())
       params.append(config['ImAS'].name())
 
@@ -118,7 +120,7 @@ def convertAmplitudes(config, fitResult, printToScreen = True) :
 
     cartVals = [(1., 0.), (result[1][0], result[1][1]), (result[1][2],
         result[1][3])]
-    if config.value('incKSWave') :
+    if KSWave[:7] == 'include' :
       cartVals.append((result[1][4], result[1][5]))
   
     cartCovs = [list(row) for row in result[2]]
@@ -136,7 +138,7 @@ def convertAmplitudes(config, fitResult, printToScreen = True) :
     # print cartesian values and covariance matrix to screen
     params = [('Re(A_0)', 'Im(A_0)'), ('Re(A_par)', 'Im(A_par)'),
         ('Re(A_perp)', 'Im(A_perp)')]
-    if config.value('incKSWave') :
+    if KSWave[:7] == 'include' :
       params.append(('Re(A_S)', 'Im(A_S)'))
 
     print 'P2VV - INFO: convertAmplitudes: cartesian amplitudes:'
@@ -145,7 +147,7 @@ def convertAmplitudes(config, fitResult, printToScreen = True) :
     # print polar values and covariance matrix to screen
     params = [('|A_0|^2', 'arg(A_0)'), ('|A_par|^2', 'arg(A_par)'),
         ('|A_perp|^2', 'arg(A_perp)')]
-    if config.value('incKSWave') :
+    if KSWave[:7] == 'include' :
       params.append(('|A_S|^2', 'arg(A_S)'))
 
     print 'P2VV - INFO: convertAmplitudes: polar amplitudes:'

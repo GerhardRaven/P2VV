@@ -318,10 +318,12 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       ReAS    = sqrt(ASSq)    * cos(ASPh)
       ImAS    = sqrt(ASSq)    * sin(ASPh)
 
-      if 'noKSWave' in optDict : incKSWave = False
-      else : incKSWave = True
-      config.addSetting('incKSWave', P2VVSetting('incKSWave',
-        'include KK or Kpi S-wave?', incKSWave))
+      KSWave = 'none'
+      if 'KSWave' in optDict and optDict['KSWave'] != '' :
+        KSWave = optDict['KSWave']
+        if mode == 'Bs2Jpsiphi' and KSWave == 'include' : KSWave = 'includeOdd'
+      config.addSetting('KSWave', P2VVSetting('KSWave',
+        'include KK or Kpi S-wave?', KSWave))
 
       ampsType = 'transCartesian'
       if 'ampsType' in optDict and optDict['ampsType'] != '' :
@@ -344,7 +346,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
               '|A_perp|^2', 'par', AperpSq, 0., 1.))
           config.addSetting('AperpPh', RooRealSetting('deltaPerp',
               'delta_perp', 'par', AperpPh, -2. * pi, 2. * pi))
-          if incKSWave :
+          if KSWave[:7] == 'include' :
             config.addSetting('ASMag2', RooRealSetting('ASMag2',
                 '|A_S|^2', 'par', ASSq, 0., 1.))
             config.addSetting('ASPh', RooRealSetting('deltaS',
@@ -363,7 +365,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
               'Re(A_perp)', 'sqrt(@0) * cos(@1)', ['AperpMag2', 'AperpPh']))
           config.addSetting('ImAperp', RooFormSetting('ImAperp',
               'Im(A_perp)', 'sqrt(@0) * sin(@1)', ['AperpMag2', 'AperpPh']))
-          if incKSWave :
+          if KSWave[:7] == 'include' :
             config.addSetting('ReAS', RooFormSetting('ReAS',
                 'Re(A_S)', 'sqrt(@0) * cos(@1)', ['ASMag2', 'ASPh']))
             config.addSetting('ImAS', RooFormSetting('ImAS',
@@ -383,7 +385,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
               'Re(A_perp)', 'par', ReAperp / ReA0, -1., 1.))
           config.addSetting('ImAperp', RooRealSetting('ImAperp',
               'Im(A_perp)', 'par', ImAperp / ReA0, -1., 1.))
-          if incKSWave :
+          if KSWave[:7] == 'include' :
             config.addSetting('ReAS', RooRealSetting('ReAS',
                 'Re(A_S)', 'par', ReAS / ReA0, -1., 1.))
             config.addSetting('ImAS', RooRealSetting('ImAS',
@@ -416,7 +418,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
               'J_9^s2 coefficient',                         # Im(A_par* A_perp)
               '@0 * @3 - @1 * @2',
               ['ReApar', 'ImApar', 'ReAperp', 'ImAperp']))
-          if incKSWave :
+          if KSWave[:7] == 'include' :
             config.addSetting('J1_1', RooFormSetting('J1_1',
                 'J_1^1 coefficient',                        # |A_S|^2
                 '2. / 3. * (@0 * @0 + @1 * @1)',
@@ -538,7 +540,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
               '1. / sqrt(2.) * -(@0 * @2 + @1 * @3) * @4',
               ['ReApar', 'ImApar', 'ReAperp', 'ImAperp', 'DCP']))
 
-          if incKSWave :
+          if KSWave == 'includeEven' :
             config.addSetting('J1_1_cosh', RooFormSetting('J1_1_cosh',
                 'J_1^1 cosh coefficient',            # +|A_S|^2 * 1
                 '2. / 3. * (@0 * @0 + @1 * @1)',
@@ -607,6 +609,75 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
                 'sqrt(6.) / 3. * (@0 * @2 + @1 * @3) * @4',
                 ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'DCP']))
 
+          elif KSWave == 'includeOdd' :
+            config.addSetting('J1_1_cosh', RooFormSetting('J1_1_cosh',
+                'J_1^1 cosh coefficient',            # +|A_S|^2 * 1
+                '2. / 3. * (@0 * @0 + @1 * @1)',
+                ['ReAS', 'ImAS']))
+            config.addSetting('J1_1_cos', RooFormSetting('J1_1_cos',
+                'J_1^1 cos coefficient',             # +|A_S|^2 * C
+                '2. / 3. * (@0 * @0 + @1 * @1) * @2',
+                ['ReAS', 'ImAS', 'CCP']))
+            config.addSetting('J1_1_sinh', RooFormSetting('J1_1_sinh',
+                'J_1^1 sinh coefficient',            # +|A_S|^2 * D
+                '2. / 3. * (@0 * @0 + @1 * @1) * @2',
+                ['ReAS', 'ImAS', 'DCP']))
+            config.addSetting('J1_1_sin', RooFormSetting('J1_1_sin',
+                'J_1^1 sin coefficient',             # +|A_S|^2 * S
+                '2. / 3. * (@0 * @0 + @1 * @1) * @2',
+                ['ReAS', 'ImAS', 'SCP']))
+
+            config.addSetting('J1_c_cosh', RooFormSetting('J1_c_cosh',
+                'J_1^c cosh coefficient',            # +Re(A_0* A_S) * C
+                '4. / sqrt(3.) * (@0 * @2 + @1 * @3) * @4',
+                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'CCP']))
+            config.addSetting('J1_c_cos', RooFormSetting('J1_c_cos',
+                'J_1^c cos coefficient',             # +Re(A_0* A_S) * 1
+                '4. / sqrt(3.) * (@0 * @2 + @1 * @3)',
+                ['ReA0', 'ImA0', 'ReAS', 'ImAS']))
+            config.addSetting('J1_c_sinh', RooFormSetting('J1_c_sinh',
+                'J_1^c sinh coefficient',            # -Im(A_0* A_S) * S
+                '4. / sqrt(3.) * -(@0 * @3 - @1 * @2) * @4',
+                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'SCP']))
+            config.addSetting('J1_c_sin', RooFormSetting('J1_c_sin',
+                'J_1^c sin coefficient',             # +Im(A_0* A_S) * D
+                '4. / sqrt(3.) * (@0 * @3 - @1 * @2) * @4',
+                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'DCP']))
+
+            config.addSetting('J4_s_cosh', RooFormSetting('J4_s_cosh',
+                'J_4^s cosh coefficient',            # +Re(A_par* A_S) * C
+                'sqrt(6.) / 3. * (@0 * @2 + @1 * @3) * @4',
+                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'CCP']))
+            config.addSetting('J4_s_cos', RooFormSetting('J4_s_cos',
+                'J_4^s cos coefficient',             # +Re(A_par* A_S) * 1
+                'sqrt(6.) / 3. * (@0 * @2 + @1 * @3)',
+                ['ReApar', 'ImApar', 'ReAS', 'ImAS']))
+            config.addSetting('J4_s_sinh', RooFormSetting('J4_s_sinh',
+                'J_4^s sinh coefficient',            # -Im(A_par* A_S) * S
+                'sqrt(6.) / 3. * -(@0 * @3 - @1 * @2) * @4',
+                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'SCP']))
+            config.addSetting('J4_s_sin', RooFormSetting('J4_s_sin',
+                'J_4^s sin coefficient',             # +Im(A_par* A_S) * D
+                'sqrt(6.) / 3. * (@0 * @3 - @1 * @2) * @4',
+                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'DCP']))
+
+            config.addSetting('J8_s_cosh', RooFormSetting('J8_s_cosh',
+                'J_8^s cosh coefficient',            # +Im(A_perp* A_S) * 1
+                'sqrt(6.) / 3. * (@0 * @3 - @1 * @2)',
+                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS']))
+            config.addSetting('J8_s_cos', RooFormSetting('J8_s_cos',
+                'J_8^s cos coefficient',             # +Im(A_perp* A_S) * C
+                'sqrt(6.) / 3. * (@0 * @3 - @1 * @2) * @4',
+                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'CCP']))
+            config.addSetting('J8_s_sinh', RooFormSetting('J8_s_sinh',
+                'J_8^s sinh coefficient',            # +Im(A_perp* A_S) * D
+                'sqrt(6.) / 3. * (@0 * @3 - @1 * @2) * @4',
+                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'DCP']))
+            config.addSetting('J8_s_sin', RooFormSetting('J8_s_sin',
+                'J_8^s sin coefficient',             # +Im(A_perp* A_S) * S
+                'sqrt(6.) / 3. * (@0 * @3 - @1 * @2) * @4',
+                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'SCP']))
+
       else :
         # angular coefficients
         if mode == 'Bd2JpsiKstar' :
@@ -628,7 +699,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
           config.addSetting('J9_s2', RooRealSetting('J9_s2',
               'J_9^s2 coefficient', 'par',                  # Im(A_par* A_perp)
               (ReApar * ImAperp - ImApar * ReAperp) / A0Sq, -5., 5.))
-          if incKSWave :
+          if KSWave[:7] == 'include' :
             config.addSetting('J1_1', RooRealSetting('J1_1',
                 'J_1^1 coefficient', 'par',                 # |A_S|^2
                 2. / 3. * ASSq / A0Sq, -5., 5.))
@@ -724,7 +795,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
               'J_9^s2 sin coefficient', 'par',       # -Re(A_par* A_perp) * D
               -(ReApar * ReAperp + ImApar * ImAperp) / A0Sq * DCP, -5., 5.))
 
-          if incKSWave :
+          if KSWave == 'includeEven' :
             config.addSetting('J1_1_cosh', RooRealSetting('J1_1_cosh',
                 'J_1^1 cosh coefficient', 'par',     # +|A_S|^2 * 1
                 2. / 3. * ASSq / A0Sq, -5., 5.))
@@ -783,6 +854,67 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
             config.addSetting('J8_s_sin', RooRealSetting('J8_s_sin',
                 'J_8^s sin coefficient', 'par',      # +Re(A_perp* A_S) * D
                 sqrt(6.) / 3. * (ReAperp * ReAS + ImAperp * ImAS) / A0Sq * DCP,
+                -5., 5.))
+
+          elif KSWave == 'includeOdd' :
+            config.addSetting('J1_1_cosh', RooRealSetting('J1_1_cosh',
+                'J_1^1 cosh coefficient', 'par',     # +|A_S|^2 * 1
+                2. / 3. * ASSq / A0Sq, -5., 5.))
+            config.addSetting('J1_1_cos', RooRealSetting('J1_1_cos',
+                'J_1^1 cos coefficient', 'par',      # +|A_S|^2 * C
+                2. / 3. * ASSq / A0Sq * CCP, -5., 5.))
+            config.addSetting('J1_1_sinh', RooRealSetting('J1_1_sinh',
+                'J_1^1 sinh coefficient', 'par',     # +|A_S|^2 * D
+                2. / 3. * ASSq / A0Sq * DCP, -5., 5.))
+            config.addSetting('J1_1_sin', RooRealSetting('J1_1_sin',
+                'J_1^1 sin coefficient', 'par',      # +|A_S|^2 * S
+                2. / 3. * ASSq / A0Sq * SCP, -5., 5.))
+
+            config.addSetting('J1_c_cosh', RooRealSetting('J1_c_cosh',
+                'J_1^c cosh coefficient', 'par',     # +Re(A_0* A_S) * C
+                4. / sqrt(3.) * ReAS / ReA0 * CCP, -5., 5.))
+            config.addSetting('J1_c_cos', RooRealSetting('J1_c_cos',
+                'J_1^c cos coefficient', 'par',      # +Re(A_0* A_S) * 1
+                4. / sqrt(3.) * ReAS / ReA0, -5., 5.))
+            config.addSetting('J1_c_sinh', RooRealSetting('J1_c_sinh',
+                'J_1^c sinh coefficient', 'par',     # -Im(A_0* A_S) * S
+                4. / sqrt(3.) * -ImAS / ReA0 * SCP, -5., 5.))
+            config.addSetting('J1_c_sin', RooRealSetting('J1_c_sin',
+                'J_1^c sin coefficient', 'par',      # +Im(A_0* A_S) * D
+                4. / sqrt(3.) * ImAS / ReA0 * DCP, -5., 5.))
+
+            config.addSetting('J4_s_cosh', RooRealSetting('J4_s_cosh',
+                'J_4^s cosh coefficient', 'par',     # +Re(A_par* A_S) * C
+                sqrt(6.) / 3. * (ReApar * ReAS + ImApar * ImAS) / A0Sq * CCP,
+                -5., 5.))
+            config.addSetting('J4_s_cos', RooRealSetting('J4_s_cos',
+                'J_4^s cos coefficient', 'par',      # +Re(A_par* A_S) * 1
+                sqrt(6.) / 3. * (ReApar * ReAS + ImApar * ImAS) / A0Sq,
+                -5., 5.))
+            config.addSetting('J4_s_sinh', RooRealSetting('J4_s_sinh',
+                'J_4^s sinh coefficient', 'par',     # -Im(A_par* A_S) * S
+                sqrt(6.) / 3. * -(ReApar * ImAS - ImApar * ReAS) / A0Sq * SCP,
+                -5., 5.))
+            config.addSetting('J4_s_sin', RooRealSetting('J4_s_sin',
+                'J_4^s sin coefficient', 'par',      # +Im(A_par* A_S) * D
+                sqrt(6.) / 3. * (ReApar * ImAS - ImApar * ReAS) / A0Sq * DCP,
+                -5., 5.))
+
+            config.addSetting('J8_s_cosh', RooRealSetting('J8_s_cosh',
+                'J_8^s cosh coefficient', 'par',     # +Im(A_perp* A_S) * 1
+                sqrt(6.) / 3. * (ReAperp * ImAS - ImAperp * ReAS) / A0Sq,
+                -5., 5.))
+            config.addSetting('J8_s_cos', RooRealSetting('J8_s_cos',
+                'J_8^s cos coefficient', 'par',      # +Im(A_perp* A_S) * C
+                sqrt(6.) / 3. * (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * CCP,
+                -5., 5.))
+            config.addSetting('J8_s_sinh', RooRealSetting('J8_s_sinh',
+                'J_8^s sinh coefficient', 'par',     # +Im(A_perp* A_S) * D
+                sqrt(6.) / 3. * (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * DCP,
+                -5., 5.))
+            config.addSetting('J8_s_sin', RooRealSetting('J8_s_sin',
+                'J_8^s sin coefficient', 'par',      # +Im(A_perp* A_S) * S
+                sqrt(6.) / 3. * (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * SCP,
                 -5., 5.))
 
 

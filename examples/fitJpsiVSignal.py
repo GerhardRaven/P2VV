@@ -30,7 +30,7 @@ generate = True
 nEvents = 50000
 
 # read events from NTuple or RooDataset
-NTuple = False
+NTuple = True
 
 # amplitude values
 A0Mag2    = 0.60
@@ -58,9 +58,14 @@ P2VV.loadP2VVLib()
 P2VV.setRooFitOutput()
 
 # create P2VV configuration object
-config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])
-    # , 'transAngles', 'ampsType=transPolar', 'lambdaCPType=polar', 'noKSWave'
-    # , 'RooBDecay', 'tResModel=3Gauss'])
+config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal','KSWave=include'])
+  # additional options:
+  # 'transAngles'          :  use transversity angles
+  # 'KSWave=includeEven'   :  a CP even S-wave in B_s -> J/psi phi
+  # 'ampsType=transPolar'  :  use polar transversity amplitudes
+  # 'lambdaCPType=polar'   :  use a polar parametrisation of lambda
+  # 'RooBDecay'            :  use RooBDecay instead of RooBTagDecay
+  # 'tResModel=3Gauss'     :  use a time resolution model with three Gaussians
 
 # custom settings
 if config.value('anglesType')[0] == 'trans' :

@@ -42,7 +42,7 @@ from math import sqrt, sin, cos
 P2VV.loadP2VVLib()
 
 # create P2VV configuration object
-config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal', 'noKSWave'])
+config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])
 
 # adjust efficiency settings
 config['effType'].setValue('angular')
