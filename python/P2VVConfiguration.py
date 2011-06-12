@@ -319,7 +319,8 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       ImAS    = sqrt(ASSq)    * sin(ASPh)
 
       KSWave = 'none'
-      if 'KSWave' in optDict and optDict['KSWave'] != '' :
+      if 'KSWave' in optDict and type(optDict['KSWave']) is str\
+          and optDict['KSWave'] != '' :
         KSWave = optDict['KSWave']
         if mode == 'Bs2Jpsiphi' and KSWave == 'include' : KSWave = 'includeOdd'
       config.addSetting('KSWave', P2VVSetting('KSWave',

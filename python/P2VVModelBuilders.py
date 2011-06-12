@@ -77,7 +77,9 @@ def buildJpsiV(config) :
 
   BDecClass = config.value('BDecayClass')
   pdfName = config.value('sigPDFName')
-  KSWave = config.value('KSWave')
+  KSWave = 'none'
+  if config.value('KSWave') and type(config.value('KSWave')) is str :
+    KSWave = config.value('KSWave')
 
   # get workspace
   ws = config.workspace()
@@ -95,7 +97,7 @@ def buildJpsiV(config) :
     J4_sc = config['J4_sc'].name()
     J8_sc = config['J8_sc'].name()
     J9_s2 = config['J9_s2'].name()
-    if KSWave :
+    if KSWave[:7] == 'include' :
       J1_1 = config['J1_1'].name()
       J1_c = config['J1_c'].name()
       J4_s = config['J4_s'].name()
@@ -126,7 +128,7 @@ def buildJpsiV(config) :
     J9_s2_cos  = config['J9_s2_cos'].name()
     J9_s2_sinh = config['J9_s2_sinh'].name()
     J9_s2_sin  = config['J9_s2_sin'].name()
-    if KSWave :
+    if KSWave[:7] == 'include' :
       J1_1_cosh = config['J1_1_cosh'].name()
       J1_1_cos  = config['J1_1_cos'].name()
       J1_1_sinh = config['J1_1_sinh'].name()
@@ -413,6 +415,13 @@ class AngleFunctionBuilder :
     from math import sqrt
     import RooFitDecorators
 
+    KSWave = False
+    if self._config.value('KSWave')\
+        and type(self._config.value('KSWave')) is str\
+        and self._config.value('KSWave')[:7] == 'include' :
+      KSWave = True
+
+
     # specify components of angular functions
     angFuncs = []
     if self._anglesType == 'Trans' :
@@ -432,7 +441,7 @@ class AngleFunctionBuilder :
       angFuncs.append(('J8_sc',  [(2, 1, 2,  1, -sqrt( 48. / 5.))]))
       angFuncs.append(('J9_s2',  [(2, 2, 2, -1,  sqrt( 12. / 5.))]))
 
-      if self._config.value('KSWave') :
+      if KSWave :
         angFuncs.append(('J1_1', [(0, 0, 0,  0,  6.             ),
                                   (0, 0, 2,  0,  sqrt(  9. / 5.)),
                                   (0, 0, 2,  2, -sqrt( 27. / 5.))]))
@@ -458,7 +467,7 @@ class AngleFunctionBuilder :
       angFuncs.append(('J8_sc',  [(2, 1, 2, -1,  sqrt( 48. / 5.))]))
       angFuncs.append(('J9_s2',  [(2, 2, 2, -2,  sqrt( 12. / 5.))]))
 
-      if self._config.value('KSWave') :
+      if KSWave :
         angFuncs.append(('J1_1', [(0, 0, 0,  0,  6.             ),
                                   (0, 0, 2,  0, -sqrt( 36. / 5.))]))
         angFuncs.append(('J1_c', [(1, 0, 0,  0,  6.             ),
