@@ -87,18 +87,20 @@ if config.value('ampsType') == 'transPolar' :
   # A_par^2 = 1 - A_0^2 - A_perp^2 :: Im(A_0) = 0
   config['A0Mag2'].set(val = A0Mag2)
   config['AperpMag2'].set(val = AperpMag2)
-  config['ASMag2'].set(val = ASMag2)
   config['AparPh'].set(val = PparPh)
   config['AperpPh'].set(val = AperpPh)
-  config['ASPh'].set(val = ASPh)
+  if config.value('KSWave')[:7] == 'include' :
+    config['ASMag2'].set(val = ASMag2)
+    config['ASPh'].set(val = ASPh)
 elif config.value('ampsType') == 'transCartesian' :
   # Re(A_0) = 1 :: Im(A_0) = 0
   config['ReApar'].set(val = sqrt(AparMag2 / A0Mag2) * cos(AparPh))
   config['ImApar'].set(val = sqrt(AparMag2 / A0Mag2) * sin(AparPh))
   config['ReAperp'].set(val = sqrt(AperpMag2 / A0Mag2) * cos(AperpPh))
   config['ImAperp'].set(val = sqrt(AperpMag2 / A0Mag2) * sin(AperpPh))
-  config['ReAS'].set(val = sqrt(ASMag2 / A0Mag2) * cos(ASPh))
-  config['ImAS'].set(val = sqrt(ASMag2 / A0Mag2) * sin(ASPh))
+  if config.value('KSWave')[:7] == 'include' :
+    config['ReAS'].set(val = sqrt(ASMag2 / A0Mag2) * cos(ASPh))
+    config['ImAS'].set(val = sqrt(ASMag2 / A0Mag2) * sin(ASPh))
 
 if mode == 'Bd2JpsiKstar' :
   config['dm'].set(min = -1., max = 2.)
