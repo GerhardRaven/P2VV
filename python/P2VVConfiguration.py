@@ -234,16 +234,16 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       elif mode == 'Bs2Jpsiphi' :
         if lambdaCPType == 'polar' :
           config.addSetting('lambdaCPSq', RooRealSetting('lambda^2',
-              'CP violation param. |lambda|^2', 'par', lambdaSq, 0., 2.))
+              'CP violation param. |lambda|^2', 'par', lambdaSq, 0., 5.))
           config.addSetting('phiCP', RooRealSetting('phis',
               'CP violation param. phi_s', 'par', phi_s, -2 * pi, 2 * pi))
           config.addSetting('CCP', RooFormSetting('C',
               'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
           config.addSetting('DCP', RooFormSetting('D',
-              'B0_s lambda param. D', '2. * @0 * cos(@1) / (1. + @0)',
+              'B0_s lambda param. D', '2. * sqrt(@0) * cos(@1) / (1. + @0)',
               ['lambdaCPSq', 'phiCP']))
           config.addSetting('SCP', RooFormSetting('S',
-              'B0_s lambda param. S', '-2. * @0 * sin(@1) / (1. + @0)',
+              'B0_s lambda param. S', '-2. * sqrt(@0) * sin(@1) / (1. + @0)',
               ['lambdaCPSq', 'phiCP']))
 
         elif lambdaCPType == 'cartesian' :

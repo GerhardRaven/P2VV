@@ -62,6 +62,67 @@ def registerMultiCatGen() :
 
 ###############################################################################
 
+def convertLambda(config, fitResult, printToScreen = True) :
+  """converts the CP violation parameter lambda from a fit result with
+     'convertComplexPars'
+  """
+
+  import RooFitDecorators
+
+  if config.value('lambdaCPType') == 'polar' :
+    # convert from polar lambda to cartesian lambda
+    params = [config['lambdaCPSq'].name(), config['phiCP'].name()]
+    result = fitResult.result(params)
+
+    polVals = [[result[1][0], -result[1][1]]]
+    polCovs = [[result[2][0][0], -result[2][0][1]],
+               [-result[2][1][0], result[2][1][1]]]
+
+    convert = convertComplexPars(polVals, polCovs, 'polar, magSq', 'cart', 0)
+
+    cartVals = convert[0]
+    cartCovs = convert[1]
+
+    polVals[0][1] = -polVals[0][1]
+    polCovs[0][1] = -polCovs[0][1]
+    polCovs[1][0] = -polCovs[1][0]
+
+  else :
+    # convert from cartesian lambda to polar lambda
+    params = [config['ReLambdaCP'].name(), config['ImLambdaCP'].name()]
+    result = fitResult.result(params)
+
+    cartVals = [[result[1][0], -result[1][1]]]
+    cartCovs = [[result[2][0][0], -result[2][0][1]],
+               [-result[2][1][0], result[2][1][1]]]
+
+    convert = convertComplexPars(cartVals, cartCovs, 'cart', 'polar, magSq', 0)
+
+    cartVals[0][1] = -cartVals[0][1]
+    cartCovs[0][1] = -cartCovs[0][1]
+    cartCovs[1][0] = -cartCovs[1][0]
+
+    polVals = convert[0]
+    polCovs = convert[1]
+
+  if printToScreen :
+    # print cartesian values and covariance matrix to screen
+    params = [('Re(lambda)', 'Im(lambda)')]
+
+    print 'P2VV - INFO: convertLambda: cartesian lambda:'
+    printComplexParams(params, cartVals, cartCovs)
+
+    # print polar values and covariance matrix to screen
+    params = [('|lambda|^2', 'phi')]
+
+    print 'P2VV - INFO: convertLambda: polar lambda:'
+    printComplexParams(params, polVals, polCovs)
+
+  return convert
+
+
+###############################################################################
+
 def convertAmplitudes(config, fitResult, printToScreen = True) :
   """converts amplitudes from a fit result with 'convertComplexPars'
   """

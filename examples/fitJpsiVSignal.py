@@ -164,6 +164,11 @@ if config.value('ampsType') == 'transCartesian'\
     or config.value('ampsType') == 'transPolar' :
   P2VV.convertAmplitudes(config, fitResult, True)
 
+# print polar (cartesian) lambda if 'ampsType' is cartesian (polar)
+if mode == 'Bs2Jpsiphi' and (config.value('lambdaCPType') == 'cartesian'\
+    or config.value('lambdaCPType') == 'polar') :
+  P2VV.convertLambda(config, fitResult, True)
+
 # get tags
 itName = config['iTag'].name()
 itPlus = config['iTag'].catTypesDict()[1]
