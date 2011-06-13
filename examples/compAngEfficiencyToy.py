@@ -62,7 +62,6 @@ config['BLifetime'].set(name = 't', min = 0., max = 4.)
 config['iTag'].set(name = 'tagInitial')
 if mode == 'Bd2JpsiKstar' :
   config['fTag'].set(name = 'tagFinal')
-config['misTag'].set(realType = 'par', val = 0., min = '', max = '')
 
 if mode == 'Bd2JpsiKstar' :
   ReHp = 0.159 * cos(1.563) / 0.775

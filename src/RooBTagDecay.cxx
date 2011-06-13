@@ -48,7 +48,7 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _dGamma("dGamma", "Delta Gamma", this, dGamma),
   _dm("dm", "Delta mass", this, dm),
   _dilution("dilution", "mis-tag dilution", this),
-  _ADilMisTag("ADilMisTag", "dilution/mis-tag asymmetry", this),
+  _ADilWTag("ADilWTag", "dilution/wrong tag asymmetry", this),
   _ANorm("ANorm", "normalization asymmetry", this),
   _avgCEven("avgCEven", "CP average even coefficients", this),
   _avgCOdd("avgCOdd", "CP average odd coefficients", this),
@@ -70,7 +70,7 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
 RooBTagDecay::RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooAbsCategory& iTag, RooAbsCategory& fTag,
     RooAbsReal& tau, RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
-    RooAbsReal& ADilMisTag, RooAbsReal& ANorm, RooAbsReal& avgCEven,
+    RooAbsReal& ADilWTag, RooAbsReal& ANorm, RooAbsReal& avgCEven,
     RooAbsReal& avgCOdd, RooAbsReal& cosCoef, const RooResolutionModel& model,
     DecayType type, Bool_t checkVars) :
   RooAbsAnaConvPdf(name, title, model, time),
@@ -81,7 +81,7 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _dGamma("dGamma", "Delta Gamma", this, dGamma),
   _dm("dm", "Delta mass", this, dm),
   _dilution("dilution", "mis-tag dilution", this, dilution),
-  _ADilMisTag("ADilMisTag", "dilution/mis-tag asymmetry", this, ADilMisTag),
+  _ADilWTag("ADilWTag", "dilution/wrong tag asymmetry", this, ADilWTag),
   _ANorm("ANorm", "normalization asymmetry", this, ANorm),
   _avgCEven("avgCEven", "CP average even coefficients", this, avgCEven),
   _avgCOdd("avgCOdd", "CP average odd coefficients", this, avgCOdd),
@@ -109,7 +109,7 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
 RooBTagDecay::RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooAbsCategory& iTag, RooAbsReal& tau,
     RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
-    RooAbsReal& ADilMisTag, RooAbsReal& avgCEven, RooAbsReal& avgCOdd,
+    RooAbsReal& ADilWTag, RooAbsReal& avgCEven, RooAbsReal& avgCOdd,
     RooAbsReal& coshCoef, RooAbsReal& sinhCoef, RooAbsReal& cosCoef,
     RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
     Bool_t checkVars) :
@@ -121,7 +121,7 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _dGamma("dGamma", "Delta Gamma", this, dGamma),
   _dm("dm", "Delta mass", this, dm),
   _dilution("dilution", "mis-tag dilution", this, dilution),
-  _ADilMisTag("ADilMisTag", "dilution/mis-tag asymmetry", this, ADilMisTag),
+  _ADilWTag("ADilWTag", "dilution/wrong tag asymmetry", this, ADilWTag),
   _ANorm("ANorm", "normalization asymmetry", this),
   _avgCEven("avgCEven", "CP average even coefficients", this, avgCEven),
   _avgCOdd("avgCOdd", "CP average odd coefficients", this, avgCOdd),
@@ -153,7 +153,7 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
   _dGamma("dGamma", this, other._dGamma),
   _dm("dm", this, other._dm),
   _dilution("dilution", this, other._dilution),
-  _ADilMisTag("ADilMisTag", this, other._ADilMisTag),
+  _ADilWTag("ADilWTag", this, other._ADilWTag),
   _ANorm("ANorm", this, other._ANorm),
   _avgCEven("avgCEven", this, other._avgCEven),
   _avgCOdd("avgCOdd", this, other._avgCOdd),
@@ -204,20 +204,20 @@ Double_t RooBTagDecay::coefficient(Int_t basisIndex) const
   if (basisIndex == _coshBasis || basisIndex == _sinhBasis) {
     if (_tags == 1)
       return (_avgCEven + _iTag * _dilution
-          * (_avgCOdd - _avgCEven * _ADilMisTag)) * coefVal;
+          * (_avgCOdd - _avgCEven * _ADilWTag)) * coefVal;
     else
       return (1. - _fTag * _ANorm) * (_avgCEven + _iTag * _dilution
-          * (_avgCOdd - _avgCEven * _ADilMisTag)) * coefVal;
+          * (_avgCOdd - _avgCEven * _ADilWTag)) * coefVal;
   }
 
   // terms that are odd in initial state tag
   if (basisIndex == _cosBasis || basisIndex == _sinBasis) {
     if (_tags == 1)
       return (_avgCOdd + _iTag * _dilution
-          * (_avgCEven - _avgCOdd * _ADilMisTag)) * coefVal;
+          * (_avgCEven - _avgCOdd * _ADilWTag)) * coefVal;
     else
       return (_fTag - _ANorm) * (_avgCOdd + _iTag * _dilution
-          * (_avgCEven - _avgCOdd * _ADilMisTag)) * coefVal;
+          * (_avgCEven - _avgCOdd * _ADilWTag)) * coefVal;
   }
 
   return 0.;
@@ -261,11 +261,11 @@ RooArgSet* RooBTagDecay::coefVars(Int_t basisIndex) const
         coefVars->add(_dilution.arg());
       delete tempSet;
 
-      tempSet = _ADilMisTag.arg().getParameters((RooArgSet*)0);
+      tempSet = _ADilWTag.arg().getParameters((RooArgSet*)0);
       if (tempSet->getSize() > 0)
         coefVars->add(*tempSet, kTRUE);
       else
-        coefVars->add(_ADilMisTag.arg());
+        coefVars->add(_ADilWTag.arg());
       delete tempSet;
 
       tempSet = _avgCEven.arg().getParameters((RooArgSet*)0);
@@ -366,7 +366,7 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   RooAbsArg* analVar = 0;
   while ((analVar = (RooAbsArg*)analVarIter->Next()) != 0) {
     if (_dilution.arg().dependsOn(*analVar)
-        || _ADilMisTag.arg().dependsOn(*analVar)
+        || _ADilWTag.arg().dependsOn(*analVar)
         || (_tags > 1 && _ANorm.arg().dependsOn(*analVar))
         || _avgCEven.arg().dependsOn(*analVar)
         || _avgCOdd.arg().dependsOn(*analVar)) {
@@ -440,7 +440,7 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
         return 2. * _avgCEven * coefInt;
       else
         return (_avgCEven + _iTag * _dilution
-            * (_avgCOdd - _avgCEven * _ADilMisTag)) * coefInt;
+            * (_avgCOdd - _avgCEven * _ADilWTag)) * coefInt;
     } else {
       if (intITag && intFTag)
         return 4. * _avgCEven * coefInt;
@@ -448,10 +448,10 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
         return 2. * (1. - _fTag * _ANorm) * _avgCEven * coefInt;
       else if (intFTag)
         return 2. * (_avgCEven + _iTag * _dilution
-            * (_avgCOdd - _avgCEven * _ADilMisTag)) * coefInt;
+            * (_avgCOdd - _avgCEven * _ADilWTag)) * coefInt;
       else
         return (1. - _fTag * _ANorm) * (_avgCEven + _iTag * _dilution
-            * (_avgCOdd - _avgCEven * _ADilMisTag)) * coefInt;
+            * (_avgCOdd - _avgCEven * _ADilWTag)) * coefInt;
     }
   }
 
@@ -462,7 +462,7 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
         return 2. * _avgCOdd * coefInt;
       else
         return (_avgCOdd + _iTag * _dilution
-            * (_avgCEven - _avgCOdd * _ADilMisTag)) * coefInt;
+            * (_avgCEven - _avgCOdd * _ADilWTag)) * coefInt;
     } else {
       if (intITag && intFTag)
         return -4. * _ANorm * _avgCOdd * coefInt;
@@ -470,10 +470,10 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
         return 2. * (_fTag - _ANorm) * _avgCOdd * coefInt;
       else if (intFTag)
         return -2. * _ANorm * (_avgCOdd + _iTag * _dilution
-            * (_avgCEven - _avgCOdd * _ADilMisTag)) * coefInt;
+            * (_avgCEven - _avgCOdd * _ADilWTag)) * coefInt;
       else
         return (_fTag - _ANorm) * (_avgCOdd + _iTag * _dilution
-            * (_avgCEven - _avgCOdd * _ADilMisTag)) * coefInt;
+            * (_avgCEven - _avgCOdd * _ADilWTag)) * coefInt;
     }
   }
 
@@ -590,9 +590,9 @@ void RooBTagDecay::generateEvent(Int_t code)
       } else {
         // use PDF with flavour tag(s)
         Double_t cEven = _avgCEven + _iTag * _dilution
-            * (_avgCOdd - _avgCEven * _ADilMisTag);
+            * (_avgCOdd - _avgCEven * _ADilWTag);
         Double_t cOdd = _avgCOdd + _iTag * _dilution
-            * (_avgCEven - _avgCOdd * _ADilMisTag);
+            * (_avgCEven - _avgCOdd * _ADilWTag);
         if (_tags > 1) {
           cEven *= 1. - _fTag * _ANorm;
           cOdd  *= _fTag - _ANorm;
@@ -631,8 +631,8 @@ void RooBTagDecay::generateEvent(Int_t code)
       // generate value for initial state tag
       Int_t iTagGen = 1;
       Double_t ACP = 0.;
-      Double_t cEvenDil = _dilution * (_avgCOdd - _avgCEven * _ADilMisTag);
-      Double_t cOddDil  = _dilution * (_avgCEven - _avgCOdd * _ADilMisTag);
+      Double_t cEvenDil = _dilution * (_avgCOdd - _avgCEven * _ADilWTag);
+      Double_t cOddDil  = _dilution * (_avgCEven - _avgCOdd * _ADilWTag);
       if (_tags == 1)
         ACP += (cEvenDil * evenTerms + cOddDil * oddTerms)
             / (_avgCEven * evenTerms + _avgCOdd * oddTerms);
@@ -668,7 +668,7 @@ Bool_t RooBTagDecay::checkVarDep(const RooAbsArg& var, Bool_t warn) const
   if (_checkVars && (_tau.arg().dependsOn(var)
       || _dGamma.arg().dependsOn(var) || _dm.arg().dependsOn(var)
       || (_tags > 0 && (_dilution.arg().dependsOn(var)
-      || _ADilMisTag.arg().dependsOn(var)
+      || _ADilWTag.arg().dependsOn(var)
       || (_tags > 1 && _ANorm.arg().dependsOn(var))
       || _avgCEven.arg().dependsOn(var) || _avgCOdd.arg().dependsOn(var)))
       || _coshCoef.arg().dependsOn(var) || _cosCoef.arg().dependsOn(var)

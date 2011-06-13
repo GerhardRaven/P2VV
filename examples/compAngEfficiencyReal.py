@@ -13,8 +13,8 @@
 ###############################################################################
 
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
-mode = 'Bd2JpsiKstar'
-#mode = 'Bs2Jpsiphi'
+#mode = 'Bd2JpsiKstar'
+mode = 'Bs2Jpsiphi'
 
 # efficiency moments file path
 momentsFilePath = 'effMoments'
@@ -52,7 +52,6 @@ config['BLifetime'].set(name = 't', min = -2., max = 20.)
 config['iTag'].set(name = 'tagdecision')
 if mode == 'Bd2JpsiKstar' :
   config['fTag'].set(name = 'qrec')
-config['misTag'].set(realType = 'par', val = 0., min = '', max = '')
 
 # allow only positive values for the true lifetime: truth matched events
 config.addSetting('trueBLifetime', P2VVConfiguration.RooRealSetting('TRUEt',

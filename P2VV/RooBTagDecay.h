@@ -39,7 +39,7 @@ public:
   RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooAbsCategory& iTag, RooAbsCategory& fTag,
     RooAbsReal& tau, RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
-    RooAbsReal& ADilMisTag, RooAbsReal& ANorm, RooAbsReal& avgCEven,
+    RooAbsReal& ADilWTag, RooAbsReal& ANorm, RooAbsReal& avgCEven,
     RooAbsReal& avgCOdd, RooAbsReal& cosCoef, const RooResolutionModel& model,
     DecayType type, Bool_t checkTags = kTRUE);
 
@@ -47,7 +47,7 @@ public:
   RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooAbsCategory& iTag, RooAbsReal& tau,
     RooAbsReal& dGamma, RooAbsReal& dm, RooAbsReal& dilution,
-    RooAbsReal& ADilMisTag, RooAbsReal& avgCEven, RooAbsReal& avgCOdd,
+    RooAbsReal& ADilWTag, RooAbsReal& avgCEven, RooAbsReal& avgCOdd,
     RooAbsReal& coshCoef, RooAbsReal& sinhCoef, RooAbsReal& cosCoef,
     RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
     Bool_t checkTags = kTRUE);
@@ -85,7 +85,7 @@ protected:
   RooRealProxy     _dGamma;
   RooRealProxy     _dm;
   RooRealProxy     _dilution;
-  RooRealProxy     _ADilMisTag;
+  RooRealProxy     _ADilWTag;
   RooRealProxy     _ANorm;
   RooRealProxy     _avgCEven;
   RooRealProxy     _avgCOdd;

@@ -30,7 +30,7 @@ generate = True
 nEvents = 50000
 
 # read events from NTuple or RooDataset
-NTuple = True
+NTuple = False
 
 # amplitude values
 A0Mag2    = 0.60
@@ -81,7 +81,6 @@ config['BLifetime'].set(name = 't', min = 0., max = 4.)
 config['iTag'].set(name = 'tagInitial')
 if mode == 'Bd2JpsiKstar' :
   config['fTag'].set(name = 'tagFinal')
-config['misTag'].set(realType = 'par', val = 0., min = '', max = '')
 
 if config.value('ampsType') == 'transPolar' :
   # A_par^2 = 1 - A_0^2 - A_perp^2 :: Im(A_0) = 0

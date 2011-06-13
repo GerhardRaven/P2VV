@@ -274,27 +274,32 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       ### flavour tags ###
       config.addSetting('iTag', RooCatSetting('iTag',
           'initial state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
-      if onlySignal :
-        config.addSetting('misTag', RooRealSetting('misTag',
-          'mis-tag fraction', 'par', 0., '', ''))
-      else :
-        config.addSetting('misTag', RooRealSetting('misTag',
-          'mis-tag fraction', 'par', 0., 0., 0.5))
       if mode == 'Bd2JpsiKstar' :
         config.addSetting('fTag', RooCatSetting('fTag',
             'final state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
 
+      config.addSetting('wTag', RooRealSetting('wTag',
+          'wrong tag fraction B', 'par', 0., '', ''))
+      config.addSetting('wTagBar', RooRealSetting('wTagBar',
+          'wrong tag fraction anti-B', 'par', 0., '', ''))
+      config.addSetting('AProd', RooRealSetting('AProd',
+          'production asymmetry', 'par', 0., '', ''))
+      config.addSetting('ANorm', RooFormSetting('ANorm',
+          'normalization asymmetry', '-@0', ['CCP']))
+      config.addSetting('ATagEff', RooRealSetting('ATagEff',
+          'tagging efficiency asymmetry', 'par', 0., '', ''))
+
       config.addSetting('tagDilution', RooFormSetting('tagDilution',
-          'mis-tag dilution', '1 - 2. * @0', ['misTag']))
-      config.addSetting('ADilMisTag', RooRealSetting('ADilMisTag',
-          'dilution/mis-tag asymmetry', 'par', 0., '', ''))
-      if mode == 'Bd2JpsiKstar' :
-        config.addSetting('ANorm', RooFormSetting('ANorm',
-            'normalization asymmetry', '-@0', ['CCP']))
-      config.addSetting('avgCEven', RooRealSetting('avgCEven',
-          'CP average even coefficients', 'par', 1., '', ''))
-      config.addSetting('avgCOdd', RooRealSetting('avgCOdd',
-          'CP average odd coefficients', 'par', 0., -1., 1.))
+          'tagging dilution', '1. - @0 - @1', ['wTag', 'wTagBar']))
+      config.addSetting('ADilWTag', RooFormSetting('ADilWTag',
+          'dilution/wrong tag asymmetry', '(@0 - @1) / @2',
+          ['wTag', 'wTagBar', 'tagDilution']))
+      config.addSetting('avgCEven', RooFormSetting('avgCEven',
+          'CP average even coefficients', '1. + @0*@1 + @0*@2 + @1*@2',
+          ['AProd', 'ANorm', 'ATagEff']))
+      config.addSetting('avgCOdd', RooFormSetting('avgCOdd',
+          'CP average odd coefficients', '@0 + @1 + @2 + @0*@1*@2',
+          ['AProd', 'ANorm', 'ATagEff']))
 
 
       ### amplitudes ###

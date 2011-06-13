@@ -152,7 +152,6 @@ def buildJpsiV(config) :
   cthetaAng = config['cthetaAng'].name()
   phiAng    = config['phiAng'].name()
   iTag      = config['iTag'].name()
-  misTag    = config['misTag'].name()
   if mode == 'Bd2JpsiKstar' : 
     fTag = config['fTag'].name()
 
@@ -169,7 +168,7 @@ def buildJpsiV(config) :
 
   # get tagging parameters
   dilution   = config['tagDilution'].name()
-  ADilMisTag = config['ADilMisTag'].name()
+  ADilWTag = config['ADilWTag'].name()
   if mode == 'Bd2JpsiKstar' :
     ANorm = config['ANorm'].name()
   avgCEven   = config['avgCEven'].name()
@@ -226,9 +225,9 @@ def buildJpsiV(config) :
 
     # define tagging factors for CP even and CP odd terms
     ws.factory("expr::cTagEven('@0 * (@3 - @2 * @1)', {%s, %s, %s, %s})"\
-        % (dilution, ADilMisTag, avgCEven, avgCOdd))
+        % (dilution, ADilWTag, avgCEven, avgCOdd))
     ws.factory("expr::cTagOdd('@0 * (@2 - @3 * @1)', {%s, %s, %s, %s})"\
-        % (dilution, ADilMisTag, avgCEven, avgCOdd))
+        % (dilution, ADilWTag, avgCEven, avgCOdd))
 
     if mode == 'Bd2JpsiKstar' :
       # B0->J/psiK*
@@ -330,7 +329,7 @@ def buildJpsiV(config) :
         ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,\
             cCommon, tres_sig, SingleSided, 1)"\
             % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilMisTag, ANorm, avgCEven, avgCOdd))
+               ADilWTag, ANorm, avgCEven, avgCOdd))
 
       else :
         print 'P2VV - INFO: buildJpsiV: factorizing time and angular PDFs'
@@ -345,7 +344,7 @@ def buildJpsiV(config) :
         ws.factory("PROD::%s(cCommon, BTagDecay(%s, %s, %s, %s, %s, %s, %s,\
             %s, %s, %s, %s, %s, tres_sig, SingleSided, 1))"\
             % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilMisTag, ANorm, avgCEven, avgCOdd, one))
+               ADilWTag, ANorm, avgCEven, avgCOdd, one))
 
     elif mode == 'Bs2Jpsiphi' :
       # B_s0->J/psiphi
@@ -366,7 +365,7 @@ def buildJpsiV(config) :
       ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s,\
           cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, 1)"\
           % (pdfName, BLifetime, iTag, BMeanLife, dGamma, dm, dilution,
-             ADilMisTag, avgCEven, avgCOdd))
+             ADilWTag, avgCEven, avgCOdd))
 
 
   return ws.pdf(pdfName)
