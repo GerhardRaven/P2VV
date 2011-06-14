@@ -58,6 +58,7 @@ tmax = 14.
 t.setRange(tmin,tmax)
 
 data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m==m && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision && etatag==etatag')
+ws.put(data)
 
 # Build mass pdf
 mb = MassPdfBuilder(ws,ws['m'],ws['mdau1'],ws['mdau2'],'Bs2Jpsiphi')
@@ -82,8 +83,8 @@ splot = RooStats.SPlot("splotdata","splotdata",data,m_pdf_fit,mb.yields_fit())
 #wdata = splot.GetSDataSet()
 
 if True :
-    c = TCanvas()
-    c2 = TCanvas()
+    c = TCanvas('all vars from sPlots','all vars from sPlots')
+    c2 = TCanvas('zoom t from sPlots','zoom t from sPlots')
     stash.append(c)
     stash.append(c2)
     observables = RooArgSet(ws['trcospsi'],ws['trcostheta'],ws['trphi'])
@@ -113,7 +114,7 @@ sigmat = ws['sigmat']
 sigmat.setBins(40)
 stdata = {}
 stpdf = {}
-c = TCanvas()
+c = TCanvas('sigmat from sPlots','sigmat from sPlots')
 c.Divide(1,2)
 for (f,sample) in enumerate([ j.GetName() for j in mb.yields_fit() ]):
       dataw = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","%s_sw"%sample) 
@@ -133,21 +134,33 @@ ws['tagdecision'].setRange('untagged','untagged')
 etatag = ws['etatag']
 etatag.setBins(40)
 
-etatagcanvas = TCanvas()
-etatagcanvas.Divide(3,1)
+etatagcanvas = TCanvas('etatag from data','etatag from data')
+etatagcanvas.Divide(4,1)
 
 etatagcanvas.cd(1)
+p = etatag.frame(RooFit.Title('etatag'))
+data.plotOn(p)
+etatagdata = RooDataHist("etatag_data","hist etatag Per Ev",RooArgSet(etatag),data)
+etatagpdf = RooHistPdf("etatag_pdf","etatag_pdf",RooArgSet(etatag),etatagdata)
+ws.put(etatagpdf)
+etatagpdf.plotOn(p)
+p.Draw()
+etatagcanvas.cd(2)
 p = etatag.frame(RooFit.Title('tagged as B'))
 data.plotOn(p,RooFit.CutRange('B'))
 p.Draw()
-etatagcanvas.cd(2)
+etatagcanvas.cd(3)
 p = etatag.frame(RooFit.Title('tagged as Bbar'))
 data.plotOn(p,RooFit.CutRange('Bbar'))
 p.Draw()
-etatagcanvas.cd(3)
+etatagcanvas.cd(4)
 p = etatag.frame(RooFit.Title('untagged'))
 data.plotOn(p,RooFit.CutRange('untagged'))
 p.Draw()
+
+writefile = TFile('ws_etatagPDF.root','RECREATE')
+ws.Write('ws')
+writefile.Close()
 
 #make etatag plots from sdata
 datawsig = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","N_sig_sw") 
@@ -158,7 +171,7 @@ datawbkg = RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),"1>0","N_bk
 #etatagdatabkg = RooDataHist("etatag_N_bkg_data","hist etatag Per Ev",RooArgSet(etatag),datawbkg)
 #etatagpdfbkg = RooHistPdf("etatag_N_bkg","etatag_N_bkg",RooArgSet(etatag),etatagdatabkg)
 
-summarycanvas = TCanvas('SummaryCanvas','SummaryCanvas')
+summarycanvas = TCanvas('etatag from sPlots','etatag from sPlots')
 summarycanvas.Divide(4,2)
 
 summarycanvas.cd(1)
