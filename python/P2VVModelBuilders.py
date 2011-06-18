@@ -351,7 +351,7 @@ def buildJpsiV(config) :
         ws.factory("PROD::%s(cCommon, BTagDecay(%s, %s, %s, %s, %s, %s, %s,\
             %s, %s, %s, %s, %s, tres_sig, SingleSided, %d))"\
             % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilWTag, ANorm, avgCEven, avgCOdd, checkTags))
+               ADilWTag, ANorm, avgCEven, avgCOdd, one, checkTags))
 
     elif mode == 'Bs2Jpsiphi' :
       # B_s0->J/psiphi
