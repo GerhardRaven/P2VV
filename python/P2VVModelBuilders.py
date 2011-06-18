@@ -77,9 +77,13 @@ def buildJpsiV(config) :
 
   BDecClass = config.value('BDecayClass')
   pdfName = config.value('sigPDFName')
+  allowITagZero =  config.value('allowITagZero')
   KSWave = 'none'
   if config.value('KSWave') and type(config.value('KSWave')) is str :
     KSWave = config.value('KSWave')
+
+  if allowITagZero :
+    print 'P2VV - WARNING: buildJpsiV: zero value for initial state flavour tag ("untagged") allowed'
 
   # get workspace
   ws = config.workspace()
@@ -313,6 +317,9 @@ def buildJpsiV(config) :
   else :
     # use RooBTagDecay
 
+    if allowITagZero : checkTags = 0
+    else : checkTags = 1
+
     if mode == 'Bd2JpsiKstar' :
       # B0->J/psiK*
 
@@ -327,9 +334,9 @@ def buildJpsiV(config) :
 
         # build PDF
         ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,\
-            cCommon, tres_sig, SingleSided, 1)"\
+            cCommon, tres_sig, SingleSided, %d)"\
             % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilWTag, ANorm, avgCEven, avgCOdd))
+               ADilWTag, ANorm, avgCEven, avgCOdd, checkTags))
 
       else :
         print 'P2VV - INFO: buildJpsiV: factorizing time and angular PDFs'
@@ -342,9 +349,9 @@ def buildJpsiV(config) :
 
         # build PDF
         ws.factory("PROD::%s(cCommon, BTagDecay(%s, %s, %s, %s, %s, %s, %s,\
-            %s, %s, %s, %s, %s, tres_sig, SingleSided, 1))"\
+            %s, %s, %s, %s, %s, tres_sig, SingleSided, %d))"\
             % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilWTag, ANorm, avgCEven, avgCOdd, one))
+               ADilWTag, ANorm, avgCEven, avgCOdd, checkTags))
 
     elif mode == 'Bs2Jpsiphi' :
       # B_s0->J/psiphi
@@ -363,9 +370,9 @@ def buildJpsiV(config) :
 
       # build PDF
       ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s,\
-          cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, 1)"\
+          cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, %d)"\
           % (pdfName, BLifetime, iTag, BMeanLife, dGamma, dm, dilution,
-             ADilWTag, avgCEven, avgCOdd))
+             ADilWTag, avgCEven, avgCOdd, checkTags))
 
 
   return ws.pdf(pdfName)

@@ -46,6 +46,10 @@ ASPh      = 2.2
 phiCP      = -0.2
 lambdaCPSq = 1.
 
+# resolution model
+BLifetimeError = 0.05
+
+
 ###############################################################################
 from math import sqrt, sin, cos
 import P2VV, P2VVConfiguration, P2VVModelBuilders, P2VVPlots
@@ -66,6 +70,7 @@ config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal','KSWave=include'])
   # 'lambdaCPType=polar'   :  use a polar parametrisation of lambda
   # 'RooBDecay'            :  use RooBDecay instead of RooBTagDecay
   # 'tResModel=3Gauss'     :  use a time resolution model with three Gaussians
+  # 'allowITagZero'        :  allow 0 value for init. state flav. tag (untagged)
 
 # custom settings
 if config.value('anglesType')[0] == 'trans' :
@@ -111,6 +116,9 @@ elif mode == 'Bs2Jpsiphi' :
   else :
     config['ReLambdaCP'].set(val = sqrt(lambdaCPSq) * cos(-phiCP))
     config['ImLambdaCP'].set(val = sqrt(lambdaCPSq) * sin(-phiCP))
+
+if 'Gauss' in config.value('tResModel') :
+  config['BLifetimeError'].set(val = BLifetimeError)
 
 # declare RooFit variables and store them in RooWorkspace
 config.declareRooVars()

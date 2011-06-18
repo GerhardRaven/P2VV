@@ -166,10 +166,10 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
         'B lifetime (ps)', 'obs', 0., -5., 14.))
     if tResModel == 'Gauss' :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat',
-          'B lifetime error (ps)', 'obs', 0.05, '', ''))
+          'B lifetime error (ps)', 'par', 0.05, '', ''))
     elif tResModel[:6] == '3Gauss' :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat',
-          'B lifetime error (ps)', 'obs', 0.05, 0.005, 0.1))
+          'B lifetime error (ps)', 'par', 0.05, 0.005, 0.1))
 
     if mode == 'Bd2JpsiKstar' :
       config.addSetting('Gamma', RooRealSetting('Gamma',
@@ -272,8 +272,19 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
               'B0_s lambda param. S', 'par', SCP, -3., 3.))
 
       ### flavour tags ###
-      config.addSetting('iTag', RooCatSetting('iTag',
-          'initial state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
+      if 'allowITagZero' in optDict : allowITagZero = True
+      else : allowITagZero = False
+      config.addSetting('allowITagZero', P2VVSetting('allowITagZero',
+          'allow zero value for init. state tag (untagged)', allowITagZero))
+
+      if allowITagZero :
+        config.addSetting('iTag', RooCatSetting('iTag',
+            'initial state flavour tag', True, 'B',
+            {+1 : 'B', -1 : 'Bbar', 0 : 'untagged'}))
+      else :
+        config.addSetting('iTag', RooCatSetting('iTag',
+            'initial state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
+
       if mode == 'Bd2JpsiKstar' :
         config.addSetting('fTag', RooCatSetting('fTag',
             'final state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
