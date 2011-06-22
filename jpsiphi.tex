@@ -110,28 +110,29 @@ we can relate the value  of $C$ to $A_\mathrm{SL}$ as follows:
 %                                                              - \eta_{i} D\sinh\left(\frac{\Delta\Gamma}{2}t\right)
 %                                                              + \eta_{i} S\sin \left(\Delta m t \right)  
 %                                                         \right] \\
-  {\cal A}_i^*(t) {\cal A}_j(t) &= \frac{ a_i^* a_j e^{-t/\tau}} {1+C}&\left[ (1+C) |E_+(t)|^2  +\eta_i\eta_j (1-C)|E_-(t)|^2 + \eta_j(D+iS)E_+^*E_-+\eta_i(D-iS)E_+E_-^*   \right] \\
-                                &= \frac{ a_i^* a_j e^{-t/\tau}} {1+C}&\Biggl[ \left( \frac{1+\eta_i\eta_j}{2} +  \frac{1-\eta_i\eta_j}{2}C\right) \cosh\left(\frac{\Delta\Gamma}{2}t\right) \\
-                                                                          &&  +\left( \frac{1-\eta_i\eta_j}{2} +  \frac{1+\eta_i\eta_j}{2}C\right) \cos(\Delta m t) \\
-                                                                          &&  +\left(-\frac{\eta_i+\eta_j}{2}D + \frac{\eta_i-\eta_j}{2}iS\right) \sinh\left(\frac{\Delta\Gamma}{2}t\right) \\
+  {\cal A}_i^*(t) {\cal A}_j(t) &= \frac{ a_i^* a_j e^{-t/\tau}} {1+C}&\Biggl[ (1+C) |E_+(t)|^2  +\eta_i\eta_j (1-C)|E_-(t)|^2 \nonumber\\
+                                                                          && + \eta_j(D+iS)E_+^*E_-+\eta_i(D-iS)E_+E_-^*   \Biggr] \\
+                                &= \frac{ a_i^* a_j e^{-t/\tau}} {1+C}&\Biggl[ \left( \frac{1+\eta_i\eta_j}{2} +  \frac{1-\eta_i\eta_j}{2}C\right) \cosh\left(\frac{\Delta\Gamma}{2}t\right)\nonumber \\
+                                                                          &&  +\left( \frac{1-\eta_i\eta_j}{2} +  \frac{1+\eta_i\eta_j}{2}C\right) \cos(\Delta m t) \nonumber\\
+                                                                          &&  +\left(-\frac{\eta_i+\eta_j}{2}D + \frac{\eta_i-\eta_j}{2}iS\right) \sinh\left(\frac{\Delta\Gamma}{2}t\right) \nonumber\\
                                                                           &&  +\left(-\frac{\eta_i+\eta_j}{2}S - \frac{\eta_i-\eta_j}{2}iD\right) \sin(\Delta m t) \Biggr] 
 \end{eqnarray}
 
 The result can be summarized as follows (where we have used that $q_T^2=1$):
 \begin{equation}
-\begin{array}{|c|| c | c | c | c | c |}
+\begin{array}{| c |c|| c | c | c | c | c |}
  \hline
-                                             &                          &  \cosh\left(\frac{\Delta\Gamma}{2}t\right) & q_T \cos(\Delta m t)  & \sinh\left(\frac{\Delta\Gamma}{2}t\right) &q_T\sin(\Delta m t)  \\
+                        q_T=+1                      &    q_T = -1&                          &  \cosh\left(\frac{\Delta\Gamma}{2}t\right) & q_T \cos(\Delta m t)  & \sinh\left(\frac{\Delta\Gamma}{2}t\right) &q_T\sin(\Delta m t)  \\
  \hline
-|{\cal A}_0(t)|^2                           &\frac{  | a_0 |^2 e^{-t/\tau}}{1+q_TC}                  & 1 &   C  &  -D & -S   \\
-|{\cal A}_\parallel(t)|^2                   &\frac{  | a_\parallel |^2 e^{-t/\tau}}{1+q_TC}          & 1 &   C  &  -D & -S   \\
-|{\cal A}_\perp(t)|^2                       &\frac{  | a_\perp |^2 e^{-t/\tau}}{1+q_TC}              & 1 &   C  &  +D & +S   \\
-\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &\frac{  \Re(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}& 0 &   0  &   S & -D   \\                         
-                                            &\frac{  \Im(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}  & C &   1  &   0 &  0   \\
-\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &\frac{  \Re(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}        & 0 &   0  &   S & -D   \\
-                                            &\frac{  \Im(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}          & C &   1  &   0 &  0   \\
-\Re({\cal A}_0^*(t){\cal A}_\parallel(t))     &\frac{  \Re(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}     & 1 &   C  &  -D & -S   \\
-                                            &\frac{  \Im(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 0 &   0  &   0 &  0   \\
+|{\cal A}_0(t)|^2                             &|\overline{\cal A}_0(t)|^2                             &\frac{  | a_0 |^2 e^{-t/\tau}}{1+q_TC}                  & 1 &   C  &  -D & -S   \\
+|{\cal A}_\parallel(t)|^2                     &|\overline{\cal A}_\parallel(t)|^2                     &\frac{  | a_\parallel |^2 e^{-t/\tau}}{1+q_TC}          & 1 &   C  &  -D & -S   \\
+|{\cal A}_\perp(t)|^2                         &|\overline{\cal A}_\perp(t)|^2                         &\frac{  | a_\perp |^2 e^{-t/\tau}}{1+q_TC}              & 1 &   C  &  +D & +S   \\
+\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &\Im(\overline{\cal A}_\parallel^*(t){\cal A}_\perp(t)) &\frac{  \Re(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}& 0 &   0  &   S & -D   \\                         
+                                              &                                              &\frac{  \Im(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}  & C &   1  &   0 &  0   \\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &\Im(\overline{\cal A}_0^*(t)\overline{\cal A}_\perp(t))         &\frac{  \Re(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}        & 0 &   0  &   S & -D   \\
+                                              &                                              &\frac{  \Im(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}          & C &   1  &   0 &  0   \\
+\Re({\cal A}_0^*(t){\cal A}_\parallel(t))     &\Re(\overline{\cal A}_0^*(t)\overline{\cal A}_\parallel(t))     &\frac{  \Re(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}     & 1 &   C  &  -D & -S   \\
+                                              &                                              &\frac{  \Im(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 0 &   0  &   0 &  0   \\
 \hline
 \end{array}
 \end{equation}
@@ -148,14 +149,22 @@ In addition, there will be those events which are untagged, which will be distri
 \begin{equation}
    P_{\mathrm{untagged}} \equiv \left( 1-\sum_i \overline{t}_i \right)  P_{\overline{B}} + \left( 1 - \sum_i t_i \right)  P_{ B }
 \end{equation}
-where we have assumed that the {\em combination} of $P_{B}+P_{\overline{B}}$ is properly normalized.
-Taking into account that $P_{B}$ and $P_{\overline{B}}$ differ in normalization by
+where we have assumed that the {\em combination} of $P_{B}+P_{\overline{B}}$ is properly normalized, as in that
+case also the derived $P_{B_\mathrm{tag},i}, P_{\overline{B}_\mathrm{tag},i}$ and $P_{\mathrm untagged}$ are properly normalized, because:
+\begin{equation}
+     \sum_i \left( P_{B_\mathrm{tag},i}+P_{\overline{B}_\mathrm{tag},i} \right) + P_{\mathrm untagged} = P_B + P_{\overline B}
+\end{equation}
+by construction.
+
+
+Taking into account that $P_{B}$ and $P_{\overline{B}}$ can differ in overall normalization
+due to an explicit production asymmetry, or due to a nonzero value of $C$, which results in
 $N_+=1+C$ and $N_-=1-C$, and labelling for the time being the CP even 
 resp. CP odd terms in $P_{B}$ and $P_{\overline{B}}$ as ${\cal E}$
 and ${\cal O}$, we find that:
 \begin{eqnarray}
    P(q_T=1,i) &=& t_i(1-w_i)\frac{{\cal E} + {\cal O}}{N_+} + \overline{t}_i\overline{w}_i\frac{{\cal E}-{\cal O}}{N_-}  \\
-   P(q_T=-1,i) &=& \overline{t}_i(1-\overline{w}_i)\frac{{\cal E} - {\cal O}}{N_-} + t_i w_i\frac{{\cal E}+{\cal O}}{N_+} 
+   P(q_T=-1,i) &=& t_i w_i\frac{{\cal E}+{\cal O}}{N_+} + \overline{t}_i(1-\overline{w}_i)\frac{{\cal E} - {\cal O}}{N_-} 
    \\ P(q_T=0) &=& \left(1-\sum_i t_i\right)  \frac{ { \cal E } + {\cal O} }{N_+} + \left(1-\sum_i \overline{t}_i\right)  \frac{ { \cal E} - {\cal O} } { N_- }
 %   \\
 %     &=& \frac{  \left[ 1-{\cal D}({\cal W}+C) \right]{\cal E}
@@ -165,6 +174,8 @@ and ${\cal O}$, we find that:
 %                               -\left[ {\cal D}(1+{\cal W}C) +  C \right] {\cal O}
 %                        }{1-C^2}\ \\
 \end{eqnarray} 
+
+
 In order to restore some symmetry to these equations, and to be able to easily reduce these
 equations to the familiar ones where $t_i=\overline{t}_i$ and $w_i=\overline{w}_i$, we introduce 
 the following parameterization:
@@ -178,27 +189,39 @@ the following parameterization:
 Note that under $(w\rightarrow 1-w_i, \overline{w}_i\rightarrow 1-\overline{w}_i)$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\cal W}_i\rightarrow{\cal W}_i)$,
 and that the quantities $\nu,\delta_i,{\cal W}_i$ are CP odd, whereas $N,\epsilon_i,{\cal D}_i$ are CP even.
 
+At this point, let us look once more at the overall normalization. Performing the sum over all tagging categories, and for
+the tagged events, over $q_T\in(-1,1)$, and adding the untagged events,
+and integrating over the decay time yields the following overall normalization:
+\begin{equation}
+    N = I_{\cal E}  + 2 \nu I_{\cal O} 
+\label{eq:overallNorm}
+\end{equation}
+where we have defined $I_{\cal E} = \int dt {\cal E}(t)$ and $I_{\cal O} = \int dt {\cal O}(t)$.
+
+The PDFs for tagged events can now be written as:
 \begin{eqnarray}
-   P(q_T=1,i)  &=&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1+{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)  
+   P(q_T=1,i)  &=&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1+{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)   \nonumber
 \\             &+&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1-{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)  
-\\ P(q_T=-1,i) &=&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1+{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right) 
+\\ P(q_T=-1,i) &=&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1+{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)  \nonumber
 \\             &+&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1-{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
 \end{eqnarray}
-where we have eliminated the overall normalization constant $N$ which is shared by each term. 
+where we have omitted(!) the overall normalization constant $N$, defined by \ref{eq:overallNorm}, which is shared by each term. 
 Combining the factors in front of ${\cal E}$ 
 and ${\cal O}$ results after some tedious algebra in:
 \begin{eqnarray}
      P(q_T=1,i)  
            &=& \epsilon_i\left[ (1+\delta_i\nu)  (1-{\cal D}_i {\cal W}_i)  +  (\delta_i+\nu)     {\cal D}_i       \right]{\cal E}
-\\         &+& \epsilon_i\left[ (1+\delta_i\nu)     {\cal D}_i              +  (\delta_i+\nu)  (1-{\cal D}_i{\cal W}_i ) \right]{\cal O}
+\\         &+& \epsilon_i\left[ (1+\delta_i\nu)     {\cal D}_i              +  (\delta_i+\nu)  (1-{\cal D}_i{\cal W}_i ) \right]{\cal O} \nonumber
 \\   P(q_T=-1,i) 
-           &=& \epsilon_i\left[ (1+\delta_i\nu)  (1+{\cal D}_i {\cal W}_i)  -  (\delta_i+\nu)     {\cal D}_i       \right]{\cal E}
+           &=& \epsilon_i\left[ (1+\delta_i\nu)  (1+{\cal D}_i {\cal W}_i)  -  (\delta_i+\nu)     {\cal D}_i       \right]{\cal E} \nonumber
 \\         &-& \epsilon_i\left[ (1+\delta_i\nu)     {\cal D}_i              -  (\delta_i+\nu)  (1+{\cal D}_i{\cal W}_i ) \right]{\cal O}
-\\   P(q_T=0)    &=&
+\\   P(q_T=0)  
+           &=&           \left[ 1- \sum_i \epsilon_i (1+\delta_i\nu) \right] {\cal E} \nonumber
+\\         &+&           \left[ 2\nu - \sum_i \epsilon_i(\nu+\delta_i) \right] {\cal O} \label{eq:untagged}
 \end{eqnarray}
-If instead we collect all CP even and CP odd terms together, we find:
+If instead we collect all CP even and CP odd terms together, we find for the tagged events:
 \begin{eqnarray}
-     P(q_T,i)  &=& \epsilon_i\left[ (1+\delta_i\nu){\cal E} + (\delta_i+\nu){\cal O} \right]
+     P(q_T\in (-1,+1),i)  &=& \epsilon_i\left[ (1+\delta_i\nu){\cal E} + (\delta_i+\nu){\cal O} \right]
 \label{eq:substrule_s}
 \\             &+& \epsilon_i q_T {\cal D}_i \left[ \left( \delta_i + \nu -{\cal W}_i(1+\delta_i\nu) ]\right) { \cal E} + \left( 1+\delta_i\nu - {\cal W}_i(\delta_i+\nu) \right){\cal O}  \right]
 \label{eq:substrule_e}
@@ -208,12 +231,19 @@ and the CP asymmetry can be written as:
   A_{CP}(i) =  {\cal D}_i \frac{\left( 1+\delta_i\nu - {\cal W}_i(\delta_i+\nu) \right){\cal O}+(\nu+\delta_i-{\cal W}_i\left(1+\delta_i\nu\right) ){\cal E}}
                                {(1+\delta_i\nu){\cal E}+(\nu+\delta_i){\cal O} }
 \end{equation}
-
 In the limit where $\nu=\delta_i={\cal W}=0$ this reduces to the expected
 \begin{eqnarray}
-   P(q_T,i) &=& \epsilon_i\left[  {\cal E} +q_T {\cal D} {\cal O}\right]  \\
+   P(q_T=0) &=& \left[ 1-\sum_i \epsilon_i \right]{\cal E} \\
+   P(q_T\ne 0,i) &=& \epsilon_i\left[  {\cal E} +q_T {\cal D} {\cal O}\right]  \\
    A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
 \end{eqnarray}
+The other direction one can take is to marginalize over the tagging decision, i.e. take the sum over $q_T=-1$  and
+$q_T=+1$. This yields 
+\begin{eqnarray}
+     P(i)  &=& \epsilon_i\left[ (1+\delta_i\nu){\cal E} + (\delta_i+\nu){\cal O} \right]
+\end{eqnarray}
+which is indeed the complement of the untagged events, defined by eq.\ref{eq:untagged}: when adding all these PDFs,
+one finds again back something which is consistent with the normalization found in eq. \ref{eq:overallNorm}
 
 As $\nu$ and $\delta_i$ always appear as sum (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
 it becomes impossible to disentangle the difference between differences in tagging efficiency for $b$ and $\overline{b}$
@@ -240,6 +270,21 @@ usual factor} $q_T{\cal D}_i$, the factor
 \end{equation}
 \end{enumerate}
 Again, in the limit that $\delta_i=\nu={\cal W}_i=0$, this results in the well-known expected behaviour.
+
+The above substitution rule suggest a different way of parameterizing the problem, namely,
+\begin{eqnarray}
+   {\cal E} &\rightarrow& {\cal E} \left[ A_i +  q_T {\cal D}_i \left( B_i - {\cal W}_i A_i \right) \right]  \\
+   {\cal O} &\rightarrow& {\cal O} \left[ B_i +  q_T {\cal D}_i \left( A_i - {\cal W}_i B_i \right) \right].
+\end{eqnarray}
+where the well-known limit case corresponds to $(A_i,B_i)=(1,0)$.
+Given that both expressions are linear both in $A_i$ and $B_i$, scaling these parameters by a common 
+factor only changes the total normalization, and hence leaves the problem invariant. As a result, one
+may as well decide to fix $A_i$ to unity. This choice is also motivated that any deviation of $A_i$ from
+unity is 2nd order, whereas a deviation of $B_i$ from zero is first order. 
+(note: what if multiple categories? the relative magnitude of
+$A_i$ could be left free maybe) (note: what about untagged events?).
+
+
 
 \vfill
 \pagebreak
@@ -384,10 +429,14 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
 
 
 \pagebreak
+\subsection{Angular Efficiency}
+
+If we decompose the efficiency in terms of the same basis, i.e. we define:
 \begin{equation}
    \epsilon(\psi,\theta,\phi) = c^{i}_{jk} P_i(\cos\psi)Y_{jk}(\theta,\phi)
    \label{eq:eps_exp}
 \end{equation}
+then we can compute the integral of the product of efficiency and signal:
 
 \begin{eqnarray}
     N(q_T,t)  &=&  \int d\cos\psi\int d\cos\theta \int d\phi \epsilon(\psi,\theta,\phi) |{\bf A}(t,q_T) \wedge \hat{n}|^2 \\
