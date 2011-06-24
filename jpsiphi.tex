@@ -137,115 +137,114 @@ The result can be summarized as follows (where we have used that $q_T^2=1$):
 \end{array}
 \end{equation}
 
-If we introduce the probability of tagging an (initial) $B$ meson as $\overline{B}$ as $w$, and
-the probability to tag an initial $\overline{B}$ meson as $B$ as $\overline{w}$, and the probability
-(efficiency) to tag an $B$ ($\overline{B}$) meson in the $i^\mathrm{th}$ tagging category as $t_i$ ($\overline{t}_i$), then the
-PDF for candidates, tagged as $B$ respectively $\overline{B}$, in tagging category $i$ will be:
+\subsection{Flavour tagging}
+
+Let us start by introducing the following short-hand notation. One can write the 
+PDF for 'true' $B$ and $\overline{B}$ as:
+\begin{eqnarray}
+   P_{B}           &\equiv&\frac{ {\cal E} + {\cal O}}{N_+} \\
+   P_{\overline{B}} &\equiv&\frac{ {\cal E} - {\cal O}}{N_-}
+\end{eqnarray}
+where ${\cal E}$ and ${\cal O}$ are the (propertime and angular dependent) CP-even resp. CP-odd parts of the PDF.
+Taking the sum over these, we find:
+\begin{equation}
+   P_{B} + P_{\overline{B}} =  \frac{ {\cal E} - \nu{\cal O} }{N} 
+   \label{eq:sumbbbar}
+\end{equation}
+where we have defined
+\begin{eqnarray}
+   &  N \equiv \left( \frac{1}{N_+}+\frac{1}{N_-}\right)^{-1} = \frac{N_+N_-}{N_+ + N_-};\;\;\;\; &  \frac{1}{N_+} =\frac{1}{2N}(1-\nu) \\
+   &\nu \equiv \frac{N_+ - N_-}{N_+ +N_-}; & \frac{1}{N_-} =\frac{1}{2N}(1+\nu) 
+\end{eqnarray}
+and requiring the total sum of PDFs (\ref{eq:sumbbbar}) to be properly normalized implies
+\begin{equation}
+   N = I_{\cal E} - \nu I_{\cal O}
+\end{equation}
+where $I_x$ is the integral of $x$ over the propertime and angles.
+
+
+Next we introduce the probability of tagging an (initial,"true") $B$ meson  and
+the probability to tag an initial $\overline{B}$ meson in some tagging category $i$ (with $i\ne 0$) as $t_i$
+respectively $\overline{t}_i$ -- at this point we still do not distinguish between $B$ and $\overline{B}$, i.e.
+we marginalize over the tagdecision.  This yields the following PDF for events in category $i$:
+\begin{eqnarray}
+     P_i & \equiv & t_i P_B + \overline{t}_i P_{\overline B}  \nonumber
+\\       &      = & \frac{\epsilon_i}{N} \left[ (1-\nu\delta_i ){\cal E}+(\delta_i - \nu){\cal O} \right] \label{eq:tagsummed}
+\end{eqnarray}
+where we have defined
+\begin{eqnarray}
+   &\epsilon_i = \frac{ t_i + \overline{t}_i }{2};\;\;\;\;  & t_i = \epsilon_i( 1 + \delta_i ) \\
+   &\delta_i = \frac{t_i - \overline{t}_i}{t_i + \overline{t}_i}; & \overline{t}_i = \epsilon_i( 1 - \delta_i ) 
+\end{eqnarray}
+and for the remainder, i.e. the untagged events, which we denote with an index $0$:
+\begin{eqnarray}
+     P_0 & \equiv & \left(1-\sum_i t_i\right) P_B + \left(1-\sum_i \overline{t}_i\right) P_{\overline B}  \nonumber
+\\   & = & \frac{1}{N} \left[ \left( 1-\sum_i\epsilon_i\left(1-\nu\delta_i\right) \right) {\cal E} 
+                            + \left( -\nu - \sum_i \epsilon_i(\delta_i-\nu)   \right) {\cal O} \right] \label{eq:untagged}
+\end{eqnarray}
+Note that at this point, by construction, we have that
+\begin{equation}
+   P_0 + \sum_i P_i = P_{B} + P_{\overline B} 
+\end{equation}
+and it should be pointed out that the untagged PDF $P_0$ is, in general, {\em not} equal to the tagged (and marginalized
+over the tagdecision) PDF $P_i$
+with the substitution $\epsilon_i \rightarrow \epsilon_0 \equiv 1-\sum_i \epsilon_i$ due to the term proportional with ${\cal O}$, 
+which appears in equation \ref{eq:sumbbbar}. Only if either $\delta_i=0$ or $\nu=0$ (or both) will this 
+substitution give the right result.
+
+Inspired by equation \ref{eq:tagsummed}, we can introduce two new parameters:
+\begin{eqnarray}
+    C_{{\cal E},i} &=& 1 - \nu \delta_i 
+\\  C_{{\cal O},i} &=& \delta_i - \nu
+\end{eqnarray}
+which, the limit of vanishing asymmetries would be unity and zero respectively.
+In terms of these parameters, the PDFs in equation \ref{eq:tagsummed} and equation \ref{eq:untagged} can be written
+as:
+\begin{eqnarray}
+     P_i    &=&  \frac{\epsilon_i}{N} \left[ C_{{\cal E},i}{\cal E}+ C_{{\cal O},i}{\cal O} \right] \label{eq:tagsummed2} \\
+     P_0    &=&  \frac{1}{N}\left[ \left(1-\sum_i \epsilon_i C_{{\cal E},i}\right) {\cal E} + \left( -\nu -\sum_i \epsilon_i C_{{\cal O},i} \right) {\cal O} \right]
+\end{eqnarray}
+
+
+At this point we introduce the distinction, for the tagged PDFs $P_i$, between observing a $B$ tag and a $\overline{B}$ tag.
+Labelling the probability to tag, in category $i$, a true $B$ as $\overline{B}$ tag with $w_i$ and a true $\overline{B}$ as $B$ tag as $\overline{w}$,
+the definition of the tagged PDF becomes\footnote{when summed together, it is obvious that one recovers eq. \ref{eq:tagsummed}}:
 \begin{eqnarray}
    P_{B_\mathrm{tag},i} &\equiv t_i (1-w_i) P_{B} + \overline{t}_i\overline{w}_i P_{\overline{ B} }\\
    P_{\overline{B}_\mathrm{tag},i} &\equiv \overline{t}_i (1-\overline{w}_i) P_{\overline{B}} + t_i w_i P_{ B }
 \end{eqnarray} 
-In addition, there will be those events which are untagged, which will be distributed as:
-\begin{equation}
-   P_{\mathrm{untagged}} \equiv \left( 1-\sum_i \overline{t}_i \right)  P_{\overline{B}} + \left( 1 - \sum_i t_i \right)  P_{ B }
-\end{equation}
-where we have assumed that the {\em combination} of $P_{B}+P_{\overline{B}}$ is properly normalized, as in that
-case also the derived $P_{B_\mathrm{tag},i}, P_{\overline{B}_\mathrm{tag},i}$ and $P_{\mathrm untagged}$ are properly normalized, because:
-\begin{equation}
-     \sum_i \left( P_{B_\mathrm{tag},i}+P_{\overline{B}_\mathrm{tag},i} \right) + P_{\mathrm untagged} = P_B + P_{\overline B}
-\end{equation}
-by construction.
-
-
-Taking into account that $P_{B}$ and $P_{\overline{B}}$ can differ in overall normalization
-due to an explicit production asymmetry, or due to a nonzero value of $C$, which results in
-$N_+=1+C$ and $N_-=1-C$, and labelling for the time being the CP even 
-resp. CP odd terms in $P_{B}$ and $P_{\overline{B}}$ as ${\cal E}$
-and ${\cal O}$, we find that:
-\begin{eqnarray}
-   P(q_T=1,i) &=& t_i(1-w_i)\frac{{\cal E} + {\cal O}}{N_+} + \overline{t}_i\overline{w}_i\frac{{\cal E}-{\cal O}}{N_-}  \\
-   P(q_T=-1,i) &=& t_i w_i\frac{{\cal E}+{\cal O}}{N_+} + \overline{t}_i(1-\overline{w}_i)\frac{{\cal E} - {\cal O}}{N_-} 
-   \\ P(q_T=0) &=& \left(1-\sum_i t_i\right)  \frac{ { \cal E } + {\cal O} }{N_+} + \left(1-\sum_i \overline{t}_i\right)  \frac{ { \cal E} - {\cal O} } { N_- }
-%   \\
-%     &=& \frac{  \left[ 1-{\cal D}({\cal W}+C) \right]{\cal E}
-%                               +\left[ {\cal D}(1 + {\cal W} C) - C \right] {\cal O}
-%                     }{1-C^2} \\
-%   P(q_T=-1) &=& \frac{  \left[ 1+{\cal D}({\cal W} + C)  \right]{\cal E}
-%                               -\left[ {\cal D}(1+{\cal W}C) +  C \right] {\cal O}
-%                        }{1-C^2}\ \\
-\end{eqnarray} 
-
-
-In order to restore some symmetry to these equations, and to be able to easily reduce these
-equations to the familiar ones where $t_i=\overline{t}_i$ and $w_i=\overline{w}_i$, we introduce 
+Once more we replace the new parameters $w_i$ and $\overline{w}_i$ by a CP-even and a CP-odd combination, by introducing
 the following parameterization:
 \begin{eqnarray}
-\frac{1}{N_\pm} &=& \frac{1}{N}\left( 1 \pm \nu \right) \\
-&w_i            = \frac{1}{2}\left[1-{\cal D}_i\left(1-{\cal W}_i\right) \right]; &  {\cal D}_i =1-w_i - \overline{w}_i \\
-&\overline{w}_i = \frac{1}{2}\left[1-{\cal D}_i\left(1+{\cal W}_i\right) \right]; &  {\cal W}_i = \frac{ w_i - \overline{w}_i}{1-w_i-\overline{w}_i}\\
-&t_i            = \epsilon_i(1+\delta_i);                              &  \epsilon_i = \frac{t_i + \overline{t}_i}{2}\\
-&\overline{t}_i = \epsilon_i(1-\delta_i);                              &  \delta_i = \frac{t_i - \overline{t}_i}{t_i+\overline{t}_i}
+&w_i            = \frac{1}{2}\left[1-{\cal D}_i\left(1-{\Delta}_i\right) \right]; &  {\cal D}_i =1-w_i - \overline{w}_i \\
+&\overline{w}_i = \frac{1}{2}\left[1-{\cal D}_i\left(1+{\Delta}_i\right) \right]; &  {\Delta}_i = \frac{ w_i - \overline{w}_i}{1-w_i-\overline{w}_i}\\
 \end{eqnarray}
-Note that under $(w\rightarrow 1-w_i, \overline{w}_i\rightarrow 1-\overline{w}_i)$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\cal W}_i\rightarrow{\cal W}_i)$,
-and that the quantities $\nu,\delta_i,{\cal W}_i$ are CP odd, whereas $N,\epsilon_i,{\cal D}_i$ are CP even.
+Note that under $(w\rightarrow 1-w_i, \overline{w}_i\rightarrow 1-\overline{w}_i)$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\Delta}_i\rightarrow{\Delta}_i)$,
+and that the quantities $\nu,\delta_i,{\Delta}_i$ are CP odd, whereas $N,\epsilon_i,{\cal D}_i$ are CP even, so the PDFs
+for $B$ tags and $\overline{B}$ tags are related by the substitution $({\cal E},{\cal O};N,\nu;\epsilon_i,\delta_i;{\cal D}_i,\Delta_i )\rightarrow({\cal E},-{\cal O};N,-\nu;\epsilon_i,-\delta_i;{\cal D}_i,-\Delta_i )$.
 
-At this point, let us look once more at the overall normalization. Performing the sum over all tagging categories, and for
-the tagged events, over $q_T\in(-1,1)$, and adding the untagged events,
-and integrating over the decay time yields the following overall normalization:
-\begin{equation}
-    N = I_{\cal E}  + 2 \nu I_{\cal O} 
-\label{eq:overallNorm}
-\end{equation}
-where we have defined $I_{\cal E} = \int dt {\cal E}(t)$ and $I_{\cal O} = \int dt {\cal O}(t)$.
 
-The PDFs for tagged events can now be written as:
+After some tedious algebra, the PDFs for tagged events can be written as:
 \begin{eqnarray}
-   P(q_T=1,i)  &=&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1+{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)   \nonumber
-\\             &+&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1-{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)  
-\\ P(q_T=-1,i) &=&\frac{1}{2} \epsilon_i(1-\nu)(1-\delta_i)\left(1+{\cal D}_i(1+{\cal W}_i)\right)\left({\cal E}-{\cal O}\right)  \nonumber
-\\             &+&\frac{1}{2} \epsilon_i(1+\nu)(1+\delta_i)\left(1-{\cal D}_i(1-{\cal W}_i)\right)\left({\cal E}+{\cal O}\right)
-\end{eqnarray}
-where we have omitted(!) the overall normalization constant $N$, defined by \ref{eq:overallNorm}, which is shared by each term. 
-Combining the factors in front of ${\cal E}$ 
-and ${\cal O}$ results after some tedious algebra in:
-\begin{eqnarray}
-     P(q_T=1,i)  
-           &=& \epsilon_i\left[ (1+\delta_i\nu)  (1-{\cal D}_i {\cal W}_i)  +  (\delta_i+\nu)     {\cal D}_i       \right]{\cal E}
-\\         &+& \epsilon_i\left[ (1+\delta_i\nu)     {\cal D}_i              +  (\delta_i+\nu)  (1-{\cal D}_i{\cal W}_i ) \right]{\cal O} \nonumber
-\\   P(q_T=-1,i) 
-           &=& \epsilon_i\left[ (1+\delta_i\nu)  (1+{\cal D}_i {\cal W}_i)  -  (\delta_i+\nu)     {\cal D}_i       \right]{\cal E} \nonumber
-\\         &-& \epsilon_i\left[ (1+\delta_i\nu)     {\cal D}_i              -  (\delta_i+\nu)  (1+{\cal D}_i{\cal W}_i ) \right]{\cal O}
-\\   P(q_T=0)  
-           &=&           \left[ 1- \sum_i \epsilon_i (1+\delta_i\nu) \right] {\cal E} \nonumber
-\\         &+&           \left[ 2\nu - \sum_i \epsilon_i(\nu+\delta_i) \right] {\cal O} \label{eq:untagged}
-\end{eqnarray}
-If instead we collect all CP even and CP odd terms together, we find for the tagged events:
-\begin{eqnarray}
-     P(q_T\in (-1,+1),i)  &=& \epsilon_i\left[ (1+\delta_i\nu){\cal E} + (\delta_i+\nu){\cal O} \right]
-\label{eq:substrule_s}
-\\             &+& \epsilon_i q_T {\cal D}_i \left[ \left( \delta_i + \nu -{\cal W}_i(1+\delta_i\nu) ]\right) { \cal E} + \left( 1+\delta_i\nu - {\cal W}_i(\delta_i+\nu) \right){\cal O}  \right]
+  P(q_T\in (-1,+1),i)  &= \frac{\epsilon_i}{2N}[& C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O}  \\
+\\           &&+ q_T {\cal D}_i \left[ \left( C_{{\cal O},i} - {\Delta}_i C_{{\cal E},i} \right) {\cal E} 
+                                     + \left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right) {\cal O}  \right] ]
+\\ &=& \frac{\epsilon_i}{N} \left[ C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O} \right] \frac{ 1 + q_T A_{CP}(i)}{2}
 \label{eq:substrule_e}
 \end{eqnarray}
 and the CP asymmetry can be written as:
 \begin{equation}
-  A_{CP}(i) =  {\cal D}_i \frac{\left( 1+\delta_i\nu - {\cal W}_i(\delta_i+\nu) \right){\cal O}+(\nu+\delta_i-{\cal W}_i\left(1+\delta_i\nu\right) ){\cal E}}
-                               {(1+\delta_i\nu){\cal E}+(\nu+\delta_i){\cal O} }
+  A_{CP}(i) =  {\cal D}_i \frac{\left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right){\cal O}+(C_{{\cal O},i}-{\Delta}_i C_{{\cal E},i}) ){\cal E}}
+                               { C_{{\cal E},i}{\cal E}+ C_{{\cal O},i}{\cal O} }
 \end{equation}
-In the limit where $\nu=\delta_i={\cal W}=0$ this reduces to the expected
+In the limit where $\nu=\delta_i={\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal O},i}=0, \Delta_i = 0$, this reduces to the expected
 \begin{eqnarray}
    P(q_T=0) &=& \left[ 1-\sum_i \epsilon_i \right]{\cal E} \\
    P(q_T\ne 0,i) &=& \epsilon_i\left[  {\cal E} +q_T {\cal D} {\cal O}\right]  \\
    A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
 \end{eqnarray}
-The other direction one can take is to marginalize over the tagging decision, i.e. take the sum over $q_T=-1$  and
-$q_T=+1$. This yields 
-\begin{eqnarray}
-     P(i)  &=& \epsilon_i\left[ (1+\delta_i\nu){\cal E} + (\delta_i+\nu){\cal O} \right]
-\end{eqnarray}
-which is indeed the complement of the untagged events, defined by eq.\ref{eq:untagged}: when adding all these PDFs,
-one finds again back something which is consistent with the normalization found in eq. \ref{eq:overallNorm}
 
-As $\nu$ and $\delta_i$ always appear as sum (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
+As $\nu$ and $\delta_i$ always appear as sum, i.e. as $C_{{\cal O},i}$ (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
 it becomes impossible to disentangle the difference between differences in tagging efficiency for $b$ and $\overline{b}$
 and a change in the relative normalization. However, when taken into account the fact that the difference in normalization
 is due to the apearance of $1/(1+C)$ vs. $1/(1-C)$, i.e. $\nu = -C$, and $C$ also appears as coefficienct in front of the $\cosh\left(\Delta\Gamma t/2\right)$
@@ -260,21 +259,21 @@ straightforward substitution rule, which one can read off from Equations (\ref{e
 the initially CP-even terms (i.e. the $\cosh(\Delta\Gamma t/2)$ and $\sinh(\Delta\Gamma t/2)$ terms) obtain an additional
 factor 
 \begin{equation}
-   {\cal E} \rightarrow {\cal E} \left[ (1+\delta_i\nu)+ q_T {\cal D}_i \left( \delta_i + \nu -{\cal W}_i(1+\delta_i\nu) ]\right) \right]
+   {\cal E} \rightarrow {\cal E} \left[ (1+\delta_i\nu)+ q_T {\cal D}_i \left( \delta_i + \nu -{\Delta}_i(1+\delta_i\nu) ]\right) \right]
 \end{equation}
 \item
 the initially CP-odd terms (i.e. the $\cos(\Delta m t) $ and $\sin(\Delta m t)$ terms) obtain, { \em instead of the
 usual factor} $q_T{\cal D}_i$, the factor
 \begin{equation}
-   {\cal O} \rightarrow {\cal O} \left[ (\delta_i+\nu) +  q_T {\cal D}_i  \left( 1+\delta_i\nu - {\cal W}_i(\delta_i+\nu) \right) \right]
+   {\cal O} \rightarrow {\cal O} \left[ (\delta_i+\nu) +  q_T {\cal D}_i  \left( 1+\delta_i\nu - {\Delta}_i(\delta_i+\nu) \right) \right]
 \end{equation}
 \end{enumerate}
-Again, in the limit that $\delta_i=\nu={\cal W}_i=0$, this results in the well-known expected behaviour.
+Again, in the limit that $\delta_i=\nu={\Delta}_i=0$, this results in the well-known expected behaviour.
 
 The above substitution rule suggest a different way of parameterizing the problem, namely,
 \begin{eqnarray}
-   {\cal E} &\rightarrow& {\cal E} \left[ A_i +  q_T {\cal D}_i \left( B_i - {\cal W}_i A_i \right) \right]  \\
-   {\cal O} &\rightarrow& {\cal O} \left[ B_i +  q_T {\cal D}_i \left( A_i - {\cal W}_i B_i \right) \right].
+   {\cal E} &\rightarrow& {\cal E} \left[ A_i +  q_T {\cal D}_i \left( B_i - {\Delta}_i A_i \right) \right]  \\
+   {\cal O} &\rightarrow& {\cal O} \left[ B_i +  q_T {\cal D}_i \left( A_i - {\Delta}_i B_i \right) \right].
 \end{eqnarray}
 where the well-known limit case corresponds to $(A_i,B_i)=(1,0)$.
 Given that both expressions are linear both in $A_i$ and $B_i$, scaling these parameters by a common 
