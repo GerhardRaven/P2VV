@@ -24,9 +24,10 @@ def getP2VVPDF(config) :
   if mode in ['Bd2JpsiKstar', 'Bs2Jpsiphi'] :
     # build PDF for B0->J/psiK* or B_s0->J/psiphi
 
-    # build angular functions
-    angFuncsBuild = config.modelBuilder('angles')
-    angFuncsBuild.buildAngularFunctions()
+    if 'anglesType' in config and len(config.value('anglesType')) > 0 :
+      # build angular functions
+      angFuncsBuild = config.modelBuilder('angles')
+      angFuncsBuild.buildAngularFunctions()
 
     # build time resolution models
     timeResBuild = config.modelBuilder('timeRes')
@@ -93,63 +94,6 @@ def buildJpsiV(config) :
   one   = config['oneConst'].name()
   minus = config['minusConst'].name()
 
-  # get angular coefficients
-  if mode == 'Bd2JpsiKstar' :
-    J1_c2 = config['J1_c2'].name()
-    J2_s2 = config['J2_s2'].name()
-    J3_s2 = config['J3_s2'].name()
-    J4_sc = config['J4_sc'].name()
-    J8_sc = config['J8_sc'].name()
-    J9_s2 = config['J9_s2'].name()
-    if KSWave[:7] == 'include' :
-      J1_1 = config['J1_1'].name()
-      J1_c = config['J1_c'].name()
-      J4_s = config['J4_s'].name()
-      J8_s = config['J8_s'].name()
-
-  elif mode == 'Bs2Jpsiphi' :
-    J1_c2_cosh = config['J1_c2_cosh'].name()
-    J1_c2_cos  = config['J1_c2_cos'].name()
-    J1_c2_sinh = config['J1_c2_sinh'].name()
-    J1_c2_sin  = config['J1_c2_sin'].name()
-    J2_s2_cosh = config['J2_s2_cosh'].name()
-    J2_s2_cos  = config['J2_s2_cos'].name()
-    J2_s2_sinh = config['J2_s2_sinh'].name()
-    J2_s2_sin  = config['J2_s2_sin'].name()
-    J3_s2_cosh = config['J3_s2_cosh'].name()
-    J3_s2_cos  = config['J3_s2_cos'].name()
-    J3_s2_sinh = config['J3_s2_sinh'].name()
-    J3_s2_sin  = config['J3_s2_sin'].name()
-    J4_sc_cosh = config['J4_sc_cosh'].name()
-    J4_sc_cos  = config['J4_sc_cos'].name()
-    J4_sc_sinh = config['J4_sc_sinh'].name()
-    J4_sc_sin  = config['J4_sc_sin'].name()
-    J8_sc_cosh = config['J8_sc_cosh'].name()
-    J8_sc_cos  = config['J8_sc_cos'].name()
-    J8_sc_sinh = config['J8_sc_sinh'].name()
-    J8_sc_sin  = config['J8_sc_sin'].name()
-    J9_s2_cosh = config['J9_s2_cosh'].name()
-    J9_s2_cos  = config['J9_s2_cos'].name()
-    J9_s2_sinh = config['J9_s2_sinh'].name()
-    J9_s2_sin  = config['J9_s2_sin'].name()
-    if KSWave[:7] == 'include' :
-      J1_1_cosh = config['J1_1_cosh'].name()
-      J1_1_cos  = config['J1_1_cos'].name()
-      J1_1_sinh = config['J1_1_sinh'].name()
-      J1_1_sin  = config['J1_1_sin'].name()
-      J1_c_cosh = config['J1_c_cosh'].name()
-      J1_c_cos  = config['J1_c_cos'].name()
-      J1_c_sinh = config['J1_c_sinh'].name()
-      J1_c_sin  = config['J1_c_sin'].name()
-      J4_s_cosh = config['J4_s_cosh'].name()
-      J4_s_cos  = config['J4_s_cos'].name()
-      J4_s_sinh = config['J4_s_sinh'].name()
-      J4_s_sin  = config['J4_s_sin'].name()
-      J8_s_cosh = config['J8_s_cosh'].name()
-      J8_s_cos  = config['J8_s_cos'].name()
-      J8_s_sinh = config['J8_s_sinh'].name()
-      J8_s_sin  = config['J8_s_sin'].name()
-
   # get observables
   BLifetime = config['BLifetime'].name()
   cpsiAng   = config['cpsiAng'].name()
@@ -171,7 +115,7 @@ def buildJpsiV(config) :
     SCP = config['SCP'].name()
 
   # get tagging parameters
-  dilution   = config['tagDilution'].name()
+  dilution = config['tagDilution'].name()
   ADilWTag = config['ADilWTag'].name()
   if mode == 'Bd2JpsiKstar' :
     ANorm = config['ANorm'].name()

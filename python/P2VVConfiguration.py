@@ -84,35 +84,32 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   ##################
   ## decay angles ##
   ##################
-  if 'noAngles' in optDict\
-      or mode not in ['Bd2mumuKstar', 'Bd2JpsiKstar', 'Bs2Jpsiphi'] :
-    anglesType = []
-  else :
-    if 'transAngles' in optDict :
-      if 'helAngles' in optDict :
-        anglesType = ['hel', 'trans']
-      else :
-        anglesType = ['trans']
-    else :
-      anglesType = ['hel']
+  anglesType = []
+  if 'anglesType' in optDict and optDict['anglesType'] != '' :
+    angType = optDict['anglesType'].lower()
+    if 'hel'   in angType : anglesType.append('hel')
+    if 'trans' in angType : anglesType.append('trans')
 
-    # helicity angles
-    if 'hel' in anglesType :
-      config.addSetting('cpsiAng', RooRealSetting('helcthetaK',
-          'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
-      config.addSetting('cthetaAng', RooRealSetting('helcthetaL',
-          'cosine of lepton polarization angle', 'obs', 0., -1., 1.))
-      config.addSetting('phiAng', RooRealSetting('helphi',
-          'angle between decay planes', 'obs', 0., -pi, pi))
+  elif mode in ['Bd2mumuKstar', 'Bd2JpsiKstar', 'Bs2Jpsiphi'] :
+    anglesType = ['hel']
 
-    # transversity angles
-    if 'trans' in anglesType :
-      config.addSetting('cpsiAng', RooRealSetting('trcpsi',
-          'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
-      config.addSetting('cthetaAng', RooRealSetting('trctheta',
-          'cosine of transversity polar angle', 'obs', 0., -1., 1.))
-      config.addSetting('phiAng', RooRealSetting('trphi',
-          'transversity azimuthal angle', 'obs', 0., -pi, pi))
+  # helicity angles
+  if 'hel' in anglesType :
+    config.addSetting('cpsiAng', RooRealSetting('helcthetaK',
+        'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
+    config.addSetting('cthetaAng', RooRealSetting('helcthetaL',
+        'cosine of lepton polarization angle', 'obs', 0., -1., 1.))
+    config.addSetting('phiAng', RooRealSetting('helphi',
+        'angle between decay planes', 'obs', 0., -pi, pi))
+
+  # transversity angles
+  if 'trans' in anglesType :
+    config.addSetting('cpsiAng', RooRealSetting('trcpsi',
+        'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
+    config.addSetting('cthetaAng', RooRealSetting('trctheta',
+        'cosine of transversity polar angle', 'obs', 0., -1., 1.))
+    config.addSetting('phiAng', RooRealSetting('trphi',
+        'transversity azimuthal angle', 'obs', 0., -pi, pi))
 
   config.addSetting('anglesType', P2VVSetting('anglesType',
       'type of angles: helicity or transversity', anglesType))
@@ -277,6 +274,12 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('allowITagZero', P2VVSetting('allowITagZero',
           'allow zero value for init. state tag (untagged)', allowITagZero))
 
+      asymType = 'direct'
+      if 'asymType' in optDict and optDict['asymType'] != '' :
+        asymType = optDict['asymType']
+      config.addSetting('asymType', P2VVSetting('asymType',
+        'type of CP asymmetries', asymType))
+
       if allowITagZero :
         config.addSetting('iTag', RooCatSetting('iTag',
             'initial state flavour tag', True, 'B',
@@ -293,24 +296,30 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
           'wrong tag fraction B', 'par', 0., '', ''))
       config.addSetting('wTagBar', RooRealSetting('wTagBar',
           'wrong tag fraction anti-B', 'par', 0., '', ''))
-      config.addSetting('AProd', RooRealSetting('AProd',
-          'production asymmetry', 'par', 0., '', ''))
-      config.addSetting('ANorm', RooFormSetting('ANorm',
-          'normalization asymmetry', '-@0', ['CCP']))
-      config.addSetting('ATagEff', RooRealSetting('ATagEff',
-          'tagging efficiency asymmetry', 'par', 0., '', ''))
-
       config.addSetting('tagDilution', RooFormSetting('tagDilution',
           'tagging dilution', '1. - @0 - @1', ['wTag', 'wTagBar']))
       config.addSetting('ADilWTag', RooFormSetting('ADilWTag',
           'dilution/wrong tag asymmetry', '(@0 - @1) / @2',
           ['wTag', 'wTagBar', 'tagDilution']))
-      config.addSetting('avgCEven', RooFormSetting('avgCEven',
-          'CP average even coefficients', '1. + @0*@1 + @0*@2 + @1*@2',
-          ['AProd', 'ANorm', 'ATagEff']))
-      config.addSetting('avgCOdd', RooFormSetting('avgCOdd',
-          'CP average odd coefficients', '@0 + @1 + @2 + @0*@1*@2',
-          ['AProd', 'ANorm', 'ATagEff']))
+
+      if asymType == 'avgCOdd' :
+        config.addSetting('avgCEven', RooRealSetting('avgCEven',
+            'CP average even coefficients', 'par', 1., '', ''))
+        config.addSetting('avgCOdd', RooRealSetting('avgCOdd',
+            'CP average odd coefficients', 'par', 0., -1., 1.))
+      else :
+        config.addSetting('AProd', RooRealSetting('AProd',
+            'production asymmetry', 'par', 0., '', ''))
+        config.addSetting('ANorm', RooFormSetting('ANorm',
+            'normalization asymmetry', '-@0', ['CCP']))
+        config.addSetting('ATagEff', RooRealSetting('ATagEff',
+            'tagging efficiency asymmetry', 'par', 0., '', ''))
+        config.addSetting('avgCEven', RooFormSetting('avgCEven',
+            'CP average even coefficients', '1. + @0*@1 + @0*@2 + @1*@2',
+            ['AProd', 'ANorm', 'ATagEff']))
+        config.addSetting('avgCOdd', RooFormSetting('avgCOdd',
+            'CP average odd coefficients', '@0 + @1 + @2 + @0*@1*@2',
+            ['AProd', 'ANorm', 'ATagEff']))
 
 
       ### amplitudes ###

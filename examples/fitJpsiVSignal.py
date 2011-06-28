@@ -64,13 +64,14 @@ P2VV.setRooFitOutput()
 # create P2VV configuration object
 config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal','KSWave=include'])
   # additional options:
-  # 'transAngles'          :  use transversity angles
-  # 'KSWave=includeEven'   :  a CP even S-wave in B_s -> J/psi phi
-  # 'ampsType=transPolar'  :  use polar transversity amplitudes
-  # 'lambdaCPType=polar'   :  use a polar parametrisation of lambda
-  # 'RooBDecay'            :  use RooBDecay instead of RooBTagDecay
-  # 'tResModel=3Gauss'     :  use a time resolution model with three Gaussians
-  # 'allowITagZero'        :  allow 0 value for init. state flav. tag (untagged)
+  # 'anglesType=trans'    : use transversity angles
+  # 'KSWave=includeEven'  : a CP even S-wave in B_s -> J/psi phi
+  # 'ampsType=transPolar' : use polar transversity amplitudes
+  # 'lambdaCPType=polar'  : use a polar parametrisation of lambda
+  # 'RooBDecay'           : use RooBDecay instead of RooBTagDecay
+  # 'tResModel=3Gauss'    : use a time resolution model with three Gaussians
+  # 'allowITagZero'       : allow 0 value for init. state flav. tag (untagged)
+  # 'asymType=avgCOdd'    : include only the sum of the CP asymmetries
 
 # custom settings
 if config.value('anglesType')[0] == 'trans' :
@@ -91,7 +92,7 @@ if config.value('ampsType') == 'transPolar' :
   # A_par^2 = 1 - A_0^2 - A_perp^2 :: Im(A_0) = 0
   config['A0Mag2'].set(val = A0Mag2)
   config['AperpMag2'].set(val = AperpMag2)
-  config['AparPh'].set(val = PparPh)
+  config['AparPh'].set(val = AparPh)
   config['AperpPh'].set(val = AperpPh)
   if config.value('KSWave')[:7] == 'include' :
     config['ASMag2'].set(val = ASMag2)
@@ -142,7 +143,8 @@ if generate :
   print "fitJpsiVSignal: writing RooDataSet '%s' to file '%s'"\
       % (dataSetName, dataFilePath)
   file = TFile.Open(dataFilePath, 'RECREATE')
-  data.Write(dataSetName)
+  if NTuple : data.tree().Write(dataSetName)
+  else : data.Write(dataSetName)
   file.Close()
 
 elif NTuple :
@@ -172,9 +174,11 @@ if config.value('ampsType') == 'transCartesian'\
     or config.value('ampsType') == 'transPolar' :
   P2VV.convertAmplitudes(config, fitResult, True)
 
-# print polar (cartesian) lambda if 'ampsType' is cartesian (polar)
+# print polar (cartesian) lambda if 'lambdaCPType' is cartesian (polar)
 if mode == 'Bs2Jpsiphi' and (config.value('lambdaCPType') == 'cartesian'\
-    or config.value('lambdaCPType') == 'polar') :
+    or (config.value('lambdaCPType') == 'polar'\
+    and config['lambdaCPSq'].minValue()\
+    != config['lambdaCPSq'].maxValue())) :
   P2VV.convertLambda(config, fitResult, True)
 
 # get tags
