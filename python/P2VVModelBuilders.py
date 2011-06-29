@@ -129,7 +129,8 @@ def buildJpsiV(config) :
     sinhCStr = ''
     sinCStr  = ''
 
-  coefficients = ['J1_c2', 'J2_s2', 'J3_s2', 'J4_sc', 'J8_sc', 'J9_s2']
+  coefficients = ['J_0020x0020_0', 'J_22x002022_0', 'J_22x002022_1',
+      'J_21x21_0', 'J_21x2m1_0', 'J_22x2m2_0']
   if KSWave[:7] == 'include' :
     if mode == 'Bd2JpsiKstar' :
       print 'P2VV - INFO: buildJpsiV: including a Kpi S-wave'
@@ -139,7 +140,7 @@ def buildJpsiV(config) :
       else :
         print 'P2VV - INFO: buildJpsiV: including a CP odd KK S-wave'
 
-    coefficients += ['J1_1', 'J1_c', 'J4_s', 'J8_s']
+    coefficients += ['J_00x0020_0', 'J_10x0020_0', 'J_11x21_0', 'J_11x2m1_0']
 
   for coef in coefficients :
     if mode == 'Bd2JpsiKstar' :
@@ -376,54 +377,54 @@ class AngleFunctionBuilder :
     angFuncs = []
     if self._anglesType == 'Trans' :
       # using transversity angles
-      angFuncs.append(('J1_c2',  [(0, 0, 0,  0,  2.             ),
-                                  (0, 0, 2,  0,  sqrt(  1. / 5.)),
-                                  (0, 0, 2,  2, -sqrt(  3. / 5.)),
-                                  (2, 0, 0,  0,  4.             ),
-                                  (2, 0, 2,  0,  sqrt(  4. / 5.)),
-                                  (2, 0, 2,  2, -sqrt( 12. / 5.))]))
-      angFuncs.append(('J2_s2',  [(2, 2, 0,  0,  2.             ),
-                                  (2, 2, 2,  0,  sqrt(  1. / 5.)),
-                                  (2, 2, 2,  2,  sqrt(  3. / 5.))]))
-      angFuncs.append(('J3_s2',  [(2, 2, 0,  0,  2.             ),
-                                  (2, 2, 2,  0, -sqrt(  4. / 5.))]))
-      angFuncs.append(('J4_sc',  [(2, 1, 2, -2, -sqrt( 48. / 5.))]))
-      angFuncs.append(('J8_sc',  [(2, 1, 2,  1, -sqrt( 48. / 5.))]))
-      angFuncs.append(('J9_s2',  [(2, 2, 2, -1,  sqrt( 12. / 5.))]))
+      angFuncs.append(('J_0020x0020_0', [(0, 0, 0,  0,  4.             ),
+                                         (0, 0, 2,  0,  sqrt(  4. / 5.)),
+                                         (0, 0, 2,  2, -sqrt( 12. / 5.)),
+                                         (2, 0, 0,  0,  8.             ),
+                                         (2, 0, 2,  0,  sqrt( 16. / 5.)),
+                                         (2, 0, 2,  2, -sqrt( 48. / 5.))]))
+      angFuncs.append(('J_22x002022_0', [(2, 2, 0,  0,  2.             ),
+                                         (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                         (2, 2, 2,  2,  sqrt(  3. / 5.))]))
+      angFuncs.append(('J_22x002022_1', [(2, 2, 0,  0,  2.             ),
+                                         (2, 2, 2,  0, -sqrt(  4. / 5.))]))
+      angFuncs.append(('J_21x21_0',     [(2, 1, 2, -2, -sqrt( 24. / 5.))]))
+      angFuncs.append(('J_21x2m1_0',    [(2, 1, 2,  1,  sqrt( 24. / 5.))]))
+      angFuncs.append(('J_22x2m2_0',    [(2, 2, 2, -1,  sqrt( 12. / 5.))]))
 
       if KSWave :
-        angFuncs.append(('J1_1', [(0, 0, 0,  0,  6.             ),
-                                  (0, 0, 2,  0,  sqrt(  9. / 5.)),
-                                  (0, 0, 2,  2, -sqrt( 27. / 5.))]))
-        angFuncs.append(('J1_c', [(1, 0, 0,  0,  6.             ),
-                                  (1, 0, 2,  0,  sqrt(  9. / 5.)),
-                                  (1, 0, 2,  2, -sqrt( 27. / 5.))]))
-        angFuncs.append(('J4_s', [(1, 1, 2, -2, -sqrt(108. / 5.))]))
-        angFuncs.append(('J8_s', [(1, 1, 2,  1, -sqrt(108. / 5.))]))
+        angFuncs.append(('J_00x0020_0', [(0, 0, 0,  0,  4.             ),
+                                         (0, 0, 2,  0,  sqrt(  4. / 5.)),
+                                         (0, 0, 2,  2, -sqrt( 12. / 5.))]))
+        angFuncs.append(('J_10x0020_0', [(1, 0, 0,  0,  sqrt(192.     )),
+                                         (1, 0, 2,  0,  sqrt( 48. / 5.)),
+                                         (1, 0, 2,  2, -sqrt(144. / 5.))]))
+        angFuncs.append(('J_11x21_0',   [(1, 1, 2, -2, -sqrt( 72. / 5.))]))
+        angFuncs.append(('J_11x2m1_0',  [(1, 1, 2,  1, -sqrt( 72. / 5.))]))
 
     else :
       # using helicity angles
-      angFuncs.append(('J1_c2',  [(0, 0, 0,  0,  2.             ),
-                                  (0, 0, 2,  0, -sqrt(  4. / 5.)),
-                                  (2, 0, 0,  0,  4.             ),
-                                  (2, 0, 2,  0, -sqrt( 16. / 5.))]))
-      angFuncs.append(('J2_s2',  [(2, 2, 0,  0,  2.             ),
-                                  (2, 2, 2,  0,  sqrt(  1. / 5.)),
-                                  (2, 2, 2,  2, -sqrt(  3. / 5.))]))
-      angFuncs.append(('J3_s2',  [(2, 2, 0,  0,  2.             ),
-                                  (2, 2, 2,  0,  sqrt(  1. / 5.)),
-                                  (2, 2, 2,  2,  sqrt(  3. / 5.))]))
-      angFuncs.append(('J4_sc',  [(2, 1, 2,  1,  sqrt( 48. / 5.))]))
-      angFuncs.append(('J8_sc',  [(2, 1, 2, -1,  sqrt( 48. / 5.))]))
-      angFuncs.append(('J9_s2',  [(2, 2, 2, -2,  sqrt( 12. / 5.))]))
+      angFuncs.append(('J_0020x0020_0', [(0, 0, 0,  0,  4.             ),
+                                         (0, 0, 2,  0, -sqrt( 16. / 5.)),
+                                         (2, 0, 0,  0,  8.             ),
+                                         (2, 0, 2,  0, -sqrt( 64. / 5.))]))
+      angFuncs.append(('J_22x002022_0', [(2, 2, 0,  0,  2.             ),
+                                         (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                         (2, 2, 2,  2, -sqrt(  3. / 5.))]))
+      angFuncs.append(('J_22x002022_1', [(2, 2, 0,  0,  2.             ),
+                                         (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                         (2, 2, 2,  2,  sqrt(  3. / 5.))]))
+      angFuncs.append(('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))]))
+      angFuncs.append(('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))]))
+      angFuncs.append(('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))]))
 
       if KSWave :
-        angFuncs.append(('J1_1', [(0, 0, 0,  0,  6.             ),
-                                  (0, 0, 2,  0, -sqrt( 36. / 5.))]))
-        angFuncs.append(('J1_c', [(1, 0, 0,  0,  6.             ),
-                                  (1, 0, 2,  0, -sqrt( 36. / 5.))]))
-        angFuncs.append(('J4_s', [(1, 1, 2,  1,  sqrt(108. / 5.))]))
-        angFuncs.append(('J8_s', [(1, 1, 2, -1,  sqrt(108. / 5.))]))
+        angFuncs.append(('J_00x0020_0', [(0, 0, 0,  0,  4.             ),
+                                         (0, 0, 2,  0, -sqrt( 16. / 5.))]))
+        angFuncs.append(('J_10x0020_0', [(1, 0, 0,  0,  sqrt(192.     )),
+                                         (1, 0, 2,  0, -sqrt(192. / 5.))]))
+        angFuncs.append(('J_11x21_0',   [(1, 1, 2,  1,  sqrt( 72. / 5.))]))
+        angFuncs.append(('J_11x2m1_0',  [(1, 1, 2, -1,  sqrt( 72. / 5.))]))
 
     # get workspace
     ws = self._config.workspace()

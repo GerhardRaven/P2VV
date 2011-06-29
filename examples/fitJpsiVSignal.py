@@ -46,8 +46,22 @@ ASPh      = 2.2
 phiCP      = -0.2
 lambdaCPSq = 1.
 
-# resolution model
+# B lifetime and mixing
 BLifetimeError = 0.05
+if mode == 'Bd2JpsiKstar' :
+  Gamma  = 0.65
+  dGamma = 0.
+  dm     = 0.51
+elif mode == 'Bs2Jpsiphi' :
+  Gamma  = 0.68
+  dGamma = 0.05
+  dm     = 17.8
+
+# flavour tags
+wTag    = 0.35
+wTagBar = 0.35
+AProd   = 0.
+ATagEff = 0.
 
 
 ###############################################################################
@@ -83,7 +97,7 @@ else :
   config['cthetaAng'].set(name = 'hel_cthetal')
   config['phiAng'].set(name = 'hel_phi')
 
-config['BLifetime'].set(name = 't', min = 0., max = 4.)
+config['BLifetime'].set(name = 't', min = -0.1, max = 5.)
 config['iTag'].set(name = 'tagInitial')
 if mode == 'Bd2JpsiKstar' :
   config['fTag'].set(name = 'tagFinal')
@@ -107,6 +121,8 @@ elif config.value('ampsType') == 'transCartesian' :
     config['ReAS'].set(val = sqrt(ASMag2 / A0Mag2) * cos(ASPh))
     config['ImAS'].set(val = sqrt(ASMag2 / A0Mag2) * sin(ASPh))
 
+config['Gamma'].set(val = Gamma)
+config['dGamma'].set(val = dGamma)
 if mode == 'Bd2JpsiKstar' :
   config['dm'].set(min = -1., max = 2.)
 elif mode == 'Bs2Jpsiphi' :
@@ -117,6 +133,11 @@ elif mode == 'Bs2Jpsiphi' :
   else :
     config['ReLambdaCP'].set(val = sqrt(lambdaCPSq) * cos(-phiCP))
     config['ImLambdaCP'].set(val = sqrt(lambdaCPSq) * sin(-phiCP))
+
+config['wTag'].set(val = wTag)
+config['wTagBar'].set(val = wTagBar)
+config['AProd'].set(val = AProd)
+config['ATagEff'].set(val = ATagEff)
 
 if 'Gauss' in config.value('tResModel') :
   config['BLifetimeError'].set(val = BLifetimeError)
