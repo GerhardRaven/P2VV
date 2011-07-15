@@ -259,7 +259,7 @@ print 'using the following terms in Fourier expansion: '
 for n,c in [ ( m.basis().GetName() , m.coefficient()/c_000 ) for m in moments if m.significance()>signif] :
     print '%s : %s ' % (n,c)
 
-if True:
+if False:
     pdf_eff = buildEff_x_PDF(ws,'fourier_eff',pdf,[ ( m.basis() , m.coefficient()/c_000 ) for m in moments if m.significance()>signif] )
 
     print 'effTimesPdfName: ', pdf_eff.GetName() 
@@ -280,7 +280,7 @@ if True:
     c.Flush()
     c.Update()
     c.Print("anglesJpsiKstarMC.eps")       
-assert False
+
 ##############################
 ### Now read data and fit! ###
 ##############################
