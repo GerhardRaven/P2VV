@@ -19,8 +19,6 @@ def _RooArgSetIter(self) :
         if not a : return
         yield a
 
-
-
 RooArgList.__iter__ = _RooArgSetIter
 RooArgList.__len__  = lambda s   : s.getSize()
 RooArgList.__contains__  = lambda s,i : s.contains(i)
@@ -139,7 +137,7 @@ def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfO
     c.Update()
     return c
 
-def writeCorrMatrixLatex(roofitresult):
+def writeCorrMatrixLatex(roofitresult,name):
     parlist = roofitresult.floatParsFinal()
     npar = parlist.getSize()
     corr = []
@@ -180,31 +178,49 @@ def writeCorrMatrixLatex(roofitresult):
     string += '\\end{table}\n'
     string += '\\end{document}\n'
 
-    f = open('corrtable.tex', 'w')
+    f = open('corrtable_%s.tex'%name, 'w')
     f.write(string)
     f.close
 
     return {'string':string}
 
-def writeFitParamsLatex(paramlist):
-    import subprocess
-    paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()),RooFit.OutputFile('temp.tex'))
-
-    orig = open('temp.tex','r')
-    f = open('fitparams.tex','w')
+def writeFitParamsLatex(result,name,toys):
+    f = open('params_%s.tex'%name,'w')
 
     string = '\\documentclass{article}\n'
     string += '\\begin{document}\n'
-    string += orig.read()
+
+    if toys:
+        string += '\\begin{tabular}{|c|c|c|c|}\n'
+        string += '\\hline\n'
+        string += 'parameter & result & original value & $\sigma$ from original \\\\ \n'
+        string += '\\hline\n'
+        string += '\\hline\n'
+        for i,j in zip(result.floatParsFinal(),result.floatParsInit()):
+            print i,j
+            string += '%s & '%i.GetName()
+            string += '%s $\pm$ %s & '%(round(i.getVal(),3),round(i.getError(),3))
+            string += '%s & '%round(j.getVal(),3)
+            string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),3))
+    else:
+        string += '\\begin{tabular}{|c|c|}\n'
+        string += '\\hline\n'
+        string += 'parameter & result \\\\ \n'
+        string += '\\hline\n'
+        string += '\\hline\n'
+        for i,j in zip(result.floatParsFinal(),result.floatParsInit()):
+            print i,j
+            string += '%s & '%i.GetName()
+            string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),3),round(i.getError(),3))
+
+    string += '\\hline\n'
+    string += '\\end{tabular}\n'
     string += '\\end{document}\n'
-    
+
     f.write(string)
-    orig.close()
     f.close()
 
-    subprocess.call(['rm', 'temp.tex'])
-    
-    return
+    return 
 
 def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max):
     import time

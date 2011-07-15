@@ -16,7 +16,7 @@ gROOT.SetStyle(myStyle.GetName())
 gROOT.ForceStyle()
 gStyle.UseCurrentStyle()
 
-
+from RooFitDecorators import *
 #######################
 ### Plot ICHEP Like ###
 #######################
@@ -352,7 +352,7 @@ ab = abasis(ws,angles)
 #rperp2 = 0.16
 #rz2 = 0.601
 
-ws.factory("{rz2[0.601,0.,1.],rperp2[0.16,0.,1.]")
+ws.factory("{rz2[0.601,0.,1.],rperp2[0.16,0.,1.]}")
 ws.factory("RooFormulaVar::rpar2('1-@0-@1',{rz2,rperp2})")
 ws.factory("RooFormulaVar::rz('sqrt(@0)',{rz2})")
 ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
@@ -366,17 +366,13 @@ ws.factory("{deltaz[0.,%f,%f],deltapar[2.5,%f,%f],deltaperp[-0.17,%f,%f]}"%(-pi,
 #tau = 1.47 defines gamma:
 
 ws.factory("{#Gamma[0.68,0.4,0.9]}")
-#ws.factory("{#Gamma[0.68]}")
 ws.factory("expr::t_sig_tau('1/@0',{#Gamma})")
 
 ws.factory("{t_sig_dG[0.06852,-0.3,0.3]}")
-#ws.factory("{t_sig_dG[0.06852]}")
 
 ws.factory("{t_sig_dm[17.8,15.,20.]}")
-#ws.factory("{t_sig_dm[20.]}")
 
 ws.factory('{phis[-0.04,-0.1,0.1]}')
-#ws.factory('{phis[-0.04]}')
 
 ws.factory("{expr::S('-1*sin(phis)',{phis}),expr::D('cos(phis)',{phis}),C[0]}")
 ws.factory("{expr::Sold('sin(phis)',{phis}),expr::Dold('cos(phis)',{phis}),Cold[0]}")
@@ -385,7 +381,7 @@ ws.factory("{expr::Sold('sin(phis)',{phis}),expr::Dold('cos(phis)',{phis}),Cold[
 ### Experimental parameters ###
 ###############################
 
-ws.factory("RooTruthModel::tres_sig(t)")
+tres = ws.factory("RooTruthModel::tres_sig(t)")
 
 ws.factory("{wtag[0.0]}")
 
@@ -399,7 +395,7 @@ ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
 ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
 
 #This one imports automatically in the workspace!
-newpdf = buildJpsiphi(ws,'newpdf', useTransversityAngles) 
+newpdf = buildJpsiphi(ws,'newpdf', useTransversityAngles, tres) 
 
 ##############################
 #This sets the range for the events in the dataset that you read, and the range in which you will fit!
@@ -430,9 +426,8 @@ else:
 ### Load MC set ###
 ###################
 
-file = TFile('/tmp/dvaneijk/MC_13144001_1M_EvtGenOnly.root')
-#file = TFile('/tmp/dvaneijk/MC_13144001_100k_EvtGenOnly.root')
-NTupletree = file.Get('JpsiPhi')
+file = TFile('/data/bfys/dveijk/MC/EvtGenFromJeroen/MC_13144001_158k_EvtGenOnly.root')
+NTupletree = file.Get('MyTree')
 
 if useTransversityAngles:
     data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision')
@@ -455,8 +450,4 @@ else:
     #plot = plothel(ws,data,pdf_ext,'transplot')                                
     plot = plothel(ws,data,p2vv,'helplot')
 
-####################
-# Latex code of the fitted parameters
-paramlist = p2vv.getParameters(data)
-paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()))
-####################
+writeFitParamsLatex(result,'MCEvtGenOnlyFit')

@@ -31,7 +31,8 @@ from ModelBuilders import *
 
 ws = RooWorkspace("ws")
 
-useTransversityAngles = True
+swave = False
+angcorr = False
 
 mcfilename = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
 
@@ -43,23 +44,63 @@ ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f], t[-2,20.], tagdeci
 
 ws.factory("{ helcosthetaK[-1,1], helcosthetaL[-1,1], helphi[%f,%f], t[-2,20.], tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]}"%(-pi,pi))
 
-if useTransversityAngles: 
-    ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
-    angles = ws.set('transversityangles')
-else:
-    ws.defineSet("helicityangles","helcosthetaK,helcosthetaL,helphi")
-    angles = ws.set('helicityangles')
+ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
+angles = ws.set('transversityangles')
 
 ab = abasis(ws,angles)
 
-ws.factory("{rz2[0.601,0.4,0.7],rperp2[0.16,0.1,0.5]}")
-ws.factory("RooFormulaVar::rpar2('1-@0-@1',{rz2,rperp2})")
-ws.factory("RooFormulaVar::rz('sqrt(@0)',{rz2})")
-ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
-ws.factory("RooFormulaVar::rpar('sqrt(@0)',{rpar2})")
+if swave:
+    ws.factory("{rz2[0.601,0.4,0.7],rperp2[0.16,0.1,0.5],rs2[0.00001,0.,0.15]}")
+    ws.factory("RooFormulaVar::rpar2('1-@0-@1-@2',{rz2,rperp2,rs2})")
+    ws.factory("RooFormulaVar::rz('sqrt(@0)',{rz2})")
+    ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
+    ws.factory("RooFormulaVar::rpar('sqrt(@0)',{rpar2})")
+    ws.factory("RooFormulaVar::rs('sqrt(@0)',{rs2})")
 
-ws.factory("{deltaz[0.],deltapar[2.5,%f,%f],deltaperp[-0.17,%f,%f]}"%(-2*pi,2*pi,-2*pi,2*pi))
+    ws.factory("{deltaz[0.],deltapar[2.5,%f,%f],deltaperp[-0.17,%f,%f],deltas[0.5,%f,%f]}"%(-2*pi,2*pi,-2*pi,2*pi,-2*pi,2*pi))
+else:
+    ws.factory("{rz2[0.601,0.4,0.7],rperp2[0.16,0.1,0.5]}")
+    ws.factory("RooFormulaVar::rpar2('1-@0-@1',{rz2,rperp2})")
+    ws.factory("RooFormulaVar::rz('sqrt(@0)',{rz2})")
+    ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
+    ws.factory("RooFormulaVar::rpar('sqrt(@0)',{rpar2})")
+ 
+    ws.factory("{deltaz[0.],deltapar[2.5,%f,%f],deltaperp[-0.17,%f,%f]}"%(-2*pi,2*pi,-2*pi,2*pi))
 
+#Parametrize differently
+#ws.factory("{NAzAz[1],NAparApar[0.44,-1,1],NAperpAperp[0.4,-1,1],ReAparAperp[-0.114,-1,1],ReAzAperp[0.08,-1,1],ReAzApar[-0.66,-1,1],ImAparAperp[0.410,-1,1],ImAzAperp[-0.63,-1,1]}")
+
+ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
+ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
+ws.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})")
+ws.factory("expr::ImApar ('rpar  * sin(deltapar)', {rpar,deltapar})")
+ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
+ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
+
+if swave:
+    ws.factory("expr::ReAs('rs * cos(deltas)',{rs,deltas})")
+    ws.factory("expr::ImAs('rs * sin(deltas)',{rs,deltas})")
+
+# define the relevant combinations of strong amplitudes
+ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,    ImAz                      })")  # |A_z|^2
+ws.factory("expr::NAparApar  ('( @0 * @0 + @1 * @1 )',{ReApar,  ImApar                    })")  # |A_par|^2
+ws.factory("expr::NAperpAperp('( @0 * @0 + @1 * @1 )',{ReAperp, ImAperp                   })")  # |A_perp|^2
+ws.factory("expr::ReAparAperp('( @0 * @2 + @1 * @3 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par||A_perp| cos(delta_perp - delta_par)
+ws.factory("expr::ReAzAperp  ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   cos(delta_perp - delta_z)
+ws.factory("expr::ReAzApar   ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReApar,  ImApar  })")  # |A_z||A_par|    cos(delta_par  - delta_z)
+ws.factory("expr::ImAparAperp('( @0 * @3 - @1 * @2 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par|A_perp|  sin(delta_perp - delta_par)
+ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   sin(delta_perp - delta_z)
+
+if swave:
+    ws.factory("expr::NAsAs      ('( @0 * @0 + @1 * @1 )',{ReAs,    ImAs                      })")  # |A_s|^2
+    
+    ws.factory("expr::ReAsAz     ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| cos(delta_z - delta_s)
+    ws.factory("expr::ReAsApar   ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| cos(delta_par - delta_s)
+    
+    ws.factory("expr::ImAsAperp  ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAperp, ImAperp })")  # |A_s||A_perp| sin(delta_perp - delta_s)
+    ws.factory("expr::ImAsAz     ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| sin(delta_z - delta_s)
+    ws.factory("expr::ImAsApar   ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| sin(delta_par - delta_s)
+    
 ##########################
 ### physics parameters ###
 ##########################
@@ -71,7 +112,7 @@ ws.factory("{t_sig_dG[0.060,-2,2]}")
 ws.factory("{t_sig_dm[17.8,15,20]}")
 
 #Parametrize in terms of S,D,C:
-#ws.factory("{S[-2,2],D[-2,2],C[0]}")
+#ws.factory("{S[-0.04,-2.,2.],D[1.,-2.,2.],C[0]}")
 
 #Parametrize in terms of phis:
 ws.factory('{phis[-0.04,%f,%f]}'%(-2*pi,2*pi))
@@ -79,44 +120,39 @@ ws.factory("{expr::S('-1*sin(@0)',{phis}),expr::D('cos(@0)',{phis}),C[0]}")
 
 #Parametrize in terms of lambda
 #ws.factory('{phis[-0.04,%f,%f]}'%(-2*pi,2*pi))
-#ws.factory("{relambda[-10,10],imlambda[-10,10]}")
+#ws.factory("{relambda[1.,-10,10],imlambda[-0.04,-10,10]}")
 #ws.factory("{expr::relambda('cos(@0)',{phis}),expr::imlambda('-1*sin(@0)',{phis})}")
 #ws.factory("{expr::lambda2('@0*@0+@1*@1',{relambda,imlambda}),expr::S('(2*@0)/(1+@1)',{imlambda,lambda2}),expr::D('(2*@0)/(1+@1)',{relambda,lambda2}),expr::C('(1-@0)/(1+@0)',{lambda2})}")
-##ws.factory("{expr::lambda2('@0*@0+@1*@1',{relambda,imlambda}),expr::S('(2*@0)/(1+@1)',{imlambda,lambda2}),expr::D('(2*@0)/(1+@1)',{relambda,lambda2}),C[0]}")
+#ws.factory("{expr::lambda2('@0*@0+@1*@1',{relambda,imlambda}),expr::S('(2*@0)/(1+@1)',{imlambda,lambda2}),expr::D('(2*@0)/(1+@1)',{relambda,lambda2}),C[0]}")
 #ws.factory("{lambda2[1],expr::S('(2*@0)/(1+@1)',{imlambda,lambda2}),expr::D('(2*@0)/(1+@1)',{relambda,lambda2}),expr::C('(1-@0)/(1+@0)',{lambda2})}")
 
 ###############################
 ### Experimental parameters ###
 ###############################
-# For determination of efficiency from MC, put RooTruthModel, later replace this by realistic Resolution model. Does that imply building the JpsiPhi pdf again?
+# For determination of efficiency from MC, put RooTruthModel, later replace this by realistic Resolution model. Does that imply building the JpsiPhi pdf again? Yes, you should, but you never did it yet. Apparantly it doesn't matter for the result, but fix it!!!
 
 #ws.factory("RooTruthModel::tres_sig(t)")
-ws.factory("RooGaussModel::tres_sig(t,mu[0],sigma[0.05])")
+
+#ws.factory("GaussModel::tres_3(t,tres_mu_fit[-0.0016],tres_s3_fit[0.183])")
+#ws.factory("GaussModel::tres_2(t,tres_mu_fit,tres_s2_fit[0.06464])")
+#ws.factory("GaussModel::tres_1(t,tres_mu_fit,tres_s1_fit[0.0337])")
+#ws.factory("AddModel::tres({tres_3,tres_2,tres_1},{tres_f3[0.017],tres_f2[0.456],tres_f1[0.527]})")
+
+ws.factory("GaussModel::tres(t,tres_mean[0.0],tres_sigma[0.05])")
 
 # For determination of efficiency from MC, put wtag to 0, later integrate out (or set to 0.5 as I used to do before). Does that imply rebuilding the JpsiPhi pdf?
-ws.factory("etatag[0.,0.,0.501]")
-ws.factory("expr::wtag('etatag',etatag)")
+ws.factory("tagomega[0.,0.,0.501]")
+ws.factory("expr::wtag('tagomega',tagomega)")
 
-##################################### building the NEW pdf ###################################
-# create observables
-ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
-ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
-ws.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})")
-ws.factory("expr::ImApar ('rpar  * sin(deltapar)', {rpar,deltapar})")
-ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
-ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
-
-if useTransversityAngles:
-    newpdf = buildJpsiphi(ws,'newpdf', True) 
+#Build the signal PDF
+if swave:
+    newpdf = buildJpsiphiSWave(ws,'newpdf', True,'tres')
 else:
-    newpdf = buildJpsiphi(ws,'newpdf', False)
+    newpdf = buildJpsiphi(ws,'newpdf', True,'tres')
 
 ws.factory("{m[5200,5550]}")
 
-if useTransversityAngles:
-    ws.defineSet("observables","m,t,trcospsi,trcostheta,trphi,tagdecision")
-else:
-    ws.defineSet("observables","m,t,helcosthetaL,helcosthetaK,helphi,tagdecision")
+ws.defineSet("observables","m,t,trcospsi,trcostheta,trphi,tagdecision")
 
 MCdatafile = TFile(mcfilename)
 NTupletree = MCdatafile.Get('MyTree')
@@ -205,15 +241,15 @@ c = dict()
 for m in moments : c[ ( m.basis().i(),m.basis().l(),m.basis().m() ) ] = m.coefficient()
 c_000 = c[(0,0,0)]
 
-if useTransversityAngles:
 
-    xi_c = compute_moments( c )
-    # normalize moments and compare
+
+xi_c = compute_moments( c )
+# normalize moments and compare
    
-    norm_xi(xi_c)
-    norm_xi(xi_m)
-    for name in xi_c.iterkeys() :
-        print '%s : direct moment: %s ;  from Fourier series: %s ; ratio = %s ' % \
+norm_xi(xi_c)
+norm_xi(xi_m)
+for name in xi_c.iterkeys() :
+    print '%s : direct moment: %s ;  from Fourier series: %s ; ratio = %s ' % \
           ( name, xi_m[name], xi_c[name], xi_m[name]/xi_c[name])
 
 # build PDF using the Fourier series efficiency...
@@ -223,7 +259,7 @@ print 'using the following terms in Fourier expansion: '
 for n,c in [ ( m.basis().GetName() , m.coefficient()/c_000 ) for m in moments if m.significance()>signif] :
     print '%s : %s ' % (n,c)
 
-if False:
+if True:
     pdf_eff = buildEff_x_PDF(ws,'fourier_eff',pdf,[ ( m.basis() , m.coefficient()/c_000 ) for m in moments if m.significance()>signif] )
 
     print 'effTimesPdfName: ', pdf_eff.GetName() 
@@ -244,7 +280,7 @@ if False:
     c.Flush()
     c.Update()
     c.Print("anglesJpsiKstarMC.eps")       
-
+assert False
 ##############################
 ### Now read data and fit! ###
 ##############################
@@ -255,14 +291,9 @@ tmin = 0.3
 tmax = 14.
 t.setRange(tmin,tmax)
 
-if useTransversityAngles:
-    trcostheta = ws.var('trcostheta')
-    trcospsi = ws.var('trcospsi')
-    trphi = ws.var('trphi')
-else:
-    cthetaK = ws.var('helcosthetaK')
-    cthetaL = ws.var('helcosthetaL')
-    phi = ws.var('helphi')
+trcostheta = ws.var('trcostheta')
+trcospsi = ws.var('trcospsi')
+trphi = ws.var('trphi')
 
 tagdecision = ws.cat('tagdecision')
 
@@ -282,15 +313,20 @@ mnarrowmax = 5411.67
 #################
 
 #Using My file with latest tagging for tagged fit
-datafile = TFile('/data/bfys/dveijk/DataJpsiPhi/Bs2JpsiPhiForTaggedFit.root')
+#datafile = TFile('/data/bfys/dveijk/DataJpsiPhi/Bs2JpsiPhiTuple.root')
+#NTupletree = datafile.Get('MyTree')
+
+#Using 2011 data
+#From Wouter, preliminary
+#datafile = TFile('/data/bfys/dveijk/DataJpsiPhi/2011/Bs2JpsiPhiTuple.root')
+#NTupletree = datafile.Get('dataset')
+#From Rob (merged myself)
+datafile = TFile('/data/bfys/dveijk/DataJpsiPhi/2011/FromRob_USE_OS.root')
 NTupletree = datafile.Get('MyTree')
 
-ws.set('observables').add(ws.var('etatag'))
+ws.set('observables').add(ws.var('tagomega'))
 
-if useTransversityAngles:
-    data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision && etatag==etatag')
-else:
-    data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && helcosthetaL==helcosthetaL && helcosthetaK==helcosthetaK && helphi==helphi && tagdecision==tagdecision && etatag==etatag')
+data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision && tagomega==tagomega')
 
 print 'Number of unbiased events', data.numEntries()
 
@@ -307,29 +343,18 @@ ws.factory("Gaussian::m_sig(m,m_sig_mean[5365,5360,5370],m_sig_sigma_1[6.,0.,20.
 #background B mass pdf
 ws.factory("Exponential::m_bkg(m,m_bkg_exp[-0.001,-0.01,-0.0001])")
 
+#Full mas PDF
+ws.factory("SUM::m_pdf(Nsig[1000,0,16000]*m_sig,Nbkg[5000,0,16000]*m_bkg)")
+
+ws['m_pdf'].fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false))
+
 #background propertime 
 # TODO: split resolution in tres_sig and tres_nonpsi!!
-ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.01,0.5],tres_sig,SingleSided)")
-ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,0.5,2.5],tres_sig,SingleSided)")
+ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
+ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,0.5,2.5],tres,SingleSided)")
 ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
 
 #background angles: 
-
-#if useTransversityAngles:
-#    ws.factory("Uniform::bkgang({trcospsi,trcostheta,trphi})")
-#else:
-#    ws.factory("Uniform::bkgang({helcosthetaL,helcosthetaK,helphi})")
-
-#if useTransversityAngles:
-#    ws.factory("Chebychev::bkg_trcospsi(trcospsi,{c0_trcospsi[-0.13,-1,1]})")
-#    ws.factory("Chebychev::bkg_trcostheta(trcostheta,{c0_trcostheta[0.08,-1,1]})")
-#    ws.factory("Chebychev::bkg_trphi(trphi,{c0_trphi[0.10,-1,1]})")
-#    ws.factory("PROD::bkgang(bkg_trcospsi,bkg_trcostheta,bkg_trphi)")
-#else:
-#    ws.factory("Chebychev::bkg_helcosthetaK(helcosthetaK,{c0_helcosthetaK[-0.13,-1,1]})")
-#    ws.factory("Chebychev::bkg_helcosthetaL(helcosthetaL,{c0_helcosthetaL[0.08,-1,1]})")
-#    ws.factory("Chebychev::bkg_helphi(helphi,{c0_helphi[0.10,-1,1]})")
-#    ws.factory("PROD::bkgang(bkg_helcosthetaL,bkg_helcosthetaK,bkg_helphi)")
 
 #Build angular background with RooP2VVAngleBasis
 _ba = lambda name,comp : _buildAngularFunction(ws,ab,name,comp)
@@ -373,21 +398,23 @@ ws.factory("PROD::sig_pdf( m_sig, newpdf)")
 #ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, bkgang)")
 ws.factory("PROD::bkg_pdf( m_bkg, t_bkg, bkg)")
 
-ws.factory("SUM::pdf_ext(Nsig[543,0,1000]*sig_pdf,Nbkg[812,0,1000]*bkg_pdf)")
+ws.factory("SUM::pdf_ext(Nsig*sig_pdf,Nbkg*bkg_pdf)")
+
 ws.factory("SUM::pdf(f_sig[0.71,0.,1.0]*sig_pdf,bkg_pdf)")
 
-pdf_ext = ws.pdf('pdf_ext')
-
 print 'GOING TO BUILD THE ACCEPTANCE CORRECTED FULL PDF!'
-angcorrpdf = buildEff_x_PDF(ws,'angcorrpdf',pdf_ext,[ ( m.basis() , m.coefficient()/c_000 ) for m in moments if m.significance()>signif] )
+angcorrpdf = buildEff_x_PDF(ws,'angcorrpdf',ws['pdf_ext'],[ ( m.basis() , m.coefficient()/c_000 ) for m in moments if m.significance()>signif] )
 ws.put(angcorrpdf)
 
-ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.338],p0sigma[0.012])")
-ws.factory("Gaussian::p1(p1var[-4.0,4.0],p1mean[1.01],p1sigma[0.17])")
-ws.factory("expr:wtag_syst('p0var+p1var*(etatag-etamean)',etatag,etamean[0.339],p0var,p1var)")
+ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.34],p0sigma[0.012])")
+ws.factory("Gaussian::p1(p1var[-4.0,4.0],p1mean[1.01],p1sigma[0.12])")
+ws.factory("expr:wtag_syst('p0var+p1var*(tagomega-etamean)',tagomega,etamean[0.339],p0var,p1var)")
 
-customizer = RooCustomizer(angcorrpdf,'inc_tag_syst')
-
+if angcorr:
+    customizer = RooCustomizer(angcorrpdf,'inc_tag_syst')
+else:
+    customizer = RooCustomizer(ws['pdf_ext'],'inc_tag_syst')
+    
 wtag = ws.function('wtag')
 wtag_syst = ws.function('wtag_syst')
 
@@ -397,7 +424,7 @@ taggingpdf = customizer.build()
 getattr(ws,'import')(taggingpdf,RooFit.RecycleConflictNodes())
 
 #etamean = RooRealVar('etamean','etamean',0.339)
-#wtag = RooFormulaVar('wtag','wtag','@0+@1*(@2-@3)',RooArgList(ws.var('p0var'),ws.var('p1var'),ws.var('etatag'),etamean))
+#wtag = RooFormulaVar('wtag','wtag','@0+@1*(@2-@3)',RooArgList(ws.var('p0var'),ws.var('p1var'),ws.var('tagomega'),etamean))
 #getattr(ws,'import')(wtag,RooFit.RecycleConflictNodes())
 #print ws.function('wtag').getVal()
 #getattr(ws,'import')(wtag,RooFit.RenameVariable('wtag','wtag'))
@@ -406,5 +433,4 @@ getattr(ws,'import')(taggingpdf,RooFit.RecycleConflictNodes())
 wsfile = TFile('TaggedWS.root','RECREATE')
 ws.Write()
 wsfile.Close()
-
 
