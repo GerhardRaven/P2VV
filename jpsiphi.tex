@@ -197,7 +197,7 @@ Inspired by equation \ref{eq:tagsummed}, we can introduce two new parameters:
     C_{{\cal E},i} &=& 1 - \nu \delta_i 
 \\  C_{{\cal O},i} &=& \delta_i - \nu
 \end{eqnarray}
-which, the limit of vanishing asymmetries would be unity and zero respectively.
+which, in the limit of vanishing asymmetries, would be unity and zero respectively.
 In terms of these parameters, the PDFs in equation \ref{eq:tagsummed} and equation \ref{eq:untagged} can be written
 as:
 \begin{eqnarray}
@@ -226,62 +226,61 @@ for $B$ tags and $\overline{B}$ tags are related by the substitution $({\cal E},
 
 After some tedious algebra, the PDFs for tagged events can be written as:
 \begin{eqnarray}
-  P(q_T\in (-1,+1),i)  &= \frac{\epsilon_i}{2N}[& C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O}  \\
+  P_i(q_T\in (-1,+1))  &= \frac{\epsilon_i}{2N}\biggl[& C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O}   \nonumber
 \\           &&+ q_T {\cal D}_i \left[ \left( C_{{\cal O},i} - {\Delta}_i C_{{\cal E},i} \right) {\cal E} 
-                                     + \left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right) {\cal O}  \right] ]
-\\ &=& \frac{\epsilon_i}{N} \left[ C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O} \right] \frac{ 1 + q_T A_{CP}(i)}{2}
+                                     + \left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right) {\cal O}  \right] \biggr] \nonumber
+% \\ &=& \frac{\epsilon_i}{N} \left[ C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O} \right] \frac{ 1 + q_T A_{CP}(i)}{2}
+\\ &\equiv& P_i \times \left( \frac{ 1}{2} + \frac{1}{2} q_T A_{CP}(i) \right)
 \label{eq:substrule_e}
 \end{eqnarray}
-and the CP asymmetry can be written as:
+where the $CP$ asymmetry is given by:
 \begin{equation}
-  A_{CP}(i) =  {\cal D}_i \frac{\left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right){\cal O}+(C_{{\cal O},i}-{\Delta}_i C_{{\cal E},i}) ){\cal E}}
+  A_{CP}(i) =  {\cal D}_i \frac{\left(C_{{\cal O},i}-{\Delta}_i C_{{\cal E},i}\right) {\cal E}+\left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right){\cal O}}
                                { C_{{\cal E},i}{\cal E}+ C_{{\cal O},i}{\cal O} }
 \end{equation}
 In the limit where $\nu=\delta_i={\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal O},i}=0, \Delta_i = 0$, this reduces to the expected
 \begin{eqnarray}
-   P(q_T=0) &=& \left[ 1-\sum_i \epsilon_i \right]{\cal E} \\
-   P(q_T\ne 0,i) &=& \epsilon_i\left[  {\cal E} +q_T {\cal D} {\cal O}\right]  \\
+   P_0 &=&\frac{1}{N} \left[ 1-\sum_i \epsilon_i \right]{\cal E} \\
+   P_i(q_T\in(-1,1)) &=& \frac{\epsilon_i}{N}\left[  {\cal E} +q_T {\cal D}_i {\cal O}\right]  \label{eq:substrule_s}\\
    A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
 \end{eqnarray}
 
 As $\nu$ and $\delta_i$ always appear as sum, i.e. as $C_{{\cal O},i}$ (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
 it becomes impossible to disentangle the difference between differences in tagging efficiency for $b$ and $\overline{b}$
 and a change in the relative normalization. However, when taken into account the fact that the difference in normalization
-is due to the apearance of $1/(1+C)$ vs. $1/(1-C)$, i.e. $\nu = -C$, and $C$ also appears as coefficienct in front of the $\cosh\left(\Delta\Gamma t/2\right)$
+is due to the apearance of $1/(1+C)$ vs. $1/(1-C)$, i.e. $\nu = C$, and $C$ also appears as coefficienct in front of the $\cosh\left(\Delta\Gamma t/2\right)$
 and $q_T\cos(\Delta m t)$ terms, it is expected that there is some residual power left to disentangle the two effects -- i.e. 
 solely due to the time-dependent shape of the distributions, and no longer in their relative normalization, i.e. in the time-integrated yields.
 
 
 Note that these mistag, tagging efficiency and normalization differences result in a fairly 
-straightforward substitution rule, which one can read off from Equations (\ref{eq:substrule_s} - \ref{eq:substrule_e}):
+straightforward substitution rule, which one can read off by comparing Equations (\ref{eq:substrule_s} - \ref{eq:substrule_e}):
 \begin{enumerate}
 \item
 the initially CP-even terms (i.e. the $\cosh(\Delta\Gamma t/2)$ and $\sinh(\Delta\Gamma t/2)$ terms) obtain an additional
 factor 
 \begin{equation}
-   {\cal E} \rightarrow {\cal E} \left[ (1+\delta_i\nu)+ q_T {\cal D}_i \left( \delta_i + \nu -{\Delta}_i(1+\delta_i\nu) ]\right) \right]
+   {\cal E} \rightarrow {\cal E} \left[ C_{{\cal E},i} + q_T {\cal D}_i \left( C_{{\cal O},i}-{\Delta}_i C_{{\cal E},i}) ]\right) \right]
 \end{equation}
 \item
 the initially CP-odd terms (i.e. the $\cos(\Delta m t) $ and $\sin(\Delta m t)$ terms) obtain, { \em instead of the
 usual factor} $q_T{\cal D}_i$, the factor
 \begin{equation}
-   {\cal O} \rightarrow {\cal O} \left[ (\delta_i+\nu) +  q_T {\cal D}_i  \left( 1+\delta_i\nu - {\Delta}_i(\delta_i+\nu) \right) \right]
+   {\cal O} \rightarrow {\cal O} \left[ C_{{\cal O},i} +  q_T {\cal D}_i  \left( C_{{\cal E},i} - {\Delta}_iC_{{\cal O},i} \right) \right]
 \end{equation}
 \end{enumerate}
-Again, in the limit that $\delta_i=\nu={\Delta}_i=0$, this results in the well-known expected behaviour.
+Again, in the limit that $\delta_i=\nu={\Delta}_i=0$, i.e. $(C_{{\cal E},i},C_{{\cal O},i},\Delta_i) = (1,0,0)$ this results in the well-known expected behaviour.
 
-The above substitution rule suggest a different way of parameterizing the problem, namely,
-\begin{eqnarray}
-   {\cal E} &\rightarrow& {\cal E} \left[ A_i +  q_T {\cal D}_i \left( B_i - {\Delta}_i A_i \right) \right]  \\
-   {\cal O} &\rightarrow& {\cal O} \left[ B_i +  q_T {\cal D}_i \left( A_i - {\Delta}_i B_i \right) \right].
-\end{eqnarray}
-where the well-known limit case corresponds to $(A_i,B_i)=(1,0)$.
-Given that both expressions are linear both in $A_i$ and $B_i$, scaling these parameters by a common 
+It should be noted that the tagged PDFs, i.e. $P_i$, are linear both in $C_{{\cal E},i}$ and $C_{{\cal O},i}$,
+and, as a result, scaling these parameters by a common 
 factor only changes the total normalization, and hence leaves the problem invariant. As a result, one
-may as well decide to fix $A_i$ to unity. This choice is also motivated that any deviation of $A_i$ from
-unity is 2nd order, whereas a deviation of $B_i$ from zero is first order. 
-(note: what if multiple categories? the relative magnitude of
-$A_i$ could be left free maybe) (note: what about untagged events?).
+may as well decide to fix $C_{{\cal E},i}$ to unity. This choice is also motivated that any deviation of $C_{{\cal E},i}$ from
+unity is 2nd order, whereas a deviation of $C_{{\cal O},i}$ from zero is first order. 
+This picture changes qualitatively when the untagged events are included. In that case, since
+the system is now closed in the sense that events which are 'lost' in the tagged $P_i$ are now 
+'gained' in the untagged $P_0$, or, to put it another way, the appearance of a '1' in $P_0$ defines
+the overall normalization, it should be possible to determine $C_{{\cal E},i}, C_{{\cal O},i}$ and
+as a bonus, also $\nu$, simultaneously.
 
 
 
@@ -298,8 +297,6 @@ or helicity angles
 \begin{equation}
   \hat{n} = ( -\cos\thetaL, -\sin\thetaL\cos\phiL, \sin\thetaL\sin\phiL )
 \end{equation}
-%%% TODO: can we trivially connect this to helicity angles at this point??
-%%% i.e. can we write \hat{n} in terms of helicity angles???
 and define transversity amplitudes
 \begin{eqnarray}
    {\bf A}(t)            &=&  ( {\cal A}_0(t) \cos\psi          , -\frac{{\cal A}_\parallel(t) \sin\psi}{\sqrt{2}}         ,i\frac{{\cal A}_\perp(t) \sin\psi}{\sqrt{2}}          )  % \\
