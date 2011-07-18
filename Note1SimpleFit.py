@@ -1,3 +1,12 @@
+########################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script was originally written to test the blinding procedure on the easiest possible fit.
+###              Signal: t;RooDecay, m;Gaussian
+###              Background: t;prompt+ml+ll, m;1st order Cheby
+###              Reso: sum of three Gaussians
+########################################
+
 from ROOT import *
 from math import pi
 

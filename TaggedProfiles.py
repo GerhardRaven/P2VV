@@ -1,3 +1,13 @@
+########################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script reads the workspace that contains the JpsiPhi Tagged PDF
+###              Blinding is taken care of in this script
+###              Deltams constraint is taken care of in this script
+###              This script takes two arguments: step = step on y-axis of the 2D grid for profiles
+###              npoints is the number of fits on the x-axis on this 2D grid
+###              This script can be submitted to the Grid in int(nsteps) subjobs using SubmitTaggedProfiles.py
+########################################
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
@@ -86,6 +96,8 @@ ws.var('#Gamma').setVal(0.68)
 ws.var('#Gamma').setMax(2.)
 ws.var('t_sig_dG').setVal(0.060)
 ws.var('phis').setVal(pi)
+ws.var('phis').setMin(0.)
+ws.var('phis').setMax(2*pi)
 
 phis = ws.var('phis')
 deltaGamma = ws.var('t_sig_dG')
@@ -102,9 +114,6 @@ valuedeltaGamma = RooRealVar("valuedeltaGamma","valuedeltaGamma",.0)
 
 dlogLLArgSet = RooArgSet(BaseNLL,GridPointNLL,stepphis,valuephis,stepdeltaGamma,valuedeltaGamma)
 dlogLLDataSet = RooDataSet('dlogLLDataSet','dlogLLDataSet',dlogLLArgSet)
-
-phis.setMin(0.)
-phis.setMax(2*pi)
 
 phis_min = 0
 phis_max = 2*pi

@@ -1,3 +1,11 @@
+########################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script is an attempt to 'reverse engineer' a Fourier series from the given 6 angular efficiency moments.
+###              This attempt never succeeded, and instead we used our own formalism of calculating the moments with respect to the Fourier bases
+###              In the end the point estimates agree with analyses using the moments when using our own formalism
+###              So this script is not so much needed anymore.
+########################################
 from itertools import count
 from math import sqrt,pi
 from ModelBuilders import *

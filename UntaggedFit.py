@@ -1,3 +1,12 @@
+########################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script reads the root file with the workspace for the untagged fit and fits
+###              The MakeProfile function is implemented in RooFitDecorators.py, but it makes a DLL profile in one go.
+###              For big grids this becomes too time-consuming. So there are now scripts to make ganga jobs for profile production:
+###              These are UntaggedProfiles.py and SubmitUntaggedProfiles.py
+########################################
+
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
@@ -75,93 +84,31 @@ dict = writeCorrMatrixLatex(result)
 ################
 ### Profiles ###
 ################
+profile = False
 
-gamma = ws.var('#Gamma')
-deltaGamma = ws.var('t_sig_dG')
-phis = ws.var('phis')
+if profile:
+   gamma = ws.var('#Gamma')
+   deltaGamma = ws.var('t_sig_dG')
+   phis = ws.var('phis')
+   
+   #setting back values
+   ws.var('#Gamma').setVal(0.68)
+   ws.var('t_sig_dG').setVal(0.060)
+   ws.var('phis').setVal(0.0)
+   
+   #MakeProfile('ProfiledGamma_Gamma',data,pdf,12,gamma,0.55,0.85,deltaGamma,-0.35,0.45)
 
-#setting back values
-ws.var('#Gamma').setVal(0.68)
-ws.var('t_sig_dG').setVal(0.060)
-ws.var('phis').setVal(0.0)
+   #setting back values
+   ws.var('#Gamma').setVal(0.68)
+   ws.var('t_sig_dG').setVal(0.060)
+   ws.var('phis').setVal(0.0)
+   ws.var('phis').setConstant(kFALSE)
+   #With phis unconstrained we now also have sensitivity to deltaperp!!!! 
+   ws.var('deltaperp').setMin(-2*pi)
+   ws.var('deltaperp').setMax(2*pi)
+   ws.var('deltaperp').setConstant(kFALSE)
 
-#MakeProfile('ProfiledGamma_Gamma',data,pdf,12,gamma,0.55,0.85,deltaGamma,-0.35,0.45)
-
-#setting back values
-ws.var('#Gamma').setVal(0.68)
-ws.var('t_sig_dG').setVal(0.060)
-ws.var('phis').setVal(0.0)
-ws.var('phis').setConstant(kFALSE)
-#With phis unconstrained we now also have sensitivity to deltaperp!!!! 
-ws.var('deltaperp').setMin(-2*pi)
-ws.var('deltaperp').setMax(2*pi)
-ws.var('deltaperp').setConstant(kFALSE)
-
-#MakeProfile('ProfiledGamma_phis_untagged',data,pdf,15,phis,-pi,pi,deltaGamma,-0.7,0.7)
-
-
-#We might still need this to see if the fits are fine actually, I remember seeing something fits hitting borders.....
-
-## param1 = deltaGamma
-## param2 = phis
-
-## param1.setMin(-0.7)
-## param1.setMax(0.7)
-## param2.setMin(-pi)
-## param2.setMax(pi)
-
-## param1.setConstant(kFALSE)
-## param2.setConstant(kFALSE)
-
-## param1_min = param1.getMin()
-## param1_max = param1.getMax()
-## param1_int = param1_min-param1_max
-
-## #get range for param2
-## param2_min = param2.getMin()
-## param2_max = param2.getMax()
-## param2_int = param2_max - param2_min
-
-## print '**************************************************'
-## print 'Minimizing NLL'
-## print '**************************************************'
-## nll = pdf.createNLL(data,RooFit.NumCPU(8))
-## m = RooMinuit(nll)
-## #m.setVerbose(kTRUE)
-## m.migrad()
-## pdf.getParameters(data).Print("s")
-
-## assert False
-
-## for i in range(1,npoints+1):
-##     param1_val = param1_min + (i-1)*(param1_int/npoints)
-##     for j in range(1,npoints+1):
-##         param2_val = param2_min + (j-1)*(param2_int/npoints)
-##         print '***************************************************************************'
-##         print 'At gridpoint i = %i from %i and j = %i from %i'%(i,npoints,j,npoints)
-##         print '%s at current gridpoint ='%(param1.GetName()), param1_val
-##         print '%s at current gridpoint ='%(param2.GetName()), param2_val
-##         print '***************************************************************************'
-##         param1.setVal(param1_val)
-##         #param1.setConstant(kTRUE)
-##         param2.setVal(param2_val)
-##         #param2.setConstant(kTRUE)
-##         #result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(true),RooFit.Minos(false),RooFit.Save(true))
-##         #nll = pdf.createNLL(data,RooFit.NumCPU(8))
-##         #nllval = nll.getVal()
-##         #ProfileLikelihood.SetBinContent(i,j,nllval)
-##         ProfileLikelihood.SetBinContent(i,j,prof.getVal())
-##         #Heights.SetBinContent(i,j,2*(-1*(nllMINval)+nllval))
-     
-## gStyle.SetPalette(1)
-## gStyle.SetOptStat(0)
-## Canvas = TCanvas('Canvas','Canvas')
-
-## ProfileLikelihood.Draw()
-
-## tfile = TFile('profilelikelihood.root','RECREATE')
-## ProfileLikelihood.Write()
-## tfile.Close()
+   MakeProfile('ProfiledGamma_phis_untagged',data,pdf,15,phis,-pi,pi,deltaGamma,-0.7,0.7)
 
 #################
 ### Single LL ###

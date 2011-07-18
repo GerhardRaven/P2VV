@@ -1,3 +1,9 @@
+########################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script was a testing ground for me to see how Gerhard implemented the angular efficiency correction
+###              There is one important feature in this script: It allows to actually plot the SHAPE of the angular efficiency correction!
+########################################
 import RooFitDecorators
 #from itertools import product,count
 from itertools import count

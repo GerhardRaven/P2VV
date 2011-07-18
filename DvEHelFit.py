@@ -1,3 +1,10 @@
+#######################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script reads the signal JpsiPhi Pdf in helicity angles from a rootfile
+###              Adds bkg PDF's, read data and fits for transversity amplitudes, to be compared later with
+###              transversity amplitudes fitted with transversity angles in DvETransFit.py.
+########################################
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import pi

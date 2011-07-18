@@ -1,3 +1,11 @@
+#######################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script generates the simplest possible signal JpsiPhi Pdf and writes it to a workspace in a rootfile
+###              In HELICITY COORDINATES!!!
+###              Do this to check that the choice of angles in the parameterization of the angles
+###              is independent of the transversity amplitudes that we fit later.
+########################################
 from ROOT import *
 
 import math

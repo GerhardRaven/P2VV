@@ -1,3 +1,9 @@
+########################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script is the shortest example to produce a strange feature when trying to plot the background component of a PDF
+###              I forgot about the exact details of the problem, so I should rerun this script once....
+########################################
 from ROOT import *
 import GaudiPython
 P2VV = GaudiPython.gbl.P2VV

@@ -1,3 +1,12 @@
+########################################
+### Author: Daan van Eijk
+### Updated on: Jun 5 11
+### Description: This script reads the workspace that contains the JpsiPhi Untagged PDF
+###              Blinding is taken care of in this script
+###              This script takes two arguments: step = step on y-axis of the 2D grid for profiles
+###              npoints is the number of fits on the x-axis on this 2D grid
+###              This script can be submitted to the Grid in int(nsteps) subjobs using SubmitUntaggedProfiles.py
+########################################
 from ROOT import *
 gSystem.Load("libp2vv")
 from math import sqrt,pi
