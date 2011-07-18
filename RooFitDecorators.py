@@ -95,7 +95,7 @@ def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfO
     rp = _obs.emptyClone( _obs.GetName() + '_resid' )
     _stash.append(rp)
     if logy : _obs.SetMinimum(0.1)
-    #TODO: plot rh as a filled histogram with fillcolor blue...
+    #TODO: if normalize : plot rh as a filled histogram with fillcolor blue...
     for i in dataOpts : 
         if i.opcode() == 'MarkerSize'  : rh.SetMarkerSize(  i.getDouble(0) )
         if i.opcode() == 'MarkerStyle' : rh.SetMarkerStyle( i.getInt(0) )
