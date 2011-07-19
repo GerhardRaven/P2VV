@@ -62,6 +62,53 @@ def registerMultiCatGen() :
 
 ###############################################################################
 
+def readData(filePath, dataSetName, NTuple = False,
+    observables = None, tagCat = '', initTag = '') :
+  """reads data from file (RooDataSet or TTree(s))
+  """
+
+  if NTuple :
+    from ROOT import RooDataSet, TChain
+
+    # create data set from NTuple file(s)
+    print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'"\
+        % (dataSetName, filePath)
+    files = TChain(dataSetName)
+    files.Add(filePath)
+    data = RooDataSet(dataSetName, dataSetName, files, observables)
+
+  else :
+    from ROOT import TFile
+
+    # get data set from file
+    print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'"\
+        % (dataSetName, filePath)
+    file = TFile.Open(filePath, 'READ')
+    data = file.Get(dataSetName)
+    file.Close()
+
+  return data
+
+
+###############################################################################
+
+def writeData(filePath, dataSetName, data, NTuple = False) :
+  """writes data to file (RooDataSet or TTree)
+  """
+
+  from ROOT import TFile
+
+  print "P2VV - INFO: writeData: writing RooDataSet '%s' to file '%s'"\
+      % (dataSetName, filePath)
+
+  file = TFile.Open(filePath, 'RECREATE')
+  if NTuple : data.tree().Write(dataSetName)
+  else : data.Write(dataSetName)
+  file.Close()
+
+
+###############################################################################
+
 def convertLambda(config, fitResult, printToScreen = True) :
   """converts the CP violation parameter lambda from a fit result with
      'convertComplexPars'

@@ -65,6 +65,8 @@ def buildJpsiV(config) :
   workspace
   """
 
+  from ROOT import RooArgList, RooWorkspace
+
   # get general settings
   mode = config.value('P2VVMode')
   if type(mode) is not str :
@@ -76,9 +78,12 @@ def buildJpsiV(config) :
 
   print 'P2VV - INFO: buildJpsiV: decay mode = ' + mode
 
-  BDecClass = config.value('BDecayClass')
-  pdfName = config.value('sigPDFName')
-  allowITagZero =  config.value('allowITagZero')
+  BDecClass     = config.value('BDecayClass')
+  pdfName       = config.value('sigPDFName')
+  allowITagZero = config.value('allowITagZero')
+  tagType       = config.value('tagType')
+  numTagCats    = config.value('numTagCats')
+  asymType      = config.value('asymType')
   KSWave = 'none'
   if config.value('KSWave') and type(config.value('KSWave')) is str :
     KSWave = config.value('KSWave')
@@ -99,9 +104,10 @@ def buildJpsiV(config) :
   cpsiAng   = config['cpsiAng'].name()
   cthetaAng = config['cthetaAng'].name()
   phiAng    = config['phiAng'].name()
-  iTag      = config['iTag'].name()
-  if mode == 'Bd2JpsiKstar' : 
-    fTag = config['fTag'].name()
+  if tagType == 'categories' : tagCat = config['tagCat'].name() + ', '
+  else : tagCat = ''
+  iTag = config['iTag'].name()
+  if mode == 'Bd2JpsiKstar' : fTag = config['fTag'].name()
 
   # get lifetime and mixing parameters
   BMeanLife = config['BMeanLife'].name()
@@ -115,12 +121,49 @@ def buildJpsiV(config) :
     SCP = config['SCP'].name()
 
   # get tagging parameters
-  dilution = config['tagDilution'].name()
-  ADilWTag = config['ADilWTag'].name()
   if mode == 'Bd2JpsiKstar' :
     ANorm = config['ANorm'].name()
-  avgCEven   = config['avgCEven'].name()
-  avgCOdd    = config['avgCOdd'].name()
+
+  if tagType == 'singleCat' :
+    dilution    = config['tagDilution'].name()
+    ADilWTag    = config['ADilWTag'].name()
+    avgCEven    = config['avgCEven'].name()
+    avgCOdd     = config['avgCOdd'].name()
+    tagCatCoefs = ''
+  else :
+    dilution    = 'tagDilutions'
+    ADilWTag    = 'ADilWTags'
+    avgCEven    = 'avgCEvens'
+    avgCOdd     = 'avgCOdds'
+    tagCatCoefs = 'tagCatCoefs, '
+
+    dilutionList   = RooArgList('tagDilutions')
+    ADilWTagList   = RooArgList('ADilWTags')
+    avgCEvenList   = RooArgList('avgCEvens')
+    avgCOddList    = RooArgList('avgCOdds')
+    tagCatCoefList = RooArgList('tagCatCoefs')
+
+    avgCEvenList.add(ws.arg(config['avgCEvenSum'].name()))
+    avgCOddList.add(ws.arg(config['avgCOddSum'].name()))
+    for tagCatIter in range(numTagCats) :
+      tagCatStr = '{0:02d}'.format(tagCatIter)
+      dilutionList.add(ws.arg(config['tagDilution' + tagCatStr].name()))
+      ADilWTagList.add(ws.arg(config['ADilWTag' + tagCatStr].name()))
+      if tagCatIter > 0 :
+        tagCatCoefList.add(ws.arg(config['tagCatCoef' + tagCatStr].name()))
+        if asymType == 'equalCoefs' :
+          avgCEvenList.add(ws.arg(config['avgCEvenSum'].name()))
+          avgCOddList.add(ws.arg(config['avgCOddSum'].name()))
+        else :
+          avgCEvenList.add(ws.arg(config['avgCEven' + tagCatStr].name()))
+          avgCOddList.add(ws.arg(config['avgCOdd' + tagCatStr].name()))
+
+    _import = getattr(RooWorkspace, 'import')
+    _import(ws, dilutionList, 'tagDilutions')
+    _import(ws, ADilWTagList, 'ADilWTags')
+    _import(ws, avgCEvenList, 'avgCEvens')
+    _import(ws, avgCOddList, 'avgCOdds')
+    _import(ws, tagCatCoefList, 'tagCatCoefs')
 
   # set strings to build time function coefficients
   coshCStr = ''
@@ -170,6 +213,9 @@ def buildJpsiV(config) :
   print "P2VV - INFO: buildJpsiV: building PDF '%s'" % pdfName
   if BDecClass == 'RooBDecay' :
     # use RooBDecay
+    if tagType != 'singleCat' :
+      print "P2VV - ERROR: getP2VVConfig: tagging categories are not implemented for RooBDecay"
+
     print 'P2VV - INFO: buildJpsiV: using RooBDecay for time PDF'
 
     # define tagging factors for CP even and CP odd terms
@@ -278,10 +324,11 @@ def buildJpsiV(config) :
         ws.factory('sum::cCommon(' + coshCStr + ')')
 
         # build PDF
-        ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,\
-            cCommon, tres_sig, SingleSided, %d)"\
-            % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilWTag, ANorm, avgCEven, avgCOdd, checkTags))
+        ws.factory("BTagDecay::%s(%s, %s, %s, %s %s, %s, %s, %s, %s, %s,\
+            %s, %s, %s cCommon, tres_sig, SingleSided, %d)"\
+            % (pdfName, BLifetime, iTag, fTag, tagCat, BMeanLife, dGamma, dm,
+               dilution, ADilWTag, ANorm, avgCEven, avgCOdd, tagCatCoefs,
+               checkTags))
 
       else :
         print 'P2VV - INFO: buildJpsiV: factorizing time and angular PDFs'
@@ -293,10 +340,11 @@ def buildJpsiV(config) :
             % (coshCStr, onesStr[:-1]))
 
         # build PDF
-        ws.factory("PROD::%s(cCommon, BTagDecay(%s, %s, %s, %s, %s, %s, %s,\
-            %s, %s, %s, %s, %s, tres_sig, SingleSided, %d))"\
-            % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilWTag, ANorm, avgCEven, avgCOdd, one, checkTags))
+        ws.factory("PROD::%s(cCommon, BTagDecay(%s, %s, %s, %s %s, %s, %s, %s,\
+            %s, %s, %s, %s, %s %s, tres_sig, SingleSided, %d))"\
+            % (pdfName, BLifetime, iTag, fTag, tagCat, BMeanLife, dGamma, dm,
+               dilution, ADilWTag, ANorm, avgCEven, avgCOdd, tagCatCoefs, one,
+               checkTags))
 
     elif mode == 'Bs2Jpsiphi' :
       # B_s0->J/psiphi
@@ -314,10 +362,10 @@ def buildJpsiV(config) :
       ws.factory('sum::cSin( ' + sinCStr  + ')')
 
       # build PDF
-      ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s,\
+      ws.factory("BTagDecay::%s(%s, %s, %s %s, %s, %s, %s, %s, %s, %s, %s\
           cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, %d)"\
-          % (pdfName, BLifetime, iTag, BMeanLife, dGamma, dm, dilution,
-             ADilWTag, avgCEven, avgCOdd, checkTags))
+          % (pdfName, BLifetime, iTag, tagCat, BMeanLife, dGamma, dm, dilution,
+             ADilWTag, avgCEven, avgCOdd, tagCatCoefs, checkTags))
 
 
   return ws.pdf(pdfName)

@@ -25,18 +25,15 @@ dataFilePath = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
 
 ###############################################################################
 import P2VV, P2VVConfiguration, P2VVModelBuilders
-from ROOT import RooDataSet, RooFit, TCanvas, TChain
+from ROOT import RooFit, TCanvas
 from math import sqrt, sin, cos
 
 # load the P2VV library
 P2VV.loadP2VVLib()
 
 # create P2VV configuration object
-config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal'])
-
-# adjust efficiency settings
-config['effType'].setValue('angular')
-config['angEffBasisFuncs'].setValue((4, 4))
+config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal',
+    'effType=angular'])
 
 # custom RooFit variable settings
 if config.value('anglesType')[0] == 'trans' :
@@ -69,6 +66,8 @@ if mode == 'Bd2JpsiKstar' :
   config['Gamma'].set(val = 0.655737)
   config['dGamma'].set(val = 0.)
   config['dm'].set(val = 0.507)
+  config['lambdaCPSq'].set(val = 1.)
+  config['phiCP'].set(val = 0.)
 elif mode == 'Bs2Jpsiphi' :
   config['ReApar'].set(val  = 0.49 * cos( 2.5)  / 0.775)
   config['ImApar'].set(val  = 0.49 * sin( 2.5)  / 0.775)
@@ -77,8 +76,8 @@ elif mode == 'Bs2Jpsiphi' :
   config['Gamma'].set(val = 0.679348)
   config['dGamma'].set(val = 0.0599979)
   config['dm'].set(val = 17.8)
-  config['ReLambdaCP'].set(val = cos(0.04))
-  config['ImLambdaCP'].set(val = sin(0.04))
+  config['lambdaCPSq'].set(val = 1.)
+  config['phiCP'].set(val = -0.04)
 
 # declare RooFit variables and store them in RooWorkspace
 config.declareRooVars()
@@ -95,12 +94,7 @@ pdf = P2VVModelBuilders.getP2VVPDF(config)
 # create data set from NTuple file(s)
 dataObs = ws.set('angles').clone('dataObs')
 dataObs.add(ws.arg(config['trueBLifetime'].name()))
-
-print "compAngEfficiencyReal: reading NTuple(s) '%s' from file(s) '%s'"\
-    % (dataSetName, dataFilePath)
-files = TChain(dataSetName)
-files.Add(dataFilePath)
-data = RooDataSet(dataSetName, dataSetName, files, dataObs)
+data = P2VV.readData(dataFilePath, dataSetName, True, dataObs)
 
 print 'compAngEfficiencyReal: %d events in data set' % data.numEntries()
 
