@@ -180,7 +180,7 @@ print 'fitJpsiVSignal: %d events in data set' % data.numEntries()
 
 # fit data
 fitResult = pdf.fitTo(data, RooFit.Minos(False), RooFit.Hesse(False),
-    RooFit.NumCPU(8), RooFit.Save())
+    RooFit.NumCPU(4), RooFit.Save())
 
 # print polar (cartesian) amplitudes if 'ampsType' is cartesian (polar)
 if config.value('ampsType') == 'transCartesian'\

@@ -73,7 +73,6 @@ if mode == 'Bd2JpsiKstar' :
   config['dGamma'].set(val = 0.)
   config['dm'].set(val = 0.507)
   config['lambdaCPSq'].set(val = 1.)
-  config['phiCP'].set(val = 0.)
 elif mode == 'Bs2Jpsiphi' :
   config['ReApar'].set(val  = 0.49 * cos( 2.5)  / 0.775)
   config['ImApar'].set(val  = 0.49 * sin( 2.5)  / 0.775)
