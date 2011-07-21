@@ -140,15 +140,15 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     config.addSetting('BDecayClass', P2VVSetting('BDecayClass',
         'RooFit class for time PDF', BDecClass))
 
-    if not onlySignal :
+    #if not onlySignal :
       # decay type
-      config.addSetting('decayType', RooCatSetting('decaytype',
-          'J/psiX decay type', True, 'Jpsiphi', {10:'JpsiKplus',
-          11:'JpsiKmin', 20:'JpsiKstar0', 21:'JpsiKstarbar0', 40:'Jpsiphi'}))
+      #config.addSetting('decayType', RooCatSetting('decaytype',
+      #    'J/psiX decay type', True, 'Jpsiphi', {10:'JpsiKplus',
+      #    11:'JpsiKmin', 20:'JpsiKstar0', 21:'JpsiKstarbar0', 40:'Jpsiphi'}))
 
       # trigger
-      config.addSetting('unbiased', RooCatSetting('unbiased',
-          'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
+      #config.addSetting('unbiased', RooCatSetting('unbiased',
+      #    'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
 
     ### B lifetime and mixing ###
     tResModel = 'Gauss'
@@ -173,33 +173,33 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('dGamma', RooRealSetting('dGamma',
           'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
       config.addSetting('dm', RooRealSetting('dm',
-          'delta m_s (ps^-1)', 'par', 0.51, '', ''))
+          'delta m_s (ps^-1)', 'par', 0.51, -1., 2.))
     elif mode == 'Bs2Jpsiphi' :
       config.addSetting('Gamma', RooRealSetting('gamma',
           'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
       config.addSetting('dGamma', RooRealSetting('dGamma',
           'delta Gamma_s (ps^-1)', 'par', 0.05, -0.3, 0.3))
       config.addSetting('dm', RooRealSetting('dm',
-          'delta m_s (ps^-1)', 'par', 17.8, '', ''))
+          'delta m_s (ps^-1)', 'par', 17.8, 15., 20.))
 
     config.addSetting('BMeanLife', RooFormSetting('BMeanLife',
         'B mean lifetime', '1. / @0', ['Gamma']))
 
     if not onlySignal :
       ### masses ###
-      config.addSetting('mJpsi', RooRealSetting('mdau1',
-          'J/psi mass (MeV)', 'obs', 3097., 3097. - 60., 3097. + 40.))
+      #config.addSetting('mJpsi', RooRealSetting('mdau1',
+      #    'J/psi mass (MeV)', 'obs', 3097., 3097. - 60., 3097. + 40.))
       if mode in ['Bu2JpsiK', 'Bd2JpsiKstar'] :
-        config.addSetting('mB', RooRealSetting('m',
+        config.addSetting('BMass', RooRealSetting('BMass',
             'B0 mass (MeV)', 'obs', 5279., 5279. - 50., 5279. + 50.))
-        if mode == 'Bd2JpsiKstar' :
-          config.addSetting('mKstar', RooRealSetting('mdau2',
-              'K*0 mass (MeV)', 'obs', 892., 892. - 50., 892. + 50.))
+        #if mode == 'Bd2JpsiKstar' :
+        #  config.addSetting('mKstar', RooRealSetting('mdau2',
+        #      'K*0 mass (MeV)', 'obs', 892., 892. - 50., 892. + 50.))
       elif mode == 'Bs2Jpsiphi' :
-        config.addSetting('m', RooRealSetting('m',
+        config.addSetting('BMass', RooRealSetting('BMass',
             'B_s0 mass (MeV)', 'obs', 5366., 5366. - 50., 5366. + 50.))
-        config.addSetting('mphi', RooRealSetting('mdau2',
-            'phi mass (MeV)', 'obs', 1019.455, 1019.455 - 12., 1019.455 + 12.))
+        #config.addSetting('mphi', RooRealSetting('mdau2',
+        #    'phi mass (MeV)', 'obs', 1019.455, 1019.455 - 12., 1019.455 + 12.))
         # Note: +-10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the
         # background -- but the roadmap uses +-12 instead...
 

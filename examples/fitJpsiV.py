@@ -44,6 +44,7 @@ phiCP      = -0.2
 lambdaCPSq = 1.
 
 # B lifetime and mixing
+time = (0., -2., 20.)
 BLifetimeError = 0.05
 if mode == 'Bd2JpsiKstar' :
   Gamma  = 0.65
@@ -57,12 +58,29 @@ elif mode == 'Bs2Jpsiphi' :
 # flavour tags
 AProd = 0.
 ANorm = -(1. - lambdaCPSq) / (1. + lambdaCPSq)
-tagCatCoefs = {'tagCatCoef01' : 0.051, 'tagCatCoef02' : 0.059,
-    'tagCatCoef03' : 0.0266, 'tagCatCoef04' : 0.0112, 'tagCatCoef05' : 0.0064}
-wTags = {'wTag01' : 0.399, 'wTag02' : 0.354, 'wTag03' : 0.267,
-    'wTag04' : 0.240, 'wTag05' : 0.124}
-wTagBars = {'wTagBar01' : 0.399, 'wTagBar02' : 0.354, 'wTagBar03' : 0.267,
-    'wTagBar04' : 0.240, 'wTagBar05' : 0.124}
+#tagCatCoefs = {'tagCatCoef01' : 0.051,
+#               'tagCatCoef02' : 0.059,
+#               'tagCatCoef03' : 0.0266,
+#               'tagCatCoef04' : 0.0112,
+#               'tagCatCoef05' : 0.0064}
+tagCatCoefs = {'tagCatCoef01' : 0.0645,
+               'tagCatCoef02' : 0.0468,
+               'tagCatCoef03' : 0.0125,
+               'tagCatCoef04' : 0.00492,
+               'tagCatCoef05' : 0.00212}
+wTags =       {'wTag01'       : 0.399,
+               'wTag02'       : 0.354,
+               'wTag03'       : 0.267,
+               'wTag04'       : 0.240,
+               'wTag05'       : 0.124}
+wTagBars =    {'wTagBar01'    : 0.399,
+               'wTagBar02'    : 0.354,
+               'wTagBar03'    : 0.267,
+               'wTagBar04'    : 0.240,
+               'wTagBar05'    : 0.124}
+
+# mass
+BMass = (5366., 5200., 5550.)
 
 
 ###############################################################################
@@ -77,8 +95,8 @@ P2VV.loadP2VVLib()
 P2VV.setRooFitOutput()
 
 # create P2VV configuration object
-config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal','KSWave=include',
-    'tagType=categories6', 'asymType=equalCoefs'])
+config = P2VVConfiguration.getP2VVConfig(mode, ['KSWave=include',
+    'anglesType=trans', 'tagType=categories6', 'asymType=equalCoefs'])
 
 # custom settings
 if config.value('anglesType')[0] == 'trans' :
@@ -90,7 +108,7 @@ else :
   config['cthetaAng'].set(name = 'hel_cthetal')
   config['phiAng'].set(name = 'hel_phi')
 
-config['BLifetime'].set(name = 't', min = -0.5, max = 5.)
+config['BLifetime'].set(name='t', val=time[0], min=time[1], max=time[2])
 config['iTag'].set(name = 'tagInitial')
 if mode == 'Bd2JpsiKstar' :
   config['fTag'].set(name = 'tagFinal')
@@ -117,14 +135,14 @@ elif config.value('ampsType') == 'transCartesian' :
 config['Gamma'].set(val = Gamma)
 config['dGamma'].set(val = dGamma)
 if mode == 'Bd2JpsiKstar' :
-  config['dm'].set(min = -1., max = 2.)
+  config['dm'].set(val = dm)
   if config.value('lambdaCPType') == 'polar' :
     config['lambdaCPSq'].set(val = lambdaCPSq)
   else :
     config['ReLambdaCP'].set(val = sqrt(lambdaCPSq))
     config['ImLambdaCP'].set(val = 0.)
 elif mode == 'Bs2Jpsiphi' :
-  config['dm'].set(min = 13., max = 23)
+  config['dm'].set(val = dm)
   if config.value('lambdaCPType') == 'polar' :
     config['phiCP'].set(val = phiCP)
     config['lambdaCPSq'].set(val = lambdaCPSq)
@@ -146,6 +164,9 @@ else :
 
 if 'Gauss' in config.value('tResModel') :
   config['BLifetimeError'].set(val = BLifetimeError)
+
+if not config.value('onlySignal') :
+  config['BMass'].set(val=BMass[0], min=BMass[1], max=BMass[2])
 
 # declare RooFit variables and store them in RooWorkspace
 config.declareRooVars()

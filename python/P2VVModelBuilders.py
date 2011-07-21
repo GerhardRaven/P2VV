@@ -65,7 +65,8 @@ def buildJpsiV(config) :
   workspace
   """
 
-  from ROOT import RooArgList, RooWorkspace
+  from ROOT import RooAddition, RooArgList, RooArgSet, RooCustomizer,\
+      RooP2VVAngleBasis, RooWorkspace
 
   # get general settings
   mode = config.value('P2VVMode')
@@ -367,7 +368,7 @@ def buildJpsiV(config) :
           % (pdfName, BLifetime, iTag, tagCat, BMeanLife, dGamma, dm, dilution,
              ADilWTag, avgCEven, avgCOdd, tagCatCoefs, checkTags))
 
-
+  # return the signal PDF
   return ws.pdf(pdfName)
 
 
@@ -491,29 +492,31 @@ class AngleFunctionBuilder :
 
     # build angular function for each term in the signal PDF
     for angFunc in angFuncs :
-      name = angFunc[0] + '_angFunc'
+      angFuncName = angFunc[0] + '_angFunc'
+      angSetName  = angFunc[0] + '_angFuncSet'
 
-      if name not in ws :
+      if angFuncName not in ws :
         # express angular function in angle basis functions
-        basesSet = ''
+        ws.defineSet(angSetName, '')
         for comps in angFunc[1] :
-          sigFunc = self.buildBasisFunc(name, comps[0], comps[1], comps[2],
-              comps[3], comps[4])
+          sigFunc = self.buildBasisFunc(angFuncName, comps[0], comps[1],
+              comps[2], comps[3], comps[4])
           if len(effFuncs) > 0:
             # with efficiency
             for effFunc in effFuncs :
               sigEffProd = ws[sigFunc].createProduct(ws[effFunc],\
                   effCoefs[effFunc])
-              basesSet += ws.put(sigEffProd) + ','
+              ws.put(sigEffProd)
+              ws.set(angSetName).add(ws[sigEffProd.GetName()])
           else :
             # without efficiency
-            basesSet += sigFunc + ','
+            ws.set(angSetName).add(ws[sigFunc])
 
         # build angular function
-        ws.factory("sum::%s(%s)" % (name, basesSet[:-1]))
+        ws.factory('RooAddition::%s(%s)' % (angFuncName, angSetName))
 
-      if name not in self._angFuncs :
-        self._angFuncs.append(name)
+      if angFuncName not in self._angFuncs :
+        self._angFuncs.append(angFuncName)
 
 
   def buildBasisFunc(self, name, i, j, k, l, c) :
@@ -526,7 +529,7 @@ class AngleFunctionBuilder :
     import RooFitDecorators
 
     # construct name
-    name = '%s_%d_%d_%d_%d' % (name + self._anglesType, i, j, k, l)
+    name = '%s_%d%d%d%d' % (name + self._anglesType, i, j, k, l)
     name = name.replace('-', 'm')
 
     # get workspace
@@ -857,6 +860,7 @@ class EfficiencyPDFBuilder :
         % filePath
 
     # loop over lines and read moments
+    numMoments = 0
     while True :
       # read next line
       line = momFile.readline()
@@ -867,7 +871,6 @@ class EfficiencyPDFBuilder :
       if len(line) < 1 or line[0] == '#' : continue
 
       # check moment format
-      numMoments = 0
       line = line.split()
       if len(line) < 4 or line[0] not in self._basis : continue
       try :

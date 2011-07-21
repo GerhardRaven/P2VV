@@ -36,6 +36,8 @@ config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal',
     'effType=angular'])
 
 # custom RooFit variable settings
+config['angEffBasisFuncs'].setValue((4, 4))
+
 if config.value('anglesType')[0] == 'trans' :
   config['cpsiAng'].set(name = 'trcospsi')
   config['cthetaAng'].set(name = 'trcostheta')

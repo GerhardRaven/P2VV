@@ -46,6 +46,8 @@ config = P2VVConfiguration.getP2VVConfig(mode, ['onlySignal',
     'effType=angular'])
 
 # custom settings
+config['angEffBasisFuncs'].setValue((4, 4))
+
 if config.value('anglesType')[0] == 'trans' :
   config['cpsiAng'].set(name = 'tr_cpsi')
   config['cthetaAng'].set(name = 'tr_ctheta')
