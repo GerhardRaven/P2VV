@@ -1,109 +1,215 @@
-###############################################################################
-## RooFitDecorators:                                                         ##
-##                                                                           ##
-## authors:                                                                  ##
-##   GR, Gerhard Raven, Nikhef & VU, Gerhard.Raven@nikhef.nl                 ##
-##                                                                           ##
-###############################################################################
+from ROOT import RooArgSet, RooArgList, RooDataSet
+from ROOT import gStyle,gROOT
+gStyle.SetPalette(1)
+gROOT.SetStyle("Plain")
 
-from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult
-
-# RooDataSet functions
+# needed to get RooFit.Name, RooFit.Components.... kRed
+# how to get just the RooFit namespace ?
+from ROOT import * 
 
 def _RooDataSetIter(self) :
-  for i in range(self.numEntries()) : yield self.get(i)
+    for i in range( self.numEntries() ) : yield self.get(i)
 
 RooDataSet.__iter__ = _RooDataSetIter
 
-
-# RooArgSet/RooArgList functions
-
 def _RooArgSetIter(self) :
-  z = self.createIterator()
-  while True :
-    a = z.Next()
-    if not a : return
-    yield a
-
-def _RooArgSetContains(self, name) :
-  for i in self :
-    if i.GetName() == name : return True
-  return False
-
-RooArgList.__iter__     = _RooArgSetIter
-RooArgList.__contains__ = _RooArgSetContains
-RooArgList.__len__      = lambda s    : s.getSize()
-RooArgList.nameList     = lambda s    : [j.GetName() for j in s] 
-RooArgList.names        = lambda s    : ','.join(s.nameList())
-
-RooArgSet.__iter__      = _RooArgSetIter
-RooArgSet.__contains__  = _RooArgSetContains
-RooArgSet.__len__       = lambda s    : s.getSize()
-RooArgSet.nameList      = lambda s    : [j.GetName() for j in s]
-RooArgSet.names         = lambda s    : ','.join(s.nameList())
-#RooArgSet.__iadd__      = lambda s,y  : s.add(y)
-#RooArgSet.__radd__      = lambda y,s  : s.add(y)
-#RooArgSet.__add__       = lambda x,y  : RooArgSet(x).__iadd__(y)
+    z = self.createIterator()
+    while True :
+        a = z.Next()
+        if not a : return
+        yield a
 
 
-# RooWorkspace functions
 
-def _RooWorkspacePut(self, x) :
-  from ROOT import RooFit
+RooArgList.__iter__ = _RooArgSetIter
+RooArgList.__len__  = lambda s   : s.getSize()
+RooArgList.__contains__  = lambda s,i : s.contains(i)
+#RooArgSet.__iadd__ = lambda s,y : s.add(y)
+#RooArgSet.__radd__ = lambda y,s : s.add(y)
+#RooArgSet.__add__  = lambda x,y : RooArgSet(x).__iadd__(y)
+RooArgList.nameList = lambda s : [ j.GetName() for j in s ] 
+RooArgList.names    = lambda s : ','.join( s.nameList() )
 
-  _import = getattr(RooWorkspace, 'import')
-
-  if _import(self, x, RooFit.Silence()) : return None
-  return x.GetName()
-
-def _setConstant(ws, pattern, constant = True, value = None):
-  import re
-
-  nrexp = re.compile(pattern)
-
-  rc = 0
-  for arg in ws.allVars() :
-    if not nrexp.match(arg.GetName()) : continue
-
-    arg.setConstant(constant)
-
-    if constant and value :
-      if value < arg.getMin() : arg.setMin(value) 
-      if value > arg.getMax() : arg.setMax(value) 
-      arg.setVal(value) 
-
-    rc += 1
-
-  return rc
-
-RooWorkspace.__getitem__  = lambda s, i    : s.obj(i)
-RooWorkspace.__contains__ = lambda s, i    : True if s.obj(i) else False
-#RooWorkspace.__setitem__  = lambda s, k, v : s.put('%s[%s]'%(k,v))
-RooWorkspace.put          = _RooWorkspacePut
-RooWorkspace.setConstant  = _setConstant
+RooArgSet.__iter__  = _RooArgSetIter
+RooArgSet.__len__   = lambda s   : s.getSize()
+RooArgSet.__contains__  = lambda s,i : s.contains(i)
+RooArgSet.nameList  = lambda s : [ j.GetName() for j in s ]
+RooArgSet.names     = lambda s : ','.join( s.nameList() )
 
 
-# RooFitResult functions
+from ROOT import RooWorkspace
+RooWorkspace.__getitem__ = lambda s,i : s.obj(i)
+RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
+#RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
+def _RooWorkspacePut( self ,x ) :
+    _import = getattr(RooWorkspace,'import')
+    if _import(self,x) : return None
+    return self[x.GetName()]
+RooWorkspace.put = _RooWorkspacePut
 
-def _RooFitResultGet(self, parList) :
-  # get parameter indices in fit result
-  indices = {}
-  floatPars = self.floatParsFinal()
-  for par in parList :
-    index = floatPars.index(par)
-    if index >= 0 :
-      indices[par] = index
-    else :
-      print 'P2VV - ERROR: RooFitResult::result(): fit result does not contain parameter', par
-      return None
+def setConstant(ws, pattern, constant = True, value = None):
+    import re
+    nrexp = re.compile(pattern)
+    rc = 0
+    for arg in ws.allVars() :
+        if not nrexp.match(arg.GetName()) : continue
+        arg.setConstant( constant )
+        if constant and value :
+            if value < arg.getMin() : arg.setMin(value) 
+            if value > arg.getMax() : arg.setMax(value) 
+            arg.setVal(value) 
+        rc += 1
+    return rc
 
-  covMatrix = self.covarianceMatrix()
 
-  values = tuple([floatPars[indices[par]].getVal() for par in parList])
-  covariances = tuple([tuple([covMatrix[indices[row]][indices[col]]\
-      for col in parList]) for row in parList])
+RooWorkspace.setConstant = setConstant
 
-  return (tuple(parList), values, covariances)
+# plot -- example usage:
+# _c1 = plot( c.cd(1),mpsi,data,pdf
+#           , { 'psi'    : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) ) 
+#             , 'nonpsi' : ( RooFit.LineColor(RooFit.kBlue),RooFit.LineStyle(kDashed) )
+#             }
+#           , frameOpts = ( RooFit.Bins(30), )
+#           , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) )
+#           , pdfOpts = ( RooFit.LineWidth(2), ) 
+#           )
+global  _stash
+_stash = [] #keep the relevant objects alive by keeping a reference to them
+def plot( c, obs, data, pdf, components, frameOpts = (), dataOpts = (), pdfOpts = (), logy = False, normalize = True, symmetrize = True ) :
+    from ROOT import TLine, TPad
+    #
+    _obs = obs.frame( *frameOpts )  if frameOpts else obs.frame()
+    _stash.append(_obs)
+    data.plotOn(_obs,RooFit.Name('data'),*dataOpts)
+    for comp,opt in components.iteritems() :
+        z = opt + pdfOpts
+        pdf.plotOn(_obs,RooFit.Components(comp), *z )
+    pdf.plotOn(_obs,RooFit.Name('pdf'),*pdfOpts)
+    _obs.drawAfter('pdf','data')
+    #TODO: add chisq/nbins
+    #chisq = _obs.chiSquare('pdf','data')
+    #nbins = _obs.GetNbinsX()
+    rh = _obs.residHist('data','pdf',normalize)
 
-RooFitResult.result = _RooFitResultGet
+    _stash.append(rh)
+    xa = _obs.GetXaxis()
+    rh.GetXaxis().SetLimits(xa.GetXmin(),xa.GetXmax())
+    rp = _obs.emptyClone( _obs.GetName() + '_resid' )
+    _stash.append(rp)
+    if logy : _obs.SetMinimum(0.1)
+    #TODO: if normalize : plot rh as a filled histogram with fillcolor blue...
+    for i in dataOpts : 
+        if i.opcode() == 'MarkerSize'  : rh.SetMarkerSize(  i.getDouble(0) )
+        if i.opcode() == 'MarkerStyle' : rh.SetMarkerStyle( i.getInt(0) )
+        if i.opcode() == 'MarkerColor' : rh.SetMarkerColor( i.getInt(0) )
+        if i.opcode() == 'Title' : rp.SetTitle( i.getString(0) )
+    rp.addPlotable( rh, 'p' )
+    if symmetrize :
+        m  = max( abs( rh.getYAxisMin() ),abs( rh.getYAxisMax() ) )
+        rp.SetMaximum(  m )
+        rp.SetMinimum( -m )
+    if normalize :
+        if rh.getYAxisMin() > -5 : rp.SetMinimum(-5)
+        if rh.getYAxisMax() <  5 : rp.SetMaximum(5)
+    xa = rp.GetXaxis()
+    l = TLine(xa.GetXmin() ,0,xa.GetXmax() ,0)
+    l.SetLineColor(kRed)
+    rp.addObject(l)
+    #TODO: improve (remove?) axis labels from rp, move up against the initial plot
 
+    # only now start drawing...
+    c.cd()
+    hname = obs.GetName() + '_plot1'
+    h = TPad(hname,hname,0,0.2,1,1)
+    _stash.append(h)
+    if logy: h.SetLogy(1)
+    h.SetNumber(1)
+    h.Draw()
+    c.cd(1)
+    _obs.Draw()
+
+    c.cd()
+    rname = obs.GetName() + '_resid1'
+    r = TPad(rname,rname,0,0,1,0.2)
+    _stash.append(r)
+    r.SetNumber(2)
+    r.Draw()
+    c.cd(2)
+    rp.Draw()
+
+    c.Update()
+    return c
+
+def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
+    parlist = roofitresult.floatParsFinal()
+    npar = parlist.getSize()
+    corr = []
+    for i in range(npar):
+        corr.append(roofitresult.correlation(parlist[i]))
+
+    layoutstring = '|c'*(npar+1)
+    layoutstring += '|}'
+
+    string = '\\documentclass{article}\n'
+    string += '\\begin{document}\n'
+    string += '\\begin{table}[h]\n'
+    string += '\\begin{center}\n'
+    string += '\\begin{tabular}{'
+    string += layoutstring+'\n' 
+    string += '\\hline\n'
+    string += 'Parameter '
+    for i in range(npar): string += ' & %s'%(parlist[i].GetName())
+    string += ' \\\\\n'
+    string += '\\hline\n\\hline\n'
+
+
+    for j in range(npar):
+        string += parlist[j].GetName() 
+        for i in range(npar):
+            if i>=j:
+                if corr[j][i].getVal() < 0.005:
+                    string += ' & - '
+                else:
+                    string += ' & ' + str(round(corr[j][i].getVal(),3)) 
+            else : 
+                string += ' & '
+        string += ' \\\\\n'
+    string += '\\hline\n'
+    string += '\\end{tabular}\n'
+    string += '\\end{center}\n'
+    string += '\\end{table}\n'
+    string += '\\end{document}\n'
+
+    if fname :
+        f = open(fname)
+        f.write(string)
+        f.close
+
+    return {'string':string}
+
+def writeFitParamsLatex(paramlist,fname = 'fitparams.tex'):
+    import tempfile,os
+    tmpfile = tempfile.NamedTemporaryFile()
+    tmpfile.close() 
+    paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()),RooFit.OutputFile(tmpfile.name))
+    tmpfile = open(tmpfile.name,'r')
+    f = open(fname,'w')
+    f.write('\\documentclass{article}\n\\begin{document}\n')
+    f.write( tmpfile.read() )
+    f.write('\\end{document}\n')
+    tmpfile.close()
+    f.close()
+    os.remove(tmpfile.name)
+    
+
+def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max,NumCPU=8,Extend=True):
+    print '**************************************************'
+    print 'making profile for %s and %s'%(param1.GetName(),param2.GetName())
+    print '**************************************************'
+
+    nll = pdf.createNLL(data,RooFit.NumCPU(NumCPU),RooFit.Extended(Extend))
+    profile = nll.createProfile(RooArgSet( param1,param2))
+    return profile.createHistogram(name,         param1, RooFit.Binning(npoints,param1_min,param1_max)
+                                  , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
+                                  , RooFit.Scaling(False)
+                                  )
