@@ -282,7 +282,7 @@ class ProdPdf( Pdf ):
         if not 'PDFs' in kwargs:
             raise KeyError( 'Must provide yields and pdfs' )
         pdfs = list( kwargs[ 'PDFs' ] )
-        self._name = self._separator().join( [ i.GetName() for i in pdfs ] )
+        self._name = name + '_' + self._separator().join( [ i.GetName() for i in pdfs ] )
         o = set()
         for p in pdfs:
             if not p.single():
