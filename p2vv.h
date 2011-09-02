@@ -9,6 +9,7 @@
 #include "RooThresholdPdf.h"
 #include "RooBTagDecay.h"
 #include "RooGammaPdf.h"
+#include "RooEffHistProd.h"
 #include "moments.h"
 
 #endif // P2VV_H

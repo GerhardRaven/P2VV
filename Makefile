@@ -17,6 +17,7 @@ SOURCES =				\
     RooBTagDecay.cxx		\
     RooThresholdPdf.cxx		\
     RooGammaPdf.cxx		\
+    RooEffHistProd.cxx          \
     p2vv_dict.cxx
 
 OBJECTS = $(SOURCES:%.cxx=%.o)
