@@ -8,4 +8,9 @@ p2vv_dict.*
 *.pyc
 *.log
 *.aux
+*.root
+*.eps
+*.pdf
+*.tex
+*.txt
 #*
