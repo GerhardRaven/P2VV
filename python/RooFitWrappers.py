@@ -112,12 +112,20 @@ class RealVar (RooObject):
 class Pdf( RooObject ):
     ## TODO: define operators
     def __init__( self, name, *args, **kwargs ):
-        self._pdfs = {}
-        if len( args ) == 1 and type( args[ 0 ] ) == dict:
-            self._name = name
-            self.__multiple_pdfs( args[ 0 ], **kwargs )
-        else:
-            self.__single_pdf( name, **kwargs )
+        if 'Observables' not in kwargs:
+            raise KeyError( 'Must provide observables %s' % kwargs )
+        if 'Type' not in kwargs:
+            raise KeyError( 'Must provide type %s' % kwargs )
+
+        # Save the keyword args as properties
+        self._dict = {}
+        for k, v in kwargs:
+            self._dict[ k.lower() ] = v
+        self._dict[ 'observables' ] = frozenset( o )
+
+        o = self.__getitem__( 'observables' )
+        self._dict[ 'name' ]  = self._separator().join( [ name ] + [ i.GetName() for i in o ] )
+        self.__make_pdf()
 
     def __str__( self ):
         s = '%s, %d\n' % ( self._name, self.single() )
@@ -127,115 +135,40 @@ class Pdf( RooObject ):
             s += '%s : %s\n' % ( o, n )
         return s
 
-    def __multiple_pdfs( self, definitions, **kwargs ):
-        self._single = False
-        
-        # Find the largest set of observables
-        l = None
-        for o in definitions.iterkeys():
-            if not l or len( o ) > len( l ):
-                l = o
-            elif set( o ) == set( l ):
-                raise StandardError( 'Error, cannot define different PDFs for the same observables' )
-            elif len( o ) == len( l ) and set( o ) != set( l ):
-                raise StandardError( 'Error, cannot define PDFs with different but same number of '\
-                                     + 'observables' )
+    def __getitem__( self, k ):
+        if k in self._dict:
+            return self._dict[ k ]
+        else:
+            return None
 
-        l = set( l )
-        for s in [ set( o ) for o in definitions.iterkeys() ]:
-            if s == l: continue
-            if not l.issuperset( s ):
-                raise StandardError ( 'Error, cannot define PDFs for a subset containing different '\
-                      + 'observables' ) 
-        
-        for o, d in definitions.iteritems():
-            a = copy( d )
-            a[ 'Observables' ] = copy( o )
-            self.__setitem__( o, Pdf( self._name, **a ) )
-
-    def __single_pdf( self, name, **kwargs ):
-        self._single = True
-        if 'Observables' not in kwargs:
-            raise KeyError( 'Must provide observables %s' % kwargs )
-        o = list( kwargs.pop( 'Observables' ) )
-        self._name = self._separator().join( [ name ] + [ i.GetName() for i in o ] )
-        of = frozenset( o )
-        self._pdfs[ of ] = self.__make_pdf( self._name, o, **kwargs )
-
-    def __make_pdf( self, name, observables, **kwargs ):
-        if name not in self.ws():
-            v = list( observables )
-            if 'Type' not in kwargs:
-                raise KeyError( 'Must provide type' )
-            self._type = kwargs.pop( 'Type' )
-            if 'Parameters' in kwargs:
-                self._parameters = kwargs.pop( 'Parameters' )
-                v += list( self._parameters )
-            if 'ResolutionModel' in kwargs:
-                self._resModel = kwargs.pop( 'ResolutionModel' )
-                if self._resModel.observables() != frozenset( observables ):
+    def __make_pdf( self ):
+        if self._dict[ 'name' ] not in self.ws():
+            v = list( self._dict[ 'observables' ] )
+            if 'parameters' in self._dict:
+                v += list( self._dict[ 'parameters' ] )
+            if 'resolutionmodel' in self._dict:
+                rm = self._dict[ 'resolutionmodel' ]
+                if rm.observables() != frozenset( observables ):
                     raise StandardError ( 'Error, resolution model must have the same '
                                           + 'observables as PDF' )
                 ## TODO add conditional observables
-                v += [ self._resModel ]
-            if 'Options' in kwargs:
-                self._options = kwargs.pop( 'Options' )
-                v += list( self._options )
-            self._declare( self._makeRecipe( name, Variables = v ) )
-            self._init( name, 'RooAbsPdf' )
+                v += [ rm ]
+            if 'options' in self._dict:
+                v += list( self._dict[ 'options' ] )
+            self._declare( self._makeRecipe() )
+            self._init( self._dict[ 'name' ], 'RooAbsPdf' )
         else:
             raise StandardError( "Recreating the same Pdf is not supported atm" )
-        return self
 
     def _separator( self ):
         return '_'
 
-    def single( self ):
-        return self._single
-    
-    def observables( self ):
-        if self._single:
-            return self._pdfs.keys()[ 0 ]
-        else:
-            return self._pdfs.keys()
-
-    def parameters( self ):
-        if hasattr( self, "_parameters" ):
-            return self._parameters
-        else:
-            return None
-
-    def options( self ):
-        if hasattr( self, "_options" ):
-            return self._options 
-        else:
-            return None
-
-    def __setitem__( self, k, d ):
-        if self.single():
-            raise StandardError( 'Error: cannot add sub pdf to final pdf' )
-        k = frozenset( [ o for o in k ] )
-        if k in self._pdfs:
-            raise StandardError( 'Error: PDF already present for observables %s' % k )
-        self._pdfs[ k ] = d
-            
-    def __getitem__( self, k ):
-        k = frozenset( k )
-        if self.single():
-            if k == self.observables():
-                return self
-            else:
-                raise StandardError( 'No pdf available for observables %s' % k )
-        if k not in self._pdfs:
-            raise KeyError( 'No suitable PDF defined for observables %s %s' % ( k, self._pdfs.keys() ) )
-        return self._pdfs[ k ]
-    
-    def _makeRecipe( self, name, **kwargs ):
-        if len( kwargs ) != 1 or 'Variables' not in kwargs:
-            raise StandardError( "This method requires a single 'Variables' argument" )
-        k = kwargs[ 'Variables' ]
+    def _makeRecipe( self ):
+        if 'variables' not in self._dict:
+            raise StandardError( "This method requires a single 'variables' to be set" )
+        k = self._dict[ 'variables' ]
         deps = ','.join( [ v.GetName() if type( v ) != str else v for v in k ] )
-        return '%s::%s(%s)' % ( self._type, name, deps )
+        return '%s::%s(%s)' % ( self._type, self._dict[ 'name' ], deps )
 
     def generate( self, whatvars, *args ):
         s = RooArgSet()
@@ -244,128 +177,43 @@ class Pdf( RooObject ):
         return self._var.generate( s, *args )
 
 class ProdPdf( Pdf ):
-    def __init__( self, name, *args, **kwargs ):
-        self._pdfs = {}
-        if len( args ) == 1 and type( args[ 0 ] ) == dict:
-            self._name = name
-            self.__multiple_pdfs( args[ 0 ], **kwargs )
-        else:
-            self.__single_pdf( name, **kwargs )
-        
-    # TODO: Implement conditional variables
-    def __multiple_pdfs( self, definitions, **kwargs ):
-        ## We start from multiple definitions, but build a single PDF
-        self._single = True
-
-        ## TODO?: Do grouping of sets of PDFs if observables are a subset of another one
-        obs = set( [ set( o ) for o in d.iterkeys() ] )
-        if len( obs ) != len( definitions ):
-            raise StandardError( 'Cannot define two PDFs with the same set of observables' )
-        
-        for i in obs:
-            for j in obs:
-                if i == j: continue
-                if j.issubset( i ):
-                    raise StandardError( "The observables of one PDF being a subset of" \
-                    + " another's doesn't make sense." )
-              
-        for o, d in definitions.iteritems():
-            sub_name = '_'.join( [ self._name ] + [ i.GetName() for i in o ] )
-            self.__setitem__( o, super( ProdPdf, self ).__make_pdf( sub_name, o, **d ) )
-
-        self._name = self._separator().join( [ p.GetName() for p in self._pdfs.values() ] )
-        self.__setitem__( frozenset.union( *( self._pdfs.keys() ) ),
-                          self.__make_pdf( self._name, PDFs = self._pdfs.values() ) )
-        
-    def __single_pdf( self, name, **kwargs ):
-        self._single = True
-        if not 'PDFs' in kwargs:
-            raise KeyError( 'Must provide yields and pdfs' )
-        pdfs = list( kwargs[ 'PDFs' ] )
-        self._name = name + '_' + self._separator().join( [ i.GetName() for i in pdfs ] )
+    def __init__( self, name, PDFs, **kwargs ):
+        self._dict = { 'pdfs' = frozenset( PDFs ),
+                       'name' = name }
+        self._dict[ 'name' ] = name + '_' + self._separator().join( [ i.GetName() for i
+                                                                      in self._dict[ 'pdfs' ] ] )
         o = set()
         for p in pdfs:
-            if not p.single():
-                raise StandardError( 'Can only multiply single PDFs' )
-            for i in p.observables():
+            for i in p[ 'observables' ]:
                 o.add( i )
-        self._pdfs[ frozenset( o ) ] = self.__make_pdf( self._name, **kwargs )
-
-    def __make_pdf( self, name, **kwargs ):
+        self._dict[ 'observables' ] = frozenset( o )
+        self.__make_pdf()
+        
+    def __make_pdf( self ):
         if name not in self.ws():
-            if not 'PDFs' in kwargs:
-                raise StandardError( "Must provide PDFs to make a ProdPDF" )
-            self._declare( self._makeRecipe( name, PDFs = kwargs[ 'PDFs' ] ) )
-            self._init( name, 'RooProdPdf' )
+            self._declare( self._makeRecipe( name ) )
+            self._init( self._dict[ 'name' ], 'RooProdPdf' )
         else:
             raise StandardError( "Recreating the same Pdf is not supported atm" )
         return self
 
-    def _makeRecipe( self, name, **kwargs ):
-        if not 'PDFs' in kwargs:
-            raise StandardError( "Must provide PDFs for recipe" )
-        pdfs = ','.join( [ p.GetName() for p in kwargs[ 'PDFs' ] ] )
-        return 'PROD::%s(%s)' % ( name, pdfs )
+    def _makeRecipe( self ):
+        pdfs = ','.join( [ p.GetName() for p in self._dict[ 'pdfs' ] ] )
+        return 'PROD::%s(%s)' % ( self._dict[ 'name' ], pdfs )
 
     def _separator( self ):
         return '_X_'
 
 class SumPdf( Pdf ):
-    def __init__( self, name, *args, **kwargs ):
-        self._pdfs = {}
+    def __init__( self, name, PDFs, Yields ):
         self._yields = {}
-        if len( args ) == 1 and type( args[ 0 ] ) == dict:
-            self._name = name
-            self.__multiple_pdfs( args[ 0 ], **kwargs )
-        else:
-            self.__single_pdf( name, **kwargs )
-        
-    # TODO: Implement conditional variables
-    def __multiple_pdfs( self, definitions, **kwargs ):
-        ## We start from multiple definitions, but build a single PDF
-        self._single = True
-
-        ## TODO?: Do grouping of sets of PDFs if observables are a subset of another one
-        obs = set( [ set( o ) for o in d.iterkeys() ] )
-        if len( obs ) != len( definitions ):
-            raise StandardError( 'Cannot define two PDFs with the same set of observables' )
-        
-        for i in obs:
-            for j in obs:
-                if i == j: continue
-                if j.issubset( i ):
-                    raise StandardError( "The observables of one PDF being a subset of" \
-                    + " another's doesn't make sense." )
-              
-        for o, d in definitions.iteritems():
-            if not 'Yield' in d:
-                raise StandardError( 'Must provide a yield variable of hint for a sum pdf.' )
-            yield_name = '_'.join( [ 'yield' ] + [ i.GetName() for i in o ] )
-            pdf_name = '_'.join( [ self._name ] + [ i.GetName() for i in o ] )
-            yield_var = d[ 'Yield' ]
-            if type ( yield_var ) != RealVal:
-                try:
-                    float( yield_var )
-                    self._yields[ o ] = RealVar( yield_name, Observable = False,
-                                                 Value = float( var ), MinMax = ( 1, 10 * yield_var ) )
-                except ValueError:
-                    raise StandardError( 'Must provide a yield variable or hint for a sum pdf.' )
-            else:
-                self._yields[ pdf_name ] = yield_var
-
-            self.__setitem__( o, super( SumPdf, self ).__make_pdf( pdf_name, o, **d ) )
+        self._dict[ 'name' ] = name
+        pdfs = list( PDFs )
+        if ( len( pdfs ) - len( Yields ) ) not in [ 0, 1 ]:
+            raise StandardError( 'The number of yield variables must be equal to or 1'
+                                 + 'less then the number of PDFs.' )
             
-        self._name = self._separator().join( [ p.GetName() for p in self._pdfs.values() ] )
-        self.__setitem__( frozenset.union( *( self._pdfs.keys() ) ),
-                          self.__make_pdf( self._name, Yields = self._yields,
-                                           PDFs = self._pdfs.values() ) )
-        
-    def __single_pdf( self, name, **kwargs ):
-        self._single = True
-        if not 'PDFs' in kwargs:
-            raise KeyError( 'Must provide pdfs' )
-        pdfs = list( kwargs[ 'PDFs' ] )
-        yields = kwargs[ 'Yields' ]
+        ## WORKING HERE
 
         o = set()
         for p in pdfs:
@@ -373,11 +221,11 @@ class SumPdf( Pdf ):
                 raise StandardError( 'Can only multiply single PDFs' )
             if p.GetName() not in yields:
                 raise KeyError( 'Must provide a yield for each PDF' )
-            for i in p.observables():
+            for i in p.observables().front():
                 o.add( i )
         self._name = self._separator().join( [ p.GetName() for p in pdfs ] )
         self._pdfs[ frozenset( o ) ] = self.__make_pdf( self._name, **kwargs )
-
+        
     def __make_pdf( self, name, **kwargs ):
         if name not in self.ws():
             if not 'PDFs' in kwargs:
@@ -496,6 +344,10 @@ class Component( object ):
 
         ## Get the right sub-pdf from the Pdf object
         Component._d[ self.name ][ frozenset( k ) ] = pdf[ k ]
+
+    def __iadd__(self,item) :
+        self.__setitem__( item.observables(), item )
+        return self
         
     def __getitem__(self,k) :
         # TODO: build PDF, and return it -- instead of returning the recipe...
