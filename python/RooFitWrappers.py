@@ -191,6 +191,9 @@ class Pdf(RooObject):
                 setattr(self._target_(), attr, v)
         else:
             self._init(self._dict['Name'], 'RooAbsPdf')
+            # Make sure we are the same as last time
+            for k, v in self._dict.iteritems():
+                assert v == self._get(k)
 
     def _separator(self):
         return '_'
@@ -230,7 +233,9 @@ class ProdPdf(Pdf):
                 setattr(self._target_(), attr, v)
         else:
             self._init(self._dict['Name'], 'RooProdPdf')
-        return self
+            # Make sure we are the same as last time
+            for k, v in self._dict.iteritems():
+                assert v == self._get(k)
 
     def _makeRecipe(self):
         pdfs = ','.join([p.GetName() for p in self._dict['PDFs']])
@@ -271,6 +276,9 @@ class SumPdf(Pdf):
                 setattr(self._target_(), attr, v)
         else:
             self._init(self._dict['Name'], 'RooAddPdf')
+            # Make sure we are the same as last time
+            for k, v in self._dict.iteritems():
+                assert v == self._get(k)
 
     def _makeRecipe(self):
         yields = self._dict['Yields']
@@ -315,8 +323,12 @@ class ResolutionModel(RooObject):
             del self._dict
         else:
             self._init(name, 'RooResolutionModel')
-            for 
-            getattr(obj, '__iter__', False)
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                if hasattr(v, '__iter__'):
+                    v = frozenset(v)
+                assert v == self._get(k)
+
     def _get(self, name):
         attr = '_' + name.lower()
         return getattr(self, attr)
