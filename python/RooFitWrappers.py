@@ -8,21 +8,31 @@ class RooObject( object ) :
     def ws(self) : 
         if not RooObject._ws : raise RuntimeError('No workspace defined!')
         return RooObject._ws
-    def setWorkspace(self,ws) : RooObject._ws = ws
-    def _declare(self,spec) :
+
+    def setWorkspace(self,ws):
+        RooObject._ws = ws
+        if not hasattr(ws, '_objects'):
+            ws._objects = {}
+        
+    def _declare(self,spec):
         x = self.ws().factory(spec)
-        if not x : raise NameError('failed to _declare %s to workspace factory'%spec)
+        if not x:
+            raise NameError('failed to _declare %s to workspace factory'%spec)
+        self.ws()._objects[x.GetName()] = self
         x._observable = False
         return x
-    def create(self,spec) : return self._declare(spec)
+
     def _init(self,name,type) :
         x = self.ws()[name]
-        if not x : raise KeyError('could not locate %s'%name)
+        if not x:
+            raise KeyError('could not locate %s' % name)
         if not x.InheritsFrom(type): 
-            raise KeyError('%s is %s, not %s'%(name,x.ClassName(),type))
+            raise KeyError('%s is %s, not %s' % (name, x.ClassName(), type))
         self._var = x
+
     def __getattr__( self, name ):
         return getattr( self._target_(), name )      
+
     def _target_( self ) :
         return self._var
 
@@ -77,88 +87,117 @@ class RealVar (RooObject):
                , 'Unit'       : lambda s : s.getUnit() 
                , 'Value'      : lambda s : s.getVal()
                , 'MinMax'     : lambda s : s.getRange()
+               , 'Name'       : lambda s : s.GetName()
                }
 
-    def __init__(self,name,**kwargs) :
+    def __init__(self,name,**kwargs):
         # TODO: add blinding support to kwargs
-        if name not in self.ws() : 
+        if name not in self.ws():
             # construct factory string on the fly...
-            if 'Value'  not in kwargs  and 'MinMax' not in kwargs : 
+            if 'Value'  not in kwargs  and 'MinMax' not in kwargs:
                 raise KeyError('%s does not exist yet, neither Value nor MinMax specified'%name)
-            if 'Value' not in kwargs : 
+            if 'Value' not in kwargs:
                 (mi,ma) = kwargs.pop('MinMax')
                 self._declare("%s[%s,%s]"%(name,mi,ma))
-            elif 'MinMax' not in kwargs : 
+            elif 'MinMax' not in kwargs:
                 self._declare("%s[%s]"%(name,kwargs.pop('Value')))
-            else :
+            else:
                 (mi,ma) = kwargs.pop('MinMax')
                 self._declare("%s[%s,%s,%s]"%(name,kwargs.pop('Value'),mi,ma))
             self._init(name,'RooRealVar')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-    def __setitem__(self,k,v) :
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(name,'RooRealVar')
+            
+    def __setitem__(self,k,v):
         return RealVar._setters[k]( self, v )
-    def __getitem__(self,k) :
+    def __getitem__(self,k):
         return RealVar._getters[k]( self )
     # overrule RooRealVar.setRange
-    def setRange(self, v) :
+    def setRange(self, v):
         (mi,ma) = v
-        self._target_().setRange( mi,ma )
+        self._var.setRange( mi,ma )
         if self.getVal() < mi or self.getVal() > ma : self.setVal( 0.5*(ma+mi)  )
 
+    def getRange(self):
+        return self._target_().getMin(), self._target_().getMax()
 
 ##TODO, factor out common code in Pdf and ResolutionModel
 
 class Pdf( RooObject ):
+    _getters = { 'Observables' : lambda s : s._get( 'Observables' ) 
+               , 'Type'        : lambda s : s._get( 'Type' )
+               , 'Options'     : lambda s : s._get( 'Options' )
+               , 'Parameters'  : lambda s : s._get( 'Parameters' )
+               , 'Name'        : lambda s : s._get( 'Name' )
+               }
+
     ## TODO: define operators
-    def __init__( self, name, **kwargs ):
+    def __init__(self, name, **kwargs):
         if 'Observables' not in kwargs:
-            raise KeyError( 'Must provide observables %s' % kwargs )
+            raise KeyError('Must provide observables %s' % kwargs)
         if 'Type' not in kwargs:
-            raise KeyError( 'Must provide type %s' % kwargs )
+            raise KeyError('Must provide type %s' % kwargs)
 
         # Save the keyword args as properties
         self._dict = {}
         for k, v in kwargs.iteritems():
-            self._dict[ k.lower() ] = v
-        o = frozenset( kwargs[ 'Observables' ] )
-        self._dict[ 'observables' ] = o
-        self._dict[ 'name' ]  = self._separator().join( [ name ] + [ i.GetName() for i in o ] )
+            self._dict[k] = v
+        for k in ['Observables', 'Parameters']:
+            self._dict[k] = frozenset(self._dict[k])
+        self._dict['Name'] = self._separator().join([name] + [i.GetName() for i in self._dict['Observables']])
+
         self.__make_pdf()
+        del self._dict
 
     def __str__( self ):
-        return '%s' % self._dict
+        d = dict( [ ( a, self[ a ] ) for a in Pdf._getters if hasattr( self, a ) ] )
+        return '%s' % d
+
+    def _get(self, name):
+        attr = '_' + name.lower()
+        return getattr(self, attr)
     
     def __getitem__( self, k ):
-        if k in self._dict:
+        if self._dict and k in self._dict:
             return self._dict[ k ]
         else:
-            return None
+            try:
+                return Pdf._getters[ k ]( self )
+            except AttributeError as error:
+                raise KeyError( str( error ) )
 
     def __make_pdf( self ):
-        if self[ 'name' ] not in self.ws():
-            v = list( self[ 'observables' ] )
-            if 'parameters' in self._dict:
-                v += list( self._dict[ 'parameters' ] )
-            if self[ 'resolutionmodel' ]:
-                rm = self[ 'resolutionmodel' ]
-                if rm.observables() != frozenset( self[ 'observables' ] ):
+        if self._dict[ 'Name' ] not in self.ws():
+            v = list( self._dict[ 'Observables' ] )
+            if 'Parameters' in self._dict:
+                v += list( self._dict[ 'Parameters' ] )
+            if 'ResolutionModel' in self._dict:
+                rm = self._dict[ 'ResolutionModel' ]
+                if rm[ 'Observables' ] != frozenset( self._dict[ 'Observables' ] ):
                     raise StandardError ( 'Error, resolution model must have the same '
                                           + 'observables as PDF' )
                 ## TODO add conditional observables
                 v += [ rm ]
-            if self[ 'options' ]:
-                v += list( self[ 'options' ] )
+            if 'Options' in self._dict:
+                v += list( self._dict[ 'Options' ] )
             self._declare( self._makeRecipe( v ) )
-            self._init( self[ 'name' ], 'RooAbsPdf' )
+            self._init( self._dict[ 'Name' ], 'RooAbsPdf' )
+
+            # Change self._dict into attributes. Cannot be done before since the
+            # underlying object does only exists at this point.
+            for k, v in self._dict.iteritems():
+                attr = '_' + k.lower()
+                setattr( self._target_(), attr, v )
         else:
-            raise StandardError( "Recreating the same Pdf is not supported atm" )
+            self._init( self._dict[ 'Name' ], 'RooAbsPdf' )
 
     def _separator( self ):
         return '_'
 
     def _makeRecipe( self, variables ):
         deps = ','.join( [ v.GetName() if type( v ) != str else v for v in variables ] )
-        return '%s::%s(%s)' % ( self[ 'type' ], self[ 'name' ], deps )
+        return '%s::%s(%s)' % ( self._dict[ 'Type' ], self._dict[ 'Name' ], deps )
 
     def generate( self, whatvars, *args ):
         s = RooArgSet()
@@ -168,27 +207,27 @@ class Pdf( RooObject ):
 
 class ProdPdf( Pdf ):
     def __init__( self, name, PDFs, **kwargs ):
-        self._dict = { 'pdfs' : frozenset( PDFs ) }
-        self._dict[ 'name' ] = name + '_' + self._separator().join( [ i.GetName() for i
-                                                                      in self[ 'pdfs' ] ] )
+        self._dict = { 'PDFs' : frozenset( PDFs ) }
+        self._dict[ 'Name' ] = name + '_' + self._separator().join( [ i.GetName() for i
+                                                                      in self._dict[ 'PDFs' ] ] )
         o = set()
-        for p in self[ 'pdfs' ]:
-            for i in p[ 'observables' ]:
+        for p in self._dict[ 'PDFs' ]:
+            for i in p[ 'Observables' ]:
                 o.add( i )
-        self._dict[ 'observables' ] = frozenset( o )
+        self._dict[ 'Observables' ] = frozenset( o )
         self.__make_pdf()
         
     def __make_pdf( self ):
-        if self[ 'name' ] not in self.ws():
+        if self._dict[ 'Name' ] not in self.ws():
             self._declare( self._makeRecipe() )
-            self._init( self[ 'name' ], 'RooProdPdf' )
+            self._init( self._dict[ 'Name' ], 'RooProdPdf' )
         else:
             raise StandardError( "Recreating the same Pdf is not supported atm" )
         return self
 
     def _makeRecipe( self ):
-        pdfs = ','.join( [ p.GetName() for p in self[ 'pdfs' ] ] )
-        return 'PROD::%s(%s)' % ( self[ 'name' ], pdfs )
+        pdfs = ','.join( [ p.GetName() for p in self._dict[ 'PDFs' ] ] )
+        return 'PROD::%s(%s)' % ( self._dict[ 'Name' ], pdfs )
 
     def _separator( self ):
         return '_X_'
@@ -196,9 +235,9 @@ class ProdPdf( Pdf ):
 class SumPdf( Pdf ):
     def __init__( self, name, PDFs, Yields ):
         self._yields = {}
-        self._dict = { 'name'  : name,
-                       'yields': Yields,
-                       'pdfs'  : PDFs }
+        self._dict = { 'Name'  : name,
+                       'Yields': Yields,
+                       'PDFs'  : PDFs }
         pdfs = list( PDFs )
         diff = set( [ p.GetName() for p in pdfs ] ).symmetric_difference( set( Yields.keys() ) )
         if ( len( diff ) ) not in [ 0, 1 ]:
@@ -208,92 +247,89 @@ class SumPdf( Pdf ):
         ## WORKING HERE
         o = set()
         for p in pdfs:
-            for i in p[ 'observables' ]:
+            for i in p[ 'Observables' ]:
                 o.add( i )
         self._name = self._separator().join( [ p.GetName() for p in pdfs ] )
         self.__make_pdf()
         
     def __make_pdf( self ):
-        if self[ 'name' ] not in self.ws():
+        if self._dict[ 'Name' ] not in self.ws():
             self._declare( self._makeRecipe() )
-            self._init( self[ 'name' ], 'RooAddPdf' )
+            self._init( self._dict[ 'Name' ], 'RooAddPdf' )
         else:
             raise StandardError( "Recreating the same Pdf is not supported atm" )
 
     def _makeRecipe( self ):
-        yields = self[ 'yields' ]
+        yields = self._dict[ 'Yields' ]
         pdfs = ','.join( [ '%s * %s' % ( yields[ p.GetName() ], p.GetName() )
                            if p.GetName() in yields else p.GetName()
-                           for p in self[ 'pdfs' ] ] )
-        return 'SUM::%s(%s)' % ( self[ 'name' ], pdfs )
+                           for p in self._dict[ 'PDFs' ] ] )
+        return 'SUM::%s(%s)' % ( self._dict[ 'Name' ], pdfs )
 
     def _separator( self ):
         return '_P_'
 
 class ResolutionModel( RooObject ):
-    _getters = { "Observables" : lambda s : s.observables()
-               , "Parameters"  : lambda s : s.parameters()
-               ## , "Options"     : lambda s : s.options()
+    _getters = { 'Observables' : lambda s : s._get( 'Observables' )
+               , 'Parameters'  : lambda s : s._get( 'Parameters' )
+               , 'Type'        : lambda s : s._get( 'Type' )
                }
 
     def __init__( self, name, **kwargs ):
-        self._name = name
+        if 'Type'  not in kwargs: 
+            raise KeyError( 'Must specify type' )
+        if 'Observables'  not in kwargs: 
+            raise KeyError( 'Must specify observables' )
+
         if name not in self.ws():
-            if 'Type'  not in kwargs: 
-                raise KeyError( 'Must specify type' )
-            self._type = kwargs.pop( 'Type' )
-            if 'Observables'  not in kwargs: 
-                raise KeyError( 'Must specify observables' )
-            self._observables = frozenset( kwargs.pop( 'Observables' ) )
-            variables = list( self._observables )
-            if 'Parameters' in kwargs:
-                self._parameters = frozenset( kwargs.pop( 'Parameters' ) )
-                variables += list( self._parameters )
-            ## if 'Options' in kwargs:
-            ##     self._options = kwargs.pop( 'Options' )
-            ##     variables += self._options
-            self._declare( self._makeRecipe( name, Variables = variables ) )
+            # Save the keyword args as properties
+            self._dict = {}
+            self._dict[ 'Name' ] = name
+            def _fs( n ):
+                self._dict[ n ] = frozenset( self._dict[ n ] )
+                
+            for k, v in kwargs.iteritems():
+                self._dict[ k ] = v
+
+            for a in [ 'Observables', 'Parameters' ]:
+                if a in self._dict: _fs( a )
+
+            self._declare( self._makeRecipe() )
             self._init( name, 'RooResolutionModel' )
+            for k, v in self._dict.iteritems():
+                attr = '_' + k.lower()
+                print 'set %s to %s' % ( attr, v )
+                setattr( self._target_(), attr, v )
+            del self._dict
         else:
-            raise StandardError( 'Recreating the same Resolution Model is not supported atm' )
+            self._init( name, 'RooResolutionModel' )
 
-    def observables( self ):
-        return self._observables
-
-    def parameters( self ):
-        if hasattr( self, "_parameters" ):
-            return self._parameters
-        else:
-            return None
-
-    ## def options():
-    ##     if hasattr( self, "_options" ):
-    ##         return self._options 
-    ##     else:
-    ##         return None
-
+    def _get( self, name ):
+        attr = '_' + name.lower()
+        return getattr( self, attr )
+            
     def __getitem__( self, k ):
         return ResolutionModel._getters[ k ]( self )
     
-    def _makeRecipe( self, name, **kwargs ):
-        if len( kwargs ) != 1 or 'Variables' not in kwargs:
-            raise StandardError( "This method requires a single 'Variables' argument" )
-        k = kwargs[ 'Variables' ]
-        deps = ','.join( [ v.GetName() for v in k ] )
-        return '%s::%s(%s)' % ( self._type, name, deps )
+    def _makeRecipe( self ):
+        variables = list( self._dict[ 'Observables' ] )
+        if 'Parameters' in self._dict:
+            variables += list( self._dict[ 'Parameters' ] )
+        deps = ','.join( [ v.GetName() for v in variables ] )
+        return '%s::%s(%s)' % ( self._dict[ 'Type' ], self._dict[ 'Name' ], deps )
         
 class Component( object ):
     _d = {}
     def __init__(self,name) :
         if name in Component._d : 
-            # TODO: make things singletons, indexed by 'name'
+            # TODO: make things singletons, indexed by 'Name'
             raise KeyError('Name %s is not unique'%name )
         self.name = name
         Component._d[name] = dict()
-        Component._d[name]['name'] = name
+        Component._d[name]['Name'] = name
     def _yieldName(self) : return 'N_%s' % self.name
     def setYield( self, n, nlo, nhi ) :
-        Component._d[self.name]['yield'] = RealVar( self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
+        Component._d[self.name]['Yield'] = RealVar( self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
     def __setitem__(self, observable, pdf ) :
         if type( observable ) is not tuple : observable = (observable,)
 
@@ -369,7 +405,7 @@ def buildPdf( components, observables, name ) :
              'PDFs'   : [] }
     for c in components:
         pdf = c[ obs ]
-        args[ 'Yields' ][ pdf.GetName() ] = c[ 'yield' ]
+        args[ 'Yields' ][ pdf.GetName() ] = c[ 'Yield' ]
         args[ 'PDFs'   ].append( pdf )
     # and sum components (inputs should already be extended)
     return SumPdf( name, **args )
