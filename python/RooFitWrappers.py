@@ -38,15 +38,15 @@ class RooObject(object) :
 
     def __cmp__(self, other):
         o = other if type(other) == str else other.GetName()
-        return self.GetName() < other
+        return self.GetName() < o
 
     def __eq__(self, other):
         o = other if type(other) == str else other.GetName()
-        return self.GetName() == other
+        return self.GetName() == o
 
     def __ne__(self, other):
         o = other if type(other) == str else other.GetName()
-        return self.GetName() != other
+        return self.GetName() != o
 
     def __hash__(self):
         return self.GetName().__hash__()
@@ -69,8 +69,54 @@ class RooObject(object) :
 ##       elegant?
 
 class Category (RooObject): 
-    def __init__(self,name) :
-        self._init(name,'RooCategory')
+    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
+               ,'Index'      : lambda s,v : s.setIndex(v)
+               ,'Label'      : lambda s,v : s.setLabel(v)
+               }
+    _getters = {'Observable' : lambda s : s.observable() 
+               ,'Index'      : lambda s : s.getIndex() 
+               ,'Label'      : lambda s : s.getLabel()
+               ,'Name'       : lambda s : s.GetName()
+               ,'States'     : lambda s : s.states()
+               }
+
+    def __init__(self,name,**kwargs):
+        # TODO: add blinding support to kwargs
+        if name not in self.ws():
+            # construct factory string on the fly...
+            states = None
+            if 'States' not in kwargs:
+                raise KeyError('%s does not exist yet, but no states defined.' % name)
+            elif type(kwargs['States']) == list:
+                states = ','.join(kwargs['States'])
+            elif type(kwargs['States']) == dict:
+                states = ','.join(['%s=%d' % i for i in kwargs['States'].items()])
+            else:
+                raise KeyError('%s does not exist yet, bad States defined.' % name)
+
+            # Create the category and extract states into storage
+            self._declare("%s[%s]"%(name,states))
+            self._init(name,'RooCategory')
+            self._target_()._states = {}
+            it = self.typeIterator()
+            while True:
+                cat = it.Next()
+                if not cat:
+                    break
+                self._target_()._states[cat.GetName()] = cat.getVal()
+        else:
+            self._init(name,'RooCategory')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                assert v == self[k]
+            
+    def __setitem__(self,k,v):
+        return Category._setters[k](self, v)
+    def __getitem__(self,k):
+        return Category._getters[k](self)
+
+    def states(self):
+        return self._states
 
 class FormulaVar (RooObject): 
     def __init__(self,name) :
@@ -108,6 +154,9 @@ class RealVar (RooObject):
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
             self._init(name,'RooRealVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                assert v == self[k]
             
     def __setitem__(self,k,v):
         return RealVar._setters[k](self, v)
@@ -249,7 +298,8 @@ class SumPdf(Pdf):
         self._yields = {}
         self._dict = {'Name'  : name,
                       'Yields': Yields,
-                      'PDFs'  : PDFs}
+                      'PDFs'  : PDFs,
+                      'Type'  : 'RooAddPdf'}
         pdfs = list(PDFs)
         diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(Yields.keys()))
         if len(diff) not in [0, 1]:
@@ -260,6 +310,7 @@ class SumPdf(Pdf):
         for p in pdfs:
             for i in p['Observables']:
                 o.add(i)
+        self._dict['Observables'] = frozenset(o)
         self._dict['Name'] = self._separator().join([p.GetName() for p in pdfs])
         self.__make_pdf()
         del self._dict
@@ -267,7 +318,7 @@ class SumPdf(Pdf):
     def __make_pdf(self):
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
-            self._init(self._dict['Name'], 'RooAddPdf')
+            self._init(self._dict['Name'], self._dict['Type'])
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.

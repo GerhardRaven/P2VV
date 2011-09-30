@@ -1,5 +1,7 @@
 from RooFitWrappers import *
 
+from ROOT import TFile
+
 # setup (singleton) workspace
 from ROOT import RooWorkspace
 ws = RooObject()
@@ -29,14 +31,14 @@ sig_m = Pdf( 'mass', Type = 'Gaussian', Observables = ( m, ), Parameters = ( mas
 
 # create signal and background
 signal = Component('signal')
-signal.setYield(100,50,150)
+signal.setYield(3000,100,6000)
 ## signal[m] = 'Gaussian(m,5300,15)'
 signal[m] = sig_m
 ## signal[t] = 'Decay(t,sig_tau[1.5,1.0,2.0],TruthModel(t),SingleSided)'
 signal[t] = sig_t
 
 background = Component('background')
-background.setYield(1000,900,1100)
+background.setYield(3000,1000,6000)
 
 background_c = RealVar( 'background_c', Observable = False, Unit = '1/MeV', Value = -0.0004)
 background[ m ] = Pdf( 'background', Observables = ( m, ), Type = 'Exponential',
@@ -56,7 +58,12 @@ pdf = buildPdf( (background,signal) , observables = (m,t), name='pdf' )
 
 ##########################################
 
-data = pdf.generate((m,t))
+data = pdf.generate((m,t), 2000)
+
+rootFile = TFile.Open("data.root", "recreate")
+rootFile.WriteTObject(data, "data")
+rootFile.Close()
+
 pdf.fitTo(data)
 
 from ROOT import TCanvas, RooCmdArg, RooFit, kDashed
