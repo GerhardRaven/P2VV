@@ -1,7 +1,7 @@
 from RooFitDecorators import *
 from copy import copy
 
-class RooObject( object ) :
+class RooObject(object) :
     _ws = None
     _dict = None
 
@@ -30,35 +30,35 @@ class RooObject( object ) :
             raise KeyError('%s is %s, not %s' % (name, x.ClassName(), type))
         self._var = x
 
-    def __getattr__( self, name ):
-        return getattr( self._target_(), name )      
+    def __getattr__(self, name):
+        return getattr(self._target_(), name)      
 
-    def _target_( self ) :
+    def _target_(self) :
         return self._var
 
-    def __cmp__( self, other ):
-        o = other if type( other ) == str else other.GetName()
+    def __cmp__(self, other):
+        o = other if type(other) == str else other.GetName()
         return self.GetName() < other
 
-    def __eq__( self, other ):
-        o = other if type( other ) == str else other.GetName()
+    def __eq__(self, other):
+        o = other if type(other) == str else other.GetName()
         return self.GetName() == other
 
-    def __ne__( self, other ):
-        o = other if type( other ) == str else other.GetName()
+    def __ne__(self, other):
+        o = other if type(other) == str else other.GetName()
         return self.GetName() != other
 
-    def __hash__( self ):
+    def __hash__(self):
         return self.GetName().__hash__()
 
-    def __str__( self ):
+    def __str__(self):
         return self.GetName()
         
     ## FIXME: Should these be in RooObject??
     def observable(self) : 
         return self._var._observable
     def setObservable(self, observable) :
-        self._var._observable = bool( observable )
+        self._var._observable = bool(observable)
 
 # TODO: make this more of a 'borg' by overloading __new__ instead of __init__
 #       otherwise properties of the proxy not in the 'target' are not shared
@@ -78,16 +78,16 @@ class FormulaVar (RooObject):
 
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
-    _setters = { 'Observable' : lambda s,v : s.setObservable(v) 
-               , 'Unit'       : lambda s,v : s.setUnit(v) 
-               , 'Value'      : lambda s,v : s.setVal(v)
-               , 'MinMax'     : lambda s,v : s.setRange(v)
+    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
+               ,'Unit'       : lambda s,v : s.setUnit(v) 
+               ,'Value'      : lambda s,v : s.setVal(v)
+               ,'MinMax'     : lambda s,v : s.setRange(v)
                }
-    _getters = { 'Observable' : lambda s : s.observable() 
-               , 'Unit'       : lambda s : s.getUnit() 
-               , 'Value'      : lambda s : s.getVal()
-               , 'MinMax'     : lambda s : s.getRange()
-               , 'Name'       : lambda s : s.GetName()
+    _getters = {'Observable' : lambda s : s.observable() 
+               ,'Unit'       : lambda s : s.getUnit() 
+               ,'Value'      : lambda s : s.getVal()
+               ,'MinMax'     : lambda s : s.getRange()
+               ,'Name'       : lambda s : s.GetName()
                }
 
     def __init__(self,name,**kwargs):
@@ -110,26 +110,26 @@ class RealVar (RooObject):
             self._init(name,'RooRealVar')
             
     def __setitem__(self,k,v):
-        return RealVar._setters[k]( self, v )
+        return RealVar._setters[k](self, v)
     def __getitem__(self,k):
-        return RealVar._getters[k]( self )
+        return RealVar._getters[k](self)
     # overrule RooRealVar.setRange
     def setRange(self, v):
         (mi,ma) = v
-        self._var.setRange( mi,ma )
-        if self.getVal() < mi or self.getVal() > ma : self.setVal( 0.5*(ma+mi)  )
+        self._var.setRange(mi,ma)
+        if self.getVal() < mi or self.getVal() > ma : self.setVal(0.5*(ma+mi) )
 
     def getRange(self):
         return self._target_().getMin(), self._target_().getMax()
 
 ##TODO, factor out common code in Pdf and ResolutionModel
 
-class Pdf( RooObject ):
-    _getters = { 'Observables' : lambda s : s._get( 'Observables' ) 
-               , 'Type'        : lambda s : s._get( 'Type' )
-               , 'Options'     : lambda s : s._get( 'Options' )
-               , 'Parameters'  : lambda s : s._get( 'Parameters' )
-               , 'Name'        : lambda s : s._get( 'Name' )
+class Pdf(RooObject):
+    _getters = {'Observables' : lambda s : s._get('Observables') 
+               ,'Type'        : lambda s : s._get('Type')
+               ,'Options'     : lambda s : s._get('Options')
+               ,'Parameters'  : lambda s : s._get('Parameters')
+               ,'Name'        : lambda s : s._get('Name')
                }
 
     ## TODO: define operators
@@ -150,15 +150,15 @@ class Pdf( RooObject ):
         self.__make_pdf()
         del self._dict
 
-    def __str__( self ):
-        d = dict( [ ( a, self[ a ] ) for a in Pdf._getters if hasattr( self, a ) ] )
+    def __str__(self):
+        d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
         return '%s' % d
 
     def _get(self, name):
         attr = '_' + name.lower()
         return getattr(self, attr)
     
-    def __getitem__( self, k ):
+    def __getitem__(self, k):
         if self._dict and k in self._dict:
             return self._dict[k]
         else:
@@ -167,7 +167,7 @@ class Pdf( RooObject ):
             except AttributeError as error:
                 raise KeyError(str(error))
 
-    def __make_pdf( self ):
+    def __make_pdf(self):
         if self._dict['Name'] not in self.ws():
             v = list(self._dict['Observables'])
             if 'Parameters' in self._dict:
@@ -192,18 +192,18 @@ class Pdf( RooObject ):
         else:
             self._init(self._dict['Name'], 'RooAbsPdf')
 
-    def _separator( self ):
+    def _separator(self):
         return '_'
 
-    def _makeRecipe( self, variables ):
-        deps = ','.join( [ v.GetName() if type( v ) != str else v for v in variables ] )
-        return '%s::%s(%s)' % ( self._dict[ 'Type' ], self._dict[ 'Name' ], deps )
+    def _makeRecipe(self, variables):
+        deps = ','.join([v.GetName() if type(v) != str else v for v in variables])
+        return '%s::%s(%s)' % (self._dict['Type'], self._dict['Name'], deps)
 
-    def generate( self, whatvars, *args ):
+    def generate(self, whatvars, *args):
         s = RooArgSet()
         for i in whatvars :
-            s.add( i._target_() if hasattr( i,'_target_' ) else i )
-        return self._var.generate( s, *args )
+            s.add(i._target_() if hasattr(i,'_target_') else i)
+        return self._var.generate(s, *args)
 
 class ProdPdf(Pdf):
     def __init__(self, name, PDFs, **kwargs):
@@ -213,7 +213,7 @@ class ProdPdf(Pdf):
         o = set()
         for p in self._dict['PDFs']:
             for i in p['Observables']:
-                o.add( i )
+                o.add(i)
         self._dict['Observables'] = frozenset(o)
         self.__make_pdf()
         del self._dict
@@ -233,14 +233,14 @@ class ProdPdf(Pdf):
         return self
 
     def _makeRecipe(self):
-        pdfs = ','.join( [ p.GetName() for p in self._dict[ 'PDFs' ] ] )
-        return 'PROD::%s(%s)' % ( self._dict[ 'Name' ], pdfs )
+        pdfs = ','.join([p.GetName() for p in self._dict['PDFs']])
+        return 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
 
-    def _separator( self ):
+    def _separator(self):
         return '_X_'
 
-class SumPdf( Pdf ):
-    def __init__( self, name, PDFs, Yields ):
+class SumPdf(Pdf):
+    def __init__(self, name, PDFs, Yields):
         self._yields = {}
         self._dict = {'Name'  : name,
                       'Yields': Yields,
@@ -259,10 +259,10 @@ class SumPdf( Pdf ):
         self.__make_pdf()
         del self._dict
         
-    def __make_pdf( self ):
-        if self._dict[ 'Name' ] not in self.ws():
-            self._declare( self._makeRecipe() )
-            self._init( self._dict[ 'Name' ], 'RooAddPdf' )
+    def __make_pdf(self):
+        if self._dict['Name'] not in self.ws():
+            self._declare(self._makeRecipe())
+            self._init(self._dict['Name'], 'RooAddPdf')
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
@@ -270,80 +270,81 @@ class SumPdf( Pdf ):
                 attr = '_' + k.lower()
                 setattr(self._target_(), attr, v)
         else:
-            self._init( self._dict['Name'], 'RooAddPdf')
+            self._init(self._dict['Name'], 'RooAddPdf')
 
-    def _makeRecipe( self ):
-        yields = self._dict[ 'Yields' ]
-        pdfs = ','.join( [ '%s * %s' % ( yields[ p.GetName() ], p.GetName() )
+    def _makeRecipe(self):
+        yields = self._dict['Yields']
+        pdfs = ','.join(['%s * %s' % (yields[p.GetName()], p.GetName())
                            if p.GetName() in yields else p.GetName()
-                           for p in self._dict[ 'PDFs' ] ] )
-        return 'SUM::%s(%s)' % ( self._dict[ 'Name' ], pdfs )
+                           for p in self._dict['PDFs']])
+        return 'SUM::%s(%s)' % (self._dict['Name'], pdfs)
 
-    def _separator( self ):
+    def _separator(self):
         return '_P_'
 
-class ResolutionModel( RooObject ):
-    _getters = { 'Observables' : lambda s : s._get( 'Observables' )
-               , 'Parameters'  : lambda s : s._get( 'Parameters' )
-               , 'Type'        : lambda s : s._get( 'Type' )
+class ResolutionModel(RooObject):
+    _getters = {'Observables' : lambda s : s._get('Observables')
+               ,'Parameters'  : lambda s : s._get('Parameters')
+               ,'Type'        : lambda s : s._get('Type')
                }
 
-    def __init__( self, name, **kwargs ):
-        if 'Type'  not in kwargs: 
-            raise KeyError( 'Must specify type' )
+    def __init__(self, name, **kwargs):
+        if 'Type' not in kwargs: 
+            raise KeyError('Must specify type')
         if 'Observables'  not in kwargs: 
-            raise KeyError( 'Must specify observables' )
+            raise KeyError('Must specify observables')
 
         if name not in self.ws():
             # Save the keyword args as properties
             self._dict = {}
-            self._dict[ 'Name' ] = name
-            def _fs( n ):
-                self._dict[ n ] = frozenset( self._dict[ n ] )
+            self._dict['Name'] = name
+            def _fs(n):
+                self._dict[n] = frozenset(self._dict[n])
                 
             for k, v in kwargs.iteritems():
-                self._dict[ k ] = v
+                self._dict[k] = v
 
-            for a in [ 'Observables', 'Parameters' ]:
-                if a in self._dict: _fs( a )
+            for a in ['Observables', 'Parameters']:
+                if a in self._dict: _fs(a)
 
-            self._declare( self._makeRecipe() )
-            self._init( name, 'RooResolutionModel' )
+            self._declare(self._makeRecipe())
+            self._init(name, 'RooResolutionModel')
             for k, v in self._dict.iteritems():
                 attr = '_' + k.lower()
-                setattr( self._target_(), attr, v )
+                setattr(self._target_(), attr, v)
             del self._dict
         else:
-            self._init( name, 'RooResolutionModel' )
-
-    def _get( self, name ):
+            self._init(name, 'RooResolutionModel')
+            for 
+            getattr(obj, '__iter__', False)
+    def _get(self, name):
         attr = '_' + name.lower()
-        return getattr( self, attr )
+        return getattr(self, attr)
             
-    def __getitem__( self, k ):
-        return ResolutionModel._getters[ k ]( self )
+    def __getitem__(self, k):
+        return ResolutionModel._getters[k](self)
     
-    def _makeRecipe( self ):
-        variables = list( self._dict[ 'Observables' ] )
+    def _makeRecipe(self):
+        variables = list(self._dict['Observables'])
         if 'Parameters' in self._dict:
-            variables += list( self._dict[ 'Parameters' ] )
-        deps = ','.join( [ v.GetName() for v in variables ] )
-        return '%s::%s(%s)' % ( self._dict[ 'Type' ], self._dict[ 'Name' ], deps )
+            variables += list(self._dict['Parameters'])
+        deps = ','.join([v.GetName() for v in variables])
+        return '%s::%s(%s)' % (self._dict['Type'], self._dict['Name'], deps)
         
-class Component( object ):
+class Component(object):
     _d = {}
     def __init__(self,name) :
         if name in Component._d : 
             # TODO: make things singletons, indexed by 'Name'
-            raise KeyError('Name %s is not unique'%name )
+            raise KeyError('Name %s is not unique'%name)
         self.name = name
         Component._d[name] = dict()
         Component._d[name]['Name'] = name
     def _yieldName(self) : return 'N_%s' % self.name
-    def setYield( self, n, nlo, nhi ) :
-        Component._d[self.name]['Yield'] = RealVar( self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
-    def __setitem__(self, observable, pdf ) :
-        if type( observable ) is not tuple : observable = (observable,)
+    def setYield(self, n, nlo, nhi) :
+        Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
+    def __setitem__(self, observable, pdf) :
+        if type(observable) is not tuple : observable = (observable,)
 
         # create a set of incoming observables
         k = set()
@@ -356,25 +357,25 @@ class Component( object ):
             if type(i) != frozenset : continue # not an observable, but either name or yield
             for j in i : present.add(j)
                 
-        if not k.isdisjoint( present ) : raise KeyError('sets are not disjoint, overlap: %s' % k.intersection(present) )
+        if not k.isdisjoint(present) : raise KeyError('sets are not disjoint, overlap: %s' % k.intersection(present))
         # TODO: check whether observable exists in the workspace...
         # TODO: and check it has its observable flag set
-        ### parse recipe: x(a,b[1,2,3],c(4,5,6)) -> ( 'x' , 'a,b[1,2,3],c(4,5,6)' )
-        ### i.e. such that %s(%s)'%( x[0], x[1]) recovers the result...
+        ### parse recipe: x(a,b[1,2,3],c(4,5,6)) -> ('x' , 'a,b[1,2,3],c(4,5,6)')
+        ### i.e. such that %s(%s)'%(x[0], x[1]) recovers the result...
         ## import re
         ## ex = '^([^(]+)\((.*)\)$'
         ## r = re.match(ex,pdfrecipe)
         ## if not r : raise KeyError('could not parse recipe %s'%pdfrecipe)
         ## (typ,args) = r.groups()
         ## if ':' in typ : 
-        ##     raise KeyError('please do not explicitly name pdfs -- %s' % typ )
+        ##     raise KeyError('please do not explicitly name pdfs -- %s' % typ)
         #TODO: should build the PDF at this point!
 
         ## Get the right sub-pdf from the Pdf object
-        Component._d[ self.name ][ frozenset( k ) ] = pdf
+        Component._d[self.name][frozenset(k)] = pdf
 
     def __iadd__(self,item) :
-        self.__setitem__( item.observables(), item )
+        self.__setitem__(item.observables(), item)
         return self
         
     def __getitem__(self,k) :
@@ -388,27 +389,28 @@ class Component( object ):
         if k not in d : 
             # try to build product -- note that d.keys() are non-overlapping by requirement
             # first, find the entry with the largest overlap, which is a subset (otherwise we'd have to marginalize)
-            terms = [ ]
+            terms = []
             nk = k
             while len(nk) :
-                overlap = lambda i : len( i.intersection(nk) ) if type(i)==frozenset and i.issubset(nk) else 0  # avoid marginalization for now...
+                overlap = lambda i : len(i.intersection(nk)) if type(i)==frozenset and i.issubset(nk) else 0  # avoid marginalization for now...
                 from operator import itemgetter
-                (kmax,mo) = max( ( (i,overlap(i)) for i in d.iterkeys() ), key = itemgetter(1) )
+                (kmax,mo) = max(((i,overlap(i)) for i in d.iterkeys()), key = itemgetter(1))
                 if not mo : break # no overlap left...
-                terms.append( kmax )
+                terms.append(kmax)
                 nk = nk - kmax 
-            if len(nk) : raise IndexError( 'could not construct matching product' )
-            nk = frozenset.union( *terms )
-            pdfs = [ self[ i ] for i in terms ]
-            d[ nk ] = ProdPdf( self.name, PDFs = pdfs )
-        return d[ k ]
+            if len(nk) : raise IndexError('could not construct matching product')
+            nk = frozenset.union(*terms)
+            pdfs = [self[i] for i in terms]
+            d[nk] = ProdPdf(self.name, PDFs = pdfs)
+        return d[k]
 
-def buildPdf( components, observables, name ) :
+def buildPdf(components, observables, name) :
     # multiply PDFs for observables (for each component)
     if not observables : raise RuntimeError('no observables??')
-    obs = [ o if type(o)==str else o.GetName() for o in observables ]
-    args = { 'Yields' : {},
-             'PDFs'   : [] }
+    obs = [o if type(o)==str else o.GetName() for o in observables]
+    args = {'Yields' : {},
+            'PDFs'   : []
+            }
     for c in components:
         pdf = c[obs]
         args['Yields'][pdf.GetName()] = c['Yield']
