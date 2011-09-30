@@ -18,7 +18,7 @@ class RooObject( object ) :
         x = self.ws().factory(spec)
         if not x:
             raise NameError('failed to _declare %s to workspace factory'%spec)
-        self.ws()._objects[x.GetName()] = self
+        self.ws()._objects[x.GetName()] = x
         x._observable = False
         return x
 
@@ -160,37 +160,37 @@ class Pdf( RooObject ):
     
     def __getitem__( self, k ):
         if self._dict and k in self._dict:
-            return self._dict[ k ]
+            return self._dict[k]
         else:
             try:
-                return Pdf._getters[ k ]( self )
+                return Pdf._getters[k](self)
             except AttributeError as error:
-                raise KeyError( str( error ) )
+                raise KeyError(str(error))
 
     def __make_pdf( self ):
-        if self._dict[ 'Name' ] not in self.ws():
-            v = list( self._dict[ 'Observables' ] )
+        if self._dict['Name'] not in self.ws():
+            v = list(self._dict['Observables'])
             if 'Parameters' in self._dict:
-                v += list( self._dict[ 'Parameters' ] )
+                v += list(self._dict['Parameters'])
             if 'ResolutionModel' in self._dict:
-                rm = self._dict[ 'ResolutionModel' ]
-                if rm[ 'Observables' ] != frozenset( self._dict[ 'Observables' ] ):
-                    raise StandardError ( 'Error, resolution model must have the same '
-                                          + 'observables as PDF' )
+                rm = self._dict['ResolutionModel']
+                if rm['Observables'] != frozenset(self._dict['Observables']):
+                    raise StandardError ('Error, resolution model must have the same '
+                                         + 'observables as PDF')
                 ## TODO add conditional observables
-                v += [ rm ]
+                v += [rm]
             if 'Options' in self._dict:
-                v += list( self._dict[ 'Options' ] )
-            self._declare( self._makeRecipe( v ) )
-            self._init( self._dict[ 'Name' ], 'RooAbsPdf' )
+                v += list(self._dict['Options'])
+            self._declare(self._makeRecipe(v))
+            self._init(self._dict['Name'], 'RooAbsPdf')
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
             for k, v in self._dict.iteritems():
                 attr = '_' + k.lower()
-                setattr( self._target_(), attr, v )
+                setattr(self._target_(), attr, v)
         else:
-            self._init( self._dict[ 'Name' ], 'RooAbsPdf' )
+            self._init(self._dict['Name'], 'RooAbsPdf')
 
     def _separator( self ):
         return '_'
@@ -205,27 +205,34 @@ class Pdf( RooObject ):
             s.add( i._target_() if hasattr( i,'_target_' ) else i )
         return self._var.generate( s, *args )
 
-class ProdPdf( Pdf ):
-    def __init__( self, name, PDFs, **kwargs ):
-        self._dict = { 'PDFs' : frozenset( PDFs ) }
-        self._dict[ 'Name' ] = name + '_' + self._separator().join( [ i.GetName() for i
-                                                                      in self._dict[ 'PDFs' ] ] )
+class ProdPdf(Pdf):
+    def __init__(self, name, PDFs, **kwargs):
+        self._dict = {'PDFs' : frozenset(PDFs)}
+        self._dict['Name'] = name + '_' + self._separator().join([i.GetName() for i
+                                                                  in self._dict['PDFs']])
         o = set()
-        for p in self._dict[ 'PDFs' ]:
-            for i in p[ 'Observables' ]:
+        for p in self._dict['PDFs']:
+            for i in p['Observables']:
                 o.add( i )
-        self._dict[ 'Observables' ] = frozenset( o )
+        self._dict['Observables'] = frozenset(o)
         self.__make_pdf()
+        del self._dict
         
-    def __make_pdf( self ):
-        if self._dict[ 'Name' ] not in self.ws():
-            self._declare( self._makeRecipe() )
-            self._init( self._dict[ 'Name' ], 'RooProdPdf' )
+    def __make_pdf(self):
+        if self._dict['Name'] not in self.ws():
+            self._declare(self._makeRecipe())
+            self._init(self._dict['Name'], 'RooProdPdf')
+
+            # Change self._dict into attributes. Cannot be done before since the
+            # underlying object does only exists at this point.
+            for k, v in self._dict.iteritems():
+                attr = '_' + k.lower()
+                setattr(self._target_(), attr, v)
         else:
-            raise StandardError( "Recreating the same Pdf is not supported atm" )
+            self._init(self._dict['Name'], 'RooProdPdf')
         return self
 
-    def _makeRecipe( self ):
+    def _makeRecipe(self):
         pdfs = ','.join( [ p.GetName() for p in self._dict[ 'PDFs' ] ] )
         return 'PROD::%s(%s)' % ( self._dict[ 'Name' ], pdfs )
 
@@ -235,29 +242,35 @@ class ProdPdf( Pdf ):
 class SumPdf( Pdf ):
     def __init__( self, name, PDFs, Yields ):
         self._yields = {}
-        self._dict = { 'Name'  : name,
-                       'Yields': Yields,
-                       'PDFs'  : PDFs }
-        pdfs = list( PDFs )
-        diff = set( [ p.GetName() for p in pdfs ] ).symmetric_difference( set( Yields.keys() ) )
-        if ( len( diff ) ) not in [ 0, 1 ]:
-            raise StandardError( 'The number of yield variables must be equal to or 1'
-                                 + 'less then the number of PDFs.' )
+        self._dict = {'Name'  : name,
+                      'Yields': Yields,
+                      'PDFs'  : PDFs}
+        pdfs = list(PDFs)
+        diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(Yields.keys()))
+        if len(diff) not in [0, 1]:
+            raise StandardError('The number of yield variables must be equal to or 1'
+                                + 'less then the number of PDFs.')
 
-        ## WORKING HERE
         o = set()
         for p in pdfs:
-            for i in p[ 'Observables' ]:
-                o.add( i )
-        self._name = self._separator().join( [ p.GetName() for p in pdfs ] )
+            for i in p['Observables']:
+                o.add(i)
+        self._dict['Name'] = self._separator().join([p.GetName() for p in pdfs])
         self.__make_pdf()
+        del self._dict
         
     def __make_pdf( self ):
         if self._dict[ 'Name' ] not in self.ws():
             self._declare( self._makeRecipe() )
             self._init( self._dict[ 'Name' ], 'RooAddPdf' )
+
+            # Change self._dict into attributes. Cannot be done before since the
+            # underlying object does only exists at this point.
+            for k, v in self._dict.iteritems():
+                attr = '_' + k.lower()
+                setattr(self._target_(), attr, v)
         else:
-            raise StandardError( "Recreating the same Pdf is not supported atm" )
+            self._init( self._dict['Name'], 'RooAddPdf')
 
     def _makeRecipe( self ):
         yields = self._dict[ 'Yields' ]
@@ -298,7 +311,6 @@ class ResolutionModel( RooObject ):
             self._init( name, 'RooResolutionModel' )
             for k, v in self._dict.iteritems():
                 attr = '_' + k.lower()
-                print 'set %s to %s' % ( attr, v )
                 setattr( self._target_(), attr, v )
             del self._dict
         else:
@@ -366,13 +378,10 @@ class Component( object ):
         return self
         
     def __getitem__(self,k) :
-        # TODO: build PDF, and return it -- instead of returning the recipe...
-        print 'request from %s: ' % self.name, k
         # TODO: if we return one a-priori build PDF, rename it properly??
         d = Component._d[self.name]
-        print d
         
-        # TODO: catch yields and name here
+        # Catch yields and name here
         if type(k)==str and k in d : return d[k]
 
         if type(k) != frozenset : k = frozenset(k)
@@ -390,11 +399,8 @@ class Component( object ):
                 nk = nk - kmax 
             if len(nk) : raise IndexError( 'could not construct matching product' )
             nk = frozenset.union( *terms )
-            print '%s %s' % ( nk, terms )
             pdfs = [ self[ i ] for i in terms ]
-            print pdfs
             d[ nk ] = ProdPdf( self.name, PDFs = pdfs )
-        print 'returning %s' % d[ k ]
         return d[ k ]
 
 def buildPdf( components, observables, name ) :
@@ -404,8 +410,8 @@ def buildPdf( components, observables, name ) :
     args = { 'Yields' : {},
              'PDFs'   : [] }
     for c in components:
-        pdf = c[ obs ]
-        args[ 'Yields' ][ pdf.GetName() ] = c[ 'Yield' ]
-        args[ 'PDFs'   ].append( pdf )
+        pdf = c[obs]
+        args['Yields'][pdf.GetName()] = c['Yield']
+        args['PDFs'].append(pdf)
     # and sum components (inputs should already be extended)
-    return SumPdf( name, **args )
+    return SumPdf(name,**args)
