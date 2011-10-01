@@ -68,7 +68,7 @@ class TestPDFs(object):
         # Test reuse of RealVar
         c = RealVar('c',Observable=False,Unit='ps',Value=0)
         with pytest.raises(AssertionError):
-            c = RealVar('c',Observable=False,Unit='ps',Value=1)
+            c = RealVar('c',Observable=False,Unit='ns',Value=0)
 
         # Test reuse of ResolutionModel
         t = RealVar('t',Observable=True,MinMax=(-1,14),Unit='ps',Value=0)

@@ -68,6 +68,9 @@ class RooObject(object) :
     def setObservable(self, observable) :
         self._var._observable = bool(observable)
 
+    def mappings(self):
+        return self.ws()._mappings
+
 # TODO: make this more of a 'borg' by overloading __new__ instead of __init__
 #       otherwise properties of the proxy not in the 'target' are not shared
 #       across multiple instances which all defer to the same 'target'
@@ -116,7 +119,8 @@ class Category (RooObject):
             self._init(name,'RooCategory')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
-                # Skip these in case we now come from a DataSet
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
                 if k in ['Index', 'Label']:
                     continue
                 assert v == self[k]
@@ -167,7 +171,8 @@ class RealVar (RooObject):
             self._init(name,'RooRealVar')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
-                # Skip these in case we now come from a DataSet
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
                 if k == 'Value':
                     continue
                 assert v == self[k]
