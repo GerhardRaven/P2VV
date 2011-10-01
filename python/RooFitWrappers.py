@@ -13,19 +13,27 @@ class RooObject(object) :
         RooObject._ws = ws
         if not hasattr(ws, '_objects'):
             ws._objects = {}
+        if not hasattr(ws, '_mappings'):
+            ws._mappings = {}
         
     def _declare(self,spec):
         x = self.ws().factory(spec)
         if not x:
             raise NameError('failed to _declare %s to workspace factory'%spec)
+        # Keep the PyROOT objects in a container so they don't get garbage
+        # collected.
         self.ws()._objects[x.GetName()] = x
         x._observable = False
         return x
 
     def _init(self,name,type) :
-        x = self.ws()[name]
-        if not x:
-            raise KeyError('could not locate %s' % name)
+        # If the object was mapped to something from the dataset, put the right
+        # variable behind it.
+        if name in self.ws()._mappings:
+            name = self.ws()._mappings[name]
+                
+        # Get the right object from our own cache, KeyError is raised correctly.
+        x = self.ws()._objects[name]
         if not x.InheritsFrom(type): 
             raise KeyError('%s is %s, not %s' % (name, x.ClassName(), type))
         self._var = x
@@ -108,6 +116,9 @@ class Category (RooObject):
             self._init(name,'RooCategory')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
+                # Skip these in case we now come from a DataSet
+                if k in ['Index', 'Label']:
+                    continue
                 assert v == self[k]
             
     def __setitem__(self,k,v):
@@ -156,6 +167,9 @@ class RealVar (RooObject):
             self._init(name,'RooRealVar')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
+                # Skip these in case we now come from a DataSet
+                if k == 'Value':
+                    continue
                 assert v == self[k]
             
     def __setitem__(self,k,v):
