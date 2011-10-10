@@ -22,7 +22,7 @@
 class RooEffHistProd: public RooAbsPdf {
 public:
   // Constructors, assignment etc
-  inline RooEffHistProd() : _nset(0), _fixedNset(0) { };
+  inline RooEffHistProd()   { };
   virtual ~RooEffHistProd();
   RooEffHistProd(const char *name, const char *title, RooAbsPdf& pdf, RooAbsReal& efficiency);
   RooEffHistProd(const RooEffHistProd& other, const char* name=0);
@@ -32,17 +32,21 @@ public:
   virtual RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype,
                                        const RooArgSet* auxProto, Bool_t verbose) const;
 
-  virtual Double_t getVal(const RooArgSet* set=0) const ;
 
   virtual Bool_t forceAnalyticalInt(const RooAbsArg& /*dep*/) const { 
     // Return kTRUE to force RooRealIntegral to offer all observables for internal integration
     return kTRUE ; 
   }
-  Int_t getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& numVars, const RooArgSet* normSet, const char* rangeName=0) const ;
-  Double_t analyticalIntegralWN(Int_t code, const RooArgSet* normSet, const char* rangeName=0) const ;
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+  Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
+
+  virtual void selectNormalization(const RooArgSet*,Bool_t);
+
   
-protected:
+private:
   
+  const char* makeFPName(const char *prefix,const RooArgSet& iset, const RooArgSet *nset, const char *postfix) const;
+
   const RooAbsPdf* pdf() const { 
     // Return pointer to pdf in product
     return (RooAbsPdf*) _pdf.absArg() ; 
@@ -61,13 +65,26 @@ protected:
   RooRealProxy _eff;      // Efficiency function
   RooSetProxy  _observables ; // Observables in the efficiency histogram
 
-  mutable std::map<Int_t, RooArgList> _integralmap ;
+  struct CacheElem : public RooAbsCacheElement {
+      CacheElem(const RooEffHistProd* parent,const RooArgSet& iset, const RooArgSet* nset,const char *rangeName);
+      CacheElem() : I(0),xmin(0),xmax(0) {}
+      virtual ~CacheElem();
+      // Payload
+      RooAbsReal  *I ;
+      RooRealVar  *xmin ;
+      RooRealVar  *xmax ;
+      virtual RooArgList containedArgs(Action) ;
+      Double_t getVal(double a, double b) { xmin->setVal(a); xmax->setVal(b); return getVal(); }
+      Double_t getVal() { /*I->Print("t"); */ return I->getVal() ; }
+  };
+  friend class CacheElem;
+  CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, const char* rangeName=0) const ;
+
+  mutable RooObjCacheManager _cacheMgr;
   typedef std::vector<Double_t> BinBoundaries ;
   BinBoundaries _binboundaries ;
   
-  mutable const RooArgSet* _nset  ; //! Normalization set to be used in evaluation
 
-  RooArgSet* _fixedNset ; //! Fixed normalization set overriding default normalization set (if provided)
 
   ClassDef(RooEffHistProd,2) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
 };

@@ -1,4 +1,8 @@
-\documentclass[a4paper,9pt,twoside]{article}
+\documentclass[a4paper,9pt,twosided]{article}
+
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
 
 \def\thetatr{\theta_\mathrm{tr}}
 \def\phitr{\phi_\mathrm{tr}}
@@ -128,17 +132,17 @@ The result can be summarized as follows (where we have used that $q_T^2=1$):
 |{\cal A}_\perp(t)|^2                       &\frac{  | a_\perp |^2 e^{-t/\tau}}{1+q_TC}              & 1 &   C  &  +D & +S   \\
 \Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &\frac{  \Re(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}& 0 &   0  &   S & -D   \\                         
                                             &\frac{  \Im(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}  & C &   1  &   0 &  0   \\
-\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &\frac{  \Re(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}        & 0 &   0  &   S & -D   \\
-                                            &\frac{  \Im(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}          & C &   1  &   0 &  0   \\
 \Re({\cal A}_0^*(t){\cal A}_\parallel(t))     &\frac{  \Re(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}     & 1 &   C  &  -D & -S   \\
                                             &\frac{  \Im(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 0 &   0  &   0 &  0   \\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &\frac{  \Re(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}        & 0 &   0  &   S & -D   \\
+                                            &\frac{  \Im(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}          & C &   1  &   0 &  0   \\
 |{\cal A}_S(t)|^2                           &\frac{  | a_S |^2 e^{-t/\tau}}{1+q_TC}                  & 1 &   C  &  D & S   \\
+\Re({\cal A}_S^*(t){\cal A}_\parallel(t))     &\frac{  \Re(a_S^*a_\parallel)e^{-t/\tau}}{1+q_TC}     & C &   1  &  0 & 0   \\
+                                            &\frac{  \Im(a_S^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 0 &   0  &   S &  -D   \\
 \Im({\cal A}_S^*(t){\cal A}_\perp(t)) &\frac{  \Re(a_S^* a_\perp)e^{-t/\tau}}{1+q_TC}                & 0 &   0  &   0 & 0   \\                         
                                             &\frac{  \Im(a_S^* a_\perp)e^{-t/\tau}}{1+q_TC}          & 1 &  C  &   D &  S   \\
 \Re({\cal A}_S^*(t){\cal A}_0(t))         &\frac{  \Re(a_S^* a_0)e^{-t/\tau}}{1+q_TC}                & C &   1  &   0 & 0   \\
                                             &\frac{  \Im(a_S^* a_0)e^{-t/\tau}}{1+q_TC}              & 0 &   0  &   S &  -D   \\
-\Re({\cal A}_S^*(t){\cal A}_\parallel(t))     &\frac{  \Re(a_S^*a_\parallel)e^{-t/\tau}}{1+q_TC}     & C &   1  &  0 & 0   \\
-                                            &\frac{  \Im(a_S^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 0 &   0  &   S &  -D   \\
 \hline
 \end{array}
 \end{equation}
@@ -283,13 +287,14 @@ then one can write
 \end{eqnarray}
 
 \begin{eqnarray}
+\label{arr:bigarray}
   |{ \bf A}(t) \wedge \hat{n}|^2 &=& 
                                   \frac{1}{2} |{\cal A}_\parallel(t)|^2 \sin^2\psi \cos^2\theta  +  \frac{1 }{2}|{\cal A}_\perp(t)|^2\sin^2\psi\sin^2\theta\sin^2\phi  \\
-                              &&+     -\Im({\cal A}_\parallel^*{\cal A}_\perp)\sin^2\psi\cos\theta\sin\theta\sin\phi  \\
-                              &+&     |{\cal A}_0|^2 \cos^2\psi\cos^2\theta  + \frac{1}{2} |{\cal A}_\perp(t)|^2\sin^2\psi \sin^2\theta\cos^2\phi \\
-                              &&+     -\sqrt{2}\Im({\cal A}_\perp^* {\cal A}_0 )\cos\psi\cos\theta\sin\psi\sin\theta\cos\phi \\
-                              &+&     |{\cal A}_0|^2 \cos^2\psi\sin^2\theta\sin^2\phi  + \frac{1}{2}{|\cal A}_\parallel(t)|^2 \sin^2\psi \sin^2\theta\cos^2\phi       \\
-                              &&+     \sqrt{2}\Re({\cal A}_0^*{\cal A}_\parallel  )\cos\psi\sin\psi\sin^2\theta\sin\phi\cos\phi\\
+                              &&+     -\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t))\sin^2\psi\cos\theta\sin\theta\sin\phi  \\
+                              &+&     |{\cal A}_0(t)|^2 \cos^2\psi\cos^2\theta  + \frac{1}{2} |{\cal A}_\perp(t)|^2\sin^2\psi \sin^2\theta\cos^2\phi \\
+                              &&+     -\sqrt{2}\Im({\cal A}_\perp^*(t) {\cal A}_0(t) )\cos\psi\cos\theta\sin\psi\sin\theta\cos\phi \\
+                              &+&     |{\cal A}_0(t)|^2 \cos^2\psi\sin^2\theta\sin^2\phi  + \frac{1}{2}{|\cal A}_\parallel(t)|^2 \sin^2\psi \sin^2\theta\cos^2\phi       \\
+                              &&+     \sqrt{2}\Re({\cal A}_0^*(t){\cal A}_\parallel(t)  )\cos\psi\sin\psi\sin^2\theta\sin\phi\cos\phi\\
                               &=&  |{\cal A}_0(t)|^2 \cos^2\psi\left( \cos^2\theta  +  \sin^2\theta\sin^2\phi\right) \\
                               &+& \frac{1}{2}|{\cal A}_\parallel(t)|^2 \sin^2\psi \left( \cos^2\theta + \sin^2\theta\cos^2\phi    \right)  \\
                               &+&\frac{1}{2}|{\cal A}_\perp(t)|^2\sin^2\psi\sin^2\theta \\
@@ -303,12 +308,80 @@ then one can write
                               &+&     \frac{1}{2\sqrt{2}}\Im({\cal A}_0^*(t) {\cal A}_\perp(t) ) \sin(2\psi)\sin(2\theta)\cos\phi \\
                               &+&     \frac{1}{2\sqrt{2}}\Re({\cal A}_0^*(t) {\cal A}_\parallel(t))\sin(2\psi)\sin^2\theta\sin(2\phi)
 \end{eqnarray}
+Integrating the sum of all these terms we get
+\begin{equation}
+\frac{16\pi}{9}(|{\cal A}_{0}(t)|^{2}+|{\cal A}_{\parallel}(t)|^{2}+|{\cal A}_{\perp}(t)|^{2}))
+\end{equation}
+By calculating  $\frac{9}{16\pi}|{ \bf A}(t) \wedge \hat{n}|^2$ instead of $|{ \bf A}(t) \wedge \hat{n}|^2$ we obtain the PDF with normalization $|{\cal A}_{0}(t)|^{2}+|{\cal A}_{\parallel}(t)|^{2}+|{\cal A}_{\perp}(t)|^{2}$. 
+\subsection{S-wave and P-S interference angular functions}\label{sec:Swaveangles}
+\subsubsection{S-wave angular function}
+One can obtain the angular function of a pure S-wave component by calculating a cross-product in the same manner as in the previous section. For a pure S-wave the object to calculate is
+\begin{equation}
+\frac{3}{16\pi}|{\bf S}(t) \wedge \hat{n}|^2\quad,
+\end{equation}
+where (WHY????)
+\begin{equation}
+{\bf S}(t) = ({\cal A}_{S}(t),0,0)
+\end{equation}
+This yields
+\begin{equation}
+\frac{3}{16\pi}|{\bf S}(t) \wedge \hat{n}|^{2}=|{\cal A}_{S}(t)|^2 (1-\sin^2\theta\cos^2\phi)
+\end{equation}
+\subsubsection{P-S interference angular functions}
+The P-S interference angular functions are the interference terms between pure P-wave (${ \bf A}(t)$) and S-wave (${ \bf S}(t)$) in the expression
+\begin{equation}
+\frac{9}{16\pi}\left|[{ \bf A}(t) + \frac{1}{\sqrt{3}}{\bf S}(t)] \wedge \hat{n}\right|^2
+\end{equation}
+These interference terms are found to be
+\begin{eqnarray}
+&\frac{9}{16\pi}&[\Re({\cal{A}}_S^*(t){\cal{A}}_\parallel(t))\frac{1}{6}\sqrt{6}\sin\psi\sin^2\theta\sin 2\phi \\
+&+&\frac{9}{16\pi}\Im({\cal{A}}_S^*(t){\cal{A}}_\perp(t))\frac{1}{6}\sqrt{6}\sin\psi\sin2\theta\cos\phi \\
+&+&\frac{9}{16 \pi}\Re({\cal{A}}_S^*(t){\cal{A}}_0(t))\frac{2}{3}\sqrt{3}\cos\psi(1-\sin^2\theta\cos^2\phi)]
+\end{eqnarray}
 
+The pure P-wave, pure S-wave and P-S interference angular functions are summarized in table \ref{tab:canonicalpdf}.
+\begin{table}[htb]
+  \begin{center}
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabular}{|c|c|c|}
+    %\begin{tabular}{|b{2cm}|b{3cm}|b{4cm}|b{3cm}|}
+      \hline
+      amplitudes & constant & angular function \\
+      \hline
+      \hline
+      $|{\cal{A}}_{0}(t)|^2$ & $\frac{9}{16 \pi}$
+        &  $\cos^2\psi \left(1 - \sin^2\theta \cos^2\phi\right)$  \\
+      $|{\cal{A}}_{\parallel}(t)|^2$ & $\frac{9}{16 \pi}$
+        &  $\frac{1}{2}\sin^2\psi \left(1 - \sin^2\theta \sin^2\phi\right)$  \\
+      $|{\cal{A}}_{\perp}(t)|^2$ & $\frac{9}{16 \pi}$
+        &  $\frac{1}{2}\sin^2\psi \sin^2\theta$  \\
+      $\Im({\cal{A}}_{\parallel}^{*}(t)\,{\cal{A}}_{\perp}(t))$ & $\frac{9}{16 \pi}$
+        &  $-\frac{1}{2}\sin^2\psi \sin2\theta \sin\phi$  \\
+      $\Re({\cal{A}}_{0}^{*}(t)\,{\cal{A}}_{\parallel}(t))$ & $\frac{9}{16 \pi}$
+        &   $\frac{1}{4}\sqrt{2}$ $\sin2\psi \sin^2\theta \sin2\phi$  \\
+      $\Im({\cal{A}}_{0}^{*}(t)\,{\cal{A}}_{\perp}(t))$ & $\frac{9}{16 \pi}$
+        &  $\frac{1}{4}\sqrt{2}$ $\sin2\psi \sin2\theta \cos\phi$  \\
+      $|{\cal{A}}_S(t)|^2$ & $\frac{9}{16 \pi}$                     
+      & $\frac{1}{3} (1-\sin^2\theta\cos^2\phi)$  \\
+      $\Re({\cal{A}}_S^*(t){\cal{A}}_\parallel(t))$ & $\frac{9}{16 \pi} $
+      &  $\frac{1}{6}\sqrt{6}\sin\psi\sin^2\theta\sin 2\phi$ \\
+      $\Im({\cal{A}}_S^*(t){\cal{A}}_\perp(t))$ & $\frac{9}{16 \pi}$ 
+      &  $\frac{1}{6}\sqrt{6}\sin\psi\sin2\theta\cos\phi$ \\
+      $ \Re({\cal{A}}_S^*(t){\cal{A}}_0(t)) $ & $\frac{9}{16 \pi} $
+      & $\frac{2}{3}\sqrt{3}\cos\psi(1-\sin^2\theta\cos^2\phi)$ \\
+       \hline
+    \end{tabular}
+  \end{center}
+  \caption{The pure P-wave, pure S-wave and P-S interference angular functions.}\label{tab:canonicalpdf}
+\end{table}
 
+\subsection{Reparameterization}
+We want to rewrite the PDF in terms of associated Legendre polynomials $P_{i}(\cos\psi)$ and spherical harmonics $Y_{lm}(\cos\theta,\phi)$. First we will give some identities involving these functions:
 \begin{eqnarray}
 P_l(x) &=& \frac{1}{2^l l!} \frac{d^l}{dx^l}(x^2-1)^l \\
 P_l^m(x) &=& \frac{(-1)^m}{2^l l!} (1-x^2)^{\frac{1}{2}m} \frac{d^{l+m}}{dx^{l+m}} (x^2-1)^l\\
-P_l^{-m}(x) & = & (-1)^m \frac{(l-m)!}{(l+m)!}P_l^m(x) \\
+P_l^m(x) &=& (-1)^m (1-x^2)^{\frac{1}{2}m} \frac{d^{m}}{dx^{m}} P_l(x)\\
+%P_l^{-m}(x) & = & (-1)^m \frac{(l-m)!}{(l+m)!}P_l^m(x) \\
 Y_l^m (\theta,\phi) &=& N_{lm} P_l^m(\cos\theta)e^{im\phi}\;\;\mathrm{with}\;N_{lm} =\sqrt{ \frac{2l+1}{4\pi}\frac{(l-m)!}{(l+m)!} } \\
 Y_l^{-m}(\theta,\phi) &=& (-1)^m N_{lm}P_l^m(\cos\theta) e^{-im\phi}
 \end{eqnarray}
@@ -335,93 +408,118 @@ Y_{lm}(\theta,\phi) & = & \left\{ \begin{array}{cl}
   \sin^2\theta\cos\phi\sin\phi &=& \sqrt{ \frac{4\pi}{9}} \left(\sqrt{\frac{3}{5}} Y_{2,-2}(\cos\theta,\phi) \right) \\
   \sin\theta\cos\theta\cos\phi &=& \sqrt{ \frac{4\pi}{9}}\left( -\sqrt{\frac{3}{5}}Y_{2,1}(\cos\theta,\phi)\right) \\ 
   \sin\theta\cos\theta\sin\phi &=& \sqrt{ \frac{4\pi}{9}}\left( -\sqrt{\frac{3}{5}}Y_{2,-1}(\cos\theta,\phi) \right) \\
+  1 & = & P_0^0(\cos\psi)\\
+  \sin \psi & = & -P_1^1(\cos\psi)\\
+  \cos \psi & = & P_0^1(\cos\psi)\\
   \sin\psi\cos\psi &=& -\frac{1}{3} P_2^1(\cos\psi) \\
   \sin^2 \psi      &=&  \frac{1}{3} P_2^2(\cos\psi) \\
   \cos^2 \psi      &=&  \frac{1}{3} \left( P_0^0(\cos\psi)+2P_2^0(\cos\psi) \right)
 \end{eqnarray}
-
+Using these identities one can rewrite the PDF as 
 \begin{eqnarray}
-\frac{9 }{\sqrt{4\pi}} |{ \bf A}(t) \wedge \hat{n}|^2 
-                              &=&|{\cal A}_0|^2  (P_0^0+2P_2^0 ) \left( 2 Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
-                              &+&|{\cal A}_\parallel|^2 P_2^2 \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
-                              &+&|{\cal A}_\perp|^2  P_2^2 \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
-                              &+&\Im({\cal A}_\parallel^*{\cal A}_\perp) \sqrt{\frac{3}{5}}P_2^2 Y_{2,-1}  \\
-                              &+&\Im({\cal A}_0^* {\cal A}_\perp )       \sqrt{\frac{6}{5}}P_2^1Y_{2,1} \\
-                              &-&\Re({\cal A}_0^*{\cal A}_\parallel  )   \sqrt{\frac{6}{5}}P_2^1 Y_{2,-2} 
+\frac{9 }{\sqrt{4\pi}} \left|[{ \bf A}(t) + \frac{1}{\sqrt{3}}{\bf S}(t)] \wedge \hat{n}\right|^2
+                              &=&|{\cal A}_0(t)|^2  (P_0^0+2P_2^0 ) \left( 2 Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
+                              &+&|{\cal A}_\parallel(t)|^2 P_2^2 \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
+                              &+&|{\cal A}_\perp(t)|^2  P_2^2 \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
+                              &+&\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) \sqrt{\frac{3}{5}}P_2^2 Y_{2,-1}  \\
+                              &-&\Re({\cal A}_0^*(t){\cal A}_\parallel(t)  )   \sqrt{\frac{6}{5}}P_2^1 Y_{2,-2} \\
+                              &+&\Im({\cal A}_0^*(t) {\cal A}_\perp(t) )       \sqrt{\frac{6}{5}}P_2^1Y_{2,1} \\
+                              &+&|{\cal A}_0(t)|^2 P_0^0\left( 2 Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right)\\
+                              &-&\Re({\cal A}_S^*(t){\cal A}_\parallel(t))3\sqrt{\frac{2}{5}}P_1^1Y_{2,-2}\\
+                              &+&\Im({\cal A}_S^*(t){\cal A}_\perp(t))3\sqrt{\frac{2}{5}}P_1^1Y_{2,1}\\
+                              &+&\Re({\cal A}_S^*(t){\cal A}_0(t)) P_1^0(4\sqrt{3}Y_{00}+2\sqrt{\frac{3}{5}}Y_{20}-6\sqrt{\frac{1}{5}}Y_{22})
 \end{eqnarray}
-
-\begin{equation}
+This can be summarized in tabular form as
+\begin{equation}\label{tab:pdfinpy}
 \begin{array}{|c|| c | c | c | c | c | c |}
  \hline
-&\multicolumn{6}{|c|}{ P_i^j(\cos\psitr)Y_{lm}(\cos\thetatr,\phitr) \times \frac{9}{\sqrt{4\pi}} } \\
+&\multicolumn{6}{|c|}{ P_i^j(\cos\psitr)Y_{lm}(\cos\thetatr,\phitr) } \\
  \hline
-|{\cal A}_0(t)|^2                       &  2 P_0^0Y_{00}  & \sqrt{\frac{1}{5}} P_0^0 Y_{20} & -\sqrt{\frac{3}{5}} P_0^0 Y_{22}
-                                        &  4 P_2^0Y_{00}  & \sqrt{\frac{4}{5}} P_2^0 Y_{20} & -\sqrt{\frac{12}{5}} P_2^0 Y_{22} \\
-|{\cal A}_\parallel(t)|^2               &    P_2^2Y_{00} &  \sqrt{\frac{1}{20}} P_2^2 Y_{20} & +\sqrt{\frac{3}{20}} P_2^2Y_{22} & && \\
+|{\cal A}_0(t)|^2                       &  2 P_0^0Y_{00}  & \sqrt{\frac{1}{5}} P_0^0 Y_{20} & - \sqrt{\frac{3}{5}} P_0^0 Y_{22}
+                                        &  4 P_2^0Y_{00}  & 2 \sqrt{\frac{1}{5}} P_2^0 Y_{20} & -2 \sqrt{\frac{3}{5}} P_2^0 Y_{22} \\
+|{\cal A}_\parallel(t)|^2               &    P_2^2Y_{00} &  \frac{1}{2}\sqrt{\frac{1}{5}} P_2^2 Y_{20} & \frac{1}{2}\sqrt{\frac{3}{5}} P_2^2Y_{22} & && \\
 |{\cal A}_\perp(t)|^2                   &  P_2^2 Y_{00} & -\sqrt{\frac{1}{5}} P_2^2 Y_{20} &                                 &&& \\
 \Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &  \sqrt{\frac{3}{5}} P_2^2 Y_{2,-1} &&&&&\\
-\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &  \sqrt{\frac{6}{5}} P_2^1 Y_{2,1} &&&&&\\
 \Re({\cal A}_0^*(t){\cal A}_\parallel(t))     & -\sqrt{\frac{6}{5}} P_2^1 Y_{2,-2} &&&&&\\
-|{\cal A}_{s}(t)|^2                   &  4 P_0^0 Y_{00} & 2 \sqrt{\frac{1}{5}} P_0^0 Y_{20} & -2 \sqrt{\frac{3}{5}} P_0^0 Y_{22}                                &&& \\
-\Re({\cal A}_{s}^*(t){\cal A}_0(t))   &  8 \sqrt{3} P_1^0 Y_{00} & 4 \sqrt{\frac{3}{5}} P_1^0 Y_{20} & - 12 \sqrt{\frac{1}{5}} P_1^0 Y_{22}                       &&& \\
-\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))   &  -6\sqrt{\frac{2}{5}} P_1^1 Y_{2,-2} &&&&& \\
-\Im({\cal A}_{s}^*(t){\cal A}_\perp(t))     &  6\sqrt{\frac{2}{5}} P_1^1 Y_{2,1} &&&&& \\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &  \sqrt{\frac{6}{5}} P_2^1 Y_{2,1} &&&&&\\
+|{\cal A}_{s}(t)|^2                   &  2 P_0^0 Y_{00} & \sqrt{\frac{1}{5}} P_0^0 Y_{20} & -\sqrt{\frac{3}{5}} P_0^0 Y_{22}                                &&& \\
+\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))   &  -3\sqrt{\frac{2}{5}} P_1^1 Y_{2,-2} &&&&& \\
+\Im({\cal A}_{s}^*(t){\cal A}_\perp(t))     &  3\sqrt{\frac{2}{5}} P_1^1 Y_{2,1} &&&&& \\
+\Re({\cal A}_{s}^*(t){\cal A}_0(t))   &  4 \sqrt{3} P_1^0 Y_{00} & 2 \sqrt{\frac{3}{5}} P_1^0 Y_{20} & - 6 \sqrt{\frac{1}{5}} P_1^0 Y_{22}                       &&& \\
  \hline
 \end{array}
 \end{equation}
+Rewriting this in terms of helicity angles instead of transversity angles one obtains
 \begin{equation}
 \begin{array}{|c|| c | c | c | c | }
  \hline
-&\multicolumn{4}{|c|}{ P_i^j(\cos\thetaK)Y_{lm}(\cos\thetaL,\phiL) \times \frac{9}{\sqrt{4\pi}} } \\
+&\multicolumn{4}{|c|}{ P_i^j(\cos\thetaK)Y_{lm}(\cos\thetaL,\phiL) } \\
  \hline
 |{\cal A}_0(t)|^2                       & 2P_0^0Y_{00} & -\sqrt{\frac{4}{5}}P_0^0Y_{20} & 4P_2^0Y_{00} & -\sqrt{\frac{16}{5}} P_2^0Y_{20}  \\
 |{\cal A}_\parallel(t)|^2               & P_2^2Y_{00} &\sqrt{\frac{1}{20}} P_2^2Y_{20} &-\sqrt{\frac{3}{20}}P_2^2Y_{22} & \\
 |{\cal A}_\perp(t)|^2                   & P_2^2Y_{00} & \sqrt{\frac{1}{20}} P_2^2Y_{20} &\sqrt{\frac{3}{20}}P_2^2Y_{22} & \\
 \Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) & \sqrt{\frac{3}{5}}P_2^2Y_{2,-2}&&&\\
-\Im({\cal A}_0^*(t){\cal A}_\perp(t))         & -\sqrt{\frac{6}{5}}P_2^1Y_{2,-1}&&&\\
 \Re({\cal A}_0^*(t){\cal A}_\parallel(t))     & \sqrt{\frac{6}{5}}P_2^1Y_{21}&&&\\
-|{\cal A}_{s}(t)|^2                   &  4 P_0^0 Y_{00} & -4 \sqrt{\frac{1}{5}} P_0^0 Y_{20} && \\
-\Re({\cal A}_{s}^*(t){\cal A}_0(t))   &  8 \sqrt{3} P_1^0 Y_{00} & -8 \sqrt{\frac{1}{5}} P_1^0 Y_{20} && \\
-\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))   &  6\sqrt{\frac{2}{5}} P_1^1 Y_{2,1} &&& \\
-\Im({\cal A}_{s}^*(t){\cal A}_\perp(t))     &  -6\sqrt{\frac{2}{5}} P_1^1 Y_{2,-1} &&& \\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         & -\sqrt{\frac{6}{5}}P_2^1Y_{2,-1}&&&\\
+|{\cal A}_{s}(t)|^2                   &  2 P_0^0 Y_{00} & -2 \sqrt{\frac{1}{5}} P_0^0 Y_{20} && \\
+\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))   &  3\sqrt{\frac{2}{5}} P_1^1 Y_{2,1} &&& \\
+\Im({\cal A}_{s}^*(t){\cal A}_\perp(t))     &  -3\sqrt{\frac{2}{5}} P_1^1 Y_{2,-1} &&& \\
+\Re({\cal A}_{s}^*(t){\cal A}_0(t))   &  4 \sqrt{3} P_1^0 Y_{00} & -4 \sqrt{\frac{3}{5}} P_1^0 Y_{20} && \\
  \hline
 \end{array}
 \end{equation}
 
-
+The correctly normalized PDF is $\frac{9}{16 \pi}|{ \bf A}(t) \wedge \hat{n}|^2$, as was calculated before. Since we coded up the functions as shown in table \ref{tab:pdfinpy}, the correct normalization for the PDF in our code and thus for the terms in table \ref{tab:pdfinpy} is 
+\begin{equation}
+\frac{9}{16 \pi}\frac{\sqrt{4 \pi}}{9} = \frac{1}{8 \sqrt{\pi}}
+\end{equation}
 
 \pagebreak
+\section{Angular acceptance and angular acceptance correction}
+We also expand a general angular acceptance function in terms of associated Legendre polynomials and spherical harmonics:
 \begin{equation}
    \epsilon(\psi,\theta,\phi) = c^{i}_{jk} P_i(\cos\psi)Y_{jk}(\theta,\phi)
    \label{eq:eps_exp}
 \end{equation}
-
+Calculating the normalization integral:
 \begin{eqnarray}
-    N(q_T,t)  &=&  \int d\cos\psi\int d\cos\theta \int d\phi \epsilon(\psi,\theta,\phi) |{\bf A}(t,q_T) \wedge \hat{n}|^2 \\
-      &=& c^i_{jk}\frac{\sqrt{4\pi}}{9} \int d\cos\psi   P_i(\cos\psi)  \int d\cos\theta d\phi Y_{jk}(\theta,\phi) 
+    N(q_T,t)  &=&  \int d\cos\psi\int d\cos\theta \int d\phi \epsilon(\psi,\theta,\phi) \frac{9}{\sqrt{4\pi}}|{\bf A}(t,q_T) \wedge \hat{n}|^2 \\
+      &=& c^i_{jk} \int d\cos\psi   P_i(\cos\psi)  \int d\cos\theta d\phi Y_{jk}(\theta,\phi) 
           \biggl[  \\
-          &&                   |{\cal A}_\parallel|^2 P_2^2(\cos\psi) \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
           &&                  +|{\cal A}_0|^2  (P_0^0(\cos\psi)+2P_2^0(\cos\psi) ) \left( 2Y_{00}+\sqrt{\frac{1}{5}}Y_{20}-\sqrt{\frac{3}{5}}Y_{22} \right) \\
+          &&                   |{\cal A}_\parallel|^2 P_2^2(\cos\psi) \left( Y_{00}+\sqrt{\frac{1}{20}}Y_{20}+\sqrt{\frac{3}{20}}Y_{22}  \right)  \\
           &&                  +|{\cal A}_\perp|^2  P_2^2(\cos\psi) \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
           &&                  +\Im({\cal A}_\parallel^*{\cal A}_\perp)\sqrt{\frac{3}{5}}P_2^2(\cos\psi) Y_{2,-1}  \\
+          &&                  -\Re({\cal A}_0^*{\cal A}_\parallel  )  \sqrt{\frac{6}{5}}P_2^1(\cos\psi) Y_{2,-2} \\
           &&                  +\Im({\cal A}_\perp^* {\cal A}_0 )      \sqrt{\frac{6}{5}}P_2^1(\cos\psi)Y_{2,1} \\
-          &&                  -\Re({\cal A}_0^*{\cal A}_\parallel  )  \sqrt{\frac{6}{5}}P_2^1(\cos\psi) Y_{2,-2} 
+          &&                  +|{\cal A}_{s}(t)|^2  P_0^0 (2Y_{00} + \sqrt{\frac{1}{5}}Y_{20} -\sqrt{\frac{3}{5}} Y_{22}) \\
+          &&                  -\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t)) 3\sqrt{\frac{2}{5}} P_1^1 Y_{2,-2}\\
+          &&                  +\Im({\cal A}_{s}^*(t){\cal A}_\perp(t)) 3\sqrt{\frac{2}{5}} P_1^1 Y_{2,1}\\
+          &&                  +\Re({\cal A}_{s}^*(t){\cal A}_0(t)) P_1^0( 4\sqrt{3}  Y_{00} + 2 \sqrt{\frac{3}{5}} Y_{20} - 6 \sqrt{\frac{1}{5}}Y_{22})
           \biggr] \\
-      &=& \frac{\sqrt{4\pi}}{9}  \int d\cos\psi   P_i(\cos\psi) \biggl[  \\
-          &&                   |{\cal A}_\parallel|^2 2( P_0^0(\cos\psi) - P_2^0(\cos\psi)  )           \left( c^i_{00}  +\sqrt{\frac{1}{20}}c^i_{20}+\sqrt{\frac{3}{20}}c^i_{22}  \right)  \\
+      &=& \int d\cos\psi   P_i(\cos\psi) \biggl[  \\
           &&                  +|{\cal A}_0|^2 2 (\frac{1}{2}P_0^0(\cos\psi)+P_2^0(\cos\psi) ) \left( 2 c^i_{00}+\sqrt{\frac{1}{ 5}}c^i_{20}-\sqrt{\frac{3}{ 5}}c^i_{22} \right) \\
+          &&                   |{\cal A}_\parallel|^2 2( P_0^0(\cos\psi) - P_2^0(\cos\psi)  )           \left( c^i_{00}  +\sqrt{\frac{1}{20}}c^i_{20}+\sqrt{\frac{3}{20}}c^i_{22}  \right)  \\
           &&                  +|{\cal A}_\perp|^2 2 ( P_0^0(\cos\psi) - P_2^0(\cos\psi)  )              \left( c^i_{00}  -\sqrt{\frac{1}{ 5}}c^i_{20}\right)\\
           &&                  +\Im({\cal A}_\parallel^*{\cal A}_\perp)2\sqrt{\frac{3}{5}} ( P_0^0(\cos\psi) - P_2^0(\cos\psi)  ) c^i_{2,-1}  \\
+          &&                  -\Re({\cal A}_0^*{\cal A}_\parallel  )  \sqrt{\frac{6}{5}}P_2^1(\cos\psi) c^i_{2,-2}\\ 
           &&                  +\Im({\cal A}_0^* {\cal A}_\perp )      \sqrt{\frac{6}{5}}P_2^1(\cos\psi)c^i_{2,1} \\
-          &&                  -\Re({\cal A}_0^*{\cal A}_\parallel  )  \sqrt{\frac{6}{5}}P_2^1(\cos\psi) c^i_{2,-2} 
+          &&                  +|{\cal A}_{s}(t)|^2  P_0^0 (2c^i_{00} + \sqrt{\frac{1}{5}}c^i_{20} -\sqrt{\frac{3}{5}} c^i_{22}) \\
+          &&                  -\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t)) 3\sqrt{\frac{2}{5}} P_1^1 c^i_{2,-2}\\
+          &&                  +\Im({\cal A}_{s}^*(t){\cal A}_\perp(t)) 3\sqrt{\frac{2}{5}} P_1^1 c^i_{2,1}\\
+          &&                  +\Re({\cal A}_{s}^*(t){\cal A}_0(t)) P_1^0( 4\sqrt{3}  c^i_{00} + 2 \sqrt{\frac{3}{5}} c^i_{20} - 6 \sqrt{\frac{1}{5}}c^i_{22})
       \biggr] \\
-      &=& \frac{8\sqrt{\pi}}{9}  \biggl[ \\
-         &&                    |{\cal A}_\parallel|^2 \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
+      &=& 4\biggl[ \\
          &&                   +|{\cal A}_0|^2   \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
+         &&                    |{\cal A}_\parallel|^2 \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
          &&                   +|{\cal A}_\perp|^2    \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
          &&                   +\Im({\cal A}_\parallel^*{\cal A}_\perp)\sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
-         &&                   -\Im({\cal A}_\perp^* {\cal A}_0 )  \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
          &&                   +\Re({\cal A}_0^*{\cal A}_\parallel)\sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+... \right) \\
+         &&                   -\Im({\cal A}_\perp^* {\cal A}_0 )  \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
+          &&                  +|{\cal A}_{s}(t)|^2  \frac{1}{2} \left(2c^0_{00} + \sqrt{\frac{1}{5}}c^0_{20} -\sqrt{\frac{3}{5}} c^0_{22}\right) \\
+          &&                  +\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t)) 3 \sqrt{\frac{2}{5}}\frac{\pi}{8} \left(c^0_{2,-2}-\frac{1}{8}c^2_{2,-2}-\frac{1}{64}c^4_{2,-2}-\frac{5\pi}{1024}c^6_{2,-2}-\frac{35\pi}{16384}c^8_{2,-2}-...\right)\\
+          &&                  -\Im({\cal A}_{s}^*(t){\cal A}_\perp(t)) 3\sqrt{\frac{2}{5}} \frac{\pi}{8} \left(c^0_{2,1}-\frac{1}{8}c^2_{2,1}-\frac{1}{64}c^4_{2,1}-\frac{5\pi}{1024}c^6_{2,1}-\frac{35\pi}{16384}c^8_{2,1}-...\right)\\
+          &&                  +\Re({\cal A}_{s}^*(t){\cal A}_0(t)) \frac{1}{6}\left(4\sqrt{3}  c^1_{00} + 2 \sqrt{\frac{3}{5}} c^1_{20} - 6 \sqrt{\frac{1}{5}}c^1_{22}\right)
       \biggr]
 \end{eqnarray}
 
@@ -429,30 +527,38 @@ where we have used
 \begin{eqnarray}
 \int_{-1}^1 d\cos\theta \int_0^{2\pi} d\phi \;\;Y_l^m(\theta,\phi) Y_{l'}^{m'*}(\theta,\phi) &=& \delta_{ll'}\delta_{mm'}\\
 \int_{-1}^1 dx  P_k^m P_l^m&=& \frac{2}{2l+1}\frac{(l+m)!}{(l-m)!}\delta_{kl} \\
-P_2^1(x) = -3x(1-x^2)^{1/2} &=& -3x(1-...  x^2 + ... x^4  + ...x^6 + ...x^8  + ... ) \\
-&=& ...P_1 + ...P_3 + ...P_5 +...P_7 + ...
+P_2^2(x) &=& 3(1-x^2) = 2(P_0-P_2)\\
+P_2^1(x) &=& -3x(1-x^2)^{1/2} = -3x(1-...  x^2 + ... x^4  + ...x^6 + ...) \\
+&=& ...P_1 + ...P_3 + ...P_5 +...P_7 + ...\\
+P_1^1(x) &=& -1(1-x^2)^{1/2} = ...P_0 + ...P_2 + ...P_4 + ...\\
 \end{eqnarray}
 
-At this point, we recognize the equivalence of the following combinations of Fourier coefficients of the efficiency, and the 'efficiency moments',
-i.e.
+In particular, an online integrator can explicitly calculate the integrals $\int_{-1}^{1}P_2^1P_i^0\mathrm{d}x$ where  $i = 1,3,5,...$ to find the coefficients in the $\Re({\cal A}_0^*{\cal A}_\parallel)$ and $\Im({\cal A}_\perp^* {\cal A}_0 )$ terms. The same goes for the integrals $\int_{-1}^{1}P_1^1P_i^0\mathrm{d}x$ where $i=0,2,4,...$ for the terms $\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))$ and $\Im({\cal A}_{s}^*(t){\cal A}_\perp(t))$.
+
+At this point, we recognize the equivalence of the following combinations of Fourier coefficients of the efficiency, and the 'efficiency normalization moments', where we have taken into account the factor $\frac{1}{8\sqrt{\pi}}$ which represents the overall normalization. 
 
 \begin{eqnarray}
-    \xi_{\parallel\parallel} &=& \frac{8 \sqrt{\pi}}{9} \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
-    \xi_{00}                 &=& \frac{8 \sqrt{\pi}}{9} \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
-    \xi_{\perp\perp}         &=& \frac{8 \sqrt{\pi}}{9} \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
-    \xi_{\parallel\perp}     &=& \frac{8 \sqrt{\pi}}{9} \sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
-    \xi_{\perp 0}            &=& -\frac{8 \sqrt{\pi}}{9} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
-    \xi_{0\parallel}         &=& \frac{8 \sqrt{\pi}}{9} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+... \right) 
-\end{eqnarray}
+    \xi_{00}                 &=& \frac{1}{2\sqrt{\pi}} \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
+    \xi_{\parallel\parallel} &=& \frac{1}{2\sqrt{\pi}} \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
+    \xi_{\perp\perp}         &=& \frac{1}{2\sqrt{\pi}} \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
+    \xi_{\parallel\perp}     &=& \frac{1}{2\sqrt{\pi}} \sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
+    \xi_{0\parallel}         &=& \frac{1}{2\sqrt{\pi}} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+... \right) \\
+    \xi_{\perp 0}            &=& -\frac{1}{2\sqrt{\pi}} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+... \right) \\
+    \xi_{SS}               &=&  \frac{1}{2\sqrt{\pi}}\frac{1}{2} \left(2c^0_{00} + \sqrt{\frac{1}{5}}c^0_{20} -\sqrt{\frac{3}{5}} c^0_{22}\right) \\
+    \xi_{S \parallel}        &=&  \frac{1}{2\sqrt{\pi}} 3 \sqrt{\frac{2}{5}}\frac{\pi}{8} \left(c^0_{2,-2}-\frac{1}{8}c^2_{2,-2}-\frac{1}{64}c^4_{2,-2}-\frac{5\pi}{1024}c^6_{2,-2}-\frac{35\pi}{16384}c^8_{2,-2}-...\right)\\
+    \xi_{S \perp}           &=& \frac{1}{2\sqrt{\pi}} 3\sqrt{\frac{2}{5}} \frac{\pi}{8} \left(c^0_{2,1}-\frac{1}{8}c^2_{2,1}-\frac{1}{64}c^4_{2,1}-\frac{5\pi}{1024}c^6_{2,1}-\frac{35\pi}{16384}c^8_{2,1}-...\right)\\
+    \xi_{S 0}              &=& \frac{1}{2\sqrt{\pi}}\frac{1}{6}\left(4\sqrt{3}  c^1_{00} + 2 \sqrt{\frac{3}{5}} c^1_{20} - 6 \sqrt{\frac{1}{5}}c^1_{22}\right)
+    \end{eqnarray}
 
 This implies that, if the efficiency is uniform (and $100\%$) in the angles, i.e.
 \begin{equation}
    \epsilon(\psi,\theta,\phi) = 1 \Rightarrow c^0_{00} = 2\sqrt{\pi} ; c^{i}_{jk} = 0 (i\neq 0, j\neq 0, k \neq 0)
 \end{equation}
 we can read off the moments as:
-\begin{equation}
-    \xi_{\parallel\parallel}= \xi_{00}= \xi_{\perp\perp}  = \frac{16\pi}{9};\;\; \xi_{\parallel\perp} =\xi_{\perp 0} = \xi_{0\parallel} = 0
-\end{equation}
+\begin{eqnarray}
+    \xi_{\parallel\parallel} = \xi_{00}= \xi_{\perp\perp} = \xi_{SS} = 1\\
+    \xi_{\parallel\perp} =\xi_{\perp 0} = \xi_{0\parallel} =\xi_{S \parallel} = \xi_{S \perp} = \xi_{S 0} =0
+\end{eqnarray}
 Given that it is known that  in the likelihood fit only the (relative) normalization of the six angular
 terms matters, it is clear that only a subset the Fourier components needs to be know to
 perform the fit. Of course additional terms will improve the visual results when plotting 

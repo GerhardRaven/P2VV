@@ -344,13 +344,15 @@ ab = abasis(ws,angles)
 #deltaz = 0.
 #rperp = 0.4
 #deltarperp = -0.17
-
-#dG = 0.06852
 #Beta_s = 0.02
 
 #This yields
 #rperp2 = 0.16
 #rz2 = 0.601
+
+#dG = 0.06852 (in DECAY.DEC, but commented out????)
+#dm = 17.8 (in DECAY.DEC)
+#Gamma = 0.68 (from tau=1.47 : SetupProject LHCb, CondDBBrowser DDDB &, param ParticleTable.txt)
 
 ws.factory("{rz2[0.601,0.,1.],rperp2[0.16,0.,1.]}")
 ws.factory("RooFormulaVar::rpar2('1-@0-@1',{rz2,rperp2})")

@@ -29,14 +29,15 @@ from ModelBuilders import *
 ############################
 
 signif = 1
-swave = True
 
+#2010
 #mcfilename = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
+#2011
 mcfilename = '/data/bfys/dveijk/MC/2011/MC2011.root'
-#datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/FromWouter.root'
-#datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3.root'
-#datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3WidePhiMass.root'
-datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2.root'
+
+#datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2.root'
+#datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2_WidePhiMass.root'
+datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2XCheck.root'
 datasetname = 'MyTree'
 
 ws = RooWorkspace("ws")
@@ -54,23 +55,14 @@ angles = ws.set('transversityangles')
 
 ab = abasis(ws,angles)
 
-if swave:
-    ws.factory("{rz2[0.601,0.4,0.7],rperp2[0.16,0.1,0.5],rs2[0.00001,0.,0.15]}")
-    ws.factory("RooFormulaVar::rpar2('1-@0-@1-@2',{rz2,rperp2,rs2})")
-    ws.factory("RooFormulaVar::rz('sqrt(@0)',{rz2})")
-    ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
-    ws.factory("RooFormulaVar::rpar('sqrt(@0)',{rpar2})")
-    ws.factory("RooFormulaVar::rs('sqrt(@0)',{rs2})")
+ws.factory("{rz2[0.601,0.4,0.7],rperp2[0.16,0.1,0.5],rs2[0.00001,0.,0.15]}")
+ws.factory("RooFormulaVar::rpar2('1-@0-@1-@2',{rz2,rperp2,rs2})")
+ws.factory("RooFormulaVar::rz('sqrt(@0)',{rz2})")
+ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
+ws.factory("RooFormulaVar::rpar('sqrt(@0)',{rpar2})")
+ws.factory("RooFormulaVar::rs('sqrt(@0)',{rs2})")
 
-    ws.factory("{deltaz[0.],deltapar[2.5,%f,%f],deltaperp[-0.17,%f,%f],deltas[0.5,%f,%f]}"%(-2*pi,2*pi,-2*pi,2*pi,-2*pi,2*pi))
-else:
-    ws.factory("{rz2[0.601,0.4,0.7],rperp2[0.16,0.1,0.5]}")
-    ws.factory("RooFormulaVar::rpar2('1-@0-@1',{rz2,rperp2})")
-    ws.factory("RooFormulaVar::rz('sqrt(@0)',{rz2})")
-    ws.factory("RooFormulaVar::rperp('sqrt(@0)',{rperp2})")
-    ws.factory("RooFormulaVar::rpar('sqrt(@0)',{rpar2})")
- 
-    ws.factory("{deltaz[0.],deltapar[2.5,%f,%f],deltaperp[-0.17,%f,%f]}"%(-2*pi,2*pi,-2*pi,2*pi))
+ws.factory("{deltaz[0.],deltapar[2.5,%f,%f],deltaperp[-0.17,%f,%f],deltas[0.5,%f,%f]}"%(-2*pi,2*pi,-2*pi,2*pi,-2*pi,2*pi))
 
 #Parametrize differently
 #ws.factory("{NAzAz[1],NAparApar[0.44,-1,1],NAperpAperp[0.4,-1,1],ReAparAperp[-0.114,-1,1],ReAzAperp[0.08,-1,1],ReAzApar[-0.66,-1,1],ImAparAperp[0.410,-1,1],ImAzAperp[-0.63,-1,1]}")
@@ -82,9 +74,8 @@ ws.factory("expr::ImApar ('@0    * sin(@1)', {rpar,deltapar})")
 ws.factory("expr::ReAperp('@0    * cos(@1)',{rperp,deltaperp})")
 ws.factory("expr::ImAperp('@0    * sin(@1)',{rperp,deltaperp})")
 
-if swave:
-    ws.factory("expr::ReAs('@0 * cos(@1)',{rs,deltas})")
-    ws.factory("expr::ImAs('@0 * sin(@1)',{rs,deltas})")
+ws.factory("expr::ReAs('@0 * cos(@1)',{rs,deltas})")
+ws.factory("expr::ImAs('@0 * sin(@1)',{rs,deltas})")
 
 # define the relevant combinations of strong amplitudes
 ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,    ImAz                      })")  # |A_z|^2
@@ -96,15 +87,12 @@ ws.factory("expr::ReAzApar   ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReApar,
 ws.factory("expr::ImAparAperp('( @0 * @3 - @1 * @2 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par|A_perp|  sin(delta_perp - delta_par)
 ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   sin(delta_perp - delta_z)
 
-if swave:
-    ws.factory("expr::NAsAs      ('( @0 * @0 + @1 * @1 )',{ReAs,    ImAs                      })")  # |A_s|^2
-    
-    ws.factory("expr::ReAsAz     ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| cos(delta_z - delta_s)
-    ws.factory("expr::ReAsApar   ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| cos(delta_par - delta_s)
-    
-    ws.factory("expr::ImAsAperp  ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAperp, ImAperp })")  # |A_s||A_perp| sin(delta_perp - delta_s)
-    ws.factory("expr::ImAsAz     ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| sin(delta_z - delta_s)
-    ws.factory("expr::ImAsApar   ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| sin(delta_par - delta_s)
+ws.factory("expr::NAsAs      ('( @0 * @0 + @1 * @1 )',{ReAs,    ImAs                      })")  # |A_s|^2
+ws.factory("expr::ReAsAz     ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| cos(delta_z - delta_s)
+ws.factory("expr::ReAsApar   ('( @0 * @2 + @1 * @3 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| cos(delta_par - delta_s)
+ws.factory("expr::ImAsAperp  ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAperp, ImAperp })")  # |A_s||A_perp| sin(delta_perp - delta_s)
+ws.factory("expr::ImAsAz     ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReAz,    ImAz    })")  # |A_s||A_z| sin(delta_z - delta_s)
+ws.factory("expr::ImAsApar   ('( @0 * @3 - @1 * @2 )',{ReAs,    ImAs,    ReApar,  ImApar  })")  # |A_s||A_par| sin(delta_par - delta_s)
     
 ##########################
 ### physics parameters ###
@@ -139,28 +127,22 @@ ws.factory("{expr::S('-1*sin(@0)',{phis}),expr::D('cos(@0)',{phis}),C[0]}")
 ws.factory("RooTruthModel::tres_MC(t)")
 
 #2011
-ws.factory("GaussModel::tres_3(t,tres_mu[0],tres_s3[0.513],tres_SF[1.00,0.9,1.1])")
-ws.factory("GaussModel::tres_2(t,tres_mu,tres_s2[0.0853],tres_SF)")
-ws.factory("GaussModel::tres_1(t,tres_mu,tres_s1[0.0434],tres_SF)")
-ws.factory("AddModel::tres({tres_3,tres_2,tres_1},{tres_f3[0.0017],tres_f2[0.165]})")
+#ws.factory("GaussModel::tres_3(t,tres_mu[-0.0027],tres_s3[0.513],tres_SF[1.00,0.9,1.1])")
+#ws.factory("GaussModel::tres_2(t,tres_mu,tres_s2[0.0853],tres_SF)")
+#ws.factory("GaussModel::tres_1(t,tres_mu,tres_s1[0.0434],tres_SF)")
+#ws.factory("AddModel::tres({tres_3,tres_2,tres_1},{tres_f3[0.0017],tres_f2[0.165]})")
 
-#ws.factory("GaussModel::tres(t,tres_mean[0.0],tres_sigma[0.06])")
+ws.factory("GaussModel::tres(t,tres_mean[0.0],tres_sigma[0.06])")
 
 # For determination of efficiency from MC, put wtag to 0, later integrate out (or set to 0.5 as I used to do before). Does that imply rebuilding the JpsiPhi pdf?
 ws.factory("tagomega[0.,0.,0.501]")
 ws.factory("expr::wtag('tagomega',tagomega)")
 
 #Build the MC PDF
-if swave:
-    MCpdf = buildJpsiphiSWave(ws,'MCpdf', True,'tres_MC')
-else:
-    MCpdf = buildJpsiphi(ws,'MCpdf', True,'tres_MC')
+MCpdf = buildJpsiphiSWave(ws,'MCpdf', True,'tres_MC')
 
 #Build the signal PDF
-if swave:
-    newpdf = buildJpsiphiSWave(ws,'newpdf', True,'tres')
-else:
-    newpdf = buildJpsiphi(ws,'newpdf', True,'tres')
+newpdf = buildJpsiphiSWave(ws,'newpdf', True,'tres')
 
 ws.defineSet("MCobservables","t,trcospsi,trcostheta,trphi")
 
@@ -174,6 +156,7 @@ NTupletree = MCdatafile.Get('MyTree')
 ## reducedtree.SetDirectory(tmpfile)
 ## reducedtree.Write()
 ## MCdata = RooDataSet('MCdata','MCdata',reducedtree,ws.set('observables'),'t==t && m==m')
+
 MCdata = RooDataSet('MCdata','MCdata',NTupletree,ws.set('MCobservables'),'t==t && trcospsi==trcospsi && trcostheta == trcostheta && trphi==trphi')
 ws.put(MCdata)
 print 'Number of MC events', MCdata.numEntries()
@@ -201,7 +184,7 @@ MCpdf_marginal = MCpdf.createProjection(marginalObs)
 # compute the 'canonical' six moments
 bnames = [ 'AzAz','AparApar','AperpAperp','AparAperp','AzAperp','AzApar' ]
 sixmom = [ EffMoment( ws['%s_basis'%n], 1., MCpdf_marginal, allObs ) for n in bnames ]
-computeMoments(MCdata,sixmom)
+computeMoments(MCdata,MCpdf_marginal,sixmom)
 xi_m = dict( [ (m.basis().GetName(),m.coefficient()) for m in sixmom ] )
 
 print 'Direct Moments xi_m =', xi_m
@@ -243,14 +226,12 @@ for (i,l) in product(range(4),range(3)) :
     moments += [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, MCpdf_marginal, allObs ) for m in range(-l,l+1) ]
 
 # loop over all data, determine moments
-computeMoments(MCdata,moments)
+computeMoments(MCdata,MCpdf_marginal,moments)
 
 # compute the 'canonical' moments given the Fourier series
 c = dict()
 for m in moments : c[ ( m.basis().i(),m.basis().l(),m.basis().m() ) ] = m.coefficient()
 c_000 = c[(0,0,0)]
-
-
 
 xi_c = compute_moments( c )
 # normalize moments and compare
@@ -445,9 +426,18 @@ angcorrpdf = buildEff_x_PDF(ws,'angcorr',ws['pdf_ext'],[ ( m.basis() , m.coeffic
 ws.put(angcorrpdf)
 
 #2011 values
-ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.384],p0sigma[0.010])")
-ws.factory("Gaussian::p1(p1var[-2.0,2.0],p1mean[1.037],p1sigma[0.081])")
-ws.factory("expr:wtag_syst('p0var+p1var*(tagomega-etamean)',tagomega,etamean[0.379],p0var,p1var)")
+#p0 = 0.384 \pm 0.003 (stat.) \pm 0.009(syst.)
+# sum quadr.: 0.009
+#p1 = 1.037 \pm 0.04 (stat.) \pm 0.07 (syst.)
+#sum quadr.: 0.08
+
+#ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.384],p0sigma[0.009])")
+#ws.factory("Gaussian::p1(p1var[-2.0,2.0],p1mean[1.037],p1sigma[0.08])")
+#ws.factory("expr:wtag_syst('p0var+p1var*(tagomega-etamean)',tagomega,etamean[0.379],p0var,p1var)")
+
+ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.367],p0sigma[0.007])")
+ws.factory("Gaussian::p1(p1var[-2.0,2.0],p1mean[1.00],p1sigma[0.05])")
+ws.factory("expr:wtag_syst('p0var+p1var*(tagomega-etamean)',tagomega,etamean[0.367],p0var,p1var)")
 
 ###########################
 ### Tagging systematics ###
@@ -469,12 +459,13 @@ angcorrtagpdf = customizer.build()
 getattr(ws,'import')(angcorrtagpdf,RooFit.RecycleConflictNodes())
 
 #Constrain deltams
-ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.63],t_sig_dm_sigma[0.11])")
+#ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.63],t_sig_dm_sigma[0.11])")
+ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.77],t_sig_dm_sigma[0.12])")
 
 #Constrain tres_SF
-ws.factory("Gaussian::tres_SFconstraint(tres_SF,tres_SF_mean[1.00],tres_SF_sigma[0.02])")
+#ws.factory("Gaussian::tres_SFconstraint(tres_SF,tres_SF_mean[1.00],tres_SF_sigma[0.02])")
 
-wsfile = TFile('UnbiasedWS_flatbkg.root','RECREATE')
+wsfile = TFile('UnbiasedWS_SmallPhiWindow_XCHECK.root','RECREATE')
 ws.Write()
 wsfile.Close()
 

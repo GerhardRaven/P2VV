@@ -14,19 +14,26 @@ from array import array
 
 from RooFitDecorators import *
 
-from lhcbStyle import *
-gStyle.SetOptTitle(0)
-lhcbname = printLHCb(gStyle,'L','Prelim','#sqrt{s}=7 TeV Data, L = 370 pb^{-1}')
+import rootStyle
+myStyle = rootStyle.plainstyle()
+gROOT.SetStyle(myStyle.GetName())
+gROOT.ForceStyle()
+gStyle.UseCurrentStyle()
+
+#from lhcbStyle import *
+#gStyle.SetOptTitle(0)
+#lhcbname = printLHCb(gStyle,'L','Prelim','#sqrt{s}=7 TeV Data, L = 370 pb^{-1}')
 #style = lhcbStyle()
 
-angcorr = True
+angcorr = False
 taggingsyst = True
-blinded = False
+blinded = True
 phisparam = True
 splitmKK = False
 
-name = 'unblinded_angcorr_flatbkg'
-wsfile = TFile('UnbiasedWS_flatbkg.root')
+name = 'SmallPhiWindow_XCHECKOLD'
+#wsfile = TFile('UnbiasedWS_SmallPhiWindow_.root')
+wsfile = TFile('UnbiasedWS_SmallPhiWindow_XCHECK.root')
 
 #name = 'FitXC_angcorr_withbkg'
 #wsfile = TFile('UnbiasedWS_withbkg.root')
@@ -79,100 +86,132 @@ else:
     pdf = pdfbeforeblinding
 
 #Set boundaries of some variables wider for blinding
-if phisparam:
-    ws.var('t_sig_dG').setVal(0.060)
-    ws.var('t_sig_dG').setMin(-4)
-    ws.var('t_sig_dG').setMax(4)
+if blinded:
+    if phisparam:
+        ws.var('t_sig_dG').setVal(0.060)
+        ws.var('t_sig_dG').setMin(-4)
+        ws.var('t_sig_dG').setMax(4)
+        
+        ws.var('phis').setVal(-1.50)
+        ws.var('phis').setMin(-2*pi)
+        ws.var('phis').setMax(2*pi)
+    else:
+        ws.var('t_sig_dG').setVal(0.060)
+        ws.var('t_sig_dG').setMin(-4)
+        ws.var('t_sig_dG').setMax(4)
     
-    ws.var('phis').setVal(-1.50)
-    ws.var('phis').setMin(-2*pi)
-    ws.var('phis').setMax(2*pi)
-else:
-    ws.var('t_sig_dG').setVal(0.060)
-    ws.var('t_sig_dG').setMin(-4)
-    ws.var('t_sig_dG').setMax(4)
-    
-    #ws.var('S').setVal(-0.04)
-    #ws.var('S').setMin(-4)
-    #ws.var('S').setMax(4)
+        #ws.var('S').setVal(-0.04)
+        #ws.var('S').setMin(-4)
+        #ws.var('S').setMax(4)
 
-    #ws.var('D').setVal(1)
-    #ws.var('D').setMin(-4)
-    #ws.var('D').setMax(4)
+        #ws.var('D').setVal(1)
+        #ws.var('D').setMin(-4)
+        #ws.var('D').setMax(4)
 
-## ws['rs2'].setVal(0.03)
-## ws['rs2'].setMin(0.)
-## ws['rs2'].setMax(1.)
-## #ws['rs2'].setConstant()
-## #ws['deltas'].setConstant()
-
-## ws['rz2'].setVal(0.485)
+## ws['rz2'].setVal(0.481)
 ## ws['rz2'].setMin(0.)
 ## ws['rz2'].setMax(1.)
 
 ## ws['rs2'].setVal(0.05)
 ## ws['rs2'].setMin(0.)
 ## ws['rs2'].setMax(1.)
+#ws['rs2'].setVal(0.)
+#ws['rs2'].setConstant()
+#ws['deltas'].setConstant()
 
-## ws['rperp2'].setVal(0.259)
+## ws['rperp2'].setVal(0.248)
 ## ws['rperp2'].setMin(0.)
 ## ws['rperp2'].setMax(1.)
 
-## ws['deltas'].setVal(3.0)
-## ws['deltas'].setMin(-2.*pi)
-## ws['deltas'].setMax(2.*pi)
+## ws['deltas'].setVal(3.)
+## #ws['deltas'].setVal(-1*3.)
+## ws['deltas'].setMin(-2*pi)
+## ws['deltas'].setMax(2*pi)
 
-## ws['deltaperp'].setVal(2.79)
-## ws['deltaperp'].setMin(-2.*pi)
+## ws['deltaperp'].setVal(2.913)
+## #ws['deltaperp'].setVal(pi-2.913)
+## ws['deltaperp'].setMin(-2*pi)
 ## ws['deltaperp'].setMax(2.*pi)
 
-## ws['deltapar'].setVal(3.24)
+## ws['deltapar'].setVal(3.237)
+## #ws['deltapar'].setVal(2*pi-3.237)
 ## ws['deltapar'].setMin(-2.*pi)
 ## ws['deltapar'].setMax(2.*pi)
 
-## ws['phis'].setVal(-1.1)
-## ws['phis'].setMin(-2.)
-## ws['phis'].setMax(0.)
+
+## ws['phis'].setVal(0.18)
+## #ws['phis'].setVal(pi-0.069)
+## ws['phis'].setMin(-2*pi)
+## ws['phis'].setMax(2*pi)
+
+## ws.var('t_sig_dG').setVal(0.121)
+## #ws.var('t_sig_dG').setVal(-1*0.121)
+
+
+ws['Nbkg'].setMax(50000)
+ws['Nsig'].setMax(10000)
 
 if splitmKK:
     #################################
     ### TEST OF SPLIT IN MKK BINS ###
     #################################
-    mdau2canvas = TCanvas('mdau2canvas','mdau2canvas')
-    mdau2frame = ws['mdau2'].frame()
-    ws['unbiaseddata'].plotOn(mdau2frame)
-    mdau2frame.Draw()
 
-    mdau2min = ws['mdau2'].getMin()
-    mdau2sigmin = 1014
-    mdau2sigmax = 1026
-    mdau2max = ws['mdau2'].getMax()
-    mKKcat = RooThresholdCategory('mKKcat','mKKcat',ws['mdau2'],'LeftSideBand') #Can't make it using factory: something goes wrong when trying to make the default value (LeftSideBand in this case)
+    mdau2bound1 = ws['mdau2'].getMin()
+    mdau2bound2 = 1008
+    mdau2bound3 = 1020
+    mdau2bound4 = 1032
+    mdau2bound5 = ws['mdau2'].getMax()
+    mKKcat = RooThresholdCategory('mKKcat','mKKcat',ws['mdau2'],'Bin1') #Can't make it using factory: something goes wrong when trying to make the default value (LeftSideBand in this case)
     ws.put(mKKcat)
-    ws['mKKcat'].addThreshold(mdau2sigmin,"LeftSideBand")
-    ws['mKKcat'].addThreshold(mdau2sigmax,"Signal")
-    ws['mKKcat'].addThreshold(mdau2max,"RightSideBand")
+    ws['mKKcat'].addThreshold(mdau2bound2,"Bin1")
+    ws['mKKcat'].addThreshold(mdau2bound3,"Bin2")
+    ws['mKKcat'].addThreshold(mdau2bound4,"Bin3")
+    ws['mKKcat'].addThreshold(mdau2bound5,"Bin4")
+
     ws['unbiaseddata'].table(ws['mKKcat']).Print('v')
 
+    mdau2canvas = TCanvas('mdau2canvas','mdau2canvas')
+    mdau2frame = ws['mdau2'].frame(RooFit.Bins(40))
+    ws['unbiaseddata'].plotOn(mdau2frame)
+    
+    
+    mdau2frame.Draw()
+
+    print "That's great: I have to print mdau2canvas.GetUymax() first, otherwise the boundaries aren't drawn nicely...."
+    print mdau2canvas.GetUymax()
+
+    bin1rightline = TLine(mdau2bound2,0,mdau2bound2,mdau2canvas.GetUymax())
+    bin1rightline.SetLineColor(2)
+    bin2rightline = TLine(mdau2bound3,0,mdau2bound3,mdau2canvas.GetUymax())
+    bin2rightline.SetLineColor(2)
+    bin3rightline = TLine(mdau2bound4,0,mdau2bound4,mdau2canvas.GetUymax())
+    bin3rightline.SetLineColor(2)
+
+    bin1rightline.Draw()
+    bin2rightline.Draw()
+    bin3rightline.Draw()
+
+    mdau2canvas.SaveAs('mdau2plot.eps')
+    
     addcolumn = ws['unbiaseddata'].addColumn(ws['mKKcat'])
     addcolumn.SetName('thismKKcat')
     ws.put(addcolumn)
 
     #ws.factory("SIMCLONE::simpdf(pdf_ext_inc_tag_syst_blinded,$SplitParam({rs2,deltas,Nbkg,Nsig},thismKKcat))")
-    ws.factory("SIMCLONE::simpdf(pdf_ext_inc_tag_syst_blinded,$SplitParam({rs2,deltas,Nbkg,Nsig},thismKKcat))")
+    ws.factory("SIMCLONE::simpdf(pdf_ext_inc_tag_syst,$SplitParam({rs2,deltas,Nbkg,Nsig},thismKKcat))")
 
     print 'Going to fit the Simultaneous PDF....'
     result = ws['simpdf'].fitTo(ws['unbiaseddata'],RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'))))
 
     ### Plot roocategory against parameters ###
-    NmKKBins = 3
-    xlist = [0,1,2]
-    xerrlist = [0.,0.,0.]
+    NmKKBins = 4
+    xlist = [0,1,2,3]
+    xerrlist = [0.,0.,0.,0.]
     x = array('f', xlist)
     xerr = array('f', xerrlist)
 
-    rs2namelist = ['rs2_LeftSideBand','rs2_Signal','rs2_RightSideBand']
-    deltasnamelist = ['deltas_LeftSideBand','deltas_Signal','deltas_RightSideBand']
+    rs2namelist = ['rs2_Bin1','rs2_Bin2','rs2_Bin3','rs2_Bin4']
+    deltasnamelist = ['deltas_Bin1','deltas_Bin2','deltas_Bin3','deltas_Bin4']
     rs2list = []
     rs2errlist = []
     deltaslist = []
@@ -187,20 +226,20 @@ if splitmKK:
     rs2y = array('f',rs2list)
     rs2yerr = array('f',rs2errlist)
     rs2_v_cat = TGraphErrors(NmKKBins, x, rs2y, xerr, rs2yerr);
-    rs2_v_cat.SetTitle("|A_{s}|^{2} vs. category")
+    rs2_v_cat.SetTitle("|A_{s}|^{2} vs. mKK category")
     rs2_v_cat.SetMarkerStyle(20)
     rs2_v_cat.SetMarkerColor(4)
-    rs2_v_cat.GetXaxis().SetTitle("Category")
+    rs2_v_cat.GetXaxis().SetTitle("mKK category")
     rs2_v_cat.GetYaxis().SetTitle("|A_{s}|^{2}")
     #rs2_v_cat.SetMaximum(1.3)
 
     deltasy = array('f',deltaslist)
     deltasyerr = array('f',deltaserrlist)
     deltas_v_cat = TGraphErrors(NmKKBins, x, deltasy, xerr, deltasyerr);
-    deltas_v_cat.SetTitle("\delta_{s} vs. category")
+    deltas_v_cat.SetTitle("\delta_{s} vs. mKK category")
     deltas_v_cat.SetMarkerStyle(20)
     deltas_v_cat.SetMarkerColor(4)
-    deltas_v_cat.GetXaxis().SetTitle("Category")
+    deltas_v_cat.GetXaxis().SetTitle("mKK category")
     deltas_v_cat.GetYaxis().SetTitle("\delta_{s}")
     #deltas_v_cat.SetMaximum(1.3)
 
@@ -208,58 +247,72 @@ if splitmKK:
     ParamCanvas.Divide(2)
 
     ParamCanvas.cd(1)
-    rs2_v_cat.GetXaxis().SetLimits(-1,3)
-    rs2_v_cat.GetXaxis().SetBinLabel(25,'LeftSideBand')
-    rs2_v_cat.GetXaxis().SetBinLabel(50,'Signal')
-    rs2_v_cat.GetXaxis().SetBinLabel(75,'RightSideBand')
+    rs2_v_cat.GetXaxis().SetLimits(-1,NmKKBins)
+    rs2_v_cat.GetXaxis().SetBinLabel(20,'Bin1')
+    rs2_v_cat.GetXaxis().SetBinLabel(40,'Bin2')
+    rs2_v_cat.GetXaxis().SetBinLabel(60,'Bin3')
+    rs2_v_cat.GetXaxis().SetBinLabel(80,'Bin4')
     rs2_v_cat.GetXaxis().LabelsOption('h')
     rs2_v_cat.Draw('AP')
 
     ParamCanvas.cd(2)
-    deltas_v_cat.GetXaxis().SetLimits(-1,3)
-    deltas_v_cat.GetXaxis().SetBinLabel(25,'LeftSideBand')
-    deltas_v_cat.GetXaxis().SetBinLabel(50,'Signal')
-    deltas_v_cat.GetXaxis().SetBinLabel(75,'RightSideBand')
+    deltas_v_cat.GetXaxis().SetLimits(-1,NmKKBins)
+    deltas_v_cat.GetXaxis().SetBinLabel(20,'Bin1')
+    deltas_v_cat.GetXaxis().SetBinLabel(40,'Bin2')
+    deltas_v_cat.GetXaxis().SetBinLabel(60,'Bin3')
+    deltas_v_cat.GetXaxis().SetBinLabel(80,'Bin4')
     deltas_v_cat.GetXaxis().LabelsOption('h')
     deltas_v_cat.Draw('AP')
 
     #Show sig/bkg per category:
     masscanvas = TCanvas('masscanvas','masscanvas')
-    masscanvas.Divide(3,1)
+    masscanvas.Divide(2,2)
 
-    ws['mdau2'].setRange('LeftSideBand',mdau2min,mdau2sigmin)
-    ws['mdau2'].setRange('Signal',mdau2sigmin,mdau2sigmax)
-    ws['mdau2'].setRange('RightSideBand',mdau2sigmax,mdau2max)
+    ws['mdau2'].setRange('Bin1',mdau2bound1,mdau2bound2)
+    ws['mdau2'].setRange('Bin2',mdau2bound2,mdau2bound3)
+    ws['mdau2'].setRange('Bin3',mdau2bound3,mdau2bound4)
+    ws['mdau2'].setRange('Bin4',mdau2bound4,mdau2bound5)
 
     argset = RooArgSet(ws['thismKKcat'])
-    leftsideband = 'pdf_ext_inc_tag_syst_blinded_LeftSideBand'
-    signal = 'pdf_ext_inc_tag_syst_blinded_Signal'
-    rightsideband = 'pdf_ext_inc_tag_syst_blinded_RightSideBand'
+    #bin1 = 'pdf_ext_inc_tag_syst_blinded_Bin1'
+    #bin2 = 'pdf_ext_inc_tag_syst_blinded_Bin2'
+    #bin3 = 'pdf_ext_inc_tag_syst_blinded_Bin3'
+    #bin4 = 'pdf_ext_inc_tag_syst_blinded_Bin4'
+
     #catdataset = RooDataSet('catdataset','catdataset',ws['unbiaseddata'],RooArgSet(ws['thismKKcat']))
     #ws.put(catdataset)
 
     masscanvas.cd(1)
-    mframe1 = ws['m'].frame()
-    ws['unbiaseddata'].plotOn(mframe1,RooFit.CutRange('LeftSideBand'))
-    ws['simpdf'].plotOn(mframe1,RooFit.Slice(ws['thismKKcat'],'LeftSideBand'),RooFit.ProjWData(argset,ws['unbiaseddata']))
+    mframe1 = ws['m'].frame(RooFit.Bins(30))
+    ws['unbiaseddata'].plotOn(mframe1,RooFit.CutRange('Bin1'))
+    ws['simpdf'].plotOn(mframe1,RooFit.Slice(ws['thismKKcat'],'Bin1'),RooFit.ProjWData(argset,ws['unbiaseddata']))
     mframe1.Draw()
 
     masscanvas.cd(2)
-    mframe2 = ws['m'].frame()
-    ws['unbiaseddata'].plotOn(mframe2,RooFit.CutRange('Signal'))
-    ws['simpdf'].plotOn(mframe2,RooFit.Slice(ws['thismKKcat'],'Signal'),RooFit.ProjWData(argset,ws['unbiaseddata']))
+    mframe2 = ws['m'].frame(RooFit.Bins(30))
+    ws['unbiaseddata'].plotOn(mframe2,RooFit.CutRange('Bin2'))
+    ws['simpdf'].plotOn(mframe2,RooFit.Slice(ws['thismKKcat'],'Bin2'),RooFit.ProjWData(argset,ws['unbiaseddata']))
     mframe2.Draw()
 
     masscanvas.cd(3)
-    mframe3 = ws['m'].frame()
-    ws['unbiaseddata'].plotOn(mframe3,RooFit.CutRange('RightSideBand'))
-    ws['simpdf'].plotOn(mframe3,RooFit.Slice(ws['thismKKcat'],'RightSideBand'),RooFit.ProjWData(argset,ws['unbiaseddata']))
+    mframe3 = ws['m'].frame(RooFit.Bins(30))
+    ws['unbiaseddata'].plotOn(mframe3,RooFit.CutRange('Bin3'))
+    ws['simpdf'].plotOn(mframe3,RooFit.Slice(ws['thismKKcat'],'Bin3'),RooFit.ProjWData(argset,ws['unbiaseddata']))
     mframe3.Draw()
-    
-    ##################################################################################
+
+    masscanvas.cd(4)
+    mframe4 = ws['m'].frame(RooFit.Bins(30))
+    ws['unbiaseddata'].plotOn(mframe4,RooFit.CutRange('Bin4'))
+    ws['simpdf'].plotOn(mframe4,RooFit.Slice(ws['thismKKcat'],'Bin4'),RooFit.ProjWData(argset,ws['unbiaseddata']))
+    mframe4.Draw()
+
+##################################################################################
 pdf = pdf
 data = ws['unbiaseddata']
 
+result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['p0'],ws['p1'],ws['dmsconstraint'])))
+
+assert False
 if taggingsyst:
     result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['p0'],ws['p1'],ws['dmsconstraint'],ws['tres_SFconstraint'])))
 else:
@@ -269,6 +322,8 @@ writeFitParamsLatex(result,name,False)
 dict = writeCorrMatrixLatex(result,name)
 
 assert False
+
+
 ######PLOT######
 lw = RooCmdArg(RooFit.LineWidth(2))
 xes = RooCmdArg(RooFit.XErrorSize(0))
