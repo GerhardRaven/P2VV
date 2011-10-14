@@ -155,17 +155,17 @@ PDF for 'true' $B$ and $\overline{B}$ as:
 where ${\cal E}$ and ${\cal O}$ are the (propertime and angular dependent) CP-even resp. CP-odd parts of the PDF.
 Taking the sum over these, we find:
 \begin{equation}
-   P_{B} + P_{\overline{B}} =  \frac{ {\cal E} - \nu{\cal O} }{N} 
+   P_{B} + P_{\overline{B}} =  \frac{ {\cal E} + \nu{\cal O} }{N} 
    \label{eq:sumbbbar}
 \end{equation}
 where we have defined
 \begin{eqnarray}
-   &  N \equiv \left( \frac{1}{N_+}+\frac{1}{N_-}\right)^{-1} = \frac{N_+N_-}{N_+ + N_-};\;\;\;\; &  \frac{1}{N_+} =\frac{1}{2N}(1-\nu) \\
-   &\nu \equiv \frac{N_+ - N_-}{N_+ +N_-}; & \frac{1}{N_-} =\frac{1}{2N}(1+\nu) 
+   &  N \equiv \left( \frac{1}{N_+}+\frac{1}{N_-}\right)^{-1} = \frac{N_+N_-}{N_+ + N_-};\;\;\;\; &  \frac{1}{N_+} =\frac{1}{2N}(1+\nu) \\
+   &\nu \equiv N \left( \frac{1}{N_+}-\frac{1}{N_-}\right) = \frac{N_- - N_+}{N_+ +N_-}; & \frac{1}{N_-} =\frac{1}{2N}(1-\nu) 
 \end{eqnarray}
 and requiring the total sum of PDFs (\ref{eq:sumbbbar}) to be properly normalized implies
 \begin{equation}
-   N = I_{\cal E} - \nu I_{\cal O}
+   N = I_{\cal E} + \nu I_{\cal O}
 \end{equation}
 where $I_x$ is the integral of $x$ over the propertime and angles.
 
@@ -176,7 +176,7 @@ respectively $\overline{t}_i$ -- at this point we still do not distinguish betwe
 we marginalize over the tagdecision.  This yields the following PDF for events in category $i$:
 \begin{eqnarray}
      P_i & \equiv & t_i P_B + \overline{t}_i P_{\overline B}  \nonumber
-\\       &      = & \frac{\epsilon_i}{N} \left[ (1-\nu\delta_i ){\cal E}+(\delta_i - \nu){\cal O} \right] \label{eq:tagsummed}
+\\       &      = & \frac{\epsilon_i}{N} \left[ (1+\nu\delta_i ){\cal E}+(\delta_i + \nu){\cal O} \right] \label{eq:tagsummed}
 \end{eqnarray}
 where we have defined
 \begin{eqnarray}
@@ -186,8 +186,8 @@ where we have defined
 and for the remainder, i.e. the untagged events, which we denote with an index $0$:
 \begin{eqnarray}
      P_0 & \equiv & \left(1-\sum_i t_i\right) P_B + \left(1-\sum_i \overline{t}_i\right) P_{\overline B}  \nonumber
-\\   & = & \frac{1}{N} \left[ \left( 1-\sum_i\epsilon_i\left(1-\nu\delta_i\right) \right) {\cal E} 
-                            + \left( -\nu - \sum_i \epsilon_i(\delta_i-\nu)   \right) {\cal O} \right] \label{eq:untagged}
+\\   & = & \frac{1}{N} \left[ \left( 1-\sum_i\epsilon_i\left(1+\nu\delta_i\right) \right) {\cal E} 
+                            + \left( \nu - \sum_i \epsilon_i(\delta_i+\nu)   \right) {\cal O} \right] \label{eq:untagged}
 \end{eqnarray}
 Note that at this point, by construction, we have that
 \begin{equation}
@@ -201,15 +201,15 @@ substitution give the right result.
 
 Inspired by equation \ref{eq:tagsummed}, we can introduce two new parameters:
 \begin{eqnarray}
-    C_{{\cal E},i} &=& 1 - \nu \delta_i 
-\\  C_{{\cal O},i} &=& \delta_i - \nu
+    C_{{\cal E},i} &=& 1 + \nu \delta_i 
+\\  C_{{\cal O},i} &=& \delta_i + \nu
 \end{eqnarray}
 which, in the limit of vanishing asymmetries, would be unity and zero respectively.
 In terms of these parameters, the PDFs in equation \ref{eq:tagsummed} and equation \ref{eq:untagged} can be written
 as:
 \begin{eqnarray}
      P_i    &=&  \frac{\epsilon_i}{N} \left[ C_{{\cal E},i}{\cal E}+ C_{{\cal O},i}{\cal O} \right] \label{eq:tagsummed2} \\
-     P_0    &=&  \frac{1}{N}\left[ \left(1-\sum_i \epsilon_i C_{{\cal E},i}\right) {\cal E} + \left( -\nu -\sum_i \epsilon_i C_{{\cal O},i} \right) {\cal O} \right]
+     P_0    &=&  \frac{1}{N}\left[ \left(1-\sum_i \epsilon_i C_{{\cal E},i}\right) {\cal E} + \left( \nu -\sum_i \epsilon_i C_{{\cal O},i} \right) {\cal O} \right]
 \end{eqnarray}
 
 
@@ -255,7 +255,7 @@ In the limit where $\nu=\delta_i={\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal 
 As $\nu$ and $\delta_i$ always appear as sum, i.e. as $C_{{\cal O},i}$ (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
 it becomes impossible to disentangle the difference between differences in tagging efficiency for $b$ and $\overline{b}$
 and a change in the relative normalization. However, when taken into account the fact that the difference in normalization
-is due to the apearance of $1/(1+C)$ vs. $1/(1-C)$, i.e. $\nu = C$, and $C$ also appears as coefficienct in front of the $\cosh\left(\Delta\Gamma t/2\right)$
+is due to the apearance of $1/(1+C)$ vs. $1/(1-C)$, i.e. $\nu = -C$, and $C$ also appears as coefficienct in front of the $\cosh\left(\Delta\Gamma t/2\right)$
 and $q_T\cos(\Delta m t)$ terms, it is expected that there is some residual power left to disentangle the two effects -- i.e. 
 solely due to the time-dependent shape of the distributions, and no longer in their relative normalization, i.e. in the time-integrated yields.
 
