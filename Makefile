@@ -9,14 +9,11 @@ LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
 	-lRooFitCore -lMathCore -lMathMore
 
 SOURCES =				\
-    RooAddition_.cxx		\
-    RooLegendre.cxx			\
     RooP2VVAngleBasis.cxx		\
-    RooSpHarmonic.cxx		\
     RooMultiCatGenerator.cxx		\
     RooBTagDecay.cxx		\
     RooThresholdPdf.cxx		\
-    RooGammaPdf.cxx		\
+    RooGammaPdf.cxx		 \
     p2vv_dict.cxx
 
 OBJECTS = $(SOURCES:%.cxx=%.o)
@@ -35,7 +32,7 @@ all: .deps libp2vv.so
 p2vv_dict.cxx: $(wildcard *.h)
 	rootcint -f p2vv_dict.cxx -c p2vv.h p2vv_LinkDef.h
 
-libp2vv.so: $(OBJECTS)
+libp2vv.so: $(OBJECTS) p2vv_dict.o
 	$(LD) $(LDFLAGS) -shared -o $@ $^
 
 clean:
