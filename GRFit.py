@@ -40,7 +40,7 @@ if mode != 'Bu2JpsiK' :
     obs.add( angles )
 
 file = TFile(files[mode])
-data = RooDataSet('data','data',file.Get('dataset'),obs,'t==t && m==m && unbiased==1')
+data = RooDataSet('data','data',file.Get('dataset'),obs) # ,'t==t && m==m' ) #  && unbiased==1')
 
 
 mb = MassPdfBuilder(ws,ws['m'],ws['mdau1'],ws['mdau2'] if mode != 'Bu2JpsiK' else None,mode)

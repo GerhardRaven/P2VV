@@ -4,6 +4,7 @@
 #include <string>
 
 // TODO: move and/or integrate this code into RooP2VVAngleBasis !!!
+// TODO: pick up code from Wouter which computes the proper errors in case of weighted events...
 class IMoment {
     public:
           IMoment(RooAbsReal &basis, double norm=1, const std::string& name = std::string()) : _basis(basis), _m0(0),_m1(0),_m2(0),_norm(norm), _name(name.empty() ? _basis.GetName() : name) {}
