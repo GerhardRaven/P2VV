@@ -7,32 +7,61 @@ gROOT.SetStyle("Plain")
 # how to get just the RooFit namespace ?
 from ROOT import * 
 
+###### decorate TPad with pads...
+def _pads(p,n=None,m=None) :
+    if n : 
+        if m : p.Divide(n,m)
+        else : p.Divide(n)
+    i=1
+    while p.GetPad(i) :
+        yield p.cd(i) 
+        i=i+1
+
+TPad.pads = _pads
+##########################################
+
+from ROOT import RooPlot
+_RooPlot_Draw = RooPlot.Draw
+def _RooPlotDraw(self,*args,**kw) :
+   pad = kw.pop('pad') if 'pad' in kw else None
+   if kw : raise RuntimeError('unknown keyword arguments: %s' % kw )
+   if pad : pad.cd()
+   _RooPlot_Draw(self,*args)
+   if pad : pad.Update()
+RooPlot.Draw = _RooPlotDraw
+
+
 def _RooDataSetIter(self) :
     for i in range( self.numEntries() ) : yield self.get(i)
 
+from ROOT import RooDataSet
 RooDataSet.__iter__ = _RooDataSetIter
 
-def _RooArgSetIter(self) :
+def _RooAbsCollectionIter(self) :
     z = self.createIterator()
     while True :
         a = z.Next()
         if not a : return
         yield a
 
-RooArgList.__iter__ = _RooArgSetIter
-RooArgList.__len__  = lambda s   : s.getSize()
-RooArgList.__contains__  = lambda s,i : s.contains(i)
-#RooArgSet.__iadd__ = lambda s,y : s.add(y)
-#RooArgSet.__radd__ = lambda y,s : s.add(y)
-#RooArgSet.__add__  = lambda x,y : RooArgSet(x).__iadd__(y)
-RooArgList.nameList = lambda s : [ j.GetName() for j in s ] 
-RooArgList.names    = lambda s : ','.join( s.nameList() )
+from ROOT import RooAbsCollection
+RooAbsCollection.__iter__ = _RooAbsCollectionIter
+RooAbsCollection.__len__  = lambda s   : s.getSize()
+RooAbsCollection.__contains__  = lambda s,i : s.contains(i)
+RooAbsCollection.__iadd__ = lambda s,x : s if s.add(x)    else s  # else None??
+RooAbsCollection.__isub__ = lambda s,x : s if s.remove(x) else s  # else None??
+RooAbsCollection.nameList = lambda s : [ j.GetName() for j in s ] 
+RooAbsCollection.names    = lambda s : ','.join( s.nameList() )
+RooAbsCollection.__eq__   = lambda s,x : s.equals(x)
+RooAbsCollection.__ne__   = lambda s,x : not s.equals(x)
 
-RooArgSet.__iter__  = _RooArgSetIter
-RooArgSet.__len__   = lambda s   : s.getSize()
-RooArgSet.__contains__  = lambda s,i : s.contains(i)
-RooArgSet.nameList  = lambda s : [ j.GetName() for j in s ]
-RooArgSet.names     = lambda s : ','.join( s.nameList() )
+def _RooTypedUnary2Binary( t,op ) :
+    return lambda x,y : getattr(t,op)(t(x),y)
+
+from ROOT import RooArgSet, RooArgList
+for t in [ RooArgSet,RooArgList ] :
+    t.__sub__  = _RooTypedUnary2Binary( t, '__isub__' )
+    t.__add__  = _RooTypedUnary2Binary( t, '__iadd__' )
 
 
 from ROOT import RooWorkspace
@@ -59,7 +88,6 @@ def setConstant(ws, pattern, constant = True, value = None):
         rc += 1
     return rc
 
-
 RooWorkspace.setConstant = setConstant
 
 # plot -- example usage:
@@ -73,15 +101,16 @@ RooWorkspace.setConstant = setConstant
 #           )
 global  _stash
 _stash = [] #keep the relevant objects alive by keeping a reference to them
-def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfOpts = None, logy = False, normalize = True, symmetrize = True ) :
+def plot( c, obs, data, pdf, components, frameOpts = (), dataOpts = (), pdfOpts = (), logy = False, normalize = True, symmetrize = True, usebar =True ) :
     from ROOT import TLine, TPad
     #
     _obs = obs.frame( *frameOpts )  if frameOpts else obs.frame()
     _stash.append(_obs)
     data.plotOn(_obs,RooFit.Name('data'),*dataOpts)
-    for comp,opt in components.iteritems() :
-        z = opt + pdfOpts
-        pdf.plotOn(_obs,RooFit.Components(comp), *z )
+    if components :
+        for comp,opt in components.iteritems() :
+            z = opt + pdfOpts
+            pdf.plotOn(_obs,RooFit.Components(comp), *z )
     pdf.plotOn(_obs,RooFit.Name('pdf'),*pdfOpts)
     _obs.drawAfter('pdf','data')
     #TODO: add chisq/nbins
@@ -96,12 +125,19 @@ def plot( c, obs, data, pdf, components, frameOpts = None, dataOpts = None, pdfO
     _stash.append(rp)
     if logy : _obs.SetMinimum(0.1)
     #TODO: if normalize : plot rh as a filled histogram with fillcolor blue...
+    #      or, maybe, with the 'bar chart' options: 'bar' or 'b'
     for i in dataOpts : 
         if i.opcode() == 'MarkerSize'  : rh.SetMarkerSize(  i.getDouble(0) )
         if i.opcode() == 'MarkerStyle' : rh.SetMarkerStyle( i.getInt(0) )
         if i.opcode() == 'MarkerColor' : rh.SetMarkerColor( i.getInt(0) )
         if i.opcode() == 'Title' : rp.SetTitle( i.getString(0) )
-    rp.addPlotable( rh, 'p' )
+    # rp.addPlotable( rh, 'p' if not usebar else 'b' )
+    # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
+    #rp.SetBarWidth(1.0)
+    #rh.SetDrawOption("B HIST")
+
+    rp.addPlotable( rh) # , 'B HIST' )
+    #rp.setDrawOptions(rh.GetName(),'B')
     if symmetrize :
         m  = max( abs( rh.getYAxisMin() ),abs( rh.getYAxisMax() ) )
         rp.SetMaximum(  m )
@@ -185,54 +221,29 @@ def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
 
     return {'string':string}
 
-def writeFitParamsLatex(result,name,toys):
-    f = open('params_%s.tex'%name,'w')
-
-    string = '\\documentclass{article}\n'
-    string += '\\begin{document}\n'
-
-    if toys:
-        string += '\\begin{tabular}{|c|c|c|c|}\n'
-        string += '\\hline\n'
-        string += 'parameter & result & original value & $\sigma$ from original \\\\ \n'
-        string += '\\hline\n'
-        string += '\\hline\n'
-        for i,j in zip(result.floatParsFinal(),result.floatParsInit()):
-            print i,j
-            string += '%s & '%i.GetName()
-            string += '%s $\pm$ %s & '%(round(i.getVal(),3),round(i.getError(),3))
-            string += '%s & '%round(j.getVal(),3)
-            string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),3))
-    else:
-        string += '\\begin{tabular}{|c|c|}\n'
-        string += '\\hline\n'
-        string += 'parameter & result \\\\ \n'
-        string += '\\hline\n'
-        string += '\\hline\n'
-        for i,j in zip(result.floatParsFinal(),result.floatParsInit()):
-            print i,j
-            string += '%s & '%i.GetName()
-            string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),3),round(i.getError(),3))
-
-    string += '\\hline\n'
-    string += '\\end{tabular}\n'
-    string += '\\end{document}\n'
-
-    f.write(string)
+def writeFitParamsLatex(paramlist,fname = 'fitparams.tex'):
+    import tempfile,os
+    tmpfile = tempfile.NamedTemporaryFile()
+    tmpfile.close() 
+    paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()),RooFit.OutputFile(tmpfile.name))
+    tmpfile = open(tmpfile.name,'r')
+    f = open(fname,'w')
+    f.write('\\documentclass{article}\n\\begin{document}\n')
+    f.write( tmpfile.read() )
+    f.write('\\end{document}\n')
+    tmpfile.close()
     f.close()
+    os.remove(tmpfile.name)
+    
 
-def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max):
+def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max,NumCPU=8,Extend=True):
     print '**************************************************'
-    print 'Going to make profile for %s and %s'%(param1.GetName(),param2.GetName())
+    print 'making profile for %s and %s'%(param1.GetName(),param2.GetName())
     print '**************************************************'
 
-    nll = pdf.createNLL(data,RooFit.NumCPU(8),RooFit.Extended(true))
+    nll = pdf.createNLL(data,RooFit.NumCPU(NumCPU),RooFit.Extended(Extend))
     profile = nll.createProfile(RooArgSet( param1,param2))
-
-    ProfileLikelihood = profile.createHistogram(name,         param1, RooFit.Binning(npoints,param1_min,param1_max)
-                                               , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
-                                               , RooFit.Scaling(False)
-                                               )
-    tfile = TFile('%s.root'%(name),'RECREATE')
-    ProfileLikelihood.Write() 
-    tfile.Close()
+    return profile.createHistogram(name,         param1, RooFit.Binning(npoints,param1_min,param1_max)
+                                  , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
+                                  , RooFit.Scaling(False)
+                                  )
