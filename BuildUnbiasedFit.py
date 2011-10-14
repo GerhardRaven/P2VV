@@ -184,7 +184,7 @@ MCpdf_marginal = MCpdf.createProjection(marginalObs)
 # compute the 'canonical' six moments
 bnames = [ 'AzAz','AparApar','AperpAperp','AparAperp','AzAperp','AzApar' ]
 sixmom = [ EffMoment( ws['%s_basis'%n], 1., MCpdf_marginal, allObs ) for n in bnames ]
-computeMoments(MCdata,MCpdf_marginal,sixmom)
+computeMoments(MCdata,sixmom)
 xi_m = dict( [ (m.basis().GetName(),m.coefficient()) for m in sixmom ] )
 
 print 'Direct Moments xi_m =', xi_m
@@ -226,7 +226,7 @@ for (i,l) in product(range(4),range(3)) :
     moments += [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, MCpdf_marginal, allObs ) for m in range(-l,l+1) ]
 
 # loop over all data, determine moments
-computeMoments(MCdata,MCpdf_marginal,moments)
+computeMoments(MCdata,moments)
 
 # compute the 'canonical' moments given the Fourier series
 c = dict()

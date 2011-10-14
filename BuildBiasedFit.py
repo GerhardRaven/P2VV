@@ -158,7 +158,7 @@ print 'angles: ', [ i.GetName() for i in angles ]
 bnames = [ 'AzAz','AparApar','AperpAperp','AparAperp','AzAperp','AzApar','AsAs','AsAz','AsApar','AsAperp']
 tenmom = [ EffMoment( ws['%s_basis'%n], 1., MCpdf, angles) for n in bnames ]
 
-computeMoments(MCdata,MCpdf,tenmom)
+computeMoments(MCdata,tenmom)
 xi_m = dict( [ (m.basis().GetName(),m.coefficient()) for m in tenmom ] )
 print 'Direct Moments xi_m =', xi_m
 
@@ -201,7 +201,7 @@ for (i,l) in product(range(4),range(3)) :
     moments += [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, MCpdf, angles ) for m in range(-l,l+1) ]
 
 # loop over all data, determine moments
-computeMoments(MCdata,MCpdf,moments)
+computeMoments(MCdata,moments)
 
 # compute the 'canonical' moments given the Fourier series
 c = dict()
