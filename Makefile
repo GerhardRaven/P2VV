@@ -47,7 +47,7 @@ $(LIBDIR)/libp2vv.so: $(OBJECTS) $(BUILDDIR)/p2vv_dict.o
 	$(LD) $(LDFLAGS) -shared -o $@ $^
 
 clean:
-	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.* *.pyc *.bak *.aux $(BUILDDIR)/*
+	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
 
 $(DEPDIR) $(LIBDIR) $(BUILDDIR):
 	mkdir $@
