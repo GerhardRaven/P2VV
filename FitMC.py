@@ -1,8 +1,8 @@
 #######################################
 ### Author: Daan van Eijk
-### Updated on: Jun 5 11
+### Updated on: Sep 2 2011
 ### Description: Fits the signal PDF only to MC data (EvtGen only) to see if we understand (that is, fit correctly for the input values of) the .dec file.
-###              I never copied the MC data file to a non-tmp folder, so it's lost.....
+###              Uses an EvtGen only root file that Jeroen created for me.
 ########################################  
 
 from ROOT import *
@@ -344,13 +344,15 @@ ab = abasis(ws,angles)
 #deltaz = 0.
 #rperp = 0.4
 #deltarperp = -0.17
-
-#dG = 0.06852
 #Beta_s = 0.02
 
 #This yields
 #rperp2 = 0.16
 #rz2 = 0.601
+
+#dG = 0.06852 (in DECAY.DEC, but commented out????)
+#dm = 17.8 (in DECAY.DEC)
+#Gamma = 0.68 (from tau=1.47 : SetupProject LHCb, CondDBBrowser DDDB &, param ParticleTable.txt)
 
 ws.factory("{rz2[0.601,0.,1.],rperp2[0.16,0.,1.]}")
 ws.factory("RooFormulaVar::rpar2('1-@0-@1',{rz2,rperp2})")
@@ -381,21 +383,31 @@ ws.factory("{expr::Sold('sin(phis)',{phis}),expr::Dold('cos(phis)',{phis}),Cold[
 ### Experimental parameters ###
 ###############################
 
-tres = ws.factory("RooTruthModel::tres_sig(t)")
+tres = ws.factory("RooTruthModel::tres(t)")
 
 ws.factory("{wtag[0.0]}")
 
 ##################################### building the NEW pdf ###################################
 # create observables
-ws.factory("expr::ReAz   ('rz    * cos(deltaz)',   {rz,deltaz})")
-ws.factory("expr::ImAz   ('rz    * sin(deltaz)',   {rz,deltaz})")
-ws.factory("expr::ReApar ('rpar  * cos(deltapar)', {rpar,deltapar})")
-ws.factory("expr::ImApar ('rpar  * sin(deltapar)', {rpar,deltapar})")
-ws.factory("expr::ReAperp('rperp * cos(deltaperp)',{rperp,deltaperp})")
-ws.factory("expr::ImAperp('rperp * sin(deltaperp)',{rperp,deltaperp})")
+ws.factory("expr::ReAz   ('@0    * cos(@1)',   {rz,deltaz})")
+ws.factory("expr::ImAz   ('@0    * sin(@1)',   {rz,deltaz})")
+ws.factory("expr::ReApar ('@0    * cos(@1)', {rpar,deltapar})")
+ws.factory("expr::ImApar ('@0    * sin(@1)', {rpar,deltapar})")
+ws.factory("expr::ReAperp('@0    * cos(@1)',{rperp,deltaperp})")
+ws.factory("expr::ImAperp('@0    * sin(@1)',{rperp,deltaperp})")
+
+# define the relevant combinations of strong amplitudes
+ws.factory("expr::NAzAz      ('( @0 * @0 + @1 * @1 )',{ReAz,    ImAz                      })")  # |A_z|^2
+ws.factory("expr::NAparApar  ('( @0 * @0 + @1 * @1 )',{ReApar,  ImApar                    })")  # |A_par|^2
+ws.factory("expr::NAperpAperp('( @0 * @0 + @1 * @1 )',{ReAperp, ImAperp                   })")  # |A_perp|^2
+ws.factory("expr::ReAparAperp('( @0 * @2 + @1 * @3 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par||A_perp| cos(delta_perp - delta_par)
+ws.factory("expr::ReAzAperp  ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   cos(delta_perp - delta_z)
+ws.factory("expr::ReAzApar   ('( @0 * @2 + @1 * @3 )',{ReAz,    ImAz,    ReApar,  ImApar  })")  # |A_z||A_par|    cos(delta_par  - delta_z)
+ws.factory("expr::ImAparAperp('( @0 * @3 - @1 * @2 )',{ReApar,  ImApar,  ReAperp, ImAperp })")  # |A_par|A_perp|  sin(delta_perp - delta_par)
+ws.factory("expr::ImAzAperp  ('( @0 * @3 - @1 * @2 )',{ReAz,    ImAz,    ReAperp, ImAperp })")  # |A_z||A_perp|   sin(delta_perp - delta_z)
 
 #This one imports automatically in the workspace!
-newpdf = buildJpsiphi(ws,'newpdf', useTransversityAngles, tres) 
+newpdf = buildJpsiphi(ws,'newpdf', useTransversityAngles,'tres') 
 
 ##############################
 #This sets the range for the events in the dataset that you read, and the range in which you will fit!
@@ -450,4 +462,4 @@ else:
     #plot = plothel(ws,data,pdf_ext,'transplot')                                
     plot = plothel(ws,data,p2vv,'helplot')
 
-writeFitParamsLatex(result,'MCEvtGenOnlyFit')
+writeFitParamsLatex(result,'MCEvtGenOnlyFit',True)

@@ -13,7 +13,8 @@ SOURCES =				\
     RooMultiCatGenerator.cxx		\
     RooBTagDecay.cxx		\
     RooThresholdPdf.cxx		\
-    RooGammaPdf.cxx		 \
+    RooGammaPdf.cxx		\
+    RooEffHistProd.cxx          \
     p2vv_dict.cxx
 
 OBJECTS = $(SOURCES:%.cxx=%.o)

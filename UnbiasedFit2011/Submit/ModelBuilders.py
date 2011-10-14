@@ -1,7 +1,6 @@
 from ROOT import *
 import RooFitDecorators
 gSystem.Load("libp2vv")
-from math import pi
 
 def product(*args, **kwds):
     # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
@@ -56,19 +55,20 @@ def _buildTransversityBasis(ws, ab) :
     # transversity amplitudes in terms of transversity angles
     _ba = lambda name,comp : _buildAngularFunction(ws,ab,name,comp)
 
-    return ( _ba("AzAz",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./ 5.))
-                               , ( 2,0,0, 0, 4.), ( 2,0,2,0,  2.*sqrt(1./ 5.)), ( 2,0,2,2, -2.*sqrt(3./ 5.)) ] )
-             , _ba("AparApar",   [ ( 2,2,0, 0, 1.), ( 2,2,2,0,  (1./2.)*sqrt(1./5.)), ( 2,2,2,2,  (1./2.)*sqrt( 3./5.)) ] )
-             , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0, -sqrt(1./ 5.)) ] )
-             , _ba("AparAperp",  [ ( 2,2,2,-1,  sqrt(3./5.)) ] )
-             , _ba("AzApar",     [ ( 2,1,2,-2, -sqrt(6./5.)) ] )
-             , _ba("AzAperp",    [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
-             , _ba("AsAs",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  sqrt(1./ 5.)), ( 0,0,2,2, -sqrt( 3./ 5.)) ] )
-             , _ba("AsApar",     [ (1,1,2,-2, -3.*sqrt(2./5.))] )
-             , _ba("AsAperp",    [ (1,1,2,1, 3.*sqrt(2./5.))] )
-             , _ba("AsAz",       [ (1,0,0,0, 4.*sqrt(3)),(1,0,2,0, 2.*sqrt(3./5.)),(1,0,2,2, -6.*sqrt(1./5.))] )
+    return ( _ba("AzAz",       [ ( 0,0,0, 0, 4.), ( 0,0,2,0,  2.*sqrt(1./ 5.)), ( 0,0,2,2, -2.*sqrt( 3./ 5.))
+                               , ( 2,0,0, 0, 8.), ( 2,0,2,0,  4.*sqrt(1./ 5.)), ( 2,0,2,2, -4.*sqrt(3./ 5.)) ] )
+             , _ba("AparApar",   [ ( 2,2,0, 0, 2.), ( 2,2,2,0,  sqrt(1./5.)), ( 2,2,2,2,  sqrt( 3./5.)) ] )
+             , _ba("AperpAperp", [ ( 2,2,0, 0, 2.), ( 2,2,2,0, -2.*sqrt(1./ 5.)) ] )
+             , _ba("AparAperp",  [ ( 2,2,2,-1,  2.*sqrt(3./5.)) ] )
+             , _ba("AzAperp",    [ ( 2,1,2, 1,  2.*sqrt(6./5.)) ] )
+             , _ba("AzApar",     [ ( 2,1,2,-2, -2.*sqrt(6./5.)) ] )
+             , _ba("AsAs",       [ ( 0,0,0, 0, 4.), ( 0,0,2,0,  2.*sqrt(1./ 5.)), ( 0,0,2,2, -2.*sqrt( 3./ 5.)) ] )
+             , _ba("AsAz",       [ (1,0,0,0, 8.*sqrt(3)),(1,0,2,0, 4.*sqrt(3./5.)),(1,0,2,2, -12.*sqrt(1./5.))] )
+             , _ba("AsApar",     [ (1,1,2,-2, -6.*sqrt(2./5.))] )
+             , _ba("AsAperp",    [ (1,1,2,1, 6.*sqrt(2./5.))] )
              )
 
+#Fix the Helicity normalization between P and S-wave!
 def _buildHelicityBasis(ws, ab) :
     #definition of the angular part of the PDF in terms of basis functions...
     # transversity amplitudes in terms of helicity angles
@@ -79,12 +79,12 @@ def _buildHelicityBasis(ws, ab) :
              , _ba("AparApar",   [ ( 2,2,0, 0, 1.), (2,2,2, 0, sqrt(1./20.)), ( 2,2,2,2,  -sqrt(3./20.)) ] )
              , _ba("AperpAperp", [ ( 2,2,0, 0, 1.), ( 2,2,2,0, sqrt(1./ 20.)), (2,2,2,2,sqrt(3./20.)) ] )
              , _ba("AparAperp",  [ ( 2,2,2,-2,  sqrt(3./5.)) ] )
-             , _ba("AzApar",     [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
              , _ba("AzAperp",    [ ( 2,1,2,-1, -sqrt(6./5.)) ] )
-             , _ba("AsAs",       [ ( 0,0,0, 0, 2.), ( 0,0,2,0,  -2.*sqrt(1./ 5.)) ] )
-             , _ba("AsApar",     [ (1,1,2,1, 3.*sqrt(2./5.)) ] )
-             , _ba("AsAperp",    [ (1,1,2,-1, -3.*sqrt(2./5.))] )
-             , _ba("AsAz",       [ (1,0,0,0, 4.*sqrt(3)), (1,0,2,0, -4.*sqrt(3./5.)) ] )
+             , _ba("AzApar",     [ ( 2,1,2, 1,  sqrt(6./5.)) ] )
+             , _ba("AsAs",       [ ( 0,0,0, 0, 4.), ( 0,0,2,0,  -4.*sqrt(1./ 5.)) ] )
+             , _ba("AsAz",       [ (1,0,0,0, 8.*sqrt(3)), (1,0,2,0, -8.*sqrt(1./5.)) ] )
+             , _ba("AsApar",     [ (1,1,2,1, 6.*sqrt(2./5.)) ] )
+             , _ba("AsAperp",    [ (1,1,2,-1, -6.*sqrt(2./5.))] )
              )
 ## TODO: replace hardwired use of 'tagomega' with a passable rule, which by default returns 'tagomega'
 ##       this is needed when fitting for mistag rate in tagging categories...
@@ -156,7 +156,6 @@ def buildJpsiphiSWave(ws, name, transversity,resoname) : # TODO: add tagsplit
     basis = afb.basis()
     
     ws.factory("expr::qtag_('@0*(1-2*@1)',{tagdecision,wtag})")
-    #ws.factory("expr::qtag_('@0*(1-2*@1)',{tagdecision,tagomega})")
     ws.factory("expr::N('1.0/(1.0+@0*@1)',{tagdecision,C})")
     ws.factory("Minus[-1]")
 
@@ -255,11 +254,11 @@ def buildJpsikstarAnglePdf(ws, name, transversity) :
 
 ## Looping over data in python is quite a bit slower than in C++
 ## So we adapt the arguments, and then defer to the C++ _computeMoments
-def computeMoments( data, pdf, moments ) :
+def computeMoments( data, moments ) :
     if not moments : return None
     vecmom = std.vector('IMoment*')()
     for m in moments : vecmom.push_back(m)
-    return _computeMoments( data, pdf, vecmom )
+    return _computeMoments( data, vecmom )
 
 def buildMomentPDF(w,name,data,moments) :
     if not moments : return None

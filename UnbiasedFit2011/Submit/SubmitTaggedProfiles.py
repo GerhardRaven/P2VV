@@ -1,9 +1,9 @@
 from math import pi
 
 g = GaudiPython()
-g.script = ('~/LHCb/P2VV/p2vv/UntaggedProfiles.py')
-g.project = 'Erasmus'
-g.version = 'v3r1'
+g.script = ('TaggedProfiles.py')
+#g.project = 'Erasmus'
+#g.version = 'v3r1'
 
 #g.user_release_area = '/afs/cern.ch/user/d/dvaneijk/cmtuser'
 
@@ -19,11 +19,11 @@ for j in range(0,npoints):
     list.append(['-j',str(j),'-n',str(npoints)])
 
 print 'list =',list
-J = Job(name = 'UntaggedProfile_%s_steps'%(npoints), application = g, backend=PBS( queue = 'qlong' ))
+J = Job(name = 'TaggedProfile_%s_steps_floatAs2'%(npoints), application = g, backend=PBS())
 s = ArgSplitter(args=list)
 J.splitter = s
 #J.outputdata = ['testdata.root']
-J.inputsandbox = ['libp2vv.so','RooFitDecorators.py','ModelBuilders.py','UntaggedWS.root']
+J.inputsandbox = ['libp2vv.so','RooFitDecorators.py','ModelBuilders.py','TaggedWS.root']
 J.outputsandbox = ['profile.root']
 J.submit()
 
