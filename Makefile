@@ -22,7 +22,7 @@ vpath %.o   $(BUILDDIR)
 
 .PHONY: all clean
 
-all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libp2vv.so 
+all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so 
 
 $(BUILDDIR)/P2VV_dict.o: $(BUILDDIR)/P2VV_dict.cxx $(BUILDDIR)/P2VV_dict.h
 
@@ -36,11 +36,11 @@ $(BUILDDIR)/%.o : %.cxx %.h
 $(BUILDDIR)/P2VV_dict.cxx: $(wildcard $(INCDIR)/*.h) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
 	rootcint -f $@ -c -I$(INCDIR) -I$(DICTDIR) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
 
-$(LIBDIR)/libp2vv.so: $(OBJECTS) $(BUILDDIR)/P2VV_dict.o
+$(LIBDIR)/libP2VV.so: $(OBJECTS) $(BUILDDIR)/P2VV_dict.o
 	$(LD) $(LDFLAGS) -shared -o $@ $^
 
 clean:
-	-rm -rf $(LIBDIR)/libp2vv.so $(OBJECTS) P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
+	-rm -rf $(LIBDIR)/libP2VV.so $(OBJECTS) P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
 
 $(DEPDIR) $(LIBDIR) $(BUILDDIR):
 	mkdir $@
