@@ -1,4 +1,4 @@
 
 void rootlogon() {
-    gSystem->Load("lib/libp2vv.so");
+    gSystem->Load("libP2VV");
 }

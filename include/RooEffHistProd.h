@@ -41,7 +41,9 @@ public:
   Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
 
   virtual void selectNormalization(const RooArgSet*,Bool_t);
+  virtual ExtendMode extendMode() const;
 
+  virtual Double_t expectedEvents(const RooArgSet* nset) const;
   
 private:
   

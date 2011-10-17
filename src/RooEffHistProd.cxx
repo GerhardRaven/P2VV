@@ -194,6 +194,26 @@ void RooEffHistProd::selectNormalization(const RooArgSet* nset,Bool_t force) {
   RooAbsPdf::selectNormalization(nset,force);
 }
 
+//_____________________________________________________________________________
+RooAbsPdf::ExtendMode RooEffHistProd::extendMode() const
+{
+  // If this product contains exactly one extendable p.d.f return the extension abilities of
+  // that p.d.f, otherwise return CanNotBeExtended
+  return pdf()->extendMode();
+}
+
+
+
+//_____________________________________________________________________________
+Double_t RooEffHistProd::expectedEvents(const RooArgSet* nset) const
+{
+  // Return the expected number of events associated with the extentable input p.d.f
+  // in the product. If there is no extendable term, return zero and issue and error
+  return pdf()->expectedEvents(nset);
+}
+
+
+
 
 //_____________________________________________________________________________
 RooEffHistProd::CacheElem *RooEffHistProd::getCache(const RooArgSet* nset, const RooArgSet* iset, const char* rangeName) const 
@@ -248,7 +268,8 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
   assert(_binboundaries.size()>1);
   assert(xmin<=xmax);
   assert(xmin>=_binboundaries.front());
-  assert(_binboundaries.back()>=xmax);
+  //assert(_binboundaries.back()>=xmax);
+  assert(_binboundaries.back()-xmax > -1e-10);
 
   if (cache->xmin==0 && cache->xmax==0)  {
     double eps = eff()->getVal();

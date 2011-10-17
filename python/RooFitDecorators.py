@@ -236,8 +236,8 @@ def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
         string += parlist[j].GetName() 
         for i in range(npar):
             if i>=j:
-                if corr[j][i].getVal() < 0.005:
-                    string += ' & - '
+                if abs(corr[j][i].getVal()) < 0.005:
+                    string += ' & -- '
                 else:
                     string += ' & ' + str(round(corr[j][i].getVal(),3)) 
             else : 
@@ -256,19 +256,40 @@ def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
 
     return {'string':string}
 
-def writeFitParamsLatex(paramlist,fname = 'fitparams.tex'):
-    import tempfile,os
-    tmpfile = tempfile.NamedTemporaryFile()
-    tmpfile.close() 
-    paramlist.printLatex(RooFit.Format("NEU",RooFit.AutoPrecision(3),RooFit.VerbatimName()),RooFit.OutputFile(tmpfile.name))
-    tmpfile = open(tmpfile.name,'r')
-    f = open(fname,'w')
-    f.write('\\documentclass{article}\n\\begin{document}\n')
-    f.write( tmpfile.read() )
-    f.write('\\end{document}\n')
-    tmpfile.close()
+
+def writeFitParamsLatex(result,name,toys):
+    f = open('params_%s.tex'%name,'w')
+
+    string = '\\documentclass{article}\n'
+    string += '\\begin{document}\n'
+
+    if toys:
+        string += '\\begin{tabular}{|c|c|c|c|}\n'
+        string += '\\hline\n'
+        string += 'parameter & result & original value & $\sigma$ from original \\\\ \n'
+        string += '\\hline\n'
+        string += '\\hline\n'
+        for i,j in zip(result.floatParsFinal(),result.floatParsInit()):
+            string += '%s & '%i.GetName()
+            string += '%s $\pm$ %s & '%(round(i.getVal(),3),round(i.getError(),3))
+            string += '%s & '%round(j.getVal(),3)
+            string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),3))
+    else:
+        string += '\\begin{tabular}{|c|c|}\n'
+        string += '\\hline\n'
+        string += 'parameter & result \\\\ \n'
+        string += '\\hline\n'
+        string += '\\hline\n'
+        for i,j in zip(result.floatParsFinal(),result.floatParsInit()):
+            string += '%s & '%i.GetName()
+            string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),3),round(i.getError(),3))
+
+    string += '\\hline\n'
+    string += '\\end{tabular}\n'
+    string += '\\end{document}\n'
+
+    f.write(string)
     f.close()
-    os.remove(tmpfile.name)
     
 
 def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max,NumCPU=8,Extend=True):

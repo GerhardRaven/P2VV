@@ -31,7 +31,7 @@ ws = RooWorkspace("ws")
 ###################
 
 ws.factory("{ trcospsi[-1,1], trcostheta[-1,1], trphi[%f,%f], t[0.3,14.], tagdecision[Bs_Jpsiphi=+1,Bsbar_Jpsiphi=-1,untagged=0]}"%(-pi,pi))
-ws.factory("{m[5200,5550],mdau2[986,1050]}")
+ws.factory("{m[5200,5550],mdau1[3030,3150],mdau2[1007.46,1031.46]}")
 ws.factory("{biased[Biased=+1,NotBiased=0],unbiased[Unbiased=+1,NotUnbiased=0],fullybiased[FullyBiased =+1,NotFullyBiased=0]}")
 
 ws.defineSet("transversityangles","trcospsi,trcostheta,trphi")
@@ -110,15 +110,15 @@ ws.factory("{expr::S('-1*sin(@0)',{phis}),expr::D('cos(@0)',{phis}),C[0]}")
 
 ws.factory("RooTruthModel::tres_MC(t)")
 
-ws.factory("GaussModel::tres_3(t,tres_mu_fit[-0.0027],tres_s3_fit[0.513])")
-ws.factory("GaussModel::tres_2(t,tres_mu_fit,tres_s2_fit[0.0853])")
-ws.factory("GaussModel::tres_1(t,tres_mu_fit,tres_s1_fit[0.0434])")
+ws.factory("GaussModel::tres_3(t,tres_mu[-0.0027],tres_s3[0.513],tres_SF[1.00,0.5,1.5])")
+ws.factory("GaussModel::tres_2(t,tres_mu,tres_s2[0.0853],tres_SF)")
+ws.factory("GaussModel::tres_1(t,tres_mu,tres_s1[0.0434],tres_SF)")
 ws.factory("AddModel::tres({tres_3,tres_2,tres_1},{tres_f3[0.0017],tres_f2[0.165]})")
 
 #ws.factory("GaussModel::tres(t,tres_mean[0.0],tres_sigma[0.05])")
 
 # For determination of efficiency from MC, put wtag to 0, later integrate out (or set to 0.5 as I used to do before). Does that imply rebuilding the JpsiPhi pdf?
-ws.factory("tagomega[0.,0.,0.501]")
+ws.factory("tagomega[0.,0.,0.5]")
 ws.factory("expr::wtag('tagomega',tagomega)")
 
 #Build the MC PDF
@@ -259,18 +259,6 @@ if False:
 #####################
 ### Now read data ###
 #####################
-#tmin = 0.3
-#tmax = 14.
-#ws['t'].setRange(tmin,tmax)
-
-#wide
-mwidemin = 5200
-mwidemax = 5550
-ws['m'].setRange(mwidemin,mwidemax)
-#narrow
-mnarrowmin = 5321.67
-mnarrowmax = 5411.67
-#m.setRange(mnarrowmin,mnarrowmax)
 
 #################
 ### Load Data ###
@@ -283,9 +271,10 @@ ws.defineSet("observables","t,trcospsi,trcostheta,trphi,m,tagdecision")
 ws.set('observables').add(ws['tagomega'])
 ws.set('observables').add(ws['biased'])
 ws.set('observables').add(ws['unbiased'])
+ws.set('observables').add(ws['mdau1'])
 ws.set('observables').add(ws['mdau2'])
 
-data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision && tagomega==tagomega && biased==biased && unbiased==unbiased && mdau2 == mdau2')
+data = RooDataSet('data','data',NTupletree,ws.set('observables'),'t==t && m ==m && trcospsi==trcospsi && trcostheta==trcostheta && trphi==trphi && tagdecision==tagdecision && tagomega==tagomega && biased==biased && unbiased==unbiased && mdau1 == mdau1 && mdau2 == mdau2')
 
 print 'Number of events', data.numEntries()
 
@@ -341,14 +330,17 @@ ws.factory("HistPdf::effpdf(t,effdatahist)")
 ### Build the PDF's ###
 #######################
 # Signal mass
-ws.factory("Gaussian::m_sig(m,m_sig_mean[5365,5360,5370],m_sig_sigma_1[6.,0.,20.])")
+ws.factory("Gaussian::m_sig_1(m,m_sig_mean[5365,5360,5370],m_sig_sigma_1[6.,0.,20.])")
+ws.factory("expr::m_sig_sigma_2('2.14*@0',{m_sig_sigma_1})")
+ws.factory("Gaussian::m_sig_2(m,m_sig_mean,m_sig_sigma_2)")
+ws.factory("SUM::m_sig(m_bkg_f[0.83]*m_sig_1,m_sig_2)")
 
 # Bkg mass
 ws.factory("Exponential::m_bkg(m,m_bkg_exp[-0.001,-0.01,-0.0001])")
 
 # Bkg time 
 #Single exponential for biased sample!!!!
-ws.factory("RooDecay::t_bkg(t,t_bkg_tau[0.2,0.01,2.0],tres,SingleSided)")
+ws.factory("RooDecay::t_bkg_B(t,t_bkg_B_tau[0.2,0.01,2.0],tres,SingleSided)")
 
 # Bkg angles
 #Build angular background with RooP2VVAngleBasis
@@ -375,8 +367,8 @@ c2000 = RooRealVar('c2000','c2000',0.,-1.,1.)
 c3000 = RooRealVar('c3000','c3000',0.,-1.,1.)
 
 #Flat background in all angles
-ang_bkg = RooRealSumPdf('ang_bkg','ang_bkg',RooArgList(ws['Bkg_0000_basis']),RooArgList(c0000))
-ws.put(ang_bkg)
+#ang_bkg = RooRealSumPdf('ang_bkg','ang_bkg',RooArgList(ws['Bkg_0000_basis']),RooArgList(c0000))
+#ws.put(ang_bkg)
 
 #Only higher order in cospsi
 #bkg_ang = RooRealSumPdf('bkg_ang','bkg_ang',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c1000,c2000,c3000))
@@ -387,48 +379,75 @@ ws.put(ang_bkg)
 #Hiher roder in all angles
 #bkg_ang = RooRealSumPdf('bkg_ang','bkg_ang',RooArgList(ws['Bkg_0000_basis'],ws['Bkg_0010_basis'],ws['Bkg_0011_basis'],ws['Bkg_001m1_basis'],ws['Bkg_1000_basis'],ws['Bkg_2000_basis'],ws['Bkg_3000_basis']),RooArgList(c0000,c0010,c0011,c001m1,c1000,c2000,c3000))
 
+ws['m'].setRange("leftsideband",5200,5330)
+ws['m'].setRange("rightsideband",5410,5550)
+
+sidebanddata = ws['data'].reduce(RooFit.CutRange('leftsideband'))
+rightsidebanddata = ws['data'].reduce(RooFit.CutRange('rightsideband'))
+sidebanddata.append(rightsidebanddata)
+sidebanddata.SetName('sidebanddata')
+sidebanddata.SetTitle('sidebanddata')
+
+#Set binning to famous 7x5x9
+ws['trcospsi'].setBins(7)
+ws['trcostheta'].setBins(5)
+ws['trphi'].setBins(9)
+
+sidebandhist = RooDataHist('sidebandhist','sidebandhist', RooArgSet(ws['trcospsi'],ws['trcostheta'],ws['trphi']), sidebanddata)
+#ang_bkg =  RooHistPdf('ang_bkg','ang_bkg',RooArgSet(ws['trcospsi'],ws['trcostheta'],ws['trphi']), sidebandhist)
+#ws.put(ang_bkg)
+
+ws.factory("Uniform::ang_bkg({trcostheta,trcospsi,trphi})")
+
+
 ###########################
 ### Putting it together ###
 ###########################
 # Mass only PDF
-ws.factory("SUM::m_pdf(Nsig[1000,0,2000]*m_sig,Nbkg[1000,0,2000]*m_bkg)")
+ws.factory("SUM::m_pdf(Nsig_B[1000,0,2000]*m_sig,Nbkg_B[1000,0,2000]*m_bkg)")
 #ws['m_pdf'].fitTo(ws['data'],RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False))
 
 ws.factory("PROD::sigpdf( m_sig, newpdf)")
-ws.factory("PROD::bkgpdf( m_bkg, t_bkg, ang_bkg)")
+ws.factory("PROD::bkgpdf( m_bkg, t_bkg_B, ang_bkg)")
 
 ws.factory("SUM::pdf(f_sig[0.71,0.,1.0]*sigpdf,bkgpdf)")
-ws.factory("SUM::pdf_ext(Nsig*sigpdf,Nbkg*bkgpdf)")
+ws.factory("SUM::pdf_ext(Nsig_B*sigpdf,Nbkg_B*bkgpdf)")
 
 ws.factory("EffHistProd::accpdf(pdf,effpdf)")
 ws.factory("EffHistProd::accpdf_ext(pdf_ext,effpdf)")
 
 print 'GOING TO BUILD THE ACCEPTANCE CORRECTED FULL PDF!'
-timeangcorrpdf = buildEff_x_PDF(ws,'angcorr',ws['accpdf'],[ ( m.basis() , m.coefficient() ) for m in moments if m.significance()>signif] )
+timeangcorrpdf = buildEff_x_PDF(ws,'angcorr',ws['accpdf_ext'],[ ( m.basis() , m.coefficient() ) for m in moments if m.significance()>signif] )
 ws.put(timeangcorrpdf)
 
-ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.34],p0sigma[0.012])")
-ws.factory("Gaussian::p1(p1var[-4.0,4.0],p1mean[1.01],p1sigma[0.12])")
-ws.factory("expr:wtag_syst('p0var+p1var*(tagomega-etamean)',tagomega,etamean[0.339],p0var,p1var)")
 
 ###########################
 ### Tagging systematics ###
 ###########################
+ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.384],p0sigma[0.010])")
+ws.factory("Gaussian::p1(p1var[-2.,2.],p1mean[1.037],p1sigma[0.081])")
+ws.factory("expr:wtag_syst('p0var+p1var*(tagomega-etamean)',tagomega,etamean[0.379],p0var,p1var)")
 
 wtag = ws.function('wtag')
 wtag_syst = ws.function('wtag_syst')
 
 #timecorrpdf
-customizer = RooCustomizer(ws['accpdf'],'inc_tag_syst')
+customizer = RooCustomizer(ws['accpdf_ext'],'inc_tag_syst')
 customizer.replaceArg( wtag, wtag_syst )
 timecorrtagpdf = customizer.build()
 getattr(ws,'import')(timecorrtagpdf,RooFit.RecycleConflictNodes())
 
 #timeangcorrpdf
-customizer = RooCustomizer(ws['accpdf_angcorr'],'inc_tag_syst')
+customizer = RooCustomizer(ws['accpdf_ext_angcorr'],'inc_tag_syst')
 customizer.replaceArg( wtag, wtag_syst )
 timeangcorrtagpdf = customizer.build()
 getattr(ws,'import')(timeangcorrtagpdf,RooFit.RecycleConflictNodes())
+
+#Constrain deltams
+ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.63],t_sig_dm_sigma[0.11])")
+
+#Constrain tres_SF
+ws.factory("Gaussian::tres_SFconstraint(tres_SF,tres_SF_mean[1.00],tres_SF_sigma[0.04])")
 
 wsfile = TFile('BiasedWS.root','RECREATE')
 ws.Write()
