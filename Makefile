@@ -14,9 +14,7 @@ SOURCES =				\
     RooP2VVAngleBasis.cxx		\
     RooSpHarmonic.cxx		\
     RooMultiCatGenerator.cxx		\
-    RooBTagDecay.cxx		\
     RooThresholdPdf.cxx		\
-    RooGammaPdf.cxx		\
     RooEffHistProd.cxx          \
     p2vv_dict.cxx
 
