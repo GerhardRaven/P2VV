@@ -26,29 +26,29 @@ def mix( data, ref) :
     nr = ref.numEntries()
     d = RooDataSet('d','d',data.get())
     from random import sample
-    for i in sample(xrange(nd+nr),nd) : 
-        d.add(data.get(i) if i<nd else ref.get(i-nd))
+    for i in sample(xrange(nd+nr),nd) : d.add( data.get(i) if i<nd else ref.get(i-nd) )
     return d
 
 def psi(data,ref,sigma=1.0) :
     from math import sqrt,exp
-    df = data['pdf']/sigma
-    rf = ref['pdf']/sigma
+    dsi = data['pdf']/sigma
+    rsi = ref['pdf']/sigma
     sqr = lambda x : x*x
     z =   sum( sqr((data[i]-ref[i])) for i in data.iterkeys() if i != 'pdf' ) 
-    return exp( -z * df * rf / 2 )
+    return exp( -0.5 * z * dsi * rsi )
 
 def normalize(pdf, data, m, s ) :
     ds = list()
     for event in data :
         dx = dict( (x.GetName(),(x.getVal()-m[x.GetName()])/s[x.GetName()]) for x in event )
         pdf.getObservables( event ).assignValueOnly( event )
-        dx['pdf'] = pdf.getVal() # / normalize by norm set volume so that <dx['pdf']> = 1 
+        # TODO: add phase space volume!!!
+        dx['pdf'] = pdf.getVal() # / normalize by norm set volume 
         ds.append( dx ) 
     return ds
 
 def PPD(data,ref,pdf,obs,sigma=0.01) :
-    rm = dict( (i.GetName(), ref.mean(i))  for i in obs )
+    rm = dict( (i.GetName(), ref.mean(i))  for i in obs ) # don't really need this...
     rs = dict( (i.GetName(), ref.sigma(i)) for i in obs )
 
     # create a secondary dataset for both data and ref, which contains 
