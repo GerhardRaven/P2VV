@@ -49,7 +49,7 @@ def _buildAngularFunction(ws,ab,name,comp) :
         n = name + '_basis'
         s = RooArgSet()
         for c in comp : s.add( ab.build(name,c[0],c[1],c[2],c[3],c[4]) )
-        return ws.put(RooAddition_( n, n, s ) )
+        return ws.put(RooAddition( n, n, s ) )
 
 def _buildTransversityBasis(ws, ab) :
     #definition of the angular part of the PDF in terms of basis functions...
@@ -114,29 +114,30 @@ def buildJpsiphi(ws, name, transversity,resoname) : # TODO: add tagsplit
     # Note that we can use a RooCustomizer to automate the replacement of
     # fjpsiphi_sinh and fjpsiphi_sin, but the qtag in N is more tricky...
 
-    ws.factory("$Alias(Addition_,sum_)")
-    ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
+    #ws.factory("$Alias(Addition_,sum_)")
+    print 'Hello world!'
+    ws.factory("sum::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
                                    ", prod(N,NAparApar,                AparApar_basis)"
                                    ", prod(N,NAperpAperp,              AperpAperp_basis)"
                                    ", prod(N,ImAparAperp,            C,AparAperp_basis)"
                                    ", prod(N,ImAzAperp,              C,AzAperp_basis)"
                                    ", prod(N,ReAzApar,                 AzApar_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_cos ({ prod(N,NAzAz,            qtag_,C,AzAz_basis)"
+    ws.factory("sum::fjpsiphi_cos ({ prod(N,NAzAz,            qtag_,C,AzAz_basis)"
                                    ", prod(N,NAparApar,        qtag_,C,AparApar_basis)"
                                    ", prod(N,NAperpAperp,      qtag_,C,AperpAperp_basis)"
                                    ", prod(N,ImAparAperp,      qtag_,  AparAperp_basis)"
                                    ", prod(N,ImAzAperp,        qtag_,  AzAperp_basis)"
                                    ", prod(N,ReAzApar,         qtag_,C,AzApar_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_sinh({ prod(N,NAzAz,      Minus,      D,AzAz_basis)"
+    ws.factory("sum::fjpsiphi_sinh({ prod(N,NAzAz,      Minus,      D,AzAz_basis)"
                                    ", prod(N,NAparApar,  Minus,      D,AparApar_basis)"
                                    ", prod(N,NAperpAperp,            D,AperpAperp_basis)"
                                    ", prod(N,ReAparAperp,            S,AparAperp_basis)"
                                    ", prod(N,ReAzAperp,              S,AzAperp_basis)"
                                    ", prod(N,ReAzApar,   Minus,      D,AzApar_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
+    ws.factory("sum::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
                                    ", prod(N,NAparApar,  Minus,qtag_,S,AparApar_basis)"
                                    ", prod(N,NAperpAperp,      qtag_,S,AperpAperp_basis)"
                                    ", prod(N,ReAparAperp,Minus,qtag_,D,AparAperp_basis)"
@@ -144,6 +145,7 @@ def buildJpsiphi(ws, name, transversity,resoname) : # TODO: add tagsplit
                                    ", prod(N,ReAzApar,   Minus,qtag_,S,AzApar_basis)"
                                    "})")
 
+    print 'Goodbye world!'
     ws.factory("BDecay::%s(t,t_sig_tau,t_sig_dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,t_sig_dm,%s,SingleSided)" %(name,resoname))
     return ws.pdf(name)
 
@@ -160,8 +162,9 @@ def buildJpsiphiSWave(ws, name, transversity,resoname) : # TODO: add tagsplit
     ws.factory("expr::N('1.0/(1.0+@0*@1)',{tagdecision,C})")
     ws.factory("Minus[-1]")
 
-    ws.factory("$Alias(Addition_,sum_)")
-    ws.factory("sum_::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
+    #ws.factory("$Alias(Addition_,sum_)")
+    print 'Hello world! - 2 '
+    ws.factory("sum::fjpsiphi_cosh({ prod(N,NAzAz,                    AzAz_basis)"
                                    ", prod(N,NAparApar,                AparApar_basis)"
                                    ", prod(N,NAperpAperp,              AperpAperp_basis)"
                                    ", prod(N,ImAparAperp,            C,AparAperp_basis)"
@@ -173,7 +176,7 @@ def buildJpsiphiSWave(ws, name, transversity,resoname) : # TODO: add tagsplit
                                    ", prod(N,ReAsAz,                 C,AsAz_basis)"
                                    ", prod(N,ReAsApar,               C,AsApar_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_cos ({ prod(N,NAzAz,            qtag_,C,AzAz_basis)"
+    ws.factory("sum::fjpsiphi_cos ({ prod(N,NAzAz,            qtag_,C,AzAz_basis)"
                                    ", prod(N,NAparApar,        qtag_,C,AparApar_basis)"
                                    ", prod(N,NAperpAperp,      qtag_,C,AperpAperp_basis)"
                                    ", prod(N,ImAparAperp,      qtag_,  AparAperp_basis)"
@@ -185,7 +188,7 @@ def buildJpsiphiSWave(ws, name, transversity,resoname) : # TODO: add tagsplit
                                    ", prod(N,ReAsAz,           qtag_,  AsAz_basis)"
                                    ", prod(N,ReAsApar,         qtag_,  AsApar_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_sinh({ prod(N,NAzAz,      Minus,      D,AzAz_basis)"
+    ws.factory("sum::fjpsiphi_sinh({ prod(N,NAzAz,      Minus,      D,AzAz_basis)"
                                    ", prod(N,NAparApar,  Minus,      D,AparApar_basis)"
                                    ", prod(N,NAperpAperp,            D,AperpAperp_basis)"
                                    ", prod(N,ReAparAperp,            S,AparAperp_basis)"
@@ -197,7 +200,7 @@ def buildJpsiphiSWave(ws, name, transversity,resoname) : # TODO: add tagsplit
                                    ", prod(N,ImAsAz,                 S,AsAz_basis)"
                                    ", prod(N,ImAsApar,               S,AsApar_basis)"
                                    "})")
-    ws.factory("sum_::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
+    ws.factory("sum::fjpsiphi_sin ({ prod(N,NAzAz,      Minus,qtag_,S,AzAz_basis)"
                                    ", prod(N,NAparApar,  Minus,qtag_,S,AparApar_basis)"
                                    ", prod(N,NAperpAperp,      qtag_,S,AperpAperp_basis)"
                                    ", prod(N,ReAparAperp,Minus,qtag_,D,AparAperp_basis)"
@@ -210,6 +213,7 @@ def buildJpsiphiSWave(ws, name, transversity,resoname) : # TODO: add tagsplit
                                    ", prod(N,ImAsApar,   Minus,qtag_,D,AsApar_basis)"
                                    "})")
     
+    print 'Goodbye world!'
     ws.factory("BDecay::%s(t,t_sig_tau,t_sig_dG,fjpsiphi_cosh,fjpsiphi_sinh,fjpsiphi_cos,fjpsiphi_sin,t_sig_dm,%s,SingleSided)"%(name,resoname))
     return ws.pdf(name)
 
@@ -284,7 +288,7 @@ def buildEff_x_PDF(w,name,pdf,eff) :
         n = "%s_%s_eff" % (name,c.GetName())
         s = RooArgSet()
         [ s.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
-        rep = w.put( RooAddition_( n, n, s, True ) )  # hand over ownership & put in workspace...
+        rep = w.put( RooAddition( n, n, s, True ) )  # hand over ownership & put in workspace...
         customizer.replaceArg( c, rep )
    return customizer.build(True)
 
