@@ -12,88 +12,88 @@ from RooFitDecorators import *
 #gROOT.ForceStyle()
 #gStyle.UseCurrentStyle()
 
-name = 'BsJpsiPhi2011_fit_phis_biased'
+name = 'BiasedFit'
 phisparam = True
-angcorr = True
+angcorr = False
+blinded = False
 
 wsfile = TFile('BiasedWS.root')
 ws = wsfile.Get('ws')
 
 if angcorr:
-    accpdfbeforeblinding = ws['accpdf_angcorr_inc_tag_syst']
+    accpdfbeforeblinding = ws['accpdf_ext_angcorr_inc_tag_syst']
 else:
-    accpdfbeforeblinding = ws['accpdf_inc_tag_syst']
+    accpdfbeforeblinding = ws['accpdf_ext_inc_tag_syst']
 
 ################
 ### Blinding ###
 ################
 
 #Building blinded parameters
-if phisparam:
-    ws.factory("RooUnblindUniform::t_sig_dG_blind('BsRooBarb',0.2,t_sig_dG)")
-    ws.factory("RooUnblindUniform::phis_blind('BsCustard',3.,phis)")    
-    #calling RooCustomizer
-    customizer = RooCustomizer(accpdfbeforeblinding,'blinded')
-    customizer.replaceArg( ws['t_sig_dG'], ws['t_sig_dG_blind'] )
-    customizer.replaceArg( ws['phis'], ws['phis_blind'] )
-    accblindedpdf = customizer.build()
+if blinded:
+    if phisparam:
+        ws.factory("RooUnblindUniform::t_sig_dG_blind('BsRooBarb',0.2,t_sig_dG)")
+        ws.factory("RooUnblindUniform::phis_blind('BsCustard',3.,phis)")    
+        #calling RooCustomizer
+        customizer = RooCustomizer(accpdfbeforeblinding,'blinded')
+        customizer.replaceArg( ws['t_sig_dG'], ws['t_sig_dG_blind'] )
+        customizer.replaceArg( ws['phis'], ws['phis_blind'] )
+        accblindedpdf = customizer.build()
 
-#Constrain deltams
-ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.77],t_sig_dm_sigma[0.12])")
+    #Set boundaries of some variables wider for blinding
+    if phisparam:
+        ws.var('t_sig_dG').setVal(0.060)
+        ws.var('t_sig_dG').setMin(-4)
+        ws.var('t_sig_dG').setMax(4)
 
-#Set boundaries of some variables wider for blinding
-if phisparam:
-    ws.var('t_sig_dG').setVal(0.060)
-    ws.var('t_sig_dG').setMin(-4)
-    ws.var('t_sig_dG').setMax(4)
+        ws.var('phis').setVal(-1.50)
+        ws.var('phis').setMin(-2*pi)
+        ws.var('phis').setMax(2*pi)
+    else:
+        ws.var('t_sig_dG').setVal(0.060)
+        ws.var('t_sig_dG').setMin(-4)
+        ws.var('t_sig_dG').setMax(4)
+
+        #ws.var('S').setVal(-0.04)
+        #ws.var('S').setMin(-4)
+        #ws.var('S').setMax(4)
+
+        #ws.var('D').setVal(1)
+        #ws.var('D').setMin(-4)
+        #ws.var('D').setMax(4)
+        
+        pdf = accblindedpdf
     
-    ws.var('phis').setVal(-1.50)
-    ws.var('phis').setMin(-2*pi)
-    ws.var('phis').setMax(2*pi)
 else:
-    ws.var('t_sig_dG').setVal(0.060)
-    ws.var('t_sig_dG').setMin(-4)
-    ws.var('t_sig_dG').setMax(4)
-    
-    #ws.var('S').setVal(-0.04)
-    #ws.var('S').setMin(-4)
-    #ws.var('S').setMax(4)
+    pdf = accpdfbeforeblinding
 
-    #ws.var('D').setVal(1)
-    #ws.var('D').setMin(-4)
-    #ws.var('D').setMax(4)
-
-pdf = accblindedpdf
 data = ws['fullybiaseddata']
 
-#ws['t_bkg_tau'].setMin(0.)
-#ws['t_bkg_tau'].setMax(1.5)
-#ws['t_bkg_tau'].setVal(0.5)
+ws['#Gamma'].setVal(0.6761)
+ws['t_sig_dG'].setVal(0.106)
+ws['rperp2'].setVal(0.260)
+ws['rz2'].setVal(0.484)
+ws['rs2'].setVal(0.01)
+ws['deltapar'].setVal(3.26)
+ws['deltaperp'].setVal(2.61)
+ws['deltas'].setVal(2.93)
+ws['phis'].setVal(0.151)
 
-## #Check
-## ws['m_pdf'].fitTo(data,RooFit.NumCPU(8))
+sw = TStopwatch()
+sw.Start()
+result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'),ws.pdf('tres_SFconstraint'))))
+sw.Stop() 
+
+writeFitParamsLatex(result,name,False)
+dict = writeCorrMatrixLatex(result,name)
+
+assert False
 
 ######PLOT######
 lw = RooCmdArg(RooFit.LineWidth(2))
 xes = RooCmdArg(RooFit.XErrorSize(0))
 err = RooCmdArg(RooFit.DrawOption('E'))
 dashed = RooCmdArg(RooFit.LineStyle(kDashed))
-
-ws['rs2'].setVal(0.1)
-#ws['rs2'].setConstant()
-#ws['deltas'].setConstant()
-
-## ws['m_bkg_exp'].setConstant()
-## ws['m_sig_sigma_1'].setConstant()
-## ws['m_sig_mean'].setConstant()
-ws['Nbkg'].setMax(5000)
-ws['Nsig'].setMax(5000)
-sw = TStopwatch()
-
-sw.Start()
-#result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'))))
-result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'))))
-sw.Stop() 
 
 signame = 'sigpdf_angcorr_inc_tag_syst_blinded'
 bkgname = 'bkgpdf_angcorr'
@@ -167,6 +167,3 @@ pdf.plotOn(mframe,lw)
 mframe.Draw()
 
 assert False
-
-writeFitParamsLatex(result,name,False)
-dict = writeCorrMatrixLatex(result,name)

@@ -20,25 +20,33 @@ gROOT.SetStyle(myStyle.GetName())
 gROOT.ForceStyle()
 gStyle.UseCurrentStyle()
 
-from lhcbStyle import *
-gStyle.SetOptTitle(0)
-lhcbname = printLHCb(gStyle,'L','Prelim','#sqrt{s}=7 TeV Data, L = 370 pb^{-1}')
-style = lhcbStyle()
+#from lhcbStyle import *
+#gStyle.SetOptTitle(0)
+#lhcbname = printLHCb(gStyle,'L','Prelim','#sqrt{s}=7 TeV Data, L = 370 pb^{-1}')
+#style = lhcbStyle()
 
-angcorr = False
+angcorr = True
+taggingsyst = True
 blinded = False
 phisparam = True
-splitmKK = False
+splitmKK = True
 
-name = 'UnbiasedFit'
-wsfile = TFile('UnbiasedWS.root')
+name = 'LargePhiWindow'
+wsfile = TFile('UnbiasedWS_LargePhiWindow.root')
+
+#name = 'FitXC_angcorr_withbkg'
+#wsfile = TFile('UnbiasedWS_withbkg.root')
 
 ws = wsfile.Get('ws')
 
-if angcorr:
-    pdfbeforeblinding = ws['pdf_ext_angcorr_inc_tag_syst']
+if taggingsyst:
+    if not angcorr:
+        pdfbeforeblinding = ws['pdf_ext_inc_tag_syst']
+    if angcorr:
+        pdfbeforeblinding = ws['pdf_ext_angcorr_inc_tag_syst']
+    
 else:
-    pdfbeforeblinding = ws['pdf_ext_inc_tag_syst']
+    pdfbeforeblinding = ws['pdf_ext_angcorr']
 
 ################
 ### Blinding ###
@@ -77,7 +85,62 @@ else:
     pdf = pdfbeforeblinding
 
 #Set boundaries of some variables wider for blinding
-ws['rs2'].setVal(0.1)
+if blinded:
+    if phisparam:
+        ws.var('t_sig_dG').setVal(0.060)
+        ws.var('t_sig_dG').setMin(-4)
+        ws.var('t_sig_dG').setMax(4)
+        
+        ws.var('phis').setVal(-1.50)
+        ws.var('phis').setMin(-2*pi)
+        ws.var('phis').setMax(2*pi)
+    else:
+        ws.var('t_sig_dG').setVal(0.060)
+        ws.var('t_sig_dG').setMin(-4)
+        ws.var('t_sig_dG').setMax(4)
+    
+        #ws.var('S').setVal(-0.04)
+        #ws.var('S').setMin(-4)
+        #ws.var('S').setMax(4)
+
+        #ws.var('D').setVal(1)
+        #ws.var('D').setMin(-4)
+        #ws.var('D').setMax(4)
+
+ws['rz2'].setVal(0.485)
+ws['rz2'].setMin(0.)
+ws['rz2'].setMax(1.)
+
+ws['rs2'].setVal(0.05)
+ws['rs2'].setMin(0.)
+ws['rs2'].setMax(1.)
+#ws['rs2'].setConstant()
+#ws['deltas'].setConstant()
+
+ws['rperp2'].setVal(0.259)
+ws['rperp2'].setMin(0.)
+ws['rperp2'].setMax(1.)
+
+ws['deltas'].setVal(0.5)
+ws['deltas'].setMin(-2*pi)
+ws['deltas'].setMax(2*pi)
+
+ws['deltaperp'].setVal(1.)
+ws['deltaperp'].setMin(0.)
+ws['deltaperp'].setMax(2.*pi)
+
+ws['deltapar'].setVal(3.)
+ws['deltapar'].setMin(-2.*pi)
+ws['deltapar'].setMax(2.*pi)
+
+ws['Nbkg'].setMax(50000)
+ws['Nsig'].setMax(10000)
+
+ws['phis'].setVal(0.1)
+ws['phis'].setMin(-pi)
+ws['phis'].setMax(pi)
+
+#ws.var('t_sig_dG').setVal(0.1)
 
 if splitmKK:
     #################################
@@ -233,39 +296,28 @@ if splitmKK:
     ws['unbiaseddata'].plotOn(mframe4,RooFit.CutRange('Bin4'))
     ws['simpdf'].plotOn(mframe4,RooFit.Slice(ws['thismKKcat'],'Bin4'),RooFit.ProjWData(argset,ws['unbiaseddata']))
     mframe4.Draw()
+    
+    ##################################################################################
 
-##################################################################################
 pdf = pdf
 data = ws['unbiaseddata']
 
-ws['#Gamma'].setVal(0.6761)
-ws['t_sig_dG'].setVal(0.106)
-ws['rperp2'].setVal(0.260)
-ws['rz2'].setVal(0.484)
-ws['rs2'].setVal(0.01)
-ws['deltapar'].setVal(3.26)
-ws['deltaperp'].setVal(2.61)
-ws['deltas'].setVal(2.93)
-ws['phis'].setVal(0.151)
-ws['Nsig_UB'].setVal(7280)
-ws['Nbkg_UB'].setVal(3746)
-
-sw = TStopwatch()
-sw.Start()
-result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['p0'],ws['p1'],ws['dmsconstraint'],ws['tres_SFconstraint'])))
-sw.Stop()
+if taggingsyst:
+    result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['p0'],ws['p1'],ws['dmsconstraint'],ws['tres_SFconstraint'])))
+else:
+    result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['dmsconstraint'],ws['tres_SFconstraint'])))
 
 writeFitParamsLatex(result,name,False)
 dict = writeCorrMatrixLatex(result,name)
 
-assert False
+
 ######PLOT######
 lw = RooCmdArg(RooFit.LineWidth(2))
 xes = RooCmdArg(RooFit.XErrorSize(0))
 err = RooCmdArg(RooFit.DrawOption('E'))
 dashed = RooCmdArg(RooFit.LineStyle(kDashed))
 
-signame = 'sig_pdf_angcorr_inc_tag_syst'
+signame = 'sig_pdf_inc_tag_syst_blinded'
 bkgname = 'bkg_pdf'
 
 sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )

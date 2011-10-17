@@ -165,7 +165,7 @@ def writeCorrMatrixLatex(roofitresult,name):
         string += parlist[j].GetName() 
         for i in range(npar):
             if i>=j:
-                if corr[j][i].getVal() < 0.005:
+                if abs(corr[j][i].getVal()) < 0.005:
                     string += ' & - '
                 else:
                     string += ' & ' + str(round(corr[j][i].getVal(),3)) 
