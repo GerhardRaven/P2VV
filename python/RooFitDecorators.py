@@ -69,7 +69,7 @@ for t in [ RooArgSet,RooArgList ] :
 
 # RooWorkspace functions
 
-from ROOT import RooWorkspace
+from ROOT import RooWorkspace, RooFit
 RooWorkspace.__getitem__ = lambda s,i : s.obj(i)
 RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
