@@ -1,11 +1,20 @@
-from ROOT import RooArgSet, RooArgList, RooDataSet
+###############################################################################
+## RooFitDecorators:                                                         ##
+##                                                                           ##
+## authors:                                                                  ##
+##   GR, Gerhard Raven, Nikhef & VU, Gerhard.Raven@nikhef.nl                 ##
+##                                                                           ##
+###############################################################################
+
+<<<<<<< HEAD
+from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult
 from ROOT import gStyle,gROOT
 gStyle.SetPalette(1)
 gROOT.SetStyle("Plain")
 
 # needed to get RooFit.Name, RooFit.Components.... kRed
 # how to get just the RooFit namespace ?
-from ROOT import * 
+#from ROOT import * 
 
 ###### decorate TPad with pads...
 def _pads(p,n=None,m=None) :
@@ -30,13 +39,14 @@ def _RooPlotDraw(self,*args,**kw) :
    if pad : pad.Update()
 RooPlot.Draw = _RooPlotDraw
 
-
+# RooDataSet functions
 def _RooDataSetIter(self) :
     for i in range( self.numEntries() ) : yield self.get(i)
 
 from ROOT import RooDataSet
 RooDataSet.__iter__ = _RooDataSetIter
 
+# RooAbsCollection/RooArgSet/RooArgList functions
 def _RooAbsCollectionIter(self) :
     z = self.createIterator()
     while True :
@@ -64,13 +74,16 @@ for t in [ RooArgSet,RooArgList ] :
     t.__add__  = _RooTypedUnary2Binary( t, '__iadd__' )
 
 
+
+# RooWorkspace functions
+
 from ROOT import RooWorkspace
 RooWorkspace.__getitem__ = lambda s,i : s.obj(i)
 RooWorkspace.__contains__ = lambda s,i : s.obj(i) is not None
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
 def _RooWorkspacePut( self ,x ) :
     _import = getattr(RooWorkspace,'import')
-    if _import(self,x) : return None
+    if _import(self,x,RooFit.Silence()) : return None
     return self[x.GetName()]
 RooWorkspace.put = _RooWorkspacePut
 
@@ -89,6 +102,34 @@ def setConstant(ws, pattern, constant = True, value = None):
     return rc
 
 RooWorkspace.setConstant = setConstant
+
+
+# RooFitResult functions
+
+def _RooFitResultGet(self, parList) :
+  # get parameter indices in fit result
+  indices = {}
+  floatPars = self.floatParsFinal()
+  for par in parList :
+    index = floatPars.index(par)
+    if index >= 0 :
+      indices[par] = index
+    else :
+      print 'P2VV - ERROR: RooFitResult::result(): fit result does not contain parameter', par
+      return None
+
+  covMatrix = self.covarianceMatrix()
+
+  values = tuple([floatPars[indices[par]].getVal() for par in parList])
+  covariances = tuple([tuple([covMatrix[indices[row]][indices[col]]\
+      for col in parList]) for row in parList])
+
+  return (tuple(parList), values, covariances)
+
+RooFitResult.result = _RooFitResultGet
+
+
+
 
 # plot -- example usage:
 # _c1 = plot( c.cd(1),mpsi,data,pdf
@@ -247,3 +288,10 @@ def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2mi
                                   , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
                                   , RooFit.Scaling(False)
                                   )
+
+
+
+
+
+
+
