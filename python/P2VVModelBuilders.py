@@ -366,11 +366,9 @@ class AngleFunctionBuilder :
     from math import sqrt
     import RooFitDecorators
 
-    KSWave = False
-    if self._config.value('KSWave')\
+    KSWave = self._config.value('KSWave')\
         and type(self._config.value('KSWave')) is str\
-        and self._config.value('KSWave')[:7] == 'include' :
-      KSWave = True
+        and self._config.value('KSWave')[:7] == 'include' 
 
 
     # specify components of angular functions
@@ -449,13 +447,11 @@ class AngleFunctionBuilder :
         # express angular function in angle basis functions
         basesSet = ''
         for comps in angFunc[1] :
-          sigFunc = self.buildBasisFunc(name, comps[0], comps[1], comps[2],
-              comps[3], comps[4])
-          if len(effFuncs) > 0:
+          sigFunc = self.buildBasisFunc(name, *comps)
+          if len(effFuncs):
             # with efficiency
             for effFunc in effFuncs :
-              sigEffProd = ws[sigFunc].createProduct(ws[effFunc],\
-                  effCoefs[effFunc])
+              sigEffProd = ws[sigFunc].createProduct(ws[effFunc], effCoefs[effFunc])
               basesSet += ws.put(sigEffProd) + ','
           else :
             # without efficiency
@@ -485,12 +481,8 @@ class AngleFunctionBuilder :
     ws = self._config.workspace()
 
     # build basis function
-    if name not in ws :
-      ws.factory("P2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)"\
-          % (name, self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
-    if name not in self._angBasisFuncs :
-      self._angBasisFuncs.append(name)
-
+    if name not in ws :                  ws.factory("P2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)" % (name, self._cpsi, self._ctheta, self._phi, i, j, k, l, c))
+    if name not in self._angBasisFuncs : self._angBasisFuncs.append(name)
     return name
 
 
@@ -534,14 +526,10 @@ class TimeResolutionBuilder :
       timeError = config['BLifetimeError'].name()
 
       for name in ['sig', 'nonpsi'] :
-        ws.factory("GaussModel::tres_%s_1(%s, tres_%s_m[0., -0.2, 0.2],\
-            tres_%s_s1[1.1, 0.3, 2.], 1, %s)"\
-            % (name, time, name, name, timeError))
+        ws.factory("GaussModel::tres_%s_1(%s, tres_%s_m[0., -0.2, 0.2], tres_%s_s1[1.1, 0.3, 2.], 1, %s)" % (name, time, name, name, timeError))
 
         if tResModel == '3GaussSimple' :
-          ws.factory("GaussModel::tres_%s_2(%s, tres_%s_m,\
-              tres_%s_s2[20., 1.5, 30], 1, %s)"\
-              % (name, time, name, name, timeError))
+          ws.factory("GaussModel::tres_%s_2(%s, tres_%s_m, tres_%s_s2[20., 1.5, 30], 1, %s)" % (name, time, name, name, timeError))
         else :
           # try GExp instead of G2  -- so that the limit GExp -> G
           # (i.e. 'lifetime'->0) it returns to the original
@@ -550,33 +538,22 @@ class TimeResolutionBuilder :
           # choice: either scale lifetime with error or not...
           # let's first try an absolute lifetime...
           # try to use the same width as in the first Gaussian!
-          ws.factory("{tres_%s_s2[1.5, 0.9, 3.0], tres_%s_l[1., 20.0]}"\
-              % (name, name))
-          ws.factory("GExpModel::tres_%s_2_gexpr(%s, tres_%s_s2, tres_%s_l, %s,\
-              %s, kFALSE, Normal)"\
-              % (name, time, name, name, timeError, timeError))
-          ws.factory("GExpModel::tres_%s_2_gexpl(%s, tres_%s_s2, tres_%s_l, %s,\
-              %s, kFALSE, Flipped)"\
-              % (name, time, name, name, timeError, timeError))
-          ws.factory("AddModel::tres_%s_2({tres_%s_2_gexpl, tres_%s_2_gexpr},\
-              {%s})" % (name, name, name, half))
+          ws.factory("{tres_%s_s2[1.5, 0.9, 3.0], tres_%s_l[1., 20.0]}" % (name, name))
+          ws.factory("GExpModel::tres_%s_2_gexpr(%s, tres_%s_s2, tres_%s_l, %s, %s, kFALSE, Normal)"  % (name, time, name, name, timeError, timeError))
+          ws.factory("GExpModel::tres_%s_2_gexpl(%s, tres_%s_s2, tres_%s_l, %s, %s, kFALSE, Flipped)" % (name, time, name, name, timeError, timeError))
+          ws.factory("AddModel::tres_%s_2({tres_%s_2_gexpl, tres_%s_2_gexpr}, {%s})" % (name, name, name, half))
 
       # define outlier catcher (3)
       if tResModel == '3GaussSimple' :
-        ws.factory("GaussModel::tres_3(%s, %s, tres_3_s[3., 1., 5.])"\
-            % (time, zero))
+        ws.factory("GaussModel::tres_3(%s, %s, tres_3_s[3., 1., 5.])" % (time, zero))
       else :
         ws.factory("{tres_3_l[1.7, 0.9, 3.0], tres_3_s[1., 0.5, 2.]}")
-        ws.factory("GExpModel::tres_3_gexpr(%s, tres_3_s, tres_3_l,\
-            kFALSE, Normal)" % time)
-        ws.factory("GExpModel::tres_3_gexpl(%s, tres_3_s, tres_3_l,\
-            kFALSE, Flipped)" % time)
+        ws.factory("GExpModel::tres_3_gexpr(%s, tres_3_s, tres_3_l, kFALSE, Normal)" % time)
+        ws.factory("GExpModel::tres_3_gexpl(%s, tres_3_s, tres_3_l, kFALSE, Flipped)" % time)
         ws.factory("AddModel::tres_3({tres_3_gexpl, tres_3_gexpr}, {%s})" % half)
 
         # add three models
-        ws.factory("AddModel::tres_%s({tres_3, tres_%s_2, tres_%s_1},\
-            {tres_%s_f3[0.001, 0.00, 0.02], tres_%s_f2[0.2, 0.01, 1]})"\
-            % (name, name, name, name, name))
+        ws.factory("AddModel::tres_%s({tres_3, tres_%s_2, tres_%s_1}, {tres_%s_f3[0.001, 0.00, 0.02], tres_%s_f2[0.2, 0.01, 1]})" % (name, name, name, name, name))
 
     else :
       # no resolution models (delta functions)
@@ -606,10 +583,8 @@ def computeMoments(data, moments) :
   """
 
   from ROOT import std, _computeMoments
-
   momVec = std.vector('IMoment*')()
   for mom in moments : momVec.push_back(mom)
-
   return _computeMoments(data, momVec)
 
 

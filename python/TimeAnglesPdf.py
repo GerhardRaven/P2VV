@@ -1,15 +1,12 @@
 from RooFitWrappers import Pdf
 
 class TimeAnglesPdf( Pdf ):
-    def __init__(self, name, Observables, AngularIndeces, ResolutionModel):
+    def __init__(self, name, Observables, AngularIndices, ResolutionModel):
         if len(Observables) != 4:
             raise StandardError('Need four observables: time and three angles')
         
         self._angles = Observables[1:]
-
-        for n, d in AngularIndeces:
-            self.__angular_function(n, d)
-
+        for n, d in AngularIndices: self.__angular_function(n, d)
         super(TimeAnglesPdf, self).__init__(name, o, **d))
 
     def __angular_function(self, n, d):

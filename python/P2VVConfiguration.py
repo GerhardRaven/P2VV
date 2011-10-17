@@ -14,10 +14,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   from ROOT import RooFit
 
   # create configuration instance
-  if createWS :
-    config = P2VVConfiguration('', '')
-  else :
-    config = P2VVConfiguration(False, '')
+  config = P2VVConfiguration('' if createWS else False, '')
 
   # check arguments
   if type(mode) is not str :
@@ -28,8 +25,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     return config
 
   # set mode in configuration
-  config.addSetting('P2VVMode', P2VVSetting('mode',
-      'P2VV mode', mode))
+  config.addSetting('P2VVMode', P2VVSetting('mode', 'P2VV mode', mode))
 
   # get options
   optDict = {}
@@ -38,47 +34,33 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       optSplit = opt.split('=')
       optDict[optSplit[0]] = optSplit[1] if len(optSplit) > 1 else ''
 
-  config.addSetting('P2VVOptions', P2VVSetting('options',
-      'P2VV options', optDict))
+  config.addSetting('P2VVOptions', P2VVSetting('options', 'P2VV options', optDict))
 
 
   ######################
   ## general settings ##
   ######################
-  config.addSetting('sigPDFName', P2VVSetting('sigPDFName',
-      'ROOT name of the signal PDF', mode + 'PDF'))
+  config.addSetting('sigPDFName', P2VVSetting('sigPDFName', 'ROOT name of the signal PDF', mode + 'PDF'))
 
-  onlySignal = False
-  if 'onlySignal' in options : onlySignal = True
-  config.addSetting('onlySignal', P2VVSetting('onlySignal',
-      'build only the signal PDF?', onlySignal))
+  onlySignal = 'onlySignal' in options 
+  config.addSetting('onlySignal', P2VVSetting('onlySignal', 'build only the signal PDF?', onlySignal))
 
   if 'noFactFlavSpec' in options :
-    config.addSetting('noFactFlavSpec', P2VVSetting('noFactFlavSpec',
-        'factorize PDF for flavour-specific states?', onlySignal))
+    config.addSetting('noFactFlavSpec', P2VVSetting('noFactFlavSpec', 'factorize PDF for flavour-specific states?', onlySignal))
 
-  config.addSetting('P2VVFrameDrawOpts', P2VVSetting('P2VVFrameDrawOpts',
-      'options for drawing plot frames', []))
+  config.addSetting('P2VVFrameDrawOpts', P2VVSetting('P2VVFrameDrawOpts', 'options for drawing plot frames', [])) 
+  config.addSetting('P2VVDataPlotOpts', P2VVSetting('P2VVDataPlotOpts', 'options for plotting data', [RooFit.MarkerStyle(8), RooFit.MarkerSize(0.4), RooFit.DrawOption("P")]))
 
-  config.addSetting('P2VVDataPlotOpts', P2VVSetting('P2VVDataPlotOpts',
-      'options for plotting data', [RooFit.MarkerStyle(8),
-      RooFit.MarkerSize(0.4), RooFit.DrawOption("P")]))
-
-  config.addSetting('P2VVPDFPlotOpts', P2VVSetting('P2VVPDFPlotOpts',
-      'options for plotting PDFs', [RooFit.LineWidth(2)]))
+  config.addSetting('P2VVPDFPlotOpts', P2VVSetting('P2VVPDFPlotOpts', 'options for plotting PDFs', [RooFit.LineWidth(2)]))
 
 
   ###############
   ## constants ##
   ###############
-  config.addSetting('zeroConst', RooRealSetting('zero',
-      'zero constant', 'par', 0., '', ''))
-  config.addSetting('halfConst', RooRealSetting('half',
-      'one half constant', 'par', 0.5, '', ''))
-  config.addSetting('oneConst', RooRealSetting('one',
-      'one constant', 'par', 1., '', ''))
-  config.addSetting('minusConst', RooRealSetting('minus',
-      'minus constant', 'par', -1., '', ''))
+  config.addSetting('zeroConst', RooRealSetting('zero', 'zero constant', 'par', 0., '', ''))
+  config.addSetting('halfConst', RooRealSetting('half', 'one half constant', 'par', 0.5, '', ''))
+  config.addSetting('oneConst', RooRealSetting('one', 'one constant', 'par', 1., '', ''))
+  config.addSetting('minusConst', RooRealSetting('minus', 'minus constant', 'par', -1., '', ''))
 
 
   ##################
@@ -95,24 +77,17 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
   # helicity angles
   if 'hel' in anglesType :
-    config.addSetting('cpsiAng', RooRealSetting('helcthetaK',
-        'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
-    config.addSetting('cthetaAng', RooRealSetting('helcthetaL',
-        'cosine of lepton polarization angle', 'obs', 0., -1., 1.))
-    config.addSetting('phiAng', RooRealSetting('helphi',
-        'angle between decay planes', 'obs', 0., -pi, pi))
+    config.addSetting('cpsiAng', RooRealSetting('helcthetaK', 'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
+    config.addSetting('cthetaAng', RooRealSetting('helcthetaL', 'cosine of lepton polarization angle', 'obs', 0., -1., 1.))
+    config.addSetting('phiAng', RooRealSetting('helphi', 'angle between decay planes', 'obs', 0., -pi, pi))
 
   # transversity angles
   if 'trans' in anglesType :
-    config.addSetting('cpsiAng', RooRealSetting('trcpsi',
-        'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
-    config.addSetting('cthetaAng', RooRealSetting('trctheta',
-        'cosine of transversity polar angle', 'obs', 0., -1., 1.))
-    config.addSetting('phiAng', RooRealSetting('trphi',
-        'transversity azimuthal angle', 'obs', 0., -pi, pi))
+    config.addSetting('cpsiAng', RooRealSetting('trcpsi', 'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
+    config.addSetting('cthetaAng', RooRealSetting('trctheta', 'cosine of transversity polar angle', 'obs', 0., -1., 1.))
+    config.addSetting('phiAng', RooRealSetting('trphi', 'transversity azimuthal angle', 'obs', 0., -pi, pi))
 
-  config.addSetting('anglesType', P2VVSetting('anglesType',
-      'type of angles: helicity or transversity', anglesType))
+  config.addSetting('anglesType', P2VVSetting('anglesType', 'type of angles: helicity or transversity', anglesType))
 
 
   #########################
@@ -120,12 +95,9 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   #########################
   if mode == 'Bd2mumuKstar' :
     # amplitudes
-    config.addSetting('incMuMass', P2VVSetting('incMuMass',
-      'include finite muon mass?', True))
-    config.addSetting('incMuMuT', P2VVSetting('incMuMuT',
-      'include timelike dimuon contribution?', True))
-    config.addSetting('incMuMuS', P2VVSetting('incMuMuS',
-      'include scalar dimuon contribution?', True))
+    config.addSetting('incMuMass', P2VVSetting('incMuMass', 'include finite muon mass?', True))
+    config.addSetting('incMuMuT',  P2VVSetting('incMuMuT', 'include timelike dimuon contribution?', True))
+    config.addSetting('incMuMuS',  P2VVSetting('incMuMuS', 'include scalar dimuon contribution?', True))
 
 
   #########################################################
@@ -135,10 +107,8 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     ### general ###
 
     # RooFit class for time PDF
-    if 'RooBDecay' in optDict : BDecClass = 'RooBDecay'
-    else : BDecClass = 'RooBTagDecay'
-    config.addSetting('BDecayClass', P2VVSetting('BDecayClass',
-        'RooFit class for time PDF', BDecClass))
+    BDecClass = 'RooBDecay' if 'RooBDecay' in optDict else 'RooBTagDecay'
+    config.addSetting('BDecayClass', P2VVSetting('BDecayClass', 'RooFit class for time PDF', BDecClass))
 
     if not onlySignal :
       # decay type
@@ -147,60 +117,40 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
           11:'JpsiKmin', 20:'JpsiKstar0', 21:'JpsiKstarbar0', 40:'Jpsiphi'}))
 
       # trigger
-      config.addSetting('unbiased', RooCatSetting('unbiased',
-          'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
+      config.addSetting('unbiased', RooCatSetting('unbiased', 'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
 
     ### B lifetime and mixing ###
-    if onlySignal : tResModel = 'truth'
-    else : tResModel = 'Gauss'
-    if 'tResModel' in optDict and optDict['tResModel'] != '' :
-      tResModel = optDict['tResModel']
+    tResModel = 'truth' if onlySignal else 'Gauss'
+    if 'tResModel' in optDict and optDict['tResModel'] != '' : tResModel = optDict['tResModel']
 
-    config.addSetting('tResModel', P2VVSetting('tResModel',
-      'time resolution model', tResModel))
-
-    config.addSetting('BLifetime', RooRealSetting('t',
-        'B lifetime (ps)', 'obs', 0., -5., 14.))
+    config.addSetting('tResModel', P2VVSetting('tResModel', 'time resolution model', tResModel))
+    config.addSetting('BLifetime', RooRealSetting('t', 'B lifetime (ps)', 'obs', 0., -5., 14.))
     if tResModel == 'Gauss' :
-      config.addSetting('BLifetimeError', RooRealSetting('sigmat',
-          'B lifetime error (ps)', 'par', 0.05, '', ''))
+      config.addSetting('BLifetimeError', RooRealSetting('sigmat', 'B lifetime error (ps)', 'par', 0.05, '', ''))
     elif tResModel[:6] == '3Gauss' :
-      config.addSetting('BLifetimeError', RooRealSetting('sigmat',
-          'B lifetime error (ps)', 'par', 0.05, 0.005, 0.1))
+      config.addSetting('BLifetimeError', RooRealSetting('sigmat', 'B lifetime error (ps)', 'par', 0.05, 0.005, 0.1))
 
     if mode == 'Bd2JpsiKstar' :
-      config.addSetting('Gamma', RooRealSetting('Gamma',
-          'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
-      config.addSetting('dGamma', RooRealSetting('dGamma',
-          'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
-      config.addSetting('dm', RooRealSetting('dm',
-          'delta m_s (ps^-1)', 'par', 0.51, '', ''))
+      config.addSetting('Gamma',  RooRealSetting('Gamma',  'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
+      config.addSetting('dGamma', RooRealSetting('dGamma', 'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
+      config.addSetting('dm',     RooRealSetting('dm',     'delta m_s (ps^-1)', 'par', 0.51, '', ''))
     elif mode == 'Bs2Jpsiphi' :
-      config.addSetting('Gamma', RooRealSetting('gamma',
-          'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
-      config.addSetting('dGamma', RooRealSetting('dGamma',
-          'delta Gamma_s (ps^-1)', 'par', 0.05, -0.3, 0.3))
-      config.addSetting('dm', RooRealSetting('dm',
-          'delta m_s (ps^-1)', 'par', 17.8, '', ''))
+      config.addSetting('Gamma',  RooRealSetting('gamma', 'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
+      config.addSetting('dGamma', RooRealSetting('dGamma', 'delta Gamma_s (ps^-1)', 'par', 0.05, -0.3, 0.3))
+      config.addSetting('dm',     RooRealSetting('dm', 'delta m_s (ps^-1)', 'par', 17.8, '', ''))
 
-    config.addSetting('BMeanLife', RooFormSetting('t_sig_tau',
-        'B mean lifetime', '1. / @0', ['Gamma']))
+    config.addSetting('BMeanLife', RooFormSetting('t_sig_tau', 'B mean lifetime', '1. / @0', ['Gamma']))
 
     if not onlySignal :
       ### masses ###
-      config.addSetting('mJpsi', RooRealSetting('mdau1',
-          'J/psi mass (MeV)', 'obs', 3097., 3097. - 60., 3097. + 40.))
+      config.addSetting('mJpsi', RooRealSetting('mdau1', 'J/psi mass (MeV)', 'obs', 3097., 3097. - 60., 3097. + 40.))
       if mode in ['Bu2JpsiK', 'Bd2JpsiKstar'] :
-        config.addSetting('mB', RooRealSetting('m',
-            'B0 mass (MeV)', 'obs', 5279., 5279. - 50., 5279. + 50.))
+        config.addSetting('mB', RooRealSetting('m', 'B0 mass (MeV)', 'obs', 5279., 5279. - 50., 5279. + 50.))
         if mode == 'Bd2JpsiKstar' :
-          config.addSetting('mKstar', RooRealSetting('mdau2',
-              'K*0 mass (MeV)', 'obs', 892., 892. - 50., 892. + 50.))
+          config.addSetting('mKstar', RooRealSetting('mdau2', 'K*0 mass (MeV)', 'obs', 892., 892. - 50., 892. + 50.))
       elif mode == 'Bs2Jpsiphi' :
-        config.addSetting('m', RooRealSetting('m',
-            'B_s0 mass (MeV)', 'obs', 5366., 5366. - 50., 5366. + 50.))
-        config.addSetting('mphi', RooRealSetting('mdau2',
-            'phi mass (MeV)', 'obs', 1019.455, 1019.455 - 12., 1019.455 + 12.))
+        config.addSetting('m', RooRealSetting('m', 'B_s0 mass (MeV)', 'obs', 5366., 5366. - 50., 5366. + 50.))
+        config.addSetting('mphi', RooRealSetting('mdau2', 'phi mass (MeV)', 'obs', 1019.455, 1019.455 - 12., 1019.455 + 12.))
         # Note: +-10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the
         # background -- but the roadmap uses +-12 instead...
 
@@ -220,106 +170,62 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       SCP = 2. * ImLambda   / (1. + lambdaSq)
 
       lambdaCPType = 'cartesian'
-      if 'lambdaCPType' in optDict and optDict['lambdaCPType'] != '' :
-        lambdaCPType = optDict['lambdaCPType']
-      config.addSetting('lambdaCPType', P2VVSetting('lambdaCPType',
-        'type of lambda (CP violation)', lambdaCPType))
+      if 'lambdaCPType' in optDict and optDict['lambdaCPType'] != '' : lambdaCPType = optDict['lambdaCPType']
+      config.addSetting('lambdaCPType', P2VVSetting('lambdaCPType', 'type of lambda (CP violation)', lambdaCPType))
 
       if mode == 'Bd2JpsiKstar' :
-        config.addSetting('CCP', RooRealSetting('C',
-            'B0 lambda param. C', 'par', 0., '', ''))
+          config.addSetting('CCP', RooRealSetting('C', 'B0 lambda param. C', 'par', 0., '', ''))
       elif mode == 'Bs2Jpsiphi' :
+        # IN: polar: (lambdaCPSq,phiCP); cartesian: (ReLambdaCP,ImLambdaCP), other: (CCP,DCP,SCP)
+        # OUT: (CCP,DCP,SCP)
         if lambdaCPType == 'polar' :
-          config.addSetting('lambdaCPSq', RooRealSetting('lambda^2',
-              'CP violation param. |lambda|^2', 'par', lambdaSq, 0., 5.))
-          config.addSetting('phiCP', RooRealSetting('phis',
-              'CP violation param. phi_s', 'par', phi_s, -2 * pi, 2 * pi))
-          config.addSetting('CCP', RooFormSetting('C',
-              'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
-          config.addSetting('DCP', RooFormSetting('D',
-              'B0_s lambda param. D', '2. * sqrt(@0) * cos(@1) / (1. + @0)',
-              ['lambdaCPSq', 'phiCP']))
-          config.addSetting('SCP', RooFormSetting('S',
-              'B0_s lambda param. S', '-2. * sqrt(@0) * sin(@1) / (1. + @0)',
-              ['lambdaCPSq', 'phiCP']))
+          config.addSetting('lambdaCPSq', RooRealSetting('lambda^2', 'CP violation param. |lambda|^2', 'par', lambdaSq, 0., 5.))
+          config.addSetting('phiCP',      RooRealSetting('phis', 'CP violation param. phi_s', 'par', phi_s, -2 * pi, 2 * pi))
+          config.addSetting('CCP',        RooFormSetting('C', 'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
+          config.addSetting('DCP',        RooFormSetting('D', 'B0_s lambda param. D', '2. * sqrt(@0) * cos(@1) / (1. + @0)', ['lambdaCPSq', 'phiCP']))
+          config.addSetting('SCP',        RooFormSetting('S', 'B0_s lambda param. S', '-2. * sqrt(@0) * sin(@1) / (1. + @0)', ['lambdaCPSq', 'phiCP']))
 
         elif lambdaCPType == 'cartesian' :
-          config.addSetting('ReLambdaCP', RooRealSetting('ReLambda',
-              'CP violation param. Re(lambda)', 'par', ReLambda, -2., 2.))
-          config.addSetting('ImLambdaCP', RooRealSetting('ImLambda',
-              'CP violation param. Im(lambda)', 'par', ImLambda, -2., 2.))
-          config.addSetting('lambdaCPSq', RooFormSetting('lambdaSq',
-              'CP violation param. |lambda|^2', '@0 * @0 + @1 * @1',
-              ['ReLambdaCP', 'ImLambdaCP']))
-          config.addSetting('CCP', RooFormSetting('C',
-              'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
-          config.addSetting('DCP', RooFormSetting('D',
-              'B0_s lambda param. D', '2. * @1 / (1. + @0)',
-              ['lambdaCPSq', 'ReLambdaCP']))
-          config.addSetting('SCP', RooFormSetting('S',
-              'B0_s lambda param. S', '2. * @1 / (1. + @0)',
-              ['lambdaCPSq', 'ImLambdaCP']))
+          config.addSetting('ReLambdaCP', RooRealSetting('ReLambda', 'CP violation param. Re(lambda)', 'par', ReLambda, -2., 2.))
+          config.addSetting('ImLambdaCP', RooRealSetting('ImLambda', 'CP violation param. Im(lambda)', 'par', ImLambda, -2., 2.))
+          config.addSetting('lambdaCPSq', RooFormSetting('lambdaSq', 'CP violation param. |lambda|^2', '@0 * @0 + @1 * @1', ['ReLambdaCP', 'ImLambdaCP']))
+          config.addSetting('CCP',        RooFormSetting('C', 'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
+          config.addSetting('DCP',        RooFormSetting('D', 'B0_s lambda param. D', '2. * @1 / (1. + @0)', ['lambdaCPSq', 'ReLambdaCP']))
+          config.addSetting('SCP',        RooFormSetting('S', 'B0_s lambda param. S', '2. * @1 / (1. + @0)', ['lambdaCPSq', 'ImLambdaCP']))
 
         else :
-          config.addSetting('CCP', RooRealSetting('C',
-              'B0_s lambda param. C', 'par', CCP, -3., 3.))
-          config.addSetting('DCP', RooRealSetting('D',
-              'B0_s lambda param. D', 'par', DCP, -3., 3.))
-          config.addSetting('SCP', RooRealSetting('S',
-              'B0_s lambda param. S', 'par', SCP, -3., 3.))
+          config.addSetting('CCP', RooRealSetting('C', 'B0_s lambda param. C', 'par', CCP, -3., 3.))
+          config.addSetting('DCP', RooRealSetting('D', 'B0_s lambda param. D', 'par', DCP, -3., 3.))
+          config.addSetting('SCP', RooRealSetting('S', 'B0_s lambda param. S', 'par', SCP, -3., 3.))
 
       ### flavour tags ###
-      if 'allowITagZero' in optDict : allowITagZero = True
-      else : allowITagZero = False
-      config.addSetting('allowITagZero', P2VVSetting('allowITagZero',
-          'allow zero value for init. state tag (untagged)', allowITagZero))
+      allowITagZero =  'allowITagZero' in optDict 
+      config.addSetting('allowITagZero', P2VVSetting('allowITagZero', 'allow zero value for init. state tag (untagged)', allowITagZero))
 
-      asymType = 'direct'
-      if 'asymType' in optDict and optDict['asymType'] != '' :
-        asymType = optDict['asymType']
-      config.addSetting('asymType', P2VVSetting('asymType',
-        'type of CP asymmetries', asymType))
+      asymType = optDict['asymType'] if 'asymType' in optDict and optDict['asymType'] else 'direct'
+      config.addSetting('asymType', P2VVSetting('asymType', 'type of CP asymmetries', asymType))
 
-      if allowITagZero :
-        config.addSetting('iTag', RooCatSetting('iTag',
-            'initial state flavour tag', True, 'B',
-            {+1 : 'B', -1 : 'Bbar', 0 : 'untagged'}))
-      else :
-        config.addSetting('iTag', RooCatSetting('iTag',
-            'initial state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
-
+      itagdict = { +1: 'B', -1 : 'Bbar'}
+      if allowITagZero : itagdict.update( { 0:'untagged' }
+      config.addSetting('iTag', RooCatSetting('iTag', 'initial state flavour tag', True, 'B', itagdict ))
       if mode == 'Bd2JpsiKstar' :
-        config.addSetting('fTag', RooCatSetting('fTag',
-            'final state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
+        config.addSetting('fTag', RooCatSetting('fTag', 'final state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
 
-      config.addSetting('wTag', RooRealSetting('wTag',
-          'wrong tag fraction B', 'par', 0., '', ''))
-      config.addSetting('wTagBar', RooRealSetting('wTagBar',
-          'wrong tag fraction anti-B', 'par', 0., '', ''))
-      config.addSetting('tagDilution', RooFormSetting('tagDilution',
-          'tagging dilution', '1. - @0 - @1', ['wTag', 'wTagBar']))
-      config.addSetting('ADilWTag', RooFormSetting('ADilWTag',
-          'dilution/wrong tag asymmetry', '(@0 - @1) / @2',
-          ['wTag', 'wTagBar', 'tagDilution']))
+      config.addSetting('wTag',        RooRealSetting('wTag', 'wrong tag fraction B', 'par', 0., '', ''))
+      config.addSetting('wTagBar',     RooRealSetting('wTagBar', 'wrong tag fraction anti-B', 'par', 0., '', ''))
+      config.addSetting('tagDilution', RooFormSetting('tagDilution', 'tagging dilution', '1. - @0 - @1', ['wTag', 'wTagBar']))
+      config.addSetting('ADilWTag',    RooFormSetting('ADilWTag', 'dilution/wrong tag asymmetry', '(@0 - @1) / @2', ['wTag', 'wTagBar', 'tagDilution']))
 
+      ### OUT: avgCEven, avgCOdd
       if asymType == 'avgCOdd' :
-        config.addSetting('avgCEven', RooRealSetting('avgCEven',
-            'CP average even coefficients', 'par', 1., '', ''))
-        config.addSetting('avgCOdd', RooRealSetting('avgCOdd',
-            'CP average odd coefficients', 'par', 0., -1., 1.))
+        config.addSetting('avgCEven', RooRealSetting('avgCEven', 'CP average even coefficients', 'par', 1., '', ''))
+        config.addSetting('avgCOdd',  RooRealSetting('avgCOdd', 'CP average odd coefficients', 'par', 0., -1., 1.))
       else :
-        config.addSetting('AProd', RooRealSetting('AProd',
-            'production asymmetry', 'par', 0., '', ''))
-        config.addSetting('ANorm', RooFormSetting('ANorm',
-            'normalization asymmetry', '-@0', ['CCP']))
-        config.addSetting('ATagEff', RooRealSetting('ATagEff',
-            'tagging efficiency asymmetry', 'par', 0., '', ''))
-        config.addSetting('avgCEven', RooFormSetting('avgCEven',
-            'CP average even coefficients', '1. + @0*@1 + @0*@2 + @1*@2',
-            ['AProd', 'ANorm', 'ATagEff']))
-        config.addSetting('avgCOdd', RooFormSetting('avgCOdd',
-            'CP average odd coefficients', '@0 + @1 + @2 + @0*@1*@2',
-            ['AProd', 'ANorm', 'ATagEff']))
+        config.addSetting('AProd',    RooRealSetting('AProd', 'production asymmetry', 'par', 0., '', ''))
+        config.addSetting('ANorm',    RooFormSetting('ANorm', 'normalization asymmetry', '-@0', ['CCP']))
+        config.addSetting('ATagEff',  RooRealSetting('ATagEff', 'tagging efficiency asymmetry', 'par', 0., '', ''))
+        config.addSetting('avgCEven', RooFormSetting('avgCEven', 'CP average even coefficients', '1. + @0*@1 + @0*@2 + @1*@2', ['AProd', 'ANorm', 'ATagEff']))
+        config.addSetting('avgCOdd',  RooFormSetting('avgCOdd', 'CP average odd coefficients', '@0 + @1 + @2 + @0*@1*@2', ['AProd', 'ANorm', 'ATagEff']))
 
 
       ### amplitudes ###
@@ -344,703 +250,241 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       ImAS    = sqrt(ASSq)    * sin(ASPh)
 
       KSWave = 'none'
-      if 'KSWave' in optDict and type(optDict['KSWave']) is str\
-          and optDict['KSWave'] != '' :
+      if 'KSWave' in optDict and type(optDict['KSWave']) is str and optDict['KSWave'] != '' :
         KSWave = optDict['KSWave']
         if mode == 'Bs2Jpsiphi' and KSWave == 'include' : KSWave = 'includeOdd'
-      config.addSetting('KSWave', P2VVSetting('KSWave',
-        'include KK or Kpi S-wave?', KSWave))
+      config.addSetting('KSWave', P2VVSetting('KSWave', 'include KK or Kpi S-wave?', KSWave))
 
       ampsType = 'transCartesian'
-      if 'ampsType' in optDict and optDict['ampsType'] != '' :
-        ampsType = optDict['ampsType']
-      config.addSetting('ampsType', P2VVSetting('ampsType',
-        'type of amplitudes', ampsType))
+      if 'ampsType' in optDict and optDict['ampsType'] != '' : ampsType = optDict['ampsType']
+      config.addSetting('ampsType', P2VVSetting('ampsType', 'type of amplitudes', ampsType))
 
+      # OUT: ReAi, ImAi
       if ampsType == 'transCartesian' or ampsType == 'transPolar':
         if ampsType == 'transPolar' :
           # polar transversity amplitudes
-          config.addSetting('A0Mag2', RooRealSetting('A0Mag2',
-              '|A0|^2', 'par', A0Sq, 0., 1.))
-          config.addSetting('A0Ph', RooRealSetting('delta0',
-              'delta_0', 'par', 0., '', ''))
-          config.addSetting('AparMag2', RooFormSetting('AparMag2',
-              '|A_par|^2', '1. - @0 - @1', ['A0Mag2', 'AperpMag2']))
-          config.addSetting('AparPh', RooRealSetting('deltaPar',
-              'delta_par', 'par', AparPh, -2. * pi, 2. * pi))
-          config.addSetting('AperpMag2', RooRealSetting('AperpMag2',
-              '|A_perp|^2', 'par', AperpSq, 0., 1.))
-          config.addSetting('AperpPh', RooRealSetting('deltaPerp',
-              'delta_perp', 'par', AperpPh, -2. * pi, 2. * pi))
+          config.addSetting('A0Mag2', RooRealSetting('A0Mag2', '|A0|^2', 'par', A0Sq, 0., 1.))
+          config.addSetting('A0Ph', RooRealSetting('delta0', 'delta_0', 'par', 0., '', ''))
+          config.addSetting('AparMag2', RooFormSetting('AparMag2', '|A_par|^2', '1. - @0 - @1', ['A0Mag2', 'AperpMag2']))
+          config.addSetting('AparPh', RooRealSetting('deltaPar', 'delta_par', 'par', AparPh, -2. * pi, 2. * pi))
+          config.addSetting('AperpMag2', RooRealSetting('AperpMag2', '|A_perp|^2', 'par', AperpSq, 0., 1.))
+          config.addSetting('AperpPh', RooRealSetting('deltaPerp', 'delta_perp', 'par', AperpPh, -2. * pi, 2. * pi))
           if KSWave[:7] == 'include' :
-            config.addSetting('ASMag2', RooRealSetting('ASMag2',
-                '|A_S|^2', 'par', ASSq, 0., 1.))
-            config.addSetting('ASPh', RooRealSetting('deltaS',
-                'delta_S', 'par', ASPh, -2. * pi, 2. * pi))
+            config.addSetting('ASMag2', RooRealSetting('ASMag2', '|A_S|^2', 'par', ASSq, 0., 1.))
+            config.addSetting('ASPh', RooRealSetting('deltaS', 'delta_S', 'par', ASPh, -2. * pi, 2. * pi))
 
           # construct cartesian amplitudes with polar parameters
-          config.addSetting('ReA0', RooFormSetting('ReA0',
-              'Re(A_0)',    'sqrt(@0) * cos(@1)', ['A0Mag2', 'A0Ph']))
-          config.addSetting('ImA0', RooFormSetting('ImA0',
-              'Im(A_0)',    'sqrt(@0) * sin(@1)', ['A0Mag2', 'A0Ph']))
-          config.addSetting('ReApar', RooFormSetting('ReApar',
-              'Re(A_par)',  'sqrt(@0) * cos(@1)', ['AparMag2', 'AparPh']))
-          config.addSetting('ImApar', RooFormSetting('ImApar',
-              'Im(A_par)',  'sqrt(@0) * sin(@1)', ['AparMag2', 'AparPh']))
-          config.addSetting('ReAperp', RooFormSetting('ReAperp',
-              'Re(A_perp)', 'sqrt(@0) * cos(@1)', ['AperpMag2', 'AperpPh']))
-          config.addSetting('ImAperp', RooFormSetting('ImAperp',
-              'Im(A_perp)', 'sqrt(@0) * sin(@1)', ['AperpMag2', 'AperpPh']))
+          config.addSetting('ReA0',    RooFormSetting('ReA0', 'Re(A_0)',    'sqrt(@0) * cos(@1)', ['A0Mag2', 'A0Ph']))
+          config.addSetting('ImA0',    RooFormSetting('ImA0', 'Im(A_0)',    'sqrt(@0) * sin(@1)', ['A0Mag2', 'A0Ph']))
+          config.addSetting('ReApar',  RooFormSetting('ReApar', 'Re(A_par)',  'sqrt(@0) * cos(@1)', ['AparMag2', 'AparPh']))
+          config.addSetting('ImApar',  RooFormSetting('ImApar', 'Im(A_par)',  'sqrt(@0) * sin(@1)', ['AparMag2', 'AparPh']))
+          config.addSetting('ReAperp', RooFormSetting('ReAperp', 'Re(A_perp)', 'sqrt(@0) * cos(@1)', ['AperpMag2', 'AperpPh']))
+          config.addSetting('ImAperp', RooFormSetting('ImAperp', 'Im(A_perp)', 'sqrt(@0) * sin(@1)', ['AperpMag2', 'AperpPh']))
           if KSWave[:7] == 'include' :
-            config.addSetting('ReAS', RooFormSetting('ReAS',
-                'Re(A_S)', 'sqrt(@0) * cos(@1)', ['ASMag2', 'ASPh']))
-            config.addSetting('ImAS', RooFormSetting('ImAS',
-                'Im(A_S)', 'sqrt(@0) * sin(@1)', ['ASMag2', 'ASPh']))
+            config.addSetting('ReAS', RooFormSetting('ReAS', 'Re(A_S)', 'sqrt(@0) * cos(@1)', ['ASMag2', 'ASPh']))
+            config.addSetting('ImAS', RooFormSetting('ImAS', 'Im(A_S)', 'sqrt(@0) * sin(@1)', ['ASMag2', 'ASPh']))
 
         elif ampsType == 'transCartesian' :
           # cartesian transversity amplitudes
-          config.addSetting('ReA0', RooRealSetting('ReA0',
-              'Re(A_0)', 'par', 1., '', ''))
-          config.addSetting('ImA0', RooRealSetting('ImA0',
-              'Im(A_0)', 'par', 0., '', ''))
-          config.addSetting('ReApar', RooRealSetting('ReApar',
-              'Re(A_par)', 'par', ReApar / ReA0, -1., 1.))
-          config.addSetting('ImApar', RooRealSetting('ImApar',
-              'Im(A_par)', 'par', ImApar / ReA0, -1., 1.))
-          config.addSetting('ReAperp', RooRealSetting('ReAperp',
-              'Re(A_perp)', 'par', ReAperp / ReA0, -1., 1.))
-          config.addSetting('ImAperp', RooRealSetting('ImAperp',
-              'Im(A_perp)', 'par', ImAperp / ReA0, -1., 1.))
+          config.addSetting('ReA0',    RooRealSetting('ReA0', 'Re(A_0)', 'par', 1., '', ''))
+          config.addSetting('ImA0',    RooRealSetting('ImA0', 'Im(A_0)', 'par', 0., '', ''))
+          config.addSetting('ReApar',  RooRealSetting('ReApar', 'Re(A_par)', 'par', ReApar / ReA0, -1., 1.))
+          config.addSetting('ImApar',  RooRealSetting('ImApar', 'Im(A_par)', 'par', ImApar / ReA0, -1., 1.))
+          config.addSetting('ReAperp', RooRealSetting('ReAperp', 'Re(A_perp)', 'par', ReAperp / ReA0, -1., 1.))
+          config.addSetting('ImAperp', RooRealSetting('ImAperp', 'Im(A_perp)', 'par', ImAperp / ReA0, -1., 1.))
           if KSWave[:7] == 'include' :
-            config.addSetting('ReAS', RooRealSetting('ReAS',
-                'Re(A_S)', 'par', ReAS / ReA0, -1., 1.))
-            config.addSetting('ImAS', RooRealSetting('ImAS',
-                'Im(A_S)', 'par', ImAS / ReA0, -1., 1.))
+            config.addSetting('ReAS',  RooRealSetting('ReAS', 'Re(A_S)', 'par', ReAS / ReA0, -1., 1.))
+            config.addSetting('ImAS',  RooRealSetting('ImAS', 'Im(A_S)', 'par', ImAS / ReA0, -1., 1.))
 
         # define angular coefficients with transversity amplitudes
         if mode == 'Bd2JpsiKstar' :
           # Bd0->J/psiK* coefficients
-          config.addSetting('J_0020x0020_0', RooFormSetting('J_0020x0020_0',
-              'J_0020x0020_0 coefficient', '@0 * @0 + @1 * @1',
-              ['ReA0', 'ImA0']))                            # |A_0|^2
-          config.addSetting('J_22x002022_0', RooFormSetting('J_22x002022_0',
-              'J_22x002022_0 coefficient', '@0 * @0 + @1 * @1',
-              ['ReApar', 'ImApar']))                        # |A_par|^2
-          config.addSetting('J_22x002022_1', RooFormSetting('J_22x002022_1',
-              'J_22x002022_1 coefficient', '@0 * @0 + @1 * @1',
-              ['ReAperp', 'ImAperp']))                      # |A_perp|^2
-          config.addSetting('J_21x21_0', RooFormSetting('J_21x21_0',
-              'J_21x21_0 coefficient', '@0 * @2 + @1 * @3',
-              ['ReA0', 'ImA0', 'ReApar', 'ImApar']))        # Re(A_0* A_par)
-          config.addSetting('J_21x2m1_0', RooFormSetting('J_21x2m1_0',
-              'J_21x2m1_0 coefficient', '@0 * @3 - @1 * @2',
-              ['ReA0', 'ImA0', 'ReAperp', 'ImAperp']))      # Im(A_0* A_perp)
-          config.addSetting('J_22x2m2_0', RooFormSetting('J_22x2m2_0',
-              'J_22x2m2_0 coefficient', '@0 * @3 - @1 * @2',
-              ['ReApar', 'ImApar', 'ReAperp', 'ImAperp']))  # Im(A_par* A_perp)
-          if KSWave[:7] == 'include' :
-            config.addSetting('J_00x0020_0', RooFormSetting('J_00x0020_0',
-                'J_00x0020_0 coefficient', '@0 * @0 + @1 * @1',
-                ['ReAS', 'ImAS']))                          # |A_S|^2
-            config.addSetting('J_10x0020_0', RooFormSetting('J_10x0020_0',
-                'J_10x0020_0 coefficient', '@0 * @2 + @1 * @3',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS']))          # Re(A_0* A_S)
-            config.addSetting('J_11x21_0', RooFormSetting('J_11x21_0',
-                'J_11x21_0 coefficient', '@0 * @2 + @1 * @3',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS']))      # Re(A_par* A_S)
-            config.addSetting('J_11x2m1_0', RooFormSetting('J_11x2m1_0',
-                'J_11x2m1_0 coefficient', '@0 * @3 - @1 * @2',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS']))    # Im(A_perp* A_S)
+          config.addSetting('J_0020x0020_0', RooFormSetting('J_0020x0020_0', 'J_0020x0020_0 coefficient', '@0 * @0 + @1 * @1', ['ReA0', 'ImA0']))                            # |A_0|^2
+          config.addSetting('J_22x002022_0', RooFormSetting('J_22x002022_0', 'J_22x002022_0 coefficient', '@0 * @0 + @1 * @1', ['ReApar', 'ImApar']))                        # |A_par|^2
+          config.addSetting('J_22x002022_1', RooFormSetting('J_22x002022_1', 'J_22x002022_1 coefficient', '@0 * @0 + @1 * @1', ['ReAperp', 'ImAperp']))                      # |A_perp|^2
+          config.addSetting('J_21x21_0',     RooFormSetting('J_21x21_0',     'J_21x21_0 coefficient',     '@0 * @2 + @1 * @3', ['ReA0', 'ImA0', 'ReApar', 'ImApar']))        # Re(A_0* A_par)
+          config.addSetting('J_21x2m1_0',    RooFormSetting('J_21x2m1_0',    'J_21x2m1_0 coefficient',    '@0 * @3 - @1 * @2', ['ReA0', 'ImA0', 'ReAperp', 'ImAperp']))      # Im(A_0* A_perp)
+          config.addSetting('J_22x2m2_0',    RooFormSetting('J_22x2m2_0',    'J_22x2m2_0 coefficient',    '@0 * @3 - @1 * @2', ['ReApar', 'ImApar', 'ReAperp', 'ImAperp']))  # Im(A_par* A_perp)
+          if KSWave[:7] == 'include' :                                      
+            config.addSetting('J_00x0020_0', RooFormSetting('J_00x0020_0',   'J_00x0020_0 coefficient',   '@0 * @0 + @1 * @1', ['ReAS', 'ImAS']))                          # |A_S|^2
+            config.addSetting('J_10x0020_0', RooFormSetting('J_10x0020_0',   'J_10x0020_0 coefficient',   '@0 * @2 + @1 * @3', ['ReA0', 'ImA0', 'ReAS', 'ImAS']))          # Re(A_0* A_S)
+            config.addSetting('J_11x21_0',   RooFormSetting('J_11x21_0',     'J_11x21_0 coefficient',     '@0 * @2 + @1 * @3', ['ReApar', 'ImApar', 'ReAS', 'ImAS']))      # Re(A_par* A_S)
+            config.addSetting('J_11x2m1_0',  RooFormSetting('J_11x2m1_0',    'J_11x2m1_0 coefficient',    '@0 * @3 - @1 * @2', ['ReAperp', 'ImAperp', 'ReAS', 'ImAS']))    # Im(A_perp* A_S)
 
         elif mode == 'Bs2Jpsiphi' :
           # Bs0->J/psiphi coefficients
-          config.addSetting('J_0020x0020_0_cosh',     # +|A_0|^2 * 1
-              RooFormSetting('J_0020x0020_0_cosh',
-              'J_0020x0020_0 cosh coefficient',
-              '@0 * @0 + @1 * @1',
-              ['ReA0', 'ImA0']))
-          config.addSetting('J_0020x0020_0_cos',      # +|A_0|^2 * C
-              RooFormSetting('J_0020x0020_0_cos',
-              'J_0020x0020_0 cos coefficient',
-              '(@0 * @0 + @1 * @1) * @2',
-              ['ReA0', 'ImA0', 'CCP']))
-          config.addSetting('J_0020x0020_0_sinh',     # -|A_0|^2 * D
-              RooFormSetting('J_0020x0020_0_sinh',
-              'J_0020x0020_0 sinh coefficient',
-              '-(@0 * @0 + @1 * @1) * @2',
-              ['ReA0', 'ImA0', 'DCP']))
-          config.addSetting('J_0020x0020_0_sin',      # -|A_0|^2 * S
-              RooFormSetting('J_0020x0020_0_sin',
-              'J_0020x0020_0 sin coefficient',
-              '-(@0 * @0 + @1 * @1) * @2',
-              ['ReA0', 'ImA0', 'SCP']))
+          config.addSetting('J_0020x0020_0_cosh', RooFormSetting('J_0020x0020_0_cosh','J_0020x0020_0 cosh coefficient',   '@0 * @0 + @1 * @1',       ['ReA0', 'ImA0']))        # +|A_0|^2 * 1
+          config.addSetting('J_0020x0020_0_cos',  RooFormSetting('J_0020x0020_0_cos', 'J_0020x0020_0 cos  coefficient',  '(@0 * @0 + @1 * @1) * @2', ['ReA0', 'ImA0', 'CCP'])) # +|A_0|^2 * C
+          config.addSetting('J_0020x0020_0_sinh', RooFormSetting('J_0020x0020_0_sinh','J_0020x0020_0 sinh coefficient', '-(@0 * @0 + @1 * @1) * @2', ['ReA0', 'ImA0', 'DCP'])) # -|A_0|^2 * D
+          config.addSetting('J_0020x0020_0_sin',  RooFormSetting('J_0020x0020_0_sin', 'J_0020x0020_0 sin  coefficient', '-(@0 * @0 + @1 * @1) * @2', ['ReA0', 'ImA0', 'SCP'])) # -|A_0|^2 * S
 
-          config.addSetting('J_22x002022_0_cosh',     # +|A_par|^2 * 1
-              RooFormSetting('J_22x002022_0_cosh',
-              'J_22x002022_0 cosh coefficient',
-              '@0 * @0 + @1 * @1',
-              ['ReApar', 'ImApar']))
-          config.addSetting('J_22x002022_0_cos',      # +|A_par|^2 * C
-              RooFormSetting('J_22x002022_0_cos',
-              'J_22x002022_0 cos coefficient',
-              '(@0 * @0 + @1 * @1) * @2',
-              ['ReApar', 'ImApar', 'CCP']))
-          config.addSetting('J_22x002022_0_sinh',     # -|A_par|^2 * D
-              RooFormSetting('J_22x002022_0_sinh',
-              'J_22x002022_0 sinh coefficient',
-              '-(@0 * @0 + @1 * @1) * @2',
-              ['ReApar', 'ImApar', 'DCP']))
-          config.addSetting('J_22x002022_0_sin',      # -|A_par|^2 * S
-              RooFormSetting('J_22x002022_0_sin',
-              'J_22x002022_0 sin coefficient',
-              '-(@0 * @0 + @1 * @1) * @2',
-              ['ReApar', 'ImApar', 'SCP']))
+          config.addSetting('J_22x002022_0_cosh', RooFormSetting('J_22x002022_0_cosh','J_22x002022_0 cosh coefficient',   '@0 * @0 + @1 * @1',       ['ReApar', 'ImApar']))        # +|A_par|^2 * 1
+          config.addSetting('J_22x002022_0_cos',  RooFormSetting('J_22x002022_0_cos', 'J_22x002022_0 cos  coefficient',  '(@0 * @0 + @1 * @1) * @2', ['ReApar', 'ImApar', 'CCP'])) # +|A_par|^2 * C
+          config.addSetting('J_22x002022_0_sinh', RooFormSetting('J_22x002022_0_sinh','J_22x002022_0 sinh coefficient', '-(@0 * @0 + @1 * @1) * @2', ['ReApar', 'ImApar', 'DCP'])) # -|A_par|^2 * D
+          config.addSetting('J_22x002022_0_sin',  RooFormSetting('J_22x002022_0_sin', 'J_22x002022_0 sin  coefficient', '-(@0 * @0 + @1 * @1) * @2', ['ReApar', 'ImApar', 'SCP'])) # -|A_par|^2 * S
 
-          config.addSetting('J_22x002022_1_cosh',     # +|A_perp|^2 * 1
-              RooFormSetting('J_22x002022_1_cosh',
-              'J_22x002022_1 cosh coefficient',
-              '@0 * @0 + @1 * @1',
-              ['ReAperp', 'ImAperp']))
-          config.addSetting('J_22x002022_1_cos',      # +|A_perp|^2 * C
-              RooFormSetting('J_22x002022_1_cos',
-              'J_22x002022_1 cos coefficient',
-              '(@0 * @0 + @1 * @1) * @2',
-              ['ReAperp', 'ImAperp', 'CCP']))
-          config.addSetting('J_22x002022_1_sinh',     # +|A_perp|^2 * D
-              RooFormSetting('J_22x002022_1_sinh',
-              'J_22x002022_1 sinh coefficient',
-              '(@0 * @0 + @1 * @1) * @2',
-              ['ReAperp', 'ImAperp', 'DCP']))
-          config.addSetting('J_22x002022_1_sin',      # +|A_perp|^2 * S
-              RooFormSetting('J_22x002022_1_sin',
-              'J_22x002022_1 sin coefficient',
-              '(@0 * @0 + @1 * @1) * @2',
-              ['ReAperp', 'ImAperp', 'SCP']))
+          config.addSetting('J_22x002022_1_cosh', RooFormSetting('J_22x002022_1_cosh','J_22x002022_1 cosh coefficient',   '@0 * @0 + @1 * @1',       ['ReAperp', 'ImAperp']))        # +|A_perp|^2 * 1
+          config.addSetting('J_22x002022_1_cos',  RooFormSetting('J_22x002022_1_cos', 'J_22x002022_1 cos  coefficient',  '(@0 * @0 + @1 * @1) * @2', ['ReAperp', 'ImAperp', 'CCP'])) # +|A_perp|^2 * C
+          config.addSetting('J_22x002022_1_sinh', RooFormSetting('J_22x002022_1_sinh','J_22x002022_1 sinh coefficient',  '(@0 * @0 + @1 * @1) * @2', ['ReAperp', 'ImAperp', 'DCP'])) # +|A_perp|^2 * D
+          config.addSetting('J_22x002022_1_sin',  RooFormSetting('J_22x002022_1_sin', 'J_22x002022_1 sin  coefficient',  '(@0 * @0 + @1 * @1) * @2', ['ReAperp', 'ImAperp', 'SCP'])) # +|A_perp|^2 * S
 
-          config.addSetting('J_21x21_0_cosh',         # +Re(A_0* A_par) * 1
-              RooFormSetting('J_21x21_0_cosh',
-              'J_21x21_0 cosh coefficient',
-              '@0 * @2 + @1 * @3',
-              ['ReA0', 'ImA0', 'ReApar', 'ImApar']))
-          config.addSetting('J_21x21_0_cos',          # +Re(A_0* A_par) * C
-              RooFormSetting('J_21x21_0_cos',
-              'J_21x21_0 cos coefficient',
-              '(@0 * @2 + @1 * @3) * @4',
-              ['ReA0', 'ImA0', 'ReApar', 'ImApar', 'CCP']))
-          config.addSetting('J_21x21_0_sinh',         # -Re(A_0* A_par) * D
-              RooFormSetting('J_21x21_0_sinh',
-              'J_21x21_0 sinh coefficient',
-              '-(@0 * @2 + @1 * @3) * @4',
-              ['ReA0', 'ImA0', 'ReApar', 'ImApar', 'DCP']))
-          config.addSetting('J_21x21_0_sin',          # -Re(A_0* A_par) * S
-              RooFormSetting('J_21x21_0_sin',
-              'J_21x21_0 sin coefficient',
-              '-(@0 * @2 + @1 * @3) * @4',
-              ['ReA0', 'ImA0', 'ReApar', 'ImApar', 'SCP']))
+          config.addSetting('J_21x21_0_cosh',     RooFormSetting('J_21x21_0_cosh',    'J_21x21_0 cosh coefficient',       '@0 * @2 + @1 * @3',       ['ReA0', 'ImA0', 'ReApar', 'ImApar'])) # +Re(A_0* A_par) * 1
+          config.addSetting('J_21x21_0_cos',      RooFormSetting('J_21x21_0_cos',     'J_21x21_0 cos coefficient',       '(@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReApar', 'ImApar', 'CCP'])) # +Re(A_0* A_par) * C
+          config.addSetting('J_21x21_0_sinh',     RooFormSetting('J_21x21_0_sinh',    'J_21x21_0 sinh coefficient',     '-(@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReApar', 'ImApar', 'DCP'])) # -Re(A_0* A_par) * D
+          config.addSetting('J_21x21_0_sin',      RooFormSetting('J_21x21_0_sin',     'J_21x21_0 sin coefficient',      '-(@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReApar', 'ImApar', 'SCP'])) # -Re(A_0* A_par) * S
+                                                 
+          config.addSetting('J_21x2m1_0_cosh',    RooFormSetting('J_21x2m1_0_cosh',   'J_21x2m1_0 cosh coefficient',     '(@0 * @3 - @1 * @2) * @4', ['ReA0', 'ImA0', 'ReAperp', 'ImAperp', 'CCP'])) # +Im(A_0* A_perp) * C
+          config.addSetting('J_21x2m1_0_cos',     RooFormSetting('J_21x2m1_0_cos',    'J_21x2m1_0 cos coefficient',       '@0 * @3 - @1 * @2',       ['ReA0', 'ImA0', 'ReAperp', 'ImAperp'])) # +Im(A_0* A_perp) * 1
+          config.addSetting('J_21x2m1_0_sinh',    RooFormSetting('J_21x2m1_0_sinh',   'J_21x2m1_0 sinh coefficient',     '(@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReAperp', 'ImAperp', 'SCP'])) # +Re(A_0* A_perp) * S
+          config.addSetting('J_21x2m1_0_sin',     RooFormSetting('J_21x2m1_0_sin',    'J_21x2m1_0 sin coefficient',     '-(@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReAperp', 'ImAperp', 'DCP'])) # -Re(A_0* A_perp) * D
 
-          config.addSetting('J_21x2m1_0_cosh',        # +Im(A_0* A_perp) * C
-              RooFormSetting('J_21x2m1_0_cosh',
-              'J_21x2m1_0 cosh coefficient',
-              '(@0 * @3 - @1 * @2) * @4',
-              ['ReA0', 'ImA0', 'ReAperp', 'ImAperp', 'CCP']))
-          config.addSetting('J_21x2m1_0_cos',         # +Im(A_0* A_perp) * 1
-              RooFormSetting('J_21x2m1_0_cos',
-              'J_21x2m1_0 cos coefficient',
-              '@0 * @3 - @1 * @2',
-              ['ReA0', 'ImA0', 'ReAperp', 'ImAperp']))
-          config.addSetting('J_21x2m1_0_sinh',        # +Re(A_0* A_perp) * S
-              RooFormSetting('J_21x2m1_0_sinh',
-              'J_21x2m1_0 sinh coefficient',
-              '(@0 * @2 + @1 * @3) * @4',
-              ['ReA0', 'ImA0', 'ReAperp', 'ImAperp', 'SCP']))
-          config.addSetting('J_21x2m1_0_sin',         # -Re(A_0* A_perp) * D
-              RooFormSetting('J_21x2m1_0_sin',
-              'J_21x2m1_0 sin coefficient',
-              '-(@0 * @2 + @1 * @3) * @4',
-              ['ReA0', 'ImA0', 'ReAperp', 'ImAperp', 'DCP']))
-
-          config.addSetting('J_22x2m2_0_cosh',        # +Im(A_par* A_perp) * C
-              RooFormSetting('J_22x2m2_0_cosh',
-              'J_22x2m2_0 cosh coefficient',
-              '(@0 * @3 - @1 * @2) * @4',
-              ['ReApar', 'ImApar', 'ReAperp', 'ImAperp', 'CCP']))
-          config.addSetting('J_22x2m2_0_cos',         # +Im(A_par* A_perp) * 1
-              RooFormSetting('J_22x2m2_0_cos',
-              'J_22x2m2_0 cos coefficient',
-              '@0 * @3 - @1 * @2',
-              ['ReApar', 'ImApar', 'ReAperp', 'ImAperp']))
-          config.addSetting('J_22x2m2_0_sinh',        # +Re(A_par* A_perp) * S
-              RooFormSetting('J_22x2m2_0_sinh',
-              'J_22x2m2_0 sinh coefficient',
-              '(@0 * @2 + @1 * @3) * @4',
-              ['ReApar', 'ImApar', 'ReAperp', 'ImAperp', 'SCP']))
-          config.addSetting('J_22x2m2_0_sin',         # -Re(A_par* A_perp) * D
-              RooFormSetting('J_22x2m2_0_sin',
-              'J_22x2m2_0 sin coefficient',
-              '-(@0 * @2 + @1 * @3) * @4',
-              ['ReApar', 'ImApar', 'ReAperp', 'ImAperp', 'DCP']))
+          config.addSetting('J_22x2m2_0_cosh',    RooFormSetting('J_22x2m2_0_cosh',   'J_22x2m2_0 cosh coefficient',     '(@0 * @3 - @1 * @2) * @4', ['ReApar', 'ImApar', 'ReAperp', 'ImAperp', 'CCP'])) # +Im(A_par* A_perp) * C
+          config.addSetting('J_22x2m2_0_cos',     RooFormSetting('J_22x2m2_0_cos',    'J_22x2m2_0 cos coefficient',       '@0 * @3 - @1 * @2',       ['ReApar', 'ImApar', 'ReAperp', 'ImAperp'])) # +Im(A_par* A_perp) * 1
+          config.addSetting('J_22x2m2_0_sinh',    RooFormSetting('J_22x2m2_0_sinh',   'J_22x2m2_0 sinh coefficient',     '(@0 * @2 + @1 * @3) * @4', ['ReApar', 'ImApar', 'ReAperp', 'ImAperp', 'SCP'])) # +Re(A_par* A_perp) * S
+          config.addSetting('J_22x2m2_0_sin',     RooFormSetting('J_22x2m2_0_sin',    'J_22x2m2_0 sin coefficient',     '-(@0 * @2 + @1 * @3) * @4', ['ReApar', 'ImApar', 'ReAperp', 'ImAperp', 'DCP'])) # -Re(A_par* A_perp) * D
 
           if KSWave == 'includeEven' :
-            config.addSetting('J_00x0020_0_cosh',     # +|A_S|^2 * 1
-                RooFormSetting('J_00x0020_0_cosh',
-                'J_00x0020_0 cosh coefficient',
-                '@0 * @0 + @1 * @1',
-                ['ReAS', 'ImAS']))
-            config.addSetting('J_00x0020_0_cos',      # +|A_S|^2 * C
-                RooFormSetting('J_00x0020_0_cos',
-                'J_00x0020_0 cos coefficient',
-                '(@0 * @0 + @1 * @1) * @2',
-                ['ReAS', 'ImAS', 'CCP']))
-            config.addSetting('J_00x0020_0_sinh',     # -|A_S|^2 * D
-                RooFormSetting('J_00x0020_0_sinh',
-                'J_00x0020_0 sinh coefficient',
-                '-(@0 * @0 + @1 * @1) * @2',
-                ['ReAS', 'ImAS', 'DCP']))
-            config.addSetting('J_00x0020_0_sin',      # -|A_S|^2 * S
-                RooFormSetting('J_00x0020_0_sin',
-                'J_00x0020_0 sin coefficient',
-                '-(@0 * @0 + @1 * @1) * @2',
-                ['ReAS', 'ImAS', 'SCP']))
+            # TODO: define etaS, which is +1 or -1, then blindly use etaS 'everywhere', i.e. start with 'includeEven', and multiple by 'etaS' there were 'includeOdd' differs by a sign...
+            config.addSetting('J_00x0020_0_cosh', RooFormSetting('J_00x0020_0_cosh', 'J_00x0020_0 cosh coefficient',   '@0 * @0 + @1 * @1',       ['ReAS', 'ImAS'])) # +|A_S|^2 * 1
+            config.addSetting('J_00x0020_0_cos',  RooFormSetting('J_00x0020_0_cos',  'J_00x0020_0 cos coefficient',   '(@0 * @0 + @1 * @1) * @2', ['ReAS', 'ImAS', 'CCP'])) # +|A_S|^2 * C
+            config.addSetting('J_00x0020_0_sinh', RooFormSetting('J_00x0020_0_sinh', 'J_00x0020_0 sinh coefficient', '-(@0 * @0 + @1 * @1) * @2', ['ReAS', 'ImAS', 'DCP'])) # -|A_S|^2 * D
+            config.addSetting('J_00x0020_0_sin',  RooFormSetting('J_00x0020_0_sin',  'J_00x0020_0 sin coefficient',  '-(@0 * @0 + @1 * @1) * @2', ['ReAS', 'ImAS', 'SCP'])) # -|A_S|^2 * S
 
-            config.addSetting('J_10x0020_0_cosh',     # +Re(A_0* A_S) * 1
-                RooFormSetting('J_10x0020_0_cosh',
-                'J_10x0020_0 cosh coefficient',
-                '@0 * @2 + @1 * @3',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS']))
-            config.addSetting('J_10x0020_0_cos',      # +Re(A_0* A_S) * C
-                RooFormSetting('J_10x0020_0_cos',
-                'J_10x0020_0 cos coefficient',
-                '(@0 * @2 + @1 * @3) * @4',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'CCP']))
-            config.addSetting('J_10x0020_0_sinh',     # -Re(A_0* A_S) * D
-                RooFormSetting('J_10x0020_0_sinh',
-                'J_10x0020_0 sinh coefficient',
-                '-(@0 * @2 + @1 * @3) * @4',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'DCP']))
-            config.addSetting('J_10x0020_0_sin',      # -Re(A_0* A_S) * S
-                RooFormSetting('J_10x0020_0_sin',
-                'J_10x0020_0 sin coefficient',
-                '-(@0 * @2 + @1 * @3) * @4',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'SCP']))
+            config.addSetting('J_10x0020_0_cosh', RooFormSetting('J_10x0020_0_cosh', 'J_10x0020_0 cosh coefficient',   '@0 * @2 + @1 * @3',       ['ReA0', 'ImA0', 'ReAS', 'ImAS'])) # +Re(A_0* A_S) * 1
+            config.addSetting('J_10x0020_0_cos',  RooFormSetting('J_10x0020_0_cos',  'J_10x0020_0 cos coefficient', '  (@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'CCP'])) # +Re(A_0* A_S) * C
+            config.addSetting('J_10x0020_0_sinh', RooFormSetting('J_10x0020_0_sinh', 'J_10x0020_0 sinh coefficient', '-(@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'DCP'])) # -Re(A_0* A_S) * D
+            config.addSetting('J_10x0020_0_sin',  RooFormSetting('J_10x0020_0_sin',  'J_10x0020_0 sin coefficient',  '-(@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'SCP'])) # -Re(A_0* A_S) * S
 
-            config.addSetting('J_11x21_0_cosh',       # +Re(A_par* A_S) * 1
-                RooFormSetting('J_11x21_0_cosh',
-                'J_11x21_0 cosh coefficient',
-                '@0 * @2 + @1 * @3',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS']))
-            config.addSetting('J_11x21_0_cos',        # +Re(A_par* A_S) * C
-                RooFormSetting('J_11x21_0_cos',
-                'J_11x21_0 cos coefficient',
-                '(@0 * @2 + @1 * @3) * @4',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'CCP']))
-            config.addSetting('J_11x21_0_sinh',       # -Re(A_par* A_S) * D
-                RooFormSetting('J_11x21_0_sinh',
-                'J_11x21_0 sinh coefficient',
-                '-(@0 * @2 + @1 * @3) * @4',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'DCP']))
-            config.addSetting('J_11x21_0_sin',        # -Re(A_par* A_S) * S
-                RooFormSetting('J_11x21_0_sin',
-                'J_11x21_0 sin coefficient',
-                '-(@0 * @2 + @1 * @3) * @4',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'SCP']))
+            config.addSetting('J_11x21_0_cosh',   RooFormSetting('J_11x21_0_cosh',   'J_11x21_0 cosh coefficient',     '@0 * @2 + @1 * @3',       ['ReApar', 'ImApar', 'ReAS', 'ImAS'])) # +Re(A_par* A_S) * 1
+            config.addSetting('J_11x21_0_cos',    RooFormSetting('J_11x21_0_cos',    'J_11x21_0 cos coefficient',     '(@0 * @2 + @1 * @3) * @4', ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'CCP'])) # +Re(A_par* A_S) * C
+            config.addSetting('J_11x21_0_sinh',   RooFormSetting('J_11x21_0_sinh',   'J_11x21_0 sinh coefficient',   '-(@0 * @2 + @1 * @3) * @4', ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'DCP'])) # -Re(A_par* A_S) * D
+            config.addSetting('J_11x21_0_sin',    RooFormSetting('J_11x21_0_sin',    'J_11x21_0 sin coefficient',    '-(@0 * @2 + @1 * @3) * @4', ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'SCP'])) # -Re(A_par* A_S) * S
 
-            config.addSetting('J_11x2m1_0_cosh',      # +Im(A_perp* A_S) * C
-                RooFormSetting('J_11x2m1_0_cosh',
-                'J_11x2m1_0 cosh coefficient',
-                '(@0 * @3 - @1 * @2) * @4',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'CCP']))
-            config.addSetting('J_11x2m1_0_cos',       # +Im(A_perp* A_S) * 1
-                RooFormSetting('J_11x2m1_0_cos',
-                'J_11x2m1_0 cos coefficient',
-                '@0 * @3 - @1 * @2',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS']))
-            config.addSetting('J_11x2m1_0_sinh',      # -Re(A_perp* A_S) * S
-                RooFormSetting('J_11x2m1_0_sinh',
-                'J_11x2m1_0 sinh coefficient',
-                '-(@0 * @2 + @1 * @3) * @4',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'SCP']))
-            config.addSetting('J_11x2m1_0_sin',       # +Re(A_perp* A_S) * D
-                RooFormSetting('J_11x2m1_0_sin',
-                'J_11x2m1_0 sin coefficient',
-                '(@0 * @2 + @1 * @3) * @4',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'DCP']))
+            config.addSetting('J_11x2m1_0_cosh',  RooFormSetting('J_11x2m1_0_cosh',  'J_11x2m1_0 cosh coefficient',   '(@0 * @3 - @1 * @2) * @4', ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'CCP'])) # +Im(A_perp* A_S) * C
+            config.addSetting('J_11x2m1_0_cos',   RooFormSetting('J_11x2m1_0_cos',   'J_11x2m1_0 cos coefficient',     '@0 * @3 - @1 * @2',       ['ReAperp', 'ImAperp', 'ReAS', 'ImAS'])) # +Im(A_perp* A_S) * 1
+            config.addSetting('J_11x2m1_0_sinh',  RooFormSetting('J_11x2m1_0_sinh',  'J_11x2m1_0 sinh coefficient',  '-(@0 * @2 + @1 * @3) * @4', ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'SCP'])) # -Re(A_perp* A_S) * S
+            config.addSetting('J_11x2m1_0_sin',   RooFormSetting('J_11x2m1_0_sin',   'J_11x2m1_0 sin coefficient',    '(@0 * @2 + @1 * @3) * @4', ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'DCP'])) # +Re(A_perp* A_S) * D
 
           elif KSWave == 'includeOdd' :
-            config.addSetting('J_00x0020_0_cosh',     # +|A_S|^2 * 1
-                RooFormSetting('J_00x0020_0_cosh',
-                'J_00x0020_0 cosh coefficient',
-                '@0 * @0 + @1 * @1',
-                ['ReAS', 'ImAS']))
-            config.addSetting('J_00x0020_0_cos',      # +|A_S|^2 * C
-                RooFormSetting('J_00x0020_0_cos',
-                'J_00x0020_0 cos coefficient',
-                '(@0 * @0 + @1 * @1) * @2',
-                ['ReAS', 'ImAS', 'CCP']))
-            config.addSetting('J_00x0020_0_sinh',     # +|A_S|^2 * D
-                RooFormSetting('J_00x0020_0_sinh',
-                'J_00x0020_0 sinh coefficient',
-                '(@0 * @0 + @1 * @1) * @2',
-                ['ReAS', 'ImAS', 'DCP']))
-            config.addSetting('J_00x0020_0_sin',      # +|A_S|^2 * S
-                RooFormSetting('J_00x0020_0_sin',
-                'J_00x0020_0 sin coefficient',
-                '(@0 * @0 + @1 * @1) * @2',
-                ['ReAS', 'ImAS', 'SCP']))
+            config.addSetting('J_00x0020_0_cosh', RooFormSetting('J_00x0020_0_cosh', 'J_00x0020_0 cosh coefficient',   '@0 * @0 + @1 * @1',       ['ReAS', 'ImAS'])) # +|A_S|^2 * 1
+            config.addSetting('J_00x0020_0_cos',  RooFormSetting('J_00x0020_0_cos',  'J_00x0020_0 cos coefficient',   '(@0 * @0 + @1 * @1) * @2', ['ReAS', 'ImAS', 'CCP'])) # +|A_S|^2 * C
+            config.addSetting('J_00x0020_0_sinh', RooFormSetting('J_00x0020_0_sinh', 'J_00x0020_0 sinh coefficient',  '(@0 * @0 + @1 * @1) * @2', ['ReAS', 'ImAS', 'DCP'])) # +|A_S|^2 * D
+            config.addSetting('J_00x0020_0_sin',  RooFormSetting('J_00x0020_0_sin',  'J_00x0020_0 sin coefficient',   '(@0 * @0 + @1 * @1) * @2', ['ReAS', 'ImAS', 'SCP'])) # +|A_S|^2 * S
 
-            config.addSetting('J_10x0020_0_cosh',
-                RooFormSetting('J_10x0020_0_cosh',    # +Re(A_0* A_S) * C
-                'J_10x0020_0 cosh coefficient',
-                '(@0 * @2 + @1 * @3) * @4',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'CCP']))
-            config.addSetting('J_10x0020_0_cos',      # +Re(A_0* A_S) * 1
-                RooFormSetting('J_10x0020_0_cos',
-                'J_10x0020_0 cos coefficient',
-                '@0 * @2 + @1 * @3',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS']))
-            config.addSetting('J_10x0020_0_sinh',     # -Im(A_0* A_S) * S
-                RooFormSetting('J_10x0020_0_sinh',
-                'J_10x0020_0 sinh coefficient',
-                '-(@0 * @3 - @1 * @2) * @4',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'SCP']))
-            config.addSetting('J_10x0020_0_sin',      # +Im(A_0* A_S) * D
-                RooFormSetting('J_10x0020_0_sin',
-                'J_10x0020_0 sin coefficient',
-                '(@0 * @3 - @1 * @2) * @4',
-                ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'DCP']))
+            config.addSetting('J_10x0020_0_cosh', RooFormSetting('J_10x0020_0_cosh', 'J_10x0020_0 cosh coefficient',  '(@0 * @2 + @1 * @3) * @4', ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'CCP'])) # +Re(A_0* A_S) * C
+            config.addSetting('J_10x0020_0_cos',  RooFormSetting('J_10x0020_0_cos',  'J_10x0020_0 cos coefficient',    '@0 * @2 + @1 * @3',       ['ReA0', 'ImA0', 'ReAS', 'ImAS'])) # +Re(A_0* A_S) * 1
+            config.addSetting('J_10x0020_0_sinh', RooFormSetting('J_10x0020_0_sinh', 'J_10x0020_0 sinh coefficient', '-(@0 * @3 - @1 * @2) * @4', ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'SCP'])) # -Im(A_0* A_S) * S
+            config.addSetting('J_10x0020_0_sin',  RooFormSetting('J_10x0020_0_sin',  'J_10x0020_0 sin coefficient',   '(@0 * @3 - @1 * @2) * @4', ['ReA0', 'ImA0', 'ReAS', 'ImAS', 'DCP'])) # +Im(A_0* A_S) * D
 
-            config.addSetting('J_11x21_0_cosh',       # +Re(A_par* A_S) * C
-                RooFormSetting('J_11x21_0_cosh',
-                'J_11x21_0 cosh coefficient',
-                '(@0 * @2 + @1 * @3) * @4',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'CCP']))
-            config.addSetting('J_11x21_0_cos',        # +Re(A_par* A_S) * 1
-                RooFormSetting('J_11x21_0_cos',
-                'J_11x21_0 cos coefficient',
-                '@0 * @2 + @1 * @3',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS']))
-            config.addSetting('J_11x21_0_sinh',       # -Im(A_par* A_S) * S
-                RooFormSetting('J_11x21_0_sinh',
-                'J_11x21_0 sinh coefficient',
-                '-(@0 * @3 - @1 * @2) * @4',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'SCP']))
-            config.addSetting('J_11x21_0_sin',        # +Im(A_par* A_S) * D
-                RooFormSetting('J_11x21_0_sin',
-                'J_11x21_0 sin coefficient',
-                '(@0 * @3 - @1 * @2) * @4',
-                ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'DCP']))
+            config.addSetting('J_11x21_0_cosh',   RooFormSetting('J_11x21_0_cosh',   'J_11x21_0 cosh coefficient',    '(@0 * @2 + @1 * @3) * @4', ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'CCP'])) # +Re(A_par* A_S) * C
+            config.addSetting('J_11x21_0_cos',    RooFormSetting('J_11x21_0_cos',    'J_11x21_0 cos coefficient',      '@0 * @2 + @1 * @3',       ['ReApar', 'ImApar', 'ReAS', 'ImAS'])) # +Re(A_par* A_S) * 1
+            config.addSetting('J_11x21_0_sinh',   RooFormSetting('J_11x21_0_sinh',   'J_11x21_0 sinh coefficient',   '-(@0 * @3 - @1 * @2) * @4', ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'SCP'])) # -Im(A_par* A_S) * S
+            config.addSetting('J_11x21_0_sin',    RooFormSetting('J_11x21_0_sin',    'J_11x21_0 sin coefficient',     '(@0 * @3 - @1 * @2) * @4', ['ReApar', 'ImApar', 'ReAS', 'ImAS', 'DCP'])) # +Im(A_par* A_S) * D
 
-            config.addSetting('J_11x2m1_0_cosh',      # +Im(A_perp* A_S) * 1
-                RooFormSetting('J_11x2m1_0_cosh',
-                'J_11x2m1_0 cosh coefficient',
-                '@0 * @3 - @1 * @2',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS']))
-            config.addSetting('J_11x2m1_0_cos',       # +Im(A_perp* A_S) * C
-                RooFormSetting('J_11x2m1_0_cos',
-                'J_11x2m1_0 cos coefficient',
-                '(@0 * @3 - @1 * @2) * @4',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'CCP']))
-            config.addSetting('J_11x2m1_0_sinh',      # +Im(A_perp* A_S) * D
-                RooFormSetting('J_11x2m1_0_sinh',
-                'J_11x2m1_0 sinh coefficient',
-                '(@0 * @3 - @1 * @2) * @4',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'DCP']))
-            config.addSetting('J_11x2m1_0_sin',       # +Im(A_perp* A_S) * S
-                RooFormSetting('J_11x2m1_0_sin',
-                'J_11x2m1_0 sin coefficient',
-                '(@0 * @3 - @1 * @2) * @4',
-                ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'SCP']))
+            config.addSetting('J_11x2m1_0_cosh',  RooFormSetting('J_11x2m1_0_cosh',  'J_11x2m1_0 cosh coefficient',    '@0 * @3 - @1 * @2',       ['ReAperp', 'ImAperp', 'ReAS', 'ImAS'])) # +Im(A_perp* A_S) * 1
+            config.addSetting('J_11x2m1_0_cos',   RooFormSetting('J_11x2m1_0_cos',   'J_11x2m1_0 cos coefficient', '   (@0 * @3 - @1 * @2) * @4', ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'CCP'])) # +Im(A_perp* A_S) * C
+            config.addSetting('J_11x2m1_0_sinh',  RooFormSetting('J_11x2m1_0_sinh',  'J_11x2m1_0 sinh coefficient',   '(@0 * @3 - @1 * @2) * @4', ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'DCP'])) # +Im(A_perp* A_S) * D
+            config.addSetting('J_11x2m1_0_sin',   RooFormSetting('J_11x2m1_0_sin',   'J_11x2m1_0 sin coefficient',    '(@0 * @3 - @1 * @2) * @4', ['ReAperp', 'ImAperp', 'ReAS', 'ImAS', 'SCP'])) # +Im(A_perp* A_S) * S
 
       else :
         # angular coefficients
         if mode == 'Bd2JpsiKstar' :
           # Bd0->J/psiK* coefficients
-          config.addSetting('J_0020x0020_0', RooRealSetting('J_0020x0020_0',
-              'J_0020x0020_0 coefficient', 'par',           # |A_0|^2
-              1., '', ''))
-          config.addSetting('J_22x002022_0', RooRealSetting('J_22x002022_0',
-              'J_22x002022_0 coefficient', 'par',           # |A_par|^2
-              AparSq / A0Sq, -5., 5.))
-          config.addSetting('J_22x002022_1', RooRealSetting('J_22x002022_1',
-              'J_22x002022_1 coefficient', 'par',           # |A_perp|^2
-              AperpSq / A0Sq, -5., 5.))
-          config.addSetting('J_21x21_0', RooRealSetting('J_21x21_0',
-              'J_21x21_0 coefficient', 'par',               # Re(A_0* A_par)
-              ReApar / ReA0, -5., 5.))
-          config.addSetting('J_21x2m1_0', RooRealSetting('J_21x2m1_0',
-              'J_21x2m1_0 coefficient', 'par',              # Im(A_0* A_perp)
-              ImAperp / ReA0, -5., 5.))
-          config.addSetting('J_22x2m2_0', RooRealSetting('J_22x2m2_0',
-              'J_22x2m2_0 coefficient', 'par',              # Im(A_par* A_perp)
-              (ReApar * ImAperp - ImApar * ReAperp) / A0Sq, -5., 5.))
+          config.addSetting('J_0020x0020_0', RooRealSetting('J_0020x0020_0', 'J_0020x0020_0 coefficient', 'par',  1., '', '')) # |A_0|^2
+          config.addSetting('J_22x002022_0', RooRealSetting('J_22x002022_0', 'J_22x002022_0 coefficient', 'par',  AparSq  / A0Sq, -5., 5.)) # |A_par|^2
+          config.addSetting('J_22x002022_1', RooRealSetting('J_22x002022_1', 'J_22x002022_1 coefficient', 'par',  AperpSq / A0Sq, -5., 5.)) # |A_perp|^2
+          config.addSetting('J_21x21_0',     RooRealSetting('J_21x21_0',     'J_21x21_0     coefficient', 'par',  ReApar  / ReA0, -5., 5.)) # Re(A_0* A_par)
+          config.addSetting('J_21x2m1_0',    RooRealSetting('J_21x2m1_0',    'J_21x2m1_0    coefficient', 'par',  ImAperp / ReA0, -5., 5.)) # Im(A_0* A_perp)
+          config.addSetting('J_22x2m2_0',    RooRealSetting('J_22x2m2_0',    'J_22x2m2_0    coefficient', 'par',  (ReApar * ImAperp - ImApar * ReAperp) / A0Sq, -5., 5.)) # Im(A_par* A_perp)
           if KSWave[:7] == 'include' :
-            config.addSetting('J_00x0020_0', RooRealSetting('J_00x0020_0',
-                'J_00x0020_0 coefficient', 'par',           # |A_S|^2
-                ASSq / A0Sq, -5., 5.))
-            config.addSetting('J_10x0020_0', RooRealSetting('J_10x0020_0',
-                'J_10x0020_0 coefficient', 'par',           # Re(A_0* A_S)
-                ReAS / ReA0, -5., 5.))
-            config.addSetting('J_11x21_0', RooRealSetting('J_11x21_0',
-                'J_11x21_0 coefficient', 'par',             # Re(A_par* A_S)
-                (ReApar * ReAS + ImApar * ImAS) / A0Sq, -5., 5.))
-            config.addSetting('J_11x2m1_0', RooRealSetting('J_11x2m1_0',
-                'J_11x2m1_0 coefficient', 'par',            # Im(A_perp* A_S)
-                (ReAperp * ImAS - ImAperp * ReAS) / A0Sq, -5., 5.))
+            config.addSetting('J_00x0020_0', RooRealSetting('J_00x0020_0',   'J_00x0020_0   coefficient', 'par',  ASSq / A0Sq, -5., 5.)) # |A_S|^2
+            config.addSetting('J_10x0020_0', RooRealSetting('J_10x0020_0',   'J_10x0020_0   coefficient', 'par',  ReAS / ReA0, -5., 5.)) # Re(A_0* A_S)
+            config.addSetting('J_11x21_0',   RooRealSetting('J_11x21_0',     'J_11x21_0     coefficient', 'par',  (ReApar  * ReAS + ImApar  * ImAS) / A0Sq, -5., 5.)) # Re(A_par* A_S)
+            config.addSetting('J_11x2m1_0',  RooRealSetting('J_11x2m1_0',    'J_11x2m1_0    coefficient', 'par',  (ReAperp * ImAS - ImAperp * ReAS) / A0Sq, -5., 5.)) # Im(A_perp* A_S)
 
         elif mode == 'Bs2Jpsiphi' :
           # Bs0->J/psiphi coefficients
-          config.addSetting('J_0020x0020_0_cosh',     # +|A_0|^2 * 1
-              RooRealSetting('J_0020x0020_0_cosh',
-              'J_0020x0020_0 cosh coefficient', 'par',
-              1., '', ''))
-          config.addSetting('J_0020x0020_0_cos',      # +|A_0|^2 * C
-              RooRealSetting('J_0020x0020_0_cos',
-              'J_0020x0020_0 cos coefficient', 'par',
-              CCP, -5., 5.))
-          config.addSetting('J_0020x0020_0_sinh',     # -|A_0|^2 * D
-              RooRealSetting('J_0020x0020_0_sinh',
-              'J_0020x0020_0 sinh coefficient', 'par',
-              -DCP, -5., 5.))
-          config.addSetting('J_0020x0020_0_sin',      # -|A_0|^2 * S
-              RooRealSetting('J_0020x0020_0_sin',
-              'J_0020x0020_0 sin coefficient', 'par',
-              -SCP, -5., 5.))
+          config.addSetting('J_0020x0020_0_cosh',  RooRealSetting('J_0020x0020_0_cosh', 'J_0020x0020_0 cosh coefficient', 'par', 1., '', '')) # +|A_0|^2 * 1
+          config.addSetting('J_0020x0020_0_cos',   RooRealSetting('J_0020x0020_0_cos',  'J_0020x0020_0 cos coefficient', 'par', CCP, -5., 5.)) # +|A_0|^2 * C
+          config.addSetting('J_0020x0020_0_sinh',  RooRealSetting('J_0020x0020_0_sinh', 'J_0020x0020_0 sinh coefficient', 'par', -DCP, -5., 5.)) # -|A_0|^2 * D
+          config.addSetting('J_0020x0020_0_sin',   RooRealSetting('J_0020x0020_0_sin',  'J_0020x0020_0 sin coefficient', 'par', -SCP, -5., 5.)) # -|A_0|^2 * S
 
-          config.addSetting('J_22x002022_0_cosh',     # +|A_par|^2 * 1
-              RooRealSetting('J_22x002022_0_cosh',
-              'J_22x002022_0 cosh coefficient', 'par',
-              AparSq / A0Sq, -5., 5.))
-          config.addSetting('J_22x002022_0_cos',      # +|A_par|^2 * C
-              RooRealSetting('J_22x002022_0_cos',
-              'J_22x002022_0 cos coefficient', 'par',
-              AparSq / A0Sq * CCP, -5., 5.))
-          config.addSetting('J_22x002022_0_sinh',     # -|A_par|^2 * D
-              RooRealSetting('J_22x002022_0_sinh',
-              'J_22x002022_0 sinh coefficient', 'par',
-              -AparSq / A0Sq * DCP, -5., 5.))
-          config.addSetting('J_22x002022_0_sin',      # -|A_par|^2 * S
-              RooRealSetting('J_22x002022_0_sin',
-              'J_22x002022_0 sin coefficient', 'par',
-              -AparSq / A0Sq * SCP, -5., 5.))
+          config.addSetting('J_22x002022_0_cosh',  RooRealSetting('J_22x002022_0_cosh', 'J_22x002022_0 cosh coefficient', 'par', AparSq / A0Sq, -5., 5.)) # +|A_par|^2 * 1
+          config.addSetting('J_22x002022_0_cos',   RooRealSetting('J_22x002022_0_cos',  'J_22x002022_0 cos coefficient', 'par', AparSq / A0Sq * CCP, -5., 5.)) # +|A_par|^2 * C
+          config.addSetting('J_22x002022_0_sinh',  RooRealSetting('J_22x002022_0_sinh', 'J_22x002022_0 sinh coefficient', 'par', -AparSq / A0Sq * DCP, -5., 5.)) # -|A_par|^2 * D
+          config.addSetting('J_22x002022_0_sin',   RooRealSetting('J_22x002022_0_sin',  'J_22x002022_0 sin coefficient', 'par', -AparSq / A0Sq * SCP, -5., 5.)) # -|A_par|^2 * S
 
-          config.addSetting('J_22x002022_1_cosh',     # +|A_perp|^2 * 1
-              RooRealSetting('J_22x002022_1_cosh',
-              'J_22x002022_1 cosh coefficient', 'par',
-              AperpSq / A0Sq, -5., 5.))
-          config.addSetting('J_22x002022_1_cos',      # +|A_perp|^2 * C
-              RooRealSetting('J_22x002022_1_cos',
-              'J_22x002022_1 cos coefficient', 'par',
-              AperpSq / A0Sq * CCP, -5., 5.))
-          config.addSetting('J_22x002022_1_sinh',     # +|A_perp|^2 * D
-              RooRealSetting('J_22x002022_1_sinh',
-              'J_22x002022_1 sinh coefficient', 'par',
-              AperpSq / A0Sq * DCP, -5., 5.))
-          config.addSetting('J_22x002022_1_sin',      # +|A_perp|^2 * S
-              RooRealSetting('J_22x002022_1_sin',
-              'J_22x002022_1 sin coefficient', 'par',
-              AperpSq / A0Sq * SCP, -5., 5.))
+          config.addSetting('J_22x002022_1_cosh',  RooRealSetting('J_22x002022_1_cosh', 'J_22x002022_1 cosh coefficient', 'par', AperpSq / A0Sq, -5., 5.)) # +|A_perp|^2 * 1
+          config.addSetting('J_22x002022_1_cos',   RooRealSetting('J_22x002022_1_cos',  'J_22x002022_1 cos coefficient', 'par', AperpSq / A0Sq * CCP, -5., 5.)) # +|A_perp|^2 * C
+          config.addSetting('J_22x002022_1_sinh',  RooRealSetting('J_22x002022_1_sinh', 'J_22x002022_1 sinh coefficient', 'par', AperpSq / A0Sq * DCP, -5., 5.)) # +|A_perp|^2 * D
+          config.addSetting('J_22x002022_1_sin',   RooRealSetting('J_22x002022_1_sin',  'J_22x002022_1 sin coefficient', 'par', AperpSq / A0Sq * SCP, -5., 5.)) # +|A_perp|^2 * S
 
-          config.addSetting('J_21x21_0_cosh',         # +Re(A_0* A_par) * 1
-              RooRealSetting('J_21x21_0_cosh',
-              'J_21x21_0 cosh coefficient', 'par',
-              ReApar / ReA0, -5., 5.))
-          config.addSetting('J_21x21_0_cos',          # +Re(A_0* A_par) * C
-              RooRealSetting('J_21x21_0_cos',
-              'J_21x21_0 cos coefficient', 'par',
-              ReApar / ReA0 * CCP, -5., 5.))
-          config.addSetting('J_21x21_0_sinh',         # -Re(A_0* A_par) * D
-              RooRealSetting('J_21x21_0_sinh',
-              'J_21x21_0 sinh coefficient', 'par',
-              -ReApar / ReA0 * DCP, -5., 5.))
-          config.addSetting('J_21x21_0_sin',          # -Re(A_0* A_par) * S
-              RooRealSetting('J_21x21_0_sin',
-              'J_21x21_0 sin coefficient', 'par',
-              -ReApar / ReA0 * SCP, -5., 5.))
+          config.addSetting('J_21x21_0_cosh',      RooRealSetting('J_21x21_0_cosh',   'J_21x21_0 cosh coefficient',   'par',  ReApar / ReA0, -5., 5.)) # +Re(A_0* A_par) * 1
+          config.addSetting('J_21x21_0_cos',       RooRealSetting('J_21x21_0_cos',    'J_21x21_0 cos coefficient',    'par',  ReApar / ReA0 * CCP, -5., 5.)) # +Re(A_0* A_par) * C
+          config.addSetting('J_21x21_0_sinh',      RooRealSetting('J_21x21_0_sinh',   'J_21x21_0 sinh coefficient',   'par', -ReApar / ReA0 * DCP, -5., 5.)) # -Re(A_0* A_par) * D
+          config.addSetting('J_21x21_0_sin',       RooRealSetting('J_21x21_0_sin',    'J_21x21_0 sin coefficient',    'par', -ReApar / ReA0 * SCP, -5., 5.)) # -Re(A_0* A_par) * S
 
-          config.addSetting('J_21x2m1_0_cosh',        # +Im(A_0* A_perp) * C
-              RooRealSetting('J_21x2m1_0_cosh',
-              'J_21x2m1_0 cosh coefficient', 'par',
-              ImAperp / ReA0 * CCP, -5., 5.))
-          config.addSetting('J_21x2m1_0_cos',         # +Im(A_0* A_perp) * 1
-              RooRealSetting('J_21x2m1_0_cos',
-              'J_21x2m1_0 cos coefficient', 'par',
-              ImAperp / ReA0, -5., 5.))
-          config.addSetting('J_21x2m1_0_sinh',        # +Re(A_0* A_perp) * S
-              RooRealSetting('J_21x2m1_0_sinh',
-              'J_21x2m1_0 sinh coefficient', 'par',
-              ReAperp / ReA0 * SCP, -5., 5.))
-          config.addSetting('J_21x2m1_0_sin',         # -Re(A_0* A_perp) * D
-              RooRealSetting('J_21x2m1_0_sin',
-              'J_21x2m1_0 sin coefficient', 'par',
-              -ReAperp / ReA0 * DCP, -5., 5.))
+          config.addSetting('J_21x2m1_0_cosh',     RooRealSetting('J_21x2m1_0_cosh',  'J_21x2m1_0 cosh coefficient',  'par',  ImAperp / ReA0 * CCP, -5., 5.)) # +Im(A_0* A_perp) * C
+          config.addSetting('J_21x2m1_0_cos',      RooRealSetting('J_21x2m1_0_cos',   'J_21x2m1_0 cos coefficient',   'par',  ImAperp / ReA0, -5., 5.)) # +Im(A_0* A_perp) * 1
+          config.addSetting('J_21x2m1_0_sinh',     RooRealSetting('J_21x2m1_0_sinh',  'J_21x2m1_0 sinh coefficient',  'par',  ReAperp / ReA0 * SCP, -5., 5.)) # +Re(A_0* A_perp) * S
+          config.addSetting('J_21x2m1_0_sin',      RooRealSetting('J_21x2m1_0_sin',   'J_21x2m1_0 sin coefficient',   'par', -ReAperp / ReA0 * DCP, -5., 5.)) # -Re(A_0* A_perp) * D
 
-          config.addSetting('J_22x2m2_0_cosh',        # +Im(A_par* A_perp) * C
-              RooRealSetting('J_22x2m2_0_cosh',
-              'J_22x2m2_0 cosh coefficient', 'par',
-              (ReApar * ImAperp - ImApar * ReAperp) / A0Sq * CCP, -5., 5.))
-          config.addSetting('J_22x2m2_0_cos',         # +Im(A_par* A_perp) * 1
-              RooRealSetting('J_22x2m2_0_cos',
-              'J_22x2m2_0 cos coefficient', 'par',
-              (ReApar * ImAperp - ImApar * ReAperp) / A0Sq, -5., 5.))
-          config.addSetting('J_22x2m2_0_sinh',        # +Re(A_par* A_perp) * S
-              RooRealSetting('J_22x2m2_0_sinh',
-              'J_22x2m2_0 sinh coefficient', 'par',
-              (ReApar * ReAperp + ImApar * ImAperp) / A0Sq * SCP, -5., 5.))
-          config.addSetting('J_22x2m2_0_sin',         # -Re(A_par* A_perp) * D
-              RooRealSetting('J_22x2m2_0_sin',
-              'J_22x2m2_0 sin coefficient', 'par',
-              -(ReApar * ReAperp + ImApar * ImAperp) / A0Sq * DCP, -5., 5.))
+          config.addSetting('J_22x2m2_0_cosh',     RooRealSetting('J_22x2m2_0_cosh',  'J_22x2m2_0 cosh coefficient',  'par',  (ReApar * ImAperp - ImApar * ReAperp) / A0Sq * CCP, -5., 5.)) # +Im(A_par* A_perp) * C
+          config.addSetting('J_22x2m2_0_cos',      RooRealSetting('J_22x2m2_0_cos',   'J_22x2m2_0 cos coefficient',   'par',  (ReApar * ImAperp - ImApar * ReAperp) / A0Sq, -5., 5.)) # +Im(A_par* A_perp) * 1
+          config.addSetting('J_22x2m2_0_sinh',     RooRealSetting('J_22x2m2_0_sinh',  'J_22x2m2_0 sinh coefficient',  'par',  (ReApar * ReAperp + ImApar * ImAperp) / A0Sq * SCP, -5., 5.)) # +Re(A_par* A_perp) * S
+          config.addSetting('J_22x2m2_0_sin',      RooRealSetting('J_22x2m2_0_sin',   'J_22x2m2_0 sin coefficient',   'par', -(ReApar * ReAperp + ImApar * ImAperp) / A0Sq * DCP, -5., 5.)) # -Re(A_par* A_perp) * D
 
           if KSWave == 'includeEven' :
-            config.addSetting('J_00x0020_0_cosh',     # +|A_S|^2 * 1
-                RooRealSetting('J_00x0020_0_cosh',
-                'J_00x0020_0 cosh coefficient', 'par',
-                ASSq / A0Sq, -5., 5.))
-            config.addSetting('J_00x0020_0_cos',      # +|A_S|^2 * C
-                RooRealSetting('J_00x0020_0_cos',
-                'J_00x0020_0 cos coefficient', 'par',
-                ASSq / A0Sq * CCP, -5., 5.))
-            config.addSetting('J_00x0020_0_sinh',     # -|A_S|^2 * D
-                RooRealSetting('J_00x0020_0_sinh',
-                'J_00x0020_0 sinh coefficient', 'par',
-                -ASSq / A0Sq * DCP, -5., 5.))
-            config.addSetting('J_00x0020_0_sin',      # -|A_S|^2 * S
-                RooRealSetting('J_00x0020_0_sin',
-                'J_00x0020_0 sin coefficient', 'par',
-                -ASSq / A0Sq * SCP, -5., 5.))
+            config.addSetting('J_00x0020_0_cosh',  RooRealSetting('J_00x0020_0_cosh', 'J_00x0020_0 cosh coefficient', 'par',  ASSq / A0Sq,       -5., 5.)) # +|A_S|^2 * 1
+            config.addSetting('J_00x0020_0_cos',   RooRealSetting('J_00x0020_0_cos',  'J_00x0020_0 cos  coefficient', 'par',  ASSq / A0Sq * CCP, -5., 5.)) # +|A_S|^2 * C
+            config.addSetting('J_00x0020_0_sinh',  RooRealSetting('J_00x0020_0_sinh', 'J_00x0020_0 sinh coefficient', 'par', -ASSq / A0Sq * DCP, -5., 5.)) # -|A_S|^2 * D
+            config.addSetting('J_00x0020_0_sin',   RooRealSetting('J_00x0020_0_sin',  'J_00x0020_0 sin  coefficient', 'par', -ASSq / A0Sq * SCP, -5., 5.)) # -|A_S|^2 * S
 
-            config.addSetting('J_10x0020_0_cosh',     # +Re(A_0* A_S) * 1
-                RooRealSetting('J_10x0020_0_cosh',
-                'J_10x0020_0 cosh coefficient', 'par',
-                ReAS / ReA0, -5., 5.))
-            config.addSetting('J_10x0020_0_cos',      # +Re(A_0* A_S) * C
-                RooRealSetting('J_10x0020_0_cos',
-                'J_10x0020_0 cos coefficient', 'par',
-                ReAS / ReA0 * CCP, -5., 5.))
-            config.addSetting('J_10x0020_0_sinh',     # -Re(A_0* A_S) * D
-                RooRealSetting('J_10x0020_0_sinh',
-                'J_10x0020_0 sinh coefficient', 'par',
-                -ReAS / ReA0 * DCP, -5., 5.))
-            config.addSetting('J_10x0020_0_sin',      # -Re(A_0* A_S) * S
-                RooRealSetting('J_10x0020_0_sin',
-                'J_10x0020_0 sin coefficient', 'par',
-                -ReAS / ReA0 * SCP, -5., 5.))
+            config.addSetting('J_10x0020_0_cosh',  RooRealSetting('J_10x0020_0_cosh', 'J_10x0020_0 cosh coefficient', 'par',  ReAS / ReA0,       -5., 5.)) # +Re(A_0* A_S) * 1
+            config.addSetting('J_10x0020_0_cos',   RooRealSetting('J_10x0020_0_cos',  'J_10x0020_0 cos  coefficient', 'par',  ReAS / ReA0 * CCP, -5., 5.)) # +Re(A_0* A_S) * C
+            config.addSetting('J_10x0020_0_sinh',  RooRealSetting('J_10x0020_0_sinh', 'J_10x0020_0 sinh coefficient', 'par', -ReAS / ReA0 * DCP, -5., 5.)) # -Re(A_0* A_S) * D
+            config.addSetting('J_10x0020_0_sin',   RooRealSetting('J_10x0020_0_sin',  'J_10x0020_0 sin  coefficient', 'par', -ReAS / ReA0 * SCP, -5., 5.)) # -Re(A_0* A_S) * S
 
-            config.addSetting('J_11x21_0_cosh',       # +Re(A_par* A_S) * 1
-                RooRealSetting('J_11x21_0_cosh',
-                'J_11x21_0 cosh coefficient', 'par',
-                (ReApar * ReAS + ImApar * ImAS) / A0Sq, -5., 5.))
-            config.addSetting('J_11x21_0_cos',        # +Re(A_par* A_S) * C
-                RooRealSetting('J_11x21_0_cos',
-                'J_11x21_0 cos coefficient', 'par',
-                (ReApar * ReAS + ImApar * ImAS) / A0Sq * CCP, -5., 5.))
-            config.addSetting('J_11x21_0_sinh',       # -Re(A_par* A_S) * D
-                RooRealSetting('J_11x21_0_sinh',
-                'J_11x21_0 sinh coefficient', 'par',
-                -(ReApar * ReAS + ImApar * ImAS) / A0Sq * DCP, -5., 5.))
-            config.addSetting('J_11x21_0_sin',        # -Re(A_par* A_S) * S
-                RooRealSetting('J_11x21_0_sin',
-                'J_11x21_0 sin coefficient', 'par',
-                -(ReApar * ReAS + ImApar * ImAS) / A0Sq * SCP, -5., 5.))
+            config.addSetting('J_11x21_0_cosh',    RooRealSetting('J_11x21_0_cosh',   'J_11x21_0 cosh coefficient',   'par',  (ReApar * ReAS + ImApar * ImAS) / A0Sq, -5., 5.)) # +Re(A_par* A_S) * 1
+            config.addSetting('J_11x21_0_cos',     RooRealSetting('J_11x21_0_cos',    'J_11x21_0 cos coefficient',    'par',  (ReApar * ReAS + ImApar * ImAS) / A0Sq * CCP, -5., 5.)) # +Re(A_par* A_S) * C
+            config.addSetting('J_11x21_0_sinh',    RooRealSetting('J_11x21_0_sinh',   'J_11x21_0 sinh coefficient',   'par', -(ReApar * ReAS + ImApar * ImAS) / A0Sq * DCP, -5., 5.)) # -Re(A_par* A_S) * D
+            config.addSetting('J_11x21_0_sin',     RooRealSetting('J_11x21_0_sin',    'J_11x21_0 sin coefficient',    'par', -(ReApar * ReAS + ImApar * ImAS) / A0Sq * SCP, -5., 5.)) # -Re(A_par* A_S) * S
 
-            config.addSetting('J_11x2m1_0_cosh',      # +Im(A_perp* A_S) * C
-                RooRealSetting('J_11x2m1_0_cosh',
-                'J_11x2m1_0 cosh coefficient', 'par',
-                (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * CCP, -5., 5.))
-            config.addSetting('J_11x2m1_0_cos',       # +Im(A_perp* A_S) * 1
-                RooRealSetting('J_11x2m1_0_cos',
-                'J_11x2m1_0 cos coefficient', 'par',
-                (ReAperp * ImAS - ImAperp * ReAS) / A0Sq, -5., 5.))
-            config.addSetting('J_11x2m1_0_sinh',      # -Re(A_perp* A_S) * S
-                RooRealSetting('J_11x2m1_0_sinh',
-                'J_11x2m1_0 sinh coefficient', 'par',
-                -(ReAperp * ReAS + ImAperp * ImAS) / A0Sq *SCP, -5., 5.))
-            config.addSetting('J_11x2m1_0_sin',       # +Re(A_perp* A_S) * D
-                RooRealSetting('J_11x2m1_0_sin',
-                'J_11x2m1_0 sin coefficient', 'par',
-                (ReAperp * ReAS + ImAperp * ImAS) / A0Sq * DCP, -5., 5.))
+            config.addSetting('J_11x2m1_0_cosh',   RooRealSetting('J_11x2m1_0_cosh',  'J_11x2m1_0 cosh coefficient',  'par',  (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * CCP, -5., 5.)) # +Im(A_perp* A_S) * C
+            config.addSetting('J_11x2m1_0_cos',    RooRealSetting('J_11x2m1_0_cos',   'J_11x2m1_0 cos coefficient',   'par',  (ReAperp * ImAS - ImAperp * ReAS) / A0Sq, -5., 5.)) # +Im(A_perp* A_S) * 1
+            config.addSetting('J_11x2m1_0_sinh',   RooRealSetting('J_11x2m1_0_sinh',  'J_11x2m1_0 sinh coefficient',  'par', -(ReAperp * ReAS + ImAperp * ImAS) / A0Sq *SCP, -5., 5.)) # -Re(A_perp* A_S) * S
+            config.addSetting('J_11x2m1_0_sin',    RooRealSetting('J_11x2m1_0_sin',   'J_11x2m1_0 sin coefficient',   'par',  (ReAperp * ReAS + ImAperp * ImAS) / A0Sq * DCP, -5., 5.)) # +Re(A_perp* A_S) * D
 
           elif KSWave == 'includeOdd' :
-            config.addSetting('J_00x0020_0_cosh',     # +|A_S|^2 * 1
-                RooRealSetting('J_00x0020_0_cosh',
-                'J_00x0020_0 cosh coefficient', 'par',
-                ASSq / A0Sq, -5., 5.))
-            config.addSetting('J_00x0020_0_cos',      # +|A_S|^2 * C
-                RooRealSetting('J_00x0020_0_cos',
-                'J_00x0020_0 cos coefficient', 'par',
-                ASSq / A0Sq * CCP, -5., 5.))
-            config.addSetting('J_00x0020_0_sinh',     # +|A_S|^2 * D
-                RooRealSetting('J_00x0020_0_sinh',
-                'J_00x0020_0 sinh coefficient', 'par',
-                ASSq / A0Sq * DCP, -5., 5.))
-            config.addSetting('J_00x0020_0_sin',      # +|A_S|^2 * S
-                RooRealSetting('J_00x0020_0_sin',
-                'J_00x0020_0 sin coefficient', 'par',
-                ASSq / A0Sq * SCP, -5., 5.))
+            config.addSetting('J_00x0020_0_cosh',  RooRealSetting('J_00x0020_0_cosh', 'J_00x0020_0 cosh coefficient', 'par',  ASSq / A0Sq, -5., 5.)) # +|A_S|^2 * 1
+            config.addSetting('J_00x0020_0_cos',   RooRealSetting('J_00x0020_0_cos',  'J_00x0020_0 cos coefficient',  'par',  ASSq / A0Sq * CCP, -5., 5.)) # +|A_S|^2 * C
+            config.addSetting('J_00x0020_0_sinh',  RooRealSetting('J_00x0020_0_sinh', 'J_00x0020_0 sinh coefficient', 'par',  ASSq / A0Sq * DCP, -5., 5.)) # +|A_S|^2 * D
+            config.addSetting('J_00x0020_0_sin',   RooRealSetting('J_00x0020_0_sin',  'J_00x0020_0 sin coefficient',  'par',  ASSq / A0Sq * SCP, -5., 5.)) # +|A_S|^2 * S
 
-            config.addSetting('J_10x0020_0_cosh',     # +Re(A_0* A_S) * C
-                RooRealSetting('J_10x0020_0_cosh',
-                'J_10x0020_0 cosh coefficient', 'par',
-                ReAS / ReA0 * CCP, -5., 5.))
-            config.addSetting('J_10x0020_0_cos',      # +Re(A_0* A_S) * 1
-                RooRealSetting('J_10x0020_0_cos',
-                'J_10x0020_0 cos coefficient', 'par',
-                ReAS / ReA0, -5., 5.))
-            config.addSetting('J_10x0020_0_sinh',     # -Im(A_0* A_S) * S
-                RooRealSetting('J_10x0020_0_sinh',
-                'J_10x0020_0 sinh coefficient', 'par',
-                -ImAS / ReA0 * SCP, -5., 5.))
-            config.addSetting('J_10x0020_0_sin',      # +Im(A_0* A_S) * D
-                RooRealSetting('J_10x0020_0_sin',
-                'J_10x0020_0 sin coefficient', 'par',
-                ImAS / ReA0 * DCP, -5., 5.))
+            config.addSetting('J_10x0020_0_cosh',  RooRealSetting('J_10x0020_0_cosh', 'J_10x0020_0 cosh coefficient', 'par',  ReAS / ReA0 * CCP, -5., 5.)) # +Re(A_0* A_S) * C
+            config.addSetting('J_10x0020_0_cos',   RooRealSetting('J_10x0020_0_cos',  'J_10x0020_0 cos coefficient',  'par',  ReAS / ReA0, -5., 5.)) # +Re(A_0* A_S) * 1
+            config.addSetting('J_10x0020_0_sinh',  RooRealSetting('J_10x0020_0_sinh', 'J_10x0020_0 sinh coefficient', 'par', -ImAS / ReA0 * SCP, -5., 5.)) # -Im(A_0* A_S) * S
+            config.addSetting('J_10x0020_0_sin',   RooRealSetting('J_10x0020_0_sin',  'J_10x0020_0 sin coefficient',  'par',  ImAS / ReA0 * DCP, -5., 5.)) # +Im(A_0* A_S) * D
 
-            config.addSetting('J_11x21_0_cosh',       # +Re(A_par* A_S) * C
-                RooRealSetting('J_11x21_0_cosh',
-                'J_11x21_0 cosh coefficient', 'par',
-                (ReApar * ReAS + ImApar * ImAS) / A0Sq * CCP, -5., 5.))
-            config.addSetting('J_11x21_0_cos',        # +Re(A_par* A_S) * 1
-                RooRealSetting('J_11x21_0_cos',
-                'J_11x21_0 cos coefficient', 'par',
-                (ReApar * ReAS + ImApar * ImAS) / A0Sq, -5., 5.))
-            config.addSetting('J_11x21_0_sinh',       # -Im(A_par* A_S) * S
-                RooRealSetting('J_11x21_0_sinh',
-                'J_11x21_0 sinh coefficient', 'par',
-                -(ReApar * ImAS - ImApar * ReAS) / A0Sq * SCP, -5., 5.))
-            config.addSetting('J_11x21_0_sin',        # +Im(A_par* A_S) * D
-                RooRealSetting('J_11x21_0_sin',
-                'J_11x21_0 sin coefficient', 'par',
-                (ReApar * ImAS - ImApar * ReAS) / A0Sq * DCP, -5., 5.))
+            config.addSetting('J_11x21_0_cosh',    RooRealSetting('J_11x21_0_cosh',   'J_11x21_0 cosh coefficient',   'par',  (ReApar * ReAS + ImApar * ImAS) / A0Sq * CCP, -5., 5.)) # +Re(A_par* A_S) * C
+            config.addSetting('J_11x21_0_cos',     RooRealSetting('J_11x21_0_cos',    'J_11x21_0 cos coefficient',    'par',  (ReApar * ReAS + ImApar * ImAS) / A0Sq, -5., 5.)) # +Re(A_par* A_S) * 1
+            config.addSetting('J_11x21_0_sinh',    RooRealSetting('J_11x21_0_sinh',   'J_11x21_0 sinh coefficient',   'par', -(ReApar * ImAS - ImApar * ReAS) / A0Sq * SCP, -5., 5.)) # -Im(A_par* A_S) * S
+            config.addSetting('J_11x21_0_sin',     RooRealSetting('J_11x21_0_sin',    'J_11x21_0 sin coefficient',    'par',  (ReApar * ImAS - ImApar * ReAS) / A0Sq * DCP, -5., 5.)) # +Im(A_par* A_S) * D
 
-            config.addSetting('J_11x2m1_0_cosh',      # +Im(A_perp* A_S) * 1
-                RooRealSetting('J_11x2m1_0_cosh',
-                'J_11x2m1_0 cosh coefficient', 'par',
-                (ReAperp * ImAS - ImAperp * ReAS) / A0Sq, -5., 5.))
-            config.addSetting('J_11x2m1_0_cos',       # +Im(A_perp* A_S) * C
-                RooRealSetting('J_11x2m1_0_cos',
-                'J_11x2m1_0 cos coefficient', 'par',
-                (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * CCP, -5., 5.))
-            config.addSetting('J_11x2m1_0_sinh',      # +Im(A_perp* A_S) * D
-                RooRealSetting('J_11x2m1_0_sinh',
-                'J_11x2m1_0 sinh coefficient', 'par',
-                (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * DCP, -5., 5.))
-            config.addSetting('J_11x2m1_0_sin',       # +Im(A_perp* A_S) * S
-                RooRealSetting('J_11x2m1_0_sin',
-                'J_11x2m1_0 sin coefficient', 'par',
-                (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * SCP, -5., 5.))
+            config.addSetting('J_11x2m1_0_cosh',   RooRealSetting('J_11x2m1_0_cosh',  'J_11x2m1_0 cosh coefficient',  'par', (ReAperp * ImAS - ImAperp * ReAS) / A0Sq, -5., 5.)) # +Im(A_perp* A_S) * 1
+            config.addSetting('J_11x2m1_0_cos',    RooRealSetting('J_11x2m1_0_cos',   'J_11x2m1_0 cos coefficient',   'par', (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * CCP, -5., 5.)) # +Im(A_perp* A_S) * C
+            config.addSetting('J_11x2m1_0_sinh',   RooRealSetting('J_11x2m1_0_sinh',  'J_11x2m1_0 sinh coefficient',  'par', (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * DCP, -5., 5.)) # +Im(A_perp* A_S) * D
+            config.addSetting('J_11x2m1_0_sin',    RooRealSetting('J_11x2m1_0_sin',   'J_11x2m1_0 sin coefficient',   'par', (ReAperp * ImAS - ImAperp * ReAS) / A0Sq * SCP, -5., 5.)) # +Im(A_perp* A_S) * S
 
 
       ### efficiencies ###
 
       if onlySignal :
-        config.addSetting('effType', P2VVSetting('effType',
-          'type of efficiency', 'noEff'))
-        config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs',
-          'angular efficiency basis functions', ''))
+        config.addSetting('effType', P2VVSetting('effType', 'type of efficiency', 'noEff'))
+        config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs', 'angular efficiency basis functions', ''))
       else :
-        config.addSetting('effType', P2VVSetting('effType',
-          'type of efficiency', 'angular'))
-        config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs',
-          'angular efficiency basis functions', (4, 4)))
+        config.addSetting('effType', P2VVSetting('effType', 'type of efficiency', 'angular'))
+        config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs', 'angular efficiency basis functions', (4, 4)))
 
 
   return config
@@ -1339,14 +783,10 @@ class P2VVSetting :
     self.setDescription(description)
     self.setValue(value)
 
-  def name(self) :
-    return self._name
-
-  def description(self) :
-    return self._description
-
-  def value(self) :
-    return self._value
+  def name(self) : return self._name
+  def description(self) : return self._description
+  def value(self) : return self._value
+  def type(self) : return self.__class__.__name__
 
   def setName(self, name) :
     if type(name) is str and len(name) > 0:
@@ -1363,11 +803,7 @@ class P2VVSetting :
         % self._name
       self._description = ''
 
-  def setValue(self, value) :
-    self._value = value
-
-  def type(self) :
-    return self.__class__.__name__
+  def setValue(self, value) : self._value = value
 
 
 ###############################################################################

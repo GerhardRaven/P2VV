@@ -281,29 +281,22 @@ cpsiCanv.Divide(2, 2)
 if mode == 'Bd2JpsiKstar' :
   P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(1), data, pdf,
       xTitle = angleName,
-      frameOpts = [RooFit.Title(angleName + ' - B / Unoscillated'),
-                   RooFit.Bins(50)],
+      frameOpts = [RooFit.Title(angleName + ' - B / Unoscillated'), RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == 1' % (itName, ftName))],
-      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
-                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus), RooFit.Slice(ws.cat(ftName), ftPlus)])
   P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(2), data, pdf,
       xTitle = angleName,
-      frameOpts = [RooFit.Title(angleName + ' - B / Oscillated'),
-                   RooFit.Bins(30)],
+      frameOpts = [RooFit.Title(angleName + ' - B / Oscillated'), RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == 1 && %s == -1' % (itName, ftName))],
-      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus),
-                   RooFit.Slice(ws.cat(ftName), ftMin)])
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itPlus), RooFit.Slice(ws.cat(ftName), ftMin)])
   P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(3), data, pdf,
       xTitle = angleName,
-      frameOpts = [RooFit.Title(angleName + ' - #bar{B} / Oscillated'),
-                   RooFit.Bins(30)],
+      frameOpts = [RooFit.Title(angleName + ' - #bar{B} / Oscillated'), RooFit.Bins(30)],
       dataOpts  = [RooFit.Cut('%s == -1 && %s == 1' % (itName, ftName))],
-      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
-                   RooFit.Slice(ws.cat(ftName), ftPlus)])
+      pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin), RooFit.Slice(ws.cat(ftName), ftPlus)])
   P2VVPlots.plot(config, 'cpsiAng', cpsiCanv.cd(4), data, pdf,
       xTitle = angleName,
-      frameOpts = [RooFit.Title(angleName + ' - #bar{B} / Unoscillated'),
-                   RooFit.Bins(50)],
+      frameOpts = [RooFit.Title(angleName + ' - #bar{B} / Unoscillated'), RooFit.Bins(50)],
       dataOpts  = [RooFit.Cut('%s == -1 && %s == -1' % (itName, ftName))],
       pdfOpts   = [RooFit.Slice(ws.cat(itName), itMin),
                    RooFit.Slice(ws.cat(ftName), ftMin)])
