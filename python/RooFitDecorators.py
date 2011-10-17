@@ -8,6 +8,7 @@ gROOT.SetStyle("Plain")
 #from ROOT import * 
 
 ###### decorate TPad with pads...
+from ROOT import TPad
 def _pads(p,n=None,m=None) :
     if n : 
         if m : p.Divide(n,m)
@@ -135,7 +136,7 @@ RooFitResult.result = _RooFitResultGet
 global  _stash
 _stash = [] #keep the relevant objects alive by keeping a reference to them
 def plot( c, obs, data, pdf, components, frameOpts = (), dataOpts = (), pdfOpts = (), logy = False, normalize = True, symmetrize = True, usebar =True ) :
-    from ROOT import TLine, TPad
+    from ROOT import TLine, TPad, RooFit
     #
     _obs = obs.frame( *frameOpts )  if frameOpts else obs.frame()
     _stash.append(_obs)
@@ -180,6 +181,7 @@ def plot( c, obs, data, pdf, components, frameOpts = (), dataOpts = (), pdfOpts 
         if rh.getYAxisMax() <  5 : rp.SetMaximum(5)
     xa = rp.GetXaxis()
     l = TLine(xa.GetXmin() ,0,xa.GetXmax() ,0)
+    from ROOT import kRed
     l.SetLineColor(kRed)
     rp.addObject(l)
     #TODO: improve (remove?) axis labels from rp, move up against the initial plot
