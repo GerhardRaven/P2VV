@@ -14,3 +14,4 @@ p2vv_dict.*
 *.tex
 *.txt
 #*
+build/*

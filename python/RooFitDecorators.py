@@ -1,11 +1,3 @@
-###############################################################################
-## RooFitDecorators:                                                         ##
-##                                                                           ##
-## authors:                                                                  ##
-##   GR, Gerhard Raven, Nikhef & VU, Gerhard.Raven@nikhef.nl                 ##
-##                                                                           ##
-###############################################################################
-
 from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult
 from ROOT import gStyle,gROOT
 gStyle.SetPalette(1)
@@ -78,7 +70,7 @@ for t in [ RooArgSet,RooArgList ] :
 
 from ROOT import RooWorkspace
 RooWorkspace.__getitem__ = lambda s,i : s.obj(i)
-RooWorkspace.__contains__ = lambda s,i : s.obj(i) is not None
+RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
 def _RooWorkspacePut( self ,x ) :
     _import = getattr(RooWorkspace,'import')
@@ -130,6 +122,7 @@ RooFitResult.result = _RooFitResultGet
 
 
 
+
 # plot -- example usage:
 # _c1 = plot( c.cd(1),mpsi,data,pdf
 #           , { 'psi'    : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) ) 
@@ -176,7 +169,7 @@ def plot( c, obs, data, pdf, components, frameOpts = (), dataOpts = (), pdfOpts 
     #rp.SetBarWidth(1.0)
     #rh.SetDrawOption("B HIST")
 
-    rp.addPlotable( rh) # , 'B HIST' )
+    rp.addPlotable( rh), 'p'  # , 'B HIST' )
     #rp.setDrawOptions(rh.GetName(),'B')
     if symmetrize :
         m  = max( abs( rh.getYAxisMin() ),abs( rh.getYAxisMax() ) )
@@ -287,10 +280,3 @@ def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2mi
                                   , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
                                   , RooFit.Scaling(False)
                                   )
-
-
-
-
-
-
-

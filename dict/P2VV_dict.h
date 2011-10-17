@@ -2,7 +2,7 @@
 #define P2VVInc_H 1
 
 #include "Moments.h"
-#include "P2VV.h"
+#include "ProgressDisplay.h"
 #include "RooBTagDecay.h"
 #include "RooGammaPdf.h"
 #include "RooMultiCatGenerator.h"

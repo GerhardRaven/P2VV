@@ -1774,4 +1774,3 @@ class RooFormSetting(RooSetting) :
     factoryString = factoryString[:-2] + '})'
 
     self._declare(workspace, factoryString)
-

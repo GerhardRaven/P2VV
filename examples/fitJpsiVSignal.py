@@ -13,8 +13,8 @@
 ###############################################################################
 
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
-mode = 'Bd2JpsiKstar'
-#mode = 'Bs2Jpsiphi'
+#mode = 'Bd2JpsiKstar'
+mode = 'Bs2Jpsiphi'
 
 # plots file
 plotsFile = mode[3:] + 'Plots.ps'

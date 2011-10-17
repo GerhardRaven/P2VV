@@ -1,6 +1,6 @@
 DEPDIR = .deps
 SRCDIR = src
-INCDIR = P2VV
+INCDIR = include
 BUILDDIR = build
 LIBDIR = lib
 DICTDIR = dict
@@ -9,13 +9,12 @@ df = $(DEPDIR)/$(*F)
 CPP = g++
 LD  = g++
 ROOTCONFIG = root-config
-CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb -I$(INCDIR) -I$(DICTDIR)
-LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
-	-lRooFitCore -lMathCore -lMathMore
+CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb -I$(INCDIR) -I.
+LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
 
-OBJECTS = $(SOURCES:$(SRCDIR)/%.cxx=$(BUILDDIR)/%.o) $(BUILDDIR)/p2vv_dict.o
+OBJECTS = $(SOURCES:$(SRCDIR)/%.cxx=$(BUILDDIR)/%.o) $(BUILDDIR)/P2VV_dict.o
 
 vpath %.cxx $(SRCDIR):$(DICTDIR):$(BUILDDIR)
 vpath %.h   $(INCDIR):$(DICTDIR):$(BUILDDIR)
@@ -25,7 +24,7 @@ vpath %.o   $(BUILDDIR)
 
 all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libp2vv.so 
 
-$(BUILDDIR)/p2vv_dict.o: $(BUILDDIR)/p2vv_dict.cxx $(BUILDDIR)/p2vv_dict.h
+$(BUILDDIR)/P2VV_dict.o: $(BUILDDIR)/P2VV_dict.cxx $(BUILDDIR)/P2VV_dict.h
 
 $(BUILDDIR)/%.o : %.cxx %.h
 	$(CPP) $(CPPFLAGS) -fPIC -DPIC -MMD -c $< -o $@
@@ -34,14 +33,14 @@ $(BUILDDIR)/%.o : %.cxx %.h
 	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
 	rm -f $(BUILDDIR)/$*.d
 
-$(BUILDDIR)/p2vv_dict.cxx: $(wildcard $(INCDIR)/*.h) $(DICTDIR)/P2VVInc.h $(DICTDIR)/P2VVLinkdef.h
-	rootcint -f $@ -c -I$(INCDIR) -I$(DICTDIR) P2VVInc.h $(DICTDIR)/P2VVLinkDef.h
+$(BUILDDIR)/P2VV_dict.cxx: $(wildcard $(INCDIR)/*.h) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
+	rootcint -f $@ -c -I$(INCDIR) -I$(DICTDIR) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
 
-$(LIBDIR)/libp2vv.so: $(OBJECTS) $(BUILDDIR)/p2vv_dict.o
+$(LIBDIR)/libp2vv.so: $(OBJECTS) $(BUILDDIR)/P2VV_dict.o
 	$(LD) $(LDFLAGS) -shared -o $@ $^
 
 clean:
-	-rm -rf libp2vv.so $(OBJECTS) p2vv_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
+	-rm -rf $(LIBDIR)/libp2vv.so $(OBJECTS) P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
 
 $(DEPDIR) $(LIBDIR) $(BUILDDIR):
 	mkdir $@
