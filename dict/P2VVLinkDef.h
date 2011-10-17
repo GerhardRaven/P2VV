@@ -12,5 +12,6 @@
 #pragma link C++ class RooMultiMultinomial;
 #pragma link C++ class RooP2VVAngleBasis;
 #pragma link C++ class RooThresholdPdf;
+#pragma link C++ class RooEffHistProd;
 
 #endif

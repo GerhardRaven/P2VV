@@ -6,7 +6,6 @@
 ##                                                                           ##
 ###############################################################################
 
-<<<<<<< HEAD
 from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult
 from ROOT import gStyle,gROOT
 gStyle.SetPalette(1)

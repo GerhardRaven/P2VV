@@ -9,5 +9,6 @@
 #include "RooMultiMultinomial.h"
 #include "RooP2VVAngleBasis.h"
 #include "RooThresholdPdf.h"
+#include "RooEffHistProd.h"
 
 #endif // P2VV_H
