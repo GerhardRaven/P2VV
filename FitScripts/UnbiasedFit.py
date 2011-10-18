@@ -8,7 +8,7 @@
 ########################################
 
 from ROOT import *
-gSystem.Load("libp2vv")
+gSystem.Load("libP2VV")
 from math import sqrt,pi
 from array import array
 
@@ -25,6 +25,10 @@ gStyle.SetOptTitle(0)
 lhcbname = printLHCb(gStyle,'L','Prelim','#sqrt{s}=7 TeV Data, L = 370 pb^{-1}')
 style = lhcbStyle()
 
+resultfile = TFile('roofitresult.root')
+result = resultfile.Get('fitresult_pdf_ext_inc_tag_syst_unbiaseddata')
+name = 'UnbiasedFit'
+assert False
 angcorr = False
 blinded = False
 phisparam = True
@@ -255,8 +259,8 @@ sw.Start()
 result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['p0'],ws['p1'],ws['dmsconstraint'],ws['tres_SFconstraint'])))
 sw.Stop()
 
-writeFitParamsLatex(result,name,False)
-dict = writeCorrMatrixLatex(result,name)
+result.writecorr(name)
+result.writepars(name,True)
 
 assert False
 ######PLOT######

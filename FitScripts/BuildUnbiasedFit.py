@@ -10,7 +10,7 @@
 # Daan van Eijk, 03-11-2011
 
 from ROOT import *
-gSystem.Load("libp2vv")
+gSystem.Load("libP2VV")
 from math import sqrt,pi
 
 from RooFitDecorators import *
