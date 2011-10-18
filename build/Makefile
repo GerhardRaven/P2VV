@@ -15,7 +15,7 @@ LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit \
 
 SOURCES =				\
 	Moments.cxx			\
-	P2VV.cxx			\
+	ProgressDisplay.cxx		\
 	RooBTagDecay.cxx		\
 	RooGammaPdf.cxx			\
 	RooMultiCatGenerator.cxx	\
