@@ -65,17 +65,21 @@ for t in [ RooArgSet,RooArgList ] :
     t.__sub__  = _RooTypedUnary2Binary( t, '__isub__' )
     t.__add__  = _RooTypedUnary2Binary( t, '__iadd__' )
 
-
-
 # RooWorkspace functions
 
 from ROOT import RooWorkspace, RooFit
 RooWorkspace.__getitem__ = lambda s,i : s.obj(i)
 RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
-def _RooWorkspacePut( self ,x ) :
+def _RooWorkspacePutSilent( self ,x ) :
     _import = getattr(RooWorkspace,'import')
     if _import(self,x,RooFit.Silence()) : return None
+    return self[x.GetName()]
+RooWorkspace.puts = _RooWorkspacePutSilent
+
+def _RooWorkspacePut( self ,x ) :
+    _import = getattr(RooWorkspace,'import')
+    if _import(self,x) : return None
     return self[x.GetName()]
 RooWorkspace.put = _RooWorkspacePut
 
