@@ -1,4 +1,9 @@
 from RooFitWrappers import *
+from ROOT import RooDecay as Decay,             \
+                 RooExponential as Exponential, \
+                 RooGaussian as Gaussian,       \
+                 RooTruthModel as TruthModel,   \
+                 RooGaussModel as GaussModel
 
 from ROOT import TFile
 
@@ -16,18 +21,18 @@ t = RealVar('t',Observable=True,MinMax=(-1,14),Unit='ps',Value=0)
 res_mean = RealVar( 'res_mean',   Observable = False, Unit = 'ps',   Value = 0,  MinMax = ( -10, 10 ) )
 res_sigma = RealVar( 'res_sigma', Observable = False, Unit = '1/ps', Value = 50, MinMax = (  20, 60 ) )
 
-sig_res = ResolutionModel( 'sig_res', Type = 'RooGaussModel', Observables = [ t ],
+sig_res = ResolutionModel( 'sig_res', Type = GaussModel, Observables = [ t ],
                            Parameters = [ res_mean, res_sigma ] )
 
 sig_tau = RealVar( 'sig_tau', Observable = False, Unit = 'ps', Value = 1.5, MinMax = ( 1., 2. ) )
 
-sig_t = Pdf( 'time', Type = 'Decay', Observables = ( t, ), Parameters = ( sig_tau, ),
+sig_t = Pdf( 'time', Type = Decay, Observables = ( t, ), Parameters = ( sig_tau, ),
              Options = ( 'SingleSided', ), ResolutionModel = sig_res )
 
 mass_mean = RealVar( 'mass_mean', Observable = False, Unit = 'MeV', Value = 5300, MinMax = ( 5200, 5800 ) )
 mass_sigma = RealVar( 'mass_sigma', Observable = False, Unit = 'MeV', Value = 15, MinMax = ( 10, 20 ) )
 
-sig_m = Pdf( 'mass', Type = 'Gaussian', Observables = ( m, ), Parameters = ( mass_mean, mass_sigma ) )
+sig_m = Pdf( 'mass', Type = Gaussian, Observables = ( m, ), Parameters = ( mass_mean, mass_sigma ) )
 
 # create signal and background
 signal = Component('signal')
@@ -41,14 +46,14 @@ background = Component('background')
 background.setYield(3000,1000,6000)
 
 background_c = RealVar( 'background_c', Observable = False, Unit = '1/MeV', Value = -0.0004)
-background[ m ] = Pdf( 'background', Observables = ( m, ), Type = 'Exponential',
+background[ m ] = Pdf( 'background', Observables = ( m, ), Type = Exponential,
                        Parameters = ( background_c, ) )
 
 background_tau = RealVar( 'background_tau', Observable = False, Unit = 'ps', Value = 0.4, MinMax = ( 0.1, 0.9 ) )
-background_res = ResolutionModel( 'background_res', Type = 'RooTruthModel', Observables = [ t ] )
+background_res = ResolutionModel( 'background_res', Type = TruthModel, Observables = [ t ] )
 
 #background[t] = 'Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided)'
-background[ t ] = Pdf( 'background', Type = 'Decay', Observables = ( t, ),
+background[ t ] = Pdf( 'background', Type = Decay, Observables = ( t, ),
                        Parameters = ( background_tau, ), Options = ( 'SingleSided', ),
                        ResolutionModel = background_res )
 # Exponential(m,-0.004)
@@ -74,9 +79,8 @@ ms = RooCmdArg(RooFit.MarkerSize(0.4))
 xe = RooCmdArg(RooFit.XErrorSize(0))
 dashed = RooCmdArg(RooFit.LineStyle(kDashed))
 c = TCanvas()
-c.Divide(1,2)
-for (cc,obs) in enumerate((m,t)) :
-    plot( c.cd(1+cc),obs,data,pdf,{ 'signal*': (sigcolor,dashed), 'background*': (bkgcolor,dashed)}, logy = (cc==1), dataOpts = (xe,ms) )
+for (cc,obs,logy) in zip(c.pads(1,2),(m,t),(False,True)) :
+    plot( cc.cd(),obs,data,pdf,{ 'signal*': (sigcolor,dashed), 'background*': (bkgcolor,dashed)}, logy = logy, dataOpts = (xe,ms) )
 
 # create a continuous tagging variable...
 

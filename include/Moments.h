@@ -11,6 +11,7 @@
 #ifndef MOMENTS_H
 #define MOMENTS_H
 #include "RooAbsPdf.h"
+#include "RooAbsData.h"
 #include <string>
 
 class IMoment {
@@ -21,6 +22,8 @@ public:
 
   virtual void inc(double weight = 1.);
   virtual RooAbsReal& basis() {return _basis;}
+  virtual RooArgSet* getObservables(const RooArgSet* set) { return basis().getObservables(set); }
+  RooArgSet* getObservables(const RooAbsData& data) { return getObservables(data.get()); }
   virtual double coefficient(bool normalize = true) const;
   virtual double variance(bool normalize = true) const;
   virtual double significance() const;
@@ -54,6 +57,7 @@ public:
     _pdf(pdf), _nset(nset) {}
 
     double evaluate() {return _basis.getVal() / _pdf.getVal(&_nset);}
+   virtual RooArgSet* getObservables(const RooArgSet* set) { return _pdf.getObservables(set); }
 
 private:
   const RooAbsPdf& _pdf;
@@ -62,6 +66,6 @@ private:
 
 typedef std::vector<IMoment*> IMomentsVector;
 
-int _computeMoments(RooAbsData& data, IMomentsVector& moments);
+int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst=false);
 
 #endif

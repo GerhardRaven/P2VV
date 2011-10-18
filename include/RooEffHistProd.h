@@ -39,10 +39,15 @@ public:
   }
   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
   Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
+
+  virtual void selectNormalization(const RooArgSet*,Bool_t);
+  virtual ExtendMode extendMode() const;
+
+  virtual Double_t expectedEvents(const RooArgSet* nset) const;
   
 private:
   
-  const char* makeFPName(const char *prefix,const RooArgSet& terms, const char *postfix) const;
+  const char* makeFPName(const char *prefix,const RooArgSet& iset, const RooArgSet *nset, const char *postfix) const;
 
   const RooAbsPdf* pdf() const { 
     // Return pointer to pdf in product
@@ -63,7 +68,7 @@ private:
   RooSetProxy  _observables ; // Observables in the efficiency histogram
 
   struct CacheElem : public RooAbsCacheElement {
-      CacheElem(const RooEffHistProd* parent,RooArgSet& analVars,const char *rangeName);
+      CacheElem(const RooEffHistProd* parent,const RooArgSet& iset, const RooArgSet* nset,const char *rangeName);
       CacheElem() : I(0),xmin(0),xmax(0) {}
       virtual ~CacheElem();
       // Payload
@@ -71,10 +76,11 @@ private:
       RooRealVar  *xmin ;
       RooRealVar  *xmax ;
       virtual RooArgList containedArgs(Action) ;
-      Double_t getVal(double a, double b,const RooArgSet* nset) { xmin->setVal(a); xmax->setVal(b); return getVal(nset); }
-      Double_t getVal(const RooArgSet *nset) { return I->getVal(nset) ; }
+      Double_t getVal(double a, double b) { xmin->setVal(a); xmax->setVal(b); return getVal(); }
+      Double_t getVal() { /*I->Print("t"); */ return I->getVal() ; }
   };
   friend class CacheElem;
+  CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, const char* rangeName=0) const ;
 
   mutable RooObjCacheManager _cacheMgr;
   typedef std::vector<Double_t> BinBoundaries ;

@@ -22,7 +22,7 @@ public:
   RooP2VVAngleBasis();
   RooP2VVAngleBasis(const char *name, const char *title,
       RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi,
-      Int_t i, Int_t j, Int_t l, Int_t m, Double_t c = 1.);
+      Int_t i, Int_t j, Int_t l, Int_t m, Double_t c = 1. );
   RooP2VVAngleBasis(const char *name, const char *title,
       RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi,
       Int_t i1, Int_t j1, Int_t l1, Int_t m1,
@@ -48,10 +48,10 @@ public:
         basis._m, c * basis._c) : 0;
   }
 
-  Int_t i() const {return _i;}
-  Int_t j() const {return _j;}
-  Int_t l() const {return _l;}
-  Int_t m() const {return _m;}
+  Int_t i() const { return _i; }
+  Int_t j() const { return _j; }
+  Int_t l() const { return _l; }
+  Int_t m() const { return _m; }
 
 private: 
   Double_t _c;

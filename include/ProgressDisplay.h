@@ -1,6 +1,5 @@
 /******************************************************************************
-** P2VV:                                                                     **
-** common P2VV tools                                                         **
+** ProgressDisplay:                                                          **
 **                                                                           **
 ** class "ProgressDisplay" is a modified copy of the class                   **
 ** "progress_display" from the Boost C++ Libraries (boost/progress.hpp)      **
@@ -10,8 +9,8 @@
 **                                                                           **
 ******************************************************************************/
 
-#ifndef P2VV_H
-#define P2VV_H
+#ifndef PROGRESSDISPLAY_H
+#define PROGRESSDISPLAY_H
 #include <iostream>
 #include <string>
 

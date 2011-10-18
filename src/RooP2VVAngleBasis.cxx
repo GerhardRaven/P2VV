@@ -153,4 +153,4 @@ RooP2VVAngleBasis::createProduct(Int_t i, Int_t j, Int_t l, Int_t m, Double_t c)
                                               , _i, _j, _l, _m
                                               ,  i,  j,  l,  m
                                               , _c * c ) : 0 ;
-  }
+}

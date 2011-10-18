@@ -34,32 +34,34 @@ ClassImp(RooEffHistProd)
   ;
 
 //_____________________________________________________________________________
-RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,RooArgSet& analVars,const char *rangeName)
+RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,const RooArgSet& iset,const RooArgSet* nset, const char *rangeName)
     : I(0),xmin(0),xmax(0)
 {
   // create a function object for the corresponding integral of the underlying PDF.
   // i.e. if we have  eps(x)f(x,y)  and we get (x,y) as allVars, 
   // construct I(xmin,xmax) = int_xmin^xmax dx int dy f(x,y)
   // so that later we can do sum_i eps( (x_i+x_i+1)/2 ) * I(x_i,x_i+1)
-  RooArgSet *x_ = parent->eff()->getObservables(&analVars); // the subset of analVars on which _eff depends
+  RooArgSet *x_ = parent->eff()->getObservables(&iset); // the subset of iset on which _eff depends
   const char *myRange = rangeName;
   assert(x_->getSize()<2); // for now, we only do 1D efficiency histograms...
   if (x_->getSize()==1) {
       assert(rangeName==0); // deal with ranges later -- this is a bit non-trivial.... need to clone the original...
       assert( *x_->first() == parent->x() );
       // TODO: add original rangeName in here!
-      const char *name = parent->makeFPName(parent->GetName(),analVars,"_I_Range_min");
+      const char *name = parent->makeFPName(parent->GetName(),iset,nset,"_I_Range_min");
       xmin = new RooRealVar(name,name,parent->x().getMin(rangeName),parent->x().getMin(rangeName),parent->x().getMax(rangeName));
-      name = parent->makeFPName(parent->GetName(),analVars,"_I_Range_max");
+      name = parent->makeFPName(parent->GetName(),iset,nset,"_I_Range_max");
       xmax = new RooRealVar(name,name,parent->x().getMax(rangeName),parent->x().getMin(rangeName),parent->x().getMax(rangeName));
-      myRange = parent->makeFPName(parent->GetName(),analVars,"_I_Range");
+      myRange = parent->makeFPName(parent->GetName(),iset,nset,"_I_Range");
       if (parent->x().hasRange(myRange)) {
         cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem  range " << myRange << " already exists!!!" << endl;
       }
       parent->x().setRange(myRange,*xmin,*xmax);
       cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem created range " << myRange << " from " << xmin->GetName() << " to " << xmax->GetName() << endl;
   }
-  I = parent->pdf()->createIntegral(analVars,analVars,myRange);
+  I = parent->pdf()->createIntegral(iset,nset,parent->getIntegratorConfig(),myRange);
+  cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem created integral " << I->GetName() << " over " << iset << " in range " << (myRange?myRange:"<none>") << endl;
+  //I->setOperMode(ADirty);
 }
 //_____________________________________________________________________________
 RooEffHistProd::CacheElem::~CacheElem() 
@@ -150,7 +152,6 @@ Double_t RooEffHistProd::evaluate() const
 RooAbsGenContext* RooEffHistProd::genContext(const RooArgSet &vars, const RooDataSet *prototype,
                                             const RooArgSet* auxProto, Bool_t verbose) const
 {
-
   return RooAbsPdf::genContext(vars,prototype,auxProto,verbose);
   // Return specialized generator context for RooEffHistProds that implements generation
   // in a more efficient way than can be done for generic correlated products
@@ -160,70 +161,124 @@ RooAbsGenContext* RooEffHistProd::genContext(const RooArgSet &vars, const RooDat
 }
 
 //_____________________________________________________________________________
-const char* RooEffHistProd::makeFPName(const char *prefix,const RooArgSet& terms, const char *postfix) const
+const char* RooEffHistProd::makeFPName(const char *prefix,const RooArgSet& iset, const RooArgSet* nset, const char *postfix) const
 {
   static TString pname;
   pname = prefix;
   if (prefix) pname.Append("_");
-  std::auto_ptr<TIterator> i( terms.createIterator() );
+  std::auto_ptr<TIterator> i( iset.createIterator() );
   RooAbsArg *arg;
   Bool_t first(kTRUE);
+  pname.Append("I_");
   while((arg=(RooAbsArg*)i->Next())) {
     if (first) { first=kFALSE;}
     else pname.Append("_X_");
     pname.Append(arg->GetName());
   }
+  if (nset) {
+       pname.Append("_N_");
+       std::auto_ptr<TIterator> i( nset->createIterator() );
+       first = kTRUE;
+       while((arg=(RooAbsArg*)i->Next())) {
+         if (first) { first=kFALSE;}
+         else pname.Append("_X_");
+         pname.Append(arg->GetName());
+       }
+  }
   pname.Append(postfix);
-  return pname.Data();
+  return RooNameReg::str(RooNameReg::ptr(pname.Data()));
+}
+
+void RooEffHistProd::selectNormalization(const RooArgSet* nset,Bool_t force) {
+  cout << "RooEffHistProd("<<GetName()<<")::selectNormalization: nset = " << (nset?*nset:RooArgSet()) << (force?" force!":"" ) << endl ;
+  RooAbsPdf::selectNormalization(nset,force);
 }
 
 //_____________________________________________________________________________
-Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const 
+RooAbsPdf::ExtendMode RooEffHistProd::extendMode() const
 {
-  //return 0 ;
+  // If this product contains exactly one extendable p.d.f return the extension abilities of
+  // that p.d.f, otherwise return CanNotBeExtended
+  return pdf()->extendMode();
+}
 
+
+
+//_____________________________________________________________________________
+Double_t RooEffHistProd::expectedEvents(const RooArgSet* nset) const
+{
+  // Return the expected number of events associated with the extentable input p.d.f
+  // in the product. If there is no extendable term, return zero and issue and error
+  return pdf()->expectedEvents(nset);
+}
+
+
+
+
+//_____________________________________________________________________________
+RooEffHistProd::CacheElem *RooEffHistProd::getCache(const RooArgSet* nset, const RooArgSet* iset, const char* rangeName) const 
+{
+  Int_t sterileIndex(-1);
+  CacheElem* cache = (CacheElem*) _cacheMgr.getObj(nset,iset,&sterileIndex,RooNameReg::ptr(rangeName));
+  if (cache) { 
+        //cout << "RooEffHistProd("<<GetName()<<")::getCache: using slot " << _cacheMgr.lastIndex() 
+             //<< " for integral with iset= " << *iset
+             //<< " nset= " << (nset?*nset:RooArgSet()) 
+             //<< " in range " << (rangeName?rangeName:"<none>") << endl;
+        return cache;
+  }
+  _cacheMgr.setObj(nset,iset,new CacheElem(this,*iset,nset,rangeName),RooNameReg::ptr(rangeName));
+  return getCache(nset,iset,rangeName);
+}
+
+//_____________________________________________________________________________
+Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset, const char* rangeName) const 
+{
   assert(rangeName==0);
   //cout << "RooEffHistProd("<<GetName()<<")::getAnalyticalIntegral("; allVars.printValue(cout); cout << ","<< ( rangeName? rangeName : "<none>" ) <<")"<<endl;
   if (_forceNumInt) return 0;
   if (allVars.getSize()==0) return 0;
-  analVars.add(allVars) ;
+  iset.add(allVars) ;
 
-  Int_t sterileIndex(-1);
-  CacheElem* cache = (CacheElem*) _cacheMgr.getObj(&analVars,&sterileIndex,RooNameReg::ptr(rangeName));
-  if (cache!=0) {
-    //cout << "RooEffHistProd("<<GetName()<<")::getAnalyticalIntegral: already have cache, returning 1+"<< _cacheMgr.lastIndex() << endl;
-    return 1+_cacheMgr.lastIndex();
-  }
-
-  Int_t code = _cacheMgr.setObj(&analVars,new CacheElem(this,analVars,rangeName),RooNameReg::ptr(rangeName));
-  //cout << "RooEffHistProd("<<GetName()<<")::getAnalyticalIntegral: returning 1+" << code << " for integral over " ;
-  //analVars.printValue(cout); cout << " @ " << &analVars << " in range " << (rangeName?rangeName:"<none>") << endl;
+  RooArgSet *nset = &iset;
+  CacheElem* cache = getCache(nset,&iset,rangeName);
+  assert(cache);
+  Int_t code = _cacheMgr.lastIndex();
+  cout << "RooEffHistProd("<<GetName()<<")::getAnalyticalIntegral: returning 1+" << code << " for integral with iset= "  << iset
+       << " nset= " << (nset?*nset:RooArgSet()) << " in range " << (rangeName?rangeName:"<none>") << endl;
   return 1+code ;
 }
 
 //_____________________________________________________________________________
 Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) const 
 {
-  assert(rangeName==0);
   assert(code>0);
-  CacheElem* cache = (CacheElem*) _cacheMgr.getObjByIndex(code-1);
-  RooArgSet *vars = getParameters(RooArgSet());
-  RooArgSet *nset = _cacheMgr.nameSet1ByIndex(code-1)->select(*vars);
-  assert(cache!=0); // if this triggers, add code to repopulate the sterilized cache entry...
 
-  // TODO: verify rangeName is consistent with the one in getAnalyticalIntegral...
+  std::auto_ptr<RooArgSet> vars( getParameters(RooArgSet()) );
+  std::auto_ptr<RooArgSet> iset(  _cacheMgr.nameSet2ByIndex(code-1)->select(*vars) );
+  std::auto_ptr<RooArgSet> nset(  _cacheMgr.nameSet1ByIndex(code-1)->select(*vars) );
+  //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: cache: iset = " << *iset << " nset = " << (nset.get()?*nset:RooArgSet()) << " _normSet = " << (_normSet?*_normSet:RooArgSet()) << endl;
+
+  CacheElem* cache = getCache(_normSet,iset.get(),rangeName);
+  //CacheElem* cache = (CacheElem*)_cacheMgr.getObjByIndex( code-1);
+
   Double_t xmin = x().getMin(rangeName), xmax = x().getMax(rangeName);
 
   // make sure the range does is contained within the binboundaries...
   assert(_binboundaries.size()>1);
   assert(xmin<=xmax);
   assert(xmin>=_binboundaries.front());
-  assert(_binboundaries.back()>=xmax);
+  //assert(_binboundaries.back()>=xmax);
+  assert(_binboundaries.back()-xmax > -1e-10);
 
-  if (cache->xmin==0 && cache->xmax==0)  return eff()->getVal()*cache->getVal(nset); // no integral over efficiency dependant...
+  if (cache->xmin==0 && cache->xmax==0)  {
+    double eps = eff()->getVal();
+    double xxx = cache->getVal(); // no integral over efficiency dependant...
+    //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: x = " << x().getVal() << " : " << eps << " (" << eff()->GetName() << ")  * " << xxx << "  (" << cache->I->GetName() << ") = " << eps*xxx<<endl;
+    return eps*xxx;
+  }
 
   double xorig = x().getVal();
-  double norm1(0);
   double sum(0);
   for(BinBoundaries::const_iterator i = _binboundaries.begin(), end = _binboundaries.end(); i+1 != end; ++i ) {
     if (*(i+1)<xmin) continue; // not there yet...
@@ -231,12 +286,13 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
     Double_t thisxmin = std::max(*i,     xmin);
     Double_t thisxmax = std::min(*(i+1), xmax);
     if (thisxmin>=thisxmax) continue;
-    //cout << "RooEffHistProd: setting " << x().GetName() << endl;
     x().setVal( 0.5*( thisxmin + thisxmax) ) ; // get the efficiency for this bin
-    sum += eff()->getVal() * cache->getVal(thisxmin,thisxmax,nset); // *(thisxmax-thisxmin);
-    //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: integral in bin from " << cache->xmin->getVal() << "," << cache->xmax->getVal() << " =  " << eff()->getVal(nset) << " * " << cache->getVal(thisxmin,thisxmax,nset) << endl;
+    double eps = eff()->getVal();
+    x().setVal(xorig);  // and restore the original value ASAP...
+    //cache->I->Print("t");
+    sum += eps * cache->getVal(thisxmin,thisxmax);
+    //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: integral in bin from " << cache->xmin->getVal() << "," << cache->xmax->getVal() << " =  " << eps << " (" << eff()->GetName() << ")  * " << cache->getVal(thisxmin,thisxmax) << "  (" << cache->I->GetName() << ") = " << eps*cache->getVal(thisxmin,thisxmax)<< endl;
   }
   //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: integral =  " << sum << endl;// " norm =  " << norm1 << endl;
-  x().setVal(xorig);
   return  sum;
 }

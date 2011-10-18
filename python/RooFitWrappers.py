@@ -1,6 +1,14 @@
 from RooFitDecorators import *
 from copy import copy
 
+
+def __check_req_kw__( name, kwargs, string ) :
+    if not name in kwargs : raise StandardError( string )
+def __check_exists_already__( self ) :
+    if self._name in self.ws() :
+        raise StandardError( 'Recreating %s is not supported atm' % type(self) )
+
+
 class RooObject(object) :
     _ws = None
     _dict = None
@@ -61,6 +69,17 @@ class RooObject(object) :
 
     def __str__(self):
         return self.GetName()
+
+    def Type(self) :
+        _t = self._dict['Type']
+        return _t if type(_t)==str else _t.__name__
+    def Name(self) :
+        return self._dict['Name']
+    def Observables(self) :
+        return self._dict['Observables']
+    def Parameters(self) :
+        return self._dict['Parameters']
+
         
     ## FIXME: Should these be in RooObject??
     def observable(self) : 
@@ -268,7 +287,7 @@ class Pdf(RooObject):
 
     def _makeRecipe(self, variables):
         deps = ','.join([v.GetName() if type(v) != str else v for v in variables])
-        return '%s::%s(%s)' % (self._dict['Type'], self._dict['Name'], deps)
+        return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
 
     def generate(self, whatvars, *args):
         s = RooArgSet()
@@ -337,7 +356,7 @@ class SumPdf(Pdf):
     def __make_pdf(self):
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
-            self._init(self._dict['Name'], self._dict['Type'])
+            self._init(self.Name(), self.Type())
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
@@ -407,11 +426,11 @@ class ResolutionModel(RooObject):
         return ResolutionModel._getters[k](self)
     
     def _makeRecipe(self):
-        variables = list(self._dict['Observables'])
+        variables = list(self.Observables())
         if 'Parameters' in self._dict:
-            variables += list(self._dict['Parameters'])
+            variables += list(self.Parameters())
         deps = ','.join([v.GetName() for v in variables])
-        return '%s::%s(%s)' % (self._dict['Type'], self._dict['Name'], deps)
+        return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
         
 class Component(object):
     _d = {}
@@ -460,6 +479,11 @@ class Component(object):
         self.__setitem__(item.observables(), item)
         return self
         
+    def __iadd__(self,item) :
+        z = tuple(item.observables())
+        self.__setitem__( z, item )
+        return self
+
     def __getitem__(self,k) :
         # TODO: if we return one a-priori build PDF, rename it properly??
         d = Component._d[self.name]

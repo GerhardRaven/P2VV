@@ -1,5 +1,5 @@
 #include <cmath>
-#include "P2VV.h"
+#include "ProgressDisplay.h"
 #include "Moments.h"
 #include "RooArgSet.h"
 #include "RooAbsData.h"
@@ -64,7 +64,7 @@ ostream& IMoment::print(ostream& os, bool normalize) const
       << " (significance: " << significance() << ")" << endl;
 }
 
-int _computeMoments(RooAbsData& data, IMomentsVector& moments)
+int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst )
 {
   typedef IMomentsVector::iterator IMomIter;
 
@@ -73,10 +73,9 @@ int _computeMoments(RooAbsData& data, IMomentsVector& moments)
     return -1;
   }
 
-  for (IMomIter mom = moments.begin(); mom != moments.end(); ++mom)
-    (*mom)->reset();
+  if (resetFirst) for (IMomIter mom = moments.begin(); mom != moments.end(); ++mom) (*mom)->reset();
 
-  RooArgSet* obs = moments.front()->basis().getObservables(data);
+  RooArgSet* obs = moments.front()->getObservables(data);
   
   cout << "P2VV - INFO: computeMoments: computing " << moments.size()
       << " moment(s) for data set '" << data.GetName() << "'" << endl;
