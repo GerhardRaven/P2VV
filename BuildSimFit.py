@@ -30,16 +30,23 @@ from ModelBuilders import *
 
 signif = 1
 
-#2010
-#mcfilename = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
-#2011
-mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB_and_B.root'
-#mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
+from os.path import exists
+databfys = None 
+for loc in [ '/data/bfys', '/Users/graven/data/bfys' ] :
+    if not exists(loc) : continue
+    databfys = loc
+    break
 
-datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2.root'
-#datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2Unbiased.root'
-#datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2_WidePhiMass.root'
-#datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2XCheck.root' #=Small Phi mass window
+#2010
+#mcfilename = databfys + '/dveijk/MC/ReducedMCNTuple.root'
+#2011
+mcfilename =  databfys+'/dveijk/MC/2011/MC2011_UB_and_B.root'
+#mcfilename =  databfys+'/dveijk/MC/2011/MC2011_UB.root'
+
+datafilename = databfys +'/dveijk/DataJpsiPhi/2011/Pass3Version2.root'
+#datafilename = databfys +' /dveijk/DataJpsiPhi/2011/Pass3Version2Unbiased.root'
+#datafilename = databfys + '/dveijk/DataJpsiPhi/2011/Pass3Version2_WidePhiMass.root'
+#datafilename = databfys + '/dveijk/DataJpsiPhi/2011/Pass3Version2XCheck.root' #=Small Phi mass window
 datasetname = 'MyTree'
 
 ws = RooWorkspace("ws")
@@ -177,7 +184,7 @@ print 'angles: ', [ i.GetName() for i in angles ]
 bnames = [ 'AzAz','AparApar','AperpAperp','AparAperp','AzAperp','AzApar','AsAs','AsAz','AsApar','AsAperp']
 tenmom = [ EffMoment( ws['%s_basis'%n], 1., MCpdf, angles) for n in bnames ]
 
-computeMoments(MCdata,MCpdf,tenmom)
+computeMoments(MCdata,tenmom)
 xi_m = dict( [ (m.basis().GetName(),m.coefficient()) for m in tenmom ] )
 print 'Direct Moments xi_m =', xi_m
 
@@ -225,7 +232,7 @@ for i in range(3,20):
     moments += [EffMoment( ab.build("mom",i,0,2,1,1. ),float(2*i+1)/2, MCpdf, angles ) ]
 
 # loop over all data, determine moments
-computeMoments(MCdata,MCpdf,moments)
+computeMoments(MCdata,moments)
 
 # compute the 'canonical' moments given the Fourier series
 c = dict()
