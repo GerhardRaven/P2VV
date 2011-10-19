@@ -1,3 +1,5 @@
+__all__ = ['TimeAnglesPdf']
+
 from RooFitWrappers import Pdf
 
 class TimeAnglesPdf(Pdf):
