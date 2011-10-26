@@ -151,6 +151,15 @@ class Category (RooObject):
         return self._states
 
 class FormulaVar (RooObject): 
+    # TODO: move __setitem__ and __getitem__ into RooObject
+    #       maybe add a search order like reverse inheritance to mimic 'virtual functions'??
+    #       could the TODO below be implemented that way?? (probably yes ;-)
+    # TODO: move common things like Name and Title in RooObject...
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
     def __init__(self,name,formula,fargs,**kwargs) :
         if name not in self.ws():
             # construct factory string on the fly...
@@ -165,6 +174,11 @@ class FormulaVar (RooObject):
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
                 assert v == self[k]
+            
+    def __setitem__(self,k,v):
+        return FormulaVar._setters[k](self, v)
+    def __getitem__(self,k):
+        return FormulaVar._getters[k](self)
 
 class ConstVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
@@ -192,9 +206,9 @@ class ConstVar (RooObject):
                 assert v == self[k]
             
     def __setitem__(self,k,v):
-        return RealVar._setters[k](self, v)
+        return ConstVar._setters[k](self, v)
     def __getitem__(self,k):
-        return RealVar._getters[k](self)
+        return ConstVar._getters[k](self)
 
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
