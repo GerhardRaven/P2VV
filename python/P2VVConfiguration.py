@@ -130,6 +130,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     elif tResModel[:6] == '3Gauss' :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat', 'B lifetime error (ps)', 'par', 0.05, 0.005, 0.1))
 
+    ### OUT: BMeanLife, dGamma, dm
     if mode == 'Bd2JpsiKstar' :
       config.addSetting('Gamma',  RooRealSetting('Gamma',  'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
       config.addSetting('dGamma', RooRealSetting('dGamma', 'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
