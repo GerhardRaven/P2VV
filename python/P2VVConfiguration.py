@@ -206,7 +206,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('asymType', P2VVSetting('asymType', 'type of CP asymmetries', asymType))
 
       itagdict = { +1: 'B', -1 : 'Bbar'}
-      if allowITagZero : itagdict.update( { 0:'untagged' }
+      if allowITagZero : itagdict.update( { 0:'untagged' } )
       config.addSetting('iTag', RooCatSetting('iTag', 'initial state flavour tag', True, 'B', itagdict ))
       if mode == 'Bd2JpsiKstar' :
         config.addSetting('fTag', RooCatSetting('fTag', 'final state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))

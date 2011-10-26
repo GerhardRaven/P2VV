@@ -19,10 +19,8 @@ class RooObject(object) :
 
     def setWorkspace(self,ws):
         RooObject._ws = ws
-        if not hasattr(ws, '_objects'):
-            ws._objects = {}
-        if not hasattr(ws, '_mappings'):
-            ws._mappings = {}
+        if not hasattr(ws, '_objects') : ws._objects  = {}
+        if not hasattr(ws, '_mappings'): ws._mappings = {}
         
     def _declare(self,spec):
         x = self.ws().factory(spec)
@@ -475,10 +473,6 @@ class Component(object):
         ## Get the right sub-pdf from the Pdf object
         Component._d[self.name][frozenset(k)] = pdf
 
-    def __iadd__(self,item) :
-        self.__setitem__(item.observables(), item)
-        return self
-        
     def __iadd__(self,item) :
         z = tuple(item.observables())
         self.__setitem__( z, item )
