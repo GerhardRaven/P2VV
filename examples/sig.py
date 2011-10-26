@@ -31,17 +31,23 @@ dGamma    =  RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}', Ob
 _phiCP      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',     Observable = False, Value = -0.2,  MinMax = (-2*pi,2*pi) )
 _lambdaCPSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2', Observable = False, Value = 1)
 
-CCP = FormulaVar('C', '(1.-@0)/(1.+@0)',                   [ _lambdaCPSq ] )
-DCP = FormulaVar('D', ' 2 * sqrt(@0) * cos(@1) / (1.+@0)', [ _lambdaCPSq, _phiCP ] )
-SCP = FormulaVar('S', '-2 * sqrt(@0) * sin(@1) / (1.+@0)', [ _lambdaCPSq, _phiCP ] )
+class CPParam :
+    def __init__(self,**kwargs) :
+        self.C = kwargs.pop('C')
+        self.D = kwargs.pop('D')
+        self.S = kwargs.pop('S')
 
+CP = CPParam( C = FormulaVar('C', '(1.-@0)/(1.+@0)',                   [ _lambdaCPSq ] )
+            , D = FormulaVar('D', ' 2 * sqrt(@0) * cos(@1) / (1.+@0)', [ _lambdaCPSq, _phiCP ] )
+            , S = FormulaVar('S', '-2 * sqrt(@0) * sin(@1) / (1.+@0)', [ _lambdaCPSq, _phiCP ] )
+            )
 
 tagDilution = RealVar( 'tagDilution', Title = 'Average Tagging Dilution', Observable = False, Value = 1 )
 ADilWTag    = RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry', Observable = False, Value = 0 )
 
 
 _AProd   = RealVar(    'AProd',    Title = 'production asymmetry', Observable = False, Value = 0)
-_ANorm   = FormulaVar( 'ANorm',    '-@0', [CCP], Title = 'normalization asymmetry' )
+_ANorm   = FormulaVar( 'ANorm',    '-@0', [CP.C], Title = 'normalization asymmetry' )
 _ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value=0.)
 avgCEven = FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average even coefficients')
 avgCOdd  = FormulaVar( 'avgCOdd',     '@0 + @1 + @2 + @0*@1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average odd coefficients')
@@ -75,55 +81,55 @@ Amplitudes = { 'A0'    : Carth_Amplitude( FormulaVar('ReA0',   'sqrt(@0) * cos(@
     
 
 # these are the angular terms: 4x(4+1)/2 = 10
-J_0020x0020_0 = { 'cosh' : FormulaVar('J_0020x0020_0_cosh',   '@0 * @0 + @1 * @1',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im     ], Title = 'J_0020x0020_0 cosh coefficient') # +|A_0|^2 * 1
-                , 'cos'  : FormulaVar('J_0020x0020_0_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, CCP], Title = 'J_0020x0020_0 cos  coefficient') # +|A_0|^2 * C
-                , 'sinh' : FormulaVar('J_0020x0020_0_sinh', '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, DCP], Title = 'J_0020x0020_0 sinh coefficient') # -|A_0|^2 * D
-                , 'sin'  : FormulaVar('J_0020x0020_0_sin',  '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, SCP], Title = 'J_0020x0020_0 sin  coefficient') # -|A_0|^2 * S
+J_0020x0020_0 = { 'cosh' : FormulaVar('J_0020x0020_0_cosh',   '@0 * @0 + @1 * @1',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im      ], Title = 'J_0020x0020_0 cosh coefficient') # +|A_0|^2 * 1
+                , 'cos'  : FormulaVar('J_0020x0020_0_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, CP.C], Title = 'J_0020x0020_0 cos  coefficient') # +|A_0|^2 * C
+                , 'sinh' : FormulaVar('J_0020x0020_0_sinh', '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, CP.D], Title = 'J_0020x0020_0 sinh coefficient') # -|A_0|^2 * D
+                , 'sin'  : FormulaVar('J_0020x0020_0_sin',  '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, CP.S], Title = 'J_0020x0020_0 sin  coefficient') # -|A_0|^2 * S
                 }
 J_22x002022_0 = { 'cosh' : FormulaVar('J_22x002022_0_cosh',   '@0 * @0 + @1 * @1',       [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im     ], Title = 'J_22x002022_0 cosh coefficient') # +|A_par|^2 * 1
-                , 'cos'  : FormulaVar('J_22x002022_0_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, CCP], Title = 'J_22x002022_0 cos  coefficient') # +|A_par|^2 * C
-                , 'sinh' : FormulaVar('J_22x002022_0_sinh', '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, DCP], Title = 'J_22x002022_0 sinh coefficient') # -|A_par|^2 * D
-                , 'sin'  : FormulaVar('J_22x002022_0_sin',  '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, SCP], Title = 'J_22x002022_0 sin  coefficient') # -|A_par|^2 * S
+                , 'cos'  : FormulaVar('J_22x002022_0_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, CP.C], Title = 'J_22x002022_0 cos  coefficient') # +|A_par|^2 * C
+                , 'sinh' : FormulaVar('J_22x002022_0_sinh', '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, CP.D], Title = 'J_22x002022_0 sinh coefficient') # -|A_par|^2 * D
+                , 'sin'  : FormulaVar('J_22x002022_0_sin',  '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, CP.S], Title = 'J_22x002022_0 sin  coefficient') # -|A_par|^2 * S
                 }
 J_22x002022_1 = { 'cosh' : FormulaVar('J_22x002022_1_cosh',   '@0 * @0 + @1 * @1',       [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im     ], Title = 'J_22x002022_1 cosh coefficient') # +|A_perp|^2 * 1
-                , 'cos'  : FormulaVar('J_22x002022_1_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CCP], Title = 'J_22x002022_1 cos  coefficient') # +|A_perp|^2 * C
-                , 'sinh' : FormulaVar('J_22x002022_1_sinh',  '(@0 * @0 + @1 * @1) * @2', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, DCP], Title = 'J_22x002022_1 sinh coefficient') # +|A_perp|^2 * D
-                , 'sin'  : FormulaVar('J_22x002022_1_sin',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, SCP], Title = 'J_22x002022_1 sin  coefficient') # +|A_perp|^2 * S
+                , 'cos'  : FormulaVar('J_22x002022_1_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.C], Title = 'J_22x002022_1 cos  coefficient') # +|A_perp|^2 * C
+                , 'sinh' : FormulaVar('J_22x002022_1_sinh',  '(@0 * @0 + @1 * @1) * @2', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.D], Title = 'J_22x002022_1 sinh coefficient') # +|A_perp|^2 * D
+                , 'sin'  : FormulaVar('J_22x002022_1_sin',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.S], Title = 'J_22x002022_1 sin  coefficient') # +|A_perp|^2 * S
                 }
-J_21x21_0     = { 'cosh' : FormulaVar('J_21x21_0_cosh',       '@0 * @2 + @1 * @3',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Apar'].Re, Amplitudes['Apar'].Im     ], Title = 'J_21x21_0 cosh coefficient') # +Re(A_0* A_par) * 1
-                , 'cos'  : FormulaVar('J_21x21_0_cos',       '(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, CCP], Title = 'J_21x21_0 cos coefficient' ) # +Re(A_0* A_par) * C
-                , 'sinh' : FormulaVar('J_21x21_0_sinh',     '-(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, DCP], Title = 'J_21x21_0 sinh coefficient') # -Re(A_0* A_par) * D
-                , 'sin'  : FormulaVar('J_21x21_0_sin',      '-(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, SCP], Title = 'J_21x21_0 sin coefficient' ) # -Re(A_0* A_par) * S
+J_21x21_0     = { 'cosh' : FormulaVar('J_21x21_0_cosh',       '@0 * @2 + @1 * @3',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Apar'].Re, Amplitudes['Apar'].Im      ], Title = 'J_21x21_0 cosh coefficient') # +Re(A_0* A_par) * 1
+                , 'cos'  : FormulaVar('J_21x21_0_cos',       '(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, CP.C], Title = 'J_21x21_0 cos coefficient' ) # +Re(A_0* A_par) * C
+                , 'sinh' : FormulaVar('J_21x21_0_sinh',     '-(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, CP.D], Title = 'J_21x21_0 sinh coefficient') # -Re(A_0* A_par) * D
+                , 'sin'  : FormulaVar('J_21x21_0_sin',      '-(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, CP.S], Title = 'J_21x21_0 sin coefficient' ) # -Re(A_0* A_par) * S
                 }
-J_21x2m1      = { 'cosh' : FormulaVar('J_21x2m1_0_cosh',     '(@0 * @3 - @1 * @2) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CCP], Title = 'J_21x2m1_0 cosh coefficient') # +Im(A_0* A_perp) * C
-                , 'cos'  : FormulaVar('J_21x2m1_0_cos',       '@0 * @3 - @1 * @2',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im     ], Title = 'J_21x2m1_0 cos coefficient' ) # +Im(A_0* A_perp) * 1
-                , 'sinh' : FormulaVar('J_21x2m1_0_sinh',     '(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, SCP], Title = 'J_21x2m1_0 sinh coefficient') # +Re(A_0* A_perp) * S
-                , 'sin'  : FormulaVar('J_21x2m1_0_sin',     '-(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, DCP], Title = 'J_21x2m1_0 sin coefficient' ) # -Re(A_0* A_perp) * D
+J_21x2m1      = { 'cosh' : FormulaVar('J_21x2m1_0_cosh',     '(@0 * @3 - @1 * @2) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.C], Title = 'J_21x2m1_0 cosh coefficient') # +Im(A_0* A_perp) * C
+                , 'cos'  : FormulaVar('J_21x2m1_0_cos',       '@0 * @3 - @1 * @2',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im      ], Title = 'J_21x2m1_0 cos coefficient' ) # +Im(A_0* A_perp) * 1
+                , 'sinh' : FormulaVar('J_21x2m1_0_sinh',     '(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.S], Title = 'J_21x2m1_0 sinh coefficient') # +Re(A_0* A_perp) * S
+                , 'sin'  : FormulaVar('J_21x2m1_0_sin',     '-(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.D], Title = 'J_21x2m1_0 sin coefficient' ) # -Re(A_0* A_perp) * D
                 }
-J_22x2m2_0    = { 'cosh' : FormulaVar('J_22x2m2_0_cosh',     '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CCP],   Title = 'J_22x2m2_0 cosh coefficient') # +Im(A_par* A_perp) * C
-                , 'cos'  : FormulaVar('J_22x2m2_0_cos',       '@0 * @3 - @1 * @2',       [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im     ],   Title = 'J_22x2m2_0 cos coefficient' ) # +Im(A_par* A_perp) * 1
-                , 'sinh' : FormulaVar('J_22x2m2_0_sinh',     '(@0 * @2 + @1 * @3) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, SCP],   Title = 'J_22x2m2_0 sinh coefficient') # +Re(A_par* A_perp) * S
-                , 'sin'  : FormulaVar('J_22x2m2_0_sin',     '-(@0 * @2 + @1 * @3) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, DCP],   Title = 'J_22x2m2_0 sin coefficient' ) # -Re(A_par* A_perp) * D
+J_22x2m2_0    = { 'cosh' : FormulaVar('J_22x2m2_0_cosh',     '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.C],   Title = 'J_22x2m2_0 cosh coefficient') # +Im(A_par* A_perp) * C
+                , 'cos'  : FormulaVar('J_22x2m2_0_cos',       '@0 * @3 - @1 * @2',       [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im      ],   Title = 'J_22x2m2_0 cos coefficient' ) # +Im(A_par* A_perp) * 1
+                , 'sinh' : FormulaVar('J_22x2m2_0_sinh',     '(@0 * @2 + @1 * @3) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.S],   Title = 'J_22x2m2_0 sinh coefficient') # +Re(A_par* A_perp) * S
+                , 'sin'  : FormulaVar('J_22x2m2_0_sin',     '-(@0 * @2 + @1 * @3) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, CP.D],   Title = 'J_22x2m2_0 sin coefficient' ) # -Re(A_par* A_perp) * D
                 }
 J_00x0020_0   = { 'cosh' : FormulaVar('J_00x0020_0_cosh',     '@0 * @0 + @1 * @1',       [Amplitudes['AS'].Re, Amplitudes['AS'].Im     ], Title = 'J_00x0020_0 cosh coefficient') # +|A_S|^2 * 1
-                , 'cos'  : FormulaVar('J_00x0020_0_cos',     '(@0 * @0 + @1 * @1) * @2', [Amplitudes['AS'].Re, Amplitudes['AS'].Im, CCP], Title = 'J_00x0020_0 cos coefficient' ) # +|A_S|^2 * C
-                , 'sinh' : FormulaVar('J_00x0020_0_sinh',    '(@0 * @0 + @1 * @1) * @2', [Amplitudes['AS'].Re, Amplitudes['AS'].Im, DCP], Title = 'J_00x0020_0 sinh coefficient') # +|A_S|^2 * D
-                , 'sin'  : FormulaVar('J_00x0020_0_sin',     '(@0 * @0 + @1 * @1) * @2', [Amplitudes['AS'].Re, Amplitudes['AS'].Im, SCP], Title = 'J_00x0020_0 sin coefficient' ) # +|A_S|^2 * S
+                , 'cos'  : FormulaVar('J_00x0020_0_cos',     '(@0 * @0 + @1 * @1) * @2', [Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.C], Title = 'J_00x0020_0 cos coefficient' ) # +|A_S|^2 * C
+                , 'sinh' : FormulaVar('J_00x0020_0_sinh',    '(@0 * @0 + @1 * @1) * @2', [Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.D], Title = 'J_00x0020_0 sinh coefficient') # +|A_S|^2 * D
+                , 'sin'  : FormulaVar('J_00x0020_0_sin',     '(@0 * @0 + @1 * @1) * @2', [Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.S], Title = 'J_00x0020_0 sin coefficient' ) # +|A_S|^2 * S
                 }
-J_10x0020_0   = { 'cosh' : FormulaVar('J_10x0020_0_cosh',    '(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CCP], Title = 'J_10x0020_0 cosh coefficient' ) # +Re(A_0* A_S) * C
+J_10x0020_0   = { 'cosh' : FormulaVar('J_10x0020_0_cosh',    '(@0 * @2 + @1 * @3) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.C], Title = 'J_10x0020_0 cosh coefficient' ) # +Re(A_0* A_S) * C
                 , 'cos'  : FormulaVar('J_10x0020_0_cos',      '@0 * @2 + @1 * @3',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im     ], Title = 'J_10x0020_0 cos coefficient'  ) # +Re(A_0* A_S) * 1
-                , 'sinh' : FormulaVar('J_10x0020_0_sinh',   '-(@0 * @3 - @1 * @2) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, SCP], Title = 'J_10x0020_0 sinh coefficient' ) # -Im(A_0* A_S) * S
-                , 'sin'  : FormulaVar('J_10x0020_0_sin',     '(@0 * @3 - @1 * @2) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, DCP], Title = 'J_10x0020_0 sin coefficient'  ) # +Im(A_0* A_S) * D
+                , 'sinh' : FormulaVar('J_10x0020_0_sinh',   '-(@0 * @3 - @1 * @2) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.S], Title = 'J_10x0020_0 sinh coefficient' ) # -Im(A_0* A_S) * S
+                , 'sin'  : FormulaVar('J_10x0020_0_sin',     '(@0 * @3 - @1 * @2) * @4', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.D], Title = 'J_10x0020_0 sin coefficient'  ) # +Im(A_0* A_S) * D
                 }
-J_11x21_0     = { 'cosh' : FormulaVar('J_11x21_0_cosh',      '(@0 * @2 + @1 * @3) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CCP],  Title = 'J_11x21_0 cosh coefficient')  # +Re(A_par* A_S) * C
+J_11x21_0     = { 'cosh' : FormulaVar('J_11x21_0_cosh',      '(@0 * @2 + @1 * @3) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.C],  Title = 'J_11x21_0 cosh coefficient')  # +Re(A_par* A_S) * C
                 , 'cos'  : FormulaVar('J_11x21_0_cos',        '@0 * @2 + @1 * @3',       [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im     ],  Title = 'J_11x21_0 cos coefficient')   # +Re(A_par* A_S) * 1
-                , 'sinh' : FormulaVar('J_11x21_0_sinh',     '-(@0 * @3 - @1 * @2) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, SCP],  Title = 'J_11x21_0 sinh coefficient')  # -Im(A_par* A_S) * S
-                , 'sin'  : FormulaVar('J_11x21_0_sin',       '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, DCP],  Title = 'J_11x21_0 sin coefficient')   # +Im(A_par* A_S) * D
+                , 'sinh' : FormulaVar('J_11x21_0_sinh',     '-(@0 * @3 - @1 * @2) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.S],  Title = 'J_11x21_0 sinh coefficient')  # -Im(A_par* A_S) * S
+                , 'sin'  : FormulaVar('J_11x21_0_sin',       '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Apar'].Re, Amplitudes['Apar'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.D],  Title = 'J_11x21_0 sin coefficient')   # +Im(A_par* A_S) * D
                 }
 J_11x2m1_0    = { 'cosh' : FormulaVar('J_11x2m1_0_cosh',      '@0 * @3 - @1 * @2',       [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im     ],  Title = 'J_11x2m1_0 cosh coefficient' ) # +Im(A_perp* A_S) * 1
-                , 'cos'  : FormulaVar('J_11x2m1_0_cos',      '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CCP],  Title = 'J_11x2m1_0 cos coefficient'  ) # +Im(A_perp* A_S) * C
-                , 'sinh' : FormulaVar('J_11x2m1_0_sinh',     '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, DCP],  Title = 'J_11x2m1_0 sinh coefficient' ) # +Im(A_perp* A_S) * D
-                , 'sin'  : FormulaVar('J_11x2m1_0_sin',      '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, SCP],  Title = 'J_11x2m1_0 sin coefficient'  ) # +Im(A_perp* A_S) * S
+                , 'cos'  : FormulaVar('J_11x2m1_0_cos',      '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.C],  Title = 'J_11x2m1_0 cos coefficient'  ) # +Im(A_perp* A_S) * C
+                , 'sinh' : FormulaVar('J_11x2m1_0_sinh',     '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.D],  Title = 'J_11x2m1_0 sinh coefficient' ) # +Im(A_perp* A_S) * D
+                , 'sin'  : FormulaVar('J_11x2m1_0_sin',      '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.S],  Title = 'J_11x2m1_0 sin coefficient'  ) # +Im(A_perp* A_S) * S
                 }
 
 
