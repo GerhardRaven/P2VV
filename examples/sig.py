@@ -65,21 +65,27 @@ _ASPh      = RealVar('deltaS',    Title = 'delta_S',    Observable = False, Valu
 
 # construct cartesian amplitudes with polar parameters -- these are the 'externally visible' (expected) parameters -- 2*4=8 terms for 4 amplitudes
 class Carth_Amplitude :
-    def __init__(self,x,y) :
+    def __init__(self,x,y, CP) :
         self.Re = x
         self.Im = y
+        self.CP = CP
 
 Amplitudes = { 'A0'    : Carth_Amplitude( FormulaVar('ReA0',   'sqrt(@0) * cos(@1)', [_A0Mag2,    _A0Ph],    Title = 'Re(A_0)'     )
-                                        , FormulaVar('ImA0',   'sqrt(@0) * sin(@1)', [_A0Mag2,    _A0Ph],    Title = 'Im(A_0)'     ))
+                                        , FormulaVar('ImA0',   'sqrt(@0) * sin(@1)', [_A0Mag2,    _A0Ph],    Title = 'Im(A_0)'     )
+                                        , +1 )
              , 'Apar'  : Carth_Amplitude( FormulaVar('ReApar', 'sqrt(@0) * cos(@1)', [_AparMag2,  _AparPh],  Title = 'Re(A_par)'   )
-                                        , FormulaVar('ImApar', 'sqrt(@0) * sin(@1)', [_AparMag2,  _AparPh],  Title = 'Im(A_par)'   ))
+                                        , FormulaVar('ImApar', 'sqrt(@0) * sin(@1)', [_AparMag2,  _AparPh],  Title = 'Im(A_par)'   )
+                                        , +1 )
              , 'Aperp' : Carth_Amplitude( FormulaVar('ReAperp','sqrt(@0) * cos(@1)', [_AperpMag2, _AperpPh], Title = 'Re(A_perp)'  )
-                                        , FormulaVar('ImAperp','sqrt(@0) * sin(@1)', [_AperpMag2, _AperpPh], Title = 'Im(A_perp)'  ))
+                                        , FormulaVar('ImAperp','sqrt(@0) * sin(@1)', [_AperpMag2, _AperpPh], Title = 'Im(A_perp)'  )
+                                        , -1 )
              , 'AS'    : Carth_Amplitude( FormulaVar('ReAS',   'sqrt(@0) * cos(@1)', [_ASMag2,    _ASPh],    Title = 'Re(A_S)'     )
-                                        , FormulaVar('ImAS',   'sqrt(@0) * sin(@1)', [_ASMag2,    _ASPh],    Title = 'Im(A_S)'     ))
+                                        , FormulaVar('ImAS',   'sqrt(@0) * sin(@1)', [_ASMag2,    _ASPh],    Title = 'Im(A_S)'     )
+                                        , -1 )
              }
     
 # these are the angular terms: 4x(4+1)/2 = 10
+# TODO: _compute_ these coefficients, given Amplitudes and CP
 J_0020x0020_0 = { 'cosh' : FormulaVar('J_0020x0020_0_cosh',   '@0 * @0 + @1 * @1',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im      ], Title = 'J_0020x0020_0 cosh coefficient') # +|A_0|^2 * 1
                 , 'cos'  : FormulaVar('J_0020x0020_0_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, CP.C], Title = 'J_0020x0020_0 cos  coefficient') # +|A_0|^2 * C
                 , 'sinh' : FormulaVar('J_0020x0020_0_sinh', '-(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, CP.D], Title = 'J_0020x0020_0 sinh coefficient') # -|A_0|^2 * D
