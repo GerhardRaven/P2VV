@@ -100,8 +100,7 @@ def buildJpsiV(config) :
   cthetaAng = config['cthetaAng'].name()
   phiAng    = config['phiAng'].name()
   iTag      = config['iTag'].name()
-  if mode == 'Bd2JpsiKstar' : 
-    fTag = config['fTag'].name()
+  if mode == 'Bd2JpsiKstar' : fTag = config['fTag'].name()
 
   # get lifetime and mixing parameters
   BMeanLife = config['BMeanLife'].name()
@@ -117,8 +116,7 @@ def buildJpsiV(config) :
   # get tagging parameters
   dilution = config['tagDilution'].name()
   ADilWTag = config['ADilWTag'].name()
-  if mode == 'Bd2JpsiKstar' :
-    ANorm = config['ANorm'].name()
+  if mode == 'Bd2JpsiKstar' : ANorm = config['ANorm'].name()
   avgCEven   = config['avgCEven'].name()
   avgCOdd    = config['avgCOdd'].name()
 
@@ -129,36 +127,24 @@ def buildJpsiV(config) :
     sinhCStr = ''
     sinCStr  = ''
 
-  coefficients = ['J_0020x0020_0', 'J_22x002022_0', 'J_22x002022_1',
-      'J_21x21_0', 'J_21x2m1_0', 'J_22x2m2_0']
+  coefficients = ['J_0020x0020_0', 'J_22x002022_0', 'J_22x002022_1', 'J_21x21_0', 'J_21x2m1_0', 'J_22x2m2_0']
   if KSWave[:7] == 'include' :
     if mode == 'Bd2JpsiKstar' :
       print 'P2VV - INFO: buildJpsiV: including a Kpi S-wave'
     elif mode == 'Bs2Jpsiphi' :
-      if KSWave == 'includeEven' :
-        print 'P2VV - INFO: buildJpsiV: including a CP even KK S-wave'
-      else :
-        print 'P2VV - INFO: buildJpsiV: including a CP odd KK S-wave'
+      print 'P2VV - INFO: buildJpsiV: including a CP %s KK S-wave' % ( 'Even' if KSWave == 'includeEven' else 'Odd' )
 
     coefficients += ['J_00x0020_0', 'J_10x0020_0', 'J_11x21_0', 'J_11x2m1_0']
 
   for coef in coefficients :
     if mode == 'Bd2JpsiKstar' :
-      coefName = config[coef].name()
-
-      coshCStr += 'prod({cEven} ' + coefName + ', ' + coef + '_angFunc), '
-      cosCStr  += 'prod({cOdd} '  + coefName + ', ' + coef + '_angFunc), '
-
+      coshCStr += 'prod({cEven} %s, %s_angFunc), ' % (config[coef].name() , coef ) 
+      cosCStr  += 'prod({cOdd}  %s, %s_angFunc), ' % (config[coef].name() , coef ) 
     elif mode == 'Bs2Jpsiphi' :
-      coshName = config[coef + '_cosh'].name()
-      cosName  = config[coef + '_cos'].name()
-      sinhName = config[coef + '_sinh'].name()
-      sinName  = config[coef + '_sin'].name()
-
-      coshCStr += 'prod({cEven} ' + coshName + ', ' + coef + '_angFunc), '
-      cosCStr  += 'prod({cOdd} '  + cosName  + ', ' + coef + '_angFunc), '
-      sinhCStr += 'prod({cEven} ' + sinhName + ', ' + coef + '_angFunc), '
-      sinCStr  += 'prod({cOdd} '  + sinName  + ', ' + coef + '_angFunc), '
+      coshCStr += 'prod({cEven} %s, %s_angFunc), ' % (config[coef + '_cosh'].name(),  coef ) 
+      cosCStr  += 'prod({cOdd}  %s, %s_angFunc), ' % (config[coef + '_cos'].name() ,  coef ) 
+      sinhCStr += 'prod({cEven} %s, %s_angFunc), ' % (config[coef + '_sinh'].name(),  coef ) 
+      sinCStr  += 'prod({cOdd}  %s, %s_angFunc), ' % (config[coef + '_sin'].name() ,  coef ) 
 
   coshCStr = coshCStr[:-1]
   cosCStr  = cosCStr[:-1]
@@ -173,38 +159,27 @@ def buildJpsiV(config) :
     print 'P2VV - INFO: buildJpsiV: using RooBDecay for time PDF'
 
     # define tagging factors for CP even and CP odd terms
-    ws.factory("expr::cTagEven('@0 * (@3 - @2 * @1)', {%s, %s, %s, %s})"\
-        % (dilution, ADilWTag, avgCEven, avgCOdd))
-    ws.factory("expr::cTagOdd('@0 * (@2 - @3 * @1)', {%s, %s, %s, %s})"\
-        % (dilution, ADilWTag, avgCEven, avgCOdd))
+    ws.factory("expr::cTagEven('@0 * (@3 - @2 * @1)', {%s, %s, %s, %s})" % (dilution, ADilWTag, avgCEven, avgCOdd))
+    ws.factory("expr::cTagOdd( '@0 * (@2 - @3 * @1)', {%s, %s, %s, %s})" % (dilution, ADilWTag, avgCEven, avgCOdd))
 
-    if mode == 'Bd2JpsiKstar' :
-      # B0->J/psiK*
-
+    if mode == 'Bd2JpsiKstar' : # B0->J/psiK*
       # build CP even and CP odd coefficients
-      ws.factory("expr::cEven('(1. - @1 * @2) * (@3 + @0 * @4)',\
-          {%s, %s, %s, %s, cTagEven})" % (iTag, fTag, ANorm, avgCEven))
-      ws.factory("expr::cOdd('(@1 - @2) * (@3 + @0 * @4)',\
-          {%s, %s, %s, %s, cTagOdd})" % (iTag, fTag, ANorm, avgCOdd))
+      ws.factory("expr::cEven('(1. - @1 * @2) * (@3 + @0 * @4)', {%s, %s, %s, %s, cTagEven})" % (iTag, fTag, ANorm, avgCEven))
+      ws.factory("expr::cOdd( '     (@1 - @2) * (@3 + @0 * @4)', {%s, %s, %s, %s, cTagOdd })" % (iTag, fTag, ANorm, avgCOdd))
 
       if config.value('noFactFlavSpec') :
         print 'P2VV - INFO: buildJpsiV: not factorizing time and angular PDFs'
 
         # format time function strings
-        coshCStr = coshCStr.format(cEven = 'cEven,')
-        cosCStr  =  cosCStr.format(cOdd  = 'cOdd,')
-
         # build time function coefficients
-        ws.factory('sum::cCosh(' + coshCStr + ')')
-        ws.factory('sum::cCos( ' + cosCStr  + ')')
-        ws.factory('sum::cZero(P2VVAngleBasis(%s, %s, %s, 0, 0, 0, 0, 1.),\
-          P2VVAngleBasis(%s, %s, %s, 0, 0, 0, 0, -1.))'\
+        ws.factory('sum::cCosh( %s )' % coshCStr.format(cEven = 'cEven,') )
+        ws.factory('sum::cCos(  %s )' %  cosCStr.format(cOdd  = 'cOdd,')  )
+        ws.factory('sum::cZero(P2VVAngleBasis(%s, %s, %s, 0, 0, 0, 0, 1.), P2VVAngleBasis(%s, %s, %s, 0, 0, 0, 0, -1.))'\
           % (cpsiAng, cthetaAng, phiAng, cpsiAng, cthetaAng, phiAng))
           # this is a dirty trick to make sure analytical integrals are used
 
         # build PDF
-        ws.factory("BDecay::%s(%s, %s, %s, cCosh, cZero, cCos, cZero, %s,\
-            tres_sig, SingleSided)"\
+        ws.factory("BDecay::%s(%s, %s, %s, cCosh, cZero, cCos, cZero, %s, tres_sig, SingleSided)"\
             % (pdfName, BLifetime, BMeanLife, dGamma, dm))
 
       else :
@@ -216,12 +191,10 @@ def buildJpsiV(config) :
         # build time function coefficient
         onesStr = ''
         for i in range(coefStr.count('prod(')) : onesStr += one + ','
-        ws.factory("RealSumPdf::cCommon({%s}, {%s})"\
-            % (coefStr, onesStr[:-1]))
+        ws.factory("RealSumPdf::cCommon({%s}, {%s})" % (coefStr, onesStr[:-1]))
 
         # build PDF
-        ws.factory("PROD::%s(cCommon,\
-          BDecay(%s, %s, %s, cEven, %s, cOdd, %s, %s, tres_sig, SingleSided))"\
+        ws.factory("PROD::%s(cCommon, BDecay(%s, %s, %s, cEven, %s, cOdd, %s, %s, tres_sig, SingleSided))"\
           % (pdfName, BLifetime, BMeanLife, dGamma, zero, zero, dm))
 
 
@@ -229,31 +202,15 @@ def buildJpsiV(config) :
       # B_s0->J/psiphi
 
       # build CP even and CP odd coefficients
-      #ws.factory('sum::cEven(%s, prod(%s, cTagEven))' % (avgCEven, iTag))
-      #ws.factory('sum::cOdd(%s, prod(%s, cTagOdd))'   % (avgCOdd,  iTag))
-      #
-      # this crashes:
-      # RooProduct.cxx:254:
-      # Int_t RooProduct::getPartIntList(const RooArgSet*, const char*) const:
-      # Assertion `i->second->getSize()==1' failed.
+      ws.factory("expr::cEven('@1 + @0 * @2', {%s, %s, cTagEven})" % (iTag, avgCEven))
+      ws.factory("expr::cOdd( '@1 + @0 * @2', {%s, %s, cTagOdd} )" % (iTag, avgCOdd))
 
-      # build CP even and CP odd coefficients
-      ws.factory("expr::cEven('@1 + @0 * @2', {%s, %s, cTagEven})"\
-          % (iTag, avgCEven))
-      ws.factory("expr::cOdd('@1 + @0 * @2', {%s, %s, cTagOdd})"\
-          % (iTag, avgCOdd))
-
-      # format time function strings
-      coshCStr = coshCStr.format(cEven = 'cEven,')
-      cosCStr  =  cosCStr.format(cOdd  = 'cOdd,')
-      sinhCStr = sinhCStr.format(cEven = 'cEven,')
-      sinCStr  =  sinCStr.format(cOdd  = 'cOdd,')
-
+      # format time function strings and
       # build time function coefficients
-      ws.factory('sum::cCosh(' + coshCStr + ')')
-      ws.factory('sum::cCos( ' + cosCStr  + ')')
-      ws.factory('sum::cSinh(' + sinhCStr + ')')
-      ws.factory('sum::cSin( ' + sinCStr  + ')')
+      ws.factory('sum::cCosh(%s)' % coshCStr.format(cEven = 'cEven,') )
+      ws.factory('sum::cCos( %s)' %  cosCStr.format(cOdd  = 'cOdd,')  )
+      ws.factory('sum::cSinh(%s)' % sinhCStr.format(cEven = 'cEven,') )
+      ws.factory('sum::cSin( %s)' %  sinCStr.format(cOdd  = 'cOdd,')  )
 
       # build PDF
       ws.factory("BDecay::%s(%s, %s, %s, cCosh, cSinh, cCos, cSin, %s,\
@@ -262,24 +219,20 @@ def buildJpsiV(config) :
   else :
     # use RooBTagDecay
 
-    if allowITagZero : checkTags = 0
-    else : checkTags = 1
+    checkTags = 0 if allowITagZero else 1
 
-    if mode == 'Bd2JpsiKstar' :
-      # B0->J/psiK*
+    if mode == 'Bd2JpsiKstar' : # B0->J/psiK*
 
       # format time function string
-      coshCStr = coshCStr.format(cEven = '')
 
       if config.value('noFactFlavSpec') :
         print 'P2VV - INFO: buildJpsiV: not factorizing time and angular PDFs'
 
         # build time function coefficient
-        ws.factory('sum::cCommon(' + coshCStr + ')')
+        ws.factory('sum::cCommon( %s)' % coshCStr.format(cEven = '')  )
 
         # build PDF
-        ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,\
-            cCommon, tres_sig, SingleSided, %d)"\
+        ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, cCommon, tres_sig, SingleSided, %d)"\
             % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
                ADilWTag, ANorm, avgCEven, avgCOdd, checkTags))
 
@@ -298,24 +251,17 @@ def buildJpsiV(config) :
             % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
                ADilWTag, ANorm, avgCEven, avgCOdd, one, checkTags))
 
-    elif mode == 'Bs2Jpsiphi' :
-      # B_s0->J/psiphi
+    elif mode == 'Bs2Jpsiphi' : # B_s0->J/psiphi
 
       # format time function strings
-      coshCStr = coshCStr.format(cEven = '')
-      cosCStr  =  cosCStr.format(cOdd  = '')
-      sinhCStr = sinhCStr.format(cEven = '')
-      sinCStr  =  sinCStr.format(cOdd  = '')
-
       # build time function coefficients
-      ws.factory('sum::cCosh(' + coshCStr + ')')
-      ws.factory('sum::cCos( ' + cosCStr  + ')')
-      ws.factory('sum::cSinh(' + sinhCStr + ')')
-      ws.factory('sum::cSin( ' + sinCStr  + ')')
+      ws.factory('sum::cCosh(%s)' % coshCStr.format(cEven = '') )
+      ws.factory('sum::cCos( %s)' %  cosCStr.format(cOdd  = '') )
+      ws.factory('sum::cSinh(%s)' % sinhCStr.format(cEven = '') )
+      ws.factory('sum::cSin( %s)' %  sinCStr.format(cOdd  = '') )
 
       # build PDF
-      ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s,\
-          cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, %d)"\
+      ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, %d)"\
           % (pdfName, BLifetime, iTag, BMeanLife, dGamma, dm, dilution,
              ADilWTag, avgCEven, avgCOdd, checkTags))
 

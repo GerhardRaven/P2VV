@@ -19,10 +19,8 @@ class RooObject(object) :
 
     def setWorkspace(self,ws):
         RooObject._ws = ws
-        if not hasattr(ws, '_objects'):
-            ws._objects = {}
-        if not hasattr(ws, '_mappings'):
-            ws._mappings = {}
+        if not hasattr(ws, '_objects') : ws._objects  = {}
+        if not hasattr(ws, '_mappings'): ws._mappings = {}
         
     def _declare(self,spec):
         x = self.ws().factory(spec)
@@ -153,21 +151,96 @@ class Category (RooObject):
         return self._states
 
 class FormulaVar (RooObject): 
-    def __init__(self,name) :
-        self._init(name,'RooFormulaVar')
+    # TODO: move __setitem__ and __getitem__ into RooObject
+    #       maybe add a search order like reverse inheritance to mimic 'virtual functions'??
+    #       could the TODO below be implemented that way?? (probably yes ;-)
+    # TODO: move common things like Name and Title in RooObject...
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
+    def __init__(self,name,formula,fargs,**kwargs) :
+        if name not in self.ws():
+            # construct factory string on the fly...
+            self._declare("expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) )
+            self._init(name,'RooFormulaVar')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            raise RunTimeError( 'Code Path Not Yet Verified'  )
+            self._init(name,'RooFormulaVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                assert v == self[k]
+            
+    def __setitem__(self,k,v):
+        return FormulaVar._setters[k](self, v)
+    def __getitem__(self,k):
+        return FormulaVar._getters[k](self)
+
+class ConstVar (RooObject): 
+    # WARNING: multiple instances don't share proxy state at this time...
+    # TODO: move common things like Name and Title in RooObject...
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Value'      : lambda s : s.getVal()
+               ,'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
+
+    def __init__(self,name,**kwargs):
+        if name not in self.ws():
+            # construct factory string on the fly...
+            __check_req_kw__( 'Value', kwargs, 'ConstVar must have value at construction' )
+            self._declare("ConstVar::%s(%s)"%(name,kwargs.pop('Value')))
+            self._init(name,'RooConstVar')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(name,'RooConstVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                assert v == self[k]
+            
+    def __setitem__(self,k,v):
+        return ConstVar._setters[k](self, v)
+    def __getitem__(self,k):
+        return ConstVar._getters[k](self)
+
+class AngleBasis (RooObject) : 
+    # if name not in ws :                 
+    def __init__(self, angles, i,j,k,l,c) :
+        # compute name, given angles,i,j,k,l,c!
+        name = '_'.join(a['Name'] for a in angles)
+        # remove c if it is 1?
+        name = 'AngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
+        name = name.replace('-', 'm')
+        name = name.replace('.', '_')
+        if name not in self.ws():
+            #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
+            self._declare("RooP2VVAngleBasis::%s(%s, %d, %d, %d, %d, %f)" % (name, ','.join(a['Name'] for a in angles), i, j, k, l, c) )
+            self._init(name,'RooP2VVAngleBasis')
+        else :
+            raise RunTimeError( 'Code Path Not Yet Verified'  )
 
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
+    # TODO: move common things like Name and Title in RooObject...
     _setters = {'Observable' : lambda s,v : s.setObservable(v) 
                ,'Unit'       : lambda s,v : s.setUnit(v) 
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
+               ,'Title'      : lambda s,v : s.SetTitle(v)
                }
     _getters = {'Observable' : lambda s : s.observable() 
                ,'Unit'       : lambda s : s.getUnit() 
                ,'Value'      : lambda s : s.getVal()
                ,'MinMax'     : lambda s : s.getRange()
                ,'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
                }
 
     def __init__(self,name,**kwargs):
@@ -475,10 +548,6 @@ class Component(object):
         ## Get the right sub-pdf from the Pdf object
         Component._d[self.name][frozenset(k)] = pdf
 
-    def __iadd__(self,item) :
-        self.__setitem__(item.observables(), item)
-        return self
-        
     def __iadd__(self,item) :
         z = tuple(item.observables())
         self.__setitem__( z, item )
