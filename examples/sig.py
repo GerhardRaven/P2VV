@@ -79,7 +79,6 @@ Amplitudes = { 'A0'    : Carth_Amplitude( FormulaVar('ReA0',   'sqrt(@0) * cos(@
                                         , FormulaVar('ImAS',   'sqrt(@0) * sin(@1)', [_ASMag2,    _ASPh],    Title = 'Im(A_S)'     ))
              }
     
-
 # these are the angular terms: 4x(4+1)/2 = 10
 J_0020x0020_0 = { 'cosh' : FormulaVar('J_0020x0020_0_cosh',   '@0 * @0 + @1 * @1',       [Amplitudes['A0'].Re, Amplitudes['A0'].Im      ], Title = 'J_0020x0020_0 cosh coefficient') # +|A_0|^2 * 1
                 , 'cos'  : FormulaVar('J_0020x0020_0_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'].Re, Amplitudes['A0'].Im, CP.C], Title = 'J_0020x0020_0 cos  coefficient') # +|A_0|^2 * C
@@ -132,23 +131,23 @@ J_11x2m1_0    = { 'cosh' : FormulaVar('J_11x2m1_0_cosh',      '@0 * @3 - @1 * @2
                 , 'sin'  : FormulaVar('J_11x2m1_0_sin',      '(@0 * @3 - @1 * @2) * @4', [Amplitudes['Aperp'].Re, Amplitudes['Aperp'].Im, Amplitudes['AS'].Re, Amplitudes['AS'].Im, CP.S],  Title = 'J_11x2m1_0 sin coefficient'  ) # +Im(A_perp* A_S) * S
                 }
 
-# TODO: put the above definitions 'inline' in dict 'coef'
+# TODO: put the above definitions 'inline' in dict 'coef' and push that into a function to hide the internals...
 coef =  { ('A0',   'A0')    : J_0020x0020_0
-        , ('Apar', 'Apar')  : J_22x002022_0
-        , ('Aperp','Aperp') : J_22x002022_1
         , ('A0',   'Apar')  : J_21x21_0 
         , ('A0',   'Aperp') : J_21x2m1
-        , ('Apar', 'Aperp') : J_22x2m2_0
-        , ('AS',   'AS')    : J_00x0020_0
         , ('A0',   'AS')    : J_10x0020_0
-        , ('Apar', 'AS')    : J_10x0020_0
+        , ('Apar', 'Apar')  : J_22x002022_0
+        , ('Apar', 'Aperp') : J_22x2m2_0
         , ('Apar', 'AS')    : J_11x21_0
+        , ('Aperp','Aperp') : J_22x002022_1
         , ('Aperp','AS')    : J_11x2m1_0
+        , ('AS',   'AS')    : J_00x0020_0
         }
 
 from itertools import combinations_with_replacement
 # TODO: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
 for (i,j) in combinations_with_replacement( ['A0','Apar','Aperp','AS'], 2 ) :
+    print (i,j)
     zz = coef[ (i,j) ]
 
 z = AngleBasis( (cpsiAng,cthetaAng,phiAng), 0,0,0,0,4.)
