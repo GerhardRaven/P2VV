@@ -213,8 +213,7 @@ def buildJpsiV(config) :
       ws.factory('sum::cSin( %s)' %  sinCStr.format(cOdd  = 'cOdd,')  )
 
       # build PDF
-      ws.factory("BDecay::%s(%s, %s, %s, cCosh, cSinh, cCos, cSin, %s,\
-        tres_sig, SingleSided)" % (pdfName, BLifetime, BMeanLife, dGamma, dm))
+      ws.factory("BDecay::%s(%s, %s, %s, cCosh, cSinh, cCos, cSin, %s, tres_sig, SingleSided)" % (pdfName, BLifetime, BMeanLife, dGamma, dm))
 
   else :
     # use RooBTagDecay

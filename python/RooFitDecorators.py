@@ -38,6 +38,16 @@ def _RooDataSetIter(self) :
 from ROOT import RooDataSet
 RooDataSet.__iter__ = _RooDataSetIter
 
+# RooAbsCategory functions
+def _RooAbsCategoryIter(self) :
+    z = self.typeIterator()
+    while True :
+        a = z.Next()
+        if not a : return
+        yield a
+from ROOT import RooAbsCategory
+RooAbsCategory.__iter__ = _RooAbsCategoryIter
+
 # RooAbsCollection/RooArgSet/RooArgList functions
 def _RooAbsCollectionIter(self) :
     z = self.createIterator()
