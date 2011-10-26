@@ -150,6 +150,48 @@ class Category (RooObject):
     def states(self):
         return self._states
 
+class Product(RooObject) :
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
+    def __init__(self,name,fargs,**kwargs) :
+        if name not in self.ws():
+            # construct factory string on the fly...
+            self._declare("prod::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) )
+            self._init(name,'RooProduct')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            raise RunTimeError( 'Code Path Not Yet Verified'  )
+            
+    def __setitem__(self,k,v):
+        return Product._setters[k](self, v)
+    def __getitem__(self,k):
+        return Product._getters[k](self)
+
+
+class Addition(RooObject) :
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
+    def __init__(self,name,fargs,**kwargs) :
+        if name not in self.ws():
+            # construct factory string on the fly...
+            self._declare("sum::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) )
+            self._init(name,'RooAddition')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            raise RunTimeError( 'Code Path Not Yet Verified'  )
+            
+    def __setitem__(self,k,v):
+        return Addition._setters[k](self, v)
+    def __getitem__(self,k):
+        return Addition._getters[k](self)
+
+
 class FormulaVar (RooObject): 
     # TODO: move __setitem__ and __getitem__ into RooObject
     #       maybe add a search order like reverse inheritance to mimic 'virtual functions'??

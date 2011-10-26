@@ -42,9 +42,9 @@ RooDataSet.__iter__ = _RooDataSetIter
 def _RooAbsCategoryIter(self) :
     z = self.typeIterator()
     while True :
-        a = z.Next()
-        if not a : return
-        yield a
+        c = z.Next()
+        if not c : return
+        yield c
 from ROOT import RooAbsCategory
 RooAbsCategory.__iter__ = _RooAbsCategoryIter
 
