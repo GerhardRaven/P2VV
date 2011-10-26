@@ -154,18 +154,51 @@ class FormulaVar (RooObject):
     def __init__(self,name) :
         self._init(name,'RooFormulaVar')
 
+class ConstVar (RooObject): 
+    # WARNING: multiple instances don't share proxy state at this time...
+    # TODO: move common things like Name and Title in RooObject...
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Value'      : lambda s : s.getVal()
+               ,'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
+
+    def __init__(self,name,**kwargs):
+        if name not in self.ws():
+            # construct factory string on the fly...
+            __check_req_kw__( 'Value', kwargs, 'ConstVar must have value at construction' )
+            self._declare("ConstVar::%s(%s)"%(name,kwargs.pop('Value')))
+            self._init(name,'RooConstVar')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(name,'RooConstVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                assert v == self[k]
+            
+    def __setitem__(self,k,v):
+        return RealVar._setters[k](self, v)
+    def __getitem__(self,k):
+        return RealVar._getters[k](self)
+
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
+    # TODO: move common things like Name and Title in RooObject...
     _setters = {'Observable' : lambda s,v : s.setObservable(v) 
                ,'Unit'       : lambda s,v : s.setUnit(v) 
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
+               ,'Title'      : lambda s,v : s.SetTitle(v)
                }
     _getters = {'Observable' : lambda s : s.observable() 
                ,'Unit'       : lambda s : s.getUnit() 
                ,'Value'      : lambda s : s.getVal()
                ,'MinMax'     : lambda s : s.getRange()
                ,'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
                }
 
     def __init__(self,name,**kwargs):
