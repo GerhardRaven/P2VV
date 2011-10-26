@@ -24,7 +24,7 @@ dm        =  RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}', Ob
 BMeanLife =  RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',      Observable = False, Value =  1.5, MinMax = (1.3, 1.8) )
 dGamma    =  RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}', Observable = False, Value = 0.05, MinMax = (-0.3,0.3) )
 
-# TODO: package this in a seperate class, which gives access to CCP, DCP, and SCP
+# TODO: package this in a seperate class, which gives access to CCP, DCP, and SCP, so we can hide the 'internal' parameterization
 # TODO: explicitly export externally visible symbols .... For now, interal stuff is prefixed by an _
 _phiCP      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',     Observable = False, Value = -0.2,  MinMax = (-2*pi,2*pi) )
 _lambdaCPSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2', Observable = False, Value = 1)
