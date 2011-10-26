@@ -1,4 +1,6 @@
 from RooFitWrappers import *
+from ROOT import gSystem
+gSystem.Load('libP2VV.so')
 ws = RooObject()
 ws.setWorkspace( RooWorkspace('myworkspace') )
 
@@ -127,6 +129,7 @@ J_11x2m1_0    = { 'cosh' : FormulaVar('J_11x2m1_0_cosh',      '@0 * @3 - @1 * @2
                 }
 
 
+z = AngleBasis( (cpsiAng,cthetaAng,phiAng), 0,0,0,0,4.)
 
 
 # using helicity angles
