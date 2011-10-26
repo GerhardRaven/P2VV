@@ -151,8 +151,20 @@ class Category (RooObject):
         return self._states
 
 class FormulaVar (RooObject): 
-    def __init__(self,name) :
-        self._init(name,'RooFormulaVar')
+    def __init__(self,name,formula,fargs,**kwargs) :
+        if name not in self.ws():
+            # construct factory string on the fly...
+            self._declare("expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) )
+            self._init(name,'RooFormulaVar')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            raise RunTimeError( 'Code Path Not Yet Verified'  )
+            self._init(name,'RooFormulaVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                assert v == self[k]
 
 class ConstVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
