@@ -66,6 +66,58 @@ ReAS    = FormulaVar('ReAS',   'sqrt(@0) * cos(@1)', [_ASMag2,    _ASPh],    Tit
 ImAS    = FormulaVar('ImAS',   'sqrt(@0) * sin(@1)', [_ASMag2,    _ASPh],    Title = 'Im(A_S)'     )
 
 
+J_0020x0020_0_cosh = FormulaVar('J_0020x0020_0_cosh',   '@0 * @0 + @1 * @1',       [ReA0, ImA0     ], Title = 'J_0020x0020_0 cosh coefficient') # +|A_0|^2 * 1
+J_0020x0020_0_cos  = FormulaVar('J_0020x0020_0_cos',   '(@0 * @0 + @1 * @1) * @2', [ReA0, ImA0, CCP], Title = 'J_0020x0020_0 cos  coefficient') # +|A_0|^2 * C
+J_0020x0020_0_sinh = FormulaVar('J_0020x0020_0_sinh', '-(@0 * @0 + @1 * @1) * @2', [ReA0, ImA0, DCP], Title = 'J_0020x0020_0 sinh coefficient') # -|A_0|^2 * D
+J_0020x0020_0_sin  = FormulaVar('J_0020x0020_0_sin',  '-(@0 * @0 + @1 * @1) * @2', [ReA0, ImA0, SCP], Title = 'J_0020x0020_0 sin  coefficient') # -|A_0|^2 * S
+
+J_22x002022_0_cosh = FormulaVar('J_22x002022_0_cosh',   '@0 * @0 + @1 * @1',       [ReApar, ImApar     ], Title = 'J_22x002022_0 cosh coefficient') # +|A_par|^2 * 1
+J_22x002022_0_cos  = FormulaVar('J_22x002022_0_cos',   '(@0 * @0 + @1 * @1) * @2', [ReApar, ImApar, CCP], Title = 'J_22x002022_0 cos  coefficient') # +|A_par|^2 * C
+J_22x002022_0_sinh = FormulaVar('J_22x002022_0_sinh', '-(@0 * @0 + @1 * @1) * @2', [ReApar, ImApar, DCP], Title = 'J_22x002022_0 sinh coefficient') # -|A_par|^2 * D
+J_22x002022_0_sin  = FormulaVar('J_22x002022_0_sin',  '-(@0 * @0 + @1 * @1) * @2', [ReApar, ImApar, SCP], Title = 'J_22x002022_0 sin  coefficient') # -|A_par|^2 * S
+
+J_22x002022_1_cosh = FormulaVar('J_22x002022_1_cosh',   '@0 * @0 + @1 * @1',       [ReAperp, ImAperp     ], Title = 'J_22x002022_1 cosh coefficient') # +|A_perp|^2 * 1
+J_22x002022_1_cos  = FormulaVar('J_22x002022_1_cos',   '(@0 * @0 + @1 * @1) * @2', [ReAperp, ImAperp, CCP], Title = 'J_22x002022_1 cos  coefficient') # +|A_perp|^2 * C
+J_22x002022_1_sinh = FormulaVar('J_22x002022_1_sinh',  '(@0 * @0 + @1 * @1) * @2', [ReAperp, ImAperp, DCP], Title = 'J_22x002022_1 sinh coefficient') # +|A_perp|^2 * D
+J_22x002022_1_sin  = FormulaVar('J_22x002022_1_sin',   '(@0 * @0 + @1 * @1) * @2', [ReAperp, ImAperp, SCP], Title = 'J_22x002022_1 sin  coefficient') # +|A_perp|^2 * S
+                                                      
+J_21x21_0_cosh     = FormulaVar('J_21x21_0_cosh',       '@0 * @2 + @1 * @3',       [ReA0, ImA0, ReApar, ImApar     ], Title = 'J_21x21_0 cosh coefficient') # +Re(A_0* A_par) * 1
+J_21x21_0_cos      = FormulaVar('J_21x21_0_cos',       '(@0 * @2 + @1 * @3) * @4', [ReA0, ImA0, ReApar, ImApar, CCP], Title = 'J_21x21_0 cos coefficient' ) # +Re(A_0* A_par) * C
+J_21x21_0_sinh     = FormulaVar('J_21x21_0_sinh',     '-(@0 * @2 + @1 * @3) * @4', [ReA0, ImA0, ReApar, ImApar, DCP], Title = 'J_21x21_0 sinh coefficient') # -Re(A_0* A_par) * D
+J_21x21_0_sin      = FormulaVar('J_21x21_0_sin',      '-(@0 * @2 + @1 * @3) * @4', [ReA0, ImA0, ReApar, ImApar, SCP], Title = 'J_21x21_0 sin coefficient' ) # -Re(A_0* A_par) * S
+
+J_21x2m1_0_cosh    = FormulaVar('J_21x2m1_0_cosh',     '(@0 * @3 - @1 * @2) * @4', [ReA0, ImA0, ReAperp, ImAperp, CCP], Title = 'J_21x2m1_0 cosh coefficient') # +Im(A_0* A_perp) * C
+J_21x2m1_0_cos     = FormulaVar('J_21x2m1_0_cos',       '@0 * @3 - @1 * @2',       [ReA0, ImA0, ReAperp, ImAperp     ], Title = 'J_21x2m1_0 cos coefficient' ) # +Im(A_0* A_perp) * 1
+J_21x2m1_0_sinh    = FormulaVar('J_21x2m1_0_sinh',     '(@0 * @2 + @1 * @3) * @4', [ReA0, ImA0, ReAperp, ImAperp, SCP], Title = 'J_21x2m1_0 sinh coefficient') # +Re(A_0* A_perp) * S
+J_21x2m1_0_sin     = FormulaVar('J_21x2m1_0_sin',     '-(@0 * @2 + @1 * @3) * @4', [ReA0, ImA0, ReAperp, ImAperp, DCP], Title = 'J_21x2m1_0 sin coefficient' ) # -Re(A_0* A_perp) * D
+                                                     
+J_22x2m2_0_cosh    = FormulaVar('J_22x2m2_0_cosh',     '(@0 * @3 - @1 * @2) * @4', [ReApar, ImApar, ReAperp, ImAperp, CCP],   Title = 'J_22x2m2_0 cosh coefficient') # +Im(A_par* A_perp) * C
+J_22x2m2_0_cos     = FormulaVar('J_22x2m2_0_cos',       '@0 * @3 - @1 * @2',       [ReApar, ImApar, ReAperp, ImAperp     ],   Title = 'J_22x2m2_0 cos coefficient' ) # +Im(A_par* A_perp) * 1
+J_22x2m2_0_sinh    = FormulaVar('J_22x2m2_0_sinh',     '(@0 * @2 + @1 * @3) * @4', [ReApar, ImApar, ReAperp, ImAperp, SCP],   Title = 'J_22x2m2_0 sinh coefficient') # +Re(A_par* A_perp) * S
+J_22x2m2_0_sin     = FormulaVar('J_22x2m2_0_sin',     '-(@0 * @2 + @1 * @3) * @4', [ReApar, ImApar, ReAperp, ImAperp, DCP],   Title = 'J_22x2m2_0 sin coefficient' ) # -Re(A_par* A_perp) * D
+
+
+J_00x0020_0_cosh   = FormulaVar('J_00x0020_0_cosh',     '@0 * @0 + @1 * @1',       [ReAS, ImAS     ], Title = 'J_00x0020_0 cosh coefficient') # +|A_S|^2 * 1
+J_00x0020_0_cos    = FormulaVar('J_00x0020_0_cos',     '(@0 * @0 + @1 * @1) * @2', [ReAS, ImAS, CCP], Title = 'J_00x0020_0 cos coefficient' ) # +|A_S|^2 * C
+J_00x0020_0_sinh   = FormulaVar('J_00x0020_0_sinh',    '(@0 * @0 + @1 * @1) * @2', [ReAS, ImAS, DCP], Title = 'J_00x0020_0 sinh coefficient') # +|A_S|^2 * D
+J_00x0020_0_sin    = FormulaVar('J_00x0020_0_sin',     '(@0 * @0 + @1 * @1) * @2', [ReAS, ImAS, SCP], Title = 'J_00x0020_0 sin coefficient' ) # +|A_S|^2 * S
+
+J_10x0020_0_cosh   = FormulaVar('J_10x0020_0_cosh',    '(@0 * @2 + @1 * @3) * @4', [ReA0, ImA0, ReAS, ImAS, CCP], Title = 'J_10x0020_0 cosh coefficient' ) # +Re(A_0* A_S) * C
+J_10x0020_0_cos    = FormulaVar('J_10x0020_0_cos',      '@0 * @2 + @1 * @3',       [ReA0, ImA0, ReAS, ImAS     ], Title = 'J_10x0020_0 cos coefficient'  ) # +Re(A_0* A_S) * 1
+J_10x0020_0_sinh   = FormulaVar('J_10x0020_0_sinh',   '-(@0 * @3 - @1 * @2) * @4', [ReA0, ImA0, ReAS, ImAS, SCP], Title = 'J_10x0020_0 sinh coefficient' ) # -Im(A_0* A_S) * S
+J_10x0020_0_sin    = FormulaVar('J_10x0020_0_sin',     '(@0 * @3 - @1 * @2) * @4', [ReA0, ImA0, ReAS, ImAS, DCP], Title = 'J_10x0020_0 sin coefficient'  ) # +Im(A_0* A_S) * D
+
+J_11x21_0_cosh     = FormulaVar('J_11x21_0_cosh',      '(@0 * @2 + @1 * @3) * @4', [ReApar, ImApar, ReAS, ImAS, CCP],  Title = 'J_11x21_0 cosh coefficient')  # +Re(A_par* A_S) * C
+J_11x21_0_cos      = FormulaVar('J_11x21_0_cos',        '@0 * @2 + @1 * @3',       [ReApar, ImApar, ReAS, ImAS     ],  Title = 'J_11x21_0 cos coefficient')   # +Re(A_par* A_S) * 1
+J_11x21_0_sinh     = FormulaVar('J_11x21_0_sinh',     '-(@0 * @3 - @1 * @2) * @4', [ReApar, ImApar, ReAS, ImAS, SCP],  Title = 'J_11x21_0 sinh coefficient')  # -Im(A_par* A_S) * S
+J_11x21_0_sin      = FormulaVar('J_11x21_0_sin',       '(@0 * @3 - @1 * @2) * @4', [ReApar, ImApar, ReAS, ImAS, DCP],  Title = 'J_11x21_0 sin coefficient')   # +Im(A_par* A_S) * D
+                                                                                                                               
+J_11x2m1_0_cosh    = FormulaVar('J_11x2m1_0_cosh',      '@0 * @3 - @1 * @2',       [ReAperp, ImAperp, ReAS, ImAS     ],  Title = 'J_11x2m1_0 cosh coefficient' ) # +Im(A_perp* A_S) * 1
+J_11x2m1_0_cos     = FormulaVar('J_11x2m1_0_cos',      '(@0 * @3 - @1 * @2) * @4', [ReAperp, ImAperp, ReAS, ImAS, CCP],  Title = 'J_11x2m1_0 cos coefficient'  ) # +Im(A_perp* A_S) * C
+J_11x2m1_0_sinh    = FormulaVar('J_11x2m1_0_sinh',     '(@0 * @3 - @1 * @2) * @4', [ReAperp, ImAperp, ReAS, ImAS, DCP],  Title = 'J_11x2m1_0 sinh coefficient' ) # +Im(A_perp* A_S) * D
+J_11x2m1_0_sin     = FormulaVar('J_11x2m1_0_sin',      '(@0 * @3 - @1 * @2) * @4', [ReAperp, ImAperp, ReAS, ImAS, SCP],  Title = 'J_11x2m1_0 sin coefficient'  ) # +Im(A_perp* A_S) * S
+
+
 
 
 
