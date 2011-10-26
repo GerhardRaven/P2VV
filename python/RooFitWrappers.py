@@ -253,7 +253,11 @@ class ConstVar (RooObject):
         return ConstVar._getters[k](self)
 
 class AngleBasis (RooObject) : 
-    # if name not in ws :                 
+    _setters = {}
+    _getters = { 'Name'       : lambda s : s.GetName()
+               , 'Title'      : lambda s : s.GetTitle()
+               }
+    # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
     def __init__(self, angles, i,j,k,l,c) :
         # compute name, given angles,i,j,k,l,c!
         name = '_'.join(a['Name'] for a in angles)
@@ -261,12 +265,18 @@ class AngleBasis (RooObject) :
         name = 'AngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
         name = name.replace('.', '_')
-        if name not in self.ws():
+        if name in self.ws():
+            #raise RunTimeError( 'Code Path Not Yet Verified'  )
+            print '%s already in workspace, assuming we can recycle...' % name
+        else :
             #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
             self._declare("RooP2VVAngleBasis::%s(%s, %d, %d, %d, %d, %f)" % (name, ','.join(a['Name'] for a in angles), i, j, k, l, c) )
-            self._init(name,'RooP2VVAngleBasis')
-        else :
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
+        self._init(name,'RooP2VVAngleBasis')
+            
+    def __setitem__(self,k,v):
+        return AngleBasis._setters[k](self, v)
+    def __getitem__(self,k):
+        return AngleBasis._getters[k](self)
 
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...

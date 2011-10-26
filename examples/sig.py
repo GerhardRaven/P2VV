@@ -158,27 +158,29 @@ coef =  { ('A0',   'A0')    : { 'cosh' : FormulaVar('J_0020x0020_0_cosh',   '@0 
         }
 
 
-# using helicity angles
+# using transversity amplitudes and helicity angles
 from math import sqrt
-angFuncs = { ('A0',   'A0')    :  ('J_0020x0020_0', [(0, 0, 0,  0,  4.             ),
-                                                     (0, 0, 2,  0, -sqrt( 16. / 5.)),
-                                                     (2, 0, 0,  0,  8.             ),
-                                                     (2, 0, 2,  0, -sqrt( 64. / 5.))])
-           , ('Apar', 'Apar')  :  ('J_22x002022_0', [(2, 2, 0,  0,  2.             ),
-                                                     (2, 2, 2,  0,  sqrt(  1. / 5.)),
-                                                     (2, 2, 2,  2, -sqrt(  3. / 5.))])
-           , ('Aperp','Aperp') :  ('J_22x002022_1', [(2, 2, 0,  0,  2.             ),
-                                                     (2, 2, 2,  0,  sqrt(  1. / 5.)),
-                                                     (2, 2, 2,  2,  sqrt(  3. / 5.))])
-           , ('A0',   'Apar')  :  ('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))])
-           , ('A0',   'Aperp') :  ('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))])
-           , ('Apar', 'Aperp') :  ('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])
-           , ('AS',   'AS')    :  ('J_00x0020_0',   [(0, 0, 0,  0,  4.             ),
-                                                     (0, 0, 2,  0, -sqrt( 16. / 5.))])
-           , ('A0',   'AS')    :  ('J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     )),
-                                                     (1, 0, 2,  0, -sqrt(192. / 5.))])
-           , ('Apar', 'AS')    :  ('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))])
-           , ('Aperp','AS')    :  ('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))])
+_build = lambda  name,args : Addition(name, [ AngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
+
+angFuncs = { ('A0',   'A0')    :  _build('J_0020x0020_0', [(0, 0, 0,  0,  4.             ),
+                                                           (0, 0, 2,  0, -sqrt( 16. / 5.)),
+                                                           (2, 0, 0,  0,  8.             ),
+                                                           (2, 0, 2,  0, -sqrt( 64. / 5.))])
+           , ('Apar', 'Apar')  :  _build('J_22x002022_0', [(2, 2, 0,  0,  2.             ),
+                                                           (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                                           (2, 2, 2,  2, -sqrt(  3. / 5.))])
+           , ('Aperp','Aperp') :  _build('J_22x002022_1', [(2, 2, 0,  0,  2.             ),
+                                                           (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                                           (2, 2, 2,  2,  sqrt(  3. / 5.))])
+           , ('A0',   'Apar')  :  _build('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))])
+           , ('A0',   'Aperp') :  _build('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))])
+           , ('Apar', 'Aperp') :  _build('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])
+           , ('AS',   'AS')    :  _build('J_00x0020_0',   [(0, 0, 0,  0,  4.             ),
+                                                           (0, 0, 2,  0, -sqrt( 16. / 5.))])
+           , ('A0',   'AS')    :  _build('J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     )),
+                                                           (1, 0, 2,  0, -sqrt(192. / 5.))])
+           , ('Apar', 'AS')    :  _build('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))])
+           , ('Aperp','AS')    :  _build('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))])
            }
 #
 from itertools import combinations_with_replacement
@@ -188,7 +190,6 @@ for (i,j) in combinations_with_replacement( ['A0','Apar','Aperp','AS'], 2 ) :
     aa = angFuncs[ (i,j) ]
     print (i,j), zz, aa
 
-z = AngleBasis( (cpsiAng,cthetaAng,phiAng), 0,0,0,0,4.)
 
 
 
