@@ -14,13 +14,20 @@ from array import array
 
 from RooFitDecorators import *
 
+name = 'SimFit_200bins_FIX'
+#name = 'SimFit_10bins_FIX'
+#name = 'SimFit_10bins_1_1_0'
+
+#wsfile = TFile('WS_SimFit_10bins_0_1_0.root')
+wsfile = TFile('WS_SimFit_200bins_FIX.root')
+
+ws = wsfile.Get('ws')
+
+#resultfile = TFile('result_%s.root'%(name))
+#prelimresult =resultfile.Get('fitresult_simpdf_inc_tag_syst_jointdata')
+
 blinded = False
 angcorr = False
-
-name = 'SimFit'
-
-wsfile = TFile('SimWS.root')
-ws = wsfile.Get('ws')
 
 if angcorr:
     pdfbeforeblinding = ws['simpdf_angcorr_inc_tag_syst']
@@ -52,6 +59,9 @@ if blinded:
 else:
     pdf = pdfbeforeblinding
 
+data = ws['jointdata']
+
+#For non-extended fit
 ws['#Gamma'].setVal(0.6761)
 ws['t_sig_dG'].setVal(0.106)
 ws['rperp2'].setVal(0.260)
@@ -61,42 +71,38 @@ ws['deltapar'].setVal(3.26)
 ws['deltaperp'].setVal(2.61)
 ws['deltas'].setVal(2.93)
 ws['phis'].setVal(0.151)
-ws['Nsig_UB'].setVal(7280)
-ws['Nbkg_UB'].setVal(3746)
 
-data = ws['jointdata']
+#set = prelimresult.floatParsFinal()
+#for i in set:
+#    parname = i.GetName()
+#    value = i.getVal()
+#    error = i.getError()
+#    ws[parname].setVal(value)
+#    ws[parname].setError(error)
+    
+fit = False
 
-#ws['rs2'].setVal(0.)
-#ws['rs2'].setConstant()
-#ws['deltas'].setVal(0.)
-#ws['deltas'].setConstant()
+if fit:
+    sw = TStopwatch()
+    sw.Start()
+    result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'),ws.pdf('tres_SFconstraint'))))
+    #result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'),ws.pdf('tres_SFconstraint'))))
+    sw.Stop()
 
-sw = TStopwatch()
-sw.Start()
-result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'),ws.pdf('tres_SFconstraint'))))
-sw.Stop()
+    result.SaveAs('result_%s.root'%(name))
+    result.writepars(name,False)
+    result.writecorr(name)
 
-writeFitParamsLatex(result,name,False)
-dict = writeCorrMatrixLatex(result,name)
-
-#mcanvas = TCanvas('mcanvas','mcanvas')
-#mframe = ws['m'].frame()
-#data.plotOn(mframe)
-#pdf.plotOn(mframe,RooFit.ProjWData(data))
-#mframe.Draw()
-
-assert False
 ######PLOT######
 lw = RooCmdArg(RooFit.LineWidth(2))
 xes = RooCmdArg(RooFit.XErrorSize(0))
 err = RooCmdArg(RooFit.DrawOption('E'))
 dashed = RooCmdArg(RooFit.LineStyle(kDashed))
 
-signame = 'accsig_inc_tag_syst_blinded'
-bkgname = 'accbkg'
-
-#signame = 'sig_pdf__inc_tag_syst_blinded'
-#bkgname = 'bkg_pdf'
+signame_UB = 'sig_pdf_inc_tag_syst'
+bkgname_UB = 'bkg_pdf_UB'
+signame_B  = 'acc_sig_pdf_inc_tag_syst'
+bkgname_B  = 'acc_bkg_pdf'
 
 sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
 bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
@@ -110,91 +116,49 @@ ws['m'].setRange('sigRegion',msigmin,msigmax)
 ws['m'].setRange('leftSideband',mmin,msigmin)
 ws['m'].setRange('rightSideband',msigmax,mmax)
 
+projectdata = RooDataSet('projectdata','projectdata',data,RooArgSet(ws['fitcat']))
+
 #Make Sanity plots
-C2 = TCanvas('C2','C2')
-C2.Divide(3,2)
+masscanvas = TCanvas('masscanvas','masscanvas')
+masscanvas.Divide(1,2)
 
-C2.cd(1)
-gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(30))
-data.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(tframe,lw)
-pdf.plotOn(tframe,RooFit.Components(bkgname),bkgcolor,dashed,lw)
-pdf.plotOn(tframe,RooFit.Components(signame),sigcolor,dashed,lw)
-tframe.Draw()
-
-C2.cd(2)
+masscanvas.cd(1)
 mframe = ws['m'].frame(RooFit.Bins(30))
-data.plotOn(mframe,RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(mframe,lw)
-pdf.plotOn(mframe,RooFit.Components(bkgname),bkgcolor,dashed,lw)
-pdf.plotOn(mframe,RooFit.Components(signame),sigcolor,dashed,lw)
+data.plotOn(mframe,RooFit.Cut("fitcat==fitcat::AllUnbiased"))
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.ProjWData(projectdata))
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.Components(signame_UB),RooFit.ProjWData(projectdata),dashed,sigcolor)
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.Components(bkgname_UB),RooFit.ProjWData(projectdata),dashed,bkgcolor) 
 mframe.Draw()
 
-C2.cd(4)
-trcosthetaframe = ws['trcostheta'].frame(RooFit.Bins(30))
-data.plotOn(trcosthetaframe,RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(trcosthetaframe,lw)
-pdf.plotOn(trcosthetaframe,RooFit.Components(bkgname),bkgcolor,dashed,lw)
-pdf.plotOn(trcosthetaframe,RooFit.Components(signame),sigcolor,dashed,lw)
-trcosthetaframe.Draw()
+masscanvas.cd(2)
+mframe = ws['m'].frame(RooFit.Bins(30))
+data.plotOn(mframe,RooFit.Cut("fitcat==fitcat::FullyBiased"))
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.ProjWData(projectdata))
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.Components(signame_B),RooFit.ProjWData(projectdata),dashed,sigcolor)
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.Components(bkgname_B),RooFit.ProjWData(projectdata),dashed,bkgcolor)
+mframe.Draw()
 
-C2.cd(5)
-trcospsiframe = ws['trcospsi'].frame(RooFit.Bins(30))
-data.plotOn(trcospsiframe,RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(trcospsiframe,lw)
-pdf.plotOn(trcospsiframe,RooFit.Components(bkgname),bkgcolor,dashed,lw)
-pdf.plotOn(trcospsiframe,RooFit.Components(signame),sigcolor,dashed,lw)
-trcospsiframe.Draw()
+masscanvas.SaveAs('plaatjemass.eps')
 
-C2.cd(6)
-trphiframe = ws['trphi'].frame(RooFit.Bins(30))
-data.plotOn(trphiframe,RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(trphiframe,lw)
-pdf.plotOn(trphiframe,RooFit.Components(bkgname),bkgcolor,dashed,lw)
-pdf.plotOn(trphiframe,RooFit.Components(signame),sigcolor,dashed,lw)
-trphiframe.Draw()
+timecanvas = TCanvas('timecanvas','timecanvas')
+timecanvas.Divide(1,2)
 
-C3 = TCanvas('C3','C3')
-C3.Divide(3,2)
-
-C3.cd(1)
+timecanvas.cd(1)
 gPad.SetLogy()
 tframe = ws['t'].frame(RooFit.Bins(30))
-data.plotOn(tframe,RooFit.CutRange('sigRegion'),RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(tframe,lw,RooFit.ProjectionRange('sigRegion'))
-pdf.plotOn(tframe,RooFit.Components(bkgname),RooFit.ProjectionRange('sigRegion'),bkgcolor,dashed,lw)
-pdf.plotOn(tframe,RooFit.Components(signame),RooFit.ProjectionRange('sigRegion'),sigcolor,dashed,lw)
+data.plotOn(tframe,RooFit.Cut("fitcat==fitcat::AllUnbiased"))
+pdf.plotOn(tframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.ProjWData(projectdata))
+pdf.plotOn(tframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.Components(signame_UB),RooFit.ProjWData(projectdata),dashed,sigcolor)
+pdf.plotOn(tframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.Components(bkgname_UB),RooFit.ProjWData(projectdata),dashed,bkgcolor) 
 tframe.Draw()
 
-C3.cd(2)
-mframe = ws['m'].frame(RooFit.Range(msigmin,msigmax),RooFit.Bins(30))
-data.plotOn(mframe,RooFit.CutRange('sigRegion'),RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(mframe,lw,RooFit.ProjectionRange('sigRegion'))
-pdf.plotOn(mframe,RooFit.Components(bkgname),RooFit.ProjectionRange('sigRegion'),bkgcolor,dashed,lw)
-pdf.plotOn(mframe,RooFit.Components(signame),RooFit.ProjectionRange('sigRegion'),sigcolor,dashed,lw)
-mframe.Draw()
+timecanvas.cd(2)
+gPad.SetLogy()
+tframe = ws['t'].frame(RooFit.Bins(30))
+data.plotOn(tframe,RooFit.Cut("fitcat==fitcat::FullyBiased"))
+pdf.plotOn(tframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.ProjWData(projectdata))
+pdf.plotOn(tframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.Components(signame_B),RooFit.ProjWData(projectdata),dashed,sigcolor)
+pdf.plotOn(tframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.Components(bkgname_B),RooFit.ProjWData(projectdata),dashed,bkgcolor) 
+tframe.Draw()
 
-C3.cd(4)
-trcosthetaframe = ws['trcostheta'].frame(RooFit.Bins(30))
-data.plotOn(trcosthetaframe,RooFit.CutRange('sigRegion'),RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(trcosthetaframe,lw,RooFit.ProjectionRange('sigRegion'))
-pdf.plotOn(trcosthetaframe,RooFit.Components(bkgname),RooFit.ProjectionRange('sigRegion'),bkgcolor,dashed,lw)
-pdf.plotOn(trcosthetaframe,RooFit.Components(signame),RooFit.ProjectionRange('sigRegion'),sigcolor,dashed,lw)
-trcosthetaframe.Draw()
-
-C3.cd(5)
-trcospsiframe = ws['trcospsi'].frame(RooFit.Bins(30))
-data.plotOn(trcospsiframe,RooFit.CutRange('sigRegion'),RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(trcospsiframe,lw,RooFit.ProjectionRange('sigRegion'))
-pdf.plotOn(trcospsiframe,RooFit.Components(bkgname),RooFit.ProjectionRange('sigRegion'),bkgcolor,dashed,lw)
-pdf.plotOn(trcospsiframe,RooFit.Components(signame),RooFit.ProjectionRange('sigRegion'),sigcolor,dashed,lw)
-trcospsiframe.Draw()
-
-C3.cd(6)
-trphiframe = ws['trphi'].frame(RooFit.Bins(30))
-data.plotOn(trphiframe,RooFit.CutRange('sigRegion'),RooFit.MarkerSize(0.5),xes)
-pdf.plotOn(trphiframe,lw,RooFit.ProjectionRange('sigRegion'))
-pdf.plotOn(trphiframe,RooFit.Components(bkgname),RooFit.ProjectionRange('sigRegion'),bkgcolor,dashed,lw)
-pdf.plotOn(trphiframe,RooFit.Components(signame),RooFit.ProjectionRange('sigRegion'),sigcolor,dashed,lw)
-trphiframe.Draw()
+timecanvas.SaveAs('plaatjetime.eps')

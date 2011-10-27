@@ -25,10 +25,6 @@ gStyle.SetOptTitle(0)
 lhcbname = printLHCb(gStyle,'L','Prelim','#sqrt{s}=7 TeV Data, L = 370 pb^{-1}')
 style = lhcbStyle()
 
-resultfile = TFile('roofitresult.root')
-result = resultfile.Get('fitresult_pdf_ext_inc_tag_syst_unbiaseddata')
-name = 'UnbiasedFit'
-assert False
 angcorr = False
 blinded = False
 phisparam = True
