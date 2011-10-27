@@ -65,7 +65,7 @@ _ASPh      = RealVar('deltaS',    Title = 'delta_S',    Observable = False, Valu
 
 # construct cartesian amplitudes with polar parameters -- these are the 'externally visible' (expected) parameters -- 2*4=8 terms for 4 amplitudes
 class Carth_Amplitude :
-    def __init__(self,name, x,y, CP) :
+    def __init__(self,name, x,y, CP ) :
         self.name = name
         self.Re = x
         self.Im = y
@@ -100,6 +100,7 @@ Mag2 = lambda ai      : FormulaVar('Mag2_%s'%ai.name,'@0*@0+@1*@1',[ai.Re,ai.Im]
 # TODO: use Addition and Product to do so...        Prod( Mag2(Amplitudes['A0']), CP.C ), Prod( 
 # TODO: later we can add the python intrinsic __mult__ and __add__  members to make it more natural...  Mag2( Amplitudes['A0'] ) * CP.C  -> FormulaVar.__mult__( FormulaVar )
 #              or maybe even RooObject.__mult__( RooObject) and defer to RooFit to figure out whether it works / is allowed ;-)
+# TODO: move Re vs. Im into angular functions -- those 'drive' whether we need Re or Im in the interference terms...
         # even^2
 coef =  { ('A0',   'A0')    : { 'cosh' : FormulaVar('J_0020x0020_0_cosh',   '@0 * @0 + @1 * @1',       [Amplitudes['A0'   ].Re, Amplitudes['A0'   ].Im      ]) # +|A_0|^2 * 1
                               , 'cos'  : FormulaVar('J_0020x0020_0_cos',   '(@0 * @0 + @1 * @1) * @2', [Amplitudes['A0'   ].Re, Amplitudes['A0'   ].Im, CP.C]) # +|A_0|^2 * C
@@ -157,7 +158,6 @@ coef =  { ('A0',   'A0')    : { 'cosh' : FormulaVar('J_0020x0020_0_cosh',   '@0 
                               }
         }
 
-
 # using transversity amplitudes and helicity angles
 from math import sqrt
 _build = lambda  name,args : Addition(name, [ AngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
@@ -165,32 +165,34 @@ _build = lambda  name,args : Addition(name, [ AngleBasis((cpsiAng,cthetaAng,phiA
 angFuncs = { ('A0',   'A0')    :  _build('J_0020x0020_0', [(0, 0, 0,  0,  4.             ),
                                                            (0, 0, 2,  0, -sqrt( 16. / 5.)),
                                                            (2, 0, 0,  0,  8.             ),
-                                                           (2, 0, 2,  0, -sqrt( 64. / 5.))])
+                                                           (2, 0, 2,  0, -sqrt( 64. / 5.))])  
            , ('Apar', 'Apar')  :  _build('J_22x002022_0', [(2, 2, 0,  0,  2.             ),
                                                            (2, 2, 2,  0,  sqrt(  1. / 5.)),
                                                            (2, 2, 2,  2, -sqrt(  3. / 5.))])
            , ('Aperp','Aperp') :  _build('J_22x002022_1', [(2, 2, 0,  0,  2.             ),
                                                            (2, 2, 2,  0,  sqrt(  1. / 5.)),
                                                            (2, 2, 2,  2,  sqrt(  3. / 5.))])
-           , ('A0',   'Apar')  :  _build('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))])
-           , ('A0',   'Aperp') :  _build('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))])
-           , ('Apar', 'Aperp') :  _build('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])
+           , ('A0',   'Apar')  :  _build('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))])   # Re
+           , ('A0',   'Aperp') :  _build('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))])   # Im
+           , ('Apar', 'Aperp') :  _build('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])   # Im
            , ('AS',   'AS')    :  _build('J_00x0020_0',   [(0, 0, 0,  0,  4.             ),
                                                            (0, 0, 2,  0, -sqrt( 16. / 5.))])
            , ('A0',   'AS')    :  _build('J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     )),
                                                            (1, 0, 2,  0, -sqrt(192. / 5.))])
            , ('Apar', 'AS')    :  _build('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))])
-           , ('Aperp','AS')    :  _build('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))])
+           , ('Aperp','AS')    :  _build('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))])   # Im!
            }
 #
 from itertools import combinations_with_replacement
 # TODO: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
+c = dict()
 for (i,j) in combinations_with_replacement( ['A0','Apar','Aperp','AS'], 2 ) :
-    zz = coef[ (i,j) ]
-    aa = angFuncs[ (i,j) ]
-    print (i,j), zz, aa
+        for k in [ 'cosh', 'sinh', 'cos', 'sin' ] :
+               if k not in c : c[k] = []
+               c[k] +=  [ Product( '%s_%s_%s'%(k,i,j), [ coef[ (i,j) ][k],  angFuncs[ (i,j) ] ] ) ]
+               print c[k]
 
-
+print c
 
 
 ws.ws().Print('V')
