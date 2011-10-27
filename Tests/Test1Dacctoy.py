@@ -1,5 +1,5 @@
 from ROOT import *
-gSystem.Load("libp2vv")
+gSystem.Load("libP2VV")
 from math import sqrt,pi
 
 from RooFitDecorators import *

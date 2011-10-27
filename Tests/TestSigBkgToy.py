@@ -1,5 +1,5 @@
 from ROOT import *
-gSystem.Load("libp2vv")
+gSystem.Load("libP2VV")
 ## from math import sqrt,pi
 
 from RooFitDecorators import *
@@ -51,6 +51,8 @@ ws.factory("SUM::accpdf2( f_sig*sigaccpdf, bkgaccpdf)")
 ### Generate 'biased' data ###
 ##############################
 accpdf1 = ws['accpdf1']
+signame = 't_sig'
+bkgname = 't_bkg'
 accdata1 = ws['accpdf1'].generate(ws.set('observables'),10000)
 
 accpdf2 = ws['accpdf2']
@@ -59,12 +61,12 @@ accdata2 = ws['accpdf2'].generate(ws.set('observables'),10000)
 print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
 print 'Fitting eff(t)*[sigpdf*f_sig+bkfpdf]'
 print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-accpdf1.fitTo(accdata1)
+#accpdf1.fitTo(accdata1)
 
 print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
 print 'Fitting [eff(t)*sigpdf]*f_sig+[eff(t)*bkfpdf]'
 print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-accpdf2.fitTo(accdata2)
+#accpdf2.fitTo(accdata2)
 
 ############
 ### Plot ###
@@ -73,6 +75,9 @@ lw = RooCmdArg(RooFit.LineWidth(2))
 xes = RooCmdArg(RooFit.XErrorSize(0))
 err = RooCmdArg(RooFit.DrawOption('E'))
 dashed = RooCmdArg(RooFit.LineStyle(kDashed))
+
+sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
+bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
 
 #Make Sanity plots
 Acc = TCanvas('Acc','Acc')
@@ -112,14 +117,16 @@ tframe.Draw()
 C2.cd(5)
 #gPad.SetLogy()
 tframe = ws['t'].frame(RooFit.Bins(10))
-accpdf1.plotOn(tframe,lw)
+accpdf1.plotOn(tframe,lw,RooFit.LineColor(kBlue-4))
 tframe.Draw()
 
 C2.cd(6)
 #gPad.SetLogy()
 tframe = ws['t'].frame(RooFit.Bins(10))
 accdata1.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
-accpdf1.plotOn(tframe,lw)
+accpdf1.plotOn(tframe,lw,RooFit.LineColor(kBlue-4))
+accpdf1.plotOn(tframe,RooFit.Components(signame),dashed,sigcolor,lw)
+accpdf1.plotOn(tframe,RooFit.Components(bkgname),dashed,bkgcolor,lw)
 tframe.Draw()
 
 C2.cd(7)
@@ -131,12 +138,14 @@ tframe.Draw()
 C2.cd(8)
 #gPad.SetLogy()
 tframe = ws['t'].frame(RooFit.Bins(10))
-accpdf2.plotOn(tframe,lw,RooFit.LineColor(kRed))
+accpdf2.plotOn(tframe,lw,RooFit.LineColor(kBlue+2))
 tframe.Draw()
 
 C2.cd(9)
 #gPad.SetLogy()
 tframe = ws['t'].frame(RooFit.Bins(10))
 accdata2.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
-accpdf2.plotOn(tframe,lw,RooFit.LineColor(kRed))
+accpdf2.plotOn(tframe,lw,RooFit.LineColor(kBlue+2))
+accpdf2.plotOn(tframe,RooFit.Components(signame),dashed,sigcolor,lw)
+accpdf2.plotOn(tframe,RooFit.Components(bkgname),dashed,bkgcolor,lw)
 tframe.Draw()

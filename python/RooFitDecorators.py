@@ -1,4 +1,4 @@
-from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult
+from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult, RooFit
 from ROOT import gStyle,gROOT
 gStyle.SetPalette(1)
 gROOT.SetStyle("Plain")
@@ -75,17 +75,21 @@ for t in [ RooArgSet,RooArgList ] :
     t.__sub__  = _RooTypedUnary2Binary( t, '__isub__' )
     t.__add__  = _RooTypedUnary2Binary( t, '__iadd__' )
 
-
-
 # RooWorkspace functions
 
 from ROOT import RooWorkspace, RooFit
 RooWorkspace.__getitem__ = lambda s,i : s.obj(i)
 RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
-def _RooWorkspacePut( self ,x ) :
+def _RooWorkspacePutSilent( self ,x ) :
     _import = getattr(RooWorkspace,'import')
     if _import(self,x,RooFit.Silence()) : return None
+    return self[x.GetName()]
+RooWorkspace.puts = _RooWorkspacePutSilent
+
+def _RooWorkspacePut( self ,x ) :
+    _import = getattr(RooWorkspace,'import')
+    if _import(self,x) : return None
     return self[x.GetName()]
 RooWorkspace.put = _RooWorkspacePut
 
@@ -129,10 +133,6 @@ def _RooFitResultGet(self, parList) :
   return (tuple(parList), values, covariances)
 
 RooFitResult.result = _RooFitResultGet
-
-
-
-
 
 # plot -- example usage:
 # _c1 = plot( c.cd(1),mpsi,data,pdf
@@ -219,12 +219,12 @@ def plot( c, obs, data, pdf, components, frameOpts = (), dataOpts = (), pdfOpts 
     c.Update()
     return c
 
-def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
-    parlist = roofitresult.floatParsFinal()
+def _RooFitResultCorrMatrixLatex(self, name):
+    parlist = self.floatParsFinal()
     npar = parlist.getSize()
     corr = []
     for i in range(npar):
-        corr.append(roofitresult.correlation(parlist[i]))
+        corr.append(self.correlation(parlist[i]))
 
     layoutstring = '|c'*(npar+1)
     layoutstring += '|}'
@@ -237,7 +237,8 @@ def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
     string += layoutstring+'\n' 
     string += '\\hline\n'
     string += 'Parameter '
-    for i in range(npar): string += ' & %s'%(parlist[i].GetName())
+    for i in range(npar):
+        string += ' & %s'%(parlist[i].GetName())
     string += ' \\\\\n'
     string += '\\hline\n\\hline\n'
 
@@ -247,7 +248,7 @@ def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
         for i in range(npar):
             if i>=j:
                 if abs(corr[j][i].getVal()) < 0.005:
-                    string += ' & -- '
+                    string += ' & - '
                 else:
                     string += ' & ' + str(round(corr[j][i].getVal(),3)) 
             else : 
@@ -259,15 +260,15 @@ def writeCorrMatrixLatex(roofitresult,fname = 'corrtable.tex'):
     string += '\\end{table}\n'
     string += '\\end{document}\n'
 
-    if fname :
-        f = open(fname)
-        f.write(string)
-        f.close
+    f = open('corrtable_%s.tex'%name, 'w')
+    f.write(string)
+    f.close
 
-    return {'string':string}
+    return
 
+RooFitResult.writecorr = _RooFitResultCorrMatrixLatex
 
-def writeFitParamsLatex(result,name,toys):
+def _RooFitResultParamsLatex(self,name,toys):
     f = open('params_%s.tex'%name,'w')
 
     string = '\\documentclass{article}\n'
@@ -279,7 +280,8 @@ def writeFitParamsLatex(result,name,toys):
         string += 'parameter & result & original value & $\sigma$ from original \\\\ \n'
         string += '\\hline\n'
         string += '\\hline\n'
-        for i,j in zip(result.floatParsFinal(),result.floatParsInit()):
+        for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
+            print i,j
             string += '%s & '%i.GetName()
             string += '%s $\pm$ %s & '%(round(i.getVal(),3),round(i.getError(),3))
             string += '%s & '%round(j.getVal(),3)
@@ -290,7 +292,8 @@ def writeFitParamsLatex(result,name,toys):
         string += 'parameter & result \\\\ \n'
         string += '\\hline\n'
         string += '\\hline\n'
-        for i,j in zip(result.floatParsFinal(),result.floatParsInit()):
+        for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
+            print i,j
             string += '%s & '%i.GetName()
             string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),3),round(i.getError(),3))
 
@@ -300,16 +303,7 @@ def writeFitParamsLatex(result,name,toys):
 
     f.write(string)
     f.close()
-    
 
-def MakeProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max,NumCPU=8,Extend=True):
-    print '**************************************************'
-    print 'making profile for %s and %s'%(param1.GetName(),param2.GetName())
-    print '**************************************************'
+    return
 
-    nll = pdf.createNLL(data,RooFit.NumCPU(NumCPU),RooFit.Extended(Extend))
-    profile = nll.createProfile(RooArgSet( param1,param2))
-    return profile.createHistogram(name,         param1, RooFit.Binning(npoints,param1_min,param1_max)
-                                  , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
-                                  , RooFit.Scaling(False)
-                                  )
+RooFitResult.writepars = _RooFitResultParamsLatex
