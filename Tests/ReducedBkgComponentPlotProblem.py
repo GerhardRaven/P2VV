@@ -3,12 +3,17 @@ gSystem.Load("libP2VV")
 
 from RooFitDecorators import *
 
+#############
+### Flags ###
+#############
+acc= True
+#Single no ERROR, Double does have ERROR!
+single = False
+
 ##############################
 ### Create ws, observables ###
 ##############################
-
 ws = RooWorkspace('ws')
-
 ws.factory("t[0.3,14.]")
 
 ##############################
@@ -30,11 +35,12 @@ ws.factory("Decay::t_sig(t,tau[1.4],tres,SingleSided)")
 
 #BKG time
 #Single no ERROR, Double does have ERROR!
-#ws.factory("RooDecay::t_bkg(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
-
-ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
-ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,0.5,2.5],tres,SingleSided)")
-ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
+if single:
+    ws.factory("RooDecay::t_bkg(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
+else:
+    ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
+    ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,0.5,2.5],tres,SingleSided)")
+    ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
 
 ws.factory("SUM::pdf_ext( Nsig[1186]*t_sig,Nbkg[568]*t_bkg)")
 
@@ -45,7 +51,6 @@ ws.factory("SUM::accpdf_ext( Nsig*acc_sig_pdf,Nbkg*acc_bkg_pdf)")
 #########################
 ### What do you want? ###
 #########################
-acc= True
 
 if acc:
     pdf = ws.pdf('accpdf_ext')
