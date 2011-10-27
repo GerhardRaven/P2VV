@@ -191,6 +191,35 @@ class Addition(RooObject) :
     def __getitem__(self,k):
         return Addition._getters[k](self)
 
+class BTagDecay(RooObject) :
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
+    def __init__(self,name,params, **kwargs) :
+        if name not in self.ws():
+            # construct factory string on the fly...
+            if 'name' in params : raise KeyError(' name should not be in params!')
+            d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
+            print d
+            d['name'] = name
+            if 'checkVars' not in d : d['checkVars'] = 0
+            self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d )
+
+            self._init(name,'RooBTagDecay')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            raise RunTimeError( 'Code Path Not Yet Verified'  )
+            
+    def __setitem__(self,k,v):
+        return BTagDecay._setters[k](self, v)
+    def __getitem__(self,k):
+        return BTagDecay._getters[k](self)
+
 
 class FormulaVar (RooObject): 
     # TODO: move __setitem__ and __getitem__ into RooObject
@@ -510,6 +539,8 @@ class ResolutionModel(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables')
                ,'Parameters'  : lambda s : s._get('Parameters')
                ,'Type'        : lambda s : s._get('Type')
+               ,'Name'        : lambda s : s.GetName()
+               ,'Title'       : lambda s : s.GetTitle()
                }
 
     def __init__(self, name, **kwargs):

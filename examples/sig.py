@@ -176,23 +176,42 @@ angFuncs = { ('A0',   'A0')    :  _build('J_0020x0020_0', [(0, 0, 0,  0,  4.    
            , ('A0',   'Aperp') :  _build('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))])   # Im
            , ('Apar', 'Aperp') :  _build('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])   # Im
            , ('AS',   'AS')    :  _build('J_00x0020_0',   [(0, 0, 0,  0,  4.             ),
-                                                           (0, 0, 2,  0, -sqrt( 16. / 5.))])
+                                                           (0, 0, 2,  0, -sqrt( 16. / 5.))])   # Im
            , ('A0',   'AS')    :  _build('J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     )),
-                                                           (1, 0, 2,  0, -sqrt(192. / 5.))])
-           , ('Apar', 'AS')    :  _build('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))])
-           , ('Aperp','AS')    :  _build('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))])   # Im!
+                                                           (1, 0, 2,  0, -sqrt(192. / 5.))])   # Re
+           , ('Apar', 'AS')    :  _build('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))])   # Re
+           , ('Aperp','AS')    :  _build('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))])   # Im
            }
 #
-from itertools import combinations_with_replacement
-# TODO: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
 c = dict()
-for (i,j) in combinations_with_replacement( ['A0','Apar','Aperp','AS'], 2 ) :
-        for k in [ 'cosh', 'sinh', 'cos', 'sin' ] :
-               if k not in c : c[k] = []
-               c[k] +=  [ Product( '%s_%s_%s'%(k,i,j), [ coef[ (i,j) ][k],  angFuncs[ (i,j) ] ] ) ]
-               print c[k]
+for k in [ 'cosh', 'sinh', 'cos', 'sin' ] :
+    # TODO: compute coef[ (i,j) ][k] from first principles (using the information from Amplitudes and angFuncs)
+    p = lambda i,j : Product( 'p_%s_%s_%s'%(k,i,j), [ coef[ (i,j) ][k],  angFuncs[ (i,j) ] ] )
+    from itertools import combinations_with_replacement as cwr
+    # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
+    c[k] = Addition( 'a_%s'% k, [ p(i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
 
-print c
+
+# build PDF
+args =   { 'time' : t
+         , 'iTag' : iTag
+         , 'tau'  : BMeanLife
+         , 'dGamma' : dGamma
+         , 'dm'    : dm 
+         , 'dilution' : tagDilution
+         , 'ADilWTag' : ADilWTag
+         , 'avgCEven' : avgCEven
+         , 'avgCOdd'  : avgCOdd
+         , 'coshCoef' : c['cosh']
+         , 'sinhCoef' : c['sinh']
+         , 'cosCoef'  : c['cos']
+         , 'sinCoef'  : c['sin']
+         , 'resolutionModel' : resolution 
+         , 'decayType' : 'SingleSided'
+         }
+pdf = BTagDecay( 'sig_pdf', args )
+
+
 
 
 ws.ws().Print('V')

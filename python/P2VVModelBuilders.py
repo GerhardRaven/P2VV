@@ -254,10 +254,6 @@ def buildJpsiV(config) :
 
       # format time function strings
       # build time function coefficients
-      print 'sum::cCosh(%s)' % coshCStr.format(cEven = '') 
-      print 'sum::cCos( %s)' %  cosCStr.format(cOdd  = '') 
-      print 'sum::cSinh(%s)' % sinhCStr.format(cEven = '') 
-      print 'sum::cSin( %s)' %  sinCStr.format(cOdd  = '') 
       ws.factory('sum::cCosh(%s)' % coshCStr.format(cEven = '') )
       ws.factory('sum::cCos( %s)' %  cosCStr.format(cOdd  = '') )
       ws.factory('sum::cSinh(%s)' % sinhCStr.format(cEven = '') )
