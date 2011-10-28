@@ -1,0 +1,621 @@
+\subsection{Differential Decay Rates} \label{sec:angDiffRates}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{P $\to$ VV} \label{sec:P2VV}
+For the decay of a pseudoscalar particle via two vector particles (\PVV), both $j_a$ and $j_b$
+(Equation~\ref{eq:amplitude1}) are equal to one. Since $\lambda$ is the spin projection of the
+vector particles, it can assume the values 0 and $\pm1$. Thus, three helicity amplitudes are
+defined for a given final state with $\lambda_1 - \lambda_2 \equiv \alpha$ and $\lambda_3 -
+\lambda_4 \equiv \beta$:
+\begin{equation} \label{eq:P2VVHelAmps}
+  H_0 \equiv A_{0,\,\alpha,\,\beta}^{1,\,1}
+  \qquad\qquad H_+ \equiv A_{+1,\,\alpha,\,\beta}^{1,\,1}
+  \qquad\qquad H_- \equiv A_{-1,\,\alpha,\,\beta}^{1,\,1}
+\end{equation}
+
+Amplitudes of the \PVV{} decay are often reparameterized in terms of \emph{transversity
+amplitudes}:
+\begin{equation} \label{eq:P2VVTrAmps}
+  A_0 \equiv H_0
+  \qquad\qquad A_\parallel \equiv \tfrac{1}{\sqrt{2}}\, (H_+ + H_-)
+  \qquad\qquad A_\perp \equiv \tfrac{1}{\sqrt{2}}\, (H_+ - H_-)
+\end{equation}
+Transversity amplitudes correspond to the linear polarization states of the two vector particles.
+The polarization (three-)vectors can be longitudinal or transverse to the decay axis. In the state
+in which both vector particles are longitudinal (0), their spins have no component in the direction
+of the decay axis ($\lambda=0$). In the transverse states, the polarization vectors may either be
+parallel ($\parallel$) or perpendicular ($\perp$) to one another. 
+
+The decay may also be decomposed in terms of partial waves. Each wave corresponds to a state in
+which the system of the two vector particles has a definite orbital angular momentum. Amplitudes
+corresponding to the S-wave ($L=0$), P-wave ($L=1$) and D-wave ($L=2$) are given by:
+\begin{alignat}{2} \label{eq:P2VVPWAmps}
+  W_\text{S} &\equiv -\sqrt{\tfrac{1}{3}}\, H_0 + \sqrt{\tfrac{1}{3}}\, (H_+ + H_-)
+    && = - \sqrt{\tfrac{1}{3}}\, A_0 + \sqrt{\tfrac{2}{3}}\, A_\parallel
+    \nonumber\\
+  W_\text{P} &\equiv \sqrt{\tfrac{1}{2}}\, (H_+ - H_-)
+    && = A_\perp
+    \\
+  W_\text{D} &\equiv \sqrt{\tfrac{2}{3}}\, H_0 + \sqrt{\tfrac{1}{6}}\, (H_+ + H_-)
+    && = \sqrt{\tfrac{2}{3}}\, A_0 + \sqrt{\tfrac{1}{3}}\, A_\parallel
+    \nonumber
+\end{alignat}
+
+Differential decay rates in terms of helicity angles and helicity amplitudes are found by
+evaluating the coefficients of the angular basis functions (Equations~\ref{eq:angBasisFuncs} and
+\ref{eq:angCoefs}). The angular functions for different combinations of amplitudes are listed in
+Tables~\ref{tab:angDistP2VV0Hel} and \ref{tab:angDistP2VV1Hel}. Functions for transversity
+amplitudes are found by applying the definitions of Equation~\ref{eq:P2VVTrAmps}. Corresponding
+tables with transversity amplitudes and transversity angles can be found in
+Appendix~\ref{sec:angTransFuncTables}. See Table~\ref{tab:helTransConv} in
+Appendix~\ref{sec:angBasisFuncTables} for the transformation between helicity and transversity
+angles of some relevant functions.
+\begin{table}[htbp]
+  \centering \footnotesize
+  \begin{tabular}{| c | c | c |}
+    \hline
+    amplitudes                              &
+      $f(\helSet) \times 16\sqrt{\pi}$      &
+      $f(\helSet) \times \tfrac{32\pi}{9}$  \\
+
+    \hline\hline
+
+    \AmpSq[H]{0}  &
+      $4\, (P_0^0 + 2\, P_2^0)\,
+        (Y_{0,\,0} + 2\tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $4\, \cos^2\thetak\, \cos^2\thetal$  \\
+    \hline
+
+    \AmpSq[H]{\pm}  &
+      $4\, (P_0^0 - P_2^0)\,
+        (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\sin^2\thetak\, \sin^2\thetal$  \\
+      &
+      $\qquad = 2\, P_2^2\,
+        (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      \\
+    \hline
+
+    \ReAmp[H][H]{0}{+}  &
+      $-4\sqrt{\tfrac{3}{5}}\, P_2^1\, Y_{2,\,+1}$  &
+      $-\sin2\thetak\, \sin2\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp[H][H]{0}{+}  &
+      $+4\sqrt{\tfrac{3}{5}}\, P_2^1\, Y_{2,\,-1}$  &
+      $+\sin2\thetak\, \sin2\thetal\, \sin\phihel$  \\
+    \hline
+
+    \ReAmp[H][H]{0}{-}  &
+      $-4\sqrt{\tfrac{3}{5}}\, P_2^1\, Y_{2,\,+1}$  &
+      $-\sin2\thetak\, \sin2\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp[H][H]{0}{-}  &
+      $-4\sqrt{\tfrac{3}{5}}\, P_2^1\, Y_{2,\,-1}$  &
+      $-\sin2\thetak\, \sin2\thetal\, \sin\phihel$  \\
+    \hline
+
+    \ReAmp[H][H]{+}{-}  &
+      $+4\sqrt{\tfrac{3}{5}}\, P_2^2\, Y_{2,\,+2}$  &
+      $+2\, \sin^2\thetak\, \sin^2\thetal\, \cos2\phihel$  \\
+    \hline
+
+    \ImAmp[H][H]{+}{-}  &
+      $+4\sqrt{\tfrac{3}{5}}\, P_2^2\, Y_{2,\,-2}$  &
+      $+2\, \sin^2\thetak\, \sin^2\thetal\, \sin2\phihel$  \\
+    \hline\hline
+
+    \AmpSq{0}  &
+      $4\, (P_0^0 + 2\, P_2^0)\,
+        (Y_{0,\,0} + 2\tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $4\, \cos^2\thetak\, \cos^2\thetal$  \\
+    &
+      $= 2\, (P_0^0 + 2\, P_2^0)\,
+        (3\, Y_{0,\,0} - Y_{0,\,0} + 4\tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $= 2\, \cos^2\thetak\, (1 + \cos2\thetal)$  \\
+    \hline
+
+    \AmpSq{\parallel}  &
+      $2\, P_2^2\,
+        (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0} + \sqrt{\tfrac{3}{5}}\, Y_{2,\,+2})$  &
+      $2\, \sin^2\thetak\, \sin^2\thetal\, \cos^2\phihel$  \\
+    &
+      $= \tfrac{1}{2}\, P_2^2\,
+        (3\, Y_{0,\,0} + Y_{0,\,0} - 4\tfrac{1}{\sqrt{5}}\, Y_{2,\,0}
+        + 4\sqrt{\tfrac{3}{5}}\, Y_{2,\,+2})$  &
+      $= \tfrac{1}{2}\, \sin^2\thetak\, (1 - \cos2\thetal + 2\, \sin^2\thetal\, \cos2\phihel)$  \\
+    \hline
+
+    \AmpSq{\perp}  &
+      $2\, P_2^2\,
+        (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0} - \sqrt{\tfrac{3}{5}}\, Y_{2,\,+2})$  &
+      $2\, \sin^2\thetak\, \sin^2\thetal\, \sin^2\phihel$  \\
+    &
+      $= \tfrac{1}{2}\, P_2^2\,
+        (3\, Y_{0,\,0} + Y_{0,\,0} - 4\tfrac{1}{\sqrt{5}}\, Y_{2,\,0}
+        - 4\sqrt{\tfrac{3}{5}}\, Y_{2,\,+2})$  &
+      $= \tfrac{1}{2}\, \sin^2\thetak\, (1 - \cos2\thetal - 2\, \sin^2\thetal\, \cos2\phihel)$  \\
+    \hline
+
+    \ReAmp{0}{\parallel}  &
+      $-4\sqrt{2}\sqrt{\tfrac{3}{5}}\, P_2^1\, Y_{2,\,+1}$  &
+      $-\sqrt{2}\, \sin2\thetak\, \sin2\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp{0}{\parallel}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp{0}{\perp}  &
+      0  &
+      0  \\
+    \hline
+
+    \ImAmp{0}{\perp}  &
+      $+4\sqrt{2}\sqrt{\tfrac{3}{5}}\, P_2^1\, Y_{2,\,-1}$  &
+      $+\sqrt{2}\, \sin2\thetak\, \sin2\thetal\, \sin\phihel$  \\
+    \hline
+
+    \ReAmp{\parallel}{\perp}  &
+      0  &
+      0  \\
+    \hline
+
+    \ImAmp{\parallel}{\perp}  &
+      $-4\sqrt{\tfrac{3}{5}}\, P_2^2\, Y_{2,\,-2}$  &
+      $-2\, \sin^2\thetak\, \sin^2\thetal\, \sin2\phihel$  \\
+    \hline
+  \end{tabular}
+
+  \caption{Angular functions in helicity angles for a \PVV{} decay in which the difference of the
+    outgoing particle helicities is zero on both sides ($\alpha=\beta=0$). (See
+    Table~\ref{tab:angDistP2VV0Tr} on page~\pageref{tab:angDistP2VV0Tr} for these functions
+    in transversity angles.)}
+  \label{tab:angDistP2VV0Hel}
+\end{table}
+%
+\begin{table}[htbp]
+  \centering \footnotesize
+  \begin{tabular}{| c | c | c |}
+    \hline
+    amplitudes                              &
+      $f(\helSet) \times 16\sqrt{\pi}$      &
+      $f(\helSet) \times \tfrac{32\pi}{9}$  \\
+
+    \hline\hline
+
+    \AmpSq[H]{0}  &
+      $4\, (P_0^0 + 2\, P_2^0)\,
+        (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $2\, \cos^2\thetak\, \sin^2\thetal$  \\
+    \hline
+
+    \AmpSq[H]{+}  &
+      $2\, (P_0^0 - P_2^0)\,
+        (2\, Y_{0,\,0} + \tfrac{1}{\sqrt{5}}\, Y_{2,\,0}
+        \pm \sqrt{3}\, Y_{1,\,0})$  &
+      $\tfrac{1}{2}\, \sin^2\thetak\, (1 \pm \cos\thetal)^2$  \\
+      &
+      $\qquad\quad = P_2^2\,
+        (2\, Y_{0,\,0} + \tfrac{1}{\sqrt{5}}\, Y_{2,\,0}
+        \pm \sqrt{3}\, Y_{1,\,0})$  &
+      \\
+    \hline
+
+    \AmpSq[H]{-}  &
+      $2\, (P_0^0 - P_2^0)\,
+        (2\, Y_{0,\,0} + \tfrac{1}{\sqrt{5}}\, Y_{2,\,0}
+        \mp \sqrt{3}\, Y_{1,\,0})$  &
+      $\tfrac{1}{2}\, \sin^2\thetak\, (1 \mp \cos\thetal)^2$  \\
+      &
+      $\qquad\quad = P_2^2\,
+        (2\, Y_{0,\,0} + \tfrac{1}{\sqrt{5}}\, Y_{2,\,0}
+        \mp \sqrt{3}\, Y_{1,\,0})$  &
+      \\
+    \hline
+
+    \ReAmp[H][H]{0}{+}  &
+      $+2\sqrt{\tfrac{3}{5}}\, P_2^1 (Y_{2,\,+1} \pm \sqrt{5}\, Y_{1,\,+1})$  &
+      $\pm \sin2\thetak\, \sin\thetal\, (1 \pm \cos\thetal) \cos\phihel$  \\
+    \hline
+
+    \ImAmp[H][H]{0}{+}  &
+      $-2\sqrt{\tfrac{3}{5}}\, P_2^1 (Y_{2,\,-1} \pm \sqrt{5}\, Y_{1,\,-1})$  &
+      $\mp \sin2\thetak\, \sin\thetal\, (1 \pm \cos\thetal) \sin\phihel$  \\
+    \hline
+
+    \ReAmp[H][H]{0}{-}  &
+      $+2\sqrt{\tfrac{3}{5}}\, P_2^1 (Y_{2,\,+1} \mp \sqrt{5}\, Y_{1,\,+1})$  &
+      $\mp \sin2\thetak\, \sin\thetal\, (1 \mp \cos\thetal) \cos\phihel$  \\
+    \hline
+
+    \ImAmp[H][H]{0}{-}  &
+      $+2\sqrt{\tfrac{3}{5}}\, P_2^1 (Y_{2,\,-1} \mp \sqrt{5}\, Y_{1,\,-1})$  &
+      $\mp \sin2\thetak\, \sin\thetal\, (1 \mp \cos\thetal) \sin\phihel$  \\
+    \hline
+
+    \ReAmp[H][H]{+}{-}  &
+      $-2\sqrt{\tfrac{3}{5}}\, P_2^2\, Y_{2,\,+2}$  &
+      $-\sin^2\thetak\, \sin^2\thetal\, \cos2\phihel$  \\
+    \hline
+
+    \ImAmp[H][H]{+}{-}  &
+      $-2\sqrt{\tfrac{3}{5}}\, P_2^2\, Y_{2,\,-2}$  &
+      $-\sin^2\thetak\, \sin^2\thetal\, \sin2\phihel$  \\
+    \hline\hline
+
+    \AmpSq{0}  &
+      $4\, (P_0^0 + 2\, P_2^0)\,
+        (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $2\, \cos^2\thetak\, \sin^2\thetal$  \\
+    &
+      $= (P_0^0 + 2\, P_2^0)\,
+        (3\, Y_{0,\,0} + Y_{0,\,0} - 4\tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $= \cos^2\thetak\, (1 - \cos2\thetal)$  \\
+    \hline
+
+    \AmpSq{\parallel}  &
+      $P_2^2\,
+        (2\, Y_{0,\,0} + \tfrac{1}{\sqrt{5}}\, Y_{2,\,0} - \sqrt{\tfrac{3}{5}}\, Y_{2,\,+2})$  &
+      $\sin^2\thetak\, (1 - \sin^2\thetal\, \cos^2\phihel)$  \\
+    &
+      $= \tfrac{1}{4}\, P_2^2\,
+        (9\, Y_{0,\,0} - Y_{0,\,0} + 4\tfrac{1}{\sqrt{5}}\, Y_{2,\,0}
+        - 4\sqrt{\tfrac{3}{5}}\, Y_{2,\,+2})$  &
+      $= \tfrac{1}{4}\, \sin^2\thetak\, (3 + \cos2\thetal - 2\, \sin^2\thetal\, \cos2\phihel)$  \\
+    \hline
+
+    \AmpSq{\perp}  &
+      $P_2^2\,
+        (2\, Y_{0,\,0} + \tfrac{1}{\sqrt{5}}\, Y_{2,\,0} + \sqrt{\tfrac{3}{5}}\, Y_{2,\,+2})$  &
+      $\sin^2\thetak\, (1 - \sin^2\thetal\, \sin^2\phihel)$  \\
+    &
+      $= \tfrac{1}{4}\, P_2^2\,
+        (9\, Y_{0,\,0} - Y_{0,\,0} + 4\tfrac{1}{\sqrt{5}}\, Y_{2,\,0}
+        + 4\sqrt{\tfrac{3}{5}}\, Y_{2,\,+2})$  &
+      $= \tfrac{1}{4}\, \sin^2\thetak\, (3 + \cos2\thetal + 2\, \sin^2\thetal\, \cos2\phihel)$  \\
+    \hline
+
+    \ReAmp{0}{\parallel}  &
+      $+2\sqrt{2}\sqrt{\tfrac{3}{5}}\, P_2^1\, Y_{2,\,+1}$  &
+      $+\frac{1}{\sqrt{2}}\, \sin2\thetak\, \sin2\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp{0}{\parallel}  &
+      $\mp 2\sqrt{2}\;\sqrt{3}\, P_2^1\, Y_{1,\,-1}$  &
+      $\mp \sqrt{2}\, \sin2\thetak\, \sin\thetal\, \sin\phihel$  \\
+    \hline
+
+    \ReAmp{0}{\perp}  &
+      $\pm 2\sqrt{2}\;\sqrt{3}\, P_2^1\, Y_{1,\,+1}$  &
+      $\pm \sqrt{2}\, \sin2\thetak\, \sin\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp{0}{\perp}  &
+      $-2\sqrt{2}\sqrt{\tfrac{3}{5}}\, P_2^1\, Y_{2,\,-1}$  &
+      $-\frac{1}{\sqrt{2}}\, \sin2\thetak\, \sin2\thetal\, \sin\phihel$  \\
+    \hline
+
+    \ReAmp{\parallel}{\perp}  &
+      $\pm 2\sqrt{3}\, P_2^2\, Y_{1,\,0}$  &
+      $\pm 2\, \sin^2\thetak\, \cos\thetal$  \\
+    \hline
+
+    \ImAmp{\parallel}{\perp}  &
+      $+2\sqrt{\tfrac{3}{5}}\, P_2^2\, Y_{2,\,-2}$  &
+      $+\sin^2\thetak\, \sin^2\thetal\, \sin2\phihel$  \\
+    \hline
+  \end{tabular}
+
+  \caption{Angular functions in helicity angles for a \PVV{} decay in which the difference of the
+    helicities of particles 1 and 2 is zero and the difference of the helicities of particles 3 and
+    4 is plus or minus one ($\alpha=0$ and $\beta=\pm1$). (See Table~\ref{tab:angDistP2VV1Tr} on
+    page~\pageref{tab:angDistP2VV1Tr} for these functions in transversity angles.)}
+  \label{tab:angDistP2VV1Hel}
+\end{table}
+
+Table~\ref{tab:angDistP2VV0Hel} shows the angular functions for the case $\alpha=\beta=0$. That is,
+the difference of the final state particle helicities is zero on both sides of the decay
+($\lambda_1=\lambda_2$ and $\lambda_3=\lambda_4$). Examples of such a process are \PVV{} decays in
+which all final state particles are (pseudo)scalars (e.g. $\B[s][0] \to \phi(\to \kaon[+]\kaon[-])\
+\phi(\to \kaon[+]\kaon[-])$), but also $\B[][0] \to V(\to\muon[+]\muon[-])\ V'(\to PP')$ when the
+(massive) muons have equal helicities.
+
+The functions shown in Table~\ref{tab:angDistP2VV1Hel} are for $\alpha=0$, $\beta=\pm1$. This is
+the configuration of a decay with (pseudo)scalars on one side and a lepton/antilepton pair on the
+other side. In this case, the leptons are in a ``normal'' configuration with opposite helicities.
+Examples are \BdtoJpsimumuKstKpi{} and \BstoJpsimumuphiKK.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Spinless Intermediate States} \label{sec:spinlessAB}
+The \PVV{} decay can be modified by replacing one of the vector particles by a spinless particle.
+Only one amplitude can be defined in this case:
+\begin{subequations} \begin{align} \label{eq:spinlessAmp}
+  A_{\text{S}_a} &\equiv A_{0,\,\alpha,\,\beta}^{0,\,1}
+    \qquad\qquad(\text{spinless }a\text{ and vector }b)  \\
+  A_{\text{S}_b} &\equiv A_{0,\,\alpha,\,\beta}^{1,\,0}
+    \qquad\qquad(\text{vector }a\text{ and spinless }b)
+\end{align} \end{subequations}
+
+\begin{table}[htbp]
+  \centering \footnotesize
+  \begin{tabular}{| c | c | c |}
+    \hline
+    amplitudes                              &
+      $f(\helSet) \times 16\sqrt{\pi}$      &
+      $f(\helSet) \times \tfrac{32\pi}{9}$  \\
+
+    \hline\hline
+
+    \AmpSq{{\text{S}_a}}  &
+      $4\, P_0^0\,
+        (Y_{0,\,0} + 2\tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\tfrac{4}{3}\, \cos^2\thetal$  \\
+    \hline
+
+    \ReAmp[H]{0}{{\text{S}_a}}  &
+      $8\sqrt{3}\, P_1^0\, (Y_{0,\,0} + 2\tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\tfrac{8}{3}\sqrt{3}\, \cos\thetak\, \cos^2\thetal$  \\
+    \hline
+
+    \ImAmp[H]{0}{{\text{S}_a}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp[H]{+}{{\text{S}_a}}  &
+      $-12\tfrac{1}{\sqrt{5}}\, P_1^1\, Y_{2,\,+1}$  &
+      $-\tfrac{2}{3}\sqrt{3}\, \sin\thetak\, \sin2\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp[H]{+}{{\text{S}_a}}  &
+      $-12\tfrac{1}{\sqrt{5}}\, P_1^1\, Y_{2,\,-1}$  &
+      $-\tfrac{2}{3}\sqrt{3}\, \sin\thetak\, \sin2\thetal\, \sin\phihel$  \\
+    \hline
+
+    \ReAmp[H]{-}{{\text{S}_a}}  &
+      $-12\tfrac{1}{\sqrt{5}}\, P_1^1\, Y_{2,\,+1}$  &
+      $-\tfrac{2}{3}\sqrt{3}\, \sin\thetak\, \sin2\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp[H]{-}{{\text{S}_a}}  &
+      $+12\tfrac{1}{\sqrt{5}}\, P_1^1\, Y_{2,\,-1}$  &
+      $+\tfrac{2}{3}\sqrt{3}\, \sin\thetak\, \sin2\thetal\, \sin\phihel$  \\
+    \hline\hline
+
+    \AmpSq{{\text{S}_a}}  &
+      $4\, P_0^0\, (Y_{0,\,0} + 2\tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\tfrac{4}{3}\, \cos^2\thetal$  \\
+    \hline
+
+    \ReAmp{0}{{\text{S}_a}}  &
+      $8\sqrt{3}\, P_1^0\, (Y_{0,\,0} + 2\tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\tfrac{8}{3}\sqrt{3}\, \cos\thetak\, \cos^2\thetal$  \\
+    \hline
+
+    \ImAmp{0}{{\text{S}_a}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp{\parallel}{{\text{S}_a}}  &
+      $-12\sqrt{2}\tfrac{1}{\sqrt{5}}\, P_1^1\, Y_{2,\,+1}$  &
+      $-\tfrac{2}{3}\sqrt{6}\, \sin\thetak\, \sin2\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp{\parallel}{{\text{S}_a}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp{\perp}{{\text{S}_a}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ImAmp{\perp}{{\text{S}_a}}  &
+      $-12\sqrt{2}\tfrac{1}{\sqrt{5}}\, P_1^1\, Y_{2,\,-1}$  &
+      $-\tfrac{2}{3}\sqrt{6}\, \sin\thetak\, \sin2\thetal\, \sin\phihel$  \\
+    \hline
+  \end{tabular}
+
+  \caption{Angular functions in helicity angles for a decay in which $a$ is spinless and $b$ is a
+    vector particle. The difference of the outgoing particle helicities is zero on both sides
+    ($\alpha=\beta=0$). Interference terms with the \PVV{} decay are shown. (See
+    Table~\ref{tab:angDistP2SV0Tr} on page~\pageref{tab:angDistP2SV0Tr} for these functions in
+    transversity angles.)}
+  \label{tab:angDistP2SV0Hel}
+\end{table}
+%
+\begin{table}[htbp]
+  \centering \footnotesize
+  \begin{tabular}{| c | c | c |}
+    \hline
+    amplitudes                              &
+      $f(\helSet) \times 16\sqrt{\pi}$      &
+      $f(\helSet) \times \tfrac{32\pi}{9}$  \\
+
+    \hline\hline
+
+    \AmpSq{{\text{S}_a}}  &
+      $4\, P_0^0\,
+        (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\tfrac{2}{3}\, \sin^2\thetal$  \\
+    \hline
+
+    \ReAmp[H]{0}{{\text{S}_a}}  &
+      $8\sqrt{3}\, P_1^0\, (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\tfrac{4}{3}\sqrt{3}\, \cos\thetak\, \sin^2\thetal$  \\
+    \hline
+
+    \ImAmp[H]{0}{{\text{S}_a}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp[H]{+}{{\text{S}_a}}  &
+      $+6\, P_1^1\, (\tfrac{1}{\sqrt{5}}\, Y_{2,\,+1} \pm Y_{1,\,+1})$  &
+      $\pm \tfrac{2}{3}\sqrt{3}\, \sin\thetak\, \sin\thetal\, (1 \pm \cos\thetal)\, \cos\phihel$ \\
+    \hline
+
+    \ImAmp[H]{+}{{\text{S}_a}}  &
+      $+6\, P_1^1\, (\tfrac{1}{\sqrt{5}}\, Y_{2,\,-1} \pm Y_{1,\,-1})$  &
+      $\pm \tfrac{2}{3}\sqrt{3}\, \sin\thetak\, \sin\thetal\, (1 \pm \cos\thetal)\, \sin\phihel$ \\
+    \hline
+
+    \ReAmp[H]{-}{{\text{S}_a}}  &
+      $+6\, P_1^1\, (\tfrac{1}{\sqrt{5}}\, Y_{2,\,+1} \mp Y_{1,\,+1})$  &
+      $\mp \tfrac{2}{3}\sqrt{3}\, \sin\thetak\, \sin\thetal\, (1 \mp \cos\thetal)\, \cos\phihel$ \\
+    \hline
+
+    \ImAmp[H]{-}{{\text{S}_a}}  &
+      $-6\, P_1^1\, (\tfrac{1}{\sqrt{5}}\, Y_{2,\,-1} \mp Y_{1,\,-1})$  &
+      $\pm \tfrac{2}{3}\sqrt{3}\, \sin\thetak\, \sin\thetal\, (1 \mp \cos\thetal)\, \sin\phihel$ \\
+    \hline\hline
+
+    \AmpSq{{\text{S}_a}}  &
+      $4\, P_0^0\, (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\tfrac{2}{3}\, \sin^2\thetal$  \\
+    \hline
+
+    \ReAmp{0}{{\text{S}_a}}  &
+      $8\sqrt{3}\, P_1^0\, (Y_{0,\,0} - \tfrac{1}{\sqrt{5}}\, Y_{2,\,0})$  &
+      $\tfrac{4}{3}\sqrt{3}\, \cos\thetak\, \sin^2\thetal$  \\
+    \hline
+
+    \ImAmp{0}{{\text{S}_a}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp{\parallel}{{\text{S}_a}}  &
+      $+6\sqrt{2}\tfrac{1}{\sqrt{5}}\, P_1^1\, Y_{2,\,+1}$  &
+      $+\tfrac{1}{3}\sqrt{6}\, \sin\thetak\, \sin2\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp{\parallel}{{\text{S}_a}}  &
+      $\pm 6\sqrt{2}\, P_1^1\, Y_{1,\,-1}$  &
+      $\pm \tfrac{2}{3}\sqrt{6}\, \sin\thetak\, \sin\thetal\, \sin\phihel$  \\
+    \hline
+
+    \ReAmp{\perp}{{\text{S}_a}}  &
+      $\pm 6\sqrt{2}\, P_1^1\, Y_{1,\,+1}$  &
+      $\pm \tfrac{2}{3}\sqrt{6}\, \sin\thetak\, \sin\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp{\perp}{{\text{S}_a}}  &
+      $+6\sqrt{2}\tfrac{1}{\sqrt{5}}\, P_1^1\, Y_{2,\,-1}$  &
+      $+\tfrac{1}{3}\sqrt{6}\, \sin\thetak\, \sin2\thetal\, \sin\phihel$  \\
+    \hline
+  \end{tabular}
+
+  \caption{Angular functions in helicity angles for a decay in which $a$ is spinless
+    and $b$ a vector particle. The difference of the helicities of particles 1 and 2 is zero and
+    the difference of the helicities of particles 3 and 4 is plus or minus one ($\alpha=0$ and
+    $\beta=\pm1$).  Interference terms with the \PVV{} decay are shown. (See
+    Table~\ref{tab:angDistP2SV1Tr} on page~\pageref{tab:angDistP2SV1Tr} for these functions in
+    transversity angles.)}
+  \label{tab:angDistP2SV1Hel}
+\end{table}
+
+\begin{table}[htbp]
+  \centering \footnotesize
+  \begin{tabular}{| c | c | c |}
+    \hline
+    amplitudes                              &
+      $f(\helSet) \times 16\sqrt{\pi}$      &
+      $f(\helSet) \times \tfrac{32\pi}{9}$  \\
+
+    \hline\hline
+
+    \AmpSq{{\text{S}_b}}  &
+      $4\, (P_0^0 + 2\, P_2^0)\, Y_{0,\,0}$  &
+      $\tfrac{4}{3}\, \cos^2\thetak$  \\
+    \hline
+
+    \ReAmp[H]{0}{{\text{S}_b}}  &
+      $-8\, (P_0^0 + 2\, P_2^0)\, Y_{1,\,0}$  &
+      $-\tfrac{8}{3}\sqrt{3}\, \cos^2\thetak\, \cos\thetal$  \\
+    \hline
+
+    \ImAmp[H]{0}{{\text{S}_b}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp[H]{+}{{\text{S}_b}}  &
+      $+4\, P_2^1\, Y_{1,\,+1}$  &
+      $+\tfrac{2}{3}\sqrt{3}\, \sin2\thetak\, \sin\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp[H]{+}{{\text{S}_b}}  &
+      $+4\, P_2^1\, Y_{1,\,-1}$  &
+      $+\tfrac{2}{3}\sqrt{3}\, \sin2\thetak\, \sin\thetal\, \sin\phihel$  \\
+    \hline
+
+    \ReAmp[H]{-}{{\text{S}_b}}  &
+      $+4\, P_2^1\, Y_{1,\,+1}$  &
+      $+\tfrac{2}{3}\sqrt{3}\, \sin2\thetak\, \sin\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp[H]{-}{{\text{S}_b}}  &
+      $-4\, P_2^1\, Y_{1,\,-1}$  &
+      $-\tfrac{2}{3}\sqrt{3}\, \sin2\thetak\, \sin\thetal\, \sin\phihel$  \\
+    \hline\hline
+
+    \AmpSq{{\text{S}_b}}  &
+      $4\, (P_0^0 + 2\, P_2^0)\, Y_{0,\,0}$  &
+      $\tfrac{4}{3}\, \cos^2\thetak$  \\
+    \hline
+
+    \ReAmp{0}{{\text{S}_b}}  &
+      $-8\, (P_0^0 + 2\, P_2^0)\, Y_{1,\,0}$  &
+      $-\tfrac{8}{3}\sqrt{3}\, \cos^2\thetak\, \cos\thetal$  \\
+    \hline
+
+    \ImAmp{0}{{\text{S}_b}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp{\parallel}{{\text{S}_b}}  &
+      $+4\sqrt{2}\, P_2^1\, Y_{1,\,+1}$  &
+      $+\tfrac{2}{3}\sqrt{6}\, \sin2\thetak\, \sin\thetal\, \cos\phihel$  \\
+    \hline
+
+    \ImAmp{\parallel}{{\text{S}_b}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ReAmp{\perp}{{\text{S}_b}}  &
+      0  &
+      0  \\
+    \hline
+
+    \ImAmp{\perp}{{\text{S}_b}}  &
+      $+4\sqrt{2}\, P_2^1\, Y_{1,\,-1}$  &
+      $+\tfrac{2}{3}\sqrt{6}\, \sin2\thetak\, \sin\thetal\, \sin\phihel$  \\
+    \hline\hline
+
+    \ReAmp{\text{S}_a}{{\text{S}_b}}  &
+      $-8\sqrt{3}\, P_1^0\, Y_{1,\,0}$  &
+      $-\tfrac{8}{3}\, \cos\thetak\, \cos\thetal$  \\
+    \hline
+
+    \ImAmp{\text{S}_a}{{\text{S}_b}}  &
+      0  &
+      0  \\
+    \hline
+  \end{tabular}
+
+  \caption{Angular functions in helicity angles for a decay in which $a$ is a vector particle
+    and $b$ is spinless. The difference of the outgoing particle helicities is zero on both sides
+    ($\alpha=\beta=0$). Interference terms with both the \PVV{} and ``spinless $a$'' decays are
+    shown. (See Table~\ref{tab:angDistP2VSTr} on page~\pageref{tab:angDistP2VSTr} for these
+    functions in transversity angles.)}
+  \label{tab:angDistP2VSHel}
+\end{table}
+
