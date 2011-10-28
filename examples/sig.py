@@ -22,6 +22,7 @@ args.update( { 'dm'     : RealVar( 'dm',        Title = 'delta m',       Unit = 
              , 'tau'    : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',      Observable = False, Value =  1.5, MinMax = (1.3, 1.8) )
              , 'dGamma' : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}', Observable = False, Value = 0.05, MinMax = (-0.3,0.3) )
              , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
+             , 'decayType' : 'SingleSided'
              } )
 
 # TODO: package this in a seperate class, which gives access to CCP, DCP, and SCP, so we can hide the 'internal' parameterization
@@ -40,15 +41,17 @@ CP = CPParam( C = FormulaVar('C', '(1.-@0)/(1.+@0)',                   [ _lambda
             , S = FormulaVar('S', '-2 * sqrt(@0) * sin(@1) / (1.+@0)', [ _lambdaCPSq, _phiCP ] )
             )
 
-tagDilution = RealVar( 'tagDilution', Title = 'Average Tagging Dilution', Observable = False, Value = 1 )
+tagDilution = RealVar( 'tagDilution', Title = 'Average Tagging Dilution',     Observable = False, Value = 1 )
 ADilWTag    = RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry', Observable = False, Value = 0 )
 
 
-_AProd   = RealVar(    'AProd',    Title = 'production asymmetry', Observable = False, Value = 0)
+_AProd   = RealVar(    'AProd',    Title = 'production asymmetry',         Observable = False, Value = 0 )
+_ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value = 0 )
 _ANorm   = FormulaVar( 'ANorm',    '-@0', [CP.C], Title = 'normalization asymmetry' )
-_ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value=0.)
-avgCEven = FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average even coefficients')
-avgCOdd  = FormulaVar( 'avgCOdd',     '@0 + @1 + @2 + @0*@1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average odd coefficients')
+
+args.update( { 'avgCEven' : FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average even coefficients')
+             , 'avgCOdd'  : FormulaVar( 'avgCOdd',     '@0 + @1 + @2 + @0*@1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average odd coefficients')
+             } )
 
 
 # polar transversity amplitudes -- this is 'internal only'
@@ -187,20 +190,13 @@ for k in [ 'cosh', 'sinh', 'cos', 'sin' ] :
     p = lambda i,j : Product( 'p_%s_%s_%s'%(k,i,j), [ coef[ (i,j) ][k],  angFuncs[ (i,j) ] ] )
     from itertools import combinations_with_replacement as cwr
     # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
-    c[k] = Addition( 'a_%s'% k, [ p(i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
+    args[ '%sCoef' % k ] = Addition( 'a_%s'% k, [ p(i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
 
 # build PDF
 args.update(  { 'time' : t
               , 'iTag' : iTag
               , 'dilution' : tagDilution
               , 'ADilWTag' : ADilWTag
-              , 'avgCEven' : avgCEven
-              , 'avgCOdd'  : avgCOdd
-              , 'coshCoef' : c['cosh']
-              , 'sinhCoef' : c['sinh']
-              , 'cosCoef'  : c['cos']
-              , 'sinCoef'  : c['sin']
-              , 'decayType' : 'SingleSided'
               } )
 pdf = BTagDecay( 'sig_pdf', args )
 

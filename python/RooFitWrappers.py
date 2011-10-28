@@ -202,7 +202,6 @@ class BTagDecay(RooObject) :
             # construct factory string on the fly...
             if 'name' in params : raise KeyError(' name should not be in params!')
             d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
-            print d
             d['name'] = name
             if 'checkVars' not in d : d['checkVars'] = 1
             self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
