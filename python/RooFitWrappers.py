@@ -23,6 +23,8 @@ class RooObject(object) :
         if not hasattr(ws, '_mappings'): ws._mappings = {}
         
     def _declare(self,spec):
+        # TODO: add mapping of name -> spec so we can gate identical invocations.
+        #       problem is that we don't know 'name' a-priori....
         x = self.ws().factory(spec)
         if not x:
             raise NameError('failed to _declare %s to workspace factory'%spec)
@@ -231,19 +233,12 @@ class FormulaVar (RooObject):
                ,'Title'      : lambda s : s.GetTitle()
                }
     def __init__(self,name,formula,fargs,**kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            self._declare("expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) )
-            self._init(name,'RooFormulaVar')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
-            self._init(name,'RooFormulaVar')
-            # Make sure we are the same as last time
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                assert v == self[k]
+        if name in self.ws():
+            print '%s already exists, assuming recycling existing object works...'%name
+        # construct factory string on the fly...
+        self._declare("expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) )
+        self._init(name,'RooFormulaVar')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
     def __setitem__(self,k,v):
         return FormulaVar._setters[k](self, v)
