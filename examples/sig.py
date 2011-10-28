@@ -79,10 +79,7 @@ _ASPh      = RealVar('deltaS',    Title = 'delta_S',    Observable = False, Valu
 from math import sqrt
 _ba = lambda  name,args : Addition(name, [ AngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
 
-
-
-
-# the following two tables, define 'everything'....
+# the following two tables, define 'everything'....####################################################
 angFuncs = { ('A0',   'A0')    :  ('Re', _ba('J_0020x0020_0', [(0, 0, 0,  0,  4.             )
                                                               ,(0, 0, 2,  0, -sqrt( 16. / 5.))
                                                               ,(2, 0, 0,  0,  8.             )
@@ -104,26 +101,26 @@ angFuncs = { ('A0',   'A0')    :  ('Re', _ba('J_0020x0020_0', [(0, 0, 0,  0,  4.
            , ('Aperp','AS')    :  ('Im', _ba('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))]))
            }
 
+# in python 2.7 and later, could use collections.OrderedDict so we can traverse without having to think...
 Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
              , 'Apar'  : Polar2_Amplitude( 'Apar',  _AparMag2,  _AparPh,  +1 )
              , 'Aperp' : Polar2_Amplitude( 'Aperp', _AperpMag2, _AperpPh, -1 )
              , 'AS'    : Polar2_Amplitude( 'AS',    _ASMag2,    _ASPh,    -1 )
              }
+#######################################################################################################
 
-
-
-
-# define functions which return the coefficients that define the time-dependence...
-d = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP.C, None )
-    , 'cos'  : lambda ai,aj,CP : ( CP.C if ai.CP == aj.CP else one , None )
-    , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_D'%(ai,aj), [ minus if ai.CP > 0 else plus, CP.D ]), None if ai.CP == aj.CP else Product('PI_%s_%s_S'%(ai,aj), [ plus  if ai.CP > aj.CP else minus, CP.S ]) )
-    , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_S'%(ai,aj), [ minus if ai.CP > 0 else plus, CP.S ]), None if ai.CP == aj.CP else Product('PI_%s_%s_D'%(ai,aj), [ minus if ai.CP > aj.CP else plus,  CP.D ]) )
-    }
-#
-def combine( name, f, A, CPparams, coef, i, j) :
+def combine( name, f, A, CPparams, i, j) :
     # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
     Real   = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
     Imag   = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
+    # define functions which return the coefficients that define the time-dependence...
+    coef = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP.C, None )
+           , 'cos'  : lambda ai,aj,CP : ( CP.C if ai.CP == aj.CP else one , None )
+           , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_D'%(ai,aj), [ minus if ai.CP > 0     else plus,  CP.D ])
+                                        , None if ai.CP == aj.CP else Product('PI_%s_%s_S'%(ai,aj), [ plus  if ai.CP > aj.CP else minus, CP.S ]) )
+           , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_S'%(ai,aj), [ minus if ai.CP > 0     else plus,  CP.S ])
+                                        , None if ai.CP == aj.CP else Product('PI_%s_%s_D'%(ai,aj), [ minus if ai.CP > aj.CP else plus,  CP.D ]) )
+        }
     (re,im) = coef[name](A[i],A[j],CPparams)
     # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
     assert not ( re and im )
@@ -134,10 +131,10 @@ def combine( name, f, A, CPparams, coef, i, j) :
         if re : return Product('ir_%s_%s_%s'%(name,A[i],A[j]), [        Imag(A[i],A[j]), re, f[(i,j)][1] ] ) # Im( z) = +Im(z)
         if im : return Product('ri_%s_%s_%s'%(name,A[i],A[j]), [        Real(A[i],A[j]), im, f[(i,j)][1] ] ) # Im(iz) = +Re(z)
 
-for k in [ 'cosh', 'sinh', 'cos', 'sin' ] :
+for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
     from itertools import combinations_with_replacement as cwr
     # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
-    args[ '%sCoef' % k ] = Addition( 'a_%s'% k, [ combine(k,angFuncs,Amplitudes,CP,d,i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
+    args[ '%sCoef' % name ] = Addition( 'a_%s'% name, [ combine(name,angFuncs,Amplitudes,CP,i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
 
 # build PDF
 args.update(  { 'time'     : t
