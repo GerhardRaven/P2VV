@@ -4,27 +4,25 @@ gSystem.Load('libP2VV.so')
 ws = RooObject()
 ws.setWorkspace( RooWorkspace('myworkspace') )
 
-from math import pi
-cpsiAng   = RealVar('helcthetaK', Title = 'cosine of kaon polarization angle',   Observable = True,  MinMax=(-1., 1.))
-cthetaAng = RealVar('helcthetaL', Title = 'cosine of lepton polarization angle', Observable = True,  MinMax=(-1., 1.))
-phiAng    = RealVar('helphi',     Title = 'angle between decay planes',          Observable = True,  MinMax=(-pi, pi))
-t         = RealVar('t',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
-
-zero  = ConstVar('zero',   Value =  0  )
-one   = ConstVar('one',    Value =  1  )
 minus = ConstVar('minus',  Value = -1  )
-half  = ConstVar('half',   Value =  0.5)
 
-unbiased = Category( 'unbiased',  Title = 'Unbiased trigger?',         Observable = True, States = { 'yes': 1 ,   'no' : 0 } )
-decay    = Category( 'decaytype', Title = 'J/psiX decay type',         Observable = True, States = { 'JpsiKplus' : 10, 'JpsiKmin' : 11, 'JpsiKstar0' : 20, 'JpsiKstar0bar': 21, 'Jpsiphi': 40 } )
-iTag     = Category( 'iTag',      Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1 } )
+args = dict()
+from math import pi
+cpsiAng   = RealVar(  'helcthetaK', Title = 'cosine of kaon polarization angle',   Observable = True,  MinMax=(-1., 1.))
+cthetaAng = RealVar(  'helcthetaL', Title = 'cosine of lepton polarization angle', Observable = True,  MinMax=(-1., 1.))
+phiAng    = RealVar(  'helphi',     Title = 'angle between decay planes',          Observable = True,  MinMax=(-pi, pi))
+t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
+
+unbiased  = Category( 'unbiased',   Title = 'Unbiased trigger?',         Observable = True, States = { 'yes': 1 ,   'no' : 0 } )
+decay     = Category( 'decaytype',  Title = 'J/psiX decay type',         Observable = True, States = { 'JpsiKplus' : 10, 'JpsiKmin' : 11, 'JpsiKstar0' : 20, 'JpsiKstar0bar': 21, 'Jpsiphi': 40 } )
+iTag      = Category( 'iTag',       Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1 } )
 
 from ROOT import RooTruthModel as TruthModel
-resolution = ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
-
-dm        =  RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}', Observable = False, Value = 17.8 )
-BMeanLife =  RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',      Observable = False, Value =  1.5, MinMax = (1.3, 1.8) )
-dGamma    =  RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}', Observable = False, Value = 0.05, MinMax = (-0.3,0.3) )
+args.update( { 'dm'     : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}', Observable = False, Value = 17.8 )  
+             , 'tau'    : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',      Observable = False, Value =  1.5, MinMax = (1.3, 1.8) )
+             , 'dGamma' : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}', Observable = False, Value = 0.05, MinMax = (-0.3,0.3) )
+             , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
+             } )
 
 # TODO: package this in a seperate class, which gives access to CCP, DCP, and SCP, so we can hide the 'internal' parameterization
 # TODO: explicitly export externally visible symbols .... For now, interal stuff is prefixed by an _
@@ -192,22 +190,18 @@ for k in [ 'cosh', 'sinh', 'cos', 'sin' ] :
     c[k] = Addition( 'a_%s'% k, [ p(i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
 
 # build PDF
-args =   { 'time' : t
-         , 'iTag' : iTag
-         , 'tau'  : BMeanLife
-         , 'dGamma' : dGamma
-         , 'dm'    : dm 
-         , 'dilution' : tagDilution
-         , 'ADilWTag' : ADilWTag
-         , 'avgCEven' : avgCEven
-         , 'avgCOdd'  : avgCOdd
-         , 'coshCoef' : c['cosh']
-         , 'sinhCoef' : c['sinh']
-         , 'cosCoef'  : c['cos']
-         , 'sinCoef'  : c['sin']
-         , 'resolutionModel' : resolution 
-         , 'decayType' : 'SingleSided'
-         }
+args.update(  { 'time' : t
+              , 'iTag' : iTag
+              , 'dilution' : tagDilution
+              , 'ADilWTag' : ADilWTag
+              , 'avgCEven' : avgCEven
+              , 'avgCOdd'  : avgCOdd
+              , 'coshCoef' : c['cosh']
+              , 'sinhCoef' : c['sinh']
+              , 'cosCoef'  : c['cos']
+              , 'sinCoef'  : c['sin']
+              , 'decayType' : 'SingleSided'
+              } )
 pdf = BTagDecay( 'sig_pdf', args )
 
 
