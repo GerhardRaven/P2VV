@@ -204,7 +204,7 @@ class BTagDecay(RooObject) :
             d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
             print d
             d['name'] = name
-            if 'checkVars' not in d : d['checkVars'] = 0
+            if 'checkVars' not in d : d['checkVars'] = 1
             self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
                                               " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
                                               " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\

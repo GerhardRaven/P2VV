@@ -160,27 +160,27 @@ coef =  { ('A0',   'A0')    : { 'cosh' : FormulaVar('J_0020x0020_0_cosh',   '@0 
 
 # using transversity amplitudes and helicity angles
 from math import sqrt
-_build = lambda  name,args : Addition(name, [ AngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
+_ba = lambda  name,args : Addition(name, [ AngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
 
-angFuncs = { ('A0',   'A0')    :  _build('J_0020x0020_0', [(0, 0, 0,  0,  4.             ),
-                                                           (0, 0, 2,  0, -sqrt( 16. / 5.)),
-                                                           (2, 0, 0,  0,  8.             ),
-                                                           (2, 0, 2,  0, -sqrt( 64. / 5.))])  
-           , ('Apar', 'Apar')  :  _build('J_22x002022_0', [(2, 2, 0,  0,  2.             ),
-                                                           (2, 2, 2,  0,  sqrt(  1. / 5.)),
-                                                           (2, 2, 2,  2, -sqrt(  3. / 5.))])
-           , ('Aperp','Aperp') :  _build('J_22x002022_1', [(2, 2, 0,  0,  2.             ),
-                                                           (2, 2, 2,  0,  sqrt(  1. / 5.)),
-                                                           (2, 2, 2,  2,  sqrt(  3. / 5.))])
-           , ('A0',   'Apar')  :  _build('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))])   # Re
-           , ('A0',   'Aperp') :  _build('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))])   # Im
-           , ('Apar', 'Aperp') :  _build('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])   # Im
-           , ('AS',   'AS')    :  _build('J_00x0020_0',   [(0, 0, 0,  0,  4.             ),
-                                                           (0, 0, 2,  0, -sqrt( 16. / 5.))])   # Im
-           , ('A0',   'AS')    :  _build('J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     )),
-                                                           (1, 0, 2,  0, -sqrt(192. / 5.))])   # Re
-           , ('Apar', 'AS')    :  _build('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))])   # Re
-           , ('Aperp','AS')    :  _build('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))])   # Im
+angFuncs = { ('A0',   'A0')    :  _ba('J_0020x0020_0', [(0, 0, 0,  0,  4.             ),
+                                                        (0, 0, 2,  0, -sqrt( 16. / 5.)),
+                                                        (2, 0, 0,  0,  8.             ),
+                                                        (2, 0, 2,  0, -sqrt( 64. / 5.))])  
+           , ('Apar', 'Apar')  :  _ba('J_22x002022_0', [(2, 2, 0,  0,  2.             ),
+                                                        (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                                        (2, 2, 2,  2, -sqrt(  3. / 5.))])
+           , ('Aperp','Aperp') :  _ba('J_22x002022_1', [(2, 2, 0,  0,  2.             ),
+                                                        (2, 2, 2,  0,  sqrt(  1. / 5.)),
+                                                        (2, 2, 2,  2,  sqrt(  3. / 5.))])
+           , ('A0',   'Apar')  :  _ba('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))])   # Re
+           , ('A0',   'Aperp') :  _ba('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))])   # Im
+           , ('Apar', 'Aperp') :  _ba('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])   # Im
+           , ('AS',   'AS')    :  _ba('J_00x0020_0',   [(0, 0, 0,  0,  4.             ),
+                                                        (0, 0, 2,  0, -sqrt( 16. / 5.))])   # Im
+           , ('A0',   'AS')    :  _ba('J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     )),
+                                                        (1, 0, 2,  0, -sqrt(192. / 5.))])   # Re
+           , ('Apar', 'AS')    :  _ba('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))])   # Re
+           , ('Aperp','AS')    :  _ba('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))])   # Im
            }
 #
 c = dict()
@@ -190,7 +190,6 @@ for k in [ 'cosh', 'sinh', 'cos', 'sin' ] :
     from itertools import combinations_with_replacement as cwr
     # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
     c[k] = Addition( 'a_%s'% k, [ p(i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
-
 
 # build PDF
 args =   { 'time' : t
@@ -210,8 +209,6 @@ args =   { 'time' : t
          , 'decayType' : 'SingleSided'
          }
 pdf = BTagDecay( 'sig_pdf', args )
-
-
 
 
 ws.ws().Print('V')
