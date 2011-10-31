@@ -1,5 +1,5 @@
 from ROOT import *
-gSystem.Load("libp2vv")
+gSystem.Load("libP2VV")
 from math import sqrt,pi
 
 from RooFitDecorators import *
@@ -159,32 +159,32 @@ timecanvas.Divide(3,2)
 
 timecanvas.cd(1)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 data.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
 tframe.Draw()
 
 timecanvas.cd(2)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 pdf.plotOn(tframe,lw)
 tframe.Draw()
 
 timecanvas.cd(3)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 data.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
 pdf.plotOn(tframe,lw)
 tframe.Draw()
 
 timecanvas.cd(4)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 accdata.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
 tframe.Draw()
 
 timecanvas.cd(5)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 #accpdf.plotOn(tframe,lw,RooFit.ProjWData(RooArgSet(ws['m']),accdata))
 accpdf.plotOn(tframe,lw,RooFit.Project(RooArgSet(ws['m'])))
 #accpdf.plotOn(tframe,lw)
@@ -192,7 +192,7 @@ tframe.Draw()
 
 timecanvas.cd(6)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 accdata.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
 accpdf.plotOn(tframe,lw)
 tframe.Draw()

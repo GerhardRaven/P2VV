@@ -8,7 +8,7 @@
 ########################################
 
 from ROOT import *
-gSystem.Load("libp2vv")
+gSystem.Load("libP2VV")
 from math import sqrt,pi
 from array import array
 
@@ -255,8 +255,8 @@ sw.Start()
 result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['p0'],ws['p1'],ws['dmsconstraint'],ws['tres_SFconstraint'])))
 sw.Stop()
 
-writeFitParamsLatex(result,name,False)
-dict = writeCorrMatrixLatex(result,name)
+result.writecorr(name)
+result.writepars(name,True)
 
 assert False
 ######PLOT######

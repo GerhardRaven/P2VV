@@ -1,0 +1,143 @@
+\subsection{Flavour Tagging and CP Asymmetries} \label{sec:tagAsym}
+\begin{itemize}
+  \item \B/\Bb{} production: A difference between the \B{} and \Bb{} the production rates
+    introduces a \emph{production asymmetry} (\AProd).
+  \item CP violation in mixing: Including CP violation in mixing leads to a change in the shapes of
+    the angular distributions in the decay. It also introduces an overall difference in
+    normalization between the \B{} and \Bb{} distributions, which can be parameterized by the
+    \emph{normalization asymmetry} (\ANorm).
+  \item Tagging efficiency: Events are classified according to the estimated probability for a
+    wrong flavour tag. \B{} and \Bb{} events may have different rates for each value of the
+    estimated probability. This gives a \emph{tagging efficiency asymmetry} (\ATagEff).
+  \item Wrong-tag probability: The true wrong-tag probability for an event is a function of its
+    estimated wrong-tag probability. This function may be different for \B{} and \Bb, which is
+    parameterized by the \emph{dilution-scaled wrong-tag asymmetry} (\ADilWTag).
+\end{itemize}
+
+A shorthand notation will be used for the expression of the differential decay rate:
+\begin{equation} \label{eq:diffRateShort}
+  \left(\frac{\ud^{4} \Gamma}{\ud t \;\ud\Omega}\right)_\iTag
+    = \even(t, \Omega) + \iTag\,\odd(t, \Omega) \quad,
+\end{equation}
+where $t$ is the (proper) lifetime of the \B{} and $\Omega$ represents the decay angles. The
+variable \iTag{} represents the flavour of the \B{} meson: $\iTag=+1$ for a \B{} and $\iTag=-1$ for
+a \Bb. \even{} is the CP even part ($\cosh\left(\tfrac{1}{2}\DG\,t\right)$ and
+$\sinh\left(\tfrac{1}{2}\DG\,t\right)$ terms) and \odd{} the CP odd part ($\cos(\Dm\,t)$ and
+$\sin(\Dm\,t)$ terms) of the differential decay rate.
+
+An asymmetry $A$ affects the relative normalization of the \B{} and \Bb{} rates. The former rate is
+multiplied by $1+A$ and the latter by $1-A$.  The product of asymmetry factors for several
+asymmetries $A_j$ is written in terms of an even part \avgCEven and an odd part \avgCOdd:
+\begin{equation} \label{eq:asymProd}
+  \prod_j\ (1+\iTag\,A_j) \equiv \avgCEven + \iTag\,\avgCOdd
+\end{equation}
+This yields the following decay distributions:
+\begin{align} \label{eq:diffRateAsym}
+  \left(\frac{\ud^{4} \Gamma}{\ud t \;\ud\Omega}\right)_\iTag^{\text{asym}}
+    \ &\propto\ \prod_j\ (1+\iTag\,A_j)\ \left[\even(t, \Omega)
+      + \iTag\,\odd(t, \Omega)\right] \nonumber\\
+    &\propto \left(\avgCEven + \iTag\,\avgCOdd\right)
+    \ \left[\even(t, \Omega) + \iTag\,\odd(t, \Omega)\right]
+\end{align}
+
+When the effects of (imperfect) flavour tagging are included, the \B{} and \Bb{} distributions in
+Equation~\ref{eq:diffRateAsym} mix. The observed distributions become linear combinations of the
+two true distributions, since a wrong tag is assigned to a part of the events. Moreover, the
+coefficients \avgCEven{} and \avgCOdd{} become functions of the estimated wrong-tag probability of
+an event. The simplest way of parameterizing this dependence is to bin the data in the estimated
+probability and consider each bin to be a \emph{tagging category}. The asymmetry in the \B{} and
+\Bb{} rates for each category (\ATagEff[i]) enters \avgCEven{} and \avgCOdd.\footnote{Note that if
+event-by-event wrong-tag probabilities are used, one defines only two tagging categories:
+\emph{tagged} and \emph{untagged}.  In this case, estimated wrong-tag probabilities for events in
+the \emph{tagged} category span a wide range between 0 and 50\%. Therefore, an alternative
+parameterization of the dependence on the estimated probabilities might be required within this
+category.}
+
+Not all the tagging category coefficients are independent. The sums of the (true) \B{} and \Bb{}
+distributions in the categories are the original physics distributions, which do not depend on
+flavour tagging. A complementary category is defined ($i=0$), for which the asymmetry coefficients
+are functions of the coefficients in the other categories and of the category sums:
+\begin{subequations} \begin{alignat}{2} \label{eq:asymCoefs}
+  \tagEff[0]\;\avgCEven[0] &= \avgCEven[\text{S}] - \sum_{i=1}^{N_c} \tagEff[i]\;\avgCEven[i] &
+    \qquad\qquad\qquad
+    \tagEff[0]\;\avgCOdd[0] &= \avgCOdd[\text{S}] - \sum_{i=1}^{N_c} \tagEff[i]\;\avgCOdd[i] \\
+  \avgCEven[\text{S}] &= \avgCEven[i]\Big|_{\ATagEff[i]=0} &
+    \avgCOdd[\text{S}] &= \avgCOdd[i]\Big|_{\ATagEff[i]=0}
+\end{alignat} \end{subequations}
+The coefficients of the sum (\avgCEven[\text{S}] and \avgCOdd[\text{S}]) are defined by the
+asymmetry product of Equation~\ref{eq:asymProd}, not including the tagging efficiency asymmetry
+\ATagEff[i]. The tagging efficiency, \tagEff[i], is the fraction of events in a category, averaged
+over (true) \B{} and \Bb. Since the efficiencies add up to one for both \B{} and \Bb, \tagEff[0]
+and \ATagEff[0] are given by:
+\begin{equation} \label{eq:tagEffs}
+  \tagEff[0] = 1 - \sum_{i=1}^{N_c} \tagEff[i]
+    \qquad\qquad\qquad
+  \tagEff[0]\,\ATagEff[0] = - \sum_{i=1}^{N_c} \tagEff[i]\,\ATagEff[i]
+\end{equation}
+
+With the wrong-tag probabilities $\wTag_i$ and $\overline{\wTag}_i$ (or $\wTag_{\iTag,\,i}$), the
+dilution $\Dil[i] = 1 - \wTag_i - \overline{\wTag}_i$ and the dilution-scaled wrong-tag
+asymmetry $\ADilWTag[i] = \frac{\wTag_i - \overline{\wTag}_i}{\Dil[i]}$, the observed \B{} and
+\Bb{} distributions in a tagging category $i$ are given by:
+\begin{align} \label{eq:diffRateObs}
+  \left(\frac{\ud^{4} \Gamma}{\ud t \;\ud\Omega}\right)_{\iTag,\,i}^{\text{obs}}
+    \ &\propto\ (1-\wTag_{\iTag,\,i})
+      \left(\avgCEven[i] + \iTag\,\avgCOdd\right)\left(\even + \iTag\,\odd\right)
+    + \wTag_{-\iTag,\,i}
+      \left(\avgCEven[i] - \iTag\,\avgCOdd\right)\left(\even - \iTag\,\odd\right) \nonumber\\
+  &\propto\
+    \left[\avgCEven[i] + \iTag\,\Dil[i]\left(\avgCOdd[i]
+      - \ADilWTag[i]\,\avgCEven[i]\right)\right]\even
+    + \left[\avgCOdd[i] + \iTag\,\Dil[i]\left(\avgCEven[i]
+      - \ADilWTag[i]\,\avgCOdd[i]\right)\right]\odd
+\end{align}
+Without asymmetries ($\avgCEven[i]=1$, $\avgCOdd=0$, $\ADilWTag[i]=0$), with perfect tagging
+($\Dil[i]=1$, $\ADilWTag[i]=0$), with 50\% wrong tags ($\Dil[i]=0$, $\ADilWTag[i]=0$)\footnote{For
+``untagged'' events the wrong-tag probabilities for \B{} and \Bb{} are both equal to 0.5. Note that
+the flavour tag \iTag{} is \emph{not} set to zero. ``Untagged'' events still have a \B{} or \Bb{}
+tag, which has a 50\% probability to be wrong. The property $\iTag=\pm1 \Rightarrow \iTag^2=1$ is
+assumed in Equations~\ref{eq:asymProd}, \ref{eq:diffRateObs}, and \ref{eq:diffRatePerfectTags} and
+it is explicitly used in Equation~\ref{eq:asymProdExpl}} or without tagging (the sum of $\iTag=+1$
+and $\iTag=-1$), Equation~\ref{eq:diffRateObs} respectively reduces to:
+\begin{subequations} \label{eq:diffRateLimits} \begin{alignat}{2}
+  \left(\frac{\ud^{4} \Gamma}{\ud t \;\ud\Omega}\right)_{\iTag,\,i}^{\text{obs}}
+    \ &\propto\ \even + \iTag\,\Dil[i]\,\odd
+    & &\text{(no asymmetries)} \label{eq:diffRateNoAsym}\\
+  \left(\frac{\ud^{4} \Gamma}{\ud t \;\ud\Omega}\right)_{\iTag,\,i}^{\text{obs}}
+    \ &\propto \left(\avgCEven[i] + \iTag\,\avgCOdd[i]\right)\ \left(\even + \iTag\,\odd\right)
+    \qquad\quad & &\text{(perfect tagging)} \label{eq:diffRatePerfectTags}\\
+  \left(\frac{\ud^{4} \Gamma}{\ud t \;\ud\Omega}\right)_{\iTag,\,i}^{\text{obs}}
+    \ &\propto  \avgCEven[i]\,\even + \avgCOdd[i]\,\odd
+    & &\text{(50\% wrong tags)} \label{eq:diffRateWrongTags}\\
+  \left(\frac{\ud^{4} \Gamma}{\ud t \;\ud\Omega}\right)^{\text{obs}}
+    \ &\propto  2\,\avgCEven\,\even + 2\,\avgCOdd\,\odd
+    & &\text{(no tagging)} \label{eq:diffRateNoTags}
+\end{alignat} \end{subequations}
+
+Note that with perfect flavour tagging (Equation~\ref{eq:diffRatePerfectTags}), the asymmetries and
+the lifetime and angular distributions factorize. As a result, the asymmetries only affect the
+relative normalizations of \B{} and \Bb{} decays. In an experiment with small wrong-tag
+probabilities, this might be a reason to normalize the \B{} and \Bb{} distributions separately and
+only fit for the shapes of both distributions. Doing so would reduce the dependence on the
+asymmetries significantly.
+
+In an experiment with wrong-tag probabilities close to the 50\% limit
+(Equation~\ref{eq:diffRateWrongTags}), the \B{} and \Bb{} distributions have roughly equal
+normalizations. In this case, the asymmetries only affect the shapes of the distributions.
+
+With a production asymmetry (\AProd), a normalization asymmetry (\ANorm) and tagging efficiency
+asymmetries (\ATagEff[i]), the asymmetry coefficients are given by (see
+Equation~\ref{eq:asymProd}):
+\begin{align*}
+  \prod_j\ (1+\iTag\,A_j)_i &= (1+\iTag\,\AProd) (1+\iTag\,\ANorm) (1+\iTag\,\ATagEff[i]) \\
+  &= 1 + \iTag\,(\AProd + \ANorm + \ATagEff[i])
+    + \iTag^2\,(\AProd\,\ANorm + \AProd\,\ATagEff[i] + \ANorm\,\ATagEff[i])
+    + \iTag\,\iTag^2\,\AProd\,\ANorm\,\ATagEff[i]
+\end{align*}
+\begin{subequations} \label{eq:asymProdExpl} \begin{alignat}{2}
+  \avgCEven[i] &= 1 + \AProd\,\ANorm + \AProd\,\ATagEff[i] + \ANorm\,\ATagEff[i] \qquad\quad&
+  \avgCOdd[i] &= \AProd + \ANorm + \ATagEff[i] + \AProd\,\ANorm\,\ATagEff[i] \\
+  \avgCEven[\text{S}] &= 1 + \AProd\,\ANorm &
+  \avgCOdd[\text{S}] &= \AProd + \ANorm
+\end{alignat} \end{subequations}
+

@@ -1,0 +1,129 @@
+\subsection{Decay Angles} \label{sec:decAngles}
+Two sets of angles are in use: helicity angles and transversity angles. The former set will be
+denoted by \helSet{} and the latter by \trSet.
+
+The helicity and transversity sets have one angle in common, which specifies the direction of the
+kaon in the \Kst{} rest frame. This angle is called \thetak{} in the helicity description and
+\psitr{} in the transversity description.
+
+The direction of the positive lepton in the dilepton rest frame is given by the second helicity
+angle, \thetal{}. A third angle (\phihel{}) is required to specify the relative orientation of the
+\Kst{} and dilepton decays. In the transversity frame, the two remaining angles are defined as
+spherical coordinates in a right-handed system in the dilepton rest frame. The polar angle is
+\thetatr{} and the azimuthal angle \phitr{}.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Helicity Angles} \label{sec:helAngles}
+The definition of helicity angles is shown in Figure~\ref{fig:helFrame} for the decay \BdtomumuKpi.
+For the decay \BstomumuKK, the \pion[-] is simply replaced by the \kaon[-] in this definition. The
+figure consists of three different parts, each of which shows particles in a different inertial
+frame. In the middle, the rest frame of the \B[][0] is shown. The frames on the left and the right
+are the centre of mass systems of the two mesons and the two muons, respectively.
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{\input{figs/helFrame.pdftex_t}}
+  \caption{Definition of helicity angles.}
+  \label{fig:helFrame}
+\end{figure}
+
+The helicity axis is defined in the direction of the dilepton in the \B[][0] rest system.
+Transformations to the other frames are given by Lorentz boosts along this axis. \thetak{} is the
+angle of the \kaon[+] with the negative helicity axis in the \Kst{} rest frame. Similarly,
+\thetal{} is the angle of the \muon[+] with the positive helicity axis in the dilepton frame. The
+angle between the decay planes of the \Kst{} and the dilepton is \phihel. It is measured from the
+``\pion[-] side'' of the \Kst{} plane to the ``\muon[+] side'' of the dilepton plane.
+
+The polar angles \thetak{} and \thetal{} are defined between 0 and $\pi$. Therefore, only
+\cthetak{} and \cthetal{} are required to completely specify these angles and not their sines
+($\sin\theta = \sqrt{1-\cos^2\theta}$). The range of \phihel{} is $-\pi$ to $+\pi$.
+
+Helicity angles may also be defined by products of three-vectors or four-vectors. Using
+three-vectors, the direction of the helicity axis is given by:
+\begin{equation}
+  \label{eq:helUnitVec}
+  \vec{e}_z = -\frac{
+    \vec{p}_{\kaon[+]} + \vec{p}_{\pion[-]}}{
+    \left|\vec{p}_{\kaon[+]} + \vec{p}_{\pion[-]}\right|}
+\end{equation}
+where the $\vec{p}_i$ are momenta in the \B[][0] rest system. In addition, the two normal vectors
+of the decay planes are defined:
+\begin{equation}
+  \label{eq:decPlaneNorms}
+  \vec{n}_K = +\frac{
+    \vec{p}_{\kaon[+]} \times \vec{p}_{\pion[-]}}{
+    \left|\vec{p}_{\kaon[+]} \times \vec{p}_{\pion[-]}\right|}
+  \qquad\text{and}\qquad
+  \vec{n}_\ell = +\frac{
+    \vec{p}_{\muon[+]} \times \vec{p}_{\muon[-]}}{
+    \left|\vec{p}_{\muon[+]} \times \vec{p}_{\muon[-]}\right|}
+\end{equation}
+The angles are now given by:
+\begin{equation}
+  \label{eq:helAngles}
+  \begin{split}
+    \cthetak     &= -\frac{\vec{q}_{\kaon[+]}}{\left|\vec{q}_{\kaon[+]}\right|}
+                     \cdot \vec{e}_z  \\
+    \cthetal     &= +\frac{\vec{r}_{\muon[+]}}{\left|\vec{r}_{\muon[+]}\right|}
+                     \cdot \vec{e}_z  \\
+    \cos\phihel  &= +\,\vec{n}_K \cdot \vec{n}_\ell  \\
+    \sin\phihel  &= +\left(\vec{n}_K \times \vec{n}_\ell\right) \cdot \vec{e}_z
+  \end{split}
+\end{equation}
+where momenta in the \Kst{} system are labelled with $\vec{q}_i$ and momenta in the dilepton
+system with $\vec{r}_i$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Transversity Angles} \label{sec:transAngles}
+The definition of transversity angles is shown in Figure~\ref{fig:transFrame}. \psitr{} is
+equal to \thetak. The angles \thetatr{} and \phitr{} are spherical coordinates in the dilepton
+rest frame. A right-handed coordinate system is defined by fixing its $x$-axis in the direction of
+the \B[][0] momentum and its $y$-axis in the \Kst{} decay plane. The $y$-axis is chosen such that
+the \kaon[+] has a positive momentum in the $y$ direction (see also Figure~\ref{fig:transFrame}).
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{\input{figs/transFrame.pdftex_t}}
+  \caption{Definition of transversity angles.}
+  \label{fig:transFrame}
+\end{figure}
+
+The polar angle in the dilepton coordinate system is \thetatr. It is defined between 0 and $\pi$,
+so only its cosine is required, like for \thetak{} and \thetal{} (and also \psitr). The azimuthal
+angle \phitr{} is defined between $-\pi$ and $+\pi$, like \phihel.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Transformation Between Helicity and Transversity Angles}
+Helicity angles can be transformed into transversity angles by defining a helicity coordinate
+system (Figure~\ref{fig:helFrame}). The axes in this system can be associated with the coordinate
+system in the transversity frame (Figure~\ref{fig:transFrame}). The unit vectors in the direction
+of the axes in the different frames are related as follows:
+\begin{equation}
+  \label{eq:unitVecTrans}
+  \vec{e}_{x\text{,\,tr}} = -\vec{e}_{z\text{,\,hel}} \qquad
+  \vec{e}_{y\text{,\,tr}} = -\vec{e}_{x\text{,\,hel}} \qquad
+  \vec{e}_{z\text{,\,tr}} = +\vec{e}_{y\text{,\,hel}}
+\end{equation}
+
+The momentum of the positive lepton can be written as:
+\begin{align}
+  \frac{\vec{p}_{\mu^+}}{\left|\vec{p}_{\mu^+}\right|}
+    &= \sin\thetal\cos\phihel\ \vec{e}_{x\text{,\,hel}}
+     + \sin\thetal\sin\phihel\ \vec{e}_{y\text{,\,hel}}
+     + \cos\thetal\ \vec{e}_{z\text{,\,hel}} \\
+    &= \sin\thetatr\cos\phitr\ \vec{e}_{x\text{,\,tr}}
+     + \sin\thetatr\sin\phitr\ \vec{e}_{y\text{,\,tr}}
+     + \cos\thetatr\ \vec{e}_{z\text{,\,tr}}
+\end{align}
+Combining with Equation~\ref{eq:unitVecTrans} and applying the relation $\psitr=\thetak$ yields:
+\begin{equation}
+  \label{eq:angleTrans}
+  \begin{split}
+    \cos\psitr              &= +\cos\thetak             \\
+    \sin\thetatr\cos\phitr  &= -\cos\thetal             \\
+    \sin\thetatr\sin\phitr  &= -\sin\thetal\cos\phihel  \\
+    \cos\thetatr            &= +\sin\thetal\sin\phihel
+  \end{split}
+\end{equation}
+
+

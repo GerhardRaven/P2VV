@@ -1,0 +1,154 @@
+\subsection{Angular Efficiency} \label{sec:angEff}
+We also expand a general angular acceptance function in terms of associated Legendre polynomials
+and spherical harmonics:
+\begin{equation}
+   \epsilon(\psi,\theta,\phi) = c^{i}_{jk} P_i(\cos\psi)Y_{jk}(\theta,\phi)
+   \label{eq:eps_exp}
+\end{equation}
+Calculating the normalization integral, i.e. the integral of the product of efficiency and signal:
+\begin{align}
+  N(q_T,t)  &=  \int \ud\cos\psi\int \ud\cos\theta \int \ud\phi \epsilon(\psi,\theta,\phi)
+      \frac{9}{\sqrt{4\pi}}|{\bf A}(t,q_T) \wedge \hat{n}|^2 \\
+  &= c^i_{jk} \int d\cos\psi   P_i(\cos\psi)  \int d\cos\theta d\phi Y_{jk}(\theta,\phi)
+    \biggl[\\
+    & + |{\cal A}_0|^2  (P_0^0(\cos\psi)+2P_2^0(\cos\psi))
+      \left( 2Y_{00}+\sqrt{\frac{1}{5}}Y_{20} - \sqrt{\frac{3}{5}}Y_{22} \right) \\
+    & + |{\cal A}_\parallel|^2 P_2^2(\cos\psi)
+      \left( Y_{00} + \sqrt{\frac{1}{20}}Y_{20} + \sqrt{\frac{3}{20}}Y_{22} \right) \\
+    & + |{\cal A}_\perp|^2  P_2^2(\cos\psi) \left( Y_{00} - \sqrt{\frac{1}{5}}Y_{20}\right)\\
+    & + \Im({\cal A}_\parallel^*{\cal A}_\perp) \sqrt{\frac{3}{5}}P_2^2(\cos\psi) Y_{2,-1} \\
+    & - \Re({\cal A}_0^*{\cal A}_\parallel) \sqrt{\frac{6}{5}}P_2^1(\cos\psi) Y_{2,-2} \\
+    & + \Im({\cal A}_\perp^* {\cal A}_0) \sqrt{\frac{6}{5}}P_2^1(\cos\psi)Y_{2,1} \\
+    & + |{\cal A}_{s}(t)|^2  P_0^0
+      \left( 2Y_{00} + \sqrt{\frac{1}{5}}Y_{20} - \sqrt{\frac{3}{5}} Y_{22} \right) \\
+    & - \Re({\cal A}_{s}^*(t){\cal A}_\parallel(t)) 3\sqrt{\frac{2}{5}} P_1^1 Y_{2,-2} \\
+    & + \Im({\cal A}_{s}^*(t){\cal A}_\perp(t)) 3\sqrt{\frac{2}{5}} P_1^1 Y_{2,1}\\
+    & + \Re({\cal A}_{s}^*(t){\cal A}_0(t)) P_1^0
+      \left( 4\sqrt{3}  Y_{00} + 2 \sqrt{\frac{3}{5}} Y_{20} - 6 \sqrt{\frac{1}{5}}Y_{22} \right)
+    \biggr] \\
+      &= \int \ud\cos\psi   P_i(\cos\psi) \biggl[ \\
+          &                  +|{\cal A}_0|^2 2 (\frac{1}{2}P_0^0(\cos\psi)+P_2^0(\cos\psi) ) \left( 2 c^i_{00}+\sqrt{\frac{1}{ 5}}c^i_{20}-\sqrt{\frac{3}{ 5}}c^i_{22} \right) \\
+          &                   |{\cal A}_\parallel|^2 2( P_0^0(\cos\psi) - P_2^0(\cos\psi)  )           \left( c^i_{00}  +\sqrt{\frac{1}{20}}c^i_{20}+\sqrt{\frac{3}{20}}c^i_{22}  \right)  \\
+          &                  +|{\cal A}_\perp|^2 2 ( P_0^0(\cos\psi) - P_2^0(\cos\psi)  )              \left( c^i_{00}  -\sqrt{\frac{1}{ 5}}c^i_{20}\right)\\
+          &                  +\Im({\cal A}_\parallel^*{\cal A}_\perp)2\sqrt{\frac{3}{5}} ( P_0^0(\cos\psi) - P_2^0(\cos\psi)  ) c^i_{2,-1}  \\
+          &                  -\Re({\cal A}_0^*{\cal A}_\parallel  )  \sqrt{\frac{6}{5}}P_2^1(\cos\psi) c^i_{2,-2}\\ 
+          &                  +\Im({\cal A}_0^* {\cal A}_\perp )      \sqrt{\frac{6}{5}}P_2^1(\cos\psi)c^i_{2,1} \\
+          &                  +|{\cal A}_{s}(t)|^2  P_0^0 (2c^i_{00} + \sqrt{\frac{1}{5}}c^i_{20} -\sqrt{\frac{3}{5}} c^i_{22}) \\
+          &                  -\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t)) 3\sqrt{\frac{2}{5}} P_1^1 c^i_{2,-2}\\
+          &                  +\Im({\cal A}_{s}^*(t){\cal A}_\perp(t)) 3\sqrt{\frac{2}{5}} P_1^1 c^i_{2,1}\\
+          &                  +\Re({\cal A}_{s}^*(t){\cal A}_0(t)) P_1^0( 4\sqrt{3}  c^i_{00} + 2 \sqrt{\frac{3}{5}} c^i_{20} - 6 \sqrt{\frac{1}{5}}c^i_{22})
+      \biggr] \\
+      &= 4\biggl[ \\
+         &                   +|{\cal A}_0|^2   \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
+         &                    |{\cal A}_\parallel|^2 \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
+         &                   +|{\cal A}_\perp|^2    \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
+         &                   +\Im({\cal A}_\parallel^*{\cal A}_\perp)\sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
+         &                   +\Re({\cal A}_0^*{\cal A}_\parallel)\sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+\ldots \right) \\
+         &                   -\Im({\cal A}_\perp^* {\cal A}_0 )  \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+\ldots \right) \\
+         &                  +|{\cal A}_{s}(t)|^2  \frac{1}{2} \left(2c^0_{00} + \sqrt{\frac{1}{5}}c^0_{20} -\sqrt{\frac{3}{5}} c^0_{22}\right) \\
+         &                  +\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t)) 3 \sqrt{\frac{2}{5}}\frac{\pi}{8} \left(c^0_{2,-2}-\frac{1}{8}c^2_{2,-2}-\frac{1}{64}c^4_{2,-2}-\frac{5\pi}{1024}c^6_{2,-2}-\frac{35\pi}{16384}c^8_{2,-2}-\ldots\right)\\
+         &                  -\Im({\cal A}_{s}^*(t){\cal A}_\perp(t)) 3\sqrt{\frac{2}{5}} \frac{\pi}{8} \left(c^0_{2,1}-\frac{1}{8}c^2_{2,1}-\frac{1}{64}c^4_{2,1}-\frac{5\pi}{1024}c^6_{2,1}-\frac{35\pi}{16384}c^8_{2,1}-\ldots\right)\\
+         &                  +\Re({\cal A}_{s}^*(t){\cal A}_0(t)) \frac{1}{6}\left(4\sqrt{3}  c^1_{00} + 2 \sqrt{\frac{3}{5}} c^1_{20} - 6 \sqrt{\frac{1}{5}}c^1_{22}\right)
+      \biggr]
+\end{align}
+where we have used
+\begin{align}
+  \int_{-1}^1 d\cos\theta \int_0^{2\pi} d\phi \;\;Y_l^m(\theta,\phi) Y_{l'}^{m'*}(\theta,\phi)
+    &= \delta_{ll'}\delta_{mm'}\\
+  \int_{-1}^1 dx  P_k^m P_l^m &= \frac{2}{2l+1}\frac{(l+m)!}{(l-m)!}\delta_{kl} \\
+  P_2^2(x) &= 3(1-x^2) = 2(P_0-P_2)\\
+  P_2^1(x) &= -3x(1-x^2)^{1/2} = -3x(1-\ldots x^2 + \ldots x^4  + \ldots x^6 + \ldots) \\
+    &= \ldots P_1 + \ldots P_3 + \ldots P_5 +\ldots P_7 + \ldots\\
+  P_1^1(x) &= -1(1-x^2)^{1/2} = \ldots P_0 + \ldots P_2 + \ldots P_4 + \ldots\\
+\end{align}
+
+In particular, an online integrator can explicitly calculate the integrals
+$\int_{-1}^{1}P_2^1P_i^0\mathrm{d}x$ where  $i = 1,3,5,\ldots$ to find the coefficients in the
+$\Re({\cal A}_0^*{\cal A}_\parallel)$ and $\Im({\cal A}_\perp^* {\cal A}_0 )$ terms. The same goes
+for the integrals $\int_{-1}^{1}P_1^1P_i^0\mathrm{d}x$ where $i=0,2,4,\ldots$ for the terms
+$\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))$ and $\Im({\cal A}_{s}^*(t){\cal A}_\perp(t))$.
+
+At this point, we recognize the equivalence of the following combinations of Fourier coefficients
+of the efficiency, and the ``efficiency normalization moments'', where we have taken into account
+the factor $\frac{1}{8\sqrt{\pi}}$ which represents the overall normalization. 
+
+\begin{align}
+  \xi_{00}                 &= \frac{1}{2\sqrt{\pi}} \left( c^0_{00}+\frac{2}{5}c^2_{00}+\sqrt{\frac{1}{20}}(c^0_{20}+\frac{2}{5}c^2_{20})-\sqrt{\frac{3}{20}}(c^0_{22}+\frac{2}{5}c^2_{22}) \right) \\
+  \xi_{\parallel\parallel} &= \frac{1}{2\sqrt{\pi}} \left( c^0_{00}-\frac{1}{5}c^2_{00}+\sqrt{\frac{1}{20}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)+\sqrt{\frac{3}{20}}\left(c^0_{22}-\frac{1}{5}c^2_{22}\right)  \right)  \\
+  \xi_{\perp\perp}         &= \frac{1}{2\sqrt{\pi}} \left( c^0_{00}-\frac{1}{5}c^2_{00} - \sqrt{\frac{1}{5}}\left(c^0_{20}-\frac{1}{5}c^2_{20}\right)\right)\\
+  \xi_{\parallel\perp}     &= \frac{1}{2\sqrt{\pi}} \sqrt{\frac{3}{5}}\left(c^0_{2,-1}-\frac{1}{5}c^2_{2,-1}\right)  \\
+  \xi_{0\parallel}         &= \frac{1}{2\sqrt{\pi}} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,-2}-\frac{1}{4}c^3_{2,-2}-\frac{5}{128}c^5_{2,-2}-\frac{7}{512}c^7_{2,-2} - \frac{105}{16384}c^9_{2,-2}+\ldots \right) \\
+  \xi_{\perp 0}            &= -\frac{1}{2\sqrt{\pi}} \sqrt{\frac{6}{5}}\frac{3\pi}{32}\left( +c^1_{2,1} -\frac{1}{4}c^3_{2,1}- \frac{5}{128}c^5_{2,1} -\frac{7}{512}c^7_{2,1} - \frac{105}{16384}c^9_{2,1}+\ldots \right) \\
+  \xi_{SS}               &=  \frac{1}{2\sqrt{\pi}}\frac{1}{2} \left(2c^0_{00} + \sqrt{\frac{1}{5}}c^0_{20} -\sqrt{\frac{3}{5}} c^0_{22}\right) \\
+  \xi_{S \parallel}        &=  \frac{1}{2\sqrt{\pi}} 3 \sqrt{\frac{2}{5}}\frac{\pi}{8} \left(c^0_{2,-2}-\frac{1}{8}c^2_{2,-2}-\frac{1}{64}c^4_{2,-2}-\frac{5\pi}{1024}c^6_{2,-2}-\frac{35\pi}{16384}c^8_{2,-2}-\ldots\right)\\
+  \xi_{S \perp}           &= \frac{1}{2\sqrt{\pi}} 3\sqrt{\frac{2}{5}} \frac{\pi}{8} \left(c^0_{2,1}-\frac{1}{8}c^2_{2,1}-\frac{1}{64}c^4_{2,1}-\frac{5\pi}{1024}c^6_{2,1}-\frac{35\pi}{16384}c^8_{2,1}-\ldots\right)\\
+  \xi_{S 0}              &= \frac{1}{2\sqrt{\pi}}\frac{1}{6}\left(4\sqrt{3}  c^1_{00} + 2 \sqrt{\frac{3}{5}} c^1_{20} - 6 \sqrt{\frac{1}{5}}c^1_{22}\right)
+\end{align}
+
+This implies that, if the efficiency is uniform (and 100\%) in the angles, i.e.
+\begin{equation}
+   \epsilon(\psi,\theta,\phi) = 1\
+   \Rightarrow c^0_{00} = 2\sqrt{\pi};\ c^{i}_{jk} = 0\ (i\neq 0,\,j\neq 0,\,k \neq 0)
+\end{equation}
+we can read off the moments as:
+\begin{equation}
+    \xi_{\parallel\parallel} = \xi_{00}= \xi_{\perp\perp} = \xi_{SS} = 1\
+    \xi_{\parallel\perp} =\xi_{\perp 0} = \xi_{0\parallel} =\xi_{S \parallel}
+      = \xi_{S \perp} = \xi_{S 0} = 0
+\end{equation}
+Given that it is known that in the likelihood fit only the (relative) normalization of the six
+angular terms matters, it is clear that only a subset the Fourier components needs to be know to
+perform the fit. Of course additional terms will improve the visual results when plotting
+differential distributions.
+
+In case only the $\xi_{ab}$ are known, and an equivalent set of $c^i_{jk}$ is required, the 
+following may be used:
+\begin{align}
+ c^0_{00}  &= \frac{3\sqrt{\pi}}{8}( \xi_{\parallel \parallel }+\xi_{00}+\xi_{\perp\perp} )     \\
+ c^2_{00}  &= \frac{15\sqrt{\pi}}{8}( \xi_{00} - \xi_{\parallel \parallel } )    \\
+ c^0_{20}  &= \frac{3\sqrt{5\pi}}{4} ( \xi_{\parallel \parallel } - \xi_{\perp\perp} )    \\
+ c^0_{2-1} &= \frac{9\sqrt{\pi}}{8}\sqrt{\frac{5}{3}}  \xi_{\parallel \perp}    \\
+ c^1_{21}  &= - \frac{12}{\sqrt{\pi}}\sqrt{\frac{5}{6}} \xi_{\perp0}    \\
+ c^1_{2-2} &= \frac{12}{\sqrt{\pi}}\sqrt{\frac{5}{6}}  \xi_{0\parallel }
+\end{align}
+Note that this choice is not unique, but will (should)  reproduce the same minimum as a fit which
+used the $\xi_{ab}$.
+
+
+%TODO: take into account ${\cal D} = 1-2( <w_i> + q_T \frac{\Delta w_i}{2})$, i.e. sum over $q_T$
+%may not fully cancel some terms... And the same for the tagging times reconstruction
+%efficiency...
+
+
+We utilize the fact that, for an MC sample generated according to a P.D.F. $g(\vec{x})$,
+and an efficiency $\epsilon(\vec{x})$, that we can write a sum over accepted events as:
+\begin{equation}
+  \frac{1}{N_{\mathrm{gen}}} \sum_{\mathrm{accepted events}}
+    f(\vec{x}_i) = \frac{1}{N_{\mathrm{gen}}}
+    \sum_{\mathrm{generated events}} \epsilon(\vec{x}_i) f(\vec{x}_i)
+  = \int g(\vec{x})dx \epsilon(\vec{x}) f(\vec{x})
+\end{equation}
+
+If we now substitute the expansion of the efficiency in terms of orthonormal basis function, i.e.
+equation \ref{eq:eps_exp}, then we have:
+
+\begin{equation}
+  \frac{1}{N_{\mathrm{gen}}} \sum_{\mathrm{accepted events}} f(\vec{x}_i)
+    = c^i_{jk}  \int g(\vec{x})dx P_i(\cos\psi)Y_{jk}(\cos\theta,\phi)  f(\vec{x})
+\end{equation}
+
+Using the orthonormality of the basis functions, we can now determine the coefficients $c^i_{jk}$ 
+by choosing $f(\vec{x})$ as follows:
+\begin{align}
+\frac{1}{N_{\mathrm{gen}}} &\sum_{\mathrm{accepted events}}
+  \frac{2i+1}{2}\frac{ P_i(\cos\psi)Y_{jk}(\cos\theta,\phi) }{ g(\vec{\Omega}) } \\
+  &= \int g(\vec{\Omega})d\vec{\Omega}\; c^l_{mn} P_l(\cos\psi)Y_{mn}(\cos\theta,\phi)
+    \left[\frac{2i+1}{2}\frac{P_i(\cos\psi)Y_{jk}(\cos\theta,\phi)}{g(\vec{\Omega})}\right] \\
+  &= c^i_{jk}
+\end{align}
+where
+\begin{equation}
+  \vec{\Omega} \equiv (\cos\psi,\cos\theta,\phi);\ \
+    \int \ud\vec{\Omega} \equiv \int \ud\cos\psi \ud\cos\theta d\phi
+\end{equation}
+

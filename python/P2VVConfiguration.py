@@ -57,10 +57,10 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   ###############
   ## constants ##
   ###############
-  config.addSetting('zeroConst', RooRealSetting('zero', 'zero constant', 'par', 0., '', ''))
-  config.addSetting('halfConst', RooRealSetting('half', 'one half constant', 'par', 0.5, '', ''))
-  config.addSetting('oneConst', RooRealSetting('one', 'one constant', 'par', 1., '', ''))
-  config.addSetting('minusConst', RooRealSetting('minus', 'minus constant', 'par', -1., '', ''))
+  config.addSetting('zeroConst',  RooRealSetting('zero',  'zero constant',     'par',  0.,  '', ''))
+  config.addSetting('halfConst',  RooRealSetting('half',  'one half constant', 'par',  0.5, '', ''))
+  config.addSetting('oneConst',   RooRealSetting('one',   'one constant',      'par',  1.,  '', ''))
+  config.addSetting('minusConst', RooRealSetting('minus', 'minus constant',    'par', -1.,  '', ''))
 
 
   ##################
@@ -77,15 +77,15 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
   # helicity angles
   if 'hel' in anglesType :
-    config.addSetting('cpsiAng', RooRealSetting('helcthetaK', 'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
+    config.addSetting('cpsiAng',   RooRealSetting('helcthetaK', 'cosine of kaon polarization angle',   'obs', 0., -1., 1.))
     config.addSetting('cthetaAng', RooRealSetting('helcthetaL', 'cosine of lepton polarization angle', 'obs', 0., -1., 1.))
-    config.addSetting('phiAng', RooRealSetting('helphi', 'angle between decay planes', 'obs', 0., -pi, pi))
+    config.addSetting('phiAng',    RooRealSetting('helphi',     'angle between decay planes',          'obs', 0., -pi, pi))
 
   # transversity angles
   if 'trans' in anglesType :
-    config.addSetting('cpsiAng', RooRealSetting('trcpsi', 'cosine of kaon polarization angle', 'obs', 0., -1., 1.))
-    config.addSetting('cthetaAng', RooRealSetting('trctheta', 'cosine of transversity polar angle', 'obs', 0., -1., 1.))
-    config.addSetting('phiAng', RooRealSetting('trphi', 'transversity azimuthal angle', 'obs', 0., -pi, pi))
+    config.addSetting('cpsiAng',   RooRealSetting('trcpsi',     'cosine of kaon polarization angle',   'obs', 0., -1., 1.))
+    config.addSetting('cthetaAng', RooRealSetting('trctheta',   'cosine of transversity polar angle',  'obs', 0., -1., 1.))
+    config.addSetting('phiAng',    RooRealSetting('trphi',      'transversity azimuthal angle',        'obs', 0., -pi, pi))
 
   config.addSetting('anglesType', P2VVSetting('anglesType', 'type of angles: helicity or transversity', anglesType))
 
@@ -130,6 +130,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     elif tResModel[:6] == '3Gauss' :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat', 'B lifetime error (ps)', 'par', 0.05, 0.005, 0.1))
 
+    ### OUT: BMeanLife, dGamma, dm
     if mode == 'Bd2JpsiKstar' :
       config.addSetting('Gamma',  RooRealSetting('Gamma',  'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
       config.addSetting('dGamma', RooRealSetting('dGamma', 'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
@@ -174,7 +175,8 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('lambdaCPType', P2VVSetting('lambdaCPType', 'type of lambda (CP violation)', lambdaCPType))
 
       if mode == 'Bd2JpsiKstar' :
-          config.addSetting('CCP', RooRealSetting('C', 'B0 lambda param. C', 'par', 0., '', ''))
+        # OUT: (CCP)
+          config.addSetting('CCP',        RooRealSetting('C', 'B0 lambda param. C', 'par', 0., '', ''))
       elif mode == 'Bs2Jpsiphi' :
         # IN: polar: (lambdaCPSq,phiCP); cartesian: (ReLambdaCP,ImLambdaCP), other: (CCP,DCP,SCP)
         # OUT: (CCP,DCP,SCP)
@@ -194,9 +196,9 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
           config.addSetting('SCP',        RooFormSetting('S', 'B0_s lambda param. S', '2. * @1 / (1. + @0)', ['lambdaCPSq', 'ImLambdaCP']))
 
         else :
-          config.addSetting('CCP', RooRealSetting('C', 'B0_s lambda param. C', 'par', CCP, -3., 3.))
-          config.addSetting('DCP', RooRealSetting('D', 'B0_s lambda param. D', 'par', DCP, -3., 3.))
-          config.addSetting('SCP', RooRealSetting('S', 'B0_s lambda param. S', 'par', SCP, -3., 3.))
+          config.addSetting('CCP',        RooRealSetting('C', 'B0_s lambda param. C', 'par', CCP, -3., 3.))
+          config.addSetting('DCP',        RooRealSetting('D', 'B0_s lambda param. D', 'par', DCP, -3., 3.))
+          config.addSetting('SCP',        RooRealSetting('S', 'B0_s lambda param. S', 'par', SCP, -3., 3.))
 
       ### flavour tags ###
       allowITagZero =  'allowITagZero' in optDict 
@@ -206,20 +208,22 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('asymType', P2VVSetting('asymType', 'type of CP asymmetries', asymType))
 
       itagdict = { +1: 'B', -1 : 'Bbar'}
-      if allowITagZero : itagdict.update( { 0:'untagged' }
+      if allowITagZero : itagdict.update( { 0:'untagged' } )
       config.addSetting('iTag', RooCatSetting('iTag', 'initial state flavour tag', True, 'B', itagdict ))
       if mode == 'Bd2JpsiKstar' :
         config.addSetting('fTag', RooCatSetting('fTag', 'final state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
 
       config.addSetting('wTag',        RooRealSetting('wTag', 'wrong tag fraction B', 'par', 0., '', ''))
       config.addSetting('wTagBar',     RooRealSetting('wTagBar', 'wrong tag fraction anti-B', 'par', 0., '', ''))
+      ### IN: wTag, wTagBar
+      ### OUT: tagDilution,ADilWTag
       config.addSetting('tagDilution', RooFormSetting('tagDilution', 'tagging dilution', '1. - @0 - @1', ['wTag', 'wTagBar']))
       config.addSetting('ADilWTag',    RooFormSetting('ADilWTag', 'dilution/wrong tag asymmetry', '(@0 - @1) / @2', ['wTag', 'wTagBar', 'tagDilution']))
 
       ### OUT: avgCEven, avgCOdd
       if asymType == 'avgCOdd' :
         config.addSetting('avgCEven', RooRealSetting('avgCEven', 'CP average even coefficients', 'par', 1., '', ''))
-        config.addSetting('avgCOdd',  RooRealSetting('avgCOdd', 'CP average odd coefficients', 'par', 0., -1., 1.))
+        config.addSetting('avgCOdd',  RooRealSetting('avgCOdd',  'CP average odd coefficients',  'par', 0., -1., 1.))
       else :
         config.addSetting('AProd',    RooRealSetting('AProd', 'production asymmetry', 'par', 0., '', ''))
         config.addSetting('ANorm',    RooFormSetting('ANorm', 'normalization asymmetry', '-@0', ['CCP']))
@@ -527,14 +531,10 @@ class P2VVConfiguration :
     return key in self._settingsDict
 
   def __getitem__(self, key) :
-    if key in self._settingsDict :
-      return self._settingsDict[key]
-    else :
-      return None
+    return self._settingsDict[key] if key in self._settingsDict else None
 
   def __iter__(self) :
-    for key in self._settingsDict :
-      yield key
+    for key in self._settingsDict : yield key
 
   def iteritems(self) :
     for keyValue in self._settingsDict.iteritems() :
@@ -565,8 +565,7 @@ class P2VVConfiguration :
 
     # get value of setting
     setting = self[key]
-    if setting : return setting.value()
-    else : return None    
+    return setting.value() if setting else None
 
   def set(self, key, setting) :
     """set a setting
