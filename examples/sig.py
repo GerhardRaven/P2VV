@@ -111,8 +111,9 @@ Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
 
 def combine( name, afun, A, CPparams, i, j) :
     # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
-    Real   = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
-    Imag   = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
+    Real        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
+    Imag        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
+    minusImag   = lambda ai, aj  : FormulaVar('minusIm_c_%s_%s'%(ai,aj),'-@0*@3+@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
     # define functions which return the coefficients that define the time-dependence...
     coef = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP.C
                                         , None )
@@ -122,16 +123,19 @@ def combine( name, afun, A, CPparams, i, j) :
                                         , None if ai.CP == aj.CP else Product('PI_%s_%s_S'%(ai,aj), [ minus if ai.CP < aj.CP else plus, CP.S ]) )
            , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_S'%(ai,aj), [ minus if ai.CP > 0     else plus, CP.S ])
                                         , None if ai.CP == aj.CP else Product('PI_%s_%s_D'%(ai,aj), [ minus if ai.CP > aj.CP else plus, CP.D ]) )
-        }
+           }
     (c_re,c_im) = coef[name](A[i],A[j],CPparams)
-    (a_re,a_im) = afun[(i,j)]
-    # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
-    assert not ( c_re and c_im )
-    assert not ( a_re and a_im )
-    if c_re and a_re : return Product('rr_%s_%s_%s'%(name,A[i],A[j]), [        Real(A[i],A[j]), c_re, a_re ] ) # Re( z) = +Re(z)
-    if c_im and a_re : return Product('ri_%s_%s_%s'%(name,A[i],A[j]), [ minus, Imag(A[i],A[j]), c_im, a_re ] ) # Re(iz) = -Im(z)
-    if c_re and a_im : return Product('ir_%s_%s_%s'%(name,A[i],A[j]), [        Imag(A[i],A[j]), c_re, a_im ] ) # Im( z) = +Im(z)
-    if c_im and a_im : return Product('ri_%s_%s_%s'%(name,A[i],A[j]), [        Real(A[i],A[j]), c_im, a_im ] ) # Im(iz) = +Re(z)
+    (f_re,f_im) = afun[(i,j)]
+    #(a_re,a_im) = ( Real(A[i],A[j]),Imag(A[i],A[j]) )
+    # TODO: move some minus sign around (ie into afun and coef) so that
+    # NOTE: this becomes just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c)....
+    mult = lambda name, fun,ai,aj, c,a : [ Product(name%(ai,aj), [ fun(ai,aj), c, a ] ) ] if c and a else []
+    s  = mult('rr_%s_%%s_%%s'%name,       Real, A[i], A[j] , c_re, f_re ) \
+       + mult('ri_%s_%%s_%%s'%name,  minusImag, A[i], A[j] , c_im, f_re ) \
+       + mult('ir_%s_%%s_%%s'%name,       Imag, A[i], A[j] , c_re, f_im ) \
+       + mult('ri_%s_%%s_%%s'%name,       Real, A[i], A[j] , c_im, f_im )
+    assert len(s) == 1 # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
+    return s[0]
 
 for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
     from itertools import combinations_with_replacement as cwr
@@ -148,7 +152,9 @@ args.update(  { 'time'     : t
               } )
 pdf = BTagDecay( 'sig_pdf', args )
 
+print 'generating data '
 data = pdf.generate( [ cpsiAng,cthetaAng,phiAng,t,iTag, ] , 10000 )
+print 'fitting data '
 pdf.fitTo(data)
 
 #ws.ws().Print('V')
