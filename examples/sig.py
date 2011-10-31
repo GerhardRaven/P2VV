@@ -80,25 +80,25 @@ from math import sqrt
 _ba = lambda  name,args : Addition(name, [ AngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
 
 # the following two tables, define 'everything'....####################################################
-angFuncs = { ('A0',   'A0')    :  ('Re', _ba('J_0020x0020_0', [(0, 0, 0,  0,  4.             )
-                                                              ,(0, 0, 2,  0, -sqrt( 16. / 5.))
-                                                              ,(2, 0, 0,  0,  8.             )
-                                                              ,(2, 0, 2,  0, -sqrt( 64. / 5.))]))
-           , ('Apar', 'Apar')  :  ('Re', _ba('J_22x002022_0', [(2, 2, 0,  0,  2.             )
-                                                              ,(2, 2, 2,  0,  sqrt(  1. / 5.))
-                                                              ,(2, 2, 2,  2, -sqrt(  3. / 5.))]))
-           , ('Aperp','Aperp') :  ('Re', _ba('J_22x002022_1', [(2, 2, 0,  0,  2.             )
-                                                              ,(2, 2, 2,  0,  sqrt(  1. / 5.))
-                                                              ,(2, 2, 2,  2,  sqrt(  3. / 5.))]) )
-           , ('A0',   'Apar')  :  ('Re', _ba('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))]))
-           , ('A0',   'Aperp') :  ('Im', _ba('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))]))
-           , ('Apar', 'Aperp') :  ('Im', _ba('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])) 
-           , ('AS',   'AS')    :  ('Re', _ba('J_00x0020_0',   [(0, 0, 0,  0,  4.             )
-                                                              ,(0, 0, 2,  0, -sqrt( 16. / 5.))]))
-           , ('A0',   'AS')    :  ('Re', _ba('J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     ))
-                                                              ,(1, 0, 2,  0, -sqrt(192. / 5.))]))
-           , ('Apar', 'AS')    :  ('Re', _ba('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))]))
-           , ('Aperp','AS')    :  ('Im', _ba('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))]))
+angFuncs = { ('A0',   'A0')    :  ( _ba('J_0020x0020_0', [(0, 0, 0,  0,  4.             )
+                                                         ,(0, 0, 2,  0, -sqrt( 16. / 5.))
+                                                         ,(2, 0, 0,  0,  8.             )
+                                                         ,(2, 0, 2,  0, -sqrt( 64. / 5.))]), None)
+           , ('Apar', 'Apar')  :  ( _ba('J_22x002022_0', [(2, 2, 0,  0,  2.             )
+                                                         ,(2, 2, 2,  0,  sqrt(  1. / 5.))
+                                                         ,(2, 2, 2,  2, -sqrt(  3. / 5.))]), None)
+           , ('Aperp','Aperp') :  ( _ba('J_22x002022_1', [(2, 2, 0,  0,  2.             )
+                                                         ,(2, 2, 2,  0,  sqrt(  1. / 5.))
+                                                         ,(2, 2, 2,  2,  sqrt(  3. / 5.))]), None)
+           , ('A0',   'Apar')  :  ( _ba('J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))]), None)
+           , ('A0',   'Aperp') :  ( None, _ba('J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))]))
+           , ('Apar', 'Aperp') :  ( None, _ba('J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])) 
+           , ('AS',   'AS')    :  ( _ba('J_00x0020_0',   [(0, 0, 0,  0,  4.             )
+                                                         ,(0, 0, 2,  0, -sqrt( 16. / 5.))]), None)
+           , ('A0',   'AS')    :  ( _ba('J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     ))
+                                                         ,(1, 0, 2,  0, -sqrt(192. / 5.))]), None)
+           , ('Apar', 'AS')    :  ( _ba('J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))]), None)
+           , ('Aperp','AS')    :  ( None, _ba('J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))]))
            }
 
 # in python 2.7 and later, could use collections.OrderedDict so we can traverse without having to think...
@@ -109,32 +109,36 @@ Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
              }
 #######################################################################################################
 
-def combine( name, f, A, CPparams, i, j) :
+def combine( name, afun, A, CPparams, i, j) :
     # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
     Real   = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
     Imag   = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
     # define functions which return the coefficients that define the time-dependence...
-    coef = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP.C, None )
-           , 'cos'  : lambda ai,aj,CP : ( CP.C if ai.CP == aj.CP else one , None )
-           , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_D'%(ai,aj), [ minus if ai.CP > 0     else plus,  CP.D ])
-                                        , None if ai.CP == aj.CP else Product('PI_%s_%s_S'%(ai,aj), [ plus  if ai.CP > aj.CP else minus, CP.S ]) )
-           , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_S'%(ai,aj), [ minus if ai.CP > 0     else plus,  CP.S ])
-                                        , None if ai.CP == aj.CP else Product('PI_%s_%s_D'%(ai,aj), [ minus if ai.CP > aj.CP else plus,  CP.D ]) )
+    coef = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP.C
+                                        , None )
+           , 'cos'  : lambda ai,aj,CP : ( CP.C if ai.CP == aj.CP else one 
+                                        , None )
+           , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_D'%(ai,aj), [ minus if ai.CP > 0     else plus, CP.D ])
+                                        , None if ai.CP == aj.CP else Product('PI_%s_%s_S'%(ai,aj), [ minus if ai.CP < aj.CP else plus, CP.S ]) )
+           , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('PR_%s_%s_S'%(ai,aj), [ minus if ai.CP > 0     else plus, CP.S ])
+                                        , None if ai.CP == aj.CP else Product('PI_%s_%s_D'%(ai,aj), [ minus if ai.CP > aj.CP else plus, CP.D ]) )
         }
-    (re,im) = coef[name](A[i],A[j],CPparams)
+    (c_re,c_im) = coef[name](A[i],A[j],CPparams)
+    (a_re,a_im) = afun[(i,j)]
     # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
-    assert not ( re and im )
-    if f[(i,j)][0] == 'Re' : 
-        if re : return Product('rr_%s_%s_%s'%(name,A[i],A[j]), [        Real(A[i],A[j]), re, f[(i,j)][1] ] ) # Re( z) = +Re(z)
-        if im : return Product('ri_%s_%s_%s'%(name,A[i],A[j]), [ minus, Imag(A[i],A[j]), im, f[(i,j)][1] ] ) # Re(iz) = -Im(z)
-    else  :                                            
-        if re : return Product('ir_%s_%s_%s'%(name,A[i],A[j]), [        Imag(A[i],A[j]), re, f[(i,j)][1] ] ) # Im( z) = +Im(z)
-        if im : return Product('ri_%s_%s_%s'%(name,A[i],A[j]), [        Real(A[i],A[j]), im, f[(i,j)][1] ] ) # Im(iz) = +Re(z)
+    assert not ( c_re and c_im )
+    assert not ( a_re and a_im )
+    if c_re and a_re : return Product('rr_%s_%s_%s'%(name,A[i],A[j]), [        Real(A[i],A[j]), c_re, a_re ] ) # Re( z) = +Re(z)
+    if c_im and a_re : return Product('ri_%s_%s_%s'%(name,A[i],A[j]), [ minus, Imag(A[i],A[j]), c_im, a_re ] ) # Re(iz) = -Im(z)
+    if c_re and a_im : return Product('ir_%s_%s_%s'%(name,A[i],A[j]), [        Imag(A[i],A[j]), c_re, a_im ] ) # Im( z) = +Im(z)
+    if c_im and a_im : return Product('ri_%s_%s_%s'%(name,A[i],A[j]), [        Real(A[i],A[j]), c_im, a_im ] ) # Im(iz) = +Re(z)
 
 for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
     from itertools import combinations_with_replacement as cwr
     # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
     args[ '%sCoef' % name ] = Addition( 'a_%s'% name, [ combine(name,angFuncs,Amplitudes,CP,i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
+
+
 
 # build PDF
 args.update(  { 'time'     : t
