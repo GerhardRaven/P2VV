@@ -155,16 +155,52 @@ class Category (RooObject):
 class FormulaVar (RooObject): 
     def __init__(self,name) :
         self._init(name,'RooFormulaVar')
+    _getters = {'Observable' : lambda s : s.observable()
+               ,'Value'      : lambda s : s.getVal()
+               ,'Name'       : lambda s : s.GetName()
+               ,'Formula'    : lambda s : s.formula()
+               ,'Dependents' : lambda s : s.dependents()
+               }
+
+    def __init__(self, name, **kwargs):
+        # TODO: add blinding support to kwargs
+        if name not in self.ws():
+            # construct factory string on the fly...
+            if 'Dependents' not in kwargs:
+                raise KeyError('%s does not exist yet, Dependents not specified' % name)
+            if 'Formula' not in kwargs:
+                raise KeyError('%s does not exist yet, Dependents not specified' % name)
+            self._formula = kwargs['Formula']
+            self._dependents = kwargs['Dependents']
+            self._declare('expr::(%s,%s)' % (kwargs['Formula'], kwargs['Dependents']))
+            self._init(name,'RooFormulaVar')
+        else:
+            self._init(name,'RooFormulaVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                if k == 'Value':
+                    continue
+                assert v == self[k]
+            
+    def __getitem__(self,k):
+        return RealVar._getters[k](self)
+
+    def formula(self):
+        return self._formula
+
+    def dependents(self):
+        return self._dependents
 
 class RealVar (RooObject): 
-    # WARNING: multiple instances don't share proxy state at this time...
-    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
-               ,'Unit'       : lambda s,v : s.setUnit(v) 
+    _setters = {'Observable' : lambda s,v : s.setObservable(v)
+               ,'Unit'       : lambda s,v : s.setUnit(v)
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
                }
-    _getters = {'Observable' : lambda s : s.observable() 
-               ,'Unit'       : lambda s : s.getUnit() 
+    _getters = {'Observable' : lambda s : s.observable()
+               ,'Unit'       : lambda s : s.getUnit()
                ,'Value'      : lambda s : s.getVal()
                ,'MinMax'     : lambda s : s.getRange()
                ,'Name'       : lambda s : s.GetName()
