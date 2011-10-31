@@ -148,5 +148,7 @@ args.update(  { 'time'     : t
               } )
 pdf = BTagDecay( 'sig_pdf', args )
 
+data = pdf.generate( [ cpsiAng,cthetaAng,phiAng,t,iTag, ] , 10000 )
+pdf.fitTo(data)
 
-ws.ws().Print('V')
+#ws.ws().Print('V')
