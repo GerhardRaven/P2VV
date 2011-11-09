@@ -18,40 +18,6 @@
 // END_HTML
 //
 
-#if 0
-#include <fenv.h>
-#include <iostream>
-
-static int
-feenableexcept (unsigned int excepts)
-{
-  static fenv_t fenv;
-  unsigned int new_excepts = excepts & FE_ALL_EXCEPT,
-               old_excepts;  // previous masks
-
-  if ( fegetenv (&fenv) ) return -1;
-  old_excepts = fenv.__control & FE_ALL_EXCEPT;
-
-  // unmask
-  fenv.__control &= ~new_excepts;
-  // fenv.__mxcsr   &= ~(new_excepts << 7);
-
-  std::cout  << "calling fesetenv" << std::endl;
-  return ( fesetenv (&fenv) ? -1 : old_excepts );
-}
-
-
-int enable()  {
-          std::cout << "enabling FPE" << std::endl;
-          feclearexcept(FE_ALL_EXCEPT); // remove any 'stale' exceptions before switching on trapping
-                               // otherwise we immediately trigger an exception...
-          std::cout << "enabling FPE II" << std::endl;
-          return feenableexcept(FE_ALL_EXCEPT);
-}
-//static int enableFPE = enable();
-
-#endif
-
 #include "RooFit.h"
 #include "Riostream.h"
 #include <string>
@@ -81,6 +47,10 @@ RooP2VVAngleBasis::RooP2VVAngleBasis( const char *name, const char *title
  , _i(i), _j(j), _l(l), _m(m)
  , _prod(false)
 {
+  // TODO: can we try to share these amongst all RooP2VVAngleBasis which use the same cpsi,chteta,phi???
+  // actually, just make sure the names are 'shared' if two objects are the same (equivalent), then 
+  // rely on the workspace conflict resolution to make them shared when adding to the workspace and
+  // retrieving it...
   std::stringstream P,Y;
   P << name << "_P" << i << ( j<0 ? "m" : "" )  << (j<0?-j:j) ;
   _compRSet.addOwned(*new RooLegendre(   P.str().c_str(), P.str().c_str(), cpsi,i,j) );

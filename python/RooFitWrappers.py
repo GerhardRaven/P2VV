@@ -26,8 +26,13 @@ class RooObject(object) :
         # TODO: add mapping of name -> spec so we can gate identical invocations.
         #       problem is that we don't know 'name' a-priori....
         x = self.ws().factory(spec)
-        if not x:
-            raise NameError('failed to _declare %s to workspace factory'%spec)
+        if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
+        x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
+        # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
+        #       the value of 'factory_tag' which is used internally in the conflict resolution
+        #       and which is the 'canonical' recipe to build an object
+        #       That way, we can check for re-use explicitly!!!
+        #  
         # Keep the PyROOT objects in a container so they don't get garbage
         # collected.
         self.ws()._objects[x.GetName()] = x
@@ -205,10 +210,11 @@ class FormulaVar (RooObject):
                ,'Title'      : lambda s : s.GetTitle()
                }
     def __init__(self,name,formula,fargs,**kwargs) :
-        if name in self.ws():
-            print '%s already exists, assuming recycling existing object works...'%name
         # construct factory string on the fly...
-        self._declare("expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) )
+        spec = "expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) 
+        present = name in self.ws() 
+        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec') 
+        if not present or not match : self._declare( spec )
         self._init(name,'RooFormulaVar')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
@@ -260,12 +266,11 @@ class P2VVAngleBasis (RooObject) :
         name = 'P2VVAngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
         name = name.replace('.', '_')
-        if name in self.ws():
-            #raise RunTimeError( 'Code Path Not Yet Verified'  )
-            print '%s already in workspace, assuming we can recycle...' % name
-        else :
-            #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
-            self._declare("RooP2VVAngleBasis::%s(%s, %d, %d, %d, %d, %f)" % (name, ','.join(a['Name'] for a in angles), i, j, k, l, c) )
+        spec = "RooP2VVAngleBasis::%s(%s, %d, %d, %d, %d, %f)" % (name, ','.join(a['Name'] for a in angles), i, j, k, l, c) 
+        present = name in self.ws() 
+        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec') 
+        #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
+        if not present or not match : self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
             
     def __setitem__(self,k,v):

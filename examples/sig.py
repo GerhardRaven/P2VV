@@ -71,8 +71,8 @@ pdf = BTagDecay( 'sig_pdf',  { 'dm'        : RealVar( 'dm',        Title = 'delt
                              , 'ADilWTag'  : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry',  Value = 0 )
                              } 
                )
-ws.ws().Print('V')
-
+#ws.ws().Print('V')
+#ws.ws().writeToFile("pdf.root")
 
 print 'generating data'
 data = pdf.generate( observables , 10000 )

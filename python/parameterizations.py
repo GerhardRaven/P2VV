@@ -76,6 +76,7 @@ class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
         from RooFitWrappers import P2VVAngleBasis, Addition
         from math import sqrt
         _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis((kwargs['cpsi'],kwargs['ctheta'],kwargs['phi']) , *a) for a in args ] )
+        # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,  4.             )
                                                                           ,(0, 0, 2,  0, -sqrt( 16. / 5.))
                                                                           ,(2, 0, 0,  0,  8.             )

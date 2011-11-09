@@ -64,7 +64,7 @@ ostream& IMoment::print(ostream& os, bool normalize) const
       << " (significance: " << significance() << ")" << endl;
 }
 
-int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst )
+int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst, bool verbose )
 {
   typedef IMomentsVector::iterator IMomIter;
 
@@ -77,20 +77,20 @@ int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst )
 
   RooArgSet* obs = moments.front()->getObservables(data);
   
-  cout << "P2VV - INFO: computeMoments: computing " << moments.size()
+  if (verbose) cout << "P2VV - INFO: computeMoments: computing " << moments.size()
       << " moment(s) for data set '" << data.GetName() << "'" << endl;
 
   int dataIter = 0;
-  ProgressDisplay progress(data.numEntries());
+  ProgressDisplay *progress = verbose ? new ProgressDisplay(data.numEntries()) : 0;
   while (dataIter < data.numEntries()) {
     *obs = *data.get(dataIter++);
     for (IMomIter mom = moments.begin(); mom != moments.end(); ++mom)
       (*mom)->inc(data.isWeighted() ? data.weight() : 1.);
 
-    ++progress;
+    if (progress) ++*progress;
   }
-
   cout << endl;
+  delete progress;
 
   return dataIter;
 }

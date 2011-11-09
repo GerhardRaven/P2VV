@@ -277,7 +277,7 @@ def buildEff_x_PDF(w,name,pdf,eff) :
    # those are assumed to be in eff....
    customizer = RooCustomizer(pdf,name)
    for c in pdf.getComponents() :
-        if type(c) is not RooP2VVAngleBasis : continue
+        if type(c) is not RooP2VVAngleBasis : continue  # TODO: do not use type to recognize, but name??
         n = "%s_%s_eff" % (name,c.GetName())
         s = RooArgSet()
         [ s.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
