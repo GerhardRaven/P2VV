@@ -11,7 +11,7 @@ cthetaAng = RealVar(  'helcthetaL', Title = 'cosine of lepton polarization angle
 phiAng    = RealVar(  'helphi',     Title = 'angle between decay planes',          Observable = True,  MinMax=(-pi, pi))
 t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
 iTag      = Category( 'iTag',       Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } )
-helicityAngles = [ cpsiAng,cthetaAng,phiAng ]
+helicityAngles = [ cpsiAng,cthetaAng,phiAng ] # WARNING: order counts!!
 observables = helicityAngles + [ t,iTag ]
 
 from parameterizations import LambdaSqArg_CPParam
@@ -74,15 +74,21 @@ pdf = BTagDecay( 'sig_pdf',  { 'dm'        : RealVar( 'dm',        Title = 'delt
 ws.ws().Print('V')
 
 
-moms = [ EffMoment( i, 1, pdf, helicityAngles ) for v in angFuncs.itervalues() for i in v if i ] 
-
 print 'generating data'
-data = pdf.generate( observables , 100000 )
+data = pdf.generate( observables , 10000 )
+
 
 print 'computing efficiency moments'
-computeMoments( data, moms )
+moms = [ EffMoment( i, 1, pdf, helicityAngles ) for v in angFuncs.itervalues() for i in v if i ] 
+
+_bm = lambda i,l,m : EffMoment( P2VVAngleBasis(helicityAngles, i,0,l,m,1. ), float(2*l+1)/2, pdf, helicityAngles )
+moms2 = [ _bm(i,l,m) for i in range(3) for l in range(3) for m in range(-l,l+1) ]
+
+computeMoments( data, moms + moms2 )
+
 from pprint import pprint
-pprint( [ (m.basis().GetName(), m.coefficient()) for m in moms ] )
+pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
+pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
 
 print 'fitting data'
 from ROOT import RooCmdArg

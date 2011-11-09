@@ -285,6 +285,8 @@ class EffMoment :
         self._var = _EffMoment( cast(x), norm, cast(pdf), self._nset )
     def __getattr__(self, name):
         return getattr(self._var, name)      
+    def GetName(self) :  return self.basis().GetName()
+
 
 
 
