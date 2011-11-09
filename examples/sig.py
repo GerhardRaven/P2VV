@@ -39,7 +39,6 @@ ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'pr
                                  , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value = 0 )
                                  , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
                                  )
-
 args.update( { 'avgCEven' : ANuissance['avgCEven'] , 'avgCOdd'  : ANuissance['avgCOdd'] } )
 
 # polar transversity amplitudes -- this is 'internal only'
@@ -88,9 +87,10 @@ angFuncs = { ('A0',   'A0')    :  ( _ba('Re_J_0020x0020_0', [(0, 0, 0,  0,  4.  
 
 
 # build PDF
-from build import buildBTagTimeCoefficients
+from parameterizations import JpsiphiBTagDecayBasisCoefficients
 # need to specify order in which to traverse...
-args.update( buildBTagTimeCoefficients( angFuncs, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) )
+basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angFuncs, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
+for i in ['cosh','sinh','cos','sin' ] : args.update( { '%sCoef'%i: basisCoefficients[i] } )
 args.update(  { 'time'     : t
               , 'iTag'     : iTag
               , 'dilution' : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',     Observable = False, Value = 1 )
