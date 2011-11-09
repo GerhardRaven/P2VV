@@ -362,6 +362,7 @@ def convertComplexPars(values, covariances = None, inType = 'trans,cart',
   # get covariances
   if covariances :
     Jacobians = []
+    # TODO: make this a TMatrixTSym
     covMatrixIn = TMatrixD(2 * nPars, 2 * nPars,
         array('d', [c_ij for c in covariances for c_ij in c[:2 * nPars]]))
 
@@ -472,6 +473,7 @@ def convertComplexPars(values, covariances = None, inType = 'trans,cart',
       fullJacobian.Mult(Jac, fullJacobianTemp)
 
     # construct output covariance matrix
+    # TODO: once covMatrixIn is a TMatrixTSym, use Similarity
     covMatrixTemp = TMatrixD(2 * nPars, 2 * nPars)
     covMatrixOut  = TMatrixD(2 * nPars, 2 * nPars)
     covMatrixTemp.Mult(fullJacobian, covMatrixIn)
