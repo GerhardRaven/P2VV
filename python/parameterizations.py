@@ -102,15 +102,10 @@ class BTagDecayBasisCoefficients :
 class JpsiphiBTagDecayBasisCoefficients( BTagDecayBasisCoefficients ) :
     def __init__(self,  angFuncs, Amplitudes,CP, order ) :
         def combine( name, afun, A, CPparams, i, j) :
-            try :
-                # this requires python 2.7 or later...
+            try : # this requires python 2.7 or later...
                 from itertools import combinations_with_replacement as cwr
             except:
-                def cwr(i, r):
-                    pool = tuple(i)
-                    from itertools import product
-                    for indices in product(range(len(pool)), repeat=r):
-                         if sorted(indices) == list(indices): yield tuple(pool[i] for i in indices)
+                from compatibility import cwr
 
             from RooFitWrappers import ConstVar, FormulaVar, Product
             plus  = ConstVar('plus', Value = 1)
