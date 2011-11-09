@@ -9,7 +9,6 @@ plus  = ConstVar('plus', Value = 1)
 minus = ConstVar('minus',  Value = -1  )
 one   = plus
 
-args = dict()
 from math import pi
 cpsiAng   = RealVar(  'helcthetaK', Title = 'cosine of kaon polarization angle',   Observable = True,  MinMax=(-1., 1.))
 cthetaAng = RealVar(  'helcthetaL', Title = 'cosine of lepton polarization angle', Observable = True,  MinMax=(-1., 1.))
@@ -19,14 +18,6 @@ t         = RealVar(  't',          Title = 'decay time', Unit='ps',            
 unbiased  = Category( 'unbiased',   Title = 'Unbiased trigger?',         Observable = True, States = { 'yes': 1 ,   'no' : 0 } )
 decay     = Category( 'decaytype',  Title = 'J/psiX decay type',         Observable = True, States = { 'JpsiKplus' : 10, 'JpsiKmin' : 11, 'JpsiKstar0' : 20, 'JpsiKstar0bar': 21, 'Jpsiphi': 40 } )
 iTag      = Category( 'iTag',       Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1 } )
-
-from ROOT import RooTruthModel as TruthModel
-args.update( { 'dm'     : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}', Observable = False, Value = 17.8 )  
-             , 'tau'    : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',      Observable = False, Value =  1.5, MinMax = (1.3, 1.8) )
-             , 'dGamma' : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}', Observable = False, Value = 0.05, MinMax = (-0.3,0.3) )
-             , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
-             , 'decayType' : 'SingleSided'
-             } )
 
 from parameterizations import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( lambdaSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2', Observable = False, Value = 1)
@@ -39,7 +30,6 @@ ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'pr
                                  , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value = 0 )
                                  , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
                                  )
-args.update( { 'avgCEven' : ANuissance['avgCEven'] , 'avgCOdd'  : ANuissance['avgCOdd'] } )
 
 # polar transversity amplitudes -- this is 'internal only'
 _A0Mag2    = RealVar('A0Mag2',    Title = '|A0|^2',     Observable = False, Value = 0.556, MinMax = (0., 1.))
@@ -66,12 +56,24 @@ angFuncs = JpsiphiTransversityAmplitudesHelicityAngles( cpsi = cpsiAng, ctheta =
 from parameterizations import JpsiphiBTagDecayBasisCoefficients
 # need to specify order in which to traverse...
 basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angFuncs, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
+
+
+# now build the actual signal PDF...
+from ROOT import RooTruthModel as TruthModel
+args = dict()
+args.update( { 'dm'     : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}', Observable = False, Value = 17.8 )  
+             , 'tau'    : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',      Observable = False, Value =  1.5, MinMax = (1.3, 1.8) )
+             , 'dGamma' : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}', Observable = False, Value = 0.05, MinMax = (-0.3,0.3) )
+             , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
+             , 'decayType' : 'SingleSided' } )
+args.update( { 'avgCEven' : ANuissance['avgCEven'] 
+             , 'avgCOdd'  : ANuissance['avgCOdd'] } )
+args.update( { 'time'     : t
+             , 'iTag'     : iTag
+             , 'dilution' : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',     Observable = False, Value = 1 )
+             , 'ADilWTag' : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry', Observable = False, Value = 0 )
+             } )
 for i in ['cosh','sinh','cos','sin' ] : args.update( { '%sCoef'%i: basisCoefficients[i] } )
-args.update(  { 'time'     : t
-              , 'iTag'     : iTag
-              , 'dilution' : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',     Observable = False, Value = 1 )
-              , 'ADilWTag' : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry', Observable = False, Value = 0 )
-              } )
 pdf = BTagDecay( 'sig_pdf', args )
 ws.ws().Print('V')
 
