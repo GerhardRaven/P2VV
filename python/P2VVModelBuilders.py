@@ -9,6 +9,16 @@
 ##                                                                           ##
 ###############################################################################
 
+from ROOT import RooWorkspace
+_fact = RooWorkspace.factory
+
+def _checkedfactory(self,s) :
+    z = _fact(self,s)
+    if not z : raise RuntimeError('factory failed to interpret "%s"'%s)
+    return z
+
+RooWorkspace.factory = _checkedfactory
+
 def getP2VVPDF(config) :
   """build a P2VV PDF
 
@@ -65,6 +75,9 @@ def buildJpsiV(config) :
   workspace
   """
 
+  from ROOT import RooAddition, RooArgList, RooArgSet, RooCustomizer,\
+      RooP2VVAngleBasis, RooWorkspace
+
   # get general settings
   mode = config.value('P2VVMode')
   if type(mode) is not str :
@@ -76,9 +89,12 @@ def buildJpsiV(config) :
 
   print 'P2VV - INFO: buildJpsiV: decay mode = ' + mode
 
-  BDecClass = config.value('BDecayClass')
-  pdfName = config.value('sigPDFName')
-  allowITagZero =  config.value('allowITagZero')
+  BDecClass     = config.value('BDecayClass')
+  pdfName       = config.value('sigPDFName')
+  allowITagZero = config.value('allowITagZero')
+  tagType       = config.value('tagType')
+  numTagCats    = config.value('numTagCats')
+  asymType      = config.value('asymType')
   KSWave = 'none'
   if config.value('KSWave') and type(config.value('KSWave')) is str :
     KSWave = config.value('KSWave')
@@ -99,7 +115,8 @@ def buildJpsiV(config) :
   cpsiAng   = config['cpsiAng'].name()
   cthetaAng = config['cthetaAng'].name()
   phiAng    = config['phiAng'].name()
-  iTag      = config['iTag'].name()
+  tagCat = config['tagCat'].name() + ', ' if tagType == 'categories' else ''
+  iTag = config['iTag'].name()
   if mode == 'Bd2JpsiKstar' : fTag = config['fTag'].name()
 
   # get lifetime and mixing parameters
@@ -114,11 +131,49 @@ def buildJpsiV(config) :
     SCP = config['SCP'].name()
 
   # get tagging parameters
-  dilution = config['tagDilution'].name()
-  ADilWTag = config['ADilWTag'].name()
-  if mode == 'Bd2JpsiKstar' : ANorm = config['ANorm'].name()
-  avgCEven   = config['avgCEven'].name()
-  avgCOdd    = config['avgCOdd'].name()
+  if mode == 'Bd2JpsiKstar' :
+    ANorm = config['ANorm'].name()
+
+  if tagType == 'singleCat' :
+    dilution    = config['tagDilution'].name()
+    ADilWTag    = config['ADilWTag'].name()
+    avgCEven    = config['avgCEven'].name()
+    avgCOdd     = config['avgCOdd'].name()
+    tagCatCoefs = ''
+  else :
+    dilution    = 'tagDilutions'
+    ADilWTag    = 'ADilWTags'
+    avgCEven    = 'avgCEvens'
+    avgCOdd     = 'avgCOdds'
+    tagCatCoefs = 'tagCatCoefs, '
+
+    dilutionList   = RooArgList('tagDilutions')
+    ADilWTagList   = RooArgList('ADilWTags')
+    avgCEvenList   = RooArgList('avgCEvens')
+    avgCOddList    = RooArgList('avgCOdds')
+    tagCatCoefList = RooArgList('tagCatCoefs')
+
+    avgCEvenList.add(ws.arg(config['avgCEvenSum'].name()))
+    avgCOddList.add(ws.arg(config['avgCOddSum'].name()))
+    for tagCatIter in range(numTagCats) :
+      tagCatStr = '{0:02d}'.format(tagCatIter)
+      dilutionList.add(ws.arg(config['tagDilution' + tagCatStr].name()))
+      ADilWTagList.add(ws.arg(config['ADilWTag' + tagCatStr].name()))
+      if tagCatIter > 0 :
+        tagCatCoefList.add(ws.arg(config['tagCatCoef' + tagCatStr].name()))
+        if asymType == 'equalCoefs' :
+          avgCEvenList.add(ws.arg(config['avgCEvenSum'].name()))
+          avgCOddList.add(ws.arg(config['avgCOddSum'].name()))
+        else :
+          avgCEvenList.add(ws.arg(config['avgCEven' + tagCatStr].name()))
+          avgCOddList.add(ws.arg(config['avgCOdd' + tagCatStr].name()))
+
+    _import = getattr(RooWorkspace, 'import')
+    _import(ws, dilutionList, 'tagDilutions')
+    _import(ws, ADilWTagList, 'ADilWTags')
+    _import(ws, avgCEvenList, 'avgCEvens')
+    _import(ws, avgCOddList, 'avgCOdds')
+    _import(ws, tagCatCoefList, 'tagCatCoefs')
 
   # set strings to build time function coefficients
   coshCStr = ''
@@ -156,6 +211,9 @@ def buildJpsiV(config) :
   print "P2VV - INFO: buildJpsiV: building PDF '%s'" % pdfName
   if BDecClass == 'RooBDecay' :
     # use RooBDecay
+    if tagType != 'singleCat' :
+      print "P2VV - ERROR: getP2VVConfig: tagging categories are not implemented for RooBDecay"
+
     print 'P2VV - INFO: buildJpsiV: using RooBDecay for time PDF'
 
     # define tagging factors for CP even and CP odd terms
@@ -231,9 +289,10 @@ def buildJpsiV(config) :
         ws.factory('sum::cCommon( %s)' % coshCStr.format(cEven = '')  )
 
         # build PDF
-        ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, cCommon, tres_sig, SingleSided, %d)"\
-            % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilWTag, ANorm, avgCEven, avgCOdd, checkTags))
+        ws.factory("BTagDecay::%s(%s, %s, %s, %s %s, %s, %s, %s, %s, %s, %s, %s, %s, cCommon, tres_sig, SingleSided, %d)"\
+            % (pdfName, BLifetime, iTag, fTag, tagCat, BMeanLife, dGamma, dm,
+               dilution, ADilWTag, ANorm, avgCEven, avgCOdd, tagCatCoefs,
+               checkTags))
 
       else :
         print 'P2VV - INFO: buildJpsiV: factorizing time and angular PDFs'
@@ -245,10 +304,11 @@ def buildJpsiV(config) :
             % (coshCStr, onesStr[:-1]))
 
         # build PDF
-        ws.factory("PROD::%s(cCommon, BTagDecay(%s, %s, %s, %s, %s, %s, %s,\
-            %s, %s, %s, %s, %s, tres_sig, SingleSided, %d))"\
-            % (pdfName, BLifetime, iTag, fTag, BMeanLife, dGamma, dm, dilution,
-               ADilWTag, ANorm, avgCEven, avgCOdd, one, checkTags))
+        ws.factory("PROD::%s(cCommon, BTagDecay(%s, %s, %s, %s %s, %s, %s, %s,\
+            %s, %s, %s, %s, %s %s, tres_sig, SingleSided, %d))"\
+            % (pdfName, BLifetime, iTag, fTag, tagCat, BMeanLife, dGamma, dm,
+               dilution, ADilWTag, ANorm, avgCEven, avgCOdd, tagCatCoefs, one,
+               checkTags))
 
     elif mode == 'Bs2Jpsiphi' : # B_s0->J/psiphi
 
@@ -260,11 +320,11 @@ def buildJpsiV(config) :
       ws.factory('sum::cSin( %s)' %  sinCStr.format(cOdd  = '') )
 
       # build PDF
-      ws.factory("BTagDecay::%s(%s, %s, %s, %s, %s, %s, %s, %s, %s, cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, %d)"\
-          % (pdfName, BLifetime, iTag, BMeanLife, dGamma, dm, dilution,
-             ADilWTag, avgCEven, avgCOdd, checkTags))
+      ws.factory("BTagDecay::%s(%s, %s, %s %s, %s, %s, %s, %s, %s, %s, %s cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, %d)"\
+          % (pdfName, BLifetime, iTag, tagCat, BMeanLife, dGamma, dm, dilution,
+             ADilWTag, avgCEven, avgCOdd, tagCatCoefs, checkTags))
 
-
+  # return the signal PDF
   return ws.pdf(pdfName)
 
 
@@ -386,27 +446,29 @@ class AngleFunctionBuilder :
 
     # build angular function for each term in the signal PDF
     for angFunc in angFuncs :
-      name = angFunc[0] + '_angFunc'
+      angFuncName = angFunc[0] + '_angFunc'
+      angSetName  = angFunc[0] + '_angFuncSet'
 
-      if name not in ws :
+      if angFuncName not in ws :
         # express angular function in angle basis functions
-        basesSet = ''
+        ws.defineSet(angSetName, '')
         for comps in angFunc[1] :
-          sigFunc = self.buildBasisFunc(name, *comps)
-          if len(effFuncs):
+          sigFunc = self.buildBasisFunc(angFuncName, *comps)
+          if effFuncs:
             # with efficiency
             for effFunc in effFuncs :
               sigEffProd = ws[sigFunc].createProduct(ws[effFunc], effCoefs[effFunc])
-              basesSet += ws.put(sigEffProd) + ','
+              ws.put(sigEffProd)
+              ws.set(angSetName).add(ws[sigEffProd.GetName()])
           else :
             # without efficiency
-            basesSet += sigFunc + ','
+            ws.set(angSetName).add(ws[sigFunc])
 
         # build angular function
-        ws.factory("sum::%s(%s)" % (name, basesSet[:-1]))
+        ws.factory('RooAddition::%s(%s)' % (angFuncName, angSetName))
 
-      if name not in self._angFuncs :
-        self._angFuncs.append(name)
+      if angFuncName not in self._angFuncs :
+        self._angFuncs.append(angFuncName)
 
 
   def buildBasisFunc(self, name, i, j, k, l, c) :
@@ -419,7 +481,7 @@ class AngleFunctionBuilder :
     import RooFitDecorators
 
     # construct name
-    name = '%s_%d_%d_%d_%d' % (name + self._anglesType, i, j, k, l)
+    name = '%s_%d%d%d%d' % (name + self._anglesType, i, j, k, l)
     name = name.replace('-', 'm')
 
     # get workspace
@@ -729,6 +791,7 @@ class EfficiencyPDFBuilder :
         % filePath
 
     # loop over lines and read moments
+    numMoments = 0
     while True :
       # read next line
       line = momFile.readline()
@@ -739,7 +802,6 @@ class EfficiencyPDFBuilder :
       if len(line) < 1 or line[0] == '#' : continue
 
       # check moment format
-      numMoments = 0
       line = line.split()
       if len(line) < 4 or line[0] not in self._basis : continue
       try :
