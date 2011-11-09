@@ -9,6 +9,16 @@
 ##                                                                           ##
 ###############################################################################
 
+from ROOT import RooWorkspace
+_fact = RooWorkspace.factory
+
+def _checkedfactory(self,s) :
+    z = _fact(self,s)
+    if not z : raise RuntimeError('factory failed to interpret "%s"'%s)
+    return z
+
+RooWorkspace.factory = _checkedfactory
+
 def getP2VVPDF(config) :
   """build a P2VV PDF
 
