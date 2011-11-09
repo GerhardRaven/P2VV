@@ -46,7 +46,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
   config.addSetting('onlySignal', P2VVSetting('onlySignal', 'build only the signal PDF?', onlySignal))
 
   if 'noFactFlavSpec' in options :
-    config.addSetting('noFactFlavSpec', P2VVSetting('noFactFlavSpec', 'factorize PDF for flavour-specific states?', onlySignal))
+    config.addSetting('noFactFlavSpec', P2VVSetting('noFactFlavSpec', 'factorize PDF for flavour-specific states?', True))
 
   config.addSetting('P2VVFrameDrawOpts', P2VVSetting('P2VVFrameDrawOpts', 'options for drawing plot frames', [])) 
   config.addSetting('P2VVDataPlotOpts', P2VVSetting('P2VVDataPlotOpts', 'options for plotting data', [RooFit.MarkerStyle(8), RooFit.MarkerSize(0.4), RooFit.DrawOption("P")]))
@@ -110,14 +110,14 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
     BDecClass = 'RooBDecay' if 'RooBDecay' in optDict else 'RooBTagDecay'
     config.addSetting('BDecayClass', P2VVSetting('BDecayClass', 'RooFit class for time PDF', BDecClass))
 
-    if not onlySignal :
+    #if not onlySignal :
       # decay type
-      config.addSetting('decayType', RooCatSetting('decaytype',
-          'J/psiX decay type', True, 'Jpsiphi', {10:'JpsiKplus',
-          11:'JpsiKmin', 20:'JpsiKstar0', 21:'JpsiKstarbar0', 40:'Jpsiphi'}))
+      #config.addSetting('decayType', RooCatSetting('decaytype',
+      #    'J/psiX decay type', True, 'Jpsiphi', {10:'JpsiKplus',
+      #    11:'JpsiKmin', 20:'JpsiKstar0', 21:'JpsiKstarbar0', 40:'Jpsiphi'}))
 
       # trigger
-      config.addSetting('unbiased', RooCatSetting('unbiased', 'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
+    #  config.addSetting('unbiased', RooCatSetting('unbiased', 'unbiased trigger?', True, 'yes', {1 : 'yes', 0 : 'no'}))
 
     ### B lifetime and mixing ###
     tResModel = 'truth' if onlySignal else 'Gauss'
@@ -125,6 +125,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
     config.addSetting('tResModel', P2VVSetting('tResModel', 'time resolution model', tResModel))
     config.addSetting('BLifetime', RooRealSetting('t', 'B lifetime (ps)', 'obs', 0., -5., 14.))
+
     if tResModel == 'Gauss' :
       config.addSetting('BLifetimeError', RooRealSetting('sigmat', 'B lifetime error (ps)', 'par', 0.05, '', ''))
     elif tResModel[:6] == '3Gauss' :
@@ -132,26 +133,29 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
     ### OUT: BMeanLife, dGamma, dm
     if mode == 'Bd2JpsiKstar' :
-      config.addSetting('Gamma',  RooRealSetting('Gamma',  'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
+      config.addSetting('Gamma', RooRealSetting('Gamma', 'Gamma (ps^-1)', 'par', 0.65, 0.4, 0.9))
       config.addSetting('dGamma', RooRealSetting('dGamma', 'delta Gamma_s (ps^-1)', 'par', 0., '', ''))
-      config.addSetting('dm',     RooRealSetting('dm',     'delta m_s (ps^-1)', 'par', 0.51, '', ''))
+      config.addSetting('dm', RooRealSetting('dm', 'delta m_s (ps^-1)', 'par', 0.51, -1., 2.))
     elif mode == 'Bs2Jpsiphi' :
-      config.addSetting('Gamma',  RooRealSetting('gamma', 'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
+      config.addSetting('Gamma', RooRealSetting('gamma', 'Gamma_s (ps^-1)', 'par', 0.68, 0.4, 0.9))
       config.addSetting('dGamma', RooRealSetting('dGamma', 'delta Gamma_s (ps^-1)', 'par', 0.05, -0.3, 0.3))
-      config.addSetting('dm',     RooRealSetting('dm', 'delta m_s (ps^-1)', 'par', 17.8, '', ''))
+      config.addSetting('dm', RooRealSetting('dm', 'delta m_s (ps^-1)', 'par', 17.8, 15., 20.))
 
-    config.addSetting('BMeanLife', RooFormSetting('t_sig_tau', 'B mean lifetime', '1. / @0', ['Gamma']))
+    config.addSetting('BMeanLife', RooFormSetting('BMeanLife', 'B mean lifetime', '1. / @0', ['Gamma']))
 
     if not onlySignal :
       ### masses ###
-      config.addSetting('mJpsi', RooRealSetting('mdau1', 'J/psi mass (MeV)', 'obs', 3097., 3097. - 60., 3097. + 40.))
+      #config.addSetting('mJpsi', RooRealSetting('mdau1',
+      #    'J/psi mass (MeV)', 'obs', 3097., 3097. - 60., 3097. + 40.))
       if mode in ['Bu2JpsiK', 'Bd2JpsiKstar'] :
-        config.addSetting('mB', RooRealSetting('m', 'B0 mass (MeV)', 'obs', 5279., 5279. - 50., 5279. + 50.))
-        if mode == 'Bd2JpsiKstar' :
-          config.addSetting('mKstar', RooRealSetting('mdau2', 'K*0 mass (MeV)', 'obs', 892., 892. - 50., 892. + 50.))
+        config.addSetting('BMass', RooRealSetting('BMass', 'B0 mass (MeV)', 'obs', 5279., 5279. - 50., 5279. + 50.))
+        #if mode == 'Bd2JpsiKstar' :
+        #  config.addSetting('mKstar', RooRealSetting('mdau2',
+        #      'K*0 mass (MeV)', 'obs', 892., 892. - 50., 892. + 50.))
       elif mode == 'Bs2Jpsiphi' :
-        config.addSetting('m', RooRealSetting('m', 'B_s0 mass (MeV)', 'obs', 5366., 5366. - 50., 5366. + 50.))
-        config.addSetting('mphi', RooRealSetting('mdau2', 'phi mass (MeV)', 'obs', 1019.455, 1019.455 - 12., 1019.455 + 12.))
+        config.addSetting('BMass', RooRealSetting('BMass', 'B_s0 mass (MeV)', 'obs', 5366., 5366. - 50., 5366. + 50.))
+        #config.addSetting('mphi', RooRealSetting('mdau2',
+        #    'phi mass (MeV)', 'obs', 1019.455, 1019.455 - 12., 1019.455 + 12.))
         # Note: +-10 Mev/c^2 keeps all of the phi signal, and kills 1/2 of the
         # background -- but the roadmap uses +-12 instead...
 
@@ -170,66 +174,133 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       DCP = 2. * ReLambda   / (1. + lambdaSq)
       SCP = 2. * ImLambda   / (1. + lambdaSq)
 
-      lambdaCPType = 'cartesian'
+      lambdaCPType = 'polar'
       if 'lambdaCPType' in optDict and optDict['lambdaCPType'] != '' : lambdaCPType = optDict['lambdaCPType']
       config.addSetting('lambdaCPType', P2VVSetting('lambdaCPType', 'type of lambda (CP violation)', lambdaCPType))
 
-      if mode == 'Bd2JpsiKstar' :
-        # OUT: (CCP)
-          config.addSetting('CCP',        RooRealSetting('C', 'B0 lambda param. C', 'par', 0., '', ''))
-      elif mode == 'Bs2Jpsiphi' :
-        # IN: polar: (lambdaCPSq,phiCP); cartesian: (ReLambdaCP,ImLambdaCP), other: (CCP,DCP,SCP)
-        # OUT: (CCP,DCP,SCP)
-        if lambdaCPType == 'polar' :
-          config.addSetting('lambdaCPSq', RooRealSetting('lambda^2', 'CP violation param. |lambda|^2', 'par', lambdaSq, 0., 5.))
-          config.addSetting('phiCP',      RooRealSetting('phis', 'CP violation param. phi_s', 'par', phi_s, -2 * pi, 2 * pi))
-          config.addSetting('CCP',        RooFormSetting('C', 'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
-          config.addSetting('DCP',        RooFormSetting('D', 'B0_s lambda param. D', '2. * sqrt(@0) * cos(@1) / (1. + @0)', ['lambdaCPSq', 'phiCP']))
-          config.addSetting('SCP',        RooFormSetting('S', 'B0_s lambda param. S', '-2. * sqrt(@0) * sin(@1) / (1. + @0)', ['lambdaCPSq', 'phiCP']))
+      if lambdaCPType == 'polar' :
+        config.addSetting('lambdaCPSq', RooRealSetting('lambda^2', 'CP violation param. |lambda|^2', 'par', lambdaSq, 0., 5.))
+        config.addSetting('CCP', RooFormSetting('C', 'lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
+        if mode == 'Bs2Jpsiphi' :
+          config.addSetting('phiCP', RooRealSetting('phis', 'CP violation param. phi_s', 'par', phi_s, -2 * pi, 2 * pi))
+          config.addSetting('DCP', RooFormSetting('D', 'B0_s lambda param. D', '2. * sqrt(@0) * cos(@1) / (1. + @0)', ['lambdaCPSq', 'phiCP']))
+          config.addSetting('SCP', RooFormSetting('S', 'B0_s lambda param. S', '-2. * sqrt(@0) * sin(@1) / (1. + @0)', ['lambdaCPSq', 'phiCP']))
 
-        elif lambdaCPType == 'cartesian' :
-          config.addSetting('ReLambdaCP', RooRealSetting('ReLambda', 'CP violation param. Re(lambda)', 'par', ReLambda, -2., 2.))
-          config.addSetting('ImLambdaCP', RooRealSetting('ImLambda', 'CP violation param. Im(lambda)', 'par', ImLambda, -2., 2.))
-          config.addSetting('lambdaCPSq', RooFormSetting('lambdaSq', 'CP violation param. |lambda|^2', '@0 * @0 + @1 * @1', ['ReLambdaCP', 'ImLambdaCP']))
-          config.addSetting('CCP',        RooFormSetting('C', 'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
-          config.addSetting('DCP',        RooFormSetting('D', 'B0_s lambda param. D', '2. * @1 / (1. + @0)', ['lambdaCPSq', 'ReLambdaCP']))
-          config.addSetting('SCP',        RooFormSetting('S', 'B0_s lambda param. S', '2. * @1 / (1. + @0)', ['lambdaCPSq', 'ImLambdaCP']))
+      elif lambdaCPType == 'cartesian' :
+        config.addSetting('ReLambdaCP', RooRealSetting('ReLambda', 'CP violation param. Re(lambda)', 'par', ReLambda, -2., 2.))
+        config.addSetting('ImLambdaCP', RooRealSetting('ImLambda', 'CP violation param. Im(lambda)', 'par', ImLambda, -2., 2.))
+        config.addSetting('lambdaCPSq', RooFormSetting('lambdaSq', 'CP violation param. |lambda|^2', '@0 * @0 + @1 * @1', ['ReLambdaCP', 'ImLambdaCP']))
+        config.addSetting('CCP', RooFormSetting('C', 'B0_s lambda param. C', '(1. - @0) / (1. + @0)', ['lambdaCPSq']))
+        if mode == 'Bs2Jpsiphi' :
+          config.addSetting('DCP', RooFormSetting('D', 'B0_s lambda param. D', '2. * @1 / (1. + @0)', ['lambdaCPSq', 'ReLambdaCP']))
+          config.addSetting('SCP', RooFormSetting('S', 'B0_s lambda param. S', '2. * @1 / (1. + @0)', ['lambdaCPSq', 'ImLambdaCP']))
 
-        else :
-          config.addSetting('CCP',        RooRealSetting('C', 'B0_s lambda param. C', 'par', CCP, -3., 3.))
-          config.addSetting('DCP',        RooRealSetting('D', 'B0_s lambda param. D', 'par', DCP, -3., 3.))
-          config.addSetting('SCP',        RooRealSetting('S', 'B0_s lambda param. S', 'par', SCP, -3., 3.))
+      else :
+        config.addSetting('CCP', RooRealSetting('C', 'B0_s lambda param. C', 'par', CCP, -3., 3.))
+        if mode == 'Bs2Jpsiphi' :
+          config.addSetting('DCP', RooRealSetting('D', 'B0_s lambda param. D', 'par', DCP, -3., 3.))
+          config.addSetting('SCP', RooRealSetting('S', 'B0_s lambda param. S', 'par', SCP, -3., 3.))
 
       ### flavour tags ###
       allowITagZero =  'allowITagZero' in optDict 
       config.addSetting('allowITagZero', P2VVSetting('allowITagZero', 'allow zero value for init. state tag (untagged)', allowITagZero))
 
-      asymType = optDict['asymType'] if 'asymType' in optDict and optDict['asymType'] else 'direct'
+      asymType = 'direct'
+      if 'asymType' in optDict and optDict['asymType'] != '' : asymType = optDict['asymType']
       config.addSetting('asymType', P2VVSetting('asymType', 'type of CP asymmetries', asymType))
 
+      tagType = 'singleCat'
+      numTagCats = 1
+      if 'tagType' in optDict and optDict['tagType'] != '' :
+        tagType = optDict['tagType']
+
+        if BDecClass == 'RooBDecay' and tagType != 'singleCat' :
+          print "P2VV - ERROR: getP2VVConfig: tagging categories are not implemented for RooBDecay"
+          tagType = 'singleCat'
+
+        if tagType[:10] == 'categories' :
+          try : numTagCats = int(tagType[10:])
+          except : numTagCats = 2
+          tagType = tagType[:10]
+          if numTagCats < 2 : numTagCats = 2
+
+      config.addSetting('tagType', P2VVSetting('tagType', 'flavour tagging implementation', tagType))
+      config.addSetting('numTagCats', P2VVSetting('numTagCats', 'number of flavour tagging categories', numTagCats))
+
+      # initial state flavour tag
       itagdict = { +1: 'B', -1 : 'Bbar'}
       if allowITagZero : itagdict.update( { 0:'untagged' } )
       config.addSetting('iTag', RooCatSetting('iTag', 'initial state flavour tag', True, 'B', itagdict ))
+
+      # final state flavour tag
       if mode == 'Bd2JpsiKstar' :
+        # NOTE: should this not be done by mapping it from the decay, i.e. J/psi phi, J/psi K*, J/psi K*bar, J/psi K+, J/psi K-...
+        #       i.e. fTag is a derived quantity...
         config.addSetting('fTag', RooCatSetting('fTag', 'final state flavour tag', True, 'B', {+1 : 'B', -1 : 'Bbar'}))
 
-      config.addSetting('wTag',        RooRealSetting('wTag', 'wrong tag fraction B', 'par', 0., '', ''))
-      config.addSetting('wTagBar',     RooRealSetting('wTagBar', 'wrong tag fraction anti-B', 'par', 0., '', ''))
-      ### IN: wTag, wTagBar
-      ### OUT: tagDilution,ADilWTag
-      config.addSetting('tagDilution', RooFormSetting('tagDilution', 'tagging dilution', '1. - @0 - @1', ['wTag', 'wTagBar']))
-      config.addSetting('ADilWTag',    RooFormSetting('ADilWTag', 'dilution/wrong tag asymmetry', '(@0 - @1) / @2', ['wTag', 'wTagBar', 'tagDilution']))
+      # production and normalization asymmetries
+      if not 'coef' in asymType.lower()  :
+        config.addSetting('AProd', RooRealSetting('AProd', 'production asymmetry', 'par', 0., -1., 1.))
+      if mode == 'Bd2JpsiKstar' or not 'coef' in asymType.lower() :
+        config.addSetting('ANorm', RooFormSetting('ANorm', 'normalization asymmetry', '-@0', ['CCP']))
 
-      ### OUT: avgCEven, avgCOdd
-      if asymType == 'avgCOdd' :
-        config.addSetting('avgCEven', RooRealSetting('avgCEven', 'CP average even coefficients', 'par', 1., '', ''))
-        config.addSetting('avgCOdd',  RooRealSetting('avgCOdd',  'CP average odd coefficients',  'par', 0., -1., 1.))
+      # tagging parameters
+      if tagType == 'categories' :
+        tagCats = {}
+        for tagCatIter in range(numTagCats) :
+          tagCat = '{0:02d}'.format(tagCatIter)
+          tagCats[tagCatIter] = 'cat' + tagCat
+
+          if tagCatIter == 0 :
+            # wrong tag parameters (untagged)
+            config.addSetting('tagDilution' + tagCat, RooRealSetting('tagDilution' + tagCat, 'tagging dilution', 'par', 0., '', ''))
+            config.addSetting('ADilWTag' + tagCat, RooRealSetting('ADilWTag' + tagCat, 'dilution/wrong tag asymmetry', 'par', 0., '', ''))
+
+            # average even and odd coefficients
+            if asymType in ['coefficients', 'equalCoefs'] :
+              config.addSetting('avgCEvenSum', RooRealSetting('avgCEvenSum', 'sum of CP average even coefficients', 'par', 1., '', ''))
+              config.addSetting('avgCOddSum', RooRealSetting('avgCOddSum', 'sum of CP average odd coefficients', 'par', 0., -2., 2.))
+            else :
+              config.addSetting('avgCEvenSum', RooFormSetting('avgCEvenSum', 'sum of CP average even coefficients', '1. + @0*@1', ['AProd', 'ANorm']))
+              config.addSetting('avgCOddSum', RooFormSetting('avgCOddSum', 'sum of CP average odd coefficients', '@0 + @1', ['AProd', 'ANorm']))
+
+          else :
+            # tagging category coefficients
+            config.addSetting('tagCatCoef' + tagCat, RooRealSetting('tagCatCoef' + tagCat, 'tagging category coefficient', 'par', (1. - float(tagCatIter) / float(numTagCats)) / float(numTagCats), 0., 1.))
+
+            # wrong tag parameters
+            config.addSetting('wTag' + tagCat, RooRealSetting('wTag' + tagCat, 'wrong tag fraction B', 'par', 0.5 * (1. - float(tagCatIter) / float(numTagCats)), '', ''))
+            config.addSetting('wTagBar' + tagCat, RooRealSetting('wTagBar' + tagCat, 'wrong tag fraction anti-B', 'par', 0.5 * (1. - float(tagCatIter) / float(numTagCats)), '', ''))
+            config.addSetting('tagDilution' + tagCat, RooFormSetting('tagDilution' + tagCat, 'tagging dilution', '1. - @0 - @1', ['wTag' + tagCat, 'wTagBar' + tagCat]))
+            config.addSetting('ADilWTag' + tagCat, RooFormSetting('ADilWTag' + tagCat, 'dilution/wrong tag asymmetry', '(@0 - @1) / @2', ['wTag' + tagCat, 'wTagBar' + tagCat, 'tagDilution' + tagCat]))
+
+            # average even and odd coefficients
+            if asymType == 'coefficients' :
+              config.addSetting('avgCEven' + tagCat, RooRealSetting('avgCEven' + tagCat, 'CP average even coefficients', 'par', 1., 0., 2.))
+              config.addSetting('avgCOdd' + tagCat, RooRealSetting('avgCOdd' + tagCat, 'CP average odd coefficients', 'par', 0., -2., 2.))
+            elif asymType != 'equalCoefs' :
+              config.addSetting('ATagEff' + tagCat, RooRealSetting('ATagEff' + tagCat, 'tagging efficiency asymmetry', 'par', 0., -1., 1.))
+              config.addSetting('avgCEven' + tagCat, RooFormSetting('avgCEven' + tagCat, 'CP average even coefficients', '1. + @0*@1 + @0*@2 + @1*@2', ['AProd', 'ANorm', 'ATagEff' + tagCat]))
+              config.addSetting('avgCOdd' + tagCat, RooFormSetting('avgCOdd' + tagCat, 'CP average odd coefficients', '@0 + @1 + @2 + @0*@1*@2', ['AProd', 'ANorm', 'ATagEff' + tagCat]))
+
+
+        # tagging category
+        config.addSetting('tagCat', RooCatSetting('tagCat', 'tagging category', True, 'cat01', tagCats))
+
       else :
-        config.addSetting('AProd',    RooRealSetting('AProd', 'production asymmetry', 'par', 0., '', ''))
-        config.addSetting('ANorm',    RooFormSetting('ANorm', 'normalization asymmetry', '-@0', ['CCP']))
-        config.addSetting('ATagEff',  RooRealSetting('ATagEff', 'tagging efficiency asymmetry', 'par', 0., '', ''))
-        config.addSetting('avgCEven', RooFormSetting('avgCEven', 'CP average even coefficients', '1. + @0*@1 + @0*@2 + @1*@2', ['AProd', 'ANorm', 'ATagEff']))
-        config.addSetting('avgCOdd',  RooFormSetting('avgCOdd', 'CP average odd coefficients', '@0 + @1 + @2 + @0*@1*@2', ['AProd', 'ANorm', 'ATagEff']))
+        # wrong tag parameters
+        config.addSetting('wTag', RooRealSetting('wTag', 'wrong tag fraction B', 'par', 0., '', ''))
+        config.addSetting('wTagBar', RooRealSetting('wTagBar', 'wrong tag fraction anti-B', 'par', 0., '', ''))
+        config.addSetting('tagDilution', RooFormSetting('tagDilution', 'tagging dilution', '1. - @0 - @1', ['wTag', 'wTagBar']))
+        config.addSetting('ADilWTag', RooFormSetting('ADilWTag', 'dilution/wrong tag asymmetry', '(@0 - @1) / @2', ['wTag', 'wTagBar', 'tagDilution']))
+
+        # average even and odd coefficients
+        if asymType == 'coefficients' :
+          config.addSetting('avgCEven', RooRealSetting('avgCEven', 'CP average even coefficients', 'par', 1., '', ''))
+          config.addSetting('avgCOdd', RooRealSetting('avgCOdd', 'CP average odd coefficients', 'par', 0., -2., 2.))
+        elif asymType != 'equalCoefs' :
+          config.addSetting('avgCEven', RooFormSetting('avgCEven', 'CP average even coefficients', '1. + @0*@1', ['AProd', 'ANorm']))
+          config.addSetting('avgCOdd', RooFormSetting('avgCOdd', 'CP average odd coefficients', '@0 + @1', ['AProd', 'ANorm']))
 
 
       ### amplitudes ###
@@ -483,11 +554,12 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
 
       ### efficiencies ###
 
-      if onlySignal :
-        config.addSetting('effType', P2VVSetting('effType', 'type of efficiency', 'noEff'))
+      effType = optDict['effType'] if 'effType' in optDict and optDict['effType'] != '' else 'noEff'
+      config.addSetting('effType', P2VVSetting('effType', 'type of efficiency', effType))
+
+      if effType == 'noEff' :
         config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs', 'angular efficiency basis functions', ''))
-      else :
-        config.addSetting('effType', P2VVSetting('effType', 'type of efficiency', 'angular'))
+      elif effType == 'angular' :
         config.addSetting('angEffBasisFuncs', P2VVSetting('angEffBasisFuncs', 'angular efficiency basis functions', (4, 4)))
 
 
@@ -1127,8 +1199,9 @@ class RooCatSetting(RooSetting) :
 
   def declare(self, workspace) :
     factoryString = "%s[" % self._name
-    for catTypeIndex, catType in self._catTypesDict.iteritems() :
-      factoryString += "%s=%d, " % (catType, catTypeIndex)
+    for catTypeIndex in sorted(self._catTypesDict.keys()) :
+      factoryString += "%s=%d, "\
+          % (self._catTypesDict[catTypeIndex], catTypeIndex)
     factoryString = factoryString[:-2] + ']'
 
     self._declare(workspace, factoryString)
