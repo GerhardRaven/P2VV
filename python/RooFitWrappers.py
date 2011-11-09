@@ -274,6 +274,19 @@ class P2VVAngleBasis (RooObject) :
         return P2VVAngleBasis._getters[k](self)
 
 
+class EffMoment :
+    from ROOT import gSystem, RooArgSet
+    gSystem.Load('libP2VV.so')
+    def __init__( self, x, norm, pdf, nset ) :
+        cast = lambda i : i._target_() if hasattr(i,'_target_') else i
+        self._nset = RooArgSet() # make sure this set remains alive long enough!
+        for i in nset : self._nset += cast(i) 
+        from ROOT import EffMoment as _EffMoment
+        self._var = _EffMoment( cast(x), norm, cast(pdf), self._nset )
+    def __getattr__(self, name):
+        return getattr(self._var, name)      
+
+
 
 def computeMoments(data, moments) :
   """computes moments of data set (wrapper for C++ _computeMoments)
@@ -284,7 +297,7 @@ def computeMoments(data, moments) :
 
   from ROOT import std, _computeMoments
   momVec = std.vector('IMoment*')()
-  for mom in moments : momVec.push_back(mom)
+  for mom in moments : momVec.push_back(mom._var if hasattr(mom,'_var') else mom)
   return _computeMoments(data, momVec)
 
 

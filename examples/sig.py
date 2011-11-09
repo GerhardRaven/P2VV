@@ -74,14 +74,10 @@ pdf = BTagDecay( 'sig_pdf',  { 'dm'        : RealVar( 'dm',        Title = 'delt
 ws.ws().Print('V')
 
 
-## TODO: import EffMoment as RooEffMoment so we can wrap it, and hide the technical stuff behind the scenes...
-from ROOT import EffMoment,RooArgSet
-a = RooArgSet()
-for i in helicityAngles : a += i._target_()
-moms = [ EffMoment( i._target_(), 1, pdf._target_(), a ) for v in angFuncs.itervalues() for i in v if i ] 
+moms = [ EffMoment( i, 1, pdf, helicityAngles ) for v in angFuncs.itervalues() for i in v if i ] 
 
 print 'generating data'
-data = pdf.generate( observables , 10000 )
+data = pdf.generate( observables , 100000 )
 
 print 'computing efficiency moments'
 computeMoments( data, moms )
@@ -89,4 +85,6 @@ from pprint import pprint
 pprint( [ (m.basis().GetName(), m.coefficient()) for m in moms ] )
 
 print 'fitting data'
-pdf.fitTo(data)
+from ROOT import RooCmdArg
+NumCPU = RooCmdArg( RooFit.NumCPU(8) )
+pdf.fitTo(data, NumCPU)
