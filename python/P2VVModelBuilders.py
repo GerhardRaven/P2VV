@@ -115,8 +115,7 @@ def buildJpsiV(config) :
   cpsiAng   = config['cpsiAng'].name()
   cthetaAng = config['cthetaAng'].name()
   phiAng    = config['phiAng'].name()
-  if tagType == 'categories' : tagCat = config['tagCat'].name() + ', '
-  else : tagCat = ''
+  tagCat = config['tagCat'].name() + ', ' if tagType == 'categories' else ''
   iTag = config['iTag'].name()
   if mode == 'Bd2JpsiKstar' : fTag = config['fTag'].name()
 
@@ -321,7 +320,7 @@ def buildJpsiV(config) :
       ws.factory('sum::cSin( %s)' %  sinCStr.format(cOdd  = '') )
 
       # build PDF
-      ws.factory("BTagDecay::%s(%s, %s, %s %s, %s, %s, %s, %s, %s, %s, %s, cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, %d)"\
+      ws.factory("BTagDecay::%s(%s, %s, %s %s, %s, %s, %s, %s, %s, %s, %s cCosh, cSinh, cCos, cSin, tres_sig, SingleSided, %d)"\
           % (pdfName, BLifetime, iTag, tagCat, BMeanLife, dGamma, dm, dilution,
              ADilWTag, avgCEven, avgCOdd, tagCatCoefs, checkTags))
 
