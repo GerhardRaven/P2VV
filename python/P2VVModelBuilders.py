@@ -444,7 +444,7 @@ class AngleFunctionBuilder :
         # express angular function in angle basis functions
         ws.defineSet(angSetName, '')
         for comps in angFunc[1] :
-          sigFunc = self.buildBasisFunc(name, *comps)
+          sigFunc = self.buildBasisFunc(angFuncName, *comps)
           if effFuncs:
             # with efficiency
             for effFunc in effFuncs :
