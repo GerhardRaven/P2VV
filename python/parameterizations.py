@@ -57,13 +57,16 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
 
 
 
+#TODO: inherit from UserDict mixin instead of wrapping & forwarding...
 class AngularFunctions :
-    def __init__(self) :
-        self._d = dict()
-    def __getitem__(self,k) :
-        return self._d[k]
-    def __setitem__(self,k,v) :
-        self._d[k] = v
+    def __init__(self) :         self._d = dict()
+    def __getitem__(self,k) :    return self._d[k]
+    def __setitem__(self,k,v) :  self._d[k] = v
+    def keys(self) :             return self._d.keys()
+    def iterkeys(self) :         return self._d.iterkeys()
+    def items(self) :            return self._d.items()
+    def iteritems(self) :        return self._d.iteritems()
+
 
 class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
     def __init__( self, **kwargs ) :

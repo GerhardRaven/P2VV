@@ -10,10 +10,9 @@ cpsiAng   = RealVar(  'helcthetaK', Title = 'cosine of kaon polarization angle',
 cthetaAng = RealVar(  'helcthetaL', Title = 'cosine of lepton polarization angle', Observable = True,  MinMax=(-1., 1.))
 phiAng    = RealVar(  'helphi',     Title = 'angle between decay planes',          Observable = True,  MinMax=(-pi, pi))
 t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
-
-unbiased  = Category( 'unbiased',   Title = 'Unbiased trigger?',         Observable = True, States = { 'yes': 1 ,   'no' : 0 } )
-decay     = Category( 'decaytype',  Title = 'J/psiX decay type',         Observable = True, States = { 'JpsiKplus' : 10, 'JpsiKmin' : 11, 'JpsiKstar0' : 20, 'JpsiKstar0bar': 21, 'Jpsiphi': 40 } )
-iTag      = Category( 'iTag',       Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1 } )
+iTag      = Category( 'iTag',       Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } )
+helicityAngles = [ cpsiAng,cthetaAng,phiAng ]
+observables = helicityAngles + [ t,iTag ]
 
 from parameterizations import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( lambdaSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2',  Value = 1)
@@ -74,9 +73,21 @@ pdf = BTagDecay( 'sig_pdf',  { 'dm'        : RealVar( 'dm',        Title = 'delt
                )
 ws.ws().Print('V')
 
+
+## TODO: import EffMoment as RooEffMoment so we can wrap it, and hide the technical stuff behind the scenes...
+from ROOT import EffMoment,RooArgSet
+moms = []
+a = RooArgSet()
+for i in helicityAngles : a += i._target_()
+for (k,v) in angFuncs.iteritems() :
+    moms += [ EffMoment( i._target_(), 1, pdf._target_(), a ) for i in v if i ] 
+
 print 'generating data '
-data = pdf.generate( [ cpsiAng,cthetaAng,phiAng,t,iTag, ] , 10000 )
-print 'fitting data '
-pdf.fitTo(data)
+data = pdf.generate( observables , 10000 )
 
+computeMoments( data, moms )
+from pprint import pprint
+pprint( [ (m.basis().GetName(), m.coefficient()) for m in moms ] )
 
+#print 'fitting data '
+#pdf.fitTo(data)

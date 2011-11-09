@@ -273,6 +273,21 @@ class P2VVAngleBasis (RooObject) :
     def __getitem__(self,k):
         return P2VVAngleBasis._getters[k](self)
 
+
+
+def computeMoments(data, moments) :
+  """computes moments of data set (wrapper for C++ _computeMoments)
+
+  Looping over data in python is quite a bit slower than in C++. Hence, we
+  adapt the arguments and then defer to the C++ _computeMoments.
+  """
+
+  from ROOT import std, _computeMoments
+  momVec = std.vector('IMoment*')()
+  for mom in moments : momVec.push_back(mom)
+  return _computeMoments(data, momVec)
+
+
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...
