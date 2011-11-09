@@ -82,7 +82,9 @@ print 'computing efficiency moments'
 moms = [ EffMoment( i, 1, pdf, helicityAngles ) for v in angFuncs.itervalues() for i in v if i ] 
 
 _bm = lambda i,l,m : EffMoment( P2VVAngleBasis(helicityAngles, i,0,l,m,1. ), float(2*l+1)/2, pdf, helicityAngles )
-moms2 = [ _bm(i,l,m) for i in range(3) for l in range(3) for m in range(-l,l+1) ]
+moms2  = [ _bm(i,l,m) for i in range(3) for l in range(3) for m in range(-l,l+1) ]
+moms2 += [ _bm(i,2,m) for i in range(3,20) for m in [-2,1] ] # these are for the 'infinite' terms in the signal PDF 
+
 
 computeMoments( data, moms + moms2 )
 
