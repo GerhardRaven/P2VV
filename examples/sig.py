@@ -28,22 +28,18 @@ args.update( { 'dm'     : RealVar( 'dm',        Title = 'delta m',       Unit = 
              , 'decayType' : 'SingleSided'
              } )
 
-
 from parameterizations import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( lambdaSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2', Observable = False, Value = 1)
                         , arg      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',     Observable = False, Value = -0.2,  MinMax = (-2*pi,2*pi) )
                         )
 
-tagDilution = RealVar( 'tagDilution', Title = 'Average Tagging Dilution',     Observable = False, Value = 1 )
-ADilWTag    = RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry', Observable = False, Value = 0 )
+from parameterizations import  ProdTagNorm_CEvenOdd
+_A = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'production asymmetry',         Observable = False, Value = 0 )
+                         , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value = 0 )
+                         , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
+                         )
 
-_AProd   = RealVar(    'AProd',    Title = 'production asymmetry',         Observable = False, Value = 0 )
-_ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value = 0 )
-_ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
-
-args.update( { 'avgCEven' : FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average even coefficients')
-             , 'avgCOdd'  : FormulaVar( 'avgCOdd',     '@0 + @1 + @2 + @0*@1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average odd coefficients')
-             } )
+args.update( { 'avgCEven' : _A['avgCEven'] , 'avgCOdd'  : _A['avgCOdd'] } )
 
 # polar transversity amplitudes -- this is 'internal only'
 _A0Mag2    = RealVar('A0Mag2',    Title = '|A0|^2',     Observable = False, Value = 0.556, MinMax = (0., 1.))
@@ -55,12 +51,19 @@ _AparPh    = RealVar('deltaPar',  Title = 'delta_par',  Observable = False, Valu
 _ASMag2    = RealVar('ASMag2',    Title = '|A_S|^2',    Observable = False, Value = 0.05, MinMax=( 0., 1.))
 _ASPh      = RealVar('deltaS',    Title = 'delta_S',    Observable = False, Value = 2.2, MinMax=( -2. * pi, 2. * pi))
 
-    
+# in python 2.7 and later, could use collections.OrderedDict so we can traverse without having to think...
+from parameterizations import Polar2_Amplitude
+Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
+             , 'Apar'  : Polar2_Amplitude( 'Apar',  _AparMag2,  _AparPh,  +1 )
+             , 'Aperp' : Polar2_Amplitude( 'Aperp', _AperpMag2, _AperpPh, -1 )
+             , 'AS'    : Polar2_Amplitude( 'AS',    _ASMag2,    _ASPh,    -1 )
+             }
+
 # using transversity amplitudes and helicity angles
+# define angle functions
 from math import sqrt
 _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
 
-# the following two tables, define 'everything'....####################################################
 angFuncs = { ('A0',   'A0')    :  ( _ba('Re_J_0020x0020_0', [(0, 0, 0,  0,  4.             )
                                                             ,(0, 0, 2,  0, -sqrt( 16. / 5.))
                                                             ,(2, 0, 0,  0,  8.             )
@@ -82,13 +85,6 @@ angFuncs = { ('A0',   'A0')    :  ( _ba('Re_J_0020x0020_0', [(0, 0, 0,  0,  4.  
            , ('Aperp','AS')    :  ( None, _ba('Im_J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))]))
            }
 
-# in python 2.7 and later, could use collections.OrderedDict so we can traverse without having to think...
-from parameterizations import Polar2_Amplitude
-Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
-             , 'Apar'  : Polar2_Amplitude( 'Apar',  _AparMag2,  _AparPh,  +1 )
-             , 'Aperp' : Polar2_Amplitude( 'Aperp', _AperpMag2, _AperpPh, -1 )
-             , 'AS'    : Polar2_Amplitude( 'AS',    _ASMag2,    _ASPh,    -1 )
-             }
 
 # build PDF
 from build import buildBTagTimeCoefficients
@@ -96,8 +92,8 @@ from build import buildBTagTimeCoefficients
 args.update( buildBTagTimeCoefficients( angFuncs, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) )
 args.update(  { 'time'     : t
               , 'iTag'     : iTag
-              , 'dilution' : tagDilution
-              , 'ADilWTag' : ADilWTag
+              , 'dilution' : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',     Observable = False, Value = 1 )
+              , 'ADilWTag' : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry', Observable = False, Value = 0 )
               } )
 pdf = BTagDecay( 'sig_pdf', args )
 ws.ws().Print('V')
@@ -106,4 +102,3 @@ print 'generating data '
 data = pdf.generate( [ cpsiAng,cthetaAng,phiAng,t,iTag, ] , 10000 )
 print 'fitting data '
 pdf.fitTo(data)
-
