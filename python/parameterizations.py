@@ -36,6 +36,13 @@ class CEvenOdd :
     def __getitem__(self,kw) :
         return getattr(self,kw)
 
+class Trivial_CEvenOdd( CEvenOdd ) :
+    def __init__(self) :
+        from RooFitWrappers import ConstVar
+        CEvenOdd.__init__(self, avgCEven =  ConstVar('one', Value = 1 )
+                              , avgCOdd  =  ConstVar('zero', Value = 0 )
+                              )
+
 class ProdTagNorm_CEvenOdd( CEvenOdd ) :
     def __init__(self,**kwargs) :
         _AProd = kwargs.pop('AProd')

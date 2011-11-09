@@ -33,13 +33,14 @@ CP = LambdaSqArg_CPParam( lambdaSq = RealVar( 'lambda^2', Title = 'CP violation 
                         , arg      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',     Observable = False, Value = -0.2,  MinMax = (-2*pi,2*pi) )
                         )
 
-from parameterizations import  ProdTagNorm_CEvenOdd
-_A = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'production asymmetry',         Observable = False, Value = 0 )
-                         , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value = 0 )
-                         , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
-                         )
+from parameterizations import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
+# ANuissance = Trivial_CEvenOdd()
+ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'production asymmetry',         Observable = False, Value = 0 )
+                                 , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value = 0 )
+                                 , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
+                                 )
 
-args.update( { 'avgCEven' : _A['avgCEven'] , 'avgCOdd'  : _A['avgCOdd'] } )
+args.update( { 'avgCEven' : ANuissance['avgCEven'] , 'avgCOdd'  : ANuissance['avgCOdd'] } )
 
 # polar transversity amplitudes -- this is 'internal only'
 _A0Mag2    = RealVar('A0Mag2',    Title = '|A0|^2',     Observable = False, Value = 0.556, MinMax = (0., 1.))
