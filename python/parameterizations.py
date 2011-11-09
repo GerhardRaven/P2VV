@@ -55,6 +55,43 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
 
 
 
+class AngularFunctions :
+    def __init__(self) :
+        self._d = dict()
+    def __getitem__(self,k) :
+        return self._d[k]
+    def __setitem__(self,k,v) :
+        self._d[k] = v
+
+class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
+    def __init__( self, **kwargs ) :
+        AngularFunctions.__init__(self)
+        from RooFitWrappers import P2VVAngleBasis, Addition
+        from math import sqrt
+        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis((kwargs['cpsi'],kwargs['ctheta'],kwargs['phi']) , *a) for a in args ] )
+        angFuncs = { ('A0',   'A0')    :  ( _ba('Re_J_0020x0020_0', [(0, 0, 0,  0,  4.             )
+                                                                    ,(0, 0, 2,  0, -sqrt( 16. / 5.))
+                                                                    ,(2, 0, 0,  0,  8.             )
+                                                                    ,(2, 0, 2,  0, -sqrt( 64. / 5.))]), None)
+                   , ('Apar', 'Apar')  :  ( _ba('Re_J_22x002022_0', [(2, 2, 0,  0,  2.             )
+                                                                    ,(2, 2, 2,  0,  sqrt(  1. / 5.))
+                                                                    ,(2, 2, 2,  2, -sqrt(  3. / 5.))]), None)
+                   , ('Aperp','Aperp') :  ( _ba('Re_J_22x002022_1', [(2, 2, 0,  0,  2.             )
+                                                                    ,(2, 2, 2,  0,  sqrt(  1. / 5.))
+                                                                    ,(2, 2, 2,  2,  sqrt(  3. / 5.))]), None)
+                   , ('A0',   'Apar')  :  ( _ba('Re_J_21x21_0',     [(2, 1, 2,  1,  sqrt( 24. / 5.))]), None)
+                   , ('A0',   'Aperp') :  ( None, _ba('Im_J_21x2m1_0',    [(2, 1, 2, -1, -sqrt( 24. / 5.))]))
+                   , ('Apar', 'Aperp') :  ( None, _ba('Im_J_22x2m2_0',    [(2, 2, 2, -2,  sqrt( 12. / 5.))])) 
+                   , ('AS',   'AS')    :  ( _ba('Re_J_00x0020_0',   [(0, 0, 0,  0,  4.             )
+                                                                    ,(0, 0, 2,  0, -sqrt( 16. / 5.))]), None)
+                   , ('A0',   'AS')    :  ( _ba('Re_J_10x0020_0',   [(1, 0, 0,  0,  sqrt(192.     ))
+                                                                    ,(1, 0, 2,  0, -sqrt(192. / 5.))]), None)
+                   , ('Apar', 'AS')    :  ( _ba('Re_J_11x21_0',     [(1, 1, 2,  1,  sqrt( 72. / 5.))]), None)
+                   , ('Aperp','AS')    :  ( None, _ba('Im_J_11x2m1_0',    [(1, 1, 2, -1,  sqrt( 72. / 5.))]))
+                   }
+        for k,v in angFuncs.iteritems() : self[k] = v
+
+
 class BTagDecayBasisCoefficients :
     def __init__(self, **kwargs ) :
         for i in ['sin','cos','sinh','cosh' ] : setattr(self,i,kwargs.pop(i))
