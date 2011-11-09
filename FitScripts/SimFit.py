@@ -14,12 +14,9 @@ from array import array
 
 from RooFitDecorators import *
 
-name = 'SimFit_200bins_FIX'
-#name = 'SimFit_10bins_FIX'
-#name = 'SimFit_10bins_1_1_0'
+name = 'SimFit_10bins'
 
-#wsfile = TFile('WS_SimFit_10bins_0_1_0.root')
-wsfile = TFile('WS_SimFit_200bins_FIX.root')
+wsfile = TFile('WS_SimFit_10bins.root')
 
 ws = wsfile.Get('ws')
 

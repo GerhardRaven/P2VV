@@ -18,7 +18,7 @@ ws = RooWorkspace("ws")
 #########################################
 ### Define variables and simple PDF's ###
 #########################################
-ws.factory("{t[0,10]}")
+ws.factory("t[0,10]")
 
 #ws.factory("TruthModel::tres(t)")
 ws.factory("GaussModel::tres(t,tres_m[0],tres_s[0.0005])")

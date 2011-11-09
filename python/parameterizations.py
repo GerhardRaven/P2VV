@@ -102,10 +102,6 @@ class BTagDecayBasisCoefficients :
 class JpsiphiBTagDecayBasisCoefficients( BTagDecayBasisCoefficients ) :
     def __init__(self,  angFuncs, Amplitudes,CP, order ) :
         def combine( name, afun, A, CPparams, i, j) :
-            try : # this requires python 2.7 or later...
-                from itertools import combinations_with_replacement as cwr
-            except:
-                from compatibility import cwr
 
             from RooFitWrappers import ConstVar, FormulaVar, Product
             plus  = ConstVar('plus', Value = 1)
@@ -143,8 +139,12 @@ class JpsiphiBTagDecayBasisCoefficients( BTagDecayBasisCoefficients ) :
 
         args = dict()
         from RooFitWrappers import Addition
-        for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
+        try : # this requires python 2.7 or later...
             from itertools import combinations_with_replacement as cwr
+        except:
+            from compatibility import cwr
+
+        for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
             # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
             args[ name ] = Addition( 'a_%s'% name, [ combine(name,angFuncs,Amplitudes,CP,i,j) for (i,j) in cwr( order, 2 ) ] )
 

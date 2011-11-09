@@ -22,8 +22,8 @@ signif = 1
 #2010
 #mcfilename = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
 #2011
-#mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB_and_B.root'
-mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
+mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB_and_B.root'
+#mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
 
 datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2.root'
 #datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2Unbiased.root'
@@ -270,7 +270,6 @@ if False:
     c.Update()
     c.Print("AngularAcceptanceCorrectionMC.eps")
 
-assert False
 #####################
 ### Now read data ###
 #####################
