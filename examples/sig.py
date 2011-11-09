@@ -63,7 +63,6 @@ Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
 from parameterizations import JpsiphiTransversityAmplitudesHelicityAngles
 angFuncs = JpsiphiTransversityAmplitudesHelicityAngles( cpsi = cpsiAng, ctheta = cthetaAng, phi = phiAng )
 
-# build PDF
 from parameterizations import JpsiphiBTagDecayBasisCoefficients
 # need to specify order in which to traverse...
 basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angFuncs, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 

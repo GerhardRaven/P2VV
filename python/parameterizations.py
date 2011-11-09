@@ -101,9 +101,17 @@ class BTagDecayBasisCoefficients :
 
 class JpsiphiBTagDecayBasisCoefficients( BTagDecayBasisCoefficients ) :
     def __init__(self,  angFuncs, Amplitudes,CP, order ) :
-        args = dict()
-
         def combine( name, afun, A, CPparams, i, j) :
+            try :
+                # this requires python 2.7 or later...
+                from itertools import combinations_with_replacement as cwr
+            except:
+                def cwr(i, r):
+                    pool = tuple(i)
+                    from itertools import product
+                    for indices in product(range(len(pool)), repeat=r):
+                         if sorted(indices) == list(indices): yield tuple(pool[i] for i in indices)
+
             from RooFitWrappers import ConstVar, FormulaVar, Product
             plus  = ConstVar('plus', Value = 1)
             minus = ConstVar('minus',  Value = -1  )
@@ -138,10 +146,11 @@ class JpsiphiBTagDecayBasisCoefficients( BTagDecayBasisCoefficients ) :
             assert len(s) == 1 # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
             return s[0]
 
+        args = dict()
         from RooFitWrappers import Addition
         for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
             from itertools import combinations_with_replacement as cwr
             # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
-            args[ name ] = Addition( 'a_%s'% name, [ combine(name,angFuncs,Amplitudes,CP,i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
+            args[ name ] = Addition( 'a_%s'% name, [ combine(name,angFuncs,Amplitudes,CP,i,j) for (i,j) in cwr( order, 2 ) ] )
 
         BTagDecayBasisCoefficients.__init__( self, **args )
