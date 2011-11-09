@@ -5,10 +5,6 @@ gSystem.Load('libP2VV.so')
 ws = RooObject()
 ws.setWorkspace( RooWorkspace('myworkspace') )
 
-plus  = ConstVar('plus', Value = 1)
-minus = ConstVar('minus',  Value = -1  )
-one   = plus
-
 from math import pi
 cpsiAng   = RealVar(  'helcthetaK', Title = 'cosine of kaon polarization angle',   Observable = True,  MinMax=(-1., 1.))
 cthetaAng = RealVar(  'helcthetaL', Title = 'cosine of lepton polarization angle', Observable = True,  MinMax=(-1., 1.))
@@ -26,6 +22,7 @@ CP = LambdaSqArg_CPParam( lambdaSq = RealVar( 'lambda^2', Title = 'CP violation 
 
 from parameterizations import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
 # ANuissance = Trivial_CEvenOdd()
+minus = ConstVar('minus',  Value = -1  )
 ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'production asymmetry',          Value = 0 )
                                  , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry',  Value = 0 )
                                  , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
@@ -81,3 +78,5 @@ print 'generating data '
 data = pdf.generate( [ cpsiAng,cthetaAng,phiAng,t,iTag, ] , 10000 )
 print 'fitting data '
 pdf.fitTo(data)
+
+
