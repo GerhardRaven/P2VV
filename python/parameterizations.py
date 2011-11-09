@@ -4,6 +4,12 @@ class CPParam :
         for i in 'CDS' : setattr(self,i,kwargs.pop(i))
 
 
+class LambdaSqArg_CPParam( CPParam ) :
+    def __init__(self, **kwargs) :
+        CPParam.__init__(self, C = FormulaVar('C', '(1.-@0)/(1.+@0)',                   [ kwargs['lambdaSq']              ] )
+                             , D = FormulaVar('D', ' 2 * sqrt(@0) * cos(@1) / (1.+@0)', [ kwargs['lambdaSq'], kwargs['arg'] ] )
+                             , S = FormulaVar('S', '-2 * sqrt(@0) * sin(@1) / (1.+@0)', [ kwargs['lambdaSq'], kwargs['arg'] ] )
+                        )
 
 # construct amplitudes with carthesian parameters
 class Carthesian_Amplitude :

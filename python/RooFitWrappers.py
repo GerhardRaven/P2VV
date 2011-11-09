@@ -247,7 +247,7 @@ class ConstVar (RooObject):
     def __getitem__(self,k):
         return ConstVar._getters[k](self)
 
-class AngleBasis (RooObject) : 
+class P2VVAngleBasis (RooObject) : 
     _setters = {}
     _getters = { 'Name'       : lambda s : s.GetName()
                , 'Title'      : lambda s : s.GetTitle()
@@ -257,7 +257,7 @@ class AngleBasis (RooObject) :
         # compute name, given angles,i,j,k,l,c!
         name = '_'.join(a['Name'] for a in angles)
         # remove c if it is 1?
-        name = 'AngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
+        name = 'P2VVAngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
         name = name.replace('.', '_')
         if name in self.ws():
@@ -269,9 +269,9 @@ class AngleBasis (RooObject) :
         self._init(name,'RooP2VVAngleBasis')
             
     def __setitem__(self,k,v):
-        return AngleBasis._setters[k](self, v)
+        return P2VVAngleBasis._setters[k](self, v)
     def __getitem__(self,k):
-        return AngleBasis._getters[k](self)
+        return P2VVAngleBasis._getters[k](self)
 
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...

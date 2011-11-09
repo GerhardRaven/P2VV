@@ -1,6 +1,7 @@
 from RooFitWrappers import *
 from ROOT import gSystem
 gSystem.Load('libP2VV.so')
+
 ws = RooObject()
 ws.setWorkspace( RooWorkspace('myworkspace') )
 
@@ -27,18 +28,14 @@ args.update( { 'dm'     : RealVar( 'dm',        Title = 'delta m',       Unit = 
              , 'decayType' : 'SingleSided'
              } )
 
-_phiCP      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',     Observable = False, Value = -0.2,  MinMax = (-2*pi,2*pi) )
-_lambdaCPSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2', Observable = False, Value = 1)
 
-from parameterizations import CPParam
-CP = CPParam( C = FormulaVar('C', '(1.-@0)/(1.+@0)',                   [ _lambdaCPSq ] )
-            , D = FormulaVar('D', ' 2 * sqrt(@0) * cos(@1) / (1.+@0)', [ _lambdaCPSq, _phiCP ] )
-            , S = FormulaVar('S', '-2 * sqrt(@0) * sin(@1) / (1.+@0)', [ _lambdaCPSq, _phiCP ] )
-            )
+from parameterizations import LambdaSqArg_CPParam
+CP = LambdaSqArg_CPParam( lambdaSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2', Observable = False, Value = 1)
+                        , arg      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',     Observable = False, Value = -0.2,  MinMax = (-2*pi,2*pi) )
+                        )
 
 tagDilution = RealVar( 'tagDilution', Title = 'Average Tagging Dilution',     Observable = False, Value = 1 )
 ADilWTag    = RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry', Observable = False, Value = 0 )
-
 
 _AProd   = RealVar(    'AProd',    Title = 'production asymmetry',         Observable = False, Value = 0 )
 _ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry', Observable = False, Value = 0 )
@@ -61,7 +58,7 @@ _ASPh      = RealVar('deltaS',    Title = 'delta_S',    Observable = False, Valu
     
 # using transversity amplitudes and helicity angles
 from math import sqrt
-_ba = lambda  name,args : Addition(name, [ AngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
+_ba = lambda  name,args : Addition(name, [ P2VVAngleBasis((cpsiAng,cthetaAng,phiAng) , *a) for a in args ] )
 
 # the following two tables, define 'everything'....####################################################
 angFuncs = { ('A0',   'A0')    :  ( _ba('Re_J_0020x0020_0', [(0, 0, 0,  0,  4.             )
@@ -92,45 +89,11 @@ Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
              , 'Aperp' : Polar2_Amplitude( 'Aperp', _AperpMag2, _AperpPh, -1 )
              , 'AS'    : Polar2_Amplitude( 'AS',    _ASMag2,    _ASPh,    -1 )
              }
-#######################################################################################################
-
-def combine( name, afun, A, CPparams, i, j) :
-    # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
-    # TODO: replace by Addition & Product...
-    Re        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
-    Im        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
-    # define functions which return the coefficients that define the time-dependence...
-    _minus_if = lambda b, x : [ minus, x ] if b else [ x ]
-    coef = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP.C  # make a trivial product just to get the labels right???
-                                        , None )
-           , 'cos'  : lambda ai,aj,CP : ( CP.C if ai.CP == aj.CP else one 
-                                        , None )
-           , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP > 0     ,  CP.D ))
-                                        , None if ai.CP == aj.CP else Product('Im_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP < aj.CP ,  CP.S )) )
-           , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > 0     ,  CP.S ))
-                                        , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > aj.CP ,  CP.D )) )
-           }
-    (c_re,c_im) = coef[name](A[i],A[j],CPparams)
-    (f_re,f_im) = afun[(i,j)]
-    #(a_re,a_im) = ( Real(A[i],A[j]),Imag(A[i],A[j]) )
-    # this triplet of complex numbers used to be written recursively as a doublet of a single number and another doublet...
-    # hence the current structure: Re(xyz) =  Re(x)Re(yz) + Im(x)Im(yz) 
-    # TODO: move some minus sign around (ie into afun and coef) so that
-    # NOTE: this becomes just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c)....
-    prod = lambda name, args : [ Product(name, args) ] if all(args) else []
-    s  = prod('ReReRe_%s_%s_%s'%(name,A[i],A[j]), [        Re( A[i], A[j]) , c_re, f_re ] ) \
-       + prod('ImImRe_%s_%s_%s'%(name,A[i],A[j]), [ minus, Im( A[i], A[j]) , c_im, f_re ] ) \
-       + prod('ImReIm_%s_%s_%s'%(name,A[i],A[j]), [        Im( A[i], A[j]) , c_re, f_im ] ) \
-       + prod('ReImIm_%s_%s_%s'%(name,A[i],A[j]), [        Re( A[i], A[j]) , c_im, f_im ] )
-    assert len(s) == 1 # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
-    return s[0]
-
-for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
-    from itertools import combinations_with_replacement as cwr
-    # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
-    args[ '%sCoef' % name ] = Addition( 'a_%s'% name, [ combine(name,angFuncs,Amplitudes,CP,i,j) for (i,j) in cwr( ['A0','Apar','Aperp','AS'], 2 ) ] )
 
 # build PDF
+from build import buildBTagTimeCoefficients
+# need to specify order in which to traverse...
+args.update( buildBTagTimeCoefficients( angFuncs, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) )
 args.update(  { 'time'     : t
               , 'iTag'     : iTag
               , 'dilution' : tagDilution
