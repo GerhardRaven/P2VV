@@ -58,21 +58,23 @@ basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angFuncs, Amplitudes,CP, 
 
 # now build the actual signal PDF...
 from ROOT import RooTruthModel as TruthModel
-args = dict()
-args.update( { 'dm'     : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}',  Value = 17.8 )  
-             , 'tau'    : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.5, MinMax = (1.3, 1.8) )
-             , 'dGamma' : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value = 0.05, MinMax = (-0.3,0.3) )
-             , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
-             , 'decayType' : 'SingleSided' } )
-args.update( { 'avgCEven' : ANuissance['avgCEven'] 
-             , 'avgCOdd'  : ANuissance['avgCOdd'] } )
-args.update( { 'time'     : t
-             , 'iTag'     : iTag
-             , 'dilution' : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',      Value = 1 )
-             , 'ADilWTag' : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry',  Value = 0 )
-             } )
-for i in ['cosh','sinh','cos','sin' ] : args.update( { '%sCoef'%i: basisCoefficients[i] } )
-pdf = BTagDecay( 'sig_pdf', args )
+pdf = BTagDecay( 'sig_pdf',  { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}',  Value = 17.8 )  
+                             , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.5,  MinMax = (1.3, 1.8) )
+                             , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.05, MinMax = (-0.3,0.3) )
+                             , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
+                             , 'decayType' : 'SingleSided' 
+                             , 'time'      : t
+                             , 'coshCoef'  : basisCoefficients['cosh']
+                             , 'cosCoef'   : basisCoefficients['cos']
+                             , 'sinhCoef'  : basisCoefficients['sinh']
+                             , 'sinCoef'   : basisCoefficients['sin']
+                             , 'avgCEven'  : ANuissance['avgCEven'] 
+                             , 'avgCOdd'   : ANuissance['avgCOdd']
+                             , 'iTag'      : iTag
+                             , 'dilution'  : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',      Value = 1 )
+                             , 'ADilWTag'  : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry',  Value = 0 )
+                             } 
+               )
 ws.ws().Print('V')
 
 print 'generating data '
