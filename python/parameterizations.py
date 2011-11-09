@@ -66,6 +66,8 @@ class AngularFunctions :
     def iterkeys(self) :         return self._d.iterkeys()
     def items(self) :            return self._d.items()
     def iteritems(self) :        return self._d.iteritems()
+    def values(self) :           return self._d.values()
+    def itervalues(self) :       return self._d.itervalues()
 
 
 class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :

@@ -76,18 +76,17 @@ ws.ws().Print('V')
 
 ## TODO: import EffMoment as RooEffMoment so we can wrap it, and hide the technical stuff behind the scenes...
 from ROOT import EffMoment,RooArgSet
-moms = []
 a = RooArgSet()
 for i in helicityAngles : a += i._target_()
-for (k,v) in angFuncs.iteritems() :
-    moms += [ EffMoment( i._target_(), 1, pdf._target_(), a ) for i in v if i ] 
+moms = [ EffMoment( i._target_(), 1, pdf._target_(), a ) for v in angFuncs.itervalues() for i in v if i ] 
 
-print 'generating data '
+print 'generating data'
 data = pdf.generate( observables , 10000 )
 
+print 'computing efficiency moments'
 computeMoments( data, moms )
 from pprint import pprint
 pprint( [ (m.basis().GetName(), m.coefficient()) for m in moms ] )
 
-#print 'fitting data '
-#pdf.fitTo(data)
+print 'fitting data'
+pdf.fitTo(data)
