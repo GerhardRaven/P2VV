@@ -344,7 +344,7 @@ class RealVar (RooObject):
                 _type = b[0] if type(b[0])==str else b[0].__name__ 
                 _bs   = b[1]
                 _args = b[2:]
-                self._declare("%s::%s_blind('%s',%s,%s)"%(_type,name,_bs,','.join(_args),name))
+                self._declare("%s::%s_blind('%s',%s,%s)"%(_type,name,_bs,','.join('%s'%i for i in _args),name))
             self._init(name,'RooRealVar')
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
@@ -565,27 +565,19 @@ class ResolutionModel(RooObject):
             # Save the keyword args as properties
             self._dict = {}
             self._dict['Name'] = name
-            def _fs(n):
-                self._dict[n] = frozenset(self._dict[n])
-                
-            for k, v in kwargs.iteritems():
-                self._dict[k] = v
-
-            for a in ['Observables', 'Parameters']:
-                if a in self._dict: _fs(a)
-
+            for k, v in kwargs.iteritems(): self._dict[k] = v
             self._declare(self._makeRecipe())
             self._init(name, 'RooResolutionModel')
             for k, v in self._dict.iteritems():
                 attr = '_' + k.lower()
+                if k in ['Observables', 'Parameters']: v = frozenset(v)
                 setattr(self._target_(), attr, v)
             del self._dict
         else:
             self._init(name, 'RooResolutionModel')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
-                if hasattr(v, '__iter__'):
-                    v = frozenset(v)
+                if hasattr(v, '__iter__'): v = frozenset(v)
                 assert v == self._get(k)
 
     def _get(self, name):
@@ -596,9 +588,9 @@ class ResolutionModel(RooObject):
         return ResolutionModel._getters[k](self)
     
     def _makeRecipe(self):
-        variables = list(self.Observables())
+        variables = list(self._dict['Observables'])
         if 'Parameters' in self._dict:
-            variables += list(self.Parameters())
+            variables += list( self._dict['Parameters'])
         deps = ','.join([v.GetName() for v in variables])
         return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
         
