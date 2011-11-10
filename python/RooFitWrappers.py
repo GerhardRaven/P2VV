@@ -2,8 +2,8 @@ from RooFitDecorators import *
 from copy import copy
 
 
-def __check_req_kw__( name, kwargs, string ) :
-    if not name in kwargs : raise StandardError( string )
+def __check_req_kw__( name, kwargs ) :
+    if not name in kwargs : raise KeyError( 'Must provide kw argument %s' % name )
 def __check_exists_already__( self ) :
     if self._name in self.ws() :
         raise StandardError( 'Recreating %s is not supported atm' % type(self) )
@@ -236,7 +236,7 @@ class ConstVar (RooObject):
     def __init__(self,name,**kwargs):
         if name not in self.ws():
             # construct factory string on the fly...
-            __check_req_kw__( 'Value', kwargs, 'ConstVar must have value at construction' )
+            __check_req_kw__( 'Value', kwargs )
             self._declare("ConstVar::%s(%s)"%(name,kwargs.pop('Value')))
             self._init(name,'RooConstVar')
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
@@ -339,6 +339,12 @@ class RealVar (RooObject):
             else:
                 (mi,ma) = kwargs.pop('MinMax')
                 self._declare("%s[%s,%s,%s]"%(name,kwargs.pop('Value'),mi,ma))
+            if 'Blind' in kwargs: # wrap the blinding class around us...
+                b = kwargs.pop('Blind')
+                _type = b[0] if type(b[0])==str else b[0].__name__ 
+                _bs   = b[1]
+                _args = b[2:]
+                self._declare("%s::%s_blind('%s',%s,%s)"%(_type,name,_bs,','.join(_args),name))
             self._init(name,'RooRealVar')
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
@@ -369,7 +375,6 @@ class RealVar (RooObject):
 class Pdf(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables') 
                ,'Type'        : lambda s : s._get('Type')
-               ,'Options'     : lambda s : s._get('Options')
                ,'Parameters'  : lambda s : s._get('Parameters')
                ,'Name'        : lambda s : s._get('Name')
                ,'Title'       : lambda s : s.GetTitle()
@@ -377,21 +382,15 @@ class Pdf(RooObject):
 
     ## TODO: define operators
     def __init__(self, name, **kwargs):
-        if 'Observables' not in kwargs:
-            raise KeyError('Must provide observables %s' % kwargs)
-        if 'Type' not in kwargs:
-            raise KeyError('Must provide type %s' % kwargs)
+        __check_req_kw__( 'Observables', kwargs )
+        __check_req_kw__( 'Type', kwargs )
 
         # Save the keyword args as properties
         self._dict = {}
         for k, v in kwargs.iteritems():
             self._dict[k] = v
-        for k in ['Observables', 'Parameters']:
-            self._dict[k] = frozenset(self._dict[k])
         self._dict['Name'] = self._separator().join([name] + [i.GetName() for i in self._dict['Observables']])
-
         self.__make_pdf()
-        del self._dict
 
     def __str__(self):
         d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
@@ -412,26 +411,21 @@ class Pdf(RooObject):
 
     def __make_pdf(self):
         if self._dict['Name'] not in self.ws():
-            v = list(self._dict['Observables'])
-            if 'Parameters' in self._dict:
-                v += list(self._dict['Parameters'])
-            if 'ResolutionModel' in self._dict:
-                rm = self._dict['ResolutionModel']
-                if rm['Observables'] != frozenset(self._dict['Observables']):
-                    raise StandardError ('Error, resolution model must have the same '
-                                         + 'observables as PDF')
-                ## TODO add conditional observables
-                v += [rm]
-            if 'Options' in self._dict:
-                v += list(self._dict['Options'])
+            v = list(self._dict['Observables'])  
+            if 'Parameters' in self._dict: v += list(self._dict['Parameters'])
             self._declare(self._makeRecipe(v))
             self._init(self._dict['Name'], 'RooAbsPdf')
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
             for k, v in self._dict.iteritems():
+                # change into a frozenset AFTER _makeRecipe has been invoked
+                # as _makeRecipe relies on the a-priori given order so it can
+                # match the c'tor arguments properly!!!!
+                if k in ['Observables', 'Parameters']: v = frozenset(v)
                 attr = '_' + k.lower()
                 setattr(self._target_(), attr, v)
+            del self._dict # no longer needed
         else:
             self._init(self._dict['Name'], 'RooAbsPdf')
             # Make sure we are the same as last time
@@ -564,10 +558,8 @@ class ResolutionModel(RooObject):
                }
 
     def __init__(self, name, **kwargs):
-        if 'Type' not in kwargs: 
-            raise KeyError('Must specify type')
-        if 'Observables'  not in kwargs: 
-            raise KeyError('Must specify observables')
+        __check_req_kw__( 'Type', kwargs )
+        __check_req_kw__( 'Observables', kwargs )
 
         if name not in self.ws():
             # Save the keyword args as properties
