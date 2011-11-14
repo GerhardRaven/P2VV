@@ -121,13 +121,11 @@ class Category (RooObject):
                }
 
     def __init__(self,name,**kwargs):
-        # TODO: add blinding support to kwargs
         if name not in self.ws():
             # construct factory string on the fly...
+            __check_req_kw__( 'States', kwargs )
             states = None
-            if 'States' not in kwargs:
-                raise KeyError('%s does not exist yet, but no states defined.' % name)
-            elif type(kwargs['States']) == list:
+            if   type(kwargs['States']) == list:
                 states = ','.join(kwargs['States'])
             elif type(kwargs['States']) == dict:
                 states = ','.join(['%s=%d' % i for i in kwargs['States'].items()])
@@ -137,30 +135,67 @@ class Category (RooObject):
             # Create the category and extract states into storage
             self._declare("%s[%s]"%(name,states))
             self._init(name,'RooCategory')
-            self._target_()._states = {}
-            it = self.typeIterator()
-            while True:
-                cat = it.Next()
-                if not cat:
-                    break
-                self._target_()._states[cat.GetName()] = cat.getVal()
+            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
         else:
             self._init(name,'RooCategory')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
-                if k in ['Index', 'Label']:
-                    continue
+                if k in ['Index', 'Label']: continue
                 assert v == self[k]
             
     def __setitem__(self,k,v):
         return Category._setters[k](self, v)
     def __getitem__(self,k):
         return Category._getters[k](self)
-
     def states(self):
         return self._states
+
+class SuperCategory( Category ) :
+    def __init__(self,name,cats,**kwargs):
+        if name not in self.ws():
+            # construct factory string on the fly: no factory string for SuperCategory???
+            args = RooArgSet()
+            cast = lambda i : i._target_() if hasattr(i,'_target_') else i
+            for c in cats : args += cast(c) 
+            from ROOT import RooSuperCategory
+            self.ws()._objects[ name ] = self.ws().put( RooSuperCategory(name,name,args) )
+            self._init(name,'RooSuperCategory')
+            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(name,'RooSuperCategory')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                if k in ['Index', 'Label']: continue
+                assert v == self[k]
+
+#class MappedCategory( Category ) :
+#    def __init__(self,name,mapper,incat,**kwargs):
+#        if name not in self.ws():
+#            # construct factory string on the fly: no factory string for MappedCategory???
+#            self.ws()._objects[ name ] = self.ws().put( RooMappedcategory(name,name,incat) )
+#            self._init(name,'RooMappedCategory')
+#            for k,v in mapper.iteritems() : self.ws()._objects[ name ].map(k,v)
+#            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
+#            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+#        else:
+#            self._init(name,'RooMappedCategory')
+#            # Make sure we are the same as last time
+#            for k, v in kwargs.iteritems():
+#                # Skip these to avoid failure in case we were loaded from a
+#                # DataSet in the mean time
+#                if k in ['Index', 'Label']: continue
+#                assert v == self[k]
+#        
+#class DataSet( RooObject ) :
+#    def __init__(self, name, tree, obs, cuts) :
+#        pass   
+#
+
 
 class Product(RooObject) :
     _setters = {'Title'      : lambda s,v : s.SetTitle(v)
