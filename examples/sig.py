@@ -2,8 +2,15 @@ from RooFitWrappers import *
 from ROOT import gSystem
 gSystem.Load('libP2VV.so')
 
+from ROOT import RooMsgService
+
+RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
+
+
 ws = RooObject()
 ws.setWorkspace( RooWorkspace('myworkspace') )
+ws.ws().importClassCode("RooBTagDecay",True);
+ws.ws().importClassCode("RooP2VVAngleBasis",True);
 
 from math import pi
 cpsiAng   = RealVar(  'helcthetaK', Title = 'cosine of kaon polarization angle',   Observable = True,  MinMax=(-1., 1.))
@@ -15,8 +22,9 @@ helicityAngles = [ cpsiAng,cthetaAng,phiAng ] # WARNING: order counts!!
 observables = helicityAngles + [ t,iTag ]
 
 from parameterizations import LambdaSqArg_CPParam
+from ROOT import RooUnblindUniform as UnblindUniform
 CP = LambdaSqArg_CPParam( lambdaSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2',  Value = 1)
-                        , arg      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',      Value = -0.2,  MinMax = (-2*pi,2*pi) )
+                        , arg      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',      Value = -0.2,  MinMax = (-2*pi,2*pi), Blind = (UnblindUniform,'BsRooBarb',0.2) )
                         )
 
 from parameterizations import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
@@ -54,25 +62,40 @@ basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angFuncs, Amplitudes,CP, 
 
 # now build the actual signal PDF...
 from ROOT import RooTruthModel as TruthModel
-pdf = BTagDecay( 'sig_pdf',  { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}',  Value = 17.8 )  
-                             , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.5,  MinMax = (1.3, 1.8) )
-                             , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.05, MinMax = (-0.3,0.3) )
-                             , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
-                             , 'decayType' : 'SingleSided' 
-                             , 'time'      : t
-                             , 'coshCoef'  : basisCoefficients['cosh']
-                             , 'cosCoef'   : basisCoefficients['cos']
-                             , 'sinhCoef'  : basisCoefficients['sinh']
-                             , 'sinCoef'   : basisCoefficients['sin']
-                             , 'avgCEven'  : ANuissance['avgCEven'] 
-                             , 'avgCOdd'   : ANuissance['avgCOdd']
-                             , 'iTag'      : iTag
-                             , 'dilution'  : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',      Value = 1 )
-                             , 'ADilWTag'  : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry',  Value = 0 )
-                             } 
-               )
-#ws.ws().Print('V')
-#ws.ws().writeToFile("pdf.root")
+args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}',  Value = 17.8 )  
+       , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.5,  MinMax = (1.3, 1.8) )
+       , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.05, MinMax = (-0.3,0.3) )
+       , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
+       , 'decayType' : 'SingleSided' 
+       , 'time'      : t
+       , 'coshCoef'  : basisCoefficients['cosh']
+       , 'cosCoef'   : basisCoefficients['cos']
+       , 'sinhCoef'  : basisCoefficients['sinh']
+       , 'sinCoef'   : basisCoefficients['sin']
+       , 'avgCEven'  : ANuissance['avgCEven'] 
+       , 'avgCOdd'   : ANuissance['avgCOdd']
+       , 'iTag'      : iTag
+       , 'dilution'  : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',      Value = 1 )
+       , 'ADilWTag'  : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry',  Value = 0 )
+       } 
+
+mcpdf = BTagDecay( 'mc_pdf',  args )
+
+# update resolution model, and build again...
+from parameterizations import ResolutionModelLP2011
+args[ 'resolutionModel' ]  = ResolutionModelLP2011( t ).Model
+
+sigpdf = BTagDecay( 'sig_pdf', args )
+
+pdf = mcpdf
+
+
+
+#l = RooArgSet()
+#pdf.branchNodeServerList( l )
+#for i in l : i.setAttribute( "CacheAndTrack" )
+
+pdf.Print("t")
 
 print 'generating data'
 data = pdf.generate( observables , 10000 )
@@ -86,13 +109,13 @@ moms2  = [ _bm(i,l,m) for i in range(3) for l in range(3) for m in range(-l,l+1)
 moms2 += [ _bm(i,2,m) for i in range(3,20) for m in [-2,1] ] # these are for the 'infinite' terms in the signal PDF 
 
 
-computeMoments( data, moms + moms2 )
+#computeMoments( data, moms + moms2 )
 
-from pprint import pprint
-pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
-pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
+#from pprint import pprint
+#pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
+#pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
 
 print 'fitting data'
 from ROOT import RooCmdArg
-NumCPU = RooCmdArg( RooFit.NumCPU(8) )
-pdf.fitTo(data, NumCPU)
+NumCPU = RooCmdArg( RooFit.NumCPU(1) )
+pdf.fitTo(data, NumCPU, RooFit.Timer(1))
