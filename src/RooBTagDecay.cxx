@@ -24,6 +24,8 @@
 //
 
 
+#include <map>
+
 #include "RooFit.h"
 #include "RooMsgService.h"
 
@@ -294,12 +296,12 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
   _avgCEvens("avgCEvens", this, other._avgCEvens),
   _avgCOdds("avgCOdds", this, other._avgCOdds),
   _tagCatCoefs("tagCatCoefs", this, other._tagCatCoefs),
-  _tagCatPositions(other._tagCatPositions),
-  _tagCatIndices(other._tagCatIndices),
   _coshCoef("coshCoef", this, other._coshCoef),
   _sinhCoef("sinhCoef", this, other._sinhCoef),
   _cosCoef("cosCoef", this, other._cosCoef),
   _sinCoef("sinCoef", this, other._sinCoef),
+  _tagCatPositions(other._tagCatPositions),
+  _tagCatIndices(other._tagCatIndices),
   _coshBasis(other._coshBasis),
   _sinhBasis(other._sinhBasis),
   _cosBasis(other._cosBasis),
@@ -400,7 +402,7 @@ Double_t RooBTagDecay::tagCatCoef(Int_t& category) const
 
   // get category
   if (category < 0) {
-    category = tagCatPosition(_tagCat.arg().getIndex());
+    category = getTagCatPosition(_tagCat.arg().getIndex());
   } else if (category >= _tagCat.arg().numTypes()) {
     coutE(InputArguments) << "RooBTagDecay::tagCatCoef(" << GetName()
         << ") category " << category << "does not exist" << endl;
@@ -910,7 +912,7 @@ void RooBTagDecay::generateEvent(Int_t code)
       }
 
       // set tagging category value
-      _tagCat = tagCatIndices(tagCatGen);
+      _tagCat = getTagCatIndex(tagCatGen);
     }
 
     // calculate dilution * (coef_(O/E) - ADilWTag * coef_(E/O))
@@ -959,6 +961,22 @@ void RooBTagDecay::generateEvent(Int_t code)
     // exit generation loop
     break;
   }
+}
+
+//_____________________________________________________________________________
+Int_t RooBTagDecay::getTagCatPosition(Int_t tagCatIndex) const
+{
+  if (_tagCatPositions.empty()) initTagCatMaps();
+
+  return _tagCatPositions.find(tagCatIndex)->second;
+}
+
+//_____________________________________________________________________________
+Int_t RooBTagDecay::getTagCatIndex(Int_t tagCatPosition) const
+{
+  if (_tagCatIndices.empty()) initTagCatMaps();
+
+  return _tagCatIndices.find(tagCatPosition)->second;
 }
 
 //_____________________________________________________________________________
@@ -1100,6 +1118,9 @@ void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
     assert(0);
   }
 
+  // initialize tagging category maps
+  initTagCatMaps();
+
   // loop over tagging categories
   TIterator* tagCatTypeIter = 0;
   if (_tagCatType > 1) tagCatTypeIter = _tagCat.arg().typeIterator();
@@ -1109,7 +1130,6 @@ void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
   TString avgCoefFormString;
   TString tagCatCoefFormString("1.");
   for (Int_t tagCatIter = 0; tagCatIter < numTagCats; ++tagCatIter) {
-
     // get parameters
     RooAbsReal* tagCatCoef = 0;
     if (_tagCatType == 2)
@@ -1305,5 +1325,28 @@ void RooBTagDecay::declareBases()
           RooArgList(_tau.arg(), _dm.arg()));
     }
   }
+}
+
+//_____________________________________________________________________________
+void RooBTagDecay::initTagCatMaps() const
+{
+  // check number of categories
+  if (_tagCatType < 2) return;
+
+  // loop over tagging categories
+  TIterator*  tagCatTypeIter = _tagCat.arg().typeIterator();
+  RooCatType* tagCatIndex    = 0;
+  Int_t       position       = 0;
+  while ((tagCatIndex = (RooCatType*)tagCatTypeIter->Next()) != 0) {
+    // set tagging category position and index
+    Int_t index = tagCatIndex->getVal();
+    _tagCatPositions[index] = position;
+    _tagCatIndices[position] = index;
+
+    // update position
+    ++position;
+  }
+
+  delete tagCatTypeIter;
 }
 
