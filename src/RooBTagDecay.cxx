@@ -400,7 +400,7 @@ Double_t RooBTagDecay::tagCatCoef(Int_t& category) const
 
   // get category
   if (category < 0) {
-    category = _tagCatPositions.find(_tagCat.arg().getIndex())->second;
+    category = tagCatPosition(_tagCat.arg().getIndex());
   } else if (category >= _tagCat.arg().numTypes()) {
     coutE(InputArguments) << "RooBTagDecay::tagCatCoef(" << GetName()
         << ") category " << category << "does not exist" << endl;
@@ -910,7 +910,7 @@ void RooBTagDecay::generateEvent(Int_t code)
       }
 
       // set tagging category value
-      _tagCat = _tagCatIndices.find(tagCatGen)->second;
+      _tagCat = tagCatIndices(tagCatGen);
     }
 
     // calculate dilution * (coef_(O/E) - ADilWTag * coef_(E/O))
@@ -1109,12 +1109,6 @@ void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
   TString avgCoefFormString;
   TString tagCatCoefFormString("1.");
   for (Int_t tagCatIter = 0; tagCatIter < numTagCats; ++tagCatIter) {
-    if (_tagCatType > 1) {
-      // get tagging category index
-      Int_t tagCatIndex = ((RooCatType*)tagCatTypeIter->Next())->getVal();
-      _tagCatPositions[tagCatIndex] = tagCatIter;
-      _tagCatIndices[tagCatIter] = tagCatIndex;
-    }
 
     // get parameters
     RooAbsReal* tagCatCoef = 0;

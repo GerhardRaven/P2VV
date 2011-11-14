@@ -32,7 +32,7 @@ class RooBTagDecay : public RooAbsAnaConvPdf
 public:
   enum DecayType {SingleSided, DoubleSided, Flipped};
 
-  inline RooBTagDecay() {}
+  RooBTagDecay() {}
 
   // constructor without flavour tags
   RooBTagDecay(const char *name, const char *title,
@@ -125,8 +125,22 @@ protected:
   RooListProxy           _avgCEvens;
   RooListProxy           _avgCOdds;
   RooListProxy           _tagCatCoefs;
-  std::map<Int_t, Int_t> _tagCatPositions;
-  std::map<Int_t, Int_t> _tagCatIndices;
+  mutable std::map<int, int> _tagCatPositions; //!
+  mutable std::map<int, int> _tagCatIndices;   //!
+
+  int tagCatPosition( int i ) const { if (_tagCatPositions.empty()) { initTagCats(); } return _tagCatPositions.find(i)->second; }
+  int tagCatIndices(  int i )  const{ if (_tagCatIndices.empty()) { initTagCats(); } return _tagCatIndices.find(i)->second; }
+  void initTagCats() const {
+    int numTagCats =  (_tagCatType == 1) ? 1 : _tagCat.arg().numTypes();
+    TIterator* tagCatTypeIter = (_tagCatType > 1) ?  _tagCat.arg().typeIterator() : 0 ;
+    for (Int_t tagCatIter = 0; tagCatIter < numTagCats; ++tagCatIter) {
+      // get tagging category index
+      Int_t tagCatIndex = ((RooCatType*)tagCatTypeIter->Next())->getVal();
+      _tagCatPositions[tagCatIndex] = tagCatIter;
+      _tagCatIndices[tagCatIter] = tagCatIndex;
+    }
+    if (_tagCatType > 1) delete tagCatTypeIter;
+  }
 
   RooRealProxy _coshCoef;
   RooRealProxy _sinhCoef;
