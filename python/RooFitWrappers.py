@@ -25,6 +25,11 @@ class RooObject(object) :
     def _declare(self,spec):
         # TODO: add mapping of name -> spec so we can gate identical invocations.
         #       problem is that we don't know 'name' a-priori....
+        #       so maybe we either require a name, and verify what we got back has
+        #       the matching name, or, in case name is 'None' then it has to be unique
+        #       and not yet used???
+        # canonicalize 'spec' a bit by getting rid of spaces
+        spec = spec.strip()
         x = self.ws().factory(spec)
         if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
         x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
@@ -570,7 +575,7 @@ class ResolutionModel(RooObject):
             self._init(name, 'RooResolutionModel')
             for k, v in self._dict.iteritems():
                 attr = '_' + k.lower()
-                if k in ['Observables', 'Parameters']: v = frozenset(v)
+                if hasattr(v, '__iter__'): v = frozenset(v)
                 setattr(self._target_(), attr, v)
             del self._dict
         else:
@@ -594,6 +599,30 @@ class ResolutionModel(RooObject):
         deps = ','.join([v.GetName() for v in variables])
         return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
         
+
+class AddModel(ResolutionModel) :
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
+    def __init__(self,name,models,fractions,**kwargs) :
+        if name not in self.ws():
+            # construct factory string on the fly...
+            for i in models : print '__init__:',i, type(i)
+            self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
+            self._init(name,'RooAddModel')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            raise RunTimeError( 'Code Path Not Yet Verified'  )
+            
+    def __setitem__(self,k,v):
+        return AddModel._setters[k](self, v)
+    def __getitem__(self,k):
+        return AddModel._getters[k](self)
+
+
+
 class Component(object):
     _d = {}
     def __init__(self,name) :
