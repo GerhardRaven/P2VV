@@ -12,8 +12,8 @@
 ###############################################################################
 
 # specify decay mode ('Bd2JpsiKstar' or 'Bs2Jpsiphi')
-mode = 'Bd2JpsiKstar'
-#mode = 'Bs2Jpsiphi'
+#mode = 'Bd2JpsiKstar'
+mode = 'Bs2Jpsiphi'
 
 # plots file
 plotsFile = mode[3:] + 'Plots.ps'
@@ -63,11 +63,11 @@ ANorm = -(1. - lambdaCPSq) / (1. + lambdaCPSq)
 #               'tagCatCoef03' : 0.0266,
 #               'tagCatCoef04' : 0.0112,
 #               'tagCatCoef05' : 0.0064}
-tagCatCoefs = {'tagCatCoef01' : 0.0645,
-               'tagCatCoef02' : 0.0468,
-               'tagCatCoef03' : 0.0125,
-               'tagCatCoef04' : 0.00492,
-               'tagCatCoef05' : 0.00212}
+tagCatCoefs = {'tagCatCoef01' : 0.15,
+               'tagCatCoef02' : 0.07,
+               'tagCatCoef03' : 0.03,
+               'tagCatCoef04' : 0.01,
+               'tagCatCoef05' : 0.003}
 wTags =       {'wTag01'       : 0.399,
                'wTag02'       : 0.354,
                'wTag03'       : 0.267,
@@ -96,7 +96,7 @@ P2VV.setRooFitOutput()
 
 # create P2VV configuration object
 config = P2VVConfiguration.getP2VVConfig(mode, ['KSWave=include',
-    'anglesType=trans', 'tagType=categories6', 'asymType=equalCoefs'])
+    'anglesType=trans', 'tagType=categories6', 'asymType=coefficients'])
 
 # custom settings
 if config.value('anglesType')[0] == 'trans' :
@@ -131,6 +131,24 @@ elif config.value('ampsType') == 'transCartesian' :
   if config.value('KSWave')[:7] == 'include' :
     config['ReAS'].set(val = sqrt(ASMag2 / A0Mag2) * cos(ASPh))
     config['ImAS'].set(val = sqrt(ASMag2 / A0Mag2) * sin(ASPh))
+elif config.value('ampsType') == 'transDaan' :
+  # Re(A_0) = 1 :: Im(A_0) = 0
+  config['AparMag2'].set(val = AparMag2 / A0Mag2)
+  config['AperpMag2'].set(val = AperpMag2 / A0Mag2)
+  config['AparPh'].set(val = AparPh)
+  config['AperpPh'].set(val = AperpPh)
+  if config.value('KSWave')[:7] == 'include' :
+    config['ReAS'].set(val = sqrt(ASMag2 / A0Mag2) * cos(ASPh))
+    config['ImAS'].set(val = sqrt(ASMag2 / A0Mag2) * sin(ASPh))
+elif config.value('ampsType') == 'transBank' :
+  # Re(A_0) = 1 :: Im(A_0) = 0
+  config['AperpMag2'].set(val = AperpMag2 / A0Mag2)
+  config['AperpPh'].set(val = AperpPh)
+  config['ReAparRed'].set(val = sqrt(AparMag2 / A0Mag2) * cos(AparPh))
+  config['ImAparRed'].set(val = sqrt(AparMag2 / A0Mag2) * sin(AparPh))
+  if config.value('KSWave')[:7] == 'include' :
+    config['ReASRed'].set(val = sqrt(ASMag2 / AperpMag2) * cos(ASPh - AperpPh))
+    config['ImASRed'].set(val = sqrt(ASMag2 / AperpMag2) * sin(ASPh - AperpPh))
 
 config['Gamma'].set(val = Gamma)
 config['dGamma'].set(val = dGamma)
@@ -142,7 +160,7 @@ if mode == 'Bd2JpsiKstar' :
     config['ReLambdaCP'].set(val = sqrt(lambdaCPSq))
     config['ImLambdaCP'].set(val = 0.)
 elif mode == 'Bs2Jpsiphi' :
-  config['dm'].set(val = dm)
+  config['dm'].set(val = dm, min='', max='')
   if config.value('lambdaCPType') == 'polar' :
     config['phiCP'].set(val = phiCP)
     config['lambdaCPSq'].set(val = lambdaCPSq)
@@ -195,7 +213,7 @@ print 'fitJpsiV: %d events in data set' % data.numEntries()
 
 # fit data
 fitResult = pdf.fitTo(data, RooFit.Minos(False), RooFit.Hesse(False),
-    RooFit.NumCPU(4), RooFit.Save())
+    RooFit.NumCPU(8), RooFit.Save())
 
 # print polar (cartesian) amplitudes if 'ampsType' is cartesian (polar)
 if config.value('ampsType') == 'transCartesian'\

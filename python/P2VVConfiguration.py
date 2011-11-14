@@ -437,9 +437,9 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       # S-wave amplitude from first LHCb results
       A0Sq    = 0.556
       AparSq  = 0.211
-      AparPh  = -(-2.93)
+      AparPh  = -2.93
       AperpSq = 0.233
-      AperpPh = pi - 2.91
+      AperpPh = 2.91
       ASSq    = 0.05
       ASPh    = 2.2
 
@@ -465,7 +465,7 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
       config.addSetting('ampsType', P2VVSetting('ampsType',
         'type of amplitudes', ampsType))
 
-      if ampsType == 'transCartesian' or ampsType == 'transPolar':
+      if ampsType != 'coefficients' :
         if ampsType == 'transPolar' :
           # polar transversity amplitudes
           config.addSetting('A0Mag2', RooRealSetting('A0Mag2',
@@ -505,7 +505,86 @@ def getP2VVConfig(mode = '', options = [], createWS = True) :
             config.addSetting('ImAS', RooFormSetting('ImAS',
                 'Im(A_S)', 'sqrt(@0) * sin(@1)', ['ASMag2', 'ASPh']))
 
-        elif ampsType == 'transCartesian' :
+        elif ampsType == 'transDaan' :
+          # Daan's transversity amplitudes
+          config.addSetting('A0Mag2', RooRealSetting('A0Mag2',
+              '|A0|^2', 'par', 1., '', ''))
+          config.addSetting('A0Ph', RooRealSetting('delta0',
+              'delta_0', 'par', 0., '', ''))
+          config.addSetting('AparMag2', RooRealSetting('AparMag2',
+              '|A_par|^2', 'par', AparSq / A0Sq, 0., 1.))
+          config.addSetting('AparPh', RooRealSetting('deltaPar',
+              'delta_par', 'par', AparPh, -2. * pi, 2. * pi))
+          config.addSetting('AperpMag2', RooRealSetting('AperpMag2',
+              '|A_perp|^2', 'par', AperpSq / A0Sq, 0., 1.))
+          config.addSetting('AperpPh', RooRealSetting('deltaPerp',
+              'delta_perp', 'par', AperpPh, -2. * pi, 2. * pi))
+          if KSWave[:7] == 'include' :
+            config.addSetting('ReAS', RooRealSetting('ReAS',
+                'Re(A_S)', 'par', ReAS / ReA0, -1., 1.))
+            config.addSetting('ImAS', RooRealSetting('ImAS',
+                'Im(A_S)', 'par', ImAS / ReA0, -1., 1.))
+
+          # construct cartesian amplitudes with Daan's parameters
+          config.addSetting('ReA0', RooFormSetting('ReA0',
+              'Re(A_0)',    'sqrt(@0) * cos(@1)', ['A0Mag2', 'A0Ph']))
+          config.addSetting('ImA0', RooFormSetting('ImA0',
+              'Im(A_0)',    'sqrt(@0) * sin(@1)', ['A0Mag2', 'A0Ph']))
+          config.addSetting('ReApar', RooFormSetting('ReApar',
+              'Re(A_par)',  'sqrt(@0) * cos(@1)', ['AparMag2', 'AparPh']))
+          config.addSetting('ImApar', RooFormSetting('ImApar',
+              'Im(A_par)',  'sqrt(@0) * sin(@1)', ['AparMag2', 'AparPh']))
+          config.addSetting('ReAperp', RooFormSetting('ReAperp',
+              'Re(A_perp)', 'sqrt(@0) * cos(@1)', ['AperpMag2', 'AperpPh']))
+          config.addSetting('ImAperp', RooFormSetting('ImAperp',
+              'Im(A_perp)', 'sqrt(@0) * sin(@1)', ['AperpMag2', 'AperpPh']))
+
+        elif ampsType == 'transBank' :
+          # bank transversity amplitudes
+          config.addSetting('A0Mag2', RooRealSetting('A0Mag2',
+              '|A0|^2', 'par', 1., '', ''))
+          config.addSetting('A0Ph', RooRealSetting('delta0',
+              'delta_0', 'par', 0., '', ''))
+          config.addSetting('ReAparRed', RooRealSetting('ReAparRed',
+              'Re(A_par^red)', 'par', ReApar / ReA0, -1., 1.))
+          config.addSetting('ImAparRed', RooRealSetting('ImAparRed',
+              'Im(A_par^red)', 'par', ImApar / ReA0, -1., 1.))
+          config.addSetting('AperpMag2', RooRealSetting('AperpMag2',
+              '|A_perp|^2', 'par', AperpSq / A0Sq, 0., 1.))
+          config.addSetting('AperpPh', RooRealSetting('deltaPerp',
+              'delta_perp', 'par', AperpPh, -2. * pi, 2. * pi))
+          if KSWave[:7] == 'include' :
+            config.addSetting('ReASRed', RooRealSetting('ReASRed',
+                'Re(A_S^red)', 'par',
+                (ReAperp * ReAS + ImAperp * ImAS) / AperpSq, -1., 1.))
+            config.addSetting('ImASRed', RooRealSetting('ImASRed',
+                'Im(A_S^red)', 'par',
+                (ReAperp * ImAS - ImAperp * ReAS) / AperpSq, -1., 1.))
+
+          # construct cartesian amplitudes with bank parameters
+          config.addSetting('ReA0', RooFormSetting('ReA0', 'Re(A_0)',
+              'sqrt(@0) * cos(@1)', ['A0Mag2', 'A0Ph']))
+          config.addSetting('ImA0', RooFormSetting('ImA0', 'Im(A_0)',
+              'sqrt(@0) * sin(@1)', ['A0Mag2', 'A0Ph']))
+          config.addSetting('ReApar', RooFormSetting('ReApar', 'Re(A_par)',
+              'sqrt(@0) * (cos(@1) * @2 - sin(@1) * @3)',
+              ['A0Mag2', 'A0Ph', 'ReAparRed', 'ImAparRed']))
+          config.addSetting('ImApar', RooFormSetting('ImApar', 'Im(A_par)',
+              'sqrt(@0) * (cos(@1) * @3 + sin(@1) * @2)',
+              ['A0Mag2', 'A0Ph', 'ReAparRed', 'ImAparRed']))
+          config.addSetting('ReAperp', RooFormSetting('ReAperp',
+              'Re(A_perp)', 'sqrt(@0) * cos(@1)', ['AperpMag2', 'AperpPh']))
+          config.addSetting('ImAperp', RooFormSetting('ImAperp',
+              'Im(A_perp)', 'sqrt(@0) * sin(@1)', ['AperpMag2', 'AperpPh']))
+          if KSWave[:7] == 'include' :
+            config.addSetting('ReAS', RooFormSetting('ReAS', 'Re(A_S)',
+                'sqrt(@0) * (cos(@1) * @2 - sin(@1) * @3)',
+                ['AperpMag2', 'AperpPh', 'ReASRed', 'ImASRed']))
+            config.addSetting('ImAS', RooFormSetting('ImAS', 'Im(A_S)',
+                'sqrt(@0) * (cos(@1) * @3 + sin(@1) * @2)',
+                ['AperpMag2', 'AperpPh', 'ReASRed', 'ImASRed']))
+
+        else :
           # cartesian transversity amplitudes
           config.addSetting('ReA0', RooRealSetting('ReA0',
               'Re(A_0)', 'par', 1., '', ''))

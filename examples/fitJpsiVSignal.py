@@ -121,6 +121,24 @@ elif config.value('ampsType') == 'transCartesian' :
   if config.value('KSWave')[:7] == 'include' :
     config['ReAS'].set(val = sqrt(ASMag2 / A0Mag2) * cos(ASPh))
     config['ImAS'].set(val = sqrt(ASMag2 / A0Mag2) * sin(ASPh))
+elif config.value('ampsType') == 'transDaan' :
+  # Re(A_0) = 1 :: Im(A_0) = 0
+  config['AparMag2'].set(val = AparMag2 / A0Mag2)
+  config['AperpMag2'].set(val = AperpMag2 / A0Mag2)
+  config['AparPh'].set(val = AparPh)
+  config['AperpPh'].set(val = AperpPh)
+  if config.value('KSWave')[:7] == 'include' :
+    config['ReAS'].set(val = sqrt(ASMag2 / A0Mag2) * cos(ASPh))
+    config['ImAS'].set(val = sqrt(ASMag2 / A0Mag2) * sin(ASPh))
+elif config.value('ampsType') == 'transBank' :
+  # Re(A_0) = 1 :: Im(A_0) = 0
+  config['AperpMag2'].set(val = AperpMag2 / A0Mag2)
+  config['AperpPh'].set(val = AperpPh)
+  config['ReAparRed'].set(val = sqrt(AparMag2 / A0Mag2) * cos(AparPh))
+  config['ImAparRed'].set(val = sqrt(AparMag2 / A0Mag2) * sin(AparPh))
+  if config.value('KSWave')[:7] == 'include' :
+    config['ReASRed'].set(val = sqrt(ASMag2 / AperpMag2) * cos(ASPh - AperpPh))
+    config['ImASRed'].set(val = sqrt(ASMag2 / AperpMag2) * sin(ASPh - AperpPh))
 
 config['Gamma'].set(val = Gamma)
 config['dGamma'].set(val = dGamma)

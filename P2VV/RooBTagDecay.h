@@ -16,8 +16,6 @@
 #ifndef ROO_B_TAG_DECAY
 #define ROO_B_TAG_DECAY
 
-#include <map>
-
 #include "RooAbsAnaConvPdf.h"
 #include "RooRealProxy.h"
 #include "RooCategoryProxy.h"
@@ -99,6 +97,9 @@ public:
       Bool_t staticInitOK = kTRUE) const;
   void generateEvent(Int_t code);
 
+  Int_t getTagCatPosition(Int_t tagCatIndex) const;
+  Int_t getTagCatIndex(Int_t tagCatPosition) const;
+
 protected:
   Bool_t checkVarDep(const RooAbsArg& var, Bool_t warn = kFALSE,
       Bool_t onlyTagPars = kFALSE) const;
@@ -107,6 +108,8 @@ protected:
   void initTaggingCats(RooArgList& tagCatCoefs, RooArgList& dilutions,
       RooArgList& ADilWTags, RooArgList& avgCEvens, RooArgList& avgCOdds);
   void declareBases();
+
+  void initTagCatMaps() const;
 
   RooRealProxy     _time;
   RooCategoryProxy _iTag;
@@ -117,21 +120,22 @@ protected:
   RooRealProxy _dGamma;
   RooRealProxy _dm;
 
-  RooListProxy           _dilutions;
-  RooListProxy           _ADilWTags;
-  RooRealProxy           _ANorm;
-  RooRealProxy           _avgCEvenSum;
-  RooRealProxy           _avgCOddSum;
-  RooListProxy           _avgCEvens;
-  RooListProxy           _avgCOdds;
-  RooListProxy           _tagCatCoefs;
-  std::map<Int_t, Int_t> _tagCatPositions;
-  std::map<Int_t, Int_t> _tagCatIndices;
+  RooListProxy _dilutions;
+  RooListProxy _ADilWTags;
+  RooRealProxy _ANorm;
+  RooRealProxy _avgCEvenSum;
+  RooRealProxy _avgCOddSum;
+  RooListProxy _avgCEvens;
+  RooListProxy _avgCOdds;
+  RooListProxy _tagCatCoefs;
 
   RooRealProxy _coshCoef;
   RooRealProxy _sinhCoef;
   RooRealProxy _cosCoef;
   RooRealProxy _sinCoef;
+
+  mutable std::map<Int_t, Int_t> _tagCatPositions; //!
+  mutable std::map<Int_t, Int_t> _tagCatIndices;   //!
 
   Int_t _coshBasis;
   Int_t _sinhBasis;
