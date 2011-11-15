@@ -135,7 +135,7 @@ class Category (RooObject):
             # Create the category and extract states into storage
             self._declare("%s[%s]"%(name,states))
             self._init(name,'RooCategory')
-            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
+            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         else:
             self._init(name,'RooCategory')
             # Make sure we are the same as last time
@@ -162,7 +162,7 @@ class SuperCategory( Category ) :
             from ROOT import RooSuperCategory
             self.ws()._objects[ name ] = self.ws().put( RooSuperCategory(name,name,args) )
             self._init(name,'RooSuperCategory')
-            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
+            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
             self._init(name,'RooSuperCategory')
@@ -173,28 +173,27 @@ class SuperCategory( Category ) :
                 if k in ['Index', 'Label']: continue
                 assert v == self[k]
 
-#class MappedCategory( Category ) :
-#    def __init__(self,name,mapper,incat,**kwargs):
-#        if name not in self.ws():
-#            # construct factory string on the fly: no factory string for MappedCategory???
-#            self.ws()._objects[ name ] = self.ws().put( RooMappedcategory(name,name,incat) )
-#            self._init(name,'RooMappedCategory')
-#            for k,v in mapper.iteritems() : self.ws()._objects[ name ].map(k,v)
-#            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
-#            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-#        else:
-#            self._init(name,'RooMappedCategory')
-#            # Make sure we are the same as last time
-#            for k, v in kwargs.iteritems():
-#                # Skip these to avoid failure in case we were loaded from a
-#                # DataSet in the mean time
-#                if k in ['Index', 'Label']: continue
-#                assert v == self[k]
-#        
-#class DataSet( RooObject ) :
-#    def __init__(self, name, tree, obs, cuts) :
-#        pass   
-#
+class MappedCategory( Category ) :
+    def __init__(self,name,cat,mapper,**kwargs):
+        if name not in self.ws():
+            # construct factory string on the fly: no factory string for SuperCategory???
+            from ROOT import RooMappedCategory
+            cast = lambda i : i._target_() if hasattr(i,'_target_') else i
+            obj =  RooMappedCategory(name,name,cast(cat) )
+            for k,vs in mapper.iteritems() : 
+                for v in vs : obj.map( v, k )
+            self.ws()._objects[ name ] = self.ws().put( obj )
+            self._init(name,'RooMappedCategory')
+            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(name,'RooMappedCategory')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                if k in ['Index', 'Label']: continue
+                assert v == self[k]
 
 
 class Product(RooObject) :
