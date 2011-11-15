@@ -13,6 +13,12 @@ class RooObject(object) :
     _ws = None
     _dict = None
 
+    def __init__(self,workspace = None) :
+        if workspace :
+            from ROOT import RooWorkspace
+            if type(workspace) != RooWorkspace : workspace = RooWorkspace(workspace)
+            self.setWorkspace( workspace )
+
     def ws(self) : 
         if not RooObject._ws : raise RuntimeError('No workspace defined!')
         return RooObject._ws
