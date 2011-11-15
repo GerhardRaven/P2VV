@@ -1,7 +1,5 @@
-
 from RooFitWrappers import *
-ws = RooObject ()
-ws.setWorkspace( RooWorkspace('ws') )
+ws = RooObject ( workspace = 'ws' )
 x = Category('mystate', States = [ 'aap','noot','mies' ] )
 y = Category('mystate2', States = [ 'x','y' ] )
 z = SuperCategory('sc',[x,y])
