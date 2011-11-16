@@ -12,6 +12,11 @@ def __check_exists_already__( self ) :
 class RooObject(object) :
     _ws = None
     _dict = None
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
 
     def __init__(self,workspace = None) :
         if workspace :
@@ -106,6 +111,11 @@ class RooObject(object) :
     def mappings(self):
         return self.ws()._mappings
 
+    def __setitem__(self,k,v):
+        return RooObject._setters[k](self, v)
+    def __getitem__(self,k):
+        return RooObject._getters[k](self)
+
 # TODO: make this more of a 'borg' by overloading __new__ instead of __init__
 #       otherwise properties of the proxy not in the 'target' are not shared
 #       across multiple instances which all defer to the same 'target'
@@ -115,16 +125,19 @@ class RooObject(object) :
 ##       elegant?
 
 class Category (RooObject): 
-    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
-               ,'Index'      : lambda s,v : s.setIndex(v)
-               ,'Label'      : lambda s,v : s.setLabel(v)
-               }
-    _getters = {'Observable' : lambda s : s.observable() 
-               ,'Index'      : lambda s : s.getIndex() 
-               ,'Label'      : lambda s : s.getLabel()
-               ,'Name'       : lambda s : s.GetName()
-               ,'States'     : lambda s : s.states()
-               }
+    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
+    from copy import copy
+    _getters = copy(RooObject._getters)
+    _getters.update( {'Observable' : lambda s : s.observable() 
+                     ,'Index'      : lambda s : s.getIndex() 
+                     ,'Label'      : lambda s : s.getLabel()
+                     ,'States'     : lambda s : s.states()
+                     } )
+    _setters = copy(RooObject._setters)
+    _setters.update( {'Observable' : lambda s,v : s.setObservable(v) 
+                     ,'Index'      : lambda s,v : s.setIndex(v)
+                     ,'Label'      : lambda s,v : s.setLabel(v)
+                     } )
 
     def __init__(self,name,**kwargs):
         if name not in self.ws():
@@ -203,11 +216,6 @@ class MappedCategory( Category ) :
 
 
 class Product(RooObject) :
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
     def __init__(self,name,fargs,**kwargs) :
         if name not in self.ws():
             # construct factory string on the fly...
@@ -217,18 +225,8 @@ class Product(RooObject) :
         else:
             raise RunTimeError( 'Code Path Not Yet Verified'  )
             
-    def __setitem__(self,k,v):
-        return Product._setters[k](self, v)
-    def __getitem__(self,k):
-        return Product._getters[k](self)
-
 
 class Addition(RooObject) :
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
     def __init__(self,name,fargs,**kwargs) :
         if name not in self.ws():
             # construct factory string on the fly...
@@ -237,23 +235,12 @@ class Addition(RooObject) :
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
             raise RunTimeError( 'Code Path Not Yet Verified'  )
-            
-    def __setitem__(self,k,v):
-        return Addition._setters[k](self, v)
-    def __getitem__(self,k):
-        return Addition._getters[k](self)
-
 
 class FormulaVar (RooObject): 
     # TODO: move __setitem__ and __getitem__ into RooObject
     #       maybe add a search order like reverse inheritance to mimic 'virtual functions'??
     #       could the TODO below be implemented that way?? (probably yes ;-)
     # TODO: move common things like Name and Title in RooObject...
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
     def __init__(self,name,formula,fargs,**kwargs) :
         # construct factory string on the fly...
         spec = "expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) 
@@ -263,20 +250,11 @@ class FormulaVar (RooObject):
         self._init(name,'RooFormulaVar')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
-    def __setitem__(self,k,v):
-        return FormulaVar._setters[k](self, v)
-    def __getitem__(self,k):
-        return FormulaVar._getters[k](self)
-
 class ConstVar (RooObject): 
-    # WARNING: multiple instances don't share proxy state at this time...
-    # TODO: move common things like Name and Title in RooObject...
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Value'      : lambda s : s.getVal()
-               ,'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
+    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
+    from copy import copy
+    _getters = copy(RooObject._getters)
+    _getters.update( {'Value'      : lambda s : s.getVal() } )
 
     def __init__(self,name,**kwargs):
         if name not in self.ws():
@@ -292,17 +270,10 @@ class ConstVar (RooObject):
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
                 assert v == self[k]
-            
-    def __setitem__(self,k,v):
-        return ConstVar._setters[k](self, v)
     def __getitem__(self,k):
         return ConstVar._getters[k](self)
 
 class P2VVAngleBasis (RooObject) : 
-    _setters = {}
-    _getters = { 'Name'       : lambda s : s.GetName()
-               , 'Title'      : lambda s : s.GetTitle()
-               }
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
     def __init__(self, angles, i,j,k,l,c) :
         # compute name, given angles,i,j,k,l,c!
@@ -318,12 +289,6 @@ class P2VVAngleBasis (RooObject) :
         if not present or not match : self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
             
-    def __setitem__(self,k,v):
-        return P2VVAngleBasis._setters[k](self, v)
-    def __getitem__(self,k):
-        return P2VVAngleBasis._getters[k](self)
-
-
 class EffMoment :
     from ROOT import gSystem, RooArgSet
     gSystem.Load('libP2VV.so')
@@ -354,21 +319,24 @@ def computeMoments(data, moments) :
 
 
 class RealVar (RooObject): 
-    # WARNING: multiple instances don't share proxy state at this time...
-    # TODO: move common things like Name and Title in RooObject...
-    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
-               ,'Unit'       : lambda s,v : s.setUnit(v) 
-               ,'Value'      : lambda s,v : s.setVal(v)
-               ,'MinMax'     : lambda s,v : s.setRange(v)
-               ,'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Observable' : lambda s : s.observable() 
-               ,'Unit'       : lambda s : s.getUnit() 
-               ,'Value'      : lambda s : s.getVal()
-               ,'MinMax'     : lambda s : s.getRange()
-               ,'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
+    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
+    from copy import copy
+    _getters = copy(RooObject._getters)
+    _getters.update( {'Observable' : lambda s : s.observable() 
+                     ,'Unit'       : lambda s : s.getUnit() 
+                     ,'Value'      : lambda s : s.getVal()
+                     ,'MinMax'     : lambda s : s.getRange()
+                     } )
+    _setters = copy(RooObject._setters)
+    _setters.update( {'Observable' : lambda s,v : s.setObservable(v) 
+                     ,'Unit'       : lambda s,v : s.setUnit(v) 
+                     ,'Value'      : lambda s,v : s.setVal(v)
+                     ,'MinMax'     : lambda s,v : s.setRange(v)
+                     } )
+    def __setitem__(self,k,v):
+        return RealVar._setters[k](self, v)
+    def __getitem__(self,k):
+        return RealVar._getters[k](self)
 
     def __init__(self,name,**kwargs):
         # TODO: add blinding support to kwargs
@@ -402,10 +370,6 @@ class RealVar (RooObject):
                     continue
                 assert v == self[k]
             
-    def __setitem__(self,k,v):
-        return RealVar._setters[k](self, v)
-    def __getitem__(self,k):
-        return RealVar._getters[k](self)
     # overrule RooRealVar.setRange
     def setRange(self, v):
         (mi,ma) = v
@@ -418,12 +382,14 @@ class RealVar (RooObject):
 ##TODO, factor out common code in Pdf and ResolutionModel
 
 class Pdf(RooObject):
-    _getters = {'Observables' : lambda s : s._get('Observables') 
-               ,'Type'        : lambda s : s._get('Type')
-               ,'Parameters'  : lambda s : s._get('Parameters')
-               ,'Name'        : lambda s : s._get('Name')
-               ,'Title'       : lambda s : s.GetTitle()
-               }
+    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
+    from copy import copy
+    _getters = copy(RooObject._getters)
+    _getters.update( {'Observables' : lambda s : s._get('Observables') 
+                     ,'Type'        : lambda s : s._get('Type')
+                     ,'Parameters'  : lambda s : s._get('Parameters')
+                     ,'Name'        : lambda s : s._get('Name')
+                     } )
 
     ## TODO: define operators
     def __init__(self, name, **kwargs):
@@ -641,11 +607,6 @@ class ResolutionModel(RooObject):
         
 
 class AddModel(ResolutionModel) :
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
     def __init__(self,name,models,fractions,**kwargs) :
         if name not in self.ws():
             # construct factory string on the fly...
@@ -656,11 +617,6 @@ class AddModel(ResolutionModel) :
         else:
             raise RunTimeError( 'Code Path Not Yet Verified'  )
             
-    def __setitem__(self,k,v):
-        return AddModel._setters[k](self, v)
-    def __getitem__(self,k):
-        return AddModel._getters[k](self)
-
 
 
 class Component(object):
