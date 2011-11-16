@@ -1,5 +1,4 @@
 from RooFitDecorators import *
-from copy import copy
 
 
 def __check_req_kw__( name, kwargs ) :
@@ -134,18 +133,15 @@ class RooObject(object) :
 
 class Category (RooObject): 
     # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
-    from copy import copy
-    _getters = copy(RooObject._getters)
-    _getters.update( {'Observable' : lambda s : s.observable() 
-                     ,'Index'      : lambda s : s.getIndex() 
-                     ,'Label'      : lambda s : s.getLabel()
-                     ,'States'     : lambda s : s.states()
-                     } )
-    _setters = copy(RooObject._setters)
-    _setters.update( {'Observable' : lambda s,v : s.setObservable(v) 
-                     ,'Index'      : lambda s,v : s.setIndex(v)
-                     ,'Label'      : lambda s,v : s.setLabel(v)
-                     } )
+    _getters = {'Observable' : lambda s : s.observable() 
+               ,'Index'      : lambda s : s.getIndex() 
+               ,'Label'      : lambda s : s.getLabel()
+               ,'States'     : lambda s : s.states()
+               } 
+    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
+               ,'Index'      : lambda s,v : s.setIndex(v)
+               ,'Label'      : lambda s,v : s.setLabel(v)
+               }
 
     def __init__(self,name,**kwargs):
         if name not in self.ws():
@@ -256,9 +252,7 @@ class FormulaVar (RooObject):
             
 class ConstVar (RooObject): 
     # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
-    from copy import copy
-    _getters = copy(RooObject._getters)
-    _getters.update( {'Value'      : lambda s : s.getVal() } )
+    _getters = {'Value'      : lambda s : s.getVal() } 
 
     def __init__(self,name,**kwargs):
         if name not in self.ws():
