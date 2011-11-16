@@ -3,13 +3,20 @@ class CPParam :
     def __init__(self,**kwargs) :
         for i in 'CDS' : setattr(self,i,kwargs.pop(i))
 
+class LambdaCarth_CPParam( CPParam ) :
+    def __init__(self, **kwargs) :
+        from RooFitWrappers import FormulaVar
+        CPParam.__init__(self, C = FormulaVar('C', '(1.-@0*@0-@1*@1) / (1. + @0*@0 + @1*@1)', [ kwargs['ReLambda'], kwargs['ImLambda'] ] )
+                             , D = FormulaVar('D', '2. * @0 / (1.+@0*@0+@1*@1)',              [ kwargs['ReLambda'], kwargs['ImLambda'] ] )
+                             , S = FormulaVar('S', '2. * @1 / (1.+@0*@0+@1*@1)',              [ kwargs['ReLambda'], kwargs['ImLambda'] ] )
+                        )
 
 class LambdaSqArg_CPParam( CPParam ) :
     def __init__(self, **kwargs) :
         from RooFitWrappers import FormulaVar
-        CPParam.__init__(self, C = FormulaVar('C', '(1.-@0)/(1.+@0)',                   [ kwargs['lambdaSq']              ] )
-                             , D = FormulaVar('D', ' 2 * sqrt(@0) * cos(@1) / (1.+@0)', [ kwargs['lambdaSq'], kwargs['arg'] ] )
-                             , S = FormulaVar('S', '-2 * sqrt(@0) * sin(@1) / (1.+@0)', [ kwargs['lambdaSq'], kwargs['arg'] ] )
+        CPParam.__init__(self, C = FormulaVar('C', '(1.-@0)/(1.+@0)',                  [ kwargs['lambdaSq']              ] )
+                             , D = FormulaVar('D', '2 * sqrt(@0) * cos(@1) / (1.+@0)', [ kwargs['lambdaSq'], kwargs['lambdaArg'] ] )
+                             , S = FormulaVar('S', '2 * sqrt(@0) * sin(@1) / (1.+@0)', [ kwargs['lambdaSq'], kwargs['lambdaArg'] ] )
                         )
 
 # construct amplitudes with carthesian parameters
