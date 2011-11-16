@@ -18,44 +18,12 @@
 // END_HTML
 //
 
-#if 0
-#include <fenv.h>
-#include <iostream>
-
-static int
-feenableexcept (unsigned int excepts)
-{
-  static fenv_t fenv;
-  unsigned int new_excepts = excepts & FE_ALL_EXCEPT,
-               old_excepts;  // previous masks
-
-  if ( fegetenv (&fenv) ) return -1;
-  old_excepts = fenv.__control & FE_ALL_EXCEPT;
-
-  // unmask
-  fenv.__control &= ~new_excepts;
-  // fenv.__mxcsr   &= ~(new_excepts << 7);
-
-  std::cout  << "calling fesetenv" << std::endl;
-  return ( fesetenv (&fenv) ? -1 : old_excepts );
-}
-
-
-int enable()  {
-          std::cout << "enabling FPE" << std::endl;
-          feclearexcept(FE_ALL_EXCEPT); // remove any 'stale' exceptions before switching on trapping
-                               // otherwise we immediately trigger an exception...
-          std::cout << "enabling FPE II" << std::endl;
-          return feenableexcept(FE_ALL_EXCEPT);
-}
-//static int enableFPE = enable();
-
-#endif
-
 #include "RooFit.h"
 #include "Riostream.h"
+#include <string>
 #include <sstream>
 #include <memory>
+#include <algorithm>
 
 #include "RooP2VVAngleBasis.h"
 #include "RooLegendre.h"
@@ -79,15 +47,22 @@ RooP2VVAngleBasis::RooP2VVAngleBasis( const char *name, const char *title
  , _i(i), _j(j), _l(l), _m(m)
  , _prod(false)
 {
+  // TODO: can we try to share these amongst all RooP2VVAngleBasis which use the same cpsi,chteta,phi???
+  // actually, just make sure the names are 'shared' if two objects are the same (equivalent), then 
+  // rely on the workspace conflict resolution to make them shared when adding to the workspace and
+  // retrieving it...
   std::stringstream P,Y;
-  P << name << "_P_" << i << ( j<0 ? "_m" : "_" )  << (j<0?-j:j) ;
+  P << name << "_P" << i << ( j<0 ? "m" : "" )  << (j<0?-j:j) ;
   _compRSet.addOwned(*new RooLegendre(   P.str().c_str(), P.str().c_str(), cpsi,i,j) );
-  Y << name << "_Y_" << l << ( m<0 ? "_m" : "_" )  << (m<0?-m:m) ;
+  Y << name << "_Y" << l << ( m<0 ? "m" : "" )  << (m<0?-m:m) ;
   _compRSet.addOwned(*new RooSpHarmonic( Y.str().c_str(), Y.str().c_str(), ctheta,phi,l,m) );
   if (c!=1) {
     std::stringstream C;
-    C << name << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c ) ;
-    _compRSet.addOwned(*new RooConstVar( C.str().c_str(), C.str().c_str(), c ) );
+    C << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c );
+    std::string strC = C.str();
+    replace(strC.begin(), strC.end(), '.', 'p');
+    strC.insert(0, name);
+    _compRSet.addOwned(*new RooConstVar( strC.c_str(), strC.c_str(), c ) );
   }
 }
 
@@ -103,15 +78,18 @@ RooP2VVAngleBasis::RooP2VVAngleBasis( const char *name, const char *title
 {
   if (c!=1) {
     std::stringstream C;
-    C << name << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c ) ;
-    _compRSet.addOwned(*new RooConstVar( C.str().c_str(), C.str().c_str(), c ) );
+    C << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c );
+    std::string strC = C.str();
+    replace(strC.begin(), strC.end(), '.', 'p');
+    strC.insert(0, name);
+    _compRSet.addOwned(*new RooConstVar( strC.c_str(), strC.c_str(), c ) );
   }
   std::stringstream P,Y;
-  P << name << "_P_" << i1 << ( j1<0 ? "_m" : "_" )  << (j1<0?-j1:j1) 
-            <<  "_"  << i2 << ( j2<0 ? "_m" : "_" )  << (j2<0?-j2:j2) ;
+  P << name << "_P" << i1 << ( j1<0 ? "m" : "" )  << (j1<0?-j1:j1) 
+            << i2 << ( j2<0 ? "m" : "" )  << (j2<0?-j2:j2) ;
   _compRSet.addOwned(*new RooLegendre(   P.str().c_str(), P.str().c_str(), cpsi,i1,j1, i2, j2) );
-  Y << name << "_Y_" << l1 << ( m1<0 ? "_m" : "_" )  << (m1<0?-m1:m1) 
-            <<  "_"  << l2 << ( m2<0 ? "_m" : "_" )  << (m2<0?-m2:m2) ;
+  Y << name << "_Y" << l1 << ( m1<0 ? "m" : "" )  << (m1<0?-m1:m1) 
+            << l2 << ( m2<0 ? "m" : "" )  << (m2<0?-m2:m2) ;
   _compRSet.addOwned(*new RooSpHarmonic( Y.str().c_str(), Y.str().c_str(), ctheta,phi,l1,m1,l2,m2) );
 }
 //_____________________________________________________________________________
@@ -125,9 +103,13 @@ RooP2VVAngleBasis::RooP2VVAngleBasis(const RooP2VVAngleBasis& other, const char*
 
 RooP2VVAngleBasis* 
 RooP2VVAngleBasis::createProduct(Int_t i, Int_t j, Int_t l, Int_t m, Double_t c) const {
-      std::stringstream name; name << this->GetName() << "_x_" << i << "_" << j 
-                                                      << "_" << l << ( m<0 ? "_m":"_" ) << (m<0?-m:m) 
-                                                      << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c ) ;
+      std::stringstream name;
+      name << "_x_" << i << j << l << ( m<0 ? "m":"" ) << (m<0?-m:m)
+           << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c );
+      std::string strName = name.str();
+      replace(strName.begin(), strName.end(), '.', 'p');
+      strName.insert(0, this->GetName());
+
       // grab first function, dynamic_cast to RooLegendre, grab its observable...
       // yes, really bad hacking...
       _compRIter->Reset();
@@ -148,7 +130,7 @@ RooP2VVAngleBasis::createProduct(Int_t i, Int_t j, Int_t l, Int_t m, Double_t c)
       RooAbsReal *phi = dynamic_cast<RooAbsReal*>(iter->Next());
       assert(phi!=0);
 
-      return (!_prod) ? new  RooP2VVAngleBasis( name.str().c_str(), name.str().c_str()
+      return (!_prod) ? new  RooP2VVAngleBasis( strName.c_str(), strName.c_str()
                                               , *cpsi, *ctheta, *phi
                                               , _i, _j, _l, _m
                                               ,  i,  j,  l,  m

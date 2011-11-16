@@ -1,24 +1,19 @@
 from ROOT import *
 gSystem.Load("libP2VV")
-from math import sqrt,pi
 
 from RooFitDecorators import *
-import rootStyle
-from ModelBuilders import _buildAngularFunction
-#from ROOT import (gROOT,gStyle,TStyle)
-myStyle = rootStyle.plainstyle()
-gROOT.SetStyle(myStyle.GetName())
-gROOT.ForceStyle()
-gStyle.UseCurrentStyle()
 
-from ModelBuilders import *
+#############
+### Flags ###
+#############
+acc= True
+#Bkg is double exponential: test = True: (eff*ml+eff*ll), test = False: eff*(ml+ll)
+test=False
 
 ##############################
 ### Create ws, observables ###
 ##############################
-
 ws = RooWorkspace('ws')
-
 ws.factory("t[0.3,14.]")
 
 ##############################
@@ -30,38 +25,48 @@ effdatahist = RooDataHist("effdatahist","effdatahist",RooArgList(ws['t']),effhis
 ws.put(effdatahist)
 ws.factory("HistPdf::effpdf(t,effdatahist)")
 
-#################
-### PDF's     ###
-#################
+#############
+### PDF's ###
+#############
 #Resolution Model
 ws.factory("GaussModel::tres(t,tres_mean[0.0],tres_sigma[0.05])")
 
+#SigPDF
 ws.factory("Decay::t_sig(t,tau[1.4],tres,SingleSided)")
 
+#Biased SigPDF
+ws.factory("EffHistProd::t_sig_B(t_sig,effpdf)")
+
 #BKG time
-#IT'S HERE!!!!!! Single no ERROR, Double does have ERROR!
-
-ws.factory("RooDecay::t_bkg(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
-
-#ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
-#ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,0.5,2.5],tres,SingleSided)")
-#ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
+if test:
+    ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
+    ws.factory("EffHistProd::ml_B(ml,effpdf)")
+    ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,0.5,2.5],tres,SingleSided)")
+    ws.factory("EffHistProd::ll_B(ll,effpdf)")
+    #BkgPdf
+    ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
+    #Biased BkgPdf
+    ws.factory("SUM::t_bkg_B(t_bkg_fll[0.3,0.,1.]*ll_B,ml_B)")
+else:
+    ws.factory("RooDecay::ml(t,t_bkg_ml_tau[0.21,0.01,0.5],tres,SingleSided)")
+    ws.factory("RooDecay::ll(t,t_bkg_ll_tau[1.92,0.5,2.5],tres,SingleSided)")
+    #BkgPdf
+    ws.factory("SUM::t_bkg(t_bkg_fll[0.3,0.,1.]*ll,ml)")
+    #Biased BkgPDF
+    ws.factory("EffHistProd::t_bkg_B(t_bkg,effpdf)")
 
 ws.factory("SUM::pdf_ext( Nsig[1186]*t_sig,Nbkg[568]*t_bkg)")
 
-ws.factory("EffHistProd::acc_sig_pdf(t_sig,effpdf)")
-ws.factory("EffHistProd::acc_bkg_pdf(t_bkg,effpdf)")
-ws.factory("SUM::accpdf_ext( Nsig*acc_sig_pdf,Nbkg*acc_bkg_pdf)")
+ws.factory("SUM::pdf_ext_B( Nsig*t_sig_B,Nbkg*t_bkg_B)")
 
 #########################
 ### What do you want? ###
 #########################
-acc= True
 
 if acc:
-    pdf = ws.pdf('accpdf_ext')
-    signame = 'acc_sig_pdf'
-    bkgname = 'acc_bkg_pdf'
+    pdf = ws.pdf('pdf_ext_B')
+    signame = 't_sig_B'
+    bkgname = 't_bkg_B'
 else:
     pdf = ws.pdf('pdf_ext')
     signame = 't_sig'
@@ -70,7 +75,7 @@ else:
 data = pdf.generate(RooArgSet(ws.var('t')),0)
 
 ###############################################################
-### To see the fit problem for the bkg component of the pdf ###
+### To see the plot problem for the bkg component of the pdf ###
 ###############################################################
 
 lw = RooCmdArg(RooFit.LineWidth(2))
@@ -86,8 +91,6 @@ data.plotOn(_tb,RooFit.MarkerSize(0.5),xes)
 pdf.plotOn(_tb,lw)
 pdf.plotOn(_tb,RooFit.Components(signame),RooFit.LineColor(sigcolor),RooFit.LineStyle(kDashed),lw)
 pdf.plotOn(_tb,RooFit.Components(bkgname),RooFit.LineColor(bkgcolor),RooFit.LineStyle(kDashed),lw)
-#_tb.SetMinimum(0.1) 
-#_tb.SetTitle("")
 _tb.Draw()
 testCanvas.Update()
 ################################################################

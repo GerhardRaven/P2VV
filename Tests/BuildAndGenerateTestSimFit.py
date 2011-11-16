@@ -108,7 +108,8 @@ ws.factory("AddModel::tres({tres_3,tres_2,tres_1},{tres_f3[0.0017],tres_f2[0.165
 #ws.factory("GaussModel::tres(t,tres_mean[0.0],tres_sigma[0.05])")
 
 # For determination of efficiency from MC, put wtag to 0, later integrate out (or set to 0.5 as I used to do before). Does that imply rebuilding the JpsiPhi pdf?
-ws.factory("tagomega[0.,0.,0.5]")
+#ws.factory("tagomega[0.,0.,0.5]")
+ws.factory("tagomega[0.33]")
 ws.factory("expr::wtag('tagomega',tagomega)")
 
 #Build the signal PDF
@@ -131,7 +132,7 @@ ws.put(fitcat)
 ##############################
 ws.factory("expr::effshape('1/(1+(a*t)**(-c))',t,a[1.45],c[2.37])")
 #ws.factory("expr::effshape('(1+b*t)/(1+(a*t)**(-c))',t,a[1.45],b[-0.0157],c[2.37])")
-effhist = ws['effshape'].createHistogram('effhist',ws['t'],RooFit.Binning(200,ws['t'].getMin(),ws['t'].getMax()))
+effhist = ws['effshape'].createHistogram('effhist',ws['t'],RooFit.Binning(10,ws['t'].getMin(),ws['t'].getMax()))
 effdatahist = RooDataHist("effdatahist","effdatahist",RooArgList(ws['t']),effhist)
 ws.put(effdatahist)
 ws.factory("HistPdf::effpdf(t,effdatahist)")
@@ -165,64 +166,58 @@ ws.factory("Uniform::ang_bkg({trcostheta,trcospsi,trphi})")
 # Mass only PDF
 ws.factory("SUM::m_pdf(Nsig_all[1000,0,16000]*m_sig,Nbkg_all[1000,0,16000]*m_bkg)")
 
-# Signal PDF
-ws.factory("PROD::sig_pdf( m_sig, newpdf)")
+# Sig PDF
+
+#UB
+# SigPDF(t,angles,m)
+ws.factory("PROD::sig_pdf_UB( m_sig, newpdf)")
+
+#B
+# Biased SigPDF(t,angles)
+ws.factory("EffHistProd::acc_newpdf(newpdf,effpdf)")
+# Full Biased SigPDF(t,angles,m)
+ws.factory("PROD::sig_pdf_B( m_sig, acc_newpdf)")
 
 # Bkg PDF
+
+#UB
 ws.factory("PROD::bkg_pdf_UB( m_bkg, t_bkg_UB, ang_bkg)")
-ws.factory("PROD::bkg_pdf_B( m_bkg, t_bkg_B, ang_bkg)")
 
-ws.factory("SUM::pdf_ext_UB(Nsig_UB[7288]*sig_pdf,Nbkg_UB[3739]*bkg_pdf_UB)")
-ws.factory("SUM::pdf_UB(f_sig_UB[0.71,0.,1.0]*sig_pdf,bkg_pdf_UB)")
+#B
+# Biased BkgPDF(t)
+ws.factory("EffHistProd::acc_t_bkg_B(t_bkg_B,effpdf)")
+# Full BkgPDF(t,angles,m)
+ws.factory("PROD::bkg_pdf_B( m_bkg,acc_t_bkg_B,ang_bkg)")
 
-#ws.factory("SUM::pdf_ext_B(Nsig_B[1186]*sig_pdf,Nbkg_B[568]*bkg_pdf_B)")
-#ws.factory("SUM::pdf_B(f_sig_B[0.71,0.,1.0]*sig_pdf,bkg_pdf_B)")
+ws.factory("SUM::pdf_ext_UB(Nsig_UB[7288]*sig_pdf_UB,Nbkg_UB[3739]*bkg_pdf_UB)")
+ws.factory("SUM::pdf_UB(f_sig_UB[0.71,0.,1.0]*sig_pdf_UB,bkg_pdf_UB)")
 
-#ws.factory("EffHistProd::accpdf_ext(pdf_ext_B,effpdf)")
-#ws.factory("EffHistProd::accpdf(pdf_B,effpdf)")
-
-#FIX BUG BUT UGLY
-ws.factory("EffHistProd::acc_sig_pdf(sig_pdf,effpdf)")
-ws.factory("EffHistProd::acc_bkg_pdf(bkg_pdf_B,effpdf)")
-ws.factory("SUM::accpdf_ext( Nsig_B[1186]*acc_sig_pdf,Nbkg_B[568]*acc_bkg_pdf)")
+ws.factory("SUM::pdf_ext_B(Nsig_B[1186]*sig_pdf_B,Nbkg_B[568]*bkg_pdf_B)")
+ws.factory("SUM::pdf_B(f_sig_B[0.71,0.,1.0]*sig_pdf_B,bkg_pdf_B)")
 
 ws.factory("Simultaneous::simpdf(fitcat)")
-ws['simpdf'].addPdf(ws['accpdf_ext'],'FullyBiased')
 ws['simpdf'].addPdf(ws['pdf_ext_UB'],'AllUnbiased')
-
-###########################
-### Tagging systematics ###
-###########################
-ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.384],p0sigma[0.010])")
-ws.factory("Gaussian::p1(p1var[-2.,2.],p1mean[1.037],p1sigma[0.081])")
-ws.factory("expr:wtag_syst('p0var+p1var*(tagomega-etamean)',tagomega,etamean[0.379],p0var,p1var)")
-
-wtag = ws.function('wtag')
-wtag_syst = ws.function('wtag_syst')
-
-#pdf
-customizer = RooCustomizer(ws['simpdf'],'inc_tag_syst')
-customizer.replaceArg( wtag, wtag_syst )
-tagpdf = customizer.build()
-getattr(ws,'import')(tagpdf,RooFit.RecycleConflictNodes())
-
-#Constrain deltams
-ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.63],t_sig_dm_sigma[0.11])")
-
-#Constrain tres_SF
-ws.factory("Gaussian::tres_SFconstraint(tres_SF,tres_SF_mean[1.00],tres_SF_sigma[0.04])")
+ws['simpdf'].addPdf(ws['pdf_ext_B'],'FullyBiased')
 
 wsfile = TFile('ToySimWS.root','RECREATE')
 ws.Write()
 wsfile.Close()
 
-## #CHECK FOR PERSISTENCY
 pdf =  ws['simpdf']
-
-#ws.defineSet("observables","t,trcospsi,trcostheta,trphi,m,tagdecision,fitcat")
 ws.defineSet("observables","t,m,fitcat")
 ras = ws.set('observables')
 data = pdf.generate(ras,0)
+
+ws['rs2'].setVal(0.04)
+
+#sw = TStopwatch()
+#sw.Start()
+#result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws.pdf('p0'),ws.pdf('p1'),ws.pdf('dmsconstraint'),ws.pdf('tres_SFconstraint'))))
+#result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True))
+#sw.Stop()
+#result.SaveAs('result_%s.root'%(name))
+#result.writepars(name,False)
+#result.writecorr(name)
 
 ######PLOT######
 lw = RooCmdArg(RooFit.LineWidth(2))
@@ -230,15 +225,10 @@ xes = RooCmdArg(RooFit.XErrorSize(0))
 err = RooCmdArg(RooFit.DrawOption('E'))
 dashed = RooCmdArg(RooFit.LineStyle(kDashed))
 
-#signame_UB = 'sig_pdf_inc_tag_syst'
-#bkgname_UB = 'bkg_pdf_UB'
-#signame_B = 'acc_sig_pdf_inc_tag_syst'
-#bkgname_B = 'acc_bkg_pdf'
-
-signame_UB = 'sig_pdf'
+signame_UB = 'sig_pdf_UB'
 bkgname_UB = 'bkg_pdf_UB'
-signame_B = 'acc_sig_pdf'
-bkgname_B = 'acc_bkg_pdf'
+signame_B = 'sig_pdf_B'
+bkgname_B = 'bkg_pdf_B'
 
 sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
 bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
@@ -255,27 +245,26 @@ ws['m'].setRange('rightSideband',msigmax,mmax)
 projectdata = RooDataSet('projectdata','projectdata',data,RooArgSet(ws['fitcat']))
 
 #Make Sanity plots
-## masscanvas = TCanvas('masscanvas','masscanvas')
-## masscanvas.Divide(1,2)
+masscanvas = TCanvas('masscanvas','masscanvas')
+masscanvas.Divide(1,2)
 
-## masscanvas.cd(1)
-## mframe = ws['m'].frame(RooFit.Bins(30))
-## data.plotOn(mframe,RooFit.Cut("fitcat==fitcat::AllUnbiased"))
-## pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.ProjWData(projectdata))
-## pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.Components(signame),RooFit.ProjWData(projectdata),dashed,sigcolor)
-## pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.Components(bkgname_UB),RooFit.ProjWData(projectdata),dashed,bkgcolor) 
-## mframe.Draw()
+masscanvas.cd(1)
+mframe = ws['m'].frame(RooFit.Bins(30))
+data.plotOn(mframe,RooFit.Cut("fitcat==fitcat::AllUnbiased"))
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.ProjWData(projectdata))
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.Components(signame_UB),RooFit.ProjWData(projectdata),dashed,sigcolor)
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"AllUnbiased"),RooFit.Components(bkgname_UB),RooFit.ProjWData(projectdata),dashed,bkgcolor) 
+mframe.Draw()
 
-## masscanvas.cd(2)
-## mframe = ws['m'].frame(RooFit.Bins(30))
-## data.plotOn(mframe,RooFit.Cut("fitcat==fitcat::FullyBiased"))
-## pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.ProjWData(projectdata))
-## pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.Components(signame),RooFit.ProjWData(projectdata),dashed,sigcolor)
-## pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.Components(bkgname_B),RooFit.ProjWData(projectdata),dashed,bkgcolor) 
-## mframe.Draw()
+masscanvas.cd(2)
+mframe = ws['m'].frame(RooFit.Bins(30))
+data.plotOn(mframe,RooFit.Cut("fitcat==fitcat::FullyBiased"))
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.ProjWData(projectdata))
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.Components(signame_B),RooFit.ProjWData(projectdata),dashed,sigcolor)
+pdf.plotOn(mframe,RooFit.Slice(ws['fitcat'],"FullyBiased"),RooFit.Components(bkgname_B),RooFit.ProjWData(projectdata),dashed,bkgcolor)
+mframe.Draw()
 
-## masscanvas.SaveAs('plaatjemass.eps')
-
+masscanvas.SaveAs('plaatjemass.eps')
 
 timecanvas = TCanvas('timecanvas','timecanvas')
 timecanvas.Divide(1,2)

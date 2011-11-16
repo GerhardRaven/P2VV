@@ -66,6 +66,6 @@ private:
 
 typedef std::vector<IMoment*> IMomentsVector;
 
-int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst = false);
+int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst = false, bool verbose = true);
 
 #endif
