@@ -18,6 +18,20 @@ class RooObject(object) :
                ,'Title'      : lambda s : s.GetTitle()
                }
 
+    #TODO: emulate virtual function dispatch by iterating over 
+    #      inheritance tree of 'self' in order to see if the 
+    #      (derived) class has any _setters or _getters attribute
+    #      
+    def __setitem__(self,k,v):
+        for i in type(self).__mro__ : 
+            if k in i._setters :  return i._setters[k](self,v )
+        raise KeyError('%s is not known for class %' % (k, type(self) ) )
+    def __getitem__(self,k):
+        for i in type(self).__mro__ : 
+            if k in i._getters :  return i._getters[k](self)
+        raise KeyError('%s is not known for class %' % (k, type(self) ) )
+
+
     def __init__(self,workspace = None) :
         if workspace :
             from ROOT import RooWorkspace
@@ -110,12 +124,6 @@ class RooObject(object) :
 
     def mappings(self):
         return self.ws()._mappings
-
-    def __setitem__(self,k,v):
-        return RooObject._setters[k](self, v)
-    def __getitem__(self,k):
-        return RooObject._getters[k](self)
-
 # TODO: make this more of a 'borg' by overloading __new__ instead of __init__
 #       otherwise properties of the proxy not in the 'target' are not shared
 #       across multiple instances which all defer to the same 'target'
@@ -164,10 +172,6 @@ class Category (RooObject):
                 if k in ['Index', 'Label']: continue
                 assert v == self[k]
             
-    def __setitem__(self,k,v):
-        return Category._setters[k](self, v)
-    def __getitem__(self,k):
-        return Category._getters[k](self)
     def states(self):
         return self._states
 
@@ -270,8 +274,6 @@ class ConstVar (RooObject):
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
                 assert v == self[k]
-    def __getitem__(self,k):
-        return ConstVar._getters[k](self)
 
 class P2VVAngleBasis (RooObject) : 
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
@@ -320,23 +322,16 @@ def computeMoments(data, moments) :
 
 class RealVar (RooObject): 
     # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
-    from copy import copy
-    _getters = copy(RooObject._getters)
-    _getters.update( {'Observable' : lambda s : s.observable() 
-                     ,'Unit'       : lambda s : s.getUnit() 
-                     ,'Value'      : lambda s : s.getVal()
-                     ,'MinMax'     : lambda s : s.getRange()
-                     } )
-    _setters = copy(RooObject._setters)
-    _setters.update( {'Observable' : lambda s,v : s.setObservable(v) 
-                     ,'Unit'       : lambda s,v : s.setUnit(v) 
-                     ,'Value'      : lambda s,v : s.setVal(v)
-                     ,'MinMax'     : lambda s,v : s.setRange(v)
-                     } )
-    def __setitem__(self,k,v):
-        return RealVar._setters[k](self, v)
-    def __getitem__(self,k):
-        return RealVar._getters[k](self)
+    _getters = {'Observable' : lambda s : s.observable() 
+               ,'Unit'       : lambda s : s.getUnit() 
+               ,'Value'      : lambda s : s.getVal()
+               ,'MinMax'     : lambda s : s.getRange()
+               }
+    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
+               ,'Unit'       : lambda s,v : s.setUnit(v) 
+               ,'Value'      : lambda s,v : s.setVal(v)
+               ,'MinMax'     : lambda s,v : s.setRange(v)
+               }
 
     def __init__(self,name,**kwargs):
         # TODO: add blinding support to kwargs
@@ -382,14 +377,11 @@ class RealVar (RooObject):
 ##TODO, factor out common code in Pdf and ResolutionModel
 
 class Pdf(RooObject):
-    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
-    from copy import copy
-    _getters = copy(RooObject._getters)
-    _getters.update( {'Observables' : lambda s : s._get('Observables') 
-                     ,'Type'        : lambda s : s._get('Type')
-                     ,'Parameters'  : lambda s : s._get('Parameters')
-                     ,'Name'        : lambda s : s._get('Name')
-                     } )
+    _getters = {'Observables' : lambda s : s._get('Observables') 
+               ,'Type'        : lambda s : s._get('Type')
+               ,'Parameters'  : lambda s : s._get('Parameters')
+               ,'Name'        : lambda s : s._get('Name')
+               }
 
     ## TODO: define operators
     def __init__(self, name, **kwargs):
@@ -416,7 +408,7 @@ class Pdf(RooObject):
             return self._dict[k]
         else:
             try:
-                return Pdf._getters[k](self)
+                return RooObject.__getitem__( self, k )
             except AttributeError as error:
                 raise KeyError(str(error))
 
@@ -595,9 +587,6 @@ class ResolutionModel(RooObject):
         attr = '_' + name.lower()
         return getattr(self, attr)
             
-    def __getitem__(self, k):
-        return ResolutionModel._getters[k](self)
-    
     def _makeRecipe(self):
         variables = list(self._dict['Observables'])
         if 'Parameters' in self._dict:
