@@ -250,11 +250,7 @@ ws['phis'].setVal(0.151)
 ws['Nsig_UB'].setVal(7280)
 ws['Nbkg_UB'].setVal(3746)
 
-sw = TStopwatch()
-sw.Start()
-result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['p0'],ws['p1'],ws['dmsconstraint'],ws['tres_SFconstraint'])))
-sw.Stop()
-
+result = pdf.fitTo(data,RooFit.NumCPU(8),RooFit.Timer(True),RooFit.Extended(True),RooFit.Minos(False),RooFit.Save(True),RooFit.ExternalConstraints(RooArgSet(ws['p0'],ws['p1'],ws['dmsconstraint'],ws['tres_SFconstraint'])))
 result.writecorr(name)
 result.writepars(name,True)
 
