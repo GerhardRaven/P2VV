@@ -5,7 +5,7 @@ generateData = False
 nEvents = 10000
 
 dataSetName = 'JpsiphiData'
-dataSetFile = 'fitJpsiV.root'
+dataSetFile = 'JvLFit.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
 NTuple = False
 

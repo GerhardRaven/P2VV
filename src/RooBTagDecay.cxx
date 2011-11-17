@@ -66,6 +66,8 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _decayType(type),
   _tagCatType(0),
   _tags(0),
+  _iTagVal(0),
+  _fTagVal(0),
   _checkVars(checkVars),
   _createdVars("createdVars", 0, this)
 {
@@ -105,14 +107,16 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _decayType(type),
   _tagCatType(1),
   _tags(3),
+  _iTagVal(0),
+  _fTagVal(0),
   _checkVars(checkVars),
   _createdVars("createdVars", 0, this)
 {
   // constructor with both initial and final state flavour tags
   // (decay into a flavour specific final state)
 
-  if (!checkTag(iTag, kTRUE)) assert(0);
-  if (!checkTag(fTag, kTRUE)) assert(0);
+  initTag(kTRUE);
+  initTag(kFALSE);
 
   RooArgList tagCatCoefs;
   RooArgList dilutions(dilution);
@@ -159,13 +163,15 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _decayType(type),
   _tagCatType(1),
   _tags(1),
+  _iTagVal(0),
+  _fTagVal(0),
   _checkVars(checkVars),
   _createdVars("createdVars", 0, this)
 {
   // constructor with only an initial state flavour tag
   // (decay into CP self-conjugate state)
 
-  if (!checkTag(iTag, kTRUE)) assert(0);
+  initTag(kTRUE);
 
   RooArgList tagCatCoefs;
   RooArgList dilutions(dilution);
@@ -211,14 +217,16 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _decayType(type),
   _tagCatType(2),
   _tags(3),
+  _iTagVal(0),
+  _fTagVal(0),
   _checkVars(checkVars),
   _createdVars("createdVars", 0, this)
 {
   // constructor with both initial and final state flavour tags (decay into
   // a flavour specific final state) and with tagging categories
 
-  if (!checkTag(iTag, kTRUE)) assert(0);
-  if (!checkTag(fTag, kTRUE)) assert(0);
+  initTag(kTRUE);
+  initTag(kFALSE);
 
   initTaggingCats(tagCatCoefs, dilutions, ADilWTags, avgCEvens, avgCOdds);
 
@@ -261,13 +269,15 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _decayType(type),
   _tagCatType(2),
   _tags(1),
+  _iTagVal(0),
+  _fTagVal(0),
   _checkVars(checkVars),
   _createdVars("createdVars", 0, this)
 {
   // constructor with only an initial state flavour tag
   // (decay into CP self-conjugate state) and with tagging categories
 
-  if (!checkTag(iTag, kTRUE)) assert(0);
+  initTag(kTRUE);
 
   initTaggingCats(tagCatCoefs, dilutions, ADilWTags, avgCEvens, avgCOdds);
 
@@ -309,6 +319,8 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
   _decayType(other._decayType),
   _tagCatType(other._tagCatType),
   _tags(other._tags),
+  _iTagVal(other._iTagVal),
+  _fTagVal(other._fTagVal),
   _checkVars(other._checkVars),
   _createdVars("createdVars", 0, this)
 {
@@ -528,8 +540,8 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   // integrate numerically if variables are unchecked
   if (!_checkVars || !checkVarDep(_time.arg())
       || (_tagCatType > 1 && !checkVarDep(_tagCat.arg()))
-      || (_tags > 0 && (!checkVarDep(_iTag.arg()) || !checkTag(_iTag.arg())))
-      || (_tags > 1 && (!checkVarDep(_fTag.arg()) || !checkTag(_fTag.arg()))))
+      || (_tags > 0 && (!checkVarDep(_iTag.arg()) || !checkTag(kTRUE)))
+      || (_tags > 1 && (!checkVarDep(_fTag.arg()) || !checkTag(kFALSE))))
     return 0;
 
   // get integration code
@@ -697,8 +709,8 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
   // use accept/reject if the flavour tags are unchecked
   if (!_checkVars || !checkVarDep(_time.arg())
       || (_tagCatType > 1 && !checkVarDep(_tagCat.arg()))
-      || (_tags > 0 && (!checkVarDep(_iTag.arg()) || !checkTag(_iTag.arg())))
-      || (_tags > 1 && (!checkVarDep(_fTag.arg()) || !checkTag(_fTag.arg()))))
+      || (_tags > 0 && (!checkVarDep(_iTag.arg()) || !checkTag(kTRUE)))
+      || (_tags > 1 && (!checkVarDep(_fTag.arg()) || !checkTag(kFALSE))))
     return 0;
 
   Int_t genCode = 0;
@@ -980,77 +992,6 @@ Int_t RooBTagDecay::getTagCatIndex(Int_t tagCatPosition) const
 }
 
 //_____________________________________________________________________________
-Bool_t RooBTagDecay::checkVarDep(const RooAbsArg& var, Bool_t warn,
-    Bool_t onlyTagPars) const
-{
-  // check if parameters depend on specified variable
-
-  if (_checkVars) {
-    Bool_t checks = kTRUE;
-    if ((!onlyTagPars && (_tau.arg().dependsOn(var)
-        || _dGamma.arg().dependsOn(var) || _dm.arg().dependsOn(var)
-        || _coshCoef.arg().dependsOn(var) || _cosCoef.arg().dependsOn(var)
-        || (_tags < 2 && (_sinhCoef.arg().dependsOn(var)
-        || _sinCoef.arg().dependsOn(var)))))
-        || (_tags > 1 && _ANorm.arg().dependsOn(var))
-        || (_tags > 0 && (_avgCEvenSum.arg().dependsOn(var)
-        || _avgCOddSum.arg().dependsOn(var))))
-      checks = kFALSE;
-
-    if (checks && _tags > 0) {
-      Int_t numTagCats = 1;
-      if (_tagCatType > 1) numTagCats = _tagCat.arg().numTypes();
-      for (Int_t tagCatIter = 0; tagCatIter < numTagCats; ++tagCatIter) {
-        if (_dilutions.at(tagCatIter)->dependsOn(var)
-            || _ADilWTags.at(tagCatIter)->dependsOn(var)
-            || _avgCEvens.at(tagCatIter)->dependsOn(var)
-            || _avgCOdds.at(tagCatIter)->dependsOn(var)
-            || _tagCatCoefs.at(tagCatIter)->dependsOn(var))
-          checks = kFALSE;
-      }
-    }
-
-    if (!checks) 
-      coutE(InputArguments) << "RooBTagDecay::checkVarDep(" << GetName()
-          << ") parameters depend on " << var.GetName()
-          << ": use \"checkVars = false\" if you insist on using this dependence"
-          << endl;
-
-    return checks;
-
-  } else if (warn) {
-    coutW(InputArguments) << "RooBTagDecay::checkVarDep(" << GetName()
-        << ") parameters dependence on "
-        << var.GetName()
-        << " is unchecked (use of \"checkVars = false\" is not recommended): integrals will be calculated numerically and event generation will use accept/reject"
-        << endl;
-  }
-
-  return kTRUE;
-}
-
-//_____________________________________________________________________________
-Bool_t RooBTagDecay::checkTag(const RooAbsCategory& tag, Bool_t warn) const
-{
-  if (_checkVars && (tag.numTypes() != 2 || !tag.isValidIndex(+1)
-      || !tag.isValidIndex(-1))) {
-    coutE(InputArguments) << "RooBTagDecay::checkTag(" << GetName()
-        << ") flavour tag " << tag.GetName()
-        << " can only have values +1 and -1: use \"checkVars = false\" if you insist on using other/additional values"
-        << endl;
-    return kFALSE;
-  } else if (warn && !_checkVars) {
-    coutW(InputArguments) << "RooBTagDecay::checkTag(" << GetName()
-        << ") unchecked flavour tag "
-        << tag.GetName()
-        << " (use of \"checkVars = false\" is not recommended): integrals will be calculated numerically and event generation will use accept/reject"
-        << endl;
-  }
-
-  return kTRUE;
-}
-
-//_____________________________________________________________________________
 void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
     RooArgList& dilutions, RooArgList& ADilWTags, RooArgList& avgCEvens,
     RooArgList& avgCOdds)
@@ -1279,6 +1220,81 @@ void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
 }
 
 //_____________________________________________________________________________
+void RooBTagDecay::initTag(Bool_t iTag)
+{
+    // initialize flavour tag
+
+    // get tag parameters
+    const char* tagName;
+    Int_t  tagVal, numTypes;
+    Bool_t BIndex, BbarIndex;
+    if (iTag) {
+      tagName   = _iTag.GetName();
+      tagVal    = _iTagVal;
+      numTypes  = _iTag.arg().numTypes();
+      BIndex    = _iTag.arg().isValidIndex(+1);
+      BbarIndex = _iTag.arg().isValidIndex(-1);
+    } else {
+      tagName   = _fTag.GetName();
+      tagVal    = _fTagVal;
+      numTypes  = _fTag.arg().numTypes();
+      BIndex    = _fTag.arg().isValidIndex(+1);
+      BbarIndex = _fTag.arg().isValidIndex(-1);
+    }
+
+    if (!_checkVars) {
+      // print warning message if flavour tags are not to be checked
+      coutW(InputArguments) << "RooBTagDecay::initTag(" << GetName()
+          << ") unchecked flavour tag "
+          << tagName
+          << " (use of \"checkVars = false\" is not recommended): integrals will be calculated numerically and event generation will use accept/reject"
+          << endl;
+    } else if (numTypes == 2 && BIndex && BbarIndex) {
+      // both B and Bbar
+      if (iTag) _iTagVal = 0;
+      else _fTagVal = 0;
+    } else if (numTypes == 1 && BIndex) {
+      // only B
+      if (iTag) _iTagVal = +1;
+      else _fTagVal = +1;
+    } else if (numTypes == 1 && BbarIndex) {
+      // only Bbar
+      if (iTag) _iTagVal = -1;
+      else _fTagVal = -1;
+    } else {
+      // not a valid configuration
+      coutE(InputArguments) << "RooBTagDecay::initTag(" << GetName()
+          << ") flavour tag " << tagName
+          << " can only have values +1 or -1: use \"checkVars = false\" if you insist on using other/additional values"
+          << endl;
+      assert(0);
+    }
+}
+
+//_____________________________________________________________________________
+void RooBTagDecay::initTagCatMaps() const
+{
+  // check number of categories
+  if (_tagCatType < 2) return;
+
+  // loop over tagging categories
+  TIterator*  tagCatTypeIter = _tagCat.arg().typeIterator();
+  RooCatType* tagCatIndex    = 0;
+  Int_t       position       = 0;
+  while ((tagCatIndex = (RooCatType*)tagCatTypeIter->Next()) != 0) {
+    // set tagging category position and index
+    Int_t index = tagCatIndex->getVal();
+    _tagCatPositions[index] = position;
+    _tagCatIndices[position] = index;
+
+    // update position
+    ++position;
+  }
+
+  delete tagCatTypeIter;
+}
+
+//_____________________________________________________________________________
 void RooBTagDecay::declareBases()
 {
   // create basis functions for time variable
@@ -1328,25 +1344,83 @@ void RooBTagDecay::declareBases()
 }
 
 //_____________________________________________________________________________
-void RooBTagDecay::initTagCatMaps() const
+Bool_t RooBTagDecay::checkVarDep(const RooAbsArg& var, Bool_t warn,
+    Bool_t onlyTagPars) const
 {
-  // check number of categories
-  if (_tagCatType < 2) return;
+  // check if parameters depend on specified variable
 
-  // loop over tagging categories
-  TIterator*  tagCatTypeIter = _tagCat.arg().typeIterator();
-  RooCatType* tagCatIndex    = 0;
-  Int_t       position       = 0;
-  while ((tagCatIndex = (RooCatType*)tagCatTypeIter->Next()) != 0) {
-    // set tagging category position and index
-    Int_t index = tagCatIndex->getVal();
-    _tagCatPositions[index] = position;
-    _tagCatIndices[position] = index;
+  if (_checkVars) {
+    Bool_t checks = kTRUE;
+    if ((!onlyTagPars && (_tau.arg().dependsOn(var)
+        || _dGamma.arg().dependsOn(var) || _dm.arg().dependsOn(var)
+        || _coshCoef.arg().dependsOn(var) || _cosCoef.arg().dependsOn(var)
+        || (_tags < 2 && (_sinhCoef.arg().dependsOn(var)
+        || _sinCoef.arg().dependsOn(var)))))
+        || (_tags > 1 && _ANorm.arg().dependsOn(var))
+        || (_tags > 0 && (_avgCEvenSum.arg().dependsOn(var)
+        || _avgCOddSum.arg().dependsOn(var))))
+      checks = kFALSE;
 
-    // update position
-    ++position;
+    if (checks && _tags > 0) {
+      Int_t numTagCats = 1;
+      if (_tagCatType > 1) numTagCats = _tagCat.arg().numTypes();
+      for (Int_t tagCatIter = 0; tagCatIter < numTagCats; ++tagCatIter) {
+        if (_dilutions.at(tagCatIter)->dependsOn(var)
+            || _ADilWTags.at(tagCatIter)->dependsOn(var)
+            || _avgCEvens.at(tagCatIter)->dependsOn(var)
+            || _avgCOdds.at(tagCatIter)->dependsOn(var)
+            || _tagCatCoefs.at(tagCatIter)->dependsOn(var))
+          checks = kFALSE;
+      }
+    }
+
+    if (!checks) 
+      coutE(InputArguments) << "RooBTagDecay::checkVarDep(" << GetName()
+          << ") parameters depend on " << var.GetName()
+          << ": use \"checkVars = false\" if you insist on using this dependence"
+          << endl;
+
+    return checks;
+
+  } else if (warn) {
+    coutW(InputArguments) << "RooBTagDecay::checkVarDep(" << GetName()
+        << ") parameters dependence on "
+        << var.GetName()
+        << " is unchecked (use of \"checkVars = false\" is not recommended): integrals will be calculated numerically and event generation will use accept/reject"
+        << endl;
   }
 
-  delete tagCatTypeIter;
+  return kTRUE;
+}
+
+//_____________________________________________________________________________
+Bool_t RooBTagDecay::checkTag(Bool_t iTag) const
+{
+  // check flavour tag state
+
+  if (_checkVars) {
+    // get tag parameters
+    Int_t  tagVal, numTypes;
+    Bool_t BIndex, BbarIndex;
+    if (iTag) {
+      tagVal    = _iTagVal;
+      numTypes  = _iTag.arg().numTypes();
+      BIndex    = _iTag.arg().isValidIndex(+1);
+      BbarIndex = _iTag.arg().isValidIndex(-1);
+    } else {
+      tagVal    = _fTagVal;
+      numTypes  = _fTag.arg().numTypes();
+      BIndex    = _fTag.arg().isValidIndex(+1);
+      BbarIndex = _fTag.arg().isValidIndex(-1);
+    }
+
+    // check tag
+    if ((tagVal == 0 && (numTypes != 2 || !BIndex || !BbarIndex))
+        || (tagVal == +1 && (numTypes != 1 || !BIndex))
+        || (tagVal == -1 && (numTypes != 1 || !BbarIndex)))
+      return kFALSE;
+  }
+
+  return kTRUE;
 }
 
