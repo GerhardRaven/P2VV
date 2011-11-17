@@ -16,11 +16,6 @@ class RooObject(object) :
     _getters = {'Name'       : lambda s : s.GetName()
                ,'Title'      : lambda s : s.GetTitle()
                }
-
-    #TODO: emulate virtual function dispatch by iterating over 
-    #      inheritance tree of 'self' in order to see if the 
-    #      (derived) class has any _setters or _getters attribute
-    #      
     def __setitem__(self,k,v):
         for i in type(self).__mro__ : 
             if k in i._setters :  return i._setters[k](self,v )
@@ -273,12 +268,12 @@ class P2VVAngleBasis (RooObject) :
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
     def __init__(self, angles, i,j,k,l,c) :
         # compute name, given angles,i,j,k,l,c!
-        name = '_'.join(a['Name'] for a in angles)
+        name = '_'.join(angles[a]['Name'] for a in ['cpsi','ctheta','phi'])
         # remove c if it is 1?
         name = 'P2VVAngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
         name = name.replace('.', '_')
-        spec = "RooP2VVAngleBasis::%s(%s, %d, %d, %d, %d, %f)" % (name, ','.join(a['Name'] for a in angles), i, j, k, l, c) 
+        spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)" % (name, angles['cpsi'],angles['ctheta'],angles['phi'], i, j, k, l, c) 
         present = name in self.ws() 
         match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec') 
         #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
@@ -593,7 +588,6 @@ class AddModel(ResolutionModel) :
     def __init__(self,name,models,fractions,**kwargs) :
         if name not in self.ws():
             # construct factory string on the fly...
-            for i in models : print '__init__:',i, type(i)
             self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
             self._init(name,'RooAddModel')
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)

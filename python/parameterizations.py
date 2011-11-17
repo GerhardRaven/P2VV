@@ -77,12 +77,48 @@ class AngularFunctions :
     def itervalues(self) :       return self._d.itervalues()
 
 
+class AngleDefinitions( object ) :
+    def __init__( self , **kwargs ) :
+        self.angles = dict( (i,kwargs.pop(i)) for i in ['cpsi' ,'ctheta','phi' ] )
+        self.functions = kwargs.pop('functions')
+
+    @staticmethod
+    def __intrprt__(name,kwargs,defname,title,minmax) :
+        from RooFitWrappers import RealVar
+        if name in kwargs and type( kwargs[name] )== str :
+            return RealVar(  kwargs[name], Title = title,   Observable = True,  MinMax=minmax )
+        elif name not in kwargs :
+            return  RealVar(  defname,   Title = title,   Observable = True,  MinMax=minmax)
+        else  :
+            return kwargs[name]
+
+
+class JpsiphiHelicityAngles( AngleDefinitions ) :
+    def __init__( self, **kwargs ) :
+        from math import pi
+        d = { 'cpsi'   : AngleDefinitions.__intrprt__( 'cpsi', kwargs, 'helcthetaK', 'cosine of kaon polarization angle',      (-1., 1.))
+            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta', kwargs,  'helcthetaL', 'cosine of lepton polarization angle', (-1., 1.))
+            , 'phi'    : AngleDefinitions.__intrprt__( 'phi', kwargs,  'helphi', 'angle between decay planes',                 (-pi, pi))
+            }
+        d['functions'] =  JpsiphiTransversityAmplitudesHelicityAngles( **d )
+        AngleDefinitions.__init__(self, **d )
+
+class JpsiphiTransversityAngles( AngleDefinitions ) :
+    def __init__( self, **kwargs ) :
+        from math import pi
+        d = { 'cpsi' :   AngleDefinitions.__intrprt__( 'cpsi', kwargs,  'trcpsi', 'cosine of kaon polarization angle', (-1., 1.))
+            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta',kwargs, 'trctheta', 'cosine of transversity polar angle',     (-1., 1.))
+            , 'phi'   :  AngleDefinitions.__intrprt__( 'phi', kwargs, 'trphi',     'transversity azimuthal angle',          (-pi, pi))
+            }
+        d['functions'] = JpsiphiTransversityAmplitudesTransversityAngles( **d )
+        AngleDefinitions.__init__(self, **d )
+
 class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
     def __init__( self, **kwargs ) :
         AngularFunctions.__init__(self)
         from RooFitWrappers import P2VVAngleBasis, Addition
         from math import sqrt
-        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis((kwargs['cpsi'],kwargs['ctheta'],kwargs['phi']) , *a) for a in args ] )
+        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,  4.             )
                                                                           ,(0, 0, 2,  0, -sqrt( 16. / 5.))
@@ -111,7 +147,7 @@ class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
         AngularFunctions.__init__(self)
         from RooFitWrappers import P2VVAngleBasis, Addition
         from math import sqrt
-        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis((kwargs['cpsi'],kwargs['ctheta'],kwargs['phi']) , *a) for a in args ] )
+        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
 
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,  4.             )
@@ -213,3 +249,4 @@ class ResolutionModelLP2011 :
         self.Model = AddModel('tres', [ ResolutionModel('tres_%s'%n, Type = GaussModel, Observables = [ t ], Parameters = [ mu, ConstVar('tres_s%s'%n, Value = v  ), SF ] ) for n,v in sigmas ]
                                     , [ ConstVar('tres_f%s'%n,Value = v) for n,v in frac ]
                              )
+

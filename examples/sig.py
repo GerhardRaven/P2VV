@@ -1,30 +1,23 @@
 from RooFitWrappers import *
-from ROOT import gSystem
-gSystem.Load('libP2VV.so')
 
-from ROOT import RooMsgService
+#from ROOT import RooMsgService
+#RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
 
-RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
+ws = RooObject( workspace = 'myws' )
 
-
-ws = RooObject()
-ws.setWorkspace( RooWorkspace('myworkspace') )
-ws.ws().importClassCode("RooBTagDecay",True);
-ws.ws().importClassCode("RooP2VVAngleBasis",True);
-
-from math import pi
-cpsiAng   = RealVar(  'helcthetaK', Title = 'cosine of kaon polarization angle',   Observable = True,  MinMax=(-1., 1.))
-cthetaAng = RealVar(  'helcthetaL', Title = 'cosine of lepton polarization angle', Observable = True,  MinMax=(-1., 1.))
-phiAng    = RealVar(  'helphi',     Title = 'angle between decay planes',          Observable = True,  MinMax=(-pi, pi))
+from parameterizations import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
+#angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
+angles    = TrAngles( cpsi = 'trcpsi', ctheta = 'trctheta', phi = 'trphi' )
 t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
-iTag      = Category( 'iTag',       Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } )
-helicityAngles = [ cpsiAng,cthetaAng,phiAng ] # WARNING: order counts!!
-observables = helicityAngles + [ t,iTag ]
+iTag      = Category( 'tagdecision',Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } )
+
+observables = [ i for i in angles.angles.itervalues()] + [ t,iTag ]
 
 from parameterizations import LambdaSqArg_CPParam
-from ROOT import RooUnblindUniform as UnblindUniform
-CP = LambdaSqArg_CPParam( lambdaSq = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2',  Value = 1)
-                        , arg      = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',      Value = -0.2,  MinMax = (-2*pi,2*pi), Blind = (UnblindUniform,'BsRooBarb',0.2) )
+from math import pi
+#from ROOT import RooUnblindUniform as UnblindUniform
+CP = LambdaSqArg_CPParam( lambdaSq  = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2',  Value = 1)
+                        , lambdaArg = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',      Value = -0.2,  MinMax = (-2*pi,2*pi) ) # , Blind = (UnblindUniform,'BsRooBarb',0.2) )
                         )
 
 from parameterizations import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
@@ -52,13 +45,12 @@ Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
              , 'AS'    : Polar2_Amplitude( 'AS',    _ASMag2,    _ASPh,    -1 )
              }
 
-# using transversity amplitudes and helicity angles
-from parameterizations import JpsiphiTransversityAmplitudesHelicityAngles
-angFuncs = JpsiphiTransversityAmplitudesHelicityAngles( cpsi = cpsiAng, ctheta = cthetaAng, phi = phiAng )
+
+#### Package from here until the "BTagDecay('name', args)" into a dedicated function...
 
 from parameterizations import JpsiphiBTagDecayBasisCoefficients
 # need to specify order in which to traverse...
-basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angFuncs, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
+basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
 
 # now build the actual signal PDF...
 from ROOT import RooTruthModel as TruthModel
@@ -81,6 +73,13 @@ args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps
 
 mcpdf = BTagDecay( 'mc_pdf',  args )
 
+if False :
+   ws.ws().importClassCode()
+   ws.ws().defineSet('observables',','.join( i.GetName() for i in observables ) )
+   ws.ws().writeToFile('/tmp/pdf.root')
+   from sys import exit
+   exit(0)
+
 # update resolution model, and build again...
 from parameterizations import ResolutionModelLP2011
 args[ 'resolutionModel' ]  = ResolutionModelLP2011( t ).Model
@@ -88,6 +87,7 @@ args[ 'resolutionModel' ]  = ResolutionModelLP2011( t ).Model
 sigpdf = BTagDecay( 'sig_pdf', args )
 
 pdf = mcpdf
+#pdf.Print("t")
 
 
 
@@ -95,27 +95,37 @@ pdf = mcpdf
 #pdf.branchNodeServerList( l )
 #for i in l : i.setAttribute( "CacheAndTrack" )
 
-pdf.Print("t")
 
 print 'generating data'
 data = pdf.generate( observables , 10000 )
 
+#mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
+#from ROOT import TFile
+#MCfile = TFile(mcfilename)
+#MCtuple = MCfile.Get('MyTree')
+#from ROOT import RooDataSet
+#_obs = RooArgSet()
+#for i in observables : _obs +=  i._target_() 
+#noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in _obs ) 
+#print noNAN
+#data = RooDataSet('MCdata','MCdata',MCtuple,_obs,noNAN)
+#print data.numEntries()
+
 
 print 'computing efficiency moments'
-moms = [ EffMoment( i, 1, pdf, helicityAngles ) for v in angFuncs.itervalues() for i in v if i ] 
+moms = [ EffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ] 
 
-_bm = lambda i,l,m : EffMoment( P2VVAngleBasis(helicityAngles, i,0,l,m,1. ), float(2*l+1)/2, pdf, helicityAngles )
+_bm = lambda i,l,m : EffMoment( P2VVAngleBasis(angles.angles, i,0,l,m,1. ), float(2*l+1)/2, pdf, angles.angles.itervalues() )
 moms2  = [ _bm(i,l,m) for i in range(3) for l in range(3) for m in range(-l,l+1) ]
 moms2 += [ _bm(i,2,m) for i in range(3,20) for m in [-2,1] ] # these are for the 'infinite' terms in the signal PDF 
 
 
-#computeMoments( data, moms + moms2 )
+computeMoments( data, moms + moms2 )
+from pprint import pprint
+pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
+pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
 
-#from pprint import pprint
-#pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
-#pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
-
-print 'fitting data'
-from ROOT import RooCmdArg
-NumCPU = RooCmdArg( RooFit.NumCPU(1) )
-pdf.fitTo(data, NumCPU, RooFit.Timer(1))
+#print 'fitting data'
+#from ROOT import RooCmdArg
+#NumCPU = RooCmdArg( RooFit.NumCPU(8) )
+#pdf.fitTo(data, NumCPU, RooFit.Timer(1), RooFit.Minimizer('Minuit2','minimize'))
