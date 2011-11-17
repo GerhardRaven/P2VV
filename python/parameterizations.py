@@ -106,6 +106,41 @@ class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
                    }
         for k,v in angFuncs.iteritems() : self[k] = v
 
+class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
+    def __init__( self, **kwargs ) :
+        AngularFunctions.__init__(self)
+        from RooFitWrappers import P2VVAngleBasis, Addition
+        from math import sqrt
+        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis((kwargs['cpsi'],kwargs['ctheta'],kwargs['phi']) , *a) for a in args ] )
+        # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
+
+        angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,  4.             )
+                                                                          ,(0, 0, 2,  0,  sqrt(  4. / 5.))
+                                                                          ,(0, 0, 2,  2, -sqrt( 12. / 5.))
+                                                                          ,(2, 0, 0,  0,  8.             )
+                                                                          ,(2, 0, 2,  0,  sqrt( 16. / 5.))
+                                                                          ,(2, 0, 2,  2, -sqrt( 48. / 5.))]), None)
+                   , ('Apar', 'Apar')  :  ( _ba('Re_ang_Apar_Apar',       [(2, 2, 0,  0,  2.             )
+                                                                          ,(2, 2, 2,  0,  sqrt(  1. / 5.))
+                                                                          ,(2, 2, 2,  2,  sqrt(  3. / 5.))]), None)
+                   , ('Aperp','Aperp') :  ( _ba('Re_ang_Aperp_Aperp',     [(2, 2, 0,  0,  2.             )
+                                                                          ,(2, 2, 2,  0, -sqrt(  4. / 5.))]), None)
+
+                   , ('A0',   'Apar')  :  ( _ba('Re_ang_A0_Apar',         [(2, 1, 2, -2, -sqrt( 24. / 5.))]), None)
+                   , ('A0',   'Aperp') :  ( None, _ba('Im_ang_A0_Aperp',  [(2, 1, 2,  1,  sqrt( 24. / 5.))]))
+                   , ('Apar', 'Aperp') :  ( None, _ba('Im_ang_Apar_Aperp',[(2, 2, 2, -1,  sqrt( 12. / 5.))]))
+
+                   , ('AS',   'AS')    :  ( _ba('Re_ang_AS_AS',           [(0, 0, 0,  0,  4.             )
+                                                                          ,(0, 0, 2,  0,  sqrt(  4. / 5.))
+                                                                          ,(0, 0, 2,  2, -sqrt( 12. / 5.))]),None)
+                   , ('A0',   'AS')    :  ( _ba('Re_ang_A0_AS',           [(1, 0, 0,  0,  sqrt(192.     ))
+                                                                          ,(1, 0, 2,  0,  sqrt( 48. / 5.))
+                                                                          ,(1, 0, 2,  2, -sqrt(144. / 5.))]), None)
+                   , ('Apar', 'AS')    :  ( _ba('Re_ang_Apar_AS',         [(1, 1, 2, -2, -sqrt( 72. / 5.))]), None)
+                   , ('Aperp','AS')    :  ( None, _ba('Im_ang_Aperp_AS',  [(1, 1, 2,  1, -sqrt( 72. / 5.))]))
+                   }
+        for k,v in angFuncs.iteritems() : self[k] = v
+
 
 class BTagDecayBasisCoefficients :
     def __init__(self, **kwargs ) :
