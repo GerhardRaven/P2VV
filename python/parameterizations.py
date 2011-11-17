@@ -37,12 +37,40 @@ class Polar2_Amplitude(Carthesian_Amplitude) :
                                                   , FormulaVar('Im_%s'%name, 'sqrt(@0) * sin(@1)', [r2,arg], Title = 'Im(%s)'% name )
                                                   , CP )
 
+class AmplitudeSet ( dict ) :
+    def __init__( self, *args) :
+        # maybe make this thing readonly???
+        for v in args: 
+            self[ v.name ] = v
+            assert hasattr(v,'Re')
+            assert hasattr(v,'Im')
+            assert hasattr(v,'CP')
+        # require the names in args to be unique...
+        assert(len(self)==len(args))
+
+class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
+    def __init__( self ) :
+        from RooFitWrappers import RealVar, FormulaVar
+        from math import pi
+        _A0Mag2    = RealVar('A0Mag2',    Title = '|A0|^2',      Value = 0.556,   MinMax = (0., 1.))
+        _A0Ph      = RealVar('delta0',    Title = 'delta_0',     Value = 0. )
+        _AperpMag2 = RealVar('AperpMag2', Title = '|A_perp|^2',  Value = 0.233,   MinMax = ( 0., 1.))
+        _AperpPh   = RealVar('deltaPerp', Title = 'delta_perp',  Value = pi-2.91, MinMax=( -2. * pi, 2. * pi))
+        _AparMag2  = FormulaVar('AparMag2', '1. - @0 - @1', [_A0Mag2, _AperpMag2],  Title = '|A_par|^2' )
+        _AparPh    = RealVar('deltaPar',  Title = 'delta_par',   Value = 2.93,    MinMax = ( -2. * pi, 2. * pi))
+        _ASMag2    = RealVar('ASMag2',    Title = '|A_S|^2',     Value = 0.05,    MinMax=( 0., 1.))
+        _ASPh      = RealVar('deltaS',    Title = 'delta_S',     Value = 2.2,     MinMax=( -2. * pi, 2. * pi))
+
+        AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
+                                   , Polar2_Amplitude( 'Apar',  _AparMag2,  _AparPh,  +1 )
+                                   , Polar2_Amplitude( 'Aperp', _AperpMag2, _AperpPh, -1 )
+                                   , Polar2_Amplitude( 'AS',    _ASMag2,    _ASPh,    -1 )
+                                   )
 
 class CEvenOdd :
     def __init__(self, **kwargs ) :
         for i in ['avgCEven','avgCOdd' ] : setattr(self,i,kwargs.pop(i))
-    def __getitem__(self,kw) :
-        return getattr(self,kw)
+    def __getitem__(self,kw) : return getattr(self,kw)
 
 class Trivial_CEvenOdd( CEvenOdd ) :
     def __init__(self) :

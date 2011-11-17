@@ -11,7 +11,7 @@ angles    = TrAngles( cpsi = 'trcpsi', ctheta = 'trctheta', phi = 'trphi' )
 t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
 iTag      = Category( 'tagdecision',Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } )
 
-observables = [ i for i in angles.angles.itervalues()] + [ t,iTag ]
+observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag ]
 
 from parameterizations import LambdaSqArg_CPParam
 from math import pi
@@ -28,29 +28,14 @@ ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'pr
                                  , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
                                  )
 
-# polar transversity amplitudes -- this is 'internal only'
-_A0Mag2    = RealVar('A0Mag2',    Title = '|A0|^2',      Value = 0.556,   MinMax = (0., 1.))
-_A0Ph      = RealVar('delta0',    Title = 'delta_0',     Value = 0. )
-_AperpMag2 = RealVar('AperpMag2', Title = '|A_perp|^2',  Value = 0.233,   MinMax = ( 0., 1.))
-_AperpPh   = RealVar('deltaPerp', Title = 'delta_perp',  Value = pi-2.91, MinMax=( -2. * pi, 2. * pi))
-_AparMag2  = FormulaVar('AparMag2', '1. - @0 - @1', [_A0Mag2, _AperpMag2],  Title = '|A_par|^2' )
-_AparPh    = RealVar('deltaPar',  Title = 'delta_par',   Value = 2.93,    MinMax = ( -2. * pi, 2. * pi))
-_ASMag2    = RealVar('ASMag2',    Title = '|A_S|^2',     Value = 0.05,    MinMax=( 0., 1.))
-_ASPh      = RealVar('deltaS',    Title = 'delta_S',     Value = 2.2,     MinMax=( -2. * pi, 2. * pi))
-
-from parameterizations import Polar2_Amplitude
-Amplitudes = { 'A0'    : Polar2_Amplitude( 'A0',    _A0Mag2,    _A0Ph,    +1 )
-             , 'Apar'  : Polar2_Amplitude( 'Apar',  _AparMag2,  _AparPh,  +1 )
-             , 'Aperp' : Polar2_Amplitude( 'Aperp', _AperpMag2, _AperpPh, -1 )
-             , 'AS'    : Polar2_Amplitude( 'AS',    _ASMag2,    _ASPh,    -1 )
-             }
-
+# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
+from parameterizations import JpsiphiAmplitudesLP2011
+amplitudes = JpsiphiAmplitudesLP2011()
 
 #### Package from here until the "BTagDecay('name', args)" into a dedicated function...
-
 from parameterizations import JpsiphiBTagDecayBasisCoefficients
 # need to specify order in which to traverse...
-basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, Amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
+basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
 
 # now build the actual signal PDF...
 from ROOT import RooTruthModel as TruthModel
