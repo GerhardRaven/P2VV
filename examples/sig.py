@@ -17,8 +17,27 @@ from parameterizations import LambdaSqArg_CPParam
 from math import pi
 #from ROOT import RooUnblindUniform as UnblindUniform
 CP = LambdaSqArg_CPParam( lambdaSq  = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2',  Value = 1)
-                        , lambdaArg = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',      Value = -0.2,  MinMax = (-2*pi,2*pi) ) # , Blind = (UnblindUniform,'BsRooBarb',0.2) )
+                        , lambdaArg = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',      Value = -0.04,  MinMax = (-2*pi,2*pi) ) # , Blind = (UnblindUniform,'BsRooBarb',0.2) )
                         )
+
+
+# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
+from parameterizations import JpsiphiAmplitudesLP2011
+amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.601, A0Ph = 0
+                                    , AperpMag2 = 0.160, AperpPh = -0.17
+                                    , AparPh = 2.5
+                                    , ASMag2 = 0, ASPh = 0 )
+amplitudes._ASMag2.setConstant(True)
+amplitudes._ASPh.setConstant(True)
+
+#### Package from here until the "BTagDecay('name', args)" into a dedicated class/function...
+from parameterizations import JpsiphiBTagDecayBasisCoefficients
+# need to specify order in which to traverse...
+basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
+
+from parameterizations import JpsiphiBDecayBasisCoefficients
+#basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes,CP, iTag,  ['A0','Apar','Aperp','AS'] ) 
+
 
 from parameterizations import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
 # ANuissance = Trivial_CEvenOdd()
@@ -28,20 +47,11 @@ ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'pr
                                  , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
                                  )
 
-# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from parameterizations import JpsiphiAmplitudesLP2011
-amplitudes = JpsiphiAmplitudesLP2011()
-
-#### Package from here until the "BTagDecay('name', args)" into a dedicated function...
-from parameterizations import JpsiphiBTagDecayBasisCoefficients
-# need to specify order in which to traverse...
-basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
-
 # now build the actual signal PDF...
 from ROOT import RooTruthModel as TruthModel
 args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}',  Value = 17.8 )  
-       , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.5,  MinMax = (1.3, 1.8) )
-       , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.05, MinMax = (-0.3,0.3) )
+       , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.0/0.68, MinMax = ( 1.3, 1.8) )
+       , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.060,    MinMax = (-0.3, 0.3) )
        , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
        , 'decayType' : 'SingleSided' 
        , 'time'      : t
@@ -57,6 +67,7 @@ args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps
        } 
 
 mcpdf = BTagDecay( 'mc_pdf',  args )
+#mcpdf = BDecay( 'mc_pdf',  args )
 
 if False :
    ws.ws().importClassCode()
@@ -78,23 +89,31 @@ pdf = mcpdf
 
 #l = RooArgSet()
 #pdf.branchNodeServerList( l )
-#for i in l : i.setAttribute( "CacheAndTrack" )
+#for i in l  : 
+#    for m in 'ReReRe','ReImIm','ImReIm','ImImRe','P2VVAngle', 'Re','Im' : # , 'a_':
+#        if m in i.GetName() : i.setAttribute( "CacheAndTrack" )
+#    if i.GetName()[:2] != 'a_' : i.setAttribute( "CacheAndTrack" ) 
+#    if not i.getAttribute('CacheAndTrack')  : print i.GetName()
+#    #print i.GetName(), i.getAttribute('CacheAndTrack') 
+#
 
 
-print 'generating data'
-data = pdf.generate( observables , 10000 )
+if True : 
+    print 'generating data'
+    data = pdf.generate( observables , 10000 )
 
-#mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
-#from ROOT import TFile
-#MCfile = TFile(mcfilename)
-#MCtuple = MCfile.Get('MyTree')
-#from ROOT import RooDataSet
-#_obs = RooArgSet()
-#for i in observables : _obs +=  i._target_() 
-#noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in _obs ) 
-#print noNAN
-#data = RooDataSet('MCdata','MCdata',MCtuple,_obs,noNAN)
-#print data.numEntries()
+else  :
+    mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
+    from ROOT import TFile
+    MCfile = TFile(mcfilename)
+    MCtuple = MCfile.Get('MyTree')
+    from ROOT import RooDataSet
+    _obs = RooArgSet()
+    for i in observables : _obs +=  i._target_() 
+    noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in _obs )
+    print noNAN
+    #data = RooDataSet('MCdata','MCdata',MCtuple,_obs,noNAN)
+    print data.numEntries()
 
 
 print 'computing efficiency moments'
@@ -105,12 +124,12 @@ moms2  = [ _bm(i,l,m) for i in range(3) for l in range(3) for m in range(-l,l+1)
 moms2 += [ _bm(i,2,m) for i in range(3,20) for m in [-2,1] ] # these are for the 'infinite' terms in the signal PDF 
 
 
-computeMoments( data, moms + moms2 )
-from pprint import pprint
-pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
-pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
+#computeMoments( data, moms + moms2 )
+#from pprint import pprint
+#pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
+#pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
 
-#print 'fitting data'
-#from ROOT import RooCmdArg
-#NumCPU = RooCmdArg( RooFit.NumCPU(8) )
-#pdf.fitTo(data, NumCPU, RooFit.Timer(1), RooFit.Minimizer('Minuit2','minimize'))
+print 'fitting data'
+from ROOT import RooCmdArg
+NumCPU = RooCmdArg( RooFit.NumCPU(1) )
+pdf.fitTo(data, NumCPU, RooFit.Timer(1)) # , RooFit.Minimizer('Minuit2','minimize'))
