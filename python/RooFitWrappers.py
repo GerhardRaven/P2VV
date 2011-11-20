@@ -226,23 +226,17 @@ class MappedCategory( Category ) :
 class Product(RooObject) :
     def __init__(self,name,fargs,**kwargs) :
         spec =  "prod::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) 
-        present = name in self.ws() 
-        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec') 
-        if present and not match : raise RuntimeError('mismatch')
-        if not present or not match : self._declare( spec )
+        self._declare( spec )
         self._init(name,'RooProduct')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
 
 class Addition(RooObject) :
     def __init__(self,name,fargs,**kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            self._declare("sum::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) )
-            self._init(name,'RooAddition')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
+        # construct factory string on the fly...
+        self._declare("sum::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) )
+        self._init(name,'RooAddition')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class FormulaVar (RooObject): 
     # TODO: move __setitem__ and __getitem__ into RooObject
@@ -252,10 +246,7 @@ class FormulaVar (RooObject):
     def __init__(self,name,formula,fargs,**kwargs) :
         # construct factory string on the fly...
         spec = "expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) 
-        present = name in self.ws() 
-        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec') 
-        if present and not match : raise RuntimeError('mismatch')
-        if not present or not match : self._declare( spec )
+        self._declare( spec )
         self._init(name,'RooFormulaVar')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
@@ -288,10 +279,8 @@ class P2VVAngleBasis (RooObject) :
         name = name.replace('-', 'm')
         name = name.replace('.', '_')
         spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)" % (name, angles['cpsi'],angles['ctheta'],angles['phi'], i, j, k, l, c) 
-        present = name in self.ws() 
-        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec') 
         #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
-        if not present or not match : self._declare( spec )
+        self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
             
 class EffMoment :
@@ -538,36 +527,30 @@ class SumPdf(Pdf):
 
 class BTagDecay( Pdf ) :
     def __init__(self,name,params, **kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            if 'name' in params : raise KeyError(' name should not be in params!')
-            d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
-            d['name'] = name
-            if 'checkVars' not in d : d['checkVars'] = 1
-            self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d )
+        # construct factory string on the fly...
+        if 'name' in params : raise KeyError(' name should not be in params!')
+        d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
+        d['name'] = name
+        if 'checkVars' not in d : d['checkVars'] = 1
+        self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+                                          " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
+                                          " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                          " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d )
 
-            self._init(name,'RooBTagDecay')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
+        self._init(name,'RooBTagDecay')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
 class BDecay( Pdf ) :
     def __init__(self,name,params, **kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            if 'name' in params : raise KeyError(' name should not be in params!')
-            d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
-            d['name'] = name
-            self._declare("BDecay::%(name)s( %(time)s, %(tau)s, %(dGamma)s, "\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                              " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
-            self._init(name,'RooBDecay')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
+        # construct factory string on the fly...
+        if 'name' in params : raise KeyError(' name should not be in params!')
+        d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
+        d['name'] = name
+        self._declare("BDecay::%(name)s( %(time)s, %(tau)s, %(dGamma)s, "\
+                                          " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                          " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
+        self._init(name,'RooBDecay')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
 class ResolutionModel(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables')
@@ -614,13 +597,10 @@ class ResolutionModel(RooObject):
 
 class AddModel(ResolutionModel) :
     def __init__(self,name,models,fractions,**kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
-            self._init(name,'RooAddModel')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
+        # construct factory string on the fly...
+        self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
+        self._init(name,'RooAddModel')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
 
 

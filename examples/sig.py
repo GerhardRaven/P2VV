@@ -124,10 +124,10 @@ moms2  = [ _bm(i,l,m) for i in range(3) for l in range(3) for m in range(-l,l+1)
 moms2 += [ _bm(i,2,m) for i in range(3,20) for m in [-2,1] ] # these are for the 'infinite' terms in the signal PDF 
 
 
-#computeMoments( data, moms + moms2 )
-#from pprint import pprint
-#pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
-#pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
+computeMoments( data, moms + moms2 )
+from pprint import pprint
+pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
+pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
 
 print 'fitting data'
 from ROOT import RooCmdArg
