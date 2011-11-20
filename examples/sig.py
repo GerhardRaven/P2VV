@@ -27,8 +27,7 @@ amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.601, A0Ph = 0
                                     , AperpMag2 = 0.160, AperpPh = -0.17
                                     , AparPh = 2.5
                                     , ASMag2 = 0, ASPh = 0 )
-amplitudes._ASMag2.setConstant(True)
-amplitudes._ASPh.setConstant(True)
+amplitudes.setConstant('.*AS.*',True)
 
 #### Package from here until the "BTagDecay('name', args)" into a dedicated class/function...
 from parameterizations import JpsiphiBTagDecayBasisCoefficients
@@ -120,14 +119,16 @@ print 'computing efficiency moments'
 moms = [ EffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ] 
 
 _bm = lambda i,l,m : EffMoment( P2VVAngleBasis(angles.angles, i,0,l,m,1. ), float(2*l+1)/2, pdf, angles.angles.itervalues() )
-moms2  = [ _bm(i,l,m) for i in range(3) for l in range(3) for m in range(-l,l+1) ]
-moms2 += [ _bm(i,2,m) for i in range(3,20) for m in [-2,1] ] # these are for the 'infinite' terms in the signal PDF 
-
+moms2  = [ _bm(i,l,m) for i in range(3) 
+                      for l in range(3) 
+                      for m in range(-l,l+1) ]
+moms2 += [ _bm(i,2,m) for i in range(3,20) 
+                      for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF 
 
 computeMoments( data, moms + moms2 )
 from pprint import pprint
-pprint( [ (m.GetName(), m.coefficient()) for m in moms ] )
-pprint( [ (m.GetName(), m.coefficient()) for m in moms2 ] )
+pprint( [ (m.GetName(), m.coefficient(), m.significance() ) for m in moms  ] )
+pprint( [ (m.GetName(), m.coefficient(), m.significance() ) for m in moms2 ] )
 
 print 'fitting data'
 from ROOT import RooCmdArg

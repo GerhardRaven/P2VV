@@ -1,4 +1,3 @@
-
 class CPParam :
     def __init__(self,**kwargs) :
         for i in 'CDS' : setattr(self,i,kwargs.pop(i))
@@ -27,7 +26,6 @@ class Carthesian_Amplitude :
         self.Im = Im
         self.CP = CP # even or odd???
     def __str__(self) : return self.name
-
 
 # construct amplitudes with polar parameters
 class Polar2_Amplitude(Carthesian_Amplitude) :
@@ -60,16 +58,34 @@ class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
         self._AparPh    = RealVar('AparPhase',  Title = 'delta_par',   Value = 2.50,    MinMax = ( -2. * pi, 2. * pi))
         self._ASMag2    = RealVar('ASMag2',     Title = '|A_S|^2',     Value = 0.10,    MinMax = ( 0., 1.))
         self._ASPh      = RealVar('ASPhase',    Title = 'delta_S',     Value = 2.2,     MinMax = ( -2. * pi, 2. * pi))
-
+        self._params    = [ self._A0Mag2,    self._A0Ph
+                          , self._AperpMag2, self._AperpPh
+                          ,                  self._AparPh
+                          , self._ASMag2,    self._ASPh ]
         if kwargs : self.setValues(**kwargs)
-
         AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Ph,    +1 )
                                    , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPh,  +1 )
                                    , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPh, -1 )
                                    , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPh,    -1 )
                                    )
+    def parameters( self ) :
+        return self._params
     def setValues( self, **kwargs ) :
-        for (k,v) in kwargs.iteritems() : getattr(self,'_'+k).Value = v
+        for (k,v) in kwargs.iteritems() : 
+            arg = getattr(self,'_'+k)
+            if v < arg.getMin() : arg.setMin(v) 
+            if v > arg.getMax() : arg.setMax(v) 
+            arg.Value = v
+    def setConstant( self, pattern, constant = True) :
+        import re
+        rc = 0
+        nrexp = re.compile(pattern)
+        for i in self.parameters(): 
+            if not nrexp.match( i.GetName() ) : continue
+            i.setConstant (constant )
+            # print '%s.setConstant(%s)'%(i,constant)
+            rc += 1
+        return rc
 
 class CEvenOdd :
     def __init__(self, **kwargs ) :
@@ -94,8 +110,6 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
                               , avgCOdd  =  FormulaVar( 'avgCOdd',     '@0 + @1 + @2 + @0*@1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average odd coefficients') 
                               )
 
-
-
 #TODO: inherit from UserDict mixin instead of wrapping & forwarding...
 class AngularFunctions :
     def __init__(self) :         self._d = dict()
@@ -117,20 +131,19 @@ class AngleDefinitions( object ) :
     @staticmethod
     def __intrprt__(name,kwargs,defname,title,minmax) :
         from RooFitWrappers import RealVar
-        if name in kwargs and type( kwargs[name] )== str :
-            return RealVar(  kwargs[name], Title = title,   Observable = True,  MinMax=minmax )
+        if name in kwargs and type( kwargs[name] ) == str :
+            return RealVar(  kwargs[name], Title = title, Observable = True,  MinMax=minmax )
         elif name not in kwargs :
-            return  RealVar(  defname,   Title = title,   Observable = True,  MinMax=minmax)
+            return  RealVar(  defname,     Title = title, Observable = True,  MinMax=minmax)
         else  :
             return kwargs[name]
-
 
 class JpsiphiHelicityAngles( AngleDefinitions ) :
     def __init__( self, **kwargs ) :
         from math import pi
-        d = { 'cpsi'   : AngleDefinitions.__intrprt__( 'cpsi', kwargs, 'helcthetaK', 'cosine of kaon polarization angle',      (-1., 1.))
-            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta', kwargs,  'helcthetaL', 'cosine of lepton polarization angle', (-1., 1.))
-            , 'phi'    : AngleDefinitions.__intrprt__( 'phi', kwargs,  'helphi', 'angle between decay planes',                 (-pi, pi))
+        d = { 'cpsi'   : AngleDefinitions.__intrprt__( 'cpsi',   kwargs, 'helcthetaK', 'cosine of kaon polarization angle',   (-1., 1.))
+            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta', kwargs, 'helcthetaL', 'cosine of lepton polarization angle', (-1., 1.))
+            , 'phi'    : AngleDefinitions.__intrprt__( 'phi',    kwargs, 'helphi',     'angle between decay planes',          (-pi, pi))
             }
         d['functions'] =  JpsiphiTransversityAmplitudesHelicityAngles( **d )
         AngleDefinitions.__init__(self, **d )
@@ -138,9 +151,9 @@ class JpsiphiHelicityAngles( AngleDefinitions ) :
 class JpsiphiTransversityAngles( AngleDefinitions ) :
     def __init__( self, **kwargs ) :
         from math import pi
-        d = { 'cpsi' :   AngleDefinitions.__intrprt__( 'cpsi', kwargs,  'trcpsi', 'cosine of kaon polarization angle', (-1., 1.))
-            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta',kwargs, 'trctheta', 'cosine of transversity polar angle',     (-1., 1.))
-            , 'phi'   :  AngleDefinitions.__intrprt__( 'phi', kwargs, 'trphi',     'transversity azimuthal angle',          (-pi, pi))
+        d = { 'cpsi' :   AngleDefinitions.__intrprt__( 'cpsi',   kwargs, 'trcpsi',   'cosine of kaon polarization angle',  (-1., 1.))
+            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta', kwargs, 'trctheta', 'cosine of transversity polar angle', (-1., 1.))
+            , 'phi'   :  AngleDefinitions.__intrprt__( 'phi',    kwargs, 'trphi',    'transversity azimuthal angle',       (-pi, pi))
             }
         d['functions'] = JpsiphiTransversityAmplitudesTransversityAngles( **d )
         AngleDefinitions.__init__(self, **d )
@@ -181,7 +194,6 @@ class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
         from math import sqrt
         _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
-
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,  4.             )
                                                                           ,(0, 0, 2,  0,  sqrt(  4. / 5.))
                                                                           ,(0, 0, 2,  2, -sqrt( 12. / 5.))

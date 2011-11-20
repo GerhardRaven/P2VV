@@ -76,7 +76,7 @@ class RooObject(object) :
             x._observable = False
         else :
             x = self.ws()._spec[ spec ] 
-            print 'INFO: spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
+            # print 'INFO: spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
         return x
 
     def _init(self,name,type) :
