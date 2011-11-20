@@ -51,16 +51,22 @@ class RooObject(object) :
         #       so maybe we either require a name, and verify what we got back has
         #       the matching name, or, in case name is 'None' then it has to be unique
         #       and not yet used???
+        #   No! we turn the mapping around, from spec -> ( object -> ) name
+        #
         # canonicalize 'spec' a bit by getting rid of spaces
         spec = spec.strip()
+        # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
+        #       the value of 'factory_tag' which is used internally in the conflict resolution
+        #       and which is the 'canonical' recipe to build an object
+        #       That way, we can improve the check for re-use, as currently it _is_ possible
+        #       to get collisions, as two different 'spec' may end up trying to build the same object
+        #       where 'same' is defined as having the same name.
+        #       For now, we deal with this by raising an exception when the factory call encounters 
+        #       a conflict.
         if spec not in self.ws()._spec : 
             x = self.ws().factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
-            # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
-            #       the value of 'factory_tag' which is used internally in the conflict resolution
-            #       and which is the 'canonical' recipe to build an object
-            #       That way, we can check for re-use explicitly!!!
             #  
             # Keep the PyROOT objects in a container so they don't get garbage
             # collected.
@@ -70,7 +76,7 @@ class RooObject(object) :
             x._observable = False
         else :
             x = self.ws()._spec[ spec ] 
-            print 'spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
+            print 'INFO: spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
         return x
 
     def _init(self,name,type) :
