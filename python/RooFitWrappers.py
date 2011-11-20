@@ -38,10 +38,14 @@ class RooObject(object) :
 
     def setWorkspace(self,ws):
         RooObject._ws = ws
-        if not hasattr(ws, '_objects') : ws._objects  = {}
+        if not hasattr(ws, '_objects') : ws._objects  = {}  # name -> object
         if not hasattr(ws, '_mappings'): ws._mappings = {}
+        if not hasattr(ws, '_spec'):     ws._spec = {}      # factory string -> object
         
     def _declare(self,spec):
+        """
+        create the underlying C++ object in the workspace
+        """
         # TODO: add mapping of name -> spec so we can gate identical invocations.
         #       problem is that we don't know 'name' a-priori....
         #       so maybe we either require a name, and verify what we got back has
@@ -49,21 +53,31 @@ class RooObject(object) :
         #       and not yet used???
         # canonicalize 'spec' a bit by getting rid of spaces
         spec = spec.strip()
-        x = self.ws().factory(spec)
-        if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
-        x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
-        # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
-        #       the value of 'factory_tag' which is used internally in the conflict resolution
-        #       and which is the 'canonical' recipe to build an object
-        #       That way, we can check for re-use explicitly!!!
-        #  
-        # Keep the PyROOT objects in a container so they don't get garbage
-        # collected.
-        self.ws()._objects[x.GetName()] = x
-        x._observable = False
+        if spec not in self.ws()._spec : 
+            x = self.ws().factory(spec)
+            if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
+            x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
+            # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
+            #       the value of 'factory_tag' which is used internally in the conflict resolution
+            #       and which is the 'canonical' recipe to build an object
+            #       That way, we can check for re-use explicitly!!!
+            #  
+            # Keep the PyROOT objects in a container so they don't get garbage
+            # collected.
+            self.ws()._objects[x.GetName()] = x
+            # and keep track what we made 
+            self.ws()._spec[ spec ] = x
+            x._observable = False
+        else :
+            x = self.ws()._spec[ spec ] 
+            print 'spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
         return x
 
     def _init(self,name,type) :
+        """
+        match ourselves to the underlying C++ object in the workspace
+        This is done by assigning _var 
+        """
         # If the object was mapped to something from the dataset, put the right
         # variable behind it.
         if name in self.ws()._mappings:
@@ -127,7 +141,6 @@ class RooObject(object) :
 ##       elegant?
 
 class Category (RooObject): 
-    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
     _getters = {'Observable' : lambda s : s.observable() 
                ,'Index'      : lambda s : s.getIndex() 
                ,'Label'      : lambda s : s.getLabel()
