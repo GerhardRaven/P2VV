@@ -78,7 +78,7 @@ int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst, 
   RooArgSet* obs = moments.front()->getObservables(data);
   
   if (verbose) cout << "P2VV - INFO: computeMoments: computing " << moments.size()
-      << " moment(s) for data set '" << data.GetName() << "'" << endl;
+      << " moment(s) for data set '" << data.GetName() << "' with " << data.numEntries() << " events" << endl;
 
   int dataIter = 0;
   ProgressDisplay *progress = verbose ? new ProgressDisplay(data.numEntries()) : 0;
