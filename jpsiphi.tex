@@ -223,6 +223,7 @@ the definition of the tagged PDF becomes\footnote{when summed together, it is ob
 \begin{eqnarray}
    P_{B_\mathrm{tag},i} &\equiv t_i (1-w_i) P_{B} + \overline{t}_i\overline{w}_i P_{\overline{ B} }\\
    P_{\overline{B}_\mathrm{tag},i} &\equiv \overline{t}_i (1-\overline{w}_i) P_{\overline{B}} + t_i w_i P_{ B }
+\label{eq:tagdef}
 \end{eqnarray} 
 Once more we replace the new parameters $w_i$ and $\overline{w}_i$ by a CP-even and a CP-odd combination, by introducing
 the following parameterization:
@@ -297,6 +298,23 @@ as a bonus, also $\nu$, simultaneously.
 
 \vfill
 \pagebreak
+At this point we introduce the distinction, for the tagged PDFs $P_i$, between observing a $B$ tag and a $\overline{B}$ tag.
+Labelling the probability to tag with a true $B$ as $\overline{B}$ tag with $w_i$ and a true $\overline{B}$ as $B$ tag as $\overline{w}$,
+where $w$ and $\overline{w}$ depend on an observable $\omega$,
+the definition of the tagged PDF becomes\footnote{
+when the distribution of $\omega$ is actually a Dirac comb, and the mistag $w(\overline{w})$ is directly given by $\omega(\overline{\omega})$, i.e. $ w(\omega) = \omega, P_\omega = \sum t_i \delta(\omega-w_i)$ 
+and $\overline{w} = \omega, \overline{P}_\omega = \sum \overline{t}_i \delta(\omega-\overline{w}_i) $, we recover
+eq. \ref{eq:tagdef}}:
+\begin{eqnarray}
+   P_{B_\mathrm{tag},\omega} &\equiv  (1-w(\omega)) P_{B} P_\omega  + \overline{w}(\omega) P_{\overline{ B} }\overline{P}_\omega \\
+   P_{\overline{B}_\mathrm{tag},\omega} &\equiv (1-\overline{w}(\omega)) P_{\overline{B}}\overline{P}_\omega  +  w(\omega) P_{ B } P_\omega
+\end{eqnarray} 
+
+If instead we take the observed distributions of $\omega$ for $B$  and $\overline{B}$, we have:
+\begin{eqnarray}
+   P_{B_\mathrm{tag},\omega} &\equiv P_\omega \left[ (1-w(\omega)) P_{B} + \overline{w}(\omega) P_{\overline{ B} } \right]\\
+   P_{\overline{B}_\mathrm{tag},\omega} &\equiv \overline{P}_\omega\left[ (1-\overline{w}(\omega)) P_{\overline{B}} +  w(\omega) P_{ B } \right]
+\end{eqnarray} 
 
 \section{Angular Dependence}
 
