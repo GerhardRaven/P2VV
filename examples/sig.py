@@ -7,11 +7,13 @@ ws = RooObject( workspace = 'myws' )
 
 from parameterizations import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
-angles    = TrAngles( cpsi = 'trcpsi', ctheta = 'trctheta', phi = 'trphi' )
-t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
-iTag      = Category( 'tagdecision',Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } )
+angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
+#t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
+t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(0.3,14)  )
+iTag      = Category( 'tagdecision',Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # TODO: , 'untagged' : 0 } )
+tagOmega  = RealVar( 'tagomega', Title = 'Mistag Rate',      Value = 0.3, MinMax = (0,0.501) )
 
-observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag ]
+observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag, tagOmega ]
 
 from parameterizations import LambdaSqArg_CPParam
 from math import pi
@@ -19,7 +21,6 @@ from math import pi
 CP = LambdaSqArg_CPParam( lambdaSq  = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2',  Value = 1)
                         , lambdaArg = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',      Value = -0.04,  MinMax = (-2*pi,2*pi) ) # , Blind = (UnblindUniform,'BsRooBarb',0.2) )
                         )
-
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from parameterizations import JpsiphiAmplitudesLP2011
@@ -49,8 +50,8 @@ ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'pr
 # now build the actual signal PDF...
 from ROOT import RooTruthModel as TruthModel
 args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}',  Value = 17.8 )  
-       , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.0/0.68, MinMax = ( 1.3, 1.8) )
-       , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.060,    MinMax = (-0.3, 0.3) )
+       , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.472,      MinMax = ( 1.3, 1.8) )
+       , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.0599979,  MinMax = (-0.3, 0.3) )
        , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
        , 'decayType' : 'SingleSided' 
        , 'time'      : t
@@ -61,10 +62,11 @@ args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps
        , 'avgCEven'  : ANuissance['avgCEven'] 
        , 'avgCOdd'   : ANuissance['avgCOdd']
        , 'iTag'      : iTag
-       , 'dilution'  : RealVar( 'tagDilution', Title = 'Average Tagging Dilution',      Value = 1 )
+       , 'dilution'  : FormulaVar('tagdilution', '1-2*@0', [ tagOmega ] )
        , 'ADilWTag'  : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry',  Value = 0 )
        } 
 
+# must make this conditional on tagomega....
 mcpdf = BTagDecay( 'mc_pdf',  args )
 #mcpdf = BDecay( 'mc_pdf',  args )
 
@@ -97,12 +99,13 @@ pdf = mcpdf
 #
 
 
-if True : 
+if False : 
     print 'generating data'
     data = pdf.generate( observables , 10000 )
 
 else  :
     mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
+    mcfilename =  '/tmp/MC2011_UB.root'
     from ROOT import TFile
     MCfile = TFile(mcfilename)
     MCtuple = MCfile.Get('MyTree')
@@ -111,7 +114,7 @@ else  :
     for i in observables : _obs +=  i._target_() 
     noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in _obs )
     print noNAN
-    #data = RooDataSet('MCdata','MCdata',MCtuple,_obs,noNAN)
+    data = RooDataSet('MCdata','MCdata',MCtuple,_obs,noNAN)
     print data.numEntries()
 
 
