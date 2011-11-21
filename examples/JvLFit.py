@@ -47,36 +47,26 @@ one   = ConstVar('one',   Value = +1.)
 minus = ConstVar('minus', Value = -1.)
 
 # variables
-cthetak   = RealVar('hel_cthetak', Title = 'cosine of kaon polarization angle',   Observable = True, Value = 0., MinMax=(-1., 1.))
-cthetal   = RealVar('hel_cthetal', Title = 'cosine of lepton polarization angle', Observable = True, Value = 0., MinMax=(-1., 1.))
-phiHel    = RealVar('hel_phi',     Title = 'angle between decay planes',          Observable = True, Value = 0., MinMax=(-pi, pi))
-time      = RealVar('t',           Title = 'decay time', Unit = 'ps',             Observable = True, Value = 0., MinMax=(-0.5, 5.))
-iTag      = Category('tagInitial', Title = 'initial state flavour tag',           Observable = True, States = {'B': +1, 'Bbar': -1})
+from parameterizations import JpsiphiHelicityAngles as HelAngles
+angles = HelAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
+time   = RealVar('t',           Title = 'decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax=(-0.5, 5.))
+iTag   = Category('tagInitial', Title = 'initial state flavour tag', Observable = True, States = {'B': +1, 'Bbar': -1})
 
-helAngles = [cthetak, cthetal, phiHel]
-observables = helAngles + [time, iTag]
+observables = [angle for angle in angles.angles.itervalues()] + [time, iTag]
 
-# angular functions
-from parameterizations import JpsiphiTransversityAmplitudesHelicityAngles
-angFuncs = JpsiphiTransversityAmplitudesHelicityAngles(cpsi = cthetak, ctheta = cthetal, phi = phiHel)
+# tagging
+wTag    = RealVar('wTag',    Title = 'wrong tag fraction B',      Value = 0.1, MinMax = (0., 0.5))
+wTagBar = RealVar('wTagBar', Title = 'wrong tag fraction anti-B', Value = 0.2, MinMax = (0., 0.5))
 
 # transversity amplitudes
-ReA0    = RealVar('ReA0',    Title = 'Re(A_0)',    Value = 1.)
-ImA0    = RealVar('ImA0',    Title = 'Im(A_0)',    Value = 0.)
-ReApar  = RealVar('ReApar',  Title = 'Re(A_par)',  Value = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal),  MinMax = (-1., 1.))
-ImApar  = RealVar('ImApar',  Title = 'Im(A_par)',  Value = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal),  MinMax = (-1., 1.))
-ReAperp = RealVar('ReAperp', Title = 'Re(A_perp)', Value = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal), MinMax = (-1., 1.))
-ImAperp = RealVar('ImAperp', Title = 'Im(A_perp)', Value = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal), MinMax = (-1., 1.))
-ReAS    = RealVar('ReAS',    Title = 'Re(A_S)',    Value = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal),    MinMax = (-1., 1.))
-ImAS    = RealVar('ImAS',    Title = 'Im(A_S)',    Value = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal),    MinMax = (-1., 1.))
-
-from parameterizations import Carthesian_Amplitude
-transAmps = {
-    'A0'    : Carthesian_Amplitude('A0',    ReA0,    ImA0,    +1)
-  , 'Apar'  : Carthesian_Amplitude('Apar',  ReApar,  ImApar,  +1)
-  , 'Aperp' : Carthesian_Amplitude('Aperp', ReAperp, ImAperp, -1)
-  , 'AS'    : Carthesian_Amplitude('AS',    ReAS,    ImAS,    -1)
-}
+from parameterizations import JpsiVCarthesianAmplitudes
+transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
+                                      , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
+                                      , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
+                                      , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
+                                      , ReAS    = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal)
+                                      , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
+                                     )
 
 # B lifetime
 Gamma  = RealVar('Gamma',  Title = 'Gamma',       Unit = 'ps^{-1}', Value = GammaVal,  MinMax = (  0.4,  0.9))
@@ -92,25 +82,17 @@ if carthLambdaCP :
   # carthesian lambda
   from parameterizations import LambdaCarth_CPParam
   lambdaCP = LambdaCarth_CPParam(
-      ReLambda = RealVar('ReLambdaCP', Title = 'CP violation param. Re(lambda)',
-                         Value = sqrt(lambdaCPSqVal) * cos(-phiCPVal), MinMax = (-2., 2.))
-    , ImLambda = RealVar('ImLambdaCP', Title = 'CP violation param. Im(lambda)',
-                         Value = sqrt(lambdaCPSqVal) * sin(-phiCPVal), MinMax = (-2., 2.))
+      ReLambda = RealVar('ReLambdaCP', Title = 'CPV param. Re(lambda)', Value = sqrt(lambdaCPSqVal) * cos(-phiCPVal), MinMax = (-2., 2.))
+    , ImLambda = RealVar('ImLambdaCP', Title = 'CPV param. Im(lambda)', Value = sqrt(lambdaCPSqVal) * sin(-phiCPVal), MinMax = (-2., 2.))
   )
 
 else :
   # polar lambda
   from parameterizations import LambdaSqArg_CPParam
   lambdaCP = LambdaSqArg_CPParam(
-      lambdaSq  = RealVar('lambdaCPSq', Title = 'CP violation param. lambda^2',
-                         Value = lambdaCPSqVal, MinMax = (0., 5.))
-    , lambdaArg = RealVar('lambdaCPArg', Title = 'CP violation param. arg(lambda)',
-                         Value = -phiCPVal, MinMax = (-2. * pi, 2. * pi))
+      lambdaSq  = RealVar('lambdaCPSq',  Title = 'CPV param. lambda^2',    Value = lambdaCPSqVal, MinMax = (0., 5.))
+    , lambdaArg = RealVar('lambdaCPArg', Title = 'CPV param. arg(lambda)', Value = -phiCPVal,     MinMax = (-2. * pi, 2. * pi))
   )
-
-# tagging
-wTag    = RealVar('wTag',    Title = 'wrong tag fraction B',      Value = 0.1, MinMax = (0., 0.5))
-wTagBar = RealVar('wTagBar', Title = 'wrong tag fraction anti-B', Value = 0.2, MinMax = (0., 0.5))
 
 # nuissance asymmetries
 from parameterizations import ProdTagNorm_CEvenOdd
@@ -122,7 +104,7 @@ ANuissance = ProdTagNorm_CEvenOdd(
 
 # coefficients for time functions
 from parameterizations import JpsiphiBTagDecayBasisCoefficients
-timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients(angFuncs, transAmps, lambdaCP, ['A0','Apar','Aperp','AS']) 
+timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients(angles.functions, transAmps, lambdaCP, ['A0','Apar','Aperp','AS']) 
 
 # build the B_s -> J/psi phi signal PDF
 args = {
@@ -161,5 +143,5 @@ else :
 
 # fit data
 print 'fitJpsiV: fitting %d events' % data.numEntries()
-pdf.fitTo(data, RooFit.NumCPU(12), RooFit.Timer(1))
+pdf.fitTo(data, RooFit.NumCPU(10), RooFit.Timer(1))
 

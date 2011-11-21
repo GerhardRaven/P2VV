@@ -46,6 +46,48 @@ class AmplitudeSet ( dict ) :
         # require the names in args to be unique...
         assert(len(self)==len(args))
 
+    def parameters( self ) :
+        return self._params
+    def setValues( self, **kwargs ) :
+        for (k,v) in kwargs.iteritems() : 
+            arg = getattr(self,'_'+k)
+            if v < arg.getMin() : arg.setMin(v) 
+            if v > arg.getMax() : arg.setMax(v) 
+            arg['Value'] = v
+    def setConstant( self, pattern, constant = True) :
+        import re
+        rc = 0
+        nrexp = re.compile(pattern)
+        for i in self.parameters(): 
+            if not nrexp.match( i.GetName() ) : continue
+            i.setConstant (constant )
+            # print '%s.setConstant(%s)'%(i,constant)
+            rc += 1
+        return rc
+
+class JpsiVCarthesianAmplitudes ( AmplitudeSet ) :
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import RealVar
+        from math import sqrt, cos, sin
+
+        self._ReA0    = RealVar('ReA0',    Title = 'Re(A_0)',    Value = 1.)
+        self._ImA0    = RealVar('ImA0',    Title = 'Im(A_0)',    Value = 0.)
+        self._ReApar  = RealVar('ReApar',  Title = 'Re(A_par)',  Value = sqrt(0.24 / 0.60) * cos( 2.50), MinMax = (-1., 1.))
+        self._ImApar  = RealVar('ImApar',  Title = 'Im(A_par)',  Value = sqrt(0.24 / 0.60) * sin( 2.50), MinMax = (-1., 1.))
+        self._ReAperp = RealVar('ReAperp', Title = 'Re(A_perp)', Value = sqrt(0.16 / 0.60) * cos(-0.17), MinMax = (-1., 1.))
+        self._ImAperp = RealVar('ImAperp', Title = 'Im(A_perp)', Value = sqrt(0.16 / 0.60) * sin(-0.17), MinMax = (-1., 1.))
+        self._ReAS    = RealVar('ReAS',    Title = 'Re(A_S)',    Value = sqrt(0.10 / 0.60) * cos( 2.20), MinMax = (-1., 1.))
+        self._ImAS    = RealVar('ImAS',    Title = 'Im(A_S)',    Value = sqrt(0.10 / 0.60) * sin( 2.20), MinMax = (-1., 1.))
+
+        self._params = [ self._ReA0, self._ImA0, self._ReApar, self._ImApar, self._ReAperp, self._ImAperp, self._ReAS, self._ImAS ]
+        if kwargs : self.setValues(**kwargs)
+
+        AmplitudeSet.__init__( self, Carthesian_Amplitude( 'A0',    self._ReA0,    self._ImA0,    +1 )
+                                   , Carthesian_Amplitude( 'Apar',  self._ReApar,  self._ImApar,  +1 )
+                                   , Carthesian_Amplitude( 'Aperp', self._ReAperp, self._ImAperp, -1 )
+                                   , Carthesian_Amplitude( 'AS',    self._ReAS,    self._ImAS,    -1 )
+                             )
+
 class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import RealVar, FormulaVar
@@ -58,34 +100,15 @@ class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
         self._AparPh    = RealVar('AparPhase',  Title = 'delta_par',   Value = 2.50,    MinMax = ( -2. * pi, 2. * pi))
         self._ASMag2    = RealVar('ASMag2',     Title = '|A_S|^2',     Value = 0.10,    MinMax = ( 0., 1.))
         self._ASPh      = RealVar('ASPhase',    Title = 'delta_S',     Value = 2.2,     MinMax = ( -2. * pi, 2. * pi))
-        self._params    = [ self._A0Mag2,    self._A0Ph
-                          , self._AperpMag2, self._AperpPh
-                          ,                  self._AparPh
-                          , self._ASMag2,    self._ASPh ]
+
+        self._params = [ self._A0Mag2, self._A0Ph, self._AperpMag2, self._AperpPh, self._AparPh, self._ASMag2, self._ASPh ]
         if kwargs : self.setValues(**kwargs)
+
         AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Ph,    +1 )
                                    , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPh,  +1 )
                                    , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPh, -1 )
                                    , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPh,    -1 )
-                                   )
-    def parameters( self ) :
-        return self._params
-    def setValues( self, **kwargs ) :
-        for (k,v) in kwargs.iteritems() : 
-            arg = getattr(self,'_'+k)
-            if v < arg.getMin() : arg.setMin(v) 
-            if v > arg.getMax() : arg.setMax(v) 
-            arg.Value = v
-    def setConstant( self, pattern, constant = True) :
-        import re
-        rc = 0
-        nrexp = re.compile(pattern)
-        for i in self.parameters(): 
-            if not nrexp.match( i.GetName() ) : continue
-            i.setConstant (constant )
-            # print '%s.setConstant(%s)'%(i,constant)
-            rc += 1
-        return rc
+                             )
 
 class CEvenOdd :
     def __init__(self, **kwargs ) :
