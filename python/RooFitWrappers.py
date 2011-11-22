@@ -1,7 +1,4 @@
 from RooFitDecorators import *
-from ROOT import RooTruthModel
-from copy import copy
-
 
 def __check_req_kw__( name, kwargs ) :
     if not name in kwargs : raise KeyError( 'Must provide kw argument %s' % name )
@@ -13,6 +10,26 @@ def __check_exists_already__( self ) :
 class RooObject(object) :
     _ws = None
     _dict = None
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               }
+    def __setitem__(self,k,v):
+        for i in type(self).__mro__ : 
+            if k in i._setters :  return i._setters[k](self,v )
+        raise KeyError('%s is not known for class %' % (k, type(self) ) )
+    def __getitem__(self,k):
+        for i in type(self).__mro__ : 
+            if k in i._getters :  return i._getters[k](self)
+        raise KeyError('%s is not known for class %' % (k, type(self) ) )
+
+
+    def __init__(self,workspace = None) :
+        if workspace :
+            from ROOT import RooWorkspace
+            if type(workspace) != RooWorkspace : workspace = RooWorkspace(workspace)
+            self.setWorkspace( workspace )
 
     def ws(self) : 
         if not RooObject._ws : raise RuntimeError('No workspace defined!')
@@ -20,32 +37,52 @@ class RooObject(object) :
 
     def setWorkspace(self,ws):
         RooObject._ws = ws
-        if not hasattr(ws, '_objects') : ws._objects  = {}
+        if not hasattr(ws, '_objects') : ws._objects  = {}  # name -> object
         if not hasattr(ws, '_mappings'): ws._mappings = {}
+        if not hasattr(ws, '_spec'):     ws._spec = {}      # factory string -> object
         
     def _declare(self,spec):
+        """
+        create the underlying C++ object in the workspace
+        """
         # TODO: add mapping of name -> spec so we can gate identical invocations.
         #       problem is that we don't know 'name' a-priori....
         #       so maybe we either require a name, and verify what we got back has
         #       the matching name, or, in case name is 'None' then it has to be unique
         #       and not yet used???
+        #   No! we turn the mapping around, from spec -> ( object -> ) name
+        #
         # canonicalize 'spec' a bit by getting rid of spaces
         spec = spec.strip()
-        x = self.ws().factory(spec)
-        if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
-        x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
         # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
         #       the value of 'factory_tag' which is used internally in the conflict resolution
         #       and which is the 'canonical' recipe to build an object
-        #       That way, we can check for re-use explicitly!!!
-        #  
-        # Keep the PyROOT objects in a container so they don't get garbage
-        # collected.
-        self.ws()._objects[x.GetName()] = x
-        x._observable = False
+        #       That way, we can improve the check for re-use, as currently it _is_ possible
+        #       to get collisions, as two different 'spec' may end up trying to build the same object
+        #       where 'same' is defined as having the same name.
+        #       For now, we deal with this by raising an exception when the factory call encounters 
+        #       a conflict.
+        if spec not in self.ws()._spec : 
+            x = self.ws().factory(spec)
+            if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
+            x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
+            #  
+            # Keep the PyROOT objects in a container so they don't get garbage
+            # collected.
+            self.ws()._objects[x.GetName()] = x
+            # and keep track what we made 
+            self.ws()._spec[ spec ] = x
+            x._observable = False
+        else :
+            x = self.ws()._spec[ spec ] 
+            # print 'INFO: spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
         return x
 
     def _init(self,name,type) :
+        """
+        match ourselves to the underlying C++ object in the workspace
+        This is done by assigning _var 
+        """
         # If the object was mapped to something from the dataset, put the right
         # variable behind it.
         if name in self.ws()._mappings:
@@ -100,7 +137,6 @@ class RooObject(object) :
 
     def mappings(self):
         return self.ws()._mappings
-
 # TODO: make this more of a 'borg' by overloading __new__ instead of __init__
 #       otherwise properties of the proxy not in the 'target' are not shared
 #       across multiple instances which all defer to the same 'target'
@@ -110,15 +146,14 @@ class RooObject(object) :
 ##       elegant?
 
 class Category (RooObject): 
-    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
-               ,'Index'      : lambda s,v : s.setIndex(v)
-               ,'Label'      : lambda s,v : s.setLabel(v)
-               }
     _getters = {'Observable' : lambda s : s.observable() 
                ,'Index'      : lambda s : s.getIndex() 
                ,'Label'      : lambda s : s.getLabel()
-               ,'Name'       : lambda s : s.GetName()
                ,'States'     : lambda s : s.states()
+               } 
+    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
+               ,'Index'      : lambda s,v : s.setIndex(v)
+               ,'Label'      : lambda s,v : s.setLabel(v)
                }
 
     def __init__(self,name,**kwargs):
@@ -136,7 +171,7 @@ class Category (RooObject):
             # Create the category and extract states into storage
             self._declare("%s[%s]"%(name,states))
             self._init(name,'RooCategory')
-            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
+            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         else:
             self._init(name,'RooCategory')
             # Make sure we are the same as last time
@@ -146,10 +181,6 @@ class Category (RooObject):
                 if k in ['Index', 'Label']: continue
                 assert v == self[k]
             
-    def __setitem__(self,k,v):
-        return Category._setters[k](self, v)
-    def __getitem__(self,k):
-        return Category._getters[k](self)
     def states(self):
         return self._states
 
@@ -163,7 +194,7 @@ class SuperCategory( Category ) :
             from ROOT import RooSuperCategory
             self.ws()._objects[ name ] = self.ws().put( RooSuperCategory(name,name,args) )
             self._init(name,'RooSuperCategory')
-            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
+            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
             self._init(name,'RooSuperCategory')
@@ -174,71 +205,43 @@ class SuperCategory( Category ) :
                 if k in ['Index', 'Label']: continue
                 assert v == self[k]
 
-#class MappedCategory( Category ) :
-#    def __init__(self,name,mapper,incat,**kwargs):
-#        if name not in self.ws():
-#            # construct factory string on the fly: no factory string for MappedCategory???
-#            self.ws()._objects[ name ] = self.ws().put( RooMappedcategory(name,name,incat) )
-#            self._init(name,'RooMappedCategory')
-#            for k,v in mapper.iteritems() : self.ws()._objects[ name ].map(k,v)
-#            self._target_()._states = dict( ( cat.GetName(), cat.getVal()) for cat in self._target_() )
-#            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-#        else:
-#            self._init(name,'RooMappedCategory')
-#            # Make sure we are the same as last time
-#            for k, v in kwargs.iteritems():
-#                # Skip these to avoid failure in case we were loaded from a
-#                # DataSet in the mean time
-#                if k in ['Index', 'Label']: continue
-#                assert v == self[k]
-#        
-#class DataSet( RooObject ) :
-#    def __init__(self, name, tree, obs, cuts) :
-#        pass   
-#
+class MappedCategory( Category ) :
+    def __init__(self,name,cat,mapper,**kwargs):
+        if name not in self.ws():
+            # construct factory string on the fly: no factory string for SuperCategory???
+            from ROOT import RooMappedCategory
+            cast = lambda i : i._target_() if hasattr(i,'_target_') else i
+            obj =  RooMappedCategory(name,name,cast(cat) )
+            for k,vs in mapper.iteritems() : 
+                for v in vs : obj.map( v, k )
+            self.ws()._objects[ name ] = self.ws().put( obj )
+            self._init(name,'RooMappedCategory')
+            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(name,'RooMappedCategory')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                if k in ['Index', 'Label']: continue
+                assert v == self[k]
 
 
 class Product(RooObject) :
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
     def __init__(self,name,fargs,**kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            self._declare("prod::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) )
-            self._init(name,'RooProduct')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
+        spec =  "prod::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) 
+        self._declare( spec )
+        self._init(name,'RooProduct')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
-    def __setitem__(self,k,v):
-        return Product._setters[k](self, v)
-    def __getitem__(self,k):
-        return Product._getters[k](self)
-
 
 class Addition(RooObject) :
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
     def __init__(self,name,fargs,**kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            self._declare("sum::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) )
-            self._init(name,'RooAddition')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
-            
-    def __setitem__(self,k,v):
-        return Addition._setters[k](self, v)
-    def __getitem__(self,k):
-        return Addition._getters[k](self)
-
+        # construct factory string on the fly...
+        self._declare("sum::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) )
+        self._init(name,'RooAddition')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class FormulaVar (RooObject): 
     # TODO: move __setitem__ and __getitem__ into RooObject
@@ -277,14 +280,8 @@ class FormulaVar (RooObject):
         return FormulaVar._getters[k](self)
 
 class ConstVar (RooObject): 
-    # WARNING: multiple instances don't share proxy state at this time...
-    # TODO: move common things like Name and Title in RooObject...
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Value'      : lambda s : s.getVal()
-               ,'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
+    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
+    _getters = {'Value'      : lambda s : s.getVal() } 
 
     def __init__(self,name,**kwargs):
         if name not in self.ws():
@@ -309,31 +306,19 @@ class ConstVar (RooObject):
         return ConstVar._getters[k](self)
 
 class P2VVAngleBasis (RooObject) : 
-    _setters = {}
-    _getters = { 'Name'       : lambda s : s.GetName()
-               , 'Title'      : lambda s : s.GetTitle()
-               }
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
     def __init__(self, angles, i,j,k,l,c) :
         # compute name, given angles,i,j,k,l,c!
-        name = '_'.join(a['Name'] for a in angles)
+        name = '_'.join(angles[a]['Name'] for a in ['cpsi','ctheta','phi'])
         # remove c if it is 1?
         name = 'P2VVAngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
         name = name.replace('.', '_')
-        spec = "RooP2VVAngleBasis::%s(%s, %d, %d, %d, %d, %f)" % (name, ','.join(a['Name'] for a in angles), i, j, k, l, c) 
-        present = name in self.ws() 
-        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec') 
+        spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)" % (name, angles['cpsi'],angles['ctheta'],angles['phi'], i, j, k, l, c) 
         #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
-        if not present or not match : self._declare( spec )
+        self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
             
-    def __setitem__(self,k,v):
-        return P2VVAngleBasis._setters[k](self, v)
-    def __getitem__(self,k):
-        return P2VVAngleBasis._getters[k](self)
-
-
 class EffMoment :
     from ROOT import gSystem, RooArgSet
     gSystem.Load('libP2VV.so')
@@ -356,7 +341,6 @@ def computeMoments(data, moments) :
   Looping over data in python is quite a bit slower than in C++. Hence, we
   adapt the arguments and then defer to the C++ _computeMoments.
   """
-
   from ROOT import std, _computeMoments
   momVec = std.vector('IMoment*')()
   for mom in moments : momVec.push_back(mom._var if hasattr(mom,'_var') else mom)
@@ -366,18 +350,16 @@ def computeMoments(data, moments) :
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...
+    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
+    _getters = {'Observable' : lambda s : s.observable() 
+               ,'Unit'       : lambda s : s.getUnit() 
+               ,'Value'      : lambda s : s.getVal()
+               ,'MinMax'     : lambda s : s.getRange()
+               }
     _setters = {'Observable' : lambda s,v : s.setObservable(v) 
                ,'Unit'       : lambda s,v : s.setUnit(v) 
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
-               ,'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Observable' : lambda s : s.observable()
-               ,'Unit'       : lambda s : s.getUnit()
-               ,'Value'      : lambda s : s.getVal()
-               ,'MinMax'     : lambda s : s.getRange()
-               ,'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
                }
 
     def __init__(self,name,**kwargs):
@@ -412,10 +394,6 @@ class RealVar (RooObject):
                     continue
                 assert v == self[k]
             
-    def __setitem__(self,k,v):
-        return RealVar._setters[k](self, v)
-    def __getitem__(self,k):
-        return RealVar._getters[k](self)
     # overrule RooRealVar.setRange
     def setRange(self, v):
         (mi,ma) = v
@@ -432,7 +410,6 @@ class Pdf(RooObject):
                ,'Type'        : lambda s : s._get('Type')
                ,'Parameters'  : lambda s : s._get('Parameters')
                ,'Name'        : lambda s : s._get('Name')
-               ,'Title'       : lambda s : s.GetTitle()
                }
 
     ## TODO: define operators
@@ -461,7 +438,7 @@ class Pdf(RooObject):
             return self._dict[k]
         else:
             try:
-                return Pdf._getters[k](self)
+                return RooObject.__getitem__( self, k )
             except AttributeError as error:
                 raise KeyError(str(error))
 
@@ -607,21 +584,6 @@ class BTagDecay( Pdf ) :
         else:
             raise RunTimeError( 'Code Path Not Yet Verified'  )
 
-class Decay( Pdf ) :
-    def __init__(self,name,params, **kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            if 'name' in params : raise KeyError(' name should not be in params!')
-            d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
-            d['name'] = name
-            self._declare("Decay::%(name)s( %(time)s, %(tau)s,"\
-                          " %(resolutionModel)s, %(decayType)s )" % d )
-
-            self._init(name,'RooDecay')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
-
 class ResolutionModel(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables')
                ,'Parameters'  : lambda s : s._get('Parameters')
@@ -657,9 +619,6 @@ class ResolutionModel(RooObject):
         attr = '_' + name.lower()
         return getattr(self, attr)
             
-    def __getitem__(self, k):
-        return ResolutionModel._getters[k](self)
-    
     def _makeRecipe(self):
         variables = list(self._dict['Observables'])
         if 'Parameters' in self._dict:
@@ -669,26 +628,12 @@ class ResolutionModel(RooObject):
         
 
 class AddModel(ResolutionModel) :
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               }
     def __init__(self,name,models,fractions,**kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            for i in models : print '__init__:',i, type(i)
-            self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
-            self._init(name,'RooAddModel')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
+        # construct factory string on the fly...
+        self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
+        self._init(name,'RooAddModel')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
-    def __setitem__(self,k,v):
-        return AddModel._setters[k](self, v)
-    def __getitem__(self,k):
-        return AddModel._getters[k](self)
-
 
 
 class Component(object):

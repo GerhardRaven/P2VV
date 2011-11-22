@@ -122,7 +122,9 @@ ws.factory("{expr::S('-1*sin(@0)',{phis}),expr::D('cos(@0)',{phis}),C[0]}")
 ###############################
 ### Experimental parameters ###
 ###############################
-# For determination of efficiency from MC, put RooTruthModel, later replace this by realistic Resolution model. Does that imply building the JpsiPhi pdf again? Yes, you should, but you never did it yet. Apparantly it doesn't matter for the result, but fix it!!!
+# For determination of efficiency from MC, put RooTruthModel, later replace this by realistic Resolution model. 
+# Does that imply building the JpsiPhi pdf again? Yes, you should, but you never did it yet. 
+# Apparantly it doesn't matter for the result, but fix it!!!
 
 ws.factory("RooTruthModel::tres_MC(t)")
 
@@ -135,7 +137,8 @@ ws.factory("AddModel::tres({tres_3,tres_2,tres_1},{tres_f3[0.0017],tres_f2[0.165
 
 #ws.factory("GaussModel::tres(t,tres_mean[0.0],tres_sigma[0.05])")
 
-# For determination of efficiency from MC, put wtag to 0, later integrate out (or set to 0.5 as I used to do before). Does that imply rebuilding the JpsiPhi pdf?
+# For determination of efficiency from MC, put wtag to 0, later integrate out (or set to 0.5 as I used to do before). 
+# Does that imply rebuilding the JpsiPhi pdf?
 ws.factory("tagomega[0.,0.,0.5]")
 ws.factory("expr::wtag('tagomega',tagomega)")
 
@@ -181,8 +184,7 @@ xi_m = dict( [ (m.basis().GetName(),m.coefficient()) for m in tenmom ] )
 print 'Direct Moments xi_m =', xi_m
 
 def norm_xi( d ) :
-    n =  (1.)/(8.*sqrt(pi))
-    for i in d.iterkeys() : d[i] = d[i]*n
+    for i in d.iterkeys() : d[i] = d[i]/(8.*sqrt(pi))
 
 norm_xi(xi_m)
 print 'Normalized direct moments xi_m =', xi_m

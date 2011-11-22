@@ -101,15 +101,15 @@ public:
   Int_t getTagCatIndex(Int_t tagCatPosition) const;
 
 protected:
-  Bool_t checkVarDep(const RooAbsArg& var, Bool_t warn = kFALSE,
-      Bool_t onlyTagPars = kFALSE) const;
-  Bool_t checkTag(const RooAbsCategory& tag, Bool_t warn = kFALSE) const;
-
   void initTaggingCats(RooArgList& tagCatCoefs, RooArgList& dilutions,
       RooArgList& ADilWTags, RooArgList& avgCEvens, RooArgList& avgCOdds);
+  void initTag(Bool_t iTag);
+  void initTagCatMaps() const;
   void declareBases();
 
-  void initTagCatMaps() const;
+  Bool_t checkVarDep(const RooAbsArg& var, Bool_t warn = kFALSE,
+      Bool_t onlyTagPars = kFALSE) const;
+  Bool_t checkTag(Bool_t iTag) const;
 
   RooRealProxy     _time;
   RooCategoryProxy _iTag;
@@ -145,6 +145,8 @@ protected:
   DecayType    _decayType;
   Int_t        _tagCatType;
   Int_t        _tags;
+  Int_t        _iTagVal;
+  Int_t        _fTagVal;
   Bool_t       _checkVars;
   RooListProxy _createdVars;
 
