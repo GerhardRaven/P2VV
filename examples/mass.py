@@ -90,7 +90,7 @@ psi_t = Pdf('psi_t', Type = Decay, Observables = [t], Parameters = [psi_tau],
 psi_background[t] = comb_t
 
 # Build PDF
-pdf = buildPdf((signal, comb_background, psi_background), observables = (m,mpsi,t), name='pdf')
+pdf = buildPdf((signal, comb_background, psi_background), observables = (m,mpsi), name='pdf')
 
 pdf.Print("t")
 
@@ -106,25 +106,6 @@ data = data.reduce(EventRange(0, 4000))
 
 from Helpers import Mapping
 mapping = Mapping({m : 'm', mpsi : 'mpsi', t : 'tau'}, data)
-
-observables = data.get()
-ranges = []
-for o in observables:
-    if o.GetName().find('tp') != -1:
-        ranges.append(o)
-
-ranges.sort()
-range_names = []
-for i in range(0, len(ranges), 2):
-    l = ranges[i]
-    r = ranges[i + 1]
-    name = l.GetName() + r.GetName()
-    t._target_().setRange(name, l, r)
-    range_names.append(name)
-
-norm_range = ','.join(range_names)
-for p in [psi_t, sig_t, comb_t]:
-    p.setNormRange(norm_range)
 
 # Fit
 print 'fitting data'
@@ -152,20 +133,10 @@ pdf.plotOn(mpsi_frame, LineWidth(2))
 pdf.plotOn(mpsi_frame, Components('sig_mpsi'), LineStyle(kDashed), LineWidth(2))
 pdf.plotOn(mpsi_frame, Components('bkg_mpsi'), LineStyle(kDashed), LineWidth(2), LineColor(kRed))
 
-t_frame = t.frame()
-data.plotOn(t_frame)
-pdf.plotOn(t_frame, LineWidth(2))
-pdf.plotOn(t_frame, Components('sig_t'), LineStyle(kDashed), LineWidth(2))
-pdf.plotOn(t_frame, Components('psi_t'), LineStyle(kDashed), LineWidth(2), LineColor(kRed))
-pdf.plotOn(t_frame, Components('comb_t'), LineStyle(kDashed), LineWidth(2), LineColor(kGreen))
-
-canvas = TCanvas('canvas', 'canvas', 1000, 1000)
-canvas.Divide(2, 2)
+canvas = TCanvas('canvas', 'canvas', 1000, 500)
+canvas.Divide(2, 1)
 canvas.cd(1)
 m_frame.Draw()
 
 canvas.cd(2)
 mpsi_frame.Draw()
-
-canvas.cd(3)
-t_frame.Draw()

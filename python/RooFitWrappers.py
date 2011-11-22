@@ -1,4 +1,5 @@
 from RooFitDecorators import *
+from ROOT import RooTruthModel
 from copy import copy
 
 
@@ -49,7 +50,7 @@ class RooObject(object) :
         # variable behind it.
         if name in self.ws()._mappings:
             name = self.ws()._mappings[name]
-                
+
         # Get the right object from our own cache, KeyError is raised correctly.
         x = self.ws()._objects[name]
         if not x.InheritsFrom(type): 
@@ -443,7 +444,8 @@ class Pdf(RooObject):
         self._dict = {}
         for k, v in kwargs.iteritems():
             self._dict[k] = v
-        self._dict['Name'] = self._separator().join([name] + [i.GetName() for i in self._dict['Observables']])
+        self._dict['Name'] = name
+
         self.__make_pdf()
 
     def __str__(self):
@@ -452,7 +454,7 @@ class Pdf(RooObject):
 
     def _get(self, name):
         attr = '_' + name.lower()
-        return getattr(self, attr)
+        return getattr(self._target_(), attr)
     
     def __getitem__(self, k):
         if self._dict and k in self._dict:
@@ -467,6 +469,8 @@ class Pdf(RooObject):
         if self._dict['Name'] not in self.ws():
             v = list(self._dict['Observables'])  
             if 'Parameters' in self._dict: v += list(self._dict['Parameters'])
+            if 'ResolutionModel' in self._dict: v.append(self._dict['ResolutionModel'])
+            if 'Options' in self._dict: v += list(self._dict['Options'])
             self._declare(self._makeRecipe(v))
             self._init(self._dict['Name'], 'RooAbsPdf')
 
@@ -731,7 +735,7 @@ class Component(object):
         Component._d[self.name][frozenset(k)] = pdf
 
     def __iadd__(self,item) :
-        z = tuple(item.observables())
+        z = tuple(item.Observables())
         self.__setitem__( z, item )
         return self
 

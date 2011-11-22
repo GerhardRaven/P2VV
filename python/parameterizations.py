@@ -164,7 +164,7 @@ class ResolutionModelLP2011 :
     def __init__( self, t ) :
         from RooFitWrappers import RealVar, ConstVar, ResolutionModel, AddModel
         mu = ConstVar('tres_mu', Value = -0.0027 )
-        SF = RealVar('tres_SF', Value = 1.0, MinMax = (0.5,1.5) )
+        SF = RealVar('tres_SF', Value = 1.0, MinMax = (0.5,5) )
         from ROOT import RooGaussModel as GaussModel
         sigmas = [ (3,0.513 ), (2,0.0853), (1,0.0434) ]
         frac   = [ (3,0.0017), (2,0.165) ]
