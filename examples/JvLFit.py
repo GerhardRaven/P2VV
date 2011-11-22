@@ -10,14 +10,14 @@ dataSetFile = 'JvLFit.root'
 NTuple = False
 
 # values of transversity amplitudes
-A0Mag2Val    = 0.4
-A0PhVal      = 0.
-AparMag2Val  = 0.3
-AparPhVal    = 2.4
-AperpMag2Val = 0.3
+A0Mag2Val    =  0.4
+A0PhVal      =  0.
+AparMag2Val  =  0.3
+AparPhVal    =  2.4
+AperpMag2Val =  0.3
 AperpPhVal   = -0.79
-ASMag2Val    = 0.3
-ASPhVal      = 2.4
+ASMag2Val    =  0.3
+ASPhVal      =  2.4
 
 # values of CP violation parameters
 carthLambdaCP = True
@@ -28,6 +28,10 @@ lambdaCPSqVal = 0.6
 GammaVal  = 0.68
 dGammaVal = 0.05
 dmVal     = 17.8
+
+# values of asymmetries
+AProdVal   =  0.4
+ATagEffVal = -0.5
 
 
 ###########################################################################################################################################
@@ -42,14 +46,12 @@ setRooFitOutput()
 ws = RooObject(workspace = 'ws')
 
 # constants
-zero  = ConstVar('zero',  Value =  0.)
-one   = ConstVar('one',   Value = +1.)
-minus = ConstVar('minus', Value = -1.)
+zero = ConstVar('zero', Value = 0.)
 
 # variables
 from parameterizations import JpsiphiHelicityAngles as HelAngles
 angles = HelAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
-time   = RealVar('t',           Title = 'decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax=(-0.5, 5.))
+time   = RealVar('t',           Title = 'decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = (-0.5, 5.))
 iTag   = Category('tagInitial', Title = 'initial state flavour tag', Observable = True, States = {'B': +1, 'Bbar': -1})
 
 observables = [angle for angle in angles.angles.itervalues()] + [time, iTag]
@@ -81,26 +83,16 @@ resModel  = ResolutionModel('resModel', Type = GaussModel, Observables = [time],
 if carthLambdaCP :
   # carthesian lambda
   from parameterizations import LambdaCarth_CPParam
-  lambdaCP = LambdaCarth_CPParam(
-      ReLambda = RealVar('ReLambdaCP', Title = 'CPV param. Re(lambda)', Value = sqrt(lambdaCPSqVal) * cos(-phiCPVal), MinMax = (-2., 2.))
-    , ImLambda = RealVar('ImLambdaCP', Title = 'CPV param. Im(lambda)', Value = sqrt(lambdaCPSqVal) * sin(-phiCPVal), MinMax = (-2., 2.))
-  )
+  lambdaCP = LambdaCarth_CPParam( ReLambda = sqrt(lambdaCPSqVal) * cos(-phiCPVal), ImLambda = sqrt(lambdaCPSqVal) * sin(-phiCPVal) )
 
 else :
   # polar lambda
   from parameterizations import LambdaSqArg_CPParam
-  lambdaCP = LambdaSqArg_CPParam(
-      lambdaSq  = RealVar('lambdaCPSq',  Title = 'CPV param. lambda^2',    Value = lambdaCPSqVal, MinMax = (0., 5.))
-    , lambdaArg = RealVar('lambdaCPArg', Title = 'CPV param. arg(lambda)', Value = -phiCPVal,     MinMax = (-2. * pi, 2. * pi))
-  )
+  lambdaCP = LambdaSqArg_CPParam( lambdaSq = lambdaCPSqVal, phi = phiCPVal )
 
 # nuissance asymmetries
 from parameterizations import ProdTagNorm_CEvenOdd
-ANuissance = ProdTagNorm_CEvenOdd(
-    AProd   = RealVar('AProd',   Title = 'production asymmetry',         Value =  0.4, MinMax = (-1., 1.))
-  , ATagEff = RealVar('ATagEff', Title = 'tagging efficiency asymmetry', Value = -0.5, MinMax = (-1., 1.))
-  , ANorm   = Product('ANorm',   [minus, lambdaCP.C],  Title = 'normalization asymmetry')
-)
+ANuissance = ProdTagNorm_CEvenOdd(AProd = AProdVal, ATagEff = ATagEffVal, C = lambdaCP.C)
 
 # coefficients for time functions
 from parameterizations import JpsiphiBTagDecayBasisCoefficients
