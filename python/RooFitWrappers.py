@@ -1,6 +1,5 @@
 from RooFitDecorators import *
 
-
 def __check_req_kw__( name, kwargs ) :
     if not name in kwargs : raise KeyError( 'Must provide kw argument %s' % name )
 def __check_exists_already__( self ) :
@@ -88,7 +87,7 @@ class RooObject(object) :
         # variable behind it.
         if name in self.ws()._mappings:
             name = self.ws()._mappings[name]
-                
+
         # Get the right object from our own cache, KeyError is raised correctly.
         x = self.ws()._objects[name]
         if not x.InheritsFrom(type): 
@@ -249,13 +248,37 @@ class FormulaVar (RooObject):
     #       maybe add a search order like reverse inheritance to mimic 'virtual functions'??
     #       could the TODO below be implemented that way?? (probably yes ;-)
     # TODO: move common things like Name and Title in RooObject...
-    def __init__(self,name,formula,fargs,**kwargs) :
+    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               }
+    _getters = {'Name'       : lambda s : s.GetName()
+               ,'Title'      : lambda s : s.GetTitle()
+               ,'Formula'    : lambda s : s.formula()
+               ,'Dependents' : lambda s : s.dependents()
+               ,'Value'      : lambda s : s.getVal()
+               }
+    def __init__(self, name, formula, fargs, **kwargs):
         # construct factory string on the fly...
-        spec = "expr::%s('%s',{%s})"%(name,formula,','.join(i['Name'] for i in fargs)) 
-        self._declare( spec )
-        self._init(name,'RooFormulaVar')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-            
+        spec = "expr::%s('%s',{%s})" % (name, formula, ','.join(i['Name'] for i in fargs)) 
+        present = name in self.ws() 
+        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec')
+        if not present or not match :
+            self._declare(spec)
+            self._init(name, 'RooFormulaVar')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(name,'RooFormulaVar')
+            for k, v in kwargs.iteritems():
+                # Skip these to avoid failure in case we were loaded from a
+                # DataSet in the mean time
+                if k == 'Value':
+                    continue
+                assert v == self[k]
+
+    def __setitem__(self,k,v):
+        return FormulaVar._setters[k](self, v)
+    def __getitem__(self,k):
+        return FormulaVar._getters[k](self)
+
 class ConstVar (RooObject): 
     # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
     _getters = {'Value'      : lambda s : s.getVal() } 
@@ -273,7 +296,14 @@ class ConstVar (RooObject):
             for k, v in kwargs.iteritems():
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
+                if k == 'Value':
+                    continue
                 assert v == self[k]
+        
+    def __setitem__(self,k,v):
+        return ConstVar._setters[k](self, v)
+    def __getitem__(self,k):
+        return ConstVar._getters[k](self)
 
 class P2VVAngleBasis (RooObject) : 
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
@@ -318,6 +348,8 @@ def computeMoments(data, moments) :
 
 
 class RealVar (RooObject): 
+    # WARNING: multiple instances don't share proxy state at this time...
+    # TODO: move common things like Name and Title in RooObject...
     # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
     _getters = {'Observable' : lambda s : s.observable() 
                ,'Unit'       : lambda s : s.getUnit() 
@@ -389,7 +421,8 @@ class Pdf(RooObject):
         self._dict = {}
         for k, v in kwargs.iteritems():
             self._dict[k] = v
-        self._dict['Name'] = self._separator().join([name] + [i.GetName() for i in self._dict['Observables']])
+        self._dict['Name'] = name
+
         self.__make_pdf()
 
     def __str__(self):
@@ -398,7 +431,7 @@ class Pdf(RooObject):
 
     def _get(self, name):
         attr = '_' + name.lower()
-        return getattr(self, attr)
+        return getattr(self._target_(), attr)
     
     def __getitem__(self, k):
         if self._dict and k in self._dict:
@@ -413,6 +446,8 @@ class Pdf(RooObject):
         if self._dict['Name'] not in self.ws():
             v = list(self._dict['Observables'])  
             if 'Parameters' in self._dict: v += list(self._dict['Parameters'])
+            if 'ResolutionModel' in self._dict: v.append(self._dict['ResolutionModel'])
+            if 'Options' in self._dict: v += list(self._dict['Options'])
             self._declare(self._makeRecipe(v))
             self._init(self._dict['Name'], 'RooAbsPdf')
 
@@ -533,31 +568,22 @@ class SumPdf(Pdf):
 
 class BTagDecay( Pdf ) :
     def __init__(self,name,params, **kwargs) :
-        # construct factory string on the fly...
-        if 'name' in params : raise KeyError(' name should not be in params!')
-        d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
-        d['name'] = name
-        if 'checkVars' not in d : d['checkVars'] = 1
-        self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                          " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
-                                          " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                          " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d )
+        if name not in self.ws():
+            # construct factory string on the fly...
+            if 'name' in params : raise KeyError(' name should not be in params!')
+            d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
+            d['name'] = name
+            if 'checkVars' not in d : d['checkVars'] = 1
+            self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d )
 
-        self._init(name,'RooBTagDecay')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-            
-class BDecay( Pdf ) :
-    def __init__(self,name,params, **kwargs) :
-        # construct factory string on the fly...
-        if 'name' in params : raise KeyError(' name should not be in params!')
-        d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
-        d['name'] = name
-        self._declare("BDecay::%(name)s( %(time)s, %(tau)s, %(dGamma)s, "\
-                                          " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                          " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
-        self._init(name,'RooBDecay')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-            
+            self._init(name,'RooBTagDecay')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            raise RunTimeError( 'Code Path Not Yet Verified'  )
+
 class ResolutionModel(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables')
                ,'Parameters'  : lambda s : s._get('Parameters')
@@ -654,7 +680,7 @@ class Component(object):
         Component._d[self.name][frozenset(k)] = pdf
 
     def __iadd__(self,item) :
-        z = tuple(item.observables())
+        z = tuple(item.Observables())
         self.__setitem__( z, item )
         return self
 
