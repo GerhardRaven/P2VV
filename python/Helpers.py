@@ -12,7 +12,7 @@ class Mapping(object):
             rv = rootVars[n] 
             # Test if they are the same
             # if getattr fails, add a corresponding method for the missing type....
-            __test = getattr( self, '__test%s' % type(rv).__name__ )
+            __test = getattr( self, '_test%s' % type(rv).__name__ )
             __test(v,rv)
 
             RooObject._ws._mappings[v.GetName()] = n
@@ -24,13 +24,13 @@ class Mapping(object):
             rv._observable = True
             v._var = rv
 
-    def __testRooCategory(self, cat, rooCat):
+    def _testRooCategory(self, cat, rooCat):
         states = dict( (cat.GetName(),cat.GetVal()) for cat in self )
         assert cat.observable() == True
         assert cat['Name']
         assert cat['States'] == states
 
-    def __testRooRealVar(self, var, rooVar):
+    def _testRooRealVar(self, var, rooVar):
         assert var.observable() == True
         assert var['MinMax'] == (rooVar.getMin(), rooVar.getMax())
         assert var['Unit'] == rooVar.getUnit()
