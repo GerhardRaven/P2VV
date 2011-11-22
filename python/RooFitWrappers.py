@@ -281,7 +281,9 @@ class FormulaVar (RooObject):
 
 class ConstVar (RooObject): 
     # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
-    _getters = {'Value'      : lambda s : s.getVal() } 
+    _getters = {  'Name'       : lambda s : s.GetName()
+                , 'Value'      : lambda s : s.getVal()
+               } 
 
     def __init__(self,name,**kwargs):
         if name not in self.ws():
