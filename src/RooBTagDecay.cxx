@@ -63,13 +63,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this, sinhCoef),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this, sinCoef),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(0),
   _tags(0),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(-2),
+  _fTagVal(-2),
+  _checkVars(checkVars)
 {
   // constructor without flavour tags (behaves like RooBDecay)
   if (!checkVarDep(time, kTRUE)) assert(0);
@@ -104,13 +104,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(1),
   _tags(3),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(-2),
+  _fTagVal(-2),
+  _checkVars(checkVars)
 {
   // constructor with both initial and final state flavour tags
   // (decay into a flavour specific final state)
@@ -160,13 +160,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this, sinhCoef),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this, sinCoef),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(1),
   _tags(1),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(-2),
+  _fTagVal(-2),
+  _checkVars(checkVars)
 {
   // constructor with only an initial state flavour tag
   // (decay into CP self-conjugate state)
@@ -214,13 +214,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(2),
   _tags(3),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(-2),
+  _fTagVal(-2),
+  _checkVars(checkVars)
 {
   // constructor with both initial and final state flavour tags (decay into
   // a flavour specific final state) and with tagging categories
@@ -266,13 +266,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this, sinhCoef),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this, sinCoef),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(2),
   _tags(1),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(-2),
+  _fTagVal(-2),
+  _checkVars(checkVars)
 {
   // constructor with only an initial state flavour tag
   // (decay into CP self-conjugate state) and with tagging categories
@@ -310,6 +310,7 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
   _sinhCoef("sinhCoef", this, other._sinhCoef),
   _cosCoef("cosCoef", this, other._cosCoef),
   _sinCoef("sinCoef", this, other._sinCoef),
+  _createdVars("createdVars", 0, this),
   _tagCatPositions(other._tagCatPositions),
   _tagCatIndices(other._tagCatIndices),
   _coshBasis(other._coshBasis),
@@ -321,8 +322,7 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
   _tags(other._tags),
   _iTagVal(other._iTagVal),
   _fTagVal(other._fTagVal),
-  _checkVars(other._checkVars),
-  _createdVars("createdVars", 0, this)
+  _checkVars(other._checkVars)
 {
   // copy constructor
 }
@@ -359,27 +359,67 @@ Double_t RooBTagDecay::coefficient(Int_t basisIndex) const
   Int_t tagCatPos = -1;
   coefVal *= tagCatCoef(tagCatPos);
 
+  // get value of initial state flavour tag
+  Int_t iTagValue = _iTagVal;
+  if (_iTagVal == 2) iTagValue = _iTag;
+
   if (basisIndex == _coshBasis || basisIndex == _sinhBasis) {
     // terms that are even in the initial state tag
-    coefVal *= ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
-        + _iTag * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
-        * (((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
-        - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
-        * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal());
+    if (_iTagVal == 0)
+      // integrate over initial state tag
+      coefVal *= 2. * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal();
+    else
+      // calculate even coefficient with initial state tag
+      coefVal *= ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
+          + iTagValue * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
+          * (((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
+          - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
+          * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal());
 
-    if (_tags == 1) return coefVal;
-    else return (1. - _fTag * _ANorm) * coefVal;
+    if (_tags == 1) {
+      // no final state tag
+      return coefVal;
+    } else {
+      // get value of final state flavour tag
+      Int_t fTagValue = _fTagVal;
+      if (_fTagVal == 2) fTagValue = _fTag;
+
+      if (_fTagVal == 0)
+        // integrate over final state tag
+        return 2. * coefVal;
+      else
+        // calculate even coefficient with initial state tag
+        return (1. - fTagValue * _ANorm) * coefVal;
+    }
 
   } else if (basisIndex == _cosBasis || basisIndex == _sinBasis) {
     // terms that are odd in the initial state tag
-    coefVal *= ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
-        + _iTag * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
-        * (((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
-        - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
-        * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal());
+    if (_iTagVal == 0)
+      // integrate over initial state tag
+      coefVal *= 2. * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal();
+    else
+      // calculate odd coefficient with initial state tag
+      coefVal *= ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
+          + iTagValue * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
+          * (((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
+          - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
+          * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal());
 
-    if (_tags == 1) return coefVal;
-    else return (_fTag - _ANorm) * coefVal;
+    if (_tags == 1) {
+      // no final state tag
+      return coefVal;
+    } else {
+      // get value of final state flavour tag
+      Int_t fTagValue = _fTagVal;
+      if (_fTagVal == 2) fTagValue = _fTag;
+
+      if (_fTagVal == 0)
+        // integrate over final state tag
+        return -2. * _ANorm * coefVal;
+      else
+        // calculate even coefficient with final state tag
+        return (fTagValue - _ANorm) * coefVal;
+    }
   }
 
   return 0.;
@@ -546,13 +586,13 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
 
   // get integration code
   Int_t  intCode   = 0;
+  Bool_t intTagCat = kFALSE;
   Bool_t intITag   = kFALSE;
   Bool_t intFTag   = kFALSE;
-  Bool_t intTagCat = kFALSE;
   RooArgSet intVars = allVars;
+  if (_tagCatType > 1) intTagCat = intVars.remove(_tagCat.arg(), kTRUE, kTRUE);
   if (_tags > 0) intITag = intVars.remove(_iTag.arg(), kTRUE, kTRUE);
   if (_tags > 1) intFTag = intVars.remove(_fTag.arg(), kTRUE, kTRUE);
-  if (_tagCatType > 1) intTagCat = intVars.remove(_tagCat.arg(), kTRUE, kTRUE);
 
   if (intVars.getSize() > 0) {
     if (coef == _coshBasis) {
@@ -1230,18 +1270,17 @@ void RooBTagDecay::initTag(Bool_t iTag)
     Bool_t BIndex, BbarIndex;
     if (iTag) {
       tagName   = _iTag.GetName();
-      tagVal    = _iTagVal;
       numTypes  = _iTag.arg().numTypes();
       BIndex    = _iTag.arg().isValidIndex(+1);
       BbarIndex = _iTag.arg().isValidIndex(-1);
     } else {
       tagName   = _fTag.GetName();
-      tagVal    = _fTagVal;
       numTypes  = _fTag.arg().numTypes();
       BIndex    = _fTag.arg().isValidIndex(+1);
       BbarIndex = _fTag.arg().isValidIndex(-1);
     }
 
+    tagVal = 0;
     if (!_checkVars) {
       // print warning message if flavour tags are not to be checked
       coutW(InputArguments) << "RooBTagDecay::initTag(" << GetName()
@@ -1251,24 +1290,28 @@ void RooBTagDecay::initTag(Bool_t iTag)
           << endl;
     } else if (numTypes == 2 && BIndex && BbarIndex) {
       // both B and Bbar
-      if (iTag) _iTagVal = 0;
-      else _fTagVal = 0;
+      tagVal = 2;
     } else if (numTypes == 1 && BIndex) {
       // only B
-      if (iTag) _iTagVal = +1;
-      else _fTagVal = +1;
+      tagVal = +1;
     } else if (numTypes == 1 && BbarIndex) {
       // only Bbar
-      if (iTag) _iTagVal = -1;
-      else _fTagVal = -1;
+      tagVal = -1;
+    } else if (numTypes == 0) {
+      // sum of B and Bbar
+      tagVal = 0;
     } else {
       // not a valid configuration
       coutE(InputArguments) << "RooBTagDecay::initTag(" << GetName()
           << ") flavour tag " << tagName
-          << " can only have values +1 or -1: use \"checkVars = false\" if you insist on using other/additional values"
+          << " can only have values +1 and/or -1: use \"checkVars = false\" if you insist on using other/additional values"
           << endl;
       assert(0);
     }
+
+    // set tag value
+    if (iTag) _iTagVal = tagVal;
+    else _fTagVal = tagVal;
 }
 
 //_____________________________________________________________________________

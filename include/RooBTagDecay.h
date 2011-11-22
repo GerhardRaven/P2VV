@@ -134,6 +134,8 @@ protected:
   RooRealProxy _cosCoef;
   RooRealProxy _sinCoef;
 
+  RooListProxy _createdVars;
+
   mutable std::map<Int_t, Int_t> _tagCatPositions; //!
   mutable std::map<Int_t, Int_t> _tagCatIndices;   //!
 
@@ -148,7 +150,6 @@ protected:
   Int_t        _iTagVal;
   Int_t        _fTagVal;
   Bool_t       _checkVars;
-  RooListProxy _createdVars;
 
   ClassDef(RooBTagDecay, 1) // PDF of B decay time distribution with flavour tagging
 };
