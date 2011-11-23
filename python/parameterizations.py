@@ -5,12 +5,14 @@ class _util_parse_mixin( object ) :
     def _parseArg(self, arg, kwargs, **d ) : 
         def _create( arg,kwargs, **d ) :
             from RooFitWrappers import RealVar, RooObject
+            from copy import copy
+            _d = copy(d) # make sure we do not modify the input!!!
             if arg in kwargs :
                 a = kwargs.pop(arg)
                 if isinstance(a,RooObject) : return a
-                d.update( a if type(a) == dict else { 'Value' : a } ) 
-            Name = d.pop('Name') if 'Name' in d else arg
-            return RealVar( Name, **d)
+                _d.update( a if type(a) == dict else { 'Value' : a } ) 
+            if 'Name' not in _d : _d['Name'] = arg
+            return RealVar(**_d)
         obj = _create(arg,kwargs,**d)
         setattr(self,'_%s'%arg,obj)
         if not hasattr(self,'_params') : self._params = []
