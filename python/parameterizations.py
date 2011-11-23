@@ -19,10 +19,9 @@ class _util_parse_mixin( object ) :
         self._params += [ obj ]
         return obj
 
-    def _checkKW( self, kwargs ) :
+    def _check_kw( self, kwargs ) :
         if len(kwargs): 
-            print 'got unknown keywords %s for type %s' % ( kwargs, type(self) )
-        assert len(kwargs) == 0
+            raise KeyError('got unknown keywords %s for %s' % ( kwargs, type(self) ) )
 
     def setValues( self, **kwargs ) :
         for ( k, v ) in kwargs.iteritems() : 
@@ -135,7 +134,7 @@ class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
         self._parseArg('ASMag2',    kwargs,  Title = '|A_S|^2',     Value = 0.10,    MinMax = ( 0., 1.))
         self._parseArg('ASPhase',   kwargs,  Title = 'delta_S',     Value = 2.2,     MinMax = ( -2. * pi, 2. * pi))
 
-        self._checkKW( kwargs ) 
+        self._check_kw( kwargs ) 
         AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Phase,    +1 )
                                    , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPhase,  +1 )
                                    , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPhase, -1 )
@@ -165,7 +164,7 @@ class Coefficients_CEvenOdd( CEvenOdd ) :
         self._parseArg( 'avgCEven', kwargs, Title = 'CP average even coefficients', Value = 1. )
         self._parseArg( 'avgCOdd',  kwargs, Title = 'CP average odd coefficients',  Value = 0., MinMax = ( -2., 2. ) )
 
-        self._checkKW( kwargs ) 
+        self._check_kw( kwargs ) 
         CEvenOdd.__init__(self, avgCEven = self._avgCEven, avgCOdd = self._avgCOdd )
 
 class ProdTagNorm_CEvenOdd( CEvenOdd ) :
@@ -187,7 +186,7 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
         else   :
           self._parseArg( 'ANorm', kwargs, Title = 'normalization asymmetry', Value = 0., MinMax = ( -1., 1. ) )
 
-        self._checkKW( kwargs ) 
+        self._check_kw( kwargs ) 
         CEvenOdd.__init__(self, avgCEven = FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2',
                                                        [self._AProd, self._ANorm, self._ATagEff], Title = 'CP average even coefficients')
                               , avgCOdd  = FormulaVar( 'avgCOdd',  '@0 + @1 + @2 + @0*@1*@2',
