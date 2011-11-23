@@ -7,7 +7,7 @@ class _util_parse_mixin( object ) :
             from RooFitWrappers import RealVar, RooObject
             if arg in kwargs :
                 a = kwargs.pop(arg)
-                if RooObject in type(a).__mro__ : return a
+                if issubclass(type(a),RooObject) : return a
                 d.update( a if type(a) == dict else { 'Value' : a } ) 
             Name = d.pop('Name') if 'Name' in d else arg
             return RealVar( Name, **d)
