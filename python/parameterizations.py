@@ -8,8 +8,9 @@ class CPParam :
     def _parseArg(self, arg, kwargs, **d ) : 
         from RooFitWrappers import RealVar, RooObject
         if arg in kwargs :
-            if RooObject in type(kwargs[arg]).__mro__ : return kwargs.pop(arg)
-            d['Value'] = kwargs.pop(arg)
+            a = kwargs.pop(arg)
+            if RooObject in type(a).__mro__ : return a
+            d.update( a if type(a) == dict else { 'Value' : a } ) 
         return RealVar( arg, **d)
 
     def setValues( self, **kwargs ) :
