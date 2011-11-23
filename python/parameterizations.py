@@ -2,6 +2,7 @@ class CPParam :
     def __init__( self, **kwargs ) :
         for coef in 'CDS' : setattr( self, coef, kwargs.pop(coef) )
 
+    ## TODO: provide a mix-in class which defines 'parameters','_parseArg','setValues','setConstant'
     def parameters( self ) :
         return self._params
 
@@ -36,15 +37,15 @@ class LambdaCarth_CPParam( CPParam ) :
         from RooFitWrappers import RealVar, FormulaVar
         from math import cos, sin
 
-        self._ReLambda = self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ) )
-        self._ImLambda = self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ) )
+        self._ReLambdaCP = self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ) )
+        self._ImLambdaCP = self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ) )
 
-        self._params = [ self._ReLambda, self._ImLambda ]
+        self._params = [ self._ReLambdaCP, self._ImLambdaCP ]
         assert len(kwargs)==0
 
-        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambda, self._ImLambda ] )
-                             , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambda, self._ImLambda ] )
-                             , S = FormulaVar('S', '2. * @1 / (1. + @0*@0 + @1*@1)',              [ self._ReLambda, self._ImLambda ] )
+        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
+                             , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
+                             , S = FormulaVar('S', '2. * @1 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
                         )
 
 class LambdaSqArg_CPParam( CPParam ) :
@@ -52,16 +53,15 @@ class LambdaSqArg_CPParam( CPParam ) :
         from RooFitWrappers import RealVar, FormulaVar
         from math import pi
 
+        self._lambdaCPSq = self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
+        self._phiCP =      self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
 
-        self._lambdaSq = self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
-        self._phi =      self._parseArg( 'phiCP' ,     kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
-
-        self._params = [ self._lambdaSq, self._phi ]
+        self._params = [ self._lambdaCPSq, self._phiCP ]
         assert len(kwargs)==0
 
-        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',               [ self._lambdaSq            ] )
-                             , D = FormulaVar('D', '2 * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaSq, self._phi ] )
-                             , S = FormulaVar('S', '2 * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaSq, self._phi ] )
+        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',               [ self._lambdaCPSq              ] )
+                             , D = FormulaVar('D', '2 * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
+                             , S = FormulaVar('S', '2 * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                         )
 
 
