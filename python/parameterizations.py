@@ -11,7 +11,8 @@ class CPParam :
             a = kwargs.pop(arg)
             if RooObject in type(a).__mro__ : return a
             d.update( a if type(a) == dict else { 'Value' : a } ) 
-        return RealVar( arg, **d)
+        Name = d.pop('Name') if 'Name' in d else arg
+        return RealVar( Name, **d)
 
     def setValues( self, **kwargs ) :
         for ( k, v ) in kwargs.iteritems() : 
