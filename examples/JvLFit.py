@@ -20,7 +20,7 @@ ASMag2Val    =  0.3
 ASPhVal      =  2.4
 
 # values of CP violation parameters
-carthLambdaCP = True
+carthLambdaCP = False
 phiCPVal      = -pi / 4.
 lambdaCPSqVal = 0.6
 
@@ -30,8 +30,10 @@ dGammaVal = 0.05
 dmVal     = 17.8
 
 # values of asymmetries
-AProdVal   =  0.4
-ATagEffVal = -0.5
+AProdVal       =  0.4
+ANormVal       = -(1. - lambdaCPSqVal) / (1. + lambdaCPSqVal)
+ATagEffVal     = -0.5
+nuissanceAsyms = False
 
 
 ###########################################################################################################################################
@@ -83,16 +85,26 @@ resModel  = ResolutionModel('resModel', Type = GaussModel, Observables = [time],
 if carthLambdaCP :
   # carthesian lambda
   from parameterizations import LambdaCarth_CPParam
-  lambdaCP = LambdaCarth_CPParam( ReLambda = sqrt(lambdaCPSqVal) * cos(-phiCPVal), ImLambda = sqrt(lambdaCPSqVal) * sin(-phiCPVal) )
+  lambdaCP = LambdaCarth_CPParam( ReLambdaCP = sqrt(lambdaCPSqVal) * cos(-phiCPVal), ImLambdaCP = sqrt(lambdaCPSqVal) * sin(-phiCPVal) )
 
 else :
   # polar lambda
   from parameterizations import LambdaSqArg_CPParam
-  lambdaCP = LambdaSqArg_CPParam( lambdaSq = lambdaCPSqVal, phi = phiCPVal )
+  lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
 # nuissance asymmetries
-from parameterizations import ProdTagNorm_CEvenOdd
-ANuissance = ProdTagNorm_CEvenOdd(AProd = AProdVal, ATagEff = ATagEffVal, C = lambdaCP.C)
+if nuissanceAsyms :
+  # use nuissance asymmetries directly
+  from parameterizations import ProdTagNorm_CEvenOdd
+  ANuissance = ProdTagNorm_CEvenOdd(AProd = AProdVal, ATagEff = ATagEffVal, CPParam = lambdaCP)
+
+else :
+  # use average and even coefficients
+  from parameterizations import Coefficients_CEvenOdd
+  ANuissance = Coefficients_CEvenOdd(  avgCEven = 1.
+                                     , avgCOdd = (AProdVal + ANormVal + ATagEffVal + AProdVal * ANormVal * ATagEffVal)
+                                                  / (1. + AProdVal * ANormVal + AProdVal * ATagEffVal + ANormVal * ATagEffVal)
+                                    )
 
 # coefficients for time functions
 from parameterizations import JpsiphiBTagDecayBasisCoefficients
@@ -136,4 +148,11 @@ else :
 # fit data
 print 'fitJpsiV: fitting %d events' % data.numEntries()
 pdf.fitTo(data, RooFit.NumCPU(10), RooFit.Timer(1))
+
+ws.ws().function('C').Print()
+#ws.ws().function('ANorm').Print()
+#ws.ws().function('ATagEff').Print()
+#ws.ws().function('AProd').Print()
+ws.ws().function('avgCEven').Print()
+ws.ws().function('avgCOdd').Print()
 

@@ -14,14 +14,17 @@ class RooObject(object) :
                }
     _getters = {'Name'       : lambda s : s.GetName()
                ,'Title'      : lambda s : s.GetTitle()
+               ,'Value'      : lambda s : s.getVal()
                }
     def __setitem__(self,k,v):
-        for i in type(self).__mro__ : 
-            if k in i._setters :  return i._setters[k](self,v )
+        from itertools import ifilter, imap
+        for setters in imap( lambda x: x._setters, ifilter( lambda x : hasattr(x,'_setters'), type(self).__mro__) ): 
+            if k in setters :  return setters[k](self,v )
         raise KeyError('%s is not known for class %' % (k, type(self) ) )
     def __getitem__(self,k):
-        for i in type(self).__mro__ : 
-            if k in i._getters :  return i._getters[k](self)
+        from itertools import ifilter, imap
+        for getters in imap( lambda x: x._getters, ifilter( lambda x : hasattr(x,'_getters'), type(self).__mro__) ): 
+            if k in getters :  return getters[k](self)
         raise KeyError('%s is not known for class %' % (k, type(self) ) )
 
 
@@ -244,15 +247,7 @@ class Addition(RooObject) :
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class FormulaVar (RooObject): 
-    # TODO: move __setitem__ and __getitem__ into RooObject
-    #       maybe add a search order like reverse inheritance to mimic 'virtual functions'??
-    #       could the TODO below be implemented that way?? (probably yes ;-)
-    # TODO: move common things like Name and Title in RooObject...
-    _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               }
-    _getters = {'Name'       : lambda s : s.GetName()
-               ,'Title'      : lambda s : s.GetTitle()
-               ,'Formula'    : lambda s : s.formula()
+    _getters = {'Formula'    : lambda s : s.formula()
                ,'Dependents' : lambda s : s.dependents()
                ,'Value'      : lambda s : s.getVal()
                }
@@ -274,17 +269,7 @@ class FormulaVar (RooObject):
                     continue
                 assert v == self[k]
 
-    def __setitem__(self,k,v):
-        return FormulaVar._setters[k](self, v)
-    def __getitem__(self,k):
-        return FormulaVar._getters[k](self)
-
 class ConstVar (RooObject): 
-    # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
-    _getters = {  'Name'       : lambda s : s.GetName()
-                , 'Value'      : lambda s : s.getVal()
-               } 
-
     def __init__(self,name,**kwargs):
         if name not in self.ws():
             # construct factory string on the fly...
@@ -302,11 +287,6 @@ class ConstVar (RooObject):
                     continue
                 assert v == self[k]
         
-    def __setitem__(self,k,v):
-        return ConstVar._setters[k](self, v)
-    def __getitem__(self,k):
-        return ConstVar._getters[k](self)
-
 class P2VVAngleBasis (RooObject) : 
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
     def __init__(self, angles, i,j,k,l,c) :
@@ -392,8 +372,7 @@ class RealVar (RooObject):
             for k, v in kwargs.iteritems():
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
-                if k == 'Value':
-                    continue
+                if k == 'Value': continue
                 assert v == self[k]
             
     # overrule RooRealVar.setRange
@@ -590,8 +569,6 @@ class ResolutionModel(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables')
                ,'Parameters'  : lambda s : s._get('Parameters')
                ,'Type'        : lambda s : s._get('Type')
-               ,'Name'        : lambda s : s.GetName()
-               ,'Title'       : lambda s : s.GetTitle()
                }
 
     def __init__(self, name, **kwargs):
