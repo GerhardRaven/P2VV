@@ -1,21 +1,57 @@
 class CPParam :
-    def __init__(self,**kwargs) :
-        for i in 'CDS' : setattr(self,i,kwargs.pop(i))
+    def __init__( self, **kwargs ) :
+        for coef in 'CDS' : setattr( self, coef, kwargs.pop(coef) )
+
+    def parameters( self ) :
+        return self._params
+
+    def setValues( self, **kwargs ) :
+        for ( k, v ) in kwargs.iteritems() : 
+           arg = getattr( self, '_' + k )
+           if v < arg.getMin() : arg.setMin(v) 
+           if v > arg.getMax() : arg.setMax(v) 
+           arg['Value'] = v
+
+    def setConstant( self, pattern, constant = True ) :
+        import re
+        rc = 0
+        nrexp = re.compile(pattern)
+        for i in self.parameters(): 
+            if not nrexp.match( i.GetName() ) : continue
+            i.setConstant ( constant )
+            rc += 1
+        return rc
 
 class LambdaCarth_CPParam( CPParam ) :
     def __init__(self, **kwargs) :
-        from RooFitWrappers import FormulaVar
-        CPParam.__init__(self, C = FormulaVar('C', '(1.-@0*@0-@1*@1) / (1. + @0*@0 + @1*@1)', [ kwargs['ReLambda'], kwargs['ImLambda'] ] )
-                             , D = FormulaVar('D', '2. * @0 / (1.+@0*@0+@1*@1)',              [ kwargs['ReLambda'], kwargs['ImLambda'] ] )
-                             , S = FormulaVar('S', '2. * @1 / (1.+@0*@0+@1*@1)',              [ kwargs['ReLambda'], kwargs['ImLambda'] ] )
+        from RooFitWrappers import RealVar, FormulaVar
+        from math import cos, sin
+
+        self._ReLambda = RealVar('ReLambdaCP', Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ))
+        self._ImLambda = RealVar('ImLambdaCP', Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ))
+
+        self._params = [ self._ReLambda, self._ImLambda ]
+        if kwargs : self.setValues(**kwargs)
+
+        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambda, self._ImLambda ] )
+                             , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambda, self._ImLambda ] )
+                             , S = FormulaVar('S', '2. * @1 / (1. + @0*@0 + @1*@1)',              [ self._ReLambda, self._ImLambda ] )
                         )
 
 class LambdaSqArg_CPParam( CPParam ) :
     def __init__(self, **kwargs) :
-        from RooFitWrappers import FormulaVar
-        CPParam.__init__(self, C = FormulaVar('C', '(1.-@0)/(1.+@0)',                  [ kwargs['lambdaSq']              ] )
-                             , D = FormulaVar('D', '2 * sqrt(@0) * cos(@1) / (1.+@0)', [ kwargs['lambdaSq'], kwargs['lambdaArg'] ] )
-                             , S = FormulaVar('S', '2 * sqrt(@0) * sin(@1) / (1.+@0)', [ kwargs['lambdaSq'], kwargs['lambdaArg'] ] )
+        from RooFitWrappers import RealVar, FormulaVar
+        from math import pi
+
+        self._lambdaSq = RealVar('lambdaCPSq', Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ))
+        self._phi      = RealVar('phiCP',      Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ))
+
+        self._params = [ self._lambdaSq, self._phi ]
+        if kwargs : self.setValues(**kwargs)
+
+        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',               [ self._lambdaSq            ] )
+                             , D = FormulaVar('D', '2 * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaSq, self._phi ] )
+                             , S = FormulaVar('S', '2 * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaSq, self._phi ] )
                         )
 
 # construct amplitudes with carthesian parameters
@@ -50,10 +86,12 @@ class AmplitudeSet ( dict ) :
         return self._params
     def setValues( self, **kwargs ) :
         for (k,v) in kwargs.iteritems() : 
+          try :
             arg = getattr(self,'_'+k)
             if v < arg.getMin() : arg.setMin(v) 
             if v > arg.getMax() : arg.setMax(v) 
             arg['Value'] = v
+          except : pass
     def setConstant( self, pattern, constant = True) :
         import re
         rc = 0
@@ -111,27 +149,67 @@ class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
                              )
 
 class CEvenOdd :
-    def __init__(self, **kwargs ) :
-        for i in ['avgCEven','avgCOdd' ] : setattr(self,i,kwargs.pop(i))
-    def __getitem__(self,kw) : return getattr(self,kw)
+    def __init__( self, **kwargs ) :
+        for i in [ 'avgCEven', 'avgCOdd' ] : setattr( self, i, kwargs.pop(i) )
+
+    def __getitem__( self, kw ) :
+        return getattr( self, kw )
+
+    def parameters( self ) :
+        return self._params
+
+    def setValues( self, **kwargs ) :
+        for ( k, v ) in kwargs.iteritems() : 
+            try :
+              arg = getattr( self, '_' + k )
+              if v < arg.getMin() : arg.setMin(v) 
+              if v > arg.getMax() : arg.setMax(v) 
+              arg['Value'] = v
+            except : pass
+
+    def setConstant( self, pattern, constant = True ) :
+        import re
+        rc = 0
+        nrexp = re.compile(pattern)
+        for i in self.parameters(): 
+            if not nrexp.match( i.GetName() ) : continue
+            i.setConstant ( constant )
+            rc += 1
+        return rc
 
 class Trivial_CEvenOdd( CEvenOdd ) :
     def __init__(self) :
         from RooFitWrappers import ConstVar
-        CEvenOdd.__init__(self, avgCEven =  ConstVar('one', Value = 1 )
-                              , avgCOdd  =  ConstVar('zero', Value = 0 )
-                              )
+        ConstVar('one',  Value = 1.)
+        ConstVar('zero', Value = 0.)
+        CEvenOdd.__init__(self, avgCEven = self._one, avgCOdd = self._zero )
 
 class ProdTagNorm_CEvenOdd( CEvenOdd ) :
-    def __init__(self,**kwargs) :
-        _AProd = kwargs.pop('AProd')
-        _ANorm = kwargs.pop('ANorm')
-        _ATagEff = kwargs.pop('ATagEff')
-        if kwargs : raise KeyError('unknown keyword argument: %s' % kwargs )
-        from RooFitWrappers import FormulaVar
-        CEvenOdd.__init__(self, avgCEven =  FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average even coefficients') 
-                              , avgCOdd  =  FormulaVar( 'avgCOdd',     '@0 + @1 + @2 + @0*@1*@2', [_AProd, _ANorm, _ATagEff], Title = 'CP average odd coefficients') 
-                              )
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import ConstVar, RealVar, FormulaVar, Product
+
+        self._AProd   = RealVar( 'AProd',   Title = 'production asymmetry',         Value = 0., MinMax = ( -1., 1. ) )
+        self._ATagEff = RealVar( 'ATagEff', Title = 'tagging efficiency asymmetry', Value = 0., MinMax = ( -1., 1. ) )
+        self._params = [ self._AProd, self._ATagEff ]
+
+        try    : CCP = kwargs.pop('C')
+        except : CCP = None
+
+        if CCP :
+          self._minus = ConstVar( 'minus', Value = -1. )
+          self._ANorm = Product(  'ANorm', [ self._minus, CCP ], Title = 'normalization asymmetry' )
+          self._params += [ self._minus, self._ANorm ]
+        else   :
+          self._ANorm = RealVar( 'ANorm', Title = 'normalization asymmetry', Value = 0., MinMax = ( -1., 1. ) )
+          self._params += [ self._ANorm ]
+
+        if kwargs : self.setValues(**kwargs)
+        #if kwargs : raise KeyError('unknown keyword argument: %s' % kwargs )
+        CEvenOdd.__init__(self, avgCEven =  FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2',
+                                                        [self._AProd, self._ANorm, self._ATagEff], Title = 'CP average even coefficients')
+                              , avgCOdd  =  FormulaVar( 'avgCOdd',  '@0 + @1 + @2 + @0*@1*@2',
+                                                        [self._AProd, self._ANorm, self._ATagEff], Title = 'CP average odd coefficients') 
+                         )
 
 #TODO: inherit from UserDict mixin instead of wrapping & forwarding...
 class AngularFunctions :
@@ -354,13 +432,25 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         BDecayBasisCoefficients.__init__( self, **args )
 
 
+class ResolutionModelTrivial :
+    def __init__( self, t ) :
+        from RooFitWrappers import RealVar, ConstVar, ResolutionModel, AddModel
+        mu = ConstVar('tres_mu', Value = -0.0027 )
+        SF = RealVar('tres_SF', Value = 1.0, MinMax = (0.5,1.5) )
+        from ROOT import RooGaussModel as GaussModel
+        sigmas = [ (3,0.513 ), (2,0.0853), (1,0.0434) ]
+        frac   = [ (3,0.0017), (2,0.165) ]
+        self.Model = AddModel('tres', [ ResolutionModel('tres_%s'%n, Type = GaussModel, Observables = [ t ], Parameters = [ mu, ConstVar('tres_s%s'%n, Value = v  ), SF ] ) for n,v in sigmas ]
+                                    , [ ConstVar('tres_f%s'%n,Value = v) for n,v in frac ]
+                             )
+
 
 
 class ResolutionModelLP2011 :
     def __init__( self, t ) :
         from RooFitWrappers import RealVar, ConstVar, ResolutionModel, AddModel
         mu = ConstVar('tres_mu', Value = -0.0027 )
-        SF = RealVar('tres_SF', Value = 1.0, MinMax = (0.5,1.5) )
+        SF = RealVar('tres_SF', Value = 1.0, MinMax = (0.5,5) )
         from ROOT import RooGaussModel as GaussModel
         sigmas = [ (3,0.513 ), (2,0.0853), (1,0.0434) ]
         frac   = [ (3,0.0017), (2,0.165) ]
