@@ -1,19 +1,26 @@
-class CPParam :
-    def __init__( self, **kwargs ) :
-        for coef in 'CDS' : setattr( self, coef, kwargs.pop(coef) )
-
-    ## TODO: provide a mix-in class which defines 'parameters','_parseArg','setValues','setConstant'
+class _util_parse_mixin( object ) :
     def parameters( self ) :
         return self._params
 
     def _parseArg(self, arg, kwargs, **d ) : 
-        from RooFitWrappers import RealVar, RooObject
-        if arg in kwargs :
-            a = kwargs.pop(arg)
-            if RooObject in type(a).__mro__ : return a
-            d.update( a if type(a) == dict else { 'Value' : a } ) 
-        Name = d.pop('Name') if 'Name' in d else arg
-        return RealVar( Name, **d)
+        def _create( arg,kwargs, **d ) :
+            from RooFitWrappers import RealVar, RooObject
+            if arg in kwargs :
+                a = kwargs.pop(arg)
+                if RooObject in type(a).__mro__ : return a
+                d.update( a if type(a) == dict else { 'Value' : a } ) 
+            Name = d.pop('Name') if 'Name' in d else arg
+            return RealVar( Name, **d)
+        obj = _create(arg,kwargs,**d)
+        setattr(self,'_%s'%arg,obj)
+        if not hasattr(self,'_params') : self._params = []
+        self._params += [ obj ]
+        return obj
+
+    def _checkKW( self, kwargs ) :
+        if len(kwargs): 
+            print 'got unknown keywords %s for type %s' % ( kwargs, type(self) )
+        assert len(kwargs) == 0
 
     def setValues( self, **kwargs ) :
         for ( k, v ) in kwargs.iteritems() : 
@@ -32,14 +39,19 @@ class CPParam :
             rc += 1
         return rc
 
+
+class CPParam ( _util_parse_mixin ):
+    def __init__( self, **kwargs ) :
+        for coef in 'CDS' : setattr( self, coef, kwargs.pop(coef) )
+
+
 class LambdaCarth_CPParam( CPParam ) :
     def __init__(self, **kwargs) :
         from RooFitWrappers import FormulaVar
         from math import cos, sin
 
-        self._ReLambdaCP = self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ) )
-        self._ImLambdaCP = self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ) )
-        self._params     = [ self._ReLambdaCP, self._ImLambdaCP ]
+        self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ) )
+        self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ) )
 
         assert len(kwargs) == 0
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
@@ -52,10 +64,8 @@ class LambdaSqArg_CPParam( CPParam ) :
         from RooFitWrappers import FormulaVar
         from math import pi
 
-        self._lambdaCPSq = self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
-        self._phiCP      = self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
-        self._params     = [ self._lambdaCPSq, self._phiCP ]
-
+        self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
+        self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
         assert len(kwargs) == 0
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',               [ self._lambdaCPSq              ] )
                              , D = FormulaVar('D', '2 * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
@@ -80,7 +90,7 @@ class Polar2_Amplitude(Carthesian_Amplitude) :
                                                   , FormulaVar('Im_%s'%name, 'sqrt(@0) * sin(@1)', [r2,arg], Title = 'Im(%s)'% name )
                                                   , CP )
 
-class AmplitudeSet ( dict ) :
+class AmplitudeSet ( dict, _util_parse_mixin ) :
     def __init__( self, *args) :
         # maybe make this thing readonly???
         for v in args: 
@@ -91,47 +101,17 @@ class AmplitudeSet ( dict ) :
         # require the names in args to be unique...
         assert(len(self)==len(args))
 
-    def _parseArg(self, arg, kwargs, **d ) : 
-        from RooFitWrappers import RealVar, RooObject
-        if arg in kwargs :
-            a = kwargs.pop(arg)
-            if RooObject in type(a).__mro__ : return a
-            d.update( a if type(a) == dict else { 'Value' : a } ) 
-        Name = d.pop('Name') if 'Name' in d else arg
-        return RealVar( Name, **d)
-
-    def parameters( self ) :
-        return self._params
-    def setValues( self, **kwargs ) :
-        for (k,v) in kwargs.iteritems() : 
-          arg = getattr(self,'_'+k)
-          if v < arg.getMin() : arg.setMin(v) 
-          if v > arg.getMax() : arg.setMax(v) 
-          arg['Value'] = v
-    def setConstant( self, pattern, constant = True) :
-        import re
-        rc = 0
-        nrexp = re.compile(pattern)
-        for i in self.parameters(): 
-            if not nrexp.match( i.GetName() ) : continue
-            i.setConstant (constant )
-            # print '%s.setConstant(%s)'%(i,constant)
-            rc += 1
-        return rc
-
 class JpsiVCarthesianAmplitudes ( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
         from math import sqrt, cos, sin
-
-        self._ReA0    = self._parseArg('ReA0',    kwargs, Title = 'Re(A_0)',    Value = 1.)
-        self._ImA0    = self._parseArg('ImA0',    kwargs, Title = 'Im(A_0)',    Value = 0.)
-        self._ReApar  = self._parseArg('ReApar',  kwargs, Title = 'Re(A_par)',  Value = sqrt(0.24 / 0.60) * cos( 2.50), MinMax = (-1., 1.))
-        self._ImApar  = self._parseArg('ImApar',  kwargs, Title = 'Im(A_par)',  Value = sqrt(0.24 / 0.60) * sin( 2.50), MinMax = (-1., 1.))
-        self._ReAperp = self._parseArg('ReAperp', kwargs, Title = 'Re(A_perp)', Value = sqrt(0.16 / 0.60) * cos(-0.17), MinMax = (-1., 1.))
-        self._ImAperp = self._parseArg('ImAperp', kwargs, Title = 'Im(A_perp)', Value = sqrt(0.16 / 0.60) * sin(-0.17), MinMax = (-1., 1.))
-        self._ReAS    = self._parseArg('ReAS',    kwargs, Title = 'Re(A_S)',    Value = sqrt(0.10 / 0.60) * cos( 2.20), MinMax = (-1., 1.))
-        self._ImAS    = self._parseArg('ImAS',    kwargs, Title = 'Im(A_S)',    Value = sqrt(0.10 / 0.60) * sin( 2.20), MinMax = (-1., 1.))
-        self._params  = [ self._ReA0, self._ImA0, self._ReApar, self._ImApar, self._ReAperp, self._ImAperp, self._ReAS, self._ImAS ]
+        self._parseArg('ReA0',    kwargs, Title = 'Re(A_0)',    Value = 1.)
+        self._parseArg('ImA0',    kwargs, Title = 'Im(A_0)',    Value = 0.)
+        self._parseArg('ReApar',  kwargs, Title = 'Re(A_par)',  Value = sqrt(0.24 / 0.60) * cos( 2.50), MinMax = (-1., 1.))
+        self._parseArg('ImApar',  kwargs, Title = 'Im(A_par)',  Value = sqrt(0.24 / 0.60) * sin( 2.50), MinMax = (-1., 1.))
+        self._parseArg('ReAperp', kwargs, Title = 'Re(A_perp)', Value = sqrt(0.16 / 0.60) * cos(-0.17), MinMax = (-1., 1.))
+        self._parseArg('ImAperp', kwargs, Title = 'Im(A_perp)', Value = sqrt(0.16 / 0.60) * sin(-0.17), MinMax = (-1., 1.))
+        self._parseArg('ReAS',    kwargs, Title = 'Re(A_S)',    Value = sqrt(0.10 / 0.60) * cos( 2.20), MinMax = (-1., 1.))
+        self._parseArg('ImAS',    kwargs, Title = 'Im(A_S)',    Value = sqrt(0.10 / 0.60) * sin( 2.20), MinMax = (-1., 1.))
 
         assert len(kwargs) == 0
         AmplitudeSet.__init__( self, Carthesian_Amplitude( 'A0',    self._ReA0,    self._ImA0,    +1 )
@@ -144,58 +124,27 @@ class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import FormulaVar
         from math import pi
-        self._A0Mag2    = self._parseArg('A0Mag2',     Title = '|A0|^2',      Value = 0.601,   MinMax = (0., 1.) )
-        self._A0Ph      = self._parseArg('A0Phase',    Title = 'delta_0',     Value = 0.                         )
-        self._AperpMag2 = self._parseArg('AperpMag2',  Title = '|A_perp|^2',  Value = 0.160,   MinMax = ( 0., 1.))
-        self._AperpPh   = self._parseArg('AperpPhase', Title = 'delta_perp',  Value = -0.17,   MinMax = ( -2. * pi, 2. * pi))
+        self._parseArg('A0Mag2',    kwargs,  Title = '|A0|^2',      Value = 0.601,   MinMax = (0., 1.) )
+        self._parseArg('A0Phase',   kwargs,  Title = 'delta_0',     Value = 0.                         )
+        self._parseArg('AperpMag2', kwargs,  Title = '|A_perp|^2',  Value = 0.160,   MinMax = ( 0., 1.))
+        self._parseArg('AperpPhase',kwargs,  Title = 'delta_perp',  Value = -0.17,   MinMax = ( -2. * pi, 2. * pi))
         self._AparMag2  = FormulaVar('AparMag2', '1. - @0 - @1', [self._A0Mag2, self._AperpMag2],  Title = '|A_par|^2' )
-        self._AparPh    = self._parseArg('AparPhase',  Title = 'delta_par',   Value = 2.50,    MinMax = ( -2. * pi, 2. * pi))
-        self._ASMag2    = self._parseArg('ASMag2',     Title = '|A_S|^2',     Value = 0.10,    MinMax = ( 0., 1.))
-        self._ASPh      = self._parseArg('ASPhase',    Title = 'delta_S',     Value = 2.2,     MinMax = ( -2. * pi, 2. * pi))
-        self._params    = [ self._A0Mag2, self._A0Ph, self._AperpMag2, self._AperpPh, self._AparPh, self._ASMag2, self._ASPh ]
+        self._parseArg('AparPhase', kwargs,  Title = 'delta_par',   Value = 2.50,    MinMax = ( -2. * pi, 2. * pi))
+        self._parseArg('ASMag2',    kwargs,  Title = '|A_S|^2',     Value = 0.10,    MinMax = ( 0., 1.))
+        self._parseArg('ASPhase',   kwargs,  Title = 'delta_S',     Value = 2.2,     MinMax = ( -2. * pi, 2. * pi))
 
-        assert len(kwargs) == 0
-        AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Ph,    +1 )
-                                   , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPh,  +1 )
-                                   , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPh, -1 )
-                                   , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPh,    -1 )
+        self._checkKW( kwargs ) 
+        AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Phase,    +1 )
+                                   , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPhase,  +1 )
+                                   , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPhase, -1 )
+                                   , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPhase,    -1 )
                              )
 
-class CEvenOdd :
+class CEvenOdd ( _util_parse_mixin ) :
     def __init__( self, **kwargs ) :
         for i in [ 'avgCEven', 'avgCOdd' ] : setattr( self, i, kwargs.pop(i) )
 
-    def __getitem__( self, kw ) :
-        return getattr( self, kw )
-
-    def _parseArg(self, arg, kwargs, **d ) : 
-        from RooFitWrappers import RealVar, RooObject
-        if arg in kwargs :
-            a = kwargs.pop(arg)
-            if RooObject in type(a).__mro__ : return a
-            d.update( a if type(a) == dict else { 'Value' : a } ) 
-        Name = d.pop('Name') if 'Name' in d else arg
-        return RealVar( Name, **d)
-
-    def parameters( self ) :
-        return self._params
-
-    def setValues( self, **kwargs ) :
-        for ( k, v ) in kwargs.iteritems() : 
-          arg = getattr( self, '_' + k )
-          if v < arg.getMin() : arg.setMin(v) 
-          if v > arg.getMax() : arg.setMax(v) 
-          arg['Value'] = v
-
-    def setConstant( self, pattern, constant = True ) :
-        import re
-        rc = 0
-        nrexp = re.compile(pattern)
-        for i in self.parameters(): 
-            if not nrexp.match( i.GetName() ) : continue
-            i.setConstant ( constant )
-            rc += 1
-        return rc
+    def __getitem__( self, kw ) : return getattr( self, kw )
 
 class Trivial_CEvenOdd( CEvenOdd ) :
     def __init__( self ) :
@@ -211,35 +160,32 @@ class Coefficients_CEvenOdd( CEvenOdd ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import ConstVar
 
-        self._avgCEven = self._parseArg( 'avgCEven', kwargs, Title = 'CP average even coefficients', Value = 1. )
-        self._avgCOdd  = self._parseArg( 'avgCOdd',  kwargs, Title = 'CP average odd coefficients',  Value = 0., MinMax = ( -2., 2. ) )
-        self._params   = [ self._avgCEven, self._avgCOdd ]
+        self._parseArg( 'avgCEven', kwargs, Title = 'CP average even coefficients', Value = 1. )
+        self._parseArg( 'avgCOdd',  kwargs, Title = 'CP average odd coefficients',  Value = 0., MinMax = ( -2., 2. ) )
 
-        assert len(kwargs) == 0
+        self._checkKW( kwargs ) 
         CEvenOdd.__init__(self, avgCEven = self._avgCEven, avgCOdd = self._avgCOdd )
 
 class ProdTagNorm_CEvenOdd( CEvenOdd ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import ConstVar, FormulaVar, Product
 
-        self._AProd   = self._parseArg( 'AProd',   kwargs, Title = 'production asymmetry',         Value = 0., MinMax = ( -1., 1. ) )
-        self._ATagEff = self._parseArg( 'ATagEff', kwargs, Title = 'tagging efficiency asymmetry', Value = 0., MinMax = ( -1., 1. ) )
-        self._params  = [ self._AProd, self._ATagEff ]
+        self._parseArg( 'AProd',   kwargs, Title = 'production asymmetry',         Value = 0., MinMax = ( -1., 1. ) )
+        self._parseArg( 'ATagEff', kwargs, Title = 'tagging efficiency asymmetry', Value = 0., MinMax = ( -1., 1. ) )
 
         if 'C' in kwargs or 'CPParam' in kwargs:
           self._minus = ConstVar( 'minus', Value = -1. )
           if 'C' in kwargs :
-            self._C = self._parseArg( 'C', kwargs, Title = 'CPV param. C', Value = 0., MinMax = ( -1., 1. ) )
+            self._parseArg( 'C', kwargs, Title = 'CPV param. C', Value = 0., MinMax = ( -1., 1. ) )
           else :
             CPParam = kwargs.pop('CPParam')
             self._C = CPParam.C
           self._ANorm   = Product( 'ANorm', [ self._minus, self._C ], Title = 'normalization asymmetry' )
           self._params += [ self._minus, self._C ]
         else   :
-          self._ANorm   = self._parseArg( 'ANorm', kwargs, Title = 'normalization asymmetry', Value = 0., MinMax = ( -1., 1. ) )
-          self._params += [ self._ANorm ]
+          self._parseArg( 'ANorm', kwargs, Title = 'normalization asymmetry', Value = 0., MinMax = ( -1., 1. ) )
 
-        assert len(kwargs) == 0
+        self._checkKW( kwargs ) 
         CEvenOdd.__init__(self, avgCEven = FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2',
                                                        [self._AProd, self._ANorm, self._ATagEff], Title = 'CP average even coefficients')
                               , avgCOdd  = FormulaVar( 'avgCOdd',  '@0 + @1 + @2 + @0*@1*@2',
@@ -468,20 +414,6 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         BDecayBasisCoefficients.__init__( self, **args )
 
 
-class ResolutionModelTrivial :
-    def __init__( self, t ) :
-        from RooFitWrappers import RealVar, ConstVar, ResolutionModel, AddModel
-        mu = ConstVar('tres_mu', Value = -0.0027 )
-        SF = RealVar('tres_SF', Value = 1.0, MinMax = (0.5,1.5) )
-        from ROOT import RooGaussModel as GaussModel
-        sigmas = [ (3,0.513 ), (2,0.0853), (1,0.0434) ]
-        frac   = [ (3,0.0017), (2,0.165) ]
-        self.Model = AddModel('tres', [ ResolutionModel('tres_%s'%n, Type = GaussModel, Observables = [ t ], Parameters = [ mu, ConstVar('tres_s%s'%n, Value = v  ), SF ] ) for n,v in sigmas ]
-                                    , [ ConstVar('tres_f%s'%n,Value = v) for n,v in frac ]
-                             )
-
-
-
 class ResolutionModelLP2011 :
     def __init__( self, t ) :
         from RooFitWrappers import RealVar, ConstVar, ResolutionModel, AddModel
@@ -493,4 +425,23 @@ class ResolutionModelLP2011 :
         self.Model = AddModel('tres', [ ResolutionModel('tres_%s'%n, Type = GaussModel, Observables = [ t ], Parameters = [ mu, ConstVar('tres_s%s'%n, Value = v  ), SF ] ) for n,v in sigmas ]
                                     , [ ConstVar('tres_f%s'%n,Value = v) for n,v in frac ]
                              )
+
+
+#def buildEff_x_PDF(name,pdf,eff) :
+#   if not eff : return pdf
+#   # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
+#   # of "pdf" with their efficiency corrected versions, multiply them with the right basis fcn & coefficent
+#   # those are assumed to be in eff....
+#   from ROOT import RooCustomizer, RooP2VVAngleBasis, RooArgSet
+#   customizer = RooCustomizer(pdf,name)
+#   for c in pdf.getComponents() :
+#        if type(c) is not RooP2VVAngleBasis : continue  # TODO: do not use type to recognize, but name??
+#        n = "%s_%s_eff" % (name,c.GetName())
+#        s = RooArgSet()
+#        from RooFitWrappers import Addition
+#        a = [ c.createProduct( fijk, cijk ) for (fijk,cijk) in eff ]
+#        # put a in ws...
+#        rep = Addition( n, [ c.createProduct( fijk, cijk ) for (fijk,cijk) in eff ] )
+#        customizer.replaceArg( c, rep._var() )
+#   return customizer.build(True)
 
