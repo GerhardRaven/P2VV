@@ -5,7 +5,7 @@ class CPParam :
     def parameters( self ) :
         return self._params
 
-    def _parseArg(self, arg,kwargs,d ) : 
+    def _parseArg(self, arg, kwargs, **d ) : 
         from RooFitWrappers import RealVar, RooObject
         if arg in kwargs :
             if RooObject in type(kwargs[arg]).__mro__ : return kwargs.pop(arg)
@@ -34,8 +34,8 @@ class LambdaCarth_CPParam( CPParam ) :
         from RooFitWrappers import RealVar, FormulaVar
         from math import cos, sin
 
-        self._ReLambda = self._parseArg('ReLambdaCP', kwargs, { 'Title' : 'CPV param. Re(lambda)', 'Value' : cos(-0.04), 'MinMax' : ( -2., 2. ) })
-        self._ImLambda = self._parseArg('ImLambdaCP', kwargs, { 'Title' : 'CPV param. Im(lambda)', 'Value' : sin(-0.04), 'MinMax' : ( -2., 2. ) })
+        self._ReLambda = self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ) )
+        self._ImLambda = self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ) )
 
         self._params = [ self._ReLambda, self._ImLambda ]
         assert len(kwargs)==0
@@ -51,8 +51,8 @@ class LambdaSqArg_CPParam( CPParam ) :
         from math import pi
 
 
-        self._lambdaSq = self._parseArg( 'lambdaCPSq', kwargs,  { 'Title' : 'CPV param. lambda^2', 'Value' :  1.,   'MinMax' : ( 0.,       5.      ) } )
-        self._phi =      self._parseArg( 'phiCP' ,     kwargs,  { 'Title' : 'CPV param. phi',      'Value' : -0.04, 'MinMax' : ( -2. * pi, 2. * pi ) } )
+        self._lambdaSq = self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
+        self._phi =      self._parseArg( 'phiCP' ,     kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
 
         self._params = [ self._lambdaSq, self._phi ]
         assert len(kwargs)==0
