@@ -5,6 +5,13 @@ class CPParam :
     def parameters( self ) :
         return self._params
 
+    def _parseArg(self, arg,kwargs,d ) : 
+        from RooFitWrappers import RealVar, RooObject
+        if arg in kwargs :
+            if RooObject in type(kwargs[arg]).__mro__ : return kwargs.pop(arg)
+            d['Value'] = kwargs.pop(arg)
+        return RealVar( arg, **d)
+
     def setValues( self, **kwargs ) :
         for ( k, v ) in kwargs.iteritems() : 
            arg = getattr( self, '_' + k )
@@ -27,11 +34,11 @@ class LambdaCarth_CPParam( CPParam ) :
         from RooFitWrappers import RealVar, FormulaVar
         from math import cos, sin
 
-        self._ReLambda = RealVar('ReLambdaCP', Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ))
-        self._ImLambda = RealVar('ImLambdaCP', Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ))
+        self._ReLambda = self._parseArg('ReLambdaCP', kwargs, { 'Title' : 'CPV param. Re(lambda)', 'Value' : cos(-0.04), 'MinMax' : ( -2., 2. ) })
+        self._ImLambda = self._parseArg('ImLambdaCP', kwargs, { 'Title' : 'CPV param. Im(lambda)', 'Value' : sin(-0.04), 'MinMax' : ( -2., 2. ) })
 
         self._params = [ self._ReLambda, self._ImLambda ]
-        if kwargs : self.setValues(**kwargs)
+        assert len(kwargs)==0
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambda, self._ImLambda ] )
                              , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambda, self._ImLambda ] )
@@ -43,16 +50,18 @@ class LambdaSqArg_CPParam( CPParam ) :
         from RooFitWrappers import RealVar, FormulaVar
         from math import pi
 
-        self._lambdaSq = RealVar('lambdaCPSq', Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ))
-        self._phi      = RealVar('phiCP',      Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ))
+
+        self._lambdaSq = self._parseArg( 'lambdaCPSq', kwargs,  { 'Title' : 'CPV param. lambda^2', 'Value' :  1.,   'MinMax' : ( 0.,       5.      ) } )
+        self._phi =      self._parseArg( 'phiCP' ,     kwargs,  { 'Title' : 'CPV param. phi',      'Value' : -0.04, 'MinMax' : ( -2. * pi, 2. * pi ) } )
 
         self._params = [ self._lambdaSq, self._phi ]
-        if kwargs : self.setValues(**kwargs)
+        assert len(kwargs)==0
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',               [ self._lambdaSq            ] )
                              , D = FormulaVar('D', '2 * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaSq, self._phi ] )
                              , S = FormulaVar('S', '2 * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaSq, self._phi ] )
                         )
+
 
 # construct amplitudes with carthesian parameters
 class Carthesian_Amplitude :
@@ -180,9 +189,9 @@ class CEvenOdd :
 class Trivial_CEvenOdd( CEvenOdd ) :
     def __init__(self) :
         from RooFitWrappers import ConstVar
-        ConstVar('one',  Value = 1.)
-        ConstVar('zero', Value = 0.)
-        CEvenOdd.__init__(self, avgCEven = self._one, avgCOdd = self._zero )
+        
+        CEvenOdd.__init__(self, avgCEven = ConstVar('one',  Value = 1.)
+                              , avgCOdd  = ConstVar('zero', Value = 0.) )
 
 class ProdTagNorm_CEvenOdd( CEvenOdd ) :
     def __init__( self, **kwargs ) :
@@ -426,7 +435,8 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
             from compatibility import cwr
 
         for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
-            # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
+            # NOTE: 'Amplitudes'  must be traversed 'in order' -- so we cannot use Amplitudes.keys() out of the box, but use the
+            #       specified order (which also selects which ones to include!)...
             args[ name ] = Addition( 'a_%s'% name, [ combine(name,angFuncs,Amplitudes,CP,tag,i,j) for (i,j) in cwr( order, 2 ) ] )
 
         BDecayBasisCoefficients.__init__( self, **args )
