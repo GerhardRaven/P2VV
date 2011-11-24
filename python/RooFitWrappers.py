@@ -344,7 +344,8 @@ class RealVar (RooObject):
                ,'MinMax'     : lambda s,v : s.setRange(v)
                }
 
-    def __init__(self,name,**kwargs):
+    def __init__(self,name = None,**kwargs):
+        if not name : name = kwargs.pop('Name')
         # TODO: add blinding support to kwargs
         if name not in self.ws():
             # construct factory string on the fly...
