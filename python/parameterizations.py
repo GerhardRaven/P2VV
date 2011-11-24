@@ -2,20 +2,20 @@ class _util_parse_mixin( object ) :
     def parameters( self ) :
         return self._params
 
-    def _parseArg(self, arg, kwargs, **d ) : 
+    def _parseArg( self, arg, kwargs, **d ) : 
         def _create( arg,kwargs, **d ) :
             from RooFitWrappers import RealVar, RooObject
             from copy import copy
             _d = copy(d) # make sure we do not modify the input!!!
             if arg in kwargs :
                 a = kwargs.pop(arg)
-                if isinstance(a,RooObject) : return a
+                if isinstance( a, RooObject ) : return a
                 _d.update( a if type(a) == dict else { 'Value' : a } ) 
-            if 'Name' not in _d : _d['Name'] = arg
+            if 'Name' not in _d : _d[ 'Name' ] = arg
             return RealVar(**_d)
-        obj = _create(arg,kwargs,**d)
+        obj = _create( arg, kwargs, **d )
         setattr(self,'_%s'%arg,obj)
-        if not hasattr(self,'_params') : self._params = []
+        if not hasattr( self, '_params' ) : self._params = []
         self._params += [ obj ]
         return obj
 
@@ -36,7 +36,7 @@ class _util_parse_mixin( object ) :
         nrexp = re.compile(pattern)
         for i in self.parameters(): 
             if not nrexp.match( i.GetName() ) : continue
-            i.setConstant ( constant )
+            i.setConstant (constant)
             rc += 1
         return rc
 
@@ -47,27 +47,27 @@ class CPParam ( _util_parse_mixin ):
 
 
 class LambdaCarth_CPParam( CPParam ) :
-    def __init__(self, **kwargs) :
+    def __init__( self, **kwargs ) :
         from RooFitWrappers import FormulaVar
         from math import cos, sin
 
         self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ) )
         self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ) )
 
-        assert len(kwargs) == 0
+        self._check_kw( kwargs )
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
                              , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
                              , S = FormulaVar('S', '2. * @1 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
                         )
 
 class LambdaSqArg_CPParam( CPParam ) :
-    def __init__(self, **kwargs) :
+    def __init__( self, **kwargs ) :
         from RooFitWrappers import FormulaVar
         from math import pi
 
         self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
-        assert len(kwargs) == 0
+        self._check_kw( kwargs )
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',               [ self._lambdaCPSq              ] )
                              , D = FormulaVar('D', '2 * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                              , S = FormulaVar('S', '2 * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
@@ -76,7 +76,7 @@ class LambdaSqArg_CPParam( CPParam ) :
 
 # construct amplitudes with carthesian parameters
 class Carthesian_Amplitude :
-    def __init__(self,name, Re, Im, CP ) :
+    def __init__( self,name, Re, Im, CP ) :
         self.name = name
         self.Re = Re
         self.Im = Im
@@ -84,23 +84,23 @@ class Carthesian_Amplitude :
     def __str__(self) : return self.name
 
 # construct amplitudes with polar parameters
-class Polar2_Amplitude(Carthesian_Amplitude) :
-    def __init__(self,name, r2, arg, CP ) :
+class Polar2_Amplitude( Carthesian_Amplitude ) :
+    def __init__( self,name, r2, arg, CP ) :
         from RooFitWrappers import FormulaVar
         Carthesian_Amplitude.__init__( self,  name, FormulaVar('Re_%s'%name, 'sqrt(@0) * cos(@1)', [r2,arg], Title = 'Re(%s)'% name )
                                                   , FormulaVar('Im_%s'%name, 'sqrt(@0) * sin(@1)', [r2,arg], Title = 'Im(%s)'% name )
                                                   , CP )
 
 class AmplitudeSet ( dict, _util_parse_mixin ) :
-    def __init__( self, *args) :
+    def __init__( self, *args ) :
         # maybe make this thing readonly???
         for v in args: 
             self[ v.name ] = v
-            assert hasattr(v,'Re')
-            assert hasattr(v,'Im')
-            assert hasattr(v,'CP')
+            assert hasattr( v, 'Re' )
+            assert hasattr( v, 'Im' )
+            assert hasattr( v, 'CP' )
         # require the names in args to be unique...
-        assert(len(self)==len(args))
+        assert( len(self)==len(args) )
 
 class JpsiVCarthesianAmplitudes ( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
@@ -114,7 +114,7 @@ class JpsiVCarthesianAmplitudes ( AmplitudeSet ) :
         self._parseArg('ReAS',    kwargs, Title = 'Re(A_S)',    Value = sqrt(0.10 / 0.60) * cos( 2.20), MinMax = (-1., 1.))
         self._parseArg('ImAS',    kwargs, Title = 'Im(A_S)',    Value = sqrt(0.10 / 0.60) * sin( 2.20), MinMax = (-1., 1.))
 
-        assert len(kwargs) == 0
+        self._check_kw( kwargs )
         AmplitudeSet.__init__( self, Carthesian_Amplitude( 'A0',    self._ReA0,    self._ImA0,    +1 )
                                    , Carthesian_Amplitude( 'Apar',  self._ReApar,  self._ImApar,  +1 )
                                    , Carthesian_Amplitude( 'Aperp', self._ReAperp, self._ImAperp, -1 )

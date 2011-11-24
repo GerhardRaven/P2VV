@@ -149,10 +149,3 @@ else :
 print 'fitJpsiV: fitting %d events' % data.numEntries()
 pdf.fitTo(data, RooFit.NumCPU(10), RooFit.Timer(1))
 
-ws.ws().function('C').Print()
-#ws.ws().function('ANorm').Print()
-#ws.ws().function('ATagEff').Print()
-#ws.ws().function('AProd').Print()
-ws.ws().function('avgCEven').Print()
-ws.ws().function('avgCOdd').Print()
-
