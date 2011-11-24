@@ -54,7 +54,7 @@ zero = ConstVar('zero', Value = 0.)
 from parameterizations import JpsiphiHelicityAngles as HelAngles
 angles = HelAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
 time   = RealVar('t',           Title = 'decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = (-0.5, 5.))
-iTag   = Category('tagInitial', Title = 'initial state flavour tag', Observable = True, States = {'B': +1, 'Bbar': -1})
+iTag   = Category('tagInitial', Title = 'initial state flavour tag', Observable = True, States = {'B': +1})#, 'Bbar': -1})
 
 observables = [angle for angle in angles.angles.itervalues()] + [time, iTag]
 

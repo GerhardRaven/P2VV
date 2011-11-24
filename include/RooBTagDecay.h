@@ -107,6 +107,8 @@ protected:
   void initTagCatMaps() const;
   void declareBases();
 
+  Double_t tagCatCoefUnsafe(Int_t category) const;
+
   Bool_t checkVarDep(const RooAbsArg& var, Bool_t warn = kFALSE,
       Bool_t onlyTagPars = kFALSE) const;
   Bool_t checkTag(Bool_t iTag) const;
