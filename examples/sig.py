@@ -8,7 +8,6 @@ ws = RooObject( workspace = 'myws' )
 from parameterizations import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
-#t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(-5,14)  )
 t         = RealVar(  't',          Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(0.3,14)  )
 iTag      = Category( 'tagdecision',Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # TODO: , 'untagged' : 0 } )
 tagOmega  = RealVar( 'tagomega', Title = 'Mistag Rate',      Value = 0.3, MinMax = (0,0.501) )
@@ -18,16 +17,17 @@ observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag, tagOmega ]
 from parameterizations import LambdaSqArg_CPParam
 from math import pi
 #from ROOT import RooUnblindUniform as UnblindUniform
-CP = LambdaSqArg_CPParam( lambdaSq  = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2',  Value = 1)
-                        , lambdaArg = RealVar( 'phiCP',    Title = 'CP violation param. phi_s',      Value = -0.04,  MinMax = (-2*pi,2*pi) ) # , Blind = (UnblindUniform,'BsRooBarb',0.2) )
-                        )
+#CP = LambdaSqArg_CPParam( lambdaSq  = RealVar( 'lambda^2', Title = 'CP violation param |lambda|^2',  Value = 1)
+#                        , lambdaArg = RealVar( 'myphiCP',    Title = 'CP violation param. phi_s',      Value = -0.04,  MinMax = (-2*pi,2*pi) ) # , Blind = (UnblindUniform,'BsRooBarb',0.2) )
+#                        )
+CP = LambdaSqArg_CPParam( phiCP = -0.04 )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from parameterizations import JpsiphiAmplitudesLP2011
-amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.601, A0Ph = 0
-                                    , AperpMag2 = 0.160, AperpPh = -0.17
-                                    , AparPh = 2.5
-                                    , ASMag2 = 0, ASPh = 0 )
+amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.601, A0Phase = 0
+                                    , AperpMag2 = 0.160, AperpPhase = -0.17
+                                    , AparPhase = 2.5
+                                    , ASMag2 = 0, ASPhase = 0 )
 amplitudes.setConstant('.*AS.*',True)
 
 #### Package from here until the "BTagDecay('name', args)" into a dedicated class/function...
@@ -42,9 +42,9 @@ from parameterizations import JpsiphiBDecayBasisCoefficients
 from parameterizations import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
 # ANuissance = Trivial_CEvenOdd()
 minus = ConstVar('minus',  Value = -1  )
-ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'production asymmetry',          Value = 0 )
-                                 , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry',  Value = 0 )
-                                 , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
+ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'MyAProd',    Title = 'production asymmetry',          Value = 0 )
+                                 , ATagEff = RealVar(    'MyATagEff',  Title = 'tagging efficiency asymmetry',  Value = 0 )
+                                 , ANorm   = Product(    'MyANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
                                  )
 
 # now build the actual signal PDF...
@@ -62,7 +62,7 @@ args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps
        , 'avgCEven'  : ANuissance['avgCEven'] 
        , 'avgCOdd'   : ANuissance['avgCOdd']
        , 'iTag'      : iTag
-       , 'dilution'  : FormulaVar('tagdilution', '1-2*@0', [ tagOmega ] )
+       , 'dilution'  : ConstVar('one',Value = 1) # FormulaVar('tagdilution', '1-2*@0', [ tagOmega ] )
        , 'ADilWTag'  : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry',  Value = 0 )
        } 
 
@@ -125,13 +125,19 @@ _bm = lambda i,l,m : EffMoment( P2VVAngleBasis(angles.angles, i,0,l,m,1. ), floa
 moms2  = [ _bm(i,l,m) for i in range(3) 
                       for l in range(3) 
                       for m in range(-l,l+1) ]
-moms2 += [ _bm(i,2,m) for i in range(3,20) 
+moms2 += [ _bm(i,2,m) for i in range(3,10)  # 3,20)
                       for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF 
 
 computeMoments( data, moms + moms2 )
+from math import sqrt
 from pprint import pprint
-pprint( [ (m.GetName(), m.coefficient(), m.significance() ) for m in moms  ] )
-pprint( [ (m.GetName(), m.coefficient(), m.significance() ) for m in moms2 ] )
+pprint( [ (m.GetName(), m.coefficient(), sqrt(m.variance()), m.significance() ) for m in moms  ] )
+pprint( [ (m.GetName(), m.coefficient(), sqrt(m.variance()), m.significance() ) for m in moms2 ] )
+
+#from parameterizations import buildEff_x_PDF
+# [ ( m.basis() , m.coefficient() ) for m in moments if m.significance()>signif]
+#eff_pdf = buildEff_x_PDF('eff_pdf',pdf._var,[ ( m.basis(), m.coefficient())  for m in moms2 ] )
+#pdf = eff_pdf
 
 print 'fitting data'
 from ROOT import RooCmdArg
