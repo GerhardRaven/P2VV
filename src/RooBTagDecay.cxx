@@ -718,10 +718,10 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
 
   if (coef == _coshBasis || coef == _sinhBasis) {
     // terms that are even in the initial state tag
-    if (intTagCat && (intITag || _iTagVal == 0)) {
+    if (intTagCat && ((intITag && _iTagVal == 2) || _iTagVal == 0)) {
       // integrate over the tagging category and over the initial state tag
       coefInt *= 2. * _avgCEvenSum;
-    } else if (intITag || _iTagVal == 0) {
+    } else if ((intITag && _iTagVal == 2) || _iTagVal == 0) {
       // integrate over the initial state tag
       coefInt *= 2. * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal();
     } else if (intTagCat) {
@@ -748,17 +748,21 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
     }
 
     // integrate over final state tag if required
-    if (_tags == 1) return coefInt;
-    else if (intFTag || _fTagVal == 0) return 2. * coefInt;
-    else if (_fTagVal == 2) return (1. - _fTag * _ANorm) * coefInt;
-    else return (1. - _fTagVal * _ANorm) * coefInt;
+    if (_tags == 1)
+      return coefInt;
+    else if ((intFTag && _fTagVal == 2) || _fTagVal == 0)
+      return 2. * coefInt;
+    else if (_fTagVal == 2)
+      return (1. - _fTag * _ANorm) * coefInt;
+    else
+      return (1. - _fTagVal * _ANorm) * coefInt;
 
   } else if (coef == _cosBasis || coef == _sinBasis) {
     // terms that are odd in the initial state tag
-    if (intTagCat && (intITag || _iTagVal == 0)) {
+    if (intTagCat && ((intITag && _iTagVal == 2) || _iTagVal == 0)) {
       // integrate over the tagging category and over the initial state tag
       coefInt *= 2. * _avgCOddSum;
-    } else if (intITag || _iTagVal == 0) {
+    } else if ((intITag && _iTagVal == 2) || _iTagVal == 0) {
       // integrate over the initial state tag
       coefInt *= 2. * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal();
     } else if (intTagCat) {
@@ -785,10 +789,14 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
     }
 
     // integrate over final state tag if required
-    if (_tags == 1) return coefInt;
-    else if (intFTag || _fTagVal == 0) return -2. * _ANorm * coefInt;
-    else if (_fTagVal == 2) return (_fTag - _ANorm) * coefInt;
-    else return (_fTagVal - _ANorm) * coefInt;
+    if (_tags == 1)
+      return coefInt;
+    else if ((intFTag && _fTagVal == 2) || _fTagVal == 0)
+      return -2. * _ANorm * coefInt;
+    else if (_fTagVal == 2)
+      return (_fTag - _ANorm) * coefInt;
+    else
+      return (_fTagVal - _ANorm) * coefInt;
   }
 
   return 0.;
@@ -1318,12 +1326,13 @@ void RooBTagDecay::initTag(Bool_t iTag)
     // get tag parameters
     const char* tagName;
     Int_t  tagVal = 2, numTypes = 0;
-    Bool_t BIndex= kFALSE, BbarIndex = kFALSE;
+    Bool_t BIndex= kFALSE, BbarIndex = kFALSE, noTagIndex = kFALSE;
     if (iTag) {
-      tagName   = _iTag.GetName();
-      numTypes  = _iTag.arg().numTypes();
-      BIndex    = _iTag.arg().isValidIndex(+1);
-      BbarIndex = _iTag.arg().isValidIndex(-1);
+      tagName    = _iTag.GetName();
+      numTypes   = _iTag.arg().numTypes();
+      BIndex     = _iTag.arg().isValidIndex(+1);
+      BbarIndex  = _iTag.arg().isValidIndex(-1);
+      noTagIndex = _iTag.arg().isValidIndex(0);
     } else {
       tagName   = _fTag.GetName();
       numTypes  = _fTag.arg().numTypes();
@@ -1347,14 +1356,14 @@ void RooBTagDecay::initTag(Bool_t iTag)
     } else if (numTypes == 1 && BbarIndex) {
       // only Bbar
       tagVal = -1;
-    } else if (numTypes == 0) {
+    } else if (iTag && numTypes == 1 && noTagIndex) {
       // sum of B and Bbar
       tagVal = 0;
     } else {
       // not a valid configuration
       coutE(InputArguments) << "RooBTagDecay::initTag(" << GetName()
-          << ") flavour tag " << tagName
-          << " can only have values +1 and/or -1: use \"checkVars = false\" if you insist on using other/additional values"
+          << ") flavour tag \"" << tagName
+          << "\" can only have values +1 and/or -1 or 0: use \"checkVars = false\" if you insist on using other/additional values"
           << endl;
       assert(0);
     }
@@ -1490,16 +1499,16 @@ Bool_t RooBTagDecay::checkVarDep(const RooAbsArg& var, Bool_t warn,
 Bool_t RooBTagDecay::checkTag(Bool_t iTag) const
 {
   // check flavour tag state
-
   if (_checkVars) {
     // get tag parameters
     Int_t  tagVal = 2, numTypes = 0;
-    Bool_t BIndex = kFALSE, BbarIndex = kFALSE;
+    Bool_t BIndex = kFALSE, BbarIndex = kFALSE, noTagIndex = kFALSE;
     if (iTag) {
-      tagVal    = _iTagVal;
-      numTypes  = _iTag.arg().numTypes();
-      BIndex    = _iTag.arg().isValidIndex(+1);
-      BbarIndex = _iTag.arg().isValidIndex(-1);
+      tagVal     = _iTagVal;
+      numTypes   = _iTag.arg().numTypes();
+      BIndex     = _iTag.arg().isValidIndex(+1);
+      BbarIndex  = _iTag.arg().isValidIndex(-1);
+      noTagIndex = _iTag.arg().isValidIndex(0);
     } else {
       tagVal    = _fTagVal;
       numTypes  = _fTag.arg().numTypes();
@@ -1508,9 +1517,10 @@ Bool_t RooBTagDecay::checkTag(Bool_t iTag) const
     }
 
     // check tag
-    if ((tagVal == 0 && (numTypes != 2 || !BIndex || !BbarIndex))
+    if ((tagVal == 2 && (numTypes != 2 || !BIndex || !BbarIndex))
         || (tagVal == +1 && (numTypes != 1 || !BIndex))
-        || (tagVal == -1 && (numTypes != 1 || !BbarIndex)))
+        || (tagVal == -1 && (numTypes != 1 || !BbarIndex))
+        || (iTag && tagVal == 0 && numTypes != 1 && !noTagIndex))
       return kFALSE;
   }
 

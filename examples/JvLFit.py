@@ -2,10 +2,10 @@ from math import pi, sin, cos, sqrt
 
 # job parameters
 generateData = False
-nEvents = 10000
+nEvents = 100000
 
 dataSetName = 'JpsiphiData'
-dataSetFile = 'JvLFit.root'
+dataSetFile = 'JvLFitLarge.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
 NTuple = False
 
@@ -54,7 +54,7 @@ zero = ConstVar('zero', Value = 0.)
 from parameterizations import JpsiphiHelicityAngles as HelAngles
 angles = HelAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
 time   = RealVar('t',           Title = 'decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = (-0.5, 5.))
-iTag   = Category('tagInitial', Title = 'initial state flavour tag', Observable = True, States = {'B': +1})#, 'Bbar': -1})
+iTag   = Category('tagInitial', Title = 'initial state flavour tag', Observable = True, States = {'B': +1, 'Bbar': -1})
 
 observables = [angle for angle in angles.angles.itervalues()] + [time, iTag]
 
@@ -144,6 +144,17 @@ if generateData :
 else :
   from P2VV import readData
   data = readData(dataSetFile, dataSetName, NTuple)
+
+  # TODO: a trick to change the observable in a data set
+  obsSet = RooArgSet()
+  for obs in observables : obsSet +=  obs._var
+  data = RooDataSet(dataSetName + '1', '', data, obsSet)
+
+# fix values of some parameters
+#ANuissance.setConstant('avgCOdd')
+#lambdaCP.setConstant('phiCP')
+wTag.setConstant()
+wTagBar.setConstant()
 
 # fit data
 print 'fitJpsiV: fitting %d events' % data.numEntries()
