@@ -7,6 +7,16 @@ gROOT.SetStyle("Plain")
 # how to get just the RooFit namespace ?
 #from ROOT import * 
 
+def __wrap_kw_subs( fun ) :
+    from ROOT import RooCmdArg,RooFit
+    __fun = fun
+    __tbl = lambda k : getattr(RooFit,k)
+    __disp = lambda k,v : __tbl(k)(v) if not hasattr(v,'__iter__') else __tbl(k)(*v) 
+    def _fun(self,*args,**kwargs) :
+        args += tuple( RooCmdArg( __disp(k,v) ) for k,v in kwargs.iteritems() )
+        return __fun(self,*args)
+    return _fun
+
 ###### decorate TPad with pads...
 from ROOT import TPad
 def _pads(p,n=None,m=None) :
@@ -83,6 +93,7 @@ RooAbsCollection.nameList = lambda s : [ j.GetName() for j in s ]
 RooAbsCollection.names    = lambda s : ','.join( s.nameList() )
 RooAbsCollection.__eq__   = lambda s,x : s.equals(x)
 RooAbsCollection.__ne__   = lambda s,x : not s.equals(x)
+RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 
 def _RooTypedUnary2Binary( t,op ) :
     return lambda x,y : getattr(t,op)(t(x),y)
@@ -169,68 +180,27 @@ def _RooFitResultGet(self, parList) :
 RooFitResult.result = _RooFitResultGet
 
 ##### RooAbsPdf.generate
-def __wrap_kw_subs( fun, tbl ) :
-    from ROOT import RooCmdArg
-    __fun = fun
-    __tbl = tbl
-    def _fun(self,*args,**kwargs) :
-        args += tuple( RooCmdArg( __tbl[k]( v ) if not hasattr(v,'__iter__') else __tbl[k](*v) ) for k,v in kwargs.iteritems() )
-        return __fun(self,*args)
-    return _fun
 
-from ROOT import RooAbsPdf
 from ROOT import RooFit
-RooAbsPdf.generate = __wrap_kw_subs( RooAbsPdf.generate, { 'NumEvents'    : RooFit.NumEvents
-                                                         , 'Asimov'       : RooFit.Asimov 
-                                                         , 'ExpectedData' : RooFit.ExpectedData 
-                                                         , 'ProtoData'    : RooFit.ProtoData
-                                                         } )
-
-RooAbsPdf.fitTo = __wrap_kw_subs( RooAbsPdf.fitTo, { 'FitOptions'              : RooFit.FitOptions
-                                                   , 'Optimize'                : RooFit.Optimize 
-                                                   , 'NumCPU'                  : RooFit.NumCPU
-                                                   , 'ProjectedObservables'    : RooFit.ProjectedObservables 
-                                                   , 'ConditionalObservables'  : RooFit.ConditionalObservables 
-                                                   , 'Verbose'                 : RooFit.Verbose 
-                                                   , 'Save'                    : RooFit.Save 
-                                                   , 'Timer'                   : RooFit.Timer 
-                                                   , 'PrintLevel'              : RooFit.PrintLevel 
-                                                   , 'Warnings'                : RooFit.Warnings 
-                                                   , 'Strategy'                : RooFit.Strategy 
-                                                   , 'InitialHesse'            : RooFit.InitialHesse 
-                                                   , 'Hesse'                   : RooFit.Hesse 
-                                                   , 'Minos'                   : RooFit.Minos 
-                                                   , 'SplitRange'              : RooFit.SplitRange 
-                                                   , 'SumCoefRange'            : RooFit.SumCoefRange 
-                                                   , 'Constrain'               : RooFit.Constrain 
-                                                   , 'Constrained'             : RooFit.Constrained 
-                                                   , 'ExternalConstraints'     : RooFit.ExternalConstraints 
-                                                   , 'PrintEvalErrors'         : RooFit.PrintEvalErrors 
-                                                   , 'EvalErrorWall'           : RooFit.EvalErrorWall 
-                                                   , 'SumW2Error'              : RooFit.SumW2Error 
-                                                   , 'CloneData'               : RooFit.CloneData 
-                                                   , 'Minimizer'               : RooFit.Minimizer 
-                                                   } )
-RooAbsPdf.plotOn = __wrap_kw_subs( RooAbsPdf.plotOn, { 'Normalization' : RooFit.Normalization
-                                                     , 'Components'    : RooFit.Components
-                                                     } )
-RooAbsPdf.printLatex = __wrap_kw_subs( RooAbsPdf.printLatex, { 'Columns'    : RooFit.Columns
-                                                             , 'OutputFile' : RooFit.OutputFile
-                                                             , 'Format'     : RooFit.Format
-                                                             , 'Sibling'    : RooFit.Sibling
-                                                             } )
-RooAbsPdf.paramOn = __wrap_kw_subs( RooAbsPdf.paramOn, { 'Label'    : RooFit.Label
-                                                       , 'Layout'   : RooFit.Layout
-                                                       , 'Parameters' : RooFit.Parameters
-                                                       , 'ShowConstants' : RooFit.ShowConstants
-                                                       } )
-RooAbsPdf.createCdf = __wrap_kw_subs( RooAbsPdf.createCdf, { 'SupNormSet'    : RooFit.SupNormSet
-                                                           , 'ScanParameters'   : RooFit.ScanParameters
-                                                           , 'ScanNumCdf' : RooFit.ScanNumCdf
-                                                           , 'ScanAllCdf' : RooFit.ScanAllCdf
-                                                           , 'ScanNoCdf' : RooFit.ScanNoCdf
-                                                           } )
 from ROOT import RooAbsPdf
+RooAbsPdf.generate = __wrap_kw_subs( RooAbsPdf.generate )
+RooAbsPdf.fitTo = __wrap_kw_subs( RooAbsPdf.fitTo )
+RooAbsPdf.plotOn = __wrap_kw_subs( RooAbsPdf.plotOn )
+RooAbsPdf.paramOn = __wrap_kw_subs( RooAbsPdf.paramOn )
+RooAbsPdf.createCdf = __wrap_kw_subs( RooAbsPdf.createCdf )
+from ROOT import RooAbsData
+RooAbsData.createHistogram = __wrap_kw_subs( RooAbsData.createHistogram )
+RooAbsData.reduce = __wrap_kw_subs( RooAbsData.reduce )
+RooAbsData.plotOn = __wrap_kw_subs( RooAbsData.plotOn )
+from ROOT import RooAbsReal
+RooAbsReal.plotOn = __wrap_kw_subs( RooAbsReal.plotOn )
+RooAbsReal.fillHistogram = __wrap_kw_subs( RooAbsReal.fillHistogram )
+RooAbsReal.createIntegral = __wrap_kw_subs( RooAbsReal.createIntegral )
+from ROOT import RooAbsRealLValue
+RooAbsRealLValue.frame = __wrap_kw_subs( RooAbsRealLValue.frame )
+from ROOT import RooAbsCollection
+RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
+
 
 
 # plot -- example usage:
