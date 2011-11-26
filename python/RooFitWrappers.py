@@ -447,6 +447,7 @@ class Pdf(RooObject):
             self._init(self._dict['Name'], 'RooAbsPdf')
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
+                if v != self._get(k) : print k,v,self._get(k)
                 assert v == self._get(k)
 
     def _separator(self):
@@ -456,11 +457,13 @@ class Pdf(RooObject):
         deps = ','.join([v.GetName() if type(v) != str else v for v in variables])
         return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
 
-    def generate(self, whatvars, *args):
-        s = RooArgSet()
-        for i in whatvars :
-            s.add(i._target_() if hasattr(i,'_target_') else i)
-        return self._var.generate(s, *args)
+    # def fitTo,plotOn
+    #  TODO: map keyword arguments to RooCmdArg... 
+    # def fitTo( self,*args,**kwargs)
+    #
+    def generate(self, whatvars, *args,**kwargs):
+        cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
+        return self._var.generate(RooArgSet( cvrt(i) for i in whatvars), *args,**kwargs)
 
 class ProdPdf(Pdf):
     # TODO: support conditional terms, use 'Conditional' key word for that...
