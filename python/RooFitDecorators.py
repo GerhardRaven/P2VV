@@ -215,16 +215,16 @@ RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 global  _stash
 _stash = [] #keep the relevant objects alive by keeping a reference to them
 def plot( c, obs, data, pdf, components, frameOpts = (), dataOpts = (), pdfOpts = (), logy = False, normalize = True, symmetrize = True, usebar =True ) :
-    from ROOT import TLine, TPad, RooFit
+    from ROOT import TLine, TPad
     #
     _obs = obs.frame( *frameOpts )  if frameOpts else obs.frame()
     _stash.append(_obs)
-    data.plotOn(_obs,RooFit.Name('data'),*dataOpts)
+    data.plotOn(_obs,Name='data',*dataOpts)
     if components :
         for comp,opt in components.iteritems() :
             z = opt + pdfOpts
-            pdf.plotOn(_obs,RooFit.Components(comp), *z )
-    pdf.plotOn(_obs,RooFit.Name('pdf'),*pdfOpts)
+            pdf.plotOn(_obs, Components = comp, *z )
+    pdf.plotOn(_obs,Name='pdf',*pdfOpts)
     _obs.drawAfter('pdf','data')
     #TODO: add chisq/nbins
     #chisq = _obs.chiSquare('pdf','data')
