@@ -22,14 +22,16 @@ TPad.pads = _pads
 ##########################################
 
 from ROOT import RooPlot
-_RooPlot_Draw = RooPlot.Draw
-def _RooPlotDraw(self,*args,**kw) :
-   pad = kw.pop('pad') if 'pad' in kw else None
-   if kw : raise RuntimeError('unknown keyword arguments: %s' % kw )
-   if pad : pad.cd()
-   _RooPlot_Draw(self,*args)
-   if pad : pad.Update()
-RooPlot.Draw = _RooPlotDraw
+def __wrap_RooPlotDraw() :
+    _RooPlot_Draw = RooPlot.Draw
+    def _RooPlotDraw(self,*args,**kw) :
+       pad = kw.pop('pad') if 'pad' in kw else None
+       if kw : raise RuntimeError('unknown keyword arguments: %s' % kw )
+       if pad : pad.cd()
+       _RooPlot_Draw(self,*args)
+       if pad : pad.Update()
+    return _RooPlotDraw
+RooPlot.Draw = __wrap_RooPlotDraw()
 
 # RooDataSet functions
 def _RooDataSetIter(self) :
@@ -38,16 +40,19 @@ def _RooDataSetIter(self) :
 from ROOT import RooDataSet
 RooDataSet.__iter__ = _RooDataSetIter
 
-__rds_init = RooDataSet.__init__
-def __RooDataSetInit(self,*args) :
+def __RooDataSetInit() :
     def cnvrt(i) :
-        from ROOT import TObject
-        if not hasattr(i,'__iter__') or isinstance(i, TObject ) : return i
+        from ROOT import TObject,TTree,RooDataSet
+        if not hasattr(i,'__iter__') or isinstance(i, TTree ) or isinstance(i,RooDataSet): return i
         _i = RooArgSet()
-        for j in i : _i.add( j )
+        for j in i : 
+            from ROOT import RooAbsArg
+            if not isinstance(j,RooAbsArg) : return i
+            _i.add( j )
         return _i
-    __rds_init(self,*tuple( cnvrt(i) for i in args ))
-RooDataSet.__init__ = __RooDataSetInit
+    __rds_init = RooDataSet.__init__
+    return lambda self,*args : __rds_init(self,*tuple( cnvrt(i) for i in args ))
+RooDataSet.__init__ = __RooDataSetInit()
 
 
 # RooAbsCategory functions
@@ -88,15 +93,20 @@ for t in [ RooArgSet,RooArgList ] :
     t.__add__  = _RooTypedUnary2Binary( t, '__iadd__' )
 
 
-#__ras_init = RooArgSet.__init__
-#def __RooArgSetInit(self,*args) :
-#    def cnvrt(i) :
-#        if not hasattr(i,'__iter__') : return i
-#        _i = RooArgSet()
-#        for j in i : _i.add( j )
-#        return _i
-#    __rds_init(self,*tuple( cnvrt(i) for i in args ))
-#RooArgSet.__init__ = __RooArgSetInit
+def __create_RooAbsCollectionInit(t) :
+    def cnvrt(i) :
+        from ROOT import TObject
+        if not hasattr(i,'__iter__') or isinstance(i,TObject): return i
+        _i = t()
+        for j in i : 
+               from ROOT import RooAbsArg
+               if not isinstance(j,RooAbsArg) : return i
+               _i.add( j )
+        return _i
+    __init = t.__init__
+    return lambda self,*args : __init(self,*tuple( cnvrt(i) for i in args ))
+RooArgSet.__init__  = __create_RooAbsCollectionInit(RooArgSet)
+RooArgList.__init__ = __create_RooAbsCollectionInit(RooArgList)
 #    
 
 # RooWorkspace functions
@@ -157,6 +167,71 @@ def _RooFitResultGet(self, parList) :
   return (tuple(parList), values, covariances)
 
 RooFitResult.result = _RooFitResultGet
+
+##### RooAbsPdf.generate
+def __wrap_kw_subs( fun, tbl ) :
+    from ROOT import RooCmdArg
+    __fun = fun
+    __tbl = tbl
+    def _fun(self,*args,**kwargs) :
+        args += tuple( RooCmdArg( __tbl[k]( v ) if not hasattr(v,'__iter__') else __tbl[k](*v) ) for k,v in kwargs.iteritems() )
+        return __fun(self,*args)
+    return _fun
+
+from ROOT import RooAbsPdf
+from ROOT import RooFit
+RooAbsPdf.generate = __wrap_kw_subs( RooAbsPdf.generate, { 'NumEvents'    : RooFit.NumEvents
+                                                         , 'Asimov'       : RooFit.Asimov 
+                                                         , 'ExpectedData' : RooFit.ExpectedData 
+                                                         , 'ProtoData'    : RooFit.ProtoData
+                                                         } )
+
+RooAbsPdf.fitTo = __wrap_kw_subs( RooAbsPdf.fitTo, { 'FitOptions'              : RooFit.FitOptions
+                                                   , 'Optimize'                : RooFit.Optimize 
+                                                   , 'NumCPU'                  : RooFit.NumCPU
+                                                   , 'ProjectedObservables'    : RooFit.ProjectedObservables 
+                                                   , 'ConditionalObservables'  : RooFit.ConditionalObservables 
+                                                   , 'Verbose'                 : RooFit.Verbose 
+                                                   , 'Save'                    : RooFit.Save 
+                                                   , 'Timer'                   : RooFit.Timer 
+                                                   , 'PrintLevel'              : RooFit.PrintLevel 
+                                                   , 'Warnings'                : RooFit.Warnings 
+                                                   , 'Strategy'                : RooFit.Strategy 
+                                                   , 'InitialHesse'            : RooFit.InitialHesse 
+                                                   , 'Hesse'                   : RooFit.Hesse 
+                                                   , 'Minos'                   : RooFit.Minos 
+                                                   , 'SplitRange'              : RooFit.SplitRange 
+                                                   , 'SumCoefRange'            : RooFit.SumCoefRange 
+                                                   , 'Constrain'               : RooFit.Constrain 
+                                                   , 'Constrained'             : RooFit.Constrained 
+                                                   , 'ExternalConstraints'     : RooFit.ExternalConstraints 
+                                                   , 'PrintEvalErrors'         : RooFit.PrintEvalErrors 
+                                                   , 'EvalErrorWall'           : RooFit.EvalErrorWall 
+                                                   , 'SumW2Error'              : RooFit.SumW2Error 
+                                                   , 'CloneData'               : RooFit.CloneData 
+                                                   , 'Minimizer'               : RooFit.Minimizer 
+                                                   } )
+RooAbsPdf.plotOn = __wrap_kw_subs( RooAbsPdf.plotOn, { 'Normalization' : RooFit.Normalization
+                                                     , 'Components'    : RooFit.Components
+                                                     } )
+RooAbsPdf.printLatex = __wrap_kw_subs( RooAbsPdf.printLatex, { 'Columns'    : RooFit.Columns
+                                                             , 'OutputFile' : RooFit.OutputFile
+                                                             , 'Format'     : RooFit.Format
+                                                             , 'Sibling'    : RooFit.Sibling
+                                                             } )
+RooAbsPdf.paramOn = __wrap_kw_subs( RooAbsPdf.paramOn, { 'Label'    : RooFit.Label
+                                                       , 'Layout'   : RooFit.Layout
+                                                       , 'Parameters' : RooFit.Parameters
+                                                       , 'ShowConstants' : RooFit.ShowConstants
+                                                       } )
+RooAbsPdf.createCdf = __wrap_kw_subs( RooAbsPdf.createCdf, { 'SupNormSet'    : RooFit.SupNormSet
+                                                           , 'ScanParameters'   : RooFit.ScanParameters
+                                                           , 'ScanNumCdf' : RooFit.ScanNumCdf
+                                                           , 'ScanAllCdf' : RooFit.ScanAllCdf
+                                                           , 'ScanNoCdf' : RooFit.ScanNoCdf
+                                                           } )
+from ROOT import RooAbsPdf
+
 
 # plot -- example usage:
 # _c1 = plot( c.cd(1),mpsi,data,pdf
