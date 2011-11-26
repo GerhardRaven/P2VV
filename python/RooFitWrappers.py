@@ -242,7 +242,7 @@ class Product(RooObject) :
 class Addition(RooObject) :
     def __init__(self,name,fargs,**kwargs) :
         # construct factory string on the fly...
-        self._declare("sum::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) )
+        self._declare("sum::%s(%s)"%(name,','.join(i.GetName() for i in fargs)) )
         self._init(name,'RooAddition')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -253,7 +253,7 @@ class FormulaVar (RooObject):
                }
     def __init__(self, name, formula, fargs, **kwargs):
         # construct factory string on the fly...
-        spec = "expr::%s('%s',{%s})" % (name, formula, ','.join(i['Name'] for i in fargs)) 
+        spec = "expr::%s('%s',{%s})" % (name, formula, ','.join(i.GetName() for i in fargs)) 
         present = name in self.ws() 
         match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec')
         if not present or not match :
@@ -291,7 +291,7 @@ class P2VVAngleBasis (RooObject) :
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
     def __init__(self, angles, i,j,k,l,c) :
         # compute name, given angles,i,j,k,l,c!
-        name = '_'.join(angles[a]['Name'] for a in ['cpsi','ctheta','phi'])
+        name = '_'.join(angles[a].GetName() for a in ['cpsi','ctheta','phi'])
         # remove c if it is 1?
         name = 'P2VVAngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
@@ -301,7 +301,7 @@ class P2VVAngleBasis (RooObject) :
         self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
             
-class EffMoment :
+class EffMoment( object ):
     from ROOT import gSystem, RooArgSet
     gSystem.Load('libP2VV.so')
     def __init__( self, x, norm, pdf, nset ) :
@@ -550,21 +550,17 @@ class SumPdf(Pdf):
 
 class BTagDecay( Pdf ) :
     def __init__(self,name,params, **kwargs) :
-        if name not in self.ws():
-            # construct factory string on the fly...
-            if 'name' in params : raise KeyError(' name should not be in params!')
-            d = dict( (k,v['Name'] if type(v) is not str else v ) for k,v in params.iteritems() )
-            d['name'] = name
-            if 'checkVars' not in d : d['checkVars'] = 1
-            self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d )
-
-            self._init(name,'RooBTagDecay')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            raise RunTimeError( 'Code Path Not Yet Verified'  )
+        # construct factory string on the fly...
+        if 'name' in params : raise KeyError(' name should not be in params!')
+        d = dict( (k, '%s' % v ) for k,v in params.iteritems() )
+        d['name'] = name
+        if 'checkVars' not in d : d['checkVars'] = 1
+        self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+                                          " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
+                                          " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                          " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d )
+        self._init(name,'RooBTagDecay')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class ResolutionModel(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables')

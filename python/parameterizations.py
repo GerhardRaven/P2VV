@@ -19,7 +19,7 @@ class _util_parse_mixin( object ) :
         self._params += [ obj ]
         return obj
 
-    def _check_kw( self, kwargs ) :
+    def _check_extraneous_kw( self, kwargs ) :
         if len(kwargs): 
             raise KeyError('got unknown keywords %s for %s' % ( kwargs, type(self) ) )
 
@@ -54,7 +54,7 @@ class LambdaCarth_CPParam( CPParam ) :
         self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ) )
         self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ) )
 
-        self._check_kw( kwargs )
+        self._check_extraneous_kw( kwargs )
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
                              , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
                              , S = FormulaVar('S', '2. * @1 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
@@ -67,7 +67,7 @@ class LambdaSqArg_CPParam( CPParam ) :
 
         self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
-        self._check_kw( kwargs )
+        self._check_extraneous_kw( kwargs )
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',               [ self._lambdaCPSq              ] )
                              , D = FormulaVar('D', '2 * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                              , S = FormulaVar('S', '2 * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
@@ -114,7 +114,7 @@ class JpsiVCarthesianAmplitudes ( AmplitudeSet ) :
         self._parseArg('ReAS',    kwargs, Title = 'Re(A_S)',    Value = sqrt(0.10 / 0.60) * cos( 2.20), MinMax = (-1., 1.))
         self._parseArg('ImAS',    kwargs, Title = 'Im(A_S)',    Value = sqrt(0.10 / 0.60) * sin( 2.20), MinMax = (-1., 1.))
 
-        self._check_kw( kwargs )
+        self._check_extraneous_kw( kwargs )
         AmplitudeSet.__init__( self, Carthesian_Amplitude( 'A0',    self._ReA0,    self._ImA0,    +1 )
                                    , Carthesian_Amplitude( 'Apar',  self._ReApar,  self._ImApar,  +1 )
                                    , Carthesian_Amplitude( 'Aperp', self._ReAperp, self._ImAperp, -1 )
@@ -134,7 +134,7 @@ class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
         self._parseArg('ASMag2',    kwargs,  Title = '|A_S|^2',     Value = 0.10,    MinMax = ( 0., 1.))
         self._parseArg('ASPhase',   kwargs,  Title = 'delta_S',     Value = 2.2,     MinMax = ( -2. * pi, 2. * pi))
 
-        self._check_kw( kwargs ) 
+        self._check_extraneous_kw( kwargs ) 
         AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Phase,    +1 )
                                    , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPhase,  +1 )
                                    , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPhase, -1 )
@@ -164,7 +164,7 @@ class Coefficients_CEvenOdd( CEvenOdd ) :
         self._parseArg( 'avgCEven', kwargs, Title = 'CP average even coefficients', Value = 1. )
         self._parseArg( 'avgCOdd',  kwargs, Title = 'CP average odd coefficients',  Value = 0., MinMax = ( -2., 2. ) )
 
-        self._check_kw( kwargs ) 
+        self._check_extraneous_kw( kwargs ) 
         CEvenOdd.__init__(self, avgCEven = self._avgCEven, avgCOdd = self._avgCOdd )
 
 class ProdTagNorm_CEvenOdd( CEvenOdd ) :
@@ -186,7 +186,7 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
         else   :
           self._parseArg( 'ANorm', kwargs, Title = 'normalization asymmetry', Value = 0., MinMax = ( -1., 1. ) )
 
-        self._check_kw( kwargs ) 
+        self._check_extraneous_kw( kwargs ) 
         CEvenOdd.__init__(self, avgCEven = FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2',
                                                        [self._AProd, self._ANorm, self._ATagEff], Title = 'CP average even coefficients')
                               , avgCOdd  = FormulaVar( 'avgCOdd',  '@0 + @1 + @2 + @0*@1*@2',

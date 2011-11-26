@@ -34,6 +34,7 @@ signif = 1
 #mcfilename = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
 #2011
 mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
+mcfilename =  '/tmp/MC2011_UB.root'
 
 datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2.root'
 #datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2Unbiased.root'
@@ -244,9 +245,9 @@ if False:
 
     effpdfs = RooArgList()
     effcoeffs = RooArgList()
-    list = [ [ m.basis() , c[(m.basis().i(),m.basis().l(),m.basis().m())] ] for m in moments if m.significance()>signif]
+    l= [ [ m.basis() , c[(m.basis().i(),m.basis().l(),m.basis().m())] ] for m in moments if m.significance()>signif]
 
-    for i in list:
+    for i in l:
         ws.factory("const_%s[%s]"%(i[0].GetName(),i[1]))
         effpdfs.add(i[0])
         effcoeffs.add(ws['const_%s'%(i[0].GetName())])
