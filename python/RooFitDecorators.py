@@ -38,6 +38,18 @@ def _RooDataSetIter(self) :
 from ROOT import RooDataSet
 RooDataSet.__iter__ = _RooDataSetIter
 
+__rds_init = RooDataSet.__init__
+def __RooDataSetInit(self,*args) :
+    def cnvrt(i) :
+        from ROOT import TObject
+        if not hasattr(i,'__iter__') or isinstance(i, TObject ) : return i
+        _i = RooArgSet()
+        for j in i : _i.add( j )
+        return _i
+    __rds_init(self,*tuple( cnvrt(i) for i in args ))
+RooDataSet.__init__ = __RooDataSetInit
+
+
 # RooAbsCategory functions
 def _RooAbsCategoryIter(self) :
     z = self.typeIterator()
@@ -74,6 +86,18 @@ from ROOT import RooArgSet, RooArgList
 for t in [ RooArgSet,RooArgList ] :
     t.__sub__  = _RooTypedUnary2Binary( t, '__isub__' )
     t.__add__  = _RooTypedUnary2Binary( t, '__iadd__' )
+
+
+#__ras_init = RooArgSet.__init__
+#def __RooArgSetInit(self,*args) :
+#    def cnvrt(i) :
+#        if not hasattr(i,'__iter__') : return i
+#        _i = RooArgSet()
+#        for j in i : _i.add( j )
+#        return _i
+#    __rds_init(self,*tuple( cnvrt(i) for i in args ))
+#RooArgSet.__init__ = __RooArgSetInit
+#    
 
 # RooWorkspace functions
 
