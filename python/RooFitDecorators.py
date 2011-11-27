@@ -21,21 +21,20 @@ def __wrap_kw_subs( fun ) :
 
 ###### decorate TPad with pads...
 from ROOT import TPad
-def _pads(p,n=None,m=None) :
+def _pads(self,n=None,m=None) :
     if n : 
-        if m : p.Divide(n,m)
-        else : p.Divide(n)
+        if m : self.Divide(n,m)
+        else : self.Divide(n)
     i=1
-    while p.GetPad(i) :
-        yield p.cd(i) 
-        i=i+1
+    while self.GetPad(i) :
+        yield self.cd(i) 
+        i += 1
 
 TPad.pads = _pads
 ##########################################
 
 from ROOT import RooPlot
-def __wrap_RooPlotDraw() :
-    __draw = RooPlot.Draw
+def __wrap_RooPlotDraw( __draw ) :
     from functools import wraps
     @wraps(__draw)
     def _RooPlotDraw(self,*args,**kw) :
@@ -45,14 +44,14 @@ def __wrap_RooPlotDraw() :
        __draw(self,*args)
        if pad : pad.Update()
     return _RooPlotDraw
-RooPlot.Draw = __wrap_RooPlotDraw()
+RooPlot.Draw = __wrap_RooPlotDraw( RooPlot.Draw )
 
 # RooDataSet functions
-def _RooDataSetIter(self) :
+def __RooDataSetIter(self) :
     for i in range( self.numEntries() ) : yield self.get(i)
 
 from ROOT import RooDataSet
-RooDataSet.__iter__ = _RooDataSetIter
+RooDataSet.__iter__ = __RooDataSetIter
 
 def __RooDataSetInit() :
     from ROOT import TObject,TTree,RooDataSet
@@ -73,27 +72,23 @@ def __RooDataSetInit() :
     return _init
 RooDataSet.__init__ = __RooDataSetInit()
 
+def __createRooIterator( create_iterator ) :
+    def __iter(self) :
+        i = create_iterator(self)
+        while True :
+            obj = i.Next()
+            if not obj : return
+            yield obj
+    return __iter
 
 # RooAbsCategory functions
-def _RooAbsCategoryIter(self) :
-    z = self.typeIterator()
-    while True :
-        c = z.Next()
-        if not c : return
-        yield c
+from operator import methodcaller
 from ROOT import RooAbsCategory
-RooAbsCategory.__iter__ = _RooAbsCategoryIter
+RooAbsCategory.__iter__ = __createRooIterator( methodcaller('typeIterator') )
 
 # RooAbsCollection/RooArgSet/RooArgList functions
-def _RooAbsCollectionIter(self) :
-    z = self.createIterator()
-    while True :
-        a = z.Next()
-        if not a : return
-        yield a
-
 from ROOT import RooAbsCollection
-RooAbsCollection.__iter__ = _RooAbsCollectionIter
+RooAbsCollection.__iter__ = __createRooIterator( methodcaller('createIterator') )
 RooAbsCollection.__len__  = lambda s   : s.getSize()
 RooAbsCollection.__contains__  = lambda s,i : s.contains(i)
 RooAbsCollection.__iadd__ = lambda s,x : s if s.add(x)    else s  # else None??
@@ -133,19 +128,19 @@ RooWorkspace.__getitem__ = lambda s,i : s.obj(i)
 RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
 
-def _RooWorkspacePut( self ,x, **kwargs ) :
+def __RooWorkspacePut( self ,x, **kwargs ) :
     _import = getattr(RooWorkspace,'import')
     if _import(self,x,**kwargs) : return None
     return self[x.GetName()]
 
 setattr( RooWorkspace, 'import',  __wrap_kw_subs( getattr(RooWorkspace, 'import' ) ) )
-RooWorkspace.put = _RooWorkspacePut
+RooWorkspace.put = __RooWorkspacePut
 
-def setConstant(ws, pattern, constant = True, value = None):
+def __RooWorkspaceSetConstant(self, pattern, constant = True, value = None):
     import re
     nrexp = re.compile(pattern)
     rc = 0
-    for arg in ws.allVars() :
+    for arg in self.allVars() :
         if not nrexp.match(arg.GetName()) : continue
         arg.setConstant( constant )
         if constant and value :
@@ -155,12 +150,12 @@ def setConstant(ws, pattern, constant = True, value = None):
         rc += 1
     return rc
 
-RooWorkspace.setConstant = setConstant
+RooWorkspace.setConstant = __RooWorkspaceSetConstant
 
 
 # RooFitResult functions
 
-def _RooFitResultGet(self, parList) :
+def __RooFitResultResult(self, parList) :
   # get parameter indices in fit result
   indices = {}
   floatPars = self.floatParsFinal()
@@ -171,37 +166,35 @@ def _RooFitResultGet(self, parList) :
     else :
       print 'ERROR: RooFitResult::result(): fit result does not contain parameter', par
       return None
-
   covMatrix = self.covarianceMatrix()
-
   values = tuple([floatPars[indices[par]].getVal() for par in parList])
   covariances = tuple([tuple([covMatrix[indices[row]][indices[col]]\
       for col in parList]) for row in parList])
 
   return (tuple(parList), values, covariances)
 
-RooFitResult.result = _RooFitResultGet
+RooFitResult.result = __RooFitResultResult
 
 
 from ROOT import RooFit
 from ROOT import RooAbsPdf
-RooAbsPdf.generate = __wrap_kw_subs( RooAbsPdf.generate )
-RooAbsPdf.fitTo = __wrap_kw_subs( RooAbsPdf.fitTo )
-RooAbsPdf.plotOn = __wrap_kw_subs( RooAbsPdf.plotOn )
-RooAbsPdf.paramOn = __wrap_kw_subs( RooAbsPdf.paramOn )
-RooAbsPdf.createCdf = __wrap_kw_subs( RooAbsPdf.createCdf )
+RooAbsPdf.generate         = __wrap_kw_subs( RooAbsPdf.generate )
+RooAbsPdf.fitTo            = __wrap_kw_subs( RooAbsPdf.fitTo )
+RooAbsPdf.plotOn           = __wrap_kw_subs( RooAbsPdf.plotOn )
+RooAbsPdf.paramOn          = __wrap_kw_subs( RooAbsPdf.paramOn )
+RooAbsPdf.createCdf        = __wrap_kw_subs( RooAbsPdf.createCdf )
 from ROOT import RooAbsData
 RooAbsData.createHistogram = __wrap_kw_subs( RooAbsData.createHistogram )
-RooAbsData.reduce = __wrap_kw_subs( RooAbsData.reduce )
-RooAbsData.plotOn = __wrap_kw_subs( RooAbsData.plotOn )
+RooAbsData.reduce          = __wrap_kw_subs( RooAbsData.reduce )
+RooAbsData.plotOn          = __wrap_kw_subs( RooAbsData.plotOn )
 from ROOT import RooAbsReal
-RooAbsReal.plotOn = __wrap_kw_subs( RooAbsReal.plotOn )
-RooAbsReal.fillHistogram = __wrap_kw_subs( RooAbsReal.fillHistogram )
-RooAbsReal.createIntegral = __wrap_kw_subs( RooAbsReal.createIntegral )
+RooAbsReal.plotOn          = __wrap_kw_subs( RooAbsReal.plotOn )
+RooAbsReal.fillHistogram   = __wrap_kw_subs( RooAbsReal.fillHistogram )
+RooAbsReal.createIntegral  = __wrap_kw_subs( RooAbsReal.createIntegral )
 from ROOT import RooAbsRealLValue
-RooAbsRealLValue.frame = __wrap_kw_subs( RooAbsRealLValue.frame )
+RooAbsRealLValue.frame     = __wrap_kw_subs( RooAbsRealLValue.frame )
 from ROOT import RooRealVar
-RooRealVar.format = __wrap_kw_subs( RooRealVar.format )
+RooRealVar.format          = __wrap_kw_subs( RooRealVar.format )
 from ROOT import RooAbsCollection
 RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 #from ROOT import RooSimCloneTool
