@@ -12,6 +12,8 @@ def __wrap_kw_subs( fun ) :
     __fun = fun
     __tbl = lambda k : getattr(RooFit,k)
     __disp = lambda k,v : __tbl(k)(v) if not hasattr(v,'__iter__') else __tbl(k)(*v) 
+    from functools import wraps
+    @wraps(fun)
     def _fun(self,*args,**kwargs) :
         args += tuple( RooCmdArg( __disp(k,v) ) for k,v in kwargs.iteritems() )
         return __fun(self,*args)
@@ -33,12 +35,14 @@ TPad.pads = _pads
 
 from ROOT import RooPlot
 def __wrap_RooPlotDraw() :
-    _RooPlot_Draw = RooPlot.Draw
+    __draw = RooPlot.Draw
+    from functools import wraps
+    @wraps(__draw)
     def _RooPlotDraw(self,*args,**kw) :
        pad = kw.pop('pad') if 'pad' in kw else None
        if kw : raise RuntimeError('unknown keyword arguments: %s' % kw )
        if pad : pad.cd()
-       _RooPlot_Draw(self,*args)
+       __draw(self,*args)
        if pad : pad.Update()
     return _RooPlotDraw
 RooPlot.Draw = __wrap_RooPlotDraw()
@@ -53,15 +57,15 @@ RooDataSet.__iter__ = _RooDataSetIter
 def __RooDataSetInit() :
     def cnvrt(i) :
         from ROOT import TObject,TTree,RooDataSet
-        if not hasattr(i,'__iter__') or isinstance(i, TTree ) or isinstance(i,RooDataSet): return i
+        if not hasattr(i,'__iter__') or any( isinstance(i, t) for t in [ TTree, RooDataSet] ): return i
         _i = RooArgSet()
         for j in i : 
             from ROOT import RooAbsArg
             if not isinstance(j,RooAbsArg) : return i
             _i.add( j )
         return _i
-    __rds_init = RooDataSet.__init__
-    return lambda self,*args : __rds_init(self,*tuple( cnvrt(i) for i in args ))
+    __init = RooDataSet.__init__
+    return lambda self,*args : __init(self,*tuple( cnvrt(i) for i in args ))
 RooDataSet.__init__ = __RooDataSetInit()
 
 
@@ -95,15 +99,6 @@ RooAbsCollection.__eq__   = lambda s,x : s.equals(x)
 RooAbsCollection.__ne__   = lambda s,x : not s.equals(x)
 RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 
-def _RooTypedUnary2Binary( t,op ) :
-    return lambda x,y : getattr(t,op)(t(x),y)
-
-from ROOT import RooArgSet, RooArgList
-for t in [ RooArgSet,RooArgList ] :
-    t.__sub__  = _RooTypedUnary2Binary( t, '__isub__' )
-    t.__add__  = _RooTypedUnary2Binary( t, '__iadd__' )
-
-
 def __create_RooAbsCollectionInit(t) :
     def cnvrt(i) :
         from ROOT import TObject
@@ -116,9 +111,15 @@ def __create_RooAbsCollectionInit(t) :
         return _i
     __init = t.__init__
     return lambda self,*args : __init(self,*tuple( cnvrt(i) for i in args ))
-RooArgSet.__init__  = __create_RooAbsCollectionInit(RooArgSet)
-RooArgList.__init__ = __create_RooAbsCollectionInit(RooArgList)
-#    
+
+def _RooTypedUnary2Binary( t,op ) :
+    return lambda x,y : getattr(t,op)(t(x),y)
+
+from ROOT import RooArgSet, RooArgList
+for t in [ RooArgSet,RooArgList ] :
+    t.__init__  = __create_RooAbsCollectionInit(t)
+    t.__sub__   = _RooTypedUnary2Binary( t, '__isub__' )
+    t.__add__   = _RooTypedUnary2Binary( t, '__iadd__' )
 
 # RooWorkspace functions
 
@@ -166,7 +167,7 @@ def _RooFitResultGet(self, parList) :
     if index >= 0 :
       indices[par] = index
     else :
-      print 'P2VV - ERROR: RooFitResult::result(): fit result does not contain parameter', par
+      print 'ERROR: RooFitResult::result(): fit result does not contain parameter', par
       return None
 
   covMatrix = self.covarianceMatrix()
@@ -179,7 +180,6 @@ def _RooFitResultGet(self, parList) :
 
 RooFitResult.result = _RooFitResultGet
 
-##### RooAbsPdf.generate
 
 from ROOT import RooFit
 from ROOT import RooAbsPdf
