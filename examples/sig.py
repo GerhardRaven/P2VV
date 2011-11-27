@@ -107,6 +107,7 @@ else  :
     from ROOT import TFile
     MCfile = TFile(mcfilename)
     MCtuple = MCfile.Get('MyTree')
+    assert MCtuple
     from ROOT import RooDataSet
     cutvar = [] # [ RealVar(i,MinMax=(-1,2)) for i in [ 'sel','triggeredByUnbiasedHlt1AndHlt2','triggeredByBiasedHlt1AndHlt2'] ]
     _obs = RooArgSet( i._target_() for i in observables + cutvar )
@@ -143,7 +144,7 @@ pprint( [ (m.GetName(), m.coefficient()/stsp, sqrt(m.variance())/stsp, m.signifi
 
 if True :
     print 'fitting data'
-    pdf.fitTo(data, NumCPU = 2, Timer = 1 , Minimizer = ('Minuit2','minimize'))
+    pdf.fitTo(data, NumCPU = 7, Timer = 1 , Minimizer = ('Minuit2','minimize'))
 
 
 from ROOT import TCanvas
