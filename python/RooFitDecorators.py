@@ -55,9 +55,10 @@ from ROOT import RooDataSet
 RooDataSet.__iter__ = _RooDataSetIter
 
 def __RooDataSetInit() :
+    from ROOT import TObject,TTree,RooDataSet
+    __doNotConvert = [ TTree, RooDataSet ]
     def cnvrt(i) :
-        from ROOT import TObject,TTree,RooDataSet
-        if not hasattr(i,'__iter__') or any( isinstance(i, t) for t in [ TTree, RooDataSet] ): return i
+        if not hasattr(i,'__iter__') or any( isinstance(i, t) for t in __doNotConvert ): return i
         _i = RooArgSet()
         for j in i : 
             from ROOT import RooAbsArg
@@ -65,7 +66,11 @@ def __RooDataSetInit() :
             _i.add( j )
         return _i
     __init = RooDataSet.__init__
-    return lambda self,*args : __init(self,*tuple( cnvrt(i) for i in args ))
+    from functools import wraps
+    @wraps(__init)
+    def _init( self, *args ) :
+        return __init(self,*tuple( cnvrt(i) for i in args ))
+    return _init
 RooDataSet.__init__ = __RooDataSetInit()
 
 
@@ -127,16 +132,13 @@ from ROOT import RooWorkspace, RooFit
 RooWorkspace.__getitem__ = lambda s,i : s.obj(i)
 RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
-def _RooWorkspacePutSilent( self ,x ) :
-    _import = getattr(RooWorkspace,'import')
-    if _import(self,x,RooFit.Silence()) : return None
-    return self[x.GetName()]
-RooWorkspace.puts = _RooWorkspacePutSilent
 
-def _RooWorkspacePut( self ,x ) :
+def _RooWorkspacePut( self ,x, **kwargs ) :
     _import = getattr(RooWorkspace,'import')
-    if _import(self,x) : return None
+    if _import(self,x,**kwargs) : return None
     return self[x.GetName()]
+
+setattr( RooWorkspace, 'import',  __wrap_kw_subs( getattr(RooWorkspace, 'import' ) ) )
 RooWorkspace.put = _RooWorkspacePut
 
 def setConstant(ws, pattern, constant = True, value = None):
@@ -198,8 +200,16 @@ RooAbsReal.fillHistogram = __wrap_kw_subs( RooAbsReal.fillHistogram )
 RooAbsReal.createIntegral = __wrap_kw_subs( RooAbsReal.createIntegral )
 from ROOT import RooAbsRealLValue
 RooAbsRealLValue.frame = __wrap_kw_subs( RooAbsRealLValue.frame )
+from ROOT import RooRealVar
+RooRealVar.format = __wrap_kw_subs( RooRealVar.format )
 from ROOT import RooAbsCollection
 RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
+#from ROOT import RooSimCloneTool
+#RooSimCloneTool.build = __wrap_kw_subs(RooSimCloneTool.build )
+#from ROOT import RooDataHist
+from ROOT import RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy
+for i in  [ RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy ] :
+    i.__init__ = __wrap_kw_subs( i.__init__ )
 
 
 
