@@ -14,9 +14,9 @@ iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',      
 observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag ]
 
 from parameterizations import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (0,999) }, lambdaCPSq = ConstVar('one',Value=1) )
-CP._phiCP.Print("V")
-CP._lambdaCPSq.Print("V")
+CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (0,9.9) }, lambdaCPSq = ConstVar('one',Value=1) )
+#CP._phiCP.Print("V")
+#CP._lambdaCPSq.Print("V")
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from parameterizations import JpsiphiAmplitudesLP2011
@@ -94,22 +94,25 @@ pdf = mcpdf
 #
 
 
-if False : 
+if True : 
     print 'generating data'
-    data = pdf.generate( observables , 10000 )
+    data = pdf.generate( observables , NumEvents = 1000 )
+    print 'generated %s events' % data.numEntries()
 
 else  :
     mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
     mcfilename =  '/data/bfys/graven/ntupleB_MC10Bs2JpsiPhi_Reco10_UpDown_simple_with_MCtime_angles_tag.root'
     mcfilename =  '/data/bfys/graven/aladaan.root'
+    mcfilename =  '/tmp/aladaan.root'
     from ROOT import TFile
     MCfile = TFile(mcfilename)
     MCtuple = MCfile.Get('MyTree')
+    assert MCtuple
     from ROOT import RooDataSet
-    _obs = RooArgSet()
     cutvar = [] # [ RealVar(i,MinMax=(-1,2)) for i in [ 'sel','triggeredByUnbiasedHlt1AndHlt2','triggeredByBiasedHlt1AndHlt2'] ]
-    for i in observables + cutvar : _obs +=  i._target_() 
+    _obs = RooArgSet( i._target_() for i in observables + cutvar )
     noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in _obs )
+    print noNAN
     data = RooDataSet('MCdata','MCdata',MCtuple,_obs,noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
     print 'got dataset with %s entries' % data.numEntries()
 
@@ -141,6 +144,13 @@ pprint( [ (m.GetName(), m.coefficient()/stsp, sqrt(m.variance())/stsp, m.signifi
 
 if True :
     print 'fitting data'
-    from ROOT import RooCmdArg
-    NumCPU = RooCmdArg( RooFit.NumCPU(7) )
-    pdf.fitTo(data, NumCPU, RooFit.Timer(1)) # , RooFit.Minimizer('Minuit2','minimize'))
+    pdf.fitTo(data, NumCPU = 7, Timer = 1 , Minimizer = ('Minuit2','minimize'))
+
+
+from ROOT import TCanvas
+c = TCanvas()
+for (cc,a) in zip(c.pads(3),angles.angles.itervalues()) :
+    f = a.frame( Bins = 24 )
+    data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kRed )
+    pdf.plotOn( f , LineColor = RooFit.kBlack)
+    f.Draw( pad = cc)
