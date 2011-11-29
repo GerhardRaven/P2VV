@@ -34,8 +34,8 @@ ws = RooObject(workspace = 'ws')
 zero = ConstVar('zero', Value = 0.)
 
 # variables
-from parameterizations import JpsiphiHelicityAngles as HelAngles
-angles = HelAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
+from parameterizations import JpsiphiHelicityAngles
+angles = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
 
 observables = [angle for angle in angles.angles.itervalues()]
 
@@ -49,3 +49,7 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
                                       , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
                                      )
 
+###########################################################################################################################################
+
+funcs = [angles.functions[('A0', 'A0')][0], angles.functions[('Apar', 'Apar')][0], angles.functions[('Aperp', 'Aperp')][0]]
+RRSP = RealSumPdf('RRSP', funcs)
