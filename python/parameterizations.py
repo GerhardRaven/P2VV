@@ -248,25 +248,25 @@ class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
         from math import sqrt
         _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
-        angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,  4.             )
-                                                                          ,(0, 0, 2,  0, -sqrt( 16. / 5.))
-                                                                          ,(2, 0, 0,  0,  8.             )
-                                                                          ,(2, 0, 2,  0, -sqrt( 64. / 5.))]), None)
-                   , ('Apar', 'Apar')  :  ( _ba('Re_ang_Apar_Apar',       [(2, 2, 0,  0,  2.             )
-                                                                          ,(2, 2, 2,  0,  sqrt(  1. / 5.))
-                                                                          ,(2, 2, 2,  2, -sqrt(  3. / 5.))]), None)
-                   , ('Aperp','Aperp') :  ( _ba('Re_ang_Aperp_Aperp',     [(2, 2, 0,  0,  2.             )
-                                                                          ,(2, 2, 2,  0,  sqrt(  1. / 5.))
-                                                                          ,(2, 2, 2,  2,  sqrt(  3. / 5.))]), None)
-                   , ('A0',   'Apar')  :  ( _ba('Re_ang_A0_Apar',         [(2, 1, 2,  1,  sqrt( 24. / 5.))]), None)
-                   , ('A0',   'Aperp') :  ( None, _ba('Im_ang_A0_Aperp',  [(2, 1, 2, -1, -sqrt( 24. / 5.))]))
-                   , ('Apar', 'Aperp') :  ( None, _ba('Im_ang_Apar_Aperp',[(2, 2, 2, -2,  sqrt( 12. / 5.))])) 
-                   , ('AS',   'AS')    :  ( _ba('Re_ang_AS_AS',           [(0, 0, 0,  0,  4.             )
-                                                                          ,(0, 0, 2,  0, -sqrt( 16. / 5.))]), None)
-                   , ('A0',   'AS')    :  ( _ba('Re_ang_A0_AS',           [(1, 0, 0,  0,  sqrt(192.     ))
-                                                                          ,(1, 0, 2,  0, -sqrt(192. / 5.))]), None)
-                   , ('Apar', 'AS')    :  ( _ba('Re_ang_Apar_AS',         [(1, 1, 2,  1,  sqrt( 72. / 5.))]), None)
-                   , ('Aperp','AS')    :  ( None, _ba('Im_ang_Aperp_AS',  [(1, 1, 2, -1,  sqrt( 72. / 5.))]))
+        angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,        4.             )
+                                                                          ,(0, 0, 2,  0,       -sqrt( 16. / 5.))
+                                                                          ,(2, 0, 0,  0,        8.             )
+                                                                          ,(2, 0, 2,  0,       -sqrt( 64. / 5.))]), None)
+                   , ('Apar', 'Apar')  :  ( _ba('Re_ang_Apar_Apar',       [(2, 2, 0,  0,        2.             )
+                                                                          ,(2, 2, 2,  0,        sqrt(  1. / 5.))
+                                                                          ,(2, 2, 2,  2,       -sqrt(  3. / 5.))]), None)
+                   , ('Aperp','Aperp') :  ( _ba('Re_ang_Aperp_Aperp',     [(2, 2, 0,  0,        2.             )
+                                                                          ,(2, 2, 2,  0,        sqrt(  1. / 5.))
+                                                                          ,(2, 2, 2,  2,        sqrt(  3. / 5.))]), None)
+                   , ('A0',   'Apar')  :  ( _ba('Re_ang_A0_Apar',         [(2, 1, 2,  1,        sqrt( 24. / 5.))]), None)
+                   , ('A0',   'Aperp') :  ( None, _ba('Im_ang_A0_Aperp',  [(2, 1, 2, -1, -1. * -sqrt( 24. / 5.))]))
+                   , ('Apar', 'Aperp') :  ( None, _ba('Im_ang_Apar_Aperp',[(2, 2, 2, -2, -1. *  sqrt( 12. / 5.))]))
+                   , ('AS',   'AS')    :  ( _ba('Re_ang_AS_AS',           [(0, 0, 0,  0,        4.             )
+                                                                          ,(0, 0, 2,  0,       -sqrt( 16. / 5.))]), None)
+                   , ('A0',   'AS')    :  ( _ba('Re_ang_A0_AS',           [(1, 0, 0,  0,        sqrt(192.     ))
+                                                                          ,(1, 0, 2,  0,       -sqrt(192. / 5.))]), None)
+                   , ('Apar', 'AS')    :  ( _ba('Re_ang_Apar_AS',         [(1, 1, 2,  1,        sqrt( 72. / 5.))]), None)
+                   , ('Aperp','AS')    :  ( None, _ba('Im_ang_Aperp_AS',  [(1, 1, 2, -1, -1. *  sqrt( 72. / 5.))]))
                    }
         for k,v in angFuncs.iteritems() : self[k] = v
 
@@ -277,30 +277,30 @@ class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
         from math import sqrt
         _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
-        angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,  4.             )
-                                                                          ,(0, 0, 2,  0,  sqrt(  4. / 5.))
-                                                                          ,(0, 0, 2,  2, -sqrt( 12. / 5.))
-                                                                          ,(2, 0, 0,  0,  8.             )
-                                                                          ,(2, 0, 2,  0,  sqrt( 16. / 5.))
-                                                                          ,(2, 0, 2,  2, -sqrt( 48. / 5.))]), None)
-                   , ('Apar', 'Apar')  :  ( _ba('Re_ang_Apar_Apar',       [(2, 2, 0,  0,  2.             )
-                                                                          ,(2, 2, 2,  0,  sqrt(  1. / 5.))
-                                                                          ,(2, 2, 2,  2,  sqrt(  3. / 5.))]), None)
-                   , ('Aperp','Aperp') :  ( _ba('Re_ang_Aperp_Aperp',     [(2, 2, 0,  0,  2.             )
-                                                                          ,(2, 2, 2,  0, -sqrt(  4. / 5.))]), None)
+        angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [(0, 0, 0,  0,        4.             )
+                                                                          ,(0, 0, 2,  0,        sqrt(  4. / 5.))
+                                                                          ,(0, 0, 2,  2,       -sqrt( 12. / 5.))
+                                                                          ,(2, 0, 0,  0,        8.             )
+                                                                          ,(2, 0, 2,  0,        sqrt( 16. / 5.))
+                                                                          ,(2, 0, 2,  2,       -sqrt( 48. / 5.))]), None)
+                   , ('Apar', 'Apar')  :  ( _ba('Re_ang_Apar_Apar',       [(2, 2, 0,  0,        2.             )
+                                                                          ,(2, 2, 2,  0,        sqrt(  1. / 5.))
+                                                                          ,(2, 2, 2,  2,        sqrt(  3. / 5.))]), None)
+                   , ('Aperp','Aperp') :  ( _ba('Re_ang_Aperp_Aperp',     [(2, 2, 0,  0,        2.             )
+                                                                          ,(2, 2, 2,  0,       -sqrt(  4. / 5.))]), None)
 
-                   , ('A0',   'Apar')  :  ( _ba('Re_ang_A0_Apar',         [(2, 1, 2, -2, -sqrt( 24. / 5.))]), None)
-                   , ('A0',   'Aperp') :  ( None, _ba('Im_ang_A0_Aperp',  [(2, 1, 2,  1,  sqrt( 24. / 5.))]))
-                   , ('Apar', 'Aperp') :  ( None, _ba('Im_ang_Apar_Aperp',[(2, 2, 2, -1,  sqrt( 12. / 5.))]))
+                   , ('A0',   'Apar')  :  ( _ba('Re_ang_A0_Apar',         [(2, 1, 2, -2,       -sqrt( 24. / 5.))]), None)
+                   , ('A0',   'Aperp') :  ( None, _ba('Im_ang_A0_Aperp',  [(2, 1, 2,  1,  -1. * sqrt( 24. / 5.))]))
+                   , ('Apar', 'Aperp') :  ( None, _ba('Im_ang_Apar_Aperp',[(2, 2, 2, -1,  -1. * sqrt( 12. / 5.))]))
 
-                   , ('AS',   'AS')    :  ( _ba('Re_ang_AS_AS',           [(0, 0, 0,  0,  4.             )
-                                                                          ,(0, 0, 2,  0,  sqrt(  4. / 5.))
-                                                                          ,(0, 0, 2,  2, -sqrt( 12. / 5.))]),None)
-                   , ('A0',   'AS')    :  ( _ba('Re_ang_A0_AS',           [(1, 0, 0,  0,  sqrt(192.     ))
-                                                                          ,(1, 0, 2,  0,  sqrt( 48. / 5.))
-                                                                          ,(1, 0, 2,  2, -sqrt(144. / 5.))]), None)
-                   , ('Apar', 'AS')    :  ( _ba('Re_ang_Apar_AS',         [(1, 1, 2, -2, -sqrt( 72. / 5.))]), None)
-                   , ('Aperp','AS')    :  ( None, _ba('Im_ang_Aperp_AS',  [(1, 1, 2,  1, -sqrt( 72. / 5.))]))
+                   , ('AS',   'AS')    :  ( _ba('Re_ang_AS_AS',           [(0, 0, 0,  0,        4.             )
+                                                                          ,(0, 0, 2,  0,        sqrt(  4. / 5.))
+                                                                          ,(0, 0, 2,  2,       -sqrt( 12. / 5.))]),None)
+                   , ('A0',   'AS')    :  ( _ba('Re_ang_A0_AS',           [(1, 0, 0,  0,        sqrt(192.     ))
+                                                                          ,(1, 0, 2,  0,        sqrt( 48. / 5.))
+                                                                          ,(1, 0, 2,  2,       -sqrt(144. / 5.))]), None)
+                   , ('Apar', 'AS')    :  ( _ba('Re_ang_Apar_AS',         [(1, 1, 2, -2,       -sqrt( 72. / 5.))]), None)
+                   , ('Aperp','AS')    :  ( None, _ba('Im_ang_Aperp_AS',  [(1, 1, 2,  1, -1. * -sqrt( 72. / 5.))]))
                    }
         for k,v in angFuncs.iteritems() : self[k] = v
 
@@ -339,13 +339,12 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
             (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) )
             # this triplet of complex numbers used to be written recursively as a doublet of a single number and another doublet...
             # hence the current structure: Re(xyz) =  Re(x)Re(yz) + Im(x)Im(yz) 
-            # TODO: move some minus sign around (ie into afun and coef) so that
             # NOTE: this becomes just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c)....
             prod = lambda name, args : [ Product(name, args) ] if all(args) else []
             s  = prod('ReReRe_%s_%s_%s'%(name,A[i],A[j]), [        a_re , c_re, f_re ] ) \
                + prod('ImImRe_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_im , c_im, f_re ] ) \
-               + prod('ImReIm_%s_%s_%s'%(name,A[i],A[j]), [        a_im , c_re, f_im ] ) \
-               + prod('ReImIm_%s_%s_%s'%(name,A[i],A[j]), [        a_re , c_im, f_im ] )
+               + prod('ImReIm_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_im , c_re, f_im ] ) \
+               + prod('ReImIm_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_re , c_im, f_im ] )
             assert len(s) == 1 # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
             return s[0]
 
@@ -390,13 +389,12 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
             (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) )
             # this triplet of complex numbers used to be written recursively as a doublet of a single number and another doublet...
             # hence the current structure: Re(xyz) =  Re(x)Re(yz) + Im(x)Im(yz) 
-            # TODO: move some minus sign around (ie into afun and coef) so that
             # NOTE: this becomes just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c)....
             prod = lambda name, args : [ Product(name, args) ] if all(args) else []
             s  = prod('ReReRe_%s_%s_%s'%(name,A[i],A[j]), [        a_re , c_re, f_re ] ) \
                + prod('ImImRe_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_im , c_im, f_re ] ) \
-               + prod('ImReIm_%s_%s_%s'%(name,A[i],A[j]), [        a_im , c_re, f_im ] ) \
-               + prod('ReImIm_%s_%s_%s'%(name,A[i],A[j]), [        a_re , c_im, f_im ] )
+               + prod('ImReIm_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_im , c_re, f_im ] ) \
+               + prod('ReImIm_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_re , c_im, f_im ] )
             assert len(s) == 1 # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
             return s[0]
 
