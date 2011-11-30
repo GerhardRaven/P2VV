@@ -305,6 +305,47 @@ class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
         for k,v in angFuncs.iteritems() : self[k] = v
 
 
+class AngularPdfTerms ( object ) :
+    def __init__( self, AngTerms ) :
+        self._angTerms = AngTerms
+
+    def __getitem__( self, keyWord ) :
+        return getattr( self, '_' + keyWord )
+
+    def buildSumPdf( self, Name ) :
+        from RooFitWrappers import RealSumPdf
+        return RealSumPdf( Name, self._angTerms )
+
+class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
+    def __init__( self, **kwargs ) :
+        # get angular functions from kwargs
+        if 'AngFunctions' in kwargs : self._angFuncs = kwargs.pop('AngFunctions')
+        else : raise KeyError('no key word \'AngFunctions\' found while initializing Coefficients_AngularPdfTerms object')
+
+        # get angular function coefficients from kwargs
+        if 'Coefficients' in kwargs :
+            self._angCoefs = kwargs.pop('AngCoefficients')
+        else :
+            from RooFitWrappers import RealVar
+            self._angCoefs = {}
+            for key, func in self._angFuncs.iteritems() :
+                self._angCoefs[key] = (  RealVar( key[0] + '_' + key[1] + '_ReCoef', Value = 1. ) if self._angFuncs[key][0] else None
+                                       , RealVar( key[0] + '_' + key[1] + '_ImCoef', Value = 1. ) if self._angFuncs[key][1] else None )
+
+        # set angular terms
+        from RooFitWrappers import ConstVar, Product
+        newAngTerm = lambda func, coef, minSign :\
+              [ Product( coef.GetName() + '_x_' + func.GetName(), [ minSign, coef, func ] if minSign else [ coef, func ] ) ]\
+              if func and coef else [ ]
+
+        minus = ConstVar('minus',  Value = -1  )
+        angTerms = []
+        for key in self._angFuncs.keys() :
+            angTerms += newAngTerm( self._angFuncs[key][0], self._angCoefs[key][0], None  )
+            angTerms += newAngTerm( self._angFuncs[key][1], self._angCoefs[key][1], minus )
+        AngularPdfTerms.__init__( self, angTerms )
+
+
 class BDecayBasisCoefficients :
     def __init__(self, **kwargs ) :
         for i in ['sin','cos','sinh','cosh' ] : setattr(self,i,kwargs.pop(i))

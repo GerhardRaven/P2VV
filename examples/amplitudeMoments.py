@@ -52,4 +52,8 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
 ###########################################################################################################################################
 
 funcs = [angles.functions[('A0', 'A0')][0], angles.functions[('Apar', 'Apar')][0], angles.functions[('Aperp', 'Aperp')][0]]
-RRSP = RealSumPdf('RRSP', funcs)
+
+from parameterizations import Coefficients_AngularPdfTerms
+pdfTerms = Coefficients_AngularPdfTerms(AngFunctions = angles.functions)
+pdf = pdfTerms.buildSumPdf('AngularPDF')
+

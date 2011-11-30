@@ -553,14 +553,14 @@ class SumPdf(Pdf):
 
 class RealSumPdf( Pdf ):
     def __init__( self, name, functions, **kwargs ) :
-        # get functions, coefficients and the name of the PDF
-        self._dict = { 'Functions' : functions }
+        # get the name of the PDF, its functions and its coefficients
+        self._dict = { 'Name' : name }
+        self._dict['Functions'] = functions
         if 'coefficients' in kwargs :
             self._dict['Coefficients'] = kwargs.pop('coefficients')
         else :
             one = ConstVar( 'one', Value = 1. )
             self._dict['Coefficients'] = [ one ] * len(self._dict['Functions'])
-        self._dict['Name'] = name + '_' + self._separator().join([func.GetName() for func in self._dict['Functions']])
 
         # make pdf
         self.__make_pdf()
@@ -589,9 +589,6 @@ class RealSumPdf( Pdf ):
         coefficients = ','.join( [ coef.GetName() for coef in self._dict['Coefficients'] ] )
         functions    = ','.join( [ func.GetName() for func in self._dict['Functions'] ] )
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
-
-    def _separator(self):
-        return '_p_'
 
 class BTagDecay( Pdf ) :
     def __init__(self,name,params, **kwargs) :
