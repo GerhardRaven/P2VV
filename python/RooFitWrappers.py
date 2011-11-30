@@ -25,7 +25,7 @@ class RooObject(object) :
         from itertools import ifilter, imap
         for getters in imap( lambda x: x._getters, ifilter( lambda x : hasattr(x,'_getters'), type(self).__mro__) ): 
             if k in getters :  return getters[k](self)
-        raise KeyError('%s is not known for class %' % (k, type(self) ) )
+        raise KeyError('\'%s\' is not known for class %s' % (k, type(self) ) )
 
 
     def __init__(self,workspace = None) :
@@ -550,6 +550,45 @@ class SumPdf(Pdf):
 
     def _separator(self):
         return '_P_'
+
+class RealSumPdf( Pdf ):
+    def __init__( self, name, functions, **kwargs ) :
+        # get the name of the PDF, its functions and its coefficients
+        self._dict = { 'Name' : name }
+        self._dict['Functions'] = functions
+        if 'coefficients' in kwargs :
+            self._dict['Coefficients'] = kwargs.pop('coefficients')
+        else :
+            one = ConstVar( 'one', Value = 1. )
+            self._dict['Coefficients'] = [ one ] * len(self._dict['Functions'])
+
+        # make pdf
+        self.__make_pdf()
+        del self._dict
+
+    def __make_pdf(self):
+        if self._dict['Name'] not in self.ws() :
+            # create PDF in workspace and initialize
+            self._declare( self._makeRecipe() )
+            self._init( self._dict['Name'], 'RooRealSumPdf' )
+
+            # change self._dict into attributes
+            # (cannot be done before since the underlying object does only exists at this point)
+            for k, v in self._dict.iteritems() :
+                attr = '_' + k.lower()
+                setattr( self._target_(), attr, v )
+        else:
+            # initialize
+            self._init( self._dict['Name'], 'RooRealSumPdf' )
+
+            # make sure we are the same as last time
+            for k, v in self._dict.iteritems() : assert v == self._get(k)
+
+    def _makeRecipe(self):
+        # create string for declaration of PDF in workspace
+        coefficients = ','.join( [ coef.GetName() for coef in self._dict['Coefficients'] ] )
+        functions    = ','.join( [ func.GetName() for func in self._dict['Functions'] ] )
+        return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
 
 class BTagDecay( Pdf ) :
     def __init__(self,name,params, **kwargs) :
