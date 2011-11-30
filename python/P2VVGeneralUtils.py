@@ -7,54 +7,6 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
-def loadP2VVLib() :
-  """function that loads the P2VV library
-
-  assumes $P2VVPATH/lib is in $LD_LIBRARYPATH
-  """
-
-  from ROOT import gSystem
-  gSystem.Load("libP2VV")
-
-
-def setRooFitOutput() :
-  """controls the RooFit output messages
-  """
-
-  from ROOT import RooFit, RooMsgService
-
-  # get message service instance
-  msgServ = RooMsgService.instance()
-
-  # remove all output streams
-  for stream in range(msgServ.numStreams()) :
-    msgServ.deleteStream(stream)
-
-  # add default streams for P2VV
-  msgServ.addStream(RooFit.PROGRESS)
-  msgServ.addStream(RooFit.INFO, RooFit.Topic(RooFit.Minimization))
-  #msgServ.getStream(1).addTopic(RooFit.Plotting)
-  msgServ.getStream(1).addTopic(RooFit.Fitting)
-  msgServ.getStream(1).addTopic(RooFit.Eval)
-  msgServ.getStream(1).addTopic(RooFit.Caching)
-  msgServ.getStream(1).addTopic(RooFit.ObjectHandling)
-  msgServ.getStream(1).addTopic(RooFit.InputArguments)
-  msgServ.getStream(1).addTopic(RooFit.DataHandling)
-  msgServ.getStream(1).addTopic(RooFit.NumIntegration)
-
-
-def registerMultiCatGen() :
-  """registers an experimental fast(er) toy generator
-  """
-
-  from ROOT import RooMultiCatGenerator, RooNumGenFactory, RooNumGenConfig,\
-      RooMsgService, RooFit
-
-  RooMultiCatGenerator.registerSampler(RooNumGenFactory.instance())
-  RooNumGenConfig.defaultConfig().methodND( False, True ).setLabel('RooMultiCatGenerator')
-  RooNumGenConfig.defaultConfig().methodND( False, True ).Print()
-
-
 ###########################################################################################################################################
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################

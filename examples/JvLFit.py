@@ -40,9 +40,7 @@ nuissanceAsyms = False
 
 # import RooFit wrappers and load P2VV library
 from RooFitWrappers import *
-from P2VVGeneralUtils import loadP2VVLib, setRooFitOutput
-loadP2VVLib()
-setRooFitOutput()
+from load import P2VVLibrary, RooFitOutput
 
 # workspace
 ws = RooObject(workspace = 'ws')
