@@ -40,7 +40,7 @@ nuissanceAsyms = False
 
 # import RooFit wrappers and load P2VV library
 from RooFitWrappers import *
-from P2VV import loadP2VVLib, setRooFitOutput
+from P2VVGeneralUtils import loadP2VVLib, setRooFitOutput
 loadP2VVLib()
 setRooFitOutput()
 
@@ -138,11 +138,11 @@ if generateData :
   print 'fitJpsiV: generating %d events' % nEvents
   data = pdf.generate(observables, nEvents)
 
-  from P2VV import writeData
+  from P2VVGeneralUtils import writeData
   writeData(dataSetFile, dataSetName, data, NTuple)
 
 else :
-  from P2VV import readData
+  from P2VVGeneralUtils import readData
   data = readData(dataSetFile, dataSetName, NTuple)
 
 # fit data

@@ -1,7 +1,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = True
+generateData = False
 nEvents = 10000
 
 dataSetName = 'JpsiKstarData'
@@ -23,7 +23,7 @@ ASPhVal      =  2.4
 
 # import RooFit wrappers and load P2VV library
 from RooFitWrappers import *
-from P2VV import loadP2VVLib, setRooFitOutput
+from P2VVGeneralUtils import loadP2VVLib, setRooFitOutput
 loadP2VVLib()
 setRooFitOutput()
 
@@ -59,14 +59,16 @@ if generateData :
   print 'fitJpsiV: generating %d events' % nEvents
   data = pdf.generate(observables, nEvents)
 
-  from P2VV import writeData
+  from P2VVGeneralUtils import writeData
   writeData(dataSetFile, dataSetName, data, NTuple)
 
 else :
-  from P2VV import readData
+  from P2VVGeneralUtils import readData
   data = readData(dataSetFile, dataSetName, NTuple)
 
 # fit data
 print 'fitJpsiV: fitting %d events' % data.numEntries()
 pdf.fitTo(data, NumCPU = 2, Timer = 1)
+
+# make some plots
 
