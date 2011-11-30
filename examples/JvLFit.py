@@ -147,5 +147,5 @@ else :
 
 # fit data
 print 'fitJpsiV: fitting %d events' % data.numEntries()
-pdf.fitTo(data, RooFit.NumCPU(10), RooFit.Timer(1))
+pdf.fitTo(data, NumCPU = 8, Timer = 1)
 

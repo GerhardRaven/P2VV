@@ -1,3 +1,6 @@
+###########################################################################################################################################
+## General Utilities                                                                                                                     ##
+###########################################################################################################################################
 class _util_parse_mixin( object ) :
     def parameters( self ) :
         return self._params
@@ -41,6 +44,9 @@ class _util_parse_mixin( object ) :
         return rc
 
 
+###########################################################################################################################################
+## CP Violation Parameters                                                                                                               ##
+###########################################################################################################################################
 class CPParam ( _util_parse_mixin ):
     def __init__( self, **kwargs ) :
         for coef in 'CDS' : setattr( self, coef, kwargs.pop(coef) )
@@ -74,6 +80,9 @@ class LambdaSqArg_CPParam( CPParam ) :
                         )
 
 
+###########################################################################################################################################
+## Decay Amplitudes                                                                                                                      ##
+###########################################################################################################################################
 # construct amplitudes with carthesian parameters
 class Carthesian_Amplitude :
     def __init__( self,name, Re, Im, CP ) :
@@ -141,6 +150,10 @@ class JpsiphiAmplitudesLP2011 ( AmplitudeSet ) :
                                    , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPhase,    -1 )
                              )
 
+
+###########################################################################################################################################
+## B/Bbar Asymmetries                                                                                                                    ##
+###########################################################################################################################################
 class CEvenOdd ( _util_parse_mixin ) :
     def __init__( self, **kwargs ) :
         for i in [ 'avgCEven', 'avgCOdd' ] : setattr( self, i, kwargs.pop(i) )
@@ -193,18 +206,22 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
                                                        [self._AProd, self._ANorm, self._ATagEff], Title = 'CP average odd coefficients') 
                          )
 
+
+###########################################################################################################################################
+## Angular Functions                                                                                                                     ##
+###########################################################################################################################################
 #TODO: inherit from UserDict mixin instead of wrapping & forwarding...
 class AngularFunctions :
     def __init__(self) :         self._d = dict()
     def __getitem__(self,k) :    return self._d[k]
     def __setitem__(self,k,v) :  self._d[k] = v
+    def __contains__(self,k) :   return k in self._d
     def keys(self) :             return self._d.keys()
     def iterkeys(self) :         return self._d.iterkeys()
     def items(self) :            return self._d.items()
     def iteritems(self) :        return self._d.iteritems()
     def values(self) :           return self._d.values()
     def itervalues(self) :       return self._d.itervalues()
-
 
 class AngleDefinitions( object ) :
     def __init__( self , **kwargs ) :
@@ -305,26 +322,32 @@ class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
         for k,v in angFuncs.iteritems() : self[k] = v
 
 
-class AngularPdfTerms ( object ) :
+###########################################################################################################################################
+## Angular PDFs                                                                                                                          ##
+###########################################################################################################################################
+class AngularPdfTerms ( list ) :
     def __init__( self, AngTerms ) :
-        self._angTerms = AngTerms
+        for term in AngTerms : self.append(term)
 
     def __getitem__( self, keyWord ) :
-        return getattr( self, '_' + keyWord )
+        if type(keyWord) == str : return getattr( self, '_' + keyWord )
+        else :                    return list.__getitem__(self, keyWord)
 
     def buildSumPdf( self, Name ) :
         from RooFitWrappers import RealSumPdf
-        return RealSumPdf( Name, self._angTerms )
+        return RealSumPdf( Name, self )
 
 class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
     def __init__( self, **kwargs ) :
         # get angular functions from kwargs
         if 'AngFunctions' in kwargs : self._angFuncs = kwargs.pop('AngFunctions')
-        else : raise KeyError('no key word \'AngFunctions\' found while initializing Coefficients_AngularPdfTerms object')
+        else : raise KeyError('Coefficients_AngularPdfTerms: no key word \'AngFunctions\' found')
 
-        # get angular function coefficients from kwargs
-        if 'Coefficients' in kwargs :
+        # get angular function coefficients
+        if 'AngCoefficients' in kwargs :
             self._angCoefs = kwargs.pop('AngCoefficients')
+            for key in self._angFuncs.keys() :
+                if key not in self._angCoefs : raise KeyError('Coefficients_AngularPdfTerms: no coefficient %s found' % str(key))
         else :
             from RooFitWrappers import RealVar
             self._angCoefs = {}
@@ -332,20 +355,71 @@ class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
                 self._angCoefs[key] = (  RealVar( key[0] + '_' + key[1] + '_ReCoef', Value = 1. ) if self._angFuncs[key][0] else None
                                        , RealVar( key[0] + '_' + key[1] + '_ImCoef', Value = 1. ) if self._angFuncs[key][1] else None )
 
-        # set angular terms
+        # check if there are no arguments left
+        if len(kwargs): raise KeyError('Coefficients_AngularPdfTerms: got unknown keyword%s: %s'\
+                                        % ( '' if len(kwargs) == 1 else 's', kwargs ))
+
+        # build angular terms
         from RooFitWrappers import ConstVar, Product
+        angTerms = []
+        minus = ConstVar('minus',  Value = -1  )
         newAngTerm = lambda func, coef, minSign :\
               [ Product( coef.GetName() + '_x_' + func.GetName(), [ minSign, coef, func ] if minSign else [ coef, func ] ) ]\
               if func and coef else [ ]
 
-        minus = ConstVar('minus',  Value = -1  )
-        angTerms = []
         for key in self._angFuncs.keys() :
             angTerms += newAngTerm( self._angFuncs[key][0], self._angCoefs[key][0], None  )
             angTerms += newAngTerm( self._angFuncs[key][1], self._angCoefs[key][1], minus )
+
+        # initialize
         AngularPdfTerms.__init__( self, angTerms )
 
+class Amplitudes_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
+    def __init__( self, **kwargs ) :
+        try :   from itertools import combinations_with_replacement as cwr
+        except: from compatibility import cwr
 
+        # get amplitude names from arguments
+        if 'AmpNames' in kwargs : self._ampNames = kwargs.pop('AmpNames')
+        else : raise KeyError('Amplitudes_AngularPdfTerms: no key word \'AmpNames\' found')
+
+        # get amplitudes from arguments
+        if 'Amplitudes' in kwargs :
+            self._amplitudes = kwargs.pop('Amplitudes')
+            for amp in self._ampNames : assert amp in self._amplitudes, 'Amplitudes_AngularPdfTerms: no amplitude \'%s\' found' % amp
+        else :
+            raise KeyError('Amplitudes_AngularPdfTerms: no key word \'Amplitudes\' found')
+
+        # get angular functions from arguments
+        if 'AngFunctions' in kwargs :
+            angFuncs = { }
+            angFuncsArg = kwargs.pop('AngFunctions')
+            for amp1, amp2 in cwr( self._ampNames, 2 ) :
+                assert ( amp1, amp2 ) in angFuncsArg, 'Amplitudes_AngularPdfTerms: no angular function %s found' % str(( amp1, amp2 ))
+                angFuncs[( amp1, amp2 )] = angFuncsArg[( amp1, amp2 )]
+        else :
+            raise KeyError('Amplitudes_AngularPdfTerms: no key word \'AngFunctions\' found')
+
+        # check if there are no arguments left
+        if len(kwargs): raise KeyError('Amplitudes_AngularPdfTerms: got unknown keyword%s: %s'\
+                                        % ( '' if len(kwargs) == 1 else 's', kwargs ))
+
+        # build angular coefficients
+        from RooFitWrappers import FormulaVar
+        angCoefs = { }
+        Re = lambda Ai, Aj : FormulaVar( 'Re_c_%s_%s' % ( Ai, Aj ), '@0*@2 + @1*@3', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+        Im = lambda Ai, Aj : FormulaVar( 'Im_c_%s_%s' % ( Ai, Aj ), '@0*@3 - @1*@2', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+        for amp1, amp2 in cwr( self._ampNames, 2 ) :
+            angCoefs[( amp1, amp2 )] = (  Re( self._amplitudes[amp1], self._amplitudes[amp2] )
+                                        , Im( self._amplitudes[amp1], self._amplitudes[amp2] ) )
+
+        # initialize
+        Coefficients_AngularPdfTerms.__init__( self, AngCoefficients = angCoefs, AngFunctions = angFuncs )
+
+
+###########################################################################################################################################
+## Time (+ Angular) PDFs                                                                                                                 ##
+###########################################################################################################################################
 class BDecayBasisCoefficients :
     def __init__(self, **kwargs ) :
         for i in ['sin','cos','sinh','cosh' ] : setattr(self,i,kwargs.pop(i))
@@ -361,7 +435,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
             minus = ConstVar('minus',  Value = -1  )
             one   = plus
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
-            # TODO: replace by Addition & Product...
+            # TODO: replace by Addition & Product... why? (only parameters)
             Re        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
             Im        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
             # define functions which return the coefficients that define the time-dependence...
@@ -402,7 +476,6 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
 
         BDecayBasisCoefficients.__init__( self, **args )
 
-
 class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__(self,  angFuncs, Amplitudes,CP, tag, order ) :
         def combine( name, afun, A, CPparams, tag, i, j) :
@@ -411,7 +484,7 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
             minus = ConstVar('minus',  Value = -1  )
             Norm = FormulaVar('Norm','1.0/(1.0+@0*@1)',[tag,CP.C] )
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
-            # TODO: replace by Addition & Product...
+            # TODO: replace by Addition & Product... why? (only parameters)
             Re        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
             Im        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
             # define functions which return the coefficients that define the time-dependence...
@@ -454,6 +527,9 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         BDecayBasisCoefficients.__init__( self, **args )
 
 
+###########################################################################################################################################
+## Resolution Models                                                                                                                     ##
+###########################################################################################################################################
 class ResolutionModelLP2011 :
     def __init__( self, t ) :
         from RooFitWrappers import RealVar, ConstVar, ResolutionModel, AddModel
@@ -467,6 +543,9 @@ class ResolutionModelLP2011 :
                              )
 
 
+###########################################################################################################################################
+## Efficiency                                                                                                                            ##
+###########################################################################################################################################
 #def buildEff_x_PDF(name,pdf,eff) :
 #   if not eff : return pdf
 #   # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 

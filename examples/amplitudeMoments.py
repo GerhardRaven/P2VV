@@ -1,7 +1,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = False
+generateData = True
 nEvents = 10000
 
 dataSetName = 'JpsiKstarData'
@@ -30,9 +30,6 @@ setRooFitOutput()
 # workspace
 ws = RooObject(workspace = 'ws')
 
-# constants
-zero = ConstVar('zero', Value = 0.)
-
 # variables
 from parameterizations import JpsiphiHelicityAngles
 angles = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
@@ -49,11 +46,27 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
                                       , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
                                      )
 
+# build angular PDF
+from parameterizations import Amplitudes_AngularPdfTerms
+pdfTerms = Amplitudes_AngularPdfTerms(AmpNames = [ 'A0', 'Apar', 'Aperp' ], Amplitudes = transAmps, AngFunctions = angles.functions)
+pdf = pdfTerms.buildSumPdf('AngularPDF')
+
+
 ###########################################################################################################################################
 
-funcs = [angles.functions[('A0', 'A0')][0], angles.functions[('Apar', 'Apar')][0], angles.functions[('Aperp', 'Aperp')][0]]
+# generate data
+if generateData :
+  print 'fitJpsiV: generating %d events' % nEvents
+  data = pdf.generate(observables, nEvents)
 
-from parameterizations import Coefficients_AngularPdfTerms
-pdfTerms = Coefficients_AngularPdfTerms(AngFunctions = angles.functions)
-pdf = pdfTerms.buildSumPdf('AngularPDF')
+  from P2VV import writeData
+  writeData(dataSetFile, dataSetName, data, NTuple)
+
+else :
+  from P2VV import readData
+  data = readData(dataSetFile, dataSetName, NTuple)
+
+# fit data
+print 'fitJpsiV: fitting %d events' % data.numEntries()
+pdf.fitTo(data, NumCPU = 2, Timer = 1)
 
