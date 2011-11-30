@@ -324,7 +324,7 @@ class P2VVAngleBasis (RooObject) :
             
 class EffMoment( object ):
     from ROOT import gSystem, RooArgSet
-    gSystem.Load('libP2VV.so')
+    from P2VVLoad import P2VVLibrary
     def __init__( self, x, norm, pdf, nset ) :
         cast = lambda i : i._target_() if hasattr(i,'_target_') else i
         self._nset = RooArgSet() # make sure this set remains alive long enough!

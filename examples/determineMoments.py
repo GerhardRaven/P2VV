@@ -1,5 +1,5 @@
 from ROOT import *
-gSystem.Load('libp2vv')
+from P2VVLoad import P2VVLibrary
 gStyle.SetOptStat(0);
 from ModelBuilders import buildMomentPDF,abasis,declareObservables,buildMassPDFs
 from itertools import count,product

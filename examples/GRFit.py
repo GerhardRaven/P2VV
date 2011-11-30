@@ -1,6 +1,6 @@
 from ROOT import *
 from RooFitDecorators import *
-gSystem.Load("libp2vv")
+from P2VVLoad import P2VVLibrary
 from math import pi
 
 #######################

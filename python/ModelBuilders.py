@@ -1,6 +1,6 @@
 from ROOT import *
 import RooFitDecorators
-gSystem.Load("libP2VV")
+from P2VVLoad import P2VVLibrary
 from math import pi
 
 def product(*args, **kwds):

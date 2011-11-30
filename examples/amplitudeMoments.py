@@ -21,21 +21,20 @@ ASPhVal      =  2.4
 
 ###########################################################################################################################################
 
-# import RooFit wrappers and load P2VV library
+# import RooFit wrappers
 from RooFitWrappers import *
-from load import P2VVLibrary, RooFitOutput
 
 # workspace
 ws = RooObject(workspace = 'ws')
 
 # variables
-from parameterizations import JpsiphiHelicityAngles
+from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angles = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
 
 observables = [angle for angle in angles.angles.itervalues()]
 
 # transversity amplitudes
-from parameterizations import JpsiVCarthesianAmplitudes
+from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
 transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                                       , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                                       , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
@@ -45,7 +44,7 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
                                      )
 
 # build angular PDF
-from parameterizations import Amplitudes_AngularPdfTerms
+from P2VVParameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
 pdfTerms = Amplitudes_AngularPdfTerms(AmpNames = [ 'A0', 'Apar', 'Aperp' ], Amplitudes = transAmps, AngFunctions = angles.functions)
 pdf = pdfTerms.buildSumPdf('AngularPDF')
 
@@ -53,6 +52,7 @@ pdf = pdfTerms.buildSumPdf('AngularPDF')
 ###########################################################################################################################################
 
 # generate data
+from P2VVLoad import RooFitOutput
 if generateData :
   print 'fitJpsiV: generating %d events' % nEvents
   data = pdf.generate(observables, nEvents)

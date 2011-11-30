@@ -5,7 +5,7 @@ from RooFitWrappers import *
 
 ws = RooObject( workspace = 'myws' )
 
-from parameterizations import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
+from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 t         = RealVar(  't', Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(0,14)  )
@@ -13,13 +13,13 @@ iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',      
 
 observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag ]
 
-from parameterizations import LambdaSqArg_CPParam
+from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (0,9.9) }, lambdaCPSq = ConstVar('one',Value=1) )
 #CP._phiCP.Print("V")
 #CP._lambdaCPSq.Print("V")
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from parameterizations import JpsiphiAmplitudesLP2011
+from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
 amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.60, A0Phase = 0
                                     , AperpMag2 = 0.160, AperpPhase = -0.17
                                     , AparPhase = 2.5
@@ -27,15 +27,15 @@ amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.60, A0Phase = 0
 #amplitudes.setConstant('.*AS.*',True)
 
 #### Package from here until the "BTagDecay('name', args)" into a dedicated class/function...
-from parameterizations import JpsiphiBTagDecayBasisCoefficients
+from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
 # need to specify order in which to traverse...
 basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
 
-from parameterizations import JpsiphiBDecayBasisCoefficients
+from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 #basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes,CP, iTag,  ['A0','Apar','Aperp','AS'] ) 
 
 
-from parameterizations import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
+from P2VVParameterizations.BBbarAsymmetries import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
 ANuissance = Trivial_CEvenOdd()
 #minus = ConstVar('minus',  Value = -1  )
 #ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'production asymmetry',          Value = 0 )
@@ -73,7 +73,7 @@ if False :
    exit(0)
 
 # update resolution model, and build again...
-from parameterizations import ResolutionModelLP2011
+from P2VVParameterizations.TimeResolution import ResolutionModelLP2011
 args[ 'resolutionModel' ]  = ResolutionModelLP2011( t ).Model
 
 #sigpdf = BTagDecay( 'sig_pdf', args )
@@ -134,7 +134,7 @@ pprint( [ (m.GetName(), m.coefficient()/stsp, sqrt(m.variance())/stsp, m.signifi
 
 ### TODO: multiply signal PDF with moms2....
 
-#from parameterizations import buildEff_x_PDF
+#from P2VVParameterizations.GeneralUtils import buildEff_x_PDF
 # [ ( m.basis() , m.coefficient() ) for m in moments if m.significance()>signif]
 #eff_pdf = buildEff_x_PDF('eff_pdf',pdf._var,[ ( m.basis(), m.coefficient())  for m in moms2 ] )
 #pdf = eff_pdf

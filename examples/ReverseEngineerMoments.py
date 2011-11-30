@@ -11,7 +11,7 @@ from math import sqrt,pi
 from ModelBuilders import *
 from RooFitDecorators import *
 from ROOT import *
-gSystem.Load("libp2vv.so")
+from P2VVLoad import P2VVLibrary
 
 from optparse import OptionParser
 parser = OptionParser()
