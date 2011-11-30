@@ -38,11 +38,8 @@ nuissanceAsyms = False
 
 ###########################################################################################################################################
 
-# import RooFit wrappers and load P2VV library
+# import RooFit wrappers
 from RooFitWrappers import *
-from P2VV import loadP2VVLib, setRooFitOutput
-loadP2VVLib()
-setRooFitOutput()
 
 # workspace
 ws = RooObject(workspace = 'ws')
@@ -51,7 +48,7 @@ ws = RooObject(workspace = 'ws')
 zero = ConstVar('zero', Value = 0.)
 
 # variables
-from parameterizations import JpsiphiHelicityAngles
+from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angles = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
 time   = RealVar('t',           Title = 'decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = (-0.5, 5.))
 iTag   = Category('tagInitial', Title = 'initial state flavour tag', Observable = True, States = {'B': +1, 'Bbar': -1})
@@ -63,7 +60,7 @@ wTag    = RealVar('wTag',    Title = 'wrong tag fraction B',      Value = 0.1, M
 wTagBar = RealVar('wTagBar', Title = 'wrong tag fraction anti-B', Value = 0.2, MinMax = (0., 0.5))
 
 # transversity amplitudes
-from parameterizations import JpsiVCarthesianAmplitudes
+from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
 transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                                       , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                                       , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
@@ -84,30 +81,30 @@ resModel  = ResolutionModel('resModel', Type = GaussModel, Observables = [time],
 # CP violation parameters
 if carthLambdaCP :
   # carthesian lambda
-  from parameterizations import LambdaCarth_CPParam
+  from P2VVParameterizations.CPVParams import LambdaCarth_CPParam
   lambdaCP = LambdaCarth_CPParam( ReLambdaCP = sqrt(lambdaCPSqVal) * cos(-phiCPVal), ImLambdaCP = sqrt(lambdaCPSqVal) * sin(-phiCPVal) )
 
 else :
   # polar lambda
-  from parameterizations import LambdaSqArg_CPParam
+  from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
   lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
 # nuissance asymmetries
 if nuissanceAsyms :
   # use nuissance asymmetries directly
-  from parameterizations import ProdTagNorm_CEvenOdd
+  from P2VVParameterizations.BBbarAsymmetries import ProdTagNorm_CEvenOdd
   ANuissance = ProdTagNorm_CEvenOdd(AProd = AProdVal, ATagEff = ATagEffVal, CPParam = lambdaCP)
 
 else :
   # use average and even coefficients
-  from parameterizations import Coefficients_CEvenOdd
+  from P2VVParameterizations.BBbarAsymmetries import Coefficients_CEvenOdd
   ANuissance = Coefficients_CEvenOdd(  avgCEven = 1.
                                      , avgCOdd = (AProdVal + ANormVal + ATagEffVal + AProdVal * ANormVal * ATagEffVal)
                                                   / (1. + AProdVal * ANormVal + AProdVal * ATagEffVal + ANormVal * ATagEffVal)
                                     )
 
 # coefficients for time functions
-from parameterizations import JpsiphiBTagDecayBasisCoefficients
+from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
 timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients(angles.functions, transAmps, lambdaCP, ['A0','Apar','Aperp','AS']) 
 
 # build the B_s -> J/psi phi signal PDF
@@ -129,20 +126,22 @@ args = {
   , 'decayType'       : 'SingleSided' 
 }
 
+from P2VVLoad import P2VVLibrary
 pdf = BTagDecay('JpsiphiPDF', args)
 
 ###########################################################################################################################################
 
 # generate data
+from P2VVLoad import RooFitOutput
 if generateData :
   print 'fitJpsiV: generating %d events' % nEvents
   data = pdf.generate(observables, nEvents)
 
-  from P2VV import writeData
+  from P2VVGeneralUtils import writeData
   writeData(dataSetFile, dataSetName, data, NTuple)
 
 else :
-  from P2VV import readData
+  from P2VVGeneralUtils import readData
   data = readData(dataSetFile, dataSetName, NTuple)
 
   # TODO: a trick to change the observable in a data set

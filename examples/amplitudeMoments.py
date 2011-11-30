@@ -1,7 +1,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = True
+generateData = False
 nEvents = 10000
 
 dataSetName = 'JpsiKstarData'
@@ -21,23 +21,20 @@ ASPhVal      =  2.4
 
 ###########################################################################################################################################
 
-# import RooFit wrappers and load P2VV library
+# import RooFit wrappers
 from RooFitWrappers import *
-from P2VV import loadP2VVLib, setRooFitOutput
-loadP2VVLib()
-setRooFitOutput()
 
 # workspace
 ws = RooObject(workspace = 'ws')
 
 # variables
-from parameterizations import JpsiphiHelicityAngles
+from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angles = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
 
 observables = [angle for angle in angles.angles.itervalues()]
 
 # transversity amplitudes
-from parameterizations import JpsiVCarthesianAmplitudes
+from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
 transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                                       , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                                       , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
@@ -47,7 +44,7 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
                                      )
 
 # build angular PDF
-from parameterizations import Amplitudes_AngularPdfTerms
+from P2VVParameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
 pdfTerms = Amplitudes_AngularPdfTerms(AmpNames = [ 'A0', 'Apar', 'Aperp' ], Amplitudes = transAmps, AngFunctions = angles.functions)
 pdf = pdfTerms.buildSumPdf('AngularPDF')
 
@@ -55,18 +52,21 @@ pdf = pdfTerms.buildSumPdf('AngularPDF')
 ###########################################################################################################################################
 
 # generate data
+from P2VVLoad import RooFitOutput
 if generateData :
   print 'fitJpsiV: generating %d events' % nEvents
   data = pdf.generate(observables, nEvents)
 
-  from P2VV import writeData
+  from P2VVGeneralUtils import writeData
   writeData(dataSetFile, dataSetName, data, NTuple)
 
 else :
-  from P2VV import readData
+  from P2VVGeneralUtils import readData
   data = readData(dataSetFile, dataSetName, NTuple)
 
 # fit data
 print 'fitJpsiV: fitting %d events' % data.numEntries()
 pdf.fitTo(data, NumCPU = 2, Timer = 1)
+
+# make some plots
 
