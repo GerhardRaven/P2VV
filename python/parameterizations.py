@@ -452,9 +452,8 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
             (c_re,c_im) = coef[name](A[i],A[j],CPparams)
             (f_re,f_im) = afun[(i,j)]
             (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) )
-            # this triplet of complex numbers used to be written recursively as a doublet of a single number and another doublet...
-            # hence the current structure: Re(xyz) =  Re(x)Re(yz) + Im(x)Im(yz) 
-            # NOTE: this becomes just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c)....
+            # NOTE: thes sign are just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c),
+            #       i.e. there is a minus in case there are 2 imaginary contributions
             prod = lambda name, args : [ Product(name, args) ] if all(args) else []
             s  = prod('ReReRe_%s_%s_%s'%(name,A[i],A[j]), [        a_re , c_re, f_re ] ) \
                + prod('ImImRe_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_im , c_im, f_re ] ) \
@@ -501,9 +500,8 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
             (c_re,c_im) = coef[name](A[i],A[j],CPparams)
             (f_re,f_im) = afun[(i,j)]
             (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) )
-            # this triplet of complex numbers used to be written recursively as a doublet of a single number and another doublet...
-            # hence the current structure: Re(xyz) =  Re(x)Re(yz) + Im(x)Im(yz) 
-            # NOTE: this becomes just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c)....
+            # NOTE: thes sign are just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c),
+            #       i.e. there is a minus in case there are 2 imaginary contributions
             prod = lambda name, args : [ Product(name, args) ] if all(args) else []
             s  = prod('ReReRe_%s_%s_%s'%(name,A[i],A[j]), [        a_re , c_re, f_re ] ) \
                + prod('ImImRe_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_im , c_im, f_re ] ) \
