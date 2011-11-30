@@ -542,6 +542,17 @@ class ResolutionModelLP2011 :
                                     , [ ConstVar('tres_f%s'%n,Value = v) for n,v in frac ]
                              )
 
+#def normalize_individual( name, pdf, tag ) :
+#    pl = RooArgList()
+#    for t in tag._var :
+#        tr = ConstVar('const_%s_%s'%(tag,t.GetName(),Value = t.getVal() )
+#        from ROOT import RooCustomizer
+#        customizer = RooCustomizer( pdf._var, '%s_%s'%(name,t.GetName() )
+#        customizer.replaceArg( tag._var, tr._var )
+#        pl += customizer.build(True)
+#    # TODO: wrap RooSimultaneous in a RooObject...
+#    return RooSimultaneous( name, name, pl, tag )
+
 
 ###########################################################################################################################################
 ## Efficiency                                                                                                                            ##
