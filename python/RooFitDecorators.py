@@ -21,7 +21,7 @@ def __wrap_kw_subs( fun ) :
 
 ###### decorate TPad with pads...
 from ROOT import TPad
-def _pads(self,n=None,m=None) :
+def __pads(self,n=None,m=None) :
     if n : 
         if m : self.Divide(n,m)
         else : self.Divide(n)
@@ -30,7 +30,7 @@ def _pads(self,n=None,m=None) :
         yield self.cd(i) 
         i += 1
 
-TPad.pads = _pads
+TPad.pads = __pads
 ##########################################
 
 from ROOT import RooPlot
@@ -204,6 +204,26 @@ from ROOT import RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy
 for i in  [ RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy ] :
     i.__init__ = __wrap_kw_subs( i.__init__ )
 
+from ROOT import RooMsgService
+RooMsgService.addStream = __wrap_kw_subs( RooMsgService.addStream )
+
+def __RooMsgService__iter__(self) :
+    for i in range(self.numStreams()) : yield self.getStream(i)
+RooMsgService.__iter__ = RooMsgService__iter__
+
+def __wrap_streamconfig_topic_add_sub( fun ) :
+    # why are addTopic and removeTopic void -- would be nicer if they were StreamConfig& addTopic( .. ) { ...; return *this; }
+    from functools import wraps
+    @wraps(fun)
+    def _fun( self, arg ) :
+        if hasattr(arg,'__iter__') :
+            for i in arg : fun(self,i)
+        else :
+            fun(self,arg)
+        return self
+    return _fun
+RooMsgService.StreamConfig.__iadd__ = __wrap_streamconfig_topic_add_sub( RooMsgService.StreamConfig.addTopic )
+RooMsgService.StreamConfig.__isub__ = __wrap_streamconfig_topic_add_sub( RooMsgService.StreamConfig.removeTopic )
 
 
 # plot -- example usage:
