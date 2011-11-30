@@ -16,6 +16,9 @@ class RooObject(object) :
                ,'Title'      : lambda s : s.GetTitle()
                ,'Value'      : lambda s : s.getVal()
                }
+    def _factory(self,spec) :
+        return self.ws().factory(spec)
+        
     def __setitem__(self,k,v):
         from itertools import ifilter, imap
         for setters in imap( lambda x: x._setters, ifilter( lambda x : hasattr(x,'_setters'), type(self).__mro__) ): 
@@ -66,9 +69,9 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters 
         #       a conflict.
         if spec not in self.ws()._spec : 
-            x = self.ws().factory(spec)
+            x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
-            x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
+            if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
             #  
             # Keep the PyROOT objects in a container so they don't get garbage
             # collected.
@@ -147,6 +150,24 @@ class RooObject(object) :
 
 # TODO?: Instead of using GetName everywhere, perhaps an appropriate __hash__ function is more
 ##       elegant?
+
+
+class ArgSet(RooObject) :
+    def _factory(self,spec):
+        import re
+        match = re.match('set::([^(]+)\(.*\)',spec)
+        assert match
+        name =  match.groups(1)[0]
+        super(ArgSet,self)._factory(spec) # this will return None for us...
+        x = self.ws().set( name )
+        x.setName( name ) # argsets come out of the ws as brand new clones without name...
+        return x
+    def __init__(self,name,args) :
+        spec = 'set::%s(%s)' % (name, ','.join( i['Name'] for i in args) )
+        self._declare(spec)
+        self._init(name,'RooArgSet')
+
+
 
 class Category (RooObject): 
     _getters = {'Observable' : lambda s : s.observable() 
