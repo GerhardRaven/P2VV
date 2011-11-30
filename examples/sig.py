@@ -109,11 +109,8 @@ else  :
     MCtuple = MCfile.Get('MyTree')
     assert MCtuple
     from ROOT import RooDataSet
-    cutvar = [] # [ RealVar(i,MinMax=(-1,2)) for i in [ 'sel','triggeredByUnbiasedHlt1AndHlt2','triggeredByBiasedHlt1AndHlt2'] ]
-    _obs = RooArgSet( i._target_() for i in observables + cutvar )
-    noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in _obs )
-    print noNAN
-    data = RooDataSet('MCdata','MCdata',MCtuple,_obs,noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
+    noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in observables )
+    data = RooDataSet('MCdata','MCdata',MCtuple, ( i._target_() for i in observables  ),noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
     print 'got dataset with %s entries' % data.numEntries()
 
 
