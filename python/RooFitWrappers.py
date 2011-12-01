@@ -311,6 +311,7 @@ class ConstVar (RooObject):
 class P2VVAngleBasis (RooObject) : 
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
     def __init__(self, angles, i,j,k,l,c) :
+        from P2VVLoad import P2VVLibrary
         # compute name, given angles,i,j,k,l,c!
         name = '_'.join(angles[a].GetName() for a in ['cpsi','ctheta','phi'])
         # remove c if it is 1?
@@ -323,9 +324,9 @@ class P2VVAngleBasis (RooObject) :
         self._init(name,'RooP2VVAngleBasis')
             
 class EffMoment( object ):
-    from ROOT import gSystem, RooArgSet
-    from P2VVLoad import P2VVLibrary
     def __init__( self, x, norm, pdf, nset ) :
+        from ROOT import RooArgSet
+        from P2VVLoad import P2VVLibrary
         cast = lambda i : i._target_() if hasattr(i,'_target_') else i
         self._nset = RooArgSet() # make sure this set remains alive long enough!
         for i in nset : self._nset += cast(i) 
@@ -344,6 +345,7 @@ def computeMoments(data, moments) :
   Looping over data in python is quite a bit slower than in C++. Hence, we
   adapt the arguments and then defer to the C++ _computeMoments.
   """
+  from P2VVLoad import P2VVLibrary
   from ROOT import std, _computeMoments
   momVec = std.vector('IMoment*')()
   for mom in moments : momVec.push_back(mom._var if hasattr(mom,'_var') else mom)
@@ -618,6 +620,8 @@ class BTagDecay( Pdf ) :
         d = dict( (k, '%s' % v ) for k,v in params.iteritems() )
         d['name'] = name
         if 'checkVars' not in d : d['checkVars'] = 1
+
+        from P2VVLoad import P2VVLibrary
         self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
                                           " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
                                           " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\

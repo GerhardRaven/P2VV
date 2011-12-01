@@ -1,9 +1,14 @@
+###########################################################################################################################################
+## set script parameters ##
+###########################
+
 from math import pi, sin, cos, sqrt
 
 # job parameters
 generateData = False
 nEvents = 10000
 
+# data parameters
 dataSetName = 'JpsiKstarData'
 dataSetFile = 'amplitudeMoments.root'
 NTuple = False
@@ -20,6 +25,8 @@ ASPhVal      =  2.4
 
 
 ###########################################################################################################################################
+## build the angular PDF ##
+###########################
 
 # import RooFit wrappers
 from RooFitWrappers import *
@@ -50,6 +57,8 @@ pdf = pdfTerms.buildSumPdf('AngularPDF')
 
 
 ###########################################################################################################################################
+## generate/read data, fit, calculate moments, ... ##
+#####################################################
 
 # generate data
 from P2VVLoad import RooFitOutput
@@ -68,5 +77,15 @@ else :
 print 'fitJpsiV: fitting %d events' % data.numEntries()
 pdf.fitTo(data, NumCPU = 2, Timer = 1)
 
-# make some plots
 
+###########################################################################################################################################
+## make some plots ##
+#####################
+
+from P2VVLoad import ROOTStyle
+from P2VVGeneralUtils import plot
+from ROOT import TCanvas
+anglesCanv = TCanvas('anglesCanv', 'Angles')
+
+for pad in anglesCanv.pads(3, 1) :
+  print pad

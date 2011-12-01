@@ -209,7 +209,7 @@ RooMsgService.addStream = __wrap_kw_subs( RooMsgService.addStream )
 
 def __RooMsgService__iter__(self) :
     for i in range(self.numStreams()) : yield self.getStream(i)
-RooMsgService.__iter__ = RooMsgService__iter__
+RooMsgService.__iter__ = __RooMsgService__iter__
 
 def __wrap_streamconfig_topic_add_sub( fun ) :
     # why are addTopic and removeTopic void -- would be nicer if they were StreamConfig& addTopic( .. ) { ...; return *this; }
@@ -225,91 +225,6 @@ def __wrap_streamconfig_topic_add_sub( fun ) :
 RooMsgService.StreamConfig.__iadd__ = __wrap_streamconfig_topic_add_sub( RooMsgService.StreamConfig.addTopic )
 RooMsgService.StreamConfig.__isub__ = __wrap_streamconfig_topic_add_sub( RooMsgService.StreamConfig.removeTopic )
 
-
-# plot -- example usage:
-# _c1 = plot( c.cd(1),mpsi,data,pdf
-#           , { 'psi'    : ( RooFit.LineColor(RooFit.kGreen),RooFit.LineStyle(kDashed) ) 
-#             , 'nonpsi' : ( RooFit.LineColor(RooFit.kBlue),RooFit.LineStyle(kDashed) )
-#             }
-#           , frameOpts = ( RooFit.Bins(30), )
-#           , dataOpts = ( RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) )
-#           , pdfOpts = ( RooFit.LineWidth(2), ) 
-#           )
-global  _stash
-_stash = [] #keep the relevant objects alive by keeping a reference to them
-def plot( c, obs, data, pdf, components, frameOpts = (), dataOpts = (), pdfOpts = (), logy = False, normalize = True, symmetrize = True, usebar =True ) :
-    from ROOT import TLine, TPad
-    #
-    _obs = obs.frame( *frameOpts )  if frameOpts else obs.frame()
-    _stash.append(_obs)
-    data.plotOn(_obs,Name='data',*dataOpts)
-    if components :
-        for comp,opt in components.iteritems() :
-            z = opt + pdfOpts
-            pdf.plotOn(_obs, Components = comp, *z )
-    pdf.plotOn(_obs,Name='pdf',*pdfOpts)
-    _obs.drawAfter('pdf','data')
-    #TODO: add chisq/nbins
-    #chisq = _obs.chiSquare('pdf','data')
-    #nbins = _obs.GetNbinsX()
-    rh = _obs.residHist('data','pdf',normalize)
-
-    _stash.append(rh)
-    xa = _obs.GetXaxis()
-    rh.GetXaxis().SetLimits(xa.GetXmin(),xa.GetXmax())
-    rp = _obs.emptyClone( _obs.GetName() + '_resid' )
-    _stash.append(rp)
-    if logy : _obs.SetMinimum(0.1)
-    #TODO: if normalize : plot rh as a filled histogram with fillcolor blue...
-    #      or, maybe, with the 'bar chart' options: 'bar' or 'b'
-    for i in dataOpts : 
-        if i.opcode() == 'MarkerSize'  : rh.SetMarkerSize(  i.getDouble(0) )
-        if i.opcode() == 'MarkerStyle' : rh.SetMarkerStyle( i.getInt(0) )
-        if i.opcode() == 'MarkerColor' : rh.SetMarkerColor( i.getInt(0) )
-        if i.opcode() == 'Title' : rp.SetTitle( i.getString(0) )
-    # rp.addPlotable( rh, 'p' if not usebar else 'b' )
-    # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
-    #rp.SetBarWidth(1.0)
-    #rh.SetDrawOption("B HIST")
-
-    rp.addPlotable( rh), 'p'  # , 'B HIST' )
-    #rp.setDrawOptions(rh.GetName(),'B')
-    if symmetrize :
-        m  = max( abs( rh.getYAxisMin() ),abs( rh.getYAxisMax() ) )
-        rp.SetMaximum(  m )
-        rp.SetMinimum( -m )
-    if normalize :
-        if rh.getYAxisMin() > -5 : rp.SetMinimum(-5)
-        if rh.getYAxisMax() <  5 : rp.SetMaximum(5)
-    xa = rp.GetXaxis()
-    l = TLine(xa.GetXmin() ,0,xa.GetXmax() ,0)
-    from ROOT import kRed
-    l.SetLineColor(kRed)
-    rp.addObject(l)
-    #TODO: improve (remove?) axis labels from rp, move up against the initial plot
-
-    # only now start drawing...
-    c.cd()
-    hname = obs.GetName() + '_plot1'
-    h = TPad(hname,hname,0,0.2,1,1)
-    _stash.append(h)
-    if logy: h.SetLogy(1)
-    h.SetNumber(1)
-    h.Draw()
-    c.cd(1)
-    _obs.Draw()
-
-    c.cd()
-    rname = obs.GetName() + '_resid1'
-    r = TPad(rname,rname,0,0,1,0.2)
-    _stash.append(r)
-    r.SetNumber(2)
-    r.Draw()
-    c.cd(2)
-    rp.Draw()
-
-    c.Update()
-    return c
 
 def _RooFitResultCorrMatrixLatex(self, name):
     parlist = self.floatParsFinal()

@@ -1,6 +1,4 @@
 from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
-
 from ROOT import RooMsgService
 
 # RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
@@ -26,7 +24,7 @@ from ROOT import RooCBShape as CrystalBall
 signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =  1.5,
                      MinMax = (1., 2.5))
 
-mc_res = ResolutionModel('mc_res', Type = RooTruthModel, Observables = [t])
+mc_res = ResolutionModel('mc_res', Type = TruthModel, Observables = [t])
 mcpdf = Pdf('mc_pdf', Type = Decay, Observables = [t], ResolutionModel = mc_res,
             Parameters = [signal_tau], Options = ['SingleSided'])
 
