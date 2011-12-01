@@ -126,7 +126,6 @@ args = {
   , 'decayType'       : 'SingleSided' 
 }
 
-from P2VVLoad import P2VVLibrary
 pdf = BTagDecay('JpsiphiPDF', args)
 
 ###########################################################################################################################################

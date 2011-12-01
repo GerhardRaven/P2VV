@@ -1,5 +1,4 @@
 from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
 
 import PyCintex
 gbl = PyCintex.makeNamespace('')

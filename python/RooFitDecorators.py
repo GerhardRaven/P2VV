@@ -209,7 +209,7 @@ RooMsgService.addStream = __wrap_kw_subs( RooMsgService.addStream )
 
 def __RooMsgService__iter__(self) :
     for i in range(self.numStreams()) : yield self.getStream(i)
-RooMsgService.__iter__ = RooMsgService__iter__
+RooMsgService.__iter__ = __RooMsgService__iter__
 
 def __wrap_streamconfig_topic_add_sub( fun ) :
     # why are addTopic and removeTopic void -- would be nicer if they were StreamConfig& addTopic( .. ) { ...; return *this; }
