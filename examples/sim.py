@@ -41,13 +41,15 @@ background = Component('background')
 background.setYield(3000,1000,6000)
 
 background_c = RealVar( 'background_c', Observable = False, Unit = '1/MeV', Value = -0.0004)
-background[ m ] = Pdf( 'background', Observables = ( m, ), Type = Exponential, Parameters = ( background_c, ) )
+# TODO: auto mangle name??
+background[ m ] = Pdf( 'background_m', Observables = ( m, ), Type = Exponential, Parameters = ( background_c, ) )
 
 background_tau = RealVar( 'background_tau', Observable = False, Unit = 'ps', Value = 0.4, MinMax = ( 0.1, 0.9 ) )
 background_res = ResolutionModel( 'background_res', Type = TruthModel, Observables = [ t ] )
 
 #background[t] = 'Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided)'
-background[ t ] = Pdf( 'background', Type = Decay, Observables = ( t, ), Parameters = ( background_tau, background_res, 'SingleSided' ) )
+# TODO: auto mangle name??
+background[ t ] = Pdf( 'background_t', Type = Decay, Observables = ( t, ), Parameters = ( background_tau, background_res, 'SingleSided' ) )
 # Exponential(m,-0.004)
 #background[m,t] = 'PROD(Exponential(m,-0.004),Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided))'
 
