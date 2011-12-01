@@ -83,9 +83,9 @@ pdf.fitTo(data, NumCPU = 2, Timer = 1)
 #####################
 
 from P2VVLoad import ROOTStyle
+from P2VVGeneralUtils import plot
 from ROOT import TCanvas
 anglesCanv = TCanvas('anglesCanv', 'Angles')
 
-for pad in anglesCanv.pads( 3, 1 ) :
+for pad in anglesCanv.pads(3, 1) :
   print pad
-
