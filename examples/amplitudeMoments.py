@@ -5,7 +5,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = False
+generateData = True
 nEvents = 10000
 
 # data parameters
