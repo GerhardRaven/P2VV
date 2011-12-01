@@ -58,7 +58,7 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, data, pdf, components, frameOpts = [ ], dataOpts = [ ], pdfOpts = [ ], plotResidHist = False
+def plot(  canv, obs, data, pdf, components = None, frameOpts = [ ], dataOpts = [ ], pdfOpts = [ ], plotResidHist = False
          , logy = False, normalize = True, symmetrize = True, usebar = True ) :
     """makes a P2VV plot
 
@@ -80,24 +80,26 @@ def plot(  canv, obs, data, pdf, components, frameOpts = [ ], dataOpts = [ ], pd
     xAxis = obsFrame.GetXaxis()
     _P2VVPlotStash.append(obsFrame)
 
-    # plot data
-    data.plotOn( obsFrame, Name = 'data', *dataOpts )
+    if data :
+        # plot data
+        data.plotOn( obsFrame, Name = 'data', *dataOpts )
 
     # plot PDF
-    if components :
+    if pdf and components :
         for comp, opts in components.iteritems() :
             drawOpts = list(opts) + list(pdfOpts)
             pdf.plotOn(obsFrame, Components = comp, *drawOpts )
-    pdf.plotOn( obsFrame, Name = 'pdf', *pdfOpts )
+    if pdf : pdf.plotOn( obsFrame, Name = 'pdf', *pdfOpts )
 
-    # draw data after drawing the PDF
-    obsFrame.drawAfter( 'pdf', 'data' )
+    if data and pdf :
+        # draw data after drawing the PDF
+        obsFrame.drawAfter( 'pdf', 'data' )
 
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
     #nbins = obsFrame.GetNbinsX()
 
-    if plotResidHist :
+    if plotResidHist and data and pdf :
         # get residuals histogram
         residHist = obsFrame.residHist( 'data', 'pdf', normalize )
         residHist.GetXaxis().SetLimits( xAxis.GetXmin(), xAxis.GetXmax() )
@@ -124,7 +126,7 @@ def plot(  canv, obs, data, pdf, components, frameOpts = [ ], dataOpts = [ ], pd
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
         #residFrame.SetBarWidth(1.0)
         #residHist.SetDrawOption("B HIST")
-        residFrame.addPlotable( residHist, 'p' )  # , 'B HIST' )
+        residFrame.addPlotable( residHist, 'P' )  # , 'B HIST' )
         #residFrame.setDrawOptions(residHist.GetName(),'B')
 
         if symmetrize :

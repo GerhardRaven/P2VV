@@ -34,11 +34,12 @@ from RooFitWrappers import *
 # workspace
 ws = RooObject(workspace = 'ws')
 
-# variables
+# angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
-angles = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
+angleFuncs = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
 
-observables = [angle for angle in angles.angles.itervalues()]
+# variables in PDF
+observables = [angle for angle in angleFuncs.angles.itervalues()]
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
@@ -52,7 +53,7 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
 
 # build angular PDF
 from P2VVParameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
-pdfTerms = Amplitudes_AngularPdfTerms(AmpNames = [ 'A0', 'Apar', 'Aperp' ], Amplitudes = transAmps, AngFunctions = angles.functions)
+pdfTerms = Amplitudes_AngularPdfTerms(AmpNames = [ 'A0', 'Apar', 'Aperp' ], Amplitudes = transAmps, AngFunctions = angleFuncs.functions)
 pdf = pdfTerms.buildSumPdf('AngularPDF')
 
 
@@ -83,9 +84,18 @@ pdf.fitTo(data, NumCPU = 2, Timer = 1)
 #####################
 
 from P2VVLoad import ROOTStyle
-from P2VVGeneralUtils import plot
+
+from ROOT import RooFit, RooCmdArg
+drawOptP  = RooCmdArg(RooFit.DrawOption('P'))
+lineWidth = RooCmdArg(RooFit.LineWidth(2))
+markStyle = RooCmdArg(RooFit.MarkerSize(8))
+markSize  = RooCmdArg(RooFit.MarkerSize(0.4))
+xErrSize  = RooCmdArg(RooFit.XErrorSize(0))
+
 from ROOT import TCanvas
 anglesCanv = TCanvas('anglesCanv', 'Angles')
 
-for pad in anglesCanv.pads(3, 1) :
-  print pad
+from P2VVGeneralUtils import plot
+for (pad, obs) in zip(anglesCanv.pads(2, 2), (angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'])) :
+    plot(pad, obs, data, pdf, dataOpts = [drawOptP, markStyle, markSize], pdfOpts = [lineWidth])
+

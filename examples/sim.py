@@ -76,7 +76,7 @@ dashed = RooCmdArg(RooFit.LineStyle(kDashed))
 c = TCanvas()
 for (cc,obs,logy) in zip(c.pads(1,2),(m,t),(False,True)) :
     plot(  cc.cd(), obs, data, pdf, { 'signal*': ( sigcolor, dashed ), 'background*': ( bkgcolor, dashed ) }, dataOpts = ( xe, ms )
-         , plotResidHist = False, logy = logy )
+         , plotResidHist = True, logy = logy )
 
 # create a continuous tagging variable...
 
