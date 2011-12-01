@@ -52,36 +52,6 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
 ###########################################################################################################################################
 ## Plots                                                                                                                                 ##
 ###########################################################################################################################################
-def setP2VVPlotStyle() :
-  """sets the P2VV style for plots in ROOT
-  """
-
-  from ROOT import gStyle, gROOT
-
-  # set ROOT plot style
-  plotStyle = gROOT.GetStyle('Plain')
-
-  plotStyle.SetTitleBorderSize(0)
-
-  plotStyle.SetPadTopMargin(0.10)
-  plotStyle.SetPadBottomMargin(0.15)
-  plotStyle.SetPadLeftMargin(0.15)
-  plotStyle.SetPadRightMargin(0.10)
-
-  plotStyle.SetTitleSize(0.048, 'XY')
-  plotStyle.SetLabelSize(0.045, 'XY')
-
-  plotStyle.SetTitleOffset(1.2, 'X')
-  plotStyle.SetTitleOffset(1.4, 'Y')
-  plotStyle.SetLabelOffset(0.011, 'XY')
-
-  gROOT.SetStyle('Plain')
-  gROOT.ForceStyle()
-
-  gStyle.SetPalette(1)
-  gStyle.UseCurrentStyle()
-
-
 def plot( config, obs, canv, data, pdf, components = {}, xTitle = '', frameOpts = None, dataOpts = None, pdfOpts = None, logy = False,
           drawRes = False, normalize = True, symmetrize = True ) :
   """makes a P2VV plot
