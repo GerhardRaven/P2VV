@@ -66,17 +66,22 @@ rootFile.Close()
 pdf.fitTo(data)
 
 from P2VVGeneralUtils import plot
-from ROOT import TCanvas, RooCmdArg, RooFit, kDashed
-sigcolor = RooCmdArg( RooFit.LineColor(RooFit.kGreen ) )
-bkgcolor = RooCmdArg( RooFit.LineColor(RooFit.kRed))
-lw = RooCmdArg(RooFit.LineWidth(2))
-ms = RooCmdArg(RooFit.MarkerSize(0.4))
-xe = RooCmdArg(RooFit.XErrorSize(0))
-dashed = RooCmdArg(RooFit.LineStyle(kDashed))
+from ROOT import TCanvas, RooFit, kDashed
+sigcolor = RooFit.kGreen
+bkgcolor = RooFit.kRed
+lw = 2
+ms = 0.4
+xe = 0
+dashed = kDashed
 c = TCanvas()
-for (cc,obs,logy) in zip(c.pads(1,2),(m,t),(False,True)) :
-    plot(  cc.cd(), obs, data, pdf, { 'signal*': ( sigcolor, dashed ), 'background*': ( bkgcolor, dashed ) }, dataOpts = ( xe, ms )
-         , plotResidHist = False, logy = logy )
+for ( cc, obs, logy ) in zip( c.pads( 1, 2 ), ( m, t ), ( False, True ) ) :
+    plot(  cc.cd(), obs, data, pdf
+         , {  'signal*'     : { 'LineColor' : sigcolor, 'LineStyle' : dashed }
+            , 'background*' : { 'LineColor' : bkgcolor, 'LineStyle' : dashed }
+           }
+         , plotResidHist = True, logy = logy
+         , dataOpts = { 'XErrorSize' : xe, 'MarkerSize' : ms }
+        )
 
 # create a continuous tagging variable...
 

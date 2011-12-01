@@ -5,7 +5,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = False
+generateData = True
 nEvents = 10000
 
 # data parameters
@@ -14,14 +14,22 @@ dataSetFile = 'amplitudeMoments.root'
 NTuple = False
 
 # values of transversity amplitudes
+ampsToUse = [ 'A0', 'Apar', 'Aperp' ] #, 'AS' ]
 A0Mag2Val    =  0.4
 A0PhVal      =  0.
 AparMag2Val  =  0.3
-AparPhVal    =  2.4
+AparPhVal    = -2.4
 AperpMag2Val =  0.3
 AperpPhVal   = -0.79
 ASMag2Val    =  0.3
 ASPhVal      =  2.4
+
+# plot options
+angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
+numBins    = ( 30, 30, 30 )
+lineWidth  = 2
+markStyle  = 8
+markSize   = 0.4
 
 
 ###########################################################################################################################################
@@ -34,11 +42,12 @@ from RooFitWrappers import *
 # workspace
 ws = RooObject(workspace = 'ws')
 
-# variables
+# angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
-angles = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
+angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
 
-observables = [angle for angle in angles.angles.itervalues()]
+# variables in PDF
+observables = [ angle for angle in angleFuncs.angles.itervalues() ]
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
@@ -52,7 +61,7 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
 
 # build angular PDF
 from P2VVParameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
-pdfTerms = Amplitudes_AngularPdfTerms(AmpNames = [ 'A0', 'Apar', 'Aperp' ], Amplitudes = transAmps, AngFunctions = angles.functions)
+pdfTerms = Amplitudes_AngularPdfTerms( AmpNames = ampsToUse, Amplitudes = transAmps, AngFunctions = angleFuncs.functions )
 pdf = pdfTerms.buildSumPdf('AngularPDF')
 
 
@@ -64,28 +73,46 @@ pdf = pdfTerms.buildSumPdf('AngularPDF')
 from P2VVLoad import RooFitOutput
 if generateData :
   print 'fitJpsiV: generating %d events' % nEvents
-  data = pdf.generate(observables, nEvents)
+  data = pdf.generate( observables, nEvents )
 
   from P2VVGeneralUtils import writeData
-  writeData(dataSetFile, dataSetName, data, NTuple)
+  writeData( dataSetFile, dataSetName, data, NTuple )
 
 else :
   from P2VVGeneralUtils import readData
-  data = readData(dataSetFile, dataSetName, NTuple)
+  data = readData( dataSetFile, dataSetName, NTuple )
 
 # fit data
 print 'fitJpsiV: fitting %d events' % data.numEntries()
-pdf.fitTo(data, NumCPU = 2, Timer = 1)
+pdf.fitTo( data, NumCPU = 2, Timer = 1 )
 
 
 ###########################################################################################################################################
 ## make some plots ##
 #####################
 
+# import ROOT plot style
 from P2VVLoad import ROOTStyle
-from P2VVGeneralUtils import plot
+
+# create canvas
 from ROOT import TCanvas
 anglesCanv = TCanvas('anglesCanv', 'Angles')
 
-for pad in anglesCanv.pads(3, 1) :
-  print pad
+# get the angles
+angles = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
+
+# make plots
+from P2VVGeneralUtils import plot
+from ROOT import RooFit, RooCmdArg
+for (pad, obs, nBins, plotTitle, xTitle) in zip(  anglesCanv.pads(2, 2)
+                                                , angles
+                                                , numBins
+                                                , tuple( [ angle.GetTitle() for angle in angles ] )
+                                                , angleNames
+                                               ) :
+    plot(  pad, obs, data, pdf, xTitle = xTitle
+         , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
+         , dataOpts  = { 'MarkerStyle' : markStyle, 'MarkerSize' : markSize }
+         , pdfOpts   = { 'LineWidth' : lineWidth }
+        )
+

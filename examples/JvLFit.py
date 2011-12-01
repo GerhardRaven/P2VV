@@ -47,17 +47,18 @@ ws = RooObject(workspace = 'ws')
 # constants
 zero = ConstVar('zero', Value = 0.)
 
-# variables
+# angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
-angles = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
-time   = RealVar('t',           Title = 'decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = (-0.5, 5.))
-iTag   = Category('tagInitial', Title = 'initial state flavour tag', Observable = True, States = {'B': +1, 'Bbar': -1})
+angleFuncs = JpsiphiHelicityAngles(cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi')
 
-observables = [angle for angle in angles.angles.itervalues()] + [time]#, iTag]
+# variables in PDF
+time = RealVar('t',           Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = (-0.5, 5.))
+iTag = Category('tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B': +1, 'Bbar': -1})
+observables = [angle for angle in angleFuncs.angles.itervalues()] + [time, iTag]
 
 # tagging
-wTag    = RealVar('wTag',    Title = 'wrong tag fraction B',      Value = 0.1, MinMax = (0., 0.5))
-wTagBar = RealVar('wTagBar', Title = 'wrong tag fraction anti-B', Value = 0.2, MinMax = (0., 0.5))
+wTag    = RealVar('wTag',    Title = 'Wrong tag fraction B',      Value = 0.1, MinMax = (0., 0.5))
+wTagBar = RealVar('wTagBar', Title = 'Wrong tag fraction anti-B', Value = 0.2, MinMax = (0., 0.5))
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
@@ -105,7 +106,7 @@ else :
 
 # coefficients for time functions
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
-timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients(angles.functions, transAmps, lambdaCP, ['A0','Apar','Aperp','AS']) 
+timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients(angleFuncs.functions, transAmps, lambdaCP, ['A0','Apar','Aperp','AS']) 
 
 # build the B_s -> J/psi phi signal PDF
 args = {

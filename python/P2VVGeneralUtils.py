@@ -58,46 +58,52 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, data, pdf, components, frameOpts = [ ], dataOpts = [ ], pdfOpts = [ ], plotResidHist = False
+def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }, dataOpts = { }, pdfOpts = { }, plotResidHist = False
          , logy = False, normalize = True, symmetrize = True, usebar = True ) :
     """makes a P2VV plot
 
     exAxismple usage:
 
     canvas = plot( canvas.cd(1), observable, data, pdf
-                  , {  'psi'    : [ RooFit.LineColor(RooFit.kGreen), RooFit.LineStyle(kDashed) ]
-                     , 'nonpsi' : [ RooFit.LineColor(RooFit.kBlue),  RooFit.LineStyle(kDashed) ]
+                  , {  'psi'    : { 'LineColor' : RooFit.kGreen, 'LineStyle' : RooFit.kDashed }
+                     , 'nonpsi' : { 'LineColor' : RooFit.kBlue,  'LineStyle' : RooFit.kDashed }
                     }
-                  , frameOpts = [ RooFit.Bins(30) ]
-                  , dataOpts  = [ RooFit.MarkerSize(0.4), RooFit.XErrorSize(0) ]
-                  , pdfOpts   = [ RooFit.LineWidth(2) ]
+                  , xTitle = 'M (MeV/c)'
+                  , frameOpts = [ 'Title'      : 'B mass', 'Bins        : 30 ]
+                  , dataOpts  = [ 'MarkerSize' : 0.4,      'XErrorSize' : 0  ]
+                  , pdfOpts   = [ 'LineWidth'  : 2                           ]
                  )
     """
     from ROOT import TLine, TPad
 
     # create frame for observable
-    obsFrame = obs.frame(*frameOpts)  if frameOpts else obs.frame()
+    obsFrame = obs.frame(**frameOpts)  if frameOpts else obs.frame()
     xAxis = obsFrame.GetXaxis()
     _P2VVPlotStash.append(obsFrame)
 
-    # plot data
-    data.plotOn( obsFrame, Name = 'data', *dataOpts )
+    # set x-axis title
+    xAxis.SetTitle(xTitle)
+
+    if data :
+        # plot data
+        data.plotOn( obsFrame, Name = 'data', **dataOpts )
 
     # plot PDF
-    if components :
+    if pdf and components :
         for comp, opts in components.iteritems() :
-            drawOpts = list(opts) + list(pdfOpts)
-            pdf.plotOn(obsFrame, Components = comp, *drawOpts )
-    pdf.plotOn( obsFrame, Name = 'pdf', *pdfOpts )
+            drawOpts = dict( list(opts.items()) + list(pdfOpts.items()) )
+            pdf.plotOn(obsFrame, Components = comp, **drawOpts )
+    if pdf : pdf.plotOn( obsFrame, Name = 'pdf', **pdfOpts )
 
-    # draw data after drawing the PDF
-    obsFrame.drawAfter( 'pdf', 'data' )
+    if data and pdf :
+        # draw data after drawing the PDF
+        obsFrame.drawAfter( 'pdf', 'data' )
 
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
     #nbins = obsFrame.GetNbinsX()
 
-    if plotResidHist :
+    if plotResidHist and data and pdf :
         # get residuals histogram
         residHist = obsFrame.residHist( 'data', 'pdf', normalize )
         residHist.GetXaxis().SetLimits( xAxis.GetXmin(), xAxis.GetXmax() )
@@ -114,17 +120,18 @@ def plot(  canv, obs, data, pdf, components, frameOpts = [ ], dataOpts = [ ], pd
         # set residual plot options
         #TODO: if normalize : plot residHist as a filled histogram with fillcolor blue...
         #      or, maybe, with the 'bar chart' options: 'bar' or 'b'
-        for opt in dataOpts :
-            if opt.opcode() == 'MarkerSize'  : residHist.SetMarkerSize(opt.getDouble(0))
-            if opt.opcode() == 'MarkerStyle' : residHist.SetMarkerStyle(opt.getInt(0))
-            if opt.opcode() == 'MarkerColor' : residHist.SetMarkerColor(opt.getInt(0))
-            if opt.opcode() == 'Title'       : residFrame.SetTitle(opt.getString(0))
+        if dataOpts :
+            for opt, val in dataOpts.iteritems() :
+                if opt == 'MarkerSize'  : residHist.SetMarkerSize(val)
+                if opt == 'MarkerStyle' : residHist.SetMarkerStyle(val)
+                if opt == 'MarkerColor' : residHist.SetMarkerColor(val)
+                if opt == 'Title'       : residFrame.SetTitle(val)
 
         # residFrame.addPlotable( residHist, 'p' if not usebar else 'b' )
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
         #residFrame.SetBarWidth(1.0)
         #residHist.SetDrawOption("B HIST")
-        residFrame.addPlotable( residHist, 'p' )  # , 'B HIST' )
+        residFrame.addPlotable( residHist, 'P' )  # , 'B HIST' )
         #residFrame.setDrawOptions(residHist.GetName(),'B')
 
         if symmetrize :
