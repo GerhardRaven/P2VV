@@ -40,9 +40,9 @@ class AngleDefinitions( object ) :
 class JpsiphiHelicityAngles( AngleDefinitions ) :
     def __init__( self, **kwargs ) :
         from math import pi
-        d = { 'cpsi'   : AngleDefinitions.__intrprt__( 'cpsi',   kwargs, 'helcthetaK', 'cosine of kaon polarization angle',   (-1., 1.))
-            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta', kwargs, 'helcthetaL', 'cosine of lepton polarization angle', (-1., 1.))
-            , 'phi'    : AngleDefinitions.__intrprt__( 'phi',    kwargs, 'helphi',     'angle between decay planes',          (-pi, pi))
+        d = { 'cpsi'   : AngleDefinitions.__intrprt__( 'cpsi',   kwargs, 'helcthetaK', 'Cosine of kaon polarization angle',   ( -1., 1. ) )
+            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta', kwargs, 'helcthetaL', 'Cosine of lepton polarization angle', ( -1., 1. ) )
+            , 'phi'    : AngleDefinitions.__intrprt__( 'phi',    kwargs, 'helphi',     'Angle between decay planes',          ( -pi, pi ) )
             }
         d['functions'] =  JpsiphiTransversityAmplitudesHelicityAngles( **d )
         AngleDefinitions.__init__(self, **d )
@@ -51,9 +51,9 @@ class JpsiphiHelicityAngles( AngleDefinitions ) :
 class JpsiphiTransversityAngles( AngleDefinitions ) :
     def __init__( self, **kwargs ) :
         from math import pi
-        d = { 'cpsi' :   AngleDefinitions.__intrprt__( 'cpsi',   kwargs, 'trcpsi',   'cosine of kaon polarization angle',  (-1., 1.))
-            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta', kwargs, 'trctheta', 'cosine of transversity polar angle', (-1., 1.))
-            , 'phi'   :  AngleDefinitions.__intrprt__( 'phi',    kwargs, 'trphi',    'transversity azimuthal angle',       (-pi, pi))
+        d = { 'cpsi' :   AngleDefinitions.__intrprt__( 'cpsi',   kwargs, 'trcpsi',   'Cosine of kaon polarization angle',  ( -1., 1. ) )
+            , 'ctheta' : AngleDefinitions.__intrprt__( 'ctheta', kwargs, 'trctheta', 'Cosine of transversity polar angle', ( -1., 1. ) )
+            , 'phi'   :  AngleDefinitions.__intrprt__( 'phi',    kwargs, 'trphi',    'Transversity azimuthal angle',       ( -pi, pi ) )
             }
         d['functions'] = JpsiphiTransversityAmplitudesTransversityAngles( **d )
         AngleDefinitions.__init__(self, **d )
