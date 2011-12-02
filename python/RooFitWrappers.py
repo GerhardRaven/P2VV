@@ -322,21 +322,45 @@ class P2VVAngleBasis (RooObject) :
         #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
         self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
-            
-class EffMoment( object ):
-    def __init__( self, x, norm, pdf, nset ) :
-        from ROOT import RooArgSet
+ 
+
+class IMoment( object ):
+    def __init__( self, moment )  : self._var = moment
+    def __getattr__( self, name ) : return getattr(self._var, name)      
+    def GetName( self )           : return self.basis().GetName()
+ 
+class Moment( IMoment ):
+    def __init__( self, BasisFunc, Norm ) :
+        # get arguments
+        self._basisFunc = BasisFunc
+        self._norm      = Norm
+
+        cast = lambda var : var._target_() if hasattr( var, '_target_' ) else var
+
+        # create moment
         from P2VVLoad import P2VVLibrary
-        cast = lambda i : i._target_() if hasattr(i,'_target_') else i
-        self._nset = RooArgSet() # make sure this set remains alive long enough!
-        for i in nset : self._nset += cast(i) 
-        from ROOT import EffMoment as _EffMoment
-        self._var = _EffMoment( cast(x), norm, cast(pdf), self._nset )
-    def __getattr__(self, name):
-        return getattr(self._var, name)      
-    def GetName(self) :  return self.basis().GetName()
+        from ROOT import Moment
+        IMoment.__init__( self, Moment( cast(self._basisFunc), self._norm ) )
+          
+class EffMoment( IMoment ):
+    def __init__( self, BasisFunc, Norm, PDF, NormSet ) :
+        # get arguments
+        self._basisFunc = BasisFunc
+        self._norm      = Norm
+        self._pdf       = PDF
+        self._normSet   = NormSet
 
+        cast = lambda var : var._target_() if hasattr( var, '_target_' ) else var
 
+        # build a RooFit normalisation set
+        from ROOT import RooArgSet
+        self._rooNormSet = RooArgSet()
+        for var in self._normSet : self._rooNormSet += cast(var)
+
+        # create efficiency moment
+        from P2VVLoad import P2VVLibrary
+        from ROOT import EffMoment
+        IMoment.__init__( self, EffMoment( cast(self._basisFunc), self._norm, cast(self._pdf), self._rooNormSet ) )
 
 
 def computeMoments(data, moments) :
