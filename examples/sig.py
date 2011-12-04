@@ -115,9 +115,9 @@ else  :
 
 
 print 'computing efficiency moments'
-moms = [ EffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ] 
+moms = [ RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ] 
 
-_bm = lambda i,l,m : EffMoment( P2VVAngleBasis(angles.angles, i,0,l,m,1. ), float(2*l+1)/2, pdf, angles.angles.itervalues() )
+_bm = lambda i,l,m : RealEffMoment( P2VVAngleBasis(angles.angles, i,0,l,m,1. ), float(2*l+1)/2, pdf, angles.angles.itervalues() )
 moms2  = [ _bm(i,l,m) for i in range(3) 
                       for l in range(3) 
                       for m in range(-l,l+1) ]
@@ -125,7 +125,7 @@ moms2 += [ _bm(i,2,m) for i in range(3,10)  # 3,20)
                       for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF 
 moms2 = [ ]
 
-computeMoments( data, moms + moms2 )
+computeRealMoments( data, moms + moms2 )
 from pprint import pprint
 from math import sqrt,pi
 stsp = 16*sqrt(pi)

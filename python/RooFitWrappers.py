@@ -324,12 +324,12 @@ class P2VVAngleBasis (RooObject) :
         self._init(name,'RooP2VVAngleBasis')
  
 
-class IMoment( object ):
+class AbsRealMoment( object ):
     def __init__( self, moment )  : self._var = moment
     def __getattr__( self, name ) : return getattr(self._var, name)      
-    def GetName( self )           : return self.basis().GetName()
+    def GetName( self )           : return self.basisFunc().GetName()
  
-class Moment( IMoment ):
+class RealMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm ) :
         # get arguments
         self._basisFunc = BasisFunc
@@ -339,10 +339,10 @@ class Moment( IMoment ):
 
         # create moment
         from P2VVLoad import P2VVLibrary
-        from ROOT import Moment
-        IMoment.__init__( self, Moment( cast(self._basisFunc), self._norm ) )
+        from ROOT import RooRealMoment
+        AbsRealMoment.__init__( self, RooRealMoment( cast(self._basisFunc), self._norm ) )
           
-class EffMoment( IMoment ):
+class RealEffMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm, PDF, NormSet ) :
         # get arguments
         self._basisFunc = BasisFunc
@@ -359,21 +359,21 @@ class EffMoment( IMoment ):
 
         # create efficiency moment
         from P2VVLoad import P2VVLibrary
-        from ROOT import EffMoment
-        IMoment.__init__( self, EffMoment( cast(self._basisFunc), self._norm, cast(self._pdf), self._rooNormSet ) )
+        from ROOT import RooRealEffMoment
+        AbsRealMoment.__init__( self, RooRealEffMoment( cast(self._basisFunc), self._norm, cast(self._pdf), self._rooNormSet ) )
 
 
-def computeMoments(data, moments) :
-  """computes moments of data set (wrapper for C++ _computeMoments)
+def computeRealMoments( data, moments ) :
+  """computes moments of data set (wrapper for C++ computeRooRealMoments)
 
   Looping over data in python is quite a bit slower than in C++. Hence, we
-  adapt the arguments and then defer to the C++ _computeMoments.
+  adapt the arguments and then defer to the C++ computeRealMoments.
   """
   from P2VVLoad import P2VVLibrary
-  from ROOT import std, _computeMoments
-  momVec = std.vector('IMoment*')()
-  for mom in moments : momVec.push_back(mom._var if hasattr(mom,'_var') else mom)
-  return _computeMoments(data, momVec)
+  from ROOT import std, computeRooRealMoments
+  momVec = std.vector('RooAbsRealMoment*')()
+  for mom in moments : momVec.push_back( mom._var if hasattr( mom, '_var' ) else mom )
+  return computeRooRealMoments( data, momVec )
 
 
 class RealVar (RooObject): 

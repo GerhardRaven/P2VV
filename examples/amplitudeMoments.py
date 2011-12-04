@@ -88,11 +88,11 @@ else :
 #pdf.fitTo( data, NumCPU = 2, Timer = 1 )
 
 # calculate angular moments
-createMoment = lambda i, l, m : Moment( P2VVAngleBasis( angleFuncs.angles, i, 0, l, m, 1. ), float( 2 * l + 1 ) / 2. )
+createMoment = lambda i, l, m : RealMoment( P2VVAngleBasis( angleFuncs.angles, i, 0, l, m, 1. ), float( 2 * l + 1 ) / 2. )
 moments  = [ createMoment( i, l, m ) for i in range(3)  for l in range(3) for m in range( -l, l + 1 ) ]
 moments += [ createMoment( i, 2, m ) for i in range( 3, 10 ) for m in [ -2, 1 ] ]
 
-computeMoments( data, moments )
+computeRealMoments( data, moments )
 
 for mom in moments :
     print mom.GetName(), mom.coefficient(), mom.variance(), mom.significance()
