@@ -322,34 +322,58 @@ class P2VVAngleBasis (RooObject) :
         #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
         self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
-            
-class EffMoment( object ):
-    def __init__( self, x, norm, pdf, nset ) :
-        from ROOT import RooArgSet
+ 
+
+class AbsRealMoment( object ):
+    def __init__( self, moment )  : self._var = moment
+    def __getattr__( self, name ) : return getattr(self._var, name)      
+    def GetName( self )           : return self.basisFunc().GetName()
+ 
+class RealMoment( AbsRealMoment ):
+    def __init__( self, BasisFunc, Norm ) :
+        # get arguments
+        self._basisFunc = BasisFunc
+        self._norm      = Norm
+
+        cast = lambda var : var._target_() if hasattr( var, '_target_' ) else var
+
+        # create moment
         from P2VVLoad import P2VVLibrary
-        cast = lambda i : i._target_() if hasattr(i,'_target_') else i
-        self._nset = RooArgSet() # make sure this set remains alive long enough!
-        for i in nset : self._nset += cast(i) 
-        from ROOT import EffMoment as _EffMoment
-        self._var = _EffMoment( cast(x), norm, cast(pdf), self._nset )
-    def __getattr__(self, name):
-        return getattr(self._var, name)      
-    def GetName(self) :  return self.basis().GetName()
+        from ROOT import RooRealMoment
+        AbsRealMoment.__init__( self, RooRealMoment( cast(self._basisFunc), self._norm ) )
+          
+class RealEffMoment( AbsRealMoment ):
+    def __init__( self, BasisFunc, Norm, PDF, NormSet ) :
+        # get arguments
+        self._basisFunc = BasisFunc
+        self._norm      = Norm
+        self._pdf       = PDF
+        self._normSet   = NormSet
+
+        cast = lambda var : var._target_() if hasattr( var, '_target_' ) else var
+
+        # build a RooFit normalisation set
+        from ROOT import RooArgSet
+        self._rooNormSet = RooArgSet()
+        for var in self._normSet : self._rooNormSet += cast(var)
+
+        # create efficiency moment
+        from P2VVLoad import P2VVLibrary
+        from ROOT import RooRealEffMoment
+        AbsRealMoment.__init__( self, RooRealEffMoment( cast(self._basisFunc), self._norm, cast(self._pdf), self._rooNormSet ) )
 
 
-
-
-def computeMoments(data, moments) :
-  """computes moments of data set (wrapper for C++ _computeMoments)
+def computeRealMoments( data, moments ) :
+  """computes moments of data set (wrapper for C++ computeRooRealMoments)
 
   Looping over data in python is quite a bit slower than in C++. Hence, we
-  adapt the arguments and then defer to the C++ _computeMoments.
+  adapt the arguments and then defer to the C++ computeRealMoments.
   """
   from P2VVLoad import P2VVLibrary
-  from ROOT import std, _computeMoments
-  momVec = std.vector('IMoment*')()
-  for mom in moments : momVec.push_back(mom._var if hasattr(mom,'_var') else mom)
-  return _computeMoments(data, momVec)
+  from ROOT import std, computeRooRealMoments
+  momVec = std.vector('RooAbsRealMoment*')()
+  for mom in moments : momVec.push_back( mom._var if hasattr( mom, '_var' ) else mom )
+  return computeRooRealMoments( data, momVec )
 
 
 class RealVar (RooObject): 

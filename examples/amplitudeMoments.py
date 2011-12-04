@@ -5,8 +5,8 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = True
-nEvents = 10000
+generateData = False
+nEvents = 500000
 
 # data parameters
 dataSetName = 'JpsiKstarData'
@@ -47,7 +47,8 @@ from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
 
 # variables in PDF
-observables = [ angle for angle in angleFuncs.angles.itervalues() ]
+angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
+observables = list(angles)
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
@@ -83,8 +84,18 @@ else :
   data = readData( dataSetFile, dataSetName, NTuple )
 
 # fit data
-print 'fitJpsiV: fitting %d events' % data.numEntries()
-pdf.fitTo( data, NumCPU = 2, Timer = 1 )
+#print 'fitJpsiV: fitting %d events' % data.numEntries()
+#pdf.fitTo( data, NumCPU = 2, Timer = 1 )
+
+# calculate angular moments
+createMoment = lambda i, l, m : RealMoment( P2VVAngleBasis( angleFuncs.angles, i, 0, l, m, 1. ), float( 2 * l + 1 ) / 2. )
+moments  = [ createMoment( i, l, m ) for i in range(3)  for l in range(3) for m in range( -l, l + 1 ) ]
+moments += [ createMoment( i, 2, m ) for i in range( 3, 10 ) for m in [ -2, 1 ] ]
+
+computeRealMoments( data, moments )
+
+for mom in moments :
+    print mom.GetName(), mom.coefficient(), mom.variance(), mom.significance()
 
 
 ###########################################################################################################################################
@@ -97,9 +108,6 @@ from P2VVLoad import ROOTStyle
 # create canvas
 from ROOT import TCanvas
 anglesCanv = TCanvas('anglesCanv', 'Angles')
-
-# get the angles
-angles = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
 
 # make plots
 from P2VVGeneralUtils import plot
