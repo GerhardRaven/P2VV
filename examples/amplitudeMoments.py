@@ -5,8 +5,8 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = False
-nEvents = 500000
+generateData = True
+nEvents = 50000
 
 # data parameters
 dataSetName = 'JpsiKstarData'
@@ -73,7 +73,7 @@ pdf = pdfTerms.buildSumPdf('AngularPDF')
 # generate data
 from P2VVLoad import RooFitOutput
 if generateData :
-  print 'fitJpsiV: generating %d events' % nEvents
+  print 'amplitudeMoments: generating %d events' % nEvents
   data = pdf.generate( observables, nEvents )
 
   from P2VVGeneralUtils import writeData
@@ -84,8 +84,8 @@ else :
   data = readData( dataSetFile, dataSetName, NTuple )
 
 # fit data
-#print 'fitJpsiV: fitting %d events' % data.numEntries()
-#pdf.fitTo( data, NumCPU = 2, Timer = 1 )
+print 'amplitudeMoments: fitting %d events' % data.numEntries()
+pdf.fitTo( data, NumCPU = 2, Timer = 1 )
 
 # calculate angular moments
 createMoment = lambda i, l, m : RealMoment( P2VVAngleBasis( angleFuncs.angles, i, 0, l, m, 1. ), float( 2 * l + 1 ) / 2. )
