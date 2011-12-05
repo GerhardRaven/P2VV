@@ -328,9 +328,6 @@ class AbsRealMoment( object ):
     def __init__( self, moment )  : self._var = moment
     def __getattr__( self, name ) : return getattr(self._var, name)      
     def GetName( self )           : return self.basisFunc().GetName()
-    def stdDev( self ) :
-        from math import sqrt
-        return sqrt(self.variance())
  
 class RealMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm ) :
@@ -364,19 +361,6 @@ class RealEffMoment( AbsRealMoment ):
         from P2VVLoad import P2VVLibrary
         from ROOT import RooRealEffMoment
         AbsRealMoment.__init__( self, RooRealEffMoment( cast(self._basisFunc), self._norm, cast(self._pdf), self._rooNormSet ) )
-
-
-def computeRealMoments( data, moments ) :
-  """computes moments of data set (wrapper for C++ computeRooRealMoments)
-
-  Looping over data in python is quite a bit slower than in C++. Hence, we
-  adapt the arguments and then defer to the C++ computeRealMoments.
-  """
-  from P2VVLoad import P2VVLibrary
-  from ROOT import std, computeRooRealMoments
-  momVec = std.vector('RooAbsRealMoment*')()
-  for mom in moments : momVec.push_back( mom._var if hasattr( mom, '_var' ) else mom )
-  return computeRooRealMoments( data, momVec )
 
 
 class RealVar (RooObject): 

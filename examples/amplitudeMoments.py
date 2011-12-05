@@ -5,13 +5,20 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = True
 nEvents = 50000
+
+generateData   = True
+fitData        = True
+computeMoments = True
+makePlots      = True
 
 # data parameters
 dataSetName = 'JpsiKstarData'
 dataSetFile = 'amplitudeMoments.root'
 NTuple = False
+
+# angular moments
+momentsFile = 'JpsiKstarMoments'
 
 # values of transversity amplitudes
 ampsToUse = [ 'A0', 'Apar', 'Aperp' ] #, 'AS' ]
@@ -70,57 +77,71 @@ pdf = pdfTerms.buildSumPdf('AngularPDF')
 ## generate/read data, fit, calculate moments, ... ##
 #####################################################
 
-# generate data
 from P2VVLoad import RooFitOutput
 if generateData :
-  print 'amplitudeMoments: generating %d events' % nEvents
-  data = pdf.generate( observables, nEvents )
+    # generate data with PDF
+    print 'amplitudeMoments: generating %d events' % nEvents
+    data = pdf.generate( observables, nEvents )
 
-  from P2VVGeneralUtils import writeData
-  writeData( dataSetFile, dataSetName, data, NTuple )
+    from P2VVGeneralUtils import writeData
+    writeData( dataSetFile, dataSetName, data, NTuple )
 
 else :
-  from P2VVGeneralUtils import readData
-  data = readData( dataSetFile, dataSetName, NTuple )
+    # read data from file
+    from P2VVGeneralUtils import readData
+    data = readData( dataSetFile, dataSetName, NTuple )
 
-# fit data
-#print 'amplitudeMoments: fitting %d events' % data.numEntries()
-#pdf.fitTo( data, NumCPU = 2, Timer = 1 )
+if fitData :
+    # fit data
+    print 'amplitudeMoments: fitting %d events' % data.numEntries()
+    pdf.fitTo( data, NumCPU = 2, Timer = 1 )
 
-# calculate angular moments
-createMoment = lambda i, l, m : RealMoment( P2VVAngleBasis( angleFuncs.angles, i, 0, l, m, 1. ), float( 2 * l + 1 ) / 2. )
-moments  = [ createMoment( i, l, m ) for i in range(3)  for l in range(3) for m in range( -l, l + 1 ) ]
-moments += [ createMoment( i, 2, m ) for i in range( 3, 10 ) for m in [ -2, 1 ] ]
 
-computeRealMoments( data, moments )
+# build angular moment basis functions
+indices  = [ ( PIndex, YLIndex, YHIndex ) for PIndex in range(3) for YLIndex in range(3) for YHIndex in range( -YLIndex, YLIndex + 1 ) ]
+indices += [ ( PIndex, 2, YHIndex ) for PIndex in range( 3, 10 ) for YHIndex in [ -2, 1 ] ]
 
-for mom in moments :
-    print mom.GetName(), mom.coefficient(), mom.stdDev(), mom.significance()
+from P2VVGeneralUtils import RealMomentsBuilder
+moments = RealMomentsBuilder()
+moments.appendMomentsList( angleFuncs.angles, indices )
+
+if computeMoments :
+    # compute moments from data set
+    moments.computeMoments(data)
+    moments.writeMoments(momentsFile)
+
+else :
+    # read moments from file
+    moments.readMoments(momentsFile)
+
+# print moments to screen
+moments.printMoments()
 
 
 ###########################################################################################################################################
 ## make some plots ##
 #####################
 
-# import ROOT plot style
-from P2VVLoad import ROOTStyle
+if makePlots :
+    # import ROOT plot style
+    from P2VVLoad import ROOTStyle
 
-# create canvas
-from ROOT import TCanvas
-anglesCanv = TCanvas('anglesCanv', 'Angles')
+    # create canvas
+    from ROOT import TCanvas
+    anglesCanv = TCanvas( 'anglesCanv', 'Angles' )
 
-# make plots
-from P2VVGeneralUtils import plot
-from ROOT import RooFit, RooCmdArg
-for (pad, obs, nBins, plotTitle, xTitle) in zip(  anglesCanv.pads(2, 2)
-                                                , angles
-                                                , numBins
-                                                , tuple( [ angle.GetTitle() for angle in angles ] )
-                                                , angleNames
-                                               ) :
-    plot(  pad, obs, data, pdf, xTitle = xTitle
-         , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
-         , dataOpts  = { 'MarkerStyle' : markStyle, 'MarkerSize' : markSize }
-         , pdfOpts   = { 'LineWidth' : lineWidth }
-        )
+    # make plots
+    from P2VVGeneralUtils import plot
+    from ROOT import RooFit, RooCmdArg
+    for (pad, obs, nBins, plotTitle, xTitle) in zip(  anglesCanv.pads(2, 2)
+                                                    , angles
+                                                    , numBins
+                                                    , tuple( [ angle.GetTitle() for angle in angles ] )
+                                                    , angleNames
+                                                   ) :
+        plot(  pad, obs, data, pdf, xTitle = xTitle
+             , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
+             , dataOpts  = { 'MarkerStyle' : markStyle, 'MarkerSize' : markSize }
+             , pdfOpts   = { 'LineWidth' : lineWidth }
+            )
 
