@@ -363,19 +363,6 @@ class RealEffMoment( AbsRealMoment ):
         AbsRealMoment.__init__( self, RooRealEffMoment( cast(self._basisFunc), self._norm, cast(self._pdf), self._rooNormSet ) )
 
 
-def computeRealMoments( data, moments ) :
-  """computes moments of data set (wrapper for C++ computeRooRealMoments)
-
-  Looping over data in python is quite a bit slower than in C++. Hence, we
-  adapt the arguments and then defer to the C++ computeRealMoments.
-  """
-  from P2VVLoad import P2VVLibrary
-  from ROOT import std, computeRooRealMoments
-  momVec = std.vector('RooAbsRealMoment*')()
-  for mom in moments : momVec.push_back( mom._var if hasattr( mom, '_var' ) else mom )
-  return computeRooRealMoments( data, momVec )
-
-
 class RealVar (RooObject): 
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...

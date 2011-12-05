@@ -21,8 +21,46 @@
 
 RooAbsRealMoment::RooAbsRealMoment(RooAbsReal& basisFunc, Double_t norm,
     const std::string& name) :
-  _basisFunc(basisFunc), _m0(0.), _m1(0.), _n0(0.), _n1(0.), _n2(0.),
-  _norm(norm), _name(name.empty() ? _basisFunc.GetName() : name) {}
+  _basisFunc(basisFunc), _name(name.empty() ? _basisFunc.GetName() : name),
+  _norm(norm), _m0(0.), _m1(0.), _n0(0.), _n1(0.), _n2(0.) {}
+
+Double_t RooAbsRealMoment::coefficient(Bool_t normalize) const
+{
+  if (_m0 <= 0.) return -999.;
+
+  if (normalize) return _m1 / _m0 * _norm;
+  else           return _m1 / _m0;
+}
+
+Double_t RooAbsRealMoment::variance(Bool_t normalize) const
+{
+  // the following formulas follow either from the jackknife method
+  // or from error propagation using the following error on weight_j:
+  //     sigma^2( weight_j ) = weight_j^2
+  // (this is also exactly how it works with s-weight).
+
+  // jackknife: sigma2 = (N - 1)/N * sum_j ( mj1 - m )^2), where mj1 is the
+  // value of m if you would leave measurement j away
+
+  // we make one approximation: we ignore the contribution of a
+  // single weight to the total in a normalization term
+
+  // var(mu) = 1/m0^2 * sum  w_j^2 (x_j - mu)^2
+  if (_m0 <= 0.) return -999.;
+
+  Double_t mu    = coefficient(kFALSE);
+  Double_t varMu = (_n2 - 2. * _n1 * mu + _n0 * mu * mu) / (_m0 * _m0);
+
+  if (normalize) return varMu * _norm * _norm;
+  else           return varMu;
+}
+
+Double_t RooAbsRealMoment::significance() const
+{
+  Double_t mu  = coefficient(kFALSE);
+  Double_t var = variance(kFALSE);
+  return var > 0 ? std::sqrt(mu * mu / var) : -999.;
+}
 
 void RooAbsRealMoment::inc(Double_t weight)
 {
@@ -38,46 +76,17 @@ void RooAbsRealMoment::inc(Double_t weight)
   _n2 += weight * weight * x * x;
 }
 
-Double_t RooAbsRealMoment::coefficient(Bool_t normalize) const {
-  if (normalize) return _m1 / _m0 * _norm;
-  else           return _m1 / _m0;
-}
-
-Double_t RooAbsRealMoment::variance(Bool_t normalize) const {
-  // the following formulas follow either from the jackknife method
-  // or from error propagation using the following error on weight_j:
-  //     sigma^2( weight_j ) = weight_j^2
-  // (this is also exactly how it works with s-weight).
-
-  // jackknife: sigma2 = (N - 1)/N * sum_j ( mj1 - m )^2), where mj1 is the
-  // value of m if you would leave measurement j away
-
-  // we make one approximation: we ignore the contribution of a
-  // single weight to the total in a normalization term
-
-  // var(mu) = 1/m0^2 * sum  w_j^2 (x_j - mu)^2
-  Double_t mu    = coefficient(false);
-  Double_t varMu = (_n2 - 2. * _n1 * mu + _n0 * mu * mu) / (_m0 * _m0);
-
-  if (normalize) return varMu * _norm * _norm;
-  else           return varMu;
-}
-
-Double_t RooAbsRealMoment::significance() const
+Double_t RooAbsRealMoment::stdDev(Bool_t normalize) const
 {
-  Double_t mu  = coefficient(false);
-  Double_t var = variance(false);
-  return var > 0 ? std::sqrt(mu * mu / var) : 999;
+  Double_t var = variance(normalize);
+  return var > 0 ? std::sqrt(var) : -999.;
 }
 
 ostream& RooAbsRealMoment::print(ostream& os, Bool_t normalize) const
 {
-  Double_t mu     = coefficient(normalize);
-  Double_t var    = variance(normalize);
-  Double_t stdDev = var > 0. ? std::sqrt(var) : 0.;
-
-  return os << "moment(" << _name << ") = " << mu << " +- " << stdDev
-      << " (significance: " << significance() << ")" << endl;
+  return os << "moment(" << _name << ") = " << coefficient(normalize) << " +- "
+      << stdDev(normalize) << " (significance: " << significance() << ")"
+      << endl;
 }
 
 //_____________________________________________________________________________
@@ -94,6 +103,7 @@ RooRealEffMoment::RooRealEffMoment(RooAbsReal& basisFunc, Double_t norm,
         + pdf.GetName()), _pdf(pdf), _normSet(normSet) {}
 
 //_____________________________________________________________________________
+
 Int_t computeRooRealMoments(RooAbsData& data, RooRealMomentsVector& moments,
     Bool_t resetFirst, Bool_t verbose)
 {

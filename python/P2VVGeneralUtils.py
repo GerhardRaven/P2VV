@@ -10,6 +10,7 @@
 ###########################################################################################################################################
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
+
 def readData( filePath, dataSetName, NTuple = False, observables = None, tagCat = '', initTag = '' ) :
   """reads data from file (RooDataSet or TTree(s))
   """
@@ -180,4 +181,196 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
 
     canv.Update()
     return canv
+
+
+class RealMomentsBuilder ( dict ) :
+    def __init__(self)   :
+        self._basisFuncNames = [ ]
+        self._basisFuncs     = { }
+        self._coefficients   = { }
+
+    def basisFuncs(self)     : return self._basisFuncs.copy()
+    def basisFuncNames(self) : return self._basisFuncNames[ : ]
+
+    def appendMomentsList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
+        # build moments from list of indices
+        if not PDF and not NormSet :
+            # build moment
+            for inds in IndicesList :
+                self.appendMoment(  Angles = Angles, PIndex = inds[0], YLowIndex = inds[1], YHighIndex = inds[2]
+                                  , Norm = float( 2 * inds[1] + 1 ) / 2. )
+        elif PDF and NormSet :
+            # build efficiency moment
+            for inds in IndicesList :
+                self.appendMoment(  Angles = Angles, PIndex = inds[0], YLowIndex = inds[1], YHighIndex = inds[2]
+                                  , Norm = float( 2 * inds[1] + 1 ) / 2., PDF = PDF, NormSet = NormSet )
+        else :
+            print 'P2VV - ERROR: RealMomentsBuilder.appendMomentsList: both a PDF and a normalisation set are required for efficiency moments'
+
+    def appendMoment( self, **kwargs ) :
+        if 'Moment' in kwargs :
+            # get moment directly from arguments
+            func = None
+            moment = kwargs.pop('Moment')
+
+        elif 'Function' in kwargs or all( arg in kwargs for arg in ( 'Angles', 'PIndex', 'YLowIndex', 'YHighIndex' ) ):
+            # build moment with function from arguments
+            if 'Function' in kwargs :
+                # get function from arguments
+                func = kwargs.pop('Function')
+            else :
+                # build basis function
+                from RooFitWrappers import P2VVAngleBasis
+                func = P2VVAngleBasis(kwargs.pop('Angles'), kwargs.pop('PIndex'), 0, kwargs.pop('YLowIndex'), kwargs.pop('YHighIndex'), 1.)
+
+            if not 'PDF' in kwargs and not 'NormSet' in kwargs :
+                # build moment
+                from RooFitWrappers import RealMoment
+                moment = RealMoment( func, kwargs.pop('Norm') if 'Norm' in kwargs else 1. )
+            elif 'PDF' in kwargs and 'NormSet' in kwargs :
+                # build efficiency moment
+                from RooFitWrappers import RealEffMoment
+                moment = RealEffMoment( func, kwargs.pop('Norm') if 'Norm' in kwargs else 1., kwargs.pop('PDF'), kwargs.pop('NormSet') )
+            else :
+                print 'P2VV - ERROR: RealMomentsBuilder.appendMoment: both a PDF and a normalisation set are required for an efficiency moment'
+                moment = None
+
+        else :
+            print 'P2VV - ERROR: RealMomentsBuilder.appendMoment: did not find required arguments'
+            moment = None
+
+        # check for unexpected arguments
+        if kwargs :
+            print 'P2VV - ERROR: RealMomentsBuilder.appendMoment: unknown arguments:', kwargs
+            moment = None
+
+        if moment :
+            # append moment
+            momName = moment.GetName()
+            self._basisFuncNames.append(momName)
+            self._basisFuncs[momName] = func
+            self[momName] = moment
+
+    def computeMoments( self, data ) :
+        """computes moments of data set (wrapper for C++ computeRooRealMoments)
+
+        Looping over data in python is quite a bit slower than in C++. Hence, we
+        adapt the arguments and then defer to the C++ computeRooRealMoments.
+        """
+        from P2VVLoad import P2VVLibrary
+        from ROOT import std, computeRooRealMoments
+        momVec = std.vector('RooAbsRealMoment*')()
+        for func in self._basisFuncNames : momVec.push_back( self[func]._var )
+        computeRooRealMoments( data, momVec )
+
+        for func in self._basisFuncNames :
+            self._coefficients[func] = ( self[func].coefficient(), self[func].stdDev(), self[func].significance() )
+
+    def printMoments(self) :
+        # get maximum length of basis function name
+        maxLenName = 15
+        for func in self._basisFuncNames : maxLenName = min( max( len(func), maxLenName ), 60 )
+
+        # print header
+        print 'P2VV - INFO: RealMomentsBuilder.printMoments:'
+        print '  ' + '-' * (45 + maxLenName)
+        print ( '  {0:<%d}   {1:<12}   {2:<12}   {3:<12}' % maxLenName )\
+                .format( 'basis function', 'coefficient', 'std. dev.', 'significance' )
+        print '  ' + '-' * (45 + maxLenName)
+
+        # print moments
+        for func in self._basisFuncNames :
+            print ( '  {0:<%d}' % maxLenName ).format(func if len(func) <= maxLenName else '...' + func[3 - maxLenName : ]),
+            if func in self._coefficients :
+                coef = self._coefficients[func]
+                print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format(coef[0], coef[1], coef[2])
+            else : print
+
+        print '  ' + '-' * (45 + maxLenName)
+
+    def writeMoments( self, filePath = 'moments' ) :
+          # get file path and name
+          filePath = filePath.strip()
+          fileName = filePath.split('/')[-1]
+
+          # open file
+          try :
+              momFile = open( filePath, 'w' )
+          except :
+              print 'P2VV - ERROR: RealMomentsBuilder.writeMoments: unable to open file \"%s\"' % filePath
+              return
+
+          # get maximum length of basis function name
+          maxLenName = 13
+          for func in self._basisFuncNames : maxLenName = max( len(func), maxLenName )
+
+          # write moments to content string
+          cont = '# %s: angular moments\n' % fileName\
+               + '#\n'\
+               + '# ' + '-' * (49 + maxLenName) + '\n'\
+               + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<13}\n' % maxLenName )\
+                     .format( 'basis function', 'coefficient', 'std. dev.', 'significance' )\
+               + '# ' + '-' * (49 + maxLenName) + '\n'
+
+          numMoments = 0
+          for func in self._basisFuncNames :
+              cont += ( '  {0:<%s}' % maxLenName ).format(func)
+              if func in self._coefficients :
+                  coef = self._coefficients[func]
+                  cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format(coef[0], coef[1], coef[2])
+                  numMoments += 1
+              else :
+                  cont += '\n'
+
+          cont += '# ' + '-' * (49 + maxLenName) + '\n\n'
+
+          # write content to file
+          momFile.write(cont)
+          momFile.close()
+
+          print 'P2VV - INFO: MomentsBuilder.writeMoments: %d efficiency moment%s written to file \"%s\"'\
+                  % ( numMoments, '' if numMoments == 1 else 's', filePath )
+
+    def readMoments( self, filePath = 'moments' ) :
+        self._coefficients = { }
+
+        # get file path
+        filePath = filePath.strip()
+
+        # open file
+        try :
+          momFile = open(filePath, 'r')
+        except :
+          print 'P2VV - ERROR: MomentsBuilder.readMoments: unable to open file \"%s\"' % filePath
+          return
+
+        # loop over lines and read moments
+        numMoments = 0
+        while True :
+          # read next line
+          line = momFile.readline()
+          if line == '' : break
+
+          # check for empty or comment lines
+          line = line.strip()
+          if len(line) < 1 or line[0] == '#' : continue
+
+          # check moment format
+          line = line.split()
+          if len(line) < 4 or line[0] not in self._basisFuncNames : continue
+          try :
+            coef   = float(line[1])
+            stdDev = float(line[2])
+            signif = float(line[3])
+          except :
+            continue
+
+          # get moment
+          self._coefficients[line[0]] = ( coef, stdDev, signif )
+          numMoments += 1
+
+        momFile.close()
+
+        print 'P2VV - INFO: MomentsBuilder.readMoments: %d efficiency moment%s read from file \"%s\"'\
+                % ( numMoments, '' if numMoments == 1 else 's', filePath )
 

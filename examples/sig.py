@@ -129,8 +129,8 @@ computeRealMoments( data, moms + moms2 )
 from pprint import pprint
 from math import sqrt,pi
 stsp = 16*sqrt(pi)
-pprint( [ (m.GetName(), m.coefficient()/stsp, sqrt(m.variance())/stsp, m.significance() ) for m in moms  ] )
-pprint( [ (m.GetName(), m.coefficient()/stsp, sqrt(m.variance())/stsp, m.significance() ) for m in moms2 ] )
+pprint( [ (m.GetName(), m.coefficient()/stsp, m.stdDev()/stsp, m.significance() ) for m in moms  ] )
+pprint( [ (m.GetName(), m.coefficient()/stsp, m.stdDev()/stsp, m.significance() ) for m in moms2 ] )
 
 ### TODO: multiply signal PDF with moms2....
 

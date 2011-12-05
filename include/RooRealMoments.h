@@ -28,8 +28,10 @@ public:
       const std::string& name = std::string());
   virtual ~RooAbsRealMoment() {};
 
-  virtual void inc(Double_t weight = 1.);
-  virtual RooAbsReal& basisFunc() {return _basisFunc;}
+  const char* name() {return _name.c_str();}
+  RooAbsReal& basisFunc() {return _basisFunc;}
+  Double_t norm() {return _norm;}
+
   virtual RooArgSet* getObservables(const RooArgSet* set)
   {
     return basisFunc().getObservables(set);
@@ -38,11 +40,14 @@ public:
   {
     return getObservables(data.get());
   }
+
   virtual Double_t coefficient(Bool_t normalize = kTRUE) const;
   virtual Double_t variance(Bool_t normalize = kTRUE) const;
   virtual Double_t significance() const;
   virtual Double_t evaluate() {return _basisFunc.getVal();}
+  virtual Double_t stdDev(Bool_t normalize = kTRUE) const;
 
+  virtual void inc(Double_t weight = 1.);
   void reset() {_m0 = _m1 = _n0 = _n1 = _n2 = 0.;}
 
   virtual ostream& print(ostream& os, Bool_t normalize = kTRUE) const;
@@ -50,10 +55,10 @@ public:
 
 protected:
   RooAbsReal& _basisFunc;
+  std::string _name;
+  Double_t _norm;
   Double_t _m0, _m1;
   Double_t _n0, _n1, _n2;
-  Double_t _norm;
-  std::string _name;
 };
 
 //_____________________________________________________________________________
