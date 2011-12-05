@@ -5,7 +5,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = True
+generateData = False
 nEvents = 50000
 
 # data parameters
@@ -84,8 +84,8 @@ else :
   data = readData( dataSetFile, dataSetName, NTuple )
 
 # fit data
-print 'amplitudeMoments: fitting %d events' % data.numEntries()
-pdf.fitTo( data, NumCPU = 2, Timer = 1 )
+#print 'amplitudeMoments: fitting %d events' % data.numEntries()
+#pdf.fitTo( data, NumCPU = 2, Timer = 1 )
 
 # calculate angular moments
 createMoment = lambda i, l, m : RealMoment( P2VVAngleBasis( angleFuncs.angles, i, 0, l, m, 1. ), float( 2 * l + 1 ) / 2. )
@@ -95,7 +95,7 @@ moments += [ createMoment( i, 2, m ) for i in range( 3, 10 ) for m in [ -2, 1 ] 
 computeRealMoments( data, moments )
 
 for mom in moments :
-    print mom.GetName(), mom.coefficient(), mom.variance(), mom.significance()
+    print mom.GetName(), mom.coefficient(), mom.stdDev(), mom.significance()
 
 
 ###########################################################################################################################################

@@ -328,6 +328,9 @@ class AbsRealMoment( object ):
     def __init__( self, moment )  : self._var = moment
     def __getattr__( self, name ) : return getattr(self._var, name)      
     def GetName( self )           : return self.basisFunc().GetName()
+    def stdDev( self ) :
+        from math import sqrt
+        return sqrt(self.variance())
  
 class RealMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm ) :
