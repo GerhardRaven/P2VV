@@ -41,12 +41,18 @@ public:
     return getObservables(data.get());
   }
 
-  virtual Double_t coefficient(Bool_t normalize = kTRUE) const;
-  virtual Double_t variance(Bool_t normalize = kTRUE) const;
-  virtual Double_t significance() const;
-  virtual Double_t evaluate() {return _basisFunc.getVal();}
-  virtual Double_t stdDev(Bool_t normalize = kTRUE) const;
+  Double_t coefficient(Bool_t normalize = kTRUE) const;
+  Double_t variance(Bool_t normalize = kTRUE) const;
+  Double_t stdDev(Bool_t normalize = kTRUE) const;
+  Double_t significance() const;
 
+  Double_t m0() {return _m0;}
+  Double_t m1() {return _m1;}
+  Double_t n0() {return _n0;}
+  Double_t n1() {return _n1;}
+  Double_t n2() {return _n2;}
+
+  virtual Double_t evaluate() {return _basisFunc.getVal();}
   virtual void inc(Double_t weight = 1.);
   void reset() {_m0 = _m1 = _n0 = _n1 = _n2 = 0.;}
 

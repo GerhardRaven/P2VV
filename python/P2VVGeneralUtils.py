@@ -63,7 +63,7 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
          , logy = False, normalize = True, symmetrize = True, usebar = True ) :
     """makes a P2VV plot
 
-    exAxismple usage:
+    example usage:
 
     canvas = plot( canvas.cd(1), observable, data, pdf
                   , {  'psi'    : { 'LineColor' : RooFit.kGreen, 'LineStyle' : RooFit.kDashed }
@@ -83,7 +83,7 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
     _P2VVPlotStash.append(obsFrame)
 
     # set x-axis title
-    xAxis.SetTitle(xTitle)
+    if xTitle : xAxis.SetTitle(xTitle)
 
     if data :
         # plot data
@@ -266,7 +266,7 @@ class RealMomentsBuilder ( dict ) :
         for func in self._basisFuncNames :
             self._coefficients[func] = ( self[func].coefficient(), self[func].stdDev(), self[func].significance() )
 
-    def printMoments(self) :
+    def printMoments( self, **kwargs ) :
         # get maximum length of basis function name
         maxLenName = 15
         for func in self._basisFuncNames : maxLenName = min( max( len(func), maxLenName ), 60 )
@@ -278,8 +278,14 @@ class RealMomentsBuilder ( dict ) :
                 .format( 'basis function', 'coefficient', 'std. dev.', 'significance' )
         print '  ' + '-' * (45 + maxLenName)
 
+        # get minimum significance
+        minSignif = -1.
+        if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
+
         # print moments
         for func in self._basisFuncNames :
+            if func in self._coefficients and self._coefficients[func][2] < minSignif : continue
+
             print ( '  {0:<%d}' % maxLenName ).format(func if len(func) <= maxLenName else '...' + func[3 - maxLenName : ]),
             if func in self._coefficients :
                 coef = self._coefficients[func]
@@ -288,50 +294,57 @@ class RealMomentsBuilder ( dict ) :
 
         print '  ' + '-' * (45 + maxLenName)
 
-    def writeMoments( self, filePath = 'moments' ) :
-          # get file path and name
-          filePath = filePath.strip()
-          fileName = filePath.split('/')[-1]
+    def writeMoments( self, filePath = 'moments', **kwargs ) :
+        # get file path and name
+        filePath = filePath.strip()
+        fileName = filePath.split('/')[-1]
 
-          # open file
-          try :
-              momFile = open( filePath, 'w' )
-          except :
-              print 'P2VV - ERROR: RealMomentsBuilder.writeMoments: unable to open file \"%s\"' % filePath
-              return
+        # open file
+        try :
+            momFile = open( filePath, 'w' )
+        except :
+            print 'P2VV - ERROR: RealMomentsBuilder.writeMoments: unable to open file \"%s\"' % filePath
+            return
 
-          # get maximum length of basis function name
-          maxLenName = 13
-          for func in self._basisFuncNames : maxLenName = max( len(func), maxLenName )
+        # get maximum length of basis function name
+        maxLenName = 13
+        for func in self._basisFuncNames : maxLenName = max( len(func), maxLenName )
 
-          # write moments to content string
-          cont = '# %s: angular moments\n' % fileName\
-               + '#\n'\
-               + '# ' + '-' * (49 + maxLenName) + '\n'\
-               + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<13}\n' % maxLenName )\
-                     .format( 'basis function', 'coefficient', 'std. dev.', 'significance' )\
-               + '# ' + '-' * (49 + maxLenName) + '\n'
+        # get minimum significance
+        minSignif = -1.
+        if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
 
-          numMoments = 0
-          for func in self._basisFuncNames :
-              cont += ( '  {0:<%s}' % maxLenName ).format(func)
-              if func in self._coefficients :
-                  coef = self._coefficients[func]
-                  cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format(coef[0], coef[1], coef[2])
-                  numMoments += 1
-              else :
-                  cont += '\n'
+        # write moments to content string
+        cont = '# %s: angular moments\n' % fileName\
+             + '# minimum significance = {0:.1f}\n'.format(minSignif)\
+             + '#\n'\
+             + '# ' + '-' * (49 + maxLenName) + '\n'\
+             + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<13}\n' % maxLenName )\
+                   .format( 'basis function', 'coefficient', 'std. dev.', 'significance' )\
+             + '# ' + '-' * (49 + maxLenName) + '\n'
 
-          cont += '# ' + '-' * (49 + maxLenName) + '\n\n'
+        numMoments = 0
+        for func in self._basisFuncNames :
+            if func in self._coefficients and self._coefficients[func][2] < minSignif : continue
 
-          # write content to file
-          momFile.write(cont)
-          momFile.close()
+            cont += ( '  {0:<%s}' % maxLenName ).format(func)
+            if func in self._coefficients :
+                coef = self._coefficients[func]
+                cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format(coef[0], coef[1], coef[2])
+                numMoments += 1
+            else :
+                cont += '\n'
 
-          print 'P2VV - INFO: MomentsBuilder.writeMoments: %d efficiency moment%s written to file \"%s\"'\
-                  % ( numMoments, '' if numMoments == 1 else 's', filePath )
+        cont += '# ' + '-' * (49 + maxLenName) + '\n\n'
 
-    def readMoments( self, filePath = 'moments' ) :
+        # write content to file
+        momFile.write(cont)
+        momFile.close()
+
+        print 'P2VV - INFO: MomentsBuilder.writeMoments: %d efficiency moment%s written to file \"%s\"'\
+                % ( numMoments, '' if numMoments == 1 else 's', filePath )
+
+    def readMoments( self, filePath = 'moments', **kwargs ) :
         self._coefficients = { }
 
         # get file path
@@ -344,30 +357,37 @@ class RealMomentsBuilder ( dict ) :
           print 'P2VV - ERROR: MomentsBuilder.readMoments: unable to open file \"%s\"' % filePath
           return
 
+        # get minimum significance
+        minSignif = -1.
+        if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
+
         # loop over lines and read moments
         numMoments = 0
         while True :
-          # read next line
-          line = momFile.readline()
-          if line == '' : break
+            # read next line
+            line = momFile.readline()
+            if line == '' : break
 
-          # check for empty or comment lines
-          line = line.strip()
-          if len(line) < 1 or line[0] == '#' : continue
+            # check for empty or comment lines
+            line = line.strip()
+            if len(line) < 1 or line[0] == '#' : continue
 
-          # check moment format
-          line = line.split()
-          if len(line) < 4 or line[0] not in self._basisFuncNames : continue
-          try :
-            coef   = float(line[1])
-            stdDev = float(line[2])
-            signif = float(line[3])
-          except :
-            continue
+            # check moment format
+            line = line.split()
+            if len(line) < 4 or line[0] not in self._basisFuncNames : continue
+            try :
+              coef   = float(line[1])
+              stdDev = float(line[2])
+              signif = float(line[3])
+            except :
+              continue
 
-          # get moment
-          self._coefficients[line[0]] = ( coef, stdDev, signif )
-          numMoments += 1
+            # check significance
+            if signif < minSignif : continue
+
+            # get moment
+            self._coefficients[line[0]] = ( coef, stdDev, signif )
+            numMoments += 1
 
         momFile.close()
 

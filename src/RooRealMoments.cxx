@@ -55,31 +55,31 @@ Double_t RooAbsRealMoment::variance(Bool_t normalize) const
   else           return varMu;
 }
 
+Double_t RooAbsRealMoment::stdDev(Bool_t normalize) const
+{
+  Double_t var = variance(normalize);
+  return var < 0 ? -999. : std::sqrt(var);
+}
+
 Double_t RooAbsRealMoment::significance() const
 {
   Double_t mu  = coefficient(kFALSE);
   Double_t var = variance(kFALSE);
-  return var > 0 ? std::sqrt(mu * mu / var) : -999.;
+  return var < 0 ? -999. : std::sqrt(mu * mu / var);
 }
 
 void RooAbsRealMoment::inc(Double_t weight)
 {
-  Double_t x = evaluate();
+  Double_t funcVal = evaluate();
 
-  // TODO: make a histogram of x... (two, one for accept, one for all)
+  // TODO: make a histogram of funcVal... (two, one for accept, one for all)
   _m0 += weight;
-  _m1 += weight * x;
+  _m1 += weight * funcVal;
 
   // these we need to compute the error using the jackknife method
   _n0 += weight * weight;
-  _n1 += weight * weight * x;
-  _n2 += weight * weight * x * x;
-}
-
-Double_t RooAbsRealMoment::stdDev(Bool_t normalize) const
-{
-  Double_t var = variance(normalize);
-  return var > 0 ? std::sqrt(var) : -999.;
+  _n1 += weight * weight * funcVal;
+  _n2 += weight * weight * funcVal * funcVal;
 }
 
 ostream& RooAbsRealMoment::print(ostream& os, Bool_t normalize) const
