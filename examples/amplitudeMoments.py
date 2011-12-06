@@ -115,7 +115,7 @@ else :
     moments.readMoments(momentsFile)
 
 # print moments to screen
-moments.printMoments()
+moments.printMoments(MinSignificance = 3.)
 
 
 ###########################################################################################################################################
