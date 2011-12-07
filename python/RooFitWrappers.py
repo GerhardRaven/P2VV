@@ -491,10 +491,16 @@ class Pdf(RooObject):
         deps = ','.join([v.GetName() if type(v) != str else v for v in variables])
         return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
 
-    # def fitTo,plotOn
-    #  TODO: map keyword arguments to RooCmdArg... 
-    # def fitTo( self,*args,**kwargs)
-    #
+    def fitTo( self, data, **kwargs ) :
+        if 'ConditionalObservables' in kwargs :
+            cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
+            return self._var.fitTo(  data
+                                   , ConditionalObservables = RooArgSet( cvrt(var) for var in kwargs.pop('ConditionalObservables') )
+                                   , **kwargs
+                                  )
+        else :
+            return self._var.fitTo( data, **kwargs )
+
     def generate(self, whatvars, *args,**kwargs):
         cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
         return self._var.generate(RooArgSet( cvrt(i) for i in whatvars), *args,**kwargs)

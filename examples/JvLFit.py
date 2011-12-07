@@ -144,8 +144,8 @@ else :
   from P2VVGeneralUtils import readData
   data = readData(dataSetFile, dataSetName, NTuple)
 
-  # TODO: a trick to change the observable in a data set
-  data = RooDataSet(dataSetName + '1', '', data, (obs._var for obs in observables))
+  # TODO: a trick to change the observables in a data set
+  data = RooDataSet( dataSetName + '1', '', data, ( obs._var for obs in observables ) )
 
 # fix values of some parameters
 #ANuissance.setConstant('avgCOdd')
@@ -154,6 +154,5 @@ wTag.setConstant()
 wTagBar.setConstant()
 
 # fit data
-print 'fitJpsiV: fitting %d events' % data.numEntries()
-pdf.fitTo(data, NumCPU = 8, Timer = 1)
+pdf.fitTo( data, ConditionalObservables = [iTag], NumCPU = 12, Timer = 1 )
 
