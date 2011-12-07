@@ -103,19 +103,19 @@ indices += [ ( PIndex, 2, YIndex1 ) for PIndex in range( 3, 10 ) for YIndex1 in 
 
 from P2VVGeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
-moments.appendList( angleFuncs.angles, indices )
+moments.appendPYList( angleFuncs.angles, indices )
 
 if computeMoments :
     # compute moments from data set
-    moments.computeMoments(data)
-    moments.writeMoments(momentsFile)
+    moments.compute(data)
+    moments.write(momentsFile)
 
 else :
     # read moments from file
-    moments.readMoments(momentsFile)
+    moments.read(momentsFile)
 
 # print moments to screen
-moments.printMoments(MinSignificance = 3.)
+moments.Print( MinSignificance = 3., Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ) )
 
 
 ###########################################################################################################################################

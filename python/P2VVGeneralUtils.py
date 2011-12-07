@@ -191,8 +191,9 @@ class RealMomentsBuilder ( dict ) :
 
     def basisFuncs(self)     : return self._basisFuncs.copy()
     def basisFuncNames(self) : return self._basisFuncNames[ : ]
+    def coefficients(self)   : return self._coefficients.copy()
 
-    def appendList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
+    def appendPYList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
         # build moments from list of indices
         if not PDF and not NormSet :
             # build moment
@@ -251,7 +252,7 @@ class RealMomentsBuilder ( dict ) :
             self._basisFuncs[momName] = func
             self[momName] = moment
 
-    def computeMoments( self, data ) :
+    def compute( self, data ) :
         """computes moments of data set (wrapper for C++ computeRooRealMoments)
 
         Looping over data in python is quite a bit slower than in C++. Hence, we
@@ -266,35 +267,54 @@ class RealMomentsBuilder ( dict ) :
         for func in self._basisFuncNames :
             self._coefficients[func] = ( self[func].coefficient(), self[func].stdDev(), self[func].significance() )
 
-    def printMoments( self, **kwargs ) :
+    def Print( self, **kwargs ) :
         # get maximum length of basis function name
         maxLenName = 15
         for func in self._basisFuncNames : maxLenName = min( max( len(func), maxLenName ), 60 )
 
+        # get name requirements
+        names = None
+        nameExpr = None
+        if 'Names' in kwargs :
+            names = kwargs.pop('Names')
+            import re
+            nameExpr = re.compile(names)
+
+        # get minimum significance
+        minSignif = float('-inf')
+        if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
+
+        # get scale factors
+        scale = None
+        if 'Scale' in kwargs : scale = kwargs['Scale']
+
         # print header
         print 'P2VV - INFO: RealMomentsBuilder.printMoments:'
+        print '  name requirement: \'' + ( names if names else '' ) + '\''
+        print '  minimum significance = %.1f' % minSignif
+        print '  scale = ' + ( str(scale) if scale else '(1., 1., 1.)' )
         print '  ' + '-' * (45 + maxLenName)
         print ( '  {0:<%d}   {1:<12}   {2:<12}   {3:<12}' % maxLenName )\
                 .format( 'basis function', 'coefficient', 'std. dev.', 'significance' )
         print '  ' + '-' * (45 + maxLenName)
 
-        # get minimum significance
-        minSignif = -1.
-        if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
-
         # print moments
         for func in self._basisFuncNames :
-            if func in self._coefficients and self._coefficients[func][2] < minSignif : continue
+            if ( nameExpr and not nameExpr.match(func) ) or ( func in self._coefficients and self._coefficients[func][2] < minSignif ) :
+                continue
 
             print ( '  {0:<%d}' % maxLenName ).format(func if len(func) <= maxLenName else '...' + func[3 - maxLenName : ]),
             if func in self._coefficients :
                 coef = self._coefficients[func]
-                print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format(coef[0], coef[1], coef[2])
+                if scale :
+                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0] * scale[0], coef[1] * scale[1], coef[2] * scale[2] )
+                else :
+                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0],            coef[1],            coef[2] )
             else : print
 
         print '  ' + '-' * (45 + maxLenName)
 
-    def writeMoments( self, filePath = 'moments', **kwargs ) :
+    def write( self, filePath = 'moments', **kwargs ) :
         # get file path and name
         filePath = filePath.strip()
         fileName = filePath.split('/')[-1]
@@ -311,11 +331,22 @@ class RealMomentsBuilder ( dict ) :
         for func in self._basisFuncNames : maxLenName = max( len(func), maxLenName )
 
         # get minimum significance
-        minSignif = -1.
+        minSignif = float('-inf')
         if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
 
+        # get name requirements
+        names = None
+        nameExpr = None
+        if 'Names' in kwargs :
+            names = kwargs.pop('Names')
+            import re
+            nameExpr = re.compile(names)
+
+        print '  name requirement: \'' + ( names if names else '' ) + '\''
+        print '  minimum significance = %.1f' % minSignif
         # write moments to content string
         cont = '# %s: angular moments\n' % fileName\
+             + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
              + '# minimum significance = {0:.1f}\n'.format(minSignif)\
              + '#\n'\
              + '# ' + '-' * (49 + maxLenName) + '\n'\
@@ -325,7 +356,8 @@ class RealMomentsBuilder ( dict ) :
 
         numMoments = 0
         for func in self._basisFuncNames :
-            if func in self._coefficients and self._coefficients[func][2] < minSignif : continue
+            if ( nameExpr and not nameExpr.match(func) ) or ( func in self._coefficients and self._coefficients[func][2] < minSignif ) :
+                continue
 
             cont += ( '  {0:<%s}' % maxLenName ).format(func)
             if func in self._coefficients :
@@ -344,7 +376,7 @@ class RealMomentsBuilder ( dict ) :
         print 'P2VV - INFO: MomentsBuilder.writeMoments: %d efficiency moment%s written to file \"%s\"'\
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
-    def readMoments( self, filePath = 'moments', **kwargs ) :
+    def read( self, filePath = 'moments', **kwargs ) :
         self._coefficients = { }
 
         # get file path
@@ -358,8 +390,14 @@ class RealMomentsBuilder ( dict ) :
           return
 
         # get minimum significance
-        minSignif = -1.
+        minSignif = float('-inf')
         if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
+
+        # get name requirements
+        nameExpr = None
+        if 'Names' in kwargs :
+            import re
+            nameExpr = re.compile(kwargs.pop('Names'))
 
         # loop over lines and read moments
         numMoments = 0
@@ -382,8 +420,8 @@ class RealMomentsBuilder ( dict ) :
             except :
               continue
 
-            # check significance
-            if signif < minSignif : continue
+            # check significance and name
+            if ( nameExpr and not nameExpr.match(line[0]) ) or signif < minSignif : continue
 
             # get moment
             self._coefficients[line[0]] = ( coef, stdDev, signif )

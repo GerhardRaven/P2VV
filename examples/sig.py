@@ -126,17 +126,13 @@ moms2Indices  = [ ( i, l, m ) for i in range(3)
                               for m in range(-l,l+1) ]
 moms2Indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
                               for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
-moments.appendList( angles.angles, moms2Indices, PDF = pdf, NormSet = angles.angles.itervalues() )
+moments.appendPYList( angles.angles, moms2Indices, PDF = pdf, NormSet = angles.angles.itervalues() )
 
-moments.computeMoments(data)
-moments.printMoments(MinSignificance = 3.)
+moments.compute(data)
 
-from pprint import pprint
 from math import sqrt,pi
-stsp = 16*sqrt(pi)
-#pprint( [ (m.GetName(), m.coefficient()/stsp, m.stdDev()/stsp, m.significance() ) for m in moms  ] )
-pprint( [ (moments[mName].GetName(), moments[mName].coefficient()/stsp, moments[mName].stdDev()/stsp, moments[mName].significance() )\
-          for mName in moments.basisFuncNames() ] )
+moments.Print( MinSignificance = 3., Names = '.*_ang_.*',        Scale = ( 1. / 16. / sqrt(pi), 1. / 16. / sqrt(pi), 1. ) )
+moments.Print( MinSignificance = 3., Names = 'P2VVAngleBasis.*', Scale = ( 1. /  2. / sqrt(pi), 1. /  2. / sqrt(pi), 1. ) )
 
 ### TODO: multiply signal PDF with moms2....
 
