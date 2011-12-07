@@ -144,7 +144,14 @@ else :
   from P2VVGeneralUtils import readData
   data = readData(dataSetFile, dataSetName, NTuple)
 
+# fix values of some parameters
+#ANuissance.setConstant('avgCOdd')
+#lambdaCP.setConstant('phiCP')
+wTag.setConstant()
+wTagBar.setConstant()
+
 # fit data
 print 'fitJpsiV: fitting %d events' % data.numEntries()
-pdf.fitTo(data, NumCPU = 8, Timer = 1)
+condSet = RooArgSet(iTag._var)
+pdf.fitTo(data, ConditionalObservables = condSet, NumCPU = 12, Timer = 1)
 
