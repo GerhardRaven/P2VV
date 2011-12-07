@@ -192,28 +192,28 @@ class RealMomentsBuilder ( dict ) :
     def basisFuncs(self)     : return self._basisFuncs.copy()
     def basisFuncNames(self) : return self._basisFuncNames[ : ]
 
-    def appendMomentsList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
+    def appendList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
         # build moments from list of indices
         if not PDF and not NormSet :
             # build moment
             for inds in IndicesList :
-                self.appendMoment(  Angles = Angles, PIndex = inds[0], YLowIndex = inds[1], YHighIndex = inds[2]
-                                  , Norm = float( 2 * inds[1] + 1 ) / 2. )
+                self.append(  Angles = Angles, PIndex = inds[0], YIndex0 = inds[1], YIndex1 = inds[2]
+                                  , Norm = float( 2 * inds[0] + 1 ) / 2. )
         elif PDF and NormSet :
             # build efficiency moment
             for inds in IndicesList :
-                self.appendMoment(  Angles = Angles, PIndex = inds[0], YLowIndex = inds[1], YHighIndex = inds[2]
-                                  , Norm = float( 2 * inds[1] + 1 ) / 2., PDF = PDF, NormSet = NormSet )
+                self.append(  Angles = Angles, PIndex = inds[0], YIndex0 = inds[1], YIndex1 = inds[2]
+                                  , Norm = float( 2 * inds[0] + 1 ) / 2., PDF = PDF, NormSet = NormSet )
         else :
-            print 'P2VV - ERROR: RealMomentsBuilder.appendMomentsList: both a PDF and a normalisation set are required for efficiency moments'
+            print 'P2VV - ERROR: RealMomentsBuilder.appendList: both a PDF and a normalisation set are required for efficiency moments'
 
-    def appendMoment( self, **kwargs ) :
+    def append( self, **kwargs ) :
         if 'Moment' in kwargs :
             # get moment directly from arguments
             func = None
             moment = kwargs.pop('Moment')
 
-        elif 'Function' in kwargs or all( arg in kwargs for arg in ( 'Angles', 'PIndex', 'YLowIndex', 'YHighIndex' ) ):
+        elif 'Function' in kwargs or all( arg in kwargs for arg in ( 'Angles', 'PIndex', 'YIndex0', 'YIndex1' ) ):
             # build moment with function from arguments
             if 'Function' in kwargs :
                 # get function from arguments
@@ -221,7 +221,7 @@ class RealMomentsBuilder ( dict ) :
             else :
                 # build basis function
                 from RooFitWrappers import P2VVAngleBasis
-                func = P2VVAngleBasis(kwargs.pop('Angles'), kwargs.pop('PIndex'), 0, kwargs.pop('YLowIndex'), kwargs.pop('YHighIndex'), 1.)
+                func = P2VVAngleBasis(kwargs.pop('Angles'), kwargs.pop('PIndex'), 0, kwargs.pop('YIndex0'), kwargs.pop('YIndex1'), 1.)
 
             if not 'PDF' in kwargs and not 'NormSet' in kwargs :
                 # build moment
@@ -232,16 +232,16 @@ class RealMomentsBuilder ( dict ) :
                 from RooFitWrappers import RealEffMoment
                 moment = RealEffMoment( func, kwargs.pop('Norm') if 'Norm' in kwargs else 1., kwargs.pop('PDF'), kwargs.pop('NormSet') )
             else :
-                print 'P2VV - ERROR: RealMomentsBuilder.appendMoment: both a PDF and a normalisation set are required for an efficiency moment'
+                print 'P2VV - ERROR: RealMomentsBuilder.append: both a PDF and a normalisation set are required for an efficiency moment'
                 moment = None
 
         else :
-            print 'P2VV - ERROR: RealMomentsBuilder.appendMoment: did not find required arguments'
+            print 'P2VV - ERROR: RealMomentsBuilder.append: did not find required arguments'
             moment = None
 
         # check for unexpected arguments
         if kwargs :
-            print 'P2VV - ERROR: RealMomentsBuilder.appendMoment: unknown arguments:', kwargs
+            print 'P2VV - ERROR: RealMomentsBuilder.append: unknown arguments:', kwargs
             moment = None
 
         if moment :

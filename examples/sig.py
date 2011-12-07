@@ -115,22 +115,28 @@ else  :
 
 
 print 'computing efficiency moments'
-moms = [ RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ] 
+from P2VVGeneralUtils import RealMomentsBuilder
+moments = RealMomentsBuilder()
 
-_bm = lambda i,l,m : RealEffMoment( P2VVAngleBasis(angles.angles, i,0,l,m,1. ), float(2*l+1)/2, pdf, angles.angles.itervalues() )
-moms2  = [ _bm(i,l,m) for i in range(3) 
-                      for l in range(3) 
-                      for m in range(-l,l+1) ]
-moms2 += [ _bm(i,2,m) for i in range(3,10)  # 3,20)
-                      for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF 
-moms2 = [ ]
+moms = [ RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ]
+for mom in moms : moments.append(Moment = mom)
 
-computeRealMoments( data, moms + moms2 )
+moms2Indices  = [ ( i, l, m ) for i in range(3)
+                              for l in range(3)
+                              for m in range(-l,l+1) ]
+moms2Indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
+                              for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
+moments.appendList( angles.angles, moms2Indices, PDF = pdf, NormSet = angles.angles.itervalues() )
+
+moments.computeMoments(data)
+moments.printMoments(MinSignificance = 3.)
+
 from pprint import pprint
 from math import sqrt,pi
 stsp = 16*sqrt(pi)
-pprint( [ (m.GetName(), m.coefficient()/stsp, m.stdDev()/stsp, m.significance() ) for m in moms  ] )
-pprint( [ (m.GetName(), m.coefficient()/stsp, m.stdDev()/stsp, m.significance() ) for m in moms2 ] )
+#pprint( [ (m.GetName(), m.coefficient()/stsp, m.stdDev()/stsp, m.significance() ) for m in moms  ] )
+pprint( [ (moments[mName].GetName(), moments[mName].coefficient()/stsp, moments[mName].stdDev()/stsp, moments[mName].significance() )\
+          for mName in moments.basisFuncNames() ] )
 
 ### TODO: multiply signal PDF with moms2....
 

@@ -98,12 +98,12 @@ if fitData :
 
 
 # build angular moment basis functions
-indices  = [ ( PIndex, YLIndex, YHIndex ) for PIndex in range(3) for YLIndex in range(3) for YHIndex in range( -YLIndex, YLIndex + 1 ) ]
-indices += [ ( PIndex, 2, YHIndex ) for PIndex in range( 3, 10 ) for YHIndex in [ -2, 1 ] ]
+indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+indices += [ ( PIndex, 2, YIndex1 ) for PIndex in range( 3, 10 ) for YIndex1 in [ -2, 1 ] ]
 
 from P2VVGeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
-moments.appendMomentsList( angleFuncs.angles, indices )
+moments.appendList( angleFuncs.angles, indices )
 
 if computeMoments :
     # compute moments from data set
