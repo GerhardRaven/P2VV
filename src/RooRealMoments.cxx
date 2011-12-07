@@ -15,6 +15,7 @@
 #include <cmath>
 #include "ProgressDisplay.h"
 #include "RooRealMoments.h"
+#include "TMath.h"
 #include "RooArgSet.h"
 
 //_____________________________________________________________________________
@@ -58,14 +59,16 @@ Double_t RooAbsRealMoment::variance(Bool_t normalize) const
 Double_t RooAbsRealMoment::stdDev(Bool_t normalize) const
 {
   Double_t var = variance(normalize);
-  return var < 0 ? -999. : std::sqrt(var);
+  if (TMath::Abs(var) < 1.e-10) return 0.;
+  return var < 0. ? -999. : std::sqrt(var);
 }
 
 Double_t RooAbsRealMoment::significance() const
 {
   Double_t mu  = coefficient(kFALSE);
   Double_t var = variance(kFALSE);
-  return var < 0 ? -999. : std::sqrt(mu * mu / var);
+  if (TMath::Abs(var) < 1.e-10) return TMath::Infinity();
+  return var < 0. ? -999. : std::sqrt(mu * mu / var);
 }
 
 void RooAbsRealMoment::inc(Double_t weight)

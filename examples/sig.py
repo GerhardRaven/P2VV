@@ -115,22 +115,24 @@ else  :
 
 
 print 'computing efficiency moments'
-moms = [ RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ] 
+from P2VVGeneralUtils import RealMomentsBuilder
+moments = RealMomentsBuilder()
 
-_bm = lambda i,l,m : RealEffMoment( P2VVAngleBasis(angles.angles, i,0,l,m,1. ), float(2*l+1)/2, pdf, angles.angles.itervalues() )
-moms2  = [ _bm(i,l,m) for i in range(3) 
-                      for l in range(3) 
-                      for m in range(-l,l+1) ]
-moms2 += [ _bm(i,2,m) for i in range(3,10)  # 3,20)
-                      for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF 
-moms2 = [ ]
+moms = [ RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ]
+for mom in moms : moments.append(Moment = mom)
 
-computeRealMoments( data, moms + moms2 )
-from pprint import pprint
+moms2Indices  = [ ( i, l, m ) for i in range(3)
+                              for l in range(3)
+                              for m in range(-l,l+1) ]
+moms2Indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
+                              for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
+moments.appendPYList( angles.angles, moms2Indices, PDF = pdf, NormSet = angles.angles.itervalues() )
+
+moments.compute(data)
+
 from math import sqrt,pi
-stsp = 16*sqrt(pi)
-pprint( [ (m.GetName(), m.coefficient()/stsp, m.stdDev()/stsp, m.significance() ) for m in moms  ] )
-pprint( [ (m.GetName(), m.coefficient()/stsp, m.stdDev()/stsp, m.significance() ) for m in moms2 ] )
+moments.Print( MinSignificance = 3., Names = '.*_ang_.*',        Scale = ( 1. / 16. / sqrt(pi), 1. / 16. / sqrt(pi), 1. ) )
+moments.Print( MinSignificance = 3., Names = 'P2VVAngleBasis.*', Scale = ( 1. /  2. / sqrt(pi), 1. /  2. / sqrt(pi), 1. ) )
 
 ### TODO: multiply signal PDF with moms2....
 
