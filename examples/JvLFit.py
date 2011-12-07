@@ -151,7 +151,5 @@ wTag.setConstant()
 wTagBar.setConstant()
 
 # fit data
-print 'fitJpsiV: fitting %d events' % data.numEntries()
-condSet = RooArgSet(iTag._var)
-pdf.fitTo(data, ConditionalObservables = condSet, NumCPU = 12, Timer = 1)
+pdf.fitTo(data, ConditionalObservables = [iTag], NumCPU = 12, Timer = 1)
 

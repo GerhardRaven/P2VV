@@ -8,10 +8,10 @@ gROOT.SetStyle("Plain")
 #from ROOT import * 
 
 def __wrap_kw_subs( fun ) :
-    from ROOT import RooCmdArg,RooFit
+    from ROOT import RooCmdArg,RooFit,RooAbsCollection
     __fun = fun
     __tbl = lambda k : getattr(RooFit,k)
-    __disp = lambda k,v : __tbl(k)(v) if not hasattr(v,'__iter__') else __tbl(k)(*v) 
+    __disp = lambda k,v : __tbl(k)(v) if isinstance( v, RooAbsCollection ) or not hasattr( v,'__iter__' ) else __tbl(k)(*v) 
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
