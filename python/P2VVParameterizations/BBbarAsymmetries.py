@@ -52,7 +52,7 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
             self._parseArg( 'C', kwargs, Title = 'CPV param. C', Value = 0., MinMax = ( -1., 1. ) )
           else :
             CPParam = kwargs.pop('CPParam')
-            self._C = CPParam.C
+            self._C = CPParam['C']
           self._ANorm   = Product( 'ANorm', [ self._minus, self._C ], Title = 'normalization asymmetry' )
           self._params += [ self._minus, self._C ]
         else   :

@@ -40,7 +40,7 @@ ANuissance = Trivial_CEvenOdd()
 #minus = ConstVar('minus',  Value = -1  )
 #ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'production asymmetry',          Value = 0 )
 #                                 , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry',  Value = 0 )
-#                                 , ANorm   = Product(    'ANorm',   [minus,CP.C],  Title = 'normalization asymmetry' )
+#                                 , ANorm   = Product(    'ANorm',   [minus,CP['C']],  Title = 'normalization asymmetry' )
 #                                 )
 
 # now build the actual signal PDF...

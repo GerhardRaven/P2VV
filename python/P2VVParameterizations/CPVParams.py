@@ -12,7 +12,9 @@ from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
 class CPParam ( _util_parse_mixin ):
     def __init__( self, **kwargs ) :
-        for coef in 'CDS' : setattr( self, coef, kwargs.pop(coef) )
+        for coef in 'CDS' : setattr( self, '_' + coef, kwargs.pop(coef) )
+
+    def __getitem__( self, kw ) : return getattr( self, '_' + kw )
 
 
 class LambdaCarth_CPParam( CPParam ) :
