@@ -217,11 +217,11 @@ if makePlots :
     timeYMax = 0.
     for pad in timeCanv.pads() :
         pad.Update()
-        for obj in pad.GetListOfPrimitives() :
-            if obj.GetName()[:5] == 'frame' : timeYMax = max(obj.GetMaximum(), timeYMax)
+        timeYMax = max( p.GetMaximum() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  )
+
     for pad in timeCanv.pads() :
-        for obj in pad.GetListOfPrimitives() :
-            if obj.GetName()[:5] == 'frame' : obj.SetMaximum(timeYMax)
+        map( lambda obj : obj.SetMaximum(timeYMax)
+           , ( p for p in pad.GetListOfPrimitives() if p.GetName().startswith(' frame' ) ) )
         pad.cd()
         pad.Draw()
 
