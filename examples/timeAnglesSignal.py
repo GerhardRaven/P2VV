@@ -214,16 +214,10 @@ if makePlots :
             )
 
     # set Y-axis maximum for lifetime plots
-    timeYMax = 0.
-    for pad in timeCanv.pads() :
-        pad.Update()
-        timeYMax = max( p.GetMaximum() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  )
-
-    for pad in timeCanv.pads() :
-        map( lambda obj : obj.SetMaximum(timeYMax)
-           , ( p for p in pad.GetListOfPrimitives() if p.GetName().startswith(' frame' ) ) )
-        pad.cd()
-        pad.Draw()
+    timeYMax = max( p.GetMaximum() for pad in timeCanv.pads() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  )
+    map( lambda obj : obj.SetMaximum(timeYMax)
+       , ( p for pad in timeCanv.pads() for p in pad.GetListOfPrimitives() if p.GetName().startswith(' frame' ) ) )
+    for pad in timeCanv.pads() : pad.Draw()
 
     # plot angles
     anglePlotTitles =   tuple(  [ angle.GetTitle() + ' - B'       for angle in angles ]\
