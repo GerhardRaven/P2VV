@@ -354,8 +354,7 @@ class RealEffMoment( AbsRealMoment ):
 
         # build a RooFit normalisation set
         from ROOT import RooArgSet
-        self._rooNormSet = RooArgSet()
-        for var in self._normSet : self._rooNormSet += cast(var)
+        self._rooNormSet = RooArgSet( cast(var) for var in self._normSet )
 
         # create efficiency moment
         from P2VVLoad import P2VVLibrary
@@ -494,12 +493,8 @@ class Pdf(RooObject):
     def fitTo( self, data, **kwargs ) :
         if 'ConditionalObservables' in kwargs :
             cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
-            return self._var.fitTo(  data
-                                   , ConditionalObservables = RooArgSet( cvrt(var) for var in kwargs.pop('ConditionalObservables') )
-                                   , **kwargs
-                                  )
-        else :
-            return self._var.fitTo( data, **kwargs )
+            kwargs['ConditionalObservables'] = RooArgSet( cvrt(var) for var in kwargs.pop('ConditionalObservables') )
+        return self._var.fitTo( data, **kwargs )
 
     def generate(self, whatvars, *args,**kwargs):
         cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
@@ -508,10 +503,9 @@ class Pdf(RooObject):
     def plotOn( self, frame, **kwargs ) :
         if 'Slice' in kwargs :
             cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
-            slice = kwargs.pop('Slice')
-            return self._var.plotOn( frame, Slice = ( cvrt(slice[0]), slice[1] ), **kwargs )
-        else :
-            return self._var.plotOn( frame, **kwargs )
+            sl = kwargs.pop('Slice')
+            kwargs['Slice'] = ( cvrt(sl[0]), sl[1] )
+        return self._var.plotOn( frame, **kwargs )
 
 class ProdPdf(Pdf):
     # TODO: support conditional terms, use 'Conditional' key word for that...
