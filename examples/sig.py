@@ -116,10 +116,9 @@ else  :
 
 print 'computing efficiency moments'
 from P2VVGeneralUtils import RealMomentsBuilder
-moments = RealMomentsBuilder()
+moms = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i )
+moments = RealMomentsBuilder( Moments = moms )
 
-moms = [ RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ]
-for mom in moms : moments.append(Moment = mom)
 
 moms2Indices  = [ ( i, l, m ) for i in range(3)
                               for l in range(3)
@@ -131,8 +130,8 @@ moments.appendPYList( angles.angles, moms2Indices, PDF = pdf, NormSet = angles.a
 moments.compute(data)
 
 from math import sqrt,pi
-moments.Print( MinSignificance = 3., Names = '.*_ang_.*',        Scale = ( 1. / 16. / sqrt(pi), 1. / 16. / sqrt(pi), 1. ) )
-moments.Print( MinSignificance = 3., Names = 'P2VVAngleBasis.*', Scale = ( 1. /  2. / sqrt(pi), 1. /  2. / sqrt(pi), 1. ) )
+moments.Print( MinSignificance = 0., Names = '.*_ang_.*',        Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
+moments.Print( MinSignificance = 3., Names = 'P2VVAngleBasis.*', Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
 
 ### TODO: multiply signal PDF with moms2....
 
