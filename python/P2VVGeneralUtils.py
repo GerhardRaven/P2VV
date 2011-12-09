@@ -30,6 +30,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, tagCat 
     # get data set from file
     print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
     file = TFile.Open( filePath, 'READ' )
+    assert file
     data = file.Get(dataSetName)
     file.Close()
 
@@ -45,6 +46,7 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
   print "P2VV - INFO: writeData: writing RooDataSet '%s' to file '%s'" % ( dataSetName, filePath )
 
   file = TFile.Open( filePath, 'RECREATE' )
+  assert file
   if NTuple : data.tree().Write(dataSetName)
   else : data.Write(dataSetName)
   file.Close()
@@ -184,10 +186,16 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
 
 
 class RealMomentsBuilder ( dict ) :
-    def __init__(self)   :
+    def __init__(self,**kw)   :
         self._basisFuncNames = [ ]
         self._basisFuncs     = { }
         self._coefficients   = { }
+        if 'Moments' in kw :
+            for i in kw.pop('Moments') : self.append( Moment = i )
+        if 'Moment' in kw :
+            self.append( Moment = kw.pop(Moment) )
+        if len(kw) :
+            raise RuntimeError( 'unknown keyword arguments %s' % kw.keys() )
 
     def basisFuncs(self)     : return self._basisFuncs.copy()
     def basisFuncNames(self) : return self._basisFuncNames[ : ]
