@@ -242,19 +242,14 @@ if makePlots :
     cpsiYMax   = 0.
     cthetaYMax = 0.
     phiYMax    = 0.
-    for pad in anglesCanv.pads() :
-        pad.Update()
-        for obj in pad.GetListOfPrimitives() :
-            if obj.GetName()[:5] == 'frame' :
-                if   obj.GetXaxis().GetTitle() == angleNames[0] : cpsiYMax   = max(obj.GetMaximum(), cpsiYMax  )
-                elif obj.GetXaxis().GetTitle() == angleNames[1] : cthetaYMax = max(obj.GetMaximum(), cthetaYMax)
-                elif obj.GetXaxis().GetTitle() == angleNames[2] : phiYMax    = max(obj.GetMaximum(), phiYMax   )
-    for pad in anglesCanv.pads() :
-        for obj in pad.GetListOfPrimitives() :
-            if obj.GetName()[:5] == 'frame' :
-                if   obj.GetXaxis().GetTitle() == angleNames[0] : obj.SetMaximum(cpsiYMax  )
-                elif obj.GetXaxis().GetTitle() == angleNames[1] : obj.SetMaximum(cthetaYMax)
-                elif obj.GetXaxis().GetTitle() == angleNames[2] : obj.SetMaximum(phiYMax   )
-        pad.cd()
-        pad.Draw()
+    frames = [ p for pad in anglesCanv.pads() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  ]
+    for f in frames :
+        if   f.GetXaxis().GetTitle() == angleNames[0] : cpsiYMax   = max(f.GetMaximum(), cpsiYMax  )
+        elif f.GetXaxis().GetTitle() == angleNames[1] : cthetaYMax = max(f.GetMaximum(), cthetaYMax)
+        elif f.GetXaxis().GetTitle() == angleNames[2] : phiYMax    = max(f.GetMaximum(), phiYMax   )
+    for f in frames :
+        if   f.GetXaxis().GetTitle() == angleNames[0] : f.SetMaximum(cpsiYMax  )
+        elif f.GetXaxis().GetTitle() == angleNames[1] : f.SetMaximum(cthetaYMax)
+        elif f.GetXaxis().GetTitle() == angleNames[2] : f.SetMaximum(phiYMax   )
+    for pad  in anglesCanv.pads() : pad.Draw()
 
