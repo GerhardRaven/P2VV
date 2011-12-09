@@ -239,17 +239,11 @@ if makePlots :
             )
 
     # set Y-axis maximum for angles plots
-    cpsiYMax   = 0.
-    cthetaYMax = 0.
-    phiYMax    = 0.
     frames = [ p for pad in anglesCanv.pads() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  ]
+    maxval = dict()
     for f in frames :
-        if   f.GetXaxis().GetTitle() == angleNames[0] : cpsiYMax   = max(f.GetMaximum(), cpsiYMax  )
-        elif f.GetXaxis().GetTitle() == angleNames[1] : cthetaYMax = max(f.GetMaximum(), cthetaYMax)
-        elif f.GetXaxis().GetTitle() == angleNames[2] : phiYMax    = max(f.GetMaximum(), phiYMax   )
+        maxval[ f.GetXaxis().GetTitle() ] = max( f.GetMaximum(), maxval.setdefault( f.GetXaxis().GetTitle(), 0 ) )
     for f in frames :
-        if   f.GetXaxis().GetTitle() == angleNames[0] : f.SetMaximum(cpsiYMax  )
-        elif f.GetXaxis().GetTitle() == angleNames[1] : f.SetMaximum(cthetaYMax)
-        elif f.GetXaxis().GetTitle() == angleNames[2] : f.SetMaximum(phiYMax   )
+        f.SetMaximum( maxval[ f.GetXaxis().GetTitle() ] )
     for pad  in anglesCanv.pads() : pad.Draw()
 
