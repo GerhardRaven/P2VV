@@ -816,8 +816,8 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
   // use accept/reject in certain cases
   if (!_checkVars || !checkVarDep(_time.arg())
       || (_tagCatType > 1 && !checkVarDep(_tagCat.arg()))
-      || (_tags > 0 && (_iTagVal != 2 || !checkVarDep(_iTag.arg())
-          || !checkTag(kTRUE)))
+      || (_tags > 0 && ((_iTagVal != 2 && _iTagVal != 3)
+          || !checkVarDep(_iTag.arg()) || !checkTag(kTRUE)))
       || (_tags > 1 && (_fTagVal != 2 || !checkVarDep(_fTag.arg())
           || !checkTag(kFALSE))))
     return 0;
@@ -833,6 +833,7 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
 
   if (_tags == 0) return genCode;
 
+  // check which tagging variables to generate
   arg = 0;
   if (_tagCatType > 1) {
     // find the tagging category variable
@@ -851,6 +852,7 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
     if (arg2 == 0) return genCode;
   }
 
+  // build generation code and add variables to generation variables set
   if (arg != 0) {
     // generate tagging category
     genCode += 2;
@@ -874,17 +876,6 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
 void RooBTagDecay::generateEvent(Int_t code)
 {
   // generate values for the variables corresponding to the generation code
-
-  // check generation code
-  if (code != 1 && !(code == 5 && _tagCatType == 1 && _tags == 1)
-      && !(code == 7 && _tagCatType > 1 && _tags == 1)
-      && !(code == 13 && _tagCatType == 1 && _tags > 1)
-      && !(code == 15 && _tagCatType > 1 && _tags > 1)) {
-    coutF(InputArguments) << "RooBTagDecay::generateEvent(" << GetName()
-        << ") error in generation code (" << code
-        << ") for this flavour tagging configuration" << endl;
-    assert(0);
-  }
 
   // set minimum Gamma for time envelope: Gamma - |DeltaGamma| / 2
   Double_t gammaMin  = 1. / _tau - TMath::Abs(_dGamma) / 2.;
@@ -1048,17 +1039,24 @@ void RooBTagDecay::generateEvent(Int_t code)
 
     // generate value for initial state tag
     Int_t iTagGen = 1;
-    Double_t ACP = 0.;
-    if (_tags == 1)
-      ACP = (cEvenDil * evenTerms + cOddDil * oddTerms)
-       / (((RooAbsReal*)_avgCEvens.at(tagCatGen))->getVal() * evenTerms
-       + ((RooAbsReal*)_avgCOdds.at(tagCatGen))->getVal() * oddTerms);
-    else
-      ACP = (cEvenDil * evenTerms - _ANorm * cOddDil * oddTerms)
-       / (((RooAbsReal*)_avgCEvens.at(tagCatGen))->getVal() * evenTerms
-       - _ANorm * ((RooAbsReal*)_avgCOdds.at(tagCatGen))->getVal() * oddTerms);
+    if (_iTagVal == 3 && tagCatGen == 0) {
+      // tagging category 0 is interpreted as the "untagged" category
+      // if the initial state tag can assume values +1, -1 and 0!!!!!!!!!
+      iTagGen = 0;
+    } else {
+      // use CP asymmetry if initial state tag only contains values +1 and -1
+      Double_t ACP = 0.;
+      if (_tags == 1)
+        ACP = (cEvenDil * evenTerms + cOddDil * oddTerms)
+        / (((RooAbsReal*)_avgCEvens.at(tagCatGen))->getVal() * evenTerms
+        + ((RooAbsReal*)_avgCOdds.at(tagCatGen))->getVal() * oddTerms);
+      else
+        ACP = (cEvenDil * evenTerms - _ANorm * cOddDil * oddTerms)
+        / (((RooAbsReal*)_avgCEvens.at(tagCatGen))->getVal() * evenTerms
+        - _ANorm * ((RooAbsReal*)_avgCOdds.at(tagCatGen))->getVal()*oddTerms);
 
-    if (2. * RooRandom::uniform() > 1. + ACP) iTagGen = -1;
+      if (2. * RooRandom::uniform() > 1. + ACP) iTagGen = -1;
+    }
 
     // set initial state tag value
     _iTag = iTagGen;
@@ -1372,7 +1370,7 @@ void RooBTagDecay::initTag(Bool_t iTag)
       // not a valid configuration
       coutE(InputArguments) << "RooBTagDecay::initTag(" << GetName()
           << ") flavour tag \"" << tagName
-          << "\" can only have values +1 and/or -1 or 0: use \"checkVars = false\" if you insist on using other/additional values"
+          << "\" can only have values +1, -1 and 0: use \"checkVars = false\" if you insist on using other/additional values"
           << endl;
       assert(0);
     }

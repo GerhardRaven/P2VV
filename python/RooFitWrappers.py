@@ -505,6 +505,14 @@ class Pdf(RooObject):
         cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
         return self._var.generate(RooArgSet( cvrt(i) for i in whatvars), *args,**kwargs)
 
+    def plotOn( self, frame, **kwargs ) :
+        if 'Slice' in kwargs :
+            cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
+            slice = kwargs.pop('Slice')
+            return self._var.plotOn( frame, Slice = ( cvrt(slice[0]), slice[1] ), **kwargs )
+        else :
+            return self._var.plotOn( frame, **kwargs )
+
 class ProdPdf(Pdf):
     # TODO: support conditional terms, use 'Conditional' key word for that...
     # ProdPdf( 'foo', [a,b], Conditional = [c,d] ) -> PROD::foo(a,b|c,d)

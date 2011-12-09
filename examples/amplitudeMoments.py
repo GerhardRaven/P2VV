@@ -133,11 +133,11 @@ if makePlots :
     # make plots
     from P2VVGeneralUtils import plot
     from ROOT import RooFit, RooCmdArg
-    for (pad, obs, nBins, plotTitle, xTitle) in zip(  anglesCanv.pads(2, 2)
-                                                    , angles
-                                                    , numBins
-                                                    , tuple( [ angle.GetTitle() for angle in angles ] )
-                                                    , angleNames
+    for ( pad, obs, nBins, plotTitle, xTitle ) in zip(  anglesCanv.pads(2, 2)
+                                                      , angles
+                                                      , numBins
+                                                      , tuple( [ angle.GetTitle() for angle in angles ] )
+                                                      , angleNames
                                                    ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
              , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
