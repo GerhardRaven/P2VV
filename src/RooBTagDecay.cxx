@@ -63,13 +63,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this, sinhCoef),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this, sinCoef),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(0),
   _tags(0),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(2),
+  _fTagVal(2),
+  _checkVars(checkVars)
 {
   // constructor without flavour tags (behaves like RooBDecay)
   if (!checkVarDep(time, kTRUE)) assert(0);
@@ -104,13 +104,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(1),
   _tags(3),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(2),
+  _fTagVal(2),
+  _checkVars(checkVars)
 {
   // constructor with both initial and final state flavour tags
   // (decay into a flavour specific final state)
@@ -160,13 +160,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this, sinhCoef),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this, sinCoef),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(1),
   _tags(1),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(2),
+  _fTagVal(2),
+  _checkVars(checkVars)
 {
   // constructor with only an initial state flavour tag
   // (decay into CP self-conjugate state)
@@ -214,13 +214,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(2),
   _tags(3),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(2),
+  _fTagVal(2),
+  _checkVars(checkVars)
 {
   // constructor with both initial and final state flavour tags (decay into
   // a flavour specific final state) and with tagging categories
@@ -266,13 +266,13 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _sinhCoef("sinhCoef", "sinh coefficient", this, sinhCoef),
   _cosCoef("cosCoef", "cos coefficient", this, cosCoef),
   _sinCoef("sinCoef", "sin coefficient", this, sinCoef),
+  _createdVars("createdVars", 0, this),
   _decayType(type),
   _tagCatType(2),
   _tags(1),
-  _iTagVal(0),
-  _fTagVal(0),
-  _checkVars(checkVars),
-  _createdVars("createdVars", 0, this)
+  _iTagVal(2),
+  _fTagVal(2),
+  _checkVars(checkVars)
 {
   // constructor with only an initial state flavour tag
   // (decay into CP self-conjugate state) and with tagging categories
@@ -310,6 +310,7 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
   _sinhCoef("sinhCoef", this, other._sinhCoef),
   _cosCoef("cosCoef", this, other._cosCoef),
   _sinCoef("sinCoef", this, other._sinCoef),
+  _createdVars("createdVars", 0, this),
   _tagCatPositions(other._tagCatPositions),
   _tagCatIndices(other._tagCatIndices),
   _coshBasis(other._coshBasis),
@@ -321,8 +322,7 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
   _tags(other._tags),
   _iTagVal(other._iTagVal),
   _fTagVal(other._fTagVal),
-  _checkVars(other._checkVars),
-  _createdVars("createdVars", 0, this)
+  _checkVars(other._checkVars)
 {
   // copy constructor
 }
@@ -359,27 +359,67 @@ Double_t RooBTagDecay::coefficient(Int_t basisIndex) const
   Int_t tagCatPos = -1;
   coefVal *= tagCatCoef(tagCatPos);
 
+  // get value of initial state flavour tag
+  Int_t iTagValue = _iTagVal;
+  if (_iTagVal == 2 || _iTagVal == 3) iTagValue = _iTag;
+
   if (basisIndex == _coshBasis || basisIndex == _sinhBasis) {
     // terms that are even in the initial state tag
-    coefVal *= ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
-        + _iTag * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
-        * (((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
-        - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
-        * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal());
+    if (_iTagVal == 0 || (_iTagVal == 3 && iTagValue == 0))
+      // integrate over initial state tag
+      coefVal *= 2. * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal();
+    else
+      // calculate even coefficient with initial state tag
+      coefVal *= ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
+          + iTagValue * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
+          * (((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
+          - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
+          * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal());
 
-    if (_tags == 1) return coefVal;
-    else return (1. - _fTag * _ANorm) * coefVal;
+    if (_tags == 1) {
+      // no final state tag
+      return coefVal;
+    } else {
+      if (_fTagVal == 0) {
+        // integrate over final state tag
+        return 2. * coefVal;
+      } else if (_fTagVal == 2) {
+        // calculate even coefficient with varying final state tag
+        return (1. - _fTag * _ANorm) * coefVal;
+      } else {
+        // calculate even coefficient with fixed initial state tag
+        return (1. - _fTagVal * _ANorm) * coefVal;
+      }
+    }
 
   } else if (basisIndex == _cosBasis || basisIndex == _sinBasis) {
     // terms that are odd in the initial state tag
-    coefVal *= ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
-        + _iTag * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
-        * (((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
-        - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
-        * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal());
+    if (_iTagVal == 0 || (_iTagVal == 3 && iTagValue == 0))
+      // integrate over initial state tag
+      coefVal *= 2. * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal();
+    else
+      // calculate odd coefficient with initial state tag
+      coefVal *= ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
+          + iTagValue * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
+          * (((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
+          - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
+          * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal());
 
-    if (_tags == 1) return coefVal;
-    else return (_fTag - _ANorm) * coefVal;
+    if (_tags == 1) {
+      // no final state tag
+      return coefVal;
+    } else {
+      if (_fTagVal == 0) {
+        // integrate over final state tag
+        return -2. * _ANorm * coefVal;
+      } else if (_fTagVal == 2) {
+        // calculate even coefficient with varying final state tag
+        return (_fTag - _ANorm) * coefVal;
+      } else {
+        // calculate even coefficient with fixed final state tag
+        return (_fTagVal - _ANorm) * coefVal;
+      }
+    }
   }
 
   return 0.;
@@ -421,12 +461,18 @@ Double_t RooBTagDecay::tagCatCoef(Int_t& category) const
     return -1.;
   }
 
-  // get coefficient
+  return tagCatCoefUnsafe(category);
+}
+
+//_____________________________________________________________________________
+Double_t RooBTagDecay::tagCatCoefUnsafe(Int_t category) const
+{
+  // get tagging category coefficient
   Double_t tagCatCoef = ((RooAbsReal*)_tagCatCoefs.at(category))->getVal();
 
   // check coefficient
   if (tagCatCoef < 0. || (_tagCatType > 2 && tagCatCoef > 1.)) {
-    coutE(Eval) << "RooBTagDecay::tagCatCoef(" << GetName()
+    coutE(Eval) << "RooBTagDecay::tagCatCoefUnsafe(" << GetName()
         << ") tagging category coefficient " << category
         << " is not in range (" << tagCatCoef << "): returning -1"
         << endl;
@@ -544,16 +590,23 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
       || (_tags > 1 && (!checkVarDep(_fTag.arg()) || !checkTag(kFALSE))))
     return 0;
 
-  // get integration code
+  // initialize integration code variables
   Int_t  intCode   = 0;
+  Bool_t intTagCat = kFALSE;
   Bool_t intITag   = kFALSE;
   Bool_t intFTag   = kFALSE;
-  Bool_t intTagCat = kFALSE;
   RooArgSet intVars = allVars;
-  if (_tags > 0) intITag = intVars.remove(_iTag.arg(), kTRUE, kTRUE);
-  if (_tags > 1) intFTag = intVars.remove(_fTag.arg(), kTRUE, kTRUE);
+
+  // integrate over tagging category?
   if (_tagCatType > 1) intTagCat = intVars.remove(_tagCat.arg(), kTRUE, kTRUE);
 
+  // integrate over initial state tag?
+  if (_tags > 0) intITag = intVars.remove(_iTag.arg(), kTRUE, kTRUE);
+
+  // integrate over final state tag?
+  if (_tags > 1) intFTag = intVars.remove(_fTag.arg(), kTRUE, kTRUE);
+
+  // get integration code
   if (intVars.getSize() > 0) {
     if (coef == _coshBasis) {
       intCode = 8 * _coshCoef.arg().getAnalyticalIntegral(intVars, analVars,
@@ -587,16 +640,19 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   }
   delete analVarIter;
 
-  if (intITag && !_iTag.hasRange(rangeName)) {
+  if (intTagCat && !_tagCat.hasRange(rangeName)) {
+    // add the tagging category to integration variables
+    intCode += 4;
+    analVars.add(_tagCat.arg());
+
+    // initialize tagging category maps
+    if (_tagCatIndices.empty()) initTagCatMaps();
+  }
+
+  if (intITag && _iTagVal != 3 && !_iTag.hasRange(rangeName)) {
     // add the initial state tag to integration variables
     intCode += 2;
     analVars.add(_iTag.arg());
-
-    if (intTagCat && !_tagCat.hasRange(rangeName)) {
-      // add the tagging category to integration variables
-      intCode += 4;
-      analVars.add(_tagCat.arg());
-    }
   }
 
   if (intFTag && !_fTag.hasRange(rangeName)) {
@@ -619,11 +675,6 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
   Bool_t intTagCat = (Bool_t)(code & 4);
   Bool_t intITag = (Bool_t)(code & 2);
   Bool_t intFTag = (Bool_t)(code & 1);
-
-  // check integration code
-  if ((intITag && _tags < 1) || (intFTag && _tags < 2)
-      || (intTagCat && (!intITag || _tagCatType < 2)))
-    return 0.;
 
   // get coefficient's integral
   Double_t coefInt = 0.;
@@ -656,6 +707,10 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
   // return the integral if there are no explicit tags
   if (_tags == 0) return coefInt;
 
+  // get value of initial state flavour tag
+  Int_t iTagValue = _iTagVal;
+  if (_iTagVal == 2 || _iTagVal == 3) iTagValue = _iTag;
+
   // determine in which tagging category we are
   Int_t tagCatPos = -1;
   if (_tagCatType > 1 && !intTagCat) coefInt *= tagCatCoef(tagCatPos);
@@ -663,37 +718,89 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
 
   if (coef == _coshBasis || coef == _sinhBasis) {
     // terms that are even in the initial state tag
-    if (intTagCat)
+    if (intTagCat && ((intITag && _iTagVal == 2) || _iTagVal == 0
+        || (_iTagVal == 3 && iTagValue == 0))) {
+      // integrate over the tagging category and over the initial state tag
       coefInt *= 2. * _avgCEvenSum;
-    else if (intITag)
+    } else if ((intITag && _iTagVal == 2) || _iTagVal == 0
+        || (_iTagVal == 3 && iTagValue == 0)) {
+      // integrate over the initial state tag
       coefInt *= 2. * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal();
-    else
+    } else if (intTagCat) {
+      // integrate over the tagging category
+      Double_t catInt = _avgCEvenSum;
+      std::map<Int_t, Int_t>::const_iterator catIt;
+      for (catIt = _tagCatIndices.begin(); catIt != _tagCatIndices.end();
+          ++catIt) {
+        catInt += tagCatCoefUnsafe(catIt->first)
+            * (iTagValue * ((RooAbsReal*)_dilutions.at(catIt->first))->getVal()
+            * (((RooAbsReal*)_avgCOdds.at(catIt->first))->getVal()
+            - ((RooAbsReal*)_ADilWTags.at(catIt->first))->getVal()
+            * ((RooAbsReal*)_avgCEvens.at(catIt->first))->getVal()));
+      }
+
+      coefInt *= catInt;
+    } else {
+      // don't integrate over the tagging category or the initial state tag
       coefInt *= ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
-          + _iTag * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
+          + iTagValue * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
           * (((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
           - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
           * ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal());
+    }
 
-    if (_tags == 1) return coefInt;
-    else if (intFTag) return 2. * coefInt;
-    else return (1. - _fTag * _ANorm) * coefInt;
+    // integrate over final state tag if required
+    if (_tags == 1)
+      return coefInt;
+    else if ((intFTag && _fTagVal == 2) || _fTagVal == 0)
+      return 2. * coefInt;
+    else if (_fTagVal == 2)
+      return (1. - _fTag * _ANorm) * coefInt;
+    else
+      return (1. - _fTagVal * _ANorm) * coefInt;
 
   } else if (coef == _cosBasis || coef == _sinBasis) {
     // terms that are odd in the initial state tag
-    if (intTagCat)
+    if (intTagCat && ((intITag && _iTagVal == 2) || _iTagVal == 0)
+        || (_iTagVal == 3 && iTagValue == 0)) {
+      // integrate over the tagging category and over the initial state tag
       coefInt *= 2. * _avgCOddSum;
-    else if (intITag)
+    } else if ((intITag && _iTagVal == 2) || _iTagVal == 0
+        || (_iTagVal == 3 && iTagValue == 0)) {
+      // integrate over the initial state tag
       coefInt *= 2. * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal();
-    else
+    } else if (intTagCat) {
+      // integrate over the tagging category
+      Double_t catInt = _avgCOddSum;
+      std::map<Int_t, Int_t>::const_iterator catIt;
+      for (catIt = _tagCatIndices.begin(); catIt != _tagCatIndices.end();
+          ++catIt) {
+        catInt += tagCatCoefUnsafe(catIt->first)
+            * (iTagValue * ((RooAbsReal*)_dilutions.at(catIt->first))->getVal()
+            * (((RooAbsReal*)_avgCEvens.at(catIt->first))->getVal()
+            - ((RooAbsReal*)_ADilWTags.at(catIt->first))->getVal()
+            * ((RooAbsReal*)_avgCOdds.at(catIt->first))->getVal()));
+      }
+
+      coefInt *= catInt;
+    } else {
+      // don't integrate over the tagging category or the initial state tag
       coefInt *= ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
-          + _iTag * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
+          + iTagValue * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
           * (((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
           - ((RooAbsReal*)_ADilWTags.at(tagCatPos))->getVal()
           * ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal());
+    }
 
-    if (_tags == 1) return coefInt;
-    else if (intFTag) return -2. * _ANorm * coefInt;
-    else return (_fTag - _ANorm) * coefInt;
+    // integrate over final state tag if required
+    if (_tags == 1)
+      return coefInt;
+    else if ((intFTag && _fTagVal == 2) || _fTagVal == 0)
+      return -2. * _ANorm * coefInt;
+    else if (_fTagVal == 2)
+      return (_fTag - _ANorm) * coefInt;
+    else
+      return (_fTagVal - _ANorm) * coefInt;
   }
 
   return 0.;
@@ -706,11 +813,13 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
   // copy variables that can be generated directly by RooBTagDecay from
   // directVars to generateVars and return generation code
 
-  // use accept/reject if the flavour tags are unchecked
+  // use accept/reject in certain cases
   if (!_checkVars || !checkVarDep(_time.arg())
       || (_tagCatType > 1 && !checkVarDep(_tagCat.arg()))
-      || (_tags > 0 && (!checkVarDep(_iTag.arg()) || !checkTag(kTRUE)))
-      || (_tags > 1 && (!checkVarDep(_fTag.arg()) || !checkTag(kFALSE))))
+      || (_tags > 0 && ((_iTagVal != 2 && _iTagVal != 3)
+          || !checkVarDep(_iTag.arg()) || !checkTag(kTRUE)))
+      || (_tags > 1 && (_fTagVal != 2 || !checkVarDep(_fTag.arg())
+          || !checkTag(kFALSE))))
     return 0;
 
   Int_t genCode = 0;
@@ -724,6 +833,7 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
 
   if (_tags == 0) return genCode;
 
+  // check which tagging variables to generate
   arg = 0;
   if (_tagCatType > 1) {
     // find the tagging category variable
@@ -742,6 +852,7 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
     if (arg2 == 0) return genCode;
   }
 
+  // build generation code and add variables to generation variables set
   if (arg != 0) {
     // generate tagging category
     genCode += 2;
@@ -765,17 +876,6 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
 void RooBTagDecay::generateEvent(Int_t code)
 {
   // generate values for the variables corresponding to the generation code
-
-  // check generation code
-  if (code != 1 && !(code == 5 && _tagCatType == 1 && _tags == 1)
-      && !(code == 7 && _tagCatType > 1 && _tags == 1)
-      && !(code == 13 && _tagCatType == 1 && _tags > 1)
-      && !(code == 15 && _tagCatType > 1 && _tags > 1)) {
-    coutF(InputArguments) << "RooBTagDecay::generateEvent(" << GetName()
-        << ") error in generation code (" << code
-        << ") for this flavour tagging configuration" << endl;
-    assert(0);
-  }
 
   // set minimum Gamma for time envelope: Gamma - |DeltaGamma| / 2
   Double_t gammaMin  = 1. / _tau - TMath::Abs(_dGamma) / 2.;
@@ -890,7 +990,7 @@ void RooBTagDecay::generateEvent(Int_t code)
       Double_t rand = RooRandom::uniform();
       while (tagCatGen < _tagCat.arg().numTypes()) {
         // get tagging category coefficient
-        Double_t tagCoef = tagCatCoef(tagCatGen);
+        Double_t tagCoef = tagCatCoefUnsafe(tagCatGen);
 
         // check coefficient
         if (tagCoef < 0.) {
@@ -939,17 +1039,24 @@ void RooBTagDecay::generateEvent(Int_t code)
 
     // generate value for initial state tag
     Int_t iTagGen = 1;
-    Double_t ACP = 0.;
-    if (_tags == 1)
-      ACP = (cEvenDil * evenTerms + cOddDil * oddTerms)
-       / (((RooAbsReal*)_avgCEvens.at(tagCatGen))->getVal() * evenTerms
-       + ((RooAbsReal*)_avgCOdds.at(tagCatGen))->getVal() * oddTerms);
-    else
-      ACP = (cEvenDil * evenTerms - _ANorm * cOddDil * oddTerms)
-       / (((RooAbsReal*)_avgCEvens.at(tagCatGen))->getVal() * evenTerms
-       - _ANorm * ((RooAbsReal*)_avgCOdds.at(tagCatGen))->getVal() * oddTerms);
+    if (_iTagVal == 3 && tagCatGen == 0) {
+      // tagging category 0 is interpreted as the "untagged" category
+      // if the initial state tag can assume values +1, -1 and 0!!!!!!!!!
+      iTagGen = 0;
+    } else {
+      // use CP asymmetry if initial state tag only contains values +1 and -1
+      Double_t ACP = 0.;
+      if (_tags == 1)
+        ACP = (cEvenDil * evenTerms + cOddDil * oddTerms)
+        / (((RooAbsReal*)_avgCEvens.at(tagCatGen))->getVal() * evenTerms
+        + ((RooAbsReal*)_avgCOdds.at(tagCatGen))->getVal() * oddTerms);
+      else
+        ACP = (cEvenDil * evenTerms - _ANorm * cOddDil * oddTerms)
+        / (((RooAbsReal*)_avgCEvens.at(tagCatGen))->getVal() * evenTerms
+        - _ANorm * ((RooAbsReal*)_avgCOdds.at(tagCatGen))->getVal()*oddTerms);
 
-    if (2. * RooRandom::uniform() > 1. + ACP) iTagGen = -1;
+      if (2. * RooRandom::uniform() > 1. + ACP) iTagGen = -1;
+    }
 
     // set initial state tag value
     _iTag = iTagGen;
@@ -1063,8 +1170,6 @@ void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
   initTagCatMaps();
 
   // loop over tagging categories
-  TIterator* tagCatTypeIter = 0;
-  if (_tagCatType > 1) tagCatTypeIter = _tagCat.arg().typeIterator();
   RooArgList avgCEvenList;
   RooArgList avgCOddList;
   RooArgList tagCatCoefList;
@@ -1158,8 +1263,6 @@ void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
     }
   }
 
-  if (_tagCatType > 1) delete tagCatTypeIter;
-
   // set average even and average odd coefficients
   if (_tagCatType == 1) {
     _avgCEvens.add(*_avgCEvenSum.absArg());
@@ -1226,17 +1329,16 @@ void RooBTagDecay::initTag(Bool_t iTag)
 
     // get tag parameters
     const char* tagName;
-    Int_t  tagVal, numTypes;
-    Bool_t BIndex, BbarIndex;
+    Int_t  tagVal = 2, numTypes = 0;
+    Bool_t BIndex= kFALSE, BbarIndex = kFALSE, noTagIndex = kFALSE;
     if (iTag) {
-      tagName   = _iTag.GetName();
-      tagVal    = _iTagVal;
-      numTypes  = _iTag.arg().numTypes();
-      BIndex    = _iTag.arg().isValidIndex(+1);
-      BbarIndex = _iTag.arg().isValidIndex(-1);
+      tagName    = _iTag.GetName();
+      numTypes   = _iTag.arg().numTypes();
+      BIndex     = _iTag.arg().isValidIndex(+1);
+      BbarIndex  = _iTag.arg().isValidIndex(-1);
+      noTagIndex = _iTag.arg().isValidIndex(0);
     } else {
       tagName   = _fTag.GetName();
-      tagVal    = _fTagVal;
       numTypes  = _fTag.arg().numTypes();
       BIndex    = _fTag.arg().isValidIndex(+1);
       BbarIndex = _fTag.arg().isValidIndex(-1);
@@ -1251,24 +1353,31 @@ void RooBTagDecay::initTag(Bool_t iTag)
           << endl;
     } else if (numTypes == 2 && BIndex && BbarIndex) {
       // both B and Bbar
-      if (iTag) _iTagVal = 0;
-      else _fTagVal = 0;
+      tagVal = 2;
     } else if (numTypes == 1 && BIndex) {
       // only B
-      if (iTag) _iTagVal = +1;
-      else _fTagVal = +1;
+      tagVal = +1;
     } else if (numTypes == 1 && BbarIndex) {
       // only Bbar
-      if (iTag) _iTagVal = -1;
-      else _fTagVal = -1;
+      tagVal = -1;
+    } else if (iTag && numTypes == 1 && noTagIndex) {
+      // sum of B and Bbar
+      tagVal = 0;
+    } else if (iTag && numTypes == 3  && BIndex && BbarIndex && noTagIndex) {
+      // B, Bbar and sum of B and Bbar
+      tagVal = 3;
     } else {
       // not a valid configuration
       coutE(InputArguments) << "RooBTagDecay::initTag(" << GetName()
-          << ") flavour tag " << tagName
-          << " can only have values +1 or -1: use \"checkVars = false\" if you insist on using other/additional values"
+          << ") flavour tag \"" << tagName
+          << "\" can only have values +1, -1 and 0: use \"checkVars = false\" if you insist on using other/additional values"
           << endl;
       assert(0);
     }
+
+    // set tag value
+    if (iTag) _iTagVal = tagVal;
+    else _fTagVal = tagVal;
 }
 
 //_____________________________________________________________________________
@@ -1397,27 +1506,29 @@ Bool_t RooBTagDecay::checkVarDep(const RooAbsArg& var, Bool_t warn,
 Bool_t RooBTagDecay::checkTag(Bool_t iTag) const
 {
   // check flavour tag state
-
   if (_checkVars) {
     // get tag parameters
-    Int_t  tagVal, numTypes;
-    Bool_t BIndex, BbarIndex;
+    Int_t  tagVal = 2, nTypes = 0;
+    Bool_t hasB = kFALSE, hasBbar = kFALSE, hasNoTag = kFALSE;
     if (iTag) {
-      tagVal    = _iTagVal;
-      numTypes  = _iTag.arg().numTypes();
-      BIndex    = _iTag.arg().isValidIndex(+1);
-      BbarIndex = _iTag.arg().isValidIndex(-1);
+      tagVal   = _iTagVal;
+      nTypes   = _iTag.arg().numTypes();
+      hasB     = _iTag.arg().isValidIndex(+1);
+      hasBbar  = _iTag.arg().isValidIndex(-1);
+      hasNoTag = _iTag.arg().isValidIndex(0);
     } else {
-      tagVal    = _fTagVal;
-      numTypes  = _fTag.arg().numTypes();
-      BIndex    = _fTag.arg().isValidIndex(+1);
-      BbarIndex = _fTag.arg().isValidIndex(-1);
+      tagVal  = _fTagVal;
+      nTypes  = _fTag.arg().numTypes();
+      hasB    = _fTag.arg().isValidIndex(+1);
+      hasBbar = _fTag.arg().isValidIndex(-1);
     }
 
     // check tag
-    if ((tagVal == 0 && (numTypes != 2 || !BIndex || !BbarIndex))
-        || (tagVal == +1 && (numTypes != 1 || !BIndex))
-        || (tagVal == -1 && (numTypes != 1 || !BbarIndex)))
+    if ((tagVal == 2 && (nTypes != 2 || !hasB || !hasBbar))
+        || (tagVal == +1 && (nTypes != 1 || !hasB))
+        || (tagVal == -1 && (nTypes != 1 || !hasBbar))
+        || (tagVal ==  3 && (nTypes != 3 || !hasB || !hasBbar || !hasNoTag))
+        || (tagVal ==  0 && (nTypes != 1 || !hasNoTag)))
       return kFALSE;
   }
 

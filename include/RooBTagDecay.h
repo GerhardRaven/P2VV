@@ -107,6 +107,8 @@ protected:
   void initTagCatMaps() const;
   void declareBases();
 
+  Double_t tagCatCoefUnsafe(Int_t category) const;
+
   Bool_t checkVarDep(const RooAbsArg& var, Bool_t warn = kFALSE,
       Bool_t onlyTagPars = kFALSE) const;
   Bool_t checkTag(Bool_t iTag) const;
@@ -134,6 +136,8 @@ protected:
   RooRealProxy _cosCoef;
   RooRealProxy _sinCoef;
 
+  RooListProxy _createdVars;
+
   mutable std::map<Int_t, Int_t> _tagCatPositions; //!
   mutable std::map<Int_t, Int_t> _tagCatIndices;   //!
 
@@ -148,7 +152,6 @@ protected:
   Int_t        _iTagVal;
   Int_t        _fTagVal;
   Bool_t       _checkVars;
-  RooListProxy _createdVars;
 
   ClassDef(RooBTagDecay, 1) // PDF of B decay time distribution with flavour tagging
 };

@@ -11,8 +11,7 @@ makePlots    = True
 
 nEvents = 10000
 dataSetName = 'JpsiphiData'
-dataSetFile = 'JvLFit.root'
-#dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
+dataSetFile = 'timeAnglesSignal.root'
 NTuple = False
 
 # transversity amplitudes
@@ -143,7 +142,7 @@ pdf = BTagDecay('JpsiphiPDF', args)
 # generate data
 from P2VVLoad import RooFitOutput
 if generateData :
-  print 'JvLFit: generating %d events' % nEvents
+  print 'timeAnglesSignal: generating %d events' % nEvents
   data = pdf.generate( observables, nEvents )
 
   from P2VVGeneralUtils import writeData
@@ -163,7 +162,7 @@ if fitData :
   taggingParams.setConstant('wTag.*')
 
   # fit data
-  print 'JvLFit: fitting %d events' % data.numEntries()
+  print 'timeAnglesSignal: fitting %d events' % data.numEntries()
   pdf.fitTo( data, NumCPU = 12, Timer = 1 )#, ConditionalObservables = [iTag] )
 
 

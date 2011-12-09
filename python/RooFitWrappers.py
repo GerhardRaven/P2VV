@@ -505,6 +505,14 @@ class Pdf(RooObject):
         cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
         return self._var.generate(RooArgSet( cvrt(i) for i in whatvars), *args,**kwargs)
 
+    def plotOn( self, frame, **kwargs ) :
+        if 'Slice' in kwargs :
+            cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
+            slice = kwargs.pop('Slice')
+            return self._var.plotOn( frame, Slice = ( cvrt(slice[0]), slice[1] ), **kwargs )
+        else :
+            return self._var.plotOn( frame, **kwargs )
+
 class ProdPdf(Pdf):
     # TODO: support conditional terms, use 'Conditional' key word for that...
     # ProdPdf( 'foo', [a,b], Conditional = [c,d] ) -> PROD::foo(a,b|c,d)
@@ -639,10 +647,19 @@ class BTagDecay( Pdf ) :
         if 'checkVars' not in d : d['checkVars'] = 1
 
         from P2VVLoad import P2VVLibrary
-        self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                          " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
-                                          " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                          " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d )
+        if 'tagCat' in d :
+            self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+                                              " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s"\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d
+                         )
+        else :
+            self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d
+                         )
+
         self._init(name,'RooBTagDecay')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 

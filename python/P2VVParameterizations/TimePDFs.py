@@ -14,8 +14,8 @@ class BDecayBasisCoefficients :
         return getattr(self,kw)
 
 class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
-    def __init__(self,  angFuncs, Amplitudes,CP, order ) :
-        def combine( name, afun, A, CPparams, i, j) :
+    def __init__( self, angFuncs, Amplitudes, CP, order ) :
+        def combine( name, afun, A, CPparams, i, j ) :
             from RooFitWrappers import ConstVar, FormulaVar, Product
             plus  = ConstVar('plus', Value = 1)
             minus = ConstVar('minus',  Value = -1  )
@@ -26,14 +26,14 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
             Im        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
             # define functions which return the coefficients that define the time-dependence...
             _minus_if = lambda b, x : [ minus, x ] if b else [ x ]
-            coef = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP.C  # make a trivial product just to get the labels right???
+            coef = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP['C']  # make a trivial product just to get the labels right???
                                                 , None )
-                   , 'cos'  : lambda ai,aj,CP : ( CP.C if ai.CP == aj.CP else one 
+                   , 'cos'  : lambda ai,aj,CP : ( CP['C'] if ai.CP == aj.CP else one 
                                                 , None )
-                   , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP > 0     ,  CP.D ))
-                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP < aj.CP ,  CP.S )) )
-                   , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > 0     ,  CP.S ))
-                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > aj.CP ,  CP.D )) )
+                   , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP > 0    , CP['D'] ))
+                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP < aj.CP, CP['S'] )) )
+                   , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > 0    , CP['S'] ))
+                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > aj.CP, CP['D'] )) )
                    }
             (c_re,c_im) = coef[name](A[i],A[j],CPparams)
             (f_re,f_im) = afun[(i,j)]
@@ -67,21 +67,21 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
             from RooFitWrappers import ConstVar, FormulaVar, Product
             plus  = ConstVar('plus', Value = 1)
             minus = ConstVar('minus',  Value = -1  )
-            Norm = FormulaVar('Norm','1.0/(1.0+@0*@1)',[tag,CP.C] )
+            Norm = FormulaVar('Norm','1.0/(1.0+@0*@1)',[tag,CP['C']] )
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
             # TODO: replace by Addition & Product... why? (only parameters)
             Re        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
             Im        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
             # define functions which return the coefficients that define the time-dependence...
             _minus_if = lambda b, x : [ minus ] + x if b else  x 
-            coef = { 'cosh' : lambda ai,aj,CP : ( Norm  if ai.CP == aj.CP else Product("Re_%s_%s_cosh", [ Norm, CP.C ] )
+            coef = { 'cosh' : lambda ai,aj,CP : ( Norm  if ai.CP == aj.CP else Product("Re_%s_%s_cosh", [ Norm, CP['C'] ] )
                                                 , None )
-                   , 'cos'  : lambda ai,aj,CP : ( Product('Re_%s_%s_cos'%(ai,aj), [tag, Norm ] + ( [ CP.C ] if ai.CP == aj.CP else [ ] )  )
+                   , 'cos'  : lambda ai,aj,CP : ( Product('Re_%s_%s_cos'%(ai,aj), [tag, Norm ] + ( [ CP['C'] ] if ai.CP == aj.CP else [ ] )  )
                                                 , None )
-                   , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP > 0     ,  [      Norm, CP.D ] ))
-                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP < aj.CP ,  [      Norm, CP.S ] )) )
-                   , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > 0     ,  [ tag, Norm, CP.S ] ))
-                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > aj.CP ,  [ tag, Norm, CP.D ] )) )
+                   , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP > 0     ,  [      Norm, CP['D'] ] ))
+                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP < aj.CP ,  [      Norm, CP['S'] ] )) )
+                   , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > 0     ,  [ tag, Norm, CP['S'] ] ))
+                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > aj.CP ,  [ tag, Norm, CP['D'] ] )) )
                    }
             (c_re,c_im) = coef[name](A[i],A[j],CPparams)
             (f_re,f_im) = afun[(i,j)]
