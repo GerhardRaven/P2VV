@@ -492,10 +492,14 @@ RooArgSet* RooBTagDecay::coefVars(Int_t basisIndex) const
   RooArgSet* coefVars = 0;
 
   // get variables from specified coefficient
-  if (basisIndex == _coshBasis)              coefVars = _coshCoef.arg().getVariables();
-  if (basisIndex == _sinhBasis && _tags < 2) coefVars = _sinhCoef.arg().getVariables();
-  if (basisIndex == _cosBasis)               coefVars = _cosCoef .arg().getVariables();
-  if (basisIndex == _sinBasis && _tags < 2)  coefVars = _sinCoef .arg().getVariables();
+  if (basisIndex == _coshBasis)
+    coefVars = _coshCoef.arg().getVariables();
+  if (basisIndex == _sinhBasis && _tags < 2)
+    coefVars = _sinhCoef.arg().getVariables();
+  if (basisIndex == _cosBasis)
+    coefVars = _cosCoef .arg().getVariables();
+  if (basisIndex == _sinBasis && _tags < 2)
+    coefVars = _sinCoef .arg().getVariables();
 
   if (coefVars == 0) {
     coefVars = new RooArgSet("parameters");
@@ -507,27 +511,36 @@ RooArgSet* RooBTagDecay::coefVars(Int_t basisIndex) const
 
       if (_tags > 1) {
         coefVars->add(_fTag.arg());
-        tempSet.reset( _ANorm.arg().getVariables() );
+        tempSet.reset(_ANorm.arg().getVariables());
         coefVars->add((tempSet->getSize() > 0) ? *tempSet : _ANorm.arg());
       }
-      tempSet.reset( _avgCEvenSum.arg().getVariables() );
-      coefVars->add((tempSet->getSize() > 0)?*tempSet: _avgCEvenSum.arg());
-      tempSet.reset( _avgCOddSum.arg().getVariables() );
+      tempSet.reset(_avgCEvenSum.arg().getVariables());
+      coefVars->add((tempSet->getSize() > 0) ? *tempSet: _avgCEvenSum.arg());
+      tempSet.reset(_avgCOddSum.arg().getVariables());
       coefVars->add((tempSet->getSize() > 0) ? *tempSet : _avgCOddSum.arg());
 
-      Int_t  numTagCats = ( _tagCatType > 1 ? _tagCat.arg().numTypes() : 1 );
+      Int_t  numTagCats = (_tagCatType > 1 ? _tagCat.arg().numTypes() : 1);
       for (Int_t tagCatIter = 0; tagCatIter < numTagCats; ++tagCatIter) {
-        tempSet.reset( _dilutions.at(tagCatIter)->getVariables() );
-        coefVars->add((tempSet->getSize() > 0) ? *tempSet :*_dilutions.at(tagCatIter));
-        tempSet.reset( _ADilWTags.at(tagCatIter)->getVariables() );
-        coefVars->add((tempSet->getSize() > 0) ?  *tempSet :*_ADilWTags.at(tagCatIter));
+        tempSet.reset( _dilutions.at(tagCatIter)->getVariables());
+        coefVars->add((tempSet->getSize() > 0)
+            ? *tempSet : *_dilutions.at(tagCatIter));
+
+        tempSet.reset( _ADilWTags.at(tagCatIter)->getVariables());
+        coefVars->add((tempSet->getSize() > 0)
+            ? *tempSet :*_ADilWTags.at(tagCatIter));
+
         tempSet.reset(_avgCEvens.at(tagCatIter)->getVariables());
-        coefVars->add( tempSet->getSize() > 0? *tempSet : *_avgCEvens.at(tagCatIter) );
+        coefVars->add(tempSet->getSize() > 0
+            ? *tempSet : *_avgCEvens.at(tagCatIter));
+
         tempSet.reset(_avgCOdds.at(tagCatIter)->getVariables());
-        coefVars->add( tempSet->getSize() > 0? *tempSet : *_avgCOdds.at(tagCatIter) );
+        coefVars->add( tempSet->getSize() > 0
+            ? *tempSet : *_avgCOdds.at(tagCatIter));
+
         if (_tagCatType > 1) {
           tempSet.reset(_tagCatCoefs.at(tagCatIter)->getVariables());
-          coefVars->add((tempSet->getSize() > 0)?*tempSet:*_tagCatCoefs.at(tagCatIter));
+          coefVars->add((tempSet->getSize() > 0)
+              ? *tempSet : *_tagCatCoefs.at(tagCatIter));
         }
       }
     }

@@ -207,15 +207,14 @@ if makePlots :
                    , 2 * ( False, True )
                   ) :
         plot(  pad, time, data, pdf, logy = logY
-             , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
-             , dataOpts  = dict( [ ( 'MarkerStyle', markStyle ), ( 'MarkerSize', markSize ) ] + list(dataCuts.items()) )
-             , pdfOpts   = dict( [ ( 'LineWidth', lineWidth ) ] + list(pdfCuts.items()) )
+             , frameOpts = dict( Bins = nBins, Title = plotTitle )
+             , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
+             , pdfOpts   = dict( LineWidth = lineWidth, **pdfCuts )
             )
 
     # set Y-axis maximum for lifetime plots
-    getFrames = lambda canvas : ( p for pad in canvas.pads() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  )
-    timeYMax = max( f.GetMaximum() for f in getFrames( timeCanv ) )
-    map( lambda obj : obj.SetMaximum(timeYMax) , ( f for f in getFrames( timeCanv ) ) )
+    timeYMax = max( frame.GetMaximum() for frame in timeCanv.frames() )
+    map( lambda obj : obj.SetMaximum(timeYMax), ( frame for frame in timeCanv.frames() ) )
     for pad in timeCanv.pads() : pad.Draw()
 
     # plot angles
@@ -232,17 +231,17 @@ if makePlots :
                    , 3 * ( { 'Slice' : ( iTag, 'B' ) }, ) + 3 * ( { 'Slice' : ( iTag, 'Bbar' ) }, )
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
-             , frameOpts = dict( Bins = nBins, Title =  plotTitle )
+             , frameOpts = dict( Bins = nBins, Title = plotTitle )
              , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts )
              , pdfOpts   = dict( LineWidth = lineWidth, **pdfCuts )
             )
 
     # set Y-axis maximum for angles plots
     from collections import defaultdict
-    maxval = defaultdict(int)
-    for f in getFrames( anglesCanv ) :
-        maxval[ f.GetXaxis().GetTitle() ] = max( f.GetMaximum(), maxval[ f.GetXaxis().GetTitle() ] )
-    for f in getFrames( anglesCanv ) :
-        f.SetMaximum( maxval[ f.GetXaxis().GetTitle() ] )
+    maxVal = defaultdict(int)
+    for frame in anglesCanv.frames() :
+        maxVal[ frame.GetXaxis().GetTitle() ] = max( frame.GetMaximum(), maxVal[ frame.GetXaxis().GetTitle() ] )
+    for frame in anglesCanv.frames() :
+        frame.SetMaximum( maxVal[ frame.GetXaxis().GetTitle() ] )
     for pad  in anglesCanv.pads() : pad.Draw()
 

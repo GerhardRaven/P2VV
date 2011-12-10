@@ -30,7 +30,15 @@ def __pads(self,n=None,m=None) :
         yield self.cd(i) 
         i += 1
 
-TPad.pads = __pads
+def __frames(self) :
+    for pad in self.pads() :
+        for prim in pad.GetListOfPrimitives() :
+            if not prim.GetName().startswith('frame') : continue
+            yield prim
+
+TPad.pads   = __pads
+TPad.frames = __frames
+
 ##########################################
 
 from ROOT import RooPlot
