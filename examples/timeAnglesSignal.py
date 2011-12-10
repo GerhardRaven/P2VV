@@ -214,9 +214,9 @@ if makePlots :
             )
 
     # set Y-axis maximum for lifetime plots
-    frames = [ p for pad in timeCanv.pads() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  ]
-    timeYMax = max( f.GetMaximum() for f in frames )
-    map( lambda obj : obj.SetMaximum(timeYMax) , ( f for f in frames ) )
+    getFrames = lambda canvas : ( p for pad in canvas.pads() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  )
+    timeYMax = max( f.GetMaximum() for f in getFrames( timeCanv ) )
+    map( lambda obj : obj.SetMaximum(timeYMax) , ( f for f in getFrames( timeCanv ) ) )
     for pad in timeCanv.pads() : pad.Draw()
 
     # plot angles
@@ -239,11 +239,11 @@ if makePlots :
             )
 
     # set Y-axis maximum for angles plots
-    frames = [ p for pad in anglesCanv.pads() for p in pad.GetListOfPrimitives() if p.GetName().startswith( 'frame' )  ]
-    maxval = dict()
-    for f in frames :
-        maxval[ f.GetXaxis().GetTitle() ] = max( f.GetMaximum(), maxval.setdefault( f.GetXaxis().GetTitle(), 0 ) )
-    for f in frames :
+    from collections import defaultdict
+    maxval = defaultdict(int)
+    for f in getFrames( anglesCanv ) :
+        maxval[ f.GetXaxis().GetTitle() ] = max( f.GetMaximum(), maxval[ f.GetXaxis().GetTitle() ] )
+    for f in getFrames( anglesCanv ) :
         f.SetMaximum( maxval[ f.GetXaxis().GetTitle() ] )
     for pad  in anglesCanv.pads() : pad.Draw()
 
