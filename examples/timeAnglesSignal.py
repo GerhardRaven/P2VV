@@ -233,9 +233,9 @@ if makePlots :
                    , 3 * ( { 'Slice' : ( iTag, 'B' ) }, ) + 3 * ( { 'Slice' : ( iTag, 'Bbar' ) }, )
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
-             , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
-             , dataOpts  = dict( [ ( 'MarkerStyle', markStyle ), ( 'MarkerSize', markSize ) ] + list(dataCuts.items()) )
-             , pdfOpts   = dict( [ ( 'LineWidth', lineWidth ) ] + list(pdfCuts.items()) )
+             , frameOpts = dict( Bins = nBins, Title =  plotTitle )
+             , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts )
+             , pdfOpts   = dict( LineWidth = lineWidth, **pdfCuts )
             )
 
     # set Y-axis maximum for angles plots
