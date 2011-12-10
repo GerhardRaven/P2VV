@@ -96,7 +96,7 @@ pdf = mcpdf
 
 if True : 
     print 'generating data'
-    data = pdf.generate( observables , NumEvents = 1000 )
+    data = pdf.generate( observables , NumEvents = 10000 )
     print 'generated %s events' % data.numEntries()
 
 else  :
@@ -116,10 +116,7 @@ else  :
 
 print 'computing efficiency moments'
 from P2VVGeneralUtils import RealMomentsBuilder
-moms = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i )
-moments = RealMomentsBuilder( Moments = moms )
-
-
+moments = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
 moms2Indices  = [ ( i, l, m ) for i in range(3)
                               for l in range(3)
                               for m in range(-l,l+1) ]
