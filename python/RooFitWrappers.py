@@ -710,13 +710,21 @@ class AddModel(ResolutionModel) :
 
 class Component(object):
     _d = {}
-    def __init__(self,name) :
+    def __init__(self,name,*args,**kw) :
         if name in Component._d : 
             # TODO: make things singletons, indexed by 'Name'
             raise KeyError('Name %s is not unique'%name)
         self.name = name
         Component._d[name] = dict()
         Component._d[name]['Name'] = name
+        if len(args) >1:
+            raise IndexError('too many arguments %s' % args )
+        if len(args) == 1:
+            for i,j in args[0].iteritems() : self[i] = j
+        if 'Yield' in kw :
+            self.setYield( *kw.pop('Yield') )
+        if len(kw) :
+            raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
     def setYield(self, n, nlo, nhi) :
         Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
