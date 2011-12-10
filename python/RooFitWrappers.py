@@ -639,6 +639,7 @@ class BTagDecay( Pdf ) :
         d = dict( (k, '%s' % v ) for k,v in params.iteritems() )
         d['name'] = name
         if 'checkVars' not in d : d['checkVars'] = 1
+        if 'decayType' not in d : d['decayType'] = 'SingleSided'
 
         from P2VVLoad import P2VVLibrary
         if 'tagCat' in d :

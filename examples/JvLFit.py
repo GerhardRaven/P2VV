@@ -5,7 +5,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = True
+generateData = False
 fitData      = True
 makePlots    = True
 
@@ -31,9 +31,10 @@ phiCPVal      = -pi / 4.
 lambdaCPSqVal = 0.6
 
 # B lifetime parameters
-GammaVal  = 0.68
-dGammaVal = 0.05
-dmVal     = 17.8
+GammaVal        = 0.68
+dGammaVal       = 0.05
+dmVal           = 17.8
+timeResSigmaVal = 0.05
 
 # asymmetries
 AProdVal =  0.4
@@ -91,9 +92,8 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = GammaVal, deltaGamma = dGammaVal, deltaM = dmVal )
 
-from ROOT import RooGaussModel as GaussModel
-timeError = RealVar( 'BLifetimeError', Title = 'B lifetime error reslution model', Unit = 'ps', Value = 0.05 )
-resModel  = ResolutionModel( 'resModel', Type = GaussModel, Observables = [time], Parameters = [ zero, timeError ] )
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution
+timeResModel = Gaussian_TimeResolution( time = time, timeResSigma = timeResSigmaVal )
 
 # CP violation parameters
 if carthLambdaCP :
@@ -129,8 +129,7 @@ args = {
   , 'sinhCoef'        : timeBasisCoefs['sinh']
   , 'cosCoef'         : timeBasisCoefs['cos']
   , 'sinCoef'         : timeBasisCoefs['sin']
-  , 'resolutionModel' : resModel
-  , 'decayType'       : 'SingleSided' 
+  , 'resolutionModel' : timeResModel['model']
 }
 
 pdf = BTagDecay('JpsiphiPDF', args)

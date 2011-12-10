@@ -29,8 +29,8 @@ mcpdf = Pdf('mc_pdf', Type = Decay, Observables = [t], ResolutionModel = mc_res,
             Parameters = [signal_tau], Options = ['SingleSided'])
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import ResolutionModelLP2011
-tres = ResolutionModelLP2011(t).Model
+from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
+tres = LP2011_TimeResolution(time = t)['model']
 
 # Signal time pdf
 sig_t = Pdf('sig_t', Type = Decay, Observables = [t], Parameters = [signal_tau],

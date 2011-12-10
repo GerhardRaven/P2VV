@@ -43,13 +43,13 @@ ANuissance = Trivial_CEvenOdd()
 #                                 , ANorm   = Product(    'ANorm',   [minus,CP['C']],  Title = 'normalization asymmetry' )
 #                                 )
 
+
 # now build the actual signal PDF...
-from ROOT import RooTruthModel as TruthModel
+from P2VVParameterizations.TimeResolution import Truth_TimeResolution
 args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}',  Value = 17.8 )  
        , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.0/0.681,  MinMax = ( 1.3, 1.8) )
        , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.060    ,  MinMax = (-0.3, 0.3) )
-       , 'resolutionModel' : ResolutionModel( 'resModel', Type = TruthModel, Observables = [ t ] )
-       , 'decayType' : 'SingleSided' 
+       , 'resolutionModel' : Truth_TimeResolution(time = t)['model']
        , 'time'      : t
        , 'coshCoef'  : basisCoefficients['cosh']
        , 'cosCoef'   : basisCoefficients['cos']
@@ -73,8 +73,8 @@ if False :
    exit(0)
 
 # update resolution model, and build again...
-from P2VVParameterizations.TimeResolution import ResolutionModelLP2011
-args[ 'resolutionModel' ]  = ResolutionModelLP2011( t ).Model
+from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
+args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 
 #sigpdf = BTagDecay( 'sig_pdf', args )
 
