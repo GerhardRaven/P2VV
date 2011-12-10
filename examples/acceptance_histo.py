@@ -52,74 +52,54 @@ sig_mpsi = Pdf('sig_mpsi', Type = CrystalBall, Observables = [mpsi],
                Parameters = [mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
 
 # Create signal component
-signal = Component('signal')
-signal.setYield(50000,0,150000)
-signal[m] = sig_m
-signal[mpsi] = sig_mpsi
-signal[t] = sig_t
+signal = Component('signal',{m: sig_m, mpsi: sig_mpsi,t:  sig_t}, Yield= (50000,0,150000) )
+
 
 # Create combinatorical background component
-comb_background = Component('comb_background')
-comb_background.setYield(50000,0,150000)
 
 m_c = RealVar( 'm_c', Observable = False, Unit = '1/MeV',
                Value = -0.0004, MinMax = (-0.1, -0.00001))
 bkg_m = Pdf('bkg_m', Observables = [m], Type = Exponential, Parameters = [m_c])
-comb_background[m] = bkg_m
 
 psi_c = RealVar( 'psi_c', Observable = False, Unit = '1/MeV',
                  Value = -0.0004, MinMax = (-0.1, -0.0000001))
 bkg_mpsi = Pdf('bkg_mpsi', Observables = [mpsi], Type = Exponential, Parameters = [psi_c])
-comb_background[mpsi] = bkg_mpsi
 
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1,
                   MinMax = (0.0001, 5))
 comb_t = Pdf('comb_t', Type = Decay, Observables = [t], Parameters = [bkg_tau],
              ResolutionModel = tres, Options = ['SingleSided'])
-comb_background[t] = comb_t
+
+comb_background = Component('comb_background', { m : bkg_m, mpsi : bkg_mpsi, t : comb_t }, Yield= (50000,0,150000))
+
 
 # Create psi background component
-psi_background = Component('psi_background')
-psi_background.setYield(50000,0,150000)
-psi_background[mpsi] = sig_mpsi
-psi_background[m] = bkg_m
 psi_tau = RealVar('psi_tau', Observable = False, Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
-psi_t = Pdf('psi_t', Type = Decay, Observables = [t], Parameters = [psi_tau],
-            ResolutionModel = tres, Options = ['SingleSided'])
-psi_background[t] = comb_t
+psi_t = Pdf('psi_t', Type = Decay, Observables = [t], Parameters = [psi_tau], ResolutionModel = tres, Options = ['SingleSided'])
+psi_background = Component('psi_background', { mpsi : sig_mpsi, m : bkg_m, t : comb_t }, Yield= (50000,0,150000) )
+
 
 # Build PDF
 pdf = buildPdf((signal, comb_background, psi_background), observables = (m,mpsi), name='pdf')
 
 # Acceptance data
 from ROOT import TFile
-from ROOT import RooFit
-EventRange = RooFit.EventRange
 
-file = TFile.Open('Bu2JpsiK_biased_stripping.root')
-workspace = file.Get('Bu2JpsiK_workspace')
+f= TFile.Open('Bu2JpsiK_biased_stripping.root')
+assert f
+workspace = f.Get('Bu2JpsiK_workspace')
 data = workspace.data('data')
-data_r = data.reduce(EventRange(0, 10000))
-
-from ROOT import RooCmdArg
-NumCPU = RooCmdArg(RooFit.NumCPU(4))
-pdf.fitTo(data, NumCPU)
+data_r = data.reduce( EventRange = (0, 10000))
+pdf.fitTo(data, NumCPU = 4)
 
 # Observables
 observables = data.get()
 
 # sPlot
-yields = {}
-for component in (signal, comb_background, psi_background):
-    yields[component['Name']] = ws.ws().var(component['Yield'])
+yields = dict( (c['Name'], ws.ws().var(c['Yield'])) for c in (signal, comb_background, psi_background) )
 
-from ROOT import RooStats
-from ROOT import RooArgList
-yield_list = RooArgList()
-for y in yields.itervalues():
-    yield_list.add(y)
-splot = RooStats.SPlot('data_splot', 'data_splot', data,
-                       pdf._target_(), yield_list)
+from ROOT import RooStats, RooArgList
+splot = RooStats.SPlot('data_splot', 'data_splot', data, pdf._target_(), RooArgList( yields.itervalues() ))
 
 # Mapping for Fit
 from Helpers import Mapping
