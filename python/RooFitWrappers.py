@@ -480,6 +480,7 @@ class Pdf(RooObject):
             self._init(self._dict['Name'], 'RooAbsPdf')
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
+                if k in ['Observables', 'Parameters']: v = frozenset(v)
                 if v != self._get(k) : print k,v,self._get(k)
                 assert v == self._get(k)
 
@@ -598,11 +599,8 @@ class RealSumPdf( Pdf ):
         # get the name of the PDF, its functions and its coefficients
         self._dict = { 'Name' : name }
         self._dict['Functions'] = functions
-        if 'coefficients' in kwargs :
-            self._dict['Coefficients'] = kwargs.pop('coefficients')
-        else :
-            one = ConstVar( 'one', Value = 1. )
-            self._dict['Coefficients'] = [ one ] * len(self._dict['Functions'])
+        from itertools import repeat
+        self._dict['Coefficients'] = kwargs.pop('coefficients',repeat(ConstVar( 'one', Value = 1. ), len(self._dict['Functions'])))
 
         # make pdf
         self.__make_pdf()
