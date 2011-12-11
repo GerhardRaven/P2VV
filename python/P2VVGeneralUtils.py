@@ -442,8 +442,8 @@ class RealMomentsBuilder ( dict ) :
         from ROOT import RooP2VVAngleBasis,RooAddition,RooArgSet
         ws = pdf.ws()
         subst = dict()
-        for comp in pdf.getComponents() :
-            if type(comp) is not RooP2VVAngleBasis : continue  # TODO: do not use type to recognize, but name??
+        # TODO: do not use type to recognize, but name??
+        for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() ) :
             name  = '%s_%s_eff' % ( pdfName, comp.GetName() )
             effTerms = RooArgSet( comp.createProduct( f,c ) for f,c in self._iterFuncAndCoef() )
             subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms, True ) ).GetName() 
