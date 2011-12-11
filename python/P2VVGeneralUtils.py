@@ -431,28 +431,45 @@ class RealMomentsBuilder ( dict ) :
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def buildPDFTerms( self, **kwargs ) :
+        # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
+        # TODO: verify we've got moments, and not EffMoments???
+        # TODO: verify we've either been computed or read
         angFuncs = {}
         angCoefs = {}
         from RooFitWrappers import ConstVar
-        for name in self._basisFuncNames :
-            angFuncs[( name, None )] = ( self._basisFuncs[name],                                       None )
-            angCoefs[( name, None )] = ( ConstVar( name + '_coef', Value = self._coefficients[name] ), None )
+        for (name,(fun,c)) in zip( self._basisFuncNames, self._iterFuncAndCoef() ) :
+            angFuncs[( name, None )] = ( fun,                                   None )
+            angCoefs[( name, None )] = ( ConstVar( name + '_coef', Value = c ), None )
 
         from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
         return Coefficients_AngularPdfTerms( AngFunctions = angFuncs, AngCoefficients = angCoefs )
+
+    #def createPDF( self, **kwargs ) :
+    #    # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
+    #    # TODO: verify we've got moments, and not EffMoments???
+    #    # TODO: verify we've either been computed or read
+    #    (fun,coef) = zip( *self._iterFuncAndCoef() )
+    #    from RooFitWrappers import ConstVar
+    #    return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( 'C_%s'%c, Value = c ) for c in coef ) )
+
+    def __mul__( self, pdf ) :
+        from RooFitWrappers import Pdf
+        if not isinstance(pdf, Pdf) : raise RuntimeError( 'trying to multiply a %s with %s ... this is not supported!'%(type(pdf),type(self) ) )
+        return self.multiplyPDFWithEff( pdf )
+
 
     def multiplyPDFWithEff( self, pdf, **kwargs ) :
         pdfName = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() )
         # TODO: check that 'we' contain efficiency moments?
         # TODO: and that we've actually either 'read' or 'compute'-ed them??
-
         from ROOT import RooP2VVAngleBasis,RooAddition,RooArgSet
         ws = pdf.ws()
         subst = dict()
         # TODO: do not use type to recognize, but name??
-        for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() ) :
+        for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
+            #for f,c in self._iterFuncAndCoef()  : print type(f),f,c[0]
+            effTerms = RooArgSet( comp.createProduct( f._var,c[0] ) for f,c in self._iterFuncAndCoef() if f and type(f._var) == RooP2VVAngleBasis )
             name  = '%s_%s_eff' % ( pdfName, comp.GetName() )
-            effTerms = RooArgSet( comp.createProduct( f,c ) for f,c in self._iterFuncAndCoef() )
             subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms, True ) ).GetName() 
         # TODO: the returned object ought to be wrapped in a Pdf class...
         return ws.factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(v,k) for k,v in subst.iteritems() ) ) )
