@@ -634,14 +634,12 @@ class RealSumPdf( Pdf ):
 
 class BTagDecay( Pdf ) :
     def __init__(self,name,params, **kwargs) :
-        # construct factory string on the fly...
         if 'name' in params : raise KeyError(' name should not be in params!')
-        d = dict( (k, '%s' % v ) for k,v in params.iteritems() )
-        d['name'] = name
-        if 'checkVars' not in d : d['checkVars'] = 1
-        if 'decayType' not in d : d['decayType'] = 'SingleSided'
+        d = { 'name' : name, 'checkVars' : 1, 'decayType' : 'SingleSided' }
+        d.update( (k, '%s' % v ) for k,v in params.iteritems() )
 
         from P2VVLoad import P2VVLibrary
+        # construct factory string on the fly...
         if 'tagCat' in d :
             self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
                                               " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s"\
