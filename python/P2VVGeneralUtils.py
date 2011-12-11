@@ -207,9 +207,16 @@ class RealMomentsBuilder ( dict ) :
     def basisFuncNames(self) : return self._basisFuncNames[ : ]
     def coefficients(self)   : return self._coefficients.copy()
 
-    def _iterFuncAndCoef( self ) :
+    def _iterFuncAndCoef( self, **kwargs ) :
+        minSignif = kwargs.pop('MinSignificance', float('-inf') )
+        names = kwargs.pop('Names',None)
+        import re
+        nameExpr = re.compile(names) if names else None
+        assert not kwargs
         for funcName in self._basisFuncNames :
-            yield ( self._basisFuncs[funcName], self._coefficients[funcName] )
+            if self._coefficients[funcName][2] < minSignif : continue
+            if nameExpr and not nameExpr.match(funcName)   : continue
+            yield ( self._basisFuncs[funcName], self._coefficients[funcName][0] )
 
     def appendPYList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
         # build moments from list of indices
@@ -473,8 +480,8 @@ class RealMomentsBuilder ( dict ) :
         subst = dict()
         # TODO: do not use type to recognize, but name??
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
-            #for f,c in self._iterFuncAndCoef()  : print type(f),f,c[0]
-            effTerms = RooArgSet( comp.createProduct( f._var,c[0] ) for f,c in self._iterFuncAndCoef() if f and type(f._var) == RooP2VVAngleBasis )
+            #for f,c in self._iterFuncAndCoef()  : print type(f),f,c
+            effTerms = RooArgSet( comp.createProduct( f._var,c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  )
             name  = '%s_%s_eff' % ( pdfName, comp.GetName() )
             subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms, True ) ).GetName() 
         # TODO: the returned object ought to be wrapped in a Pdf class...
