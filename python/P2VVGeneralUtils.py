@@ -72,9 +72,9 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
                      , 'nonpsi' : { 'LineColor' : RooFit.kBlue,  'LineStyle' : RooFit.kDashed }
                     }
                   , xTitle = 'M (MeV/c)'
-                  , frameOpts = [ 'Title'      : 'B mass', 'Bins        : 30 ]
-                  , dataOpts  = [ 'MarkerSize' : 0.4,      'XErrorSize' : 0  ]
-                  , pdfOpts   = [ 'LineWidth'  : 2                           ]
+                  , frameOpts = { 'Title'      : 'B mass', 'Bins        : 30 }
+                  , dataOpts  = { 'MarkerSize' : 0.4,      'XErrorSize' : 0  }
+                  , pdfOpts   = { 'LineWidth'  : 2                           }
                  )
     """
     from ROOT import TLine, TPad
@@ -87,27 +87,26 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
     # set x-axis title
     if xTitle : xAxis.SetTitle(xTitle)
 
-    if data :
-        # plot data
-        data.plotOn( obsFrame, Name = 'data', **dataOpts )
+    # plot data
+    if data : data.plotOn( obsFrame, Name = 'data', **dataOpts )
 
     # plot PDF
-    if pdf and components :
-        for comp, opts in components.iteritems() :
-            drawOpts = dict( list(opts.items()) + list(pdfOpts.items()) )
-            pdf.plotOn(obsFrame, Components = comp, **drawOpts )
-    if pdf : pdf.plotOn( obsFrame, Name = 'pdf', **pdfOpts )
+    if pdf :
+        if components :
+            for comp, opts in components.iteritems() :
+                drawOpts = dict( list(opts.items()) + list(pdfOpts.items()) )
+                pdf.plotOn(obsFrame, Components = comp, **drawOpts )
+        pdf.plotOn( obsFrame, Name = 'pdf', **pdfOpts )
 
-    if data and pdf :
-        # draw data after drawing the PDF
-        obsFrame.drawAfter( 'pdf', 'data' )
+    # draw data after drawing the PDF
+    if data and pdf : obsFrame.drawAfter( 'pdf', 'data' )
 
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
     #nbins = obsFrame.GetNbinsX()
 
+    # get residuals histogram
     if plotResidHist and data and pdf :
-        # get residuals histogram
         residHist = obsFrame.residHist( 'data', 'pdf', normalize )
         residHist.GetXaxis().SetLimits( xAxis.GetXmin(), xAxis.GetXmax() )
         _P2VVPlotStash.append(residHist)
@@ -124,11 +123,12 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
         #TODO: if normalize : plot residHist as a filled histogram with fillcolor blue...
         #      or, maybe, with the 'bar chart' options: 'bar' or 'b'
         if dataOpts :
-            for opt, val in dataOpts.iteritems() :
-                if opt == 'MarkerSize'  : residHist.SetMarkerSize(val)
-                if opt == 'MarkerStyle' : residHist.SetMarkerStyle(val)
-                if opt == 'MarkerColor' : residHist.SetMarkerColor(val)
-                if opt == 'Title'       : residFrame.SetTitle(val)
+            fun = { 'MarkerSize'  : lambda x : residHist.SetMarkerSize(x) 
+                  , 'MarkerStyle' : lambda x : residHist.SetMarkerStyle(x)
+                  , 'MarkerColor' : lambda x : residHist.SetMarkerColor(x)
+                  , 'Title'       : lambda x : residFrame.SetTitle(x)
+                  }
+            for k, v in dataOpts.iteritems() : fun[k](v)
 
         # residFrame.addPlotable( residHist, 'p' if not usebar else 'b' )
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
@@ -194,7 +194,7 @@ class RealMomentsBuilder ( dict ) :
             for i in kw.pop('Moments') : self.append( Moment = i )
         if 'Moment' in kw :
             self.append( Moment = kw.pop(Moment) )
-        if len(kw) :
+        if kw :
             raise RuntimeError( 'unknown keyword arguments %s' % kw.keys() )
 
     def basisFuncs(self)     : return self._basisFuncs.copy()
@@ -235,11 +235,11 @@ class RealMomentsBuilder ( dict ) :
             if not 'PDF' in kwargs and not 'NormSet' in kwargs :
                 # build moment
                 from RooFitWrappers import RealMoment
-                moment = RealMoment( func, kwargs.pop('Norm') if 'Norm' in kwargs else 1. )
+                moment = RealMoment( func, kwargs.pop('Norm',1.) )
             elif 'PDF' in kwargs and 'NormSet' in kwargs :
                 # build efficiency moment
                 from RooFitWrappers import RealEffMoment
-                moment = RealEffMoment( func, kwargs.pop('Norm') if 'Norm' in kwargs else 1., kwargs.pop('PDF'), kwargs.pop('NormSet') )
+                moment = RealEffMoment( func, kwargs.pop('Norm',1.), kwargs.pop('PDF'), kwargs.pop('NormSet') )
             else :
                 print 'P2VV - ERROR: RealMomentsBuilder.append: both a PDF and a normalisation set are required for an efficiency moment'
                 moment = None
@@ -281,20 +281,15 @@ class RealMomentsBuilder ( dict ) :
         for func in self._basisFuncNames : maxLenName = min( max( len(func), maxLenName ), 60 )
 
         # get name requirements
-        names = None
-        nameExpr = None
-        if 'Names' in kwargs :
-            names = kwargs.pop('Names')
-            import re
-            nameExpr = re.compile(names)
+        names = kwargs.pop('Names',None)
+        import re
+        nameExpr = re.compile(names) if names else None
 
         # get minimum significance
-        minSignif = float('-inf')
-        if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
+        minSignif = kwargs.pop('MinSignificance', float('-inf') )
 
         # get scale factors
-        scale = None
-        if 'Scale' in kwargs : scale = kwargs['Scale']
+        scale = kwargs.pop('Scale', None )
 
         # print header
         print 'P2VV - INFO: RealMomentsBuilder.printMoments:'
@@ -339,16 +334,12 @@ class RealMomentsBuilder ( dict ) :
         for func in self._basisFuncNames : maxLenName = max( len(func), maxLenName )
 
         # get minimum significance
-        minSignif = float('-inf')
-        if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
+        minSignif = kwargs.pop('MinSignificance',float('-inf'))
 
         # get name requirements
-        names = None
-        nameExpr = None
-        if 'Names' in kwargs :
-            names = kwargs.pop('Names')
-            import re
-            nameExpr = re.compile(names)
+        import re
+        names = kwargs.pop('Names', None) 
+        nameExpr = re.compile(names) if names else None
 
         print '  name requirement: \'' + ( names if names else '' ) + '\''
         print '  minimum significance = %.1f' % minSignif
@@ -398,25 +389,22 @@ class RealMomentsBuilder ( dict ) :
           return
 
         # get minimum significance
-        minSignif = float('-inf')
-        if 'MinSignificance' in kwargs : minSignif = kwargs['MinSignificance']
+        minSignif = kwargs.pop('MinSignificance',float('-inf'))
 
         # get name requirements
-        nameExpr = None
-        if 'Names' in kwargs :
-            import re
-            nameExpr = re.compile(kwargs.pop('Names'))
+        import re
+        nameExpr = re.compile(kwargs.pop('Names')) if 'Names' in kwargs else None
 
         # loop over lines and read moments
         numMoments = 0
         while True :
             # read next line
             line = momFile.readline()
-            if line == '' : break
+            if not line : break
 
             # check for empty or comment lines
             line = line.strip()
-            if len(line) < 1 or line[0] == '#' : continue
+            if not line or line[0] == '#' : continue
 
             # check moment format
             line = line.split()
@@ -439,4 +427,3 @@ class RealMomentsBuilder ( dict ) :
 
         print 'P2VV - INFO: MomentsBuilder.readMoments: %d efficiency moment%s read from file \"%s\"'\
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
-
