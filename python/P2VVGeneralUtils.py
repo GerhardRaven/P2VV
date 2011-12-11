@@ -425,3 +425,27 @@ class RealMomentsBuilder ( dict ) :
 
         print 'P2VV - INFO: MomentsBuilder.readMoments: %d efficiency moment%s read from file \"%s\"'\
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
+
+    def buildPDFTerms( self, **kwargs ) :
+        from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
+        return Coefficients_AngularPdfTerms()
+
+    def multiplyPDFWithEff( self, pdf, **kwargs ) :
+        if 'Name' in kwargs : pdfName = kwargs.pop('Name')
+        else :                pdfName = pdf.GetName() + '_x_Eff'
+
+        # TODO: use RooFactoryWSTool interface to customizer:
+        #       EDIT::name( orig, substNode=origNode), ... ]
+        #       Create a clone of input object orig, with the specified replacements operations executed
+        from ROOT import RooCustomizer, RooP2VVAngleBasis
+        customizer = RooCustomizer( pdf._target_(), pdfName )
+        for angFunc in pdf.getComponents() :
+            if type(angFunc) is not RooP2VVAngleBasis : continue  # TODO: do not use type to recognize, but name??
+
+            termName = '%s_%s_eff' % ( pdfName, angFunc.GetName() )
+            effProdSumTerms = RooArgSet( angFunc.createProduct( self._basisFuncs[funcName], self._coefficients[funcName] )\
+                                         for funcName in self._basisFuncNames )
+            customizer.replaceArg( angFunc, RooAddition( termName, termName, effProdSumTerms, True ) )
+
+        return customizer.build(True)
+
