@@ -186,6 +186,12 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
 
 
 class RealMomentsBuilder ( dict ) :
+    # TODO:  implement reduce: clone self, selecting a subset of available moments...
+    # TODO:                    support as kw: MinSignificance, Names
+    # def reduce( self, **kwargs ) :
+    #
+    #
+
     def __init__( self, **kwargs )   :
         self._basisFuncNames = [ ]
         self._basisFuncs     = { }
