@@ -350,8 +350,6 @@ class RealMomentsBuilder ( dict ) :
             import re
             nameExpr = re.compile(names)
 
-        print '  name requirement: \'' + ( names if names else '' ) + '\''
-        print '  minimum significance = %.1f' % minSignif
         # write moments to content string
         cont = '# %s: angular moments\n' % fileName\
              + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
