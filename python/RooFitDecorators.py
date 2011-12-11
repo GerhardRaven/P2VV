@@ -45,7 +45,7 @@ def __wrap_RooPlotDraw( __draw ) :
     from functools import wraps
     @wraps(__draw)
     def _RooPlotDraw(self,*args,**kw) :
-       pad = kw.pop('pad') if 'pad' in kw else None
+       pad = kw.pop('pad',None) 
        if kw : raise RuntimeError('unknown keyword arguments: %s' % kw )
        if pad : pad.cd()
        __draw(self,*args)
