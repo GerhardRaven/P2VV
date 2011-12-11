@@ -16,6 +16,8 @@
 #ifndef ROO_B_TAG_DECAY
 #define ROO_B_TAG_DECAY
 
+#include <map>
+
 #include "RooAbsAnaConvPdf.h"
 #include "RooRealProxy.h"
 #include "RooCategoryProxy.h"

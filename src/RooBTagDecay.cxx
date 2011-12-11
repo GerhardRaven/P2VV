@@ -24,7 +24,7 @@
 //
 
 
-#include <map>
+#include <memory>
 
 #include "RooFit.h"
 #include "RooMsgService.h"
