@@ -28,7 +28,7 @@ class _util_parse_mixin( object ) :
         return obj
 
     def _check_extraneous_kw( self, kwargs ) :
-        if len(kwargs): 
+        if kwargs: 
             raise KeyError('got unknown keywords %s for %s' % ( kwargs, type(self) ) )
 
     def setValues( self, **kwargs ) :
@@ -49,6 +49,7 @@ class _util_parse_mixin( object ) :
         return rc
 
 
+
 #def normalize_individual( name, pdf, tag ) :
 #    pl = RooArgList()
 #    for t in tag._var :
@@ -60,22 +61,4 @@ class _util_parse_mixin( object ) :
 #    # TODO: wrap RooSimultaneous in a RooObject...
 #    return RooSimultaneous( name, name, pl, tag )
 
-
-#def buildEff_x_PDF(name,pdf,eff) :
-#   if not eff : return pdf
-#   # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
-#   # of "pdf" with their efficiency corrected versions, multiply them with the right basis fcn & coefficent
-#   # those are assumed to be in eff....
-#   from ROOT import RooCustomizer, RooP2VVAngleBasis, RooArgSet
-#   customizer = RooCustomizer(pdf,name)
-#   for c in pdf.getComponents() :
-#        if type(c) is not RooP2VVAngleBasis : continue  # TODO: do not use type to recognize, but name??
-#        n = "%s_%s_eff" % (name,c.GetName())
-#        s = RooArgSet()
-#        from RooFitWrappers import Addition
-#        a = [ c.createProduct( fijk, cijk ) for (fijk,cijk) in eff ]
-#        # put a in ws...
-#        rep = Addition( n, [ c.createProduct( fijk, cijk ) for (fijk,cijk) in eff ] )
-#        customizer.replaceArg( c, rep._var() )
-#   return customizer.build(True)
 

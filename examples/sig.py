@@ -116,35 +116,35 @@ else  :
 
 print 'computing efficiency moments'
 from P2VVGeneralUtils import RealMomentsBuilder
-moments = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
+eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
 moms2Indices  = [ ( i, l, m ) for i in range(3)
                               for l in range(3)
                               for m in range(-l,l+1) ]
 moms2Indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
                               for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
-moments.appendPYList( angles.angles, moms2Indices, PDF = pdf, NormSet = angles.angles.itervalues() )
+eff.appendPYList( angles.angles, moms2Indices, PDF = pdf, NormSet = angles.angles.itervalues() )
 
-moments.compute(data)
+eff.compute(data)
 
 from math import sqrt,pi
-moments.Print( MinSignificance = 0., Names = '.*_ang_.*',        Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
-moments.Print( MinSignificance = 3., Names = 'P2VVAngleBasis.*', Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
+eff.Print( MinSignificance = 0., Names = '.*_ang_.*',        Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
+eff.Print( MinSignificance = 3., Names = 'P2VVAngleBasis.*', Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
 
-### TODO: multiply signal PDF with moms2....
-
-#from P2VVParameterizations.GeneralUtils import buildEff_x_PDF
-# [ ( m.basis() , m.coefficient() ) for m in moments if m.significance()>signif]
-#eff_pdf = buildEff_x_PDF('eff_pdf',pdf._var,[ ( m.basis(), m.coefficient())  for m in moms2 ] )
-#pdf = eff_pdf
 
 if True :
-    print 'fitting data'
+    print 'fitting data without efficiency'
+    pdf.fitTo(data, NumCPU = 7, Timer = 1 , Minimizer = ('Minuit2','minimize'))
+
+    pdf = eff * pdf
+
+    print 'fitting data including efficiency'
     pdf.fitTo(data, NumCPU = 7, Timer = 1 , Minimizer = ('Minuit2','minimize'))
 
 
 from ROOT import TCanvas
 c = TCanvas()
-for (cc,a) in zip(c.pads(3),angles.angles.itervalues()) :
+from itertools import chain
+for (cc,a) in zip(c.pads(4),chain(angles.angles.itervalues(),[t])) :
     f = a.frame( Bins = 24 )
     data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kRed )
     pdf.plotOn( f , LineColor = RooFit.kBlack)
