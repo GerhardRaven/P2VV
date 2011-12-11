@@ -186,20 +186,24 @@ def plot(  canv, obs, data, pdf, components = None, xTitle = '', frameOpts = { }
 
 
 class RealMomentsBuilder ( dict ) :
-    def __init__(self,**kw)   :
+    def __init__( self, **kwargs )   :
         self._basisFuncNames = [ ]
         self._basisFuncs     = { }
         self._coefficients   = { }
-        if 'Moments' in kw :
-            for i in kw.pop('Moments') : self.append( Moment = i )
-        if 'Moment' in kw :
-            self.append( Moment = kw.pop(Moment) )
-        if kw :
-            raise RuntimeError( 'unknown keyword arguments %s' % kw.keys() )
+        if 'Moments' in kwargs :
+            for mom in kwargs.pop('Moments') : self.append( Moment = mom )
+        if 'Moment' in kwargs :
+            self.append( Moment = kwargs.pop(Moment) )
+        if kwargs :
+            raise RuntimeError( 'unknown keyword arguments %s' % kwargs.keys() )
 
     def basisFuncs(self)     : return self._basisFuncs.copy()
     def basisFuncNames(self) : return self._basisFuncNames[ : ]
     def coefficients(self)   : return self._coefficients.copy()
+
+    def _iterFuncAndCoef( self ) :
+        for funcName in self._basisFuncNames :
+            yield ( self._basisFuncs[funcName], self._coefficients[funcName] )
 
     def appendPYList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
         # build moments from list of indices
@@ -427,15 +431,18 @@ class RealMomentsBuilder ( dict ) :
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def buildPDFTerms( self, **kwargs ) :
-        from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
-        return Coefficients_AngularPdfTerms()
+        angFuncs = {}
+        angCoefs = {}
+        from RooFitWrappers import ConstVar
+        for name in self._basisFuncNames :
+            angFuncs[( name, None )] = ( self._basisFuncs[name],                                       None )
+            angCoefs[( name, None )] = ( ConstVar( name + '_coef', Value = self._coefficients[name] ), None )
 
-    def _iterFuncAndCoef( self ) :
-        for fn in self._basisFuncNames :
-            yield (self._basisFuncs[fn], self._coefficients[fn])
+        from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
+        return Coefficients_AngularPdfTerms( AngFunctions = angFuncs, AngCoefficients = angCoefs )
 
     def multiplyPDFWithEff( self, pdf, **kwargs ) :
-        pdfName = kwargs.pop('Name','%s_x_Eff'%pdf.GetName())
+        pdfName = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() )
         # TODO: check that 'we' contain efficiency moments?
         # TODO: and that we've actually either 'read' or 'compute'-ed them??
 

@@ -117,6 +117,10 @@ else :
 # print moments to screen
 moments.Print( MinSignificance = 3., Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ) )
 
+# build new PDF with angular moments
+momPDFTerms = moments.buildPDFTerms()
+#momPDF = momPDFTerms.buildSumPdf('angMomentsPDF')
+
 
 ###########################################################################################################################################
 ## make some plots ##

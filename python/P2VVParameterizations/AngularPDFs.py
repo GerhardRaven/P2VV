@@ -24,7 +24,7 @@ class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
     def __init__( self, **kwargs ) :
         # get angular functions from kwargs
         from RooFitWrappers import __check_req_kw__
-        __check_req_kw( 'AngFunctions', kwargs )
+        __check_req_kw__( 'AngFunctions', kwargs )
         self._angFuncs = kwargs.pop('AngFunctions')
 
         # get angular function coefficients
@@ -34,12 +34,12 @@ class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
                 if key not in self._angCoefs : raise KeyError('Coefficients_AngularPdfTerms: no coefficient %s found' % str(key))
         else :
             from RooFitWrappers import RealVar
-            self._angCoefs = dict( ( k, (  RealVar( '%s_%s_ReCoef' %( k[0],k[1] ), Value = 1. ) if self._angFuncs[k][0] else None
-                                        ,  RealVar( '%s_%s_ImCoef' %( k[0],k[1] ), Value = 1. ) if self._angFuncs[k][1] else None ) ) for k, func in self._angFuncs.iteritems() )
+            self._angCoefs = dict( ( key, (  RealVar('%s_%s_ReCoef' % (key[0], key[1]), Value = 1.) if self._angFuncs[key][0] else None
+                                           , RealVar('%s_%s_ImCoef' % (key[0], key[1]), Value = 1.) if self._angFuncs[key][1] else None) )\
+                                     for key, func in self._angFuncs.iteritems() )
 
-        # check if there are no arguments left
-        if kwargs: raise KeyError('Coefficients_AngularPdfTerms: got unknown keyword%s: %s'\
-                                        % ( '' if len(kwargs) == 1 else 's', kwargs ))
+        # check if there are arguments left
+        if kwargs: raise KeyError('Coefficients_AngularPdfTerms: got unknown keyword%s: %s' % ( '' if len(kwargs) == 1 else 's', kwargs ) )
 
         # build angular terms
         from RooFitWrappers import ConstVar, Product
