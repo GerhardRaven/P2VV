@@ -430,22 +430,22 @@ class RealMomentsBuilder ( dict ) :
         from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
         return Coefficients_AngularPdfTerms()
 
+    def _iterFuncAndCoef( self ) :
+        for fn in self._basisFuncNames :
+            yield (self._basisFuncs[fn], self._coefficients[fn])
+
     def multiplyPDFWithEff( self, pdf, **kwargs ) :
-        if 'Name' in kwargs : pdfName = kwargs.pop('Name')
-        else :                pdfName = pdf.GetName() + '_x_Eff'
+        pdfName = kwargs.pop('Name','%s_x_Eff'%pdf.GetName())
+        # TODO: check that 'we' contain efficiency moments?
+        # TODO: and that we've actually either 'read' or 'compute'-ed them??
 
-        # TODO: use RooFactoryWSTool interface to customizer:
-        #       EDIT::name( orig, substNode=origNode), ... ]
-        #       Create a clone of input object orig, with the specified replacements operations executed
-        from ROOT import RooCustomizer, RooP2VVAngleBasis
-        customizer = RooCustomizer( pdf._target_(), pdfName )
-        for angFunc in pdf.getComponents() :
-            if type(angFunc) is not RooP2VVAngleBasis : continue  # TODO: do not use type to recognize, but name??
-
-            termName = '%s_%s_eff' % ( pdfName, angFunc.GetName() )
-            effProdSumTerms = RooArgSet( angFunc.createProduct( self._basisFuncs[funcName], self._coefficients[funcName] )\
-                                         for funcName in self._basisFuncNames )
-            customizer.replaceArg( angFunc, RooAddition( termName, termName, effProdSumTerms, True ) )
-
-        return customizer.build(True)
-
+        from ROOT import RooP2VVAngleBasis,RooAddition,RooArgSet
+        ws = pdf.ws()
+        subst = dict()
+        for comp in pdf.getComponents() :
+            if type(comp) is not RooP2VVAngleBasis : continue  # TODO: do not use type to recognize, but name??
+            name  = '%s_%s_eff' % ( pdfName, comp.GetName() )
+            effTerms = RooArgSet( comp.createProduct( f,c ) for f,c in self._iterFuncAndCoef() )
+            subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms, True ) ).GetName() 
+        # TODO: the returned object ought to be wrapped in a Pdf class...
+        return ws.factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(v,k) for k,v in subst.iteritems() ) ) )
