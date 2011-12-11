@@ -341,8 +341,6 @@ class RealMomentsBuilder ( dict ) :
         names = kwargs.pop('Names', None) 
         nameExpr = re.compile(names) if names else None
 
-        print '  name requirement: \'' + ( names if names else '' ) + '\''
-        print '  minimum significance = %.1f' % minSignif
         # write moments to content string
         cont = '# %s: angular moments\n' % fileName\
              + '# name requirement: \'{0}\'\n'.format( names if names else '' )\

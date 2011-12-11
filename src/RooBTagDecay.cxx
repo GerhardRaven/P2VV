@@ -24,7 +24,7 @@
 //
 
 
-#include <map>
+#include <memory>
 
 #include "RooFit.h"
 #include "RooMsgService.h"
@@ -746,8 +746,8 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
 
   } else if (coef == _cosBasis || coef == _sinBasis) {
     // terms that are odd in the initial state tag
-    if (intTagCat && ((intITag && _iTagVal == 2) || _iTagVal == 0)
-        || (_iTagVal == 3 && iTagValue == 0)) {
+    if (intTagCat && ((intITag && _iTagVal == 2) || _iTagVal == 0
+        || (_iTagVal == 3 && iTagValue == 0))) {
       // integrate over the tagging category and over the initial state tag
       coefInt *= 2. * _avgCOddSum;
     } else if ((intITag && _iTagVal == 2) || _iTagVal == 0
