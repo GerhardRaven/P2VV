@@ -31,10 +31,9 @@ def __pads(self,n=None,m=None) :
         i += 1
 
 def __frames(self) :
-    for pad in self.pads() :
-        for prim in pad.GetListOfPrimitives() :
-            if not prim.GetName().startswith('frame') : continue
-            yield prim
+    return ( p for pad in self.pads()
+               for p in pad.GetListOfPrimitives()
+               if p.GetName().startswith('frame') )
 
 TPad.pads   = __pads
 TPad.frames = __frames
