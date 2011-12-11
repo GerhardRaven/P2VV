@@ -258,14 +258,14 @@ def buildEff_x_PDF(w,name,pdf,eff) :
    # now we need to multiply all relevant components (i.e. all RooP2VVAngleBasis ones) 
    # of "pdf" with their efficiency corrected versions, multiply them with the right basis fcn & coefficent
    # those are assumed to be in eff....
+   ### TODO: use RooFactoryWSTool interface to customizer:
+   ###   EDIT::name( orig, substNode=origNode), ... ]  -- Create a clone of input object orig, with the specified replacements operations executed
    customizer = RooCustomizer(pdf,name)
    for c in pdf.getComponents() :
         if type(c) is not RooP2VVAngleBasis : continue  # TODO: do not use type to recognize, but name??
         n = "%s_%s_eff" % (name,c.GetName())
-        s = RooArgSet()
-        [ s.add( c.createProduct( fijk, cijk ) )  for (fijk,cijk) in eff ]
-        rep = w.put( RooAddition( n, n, s, True ) )  # hand over ownership & put in workspace...
-        customizer.replaceArg( c, rep )
+        s = RooArgSet( c.createProduct( fijk, cijk ) for (fijk,cijk) in eff )
+        customizer.replaceArg( c, w.put( RooAddition( n, n, s, True ) ) )
    return customizer.build(True)
 
 def buildEffMomentsPDF(w,name,pdf,data,moments) :
