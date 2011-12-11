@@ -1,25 +1,8 @@
 from ROOT import *
 import RooFitDecorators
-from P2VVLoad import P2VVLibrary
+from P2VVLoad import P2VVLibrary, MultiCatGen
 from math import pi
 
-def product(*args, **kwds):
-    # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
-    # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
-    pools = map(tuple, args) * kwds.get('repeat', 1)
-    result = [[]]
-    for pool in pools:
-        result = [x+[y] for x in result for y in pool]
-    for prod in result:
-        yield tuple(prod)
-
-feelTheNeedForSpeed = True
-if feelTheNeedForSpeed:
-    ### experimental fast(er) toy generator...
-    RooMultiCatGenerator.registerSampler( RooNumGenFactory.instance() )
-    RooNumGenConfig.defaultConfig().methodND(False,True).setLabel( "RooMultiCatGenerator" )
-    RooNumGenConfig.defaultConfig().methodND(False,True).Print()
-    RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 
 class abasis : # TODO: can also implement this by returning a 'bound' function instead...
     def __init__(self,w,*args) :
