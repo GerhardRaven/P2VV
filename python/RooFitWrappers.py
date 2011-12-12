@@ -313,20 +313,13 @@ class P2VVAngleBasis (RooObject) :
     def __init__(self, angles, i,j,k,l,c=1,i2=None,j2=None,k2=None,l2=None) :
         assert c!=0
         # compute name, given angles,i,j,k,l,c!
-        name = '_'.join(angles[a].GetName() for a in ['cpsi','ctheta','phi'])
-        # remove c if it is 1?
+        name = '_'.join(angles[a].GetName() for a in ['cpsi','ctheta','phi']) # aargh... too long for RooFit workspace parsing  code....
+        name = ''
         second = (i2 or j2 or k2 or l2 )
         if second : assert i2!=None and j2!=None and k2!=None and l2!=None
-        if second :
-            if c == 1 :
-                name = 'P2VVAngleBasis_%s__%d_%d_%d_%d__%d_%d_%d_%d' % (name, i,j,k,l, i2,j2,k2,l2)
-            else :
-                name = 'P2VVAngleBasis_%s__%d_%d_%d_%d__%d_%d_%d_%d__%f' % (name, i,j,k,l, i2,j2,k2,l2, c)  # truncate printing of 'c' to 3 decimals?
-        else :
-            if c == 1 :
-                name = 'P2VVAngleBasis_%s__%d_%d_%d_%d' % (name, i,j,k,l) 
-            else :
-                name = 'P2VVAngleBasis_%s__%d_%d_%d_%d__%f' % (name, i,j,k,l, c)  # truncate printing of 'c' to 3 decimals?
+        name = 'p2vvab_%s__%d_%d_%d_%d' % (name, i,j,k,l) 
+        if second : name = '%s__%d_%d_%d_%d' % (name, i2,j2,k2,l2)
+        if c!=1 :   name = '%s__%f'%(name,c) # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
         name = name.replace('.', '_')
         if second :

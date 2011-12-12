@@ -503,10 +503,10 @@ class RealMomentsBuilder ( dict ) :
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
             name  = '%s_%s_eff' % ( pdfName, comp.GetName() )
             if True : # build wrapped, inside workspace
-               effTerms = RooArgSet( _createProduct( comp, f, c )._var for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  )
-               subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms ) ).GetName() 
+               from RooFitWrappers import Addition
+               subst[comp] = Addition( name, [ _createProduct( comp, f, c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  ] )
             else :   # build explicit, outside of workspace
                effTerms = RooArgSet( comp.createProduct(  f, c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  )
-               subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms, True ) ).GetName() 
+               subst[comp] = ws.put( RooAddition( name, name, effTerms, True ) )
         # TODO: the returned object ought to be wrapped in a Pdf class...
-        return ws.factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(v,k) for k,v in subst.iteritems() ) ) )
+        return ws.factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(v.GetName(),k.GetName()) for k,v in subst.iteritems() ) ) )
