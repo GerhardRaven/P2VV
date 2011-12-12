@@ -310,16 +310,31 @@ class ConstVar (RooObject):
         
 class P2VVAngleBasis (RooObject) : 
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
-    def __init__(self, angles, i,j,k,l,c) :
-        from P2VVLoad import P2VVLibrary
+    def __init__(self, angles, i,j,k,l,c=1,i2=None,j2=None,k2=None,l2=None) :
+        assert c!=0
         # compute name, given angles,i,j,k,l,c!
         name = '_'.join(angles[a].GetName() for a in ['cpsi','ctheta','phi'])
         # remove c if it is 1?
-        name = 'P2VVAngleBasis_%s_%d_%d_%d_%d_%f' % (name, i, j, k, l, c)  # truncate printing of 'c' to 3 decimals?
+        second = (i2 or j2 or k2 or l2 )
+        if second : assert i2!=None and j2!=None and k2!=None and l2!=None
+        if second :
+            if c == 1 :
+                name = 'P2VVAngleBasis_%s__%d_%d_%d_%d__%d_%d_%d_%d' % (name, i,j,k,l, i2,j2,k2,l2)
+            else :
+                name = 'P2VVAngleBasis_%s__%d_%d_%d_%d__%d_%d_%d_%d__%f' % (name, i,j,k,l, i2,j2,k2,l2, c)  # truncate printing of 'c' to 3 decimals?
+        else :
+            if c == 1 :
+                name = 'P2VVAngleBasis_%s__%d_%d_%d_%d' % (name, i,j,k,l) 
+            else :
+                name = 'P2VVAngleBasis_%s__%d_%d_%d_%d__%f' % (name, i,j,k,l, c)  # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
         name = name.replace('.', '_')
-        spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)" % (name, angles['cpsi'],angles['ctheta'],angles['phi'], i, j, k, l, c) 
-        #TODO: this requires libP2VV.so to be loaded -- do we do this at this point?
+        if second :
+            spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d,%d,%d,%d, %d,%d,%d,%d, %f)" % (name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName(), i, j, k, l, i2, j2, k2, l2, c) 
+        else :
+            spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)" % (name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName(), i, j, k, l, c) 
+        #NOTE: this requires libP2VV.so to be loaded 
+        from P2VVLoad import P2VVLibrary
         self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
  

@@ -52,6 +52,8 @@ public:
   Int_t j() const { return _j; }
   Int_t l() const { return _l; }
   Int_t m() const { return _m; }
+  Double_t c() const { return _c; }
+  bool prod() const { return _prod; }
 
 private: 
   Double_t _c;

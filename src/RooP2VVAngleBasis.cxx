@@ -115,14 +115,14 @@ RooP2VVAngleBasis::createProduct(Int_t i, Int_t j, Int_t l, Int_t m, Double_t c)
       _compRIter->Reset();
       RooLegendre *P = dynamic_cast<RooLegendre*>(_compRIter->Next());
       assert(P!=0);
-      RooArgSet* Po = P->getParameters((RooAbsData*) 0);
+      RooArgSet* Po = P->getVariables();
       assert(Po->getSize()==1);  
       std::auto_ptr<TIterator> iter( Po->createIterator() );
       RooAbsReal *cpsi = dynamic_cast<RooAbsReal*>(iter->Next());
       assert(cpsi!=0);
       RooSpHarmonic *Y = dynamic_cast<RooSpHarmonic*>(_compRIter->Next());
       assert(Y!=0);
-      RooArgSet* Yo = Y->getParameters((RooAbsData*) 0);
+      RooArgSet* Yo = Y->getVariables();
       assert(Yo->getSize()==2);  
       iter.reset( Yo->createIterator() );
       RooAbsReal *ctheta = dynamic_cast<RooAbsReal*>(iter->Next());
