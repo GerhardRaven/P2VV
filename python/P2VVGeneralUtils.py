@@ -478,19 +478,20 @@ class RealMomentsBuilder ( dict ) :
             assert not f2.prod()
             d1 = dict( (type(i),i) for i in f1.components() )
             d2 = dict( (type(i),i) for i in f2.components() )
-            from ROOT import RooLegendre, RooSpHarmonic,RooConstVar
+            from ROOT import RooLegendre, RooSpHarmonic
             for i in [ RooLegendre, RooSpHarmonic ] :
                 assert d1[i].getVariables().equals( d2[i].getVariables() )
             (cpsi,) = d1[RooLegendre].getVariables()
             (ctheta,phi) = d1[RooSpHarmonic].getVariables()
-            (i1,j1,l1,m1,c1) = (f1.i(),f1.j(),f1.l(),f1.m(),f1.c())
-            (i2,j2,l2,m2,c2) = (f2.i(),f2.j(),f2.l(),f2.m(),f2.c())
-            # print 'cpsi=%s,ctheta=%s,phi=%s (%s,%s,%s,%s,%s) (%s,%s,%s,%s,%s) (%s,%s,%s) '%( cpsi,ctheta,phi,i1,j1,l1,m1,c1, i2,j2,l2,m2,c2,c,c1,c2)
             from RooFitWrappers import P2VVAngleBasis
-            assert c1!=0
-            assert c2!=0
+            assert f1.c()!=0
+            assert f2.c()!=0
             assert c!=0
-            return P2VVAngleBasis( {'cpsi':cpsi,'ctheta':ctheta,'phi':phi}, i1,j1,l1,m1, c1*c2*c, i2,j2,l2,m2 ) # build a wrapped object inside workspace
+            return P2VVAngleBasis( {'cpsi':cpsi,'ctheta':ctheta,'phi':phi}
+                                 , f1.i(),f1.j(),f1.l(),f1.m()
+                                 , f1.c()*f2.c()*c
+                                 , f2.i(),f2.j(),f2.l(),f2.m()
+                                 ) # build a wrapped object inside workspace
             
         pdfName = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() )
         # TODO: check that 'we' contain efficiency moments?
@@ -500,8 +501,8 @@ class RealMomentsBuilder ( dict ) :
         # TODO: do not use type to recognize, but name??
         from RooFitWrappers import Addition
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
-            subst[comp] = Addition( '%s_%s_eff' % ( pdfName, comp.GetName() )
-                                  , [ _createProduct( comp, f, c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  ] 
+            subst[comp] = Addition( '%s_x_eff' % ( comp.GetName() )
+                                  , [ _createProduct( comp, f, c ) for f,c in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
                                   )
         # TODO: the returned object ought to be wrapped in a Pdf class...
-        return pdf.ws().factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(v.GetName(),k.GetName()) for k,v in subst.iteritems() ) ) )
+        return pdf.ws().factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(k.GetName(),v.GetName()) for k,v in subst.iteritems() ) ) )
