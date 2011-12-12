@@ -128,17 +128,15 @@ eff.compute(data)
 
 from math import sqrt,pi
 eff.Print( MinSignificance = 0., Names = '.*_ang_.*',        Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
-eff.Print( MinSignificance = 3., Names = 'P2VVAngleBasis.*', Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
+eff.Print( MinSignificance = 3., Names = 'p2vvab.*', Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
 
+pdf.Print("T")
+pdf2 = eff * pdf
+pdf2.Print("T")
 
-if True :
-    print 'fitting data without efficiency'
-    pdf.fitTo(data, NumCPU = 7, Timer = 1 , Minimizer = ('Minuit2','minimize'))
-
-    pdf = eff * pdf
-
+if False :
     print 'fitting data including efficiency'
-    pdf.fitTo(data, NumCPU = 7, Timer = 1 , Minimizer = ('Minuit2','minimize'))
+    pdf.fitTo(data, NumCPU = 4, Timer = 1 , Minimizer = ('Minuit2','minimize'))
 
 
 from ROOT import TCanvas
@@ -148,4 +146,5 @@ for (cc,a) in zip(c.pads(4),chain(angles.angles.itervalues(),[t])) :
     f = a.frame( Bins = 24 )
     data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kRed )
     pdf.plotOn( f , LineColor = RooFit.kBlack)
+    pdf2.plotOn( f , LineColor = RooFit.kBlue)
     f.Draw( pad = cc)
