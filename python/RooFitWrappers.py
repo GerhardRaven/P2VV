@@ -317,11 +317,11 @@ class P2VVAngleBasis (RooObject) :
         name = ''
         second = (i2 or j2 or k2 or l2 )
         if second : assert i2!=None and j2!=None and k2!=None and l2!=None
-        name = 'p2vvab_%s__%d_%d_%d_%d' % (name, i,j,k,l) 
-        if second : name = '%s__%d_%d_%d_%d' % (name, i2,j2,k2,l2)
-        if c!=1 :   name = '%s__%f'%(name,c) # truncate printing of 'c' to 3 decimals?
+        name = 'p2vvab_%s%d%d%d%d' % (name, i,j,k,l) 
+        if second : name = '%s%d%d%d%d' % (name, i2,j2,k2,l2)
+        if c!=1 :   name = '%s%3.2f'%(name,c) # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
-        name = name.replace('.', '_')
+        name = name.replace('.', 'd')
         if second :
             spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d,%d,%d,%d, %d,%d,%d,%d, %f)" % (name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName(), i, j, k, l, i2, j2, k2, l2, c) 
         else :
