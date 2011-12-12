@@ -479,7 +479,6 @@ class RealMomentsBuilder ( dict ) :
             d1 = dict( (type(i),i) for i in f1.components() )
             d2 = dict( (type(i),i) for i in f2.components() )
             from ROOT import RooLegendre, RooSpHarmonic,RooConstVar
-            # assert d1.keys() == d2.keys() # one may have RooConstVar, the other not...
             for i in [ RooLegendre, RooSpHarmonic ] :
                 assert d1[i].getVariables().equals( d2[i].getVariables() )
             (cpsi,) = d1[RooLegendre].getVariables()
@@ -497,16 +496,12 @@ class RealMomentsBuilder ( dict ) :
         # TODO: check that 'we' contain efficiency moments?
         # TODO: and that we've actually either 'read' or 'compute'-ed them??
         from ROOT import RooP2VVAngleBasis,RooAddition,RooArgSet
-        ws = pdf.ws()
         subst = dict()
         # TODO: do not use type to recognize, but name??
+        from RooFitWrappers import Addition
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
-            name  = '%s_%s_eff' % ( pdfName, comp.GetName() )
-            if True : # build wrapped, inside workspace
-               from RooFitWrappers import Addition
-               subst[comp] = Addition( name, [ _createProduct( comp, f, c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  ] )
-            else :   # build explicit, outside of workspace
-               effTerms = RooArgSet( comp.createProduct(  f, c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  )
-               subst[comp] = ws.put( RooAddition( name, name, effTerms, True ) )
+            subst[comp] = Addition( '%s_%s_eff' % ( pdfName, comp.GetName() )
+                                  , [ _createProduct( comp, f, c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  ] 
+                                  )
         # TODO: the returned object ought to be wrapped in a Pdf class...
-        return ws.factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(v.GetName(),k.GetName()) for k,v in subst.iteritems() ) ) )
+        return pdf.ws().factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(v.GetName(),k.GetName()) for k,v in subst.iteritems() ) ) )
