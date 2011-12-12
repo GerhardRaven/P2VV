@@ -94,7 +94,7 @@ pdf = mcpdf
 #
 
 
-if True : 
+if False : 
     print 'generating data'
     data = pdf.generate( observables , NumEvents = 10000 )
     print 'generated %s events' % data.numEntries()
@@ -116,27 +116,32 @@ else  :
 
 print 'computing efficiency moments'
 from P2VVGeneralUtils import RealMomentsBuilder
-eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
-moms2Indices  = [ ( i, l, m ) for i in range(3)
-                              for l in range(3)
-                              for m in range(-l,l+1) ]
-moms2Indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
-                              for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
-eff.appendPYList( angles.angles, moms2Indices, PDF = pdf, NormSet = angles.angles.itervalues() )
-
+# eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
+eff = RealMomentsBuilder()
+indices  = [ ( i, l, m ) for i in range(3)
+                         for l in range(3)
+                         for m in range(-l,l+1) ]
+indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
+                         for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
+eff.appendPYList( angles.angles, indices, PDF = pdf, NormSet = angles.angles.itervalues() )
 eff.compute(data)
 
 from math import sqrt,pi
-eff.Print( MinSignificance = 0., Names = '.*_ang_.*',        Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
-eff.Print( MinSignificance = 3., Names = 'p2vvab.*', Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
+eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
+eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
 
-pdf.Print("T")
+#pdf.Print("T")
 pdf2 = eff * pdf
-pdf2.Print("T")
+#pdf2.Print("T")
 
 if False :
     print 'fitting data including efficiency'
-    pdf.fitTo(data, NumCPU = 4, Timer = 1 , Minimizer = ('Minuit2','minimize'))
+    pdf2.fitTo(data, NumCPU = 4, Timer = 1 , Minimizer = ('Minuit2','minimize'))
+
+moms = RealMomentsBuilder()
+moms.appendPYList( angles.angles, indices )
+moms.compute(data)
+mom_pdf = moms.createPDF( Name = 'mom_pdf' )
 
 
 from ROOT import TCanvas
@@ -147,4 +152,5 @@ for (cc,a) in zip(c.pads(4),chain(angles.angles.itervalues(),[t])) :
     data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kRed )
     pdf.plotOn( f , LineColor = RooFit.kBlack)
     pdf2.plotOn( f , LineColor = RooFit.kBlue)
+    mom_pdf.plotOn( f, LineColor = RooFit.kRed)
     f.Draw( pad = cc)
