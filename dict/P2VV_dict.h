@@ -10,5 +10,6 @@
 #include "RooP2VVAngleBasis.h"
 #include "RooThresholdPdf.h"
 #include "RooEffHistProd.h"
+#include "RooRelBreitWigner.h"
 
 #endif // P2VV_H

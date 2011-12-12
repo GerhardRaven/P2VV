@@ -13,5 +13,6 @@
 #pragma link C++ class RooP2VVAngleBasis;
 #pragma link C++ class RooThresholdPdf;
 #pragma link C++ class RooEffHistProd;
+#pragma link C++ class RooRelBreitWigner;
 
 #endif
