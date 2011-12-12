@@ -226,6 +226,10 @@ class RealMomentsBuilder ( dict ) :
                 self.append(  Angles = Angles, PIndex = inds[0], YIndex0 = inds[1], YIndex1 = inds[2]
                                   , Norm = float( 2 * inds[0] + 1 ) / 2. )
         elif PDF and NormSet :
+            # TODO: default for NormSet should be all observables in PDF except Angles, but
+            #       we need a dataset to determine this ;-( 
+            #       maybe set to 'None' , and then defer to compute???
+            #       Problem is, at that point the moments have already been build...
             # build efficiency moment
             for inds in IndicesList :
                 self.append(  Angles = Angles, PIndex = inds[0], YIndex0 = inds[1], YIndex1 = inds[2]
@@ -457,13 +461,13 @@ class RealMomentsBuilder ( dict ) :
         from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
         return Coefficients_AngularPdfTerms( AngFunctions = angFuncs, AngCoefficients = angCoefs )
 
-    #def createPDF( self, **kwargs ) :
-    #    # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
-    #    # TODO: verify we've got moments, and not EffMoments???
-    #    # TODO: verify we've either been computed or read
-    #    (fun,coef) = zip( *self._iterFuncAndCoef() )
-    #    from RooFitWrappers import ConstVar
-    #    return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( 'C_%s'%c, Value = c ) for c in coef ) )
+    def createPDF( self, **kwargs ) :
+        # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
+        # TODO: verify we've got moments, and not EffMoments???
+        # TODO: verify we've either been computed or read
+        (fun,coef) = zip( *self._iterFuncAndCoef() )
+        from RooFitWrappers import ConstVar,RealSumPdf
+        return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( 'C_%3.6f'%c, Value = c ) for c in coef ) )
 
     def __mul__( self, pdf ) :
         from RooFitWrappers import Pdf
@@ -483,10 +487,10 @@ class RealMomentsBuilder ( dict ) :
                 assert d1[i].getVariables().equals( d2[i].getVariables() )
             (cpsi,) = d1[RooLegendre].getVariables()
             (ctheta,phi) = d1[RooSpHarmonic].getVariables()
-            from RooFitWrappers import P2VVAngleBasis
             assert f1.c()!=0
             assert f2.c()!=0
             assert c!=0
+            from RooFitWrappers import P2VVAngleBasis
             return P2VVAngleBasis( {'cpsi':cpsi,'ctheta':ctheta,'phi':phi}
                                  , f1.i(),f1.j(),f1.l(),f1.m()
                                  , f1.c()*f2.c()*c
