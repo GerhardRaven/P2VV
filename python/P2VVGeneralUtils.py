@@ -444,7 +444,7 @@ class RealMomentsBuilder ( dict ) :
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def buildPDFTerms( self, **kwargs ) :
-        # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
+        # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar?? x times their error??)
         # TODO: verify we've got moments, and not EffMoments???
         # TODO: verify we've either been computed or read
         angFuncs = {}
@@ -472,6 +472,27 @@ class RealMomentsBuilder ( dict ) :
 
 
     def multiplyPDFWithEff( self, pdf, **kwargs ) :
+
+        def _createProduct( f1, f2, c ) :
+            assert not f1.prod()
+            assert not f2.prod()
+            d1 = dict( (type(i),i) for i in f1.components() )
+            d2 = dict( (type(i),i) for i in f2.components() )
+            from ROOT import RooLegendre, RooSpHarmonic,RooConstVar
+            # assert d1.keys() == d2.keys() # one may have RooConstVar, the other not...
+            for i in [ RooLegendre, RooSpHarmonic ] :
+                assert d1[i].getVariables().equals( d2[i].getVariables() )
+            (cpsi,) = d1[RooLegendre].getVariables()
+            (ctheta,phi) = d1[RooSpHarmonic].getVariables()
+            (i1,j1,l1,m1,c1) = (f1.i(),f1.j(),f1.l(),f1.m(),f1.c())
+            (i2,j2,l2,m2,c2) = (f2.i(),f2.j(),f2.l(),f2.m(),f2.c())
+            # print 'cpsi=%s,ctheta=%s,phi=%s (%s,%s,%s,%s,%s) (%s,%s,%s,%s,%s) (%s,%s,%s) '%( cpsi,ctheta,phi,i1,j1,l1,m1,c1, i2,j2,l2,m2,c2,c,c1,c2)
+            from RooFitWrappers import P2VVAngleBasis
+            assert c1!=0
+            assert c2!=0
+            assert c!=0
+            return P2VVAngleBasis( {'cpsi':cpsi,'ctheta':ctheta,'phi':phi}, i1,j1,l1,m1, c1*c2*c, i2,j2,l2,m2 ) # build a wrapped object inside workspace
+            
         pdfName = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() )
         # TODO: check that 'we' contain efficiency moments?
         # TODO: and that we've actually either 'read' or 'compute'-ed them??
@@ -480,9 +501,12 @@ class RealMomentsBuilder ( dict ) :
         subst = dict()
         # TODO: do not use type to recognize, but name??
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
-            #for f,c in self._iterFuncAndCoef()  : print type(f),f,c
-            effTerms = RooArgSet( comp.createProduct( f._var,c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  )
             name  = '%s_%s_eff' % ( pdfName, comp.GetName() )
-            subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms, True ) ).GetName() 
+            if True : # build wrapped, inside workspace
+               effTerms = RooArgSet( _createProduct( comp, f, c )._var for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  )
+               subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms ) ).GetName() 
+            else :   # build explicit, outside of workspace
+               effTerms = RooArgSet( comp.createProduct(  f, c ) for f,c in self._iterFuncAndCoef( Names = 'P2VVAngleBasis.*' )  )
+               subst[comp.GetName()] = ws.put( RooAddition( name, name, effTerms, True ) ).GetName() 
         # TODO: the returned object ought to be wrapped in a Pdf class...
         return ws.factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(v,k) for k,v in subst.iteritems() ) ) )
