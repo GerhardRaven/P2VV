@@ -62,17 +62,6 @@ Double_t RooRelBreitWigner::evaluate() const
   return val ;
 }
 
-RooComplex RooRelBreitWigner::amplitude() const
-{
-  Double_t arg = mean*mean - x*x ;
-  Double_t gammaf = gamma() ;
-  RooComplex denominator( arg, mean*gammaf ) ;
-  // still need the phase-space factor
-  RooComplex  fac(std::sqrt(x * gammaf),0) ;
-  return fac / denominator ;
-}
-
-
 Double_t RooRelBreitWigner::gamma() const
 {  
   // first compute q(x) and q(m) where q is the momentum of daughters in mother rest frame
@@ -93,14 +82,10 @@ Double_t RooRelBreitWigner::gamma() const
 Double_t RooRelBreitWigner::FFunction(Double_t X) const
 {
   // Blatt-Weisskopf barrier factors.
-  if(spin==0){
-      return 1.0;
-  }
-  if(spin==1){
-    return 1.0/(1 + X*X);
-  }
-  if(spin==2){
-    return 1.0/(9 + 3*X*X + X*X*X*X); 
+  switch( rint(spin) ) {
+    case 0  : return 1.0;
+    case 1  : return 1.0/(1 + X*X);
+    case 2  : return 1.0/(9 + 3*X*X + X*X*X*X); 
   }
   return 1.0;
 }
@@ -120,28 +105,3 @@ Double_t RooRelBreitWigner::KFunction(Double_t X) const
   }
   return q ;
 }
-
-
-/*
-  Int_t RooRelBreitWigner::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const 
-  {
-  if (matchArgs(allVars,analVars,x)) return 1 ;
-  return 0 ;
-  }
-  
-  
-  Double_t RooRelBreitWigner::analyticalIntegral(Int_t code, const char* rangeName) const 
-  {
-  switch(code) {
-  case 1: 
-  {
-  Double_t c = 2./width;
-  return c*(atan(c*(x.max(rangeName)-mean)) - atan(c*(x.min(rangeName)-mean)));
-  }
-  }
-  
-  assert(0) ;
-  return 0 ;
-  }
-*/
-
