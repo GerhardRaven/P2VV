@@ -8,15 +8,12 @@ ws = RooObject( workspace = 'myws' )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
-t         = RealVar(  't', Title = 'decay time', Unit='ps',               Observable = True,  MinMax=(0,14)  )
-iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',           Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # TODO: , 'untagged' : 0 } )
-
+t         = RealVar(  't', Title = 'decay time', Unit='ps',                  Observable = True,  MinMax=(0,14)  )
+iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',   Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # TODO: , 'untagged' : 0 } )
 observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag ]
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (0,9.9) }, lambdaCPSq = ConstVar('one',Value=1) )
-#CP._phiCP.Print("V")
-#CP._lambdaCPSq.Print("V")
+CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
@@ -31,7 +28,7 @@ from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
 # need to specify order in which to traverse...
 basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
 
-from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
+#from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 #basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes,CP, iTag,  ['A0','Apar','Aperp','AS'] ) 
 
 
@@ -65,13 +62,6 @@ args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps
 mcpdf = BTagDecay( 'mc_pdf',  args )
 #mcpdf = BDecay( 'mc_pdf',  args )
 
-if False :
-   ws.ws().importClassCode()
-   ws.ws().defineSet('observables',','.join( i.GetName() for i in observables ) )
-   ws.ws().writeToFile('/tmp/pdf.root')
-   from sys import exit
-   exit(0)
-
 # update resolution model, and build again...
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
@@ -79,8 +69,6 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 #sigpdf = BTagDecay( 'sig_pdf', args )
 
 pdf = mcpdf
-#pdf.Print("t")
-
 
 
 #l = RooArgSet()
@@ -94,11 +82,10 @@ pdf = mcpdf
 #
 
 
-if False : 
+if True : 
     print 'generating data'
-    data = pdf.generate( observables , NumEvents = 10000 )
+    data = pdf.generate( observables , NumEvents = 1000 )
     print 'generated %s events' % data.numEntries()
-
 else  :
     mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
     mcfilename =  '/data/bfys/graven/ntupleB_MC10Bs2JpsiPhi_Reco10_UpDown_simple_with_MCtime_angles_tag.root'
@@ -127,16 +114,16 @@ eff.appendPYList( angles.angles, indices, PDF = pdf, NormSet = angles.angles.ite
 eff.compute(data)
 
 from math import sqrt,pi
-eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
+#eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
 eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
 
 #pdf.Print("T")
 pdf2 = eff * pdf
 #pdf2.Print("T")
 
-if False :
+if True :
     print 'fitting data including efficiency'
-    pdf2.fitTo(data, NumCPU = 4, Timer = 1 , Minimizer = ('Minuit2','minimize'))
+    pdf.fitTo(data, NumCPU = 4, Timer = 1 , Minimizer = ('Minuit2','minimize'))
 
 moms = RealMomentsBuilder()
 moms.appendPYList( angles.angles, indices )

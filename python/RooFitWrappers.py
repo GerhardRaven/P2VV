@@ -75,7 +75,7 @@ class RooObject(object) :
             #  
             # Keep the PyROOT objects in a container so they don't get garbage
             # collected.
-            self.ws()._objects[x.GetName()] = x
+            self.ws()._objects[x.GetName()] = x # Note: use explicit GetName, not str, as x is a 'bare' PyROOT object!!!
             # and keep track what we made 
             self.ws()._spec[ spec ] = x
             x._observable = False
@@ -313,7 +313,8 @@ class P2VVAngleBasis (RooObject) :
     def __init__(self, angles, i,j,k,l,c=1,i2=None,j2=None,k2=None,l2=None) :
         assert c!=0
         # compute name, given angles,i,j,k,l,c!
-        name = '_'.join(angles[a].GetName() for a in ['cpsi','ctheta','phi']) # aargh... too long for RooFit workspace parsing  code....
+        # WARNING: angles may contain barebones PyROOT objects!!!
+        name = '_'.join( angles[a].GetName()  for a in ['cpsi','ctheta','phi']) # aargh... too long for RooFit workspace parsing  code....
         name = ''
         second = (i2 or j2 or k2 or l2 )
         if second : assert i2!=None and j2!=None and k2!=None and l2!=None
@@ -325,7 +326,7 @@ class P2VVAngleBasis (RooObject) :
         if second :
             spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d,%d,%d,%d, %d,%d,%d,%d, %f)" % (name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName(), i, j, k, l, i2, j2, k2, l2, c) 
         else :
-            spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d, %d, %d, %d, %f)" % (name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName(), i, j, k, l, c) 
+            spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d,%d,%d,%d, %f)"              % (name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName(), i, j, k, l, c) 
         #NOTE: this requires libP2VV.so to be loaded 
         from P2VVLoad import P2VVLibrary
         self._declare( spec )
@@ -399,7 +400,9 @@ class RealVar (RooObject):
                 self._declare("%s[%s]"%(name,kwargs.pop('Value')))
             else:
                 (mi,ma) = kwargs.pop('MinMax')
-                self._declare("%s[%s,%s,%s]"%(name,kwargs.pop('Value'),mi,ma))
+                val = kwargs.pop('Value')
+                if val < mi or val > ma : raise RuntimeError('Specified Value not contained in MinMax')
+                self._declare("%s[%s,%s,%s]"%(name,val,mi,ma))
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
                 _type = b[0] if type(b[0])==str else b[0].__name__ 
