@@ -7,8 +7,8 @@ from math import pi, sin, cos, sqrt
 # job parameters
 nEvents = 50000
 
-generateData   = True
-fitData        = True
+generateData   = False
+fitData        = False
 computeMoments = True
 makePlots      = True
 
@@ -99,7 +99,7 @@ if fitData :
 
 # build angular moment basis functions
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-indices += [ ( PIndex, 2, YIndex1 ) for PIndex in range( 3, 10 ) for YIndex1 in [ -2, 1 ] ]
+#indices += [ ( PIndex, 2, YIndex1 ) for PIndex in range( 3, 10 ) for YIndex1 in [ -2, 1 ] ]
 
 from P2VVGeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
@@ -119,7 +119,7 @@ moments.Print( MinSignificance = 3., Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 )
 
 # build new PDF with angular moments
 momPDFTerms = moments.buildPDFTerms()
-#momPDF = momPDFTerms.buildSumPdf('angMomentsPDF')
+momPDF = momPDFTerms.buildSumPdf('angMomentsPDF')
 
 
 ###########################################################################################################################################
@@ -143,9 +143,10 @@ if makePlots :
                                                       , tuple( [ angle.GetTitle() for angle in angles ] )
                                                       , angleNames
                                                    ) :
-        plot(  pad, obs, data, pdf, xTitle = xTitle
-             , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
-             , dataOpts  = { 'MarkerStyle' : markStyle, 'MarkerSize' : markSize }
-             , pdfOpts   = { 'LineWidth' : lineWidth }
+        plot(  pad, obs, data, pdf, addPDFs = [ momPDF ], xTitle = xTitle
+             , frameOpts   = dict( Bins = nBins, Title = plotTitle )
+             , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
+             , pdfOpts     = dict( LineWidth = lineWidth )
+             , addPDFsOpts = [ dict( LineWidth = lineWidth, LineColor = RooFit.kRed ) ]
             )
 
