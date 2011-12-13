@@ -31,12 +31,22 @@ def __pads(self,n=None,m=None) :
         i += 1
 
 def __frames(self) :
-    return ( p for pad in self.pads()
-               for p in pad.GetListOfPrimitives()
-               if p.GetName().startswith('frame') )
+    for prim in self.GetListOfPrimitives() :
+        if type(prim) == TPad :
+            for prim1 in prim.frames() : yield prim1
+        elif prim.GetName().startswith('TFrame') :
+            yield prim
 
-TPad.pads   = __pads
-TPad.frames = __frames
+def __frameHists(self) :
+    for prim in self.GetListOfPrimitives() :
+        if type(prim) == TPad :
+            for prim1 in prim.frameHists() : yield prim1
+        elif prim.GetName().startswith('frame') :
+            yield prim
+
+TPad.pads       = __pads
+TPad.frames     = __frames
+TPad.frameHists = __frameHists
 
 ##########################################
 
