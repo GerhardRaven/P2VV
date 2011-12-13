@@ -82,7 +82,7 @@ Double_t RooRelBreitWigner::gamma() const
 Double_t RooRelBreitWigner::FFunction(Double_t X) const
 {
   // Blatt-Weisskopf barrier factors.
-  switch( rint(spin) ) {
+  switch( int(rint(spin)) ) {
     case 0  : return 1.0;
     case 1  : return 1.0/(1 + X*X);
     case 2  : return 1.0/(9 + 3*X*X + X*X*X*X); 
