@@ -497,6 +497,7 @@ class RealMomentsBuilder ( dict ) :
             assert f2.c()!=0
             assert c!=0
             from RooFitWrappers import P2VVAngleBasis
+            # WARNING: cpsi,ctheta, phi are barebones PyROOT objects!!!
             return P2VVAngleBasis( {'cpsi':cpsi,'ctheta':ctheta,'phi':phi}
                                  , f1.i(),f1.j(),f1.l(),f1.m()
                                  , f1.c()*f2.c()*c
