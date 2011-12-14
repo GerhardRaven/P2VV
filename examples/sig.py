@@ -84,7 +84,7 @@ pdf = mcpdf
 
 if True : 
     print 'generating data'
-    data = pdf.generate( observables , NumEvents = 1000 )
+    data = pdf.generate( observables , NumEvents = 10000 )
     print 'generated %s events' % data.numEntries()
 else  :
     mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
