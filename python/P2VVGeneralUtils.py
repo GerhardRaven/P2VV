@@ -365,7 +365,7 @@ class RealMomentsBuilder ( dict ) :
 
         # get name requirements
         import re
-        names = kwargs.pop('Names', None) 
+        names = kwargs.pop('Names', None)
         nameExpr = re.compile(names) if names else None
 
         # write moments to content string
@@ -457,12 +457,20 @@ class RealMomentsBuilder ( dict ) :
         # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar?? x times their error??)
         # TODO: verify we've got moments, and not EffMoments???
         # TODO: verify we've either been computed or read
+
+        # get minimum significance
+        minSignif = kwargs.pop( 'MinSignificance', float('-inf') )
+
+        # get name requirements
+        import re
+        names = kwargs.pop('Names', None)
+
         angFuncs = {}
         angCoefs = {}
         from RooFitWrappers import ConstVar
-        for (name,(fun,c)) in zip( self._basisFuncNames, self._iterFuncAndCoef() ) :
-            angFuncs[( name, None )] = ( fun,                                   None )
-            angCoefs[( name, None )] = ( ConstVar( name + '_coef', Value = c ), None )
+        for ( name, ( func, coef ) ) in zip( self._basisFuncNames, self._iterFuncAndCoef( MinSignificance = minSignif, Names = names ) ) :
+            angFuncs[( name, None )] = ( func,                                  None )
+            angCoefs[( name, None )] = ( ConstVar( 'C_' + name, Value = coef ), None )
 
         from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
         return Coefficients_AngularPdfTerms( AngFunctions = angFuncs, AngCoefficients = angCoefs )

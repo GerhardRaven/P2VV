@@ -14,25 +14,27 @@ makePlots      = True
 
 # data parameters
 dataSetName = 'JpsiKstarData'
-dataSetFile = 'amplitudeMoments.root'
+dataSetFile = 'amplitudeMoments_hel.root'
+#dataSetFile = 'amplitudeMoments_trans.root'
 NTuple = False
 
 # angular moments
 momentsFile = 'JpsiKstarMoments'
 
 # values of transversity amplitudes
-ampsToUse = [ 'A0', 'Apar', 'Aperp' ] #, 'AS' ]
-A0Mag2Val    =  0.4
+ampsToUse = [ 'A0', 'Apar', 'Aperp', 'AS' ]
+A0Mag2Val    =  0.45
 A0PhVal      =  0.
-AparMag2Val  =  0.3
-AparPhVal    = -2.4
-AperpMag2Val =  0.3
-AperpPhVal   = -0.79
-ASMag2Val    =  0.3
-ASPhVal      =  2.4
+AparMag2Val  =  0.35
+AparPhVal    =  pi
+AperpMag2Val =  0.2
+AperpPhVal   =  0.5 * pi
+ASMag2Val    =  0.4
+ASPhVal      =  0.
 
 # plot options
 angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
+#angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{tr})', '#phi_{tr}' )
 numBins    = ( 30, 30, 30 )
 lineWidth  = 2
 markStyle  = 8
@@ -52,6 +54,8 @@ ws = RooObject(workspace = 'ws')
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
+#from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles
+#angleFuncs = JpsiphiTransversityAngles( cpsi = 'cpsi_tr', ctheta = 'ctheta_tr', phi = 'phi_tr' )
 
 # variables in PDF
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
@@ -74,8 +78,8 @@ pdf = pdfTerms.buildSumPdf('AngularPDF')
 
 
 ###########################################################################################################################################
-## generate/read data, fit, calculate moments, ... ##
-#####################################################
+## generate/read data and do a fit ##
+#####################################
 
 from P2VVLoad import RooFitOutput
 if generateData :
@@ -97,9 +101,18 @@ if fitData :
     pdf.fitTo( data, NumCPU = 2, Timer = 1 )
 
 
+###########################################################################################################################################
+## compute angular moments and build moments PDFs ##
+####################################################
+
 # build angular moment basis functions
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
 #indices += [ ( PIndex, 2, YIndex1 ) for PIndex in range( 3, 10 ) for YIndex1 in [ -2, 1 ] ]
+
+# construct moment names strings
+names0 = 'p2vvab_00..'
+names1 = names0 + '|p2vvab_10..'
+names2 = names1 + '|p2vvab_20..'
 
 from P2VVGeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
@@ -115,11 +128,16 @@ else :
     moments.read(momentsFile)
 
 # print moments to screen
-moments.Print( MinSignificance = 3., Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ) )
+moments.Print( Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ), MinSignificance = 3., Names = names0 )
+moments.Print( Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ), MinSignificance = 3., Names = names1 )
+moments.Print( Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ), MinSignificance = 3., Names = names2 )
+moments.Print( Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ), MinSignificance = 3.                 )
 
-# build new PDF with angular moments
-momPDFTerms = moments.buildPDFTerms()
-momPDF = momPDFTerms.buildSumPdf('angMomentsPDF')
+# build new PDFs with angular moments
+momPDF0 = moments.buildPDFTerms( MinSignificance = 3, Names = names0 ).buildSumPdf('angMomentsPDF0')
+momPDF1 = moments.buildPDFTerms( MinSignificance = 3, Names = names1 ).buildSumPdf('angMomentsPDF1')
+momPDF2 = moments.buildPDFTerms( MinSignificance = 3, Names = names2 ).buildSumPdf('angMomentsPDF2')
+momPDF  = moments.buildPDFTerms( MinSignificance = 3                 ).buildSumPdf('angMomentsPDF')
 
 
 ###########################################################################################################################################
@@ -143,10 +161,14 @@ if makePlots :
                                                       , tuple( [ angle.GetTitle() for angle in angles ] )
                                                       , angleNames
                                                    ) :
-        plot(  pad, obs, data, pdf, addPDFs = [ momPDF ], xTitle = xTitle
+        plot(  pad, obs, data, pdf, xTitle = xTitle, addPDFs = [ momPDF0, momPDF1, momPDF2, momPDF ]
              , frameOpts   = dict( Bins = nBins, Title = plotTitle )
              , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
              , pdfOpts     = dict( LineWidth = lineWidth )
-             , addPDFsOpts = [ dict( LineWidth = lineWidth, LineColor = RooFit.kRed ) ]
+             , addPDFsOpts = [  dict( LineWidth = lineWidth, LineColor = RooFit.kGreen + 2 )
+                              , dict( LineWidth = lineWidth, LineColor = RooFit.kCyan + 2  )
+                              , dict( LineWidth = lineWidth, LineColor = RooFit.kMagenta   )
+                              , dict( LineWidth = lineWidth, LineColor = RooFit.kRed       )
+                             ]
             )
 
