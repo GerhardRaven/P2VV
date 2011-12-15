@@ -238,7 +238,7 @@ if makePlots :
 
     # set Y-axis maximum for angles plots
     from collections import defaultdict
-    maxVal = defaultdict(int)
+    maxVal = defaultdict(float)
     for frame in anglesCanv.frameHists() :
         maxVal[ frame.GetXaxis().GetTitle() ] = max( frame.GetMaximum(), maxVal[ frame.GetXaxis().GetTitle() ] )
     for frame in anglesCanv.frameHists() :

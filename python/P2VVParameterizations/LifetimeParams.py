@@ -13,6 +13,7 @@ from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 class LifetimeParams ( _util_parse_mixin ):
     def __init__( self, **kwargs ) :
         for coef in [ 'MeanLifetime', 'deltaGamma', 'deltaM' ] : setattr( self, '_' + coef, kwargs.pop(coef) )
+        self._check_extraneous_kw( kwargs )
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
 

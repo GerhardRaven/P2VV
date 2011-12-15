@@ -6,10 +6,10 @@ LIBDIR = lib
 DICTDIR = dict
 df = $(DEPDIR)/$(*F)
 
-CPP = g++
-LD  = g++
+#CXX = g++
+LD  = $(CXX)
 ROOTCONFIG = root-config
-CPPFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb -I$(INCDIR) -I.
+CXXFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb -I$(INCDIR) -I.
 LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
@@ -27,7 +27,7 @@ all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so
 $(BUILDDIR)/P2VV_dict.o: $(BUILDDIR)/P2VV_dict.cxx $(BUILDDIR)/P2VV_dict.h
 
 $(BUILDDIR)/%.o : %.cxx %.h
-	$(CPP) $(CPPFLAGS) -fPIC -DPIC -MMD -c $< -o $@
+	$(CXX) $(CXXFLAGS) -fPIC -DPIC -MMD -c $< -o $@
 	@cp $(BUILDDIR)/$*.d $(df).P; \
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \

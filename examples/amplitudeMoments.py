@@ -49,7 +49,7 @@ markSize   = 0.4
 from RooFitWrappers import *
 
 # workspace
-ws = RooObject(workspace = 'ws')
+RooObject(workspace = 'ws')
 
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
