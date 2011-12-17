@@ -68,13 +68,14 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 
 pdf = mcpdf
 
-
+#TODO: move mass PDF definition into parameterizations
+#TODO: add background PDF definition to parameterizations
 mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5400))
 mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV/c^2', Value = 5300, MinMax = ( 5250, 5350 ) )
 mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV/c^2', Value = 10, MinMax = ( 5, 15 ) )
 from ROOT import RooGaussian as Gaussian
 sig_m = Pdf( 'sig_m', Type = Gaussian, Observables = ( mass, ), Parameters = ( mass_mean, mass_sigma ) )
-signal = Component('signal',{ mass : sig_m, (t,)+tuple(angles.angles.values()) :  pdf }, Yield = (3000,100,6000) )
+signal = Component('signal',{ mass : sig_m, (t,)+tuple(angles.angles.values()) :  pdf }, Yield = (10000,5000,15000) )
 
 pdf = buildPdf( (signal,), Observables = (mass,t)+tuple(angles.angles.values()), Name = 'jointpdf' )
 observables += [ mass ]
