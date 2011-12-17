@@ -134,7 +134,8 @@ def plot(  canv, obs, data, pdf, addPDFs = [ ], components = None, xTitle = '', 
                   , 'MarkerColor' : lambda x : residHist.SetMarkerColor(x)
                   , 'Title'       : lambda x : residFrame.SetTitle(x)
                   }
-            for k, v in dataOpts.iteritems() : fun[k](v)
+            for k, v in dataOpts.iteritems() : 
+                if k in fun : fun[k](v)
 
         # residFrame.addPlotable( residHist, 'p' if not usebar else 'b' )
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
