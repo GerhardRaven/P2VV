@@ -9,7 +9,9 @@ from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelA
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 t         = RealVar(  't', Title = 'decay time', Unit='ps',                  Observable = True,  MinMax=(0,14)  )
-iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',   Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # TODO: , 'untagged' : 0 } )
+iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',   Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # , 'untagged' : 0 } )
+#eta       = RealVar(   'eta', Title = 'estimated mis tag', Observable = True, Value = 0.3 ) # MinMax=(0,0.5) )
+eta       = ConstVar(  'eta', Value = 0.3 )
 observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag ]
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
@@ -21,7 +23,7 @@ amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.60, A0Phase = 0
                                     , AperpMag2 = 0.160, AperpPhase = -0.17
                                     , AparPhase = 2.5
                                     , ASMag2 = 0, ASPhase = 0 )
-#amplitudes.setConstant('.*AS.*',True)
+amplitudes.setConstant('.*AS.*',True)
 
 #### Package from here until the "BTagDecay('name', args)" into a dedicated class/function...
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
@@ -31,35 +33,31 @@ basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitu
 #from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 #basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes,CP, iTag,  ['A0','Apar','Aperp','AS'] ) 
 
-
-from P2VVParameterizations.BBbarAsymmetries import  ProdTagNorm_CEvenOdd, Trivial_CEvenOdd
-ANuissance = Trivial_CEvenOdd()
-#minus = ConstVar('minus',  Value = -1  )
-#ANuissance = ProdTagNorm_CEvenOdd( AProd   = RealVar(    'AProd',    Title = 'production asymmetry',          Value = 0 )
-#                                 , ATagEff = RealVar(    'ATagEff',  Title = 'tagging efficiency asymmetry',  Value = 0 )
-#                                 , ANorm   = Product(    'ANorm',   [minus,CP['C']],  Title = 'normalization asymmetry' )
-#                                 )
-
+from P2VVParameterizations.FlavourTagging import TrivialTaggingParams
+taggingParams = TrivialTaggingParams( wTag = eta ) # FormulaVar('wTag','@2 + @3*(@0-@1)',[eta,etaAverage,p0,p1] ) )
 
 # now build the actual signal PDF...
+from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, deltaGamma = 0.05, deltaM = 17.8 )
+
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution
-args = { 'dm'        : RealVar( 'dm',        Title = 'delta m',       Unit = 'ps^{-1}',  Value = 17.8 )  
-       , 'tau'       : RealVar( 't_sig_tau', Title = 'mean lifetime', Unit = 'ps',       Value =  1.0/0.681,  MinMax = ( 1.3, 1.8) )
-       , 'dGamma'    : RealVar( 'dGamma',    Title = 'dGamma',        Unit = 'ps^{-1}',  Value =  0.060    ,  MinMax = (-0.3, 0.3) )
+args = { 'time'      : t
+       , 'iTag'      : iTag
+       , 'dm'        : lifetimeParams['deltaM'] 
+       , 'tau'       : lifetimeParams['MeanLifetime']
+       , 'dGamma'    : lifetimeParams['deltaGamma'] 
        , 'resolutionModel' : Truth_TimeResolution(time = t)['model']
-       , 'time'      : t
        , 'coshCoef'  : basisCoefficients['cosh']
        , 'cosCoef'   : basisCoefficients['cos']
        , 'sinhCoef'  : basisCoefficients['sinh']
        , 'sinCoef'   : basisCoefficients['sin']
-       , 'avgCEven'  : ANuissance['avgCEven'] 
-       , 'avgCOdd'   : ANuissance['avgCOdd']
-       , 'iTag'      : iTag
-       , 'dilution'  : ConstVar('one',Value = 1) # FormulaVar('tagdilution', '1-2*@0', [ tagOmega ] )
-       , 'ADilWTag'  : RealVar( 'ADilWTag',    Title = 'dilution/wrong tag asymmetry',  Value = 0 )
-       } 
+       , 'avgCEven'  : taggingParams['avgCEven'] 
+       , 'avgCOdd'   : taggingParams['avgCOdd']
+       , 'dilution'  : taggingParams['dilution']
+       , 'ADilWTag'  : taggingParams['ADilWTag']
+       }
 
-mcpdf = BTagDecay( 'mc_pdf',  args )
+mcpdf = BTagDecay( 'mc_pdf', **args )
 #mcpdf = BDecay( 'mc_pdf',  args )
 
 # update resolution model, and build again...
@@ -125,6 +123,7 @@ if True :
     print 'fitting data including efficiency'
     pdf.fitTo(data, NumCPU = 4, Timer = 1 , Minimizer = ('Minuit2','minimize'))
 
+# create generic PDF to describe the angular distribution
 moms = RealMomentsBuilder()
 moms.appendPYList( angles.angles, indices )
 moms.compute(data)
@@ -134,10 +133,10 @@ mom_pdf = moms.createPDF( Name = 'mom_pdf' )
 from ROOT import TCanvas
 c = TCanvas()
 from itertools import chain
-for (cc,a) in zip(c.pads(4),chain(angles.angles.itervalues(),[t])) :
-    f = a.frame( Bins = 24 )
-    data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kRed )
+for (cc,o) in zip(c.pads(4),chain(angles.angles.itervalues(),[t])) :
+    f = o.frame( Bins = 24 )
+    data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kGreen )
     pdf.plotOn( f , LineColor = RooFit.kBlack)
     pdf2.plotOn( f , LineColor = RooFit.kBlue)
-    if a in mom_pdf.getObservables( data )  : mom_pdf.plotOn( f, LineColor = RooFit.kRed)
+    if o in mom_pdf.getObservables( data )  : mom_pdf.plotOn( f, LineColor = RooFit.kRed)
     f.Draw( pad = cc)

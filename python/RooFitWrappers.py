@@ -649,27 +649,31 @@ class RealSumPdf( Pdf ):
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
 
 class BTagDecay( Pdf ) :
-    def __init__(self,name,params, **kwargs) :
-        if 'name' in params : raise KeyError(' name should not be in params!')
-        d = { 'name' : name, 'checkVars' : 1, 'decayType' : 'SingleSided' }
-        d.update( (k, '%s' % v ) for k,v in params.iteritems() )
+    # TODO: replace params in favour of more kwargs...
+    def __init__(self,Name,**kwargs) :
+        d = { 'Name' : Name, 'checkVars' : 1, 'decayType' : 'SingleSided', 'tagCat' : None }
+        for i in [ 'time','iTag','tau', 'dGamma', 'dm'
+                 , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
+                 , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                 , 'resolutionModel', 'decayType', 'checkVars' ] :
+           if i not in d or i in kwargs : d[i] = '%s'%kwargs.pop(i) 
 
         from P2VVLoad import P2VVLibrary
         # construct factory string on the fly...
-        if 'tagCat' in d :
-            self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+        if d['tagCat'] :
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
                                               " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s"\
                                               " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
                                               " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d
                          )
         else :
-            self._declare("BTagDecay::%(name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
                                               " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
                                               " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
                                               " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d
                          )
 
-        self._init(name,'RooBTagDecay')
+        self._init(Name,'RooBTagDecay')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class ResolutionModel(RooObject):
