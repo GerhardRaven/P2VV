@@ -69,15 +69,15 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 pdf = mcpdf
 
 
-mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5000,6000))
-mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV', Value = 5300, MinMax = ( 5200, 5800 ) )
-mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV', Value = 15, MinMax = ( 10, 20 ) )
+mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5400))
+mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV/c^2', Value = 5300, MinMax = ( 5250, 5350 ) )
+mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV/c^2', Value = 10, MinMax = ( 5, 15 ) )
 from ROOT import RooGaussian as Gaussian
-sig_m = Pdf( 'mass', Type = Gaussian, Observables = ( mass, ), Parameters = ( mass_mean, mass_sigma ) )
-#signal = Component('signal',{ m : sig_m, (t,)+tuple(angles.angles.values()) :  pdf }, Yield = (3000,100,6000) )
+sig_m = Pdf( 'sig_m', Type = Gaussian, Observables = ( mass, ), Parameters = ( mass_mean, mass_sigma ) )
+signal = Component('signal',{ mass : sig_m, (t,)+tuple(angles.angles.values()) :  pdf }, Yield = (3000,100,6000) )
 
-#pdf = buildPdf( (signal,), Observables = (m,t)+tuple(angles.angles.values()), Name = 'jointpdf' )
-
+pdf = buildPdf( (signal,), Observables = (mass,t)+tuple(angles.angles.values()), Name = 'jointpdf' )
+observables += [ mass ]
 
 
 

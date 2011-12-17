@@ -568,9 +568,9 @@ class ProdPdf(Pdf):
         return '_X_'
 
 class SumPdf(Pdf):
-    def __init__(self, name, PDFs, Yields):
+    def __init__(self, Name, PDFs, Yields):
         self._yields = {}
-        self._dict = {'Name'  : name,
+        self._dict = {'Name'  : Name,
                       'Yields': Yields,
                       'PDFs'  : PDFs,
                       'Type'  : 'RooAddPdf'}
@@ -580,12 +580,11 @@ class SumPdf(Pdf):
             raise StandardError('The number of yield variables must be equal to or 1'
                                 + 'less then the number of PDFs.')
         self._dict['Observables'] = frozenset( i for p in pdfs for i in p['Observables' ] )
-        self._dict['Name'] = self._separator().join([p.GetName() for p in pdfs])
+        # self._dict['Name'] = self._separator().join([p.GetName() for p in pdfs])
         self._make_pdf()
         del self._dict
         
     def _make_pdf(self):
-        print self._dict['Name'],'->',self._makeRecipe()
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
             self._init(self.Name(), self.Type())
@@ -797,7 +796,6 @@ class Component(object):
 
         if type(k) != frozenset : k = frozenset(k)
         if k not in d : 
-            print 'building product for %s ' % ( [  i for i in k ] )
             # try to build product -- note that d.keys() are non-overlapping by requirement
             # first, find the entry with the largest overlap, which is a subset (otherwise we'd have to marginalize)
             terms = []
@@ -812,21 +810,17 @@ class Component(object):
             if len(nk) : raise IndexError('could not construct matching product')
             nk = frozenset.union(*terms)
             pdfs = [self[i] for i in terms]
-            print '2: building product %s for %s ' % ( self.name, [ i.GetName() for i in pdfs ] )
             d[nk] = ProdPdf(self.name, PDFs = pdfs)
         return d[k]
 
 def buildPdf(Components, Observables, Name) :
-    print 'buildPdf(%s)'%Name
     # multiply PDFs for observables (for each component)
     if not Observables : raise RuntimeError('no Observables??')
     obs = [o if type(o)==str else o.GetName() for o in Observables]
     args = {'Yields' : {}, 'PDFs'   : [] }
     for c in Components:
         pdf = c[obs]
-        print 'buildPdf: %s'% pdf.GetName()
         args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
     # and sum components (inputs should already be extended)
-    print 'buildPdfs: generated %s' % args
     return SumPdf(Name,**args)
