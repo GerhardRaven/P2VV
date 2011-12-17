@@ -57,6 +57,7 @@ args = { 'time'      : t
        , 'ADilWTag'  : taggingParams['ADilWTag']
        }
 
+# TODO: should be able to write BTagDecay('mypdf', **lifetimeParams.BTagDecay() + **basisCoefficients.BTagDecay() + **taggingParams.BTagDecay() )
 mcpdf = BTagDecay( 'mc_pdf', **args )
 #mcpdf = BDecay( 'mc_pdf',  args )
 
@@ -69,7 +70,7 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 pdf = mcpdf
 
 #TODO: move mass PDF definition into parameterizations
-#TODO: add background PDF definition to parameterizations
+#TODO: add background PDF definitions to parameterizations
 mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5400))
 mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV/c^2', Value = 5300, MinMax = ( 5250, 5350 ) )
 mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV/c^2', Value = 10, MinMax = ( 5, 15 ) )

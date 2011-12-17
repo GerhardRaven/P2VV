@@ -529,6 +529,12 @@ class Pdf(RooObject):
             kwargs['Slice'] = ( cvrt(sl[0]), sl[1] )
         return self._var.plotOn( frame, **kwargs )
 
+
+    def edit(self, Name, rule ) :
+        #TODO: wrap result in Pdf!!!
+        return self.ws().factory('EDIT::%s(%s,%s)' % ( Name, self.GetName(), ','.join( '%s=%s'%(k.GetName(),v.GetName()) for k,v in rule.iteritems() ) ) )
+
+
 class ProdPdf(Pdf):
     # TODO: support conditional terms, use 'Conditional' key word for that...
     # ProdPdf( 'foo', [a,b], Conditional = [c,d] ) -> PROD::foo(a,b|c,d)
