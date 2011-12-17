@@ -9,14 +9,13 @@ gROOT.SetStyle("Plain")
 
 def __wrap_kw_subs( fun ) :
     from ROOT import RooCmdArg,RooFit,RooAbsCollection
-    __fun = fun
-    __tbl = lambda k : getattr(RooFit,k)
+    __tbl  = lambda k : getattr(RooFit,k)
     __disp = lambda k,v : __tbl(k)(v) if isinstance( v, RooAbsCollection ) or not hasattr( v,'__iter__' ) else __tbl(k)(*v) 
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
         args += tuple( RooCmdArg( __disp(k,v) ) for k,v in kwargs.iteritems() )
-        return __fun(self,*args)
+        return fun(self,*args)
     return _fun
 
 ###### decorate TPad with pads...
@@ -70,7 +69,7 @@ def __RooDataSetIter(self) :
 from ROOT import RooDataSet
 RooDataSet.__iter__ = __RooDataSetIter
 
-def __RooDataSetInit() :
+def __wrapRooDataSetInit( init ) :
     from ROOT import TObject,TTree,RooDataSet
     __doNotConvert = [ TTree, RooDataSet ]
     def cnvrt(i) :
@@ -81,13 +80,12 @@ def __RooDataSetInit() :
             if not isinstance(j,RooAbsArg) : return i
             _i.add( j )
         return _i
-    __init = RooDataSet.__init__
     from functools import wraps
-    @wraps(__init)
+    @wraps(init)
     def _init( self, *args ) :
-        return __init(self,*tuple( cnvrt(i) for i in args ))
+        return init(self,*tuple( cnvrt(i) for i in args ))
     return _init
-RooDataSet.__init__ = __RooDataSetInit()
+RooDataSet.__init__ = __wrapRooDataSetInit( RooDataSet.__init__ )
 
 def __createRooIterator( create_iterator ) :
     def __iter(self) :
