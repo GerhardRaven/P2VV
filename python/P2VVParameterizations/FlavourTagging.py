@@ -12,14 +12,9 @@ from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
 class TaggingParams ( _util_parse_mixin ):
     def __init__( self, **kwargs ) :
-        if 'Dilutions' in kwargs : self._dilutions = kwargs.pop('Dilutions')
-        else : raise KeyError('TaggingParams: no key word argument \"Dilutions\" found')
-
-        if 'ADilWTags' in kwargs : self._ADilWTags = kwargs.pop('ADilWTags')
-        else : raise KeyError('TaggingParams: no key word argument \"ADilWTags\" found')
-
-        if 'CEvenOdds' in kwargs : self._CEvenOdds = kwargs.pop('CEvenOdds')
-        else : raise KeyError('TaggingParams: no key word argument \"CEvenOdds\" found')
+        self._dilutions = kwargs.pop('Dilutions')
+        self._ADilWTags = kwargs.pop('ADilWTags')
+        self._CEvenOdds = kwargs.pop('CEvenOdds')
 
     def __getitem__( self, kw ) :
         if kw == 'dilution'                  : return self._dilutions[0]
@@ -65,3 +60,15 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
             # multiple tagging categories
             pass
 
+class TrivialTaggingParams( TaggingParams ) :
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import FormulaVar,ConstVar
+        self._parseArg( 'wTag', kwargs, Title = 'B wrong tag probability',    Value = 0.25, MinMax = ( 0., 0.5 ) )
+        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
+        self._check_extraneous_kw( kwargs )
+        TaggingParams.__init__( self
+                              , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2*@0 '
+                                                         , [ self._wTag ], Title = 'Average tagging dilution' ) ]
+                              , ADilWTags = [ ConstVar('zero',Value = 0) ]
+                              , CEvenOdds = [ Trivial_CEvenOdd() ]
+                              )
