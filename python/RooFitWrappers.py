@@ -221,12 +221,7 @@ class Category (RooObject):
 class SuperCategory( Category ) :
     def __init__(self,name,cats,**kwargs):
         if name not in self.ws():
-            # construct factory string on the fly: no factory string for SuperCategory???
-            args = RooArgSet()
-            cast = lambda i : i._target_() if hasattr(i,'_target_') else i
-            for c in cats : args += cast(c) 
-            from ROOT import RooSuperCategory
-            self.ws()._objects[ name ] = self.ws().put( RooSuperCategory(name,name,args) )
+            self._declare("SuperCategory::%s({%s})"%(name,','.join( [ c.GetName() for c in cats ] ) ) )
             self._init(name,'RooSuperCategory')
             self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
