@@ -638,7 +638,7 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
     if (_tagCatIndices.empty()) initTagCatMaps();
   }
 
-  if (intITag && _iTagVal != 3 && !_iTag.hasRange(rangeName)) {
+  if (intITag && !_iTag.hasRange(rangeName)) {
     // add the initial state tag to integration variables
     intCode += 2;
     analVars.add(_iTag.arg());
@@ -1120,15 +1120,6 @@ void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
     _tagCatType = 2;
   } else if (tagCatCoefs.getSize() == numTagCats - 1) {
     _tagCatType = 3;
-    coutW(InputArguments) << "RooBTagDecay::initTaggingCats(" << GetName()
-        << ") initial state tag can assume three values (-1, 0, +1): please make sure you know what you are doing:"
-        << endl
-        << "    * the value of the decay rate with tag = 0 is equal to the value with dilution = 0"
-        << endl
-        << "    * the integral of the decay rate is equal to the sum of B (+1) and Bbar (-1)"
-        << endl
-        << "    * events with tag = 0 will be generated in tagging category 0"
-        << endl;
   } else {
     coutF(InputArguments) << "RooBTagDecay::initTaggingCats(" << GetName()
         << ") number of tagging category coefficients does not match number of category types"
@@ -1369,7 +1360,13 @@ void RooBTagDecay::initTag(Bool_t iTag)
       // B, Bbar and sum of B and Bbar
       tagVal = 3;
       coutW(InputArguments) << "RooBTagDecay::initTag(" << GetName()
-          << ") initial state flavour tag can assume value 0 (untagged): the sum of the B and Bbar decay rates will be returned for this value and untagged events will be generated in tagging category 0"
+          << ") initial state tag can assume three values (-1, 0, +1): please make sure you know what you are doing:"
+          << endl
+          << "    * the value of the decay rate with tag = 0 is equal to the value with dilution = 0"
+          << endl
+          << "    * the integral of the decay rate is equal to the sum of B (+1) and Bbar (-1)"
+          << endl
+          << "    * events with tag = 0 will be generated in tagging category 0"
           << endl;
     } else {
       // not a valid configuration
