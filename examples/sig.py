@@ -139,5 +139,5 @@ for (cc,a) in zip(c.pads(4),chain(angles.angles.itervalues(),[t])) :
     data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kRed )
     pdf.plotOn( f , LineColor = RooFit.kBlack)
     pdf2.plotOn( f , LineColor = RooFit.kBlue)
-    mom_pdf.plotOn( f, LineColor = RooFit.kRed)
+    if a in mom_pdf.getObservables( data )  : mom_pdf.plotOn( f, LineColor = RooFit.kRed)
     f.Draw( pad = cc)

@@ -6,6 +6,15 @@ def __check_exists_already__( self ) :
     if self._name in self.ws() :
         raise StandardError( 'Recreating %s is not supported atm' % type(self) )
 
+def __wrap_RAC_contains( contains ) :
+    from functools import wraps
+    @wraps(contains)
+    def _contains(self,i) :
+        return self.contains( i._var if hasattr(i,'_var') else i )
+    return _contains
+
+RooAbsCollection.__contains__ = __wrap_RAC_contains( RooAbsCollection.__contains__ )
+
 
 class RooObject(object) :
     _ws = None
@@ -124,6 +133,7 @@ class RooObject(object) :
     def __str__(self):
         return self.GetName()
 
+    ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
     def Type(self) :
         _t = self._dict['Type']
         return _t if type(_t)==str else _t.__name__
@@ -135,7 +145,7 @@ class RooObject(object) :
         return self._dict['Parameters']
 
         
-    ## FIXME: Should these be in RooObject??
+    ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
     def observable(self) : 
         return self._var._observable
     def setObservable(self, observable) :
@@ -444,11 +454,8 @@ class Pdf(RooObject):
         __check_req_kw__( 'Type', kwargs )
 
         # Save the keyword args as properties
-        self._dict = {}
-        for k, v in kwargs.iteritems():
-            self._dict[k] = v
+        self._dict = kwargs
         self._dict['Name'] = name
-
         self.__make_pdf()
 
     def __str__(self):
