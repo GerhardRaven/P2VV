@@ -30,9 +30,9 @@ class AngleDefinitions( object ) :
     def __intrprt__(name,kwargs,defname,title,minmax) :
         from RooFitWrappers import RealVar
         if name in kwargs and type( kwargs[name] ) == str :
-            return RealVar(  kwargs[name], Title = title, Observable = True,  MinMax=minmax )
+            return RealVar(  Name = kwargs[name], Title = title, Observable = True,  MinMax=minmax )
         elif name not in kwargs :
-            return  RealVar(  defname,     Title = title, Observable = True,  MinMax=minmax)
+            return  RealVar(  Name = defname,     Title = title, Observable = True,  MinMax=minmax)
         else  :
             return kwargs[name]
 

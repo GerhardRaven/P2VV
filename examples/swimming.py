@@ -87,7 +87,7 @@ psi_t = Pdf('psi_t', Type = Decay, Observables = [t], Parameters = [psi_tau],
 psi_background[t] = comb_t
 
 # Build PDF
-pdf = buildPdf((signal, comb_background, psi_background), observables = (m,mpsi,t), name='pdf')
+pdf = buildPdf((signal, comb_background, psi_background), Observables = (m,mpsi,t), Name='pdf')
 
 pdf.Print("t")
 

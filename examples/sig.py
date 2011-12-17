@@ -38,7 +38,7 @@ taggingParams = TrivialTaggingParams( wTag = eta ) # FormulaVar('wTag','@2 + @3*
 
 # now build the actual signal PDF...
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, deltaGamma = 0.05, deltaM = 17.8 )
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, deltaGamma = 0.05, deltaM = dict( Value = 17.8, MinMax = (16,19), Constant = True) )
 
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution
 args = { 'time'      : t
@@ -67,6 +67,18 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 #sigpdf = BTagDecay( 'sig_pdf', args )
 
 pdf = mcpdf
+
+
+mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5000,6000))
+mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV', Value = 5300, MinMax = ( 5200, 5800 ) )
+mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV', Value = 15, MinMax = ( 10, 20 ) )
+from ROOT import RooGaussian as Gaussian
+sig_m = Pdf( 'mass', Type = Gaussian, Observables = ( mass, ), Parameters = ( mass_mean, mass_sigma ) )
+#signal = Component('signal',{ m : sig_m, (t,)+tuple(angles.angles.values()) :  pdf }, Yield = (3000,100,6000) )
+
+#pdf = buildPdf( (signal,), Observables = (m,t)+tuple(angles.angles.values()), Name = 'jointpdf' )
+
+
 
 
 #l = RooArgSet()
@@ -133,10 +145,11 @@ mom_pdf = moms.createPDF( Name = 'mom_pdf' )
 from ROOT import TCanvas
 c = TCanvas()
 from itertools import chain
-for (cc,o) in zip(c.pads(4),chain(angles.angles.itervalues(),[t])) :
+for (cc,o) in zip(c.pads(5),chain(angles.angles.itervalues(),[t,mass])) :
+    if o not in data.get() : continue
     f = o.frame( Bins = 24 )
     data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kGreen )
-    pdf.plotOn( f , LineColor = RooFit.kBlack)
-    pdf2.plotOn( f , LineColor = RooFit.kBlue)
+    if o in pdf.getObservables( data )      : pdf.plotOn( f , LineColor = RooFit.kBlack)
+    if o in pdf2.getObservables( data )     : pdf2.plotOn( f , LineColor = RooFit.kBlue)
     if o in mom_pdf.getObservables( data )  : mom_pdf.plotOn( f, LineColor = RooFit.kRed)
     f.Draw( pad = cc)

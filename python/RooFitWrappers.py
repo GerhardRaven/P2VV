@@ -1,4 +1,5 @@
 from RooFitDecorators import *
+from functools import wraps
 
 def __check_req_kw__( name, kwargs ) :
     if not name in kwargs : raise KeyError( 'Must provide kw argument %s' % name )
@@ -7,7 +8,6 @@ def __check_exists_already__( self ) :
         raise StandardError( 'Recreating %s is not supported atm' % type(self) )
 
 def __wrap_RAC_contains( contains ) :
-    from functools import wraps
     @wraps(contains)
     def _contains(self,i) :
         return self.contains( i._var if hasattr(i,'_var') else i )
@@ -93,7 +93,7 @@ class RooObject(object) :
             # print 'INFO: spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
         return x
 
-    def _init(self,name,type) :
+    def _init(self,name,type_) :
         """
         match ourselves to the underlying C++ object in the workspace
         This is done by assigning _var 
@@ -105,8 +105,8 @@ class RooObject(object) :
 
         # Get the right object from our own cache, KeyError is raised correctly.
         x = self.ws()._objects[name]
-        if not x.InheritsFrom(type): 
-            raise KeyError('%s is %s, not %s' % (name, x.ClassName(), type))
+        if not x.InheritsFrom(type_): 
+            raise KeyError('%s is %s, not %s' % (name, x.ClassName(), type_))
         self._var = x
 
     def __getattr__(self, name):
@@ -394,35 +394,35 @@ class RealVar (RooObject):
                ,'Unit'       : lambda s,v : s.setUnit(v) 
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
+               ,'Constant'   : lambda s,v : s.setConstant(v)
                }
 
-    def __init__(self,name = None,**kwargs):
-        if not name : name = kwargs.pop('Name')
-        # TODO: add blinding support to kwargs
-        if name not in self.ws():
+    def __init__(self,Name ,**kwargs):
+        if 'name' in kwargs : raise RuntimeError('Please replace name argument with Name = xyz' )
+        if Name not in self.ws():
             # construct factory string on the fly...
             if 'Value'  not in kwargs  and 'MinMax' not in kwargs:
-                raise KeyError('%s does not exist yet, neither Value nor MinMax specified'%name)
+                raise KeyError('%s does not exist yet, neither Value nor MinMax specified'%Name)
             if 'Value' not in kwargs:
                 (mi,ma) = kwargs.pop('MinMax')
-                self._declare("%s[%s,%s]"%(name,mi,ma))
+                self._declare("%s[%s,%s]"%(Name,mi,ma))
             elif 'MinMax' not in kwargs:
-                self._declare("%s[%s]"%(name,kwargs.pop('Value')))
+                self._declare("%s[%s]"%(Name,kwargs.pop('Value')))
             else:
                 (mi,ma) = kwargs.pop('MinMax')
                 val = kwargs.pop('Value')
                 if val < mi or val > ma : raise RuntimeError('Specified Value not contained in MinMax')
-                self._declare("%s[%s,%s,%s]"%(name,val,mi,ma))
+                self._declare("%s[%s,%s,%s]"%(Name,val,mi,ma))
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
                 _type = b[0] if type(b[0])==str else b[0].__name__ 
                 _bs   = b[1]
                 _args = b[2:]
-                self._declare("%s::%s_blind('%s',%s,%s)"%(_type,name,_bs,','.join('%s'%i for i in _args),name))
-            self._init(name,'RooRealVar')
+                self._declare("%s::%s_blind('%s',%s,%s)"%(_type,Name,_bs,','.join('%s'%i for i in _args),Name))
+            self._init(Name,'RooRealVar')
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
-            self._init(name,'RooRealVar')
+            self._init(Name,'RooRealVar')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
                 # Skip these to avoid failure in case we were loaded from a
@@ -442,6 +442,9 @@ class RealVar (RooObject):
 ##TODO, factor out common code in Pdf and ResolutionModel
 
 class Pdf(RooObject):
+    # TODO: support conditional observables!!!
+    #       multiply automatically with flat PDF for conditional observables in no PDF for them is given??
+    #       or intercept fitTo and add ConditionalObservables = ( ... ) ??
     _getters = {'Observables' : lambda s : s._get('Observables') 
                ,'Type'        : lambda s : s._get('Type')
                ,'Parameters'  : lambda s : s._get('Parameters')
@@ -449,14 +452,14 @@ class Pdf(RooObject):
                }
 
     ## TODO: define operators
-    def __init__(self, name, **kwargs):
+    def __init__(self, Name, **kwargs):
         __check_req_kw__( 'Observables', kwargs )
         __check_req_kw__( 'Type', kwargs )
 
         # Save the keyword args as properties
         self._dict = kwargs
-        self._dict['Name'] = name
-        self.__make_pdf()
+        self._dict['Name'] = Name
+        self._make_pdf()
 
     def __str__(self):
         d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
@@ -475,14 +478,16 @@ class Pdf(RooObject):
             except AttributeError as error:
                 raise KeyError(str(error))
 
-    def __make_pdf(self):
+    def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
             v = list(self._dict['Observables'])  
             if 'Parameters' in self._dict: v += list(self._dict['Parameters'])
             if 'ResolutionModel' in self._dict: v.append(self._dict['ResolutionModel'])
             if 'Options' in self._dict: v += list(self._dict['Options'])
-            self._declare(self._makeRecipe(v))
-            self._init(self._dict['Name'], 'RooAbsPdf')
+            x = self._declare(self._makeRecipe(v))
+            from ROOT import RooAbsPdf
+            assert isinstance(x,RooAbsPdf)
+            self._init(self._dict['Name'], x.ClassName())
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
@@ -509,16 +514,19 @@ class Pdf(RooObject):
         deps = ','.join([v.GetName() if type(v) != str else v for v in variables])
         return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
 
+    @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
         if 'ConditionalObservables' in kwargs :
             cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
             kwargs['ConditionalObservables'] = RooArgSet( cvrt(var) for var in kwargs.pop('ConditionalObservables') )
         return self._var.fitTo( data, **kwargs )
 
+    @wraps(RooAbsPdf.generate)
     def generate(self, whatvars, *args,**kwargs):
         cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
         return self._var.generate(RooArgSet( cvrt(i) for i in whatvars), *args,**kwargs)
 
+    @wraps(RooAbsPdf.plotOn)
     def plotOn( self, frame, **kwargs ) :
         if 'Slice' in kwargs :
             cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
@@ -538,10 +546,10 @@ class ProdPdf(Pdf):
             for i in p['Observables']:
                 o.add(i)
         self._dict['Observables'] = frozenset(o)
-        self.__make_pdf()
+        self._make_pdf()
         del self._dict
         
-    def __make_pdf(self):
+    def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
             self._init(self._dict['Name'], 'RooProdPdf')
@@ -576,17 +584,13 @@ class SumPdf(Pdf):
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
                                 + 'less then the number of PDFs.')
-
-        o = set()
-        for p in pdfs:
-            for i in p['Observables']:
-                o.add(i)
-        self._dict['Observables'] = frozenset(o)
+        self._dict['Observables'] = frozenset( i for p in pdfs for i in p['Observables' ] )
         self._dict['Name'] = self._separator().join([p.GetName() for p in pdfs])
-        self.__make_pdf()
+        self._make_pdf()
         del self._dict
         
-    def __make_pdf(self):
+    def _make_pdf(self):
+        print self._dict['Name'],'->',self._makeRecipe()
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
             self._init(self.Name(), self.Type())
@@ -621,10 +625,10 @@ class RealSumPdf( Pdf ):
         self._dict['Coefficients'] = kwargs.pop('coefficients',repeat(ConstVar( 'one', Value = 1. ), len(self._dict['Functions'])))
 
         # make pdf
-        self.__make_pdf()
+        self._make_pdf()
         del self._dict
 
-    def __make_pdf(self):
+    def _make_pdf(self):
         if self._dict['Name'] not in self.ws() :
             # create PDF in workspace and initialize
             self._declare( self._makeRecipe() )
@@ -649,7 +653,8 @@ class RealSumPdf( Pdf ):
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
 
 class BTagDecay( Pdf ) :
-    # TODO: replace params in favour of more kwargs...
+    def _make_pdf(self) :
+        pass
     def __init__(self,Name,**kwargs) :
         d = { 'Name' : Name, 'checkVars' : 1, 'decayType' : 'SingleSided', 'tagCat' : None }
         for i in [ 'time','iTag','tau', 'dGamma', 'dm'
@@ -674,6 +679,11 @@ class BTagDecay( Pdf ) :
                          )
 
         self._init(Name,'RooBTagDecay')
+        Pdf.__init__(self
+                    , Name = d['Name']
+                    , Type = 'RooBTagDecay'
+                    , Observables = kwargs.pop('Observables',[d['time'],d['iTag']])
+                    )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class ResolutionModel(RooObject):

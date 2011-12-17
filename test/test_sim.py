@@ -184,7 +184,7 @@ class TestPDFs(object):
                             Parameters = (background_tau,), Options = ('SingleSided',),
                             ResolutionModel = background_res)
 
-        pdf = buildPdf((background,signal) , observables = (m,t), name='pdf')
+        pdf = buildPdf((background,signal) , Observables = (m,t), Name='pdf')
         assert pdf['Observables'] == frozenset((m,t))
         assert pdf['Type'] == 'RooAddPdf'
 
