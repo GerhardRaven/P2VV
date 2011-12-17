@@ -596,9 +596,10 @@ class SumPdf(Pdf):
                 attr = '_' + k.lower()
                 setattr(self._target_(), attr, v)
         else:
-            self._init(self._dict['Name'], 'RooAddPdf')
+            self._init(self._dict['Name'], 'RooAddPdf') # single component won't be an RooAddPdf
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
+                print k,v,self._get(k)
                 assert v == self._get(k)
 
     def _makeRecipe(self):
@@ -796,6 +797,7 @@ class Component(object):
 
         if type(k) != frozenset : k = frozenset(k)
         if k not in d : 
+            print 'building product for %s ' % ( [  i for i in k ] )
             # try to build product -- note that d.keys() are non-overlapping by requirement
             # first, find the entry with the largest overlap, which is a subset (otherwise we'd have to marginalize)
             terms = []
@@ -810,19 +812,21 @@ class Component(object):
             if len(nk) : raise IndexError('could not construct matching product')
             nk = frozenset.union(*terms)
             pdfs = [self[i] for i in terms]
+            print '2: building product %s for %s ' % ( self.name, [ i.GetName() for i in pdfs ] )
             d[nk] = ProdPdf(self.name, PDFs = pdfs)
         return d[k]
 
-def buildPdf(components, observables, name) :
+def buildPdf(Components, Observables, Name) :
+    print 'buildPdf(%s)'%Name
     # multiply PDFs for observables (for each component)
-    if not observables : raise RuntimeError('no observables??')
-    obs = [o if type(o)==str else o.GetName() for o in observables]
-    args = {'Yields' : {},
-            'PDFs'   : []
-            }
-    for c in components:
+    if not Observables : raise RuntimeError('no Observables??')
+    obs = [o if type(o)==str else o.GetName() for o in Observables]
+    args = {'Yields' : {}, 'PDFs'   : [] }
+    for c in Components:
         pdf = c[obs]
+        print 'buildPdf: %s'% pdf.GetName()
         args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
     # and sum components (inputs should already be extended)
-    return SumPdf(name,**args)
+    print 'buildPdfs: generated %s' % args
+    return SumPdf(Name,**args)
