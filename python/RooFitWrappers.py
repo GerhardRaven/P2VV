@@ -538,15 +538,11 @@ class Pdf(RooObject):
 class ProdPdf(Pdf):
     # TODO: support conditional terms, use 'Conditional' key word for that...
     # ProdPdf( 'foo', [a,b], Conditional = [c,d] ) -> PROD::foo(a,b|c,d)
-    def __init__(self, name, PDFs, **kwargs):
-        self._dict = {'PDFs' : frozenset(PDFs)}
-        self._dict['Name'] = name + '_' + self._separator().join([i.GetName() for i
-                                                                  in self._dict['PDFs']])
-        o = set()
-        for p in self._dict['PDFs']:
-            for i in p['Observables']:
-                o.add(i)
-        self._dict['Observables'] = frozenset(o)
+    def __init__(self, Name, PDFs, **kwargs):
+        self._dict = { 'PDFs' : frozenset(PDFs)
+                     , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
+                     , 'Observables' : frozenset( i for p in PDFs for i in p['Observables'] )
+                     }
         self._make_pdf()
         del self._dict
         

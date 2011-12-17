@@ -22,8 +22,8 @@ from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
 amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.60, A0Phase = 0
                                     , AperpMag2 = 0.160, AperpPhase = -0.17
                                     , AparPhase = 2.5
-                                    , ASMag2 = 0, ASPhase = 0 )
-amplitudes.setConstant('.*AS.*',True)
+                                    , ASMag2 = { 'Value' : 0, 'Constant': True} , ASPhase = { 'Value': 0, 'Constant':True } )
+#amplitudes.setConstant('.*AS.*',True)
 
 #### Package from here until the "BTagDecay('name', args)" into a dedicated class/function...
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
