@@ -154,6 +154,7 @@ class RooObject(object) :
     def setObservable(self, observable) :
         from ROOT import RooAbsLValue
         assert isinstance(self._var,RooAbsLValue) # if we're not an LValue, we cannot be Observable!!!
+        assert self._var.isLValue() # not sure the best way to check for LValue...
         self._var.setAttribute('Observable',observable)
 
     def mappings(self):
@@ -193,6 +194,7 @@ class Category (RooObject):
     _setters = {'Observable' : lambda s,v : s.setObservable(v) 
                ,'Index'      : lambda s,v : s.setIndex(v)
                ,'Label'      : lambda s,v : s.setLabel(v)
+               ,'Constant'   : lambda s,v : s.setConstant(v)
                }
 
     def __init__(self,name,**kwargs):
@@ -522,7 +524,8 @@ class Pdf(RooObject):
         return self._var.fitTo( data, **kwargs )
 
     @wraps(RooAbsPdf.generate)
-    def generate(self, whatvars, *args,**kwargs):
+    def generate(self, whatvars, *args, **kwargs):
+        #if not whatvars : whatvars = [ i for i in self._var.getVariables() if i.getAttribute('Observable') ]
         cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
         return self._var.generate(RooArgSet( cvrt(i) for i in whatvars), *args,**kwargs)
 
