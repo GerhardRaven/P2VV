@@ -45,7 +45,10 @@ background_t = Pdf( 'background_t', Type = Decay, Observables = ( t, ), Paramete
 # Exponential(m,-0.004)
 #background[m,t] = 'PROD(Exponential(m,-0.004),Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided))'
 
-background = Component('background', ( background_t, background_m ), Yield= (3000,1000,6000))
+# background = Component('background', ( background_t, background_m ), Yield= (3000,1000,6000))
+background = Component('background',  Yield= (3000,1000,6000))
+background += background_t
+background += background_m 
 
 pdf = buildPdf( (background,signal) , Observables = (m,t), Name='pdf' )
 

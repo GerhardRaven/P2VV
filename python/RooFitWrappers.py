@@ -759,6 +759,13 @@ class Component(object):
     def _yieldName(self) : return 'N_%s' % self.name
     def setYield(self, n, nlo, nhi) :
         Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
+    def __iadd__(self,pdf) :
+        self.append(pdf)
+        return self
+    def append(self,pdf ) :
+        obs = tuple( i.GetName() for i in pdf.getVariables() if i.getAttribute('Observable') )
+        self[obs] = pdf
+        
     def __setitem__(self, observable, pdf) :
         if type(observable) is not tuple : observable = (observable,)
 
@@ -792,10 +799,6 @@ class Component(object):
         ## Get the right sub-pdf from the Pdf object
         Component._d[self.name][frozenset(k)] = pdf
 
-    def __iadd__(self,item) :
-        z = tuple(item.Observables())
-        self.__setitem__( z, item )
-        return self
 
     def __getitem__(self,k) :
         # TODO: if we return one a-priori build PDF, rename it properly??
