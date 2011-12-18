@@ -16,6 +16,7 @@ class TaggingParams ( _util_parse_mixin ):
         self._dilutions  = kwargs.pop('Dilutions')
         self._ADilWTags  = kwargs.pop('ADilWTags')
         self._CEvenOdds  = kwargs.pop('CEvenOdds')
+        if self._numTagCats > 1 : self._tagCatCoefs = kwargs.pop('TagCatCoefs')
 
     def __getitem__( self, kw ) :
         def raiseError(kw) : raise RuntimeError( 'TaggingParams.__getitem__(\'%s\'): need to specify tagging category' % kw )
@@ -74,11 +75,89 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
         else :
             # multiple tagging categories
             numTagCats = kwargs.pop('NumTagCats')
+            if numTagCats < 1 :
+                raise KeyError('WTagsCoefAsyms_TaggingParams: number of tagging categories must be greater than or equal to one')
 
-            dilutions = []
-            ADilWTags = []
-            CEvenOdds = []
+            from RooFitWrappers import RealVar, FormulaVar
+            tagCatCoefs = [ ]
+            dilutions   = [ ]
+            ADilWTags   = [ ]
+            CEvenOdds   = [ ]
 
+            # get wrong tag parameters category 0
+            if 'wTag0' in kwargs and 'wTagBar0' in kwargs :
+                startTagCat = 0
+            else :
+                startTagCat = 1
+                dilutions.append( RealVar( 'tagDilution0', Title = 'Average tagging dilution 0',     Value = 0. ) )
+                ADilWTags.append( RealVar( 'ADilWTag0',    Title = 'Dilution/wrong tag asymmetry 0', Value = 0. ) )
+
+            # get average even and average odd coefficients of category 0
+            from P2VVParameterizations.BBbarAsymmetries import Coefficients_CEvenOdd
+            if 'CEvenOddSum' in kwargs :
+                CEvenOddSum = kwargs.pop('CEvenOddSum')
+            else :
+                if 'AProd' in kwargs and 'ANorm' in kwargs :
+                    self._AProdVal = kwargs.pop('AProd')
+                    self._ANormVal = kwargs.pop('ANorm')
+                    avgCOdd  = ( self._AProdVal + self._ANormVal ) / ( 1. + self._AProdVal * self._ANormVal )
+                elif 'AvgCEvenSum' in kwargs and 'AvgCOddSum' in kwargs :
+                    avgCEvenSum = kwargs.pop('AvgCEvenSum')
+                    avgCOddSum  = kwargs.pop('AvgCOddSum') / avgCEvenSum
+                CEvenOddSum = Coefficients_CEvenOdd( avgCEven = 1., avgCOdd = avgCOddSum )
+
+            CEvenOdds.append(CEvenOddSum)
+
+            # loop over tagging categories
+            for index in range( startTagCat, numTagCats ) :
+                if index > 0 :
+                    # get tagging category coefficient
+                    self._parseArg(  'tagCatCoef%d' % index, kwargs, Title = 'Tagging category coefficient %d' % index
+                                   , Value = (1. - float(index) / float(numTagCats)) / float(numTagCats)
+                                   , MinMax = ( 0., 1. )
+                                  )
+
+                # get wrong tag parameters
+                self._parseArg(  'wTag%d' % index, kwargs, Title = 'B wrong tag probability %d' % index
+                               , Value = 0.5 * (1. - float(index) / float(numTagCats))
+                               , MinMax = ( 0., 0.5 )
+                              )
+                self._parseArg(  'wTagBar%d' % index, kwargs, Title = 'Bbar wrong tag probability %d' % index
+                               , Value = 0.5 * (1. - float(index) / float(numTagCats))
+                               , MinMax = ( 0., 0.5 )
+                              )
+                dilutions.append( FormulaVar(  'tagDilution%d', '1. - @0 - @1'
+                                             , [ getattr( self, '_wTag%d' % index ), getattr( self, '_wTagBar%d' % index ) ]
+                                             , Title = 'Average tagging dilution %d' % index
+                                            )
+                                )
+                ADilWTags.append( FormulaVar(  'ADilWTag%d', '(@0 - @1) / (1. - @0 - @1)'
+                                             , [ getattr( self, '_wTag%d' % index ), getattr( self, '_wTagBar%d' % index ) ]
+                                             , Title = 'Dilution/wrong tag asymmetry %d' % index
+                                            )
+                                )
+
+                # get average even and average odd coefficients
+                if 'CEvenOdd%d' % index in kwargs :
+                    CEvenOdd = kwargs.pop('CEvenOdd%d' % index)
+                else :
+                    if 'ATagEffVal%d' % index in kwargs and hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
+                        ATagEffVal = kwargs.pop('ATagEffVal%d' % index)
+                        avgCOdd = ( self._AProdVal + self._ANormVal + ATagEffVal + self._AProdVal * self._ANormVal * ATagEffVal )\
+                                  / ( 1. + self._AProdVal * self._ANormVal + self._AProdVal * ATagEffVal + self._ANormVal * ATagEffVal )
+                    elif 'AvgCEven%d' % index in kwargs and 'AvgCOdd%d' % index in kwargs :
+                        avgCEven = kwargs.pop('AvgCEven%d' % index)
+                        avgCOdd  = kwargs.pop('AvgCOdd%d'  % index) / avgCEven
+                    CEvenOdd = Coefficients_CEvenOdd( avgCEven = 1., avgCOdd = avgCOdd )
+
+                CEvenOdds.append(CEvenOdd)
+
+            # check for remaining keyword arguments and initialize
             self._check_extraneous_kw( kwargs )
-            TaggingParams.__init__( self, NumTagCats = numTagCats, Dilutions = dilutions, ADilWTags = ADilWTags, CEvenOdds = CEvenOdds )
+            TaggingParams.__init__(  self, NumTagCats = numTagCats
+                                   , TagCatCoefs = [ self.getattr( '_tagCatCoef%d' % index ) for index in range( 1, numTagCats ) ]
+                                   , Dilutions   = dilutions
+                                   , ADilWTags   = ADilWTags
+                                   , CEvenOdds   = CEvenOdds
+                                  )
 
