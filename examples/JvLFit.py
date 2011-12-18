@@ -160,7 +160,7 @@ if fitData :
   # fix values of some parameters
   #lambdaCP.setConstant('phiCP')
   #lambdaCP.setConstant('lambdaCPSq')
-  #taggingParams._CEvenOdds[0].setConstant('avgCOdd')
+  #taggingParams['CEvenOdd'].setConstant('avgCOdd')
   taggingParams.setConstant('wTag.*')
 
   # fit data
