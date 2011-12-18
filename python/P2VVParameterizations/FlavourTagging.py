@@ -12,15 +12,17 @@ from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
 class TaggingParams ( _util_parse_mixin ):
     def __init__( self, **kwargs ) :
-        self._dilutions = kwargs.pop('Dilutions')
-        self._ADilWTags = kwargs.pop('ADilWTags')
-        self._CEvenOdds = kwargs.pop('CEvenOdds')
+        self._numTagCats = kwargs.pop( 'NumTagCats', 1 )
+        self._dilutions  = kwargs.pop('Dilutions')
+        self._ADilWTags  = kwargs.pop('ADilWTags')
+        self._CEvenOdds  = kwargs.pop('CEvenOdds')
 
     def __getitem__( self, kw ) :
-        if kw == 'dilution'                  : return self._dilutions[0]
-        if kw == 'ADilWTag'                  : return self._ADilWTags[0]
-        if kw == 'CEvenOdd'                  : return self._CEvenOdds[0]
-        if kw in [ 'avgCEven',  'avgCOdd' ]  : return self._CEvenOdds[0][kw]
+        def raiseError(kw) : raise RuntimeError( 'TaggingParams.__getitem__(\'%s\'): need to specify tagging category' % kw )
+        if kw == 'dilution'                  : return self._dilutions[0]     if self._numTagCats == 1 else raiseError(kw)
+        if kw == 'ADilWTag'                  : return self._ADilWTags[0]     if self._numTagCats == 1 else raiseError(kw)
+        if kw == 'CEvenOdd'                  : return self._CEvenOdds[0]     if self._numTagCats == 1 else raiseError(kw)
+        if kw in [ 'avgCEven',  'avgCOdd' ]  : return self._CEvenOdds[0][kw] if self._numTagCats == 1 else raiseError(kw)
         if kw in [ 'avgCEvens', 'avgCOdds' ] : return [ CEvenOdd[kw] for CEvenOdd in self._CEvenOdds ]
 
         return getattr( self, '_' + kw )
@@ -71,5 +73,12 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
 
         else :
             # multiple tagging categories
-            pass
+            numTagCats = kwargs.pop('NumTagCats')
+
+            dilutions = []
+            ADilWTags = []
+            CEvenOdds = []
+
+            self._check_extraneous_kw( kwargs )
+            TaggingParams.__init__( self, NumTagCats = numTagCats, Dilutions = dilutions, ADilWTags = ADilWTags, CEvenOdds = CEvenOdds )
 
