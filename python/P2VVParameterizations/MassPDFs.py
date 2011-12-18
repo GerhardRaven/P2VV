@@ -29,6 +29,12 @@ class LP2011_Signal_Mass ( MassPdf ) :
         MassPdf.__init__(self, pdf = SumPdf(Name = 'LP2011_Signal_Mass',   PDFs = (  g1,  g2)  , Yields = { g1.GetName() : self._m_bkg_f } ) )
 
 
-#class LP2011_Background_Mass ( MassPdf ) :
-#    ## Bkg mass
-#    #ws.factory("Exponential::m_bkg(m,m_bkg_exp[-0.001,-0.01,-0.0001])")
+class LP2011_Background_Mass ( MassPdf ) :
+    def __init__(self, mass, **kwargs ) :
+        self._parseArg('m_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'MeV/c^2', Value = -0.001, MinMax = (-0.01,-0.0001) )
+        from ROOT import RooExponential as Exponential
+        bkg = Pdf( 'LP2011_Background_Mass', Type = Exponential
+                                           , Observables = (mass,)
+                                           , Parameters = (self._m_bkg_exp )
+                                           )
+        MassPdf.__init__(self, pdf = bkg )
