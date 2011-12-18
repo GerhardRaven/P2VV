@@ -162,7 +162,8 @@ if fitData :
 
   # fit data
   print 'timeAnglesSignal: fitting %d events' % data.numEntries()
-  pdf.fitTo( data, NumCPU = 12, Timer = 1 )#, ConditionalObservables = [iTag] )
+  from P2VVGeneralUtils import numCPU
+  pdf.fitTo( data, NumCPU = numCPU(), Timer = 1 )#, ConditionalObservables = [iTag] )
 
 
 ###########################################################################################################################################
@@ -186,7 +187,7 @@ if makePlots :
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
              , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
-             , dataOpts  = { 'MarkerStyle' : markStyle, 'MarkerSize' : markSize }
+             , dataOpts  = { 'MarkerStyle' : markStyle, 'MarkerSize' : markSize, 'XErrorSize' : 0 }
              , pdfOpts   = { 'LineWidth' : lineWidth }
             )
 
