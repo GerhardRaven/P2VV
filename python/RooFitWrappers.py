@@ -454,6 +454,8 @@ class Pdf(RooObject):
         self._dict = kwargs
         self._dict['Name'] = Name
         self._make_pdf()
+        print 'Pdf: deduced observables: %s' % set( i.GetName() for i in self._var.getVariables() if i.getAttribute('Observable') )
+        print 'Pdf: specified observables : %s' % set( i.GetName() for i in kwargs['Observables'] )
 
     def __str__(self):
         d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
@@ -733,21 +735,17 @@ class AddModel(ResolutionModel) :
 
 class Component(object):
     _d = {}
-    def __init__(self,name,*args,**kw) :
-        if name in Component._d : 
-            # TODO: make things singletons, indexed by 'Name'
-            raise KeyError('Name %s is not unique'%name)
-        self.name = name
-        Component._d[name] = dict()
-        Component._d[name]['Name'] = name
-        if len(args) >1:
-            raise IndexError('too many arguments %s' % args )
+    def __init__(self,Name,*args,**kw) :
+        # TODO: make things singletons, indexed by 'Name'
+        if Name in Component._d : raise KeyError('Name %s is not unique'%name)
+        self.name = Name
+        Component._d[Name] = dict()
+        Component._d[Name]['Name'] = Name
+        if len(args) >1: raise IndexError('too many arguments %s' % args )
         if len(args) == 1:
             for i,j in args[0].iteritems() : self[i] = j
-        if 'Yield' in kw :
-            self.setYield( *kw.pop('Yield') )
-        if len(kw) :
-            raise IndexError('unknown keyword arguments %s' % kw.keys() )
+        if 'Yield' in kw : self.setYield( *kw.pop('Yield') )
+        if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
     def setYield(self, n, nlo, nhi) :
         Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
@@ -755,13 +753,11 @@ class Component(object):
         if type(observable) is not tuple : observable = (observable,)
 
         # create a set of incoming observables
-        k = set()
-        for o in observable : 
-            if type(o) is not str: o = o.GetName()
-            k.add(o)
+        k = set(o if type(o)==str else o.GetName() for o in observable )
         #### 
-        print 'specified observables: %s' % k
-        print 'deduced observables: %s' % set( i.GetName() for i in pdf.getVariables() if i.getAttribute('Observable') )
+        print 'Component: specified observables: %s' % k
+        print 'Component: deduced observables: %s' % set( i.GetName() for i in pdf.getVariables() if i.getAttribute('Observable') )
+        assert k == set( i.GetName() for i in pdf.getVariables() if i.getAttribute('Observable') )
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
         present = set()
