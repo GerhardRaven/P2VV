@@ -17,6 +17,11 @@ RooAbsCollection.__contains__ = __wrap_RAC_contains( RooAbsCollection.__contains
 
 
 class RooObject(object) :
+    # TODO: add functionality to ask for RooObject instances by name from a 'static' dictionary
+    #       that way, when given eg. a RooRealVar, we ask for its name, and can look up the
+    #       the corresponding RealVar:  x = RooObjects[ rrv.GetName() ]
+    # NOTE: this looks like _objects, it has the same key, but the value isn't the underlying PyROOT
+    #       object but it's wrapper...
     _ws = None
     _dict = None
     _setters = {'Title'      : lambda s,v : s.SetTitle(v)
