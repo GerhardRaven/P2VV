@@ -131,7 +131,7 @@ args = {
   , 'resolutionModel' : timeResModel['model']
 }
 
-pdf = BTagDecay('JpsiphiPDF', args)
+pdf = BTagDecay('JpsiphiPDF', **args)
 
 
 ###########################################################################################################################################

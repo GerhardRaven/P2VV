@@ -71,7 +71,7 @@ psi_background = Component('psi_background', { mpsi : sig_mpsi, m : bkg_m, t : c
 
 
 # Build PDF
-pdf = buildPdf((signal, comb_background, psi_background), observables = (m,mpsi), name='pdf')
+pdf = buildPdf((signal, comb_background, psi_background), Observables = (m,mpsi), Name='pdf')
 
 # Acceptance data
 from ROOT import TFile

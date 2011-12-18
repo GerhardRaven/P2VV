@@ -4,6 +4,7 @@
 #include "RooRealMoments.h"
 #include "ProgressDisplay.h"
 #include "RooBTagDecay.h"
+#include "RooTrivialTagDecay.h"
 #include "RooGammaPdf.h"
 #include "RooMultiCatGenerator.h"
 #include "RooMultiMultinomial.h"

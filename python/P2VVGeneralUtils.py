@@ -134,7 +134,8 @@ def plot(  canv, obs, data, pdf, addPDFs = [ ], components = None, xTitle = '', 
                   , 'MarkerColor' : lambda x : residHist.SetMarkerColor(x)
                   , 'Title'       : lambda x : residFrame.SetTitle(x)
                   }
-            for k, v in dataOpts.iteritems() : fun[k](v)
+            for k, v in dataOpts.iteritems() : 
+                if k in fun : fun[k](v)
 
         # residFrame.addPlotable( residHist, 'p' if not usebar else 'b' )
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
@@ -494,6 +495,9 @@ class RealMomentsBuilder ( dict ) :
         def _createProduct( f1, f2, c ) :
             assert not f1.prod()
             assert not f2.prod()
+            assert f1.c()!=0
+            assert f2.c()!=0
+            assert c!=0
             d1 = dict( (type(i),i) for i in f1.components() )
             d2 = dict( (type(i),i) for i in f2.components() )
             from ROOT import RooLegendre, RooSpHarmonic
@@ -501,9 +505,6 @@ class RealMomentsBuilder ( dict ) :
                 assert d1[i].getVariables().equals( d2[i].getVariables() )
             (cpsi,) = d1[RooLegendre].getVariables()
             (ctheta,phi) = d1[RooSpHarmonic].getVariables()
-            assert f1.c()!=0
-            assert f2.c()!=0
-            assert c!=0
             from RooFitWrappers import P2VVAngleBasis
             # WARNING: cpsi,ctheta, phi are barebones PyROOT objects!!!
             return P2VVAngleBasis( {'cpsi':cpsi,'ctheta':ctheta,'phi':phi}
@@ -512,10 +513,9 @@ class RealMomentsBuilder ( dict ) :
                                  , f2.i(),f2.j(),f2.l(),f2.m()
                                  ) # build a wrapped object inside workspace
             
-        pdfName = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() )
         # TODO: check that 'we' contain efficiency moments?
         # TODO: and that we've actually either 'read' or 'compute'-ed them??
-        from ROOT import RooP2VVAngleBasis,RooAddition,RooArgSet
+        from ROOT import RooP2VVAngleBasis
         subst = dict()
         # TODO: do not use type to recognize, but name??
         from RooFitWrappers import Addition
@@ -523,5 +523,4 @@ class RealMomentsBuilder ( dict ) :
             subst[comp] = Addition( '%s_x_eff' % ( comp.GetName() )
                                   , [ _createProduct( comp, f, c ) for f,c in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
                                   )
-        # TODO: the returned object ought to be wrapped in a Pdf class...
-        return pdf.ws().factory('EDIT::%s(%s,%s)' % ( pdfName, pdf.GetName(), ','.join( '%s=%s'%(k.GetName(),v.GetName()) for k,v in subst.iteritems() ) ) )
+        return pdf.edit( kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), subst )

@@ -25,34 +25,29 @@ sig_t     = Pdf( 'time', Type = Decay, Observables = ( t, ), Parameters = ( sig_
 
 mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV', Value = 5300, MinMax = ( 5200, 5800 ) )
 mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV', Value = 15, MinMax = ( 10, 20 ) )
-
 sig_m = Pdf( 'mass', Type = Gaussian, Observables = ( m, ), Parameters = ( mass_mean, mass_sigma ) )
 
 # create signal and background
-signal = Component('signal')
-signal.setYield(3000,100,6000)
-## signal[m] = 'Gaussian(m,5300,15)'
-signal[m] = sig_m
-## signal[t] = 'Decay(t,sig_tau[1.5,1.0,2.0],TruthModel(t),SingleSided)'
-signal[t] = sig_t
+signal = Component('signal',{ m : sig_m, t :  sig_t }, Yield = (3000,100,6000) )
 
-background = Component('background')
-background.setYield(3000,1000,6000)
+
 
 background_c = RealVar( 'background_c',  Unit = '1/MeV', Value = -0.0004)
 # TODO: auto mangle name??
-background[ m ] = Pdf( 'background_m', Observables = ( m, ), Type = Exponential, Parameters = ( background_c, ) )
+background_m = Pdf( 'background_m', Observables = ( m, ), Type = Exponential, Parameters = ( background_c, ) )
 
 background_tau = RealVar( 'background_tau',  Unit = 'ps', Value = 0.4, MinMax = ( 0.1, 0.9 ) )
 background_res = ResolutionModel( 'background_res', Type = TruthModel, Observables = [ t ] )
 
 #background[t] = 'Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided)'
 # TODO: auto mangle name??
-background[ t ] = Pdf( 'background_t', Type = Decay, Observables = ( t, ), Parameters = ( background_tau, background_res, 'SingleSided' ) )
+background_t = Pdf( 'background_t', Type = Decay, Observables = ( t, ), Parameters = ( background_tau, background_res, 'SingleSided' ) )
 # Exponential(m,-0.004)
 #background[m,t] = 'PROD(Exponential(m,-0.004),Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided))'
 
-pdf = buildPdf( (background,signal) , observables = (m,t), name='pdf' )
+background = Component('background', { t  : background_t, m : background_m }, Yield= (3000,1000,6000))
+
+pdf = buildPdf( (background,signal) , Observables = (m,t), Name='pdf' )
 
 ##########################################
 
@@ -75,9 +70,9 @@ dashed = kDashed
 c = TCanvas()
 for ( cc, obs, logy ) in zip( c.pads( 1, 2 ), ( m, t ), ( False, True ) ) :
     plot(  cc.cd(), obs, data, pdf
-         , {  'signal*'     : { 'LineColor' : sigcolor, 'LineStyle' : dashed }
-            , 'background*' : { 'LineColor' : bkgcolor, 'LineStyle' : dashed }
-           }
+         , components = { 'signal*'     : { 'LineColor' : sigcolor, 'LineStyle' : dashed }
+                        , 'background*' : { 'LineColor' : bkgcolor, 'LineStyle' : dashed }
+                        }
          , plotResidHist = True, logy = logy
          , dataOpts = { 'XErrorSize' : xe, 'MarkerSize' : ms }
         )

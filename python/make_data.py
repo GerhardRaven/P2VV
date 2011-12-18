@@ -54,7 +54,7 @@ background[ t ] = Pdf( 'background', Type = 'Decay', Observables = ( t, ),
 # Exponential(m,-0.004)
 #background[m,t] = 'PROD(Exponential(m,-0.004),Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided))'
 
-pdf = buildPdf( (background,signal) , observables = (m,t), name='pdf' )
+pdf = buildPdf( (background,signal) , Observables = (m,t), Name='pdf' )
 
 ##########################################
 

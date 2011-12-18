@@ -454,13 +454,13 @@ wtag_syst = ws.function('wtag_syst')
 customizer = RooCustomizer(ws['pdf_ext'],'inc_tag_syst')
 customizer.replaceArg( wtag, wtag_syst )
 tagpdf = customizer.build()
-getattr(ws,'import')(tagpdf,RooFit.RecycleConflictNodes())
+ws.put(tagpdf,RooFit.RecycleConflictNodes())
 
 #angcorrpdf
 customizer = RooCustomizer(angcorrpdf,'inc_tag_syst')
 customizer.replaceArg( wtag, wtag_syst )
 angcorrtagpdf = customizer.build()
-getattr(ws,'import')(angcorrtagpdf,RooFit.RecycleConflictNodes())
+ws.put(angcorrtagpdf,RooFit.RecycleConflictNodes())
 
 #Constrain deltams
 ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.63],t_sig_dm_sigma[0.11])")
