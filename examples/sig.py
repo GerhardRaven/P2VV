@@ -76,7 +76,7 @@ mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV/c^2', Value = 5300, MinMax = ( 
 mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV/c^2', Value = 10, MinMax = ( 5, 15 ) )
 from ROOT import RooGaussian as Gaussian
 sig_m = Pdf( 'sig_m', Type = Gaussian, Observables = ( mass, ), Parameters = ( mass_mean, mass_sigma ) )
-signal = Component('signal',{ mass : sig_m, (t,)+tuple(angles.angles.values()) :  pdf }, Yield = (10000,5000,15000) )
+signal = Component('signal',(  sig_m,  pdf ), Yield = (10000,5000,15000) )
 
 pdf = buildPdf( (signal,), Observables = (mass,t)+tuple(angles.angles.values()), Name = 'jointpdf' )
 print pdf['Observables']
