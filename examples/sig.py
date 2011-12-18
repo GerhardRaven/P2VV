@@ -73,8 +73,16 @@ pdf = mcpdf
 
 
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
-#TODO: add background PDF definitions to parameterizations
 signal = Component('signal',(  LP2011_Signal_Mass( mass = mass ).pdf(),  pdf ), Yield = (10000,5000,15000) )
+
+from P2VVParameterizations.MassPDFs import LP2011_Background_Mass
+from P2VVParameterizations.TimePDFs import LP2011_Background_Time
+#TODO: add uniform angular PDF to parameterizations
+# from P2VVParameterizations.AnglePDFs import Uniform_Angles
+bkg  = Component('bkg',(  LP2011_Background_Mass( mass = mass ).pdf()
+                       ,  LP2011_Background_Time( time = t , resolutionModel = LP2011_TimeResolution(time = t)['model']).pdf()
+                       #, Uniform_Angles( angles = angles.angles ).pdf()
+                       ), Yield = (4000,1000,15000) )
 
 pdf = buildPdf( (signal,), Observables = observables,  Name = 'jointpdf' )
 # print pdf['Observables']

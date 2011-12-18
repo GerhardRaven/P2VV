@@ -9,7 +9,7 @@
 
 
 import sys
-def numCPU( Max = sys.maxint) :
+def numCPU( Max = sys.maxint ) :
     try : # needs >= 2.6
         import multiprocessing
         return min(Max,multiprocessing.cpu_count())

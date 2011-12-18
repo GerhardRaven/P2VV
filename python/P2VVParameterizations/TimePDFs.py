@@ -110,3 +110,22 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
 
         BDecayBasisCoefficients.__init__( self, **args )
 
+
+from P2VVParameterizations.GeneralUtils import _util_parse_mixin
+class TimePdf( _util_parse_mixin ) :
+    def __init__(self, **kwargs ) :
+        for (k,v) in kwargs.iteritems() :
+            setattr(self,'_'+k,v)
+    def pdf(self) :
+        return self._pdf
+
+class LP2011_Background_Time( TimePdf ) :
+    def __init__(self,time,resolutionModel,**kwargs) :
+        self._parseArg('t_bkg_ml_tau', kwargs, Title = 'medium lifetime background ', Unit = 'ps', Value = 0.21, MinMax = (0.01,0.5) )
+        self._parseArg('t_bkg_ll_tau', kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.92, MinMax = (0.5,2.5) )
+        self._parseArg('t_bkg_fll',kwargs, Title = 'fraction long lifetime background', Value = 0.3, MinMax = (0., 1.) )
+        from RooFitWrappers import  SumPdf,Pdf
+        from ROOT import RooDecay as Decay
+        ml = Pdf('t_bkg_ml',Type =Decay, Observables=(time,),Parameters = (self._t_bkg_ml_tau,resolutionModel,'SingleSided'))
+        ll = Pdf('t_bkg_ll',Type =Decay, Observables=(time,),Parameters = (self._t_bkg_ll_tau,resolutionModel,'SingleSided'))
+        TimePdf.__init__(self, pdf = SumPdf(Name = 'LP2011_Background_time',   PDFs = (  ml, ll)  , Yields = { ml.GetName() : self._t_bkg_fll } ) )
