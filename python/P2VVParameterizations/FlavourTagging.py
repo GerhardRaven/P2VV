@@ -19,11 +19,24 @@ class TaggingParams ( _util_parse_mixin ):
     def __getitem__( self, kw ) :
         if kw == 'dilution'                  : return self._dilutions[0]
         if kw == 'ADilWTag'                  : return self._ADilWTags[0]
-        if kw in [ 'avgCEven',  'avgCOdd' ]  : return self._CEvenOdds[0][kw] 
+        if kw == 'CEvenOdd'                  : return self._CEvenOdds[0]
+        if kw in [ 'avgCEven',  'avgCOdd' ]  : return self._CEvenOdds[0][kw]
         if kw in [ 'avgCEvens', 'avgCOdds' ] : return [ CEvenOdd[kw] for CEvenOdd in self._CEvenOdds ]
 
         return getattr( self, '_' + kw )
 
+class Trivial_TaggingParams( TaggingParams ) :
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import FormulaVar,ConstVar
+        self._parseArg( 'wTag', kwargs, Title = 'B wrong tag probability',    Value = 0.25, MinMax = ( 0., 0.5 ) )
+        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
+        self._check_extraneous_kw( kwargs )
+        TaggingParams.__init__( self
+                              , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2*@0 '
+                                                         , [ self._wTag ], Title = 'Average tagging dilution' ) ]
+                              , ADilWTags = [ ConstVar('zero',Value = 0) ]
+                              , CEvenOdds = [ Trivial_CEvenOdd() ]
+                              )
 
 class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
@@ -60,15 +73,3 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
             # multiple tagging categories
             pass
 
-class Trivial_TaggingParams( TaggingParams ) :
-    def __init__( self, **kwargs ) :
-        from RooFitWrappers import FormulaVar,ConstVar
-        self._parseArg( 'wTag', kwargs, Title = 'B wrong tag probability',    Value = 0.25, MinMax = ( 0., 0.5 ) )
-        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
-        self._check_extraneous_kw( kwargs )
-        TaggingParams.__init__( self
-                              , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2*@0 '
-                                                         , [ self._wTag ], Title = 'Average tagging dilution' ) ]
-                              , ADilWTags = [ ConstVar('zero',Value = 0) ]
-                              , CEvenOdds = [ Trivial_CEvenOdd() ]
-                              )
