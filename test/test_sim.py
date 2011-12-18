@@ -164,10 +164,7 @@ class TestPDFs(object):
                     Parameters = (mass_mean, mass_sigma))
 
         # create signal and background
-        signal = Component('signal')
-        signal.setYield(100,50,150)
-        signal[m] = sig_m
-        signal[t] = sig_t
+        signal = Component('signal', { m:  sig_m, t:  sig_t },  Yield= (100,50,150) )
 
         background = Component('background')
         background.setYield(1000,900,1100)
