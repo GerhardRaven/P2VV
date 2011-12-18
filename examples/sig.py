@@ -58,7 +58,7 @@ args = { 'time'      : t
        }
 
 # TODO: should be able to write BTagDecay('mypdf', **lifetimeParams.BTagDecay() + **basisCoefficients.BTagDecay() + **taggingParams.BTagDecay() )
-mcpdf = BTagDecay( 'mc_pdf', **args )
+mcpdf = BTagDecay( 'mc_pdf', Observables = [ t,iTag ] + angles.angles.values(), **args  )
 #mcpdf = BDecay( 'mc_pdf',  args )
 
 # update resolution model, and build again...
@@ -79,6 +79,7 @@ sig_m = Pdf( 'sig_m', Type = Gaussian, Observables = ( mass, ), Parameters = ( m
 signal = Component('signal',{ mass : sig_m, (t,)+tuple(angles.angles.values()) :  pdf }, Yield = (10000,5000,15000) )
 
 pdf = buildPdf( (signal,), Observables = (mass,t)+tuple(angles.angles.values()), Name = 'jointpdf' )
+print pdf['Observables']
 observables += [ mass ]
 
 

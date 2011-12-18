@@ -461,8 +461,7 @@ class Pdf(RooObject):
         return '%s' % d
 
     def _get(self, name):
-        attr = '_' + name.lower()
-        return getattr(self._target_(), attr)
+        return getattr(self._target_(), '_' + name.lower())
     
     def __getitem__(self, k):
         if self._dict and k in self._dict:
@@ -658,7 +657,7 @@ class BTagDecay( Pdf ) :
                  , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
                  , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
                  , 'resolutionModel', 'decayType', 'checkVars' ] :
-           if i not in d or i in kwargs : d[i] = '%s'%kwargs.pop(i) 
+           if i not in d or i in kwargs : d[i] = kwargs.pop(i) 
 
         from P2VVLoad import P2VVLibrary
         # construct factory string on the fly...
@@ -677,9 +676,9 @@ class BTagDecay( Pdf ) :
 
         self._init(Name,'RooBTagDecay')
         Pdf.__init__(self
-                    , Name = d['Name']
+                    , Name = Name
                     , Type = 'RooBTagDecay'
-                    , Observables = kwargs.pop('Observables',[d['time'],d['iTag']])
+                    , Observables = kwargs.pop('Observables',[d['time'],d['iTag']]) # TODO: remove the default? just pass **kwargs??
                     )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
