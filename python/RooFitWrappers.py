@@ -748,7 +748,12 @@ class Component(object):
         Component._d[Name]['Name'] = Name
         if len(args) >1: raise IndexError('too many arguments %s' % args )
         if len(args) == 1:
-            for i,j in args[0].iteritems() : self[i] = j
+            if type(args[0]) == dict :
+                for i,j in args[0].iteritems() : self[i] = j
+            else :
+                for j in args[0] :
+                    i = tuple( o.GetName() for o in j.getVariables() if o.getAttribute('Observable') )
+                    self[i] = j 
         if 'Yield' in kw : self.setYield( *kw.pop('Yield') )
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name

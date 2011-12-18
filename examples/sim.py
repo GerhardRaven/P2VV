@@ -28,7 +28,7 @@ mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV', Value = 15, MinMax = ( 10, 20
 sig_m = Pdf( 'mass', Type = Gaussian, Observables = ( m, ), Parameters = ( mass_mean, mass_sigma ) )
 
 # create signal and background
-signal = Component('signal',{ m : sig_m, t :  sig_t }, Yield = (3000,100,6000) )
+signal = Component('signal',( sig_m,sig_t ), Yield = (3000,100,6000) )
 
 
 
