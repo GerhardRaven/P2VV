@@ -12,7 +12,10 @@ t         = RealVar(  't', Title = 'decay time', Unit='ps',                  Obs
 iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',   Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # , 'untagged' : 0 } )
 #eta       = RealVar(   'eta', Title = 'estimated mis tag', Observable = True, Value = 0.3 ) # MinMax=(0,0.5) )
 eta       = ConstVar(  'eta', Value = 0.3 )
-observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag ]
+mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5450))
+observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag, mass ]
+
+for i in angles.angles.itervalues() : i.setBins(24)
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
@@ -69,30 +72,14 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 
 pdf = mcpdf
 
-#TODO: move mass PDF definition into parameterizations
+
+from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
 #TODO: add background PDF definitions to parameterizations
-mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5400))
-mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV/c^2', Value = 5300, MinMax = ( 5250, 5350 ) )
-mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV/c^2', Value = 10, MinMax = ( 5, 15 ) )
-from ROOT import RooGaussian as Gaussian
-sig_m = Pdf( 'sig_m', Type = Gaussian, Observables = ( mass, ), Parameters = ( mass_mean, mass_sigma ) )
-signal = Component('signal',(  sig_m,  pdf ), Yield = (10000,5000,15000) )
+signal = Component('signal',(  LP2011_Signal_Mass( mass = mass ).pdf(),  pdf ), Yield = (10000,5000,15000) )
 
-pdf = buildPdf( (signal,), Observables = (mass,t)+tuple(angles.angles.values()), Name = 'jointpdf' )
-print pdf['Observables']
-observables += [ mass ]
+pdf = buildPdf( (signal,), Observables = observables,  Name = 'jointpdf' )
+# print pdf['Observables']
 
-
-
-#l = RooArgSet()
-#pdf.branchNodeServerList( l )
-#for i in l  : 
-#    for m in 'ReReRe','ReImIm','ImReIm','ImImRe','P2VVAngle', 'Re','Im' : # , 'a_':
-#        if m in i.GetName() : i.setAttribute( "CacheAndTrack" )
-#    if i.GetName()[:2] != 'a_' : i.setAttribute( "CacheAndTrack" ) 
-#    if not i.getAttribute('CacheAndTrack')  : print i.GetName()
-#    #print i.GetName(), i.getAttribute('CacheAndTrack') 
-#
 
 
 if True : 
@@ -151,7 +138,7 @@ c = TCanvas()
 from itertools import chain
 for (cc,o) in zip(c.pads(5),chain(angles.angles.itervalues(),[t,mass])) :
     if o not in data.get() : continue
-    f = o.frame( Bins = 24 )
+    f = o.frame( )
     data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kGreen )
     if o in pdf.getObservables( data )      : pdf.plotOn( f , LineColor = RooFit.kBlack)
     if o in pdf2.getObservables( data )     : pdf2.plotOn( f , LineColor = RooFit.kBlue)
