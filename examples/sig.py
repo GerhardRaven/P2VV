@@ -12,8 +12,10 @@ t         = RealVar(  't', Title = 'decay time', Unit='ps',                  Obs
 iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',   Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # , 'untagged' : 0 } )
 #eta       = RealVar(   'eta', Title = 'estimated mis tag', Observable = True, Value = 0.3 ) # MinMax=(0,0.5) )
 eta       = ConstVar(  'eta', Value = 0.3 )
-mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5400))
+mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5450))
 observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag, mass ]
+
+for i in angles.angles.itervalues() : i.setBins(24)
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
@@ -76,7 +78,7 @@ from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
 signal = Component('signal',(  LP2011_Signal_Mass( mass = mass ).pdf(),  pdf ), Yield = (10000,5000,15000) )
 
 pdf = buildPdf( (signal,), Observables = observables,  Name = 'jointpdf' )
-print pdf['Observables']
+# print pdf['Observables']
 
 
 
@@ -136,7 +138,7 @@ c = TCanvas()
 from itertools import chain
 for (cc,o) in zip(c.pads(5),chain(angles.angles.itervalues(),[t,mass])) :
     if o not in data.get() : continue
-    f = o.frame( Bins = 24 )
+    f = o.frame( )
     data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kGreen )
     if o in pdf.getObservables( data )      : pdf.plotOn( f , LineColor = RooFit.kBlack)
     if o in pdf2.getObservables( data )     : pdf2.plotOn( f , LineColor = RooFit.kBlue)
