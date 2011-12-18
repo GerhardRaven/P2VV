@@ -142,9 +142,9 @@ class RooObject(object) :
         _t = self._dict['Type']
         return _t if type(_t)==str else _t.__name__
     def Observables(self) :
-        return self._dict['Observables']
+        return set( i.GetName() for i in self._var.getVariables() if i.getAttribute('Observable') )
     def Parameters(self) :
-        return self._dict['Parameters']
+        return set( i.GetName() for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
         
     ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
@@ -457,7 +457,7 @@ class Pdf(RooObject):
         self._dict = kwargs
         self._dict['Name'] = Name
         self._make_pdf()
-        print 'Pdf: deduced observables: %s' % set( i.GetName() for i in self._var.getVariables() if i.getAttribute('Observable') )
+        print 'Pdf: deduced observables: %s' %  self.Observables() 
         print 'Pdf: specified observables : %s' % set( i.GetName() for i in kwargs['Observables'] )
 
     def __str__(self):
@@ -755,18 +755,17 @@ class Component(object):
         self.append(pdf)
         return self
     def append(self,pdf ) :
-        obs = tuple( i.GetName() for i in pdf.getVariables() if i.getAttribute('Observable') )
-        self[obs] = pdf
+        self[ pdf.Observables() ] = pdf
         
     def __setitem__(self, observable, pdf) :
-        if type(observable) is not tuple : observable = (observable,)
+        if not hasattr(observable,'__iter__') : observable = (observable,)
 
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
         #### 
         print 'Component: specified observables: %s' % k
-        print 'Component: deduced observables: %s' % set( i.GetName() for i in pdf.getVariables() if i.getAttribute('Observable') )
-        assert k == set( i.GetName() for i in pdf.getVariables() if i.getAttribute('Observable') )
+        print 'Component: deduced observables: %s' % pdf.Observables()
+        assert k == pdf.Observables()
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
         present = set()
