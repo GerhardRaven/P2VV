@@ -707,18 +707,15 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
 
   if (coef == _coshBasis || coef == _sinhBasis) {
     // terms that are even in the initial state tag
-    if (intTagCat && (intITag || iTagValue == 0)) {
-      // integrate over the tagging category and over the initial state tag
-      // (or dilution = 0 for a tag with three states)
-      coefInt *= _avgCEvenSum;
-      if (intITag || _iTagVal == 0) coefInt *= 2.;
-    } else if (intITag || iTagValue == 0) {
+    if ((intITag && (_iTagVal == 2 || _iTagVal == 3)) || iTagValue == 0) {
       // integrate over the initial state tag
       // (or dilution = 0 for a tag with three states)
-      coefInt *= ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal();
+      if (intTagCat) coefInt *= _avgCEvenSum;
+      else coefInt *= ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal();
+
       if (intITag || _iTagVal == 0) coefInt *= 2.;
     } else if (intTagCat) {
-      // integrate over the tagging category
+      // don't integrate over initial state tag, but over tagging category
       Double_t catInt = _avgCEvenSum;
       std::map<Int_t, Int_t>::const_iterator catIt;
       for (catIt = _tagCatIndices.begin(); catIt != _tagCatIndices.end();
@@ -732,7 +729,7 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
 
       coefInt *= catInt;
     } else {
-      // don't integrate over the tagging category or the initial state tag
+      // don't integrate over the initial state tag or the tagging category
       coefInt *= ((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()
           + iTagValue * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
           * (((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
@@ -752,18 +749,15 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
 
   } else if (coef == _cosBasis || coef == _sinBasis) {
     // terms that are odd in the initial state tag
-    if (intTagCat && (intITag || iTagValue == 0)) {
-      // integrate over the tagging category and over the initial state tag
-      // (or dilution = 0 for a tag with three states)
-      coefInt *= _avgCOddSum;
-      if (intITag || _iTagVal == 0) coefInt *= 2.;
-    } else if (intITag || iTagValue == 0) {
+    if ((intITag && (_iTagVal == 2 || _iTagVal == 3)) || iTagValue == 0) {
       // integrate over the initial state tag
       // (or dilution = 0 for a tag with three states)
-      coefInt *= ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal();
+      if (intTagCat) coefInt *= _avgCOddSum;
+      else coefInt *= ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal();
+
       if (intITag || _iTagVal == 0) coefInt *= 2.;
     } else if (intTagCat) {
-      // integrate over the tagging category
+      // don't integrate over initial state tag, but over tagging category
       Double_t catInt = _avgCOddSum;
       std::map<Int_t, Int_t>::const_iterator catIt;
       for (catIt = _tagCatIndices.begin(); catIt != _tagCatIndices.end();
@@ -777,7 +771,7 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
 
       coefInt *= catInt;
     } else {
-      // don't integrate over the tagging category or the initial state tag
+      // don't integrate over the initial state tag or the tagging category
       coefInt *= ((RooAbsReal*)_avgCOdds.at(tagCatPos))->getVal()
           + iTagValue * ((RooAbsReal*)_dilutions.at(tagCatPos))->getVal()
           * (((RooAbsReal*)_avgCEvens.at(tagCatPos))->getVal()

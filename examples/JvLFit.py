@@ -9,11 +9,12 @@ generateData = False
 fitData      = True
 makePlots    = True
 
-nEvents = 10000
+nEvents = 100000
 dataSetName = 'JpsiphiData'
-dataSetFile = 'JvLFit.root'
+dataSetFile = 'JvLFit2Tags.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
 NTuple = False
+plotsFile = 'JvLFit2Tags.ps'
 
 # transversity amplitudes
 A0Mag2Val    =  0.4
@@ -46,8 +47,8 @@ wTagBarVal = 0.2
 
 # plot options
 angleNames   = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
-numBins      = ( 50, 50, 50, 50 )
-numTimeBins  = ( 30, 30, 30 )
+numBins      = ( 60, 30, 30, 30 )
+numTimeBins  = ( 60, 60, 60 )
 numAngleBins = ( 30, 30, 30 )
 lineWidth    = 2
 markStyle    = 8
@@ -73,7 +74,7 @@ angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 
 
 # variables in PDF
 time = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-iTag = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B': +1, 'Bbar': -1, 'Untagged' : 0} )
+iTag = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B' + 1, 'Bbar' : -1} )#, 'Untagged' : 0} )
 
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
 observables = [ time ] + list(angles) + [ iTag ]
@@ -157,8 +158,9 @@ else :
 
 if fitData :
   # fix values of some parameters
-  #ANuissance.setConstant('avgCOdd')
   #lambdaCP.setConstant('phiCP')
+  #lambdaCP.setConstant('lambdaCPSq')
+  #taggingParams._CEvenOdds[0].setConstant('avgCOdd')
   taggingParams.setConstant('wTag.*')
 
   # fit data
@@ -245,4 +247,8 @@ if makePlots :
     for frame in anglesCanv.frameHists() :
         frame.SetMaximum( maxVal[ frame.GetXaxis().GetTitle() ] )
     for pad  in anglesCanv.pads() : pad.Draw()
+
+    timeAnglesCanv.Print(plotsFile + '(')
+    timeCanv.Print(plotsFile)
+    anglesCanv.Print(plotsFile + ')')
 
