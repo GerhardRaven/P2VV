@@ -87,7 +87,6 @@ class RooObject(object) :
             self.ws()._objects[x.GetName()] = x # Note: use explicit GetName, not str, as x is a 'bare' PyROOT object!!!
             # and keep track what we made 
             self.ws()._spec[ spec ] = x
-            x._observable = False
         else :
             x = self.ws()._spec[ spec ] 
             # print 'INFO: spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
@@ -147,9 +146,9 @@ class RooObject(object) :
         
     ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
     def observable(self) : 
-        return self._var._observable
+        return self._var.getAttribute('Observable')
     def setObservable(self, observable) :
-        self._var._observable = bool(observable)
+        self._var.setAttribute('Observable',observable)
 
     def mappings(self):
         return self.ws()._mappings
@@ -760,6 +759,10 @@ class Component(object):
         for o in observable : 
             if type(o) is not str: o = o.GetName()
             k.add(o)
+        #### 
+        print 'specified observables: %s' % k
+        print 'deduced observables: %s' % set( i.GetName() for i in pdf.getVariables() if i.getAttribute('Observable') )
+        ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
         present = set()
         for i in  Component._d[self.name].iterkeys() :
