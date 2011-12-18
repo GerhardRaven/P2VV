@@ -162,8 +162,7 @@ if fitData :
 
   # fit data
   print 'timeAnglesSignal: fitting %d events' % data.numEntries()
-  from P2VVGeneralUtils import numCPU
-  pdf.fitTo( data, NumCPU = numCPU(), Timer = 1 )#, ConditionalObservables = [iTag] )
+  pdf.fitTo( data, NumCPU = 2, Timer = 1 )#, ConditionalObservables = [iTag] )
 
 
 ###########################################################################################################################################
