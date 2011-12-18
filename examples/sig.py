@@ -70,28 +70,14 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 
 pdf = mcpdf
 
-#TODO: move mass PDF definition into parameterizations
+
+from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
 #TODO: add background PDF definitions to parameterizations
-mass_mean  = RealVar( 'mass_mean',   Unit = 'MeV/c^2', Value = 5300, MinMax = ( 5250, 5350 ) )
-mass_sigma = RealVar( 'mass_sigma',  Unit = 'MeV/c^2', Value = 10, MinMax = ( 5, 15 ) )
-from ROOT import RooGaussian as Gaussian
-sig_m = Pdf( 'sig_m', Type = Gaussian, Observables = ( mass, ), Parameters = ( mass_mean, mass_sigma ) )
-signal = Component('signal',(  sig_m,  pdf ), Yield = (10000,5000,15000) )
+signal = Component('signal',(  LP2011_Signal_Mass( mass = mass ).pdf(),  pdf ), Yield = (10000,5000,15000) )
 
 pdf = buildPdf( (signal,), Observables = observables,  Name = 'jointpdf' )
 print pdf['Observables']
 
-
-
-#l = RooArgSet()
-#pdf.branchNodeServerList( l )
-#for i in l  : 
-#    for m in 'ReReRe','ReImIm','ImReIm','ImImRe','P2VVAngle', 'Re','Im' : # , 'a_':
-#        if m in i.GetName() : i.setAttribute( "CacheAndTrack" )
-#    if i.GetName()[:2] != 'a_' : i.setAttribute( "CacheAndTrack" ) 
-#    if not i.getAttribute('CacheAndTrack')  : print i.GetName()
-#    #print i.GetName(), i.getAttribute('CacheAndTrack') 
-#
 
 
 if True : 
