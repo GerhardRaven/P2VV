@@ -1,8 +1,5 @@
 from RooFitWrappers import *
 
-#from ROOT import RooMsgService
-#RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
-
 ws = RooObject( workspace = 'myws' )
 
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
@@ -10,12 +7,14 @@ from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelA
 angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 t         = RealVar(  't', Title = 'decay time', Unit='ps',                  Observable = True,  MinMax=(0,14)  )
 iTag      = Category( 'tagdecision' , Title = 'initial state flavour tag',   Observable = True,  States = { 'B': +1, 'Bbar': -1 } ) # , 'untagged' : 0 } )
-#eta       = RealVar(   'eta', Title = 'estimated mis tag', Observable = True, Value = 0.3 ) # MinMax=(0,0.5) )
-eta       = ConstVar(  'eta', Value = 0.3 )
-mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5450))
+eta       = RealVar(   'eta', Title = 'estimated mis tag', Observable = False, Constant = True, Value = 0.3, MinMax=(0,0.5) )
+mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5550))
 observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag, mass ]
 
 for i in angles.angles.itervalues() : i.setBins(24)
+mass.setRange('leftsideband', (mass.getMin(),5330) )
+mass.setRange('signal',(5330,5410) )
+mass.setRange('rightsideband',(5410,mass.getMax()) )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
@@ -136,10 +135,12 @@ mom_pdf = moms.createPDF( Name = 'mom_pdf' )
 from ROOT import TCanvas
 c = TCanvas()
 from itertools import chain
-for (cc,o) in zip(c.pads(5),chain(angles.angles.itervalues(),[t,mass])) :
+#TODO: remove categories from observables -- actually, split by category (integrate over, slice for each state)
+plots = [ o for o in observables if hasattr(o,'frame') ]
+for (cc,o) in zip(c.pads(len(plots)),plots) :
     if o not in data.get() : continue
     f = o.frame( )
-    data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kGreen )
+    data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kBlack )
     if o in pdf.getObservables( data )      : pdf.plotOn( f , LineColor = RooFit.kBlack)
     if o in pdf2.getObservables( data )     : pdf2.plotOn( f , LineColor = RooFit.kBlue)
     if o in mom_pdf.getObservables( data )  : mom_pdf.plotOn( f, LineColor = RooFit.kRed)

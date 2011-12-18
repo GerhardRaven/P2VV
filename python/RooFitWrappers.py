@@ -434,10 +434,17 @@ class RealVar (RooObject):
                 assert v == self[k]
             
     # overrule RooRealVar.setRange
-    def setRange(self, v):
-        (mi,ma) = v
-        self._var.setRange(mi,ma)
-        if self.getVal() < mi or self.getVal() > ma : self.setVal(0.5*(ma+mi) )
+    @wraps(RooRealVar.setRange)
+    def setRange(self, *args):
+        assert args
+        if type(args[0]) == str :
+            assert len(args)==2
+            self._var.setRange( args[0], *args[1] )
+        else  :
+            assert len(args)==1
+            (mi,ma) = args[0]
+            self._var.setRange(mi,ma)
+            if self.getVal() < mi or self.getVal() > ma : self.setVal(0.5*(ma+mi) )
 
     def getRange(self):
         return self._target_().getMin(), self._target_().getMax()
