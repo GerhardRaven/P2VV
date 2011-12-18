@@ -37,7 +37,7 @@ class RooObject(object) :
         from itertools import ifilter, imap
         for setters in imap( lambda x: x._setters, ifilter( lambda x : hasattr(x,'_setters'), type(self).__mro__) ): 
             if k in setters :  return setters[k](self,v )
-        raise KeyError('%s is not known for class %' % (k, type(self) ) )
+        raise KeyError('%s is not known for class %s' % (k, type(self) ) )
     def __getitem__(self,k):
         from itertools import ifilter, imap
         for getters in imap( lambda x: x._getters, ifilter( lambda x : hasattr(x,'_getters'), type(self).__mro__) ): 
@@ -198,9 +198,9 @@ class Category (RooObject):
             __check_req_kw__( 'States', kwargs )
             states = None
             if   type(kwargs['States']) == list:
-                states = ','.join(kwargs['States'])
+                states = ','.join(kwargs.pop('States'))
             elif type(kwargs['States']) == dict:
-                states = ','.join(['%s=%d' % i for i in kwargs['States'].items()])
+                states = ','.join(['%s=%d' % i for i in kwargs.pop('States').items()])
             else:
                 raise KeyError('%s does not exist yet, bad States defined.' % name)
 
@@ -208,6 +208,7 @@ class Category (RooObject):
             self._declare("%s[%s]"%(name,states))
             self._init(name,'RooCategory')
             self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
             self._init(name,'RooCategory')
             # Make sure we are the same as last time
@@ -457,8 +458,8 @@ class Pdf(RooObject):
         self._dict = kwargs
         self._dict['Name'] = Name
         self._make_pdf()
-        print 'Pdf: deduced observables: %s' %  self.Observables() 
-        print 'Pdf: specified observables : %s' % set( i.GetName() for i in kwargs['Observables'] )
+        print 'Pdf(%s): deduced observables: %s' %  (Name,self.Observables() )
+        print 'Pdf(%s): specified observables : %s' % (Name,set( i.GetName() for i in kwargs['Observables'] ))
 
     def __str__(self):
         d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
@@ -651,8 +652,7 @@ class RealSumPdf( Pdf ):
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
 
 class BTagDecay( Pdf ) :
-    def _make_pdf(self) :
-        pass
+    def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
         d = { 'Name' : Name, 'checkVars' : 1, 'decayType' : 'SingleSided', 'tagCat' : None }
         for i in [ 'time','iTag','tau', 'dGamma', 'dm'
@@ -680,8 +680,9 @@ class BTagDecay( Pdf ) :
         Pdf.__init__(self
                     , Name = Name
                     , Type = 'RooBTagDecay'
-                    , Observables = kwargs.pop('Observables',[d['time'],d['iTag']]) # TODO: remove the default? just pass **kwargs??
+                    , Observables = () # let Pdf figure this out itself...
                     )
+        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class ResolutionModel(RooObject):
@@ -811,7 +812,7 @@ class Component(object):
                 if not mo : break # no overlap left...
                 terms.append(kmax)
                 nk = nk - kmax 
-            if len(nk) : raise IndexError('could not construct matching product')
+            if nk : raise IndexError('could not construct matching product -- no PDF for observables: %s' % [i for i in nk ])
             nk = frozenset.union(*terms)
             pdfs = [self[i] for i in terms]
             d[nk] = ProdPdf(self.name, PDFs = pdfs)
