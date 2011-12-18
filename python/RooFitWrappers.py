@@ -137,8 +137,6 @@ class RooObject(object) :
     def __str__(self):
         return self.GetName()
 
-    def Name(self) :
-        return self.GetName()
     ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
     def Type(self) :
         _t = self._dict['Type']

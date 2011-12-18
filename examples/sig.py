@@ -136,7 +136,7 @@ pdf2 = eff * pdf
 
 if True :
     print 'fitting data including efficiency'
-    from P2VVGeneralUtils import numCPU()
+    from P2VVGeneralUtils import numCPU
     pdf.fitTo(data, NumCPU = numCPU(), Timer = 1 , Minimizer = ('Minuit2','minimize'))
 
 # create generic PDF to describe the angular distribution
