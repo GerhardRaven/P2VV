@@ -137,20 +137,23 @@ class RooObject(object) :
     def __str__(self):
         return self.GetName()
 
-    ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
-    def Type(self) :
-        _t = self._dict['Type']
-        return _t if type(_t)==str else _t.__name__
     def Observables(self) :
         return set( i.GetName() for i in self._var.getVariables() if i.getAttribute('Observable') )
     def Parameters(self) :
         return set( i.GetName() for i in self._var.getVariables() if not i.getAttribute('Observable') )
+
+    ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
+    def Type(self) :
+        _t = self._dict['Type']
+        return _t if type(_t)==str else _t.__name__
 
         
     ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
     def observable(self) : 
         return self._var.getAttribute('Observable')
     def setObservable(self, observable) :
+        from ROOT import RooAbsLValue
+        assert isinstance(self._var,RooAbsLValue) # if we're not an LValue, we cannot be Observable!!!
         self._var.setAttribute('Observable',observable)
 
     def mappings(self):
