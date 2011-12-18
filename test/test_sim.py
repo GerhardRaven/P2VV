@@ -164,10 +164,9 @@ class TestPDFs(object):
                     Parameters = (mass_mean, mass_sigma))
 
         # create signal and background
-        signal = Component('signal', { m:  sig_m, t:  sig_t },  Yield= (100,50,150) )
+        signal = Component('signal', (  sig_m,  sig_t ),  Yield= (100,50,150) )
 
-        background = Component('background')
-        background.setYield(1000,900,1100)
+        background = Component('background', Yield = (1000,900,1100))
 
         background_c = RealVar('background_c', Observable = False, Unit = '1/MeV', Value = -0.0004)
         background[m] = Pdf('background', Observables = (m,), Type = 'Exponential',
@@ -180,6 +179,7 @@ class TestPDFs(object):
         background[t] = Pdf('background', Type = 'Decay', Observables = (t,),
                             Parameters = (background_tau,), Options = ('SingleSided',),
                             ResolutionModel = background_res)
+
 
         pdf = buildPdf((background,signal) , Observables = (m,t), Name='pdf')
         assert pdf['Observables'] == frozenset((m,t))

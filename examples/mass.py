@@ -49,7 +49,7 @@ sig_mpsi = Pdf('sig_mpsi', Type = CrystalBall, Observables = [mpsi],
                Parameters = [mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
 
 # Create signal component
-signal = Component('signal', { m : sig_m, mpsi : sig_mpsi, t : sig_t }, Yield = (10000,100,15000) )
+signal = Component('signal', (  sig_m,  sig_mpsi,  sig_t ), Yield = (10000,100,15000) )
 
 # Create combinatorical background component
 
@@ -61,13 +61,13 @@ psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.0
 bkg_mpsi = Pdf('bkg_mpsi', Observables = [mpsi], Type = Exponential, Parameters = [psi_c])
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
 comb_t = Pdf('comb_t', Type = Decay, Observables = [t], Parameters = [bkg_tau], ResolutionModel = tres, Options = ['SingleSided'])
-comb_background = Component('comb_background', { m: bkg_m, mpsi: bkg_mpsi, t : comb_t }, Yield = (5000,100,15000) )
+comb_background = Component('comb_background', ( bkg_m,  bkg_mpsi,  comb_t ), Yield = (5000,100,15000) )
 
 
 # Create psi background component
 psi_tau = RealVar('psi_tau',  Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
 psi_t = Pdf('psi_t', Type = Decay, Observables = [t], Parameters = [psi_tau], ResolutionModel = tres, Options = ['SingleSided'])
-psi_background = Component('psi_background', { t : comb_t, mpsi: sig_mpsi, m:  bkg_m }, Yield= (5000,500,15000) )
+psi_background = Component('psi_background', (  comb_t,  sig_mpsi,  bkg_m ), Yield= (5000,500,15000) )
 
 
 # Build PDF
