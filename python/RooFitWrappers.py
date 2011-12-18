@@ -137,12 +137,12 @@ class RooObject(object) :
     def __str__(self):
         return self.GetName()
 
+    def Name(self) :
+        return self.GetName()
     ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
     def Type(self) :
         _t = self._dict['Type']
         return _t if type(_t)==str else _t.__name__
-    def Name(self) :
-        return self._dict['Name']
     def Observables(self) :
         return self._dict['Observables']
     def Parameters(self) :
@@ -484,7 +484,8 @@ class Pdf(RooObject):
             if 'Parameters' in self._dict: v += list(self._dict['Parameters'])
             if 'ResolutionModel' in self._dict: v.append(self._dict['ResolutionModel'])
             if 'Options' in self._dict: v += list(self._dict['Options'])
-            x = self._declare(self._makeRecipe(v))
+            deps = ','.join([i.GetName() if type(i) != str else i for i in v])
+            x = self._declare( '%s::%s(%s)' % (self.Type(), self._dict['Name'], deps) )
             from ROOT import RooAbsPdf
             assert isinstance(x,RooAbsPdf)
             self._init(self._dict['Name'], x.ClassName())
@@ -510,9 +511,6 @@ class Pdf(RooObject):
     def _separator(self):
         return '_'
 
-    def _makeRecipe(self, variables):
-        deps = ','.join([v.GetName() if type(v) != str else v for v in variables])
-        return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
 
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
@@ -594,7 +592,7 @@ class SumPdf(Pdf):
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
-            self._init(self.Name(), self.Type())
+            self._init(self._dict['Name'], self.Type())
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
@@ -700,16 +698,20 @@ class ResolutionModel(RooObject):
 
         if name not in self.ws():
             # Save the keyword args as properties
-            self._dict = {}
-            self._dict['Name'] = name
-            for k, v in kwargs.iteritems(): self._dict[k] = v
-            self._declare(self._makeRecipe())
+            _dict = {}
+            _dict['Name'] = name
+            for k, v in kwargs.iteritems(): _dict[k] = v
+            variables = list(_dict['Observables'])
+            if 'Parameters' in _dict: variables += list( _dict['Parameters'])
+            deps = ','.join([v.GetName() for v in variables])
+            _t = kwargs.pop('Type')
+            if type(_t) != str : _t = _t.__name__
+            self._declare(  '%s::%s(%s)' % ( _t, name, deps) )
             self._init(name, 'RooResolutionModel')
-            for k, v in self._dict.iteritems():
+            for k, v in _dict.iteritems():
                 attr = '_' + k.lower()
                 if hasattr(v, '__iter__'): v = frozenset(v)
                 setattr(self._target_(), attr, v)
-            del self._dict
         else:
             self._init(name, 'RooResolutionModel')
             # Make sure we are the same as last time
@@ -718,16 +720,8 @@ class ResolutionModel(RooObject):
                 assert v == self._get(k)
 
     def _get(self, name):
-        attr = '_' + name.lower()
-        return getattr(self, attr)
+        return getattr(self,'_' + name.lower())
             
-    def _makeRecipe(self):
-        variables = list(self._dict['Observables'])
-        if 'Parameters' in self._dict:
-            variables += list( self._dict['Parameters'])
-        deps = ','.join([v.GetName() for v in variables])
-        return '%s::%s(%s)' % (self.Type(), self.Name(), deps)
-        
 
 class AddModel(ResolutionModel) :
     def __init__(self,name,models,fractions,**kwargs) :
