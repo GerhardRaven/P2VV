@@ -50,41 +50,33 @@ sig_mpsi = Pdf('sig_mpsi', Type = CrystalBall, Observables = [mpsi],
                Parameters = [mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
 
 # Create signal component
-signal = Component('signal')
-signal.setYield(10000,100,15000)
-signal[m] = sig_m
-signal[mpsi] = sig_mpsi
-signal[t] = sig_t
+signal = Component('signal', { m : sig_m , mpsi : sig_mpsi , t : sig_t }, Yield= (10000,100,15000) )
+
 
 # Create combinatorical background component
-comb_background = Component('comb_background')
-comb_background.setYield(5000,100,15000)
 
 m_c = RealVar( 'm_c', Observable = False, Unit = '1/MeV',
                Value = -0.0004, MinMax = (-0.1, -0.00001))
 bkg_m = Pdf('bkg_m', Observables = [m], Type = Exponential, Parameters = [m_c])
-comb_background[m] = bkg_m
 
 psi_c = RealVar( 'psi_c', Observable = False, Unit = '1/MeV',
                  Value = -0.0004, MinMax = (-0.1, -0.0000001))
 bkg_mpsi = Pdf('bkg_mpsi', Observables = [mpsi], Type = Exponential, Parameters = [psi_c])
-comb_background[mpsi] = bkg_mpsi
 
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1,
                   MinMax = (0.0001, 5))
 comb_t = Pdf('comb_t', Type = Decay, Observables = [t], Parameters = [bkg_tau],
              ResolutionModel = tres, Options = ['SingleSided'])
-comb_background[t] = comb_t
+
+
+comb_background = Component('comb_background', { t : comb_t , mpsi : bkg_mpsi , m : bkg_m }, Yield=(5000,100,15000) )
 
 # Create psi background component
-psi_background = Component('psi_background')
-psi_background.setYield(5000,500,15000)
-psi_background[mpsi] = sig_mpsi
-psi_background[m] = bkg_m
 psi_tau = RealVar('psi_tau', Observable = False, Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
 psi_t = Pdf('psi_t', Type = Decay, Observables = [t], Parameters = [psi_tau],
             ResolutionModel = tres, Options = ['SingleSided'])
-psi_background[t] = comb_t
+psi_background = Component('psi_background', { mpsi : sig_mpsi , m : bkg_m , t : comb_t }, Yield(5000,500,15000) )
+
 
 # Build PDF
 pdf = buildPdf((signal, comb_background, psi_background), Observables = (m,mpsi,t), Name='pdf')
