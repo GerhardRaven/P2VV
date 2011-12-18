@@ -136,7 +136,8 @@ pdf2 = eff * pdf
 
 if True :
     print 'fitting data including efficiency'
-    pdf.fitTo(data, NumCPU = 4, Timer = 1 , Minimizer = ('Minuit2','minimize'))
+    from P2VVGeneralUtils import numCPU
+    pdf.fitTo(data, NumCPU = numCPU(), Timer = 1 , Minimizer = ('Minuit2','minimize'))
 
 # create generic PDF to describe the angular distribution
 moms = RealMomentsBuilder()

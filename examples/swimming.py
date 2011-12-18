@@ -3,10 +3,7 @@ from ROOT import RooMsgService
 
 # RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
 
-ws = RooObject()
-ws.setWorkspace(RooWorkspace('swimming'))
-ws.ws().importClassCode('RooBTagDecay', True)
-ws.ws().importClassCode('RooP2VVAngleBasis', True)
+RooObject( workspace = 'swimming' )
 
 from math import pi
 t = RealVar('tau', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
@@ -37,15 +34,15 @@ sig_t = Pdf('sig_t', Type = Decay, Observables = [t], Parameters = [signal_tau],
             ResolutionModel = tres, Options = ['SingleSided'])
 
 # B mass pdf
-m_mean  = RealVar('m_mean',  Observable = False, Unit = 'MeV', Value = 5300, MinMax = (5200, 5800))
-m_sigma = RealVar('m_sigma', Observable = False, Unit = 'MeV', Value = 15, MinMax = (10, 30))
+m_mean  = RealVar('m_mean',   Unit = 'MeV', Value = 5300, MinMax = (5200, 5800))
+m_sigma = RealVar('m_sigma',  Unit = 'MeV', Value = 15, MinMax = (10, 30))
 sig_m = Pdf('sig_m', Type = Gaussian, Observables = (m,), Parameters = (m_mean, m_sigma ))
 
 # J/psi mass pdf
-mpsi_mean  = RealVar('mpsi_mean',  Observable = False, Unit = 'MeV', Value = 3097, MinMax = (3070, 3110))
-mpsi_sigma = RealVar('mpsi_sigma', Observable = False, Unit = 'MeV', Value = 10, MinMax = (5, 20))
-mpsi_alpha = RealVar('mpsi_alpha', Observable = False, Unit = '', Value = 1.36, MinMax = (0.5, 3))
-mpsi_n = RealVar('mpsi_n', Observable = False, Unit = '', Value = 1, MinMax = (0.1, 2))
+mpsi_mean  = RealVar('mpsi_mean',   Unit = 'MeV', Value = 3097, MinMax = (3070, 3110))
+mpsi_sigma = RealVar('mpsi_sigma',  Unit = 'MeV', Value = 10, MinMax = (5, 20))
+mpsi_alpha = RealVar('mpsi_alpha',  Unit = '', Value = 1.36, MinMax = (0.5, 3))
+mpsi_n = RealVar('mpsi_n',  Unit = '', Value = 1, MinMax = (0.1, 2))
 sig_mpsi = Pdf('sig_mpsi', Type = CrystalBall, Observables = [mpsi],
                Parameters = [mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
 
@@ -55,11 +52,11 @@ signal = Component('signal', ( sig_m , sig_mpsi ,  sig_t ), Yield= (10000,100,15
 
 # Create combinatorical background component
 
-m_c = RealVar( 'm_c', Observable = False, Unit = '1/MeV',
+m_c = RealVar( 'm_c',  Unit = '1/MeV',
                Value = -0.0004, MinMax = (-0.1, -0.00001))
 bkg_m = Pdf('bkg_m', Observables = [m], Type = Exponential, Parameters = [m_c])
 
-psi_c = RealVar( 'psi_c', Observable = False, Unit = '1/MeV',
+psi_c = RealVar( 'psi_c',  Unit = '1/MeV',
                  Value = -0.0004, MinMax = (-0.1, -0.0000001))
 bkg_mpsi = Pdf('bkg_mpsi', Observables = [mpsi], Type = Exponential, Parameters = [psi_c])
 
@@ -72,7 +69,7 @@ comb_t = Pdf('comb_t', Type = Decay, Observables = [t], Parameters = [bkg_tau],
 comb_background = Component('comb_background', (  comb_t ,  bkg_mpsi ,  bkg_m ), Yield=(5000,100,15000) )
 
 # Create psi background component
-psi_tau = RealVar('psi_tau', Observable = False, Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
+psi_tau = RealVar('psi_tau',  Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
 psi_t = Pdf('psi_t', Type = Decay, Observables = [t], Parameters = [psi_tau],
             ResolutionModel = tres, Options = ['SingleSided'])
 psi_background = Component('psi_background', (  sig_mpsi , bkg_m , comb_t ), Yield(5000,500,15000) )
@@ -80,28 +77,22 @@ psi_background = Component('psi_background', (  sig_mpsi , bkg_m , comb_t ), Yie
 
 # Build PDF
 pdf = buildPdf((signal, comb_background, psi_background), Observables = (m,mpsi,t), Name='pdf')
-
 pdf.Print("t")
 
 # Apply acceptance (dirty way)
 from ROOT import TFile
 from ROOT import RooFit
-EventRange = RooFit.EventRange
 
 file = TFile.Open('Bu2JpsiK.root')
 workspace = file.Get('Bu2JpsiK_workspace')
 data = workspace.data('data')
-data = data.reduce(EventRange(0, 4000))
+data = data.reduce(EventRange = (0, 4000))
 
 from Helpers import Mapping
 mapping = Mapping({m : 'm', mpsi : 'mpsi', t : 'tau'}, data)
 
 observables = data.get()
-ranges = []
-for o in observables:
-    if o.GetName().find('tp') != -1:
-        ranges.append(o)
-
+ranges = [ o for o in observables if o.GetName().find('tp') != -1 ]
 ranges.sort()
 range_names = []
 for i in range(0, len(ranges), 2):
@@ -117,36 +108,31 @@ for p in [psi_t, sig_t, comb_t]:
 
 # Fit
 print 'fitting data'
-from ROOT import RooCmdArg
-NumCPU = RooCmdArg(RooFit.NumCPU(4))
-pdf.fitTo(data, NumCPU, RooFit.Timer(1))
+from P2VVGeneralUtils import numCPU
+pdf.fitTo(data, NumCPU = numCPU(), Timer = 1)
 
 from ROOT import kDashed, kRed, kGreen
 from ROOT import TCanvas
-Components = RooFit.Components
-LineStyle = RooFit.LineStyle
-LineWidth = RooFit.LineWidth
-LineColor = RooFit.LineColor
 
 print 'plotting'
 m_frame = m.frame()
 data.plotOn(m_frame)
-pdf.plotOn(m_frame, LineWidth(2))
-pdf.plotOn(m_frame, Components('sig_m'), LineStyle(kDashed), LineWidth(2))
-pdf.plotOn(m_frame, Components('bkg_m'), LineStyle(kDashed), LineWidth(2), LineColor(kRed))
+pdf.plotOn(m_frame, LineWidth = 2)
+pdf.plotOn(m_frame, Components=('sig_m'), LineStyle = kDashed, LineWidth=2 )
+pdf.plotOn(m_frame, Components=('bkg_m'), LineStyle = kDashed, LineWidth=2, LineColor = kRed)
 
 mpsi_frame = mpsi.frame()
 data.plotOn(mpsi_frame)
-pdf.plotOn(mpsi_frame, LineWidth(2))
-pdf.plotOn(mpsi_frame, Components('sig_mpsi'), LineStyle(kDashed), LineWidth(2))
-pdf.plotOn(mpsi_frame, Components('bkg_mpsi'), LineStyle(kDashed), LineWidth(2), LineColor(kRed))
+pdf.plotOn(mpsi_frame, LineWidth = 2)
+pdf.plotOn(mpsi_frame, Components=('sig_mpsi'), LineStyle=kDashed, LineWidth=2)
+pdf.plotOn(mpsi_frame, Components=('bkg_mpsi'), LineStyle=kDashed, LineWidth=2, LineColor=kRed)
 
 t_frame = t.frame()
 data.plotOn(t_frame)
-pdf.plotOn(t_frame, LineWidth(2))
-pdf.plotOn(t_frame, Components('sig_t'), LineStyle(kDashed), LineWidth(2))
-pdf.plotOn(t_frame, Components('psi_t'), LineStyle(kDashed), LineWidth(2), LineColor(kRed))
-pdf.plotOn(t_frame, Components('comb_t'), LineStyle(kDashed), LineWidth(2), LineColor(kGreen))
+pdf.plotOn(t_frame, LineWidth=2)
+pdf.plotOn(t_frame, Components=('sig_t'), LineStyle=kDashed, LineWidth=2)
+pdf.plotOn(t_frame, Components=('psi_t'), LineStyle=kDashed, LineWidth=2, LineColor=kRed)
+pdf.plotOn(t_frame, Components=('comb_t'), LineStyle=kDashed, LineWidth=2, LineColor=kGreen)
 
 canvas = TCanvas('canvas', 'canvas', 1000, 1000)
 canvas.Divide(2, 2)
