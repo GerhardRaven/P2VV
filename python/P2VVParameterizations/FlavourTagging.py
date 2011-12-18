@@ -60,7 +60,7 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
             # multiple tagging categories
             pass
 
-class TrivialTaggingParams( TaggingParams ) :
+class Trivial_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import FormulaVar,ConstVar
         self._parseArg( 'wTag', kwargs, Title = 'B wrong tag probability',    Value = 0.25, MinMax = ( 0., 0.5 ) )

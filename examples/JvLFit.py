@@ -74,7 +74,7 @@ angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 
 
 # variables in PDF
 time = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-iTag = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B' + 1, 'Bbar' : -1} )#, 'Untagged' : 0} )
+iTag = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B' : +1, 'Bbar' : -1} )#, 'Untagged' : 0} )
 
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
 observables = [ time ] + list(angles) + [ iTag ]
