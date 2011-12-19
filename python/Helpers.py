@@ -7,7 +7,7 @@ class Mapping(object):
         self._dataset = dataset
         RooObject._ws.put( dataset )
 
-        rootVars = dict( (var.GetName(),var) for var in dataset.get() )
+        rootVars = dict((var.GetName(), var) for var in dataset.get())
         for v, n in mapping.iteritems():
             rv = rootVars[n] 
             # Test if they are the same
