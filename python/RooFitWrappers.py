@@ -7,13 +7,14 @@ def __check_exists_already__( self ) :
     if self._name in self.ws() :
         raise StandardError( 'Recreating %s is not supported atm' % type(self) )
 
-def __wrap_RAC_contains( contains ) :
-    @wraps(contains)
-    def _contains(self,i) :
-        return self.contains( i._var if hasattr(i,'_var') else i )
-    return _contains
+def __wrap__dref_var__( fun ) :
+    @wraps(fun)
+    def _fun(self,*args) :
+        return fun(self, *tuple( i._var if hasattr(i,'_var') else i for i in args ) )
+    return _fun
 
-RooAbsCollection.__contains__ = __wrap_RAC_contains( RooAbsCollection.__contains__ )
+RooAbsCollection.__contains__ = __wrap__dref_var__( RooAbsCollection.__contains__ )
+RooAbsData.table = __wrap__dref_var__( RooAbsData.table )
 
 
 class RooObject(object) :
@@ -534,7 +535,7 @@ class Pdf(RooObject):
     def generate(self, whatvars, *args, **kwargs):
         #if not whatvars : whatvars = [ i for i in self._var.getVariables() if i.getAttribute('Observable') ]
         cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
-        return self._var.generate(RooArgSet( cvrt(i) for i in whatvars), *args,**kwargs)
+        return self._var.generate(RooArgSet([ cvrt(i) for i in whatvars] if not isinstance(cvrt(whatvars),RooAbsCategory) else cvrt(whatvars)), *args,**kwargs)
 
     @wraps(RooAbsPdf.plotOn)
     def plotOn( self, frame, **kwargs ) :
@@ -663,6 +664,27 @@ class RealSumPdf( Pdf ):
         coefficients = ','.join( [ coef.GetName() for coef in self._dict['Coefficients'] ] )
         functions    = ','.join( [ func.GetName() for func in self._dict['Functions'] ] )
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
+
+class GenericPdf( Pdf ) :
+    def _make_pdf(self) : pass
+    def __init__(self,Name,**kwargs) :
+
+        d = { 'Name' : Name 
+            , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
+            , 'Formula' : kwargs.pop('Formula')
+            }
+
+        # construct factory string on the fly...
+        self._declare("GenericPdf::%(Name)s( '%(Formula)s', { %(Args)s } )" % d )
+
+        self._init(Name,'RooGenericPdf')
+        Pdf.__init__(self
+                    , Name = Name
+                    , Type = 'RooGenericPdf'
+                    , Observables = () # let Pdf figure this out itself...
+                    )
+        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class BTagDecay( Pdf ) :
     def _make_pdf(self) : pass
