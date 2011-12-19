@@ -7,10 +7,12 @@ def __check_exists_already__( self ) :
     if self._name in self.ws() :
         raise StandardError( 'Recreating %s is not supported atm' % type(self) )
 
+__dref__ = lambda i : i._var if hasattr(i,'_var') else i
+
 def __wrap__dref_var__( fun ) :
     @wraps(fun)
     def _fun(self,*args) :
-        return fun(self, *tuple( i._var if hasattr(i,'_var') else i for i in args ) )
+        return fun(self, *tuple( __dref__(i) for i in args ) )
     return _fun
 
 RooAbsCollection.__contains__ = __wrap__dref_var__( RooAbsCollection.__contains__ )
@@ -38,7 +40,7 @@ class RooObject(object) :
         from itertools import ifilter, imap
         for setters in imap( lambda x: x._setters, ifilter( lambda x : hasattr(x,'_setters'), type(self).__mro__) ): 
             if k in setters :  return setters[k](self,v )
-        raise KeyError('%s is not known for class %s' % (k, type(self) ) )
+        raise KeyError('\'%s\' is not known for class %s' % (k, type(self) ) )
     def __getitem__(self,k):
         from itertools import ifilter, imap
         for getters in imap( lambda x: x._getters, ifilter( lambda x : hasattr(x,'_getters'), type(self).__mro__) ): 
@@ -373,11 +375,10 @@ class RealEffMoment( AbsRealMoment ):
         self._pdf       = PDF
         self._normSet   = NormSet
 
-        cast = lambda var : var._target_() if hasattr( var, '_target_' ) else var
 
         # build a RooFit normalisation set
         from ROOT import RooArgSet
-        self._rooNormSet = RooArgSet( cast(var) for var in self._normSet )
+        self._rooNormSet = RooArgSet( __dref__(var) for var in self._normSet )
 
         # create efficiency moment
         from P2VVLoad import P2VVLibrary
@@ -531,22 +532,19 @@ class Pdf(RooObject):
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
         if 'ConditionalObservables' in kwargs :
-            cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
-            kwargs['ConditionalObservables'] = RooArgSet( cvrt(var) for var in kwargs.pop('ConditionalObservables') )
+            kwargs['ConditionalObservables'] = RooArgSet( __dref__(var) for var in kwargs.pop('ConditionalObservables') )
         return self._var.fitTo( data, **kwargs )
 
     @wraps(RooAbsPdf.generate)
     def generate(self, whatvars, *args, **kwargs):
         #if not whatvars : whatvars = [ i for i in self._var.getVariables() if i.getAttribute('Observable') ]
-        cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
-        return self._var.generate(RooArgSet([ cvrt(i) for i in whatvars] if not isinstance(cvrt(whatvars),RooAbsCategory) else cvrt(whatvars)), *args,**kwargs)
+        return self._var.generate(RooArgSet([ __dref__(i) for i in whatvars] if not isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars)), *args,**kwargs)
 
     @wraps(RooAbsPdf.plotOn)
     def plotOn( self, frame, **kwargs ) :
         if 'Slice' in kwargs :
-            cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
             sl = kwargs.pop('Slice')
-            kwargs['Slice'] = ( cvrt(sl[0]), sl[1] )
+            kwargs['Slice'] = ( __dref__(sl[0]), sl[1] )
         return self._var.plotOn( frame, **kwargs )
 
 
@@ -673,15 +671,12 @@ class RealSumPdf( Pdf ):
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
-
         d = { 'Name' : Name 
             , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
             , 'Formula' : kwargs.pop('Formula')
             }
-
         # construct factory string on the fly...
         self._declare("GenericPdf::%(Name)s( '%(Formula)s', { %(Args)s } )" % d )
-
         self._init(Name,'RooGenericPdf')
         Pdf.__init__(self
                     , Name = Name
@@ -694,14 +689,11 @@ class GenericPdf( Pdf ) :
 class UniformPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
-
         d = { 'Name' : Name 
             , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
             }
-
         # construct factory string on the fly...
         self._declare("Uniform::%(Name)s( { %(Args)s } )" % d )
-
         self._init(Name,'RooUniform')
         Pdf.__init__(self
                     , Name = Name
@@ -824,7 +816,7 @@ class Component(object):
         assert n>=nlo
         assert n<=nhi
         Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n)
-        Component._d[self.name]['Yield'].Print('V')
+        # Component._d[self.name]['Yield'].Print('V')
     def __iadd__(self,pdf) :
         self.append(pdf)
         return self
