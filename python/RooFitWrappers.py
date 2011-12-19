@@ -475,8 +475,8 @@ class Pdf(RooObject):
         self._dict = kwargs
         self._dict['Name'] = Name
         self._make_pdf()
-        print 'Pdf(%s): deduced observables: %s' %  (Name,self.Observables() )
-        print 'Pdf(%s): specified observables : %s' % (Name,set( i.GetName() for i in kwargs['Observables'] ))
+        #print 'Pdf(%s): deduced observables: %s' %  (Name,self.Observables() )
+        #print 'Pdf(%s): specified observables : %s' % (Name,set( i.GetName() for i in kwargs['Observables'] ))
 
     def __str__(self):
         d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
@@ -669,6 +669,7 @@ class RealSumPdf( Pdf ):
         functions    = ','.join( [ func.GetName() for func in self._dict['Functions'] ] )
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
 
+
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
@@ -685,6 +686,26 @@ class GenericPdf( Pdf ) :
         Pdf.__init__(self
                     , Name = Name
                     , Type = 'RooGenericPdf'
+                    , Observables = () # let Pdf figure this out itself...
+                    )
+        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+class UniformPdf( Pdf ) :
+    def _make_pdf(self) : pass
+    def __init__(self,Name,**kwargs) :
+
+        d = { 'Name' : Name 
+            , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
+            }
+
+        # construct factory string on the fly...
+        self._declare("Uniform::%(Name)s( { %(Args)s } )" % d )
+
+        self._init(Name,'RooUniform')
+        Pdf.__init__(self
+                    , Name = Name
+                    , Type = 'RooUniform'
                     , Observables = () # let Pdf figure this out itself...
                     )
         kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
@@ -800,7 +821,10 @@ class Component(object):
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
     def setYield(self, n, nlo, nhi) :
-        Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
+        assert n>=nlo
+        assert n<=nhi
+        Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n)
+        Component._d[self.name]['Yield'].Print('V')
     def __iadd__(self,pdf) :
         self.append(pdf)
         return self
@@ -813,8 +837,8 @@ class Component(object):
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
         #### 
-        print 'Component: specified observables: %s' % k
-        print 'Component: deduced observables: %s' % pdf.Observables()
+        #print 'Component: specified observables: %s' % k
+        #print 'Component: deduced observables: %s' % pdf.Observables()
         assert k == pdf.Observables()
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
