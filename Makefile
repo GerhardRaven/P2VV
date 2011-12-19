@@ -9,7 +9,7 @@ df = $(DEPDIR)/$(*F)
 #CXX = g++
 LD  = $(CXX)
 ROOTCONFIG = root-config
-CXXFLAGS := $(shell $(ROOTCONFIG) --cflags) -Wall -O2 -pipe -ggdb -I$(INCDIR) -I.
+CXXFLAGS := $(shell $(ROOTCONFIG) --cflags) -march=native -Wall -O2 -pipe -ggdb -I$(INCDIR) -I.
 LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
@@ -24,7 +24,7 @@ vpath %.o   $(BUILDDIR)
 
 all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so 
 
-$(BUILDDIR)/P2VV_dict.o: $(BUILDDIR)/P2VV_dict.cxx $(BUILDDIR)/P2VV_dict.h
+$(BUILDDIR)/P2VV_dict.o: $(BUILDDIR)/P2VV_dict.cxx
 
 $(BUILDDIR)/%.o : %.cxx %.h
 	$(CXX) $(CXXFLAGS) -fPIC -DPIC -MMD -c $< -o $@

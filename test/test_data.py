@@ -15,8 +15,8 @@ class TestData(object):
         from RooFitWrappers import RealVar
         from Helpers import Mapping
 
-        m = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5000,6000))
-        t = RealVar('t',Observable=True,MinMax=(-1,14),Unit='ps',Value=0)
+        m = RealVar('m', Observable = True, Unit = 'MeV/c^2', MinMax=(5000, 6000))
+        t = RealVar('t', Observable = True, MinMax = (-1, 14), Unit = 'ps', Value = 0)
 
         import inspect
         thisFile = inspect.getfile(inspect.currentframe())
@@ -26,10 +26,10 @@ class TestData(object):
         
         m = Mapping({m : 'data_m', t :'data_t'}, dataset)
 
-        m = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5000,6000))
+        m = RealVar('m', Observable = True, Unit = 'MeV/c^2', MinMax=(5000, 6000))
         assert m['Observable'] == True
         assert m['Unit'] == 'MeV/c^2'
-        assert m['MinMax'] == (5000,6000)
+        assert m['MinMax'] == (5000, 6000)
         assert m['Name'] == 'data_m'
 
         t = RealVar('t',Observable=True,MinMax=(-1,14),Unit='ps',Value=0)

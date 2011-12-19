@@ -49,7 +49,7 @@ class RooObject(object) :
         if workspace :
             from ROOT import RooWorkspace
             if type(workspace) != RooWorkspace : workspace = RooWorkspace(workspace)
-            self.setWorkspace( workspace )
+            self.setWorkspace(workspace)
 
     def ws(self) : 
         if not RooObject._ws : raise RuntimeError('No workspace defined!')
@@ -431,7 +431,11 @@ class RealVar (RooObject):
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
                 if k == 'Value': continue
-                assert v == self[k]
+                try:
+                    assert v == self[k]
+                except AssertionError:
+                    print "%s is not the same" % k
+                    raise
             
     # overrule RooRealVar.setRange
     @wraps(RooRealVar.setRange)

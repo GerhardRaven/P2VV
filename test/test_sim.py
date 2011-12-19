@@ -132,8 +132,8 @@ class TestPDFs(object):
                    Options = ('SingleSided',), ResolutionModel = res)
 
         assert sig['Type'] == 'Decay'
-        assert sig['Observables'] == frozenset([t])
-        assert sig['Parameters'] == frozenset([tau])
+        assert list(sig['Observables']) == [t]
+        assert list(sig['Parameters']) == [tau]
 
     def test_component(self):
         from RooFitWrappers import RealVar
@@ -176,12 +176,12 @@ class TestPDFs(object):
                                  MinMax = (0.1, 0.9))
         background_res = ResolutionModel('background_res', Type = 'RooTruthModel', Observables = [t])
 
-        background[t] = Pdf('background', Type = 'Decay', Observables = (t,),
+        background[t] = Pdf('bkg', Type = 'Decay', Observables = (t,),
                             Parameters = (background_tau,), Options = ('SingleSided',),
                             ResolutionModel = background_res)
 
 
         pdf = buildPdf((background,signal) , Observables = (m,t), Name='pdf')
-        assert pdf['Observables'] == frozenset((m,t))
+        assert list(pdf['Observables']) == [m,t]
         assert pdf['Type'] == 'RooAddPdf'
 
