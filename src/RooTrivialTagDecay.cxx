@@ -143,15 +143,17 @@ RooArgSet* RooTrivialTagDecay::coefVars(Int_t basisIndex) const
 //_____________________________________________________________________________
 Int_t RooTrivialTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const 
 {
-  // TODO: what if we are integrating over _tag???? remove _tag from allVars!!!
+  // Note: what if we are integrating over _tag???? remove _tag from allVars!!!
+  RooArgSet redVars(allVars);
+  redVars.remove(_tag.arg());
   const RooRealProxy* p = proxy( coef );
-  return p ? p->arg().getAnalyticalIntegral(allVars,analVars,rangeName) : 0; 
+  return p ? p->arg().getAnalyticalIntegral(redVars,analVars,rangeName) : 0; 
 }
 
 //_____________________________________________________________________________
 Double_t RooTrivialTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code, const char* rangeName) const 
 {
-  // TODO: what if we are integrating over _tag????
+  // TODO: what if we are integrating over _tag???? Should not happen, as getCoefAnalyticalIntegral will not select it!
   const RooRealProxy* p = proxy( coef );
   return ( p ? p->arg().analyticalIntegral(code,rangeName) : 0 ) * ( _tag!=0 ? _tageff : 1.-_tageff );
 }
