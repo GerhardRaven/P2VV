@@ -60,19 +60,20 @@ public:
   RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooCategory& iTag, RooCategory& fTag,
     RooCategory& tagCat, RooAbsReal& tau, RooAbsReal& dGamma,
-    RooAbsReal& dm, RooArgList& dilutions, RooArgList& ADilWTags,
-    RooAbsReal& ANorm, RooArgList& avgCEvens, RooArgList& avgCOdds,
-    RooArgList& tagCatCoefs, RooAbsReal& cosCoef,
+    RooAbsReal& dm, const RooArgList& dilutions, const RooArgList& ADilWTags,
+    RooAbsReal& ANorm, const RooArgList& avgCEvens, const RooArgList& avgCOdds,
+    const RooArgList& tagCatCoefs, RooAbsReal& cosCoef,
     const RooResolutionModel& model, DecayType type, Bool_t checkTags = kTRUE);
 
   // constructor with an initial state tag and tagging categories
   RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooCategory& iTag, RooCategory& tagCat, RooAbsReal& tau,
-    RooAbsReal& dGamma, RooAbsReal& dm, RooArgList& dilutions,
-    RooArgList& ADilWTags, RooArgList& avgCEvens, RooArgList& avgCOdds,
-    RooArgList& tagCatCoefs, RooAbsReal& coshCoef, RooAbsReal& sinhCoef,
-    RooAbsReal& cosCoef, RooAbsReal& sinCoef, const RooResolutionModel& model,
-    DecayType type, Bool_t checkTags = kTRUE);
+    RooAbsReal& dGamma, RooAbsReal& dm, const RooArgList& dilutions,
+    const RooArgList& ADilWTags, const RooArgList& avgCEvens,
+    const RooArgList& avgCOdds, const RooArgList& tagCatCoefs,
+    RooAbsReal& coshCoef, RooAbsReal& sinhCoef, RooAbsReal& cosCoef,
+    RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
+    Bool_t checkTags = kTRUE);
 
   RooBTagDecay(const RooBTagDecay& other, const char* name = 0);
 
@@ -101,8 +102,9 @@ public:
   Int_t getTagCatIndex(Int_t tagCatPosition) const;
 
 protected:
-  void initTaggingCats(RooArgList& tagCatCoefs, RooArgList& dilutions,
-      RooArgList& ADilWTags, RooArgList& avgCEvens, RooArgList& avgCOdds);
+  void initTaggingCats(const RooArgList& tagCatCoefs,
+      const RooArgList& dilutions, const RooArgList& ADilWTags,
+      const RooArgList& avgCEvens, const RooArgList& avgCOdds);
   void initTag(Bool_t iTag);
   void initTagCatMaps() const;
   void declareBases();

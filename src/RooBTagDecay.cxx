@@ -123,7 +123,6 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   RooArgList ADilWTags(ADilWTag);
   RooArgList avgCEvens(avgCEven);
   RooArgList avgCOdds(avgCOdd);
-
   initTaggingCats(tagCatCoefs, dilutions, ADilWTags, avgCEvens, avgCOdds);
 
   if (!checkVarDep(time, kTRUE)) assert(0);
@@ -190,10 +189,10 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
 RooBTagDecay::RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooCategory& iTag, RooCategory& fTag,
     RooCategory& tagCat, RooAbsReal& tau, RooAbsReal& dGamma, RooAbsReal& dm,
-    RooArgList& dilutions, RooArgList& ADilWTags, RooAbsReal& ANorm,
-    RooArgList& avgCEvens, RooArgList& avgCOdds, RooArgList& tagCatCoefs,
-    RooAbsReal& cosCoef, const RooResolutionModel& model, DecayType type,
-    Bool_t checkVars) :
+    const RooArgList& dilutions, const RooArgList& ADilWTags,
+    RooAbsReal& ANorm, const RooArgList& avgCEvens, const RooArgList& avgCOdds,
+    const RooArgList& tagCatCoefs, RooAbsReal& cosCoef,
+    const RooResolutionModel& model, DecayType type, Bool_t checkVars) :
   RooAbsAnaConvPdf(name, title, model, time),
   _time("time", "B lifetime", this, time),
   _iTag("iTag", "initial state tag", this, iTag),
@@ -241,11 +240,12 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
 //_____________________________________________________________________________
 RooBTagDecay::RooBTagDecay(const char *name, const char* title,
     RooRealVar& time, RooCategory& iTag, RooCategory& tagCat, RooAbsReal& tau,
-    RooAbsReal& dGamma, RooAbsReal& dm, RooArgList& dilutions,
-    RooArgList& ADilWTags, RooArgList& avgCEvens, RooArgList& avgCOdds,
-    RooArgList& tagCatCoefs, RooAbsReal& coshCoef, RooAbsReal& sinhCoef,
-    RooAbsReal& cosCoef, RooAbsReal& sinCoef, const RooResolutionModel& model,
-    DecayType type, Bool_t checkVars) :
+    RooAbsReal& dGamma, RooAbsReal& dm, const RooArgList& dilutions,
+    const RooArgList& ADilWTags, const RooArgList& avgCEvens,
+    const RooArgList& avgCOdds, const RooArgList& tagCatCoefs,
+    RooAbsReal& coshCoef, RooAbsReal& sinhCoef, RooAbsReal& cosCoef,
+    RooAbsReal& sinCoef, const RooResolutionModel& model, DecayType type,
+    Bool_t checkVars) :
   RooAbsAnaConvPdf(name, title, model, time),
   _time("time", "B lifetime", this, time),
   _iTag("iTag", "initial state tag", this, iTag),
@@ -1086,9 +1086,9 @@ Int_t RooBTagDecay::getTagCatIndex(Int_t tagCatPosition) const
 }
 
 //_____________________________________________________________________________
-void RooBTagDecay::initTaggingCats(RooArgList& tagCatCoefs,
-    RooArgList& dilutions, RooArgList& ADilWTags, RooArgList& avgCEvens,
-    RooArgList& avgCOdds)
+void RooBTagDecay::initTaggingCats(const RooArgList& tagCatCoefs,
+    const RooArgList& dilutions, const RooArgList& ADilWTags,
+    const RooArgList& avgCEvens, const RooArgList& avgCOdds)
 {
   // set proxies for tagging category coefficients, dilutions,
   // dilution/wrong-tag asymmetries, average even coefficients and

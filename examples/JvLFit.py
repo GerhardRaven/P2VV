@@ -6,8 +6,8 @@ from math import pi, sin, cos, sqrt
 
 # job parameters
 generateData = False
-fitData      = False
-makePlots    = False
+fitData      = True
+makePlots    = True
 
 nEvents = 10000
 dataSetName = 'JpsiphiData'
@@ -78,7 +78,7 @@ iTag   = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable
 tagCat = Category( 'tagCat'    , Title = 'Tagging Category',          Observable = True, States = [ 'Untagged', 'Tagged' ] )
 
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
-observables = [ time ] + list(angles) + [ iTag ]
+observables = [ time ] + list(angles) + [ iTag, tagCat ]
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
