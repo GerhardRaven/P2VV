@@ -3,6 +3,7 @@
 Defines RooFit output streams and topics for P2VV
 """
 
+import RooFitDecorators
 print "P2VV - INFO: RooFitOutput: setting RooFit output streams"
 from ROOT import RooFit, RooMsgService
 
