@@ -8,14 +8,15 @@
 ###########################################################################################################################################
 
 
-def numCPU() :
+import sys
+def numCPU( Max = sys.maxint ) :
     try : # needs >= 2.6
         import multiprocessing
-        return multiprocessing.cpu_count()
+        return min(Max,multiprocessing.cpu_count())
     except :
         import os
         ncpu = os.sysconf('SC_NPROCESSORS_ONLN')
-        return max( ncpu, 1 )
+        return min(Max,max( ncpu, 1 ))
 
 
 ###########################################################################################################################################
