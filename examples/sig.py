@@ -60,7 +60,7 @@ args = { 'time'      : t
        }
 
 # TODO: should be able to write BTagDecay('mypdf', **lifetimeParams.BTagDecay() + **basisCoefficients.BTagDecay() + **taggingParams.BTagDecay() )
-mcpdf = BTagDecay( 'mc_pdf', Observables = [ t,iTag ] + angles.angles.values(), **args  )
+mcpdf = BTagDecay( 'mc_pdf', **args  )
 #mcpdf = BDecay( 'mc_pdf',  args )
 
 # update resolution model, and build again...
@@ -70,7 +70,6 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 #sigpdf = BTagDecay( 'sig_pdf', args )
 
 pdf = mcpdf
-
 
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
 signal = Component('signal',(  LP2011_Signal_Mass( mass = mass ).pdf(),  pdf ), Yield = (10000,5000,15000) )
