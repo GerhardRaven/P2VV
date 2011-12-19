@@ -9,7 +9,7 @@ df = $(DEPDIR)/$(*F)
 #CXX = g++
 LD  = $(CXX)
 ROOTCONFIG = root-config
-CXXFLAGS := $(shell $(ROOTCONFIG) --cflags) -march=native -Wall -O2 -pipe -ggdb -I$(INCDIR) -I.
+CXXFLAGS := $(shell $(ROOTCONFIG) --cflags)  -Wall -O2 -pipe -ggdb -I$(INCDIR) -I.
 LDFLAGS := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
