@@ -164,7 +164,7 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
 
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
-class Trivial_Background_TagPdf( _util_parse_mixin ) :
+class Trivial_Background_Tag( _util_parse_mixin ) :
     def pdf(self) :
         return self._pdf
     def __init__( self, tagdecision, **kwargs ) :
