@@ -161,3 +161,25 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
                                    , CEvenOdds   = CEvenOdds
                                   )
 
+
+
+from P2VVParameterizations.GeneralUtils import _util_parse_mixin
+class Trivial_Background_Tag( _util_parse_mixin ) :
+    def pdf(self) :
+        return self._pdf
+    def __init__( self, tagdecision, **kwargs ) :
+        triple =  set([-1,0,+1])==set([ i for i in tagdecision.states().itervalues()] )
+        double =  set([-1,+1])==set([ i for i in tagdecision.states().itervalues()] )
+        assert triple or double
+        if triple : self._parseArg('bkg_tag_eps',   kwargs, Title = 'background tagging efficiency ', Value = 0.25, MinMax = (0.0,1.0) )
+        self._parseArg('bkg_tag_delta', kwargs, Title = 'background tagging asymmetry ', Value = 0.0, MinMax = (-0.5,0.5) )
+        from RooFitWrappers import GenericPdf
+        if triple :
+            self._pdf = GenericPdf('Trivial_Background_TagPdf', Formula = '(@0==0)*(1-@1)+(@0!=0)*@1*0.5*(1+@0*@2)'
+                                                              , Arguments = [ tagdecision,self._bkg_tag_eps,self._bkg_tag_delta ] )
+        else :
+            self._pdf = GenericPdf('Trivial_Background_TagPdf', Formula = '0.5*(1+@0*@1)'
+                                                              , Arguments = [ tagdecision,self._bkg_tag_delta ] )
+
+        for (k,v) in kwargs.iteritems() :
+            setattr(self,'_'+k,v)

@@ -12,16 +12,14 @@ plotsFile = 'MultiMultinomialPlots.ps'
 
 ###############################################################################
 from array import array
-import P2VV, P2VVPlots
 
-# load the P2VV library
-P2VV.loadP2VVLib()
+from P2VVLoad import P2VVLibrary
 
 from ROOT import RooArgList, RooArgSet, RooBinning, RooEffProd, RooGaussian,\
     RooMultiMultinomial, RooRealVar, TCanvas
 
 # set RooFit output
-P2VV.setRooFitOutput()
+from P2VVLoad import RooFitOutput
 
 # create a base variable and its binning
 baseVar = RooRealVar('baseVar', 'baseVar', 0., -1., 1.)
@@ -61,7 +59,7 @@ for i in range(cList.getSize()) :
   print i, cList.at(i).getVal()
 
 # set plot style
-P2VVPlots.setP2VVPlotStyle()
+#P2VVPlots.setP2VVPlotStyle()
 
 # plot the step function, the PDF and PDF data
 canv = TCanvas()

@@ -94,3 +94,16 @@ class Amplitudes_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
                                         , Im( self._amplitudes[amp1], self._amplitudes[amp2] ) )
         # initialize
         Coefficients_AngularPdfTerms.__init__( self, AngCoefficients = angCoefs, AngFunctions = angFuncs )
+
+
+
+from P2VVParameterizations.GeneralUtils import _util_parse_mixin
+class Uniform_Angles( _util_parse_mixin ) :
+    def pdf(self) :
+        return self._pdf        
+    def __init__( self, angles, **kwargs ) :
+        # not the fastes implementation, but certainly the quickest to implement ;-)
+        from RooFitWrappers import GenericPdf
+        self._pdf =  GenericPdf('Uniform_AnglesPdf', Formula = '1.' , Arguments = ( angles['phi'],angles['ctheta'],angles['cpsi'] ) )
+        for (k,v) in kwargs.iteritems() :
+            setattr(self,'_'+k,v)
