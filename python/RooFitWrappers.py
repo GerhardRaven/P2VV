@@ -659,37 +659,47 @@ class RealSumPdf( Pdf ):
 
 class BTagDecay( Pdf ) :
     def _make_pdf(self) : pass
-    def __init__(self,Name,**kwargs) :
-        d = { 'Name' : Name, 'checkVars' : 1, 'decayType' : 'SingleSided', 'tagCat' : None }
-        for i in [ 'time','iTag','tau', 'dGamma', 'dm'
-                 , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
-                 , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
-                 , 'resolutionModel', 'decayType', 'checkVars' ] :
-           if i not in d or i in kwargs : d[i] = kwargs.pop(i) 
-
+    def __init__( self, Name, **kwargs ) :
         from P2VVLoad import P2VVLibrary
+        argDict = { 'Name' : Name, 'checkVars' : '1', 'decayType' : 'SingleSided' }
+
         # construct factory string on the fly...
-        if d['tagCat'] :
+        convert = lambda arg : str(arg) if type(arg) != list else '{%s}' % ','.join( str(listItem) for listItem in arg )
+        if 'tagCat' in kwargs :
+            for argName in [  'time', 'iTag', 'tagCat', 'tau', 'dGamma', 'dm'
+                            , 'dilutions', 'ADilWTags', 'avgCEvens', 'avgCOdds', 'tagCatCoefs'
+                            , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                            , 'resolutionModel', 'decayType', 'checkVars'
+                           ] :
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
+
             self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                              " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s"\
+                                              " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s,"\
                                               " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
                          )
         else :
+            for argName in [  'time', 'iTag', 'tau', 'dGamma', 'dm'
+                        , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
+                        , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                        , 'resolutionModel', 'decayType', 'checkVars'
+                       ] :
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
+
             self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
                                               " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
                                               " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
                          )
 
-        self._init(Name,'RooBTagDecay')
-        Pdf.__init__(self
-                    , Name = Name
-                    , Type = 'RooBTagDecay'
-                    , Observables = () # let Pdf figure this out itself...
+        self._init( Name, 'RooBTagDecay' )
+        Pdf.__init__(  self
+                     , Name = Name
+                     , Type = 'RooBTagDecay'
+                     , Observables = () # let Pdf figure this out itself...
                     )
-        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        kwargs.pop( 'Observables', None ) # TODO: remove this bad hack!!! Observables are automatically determined
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
 
 class ResolutionModel(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables')

@@ -6,8 +6,8 @@ from math import pi, sin, cos, sqrt
 
 # job parameters
 generateData = False
-fitData      = True
-makePlots    = True
+fitData      = False
+makePlots    = False
 
 nEvents = 10000
 dataSetName = 'JpsiphiData'
@@ -73,8 +73,9 @@ from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
 
 # variables in PDF
-time = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-iTag = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B' : +1, 'Bbar' : -1} )#, 'Untagged' : 0} )
+time   = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+iTag   = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B':+1, 'Bbar':-1} )#, 'Untagged':0} )
+tagCat = Category( 'tagCat'    , Title = 'Tagging Category',          Observable = True, States = [ 'Untagged', 'Tagged' ] )
 
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
 observables = [ time ] + list(angles) + [ iTag ]
@@ -107,9 +108,12 @@ else :
   from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
   lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
+
 # tagging parameters
 from P2VVParameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
-taggingParams = WTagsCoefAsyms_TaggingParams( wTag = wTagVal, wTagBar = wTagBarVal, AProd = AProdVal, ANorm = ANormVal )
+taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCat.numTypes(), wTag1 = wTagVal, wTagBar1 = wTagBarVal, AProd = AProdVal
+                                             , ANorm = ANormVal
+                                            )
 
 # coefficients for time functions
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
@@ -119,13 +123,15 @@ timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients( angleFuncs.functions, transA
 args = {
     'time'            : time
   , 'iTag'            : iTag
+  , 'tagCat'          : tagCat
   , 'tau'             : lifetimeParams['MeanLifetime']
   , 'dGamma'          : lifetimeParams['deltaGamma']
   , 'dm'              : lifetimeParams['deltaM']
-  , 'dilution'        : taggingParams['dilution']
-  , 'ADilWTag'        : taggingParams['ADilWTag']
-  , 'avgCEven'        : taggingParams['avgCEven']
-  , 'avgCOdd'         : taggingParams['avgCOdd']
+  , 'dilutions'       : taggingParams['dilutions']
+  , 'ADilWTags'       : taggingParams['ADilWTags']
+  , 'avgCEvens'       : taggingParams['avgCEvens']
+  , 'avgCOdds'        : taggingParams['avgCOdds']
+  , 'tagCatCoefs'     : taggingParams['tagCatCoefs']
   , 'coshCoef'        : timeBasisCoefs['cosh']
   , 'sinhCoef'        : timeBasisCoefs['sinh']
   , 'cosCoef'         : timeBasisCoefs['cos']
