@@ -1,10 +1,5 @@
 #ifdef __CINT__
 
-#pragma link C++ class IMoment;
-#pragma link C++ class Moment;
-#pragma link C++ class EffMoment;
-#pragma link C++ function _computeMoments;
-#pragma link C++ class vector<IMoment*>;
 #pragma link C++ class RooAbsRealMoment;
 #pragma link C++ class RooRealMoment;
 #pragma link C++ class RooRealEffMoment;

@@ -237,9 +237,9 @@ def buildJpsikstarAnglePdf(ws, name, transversity) :
 ## So we adapt the arguments, and then defer to the C++ _computeMoments
 def computeMoments( data, moments ) :
     if not moments : return None
-    vecmom = std.vector('IMoment*')()
+    vecmom = std.vector('RooAbsRealMoment*')()
     for m in moments : vecmom.push_back(m)
-    return _computeMoments( data, vecmom )
+    return computeRooRealMoments( data, vecmom )
 
 def buildMomentPDF(w,name,data,moments) :
     if not moments : return None
