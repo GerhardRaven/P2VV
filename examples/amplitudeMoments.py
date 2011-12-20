@@ -17,6 +17,7 @@ dataSetName = 'JpsiKstarData'
 dataSetFile = 'amplitudeMoments_hel.root'
 #dataSetFile = 'amplitudeMoments_trans.root'
 NTuple = False
+plotsFile = 'amplitudeMoments.ps'
 
 # angular moments
 momentsFile = 'JpsiKstarMoments'
@@ -42,8 +43,8 @@ markSize   = 0.4
 
 
 ###########################################################################################################################################
-## build the angular PDF ##
-###########################
+## build the angular PDF, generate/read data and do a fit ##
+############################################################
 
 # import RooFit wrappers
 from RooFitWrappers import *
@@ -75,11 +76,6 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
 from P2VVParameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
 pdfTerms = Amplitudes_AngularPdfTerms( AmpNames = ampsToUse, Amplitudes = transAmps, AngFunctions = angleFuncs.functions )
 pdf = pdfTerms.buildSumPdf('AngularPDF')
-
-
-###########################################################################################################################################
-## generate/read data and do a fit ##
-#####################################
 
 from P2VVLoad import RooFitOutput
 if generateData :
@@ -139,22 +135,30 @@ momPDF1 = moments.buildPDFTerms( MinSignificance = 3, Names = names1 ).buildSumP
 momPDF2 = moments.buildPDFTerms( MinSignificance = 3, Names = names2 ).buildSumPdf('angMomentsPDF2')
 momPDF  = moments.buildPDFTerms( MinSignificance = 3                 ).buildSumPdf('angMomentsPDF')
 
-# build new PDFs with angular coefficients
+
+###########################################################################################################################################
+## build a PDF from angular basis functions and do a fit ##
+###########################################################
+
+# build new PDF with angular coefficients
 from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
-coefIndices = indices[ : ]
-coefIndices.remove( ( 0, 0, 0 ) )
+coefIndices = [ ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 2, 2, 0 ), ( 2, 2, 2 ) ]
 cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
 coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
                                           , **dict( (  'C%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
                                                      , {  'Name'    : 'Cab%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
                                                         , 'Value'   : 0.
-                                                        , 'MinMax'  : ( -1., +1. )
+                                                        , 'MinMax'  : ( -0.5, +0.5 )
                                                         , 'Indices' : inds
                                                        }
                                                     ) for inds in coefIndices
                                                   )
                                          )
 coefPDF = coefPDFTerms.buildSumPdf('angCoefsPDF')
+
+# fit data
+coefPDF.fitTo( data, NumCPU = 2, Timer = 1 )
+
 
 ###########################################################################################################################################
 ## make some plots ##
@@ -177,14 +181,17 @@ if makePlots :
                                                       , tuple( [ angle.GetTitle() for angle in angles ] )
                                                       , angleNames
                                                    ) :
-        plot(  pad, obs, data, pdf, xTitle = xTitle, addPDFs = [ momPDF0, momPDF1, momPDF2, momPDF ]
+        plot(  pad, obs, data, pdf, xTitle = xTitle, addPDFs = [ momPDF0, momPDF1, momPDF2, momPDF, coefPDF ]
              , frameOpts   = dict( Bins = nBins, Title = plotTitle )
              , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
-             , pdfOpts     = dict( LineWidth = lineWidth )
+             , pdfOpts     = dict( LineWidth = lineWidth, LineColor = RooFit.kBlack )
              , addPDFsOpts = [  dict( LineWidth = lineWidth, LineColor = RooFit.kGreen + 2 )
                               , dict( LineWidth = lineWidth, LineColor = RooFit.kCyan + 2  )
+                              , dict( LineWidth = lineWidth, LineColor = RooFit.kBlue      )
                               , dict( LineWidth = lineWidth, LineColor = RooFit.kMagenta   )
                               , dict( LineWidth = lineWidth, LineColor = RooFit.kRed       )
                              ]
             )
+
+    anglesCanv.Print(plotsFile)
 
