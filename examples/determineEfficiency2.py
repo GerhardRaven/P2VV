@@ -67,17 +67,20 @@ args = { 'time'      : t
 mcpdf = BTagDecay( 'mc_pdf', **args  )
 
 
-mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
-mcfilename =  '/data/bfys/graven/ntupleB_MC10Bs2JpsiPhi_Reco10_UpDown_simple_with_MCtime_angles_tag.root'
-mcfilename =  '/data/bfys/graven/aladaan.root'
-#mcfilename =  '/tmp/aladaan.root'
-from ROOT import TFile
-MCfile = TFile(mcfilename)
-MCtuple = MCfile.Get('MyTree')
-assert MCtuple
-from ROOT import RooDataSet
-noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in observables )
-data = RooDataSet('MCdata','MCdata',MCtuple, ( i._target_() for i in observables  ),noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
+if False :
+    mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
+    mcfilename =  '/data/bfys/graven/ntupleB_MC10Bs2JpsiPhi_Reco10_UpDown_simple_with_MCtime_angles_tag.root'
+    mcfilename =  '/data/bfys/graven/aladaan.root'
+    #mcfilename =  '/tmp/aladaan.root'
+    from ROOT import TFile
+    MCfile = TFile(mcfilename)
+    MCtuple = MCfile.Get('MyTree')
+    assert MCtuple
+    from ROOT import RooDataSet
+    noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in observables )
+    data = RooDataSet('MCdata','MCdata',MCtuple, ( i._target_() for i in observables  ),noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
+else :
+    data = mcpdf.generate(observables,10000)
 print 'got dataset with %s entries' % data.numEntries()
 
 
@@ -93,20 +96,67 @@ data = inEffData;
 
 
 print 'computing efficiency moments'
+##################################
 from P2VVGeneralUtils import RealMomentsBuilder
 # eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, mcpdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
 eff = RealMomentsBuilder()
-indices  = [ ( i, l, m ) for i in range(6)
-                         for l in range(6)
+indices  = [ ( i, l, m ) for i in range(4)
+                         for l in range(4)
                          for m in range(-l,l+1) ]
-indices += [ ( i, 2, m ) for i in range(6,10)  # 3,20)
-                         for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
+#indices += [ ( i, 2, m ) for i in range(6,10)  # 3,20)
+#                         for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
 eff.appendPYList( angles.angles, indices, PDF = mcpdf, NormSet = angles.angles.itervalues() )
 eff.compute(data)
 
 from math import sqrt,pi
 #eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
 eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
+##################################
+class abasis :
+    def __init__(self,w,*args) :
+       self.w = w
+       (cpsi,cheta,phi) = args if len(args)==3 else args[0]
+
+       def _f(x) :
+            if type(x) is str : return w[x]
+            if not self.w.function(x.GetName()) : x = w.put(x)
+            return x
+       self.cpsi   = _f(cpsi)
+       self.ctheta = _f(cheta)
+       self.phi    = _f(phi)
+       print 'using %s,%s,%s' % (self.cpsi,self.ctheta,self.phi)
+
+    def angles(self) : 
+        return RooArgList(self.cpsi,self.ctheta,self.phi)
+    def build(self,label,i,j,k,l,c) :
+        name = "%s_%d_%d_%d_%d" % (label,i,j,k,l)
+        name.replace("-","m")
+        b = self.w.function(name) # workaround a bug in ROOT 5.26 -- if name not present, w.obj(name) will SEGV...
+        from ROOT import RooP2VVAngleBasis
+        if not b : 
+            b = self.w.put( RooP2VVAngleBasis(name,name,self.cpsi,self.ctheta,self.phi,i,j,k,l,c) )
+        return b
+
+ab = abasis(mcpdf.ws(),angles.angles['cpsi']._var,angles.angles['ctheta']._var,angles.angles['phi']._var)
+from itertools import product
+# if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
+# Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
+from ROOT import EffMoment
+moments = [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, mcpdf._var, allObs ) for i in range(4) for l in range(4) for m in range(-l,l+1) ]
+
+# loop over all data, determine moments
+def computeMoments( data, moments ) :
+    if not moments : return None
+    from ROOT import std
+    vecmom = std.vector('IMoment*')()
+    for m in moments : vecmom.push_back(m)
+    from ROOT import _computeMoments
+    return _computeMoments( data, vecmom )
+
+computeMoments(data,moments)
+for i in moments : i.Print()
+##################################
+
 
 #pdf.Print("T")
 pdf = eff * mcpdf
