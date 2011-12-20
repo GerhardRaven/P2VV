@@ -9,7 +9,7 @@ generateData = False
 fitData      = True
 makePlots    = True
 
-nEvents = 10000
+nEvents = 30000
 dataSetName = 'JpsiphiData'
 dataSetFile = 'JvLFit2Tags.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
@@ -38,8 +38,9 @@ dmVal           = 17.8
 timeResSigmaVal = 0.05
 
 # asymmetries
-AProdVal =  0.4
-ANormVal = -( 1. - lambdaCPSqVal ) / ( 1. + lambdaCPSqVal )
+AProdVal   =  0.4
+ANormVal   = -( 1. - lambdaCPSqVal ) / ( 1. + lambdaCPSqVal )
+ATagEffVal =  0.1
 
 # tagging parameters
 wTagVal    = 0.1
@@ -112,7 +113,7 @@ else :
 # tagging parameters
 from P2VVParameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
 taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCat.numTypes(), wTag1 = wTagVal, wTagBar1 = wTagBarVal, AProd = AProdVal
-                                             , ANorm = ANormVal
+                                             , ANorm = ANormVal, ATagEff1 = ATagEffVal
                                             )
 
 # coefficients for time functions
@@ -167,7 +168,7 @@ if fitData :
   #lambdaCP.setConstant('phiCP')
   #lambdaCP.setConstant('lambdaCPSq')
   #taggingParams['CEvenOdd'].setConstant('avgCOdd')
-  taggingParams.setConstant('wTag.*')
+  #taggingParams.setConstant('wTag.*')
 
   # fit data
   print 'JvLFit: fitting %d events' % data.numEntries()
