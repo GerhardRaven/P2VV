@@ -9,7 +9,7 @@ generateData = False
 fitData      = True
 makePlots    = True
 
-nEvents = 30000
+nEvents = 50000
 dataSetName = 'JpsiphiData'
 dataSetFile = 'JvLFit2Tags.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'

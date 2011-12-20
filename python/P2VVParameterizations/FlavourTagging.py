@@ -102,20 +102,20 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
             from P2VVParameterizations.BBbarAsymmetries import Coefficients_CEvenOdd
             if 'CEvenOddSum' in kwargs :
                 CEvenOddSum = kwargs.pop('CEvenOddSum')
+            elif 'AvgCEvenSum' in kwargs and 'AvgCOddSum' in kwargs :
+                avgCEvenSum = kwargs.pop('AvgCEvenSum')
+                avgCOddSum  = kwargs.pop('AvgCOddSum')
+                CEvenOddSum = Coefficients_CEvenOdd( avgCEven = avgCEvenSum, avgCOdd = avgCOddSum )
             else :
                 if 'AProd' in kwargs and 'ANorm' in kwargs :
                     self._AProdVal = kwargs.pop('AProd')
                     self._ANormVal = kwargs.pop('ANorm')
                     avgCOddSum  = ( self._AProdVal + self._ANormVal ) / ( 1. + self._AProdVal * self._ANormVal )
-                elif 'AvgCEvenSum' in kwargs and 'AvgCOddSum' in kwargs :
-                    avgCEvenSum = kwargs.pop('AvgCEvenSum')
-                    avgCOddSum  = kwargs.pop('AvgCOddSum') / avgCEvenSum
                 else :
                     avgCOddSum = 0.
                 CEvenOddSum = Coefficients_CEvenOdd(  avgCEven = ConstVar( 'avgCEvenSum', Value = 1. )
                                                     , avgCOdd  = RealVar(  'avgCOddSum',  Value = avgCOddSum, MinMax = ( -2., 2. ) )
                                                    )
-
             CEvenOdds.append(CEvenOddSum)
 
             # loop over tagging categories
@@ -131,18 +131,22 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
                     # get average even and average odd coefficients
                     if 'CEvenOdd%d' % index in kwargs :
                         CEvenOdd = kwargs.pop('CEvenOdd%d' % index)
+                    elif 'AvgCEven%d' % index in kwargs and 'AvgCOdd%d' % index in kwargs :
+                        avgCEven = kwargs.pop('AvgCEven%d' % index)
+                        avgCOdd  = kwargs.pop('AvgCOdd%d'  % index)
+                        CEvenOdd = Coefficients_CEvenOdd( avgCEven = avgCEven, avgCOdd = avgCOdd )
                     else :
                         if 'ATagEff%d' % index in kwargs and hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
                             ATagEffVal = kwargs.pop('ATagEff%d' % index)
-                            avgCOdd = ( self._AProdVal + self._ANormVal + ATagEffVal + self._AProdVal * self._ANormVal * ATagEffVal )\
-                                     / ( 1. + self._AProdVal * self._ANormVal + self._AProdVal * ATagEffVal + self._ANormVal * ATagEffVal )
-                        elif 'AvgCEven%d' % index in kwargs and 'AvgCOdd%d' % index in kwargs :
-                            avgCEven = kwargs.pop('AvgCEven%d' % index)
-                            avgCOdd  = kwargs.pop('AvgCOdd%d'  % index) / avgCEven
+                            avgCEven = 1. + self._AProdVal * self._ANormVal + self._AProdVal * ATagEffVal + self._ANormVal * ATagEffVal
+                            avgCOdd  = self._AProdVal + self._ANormVal + ATagEffVal + self._AProdVal * self._ANormVal * ATagEffVal
+                            avgCEven /= 1. + self._AProdVal * self._ANormVal
+                            avgCOdd  /= 1. + self._AProdVal * self._ANormVal
                         else :
-                            avgCOdd = 0.
-                        CEvenOdd = Coefficients_CEvenOdd(  avgCEven = RealVar( 'avgCEven%d' % index, Value = 1.,      MinMax = ( 0., 2.) )
-                                                         , avgCOdd  = RealVar( 'avgCOdd%d'  % index, Value = avgCOdd, MinMax = (-2., 2.) )
+                            avgCEven = 1. / ( 1. + self._AProdVal * self._ANormVal )
+                            avgCOdd  = 0.
+                        CEvenOdd = Coefficients_CEvenOdd(  avgCEven = RealVar( 'avgCEven%d' % index, Value = avgCEven, MinMax = ( 0., 2.) )
+                                                         , avgCOdd  = RealVar( 'avgCOdd%d'  % index, Value = avgCOdd,  MinMax = (-2., 2.) )
                                                         )
                     CEvenOdds.append(CEvenOdd)
 
