@@ -80,7 +80,7 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
             if numTagCats < 1 :
                 raise KeyError('WTagsCoefAsyms_TaggingParams: number of tagging categories must be greater than or equal to one')
 
-            from RooFitWrappers import RealVar, FormulaVar
+            from RooFitWrappers import ConstVar, RealVar, FormulaVar
             tagCatCoefs    = [ ]
             dilutions      = [ ]
             ADilWTags      = [ ]
@@ -95,25 +95,27 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
                 startTagCat = 1
                 self._wTags.append(None)
                 self._wTagBars.append(None)
-                dilutions.append( RealVar( 'tagDilution0', Title = 'Average tagging dilution 0',     Value = 0. ) )
-                ADilWTags.append( RealVar( 'ADilWTag0',    Title = 'Dilution/wrong tag asymmetry 0', Value = 0. ) )
+                dilutions.append( ConstVar( 'tagDilution0', Value = 0. ) )
+                ADilWTags.append( ConstVar( 'ADilWTag0',    Value = 0. ) )
 
             # get average even and average odd coefficients of category 0
             from P2VVParameterizations.BBbarAsymmetries import Coefficients_CEvenOdd
             if 'CEvenOddSum' in kwargs :
                 CEvenOddSum = kwargs.pop('CEvenOddSum')
+            elif 'AvgCEvenSum' in kwargs and 'AvgCOddSum' in kwargs :
+                avgCEvenSum = kwargs.pop('AvgCEvenSum')
+                avgCOddSum  = kwargs.pop('AvgCOddSum')
+                CEvenOddSum = Coefficients_CEvenOdd( avgCEven = avgCEvenSum, avgCOdd = avgCOddSum )
             else :
                 if 'AProd' in kwargs and 'ANorm' in kwargs :
                     self._AProdVal = kwargs.pop('AProd')
                     self._ANormVal = kwargs.pop('ANorm')
                     avgCOddSum  = ( self._AProdVal + self._ANormVal ) / ( 1. + self._AProdVal * self._ANormVal )
-                elif 'AvgCEvenSum' in kwargs and 'AvgCOddSum' in kwargs :
-                    avgCEvenSum = kwargs.pop('AvgCEvenSum')
-                    avgCOddSum  = kwargs.pop('AvgCOddSum') / avgCEvenSum
                 else :
                     avgCOddSum = 0.
-                CEvenOddSum = Coefficients_CEvenOdd( avgCEven = 1., avgCOdd = avgCOddSum )
-
+                CEvenOddSum = Coefficients_CEvenOdd(  avgCEven = ConstVar( 'avgCEvenSum', Value = 1. )
+                                                    , avgCOdd  = RealVar(  'avgCOddSum',  Value = avgCOddSum, MinMax = ( -2., 2. ) )
+                                                   )
             CEvenOdds.append(CEvenOddSum)
 
             # loop over tagging categories
@@ -129,18 +131,23 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
                     # get average even and average odd coefficients
                     if 'CEvenOdd%d' % index in kwargs :
                         CEvenOdd = kwargs.pop('CEvenOdd%d' % index)
+                    elif 'AvgCEven%d' % index in kwargs and 'AvgCOdd%d' % index in kwargs :
+                        avgCEven = kwargs.pop('AvgCEven%d' % index)
+                        avgCOdd  = kwargs.pop('AvgCOdd%d'  % index)
+                        CEvenOdd = Coefficients_CEvenOdd( avgCEven = avgCEven, avgCOdd = avgCOdd )
                     else :
-                        if 'ATagEffVal%d' % index in kwargs and hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
-                            ATagEffVal = kwargs.pop('ATagEffVal%d' % index)
-                            avgCOdd = ( self._AProdVal + self._ANormVal + ATagEffVal + self._AProdVal*self._ANormVal*ATagEffVal )\
-                                      / ( 1. + self._AProdVal*self._ANormVal + self._AProdVal*ATagEffVal + self._ANormVal*ATagEffVal )
-                        elif 'AvgCEven%d' % index in kwargs and 'AvgCOdd%d' % index in kwargs :
-                            avgCEven = kwargs.pop('AvgCEven%d' % index)
-                            avgCOdd  = kwargs.pop('AvgCOdd%d'  % index) / avgCEven
+                        if 'ATagEff%d' % index in kwargs and hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
+                            ATagEffVal = kwargs.pop('ATagEff%d' % index)
+                            avgCEven = 1. + self._AProdVal * self._ANormVal + self._AProdVal * ATagEffVal + self._ANormVal * ATagEffVal
+                            avgCOdd  = self._AProdVal + self._ANormVal + ATagEffVal + self._AProdVal * self._ANormVal * ATagEffVal
+                            avgCEven /= 1. + self._AProdVal * self._ANormVal
+                            avgCOdd  /= 1. + self._AProdVal * self._ANormVal
                         else :
-                            avgCOdd = 0.
-                        CEvenOdd = Coefficients_CEvenOdd( avgCEven = 1., avgCOdd = avgCOdd )
-
+                            avgCEven = 1. / ( 1. + self._AProdVal * self._ANormVal )
+                            avgCOdd  = 0.
+                        CEvenOdd = Coefficients_CEvenOdd(  avgCEven = RealVar( 'avgCEven%d' % index, Value = avgCEven, MinMax = ( 0., 2.) )
+                                                         , avgCOdd  = RealVar( 'avgCOdd%d'  % index, Value = avgCOdd,  MinMax = (-2., 2.) )
+                                                        )
                     CEvenOdds.append(CEvenOdd)
 
                 # get wrong tag parameters

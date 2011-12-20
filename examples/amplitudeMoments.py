@@ -49,7 +49,7 @@ markSize   = 0.4
 from RooFitWrappers import *
 
 # workspace
-RooObject(workspace = 'ws')
+ws = RooObject(workspace = 'ws')
 
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
@@ -139,6 +139,22 @@ momPDF1 = moments.buildPDFTerms( MinSignificance = 3, Names = names1 ).buildSumP
 momPDF2 = moments.buildPDFTerms( MinSignificance = 3, Names = names2 ).buildSumPdf('angMomentsPDF2')
 momPDF  = moments.buildPDFTerms( MinSignificance = 3                 ).buildSumPdf('angMomentsPDF')
 
+# build new PDFs with angular coefficients
+from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
+coefIndices = indices[ : ]
+coefIndices.remove( ( 0, 0, 0 ) )
+cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
+coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
+                                          , **dict( (  'C%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
+                                                     , {  'Name'    : 'Cab%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
+                                                        , 'Value'   : 0.
+                                                        , 'MinMax'  : ( -1., +1. )
+                                                        , 'Indices' : inds
+                                                       }
+                                                    ) for inds in coefIndices
+                                                  )
+                                         )
+coefPDF = coefPDFTerms.buildSumPdf('angCoefsPDF')
 
 ###########################################################################################################################################
 ## make some plots ##
