@@ -1,3 +1,11 @@
+class efficiency :
+    def __init__(self,*args) : 
+        (self.cpsi,self.ctheta,self.phi) = args[0] if len(args)==1 else args
+    def accept(self) :
+        e = min(1,max(0,1+self.cpsi.getVal() ))
+        from random import random
+        return random() < e
+
 from RooFitWrappers import *
 
 ws = RooObject( workspace = 'myws' )
@@ -73,14 +81,25 @@ data = RooDataSet('MCdata','MCdata',MCtuple, ( i._target_() for i in observables
 print 'got dataset with %s entries' % data.numEntries()
 
 
+
+eps = efficiency( angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'] )
+allObs = mcpdf.getObservables( data.get() )
+inEffData = RooDataSet( "inEffData","inEffData", allObs )
+for event in  data :
+    allObs.assignValueOnly( event )
+    if eps.accept() : inEffData.add( allObs )
+origdata = data
+data = inEffData;
+
+
 print 'computing efficiency moments'
 from P2VVGeneralUtils import RealMomentsBuilder
 # eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, mcpdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
 eff = RealMomentsBuilder()
-indices  = [ ( i, l, m ) for i in range(3)
-                         for l in range(3)
+indices  = [ ( i, l, m ) for i in range(6)
+                         for l in range(6)
                          for m in range(-l,l+1) ]
-indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
+indices += [ ( i, 2, m ) for i in range(6,10)  # 3,20)
                          for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
 eff.appendPYList( angles.angles, indices, PDF = mcpdf, NormSet = angles.angles.itervalues() )
 eff.compute(data)
@@ -103,9 +122,10 @@ print pdf.GetName(), type(pdf)
 
 from ROOT import TCanvas
 c = TCanvas()
-for (cc,(lab,ind)) in zip(c.pads(1,len(iTag.states().items())),iTag.states().items()) :
-    dataCuts = dict( Cut = '%s == %s' % ( iTag.GetName(), ind ) )
-    pdfCuts  = dict( Slice = ( iTag, lab ) )
+#for (cc,(lab,ind)) in zip(c.pads(1,len(iTag.states().items())),iTag.states().items()) :
+for (cc) in c.pads(1,1):
+    dataCuts = {} # dict( Cut = '%s == %s' % ( iTag.GetName(), ind ) )
+    pdfCuts  = {} # dict( Slice = ( iTag, lab ) )
     obs = [ o for o in observables if hasattr(o,'frame') ]
     for (ccc,o) in zip(cc.pads(len(obs)),obs) :
         from P2VVGeneralUtils import plot
