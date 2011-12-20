@@ -175,7 +175,7 @@ RooAbsData.createHistogram = __wrap_kw_subs( RooAbsData.createHistogram )
 RooAbsData.reduce          = __wrap_kw_subs( RooAbsData.reduce )
 RooAbsData.plotOn          = __wrap_kw_subs( RooAbsData.plotOn )
 from ROOT import RooAbsReal
-RooAbsReal.plotOn          = __wrap_kw_subs( RooAbsReal.plotOn )
+#RooAbsReal.plotOn          = __wrap_kw_subs( RooAbsReal.plotOn )
 RooAbsReal.fillHistogram   = __wrap_kw_subs( RooAbsReal.fillHistogram )
 RooAbsReal.createIntegral  = __wrap_kw_subs( RooAbsReal.createIntegral )
 from ROOT import RooAbsRealLValue
