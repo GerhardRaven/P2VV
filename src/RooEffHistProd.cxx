@@ -144,7 +144,6 @@ RooEffHistProd::~RooEffHistProd()
 Double_t RooEffHistProd::evaluate() const
 {
   // Calculate and return 'raw' unnormalized value of p.d.f
-  // cout << "_normSet = " << (_normSet?*_normSet:RooArgSet()) << endl ;
   return eff()->getVal() * pdf()->getVal(_normSet);
 }
 
@@ -257,7 +256,6 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
   std::auto_ptr<RooArgSet> vars( getParameters(RooArgSet()) );
   std::auto_ptr<RooArgSet> iset(  _cacheMgr.nameSet2ByIndex(code-1)->select(*vars) );
   std::auto_ptr<RooArgSet> nset(  _cacheMgr.nameSet1ByIndex(code-1)->select(*vars) );
-  //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: cache: iset = " << *iset << " nset = " << (nset.get()?*nset:RooArgSet()) << " _normSet = " << (_normSet?*_normSet:RooArgSet()) << endl;
 
   CacheElem* cache = getCache(_normSet,iset.get(),rangeName);
   //CacheElem* cache = (CacheElem*)_cacheMgr.getObjByIndex( code-1);
@@ -274,11 +272,13 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
   if (cache->xmin==0 && cache->xmax==0)  {
     double eps = eff()->getVal();
     double xxx = cache->getVal(); // no integral over efficiency dependant...
-    //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: x = " << x().getVal() << " : " << eps << " (" << eff()->GetName() << ")  * " << xxx << "  (" << cache->I->GetName() << ") = " << eps*xxx<<endl;
     return eps*xxx;
   }
 
   double xorig = x().getVal();
+  Bool_t origState = inhibitDirty() ;
+  setDirtyInhibit(kTRUE) ;
+
   double sum(0);
   for(BinBoundaries::const_iterator i = _binboundaries.begin(), end = _binboundaries.end(); i+1 != end; ++i ) {
     if (*(i+1)<xmin) continue; // not there yet...
@@ -286,13 +286,20 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
     Double_t thisxmin = std::max(*i,     xmin);
     Double_t thisxmax = std::min(*(i+1), xmax);
     if (thisxmin>=thisxmax) continue;
+
+
     x().setVal( 0.5*( thisxmin + thisxmax) ) ; // get the efficiency for this bin
     double eps = eff()->getVal();
     x().setVal(xorig);  // and restore the original value ASAP...
+
     //cache->I->Print("t");
     sum += eps * cache->getVal(thisxmin,thisxmax);
-    //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: integral in bin from " << cache->xmin->getVal() << "," << cache->xmax->getVal() << " =  " << eps << " (" << eff()->GetName() << ")  * " << cache->getVal(thisxmin,thisxmax) << "  (" << cache->I->GetName() << ") = " << eps*cache->getVal(thisxmin,thisxmax)<< endl;
+//     cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: integral in bin from " << cache->xmin->getVal() << "," << cache->xmax->getVal() << " =  " << eps << " (" << eff()->GetName() << ")  * " << cache->getVal(thisxmin,thisxmax) << "  (" << cache->I->GetName() << ") = " << eps*cache->getVal(thisxmin,thisxmax)<< endl;
   }
-  //cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: integral =  " << sum << endl;// " norm =  " << norm1 << endl;
+
+  eff()->getVal() ;
+  setDirtyInhibit(origState) ;	
+
+//   cout << "RooEffHistProd("<<GetName()<<")::analyticalIntegral: integral =  " << sum << endl;// " norm =  " << norm1 << endl;
   return  sum;
 }
