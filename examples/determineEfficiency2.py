@@ -1,10 +1,25 @@
+def legendre(x) :
+        return (1,x,0.5*(3*x*x-1),0.5*(5*x*x*x-3*x) )
+def spharmonic(ct,phi) :
+        from math import sin,cos,pi,sqrt
+        st = sqrt(1-ct*ct)
+        x=st*cos(phi)
+        y=st*sin(phi)
+        z=ct
+        n0 = sqrt(1./(4*pi))
+        n1 = sqrt(3./(4*pi))
+        return ( (n0,), (-n1*y,n1*z,-n1*x),  )  # 0,1,2  -> -1,0,+1
+
 class efficiency :
-    def __init__(self,*args) : 
+    def __init__(self,*args) :
         (self.cpsi,self.ctheta,self.phi) = args[0] if len(args)==1 else args
     def accept(self) :
-        e = min(1,max(0,1+self.cpsi.getVal() ))
+        p = legendre( self.cpsi.getVal() )
+        y = spharmonic( self.ctheta.getVal(), self.phi.getVal() )
         from random import random
-        return random() < e
+        #return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 
+        return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 * ( y[0][0] + 0.1*y[1][-1+1] + 0.2*y[1][0+1] + 0.3*y[1][1+1] )
+
 
 from RooFitWrappers import *
 
@@ -67,20 +82,7 @@ args = { 'time'      : t
 mcpdf = BTagDecay( 'mc_pdf', **args  )
 
 
-if False :
-    mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
-    mcfilename =  '/data/bfys/graven/ntupleB_MC10Bs2JpsiPhi_Reco10_UpDown_simple_with_MCtime_angles_tag.root'
-    mcfilename =  '/data/bfys/graven/aladaan.root'
-    #mcfilename =  '/tmp/aladaan.root'
-    from ROOT import TFile
-    MCfile = TFile(mcfilename)
-    MCtuple = MCfile.Get('MyTree')
-    assert MCtuple
-    from ROOT import RooDataSet
-    noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in observables )
-    data = RooDataSet('MCdata','MCdata',MCtuple, ( i._target_() for i in observables  ),noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
-else :
-    data = mcpdf.generate(observables,10000)
+data = mcpdf.generate(observables,10000)
 print 'got dataset with %s entries' % data.numEntries()
 
 
@@ -105,12 +107,13 @@ indices  = [ ( i, l, m ) for i in range(4)
                          for m in range(-l,l+1) ]
 #indices += [ ( i, 2, m ) for i in range(6,10)  # 3,20)
 #                         for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
-eff.appendPYList( angles.angles, indices, PDF = mcpdf, NormSet = angles.angles.itervalues() )
-eff.compute(data)
+eff.appendPYList( angles.angles, indices, PDF = mcpdf, NormSet = allObs)
+#eff.compute(data)
 
-from math import sqrt,pi
+#from math import sqrt,pi
 #eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
-eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
+#eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
+#eff.Print( MinSignificance = 0., Names = 'p2vvab.*' )
 ##################################
 class abasis :
     def __init__(self,w,*args) :
@@ -142,7 +145,7 @@ from itertools import product
 # if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
 # Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
 from ROOT import EffMoment
-moments = [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, mcpdf._var, allObs ) for i in range(4) for l in range(4) for m in range(-l,l+1) ]
+moments = [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, mcpdf._var, allObs ) for (i,l,m)  in indices ]
 
 # loop over all data, determine moments
 def computeMoments( data, moments ) :
@@ -155,7 +158,10 @@ def computeMoments( data, moments ) :
 
 computeMoments(data,moments)
 for i in moments : i.Print()
+
 ##################################
+eff.compute(data)
+eff.Print( MinSignificance = 0., Names = 'p2vvab.*' )
 
 
 #pdf.Print("T")
@@ -176,7 +182,7 @@ c = TCanvas()
 for (cc) in c.pads(1,1):
     dataCuts = {} # dict( Cut = '%s == %s' % ( iTag.GetName(), ind ) )
     pdfCuts  = {} # dict( Slice = ( iTag, lab ) )
-    obs = [ o for o in observables if hasattr(o,'frame') ]
+    obs = [ o for o in observables if hasattr(o,'frame') and o.GetName() != 't' ]
     for (ccc,o) in zip(cc.pads(len(obs)),obs) :
         from P2VVGeneralUtils import plot
         plot( ccc, o, data, pdf, addPDFs = [ mcpdf ]

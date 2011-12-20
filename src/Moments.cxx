@@ -84,6 +84,9 @@ int _computeMoments(RooAbsData& data, IMomentsVector& moments, bool resetFirst )
   ProgressDisplay progress(data.numEntries());
   while (dataIter < data.numEntries()) {
     *obs = *data.get(dataIter++);
+    //cout << "_computeMoments:" << endl;
+    //obs->Print("V");
+    //cout << endl;
     for (IMomIter mom = moments.begin(); mom != moments.end(); ++mom)
       (*mom)->inc(data.isWeighted() ? data.weight() : 1.);
 

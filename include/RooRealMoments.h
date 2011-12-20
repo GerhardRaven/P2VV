@@ -85,7 +85,12 @@ public:
   RooRealEffMoment(RooAbsReal& basisFunc, Double_t norm, const RooAbsPdf& pdf,
       const RooArgSet& normSet);
 
-  Double_t evaluate() {return _basisFunc.getVal() / _pdf.getVal(&_normSet);}
+  Double_t evaluate() {
+       //cout << "RooRealEffMoment::evaluate():" << endl;
+      //_normSet.Print("V");
+      //cout << _basisFunc.GetName() << " = " << _basisFunc.getVal() << "  ; " << _pdf.GetName() << " = " << _pdf.getVal(&_normSet) << endl;
+      return _basisFunc.getVal() / _pdf.getVal(&_normSet);
+  }
   virtual RooArgSet* getObservables(const RooArgSet* set)
   {
     return _pdf.getObservables(set);
