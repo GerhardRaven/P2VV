@@ -383,7 +383,7 @@ class RealEffMoment( AbsRealMoment ):
         # create efficiency moment
         from P2VVLoad import P2VVLibrary
         from ROOT import RooRealEffMoment
-        AbsRealMoment.__init__( self, RooRealEffMoment( cast(self._basisFunc), self._norm, cast(self._pdf), self._rooNormSet ) )
+        AbsRealMoment.__init__( self, RooRealEffMoment( __dref__(self._basisFunc), self._norm, __dref__(self._pdf), self._rooNormSet ) )
 
 
 class RealVar (RooObject): 
@@ -548,11 +548,6 @@ class Pdf(RooObject):
         return self._var.plotOn( frame, **kwargs )
 
 
-    def edit(self, Name, rule ) :
-        #TODO: wrap result in Pdf!!!
-        return self.ws().factory('EDIT::%s(%s,%s)' % ( Name, self.GetName(), ','.join( '%s=%s'%(k.GetName(),v.GetName()) for k,v in rule.iteritems() ) ) )
-
-
 class ProdPdf(Pdf):
     # TODO: support conditional terms, use 'Conditional' key word for that...
     # ProdPdf( 'foo', [a,b], Conditional = [c,d] ) -> PROD::foo(a,b|c,d)
@@ -667,6 +662,23 @@ class RealSumPdf( Pdf ):
         functions    = ','.join( [ func.GetName() for func in self._dict['Functions'] ] )
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
 
+class EditPdf( Pdf ) :
+    def _make_pdf(self) : pass
+    def __init__(self,Name,**kwargs) :
+        d = { 'Name' : Name 
+            , 'Original' : kwargs.pop('Original')
+            , 'Rules' : kwargs.pop('Rules')
+            }
+        # construct factory string on the fly...
+        self._declare("EDIT::%s( %s, %s )" % ( Name, d['Original'].GetName(), ','.join([ '%s=%s'%(k.GetName(),v.GetName()) for k,v in d['Rules'].iteritems()])  ) )
+        self._init(Name,type(__dref__(d['Original'])).__name__)
+        Pdf.__init__(self
+                    , Name = Name
+                    , Type = type(__dref__(d['Original'])).__name__
+                    , Observables = () # let Pdf figure this out itself...
+                    )
+        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass

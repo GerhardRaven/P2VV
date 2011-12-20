@@ -64,8 +64,8 @@ RooTrivialTagDecay::RooTrivialTagDecay(const char *name, const char* title,
   _tageff("tageff","tageff",this,tageff),
   _fcosh("fcosh", "Cosh Coefficient", this, fcosh), 
   _fsinh("fsinh", "Sinh Coefficient", this, fsinh),
-  _fcos("fcos", "Cos Coefficient", this, *new RooProduct("__tag_fcos__","__tag_fcos__", RooArgSet(tag,fcos)),kTRUE,kFALSE,kTRUE),
-  _fsin("fsin", "Sin Coefficient", this, *new RooProduct("__tag_fsin__","__tag_fsin__", RooArgSet(tag,fsin)),kTRUE,kFALSE,kTRUE),
+  _fcos("fcos", "q x Cos Coefficient", this, *new RooProduct("__tag_fcos__","__tag_fcos__", RooArgSet(tag,fcos)),kTRUE,kFALSE,kTRUE),
+  _fsin("fsin", "q x Sin Coefficient", this, *new RooProduct("__tag_fsin__","__tag_fsin__", RooArgSet(tag,fsin)),kTRUE,kFALSE,kTRUE),
   _type(type)
 {
   //Constructor
