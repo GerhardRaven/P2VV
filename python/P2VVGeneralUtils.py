@@ -281,7 +281,7 @@ class RealMomentsBuilder ( dict ) :
                 # build basis function
                 from RooFitWrappers import P2VVAngleBasis
                 momIndices = ( kwargs.pop('PIndex'), kwargs.pop('YIndex0'), kwargs.pop('YIndex1') )
-                func = P2VVAngleBasis( kwargs.pop('Angles'), momIndices[0], 0, momIndices[1], momIndices[2], 1. )
+                func = P2VVAngleBasis( kwargs.pop('Angles'), ( momIndices[0], 0, momIndices[1], momIndices[2] ) , 1. )
 
             if not 'PDF' in kwargs and not 'NormSet' in kwargs :
                 # build moment
@@ -557,9 +557,9 @@ class RealMomentsBuilder ( dict ) :
             from RooFitWrappers import P2VVAngleBasis
             # WARNING: cpsi,ctheta, phi are barebones PyROOT objects!!!
             return P2VVAngleBasis( {'cpsi':cpsi,'ctheta':ctheta,'phi':phi}
-                                 , f1.i(),f1.j(),f1.l(),f1.m()
+                                 , ( f1.i(),f1.j(),f1.l(),f1.m() )
                                  , f1.c()*f2.c()*c
-                                 , f2.i(),f2.j(),f2.l(),f2.m()
+                                 , ( f2.i(),f2.j(),f2.l(),f2.m() )
                                  ) # build a wrapped object inside workspace
             
         # TODO: check that 'we' contain efficiency moments?

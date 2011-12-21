@@ -326,23 +326,18 @@ class ConstVar (RooObject):
         
 class P2VVAngleBasis (RooObject) : 
     # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
-    def __init__(self, angles, i,j,k,l,c=1,i2=None,j2=None,k2=None,l2=None) :
+    def __init__(self, angles, ind,c=1,ind2 = None) :
         assert c!=0
-        # compute name, given angles,i,j,k,l,c!
         # WARNING: angles may contain barebones PyROOT objects!!!
-        name = '_'.join( angles[a].GetName()  for a in ['cpsi','ctheta','phi']) # aargh... too long for RooFit workspace parsing  code....
-        name = ''
-        second = (i2 != None or j2 != None or k2 != None or l2 != None )
-        if second : assert i2!=None and j2!=None and k2!=None and l2!=None
-        name = 'p2vvab_%s%d%d%d%d' % (name, i,j,k,l) 
-        if second : name = '%s_%d%d%d%d' % (name, i2,j2,k2,l2)
-        if c!=1 :   name = '%s_%3.2f'%(name,c) # truncate printing of 'c' to 3 decimals?
+        name =      'p2vvab_%d%d%d%d' % ind
+        if ind2 : name += '_%d%d%d%d' % ind2
+        if c!=1 : name += '_%3.2f' % c
         name = name.replace('-', 'm')
         name = name.replace('.', 'd')
-        if second :
-            spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d,%d,%d,%d, %d,%d,%d,%d, %f)" % (name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName(), i, j, k, l, i2, j2, k2, l2, c) 
-        else :
-            spec = "RooP2VVAngleBasis::%s(%s, %s, %s, %d,%d,%d,%d, %f)"              % (name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName(), i, j, k, l, c) 
+        spec = "RooP2VVAngleBasis::%s(%s, %s, %s, " %(name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName() )
+        spec += "%d,%d,%d,%d, " % ind
+        if ind2 : spec += "%d,%d,%d,%d, " % ind2
+        spec += " %f)"% c
         #NOTE: this requires libP2VV.so to be loaded 
         from P2VVLoad import P2VVLibrary
         self._declare( spec )
