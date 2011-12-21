@@ -212,9 +212,10 @@ class RealMomentsBuilder ( dict ) :
     #
 
     def __init__( self, **kwargs )   :
-        self._basisFuncNames = [ ]
-        self._basisFuncs     = { }
-        self._coefficients   = { }
+        self._basisFuncNames   = [ ]
+        self._basisFuncIndices = { }
+        self._basisFuncs       = { }
+        self._coefficients     = { }
         if 'Moments' in kwargs :
             for mom in kwargs.pop('Moments') : self.append( Moment = mom )
         if 'Moment' in kwargs :
@@ -222,20 +223,28 @@ class RealMomentsBuilder ( dict ) :
         if kwargs :
             raise RuntimeError( 'unknown keyword arguments %s' % kwargs.keys() )
 
-    def basisFuncs(self)     : return self._basisFuncs.copy()
-    def basisFuncNames(self) : return self._basisFuncNames[ : ]
-    def coefficients(self)   : return self._coefficients.copy()
+    def basisFuncs(self)       : return self._basisFuncs.copy()
+    def basisFuncNames(self)   : return self._basisFuncNames[ : ]
+    def basisFuncIndices(self) : return self._basisFuncIndices.copy()
+    def coefficients(self)     : return self._coefficients.copy()
 
     def _iterFuncAndCoef( self, **kwargs ) :
-        minSignif = kwargs.pop('MinSignificance', float('-inf') )
+        # get minimum significance for coefficient
+        minSignif = kwargs.pop( 'MinSignificance', float('-inf') )
+
+        # get name requirement for coefficient
         names = kwargs.pop('Names',None)
         import re
         nameExpr = re.compile(names) if names else None
+
+        # check if there are no arguments left
         assert not kwargs
+
+        # yield name, coefficient and function for selected moments
         for funcName in self._basisFuncNames :
             if self._coefficients[funcName][2] < minSignif : continue
             if nameExpr and not nameExpr.match(funcName)   : continue
-            yield ( self._basisFuncs[funcName], self._coefficients[funcName][0] )
+            yield ( funcName, self._coefficients[funcName], self._basisFuncs[funcName] )
 
     def appendPYList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
         # build moments from list of indices
@@ -257,6 +266,7 @@ class RealMomentsBuilder ( dict ) :
             print 'P2VV - ERROR: RealMomentsBuilder.appendList: both a PDF and a normalisation set are required for efficiency moments'
 
     def append( self, **kwargs ) :
+        momIndices = None
         if 'Moment' in kwargs :
             # get moment directly from arguments
             func = None
@@ -270,7 +280,8 @@ class RealMomentsBuilder ( dict ) :
             else :
                 # build basis function
                 from RooFitWrappers import P2VVAngleBasis
-                func = P2VVAngleBasis(kwargs.pop('Angles'), kwargs.pop('PIndex'), 0, kwargs.pop('YIndex0'), kwargs.pop('YIndex1'), 1.)
+                momIndices = ( kwargs.pop('PIndex'), kwargs.pop('YIndex0'), kwargs.pop('YIndex1') )
+                func = P2VVAngleBasis( kwargs.pop('Angles'), momIndices[0], 0, momIndices[1], momIndices[2], 1. )
 
             if not 'PDF' in kwargs and not 'NormSet' in kwargs :
                 # build moment
@@ -297,6 +308,8 @@ class RealMomentsBuilder ( dict ) :
             # append moment
             momName = moment.GetName()
             self._basisFuncNames.append(momName)
+            if momIndices : self._basisFuncIndices[momName] = momIndices
+            else :          self._basisFuncIndices[momName] = None
             self._basisFuncs[momName] = func
             self[momName] = moment
 
@@ -329,7 +342,7 @@ class RealMomentsBuilder ( dict ) :
         minSignif = kwargs.pop('MinSignificance', float('-inf') )
 
         # get scale factors
-        scale = kwargs.pop('Scale', None )
+        scale = kwargs.pop('Scales', None )
 
         # print header
         print 'P2VV - INFO: RealMomentsBuilder.printMoments:'
@@ -476,16 +489,38 @@ class RealMomentsBuilder ( dict ) :
 
         # get name requirements
         import re
-        names = kwargs.pop('Names', None)
+        names = kwargs.pop( 'Names', None )
 
+        # get scale factors
+        scales = kwargs.pop( 'Scales', ( None, None ) )
+
+        # get number of standard deviations for range of the PDF coefficients
+        numStdDevs = kwargs.pop( 'RangeNumStdDevs', 5. )
+
+        # get prefix for PDF coefficient names
+        namePref = kwargs.pop( 'CoefNamePrefix', 'C_' )
+
+        # loop over PDF terms
         keys     = []
         angFuncs = {}
         angCoefs = {}
-        from RooFitWrappers import ConstVar
-        for ( name, ( func, coef ) ) in zip( self._basisFuncNames, self._iterFuncAndCoef( MinSignificance = minSignif, Names = names ) ) :
+        from RooFitWrappers import ConstVar, RealVar
+        for ( name, coef, func ) in self._iterFuncAndCoef( MinSignificance = minSignif, Names = names ) :
+            # construct the key and the function for the term
             keys.append( ( name, None ) )
-            angFuncs[( name, None )] = ( func,                                  None )
-            angCoefs[( name, None )] = ( ConstVar( 'C_' + name, Value = coef ), None )
+            angFuncs[( name, None )] = ( func, None )
+
+            # get the coefficient value and standard deviation
+            coefVal = coef[0] * scales[0] if scales[0] else coef[0]
+            coefErr = coef[1] * scales[1] if scales[1] else coef[1]
+
+            # create the coefficient parameter for the PDF term
+            if self._basisFuncIndices[name] == ( 0, 0, 0 ) :
+                angCoefs[( name, None )] = ( ConstVar( namePref + name, Value = coefVal ), None )
+            else :
+                coefMin = coefVal - numStdDevs * coefErr
+                coefMax = coefVal + numStdDevs * coefErr
+                angCoefs[( name, None )] = ( RealVar(  namePref + name, Value = coefVal, MinMax = ( coefMin, coefMax ) ), None )
 
         from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
         return Coefficients_AngularPdfTerms( Keys = keys, AngFunctions = angFuncs, AngCoefficients = angCoefs )
@@ -494,9 +529,9 @@ class RealMomentsBuilder ( dict ) :
         # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
         # TODO: verify we've got moments, and not EffMoments???
         # TODO: verify we've either been computed or read
-        (fun,coef) = zip( *self._iterFuncAndCoef() )
+        ( name, coef, fun ) = zip( *self._iterFuncAndCoef() )
         from RooFitWrappers import ConstVar,RealSumPdf
-        return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( 'C_%3.6f'%c, Value = c ) for c in coef ) )
+        return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( 'C_%3.6f'%c, Value = c ) for c in coef[0] ) )
 
     def __mul__( self, pdf ) :
         from RooFitWrappers import Pdf
@@ -535,6 +570,6 @@ class RealMomentsBuilder ( dict ) :
         from RooFitWrappers import Addition,EditPdf
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
             subst[comp] = Addition( '%s_x_eff' % ( comp.GetName() )
-                                  , [ _createProduct( comp, f, c ) for f,c in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
+                                  , [ _createProduct( comp, f, c[0] ) for n,c,f in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
                                   )
         return EditPdf( Name = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), Original = pdf, Rules = subst )

@@ -23,7 +23,7 @@ plotsFile = 'amplitudeMoments.ps'
 momentsFile = 'JpsiKstarMoments'
 
 # values of transversity amplitudes
-ampsToUse = [ 'A0', 'Apar', 'Aperp', 'AS' ]
+ampsToUse = [ 'A0', 'Apar', 'Aperp' ]#, 'AS' ]
 A0Mag2Val    =  0.45
 A0PhVal      =  0.
 AparMag2Val  =  0.35
@@ -110,6 +110,9 @@ names0 = 'p2vvab_00..'
 names1 = names0 + '|p2vvab_10..'
 names2 = names1 + '|p2vvab_20..'
 
+# moments overall scales
+scales = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 )
+
 from P2VVGeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
@@ -124,16 +127,16 @@ else :
     moments.read(momentsFile)
 
 # print moments to screen
-moments.Print( Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ), MinSignificance = 3., Names = names0 )
-moments.Print( Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ), MinSignificance = 3., Names = names1 )
-moments.Print( Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ), MinSignificance = 3., Names = names2 )
-moments.Print( Scale = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 ), MinSignificance = 3.                 )
+moments.Print( Scales = scales, MinSignificance = 3., Names = names0 )
+moments.Print( Scales = scales, MinSignificance = 3., Names = names1 )
+moments.Print( Scales = scales, MinSignificance = 3., Names = names2 )
+moments.Print( Scales = scales, MinSignificance = 3.                 )
 
 # build new PDFs with angular moments
-momPDF0 = moments.buildPDFTerms( MinSignificance = 3, Names = names0 ).buildSumPdf('angMomentsPDF0')
-momPDF1 = moments.buildPDFTerms( MinSignificance = 3, Names = names1 ).buildSumPdf('angMomentsPDF1')
-momPDF2 = moments.buildPDFTerms( MinSignificance = 3, Names = names2 ).buildSumPdf('angMomentsPDF2')
-momPDF  = moments.buildPDFTerms( MinSignificance = 3                 ).buildSumPdf('angMomentsPDF')
+momPDF0 = moments.buildPDFTerms(MinSignificance = 3, Names = names0, Scales = scales, CoefNamePrefix = 'C0_').buildSumPdf('angMomentsPDF0')
+momPDF1 = moments.buildPDFTerms(MinSignificance = 3, Names = names1, Scales = scales, CoefNamePrefix = 'C1_').buildSumPdf('angMomentsPDF1')
+momPDF2 = moments.buildPDFTerms(MinSignificance = 3, Names = names2, Scales = scales, CoefNamePrefix = 'C2_').buildSumPdf('angMomentsPDF2')
+momPDF  = moments.buildPDFTerms(MinSignificance = 3                , Scales = scales                        ).buildSumPdf('angMomentsPDF')
 
 
 ###########################################################################################################################################
@@ -148,7 +151,7 @@ coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
                                           , **dict( (  'C%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
                                                      , {  'Name'    : 'Cab%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
                                                         , 'Value'   : 0.
-                                                        , 'MinMax'  : ( -0.5, +0.5 )
+                                                        , 'MinMax'  : ( -0.6, +0.6 )
                                                         , 'Indices' : inds
                                                        }
                                                     ) for inds in coefIndices

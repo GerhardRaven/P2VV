@@ -111,8 +111,8 @@ eff.appendPYList( angles.angles, indices, PDF = mcpdf, NormSet = allObs)
 #eff.compute(data)
 
 #from math import sqrt,pi
-#eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
-#eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
+#eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scales = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
+#eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scales = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
 #eff.Print( MinSignificance = 0., Names = 'p2vvab.*' )
 ##################################
 class abasis :
