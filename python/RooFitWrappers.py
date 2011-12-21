@@ -433,11 +433,7 @@ class RealVar (RooObject):
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
                 if k == 'Value': continue
-                try:
-                    assert v == self[k]
-                except AssertionError:
-                    print "%s is not the same" % k
-                    raise
+                assert v == self[k], '\'%s\' is not the same for %s' % ( k, Name )
             
     # overrule RooRealVar.setRange
     @wraps(RooRealVar.setRange)
