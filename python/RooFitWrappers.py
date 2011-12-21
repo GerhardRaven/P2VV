@@ -332,7 +332,7 @@ class P2VVAngleBasis (RooObject) :
         # WARNING: angles may contain barebones PyROOT objects!!!
         name = '_'.join( angles[a].GetName()  for a in ['cpsi','ctheta','phi']) # aargh... too long for RooFit workspace parsing  code....
         name = ''
-        second = (i2 or j2 or k2 or l2 )
+        second = (i2 != None or j2 != None or k2 != None or l2 != None )
         if second : assert i2!=None and j2!=None and k2!=None and l2!=None
         name = 'p2vvab_%s%d%d%d%d' % (name, i,j,k,l) 
         if second : name = '%s_%d%d%d%d' % (name, i2,j2,k2,l2)
