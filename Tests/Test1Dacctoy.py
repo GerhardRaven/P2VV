@@ -58,7 +58,11 @@ accpdf1 = ws['accpdf1']
 ##############################
 accdata1 = accpdf1.generate(ws.set('observables'),10000)
 
-accpdf1.fitTo(accdata1)
+ws.put(accdata1)
+ws.addClassDeclImportDir("..")
+ws.addClassImplImportDir("..")
+ws.importClassCode()
+## accpdf1.fitTo(accdata1, Optimize = 1)
 
 ############
 ### Plot ###
@@ -72,7 +76,7 @@ dashed = RooCmdArg(RooFit.LineStyle(kDashed))
 Acc = TCanvas('Acc','Acc')
 
 Acc.cd(1)
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 ws['effpdf'].plotOn(tframe)
 tframe.Draw()
 
@@ -81,26 +85,26 @@ C2.Divide(3,2)
 
 C2.cd(1)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 data.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
 tframe.Draw()
 
 C2.cd(2)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 pdf.plotOn(tframe,lw)
 tframe.Draw()
 
 C2.cd(3)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 data.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
 pdf.plotOn(tframe,lw)
 tframe.Draw()
 
 C2.cd(4)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 accdata1.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
 tframe.Draw()
 
@@ -137,13 +141,13 @@ tframe.Draw()
 
 C2.cd(5)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 accpdf1.plotOn(tframe,lw)
 tframe.Draw()
 
 C2.cd(6)
 #gPad.SetLogy()
-tframe = ws['t'].frame(RooFit.Bins(10))
+tframe = ws['t'].frame(RooFit.Bins(30))
 accdata1.plotOn(tframe,RooFit.MarkerSize(0.5),xes)
 accpdf1.plotOn(tframe,lw)
 tframe.Draw()
@@ -158,3 +162,7 @@ tframe.Draw()
 ##     print "pdfval: ", pdfval
 ##     sum += dt * pdfval 
 ## print "Integral: ", sum 
+
+f = TFile.Open("test_EffHistProd.root", "recreate")
+f.WriteTObject(ws)
+f.Close()

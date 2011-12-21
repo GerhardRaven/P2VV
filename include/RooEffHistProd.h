@@ -76,7 +76,15 @@ private:
       RooRealVar  *xmin ;
       RooRealVar  *xmax ;
       virtual RooArgList containedArgs(Action) ;
-      Double_t getVal(double a, double b) { xmin->setVal(a); xmax->setVal(b); return getVal(); }
+      Double_t getVal(double a, double b) { 
+	Double_t xminOrig = xmin->getVal() ;
+	Double_t xmaxOrig = xmax->getVal() ;
+	xmin->setVal(a); xmax->setVal(b); 
+	Double_t ret = getVal(); 
+	xmin->setVal(xminOrig) ;
+	xmax->setVal(xmaxOrig) ;
+	return ret ;
+      }
       Double_t getVal() { /*I->Print("t"); */ return I->getVal() ; }
   };
   friend class CacheElem;
