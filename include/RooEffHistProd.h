@@ -91,12 +91,12 @@ private:
   CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, const char* rangeName=0) const ;
 
   mutable RooObjCacheManager _cacheMgr;
-  typedef std::vector<Double_t> BinBoundaries ;
+  typedef std::vector<double> BinBoundaries ;
   BinBoundaries _binboundaries ;
   
 
 
-  ClassDef(RooEffHistProd,2) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
+  ClassDef(RooEffHistProd, 3) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
 };
 
 #endif
