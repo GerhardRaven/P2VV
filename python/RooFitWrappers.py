@@ -335,8 +335,8 @@ class P2VVAngleBasis (RooObject) :
         second = (i2 or j2 or k2 or l2 )
         if second : assert i2!=None and j2!=None and k2!=None and l2!=None
         name = 'p2vvab_%s%d%d%d%d' % (name, i,j,k,l) 
-        if second : name = '%s%d%d%d%d' % (name, i2,j2,k2,l2)
-        if c!=1 :   name = '%s%3.2f'%(name,c) # truncate printing of 'c' to 3 decimals?
+        if second : name = '%s_%d%d%d%d' % (name, i2,j2,k2,l2)
+        if c!=1 :   name = '%s_%3.2f'%(name,c) # truncate printing of 'c' to 3 decimals?
         name = name.replace('-', 'm')
         name = name.replace('.', 'd')
         if second :
