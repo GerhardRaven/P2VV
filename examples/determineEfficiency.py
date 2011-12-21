@@ -65,14 +65,14 @@ data = inEffData;
           
 # define the moments used to describe the efficiency
 # for this, we need the PDF used to generate the data
-marginalObs = pdf.getObservables( data.get() )
-marginalObs.remove( angles )
+#marginalObs = pdf.getObservables( data.get() )
+#marginalObs.remove( angles )
 # marginalize pdf over 'the rest' so we get the normalization of the moments right...
-pdf_marginal = pdf.createProjection(marginalObs)
+#pdf_marginal = pdf.createProjection(marginalObs)
 
 # compute the 'canonical' six moments
 bnames = [ 'AzAz','AparApar','AperpAperp','AparAperp','AzAperp','AzApar' ]
-sixmom = [ EffMoment( w['%s_basis'%n], 1., pdf_marginal, allObs ) for n in bnames ]
+sixmom = [ EffMoment( w['%s_basis'%n], 1., pdf, allObs ) for n in bnames ]
 computeMoments(data,sixmom)
 xi_m = dict( [ (m.basis().GetName(),m.coefficient()) for m in sixmom ] )
 
@@ -83,7 +83,7 @@ ab = abasis(w,angles)
 for (i,l) in product(range(4),range(4)) :
     # if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
     # Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
-    moments += [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, pdf_marginal, allObs ) for m in range(-l,l+1) ]
+    moments += [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, pdf, allObs ) for m in range(-l,l+1) ]
 
 # loop over all data, determine moments
 computeMoments(data,moments)
