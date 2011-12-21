@@ -64,8 +64,8 @@ RooTrivialTagDecay::RooTrivialTagDecay(const char *name, const char* title,
   _tageff("tageff","tageff",this,tageff),
   _fcosh("fcosh", "Cosh Coefficient", this, fcosh), 
   _fsinh("fsinh", "Sinh Coefficient", this, fsinh),
-  _fcos("fcos", "q x Cos Coefficient", this, *new RooProduct("__tag_fcos__","__tag_fcos__", RooArgSet(tag,fcos)),kTRUE,kFALSE,kTRUE),
-  _fsin("fsin", "q x Sin Coefficient", this, *new RooProduct("__tag_fsin__","__tag_fsin__", RooArgSet(tag,fsin)),kTRUE,kFALSE,kTRUE),
+  _fcos("fcos", "q x Cos Coefficient", this, *new RooProduct("__tag_fcos__","__tag_fcos__", RooArgSet(tag,fcos))), // ,kTRUE,kFALSE,kTRUE),
+  _fsin("fsin", "q x Sin Coefficient", this, *new RooProduct("__tag_fsin__","__tag_fsin__", RooArgSet(tag,fsin))), // ,kTRUE,kFALSE,kTRUE),
   _type(type)
 {
   //Constructor
@@ -90,6 +90,7 @@ RooTrivialTagDecay::RooTrivialTagDecay(const char *name, const char* title,
       _basisSin = declareBasis("exp(-abs(@0)/@1)*sin(@0*@2)",RooArgList(tau, dm));
       break;
     }
+  cout << " RooTrivialTagDecay("<< this <<")::ctor" << endl;
 }
 
 //_____________________________________________________________________________
@@ -111,9 +112,17 @@ RooTrivialTagDecay::RooTrivialTagDecay(const RooTrivialTagDecay& other, const ch
   _basisSin(other._basisSin),
   _type(other._type)
 {
+  cout << " RooTrivialTagDecay("<< this <<")::copy ctor("<< &other <<"," << (name ? name : "<none>" )<< ")" << endl;
   //Copy constructor
 }
 
+TObject* RooTrivialTagDecay::clone(const char* newname) const 
+{ 
+    cout << "RooTrivialTagDecay("<< this <<")::clone(" << (newname? newname : "<none>" ) << ")" << endl;
+    RooTrivialTagDecay *p = new RooTrivialTagDecay(*this,newname);
+    cout << "RooTrivialTagDecay("<< this <<")::clone -- return "  << p << endl;
+    return p;
+}
 
 
 //_____________________________________________________________________________

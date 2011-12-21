@@ -38,10 +38,7 @@ public:
 			const RooResolutionModel& model,
 			DecayType type);
   RooTrivialTagDecay(const RooTrivialTagDecay& other, const char* name=0);
-  virtual TObject* clone(const char* newname) const 
-  { 
-    return new RooTrivialTagDecay(*this,newname);
-  }
+  virtual TObject* clone(const char* newname) const ;
   virtual ~RooTrivialTagDecay();
 
   virtual Double_t coefficient(Int_t basisIndex) const;
