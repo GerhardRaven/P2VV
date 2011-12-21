@@ -56,7 +56,11 @@ public:
     IMoment(x, norm, std::string(x.GetName()) + "_" + pdf.GetName()),
     _pdf(pdf), _nset(nset) {}
 
-    double evaluate() {return _basis.getVal() / _pdf.getVal(&_nset);}
+   double evaluate() {
+       //cout << "EffMoment::evaluate():" << endl;
+        //_nset.Print("V");
+        //cout << _basis.GetName() << " = " << _basis.getVal() << "  ; " << _pdf.GetName() << " = " << _pdf.getVal(&_nset) << endl;
+        return _basis.getVal() / _pdf.getVal(&_nset);}
    virtual RooArgSet* getObservables(const RooArgSet* set) { return _pdf.getObservables(set); }
 
 private:
