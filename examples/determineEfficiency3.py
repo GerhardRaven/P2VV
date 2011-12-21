@@ -18,7 +18,7 @@ class efficiency :
         y = spharmonic( self.ctheta.getVal(), self.phi.getVal() )
         from random import random
         assert ( p[0]+0.4*p[2] )/1.4  < 1.0001
-        return random() < ( p[0]+0.4*p[2] )/1.4 
+        return random() < ( p[0]+0.4*p[1] )/1.4 
         #return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 * ( y[0][0] + 0.1*y[1][-1+1] + 0.2*y[1][0+1] + 0.3*y[1][1+1] )
 
 
