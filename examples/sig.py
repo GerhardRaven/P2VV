@@ -11,13 +11,15 @@ eta       = RealVar(   'eta', Title = 'estimated mis tag', Observable = False, C
 mass = RealVar('m',Observable=True,Unit='MeV/c^2',MinMax=(5200,5550))
 observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag, mass ]
 
-for i in angles.angles.itervalues() : i.setBins(24)
+for i in angles.angles.itervalues() : i.setBins(16)
+t.setBins(48)
+mass.setBins(48)
 mass.setRange('leftsideband', (mass.getMin(),5330) )
 mass.setRange('signal',(5330,5410) )
 mass.setRange('rightsideband',(5410,mass.getMax()) )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
+CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.4, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
@@ -60,7 +62,7 @@ args = { 'time'      : t
        }
 
 # TODO: should be able to write BTagDecay('mypdf', **lifetimeParams.BTagDecay() + **basisCoefficients.BTagDecay() + **taggingParams.BTagDecay() )
-mcpdf = BTagDecay( 'mc_pdf', Observables = [ t,iTag ] + angles.angles.values(), **args  )
+mcpdf = BTagDecay( 'mc_pdf', **args  )
 #mcpdf = BDecay( 'mc_pdf',  args )
 
 # update resolution model, and build again...
@@ -71,9 +73,8 @@ args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
 
 pdf = mcpdf
 
-
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
-signal = Component('signal',(  LP2011_Signal_Mass( mass = mass ).pdf(),  pdf ), Yield = (10000,5000,15000) )
+signal = Component('sig',(  LP2011_Signal_Mass( mass = mass ).pdf(),  pdf ), Yield = (1000,0,15000) )
 
 from P2VVParameterizations.MassPDFs import LP2011_Background_Mass
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time
@@ -81,18 +82,17 @@ from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
 from P2VVParameterizations.AngularPDFs import Uniform_Angles
 bkg  = Component('bkg',(  LP2011_Background_Mass( mass = mass ).pdf()
                        ,  LP2011_Background_Time( time = t , resolutionModel = LP2011_TimeResolution(time = t)['model']).pdf()
-                       ,  Trivial_Background_Tag( tagdecision = iTag ).pdf()
+                       ,  Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.3 ).pdf()
                        ,  Uniform_Angles( angles = angles.angles ).pdf()
                        ), Yield = (4000,1000,15000) )
 
 pdf = buildPdf( (signal,bkg), Observables = observables,  Name = 'jointpdf' )
-# print pdf['Observables']
 
 
 
 if True : 
     print 'generating data'
-    data = pdf.generate( observables , NumEvents = 10000 )
+    data = pdf.generate( observables ) # , NumEvents = 10000 )
     print 'generated %s events' % data.numEntries()
 else  :
     mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
@@ -109,48 +109,54 @@ else  :
     print 'got dataset with %s entries' % data.numEntries()
 
 
-print 'computing efficiency moments'
-from P2VVGeneralUtils import RealMomentsBuilder
-# eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
-eff = RealMomentsBuilder()
-indices  = [ ( i, l, m ) for i in range(3)
-                         for l in range(3)
-                         for m in range(-l,l+1) ]
-indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
-                         for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
-eff.appendPYList( angles.angles, indices, PDF = pdf, NormSet = angles.angles.itervalues() )
-eff.compute(data)
+if False :
+    print 'computing efficiency moments'
+    from P2VVGeneralUtils import RealMomentsBuilder
+    # eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, pdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
+    eff = RealMomentsBuilder()
+    indices  = [ ( i, l, m ) for i in range(3)
+                             for l in range(3)
+                             for m in range(-l,l+1) ]
+    indices += [ ( i, 2, m ) for i in range(3,10)  # 3,20)
+                             for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
+    eff.appendPYList( angles.angles, indices, PDF = pdf, NormSet = angles.angles.itervalues() )
+    eff.compute(data)
 
-from math import sqrt,pi
-#eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
-eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
+    from math import sqrt,pi
+    #eff.Print( MinSignificance = 0., Names = '.*_ang_.*',   Scale = ( 1. / (16*sqrt(pi)), 1. / (16*sqrt(pi)), 1. ) )
+    eff.Print( MinSignificance = 0., Names = 'p2vvab.*',    Scale = ( 1. / ( 2*sqrt(pi)), 1. / ( 2*sqrt(pi)), 1. ) )
 
-#pdf.Print("T")
-pdf2 = eff * pdf
-#pdf2.Print("T")
+    #pdf.Print("T")
+    pdf2 = eff * pdf
+    #pdf2.Print("T")
 
-if True :
-    print 'fitting data including efficiency'
-    from P2VVGeneralUtils import numCPU
-    pdf.fitTo(data, NumCPU = numCPU(), Timer = 1 , Minimizer = ('Minuit2','minimize'))
+    # create generic PDF to describe the angular distribution
+    moms = RealMomentsBuilder()
+    moms.appendPYList( angles.angles, indices )
+    moms.compute(data)
+    mom_pdf = moms.createPDF( Name = 'mom_pdf' )
 
-# create generic PDF to describe the angular distribution
-moms = RealMomentsBuilder()
-moms.appendPYList( angles.angles, indices )
-moms.compute(data)
-mom_pdf = moms.createPDF( Name = 'mom_pdf' )
-
+from P2VVGeneralUtils import numCPU
+pdf.fitTo(data, NumCPU = numCPU(), Timer = 1 , Minimizer = ('Minuit2','minimize')) # , Optimize = 1)
 
 from ROOT import TCanvas
-c = TCanvas()
-from itertools import chain
-#TODO: remove categories from observables -- actually, split by category (integrate over, slice for each state)
 plots = [ o for o in observables if hasattr(o,'frame') ]
-for (cc,o) in zip(c.pads(len(plots)),plots) :
-    if o not in data.get() : continue
-    f = o.frame( )
-    data.plotOn(f, MarkerSize = 0.8, MarkerColor = RooFit.kBlack )
-    if o in pdf.getObservables( data )      : pdf.plotOn( f , LineColor = RooFit.kBlack)
-    if o in pdf2.getObservables( data )     : pdf2.plotOn( f , LineColor = RooFit.kBlue)
-    if o in mom_pdf.getObservables( data )  : mom_pdf.plotOn( f, LineColor = RooFit.kRed)
-    f.Draw( pad = cc)
+
+# TODO: plot signal and sideband seperately!!!
+c = dict()
+for rng in ( None, 'signal', 'leftsideband','rightsideband','leftsideband,rightsideband' ) :
+    c[rng] = TCanvas('%s'%rng)
+    dataRng = dict( CutRange = rng ) if rng else dict()
+    pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
+    for (cc,(lab,ind)) in zip(c[rng].pads(1,len(iTag.states().items())),iTag.states().items()) :
+        dataCuts = dict( Cut = '%s == %s' % ( iTag.GetName(), ind ), **dataRng )
+        pdfCuts  = dict( Slice = ( iTag, lab ), **pdfRng )
+        for (ccc,o) in zip(cc.pads(len(plots)),plots) :
+            from P2VVGeneralUtils import plot
+            plot( ccc, o, data, pdf, components = { 'sig*' : { 'LineColor' : RooFit.kGreen, 'LineStyle' : RooFit.kDashed }
+                                                  , 'bkg*' : { 'LineColor' : RooFit.kRed, 'LineStyle' : RooFit.kDashed }
+                                                  }
+                                   , dataOpts = dict( MarkerSize = 0.8, MarkerColor = RooFit.kBlack, **dataCuts )
+                                   , pdfOpts  = dict( LineWidth = 2 , **pdfCuts )
+                                   )
+        #if o in mom_pdf.getObservables( data )  : mom_pdf.plotOn( f, LineColor = RooFit.kGreen)

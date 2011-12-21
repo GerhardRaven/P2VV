@@ -9,7 +9,7 @@ generateData = False
 fitData      = True
 makePlots    = True
 
-nEvents = 10000
+nEvents = 50000
 dataSetName = 'JpsiphiData'
 dataSetFile = 'JvLFit2Tags.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
@@ -38,8 +38,9 @@ dmVal           = 17.8
 timeResSigmaVal = 0.05
 
 # asymmetries
-AProdVal =  0.4
-ANormVal = -( 1. - lambdaCPSqVal ) / ( 1. + lambdaCPSqVal )
+AProdVal   =  0.4
+ANormVal   = -( 1. - lambdaCPSqVal ) / ( 1. + lambdaCPSqVal )
+ATagEffVal =  0.1
 
 # tagging parameters
 wTagVal    = 0.1
@@ -73,11 +74,12 @@ from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
 
 # variables in PDF
-time = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-iTag = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B' : +1, 'Bbar' : -1} )#, 'Untagged' : 0} )
+time   = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+iTag   = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B':+1, 'Bbar':-1} )#, 'Untagged':0} )
+tagCat = Category( 'tagCat'    , Title = 'Tagging Category',          Observable = True, States = [ 'Untagged', 'Tagged' ] )
 
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
-observables = [ time ] + list(angles) + [ iTag ]
+observables = [ time ] + list(angles) + [ iTag, tagCat ]
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
@@ -107,9 +109,12 @@ else :
   from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
   lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
+
 # tagging parameters
 from P2VVParameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
-taggingParams = WTagsCoefAsyms_TaggingParams( wTag = wTagVal, wTagBar = wTagBarVal, AProd = AProdVal, ANorm = ANormVal )
+taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCat.numTypes(), wTag1 = wTagVal, wTagBar1 = wTagBarVal, AProd = AProdVal
+                                             , ANorm = ANormVal, ATagEff1 = ATagEffVal
+                                            )
 
 # coefficients for time functions
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
@@ -119,13 +124,15 @@ timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients( angleFuncs.functions, transA
 args = {
     'time'            : time
   , 'iTag'            : iTag
+  , 'tagCat'          : tagCat
   , 'tau'             : lifetimeParams['MeanLifetime']
   , 'dGamma'          : lifetimeParams['deltaGamma']
   , 'dm'              : lifetimeParams['deltaM']
-  , 'dilution'        : taggingParams['dilution']
-  , 'ADilWTag'        : taggingParams['ADilWTag']
-  , 'avgCEven'        : taggingParams['avgCEven']
-  , 'avgCOdd'         : taggingParams['avgCOdd']
+  , 'dilutions'       : taggingParams['dilutions']
+  , 'ADilWTags'       : taggingParams['ADilWTags']
+  , 'avgCEvens'       : taggingParams['avgCEvens']
+  , 'avgCOdds'        : taggingParams['avgCOdds']
+  , 'tagCatCoefs'     : taggingParams['tagCatCoefs']
   , 'coshCoef'        : timeBasisCoefs['cosh']
   , 'sinhCoef'        : timeBasisCoefs['sinh']
   , 'cosCoef'         : timeBasisCoefs['cos']
@@ -161,7 +168,7 @@ if fitData :
   #lambdaCP.setConstant('phiCP')
   #lambdaCP.setConstant('lambdaCPSq')
   #taggingParams['CEvenOdd'].setConstant('avgCOdd')
-  taggingParams.setConstant('wTag.*')
+  #taggingParams.setConstant('wTag.*')
 
   # fit data
   print 'JvLFit: fitting %d events' % data.numEntries()

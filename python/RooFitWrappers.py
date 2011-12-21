@@ -7,10 +7,12 @@ def __check_exists_already__( self ) :
     if self._name in self.ws() :
         raise StandardError( 'Recreating %s is not supported atm' % type(self) )
 
+__dref__ = lambda i : i._var if hasattr(i,'_var') else i
+
 def __wrap__dref_var__( fun ) :
     @wraps(fun)
     def _fun(self,*args) :
-        return fun(self, *tuple( i._var if hasattr(i,'_var') else i for i in args ) )
+        return fun(self, *tuple( __dref__(i) for i in args ) )
     return _fun
 
 RooAbsCollection.__contains__ = __wrap__dref_var__( RooAbsCollection.__contains__ )
@@ -38,7 +40,7 @@ class RooObject(object) :
         from itertools import ifilter, imap
         for setters in imap( lambda x: x._setters, ifilter( lambda x : hasattr(x,'_setters'), type(self).__mro__) ): 
             if k in setters :  return setters[k](self,v )
-        raise KeyError('%s is not known for class %s' % (k, type(self) ) )
+        raise KeyError('\'%s\' is not known for class %s' % (k, type(self) ) )
     def __getitem__(self,k):
         from itertools import ifilter, imap
         for getters in imap( lambda x: x._getters, ifilter( lambda x : hasattr(x,'_getters'), type(self).__mro__) ): 
@@ -373,16 +375,15 @@ class RealEffMoment( AbsRealMoment ):
         self._pdf       = PDF
         self._normSet   = NormSet
 
-        cast = lambda var : var._target_() if hasattr( var, '_target_' ) else var
 
         # build a RooFit normalisation set
         from ROOT import RooArgSet
-        self._rooNormSet = RooArgSet( cast(var) for var in self._normSet )
+        self._rooNormSet = RooArgSet( __dref__(var) for var in self._normSet )
 
         # create efficiency moment
         from P2VVLoad import P2VVLibrary
         from ROOT import RooRealEffMoment
-        AbsRealMoment.__init__( self, RooRealEffMoment( cast(self._basisFunc), self._norm, cast(self._pdf), self._rooNormSet ) )
+        AbsRealMoment.__init__( self, RooRealEffMoment( __dref__(self._basisFunc), self._norm, __dref__(self._pdf), self._rooNormSet ) )
 
 
 class RealVar (RooObject): 
@@ -475,8 +476,8 @@ class Pdf(RooObject):
         self._dict = kwargs
         self._dict['Name'] = Name
         self._make_pdf()
-        print 'Pdf(%s): deduced observables: %s' %  (Name,self.Observables() )
-        print 'Pdf(%s): specified observables : %s' % (Name,set( i.GetName() for i in kwargs['Observables'] ))
+        #print 'Pdf(%s): deduced observables: %s' %  (Name,self.Observables() )
+        #print 'Pdf(%s): specified observables : %s' % (Name,set( i.GetName() for i in kwargs['Observables'] ))
 
     def __str__(self):
         d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
@@ -531,28 +532,20 @@ class Pdf(RooObject):
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
         if 'ConditionalObservables' in kwargs :
-            cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
-            kwargs['ConditionalObservables'] = RooArgSet( cvrt(var) for var in kwargs.pop('ConditionalObservables') )
+            kwargs['ConditionalObservables'] = RooArgSet( __dref__(var) for var in kwargs.pop('ConditionalObservables') )
         return self._var.fitTo( data, **kwargs )
 
     @wraps(RooAbsPdf.generate)
     def generate(self, whatvars, *args, **kwargs):
         #if not whatvars : whatvars = [ i for i in self._var.getVariables() if i.getAttribute('Observable') ]
-        cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
-        return self._var.generate(RooArgSet([ cvrt(i) for i in whatvars] if not isinstance(cvrt(whatvars),RooAbsCategory) else cvrt(whatvars)), *args,**kwargs)
+        return self._var.generate(RooArgSet([ __dref__(i) for i in whatvars] if not isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars)), *args,**kwargs)
 
     @wraps(RooAbsPdf.plotOn)
     def plotOn( self, frame, **kwargs ) :
         if 'Slice' in kwargs :
-            cvrt = lambda i : i._target_() if hasattr(i,'_target_') else i
             sl = kwargs.pop('Slice')
-            kwargs['Slice'] = ( cvrt(sl[0]), sl[1] )
+            kwargs['Slice'] = ( __dref__(sl[0]), sl[1] )
         return self._var.plotOn( frame, **kwargs )
-
-
-    def edit(self, Name, rule ) :
-        #TODO: wrap result in Pdf!!!
-        return self.ws().factory('EDIT::%s(%s,%s)' % ( Name, self.GetName(), ','.join( '%s=%s'%(k.GetName(),v.GetName()) for k,v in rule.iteritems() ) ) )
 
 
 class ProdPdf(Pdf):
@@ -669,18 +662,33 @@ class RealSumPdf( Pdf ):
         functions    = ','.join( [ func.GetName() for func in self._dict['Functions'] ] )
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
 
+class EditPdf( Pdf ) :
+    def _make_pdf(self) : pass
+    def __init__(self,Name,**kwargs) :
+        d = { 'Name' : Name 
+            , 'Original' : kwargs.pop('Original')
+            , 'Rules' : kwargs.pop('Rules')
+            }
+        # construct factory string on the fly...
+        self._declare("EDIT::%s( %s, %s )" % ( Name, d['Original'].GetName(), ','.join([ '%s=%s'%(k.GetName(),v.GetName()) for k,v in d['Rules'].iteritems()])  ) )
+        self._init(Name,type(__dref__(d['Original'])).__name__)
+        Pdf.__init__(self
+                    , Name = Name
+                    , Type = type(__dref__(d['Original'])).__name__
+                    , Observables = () # let Pdf figure this out itself...
+                    )
+        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
-
         d = { 'Name' : Name 
             , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
             , 'Formula' : kwargs.pop('Formula')
             }
-
         # construct factory string on the fly...
         self._declare("GenericPdf::%(Name)s( '%(Formula)s', { %(Args)s } )" % d )
-
         self._init(Name,'RooGenericPdf')
         Pdf.__init__(self
                     , Name = Name
@@ -690,39 +698,66 @@ class GenericPdf( Pdf ) :
         kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-class BTagDecay( Pdf ) :
+class UniformPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
-        d = { 'Name' : Name, 'checkVars' : 1, 'decayType' : 'SingleSided', 'tagCat' : None }
-        for i in [ 'time','iTag','tau', 'dGamma', 'dm'
-                 , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
-                 , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
-                 , 'resolutionModel', 'decayType', 'checkVars' ] :
-           if i not in d or i in kwargs : d[i] = kwargs.pop(i) 
-
-        from P2VVLoad import P2VVLibrary
+        d = { 'Name' : Name 
+            , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
+            }
         # construct factory string on the fly...
-        if d['tagCat'] :
-            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                              " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s"\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d
-                         )
-        else :
-            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % d
-                         )
-
-        self._init(Name,'RooBTagDecay')
+        self._declare("Uniform::%(Name)s( { %(Args)s } )" % d )
+        self._init(Name,'RooUniform')
         Pdf.__init__(self
                     , Name = Name
-                    , Type = 'RooBTagDecay'
+                    , Type = 'RooUniform'
                     , Observables = () # let Pdf figure this out itself...
                     )
         kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+class BTagDecay( Pdf ) :
+    def _make_pdf(self) : pass
+    def __init__( self, Name, **kwargs ) :
+        from P2VVLoad import P2VVLibrary
+        argDict = { 'Name' : Name, 'checkVars' : '1', 'decayType' : 'SingleSided' }
+
+        # construct factory string on the fly...
+        convert = lambda arg : str(arg) if type(arg) != list else '{%s}' % ','.join( str(listItem) for listItem in arg )
+        if 'tagCat' in kwargs :
+            for argName in [  'time', 'iTag', 'tagCat', 'tau', 'dGamma', 'dm'
+                            , 'dilutions', 'ADilWTags', 'avgCEvens', 'avgCOdds', 'tagCatCoefs'
+                            , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                            , 'resolutionModel', 'decayType', 'checkVars'
+                           ] :
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
+
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+                                              " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s,"\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
+                         )
+        else :
+            for argName in [  'time', 'iTag', 'tau', 'dGamma', 'dm'
+                        , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
+                        , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                        , 'resolutionModel', 'decayType', 'checkVars'
+                       ] :
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
+
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
+                         )
+
+        self._init( Name, 'RooBTagDecay' )
+        Pdf.__init__(  self
+                     , Name = Name
+                     , Type = 'RooBTagDecay'
+                     , Observables = () # let Pdf figure this out itself...
+                    )
+        kwargs.pop( 'Observables', None ) # TODO: remove this bad hack!!! Observables are automatically determined
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
 
 class ResolutionModel(RooObject):
     _getters = {'Observables' : lambda s : s._get('Observables')
@@ -790,7 +825,10 @@ class Component(object):
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
     def setYield(self, n, nlo, nhi) :
-        Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n).GetName()
+        assert n>=nlo
+        assert n<=nhi
+        Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n)
+        # Component._d[self.name]['Yield'].Print('V')
     def __iadd__(self,pdf) :
         self.append(pdf)
         return self
@@ -803,8 +841,8 @@ class Component(object):
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
         #### 
-        print 'Component: specified observables: %s' % k
-        print 'Component: deduced observables: %s' % pdf.Observables()
+        #print 'Component: specified observables: %s' % k
+        #print 'Component: deduced observables: %s' % pdf.Observables()
         assert k == pdf.Observables()
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)

@@ -10,7 +10,7 @@ class _util_parse_mixin( object ) :
     def parameters( self ) :
         return self._params
 
-    def _parseArg( self, arg, kwargs, **d ) : 
+    def _parseArg( self, arg, kwargs, **d ) :
         def _create( arg,kwargs, **d ) :
             from RooFitWrappers import RealVar, RooObject
             from copy import copy
@@ -18,13 +18,24 @@ class _util_parse_mixin( object ) :
             if arg in kwargs :
                 a = kwargs.pop(arg)
                 if isinstance( a, RooObject ) : return a
-                _d.update( a if type(a) == dict else { 'Value' : a } ) 
+                _d.update( a if type(a) == dict else { 'Value' : a } )
             if 'Name' not in _d : _d[ 'Name' ] = arg
             return RealVar(**_d)
+
+        # get object container list
+        contList = d.pop( 'ContainerList', None )
+
+        # create object
         obj = _create( arg, kwargs, **d )
-        setattr(self,'_%s'%arg,obj)
+
+        # put object in container list or set it as attribute
+        if contList != None : contList.append(obj)
+        else : setattr( self, '_%s' % arg, obj )
+
+        # put object in parameters
         if not hasattr( self, '_params' ) : self._params = []
         self._params += [ obj ]
+
         return obj
 
     def _check_extraneous_kw( self, kwargs ) :

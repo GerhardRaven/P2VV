@@ -30,8 +30,7 @@
 #include <memory>
 #include <algorithm>
 
-ClassImp(RooEffHistProd)
-  ;
+ClassImp(RooEffHistProd);
 
 //_____________________________________________________________________________
 RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,const RooArgSet& iset,const RooArgSet* nset, const char *rangeName)

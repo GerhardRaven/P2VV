@@ -34,7 +34,6 @@ signif = 1
 #mcfilename = '/data/bfys/dveijk/MC/ReducedMCNTuple.root'
 #2011
 mcfilename =  '/data/bfys/dveijk/MC/2011/MC2011_UB.root'
-mcfilename =  '/tmp/MC2011_UB.root'
 
 datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2.root'
 #datafilename = '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2Unbiased.root'
@@ -178,10 +177,10 @@ print 'angles: ', [ i.GetName() for i in angles ]
 
 # compute the 'canonical' ten moments
 bnames = [ 'AzAz','AparApar','AperpAperp','AparAperp','AzAperp','AzApar','AsAs','AsAz','AsApar','AsAperp']
-tenmom = [ EffMoment( ws['%s_basis'%n], 1., MCpdf, angles) for n in bnames ]
+tenmom = [ RooRealEffMoment( ws['%s_basis'%n], 1., MCpdf, angles) for n in bnames ]
 
 computeMoments(MCdata,tenmom)
-xi_m = dict( [ (m.basis().GetName(),m.coefficient()) for m in tenmom ] )
+xi_m = dict( [ (m.name(),m.coefficient()) for m in tenmom ] )
 print 'Direct Moments xi_m =', xi_m
 
 def norm_xi( d ) :
@@ -191,16 +190,16 @@ norm_xi(xi_m)
 print 'Normalized direct moments xi_m =', xi_m
 
 def compute_moments( c ) :
-    return { 'AzAz_basis'       :   4*( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
-           , 'AparApar_basis'   :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
-           , 'AperpAperp_basis' :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
-           , 'AparAperp_basis'  :   4*sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
-           , 'AzApar_basis'     :   4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 - 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16384)
-           , 'AzAperp_basis'    :  -4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16384)
-           , 'AsAs_basis'       :   2*(2*c[(0,0,0)]+sqrt(1./5)*c[(0,2,0)]-sqrt(3./5)*c[(0,2,2)])
-           , 'AsApar_basis'     :   12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)] - c[(2,2,-2)]/8 - c[(4,2,-2)]/64 - 5*pi*c[(6,2,-2)]/1024 -35*pi*c[(8,2,-2)]/16384)
-           , 'AsAperp_basis'    :  -12*sqrt(2./5.)*pi/8 *( c[(0,2,1)] - c[(2,2,1)]/8 - c[(4,2,1)]/64 - 5*pi*c[(6,2,1)]/1024 -35*pi*c[(8,2,1)]/16384)
-           , 'AsAz_basis'       :   (2./3)*(4*sqrt(3)*c[(1,0,0)]+2*sqrt(3./5)*c[(1,2,0)]-6*sqrt(1./5)*c[(1,2,2)])
+    return { 'AzAz_basis_MCpdf'       :   4*( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
+           , 'AparApar_basis_MCpdf'   :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
+           , 'AperpAperp_basis_MCpdf' :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
+           , 'AparAperp_basis_MCpdf'  :   4*sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
+           , 'AzApar_basis_MCpdf'     :   4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 - 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16384)
+           , 'AzAperp_basis_MCpdf'    :  -4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16384)
+           , 'AsAs_basis_MCpdf'       :   2*(2*c[(0,0,0)]+sqrt(1./5)*c[(0,2,0)]-sqrt(3./5)*c[(0,2,2)])
+           , 'AsApar_basis_MCpdf'     :   12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)] - c[(2,2,-2)]/8 - c[(4,2,-2)]/64 - 5*pi*c[(6,2,-2)]/1024 -35*pi*c[(8,2,-2)]/16384)
+           , 'AsAperp_basis_MCpdf'    :  -12*sqrt(2./5.)*pi/8 *( c[(0,2,1)] - c[(2,2,1)]/8 - c[(4,2,1)]/64 - 5*pi*c[(6,2,1)]/1024 -35*pi*c[(8,2,1)]/16384)
+           , 'AsAz_basis_MCpdf'       :   (2./3)*(4*sqrt(3)*c[(1,0,0)]+2*sqrt(3./5)*c[(1,2,0)]-6*sqrt(1./5)*c[(1,2,2)])
            }
 
 # compute the Fourier series for the efficiency
@@ -211,12 +210,12 @@ except : from compatibility import product
 for (i,l) in product(range(3),range(3)) :
     # if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
     # Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
-    moments += [ EffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, MCpdf, angles ) for m in range(-l,l+1) ]
+    moments += [ RooRealEffMoment( ab.build("mom",i,0,l,m,1. ),float(2*i+1)/2, MCpdf, angles ) for m in range(-l,l+1) ]
 
 #Generate the moments needed for the infinite series
 for i in range(3,20):
-    moments += [EffMoment( ab.build("mom",i,0,2,-2,1. ),float(2*i+1)/2, MCpdf, angles )]
-    moments += [EffMoment( ab.build("mom",i,0,2,1,1. ),float(2*i+1)/2, MCpdf, angles ) ]
+    moments += [RooRealEffMoment( ab.build("mom",i,0,2,-2,1. ),float(2*i+1)/2, MCpdf, angles )]
+    moments += [RooRealEffMoment( ab.build("mom",i,0,2,1,1. ),float(2*i+1)/2, MCpdf, angles ) ]
 
 # loop over all data, determine moments
 computeMoments(MCdata,moments)
@@ -224,7 +223,7 @@ computeMoments(MCdata,moments)
 # compute the 'canonical' moments given the Fourier series
 c = dict()
 for m in moments :
-    c[ ( m.basis().i(),m.basis().l(),m.basis().m() ) ] = m.coefficient()
+    c[ ( m.basisFunc().i(),m.basisFunc().l(),m.basisFunc().m() ) ] = m.coefficient()
 
 xi_c = compute_moments( c )
 norm_xi(xi_c)
@@ -235,17 +234,17 @@ for name in xi_c.iterkeys() :
 
 print 'using the following terms in Fourier expansion: '
 
-for n,coeff in [ ( m.basis().GetName() , m.coefficient() ) for m in moments if m.significance()>signif] :
+for n,coeff in [ ( m.name() , m.coefficient() ) for m in moments if m.significance()>signif] :
     print '%s : %s ' % (n,coeff)
 
 
 if False:
-    MCpdf_eff = buildEff_x_PDF(ws,'fourier_eff',MCpdf,[ ( m.basis() , m.coefficient() ) for m in moments if m.significance()>signif] )
+    MCpdf_eff = buildEff_x_PDF(ws,'fourier_eff',MCpdf,[ ( m.basisFunc() , m.coefficient() ) for m in moments if m.significance()>signif] )
     ws.put( MCpdf_eff )
 
     effpdfs = RooArgList()
     effcoeffs = RooArgList()
-    l= [ [ m.basis() , c[(m.basis().i(),m.basis().l(),m.basis().m())] ] for m in moments if m.significance()>signif]
+    l= [ [ m.basisFunc() , c[(m.basisFunc().i(),m.basisFunc().l(),m.basisFunc().m())] ] for m in moments if m.significance()>signif]
 
     for i in l:
         ws.factory("const_%s[%s]"%(i[0].GetName(),i[1]))
@@ -436,7 +435,7 @@ ws.factory("SUM::pdf_ext(Nsig_UB*sig_pdf,Nbkg_UB*bkg_pdf)")
 ws.factory("SUM::pdf(f_sig[0.71,0.,1.0]*sig_pdf,bkg_pdf)")
 
 print 'GOING TO BUILD THE ANGULAR ACCEPTANCE CORRECTED FULL PDF!'
-angcorrpdf = buildEff_x_PDF(ws,'angcorr',ws['pdf_ext'],[ ( m.basis() , m.coefficient() ) for m in moments if m.significance()>signif] )
+angcorrpdf = buildEff_x_PDF(ws,'angcorr',ws['pdf_ext'],[ ( m.basisFunc() , m.coefficient() ) for m in moments if m.significance()>signif] )
 ws.put(angcorrpdf)
 
 ws.factory("Gaussian::p0(p0var[0.,0.5],p0mean[0.384],p0sigma[0.010])")
@@ -454,13 +453,15 @@ wtag_syst = ws.function('wtag_syst')
 customizer = RooCustomizer(ws['pdf_ext'],'inc_tag_syst')
 customizer.replaceArg( wtag, wtag_syst )
 tagpdf = customizer.build()
-ws.put(tagpdf,RooFit.RecycleConflictNodes())
+#ws.put(tagpdf,RooFit.RecycleConflictNodes())
+getattr(ws,'import')(tagpdf,RooFit.RecycleConflictNodes())
 
 #angcorrpdf
 customizer = RooCustomizer(angcorrpdf,'inc_tag_syst')
 customizer.replaceArg( wtag, wtag_syst )
 angcorrtagpdf = customizer.build()
-ws.put(angcorrtagpdf,RooFit.RecycleConflictNodes())
+#ws.put(angcorrtagpdf,RooFit.RecycleConflictNodes())
+getattr(ws,'import')(angcorrtagpdf,RooFit.RecycleConflictNodes())
 
 #Constrain deltams
 ws.factory("Gaussian::dmsconstraint(t_sig_dm,t_sig_dm_mean[17.63],t_sig_dm_sigma[0.11])")

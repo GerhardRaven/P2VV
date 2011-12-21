@@ -133,6 +133,9 @@ Int_t computeRooRealMoments(RooAbsData& data, RooRealMomentsVector& moments,
   ProgressDisplay *prog = verbose ? new ProgressDisplay(data.numEntries()) : 0;
   while (dataIter < data.numEntries()) {
     *obs = *data.get(dataIter++);
+    //cout << "computeRooRealMoments:" << endl;
+    //obs->Print("V");
+    //cout << endl;
     for (RealMomIter mom = moments.begin(); mom != moments.end(); ++mom)
       (*mom)->inc(data.isWeighted() ? data.weight() : 1.);
 

@@ -478,15 +478,17 @@ class RealMomentsBuilder ( dict ) :
         import re
         names = kwargs.pop('Names', None)
 
+        keys     = []
         angFuncs = {}
         angCoefs = {}
         from RooFitWrappers import ConstVar
         for ( name, ( func, coef ) ) in zip( self._basisFuncNames, self._iterFuncAndCoef( MinSignificance = minSignif, Names = names ) ) :
+            keys.append( ( name, None ) )
             angFuncs[( name, None )] = ( func,                                  None )
             angCoefs[( name, None )] = ( ConstVar( 'C_' + name, Value = coef ), None )
 
         from P2VVParameterizations.AngularPDFs import Coefficients_AngularPdfTerms
-        return Coefficients_AngularPdfTerms( AngFunctions = angFuncs, AngCoefficients = angCoefs )
+        return Coefficients_AngularPdfTerms( Keys = keys, AngFunctions = angFuncs, AngCoefficients = angCoefs )
 
     def createPDF( self, **kwargs ) :
         # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
@@ -530,9 +532,9 @@ class RealMomentsBuilder ( dict ) :
         from ROOT import RooP2VVAngleBasis
         subst = dict()
         # TODO: do not use type to recognize, but name??
-        from RooFitWrappers import Addition
+        from RooFitWrappers import Addition,EditPdf
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
             subst[comp] = Addition( '%s_x_eff' % ( comp.GetName() )
                                   , [ _createProduct( comp, f, c ) for f,c in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
                                   )
-        return pdf.edit( kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), subst )
+        return EditPdf( Name = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), Original = pdf, Rules = subst )

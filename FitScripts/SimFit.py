@@ -14,9 +14,11 @@ from array import array
 
 from RooFitDecorators import *
 
-name = 'SimFit_10bins'
+nbins_timeacc = 100
 
-wsfile = TFile('WS_SimFit_10bins.root')
+name = 'SimFit_%s_bins'%(nbins_timeacc)
+
+wsfile = TFile('SimWS_%s_bins.root'%(nbins_timeacc))
 
 ws = wsfile.Get('ws')
 
@@ -77,7 +79,7 @@ ws['phis'].setVal(0.151)
 #    ws[parname].setVal(value)
 #    ws[parname].setError(error)
     
-fit = False
+fit = True
 
 if fit:
     sw = TStopwatch()
@@ -89,6 +91,8 @@ if fit:
     result.SaveAs('result_%s.root'%(name))
     result.writepars(name,False)
     result.writecorr(name)
+
+assert False
 
 ######PLOT######
 lw = RooCmdArg(RooFit.LineWidth(2))

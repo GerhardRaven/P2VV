@@ -7,32 +7,42 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
+from P2VVParameterizations.GeneralUtils import _util_parse_mixin
+
 
 class AngularPdfTerms ( list ) :
     def __init__( self, AngTerms ) :
+        # set the angular terms
         self += ( term for term in AngTerms )
 
     def __getitem__( self, keyWord ) :
+        # return an attribute if the key word is a string and an angular term if the key word is an integer
         if type(keyWord) == str : return getattr( self, '_' + keyWord )
         else :                    return list.__getitem__(self, keyWord)
 
     def buildSumPdf( self, Name ) :
+        # build a RealSumPdf from the current angular terms
         from RooFitWrappers import RealSumPdf
         return RealSumPdf( Name, self )
 
 class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
     def __init__( self, **kwargs ) :
-        # get angular functions from kwargs
+        # get angular functions from arguments (dictionary with complex ( Re, Im ) wrapped RooFit objects)
         from RooFitWrappers import __check_req_kw__
         __check_req_kw__( 'AngFunctions', kwargs )
         self._angFuncs = kwargs.pop('AngFunctions')
 
-        # get angular function coefficients
+        # get keys for angular terms
+        self._keys = kwargs.pop( 'Keys', self._angFuncs.keys() )
+
+        # get angular function coefficients (dictionary with complex ( Re, Im ) wrapped RooFit objects)
         if 'AngCoefficients' in kwargs :
+            # get coefficients from arguments
             self._angCoefs = kwargs.pop('AngCoefficients')
-            for key in self._angFuncs.keys() :
+            for key in self._keys :
                 if key not in self._angCoefs : raise KeyError('Coefficients_AngularPdfTerms: no coefficient %s found' % str(key))
         else :
+            # build a coefficient for each angular function
             from RooFitWrappers import RealVar
             self._angCoefs = dict( ( key, (  RealVar('%s_%s_ReCoef' % (key[0], key[1]), Value = 1.) if self._angFuncs[key][0] else None
                                            , RealVar('%s_%s_ImCoef' % (key[0], key[1]), Value = 1.) if self._angFuncs[key][1] else None) )\
@@ -41,7 +51,7 @@ class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
         # check if there are arguments left
         if kwargs: raise KeyError('Coefficients_AngularPdfTerms: got unknown keyword%s: %s' % ( '' if len(kwargs) == 1 else 's', kwargs ) )
 
-        # build angular terms
+        # build angular terms ( list of products of coefficients and functions: Re[C*F] = Re(C)*Re(F) - Im(C)*Im(F) )
         from RooFitWrappers import ConstVar, Product
         minus = ConstVar('minus',  Value = -1  )
         newAngTerm = lambda func, coef, minSign :\
@@ -49,12 +59,63 @@ class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
               if func and coef else [ ]
 
         angTerms = []
-        for key in self._angFuncs.keys() :
+        for key in self._keys :
             angTerms += newAngTerm( self._angFuncs[key][0], self._angCoefs[key][0], None  )
             angTerms += newAngTerm( self._angFuncs[key][1], self._angCoefs[key][1], minus )
 
         # initialize
         AngularPdfTerms.__init__( self, angTerms )
+
+class AngleBasis_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
+    def __init__( self, **kwargs ) :
+        # get angles from arguments
+        from RooFitWrappers import __check_req_kw__
+        __check_req_kw__( 'Angles', kwargs )
+        self._angles = kwargs.pop('Angles')
+
+        # initialize coefficients and functions lists
+        keys     = []
+        angCoefs = {}
+        angFuncs = {}
+
+        # get coefficients and angular basis function indices from arguments
+        hasC000 = False
+        for coefName, coefArgs in kwargs.iteritems() :
+            # check if this argument is a coefficient
+            if coefName[0] != 'C' or type(coefArgs) != dict : continue
+
+            # process arguments of coefficient
+            indices = coefArgs.pop( 'Indices', None )
+            if not indices : raise KeyError( 'AngleBasis_AngularPdfTerms: no indices found for coefficient %s' % coefName )
+            if indices[0] == 0 and indices[1] == 0 and indices[2] == 0 : hasC000 = True
+
+            # get (RooFit) name of angular term
+            cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
+            RooFitCoefName = coefArgs.pop( 'Name', 'Cab%d%d%s' % ( indices[0], indices[1], cnvrtInd(indices[2]) ) )
+
+            # create coefficient and angular function
+            from RooFitWrappers import RealVar, P2VVAngleBasis
+            keys.append( ( coefName, None ) )
+            angCoefs[ ( coefName, None ) ] = ( RealVar( RooFitCoefName, **coefArgs ), None )
+            angFuncs[ ( coefName, None ) ] = ( P2VVAngleBasis( self._angles, indices[0], 0, indices[1], indices[2], 1. ), None )
+
+        # remove coefficients from arguments
+        for key in keys : kwargs.pop(key[0])
+
+        # add P_0 Y_0_0 term ( 0, 0, 0 )
+        if not hasC000 :
+            from RooFitWrappers import ConstVar
+            keys.insert( 0, ( 'C000', None ) )
+            angCoefs[ keys[0] ] = ( ConstVar( 'Cab000', Value = 1. ), None )
+            angFuncs[ keys[0] ] = ( P2VVAngleBasis( self._angles, 0, 0, 0, 0, 1. ), None )
+
+        # check if there are no arguments left
+        if kwargs: raise KeyError('AngleBasis_AngularPdfTerms: got unknown keyword%s: %s'\
+                                        % ( '' if len(kwargs) == 1 else 's', kwargs ))
+
+        # initialize
+        Coefficients_AngularPdfTerms.__init__( self, Keys = keys, AngCoefficients = angCoefs, AngFunctions = angFuncs )
+
 
 class Amplitudes_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
     def __init__( self, **kwargs ) :
@@ -73,12 +134,15 @@ class Amplitudes_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
         self._amplitudes = kwargs.pop('Amplitudes')
         for amp in self._ampNames : assert amp in self._amplitudes, 'Amplitudes_AngularPdfTerms: no amplitude \'%s\' found' % amp
 
+        # get keys for angular terms
+        keys = [ key for key in cwr( self._ampNames, 2 ) ]
+
         # get angular functions from arguments
         angFuncs = { }
         angFuncsArg = kwargs.pop('AngFunctions')
-        for amp1, amp2 in cwr( self._ampNames, 2 ) :
-            assert ( amp1, amp2 ) in angFuncsArg, 'Amplitudes_AngularPdfTerms: no angular function %s found' % str(( amp1, amp2 ))
-            angFuncs[( amp1, amp2 )] = angFuncsArg[( amp1, amp2 )]
+        for key in keys :
+            assert key in angFuncsArg, 'Amplitudes_AngularPdfTerms: no angular function %s found' % str(key)
+            angFuncs[key] = angFuncsArg[key]
 
         # check if there are no arguments left
         if kwargs: raise KeyError('Amplitudes_AngularPdfTerms: got unknown keyword%s: %s'\
@@ -89,21 +153,18 @@ class Amplitudes_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
         angCoefs = { }
         Re = lambda Ai, Aj : FormulaVar( 'Re_c_%s_%s' % ( Ai, Aj ), '@0*@2 + @1*@3', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
         Im = lambda Ai, Aj : FormulaVar( 'Im_c_%s_%s' % ( Ai, Aj ), '@0*@3 - @1*@2', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
-        for amp1, amp2 in cwr( self._ampNames, 2 ) :
-            angCoefs[( amp1, amp2 )] = (  Re( self._amplitudes[amp1], self._amplitudes[amp2] )
-                                        , Im( self._amplitudes[amp1], self._amplitudes[amp2] ) )
+        for key in keys :
+            angCoefs[key] = (  Re( self._amplitudes[ key[0] ], self._amplitudes[ key[1] ] )
+                             , Im( self._amplitudes[ key[0] ], self._amplitudes[ key[1] ] ) )
         # initialize
-        Coefficients_AngularPdfTerms.__init__( self, AngCoefficients = angCoefs, AngFunctions = angFuncs )
+        Coefficients_AngularPdfTerms.__init__( self, Keys = keys, AngCoefficients = angCoefs, AngFunctions = angFuncs )
 
 
-
-from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 class Uniform_Angles( _util_parse_mixin ) :
     def pdf(self) :
         return self._pdf        
     def __init__( self, angles, **kwargs ) :
-        # not the fastes implementation, but certainly the quickest to implement ;-)
-        from RooFitWrappers import GenericPdf
-        self._pdf =  GenericPdf('Uniform_AnglesPdf', Formula = '1.' , Arguments = ( angles['phi'],angles['ctheta'],angles['cpsi'] ) )
+        from RooFitWrappers import UniformPdf
+        self._pdf =  UniformPdf('Uniform_AnglesPdf', Arguments = ( angles['phi'],angles['ctheta'],angles['cpsi'] ) )
         for (k,v) in kwargs.iteritems() :
             setattr(self,'_'+k,v)
