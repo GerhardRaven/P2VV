@@ -325,16 +325,18 @@ class ConstVar (RooObject):
                 assert v == self[k]
         
 class P2VVAngleBasis (RooObject) : 
-    # TODO: make a 'borg' out of this which avoids re-creating ourselves by construction...
+    # TODO: move 'c' out of this class (and into an explicit product), 
+    #       which will allow more re-use of existing objects, and hence 
+    #       make things faster
     def __init__(self, angles, ind,c=1,ind2 = None) :
         assert c!=0
-        # WARNING: angles may contain barebones PyROOT objects!!!
         name =      'p2vvab_%d%d%d%d' % ind
         if ind2 : name += '_%d%d%d%d' % ind2
         if c!=1 : name += '_%3.2f' % c
-        name = name.replace('-', 'm')
-        name = name.replace('.', 'd')
-        spec = "RooP2VVAngleBasis::%s(%s, %s, %s, " %(name, angles['cpsi'].GetName(),angles['ctheta'].GetName(),angles['phi'].GetName() )
+        name = name.replace('.','d').replace('-','m')
+        spec = "RooP2VVAngleBasis::%s(" % name
+        # WARNING: angles may contain barebones PyROOT objects!!!
+        spec += "%s, %s, %s, " % tuple( angles[i].GetName() for i in [ 'cpsi', 'ctheta', 'phi'] )
         spec += "%d,%d,%d,%d, " % ind
         if ind2 : spec += "%d,%d,%d,%d, " % ind2
         spec += " %f)"% c
