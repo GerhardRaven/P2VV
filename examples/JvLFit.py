@@ -255,6 +255,7 @@ if makePlots :
         frame.SetMaximum( maxVal[ frame.GetXaxis().GetTitle() ] )
     for pad  in anglesCanv.pads() : pad.Draw()
 
+    # print canvas to file
     timeAnglesCanv.Print(plotsFile + '(')
     timeCanv.Print(plotsFile)
     anglesCanv.Print(plotsFile + ')')

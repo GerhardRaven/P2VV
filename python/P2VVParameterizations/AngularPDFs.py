@@ -80,7 +80,10 @@ class AngleBasis_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
 
         # get coefficients and angular basis function indices from arguments
         hasC000 = False
-        for coefName, coefArgs in kwargs.iteritems() :
+        for coefName in sorted(kwargs.keys()) :
+            # get coefficient's arguments
+            coefArgs = kwargs[coefName]
+
             # check if this argument is a coefficient
             if coefName[0] != 'C' or type(coefArgs) != dict : continue
 
