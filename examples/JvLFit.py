@@ -6,7 +6,7 @@ from math import pi, sin, cos, sqrt
 
 # job parameters
 generateData = False
-fitData      = True
+fitData      = False
 makePlots    = True
 
 nEvents = 50000
@@ -226,6 +226,38 @@ if makePlots :
     timeYMax = max( frame.GetMaximum() for frame in timeCanv.frameHists() )
     map( lambda obj : obj.SetMaximum(timeYMax), ( frame for frame in timeCanv.frameHists() ) )
     for pad in timeCanv.pads() : pad.Draw()
+
+    # plot lifetime (tagged/untagged)
+    timePlotTitles1 = tuple( [ time.GetTitle() + str for str in (  ' - B (tagged)'
+                                                                 , ' - B (untagged)'
+                                                                 , ' - #bar{B} (tagged)'
+                                                                 , ' - #bar{B} (untagged)'
+                                                                )
+                            ] )
+    timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
+    for ( pad, nBins, plotTitle, dataCuts, pdfCuts )\
+            in zip(  timeCanv1.pads( 2, 2 )
+                   , 2 * numTimeBins
+                   , timePlotTitles1
+                   , ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' > 0'  }, )
+                   + ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' == 0' }, )
+                   + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' > 0'  }, )
+                   + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' == 0' }, )
+                   , ( { 'Slices' : [ ( iTag, 'B' )   , ( tagCat, 'Tagged'   ) ] }, )
+                   + ( { 'Slices' : [ ( iTag, 'B' )   , ( tagCat, 'Untagged' ) ] }, )
+                   + ( { 'Slices' : [ ( iTag, 'Bbar' ), ( tagCat, 'Tagged'   ) ] }, )
+                   + ( { 'Slices' : [ ( iTag, 'Bbar' ), ( tagCat, 'Untagged' ) ] }, )
+                  ) :
+        plot(  pad, time, data, pdf
+             , frameOpts = dict( Bins = nBins, Title = plotTitle )
+             , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
+             , pdfOpts   = dict( LineWidth = lineWidth, **pdfCuts )
+            )
+
+    # set Y-axis maximum for lifetime plots
+#    timeYMax = max( frame.GetMaximum() for frame in timeCanv.frameHists() )
+#    map( lambda obj : obj.SetMaximum(timeYMax), ( frame for frame in timeCanv1.frameHists() ) )
+#    for pad in timeCanv1.pads() : pad.Draw()
 
     # plot angles
     anglePlotTitles =   tuple(  [ angle.GetTitle() + ' - B'       for angle in angles ]\

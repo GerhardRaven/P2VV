@@ -15,6 +15,8 @@ def __wrap_kw_subs( fun ) :
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
+        if 'Slices' in kwargs :
+            args += tuple( RooCmdArg( __disp('Slice', slice) ) for slice in kwargs.pop('Slices') )
         args += tuple( RooCmdArg( __disp(k,v) ) for k,v in kwargs.iteritems() )
         return fun(self,*args)
     return _fun
