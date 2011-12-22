@@ -43,5 +43,5 @@ clean:
 	-rm -rf $(LIBDIR)/libP2VV.so $(OBJECTS) P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
 
 $(DEPDIR) $(LIBDIR) $(BUILDDIR):
-	mkdir $@
+	@if [ ! -d $@ ]; then mkdir $@; fi
 -include $(SOURCES:%.cxx=$(DEPDIR)/%.P)

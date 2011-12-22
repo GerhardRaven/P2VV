@@ -48,8 +48,8 @@ for i in range(6,nbins+1):
 effdatahist = RooDataHist("effdatahist","effdatahist",RooArgList(ws['t']),effh1) 
 ws.put(effdatahist)
 
-ws.factory("HistPdf::effpdf(t,effdatahist)")
-ws.factory("EffHistProd::accpdf1(pdf,effpdf)")
+ws.factory("HistFunc::eff(t,effdatahist)")
+ws.factory("EffHistProd::accpdf1(pdf,eff)")
 
 accpdf1 = ws['accpdf1']
 
@@ -77,7 +77,7 @@ Acc = TCanvas('Acc','Acc')
 
 Acc.cd(1)
 tframe = ws['t'].frame(RooFit.Bins(30))
-ws['effpdf'].plotOn(tframe)
+ws['eff'].plotOn(tframe)
 tframe.Draw()
 
 C2 = TCanvas('C2','C2')

@@ -52,7 +52,7 @@ from ROOT import RooStudyManager
 gfs = RooGenFitStudy();
 gfs.storeDetailedOutput(True)
 gfs.setGenConfig("acc_pdf", "t", RooFit.NumEvents(10000))
-gfs.setFitConfig("acc_pdf", "t", RooFit.PrintLevel(-1))
+gfs.setFitConfig("acc_pdf", "t", RooFit.PrintLevel(-1), RooFit.Minimizer("Minuit2"))
 
 mgr = RooStudyManager(w, gfs)
 
@@ -61,7 +61,7 @@ mgr.run(100)
 
 data = gfs.summaryData()
 details = gfs.detailedData()
-root_file = TFile.Open('data_%d.root' % nbins, 'recreate')
+root_file = TFile.Open('data1D_%d.root' % nbins, 'recreate')
 root_file.WriteTObject(data, 'data')
 root_file.WriteTObject(details, 'details')
 root_file.Close()

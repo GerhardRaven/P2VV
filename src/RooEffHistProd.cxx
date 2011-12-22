@@ -27,6 +27,7 @@
 #include "RooEffGenContext.h"
 #include "RooNameReg.h"
 #include "RooRealVar.h"
+#include "RooRandom.h"
 #include <memory>
 #include <algorithm>
 
@@ -55,17 +56,17 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,const RooArgSe
       xmax = new RooRealVar(name, name,parent->x().getMax(rangeName),
                             parent->x().getMin(rangeName), parent->x().getMax(rangeName));
       myRange = parent->makeFPName(parent->GetName(), iset, nset, "_I_Range");
-      if (parent->x().hasRange(myRange)) {
-         cout << "RooEffHistProd(" << parent->GetName() << ")::CacheElem  range " << myRange 
-              << " already exists!!!" << endl;
-      }
+      // if (parent->x().hasRange(myRange)) {
+      //    cout << "RooEffHistProd(" << parent->GetName() << ")::CacheElem  range " << myRange 
+      //         << " already exists!!!" << endl;
+      // }
       parent->x().setRange(myRange,*xmin,*xmax);
-      cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem created range " 
-           << myRange << " from " << xmin->GetName() << " to " << xmax->GetName() << endl;
+      // cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem created range " 
+      //      << myRange << " from " << xmin->GetName() << " to " << xmax->GetName() << endl;
    }
    I = parent->pdf()->createIntegral(iset,nset,parent->getIntegratorConfig(),myRange);
-   cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem created integral " 
-        << I->GetName() << " over " << iset << " in range " << (myRange ? myRange : "<none>") << endl;
+   // cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem created integral " 
+   //      << I->GetName() << " over " << iset << " in range " << (myRange ? myRange : "<none>") << endl;
    //I->setOperMode(ADirty);
 }
 //_____________________________________________________________________________
@@ -86,7 +87,7 @@ RooEffHistProd::RooEffHistProd(const char *name, const char *title,
    RooAbsPdf(name, title),
    _pdf("pdf", "pre-efficiency pdf", this, inPdf),
    _eff("eff", "efficiency function", this, inEff),
-   _observables("obs","observables in efficiency function", this),
+   _observables("obs", "observables in efficiency function", this),
    _cacheMgr(this, 10)
 {  
    // Constructor of a a production of p.d.f inPdf with efficiency
@@ -157,7 +158,6 @@ Double_t RooEffHistProd::evaluate() const
 RooAbsGenContext* RooEffHistProd::genContext(const RooArgSet &vars, const RooDataSet *prototype,
                                              const RooArgSet* auxProto, Bool_t verbose) const
 {
-   return RooAbsPdf::genContext(vars,prototype,auxProto,verbose);
    // Return specialized generator context for RooEffHistProds that implements generation
    // in a more efficient way than can be done for generic correlated products
    assert(pdf() != 0);
@@ -203,8 +203,8 @@ const char* RooEffHistProd::makeFPName(const char *prefix,const RooArgSet& iset,
 
 //_____________________________________________________________________________
 void RooEffHistProd::selectNormalization(const RooArgSet* nset,Bool_t force) {
-   cout << "RooEffHistProd(" <<GetName() <<")::selectNormalization: nset = " 
-        << (nset ? *nset : RooArgSet()) << (force ?" force!" : "" ) << endl;
+   // cout << "RooEffHistProd(" <<GetName() <<")::selectNormalization: nset = " 
+   //      << (nset ? *nset : RooArgSet()) << (force ?" force!" : "" ) << endl;
    RooAbsPdf::selectNormalization(nset,force);
 }
 
@@ -259,9 +259,9 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
    CacheElem* cache = getCache(nset,&iset,rangeName);
    assert(cache);
    Int_t code = _cacheMgr.lastIndex();
-   cout << "RooEffHistProd("<<GetName()<<")::getAnalyticalIntegral: returning 1+" 
-        << code << " for integral with iset= "  << iset << " nset= " << (nset ? *nset : RooArgSet())
-        << " in range " << (rangeName?rangeName:"<none>") << endl;
+   // cout << "RooEffHistProd("<<GetName()<<")::getAnalyticalIntegral: returning 1+" 
+   //      << code << " for integral with iset= "  << iset << " nset= " << (nset ? *nset : RooArgSet())
+   //      << " in range " << (rangeName?rangeName:"<none>") << endl;
    return 1 + code;
 }
 

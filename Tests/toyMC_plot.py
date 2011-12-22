@@ -1,9 +1,19 @@
+from optparse import OptionParser
+import sys
+parser = OptionParser(usage = '%prog nbins')
+
+(options, args) = parser.parse_args()
+if len(args) != 1:
+    print parser.usage
+    sys.exit(-1)
+nbins = int(args[0])
+
 from ROOT import (RooPullVar, RooConstVar,
                   RooFormulaVar, TFile,
                   TCanvas, RooArgList,
                   RooErrorVar, RooFit)
 
-root_file = TFile.Open('data_100.root')
+root_file = TFile.Open('data2D_%d.root' % nbins)
 data = root_file.Get('data')
 args = data.get()
 tau = args.find('tau')
