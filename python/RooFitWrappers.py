@@ -28,11 +28,13 @@ class RooObject(object) :
     _ws = None
     _dict = None
     _setters = {'Title'      : lambda s,v : s.SetTitle(v)
+               ,'Observable' : lambda s,v : s.setObservable(v) 
                }
     _getters = {'Name'       : lambda s : s.GetName()
                ,'Title'      : lambda s : s.GetTitle()
                ,'Value'      : lambda s : s.getVal()
                ,'Type'       : lambda s : s.Type()
+               ,'Observable' : lambda s : s.observable() 
                }
     def _factory(self,spec) :
         return self.ws().factory(spec)
@@ -196,13 +198,11 @@ class ArgSet(RooObject) :
 
 
 class Category (RooObject): 
-    _getters = {'Observable' : lambda s : s.observable() 
-               ,'Index'      : lambda s : s.getIndex() 
+    _getters = {'Index'      : lambda s : s.getIndex() 
                ,'Label'      : lambda s : s.getLabel()
                ,'States'     : lambda s : s.states()
                } 
-    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
-               ,'Index'      : lambda s,v : s.setIndex(v)
+    _setters = {'Index'      : lambda s,v : s.setIndex(v)
                ,'Label'      : lambda s,v : s.setLabel(v)
                ,'Constant'   : lambda s,v : s.setConstant(v)
                }
@@ -392,13 +392,11 @@ class RealVar (RooObject):
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...
     # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
-    _getters = {'Observable' : lambda s : s.observable() 
-               ,'Unit'       : lambda s : s.getUnit() 
+    _getters = {'Unit'       : lambda s : s.getUnit() 
                ,'Value'      : lambda s : s.getVal()
                ,'MinMax'     : lambda s : s.getRange()
                }
-    _setters = {'Observable' : lambda s,v : s.setObservable(v) 
-               ,'Unit'       : lambda s,v : s.setUnit(v) 
+    _setters = {'Unit'       : lambda s,v : s.setUnit(v) 
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
                ,'Constant'   : lambda s,v : s.setConstant(v)
@@ -459,8 +457,7 @@ class Pdf(RooObject):
     # TODO: support conditional observables!!!
     #       multiply automatically with flat PDF for conditional observables in no PDF for them is given??
     #       or intercept fitTo and add ConditionalObservables = ( ... ) ??
-    _getters = {'Observables' : lambda s : s.Observables()
-               ,'Type'        : lambda s : s._get('Type')
+    _getters = {'Type'        : lambda s : s._get('Type')
                ,'Parameters'  : lambda s : s._get('Parameters')
                ,'Name'        : lambda s : s._get('Name')
                }
@@ -473,8 +470,6 @@ class Pdf(RooObject):
         self._dict = kwargs
         self._dict['Name'] = Name
         self._make_pdf()
-        #print 'Pdf(%s): deduced observables: %s' %  (Name,self.Observables() )
-        #print 'Pdf(%s): specified observables : %s' % (Name,set( i.GetName() for i in kwargs['Observables'] ))
 
     def __str__(self):
         d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
@@ -551,7 +546,6 @@ class ProdPdf(Pdf):
     def __init__(self, Name, PDFs, **kwargs):
         self._dict = { 'PDFs' : frozenset(PDFs)
                      , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
-                     , 'Observables' : frozenset( i for p in PDFs for i in p['Observables'] )
                      }
         self._make_pdf()
         del self._dict
@@ -591,7 +585,6 @@ class SumPdf(Pdf):
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
                                 + 'less then the number of PDFs.')
-        self._dict['Observables'] = frozenset( i for p in pdfs for i in p['Observables' ] )
         # self._dict['Name'] = self._separator().join([p.GetName() for p in pdfs])
         self._make_pdf()
         del self._dict
@@ -669,10 +662,7 @@ class EditPdf( Pdf ) :
         # construct factory string on the fly...
         self._declare("EDIT::%s( %s, %s )" % ( Name, d['Original'].GetName(), ','.join([ '%s=%s'%(k.GetName(),v.GetName()) for k,v in d['Rules'].iteritems()])  ) )
         self._init(Name,type(__dref__(d['Original'])).__name__)
-        Pdf.__init__(self
-                    , Name = Name
-                    , Type = type(__dref__(d['Original'])).__name__
-                    )
+        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class GenericPdf( Pdf ) :
@@ -685,10 +675,7 @@ class GenericPdf( Pdf ) :
         # construct factory string on the fly...
         self._declare("GenericPdf::%(Name)s( '%(Formula)s', { %(Args)s } )" % d )
         self._init(Name,'RooGenericPdf')
-        Pdf.__init__(self
-                    , Name = Name
-                    , Type = 'RooGenericPdf'
-                    )
+        Pdf.__init__(self , Name = Name , Type = 'RooGenericPdf')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class UniformPdf( Pdf ) :
@@ -700,10 +687,7 @@ class UniformPdf( Pdf ) :
         # construct factory string on the fly...
         self._declare("Uniform::%(Name)s( { %(Args)s } )" % d )
         self._init(Name,'RooUniform')
-        Pdf.__init__(self
-                    , Name = Name
-                    , Type = 'RooUniform'
-                    )
+        Pdf.__init__(self , Name = Name , Type = 'RooUniform')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class BTagDecay( Pdf ) :
@@ -825,9 +809,6 @@ class Component(object):
 
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
-        #### 
-        #print 'Component: specified observables: %s' % k
-        #print 'Component: deduced observables: %s' % pdf.Observables()
         assert k == set( i.GetName() for i in pdf.Observables() )
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
