@@ -22,7 +22,7 @@ class Truth_TimeResolution ( TimeResolution ) :
         from ROOT import RooTruthModel as TruthModel
         TimeResolution.__init__( self, ResolutionModel(  'timeResModelTruth'
                                                        , Type = TruthModel
-                                                       , Observables = [ self._time ] )
+                                                       , Parameters = [ self._time ] )
                                )
 
 class Gaussian_TimeResolution ( TimeResolution ) :
@@ -35,8 +35,7 @@ class Gaussian_TimeResolution ( TimeResolution ) :
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__( self, ResolutionModel(  'timeResModelGauss'
                                                        , Type = GaussModel
-                                                       , Observables = [ self._time ]
-                                                       , Parameters  = [ self._timeResMu, self._timeResSigma ] )
+                                                       , Parameters  = [ self._time, self._timeResMu, self._timeResSigma ] )
                                )
 
 class LP2011_TimeResolution ( TimeResolution ) :
@@ -55,8 +54,7 @@ class LP2011_TimeResolution ( TimeResolution ) :
         TimeResolution.__init__( self, AddModel(  'timeResModelLP2011'
                                                 , [ ResolutionModel(  'timeResLP2011_%s' % numVal[0]
                                                                     , Type = GaussModel
-                                                                    , Observables = [ self._time ]
-                                                                    , Parameters  = [ self._timeResMu, sigma, self._timeResSF ]
+                                                                    , Parameters  = [ self._time, self._timeResMu, sigma, self._timeResSF ]
                                                                    )\
                                                     for ( numVal, sigma ) in zip( sigmas, self._timeResSigmas ) ]
                                                 , self._timeResFracs )

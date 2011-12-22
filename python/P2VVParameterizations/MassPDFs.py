@@ -17,12 +17,10 @@ class LP2011_Signal_Mass ( MassPdf ) :
         from ROOT import RooGaussian as Gaussian
         from RooFitWrappers import Pdf, FormulaVar, SumPdf
         g1 = Pdf( 'm_sig_1', Type = Gaussian
-                           , Observables = (mass,)
-                           , Parameters = (self._m_sig_mean, self._m_sig_sigma_1 ) 
+                           , Parameters = (mass, self._m_sig_mean, self._m_sig_sigma_1 ) 
                            )
         g2 = Pdf( 'm_sig_2', Type = Gaussian
-                           , Observables = (mass,)
-                           , Parameters = ( self._m_sig_mean
+                           , Parameters = ( mass, self._m_sig_mean
                                           , FormulaVar('m_sig_sigma_2','@0*@1',(self._m_sig_sigma_2_scale, self._m_sig_sigma_1))
                                           )  
                            )
@@ -35,8 +33,7 @@ class LP2011_Background_Mass ( MassPdf ) :
         from ROOT import RooExponential as Exponential
         from RooFitWrappers import Pdf
         bkg = Pdf( kwargs.pop('Name','LP2011_Background_Mass'), Type = Exponential
-                                           , Observables = (mass,)
-                                           , Parameters = (self._m_bkg_exp, )
+                                           , Parameters = (mass, self._m_bkg_exp, )
                                            )
         MassPdf.__init__(self, pdf = bkg )
 

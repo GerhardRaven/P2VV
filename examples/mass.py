@@ -23,30 +23,30 @@ from ROOT import RooCBShape as CrystalBall
 signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =  1.5,
                      MinMax = (1., 2.5))
 
-mc_res = ResolutionModel('mc_res', Type = TruthModel, Observables = [t])
-mcpdf = Pdf('mc_pdf', Type = Decay, Observables = [t], ResolutionModel = mc_res,
-            Parameters = [signal_tau], Options = ['SingleSided'])
+mc_res = ResolutionModel('mc_res', Type = TruthModel, Parameters = [t])
+mcpdf = Pdf('mc_pdf', Type = Decay,  ResolutionModel = mc_res,
+            Parameters = [t,signal_tau], Options = ['SingleSided'])
 
 # Time resolution model
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 tres = LP2011_TimeResolution(time = t)['model']
 
 # Signal time pdf
-sig_t = Pdf('sig_t', Type = Decay, Observables = [t], Parameters = [signal_tau],
+sig_t = Pdf('sig_t', Type = Decay,  Parameters = [t,signal_tau],
             ResolutionModel = tres, Options = ['SingleSided'])
 
 # B mass pdf
 m_mean  = RealVar('m_mean',   Unit = 'MeV', Value = 5300, MinMax = (5200, 5800))
 m_sigma = RealVar('m_sigma',  Unit = 'MeV', Value = 15, MinMax = (10, 30))
-sig_m = Pdf('sig_m', Type = Gaussian, Observables = (m,), Parameters = (m_mean, m_sigma ))
+sig_m = Pdf('sig_m', Type = Gaussian,  Parameters = (m,m_mean, m_sigma ))
 
 # J/psi mass pdf
 mpsi_mean  = RealVar('mpsi_mean',   Unit = 'MeV', Value = 3097, MinMax = (3070, 3110))
 mpsi_sigma = RealVar('mpsi_sigma',  Unit = 'MeV', Value = 10, MinMax = (5, 20))
 mpsi_alpha = RealVar('mpsi_alpha',  Unit = '', Value = 1.36, MinMax = (0.5, 3))
 mpsi_n = RealVar('mpsi_n',  Unit = '', Value = 1, MinMax = (0.1, 2))
-sig_mpsi = Pdf('sig_mpsi', Type = CrystalBall, Observables = [mpsi],
-               Parameters = [mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
+sig_mpsi = Pdf('sig_mpsi', Type = CrystalBall,
+               Parameters = [mpsi, mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
 
 # Create signal component
 signal = Component('signal', (  sig_m,  sig_mpsi,  sig_t ), Yield = (10000,100,15000) )
@@ -54,19 +54,19 @@ signal = Component('signal', (  sig_m,  sig_mpsi,  sig_t ), Yield = (10000,100,1
 # Create combinatorical background component
 
 m_c = RealVar( 'm_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.00001))
-bkg_m = Pdf('bkg_m', Observables = [m], Type = Exponential, Parameters = [m_c])
+bkg_m = Pdf('bkg_m', Type = Exponential, Parameters = [m, m_c])
 
 
 psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.0000001))
-bkg_mpsi = Pdf('bkg_mpsi', Observables = [mpsi], Type = Exponential, Parameters = [psi_c])
+bkg_mpsi = Pdf('bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c])
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
-comb_t = Pdf('comb_t', Type = Decay, Observables = [t], Parameters = [bkg_tau], ResolutionModel = tres, Options = ['SingleSided'])
+comb_t = Pdf('comb_t', Type = Decay,  Parameters = [t,bkg_tau], ResolutionModel = tres, Options = ['SingleSided'])
 comb_background = Component('comb_background', ( bkg_m,  bkg_mpsi,  comb_t ), Yield = (5000,100,15000) )
 
 
 # Create psi background component
 psi_tau = RealVar('psi_tau',  Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
-psi_t = Pdf('psi_t', Type = Decay, Observables = [t], Parameters = [psi_tau], ResolutionModel = tres, Options = ['SingleSided'])
+psi_t = Pdf('psi_t', Type = Decay, Parameters = [t,psi_tau], ResolutionModel = tres, Options = ['SingleSided'])
 psi_background = Component('psi_background', (  comb_t,  sig_mpsi,  bkg_m ), Yield= (5000,500,15000) )
 
 

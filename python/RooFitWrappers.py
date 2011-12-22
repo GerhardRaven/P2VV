@@ -32,6 +32,7 @@ class RooObject(object) :
     _getters = {'Name'       : lambda s : s.GetName()
                ,'Title'      : lambda s : s.GetTitle()
                ,'Value'      : lambda s : s.getVal()
+               ,'Type'       : lambda s : s.Type()
                }
     def _factory(self,spec) :
         return self.ws().factory(spec)
@@ -61,9 +62,14 @@ class RooObject(object) :
     def setWorkspace(self,ws):
         RooObject._ws = ws
         if not hasattr(ws, '_objects') : ws._objects  = {}  # name -> object
+        if not hasattr(ws, '_rooobject') : ws._rooobjects  = {}  # name -> rooobject
         if not hasattr(ws, '_mappings'): ws._mappings = {}
         if not hasattr(ws, '_spec'):     ws._spec = {}      # factory string -> object
         
+    def _rooobject(self,Name) :
+        if type(Name)!=str : Name = Name.GetName()
+        return self.ws()._rooobject[Name]
+
     def _declare(self,spec):
         """
         create the underlying C++ object in the workspace
@@ -115,6 +121,7 @@ class RooObject(object) :
         if not x.InheritsFrom(type_): 
             raise KeyError('%s is %s, not %s' % (name, x.ClassName(), type_))
         self._var = x
+        self.ws()._rooobjects[x.GetName()] = self
 
     def __getattr__(self, name):
         return getattr(self._target_(), name)      
@@ -141,9 +148,9 @@ class RooObject(object) :
         return self.GetName()
 
     def Observables(self) :
-        return set( i for i in self._var.getVariables() if i.getAttribute('Observable') )
+        return set( self.ws()._rooobjects[i.GetName()] for i in self._var.getVariables() if i.getAttribute('Observable') )
     def Parameters(self) :
-        return set( i for i in self._var.getVariables() if not i.getAttribute('Observable') )
+        return set( self.ws()._rooobjects[i.GetName()] for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
     ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
     def Type(self) :
@@ -302,8 +309,7 @@ class FormulaVar (RooObject):
             for k, v in kwargs.iteritems():
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
-                if k == 'Value':
-                    continue
+                if k == 'Value': continue
                 assert v == self[k]
 
 class ConstVar (RooObject): 
@@ -320,8 +326,7 @@ class ConstVar (RooObject):
             for k, v in kwargs.iteritems():
                 # Skip these to avoid failure in case we were loaded from a
                 # DataSet in the mean time
-                if k == 'Value':
-                    continue
+                if k == 'Value': continue
                 assert v == self[k]
         
 class P2VVAngleBasis (RooObject) : 
@@ -454,7 +459,7 @@ class Pdf(RooObject):
     # TODO: support conditional observables!!!
     #       multiply automatically with flat PDF for conditional observables in no PDF for them is given??
     #       or intercept fitTo and add ConditionalObservables = ( ... ) ??
-    _getters = {'Observables' : lambda s : s._get('Observables') 
+    _getters = {'Observables' : lambda s : s.Observables()
                ,'Type'        : lambda s : s._get('Type')
                ,'Parameters'  : lambda s : s._get('Parameters')
                ,'Name'        : lambda s : s._get('Name')
@@ -462,7 +467,6 @@ class Pdf(RooObject):
 
     ## TODO: define operators
     def __init__(self, Name, **kwargs):
-        __check_req_kw__( 'Observables', kwargs )
         __check_req_kw__( 'Type', kwargs )
 
         # Save the keyword args as properties
@@ -490,7 +494,7 @@ class Pdf(RooObject):
 
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
-            v = list(self._dict['Observables'])  
+            v = list()
             if 'Parameters' in self._dict: v += list(self._dict['Parameters'])
             if 'ResolutionModel' in self._dict: v.append(self._dict['ResolutionModel'])
             if 'Options' in self._dict: v += list(self._dict['Options'])
@@ -506,7 +510,7 @@ class Pdf(RooObject):
                 # change into a frozenset AFTER _makeRecipe has been invoked
                 # as _makeRecipe relies on the a-priori given order so it can
                 # match the c'tor arguments properly!!!!
-                if k in ['Observables', 'Parameters']: v = frozenset(v)
+                if k in [ 'Parameters']: v = frozenset(v)
                 attr = '_' + k.lower()
                 setattr(self._target_(), attr, v)
             del self._dict # no longer needed
@@ -514,7 +518,7 @@ class Pdf(RooObject):
             self._init(self._dict['Name'], 'RooAbsPdf')
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
-                if k in ['Observables', 'Parameters']: v = frozenset(v)
+                if k in [ 'Parameters']: v = frozenset(v)
                 if v != self._get(k) : print k,v,self._get(k)
                 assert v == self._get(k)
 
@@ -671,9 +675,7 @@ class EditPdf( Pdf ) :
         Pdf.__init__(self
                     , Name = Name
                     , Type = type(__dref__(d['Original'])).__name__
-                    , Observables = () # let Pdf figure this out itself...
                     )
-        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class GenericPdf( Pdf ) :
@@ -689,9 +691,7 @@ class GenericPdf( Pdf ) :
         Pdf.__init__(self
                     , Name = Name
                     , Type = 'RooGenericPdf'
-                    , Observables = () # let Pdf figure this out itself...
                     )
-        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class UniformPdf( Pdf ) :
@@ -706,9 +706,7 @@ class UniformPdf( Pdf ) :
         Pdf.__init__(self
                     , Name = Name
                     , Type = 'RooUniform'
-                    , Observables = () # let Pdf figure this out itself...
                     )
-        kwargs.pop('Observables',None) # TODO: remove this bad hack!!! Observables are automatically determined
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class BTagDecay( Pdf ) :
@@ -750,27 +748,21 @@ class BTagDecay( Pdf ) :
         Pdf.__init__(  self
                      , Name = Name
                      , Type = 'RooBTagDecay'
-                     , Observables = () # let Pdf figure this out itself...
                     )
-        kwargs.pop( 'Observables', None ) # TODO: remove this bad hack!!! Observables are automatically determined
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
 
 class ResolutionModel(RooObject):
-    _getters = {'Observables' : lambda s : s._get('Observables')
-               ,'Parameters'  : lambda s : s._get('Parameters')
-               ,'Type'        : lambda s : s._get('Type')
-               }
+    _getters = { 'Parameters'  : lambda s : s._get('Parameters') }
 
     def __init__(self, name, **kwargs):
         __check_req_kw__( 'Type', kwargs )
-        __check_req_kw__( 'Observables', kwargs )
 
         if name not in self.ws():
             # Save the keyword args as properties
             _dict = {}
             _dict['Name'] = name
             for k, v in kwargs.iteritems(): _dict[k] = v
-            variables = list(_dict['Observables'])
+            variables = list()
             if 'Parameters' in _dict: variables += list( _dict['Parameters'])
             deps = ','.join([v.GetName() for v in variables])
             _t = kwargs.pop('Type')
