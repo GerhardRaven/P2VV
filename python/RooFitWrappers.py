@@ -538,6 +538,9 @@ class Pdf(RooObject):
         if 'Slice' in kwargs :
             sl = kwargs.pop('Slice')
             kwargs['Slice'] = ( __dref__(sl[0]), sl[1] )
+        if 'Slices' in kwargs :
+            sls = kwargs.pop('Slices')
+            kwargs['Slices'] = [ ( __dref__(sl[0]), sl[1] ) for sl in sls ]
         return self._var.plotOn( frame, **kwargs )
 
 
