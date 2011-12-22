@@ -1,9 +1,18 @@
+from optparse import OptionParser
+import sys
+parser = OptionParser(usage = '%prog nbins')
+
+(options, args) = parser.parse_args()
+if len(args) != 1:
+    print parser.usage
+    sys.exit(-1)
+nbins = int(args[0])
+
 from ROOT import (gSystem, TH1F, TFile,
                   RooDataHist, RooFit,
                   TCanvas)
 gSystem.Load("libP2VV")
 ## from math import sqrt,pi
-
 from RooFitDecorators import *
 
 w = RooWorkspace("w")
@@ -30,7 +39,6 @@ w.defineSet("observables","t,m")
 ##############################################
 ### Define acceptance function a la Wouter ###
 ##############################################
-nbins = 1000
 effh1 = TH1F( "effh1", "effh1", nbins, w.var('t').getMin(), w.var('t').getMax()) 
 for i in range(1, int(0.6 * nbins)):
     effh1.SetBinContent(i, 1. / nbins * i)
@@ -90,6 +98,6 @@ mgr = RooStudyManager(w, gfs)
 mgr.prepareBatchInput('data2D_%d' % nbins, 100, True)
 
 ## data = gfs.summaryData();
-## root_file = TFile.Open('data2D_%d.root' % nbins, 'recreate')
-## root_file.WriteTObject(data, 'data')
-## root_file.Close()
+root_file = TFile.Open('workspace2D_%d.root' % nbins, 'recreate')
+root_file.WriteTObject(w, 'w')
+root_file.Close()
