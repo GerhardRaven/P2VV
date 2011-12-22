@@ -141,9 +141,9 @@ class RooObject(object) :
         return self.GetName()
 
     def Observables(self) :
-        return set( i.GetName() for i in self._var.getVariables() if i.getAttribute('Observable') )
+        return set( i for i in self._var.getVariables() if i.getAttribute('Observable') )
     def Parameters(self) :
-        return set( i.GetName() for i in self._var.getVariables() if not i.getAttribute('Observable') )
+        return set( i for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
     ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
     def Type(self) :
@@ -836,7 +836,7 @@ class Component(object):
         #### 
         #print 'Component: specified observables: %s' % k
         #print 'Component: deduced observables: %s' % pdf.Observables()
-        assert k == pdf.Observables()
+        assert k == set( i.GetName() for i in pdf.Observables() )
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
         present = set()
