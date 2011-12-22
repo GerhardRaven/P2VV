@@ -12,7 +12,7 @@ class LP2011_Signal_Mass ( MassPdf ) :
         self._parseArg('m_sig_mean', kwargs, Title = 'B Mass', Unit = 'MeV/c^2', Value = 5365, MinMax = (5360,5370) )
         self._parseArg('m_sig_sigma_1', kwargs, Title = 'B Mass resolution 1', Unit = 'MeV/c^2', Value = 6, MinMax = (3,20) )
         self._parseArg('m_sig_sigma_2_scale', kwargs, Title = 'B Mass resolution 2 scale factor', Unit = 'MeV/c^2', Value = 2.15, MinMax = (1,5) )
-        self._parseArg('m_bkg_f',kwargs, Title = 'B mass fraction 2nd Gaussian', Value = 0.83, MinMax = (0.,1.) )
+        self._parseArg('m_sig_f',kwargs, Title = 'B mass fraction 2nd Gaussian', Value = 0.83, MinMax = (0.,1.) )
 
         from ROOT import RooGaussian as Gaussian
         from RooFitWrappers import Pdf, FormulaVar, SumPdf
