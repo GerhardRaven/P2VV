@@ -21,7 +21,6 @@ RooAbsData.table = __wrap__dref_var__( RooAbsData.table )
 
 class RooObject(object) :
     _ws = None
-    _dict = None
     _setters = {'Title'      : lambda s,v : s.SetTitle(v)
                ,'Observable' : lambda s,v : s.setObservable(v) 
                }
