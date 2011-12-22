@@ -25,14 +25,14 @@ from ROOT import RooCBShape as CrystalBall
 signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =  1.5, MinMax = (1., 2.5))
 
 mc_res = ResolutionModel('mc_res', Type = TruthModel, Parameters = [t])
-mcpdf = Pdf('mc_pdf', Type = Decay, ResolutionModel = mc_res, Parameters = [t,signal_tau], Options = ['SingleSided'])
+mcpdf = Pdf('mc_pdf', Type = Decay,  Parameters = [t,signal_tau,mc_res,'SingleSided'])
 
 # Time resolution model
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 tres = LP2011_TimeResolution(time = t)['model']
 
 # Signal time pdf
-sig_t = Pdf('sig_t', Type = Decay, Parameters = [t,signal_tau], ResolutionModel = tres, Options = ['SingleSided'])
+sig_t = Pdf('sig_t', Type = Decay, Parameters = [t,signal_tau, tres, 'SingleSided'])
 
 # B mass pdf
 m_mean  = RealVar('m_mean',   Unit = 'MeV', Value = 5300, MinMax = (5200, 5800))
@@ -59,14 +59,14 @@ psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.0
 bkg_mpsi = Pdf('bkg_mpsi', Type = Exponential, Parameters = [mpsi, psi_c])
 
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
-comb_t = Pdf('comb_t', Type = Decay, Parameters = [t,bkg_tau], ResolutionModel = tres, Options = ['SingleSided'])
+comb_t = Pdf('comb_t', Type = Decay, Parameters = [t,bkg_tau, tres, 'SingleSided'])
 
 comb_background = Component('comb_background', { m : bkg_m, mpsi : bkg_mpsi, t : comb_t }, Yield= (50000,0,150000))
 
 
 # Create psi background component
 psi_tau = RealVar('psi_tau',  Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
-psi_t = Pdf('psi_t', Type = Decay, Parameters = [t,psi_tau], ResolutionModel = tres, Options = ['SingleSided'])
+psi_t = Pdf('psi_t', Type = Decay, Parameters = [t,psi_tau, tres, 'SingleSided'])
 psi_background = Component('psi_background', { mpsi : sig_mpsi, m : bkg_m, t : comb_t }, Yield= (50000,0,150000) )
 
 

@@ -494,10 +494,7 @@ class Pdf(RooObject):
 
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
-            v = list()
-            if 'Parameters' in self._dict: v += list(self._dict['Parameters'])
-            if 'ResolutionModel' in self._dict: v.append(self._dict['ResolutionModel'])
-            if 'Options' in self._dict: v += list(self._dict['Options'])
+            v = list(self._dict['Parameters'])
             deps = ','.join([i.GetName() if type(i) != str else i for i in v])
             x = self._declare( '%s::%s(%s)' % (self.Type(), self._dict['Name'], deps) )
             from ROOT import RooAbsPdf

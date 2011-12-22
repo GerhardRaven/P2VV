@@ -42,11 +42,8 @@ background += Pdf( 'background_m',  Type = Exponential, Parameters = (m, backgro
 background_tau = RealVar( 'background_tau',  Unit = 'ps', Value = 0.4, MinMax = ( 0.1, 0.9 ) )
 background_res = ResolutionModel( 'background_res', Type = TruthModel, Parameters = [ t ] )
 
-#background[t] = 'Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided)'
 # TODO: auto mangle name??
 background += Pdf( 'background_t', Type = Decay,  Parameters = (t, background_tau, background_res, 'SingleSided' ) )
-# Exponential(m,-0.004)
-#background[m,t] = 'PROD(Exponential(m,-0.004),Decay(t,bkg_tau[0.4,0.1,0.9],TruthModel(t),SingleSided))'
 
 # background = Component('background', ( background_t, background_m ), Yield= (3000,1000,6000))
 
