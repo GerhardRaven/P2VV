@@ -24,7 +24,7 @@ class LP2011_Signal_Mass ( MassPdf ) :
                                           , FormulaVar('m_sig_sigma_2','@0*@1',(self._m_sig_sigma_2_scale, self._m_sig_sigma_1))
                                           )  
                            )
-        MassPdf.__init__(self, pdf = SumPdf(Name = kwargs.pop('Name','LP2011_Signal_Mass'),   PDFs = (  g1,  g2)  , Yields = { g1.GetName() : self._m_bkg_f } ) )
+        MassPdf.__init__(self, pdf = SumPdf(Name = kwargs.pop('Name','LP2011_Signal_Mass'),   PDFs = (  g1,  g2)  , Yields = { g1.GetName() : self._m_sig_f } ) )
 
 
 class LP2011_Background_Mass ( MassPdf ) :
