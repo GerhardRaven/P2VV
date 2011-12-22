@@ -20,11 +20,6 @@ RooAbsData.table = __wrap__dref_var__( RooAbsData.table )
 
 
 class RooObject(object) :
-    # TODO: add functionality to ask for RooObject instances by name from a 'static' dictionary
-    #       that way, when given eg. a RooRealVar, we ask for its name, and can look up the
-    #       the corresponding RealVar:  x = RooObjects[ rrv.GetName() ]
-    # NOTE: this looks like _objects, it has the same key, but the value isn't the underlying PyROOT
-    #       object but it's wrapper...
     _ws = None
     _dict = None
     _setters = {'Title'      : lambda s,v : s.SetTitle(v)
@@ -63,10 +58,10 @@ class RooObject(object) :
 
     def setWorkspace(self,ws):
         RooObject._ws = ws
-        if not hasattr(ws, '_objects') : ws._objects  = {}  # name -> object
-        if not hasattr(ws, '_rooobject') : ws._rooobjects  = {}  # name -> rooobject
-        if not hasattr(ws, '_mappings'): ws._mappings = {}
-        if not hasattr(ws, '_spec'):     ws._spec = {}      # factory string -> object
+        if not hasattr(ws, '_objects') :   ws._objects     = {} # name -> object
+        if not hasattr(ws, '_rooobject') : ws._rooobjects  = {} # name -> rooobject
+        if not hasattr(ws, '_mappings') :  ws._mappings    = {}
+        if not hasattr(ws, '_spec') :      ws._spec        = {} # factory string -> object
         
     def _rooobject(self,Name) :
         if type(Name)!=str : Name = Name.GetName()
@@ -361,13 +356,10 @@ class RealMoment( AbsRealMoment ):
         # get arguments
         self._basisFunc = BasisFunc
         self._norm      = Norm
-
-        cast = lambda var : var._target_() if hasattr( var, '_target_' ) else var
-
         # create moment
         from P2VVLoad import P2VVLibrary
         from ROOT import RooRealMoment
-        AbsRealMoment.__init__( self, RooRealMoment( cast(self._basisFunc), self._norm ) )
+        AbsRealMoment.__init__( self, RooRealMoment( __dref__(self._basisFunc), self._norm ) )
           
 class RealEffMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm, PDF, NormSet ) :
