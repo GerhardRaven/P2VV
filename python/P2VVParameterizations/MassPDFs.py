@@ -26,7 +26,7 @@ class LP2011_Signal_Mass ( MassPdf ) :
                                           , FormulaVar('m_sig_sigma_2','@0*@1',(self._m_sig_sigma_2_scale, self._m_sig_sigma_1))
                                           )  
                            )
-        MassPdf.__init__(self, pdf = SumPdf(Name = 'LP2011_Signal_Mass',   PDFs = (  g1,  g2)  , Yields = { g1.GetName() : self._m_bkg_f } ) )
+        MassPdf.__init__(self, pdf = SumPdf(Name = kwargs.pop('Name','LP2011_Signal_Mass'),   PDFs = (  g1,  g2)  , Yields = { g1.GetName() : self._m_bkg_f } ) )
 
 
 class LP2011_Background_Mass ( MassPdf ) :
@@ -34,8 +34,11 @@ class LP2011_Background_Mass ( MassPdf ) :
         self._parseArg('m_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'MeV/c^2', Value = -0.001, MinMax = (-0.01,-0.0001) )
         from ROOT import RooExponential as Exponential
         from RooFitWrappers import Pdf
-        bkg = Pdf( 'LP2011_Background_Mass', Type = Exponential
+        bkg = Pdf( kwargs.pop('Name','LP2011_Background_Mass'), Type = Exponential
                                            , Observables = (mass,)
                                            , Parameters = (self._m_bkg_exp, )
                                            )
         MassPdf.__init__(self, pdf = bkg )
+
+
+
