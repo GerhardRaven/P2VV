@@ -126,6 +126,14 @@ class LP2011_Background_Time( TimePdf ) :
         self._parseArg('t_bkg_fll',kwargs, Title = 'fraction long lifetime background', Value = 0.3, MinMax = (0., 1.) )
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay
-        ml = Pdf('t_bkg_ml',Type =Decay, Observables=(time,),Parameters = (self._t_bkg_ml_tau,resolutionModel,'SingleSided'))
-        ll = Pdf('t_bkg_ll',Type =Decay, Observables=(time,),Parameters = (self._t_bkg_ll_tau,resolutionModel,'SingleSided'))
-        TimePdf.__init__(self, pdf = SumPdf(Name = 'LP2011_Background_time',   PDFs = (  ml, ll)  , Yields = { ml.GetName() : self._t_bkg_fll } ) )
+        ml = Pdf( kwargs.pop('t_bkg_ml','Name_%s'%t_bkg_ml),Type =Decay, Observables=(time,),Parameters = (self._t_bkg_ml_tau,resolutionModel,'SingleSided'))
+        ll = Pdf( kwargs.pop('t_bkg_ll','Name_%s'%t_bkg_ll),Type =Decay, Observables=(time,),Parameters = (self._t_bkg_ll_tau,resolutionModel,'SingleSided'))
+        TimePdf.__init__(self, pdf = SumPdf(kwargs.pop('Name','LP2011_Background_time'),   PDFs = (  ml, ll)  , Yields = { ml.GetName() : self._t_bkg_fll } ) )
+
+
+class Single_Exponent_Time( TimePdf ) :
+    def __init__(self,time,resolutionModel,**kwargs) :
+        self._parseArg('t_sig_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 1.5, MinMax = (0.5,2.5) )
+        from RooFitWrappers import Pdf
+        from ROOT import RooDecay as Decay
+        TimePdf.__init__(self, pdf = Pdf(kwargs.pop('Name','Single_Exponent_Time'),Type =Decay, Observables=(time,),Parameters = (self._t_sig_tau,resolutionModel,'SingleSided')) )
