@@ -5,7 +5,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = False
+generateData = True
 fitData      = False
 makePlots    = True
 
@@ -75,7 +75,7 @@ zero = ConstVar( 'zero', Value = 0. )
 
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
-angleFuncs = JpsiphiHelicityAngles( cpsi = dict(Name='cthetaK'), ctheta = dict(Name='cthetal'), phi = dict(Name='phi') )
+angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
 
 # variables in PDF
 time   = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
