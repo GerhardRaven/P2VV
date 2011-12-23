@@ -1,18 +1,5 @@
 from RooFitWrappers import *
 
-def readData( obs, fname ) :
-    from ROOT import TFile
-    f = TFile.Open(fname)
-    assert f
-    tree = f.Get('DecayTree')
-    assert tree
-    noNAN =  ' && '.join( '( %s==%s )' % (i,i) for i in obs )
-    from ROOT import RooDataSet
-    data = RooDataSet('data','data', tree, [ i._var for i in obs ], noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
-    print 'got dataset with %s candidates' % data.numEntries()
-    return data
-
-
 ws = RooObject( workspace = 'workspace')
 
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14))
@@ -25,7 +12,13 @@ angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 
 
 #unbiased data only: /data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_DTT_after_yuehongs_script_20111220.root
-data  = readData( (m,mpsi,t,mphi)+tuple(angles.angles.itervalues()),'/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
+from P2VVGeneralUtils import readData
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+               , 'DecayTree'
+               , True
+               , (m,mpsi,t,mphi)+tuple(angles.angles.itervalues())
+               )
+
 
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
