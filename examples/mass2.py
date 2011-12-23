@@ -2,23 +2,26 @@ from RooFitWrappers import *
 
 ws = RooObject( workspace = 'workspace')
 
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14))
-m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5259, 5451), nBins = 48)
-mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3025, 3169), nBins = 32)
-mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1020-8, 1020+8))
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14) )
+m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5259, 5451), nBins = 48 )
+mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3025, 3169), nBins = 32 )
+mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1020-8, 1020+8) )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
-angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
+angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   nBins = 24 )
+                    , ctheta = dict( Name = 'trcostheta', nBins = 24 )
+                    , phi    = dict( Name = 'trphi',      nBins = 24 ) 
+                    )
 
 
 #unbiased data only: /data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_DTT_after_yuehongs_script_20111220.root
 from P2VVGeneralUtils import readData
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+# data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , 'DecayTree'
                , True
                , (m,mpsi,t,mphi)+tuple(angles.angles.itervalues())
                )
-
 
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
@@ -48,6 +51,8 @@ bkg_mpsi = Background_PsiMass( Name = 'bkg_mpsi', mass = mpsi )
 #                                                  )
 #                                         )
 #mcpdf = coefPDFTerms.buildSumPdf('angCoefsPDF')
+from P2VVParameterizations.AngularPDFs import Uniform_Angles
+all_angles =  Uniform_Angles( angles = angles.angles )
 
 
 # Decay time pdf
@@ -64,17 +69,17 @@ cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(
 (ntot,nsig,fpsi) = (data.numEntries(), 20000, 0.4)
 npsi = (ntot-nsig)*fpsi
 ncmb = (ntot-nsig)*(1-fpsi)
-signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf() ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
-psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf() ), Yield = ( npsi, 0.6*npsi, 1.4*npsi) )
-cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf() ), Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
+signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf(), all_angles.pdf() ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
+psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf(), all_angles.pdf() ), Yield = ( npsi, 0.6*npsi, 1.4*npsi) )
+cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf(), all_angles.pdf() ), Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
 
 # Build PDF
-pdf  = buildPdf((signal, cmb_background, psi_background ), Observables = (m,mpsi,t), Name='pdf')
+pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='pdf')
 
 # Fit
 print 'fitting data'
 from P2VVGeneralUtils import numCPU
-pdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  Optimize=0)
+pdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  Optimize=0, Minimizer = ('Minuit2','minimize'))
 
 # Plot: TODO: define mass ranges for signal, sideband, and restrict plots to those... (see sig.py for an example)
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
@@ -88,4 +93,5 @@ for (p,o) in zip( canvas.pads(len(obs)), obs ) :
                                         }
                          , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack )
                          , pdfOpts  = dict( LineWidth = 2 )
+                         , logy = o == t
                          )
