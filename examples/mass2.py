@@ -1,16 +1,5 @@
 from RooFitWrappers import *
 
-def readData( obs, fname ) :
-    from ROOT import TFile
-    f = TFile.Open(fname)
-    tree = f.Get('DecayTree')
-    noNAN =  ' && '.join( '( %s==%s )' % (i,i) for i in obs )
-    from ROOT import RooDataSet
-    data = RooDataSet('data','data', tree, [ i._var for i in obs ], noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
-    print 'got dataset with %s candidates' % data.numEntries()
-    return data
-
-
 ws = RooObject( workspace = 'workspace')
 
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.8, 14))
@@ -52,7 +41,12 @@ cmb_background = Component('cmb_background', ( bkg_m.pdf(),  bkg_mpsi.pdf(),  cm
 # Build PDF
 pdf  = buildPdf((signal, cmb_background, psi_background ), Observables = (m,mpsi,t), Name='pdf')
 
-data  = readData( (m,mpsi,t,mphi),'/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
+from P2VVGeneralUtils import readData
+data = readData(  '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+                , 'DecayTree'
+                , True
+                , [ m, mpsi, t, mphi ]
+               )
 
 # Fit
 print 'fitting data'

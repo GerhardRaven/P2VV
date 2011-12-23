@@ -34,7 +34,9 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, tagCat 
     print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
     files = TChain(dataSetName)
     files.Add(filePath)
-    data = RooDataSet( dataSetName, dataSetName, files, observables )
+
+    noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
+    data = RooDataSet( dataSetName, dataSetName, files, [ obs._var for obs in observables ], noNAN )
 
   else :
     from ROOT import TFile
@@ -42,9 +44,11 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, tagCat 
     # get data set from file
     print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
     file = TFile.Open( filePath, 'READ' )
-    assert file
+    assert file, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
     data = file.Get(dataSetName)
     file.Close()
+
+  print 'P2VV - INFO: read dataset with %s entries' % data.numEntries()
 
   return data
 
@@ -58,7 +62,7 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
   print "P2VV - INFO: writeData: writing RooDataSet '%s' to file '%s'" % ( dataSetName, filePath )
 
   file = TFile.Open( filePath, 'RECREATE' )
-  assert file
+  assert file, "P2VV - ERROR: writeData: file '%s' could not be opened" % filePath
   if NTuple : data.tree().Write(dataSetName)
   else : data.Write(dataSetName)
   file.Close()

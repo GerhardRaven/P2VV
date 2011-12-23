@@ -5,8 +5,8 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = False
-fitData      = False
+generateData = True
+fitData      = True
 makePlots    = True
 
 nEvents = 200000
@@ -41,30 +41,14 @@ timeResSigmaVal = 0.05
 AProdVal = 0.4
 
 # tagging parameters
-numTagCats = 6
-tagParamVals = {  'tagCatCoef1' : 0.15
-                , 'tagCatCoef2' : 0.07
-                , 'tagCatCoef3' : 0.03
-                , 'tagCatCoef4' : 0.01
-                , 'tagCatCoef5' : 0.01
-                , 'ATagEff1'    : 0.
-                , 'ATagEff2'    : 0.
-                , 'ATagEff3'    : 0.
-                , 'ATagEff4'    : 0.
-                , 'ATagEff5'    : 0.
-                , 'wTag1'       : 0.399
-                , 'wTag2'       : 0.354
-                , 'wTag3'       : 0.267
-                , 'wTag4'       : 0.240
-                , 'wTag5'       : 0.124
-                , 'wTagBar1'    : 0.399
-                , 'wTagBar2'    : 0.354
-                , 'wTagBar3'    : 0.267
-                , 'wTagBar4'    : 0.240
-                , 'wTagBar5'    : 0.124
-               }
-taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1, numTagCats ) ] )
-tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( 5, numTagCats ) ] )
+numTagCats    = 11
+cat5Min       = 9
+taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
+tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
+tagCatCoefs   = [ 0.090, 0.060, 0.045, 0.025, 0.016, 0.013, 0.010, 0.008, 0.006, 0.004 ]
+ATagEffs      = ( numTagCats - 1 ) * [ 0. ]
+wTags         = [ 0.42, 0.38, 0.35, 0.32, 0.27, 0.25, 0.24, 0.20, 0.15, 0.10 ]
+wTagBars      = wTags
 
 # plot options
 angleNames   = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
@@ -131,6 +115,11 @@ lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
 # tagging parameters
 from P2VVParameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
+tagParamVals  = dict(  [ ( 'tagCatCoef%d' % ( cat + 1 ), coef ) for cat, coef in enumerate(tagCatCoefs) ]
+                     + [ ( 'ATagEff%d'    % ( cat + 1 ), asym ) for cat, asym in enumerate(ATagEffs)    ]
+                     + [ ( 'wTag%d'       % ( cat + 1 ), wTag ) for cat, wTag in enumerate(wTags)       ]
+                     + [ ( 'wTagBar%d'    % ( cat + 1 ), wTag ) for cat, wTag in enumerate(wTagBars)    ]
+                    )
 taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCat.numTypes(), AProd = AProdVal, ANorm = -lambdaCP['C'].getVal()
                                              , **tagParamVals
                                             )
@@ -177,11 +166,13 @@ if generateData :
 
 else :
   from P2VVGeneralUtils import readData
-  data = readData( dataSetFile, dataSetName, NTuple )
+  data = readData( dataSetFile, dataSetName, observables, NTuple )
 
 if fitData :
   # fix values of some parameters
-  for CEvenOdd in taggingParams['CEvenOdds'][ 1 : ] : CEvenOdd.setConstant('avgCEven.*')
+  for CEvenOdd in taggingParams['CEvenOdds'][ 1 : ] :
+      CEvenOdd.setConstant('avgCEven.*')
+      CEvenOdd.setConstant('avgCOdd.*')
   taggingParams.setConstant('wTag.*')
 
   # fit data
@@ -252,22 +243,22 @@ if makePlots :
                             ] )
     timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
     for ( pad, nBins, plotTitle, dataCuts, pdfCuts )\
-            in zip(  timeCanv1.pads( 3, 2 )
-                   , 3 * numTimeBins
-                   , timePlotTitles1
-                   ,   ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' == 0' }, )
-                     + ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' >  0' }, )
-                     + ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' == 5' }, )
-                     + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' == 0' }, )
-                     + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' >  0' }, )
-                     + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' == 5' }, )
-                   ,   ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'UntaggedRange' }, )
-                     + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TaggedRange'   }, )
-                     + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TagCat5Range'  }, )
-                     + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'UntaggedRange' }, )
-                     + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TaggedRange'   }, )
-                     + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TagCat5Range'  }, )
-                  ) :
+        in zip(  timeCanv1.pads( 3, 2 )
+               , 3 * numTimeBins
+               , timePlotTitles1
+               ,   ( { 'Cut' : '{tag} == +1 && {cat} == 0'.format(    tag = iTag.GetName(), cat = tagCat.GetName()                 ) }, )
+                 + ( { 'Cut' : '{tag} == +1 && {cat} >  0'.format(    tag = iTag.GetName(), cat = tagCat.GetName()                 ) }, )
+                 + ( { 'Cut' : '{tag} == +1 && {cat} >= {c5:d}'.format( tag = iTag.GetName(), cat = tagCat.GetName(), c5 = cat5Min ) }, )
+                 + ( { 'Cut' : '{tag} == -1 && {cat} == 0'.format(    tag = iTag.GetName(), cat = tagCat.GetName()                 ) }, )
+                 + ( { 'Cut' : '{tag} == -1 && {cat} >  0'.format(    tag = iTag.GetName(), cat = tagCat.GetName()                 ) }, )
+                 + ( { 'Cut' : '{tag} == -1 && {cat} >= {c5:d}'.format( tag = iTag.GetName(), cat = tagCat.GetName(), c5 = cat5Min ) }, )
+               ,   ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'UntaggedRange' }, )
+                 + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TaggedRange'   }, )
+                 + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TagCat5Range'  }, )
+                 + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'UntaggedRange' }, )
+                 + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TaggedRange'   }, )
+                 + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TagCat5Range'  }, )
+              ) :
         plot(  pad, time, data, pdf
              , frameOpts = dict( Bins = nBins, Title = plotTitle )
              , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
