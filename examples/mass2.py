@@ -1,53 +1,34 @@
 from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
-from ROOT import RooMsgService
 
-# RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
+ws = RooObject( workspace = 'workspace')
 
-ws = RooObject( workspace = 'swimming')
-
-t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
-m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5450))
-mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3170))
-
-
-# now build the actual signal PDF...
-from ROOT import RooExponential as Exponential
-from ROOT import RooDecay as Decay
-from ROOT import RooCBShape as CrystalBall
-
-# Time resolution model
-from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
-tres = LP2011_TimeResolution(time = t)['model']
-
-# Signal time pdf
-from P2VVParameterizations.TimePDFs import Single_Exponent_Time
-sig_t = Single_Exponent_Time( Name = 'sig_t',time = t, resolutionModel = tres, t_sig_tau = dict( Value = 1.5, Name = 'signal_tau', MinMax=(1,2) ) )
+t    = RealVar('time',  Title = 'decay time',    Unit='ps',    Observable = True, MinMax = (-5, 14))
+m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5250, 5450))
+mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3170))
+mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1020-8, 1020+8))
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
-sig_m = LP2011_Signal_Mass( Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5368, MinMax = (5363,5372) ) )
+from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5368, MinMax = (5363,5372) ) )
+bkg_m = Background_BMass( Name = 'bkg_m', mass = m )
 #sig_m.setConstant('.*')
-
-# J/psi mass pdf
-mpsi_mean  = RealVar('mpsi_mean',   Unit = 'MeV', Value = 3097, MinMax = (3070, 3110))
-mpsi_sigma = RealVar('mpsi_sigma',  Unit = 'MeV', Value = 14, MinMax = (8, 20))
-mpsi_alpha = RealVar('mpsi_alpha',  Unit = '', Value = 1.90, MinMax = (1, 3))
-mpsi_n = RealVar('mpsi_n',  Unit = '', Value = 2, MinMax = (0.1, 5))
-sig_mpsi = Pdf('sig_mpsi', Type = CrystalBall, Parameters = [mpsi, mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
-
-
-# Create combinatorical background component
-from P2VVParameterizations.MassPDFs import LP2011_Background_Mass
-bkg_m = LP2011_Background_Mass( Name = 'bkg_m', mass = m )
 #bkg_m.setConstant('.*')
 
+# J/psi mass pdf
+from P2VVParameterizations.MassPDFs import Signal_PsiMass, Background_PsiMass
+sig_mpsi = Signal_PsiMass(     Name = 'sig_mpsi', mass = mpsi )
+bkg_mpsi = Background_PsiMass( Name = 'bkg_mpsi', mass = mpsi )
 
-psi_c = RealVar( 'mpsi_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.0000001))
-bkg_mpsi = Pdf('bkg_mpsi', Type = Exponential, Parameters = [mpsi, psi_c])
+# Decay time pdf
+from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
+tres = TimeResolution(time = t)['model']
+
+from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Signal_Time
+sig_t = Signal_Time( Name = 'sig_t', time = t, resolutionModel = tres, t_sig_tau = dict( Value = 1.5, Name = 'signal_tau', MinMax=(1,2) ) )
+
+from ROOT import RooDecay as Decay
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
 comb_t = Pdf('comb_t', Type = Decay, Parameters = [t, bkg_tau, tres, 'SingleSided'])
-
 
 # Create psi background component
 psi_tau = RealVar('psi_tau',  Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
@@ -59,13 +40,12 @@ nsig = 32020
 fpsi = 0.5
 npsi = (ntot-nsig)*fpsi
 ncmb = (ntot-nsig)*(1-fpsi)
-signal          = Component('signal',          ( sig_m.pdf(),  sig_mpsi,  sig_t.pdf() ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
-psi_background  = Component('psi_background',  ( bkg_m.pdf(),  sig_mpsi,  comb_t ),      Yield=  ( npsi, 0.6*npsi, 1.4*npsi) )
-comb_background = Component('comb_background', ( bkg_m.pdf(),  bkg_mpsi,  comb_t ),      Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
+signal          = Component('signal',          ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf() ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
+psi_background  = Component('psi_background',  ( bkg_m.pdf(),  sig_mpsi.pdf(),  comb_t ),      Yield=  ( npsi, 0.6*npsi, 1.4*npsi) )
+comb_background = Component('comb_background', ( bkg_m.pdf(),  bkg_mpsi.pdf(),  comb_t ),      Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
 
 # Build PDF
 pdf = buildPdf((signal, comb_background, psi_background ), Observables = (m,mpsi), Name='pdf')
-
 
 from ROOT import TFile
 f = TFile.Open('/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
@@ -76,12 +56,10 @@ from ROOT import RooDataSet
 data = RooDataSet('data','data', tree, [ i._var for i in pdf.Observables() ], noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
 print 'got dataset with %s candidates' % data.numEntries()
 
-
-
 # Fit
 print 'fitting data'
 from P2VVGeneralUtils import numCPU
-pdf.fitTo(data, NumCPU = 1 , Timer=1, Extended = True, Verbose = False,  Optimize=0)
+pdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  Optimize=0)
 
 from ROOT import kDashed, kRed, kGreen, kBlue
 from ROOT import TCanvas
