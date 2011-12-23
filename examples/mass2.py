@@ -1,5 +1,4 @@
 from RooFitWrappers import *
-
 ws = RooObject( workspace = 'workspace')
 
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14) )
@@ -8,11 +7,12 @@ mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1020-8, 1020+8) )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
-angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   nBins = 24 )
-                    , ctheta = dict( Name = 'trcostheta', nBins = 24 )
-                    , phi    = dict( Name = 'trphi',      nBins = 24 ) 
+angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',        nBins = 24 )
+                    , ctheta = dict( Name = 'trcostheta', Title = 'cos(#theta_{tr})', nBins = 24 )
+                    , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 
+observables = [ mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'] ]
 
 #unbiased data only: /data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_DTT_after_yuehongs_script_20111220.root
 from P2VVGeneralUtils import readData
@@ -20,7 +20,7 @@ from P2VVGeneralUtils import readData
 data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , 'DecayTree'
                , True
-               , (m,mpsi,t,mphi)+tuple(angles.angles.itervalues())
+               , observables
                )
 
 # B mass pdf
@@ -54,7 +54,6 @@ bkg_mpsi = Background_PsiMass( Name = 'bkg_mpsi', mass = mpsi )
 from P2VVParameterizations.AngularPDFs import Uniform_Angles
 all_angles =  Uniform_Angles( angles = angles.angles )
 
-
 # Decay time pdf
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
 tres = TimeResolution(time = t)
@@ -77,14 +76,13 @@ cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cm
 pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='pdf')
 
 # Fit
-print 'fitting data'
 from P2VVGeneralUtils import numCPU
 pdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  Optimize=0, Minimizer = ('Minuit2','minimize'))
 
 # Plot: TODO: define mass ranges for signal, sideband, and restrict plots to those... (see sig.py for an example)
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 canvas = TCanvas('canvas', 'canvas', 1000, 500)
-obs = pdf.Observables()
+obs = [ o for o in observables if o in pdf.Observables() ]
 for (p,o) in zip( canvas.pads(len(obs)), obs ) :
     from P2VVGeneralUtils import plot
     plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
