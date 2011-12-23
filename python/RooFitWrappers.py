@@ -391,6 +391,7 @@ class RealVar (RooObject):
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
                ,'Constant'   : lambda s,v : s.setConstant(v)
+               ,'nBins'      : lambda s,v : s.setBins(v)
                }
 
     def __init__(self,Name ,**kwargs):
