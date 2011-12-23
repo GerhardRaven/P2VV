@@ -29,6 +29,7 @@ class RooObject(object) :
                ,'Value'      : lambda s : s.getVal()
                ,'Type'       : lambda s : s.Type()
                ,'Observable' : lambda s : s.observable() 
+               ,'Constant'   : lambda s : s.isConstant() 
                }
     def _factory(self,spec) :
         return self.ws().factory(spec)
@@ -408,7 +409,7 @@ class RealVar (RooObject):
             else:
                 (mi,ma) = kwargs.pop('MinMax')
                 val = kwargs.pop('Value')
-                if val < mi or val > ma : raise RuntimeError('Specified Value not contained in MinMax')
+                if val < mi or val > ma : raise RuntimeError('Specified Value %s not contained in MinMax (%s,%s)' % ( val,mi,ma))
                 self._declare("%s[%s,%s,%s]"%(Name,val,mi,ma))
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
