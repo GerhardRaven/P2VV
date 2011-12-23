@@ -1,8 +1,19 @@
 from RooFitWrappers import *
 
+def readData( obs, fname ) :
+    from ROOT import TFile
+    f = TFile.Open(fname)
+    tree = f.Get('DecayTree')
+    noNAN =  ' && '.join( '( %s==%s )' % (i,i) for i in obs )
+    from ROOT import RooDataSet
+    data = RooDataSet('data','data', tree, [ i._var for i in obs ], noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
+    print 'got dataset with %s candidates' % data.numEntries()
+    return data
+
+
 ws = RooObject( workspace = 'workspace')
 
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (1, 14))
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.8, 14))
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5250, 5450))
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3170))
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1020-8, 1020+8))
@@ -11,8 +22,6 @@ mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5368, MinMax = (5363,5372) ) )
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m )
-#sig_m.setConstant('.*')
-#bkg_m.setConstant('.*')
 
 # J/psi mass pdf
 from P2VVParameterizations.MassPDFs import Signal_PsiMass, Background_PsiMass
@@ -31,13 +40,9 @@ from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Signal_Time, 
 sig_t = Signal_Time(     Name = 'sig_t', time = t, resolutionModel = tres.model(), t_sig_tau = dict( Value = 1.5, Name = 't_sig_tau', MinMax=(1.0,2.0) ) )
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model() )
 cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model() )
-sig_t.setConstant('.*')
-psi_t.setConstant('.*')
-cmb_t.setConstant('.*')
-
 
 # Create components
-(ntot,nsig,fpsi) = (107182, 32571, 0.4)
+(ntot,nsig,fpsi) = (19000, 15000, 0.4)
 npsi = (ntot-nsig)*fpsi
 ncmb = (ntot-nsig)*(1-fpsi)
 signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf() ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
@@ -46,23 +51,12 @@ cmb_background = Component('cmb_background', ( bkg_m.pdf(),  bkg_mpsi.pdf(),  cm
 
 # Build PDF
 pdf  = buildPdf((signal, cmb_background, psi_background ), Observables = (m,mpsi,t), Name='pdf')
-mpdf = buildPdf((signal, cmb_background, psi_background ), Observables = (m,mpsi),   Name='mpdf')
-pdf  = mpdf
 
-from ROOT import TFile
-f = TFile.Open('/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
-#f = TFile.Open('/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
-tree = f.Get('DecayTree')
-noNAN =  ' && '.join( '( %s==%s )' % (i.GetName(),i.GetName()) for i in pdf.Observables() )
-from ROOT import RooDataSet
-data = RooDataSet('data','data', tree, [ i._var for i in pdf.Observables() ], noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
-print 'got dataset with %s candidates' % data.numEntries()
+data  = readData( (m,mpsi,t,mphi),'/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
 
 # Fit
 print 'fitting data'
 from P2VVGeneralUtils import numCPU
-#mpdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  Optimize=0)
-#for p in mpdf.Parameters() : p.setConstant(True)
 pdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  Optimize=0)
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
