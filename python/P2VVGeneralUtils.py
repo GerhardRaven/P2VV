@@ -23,49 +23,65 @@ def numCPU( Max = sys.maxint ) :
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
 
-def readData( filePath, dataSetName, NTuple = False, observables = None, tagCat = '', initTag = '' ) :
-  """reads data from file (RooDataSet or TTree(s))
-  """
+def readData( filePath, dataSetName, NTuple = False, observables = None ) :
+    """reads data from file (RooDataSet or TTree(s))
+    """
 
-  if NTuple :
-    from ROOT import RooDataSet, TChain
+    if NTuple :
+      from ROOT import RooDataSet, TChain
+      assert observables != None, "P2VV - ERROR: readData: set of observables is required for reading an NTuple"
 
-    # create data set from NTuple file(s)
-    print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
-    chain = TChain(dataSetName)
-    chain.Add(filePath)
+      # create data set from NTuple file(s)
+      print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
+      chain = TChain(dataSetName)
+      chain.Add(filePath)
 
-    noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
-    data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN )
+      noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
+      data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN )
 
-  else :
-    from ROOT import TFile
+    else :
+      from ROOT import TFile
 
-    # get data set from file
-    print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
-    file = TFile.Open( filePath, 'READ' )
-    assert file, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
-    data = file.Get(dataSetName)
-    file.Close()
+      # get data set from file
+      print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
+      file = TFile.Open( filePath, 'READ' )
+      assert file, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
+      data = file.Get(dataSetName)
+      file.Close()
 
-  print 'P2VV - INFO: read dataset with %s entries' % data.numEntries()
+    print 'P2VV - INFO: read dataset with %s entries' % data.numEntries()
 
-  return data
+    return data
 
 
 def writeData( filePath, dataSetName, data, NTuple = False ) :
-  """writes data to file (RooDataSet or TTree)
-  """
+    """writes data to file (RooDataSet or TTree)
+    """
 
-  from ROOT import TFile
+    from ROOT import TFile
 
-  print "P2VV - INFO: writeData: writing RooDataSet '%s' to file '%s'" % ( dataSetName, filePath )
+    print "P2VV - INFO: writeData: writing RooDataSet '%s' to file '%s'" % ( dataSetName, filePath )
 
-  file = TFile.Open( filePath, 'RECREATE' )
-  assert file, "P2VV - ERROR: writeData: file '%s' could not be opened" % filePath
-  if NTuple : data.tree().Write(dataSetName)
-  else : data.Write(dataSetName)
-  file.Close()
+    file = TFile.Open( filePath, 'RECREATE' )
+    assert file, "P2VV - ERROR: writeData: file '%s' could not be opened" % filePath
+    if NTuple : data.tree().Write(dataSetName)
+    else : data.Write(dataSetName)
+    file.Close()
+
+
+def addTaggingObservables( dataSet, estimWTag, tagCatBinEdges ) :
+    """add tagging observables to data set
+    """
+
+    from ROOT import RooBinningCategory
+
+    # create binning
+    if not tagCatBinEdges : tagCatBinEdges = [ 0.50001, 0.49999, 0.38, 0.31, 0.24, 0.17 ]
+
+    # create tagging category column
+    tagCatFormula = RooBinningCategory( 'tagCatP2VV', 'P2VV tagging category', estimWTag, bins )
+    tagCat = dataSet.addColumn(tagCatFormula)
+    tagCat.createFundamental()
 
 
 ###########################################################################################################################################

@@ -5,8 +5,8 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = True
-fitData      = True
+generateData = False
+fitData      = False
 makePlots    = True
 
 nEvents = 200000
@@ -166,7 +166,7 @@ if generateData :
 
 else :
   from P2VVGeneralUtils import readData
-  data = readData( dataSetFile, dataSetName, observables, NTuple )
+  data = readData( dataSetFile, dataSetName, NTuple, observables )
 
 if fitData :
   # fix values of some parameters
