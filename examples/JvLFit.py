@@ -9,12 +9,12 @@ generateData = False
 fitData      = False
 makePlots    = True
 
-nEvents = 50000
+nEvents = 200000
 dataSetName = 'JpsiphiData'
-dataSetFile = 'JvLFit2Tags.root'
+dataSetFile = 'JvLFitTagCats.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
 NTuple = False
-plotsFile = 'JvLFit2Tags.ps'
+plotsFile = 'JvLFitTagCats.ps'
 
 # transversity amplitudes
 A0Mag2Val    =  0.4
@@ -38,18 +38,38 @@ dmVal           = 17.8
 timeResSigmaVal = 0.05
 
 # asymmetries
-AProdVal   =  0.4
-ANormVal   = -( 1. - lambdaCPSqVal ) / ( 1. + lambdaCPSqVal )
-ATagEffVal =  0.1
+AProdVal = 0.4
 
 # tagging parameters
-wTagVal    = 0.1
-wTagBarVal = 0.2
+numTagCats = 6
+tagParamVals = {  'tagCatCoef1' : 0.15
+                , 'tagCatCoef2' : 0.07
+                , 'tagCatCoef3' : 0.03
+                , 'tagCatCoef4' : 0.01
+                , 'tagCatCoef5' : 0.01
+                , 'ATagEff1'    : 0.
+                , 'ATagEff2'    : 0.
+                , 'ATagEff3'    : 0.
+                , 'ATagEff4'    : 0.
+                , 'ATagEff5'    : 0.
+                , 'wTag1'       : 0.399
+                , 'wTag2'       : 0.354
+                , 'wTag3'       : 0.267
+                , 'wTag4'       : 0.240
+                , 'wTag5'       : 0.124
+                , 'wTagBar1'    : 0.399
+                , 'wTagBar2'    : 0.354
+                , 'wTagBar3'    : 0.267
+                , 'wTagBar4'    : 0.240
+                , 'wTagBar5'    : 0.124
+               }
+taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1, numTagCats ) ] )
+tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( 5, numTagCats ) ] )
 
 # plot options
 angleNames   = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
 numBins      = ( 60, 30, 30, 30 )
-numTimeBins  = ( 60, 60, 60 )
+numTimeBins  = ( 60, 60 )
 numAngleBins = ( 30, 30, 30 )
 lineWidth    = 2
 markStyle    = 8
@@ -75,11 +95,18 @@ angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 
 
 # variables in PDF
 time   = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-iTag   = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B':+1, 'Bbar':-1} )#, 'Untagged':0} )
-tagCat = Category( 'tagCat'    , Title = 'Tagging Category',          Observable = True, States = [ 'Untagged', 'Tagged' ] )
+iTag   = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B' : +1, 'Bbar' : -1} )
+tagCat = Category( 'tagCat'    , Title = 'Tagging Category',          Observable = True
+                  , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, numTagCats ) ]
+                 )
 
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
 observables = [ time ] + list(angles) + [ iTag, tagCat ]
+
+# variable ranges
+tagCat.setRange( 'UntaggedRange', 'Untagged'    )
+tagCat.setRange( 'TaggedRange',   taggedCatsStr )
+tagCat.setRange( 'TagCat5Range',  tagCat5Str    )
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
@@ -99,21 +126,13 @@ from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution
 timeResModel = Gaussian_TimeResolution( time = time, timeResSigma = timeResSigmaVal )
 
 # CP violation parameters
-if carthLambdaCP :
-  # carthesian lambda
-  from P2VVParameterizations.CPVParams import LambdaCarth_CPParam
-  lambdaCP = LambdaCarth_CPParam( ReLambdaCP = sqrt(lambdaCPSqVal) * cos(-phiCPVal), ImLambdaCP = sqrt(lambdaCPSqVal) * sin(-phiCPVal) )
-
-else :
-  # polar lambda
-  from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-  lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
-
+from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
+lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
 # tagging parameters
 from P2VVParameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
-taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCat.numTypes(), wTag1 = wTagVal, wTagBar1 = wTagBarVal, AProd = AProdVal
-                                             , ANorm = ANormVal, ATagEff1 = ATagEffVal
+taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCat.numTypes(), AProd = AProdVal, ANorm = -lambdaCP['C'].getVal()
+                                             , **tagParamVals
                                             )
 
 # coefficients for time functions
@@ -160,19 +179,14 @@ else :
   from P2VVGeneralUtils import readData
   data = readData( dataSetFile, dataSetName, NTuple )
 
-  # TODO: a trick to change the observables in a data set ( iTag( +1, -1 ) <--> iTag( +1, -1, 0 ) )
-  data = RooDataSet( dataSetName + '1', '', data, ( obs._var for obs in observables ) )
-
 if fitData :
   # fix values of some parameters
-  #lambdaCP.setConstant('phiCP')
-  #lambdaCP.setConstant('lambdaCPSq')
-  #taggingParams['CEvenOdd'].setConstant('avgCOdd')
-  #taggingParams.setConstant('wTag.*')
+  for CEvenOdd in taggingParams['CEvenOdds'][ 1 : ] : CEvenOdd.setConstant('avgCEven.*')
+  taggingParams.setConstant('wTag.*')
 
   # fit data
   print 'JvLFit: fitting %d events' % data.numEntries()
-  pdf.fitTo( data, NumCPU = 12, Timer = 1 )#, ConditionalObservables = [iTag] )
+  pdf.fitTo( data, NumCPU = 12, Timer = 1 )
 
 
 ###########################################################################################################################################
@@ -228,36 +242,37 @@ if makePlots :
     for pad in timeCanv.pads() : pad.Draw()
 
     # plot lifetime (tagged/untagged)
-    timePlotTitles1 = tuple( [ time.GetTitle() + str for str in (  ' - B (tagged)'
-                                                                 , ' - B (untagged)'
-                                                                 , ' - #bar{B} (tagged)'
+    timePlotTitles1 = tuple( [ time.GetTitle() + str for str in (  ' - B (untagged)'
+                                                                 , ' - B (tagged)'
+                                                                 , ' - B (tagging category 5)'
                                                                  , ' - #bar{B} (untagged)'
+                                                                 , ' - #bar{B} (tagged)'
+                                                                 , ' - #bar{B} (tagging category 5)'
                                                                 )
                             ] )
     timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
     for ( pad, nBins, plotTitle, dataCuts, pdfCuts )\
-            in zip(  timeCanv1.pads( 2, 2 )
-                   , 2 * numTimeBins
+            in zip(  timeCanv1.pads( 3, 2 )
+                   , 3 * numTimeBins
                    , timePlotTitles1
-                   , ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' > 0'  }, )
-                   + ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' == 0' }, )
-                   + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' > 0'  }, )
-                   + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' == 0' }, )
-                   , ( { 'Slices' : [ ( iTag, 'B' )   , ( tagCat, 'Tagged'   ) ] }, )
-                   + ( { 'Slices' : [ ( iTag, 'B' )   , ( tagCat, 'Untagged' ) ] }, )
-                   + ( { 'Slices' : [ ( iTag, 'Bbar' ), ( tagCat, 'Tagged'   ) ] }, )
-                   + ( { 'Slices' : [ ( iTag, 'Bbar' ), ( tagCat, 'Untagged' ) ] }, )
+                   ,   ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' == 0' }, )
+                     + ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' >  0' }, )
+                     + ( { 'Cut' : iTag.GetName() + ' == +1 && ' + tagCat.GetName() + ' == 5' }, )
+                     + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' == 0' }, )
+                     + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' >  0' }, )
+                     + ( { 'Cut' : iTag.GetName() + ' == -1 && ' + tagCat.GetName() + ' == 5' }, )
+                   ,   ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'UntaggedRange' }, )
+                     + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TaggedRange'   }, )
+                     + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TagCat5Range'  }, )
+                     + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'UntaggedRange' }, )
+                     + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TaggedRange'   }, )
+                     + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TagCat5Range'  }, )
                   ) :
         plot(  pad, time, data, pdf
              , frameOpts = dict( Bins = nBins, Title = plotTitle )
              , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
              , pdfOpts   = dict( LineWidth = lineWidth, **pdfCuts )
             )
-
-    # set Y-axis maximum for lifetime plots
-#    timeYMax = max( frame.GetMaximum() for frame in timeCanv.frameHists() )
-#    map( lambda obj : obj.SetMaximum(timeYMax), ( frame for frame in timeCanv1.frameHists() ) )
-#    for pad in timeCanv1.pads() : pad.Draw()
 
     # plot angles
     anglePlotTitles =   tuple(  [ angle.GetTitle() + ' - B'       for angle in angles ]\
@@ -290,5 +305,6 @@ if makePlots :
     # print canvas to file
     timeAnglesCanv.Print(plotsFile + '(')
     timeCanv.Print(plotsFile)
+    timeCanv1.Print(plotsFile)
     anglesCanv.Print(plotsFile + ')')
 

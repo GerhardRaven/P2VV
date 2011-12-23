@@ -104,11 +104,46 @@ def plot(  canv, obs, data, pdf, addPDFs = [ ], components = None, xTitle = '', 
 
     # plot PDF
     if pdf :
+        # define function that parces the 'Slice(s)' argument and plots the pdf
+        def plotPDFWithSlices( pdf, frame, name, **pdfOpts ) :
+            if 'Slice' in pdfOpts or 'Slices' in pdfOpts :
+                # get 'Slice(s)' argument from plot options
+                origSlices = pdfOpts.pop( 'Slices', [ ] )
+                if 'Slice' in pdfOpts : origSlices += [ pdfOpts.pop('Slice') ]
+
+                # parse 'Slices' argument
+                slicesList = [ [ ] ]
+                for slice in origSlices :
+                    tempList = [ ]
+                    for slices in slicesList : tempList += [ slices + [( slice[0], catType.strip() )] for catType in slice[1].split(',') ]
+                    slicesList = tempList
+
+                for num, slices in enumerate(slicesList) :
+                    # plot pdf for all slices
+                    if num == 0 and len(slicesList) == 1 :
+                        opts = dict( Name = name, Slices = slices, **pdfOpts )
+                    elif num == 0 :
+                        opts = dict( Name = name + '0', Invisible = None, Slices = slices, **pdfOpts )
+                    elif num == len(slicesList) - 1 :
+                        opts = dict( Name = name, AddTo = (name + '%d' % (num - 1), 1., 1.), Slices = slices, **pdfOpts )
+                    else :
+                        opts = dict(  Name = name + '%d' % num, AddTo = (name + '%d' % (num - 1), 1., 1.), Invisible = None
+                                    , Slices = slices, **pdfOpts
+                                   )
+
+                    pdf.plotOn( obsFrame, **opts )
+
+            else :
+                pdf.plotOn( obsFrame, Name = name, **pdfOpts )
+
         if components :
-            for comp, opts in components.iteritems() :
-                drawOpts = dict( list(opts.items()) + list(pdfOpts.items()) )
-                pdf.plotOn(obsFrame, Components = comp, **drawOpts )
-        pdf.plotOn( obsFrame, Name = 'pdf', **pdfOpts )
+            # plot separate components of the pdf
+            for num, comp in enumerate( components.keys() ) :
+                drawOpts = dict( list(components[comp].items()) + list(pdfOpts.items()) )
+                plotPDFWithSlices( pdf, obsFrame, 'comp%d' % num, Components = comp, **drawOpts )
+
+        # plot total pdf
+        plotPDFWithSlices( pdf, obsFrame, 'pdf', **pdfOpts )
 
         # draw data after drawing the PDF
         if data : obsFrame.drawAfter( 'pdf',  'data' )
