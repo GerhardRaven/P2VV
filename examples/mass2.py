@@ -33,7 +33,7 @@ sig_m = LP2011_Signal_Mass( Name = 'sig_m', mass = m, m_sig_mean = dict( Value =
 mpsi_mean  = RealVar('mpsi_mean',   Unit = 'MeV', Value = 3097, MinMax = (3070, 3110))
 mpsi_sigma = RealVar('mpsi_sigma',  Unit = 'MeV', Value = 14, MinMax = (8, 20))
 mpsi_alpha = RealVar('mpsi_alpha',  Unit = '', Value = 1.90, MinMax = (1, 3))
-mpsi_n = RealVar('mpsi_n',  Unit = '', Value = 2, MinMax = (0.1, 3))
+mpsi_n = RealVar('mpsi_n',  Unit = '', Value = 2, MinMax = (0.1, 5))
 sig_mpsi = Pdf('sig_mpsi', Type = CrystalBall, Parameters = [mpsi, mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
 
 
@@ -54,44 +54,45 @@ psi_tau = RealVar('psi_tau',  Unit = 'ps', Value = 0.5, MinMax = (0.001, 1))
 psi_t = Pdf('psi_t', Type = Decay, Parameters = [t,psi_tau,tres, 'SingleSided'])
 
 # Create components
-signal          = Component('signal',          ( sig_m.pdf(),  sig_mpsi,  sig_t.pdf() ), Yield = ( 32520, 30000, 35000) )
-psi_background  = Component('psi_background',  ( bkg_m.pdf(),  sig_mpsi,  comb_t ),      Yield=  ( 28496, 25000, 30000) )
-comb_background = Component('comb_background', ( bkg_m.pdf(),  bkg_mpsi,  comb_t ),      Yield = ( 46115, 45000, 50000) )
+ntot = 107182
+nsig = 32020
+fpsi = 0.5
+npsi = (ntot-nsig)*fpsi
+ncmb = (ntot-nsig)*(1-fpsi)
+signal          = Component('signal',          ( sig_m.pdf(),  sig_mpsi,  sig_t.pdf() ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
+psi_background  = Component('psi_background',  ( bkg_m.pdf(),  sig_mpsi,  comb_t ),      Yield=  ( npsi, 0.6*npsi, 1.4*npsi) )
+comb_background = Component('comb_background', ( bkg_m.pdf(),  bkg_mpsi,  comb_t ),      Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
 
 # Build PDF
 pdf = buildPdf((signal, comb_background, psi_background ), Observables = (m,mpsi), Name='pdf')
 
 
 from ROOT import TFile
-#f = TFile.Open('/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
-f = TFile.Open('/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
+f = TFile.Open('/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
+#f = TFile.Open('/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root')
 tree = f.Get('DecayTree')
 noNAN =  ' && '.join( '( %s==%s )' % (i.GetName(),i.GetName()) for i in pdf.Observables() )
 from ROOT import RooDataSet
- #= RooArgSet( i._var for i in pdf.Observables() )
-
-data = RooDataSet('data','data', tree, [ i._var for i in pdf.Observables() ])#  , noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
+data = RooDataSet('data','data', tree, [ i._var for i in pdf.Observables() ], noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
 print 'got dataset with %s candidates' % data.numEntries()
 
 
 
 # Fit
 print 'fitting data'
-pdf.fitTo(data, NumCPU = 4 , Timer=1, Extended = True, Verbose = False,  Optimize=1)
+from P2VVGeneralUtils import numCPU
+pdf.fitTo(data, NumCPU = 1 , Timer=1, Extended = True, Verbose = False,  Optimize=0)
 
-from ROOT import kDashed, kRed, kGreen
+from ROOT import kDashed, kRed, kGreen, kBlue
 from ROOT import TCanvas
-
-print 'plotting'
-
 canvas = TCanvas('canvas', 'canvas', 1000, 500)
 obs = pdf.Observables()
 for (p,o) in zip( canvas.pads(len(obs)), obs ) :
     f = o.frame()
     from P2VVGeneralUtils import plot
-    plot( p, o, data, pdf, components = { 'sig*'  : { 'LineColor' : RooFit.kGreen, 'LineStyle' : RooFit.kDashed }
-                                        , 'psi*'  : { 'LineColor' : RooFit.kRed,   'LineStyle' : RooFit.kDashed }
-                                        , 'comb*' : { 'LineColor' : RooFit.kBlue,  'LineStyle' : RooFit.kDashed }
+    plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                                        , 'psi*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                                        , 'comb*'    : dict( LineColor = kBlue,  LineStyle = kDashed )
                                         }
                          , dataOpts = dict( MarkerSize = 0.8, MarkerColor = RooFit.kBlack )
                          , pdfOpts  = dict( LineWidth = 2 )
