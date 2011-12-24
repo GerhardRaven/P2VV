@@ -19,7 +19,7 @@ mass.setRange('signal',(5330,5410) )
 mass.setRange('rightsideband',(5410,mass.getMax()) )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.4, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
+CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.4, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar(Name='one',Value=1) )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
@@ -132,7 +132,7 @@ if False :
     mom_pdf = moms.createPDF( Name = 'mom_pdf' )
 
 from P2VVGeneralUtils import numCPU
-pdf.fitTo(data, NumCPU = numCPU(), Timer = 1 , Minimizer = ('Minuit2','minimize')) # , Optimize = 1)
+pdf.fitTo(data, NumCPU = numCPU(), Timer = 1 , Minimizer = ('Minuit2','minimize'), Optimize = 0)
 
 from ROOT import TCanvas
 plots = [ o for o in observables if hasattr(o,'frame') ]
@@ -141,11 +141,9 @@ plots = [ o for o in observables if hasattr(o,'frame') ]
 c = dict()
 for rng in ( None, 'signal', 'leftsideband','rightsideband','leftsideband,rightsideband' ) :
     c[rng] = TCanvas('%s'%rng)
-    dataRng = dict( CutRange = rng ) if rng else dict()
-    pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
     for (cc,(lab,ind)) in zip(c[rng].pads(1,len(iTag.states().items())),iTag.states().items()) :
-        dataCuts = dict( Cut = '%s == %s' % ( iTag.GetName(), ind ), **dataRng )
-        pdfCuts  = dict( Slice = ( iTag, lab ), **pdfRng )
+        dataCuts = dict( Cut = '%s == %s' % ( iTag.GetName(), ind ), **(dict( CutRange = rng ) if rng else {}) )
+        pdfCuts  = dict( Slice = ( iTag, lab ), **(dict( ProjectionRange = rng ) if rng else {}) )
         for (ccc,o) in zip(cc.pads(len(plots)),plots) :
             from P2VVGeneralUtils import plot
             plot( ccc, o, data, pdf, components = { 'sig*' : { 'LineColor' : RooFit.kGreen, 'LineStyle' : RooFit.kDashed }
@@ -153,5 +151,6 @@ for rng in ( None, 'signal', 'leftsideband','rightsideband','leftsideband,rights
                                                   }
                                    , dataOpts = dict( MarkerSize = 0.8, MarkerColor = RooFit.kBlack, **dataCuts )
                                    , pdfOpts  = dict( LineWidth = 2 , **pdfCuts )
+                                   , logy = o == t
                                    )
         #if o in mom_pdf.getObservables( data )  : mom_pdf.plotOn( f, LineColor = RooFit.kGreen)

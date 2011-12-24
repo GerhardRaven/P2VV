@@ -273,10 +273,12 @@ class FormulaVar (RooObject):
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class ConstVar (RooObject): 
-    def __init__(self,name,**kwargs):
+    def __init__(self,**kwargs):
          # construct factory string on the fly...
          __check_req_kw__( 'Value', kwargs )
-         self._declare("ConstVar::%s(%s)"%(name,kwargs.pop('Value')))
+         __check_req_kw__( 'Name', kwargs )
+         self._declare("ConstVar::%(Name)s(%(Value)s)" % kwargs )
+         (name,value) = (kwargs.pop('Name'),kwargs.pop('Value'))
          self._init(name,'RooConstVar')
          for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         
@@ -411,12 +413,12 @@ class Pdf(RooObject):
                }
 
     ## TODO: define operators
-    def __init__(self, Name, **kwargs):
+    def __init__(self, **kwargs):
         __check_req_kw__( 'Type', kwargs )
+        __check_req_kw__( 'Name', kwargs )
 
         # Save the keyword args as properties
         self._dict = kwargs
-        self._dict['Name'] = Name
         self._make_pdf()
 
     def __str__(self):
@@ -570,7 +572,7 @@ class RealSumPdf( Pdf ):
         self._dict = { 'Name' : name }
         self._dict['Functions'] = functions
         from itertools import repeat
-        self._dict['Coefficients'] = kwargs.pop('coefficients',repeat(ConstVar( 'one', Value = 1. ), len(self._dict['Functions'])))
+        self._dict['Coefficients'] = kwargs.pop('coefficients',repeat(ConstVar( Name = 'one', Value = 1 ), len(self._dict['Functions'])))
 
         # make pdf
         self._make_pdf()
@@ -683,31 +685,25 @@ class BTagDecay( Pdf ) :
 class ResolutionModel(RooObject):
     _getters = { 'Parameters'  : lambda s : s._get('Parameters') }
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, **kwargs):
         __check_req_kw__( 'Type', kwargs )
+        __check_req_kw__( 'Name', kwargs )
 
-        if name not in self.ws():
-            # Save the keyword args as properties
-            _dict = {}
-            _dict['Name'] = name
-            for k, v in kwargs.iteritems(): _dict[k] = v
-            variables = list()
-            if 'Parameters' in _dict: variables += list( _dict['Parameters'])
-            deps = ','.join([v.GetName() for v in variables])
-            _t = kwargs.pop('Type')
-            if type(_t) != str : _t = _t.__name__
-            self._declare(  '%s::%s(%s)' % ( _t, name, deps) )
-            self._init(name, 'RooResolutionModel')
-            for k, v in _dict.iteritems():
-                attr = '_' + k.lower()
-                if hasattr(v, '__iter__'): v = frozenset(v)
-                setattr(self._target_(), attr, v)
-        else:
-            self._init(name, 'RooResolutionModel')
-            # Make sure we are the same as last time
-            for k, v in kwargs.iteritems():
-                if hasattr(v, '__iter__'): v = frozenset(v)
-                assert v == self._get(k)
+        # Save the keyword args as properties
+        _dict = {}
+        for k, v in kwargs.iteritems(): _dict[k] = v
+        variables = list()
+        if 'Parameters' in _dict: variables += list( _dict['Parameters'])
+        deps = ','.join([v.GetName() for v in variables])
+        _t = kwargs.pop('Type')
+        if type(_t) != str : _t = _t.__name__
+        name = kwargs.pop('Name')
+        self._declare(  '%s::%s(%s)' % ( _t, name, deps) )
+        self._init(name, 'RooResolutionModel')
+        for k, v in _dict.iteritems():
+            attr = '_' + k.lower()
+            if hasattr(v, '__iter__'): v = frozenset(v)
+            setattr(self._target_(), attr, v)
 
     def _get(self, name):
         return getattr(self,'_' + name.lower())
@@ -768,16 +764,6 @@ class Component(object):
         if not k.isdisjoint(present) : raise KeyError('sets are not disjoint, overlap: %s' % k.intersection(present))
         # TODO: check whether observable exists in the workspace...
         # TODO: and check it has its observable flag set
-        ### parse recipe: x(a,b[1,2,3],c(4,5,6)) -> ('x' , 'a,b[1,2,3],c(4,5,6)')
-        ### i.e. such that %s(%s)'%(x[0], x[1]) recovers the result...
-        ## import re
-        ## ex = '^([^(]+)\((.*)\)$'
-        ## r = re.match(ex,pdfrecipe)
-        ## if not r : raise KeyError('could not parse recipe %s'%pdfrecipe)
-        ## (typ,args) = r.groups()
-        ## if ':' in typ : 
-        ##     raise KeyError('please do not explicitly name pdfs -- %s' % typ)
-        #TODO: should build the PDF at this point!
 
         ## Get the right sub-pdf from the Pdf object
         Component._d[self.name][frozenset(k)] = pdf

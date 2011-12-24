@@ -37,7 +37,7 @@ class Trivial_TaggingParams( TaggingParams ) :
         TaggingParams.__init__( self
                               , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2*@0 '
                                                          , [ self._wTag ], Title = 'Average tagging dilution' ) ]
-                              , ADilWTags = [ ConstVar('zero',Value = 0) ]
+                              , ADilWTags = [ ConstVar( Name = 'zero',Value = 0) ]
                               , CEvenOdds = [ Trivial_CEvenOdd() ]
                               )
 
@@ -95,8 +95,8 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
                 startTagCat = 1
                 self._wTags.append(None)
                 self._wTagBars.append(None)
-                dilutions.append( ConstVar( 'tagDilution0', Value = 0. ) )
-                ADilWTags.append( ConstVar( 'ADilWTag0',    Value = 0. ) )
+                dilutions.append( ConstVar( Name = 'tagDilution0', Value = 0. ) )
+                ADilWTags.append( ConstVar( Name = 'ADilWTag0',    Value = 0. ) )
 
             # get average even and average odd coefficients of category 0
             from P2VVParameterizations.BBbarAsymmetries import Coefficients_CEvenOdd
@@ -113,7 +113,7 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
                     avgCOddSum  = ( self._AProdVal + self._ANormVal ) / ( 1. + self._AProdVal * self._ANormVal )
                 else :
                     avgCOddSum = 0.
-                CEvenOddSum = Coefficients_CEvenOdd(  avgCEven = ConstVar( 'avgCEvenSum', Value = 1. )
+                CEvenOddSum = Coefficients_CEvenOdd(  avgCEven = ConstVar( Name = 'avgCEvenSum', Value = 1. )
                                                     , avgCOdd  = RealVar(  'avgCOddSum',  Value = avgCOddSum, MinMax = ( -2., 2. ) )
                                                    )
             CEvenOdds.append(CEvenOddSum)

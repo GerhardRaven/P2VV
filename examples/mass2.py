@@ -94,11 +94,12 @@ pdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  
 # Plot: TODO: define mass ranges for signal, sideband, and restrict plots to those... (see sig.py for an example)
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 canvas = dict()
-obs = observables # [ o for o in observables if o in pdf.Observables() ]
 for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     canvas[rng] = TCanvas('%s'%rng)
     dataRng = dict( CutRange = rng )        if rng else dict()
     pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
+    obs = observables # [ o for o in observables if o in pdf.Observables() ]
+    obs =  [ o for o in obs if hasattr(o,'frame') ]
     for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
         from P2VVGeneralUtils import plot
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
