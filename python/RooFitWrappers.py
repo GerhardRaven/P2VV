@@ -89,6 +89,7 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters 
         #       a conflict.
         if spec not in self.ws()._spec : 
+            #print 'creating %s' % spec
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
@@ -203,49 +204,31 @@ class Category (RooObject):
                }
 
     def __init__(self,name,**kwargs):
-        if name not in self.ws():
-            # construct factory string on the fly...
-            __check_req_kw__( 'States', kwargs )
-            states = None
-            if   type(kwargs['States']) == list:
-                states = ','.join(kwargs.pop('States'))
-            elif type(kwargs['States']) == dict:
-                states = ','.join(['%s=%d' % i for i in kwargs.pop('States').items()])
-            else:
-                raise KeyError('%s does not exist yet, bad States defined.' % name)
-
-            # Create the category and extract states into storage
-            self._declare("%s[%s]"%(name,states))
-            self._init(name,'RooCategory')
-            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        # construct factory string on the fly...
+        __check_req_kw__( 'States', kwargs )
+        states = kwargs.pop('States')
+        if   type(states) == list:
+            states = ','.join(states)
+        elif type(states) == dict:
+            states = ','.join(['%s=%d' % i for i in states.iteritems()])
         else:
-            self._init(name,'RooCategory')
-            # Make sure we are the same as last time
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                if k in ['Index', 'Label']: continue
-                assert v == self[k]
+            raise KeyError('%s does not exist yet, bad States %s defined.' % (name,states))
+
+        # Create the category and extract states into storage
+        self._declare("%s[%s]"%(name,states))
+        self._init(name,'RooCategory')
+        self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
     def states(self):
         return self._states
 
 class SuperCategory( Category ) :
     def __init__(self,name,cats,**kwargs):
-        if name not in self.ws():
-            self._declare("SuperCategory::%s({%s})"%(name,','.join( [ c.GetName() for c in cats ] ) ) )
-            self._init(name,'RooSuperCategory')
-            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            self._init(name,'RooSuperCategory')
-            # Make sure we are the same as last time
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                if k in ['Index', 'Label']: continue
-                assert v == self[k]
+        self._declare("SuperCategory::%s({%s})"%(name,','.join( [ c.GetName() for c in cats ] ) ) )
+        self._init(name,'RooSuperCategory')
+        self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class MappedCategory( Category ) :
     def __init__(self,name,cat,mapper,**kwargs):
@@ -293,36 +276,17 @@ class FormulaVar (RooObject):
     def __init__(self, name, formula, fargs, **kwargs):
         # construct factory string on the fly...
         spec = "expr::%s('%s',{%s})" % (name, formula, ','.join(i.GetName() for i in fargs)) 
-        present = name in self.ws() 
-        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec')
-        if not present or not match :
-            self._declare(spec)
-            self._init(name, 'RooFormulaVar')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            self._init(name,'RooFormulaVar')
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                if k == 'Value': continue
-                assert v == self[k]
+        self._declare(spec)
+        self._init(name, 'RooFormulaVar')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class ConstVar (RooObject): 
     def __init__(self,name,**kwargs):
-        if name not in self.ws():
-            # construct factory string on the fly...
-            __check_req_kw__( 'Value', kwargs )
-            self._declare("ConstVar::%s(%s)"%(name,kwargs.pop('Value')))
-            self._init(name,'RooConstVar')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            self._init(name,'RooConstVar')
-            # Make sure we are the same as last time
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                if k == 'Value': continue
-                assert v == self[k]
+         # construct factory string on the fly...
+         __check_req_kw__( 'Value', kwargs )
+         self._declare("ConstVar::%s(%s)"%(name,kwargs.pop('Value')))
+         self._init(name,'RooConstVar')
+         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         
 class P2VVAngleBasis (RooObject) : 
     # TODO: move 'c' out of this class (and into an explicit product), 
