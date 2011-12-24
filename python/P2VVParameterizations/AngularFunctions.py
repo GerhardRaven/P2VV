@@ -31,9 +31,9 @@ class AngleDefinitions( _util_parse_mixin ) :
 class JpsiphiHelicityAngles( AngleDefinitions ) :
     def __init__( self, **kwargs ) :
         from math import pi
-        d = { 'cpsi'   : self._parseArg( 'cpsi',   kwargs, Name = 'helcthetaK', Title = 'Cosine of kaon polarization angle',   MinMax = ( -1., 1. ), Observable = True )
-            , 'ctheta' : self._parseArg( 'ctheta', kwargs, Name = 'helcthetaL', Title = 'Cosine of lepton polarization angle', MinMax = ( -1., 1. ), Observable = True )
-            , 'phi'    : self._parseArg( 'phi',    kwargs, Name = 'helphi',     Title = 'Angle between decay planes',          MinMax = ( -pi, pi ), Observable = True )
+        d = { 'cpsi'   : self._parseArg( 'cpsi',   kwargs, SingleArgKey = 'Name', Name = 'helcthetaK', Title = 'Cosine of kaon polarization angle',   MinMax = ( -1., 1. ), Observable = True )
+            , 'ctheta' : self._parseArg( 'ctheta', kwargs, SingleArgKey = 'Name', Name = 'helcthetaL', Title = 'Cosine of lepton polarization angle', MinMax = ( -1., 1. ), Observable = True )
+            , 'phi'    : self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name = 'helphi',     Title = 'Angle between decay planes',          MinMax = ( -pi, pi ), Observable = True )
             }
         d['functions'] =  JpsiphiTransversityAmplitudesHelicityAngles( **d )
         AngleDefinitions.__init__(self, **d )
@@ -42,9 +42,9 @@ class JpsiphiHelicityAngles( AngleDefinitions ) :
 class JpsiphiTransversityAngles( AngleDefinitions ) :
     def __init__( self, **kwargs ) :
         from math import pi
-        d = { 'cpsi' :   self._parseArg( 'cpsi',   kwargs, Name='trcpsi',   Title='Cosine of kaon polarization angle',  MinMax=( -1., 1. ), Observable = True )
-            , 'ctheta' : self._parseArg( 'ctheta', kwargs, Name='trctheta', Title='Cosine of transversity polar angle', MinMax=( -1., 1. ), Observable = True )
-            , 'phi'   :  self._parseArg( 'phi',    kwargs, Name='trphi',    Title='Transversity azimuthal angle',       MinMax=( -pi, pi ), Observable = True )
+        d = { 'cpsi' :   self._parseArg( 'cpsi',   kwargs, SingleArgKey = 'Name', Name='trcpsi',   Title='Cosine of kaon polarization angle',  MinMax=( -1., 1. ), Observable = True )
+            , 'ctheta' : self._parseArg( 'ctheta', kwargs, SingleArgKey = 'Name', Name='trctheta', Title='Cosine of transversity polar angle', MinMax=( -1., 1. ), Observable = True )
+            , 'phi'   :  self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name='trphi',    Title='Transversity azimuthal angle',       MinMax=( -pi, pi ), Observable = True )
             }
         d['functions'] = JpsiphiTransversityAmplitudesTransversityAngles( **d )
         AngleDefinitions.__init__(self, **d )
