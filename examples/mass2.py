@@ -1,5 +1,5 @@
 from RooFitWrappers import *
-ws = RooObject( workspace = 'workspace')
+obj  = RooObject( workspace = 'workspace')
 
 # define observables
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14),    nBins =  54 )
@@ -98,8 +98,13 @@ pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,
 #pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='pdf')
 
 # Fit
-from P2VVGeneralUtils import numCPU
-pdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  Optimize=0, Minimizer = ('Minuit2','minimize'))
+from P2VVGeneralUtils import numCPU, ROOTversion
+(ROOTmajor,ROOTminor,ROOTpatch) = ROOTversion()
+pdf.fitTo(data, NumCPU = numCPU() 
+              , Timer=1
+              , Verbose = False
+              , Optimize = True if ROOTminor<32 else 0 # do NOT optimize in 5.32 or later... ( Optimize = 1 only works on a single CPU )
+              , Minimizer = ('Minuit2','minimize'))
 
 # Plot: TODO: define mass ranges for signal, sideband, and restrict plots to those... (see sig.py for an example)
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
