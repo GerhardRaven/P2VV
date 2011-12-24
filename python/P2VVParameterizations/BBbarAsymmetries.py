@@ -21,8 +21,8 @@ class Trivial_CEvenOdd( CEvenOdd ) :
     def __init__( self ) :
         from RooFitWrappers import ConstVar
 
-        self._zero   = ConstVar('zero', Value = 0.)
-        self._one    = ConstVar('one',  Value = 1.)
+        self._zero   = ConstVar('zero', Value = 0)
+        self._one    = ConstVar('one',  Value = 1)
         self._params = [ self._one, self._zero ]
 
         CEvenOdd.__init__( self, avgCEven = self._one, avgCOdd = self._zero )
