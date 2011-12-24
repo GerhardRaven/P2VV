@@ -2,10 +2,11 @@ from RooFitWrappers import *
 ws = RooObject( workspace = 'workspace')
 
 # define observables
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14),    nBins = 48 )
-m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5259, 5451), nBins = 48 )
-mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3025, 3169), nBins = 32 )
-mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1012, 1028), nBins = 16 )
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14),    nBins =  48 )
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.001, 0.2), nBins = 100 )
+m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5259, 5451), nBins =  48 )
+mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3025, 3169), nBins =  32 )
+mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1012, 1028), nBins =  16 )
 iTag = Category( 'tagdecision' , Title = 'initial state flavour tag',   Observable = True,  States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
@@ -14,7 +15,7 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 
-observables = [ iTag, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'] ]
+observables = [ iTag, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st ]
 
 m.setRange('leftsideband', (m.getMin(),5330) )
 m.setRange('signal',(5330,5410) )
@@ -40,6 +41,19 @@ cmb_m = Background_BMass( Name = 'cmb_m', mass = m, m_bkg_exp  = dict( Name = 'm
 from P2VVParameterizations.MassPDFs import Signal_PsiMass, Background_PsiMass
 sig_mpsi = Signal_PsiMass(     Name = 'sig_mpsi', mass = mpsi )
 bkg_mpsi = Background_PsiMass( Name = 'bkg_mpsi', mass = mpsi )
+
+# sigma(t) pdf
+from ROOT import RooGamma as Gamma
+st_mu     = RealVar( Name = 'st_mu',  Value = 0, Constant = True )
+st_sig_gamma1 = RealVar( Name = 'st_sig_gamma1', MinMax = (5,15) )
+st_sig_beta1  = RealVar( Name = 'st_sig_beta1', MinMax = (0.0001,0.01) , Value = 0.0025 )
+sig_st = Pdf( Name = 'sig_st', Type = Gamma, Parameters = ( st, st_sig_gamma1, st_sig_beta1, st_mu ) )
+st_cmb_gamma1 = RealVar( Name = 'st_cmb_gamma1', MinMax = (5,15) )
+st_cmb_beta1  = RealVar( Name = 'st_cmb_beta1', MinMax = (0.0001,0.01) , Value = 0.0025 )
+cmb_st = Pdf( Name = 'cmb_st', Type = Gamma, Parameters = ( st, st_cmb_gamma1, st_cmb_beta1, st_mu ) )
+st_psi_gamma1 = RealVar( Name = 'st_psi_gamma1', MinMax = (5,15) )
+st_psi_beta1  = RealVar( Name = 'st_psi_beta1', MinMax = (0.0001,0.01) , Value = 0.0025 )
+psi_st = Pdf( Name = 'psi_st', Type = Gamma, Parameters = ( st, st_psi_gamma1, st_psi_beta1, st_mu ) )
 
 # phi mass pdf
 
@@ -80,12 +94,13 @@ bkg_tag = Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.0 )
 (ntot,nsig,fpsi) = (data.numEntries(), 20000, 0.4)
 npsi = (ntot-nsig)*fpsi
 ncmb = (ntot-nsig)*(1-fpsi)
-signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf(), bkg_angles ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
-psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf(), bkg_angles ), Yield = ( npsi, 0.6*npsi, 1.4*npsi) )
-cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf(), bkg_angles ), Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
+signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf(), bkg_angles, sig_st ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
+psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf(), bkg_angles, psi_st ), Yield = ( npsi, 0.6*npsi, 1.4*npsi) )
+cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf(), bkg_angles, cmb_st ), Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
 
 # Build PDF
-pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,st), Name='pdf')
+#pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='pdf')
 
 # Fit
 from P2VVGeneralUtils import numCPU
@@ -99,6 +114,7 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     dataRng = dict( CutRange = rng )        if rng else dict()
     pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
     obs = observables # [ o for o in observables if o in pdf.Observables() ]
+    obs =  [ o for o in observables if o in pdf.Observables() ]
     obs =  [ o for o in obs if hasattr(o,'frame') ]
     for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
         from P2VVGeneralUtils import plot
