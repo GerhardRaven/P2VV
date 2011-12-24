@@ -64,6 +64,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
 class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__(self,  angFuncs, Amplitudes,CP, tag, order ) :
         def combine( name, afun, A, CPparams, tag, i, j) :
+            # TODO: deal with tag = None: create the untagged PDF in that case!
             from RooFitWrappers import ConstVar, FormulaVar, Product
             plus  = ConstVar('plus', Value = 1)
             minus = ConstVar('minus',  Value = -1  )

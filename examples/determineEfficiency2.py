@@ -17,8 +17,9 @@ class efficiency :
         p = legendre( self.cpsi.getVal() )
         y = spharmonic( self.ctheta.getVal(), self.phi.getVal() )
         from random import random
-        #return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 
-        return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 * ( y[0][0] + 0.1*y[1][-1+1] + 0.2*y[1][0+1] + 0.3*y[1][1+1] )
+        assert ( p[0]+0.4*p[2] )/1.4  < 1.0001
+        return random() < ( p[0]+0.4*p[2] )/1.4 
+        #return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 * ( y[0][0] + 0.1*y[1][-1+1] + 0.2*y[1][0+1] + 0.3*y[1][1+1] )
 
 
 from RooFitWrappers import *
@@ -84,11 +85,12 @@ mcpdf = BTagDecay( 'mc_pdf', **args  )
 
 data = mcpdf.generate(observables,10000)
 print 'got dataset with %s entries' % data.numEntries()
-
-
-
-eps = efficiency( angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'] )
 allObs = mcpdf.getObservables( data.get() )
+allObs.Print()
+print mcpdf.Observables()
+
+#assert False
+eps = efficiency( angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'] )
 inEffData = RooDataSet( "inEffData","inEffData", allObs )
 for event in  data :
     allObs.assignValueOnly( event )
@@ -102,11 +104,11 @@ print 'computing efficiency moments'
 from P2VVGeneralUtils import RealMomentsBuilder
 # eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, mcpdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
 eff = RealMomentsBuilder()
-indices  = [ ( i, l, m ) for i in range(4)
-                         for l in range(4)
+indices  = [ ( i, l, m ) for i in range(3)
+                         for l in range(1)
                          for m in range(-l,l+1) ]
-#indices += [ ( i, 2, m ) for i in range(6,10)  # 3,20)
-#                         for m in [-2,1] ] # these are for the 'infinite' series in the signal PDF
+indices += [ ( i, 2, m ) for i in range(3,3)  # 3,20)
+                         for m in (-2,1) ] # these are for the 'infinite' series in the signal PDF
 eff.appendPYList( angles.angles, indices, PDF = mcpdf, NormSet = allObs)
 #eff.compute(data)
 
@@ -141,7 +143,6 @@ class abasis :
         return b
 
 ab = abasis(mcpdf.ws(),angles.angles['cpsi']._var,angles.angles['ctheta']._var,angles.angles['phi']._var)
-from itertools import product
 # if we want to write it as efficiency, i.e. eps_ijk * P_i * Y_jk * PDF then we need the marginal..
 # Warning: the Y_lm are orthonormal, but the P_i are orthogonal, but the dot product is (2*i+1)/2
 from ROOT import EffMoment

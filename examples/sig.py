@@ -99,13 +99,8 @@ else  :
     mcfilename =  '/data/bfys/graven/ntupleB_MC10Bs2JpsiPhi_Reco10_UpDown_simple_with_MCtime_angles_tag.root'
     mcfilename =  '/data/bfys/graven/aladaan.root'
     mcfilename =  '/tmp/aladaan.root'
-    from ROOT import TFile
-    MCfile = TFile(mcfilename)
-    MCtuple = MCfile.Get('MyTree')
-    assert MCtuple
-    from ROOT import RooDataSet
-    noNAN  = ' && '.join( '%s==%s' % (i.GetName(),i.GetName()) for i in observables )
-    data = RooDataSet('MCdata','MCdata',MCtuple, ( i._target_() for i in observables  ),noNAN ) # ' && '.join([ noNAN, 'sel>0.5', '( (triggeredByUnbiasedHlt1AndHlt2>0.5) || (triggeredByBiasedHlt1AndHlt2>0.5) )' ]))
+    from P2VVGeneralUtils import readData
+    data = readData( mcfilename, 'MyTree', True, observables )
     print 'got dataset with %s entries' % data.numEntries()
 
 

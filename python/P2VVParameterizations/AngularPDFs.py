@@ -90,7 +90,7 @@ class AngleBasis_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
             # process arguments of coefficient
             indices = coefArgs.pop( 'Indices', None )
             if not indices : raise KeyError( 'AngleBasis_AngularPdfTerms: no indices found for coefficient %s' % coefName )
-            if indices[0] == 0 and indices[1] == 0 and indices[2] == 0 : hasC000 = True
+            if indices == (0,0,0) : hasC000 = True
 
             # get (RooFit) name of angular term
             cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
@@ -107,7 +107,7 @@ class AngleBasis_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
 
         # add P_0 Y_0_0 term ( 0, 0, 0 )
         if not hasC000 :
-            from RooFitWrappers import ConstVar
+            from RooFitWrappers import ConstVar,P2VVAngleBasis
             keys.insert( 0, ( 'C000', None ) )
             angCoefs[ keys[0] ] = ( ConstVar( 'Cab000', Value = 1. ), None )
             angFuncs[ keys[0] ] = ( P2VVAngleBasis( self._angles, ( 0, 0, 0, 0 ), 1. ), None )
