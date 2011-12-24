@@ -41,10 +41,10 @@ bkg_mpsi = Background_PsiMass( Name = 'bkg_mpsi', mass = mpsi )
 from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angles.angles
-                                          , **dict( (  ('angles_bkg_f_%d%d%d' % i ).replace('-','m')
-                                                     , {  'Name'     : 'angles_bkg_%d%d%d' % i ).replace('-','m')
+                                          , **dict( (  ('C%d%d%d' % i ).replace('-','m')
+                                                     , {  'Name'     : ( 'C_%d%d%d' % i ).replace('-','m')
                                                         , 'Value'    : 1. if i == (0,0,0) else 0.
-                                                        , 'MinMax'   : ( 0.99, 1.01 )  if i == (0,0,0) else ( -0.2,+0.2 ) if i[1]==0 else (-0.1,0.1)
+                                                        , 'MinMax'   : ( 0.99, 1.01 )  if i == (0,0,0) else ( -0.4,+0.4 ) if i[1]==0 else (-0.1,0.1)
                                                         , 'Indices'  : i
                                                         , 'Constant' : i == (0,0,0)
                                                        }
