@@ -60,13 +60,14 @@ coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angles.angles
                                           , **dict( (  ('C%d%d%d' % i ).replace('-','m')
                                                      , {  'Name'     : ( 'C_%d%d%d' % i ).replace('-','m')
                                                         , 'Value'    : 1. if i == (0,0,0) else 0.
-                                                        , 'MinMax'   : ( 0.99, 1.01 )  if i == (0,0,0) else ( -0.4,+0.4 ) if i[1]==0 else (-0.1,0.1)
+                                                        , 'MinMax'   : ( 0.99, 1.01 )  if i == (0,0,0) else ( -0.4,+0.4 ) if i[1] == 0 else (-0.1,0.1)
                                                         , 'Indices'  : i
                                                         , 'Constant' : i == (0,0,0)
                                                        }
                                                     ) for i in indices(4,3)
                                                   )
                                          )
+#TODO: adjust syntax to match the rest... move Name into __init__ as kw...
 bkg_angles = coefPDFTerms.buildSumPdf('angCoefsPDF')
 #from P2VVParameterizations.AngularPDFs import Uniform_Angles
 #bkg_angles =  Uniform_Angles( angles = angles.angles )
@@ -98,18 +99,18 @@ pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,
 #pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='pdf')
 
 # Fit
-from P2VVGeneralUtils import numCPU, ROOTversion
-(ROOTmajor,ROOTminor,ROOTpatch) = ROOTversion()
+from P2VVGeneralUtils import numCPU
+from ROOTDecorators import  ROOTversion as Rv
 pdf.fitTo(data, NumCPU = numCPU() 
               , Timer=1
               , Verbose = False
-              , Optimize = True if ROOTminor<32 else 0 # do NOT optimize in 5.32 or later... ( Optimize = 1 only works on a single CPU )
+              , Optimize = True if Rv()[1]<32 else 0 # do NOT optimize in 5.32 or later... ( Optimize = 1 only works on a single CPU, 2 doesn't work at all )
               , Minimizer = ('Minuit2','minimize'))
 
 # Plot: TODO: define mass ranges for signal, sideband, and restrict plots to those... (see sig.py for an example)
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 canvas = dict()
-for rng in ( None, 'signal','leftsideband,rightsideband' ) :
+for rng in ( None, 'signal','leftsideband','rightsideband','leftsideband,rightsideband' ) :
     canvas[rng] = TCanvas('%s'%rng)
     obs = observables
     obs =  [ o for o in obs if o in pdf.Observables() ]
