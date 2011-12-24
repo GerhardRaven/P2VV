@@ -175,6 +175,7 @@ for i in range(options.ntoys):
 # Write the results to a file
 output_file = TFile.Open(options.output, 'recreate')
 output_file.WriteTObject(result_data, result_data.GetName())
+output_file.WriteTObject(gen_params, 'gen_params')
 output_file.Close()
 
 ## from ROOT import RooFit, RooGenFitStudy
