@@ -69,17 +69,20 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
     file.Close()
 
 
-def addTaggingObservables( dataSet, estimWTag, tagCatBinEdges ) :
+def addTaggingObservables( dataSet, estimWTag, tagCatBinBoundaries = None ) :
     """add tagging observables to data set
     """
 
-    from ROOT import RooBinningCategory
-
     # create binning
-    if not tagCatBinEdges : tagCatBinEdges = [ 0.50001, 0.49999, 0.38, 0.31, 0.24, 0.17 ]
+    from array import array
+    from ROOT import RooBinning
+    if not tagCatBinBoundaries : tagCatBinBoundaries = array( 'd', [ 0.50001, 0.49999, 0.38, 0.31, 0.24, 0.17, 0. ] )
+    bins = RooBinning( len( tagCatBinBoundaries - 1 ), tagCatBinBoundaries, 'estWTagBins' )
+    estimWTag.setBinning( bins, 'estWTagBins' )
 
     # create tagging category column
-    tagCatFormula = RooBinningCategory( 'tagCatP2VV', 'P2VV tagging category', estimWTag, bins )
+    from ROOT import RooBinningCategory
+    tagCatFormula = RooBinningCategory( 'tagCatP2VV', 'P2VV tagging category', estimWTag, 'estWTagBins' )
     tagCat = dataSet.addColumn(tagCatFormula)
     tagCat.createFundamental()
 
