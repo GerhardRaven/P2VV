@@ -61,3 +61,18 @@ class LP2011_TimeResolution ( TimeResolution ) :
                                                , self._timeResFracs )
                                )
 
+class Gamma_Sigmat( _util_parse_mixin ) :
+    def pdf(self) :
+        return self._pdf
+    def __init__( self, **kwargs ) :
+        from ROOT import RooGamma as Gamma
+        from RooFitWrappers import Pdf
+        self._parseArg( 'st',    kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.001,0.5) )
+        self._parseArg( 'st_mu', kwargs,   Value = 0, Constant = True )
+        self._parseArg( 'st_sig_gamma', kwargs,  MinMax = (5,15) )
+        self._parseArg( 'st_sig_beta',  kwargs,  MinMax = (0.0001,0.01) , Value = 0.0025 )
+        self._pdf = Pdf( Name = kwargs.pop('Name','sig_st')
+                       , Type = Gamma
+                       , Parameters = ( self._st, self._st_sig_gamma, self._st_sig_beta, self._st_mu ) 
+                       )
+

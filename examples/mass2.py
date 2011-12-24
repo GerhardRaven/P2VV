@@ -43,17 +43,10 @@ sig_mpsi = Signal_PsiMass(     Name = 'sig_mpsi', mass = mpsi )
 bkg_mpsi = Background_PsiMass( Name = 'bkg_mpsi', mass = mpsi )
 
 # sigma(t) pdf
-from ROOT import RooGamma as Gamma
-st_mu     = RealVar( Name = 'st_mu',  Value = 0, Constant = True )
-st_sig_gamma1 = RealVar( Name = 'st_sig_gamma1', MinMax = (5,15) )
-st_sig_beta1  = RealVar( Name = 'st_sig_beta1', MinMax = (0.0001,0.01) , Value = 0.0025 )
-sig_st = Pdf( Name = 'sig_st', Type = Gamma, Parameters = ( st, st_sig_gamma1, st_sig_beta1, st_mu ) )
-st_cmb_gamma1 = RealVar( Name = 'st_cmb_gamma1', MinMax = (5,15) )
-st_cmb_beta1  = RealVar( Name = 'st_cmb_beta1', MinMax = (0.0001,0.01) , Value = 0.0025 )
-cmb_st = Pdf( Name = 'cmb_st', Type = Gamma, Parameters = ( st, st_cmb_gamma1, st_cmb_beta1, st_mu ) )
-st_psi_gamma1 = RealVar( Name = 'st_psi_gamma1', MinMax = (5,15) )
-st_psi_beta1  = RealVar( Name = 'st_psi_beta1', MinMax = (0.0001,0.01) , Value = 0.0025 )
-psi_st = Pdf( Name = 'psi_st', Type = Gamma, Parameters = ( st, st_psi_gamma1, st_psi_beta1, st_mu ) )
+from P2VVParameterizations.TimeResolution import Gamma_Sigmat
+sig_st = Gamma_Sigmat( Name = 'sig_st', st = st )
+cmb_st = Gamma_Sigmat( Name = 'cmb_st', st = st, st_sig_gamma = dict( Name = 'st_cmb_gamma' ), st_sig_beta = dict( Name = 'st_cmb_beta' ) )
+psi_st = Gamma_Sigmat( Name = 'psi_st', st = st, st_sig_gamma = dict( Name = 'st_psi_gamma' ), st_sig_beta = dict( Name = 'st_psi_beta' ) )
 
 # phi mass pdf
 
@@ -94,9 +87,9 @@ bkg_tag = Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.0 )
 (ntot,nsig,fpsi) = (data.numEntries(), 20000, 0.4)
 npsi = (ntot-nsig)*fpsi
 ncmb = (ntot-nsig)*(1-fpsi)
-signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf(), bkg_angles, sig_st ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
-psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf(), bkg_angles, psi_st ), Yield = ( npsi, 0.6*npsi, 1.4*npsi) )
-cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf(), bkg_angles, cmb_st ), Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
+signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf(), bkg_angles, sig_st.pdf() ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
+psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf(), bkg_angles, psi_st.pdf() ), Yield = ( npsi, 0.6*npsi, 1.4*npsi) )
+cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf(), bkg_angles, cmb_st.pdf() ), Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
 
 # Build PDF
 pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,st), Name='pdf')
