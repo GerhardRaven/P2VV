@@ -29,6 +29,7 @@ class RooObject(object) :
                ,'Value'      : lambda s : s.getVal()
                ,'Type'       : lambda s : s.Type()
                ,'Observable' : lambda s : s.observable() 
+               ,'Constant'   : lambda s : s.isConstant() 
                }
     def _factory(self,spec) :
         return self.ws().factory(spec)
@@ -70,13 +71,6 @@ class RooObject(object) :
         """
         create the underlying C++ object in the workspace
         """
-        # TODO: add mapping of name -> spec so we can gate identical invocations.
-        #       problem is that we don't know 'name' a-priori....
-        #       so maybe we either require a name, and verify what we got back has
-        #       the matching name, or, in case name is 'None' then it has to be unique
-        #       and not yet used???
-        #   No! we turn the mapping around, from spec -> ( object -> ) name
-        #
         # canonicalize 'spec' a bit by getting rid of spaces
         spec = spec.strip()
         # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
@@ -88,6 +82,7 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters 
         #       a conflict.
         if spec not in self.ws()._spec : 
+            #print 'creating %s' % spec
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
@@ -202,57 +197,38 @@ class Category (RooObject):
                }
 
     def __init__(self,name,**kwargs):
-        if name not in self.ws():
-            # construct factory string on the fly...
-            __check_req_kw__( 'States', kwargs )
-            states = None
-            if   type(kwargs['States']) == list:
-                states = ','.join(kwargs.pop('States'))
-            elif type(kwargs['States']) == dict:
-                states = ','.join(['%s=%d' % i for i in kwargs.pop('States').items()])
-            else:
-                raise KeyError('%s does not exist yet, bad States defined.' % name)
-
-            # Create the category and extract states into storage
-            self._declare("%s[%s]"%(name,states))
-            self._init(name,'RooCategory')
-            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        # construct factory string on the fly...
+        __check_req_kw__( 'States', kwargs )
+        states = kwargs.pop('States')
+        if   type(states) == list:
+            states = ','.join(states)
+        elif type(states) == dict:
+            states = ','.join(['%s=%d' % i for i in states.iteritems()])
         else:
-            self._init(name,'RooCategory')
-            # Make sure we are the same as last time
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                if k in ['Index', 'Label']: continue
-                assert v == self[k]
+            raise KeyError('%s does not exist yet, bad States %s defined.' % (name,states))
+
+        # Create the category and extract states into storage
+        self._declare("%s[%s]"%(name,states))
+        self._init(name,'RooCategory')
+        self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
     def states(self):
         return self._states
 
 class SuperCategory( Category ) :
     def __init__(self,name,cats,**kwargs):
-        if name not in self.ws():
-            self._declare("SuperCategory::%s({%s})"%(name,','.join( [ c.GetName() for c in cats ] ) ) )
-            self._init(name,'RooSuperCategory')
-            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            self._init(name,'RooSuperCategory')
-            # Make sure we are the same as last time
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                if k in ['Index', 'Label']: continue
-                assert v == self[k]
+        self._declare("SuperCategory::%s({%s})"%(name,','.join( [ c.GetName() for c in cats ] ) ) )
+        self._init(name,'RooSuperCategory')
+        self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class MappedCategory( Category ) :
     def __init__(self,name,cat,mapper,**kwargs):
         if name not in self.ws():
-            # construct factory string on the fly: no factory string for SuperCategory???
+            # construct factory string on the fly: no factory string for MappedCategory???
             from ROOT import RooMappedCategory
-            cast = lambda i : i._target_() if hasattr(i,'_target_') else i
-            obj =  RooMappedCategory(name,name,cast(cat) )
+            obj =  RooMappedCategory(name,name,__dref__(cat) )
             for k,vs in mapper.iteritems() : 
                 for v in vs : obj.map( v, k )
             self.ws()._objects[ name ] = self.ws().put( obj )
@@ -292,36 +268,17 @@ class FormulaVar (RooObject):
     def __init__(self, name, formula, fargs, **kwargs):
         # construct factory string on the fly...
         spec = "expr::%s('%s',{%s})" % (name, formula, ','.join(i.GetName() for i in fargs)) 
-        present = name in self.ws() 
-        match = present and spec == self.ws()[name].getStringAttribute('RooFitWrappers.RooObject::spec')
-        if not present or not match :
-            self._declare(spec)
-            self._init(name, 'RooFormulaVar')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            self._init(name,'RooFormulaVar')
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                if k == 'Value': continue
-                assert v == self[k]
+        self._declare(spec)
+        self._init(name, 'RooFormulaVar')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class ConstVar (RooObject): 
     def __init__(self,name,**kwargs):
-        if name not in self.ws():
-            # construct factory string on the fly...
-            __check_req_kw__( 'Value', kwargs )
-            self._declare("ConstVar::%s(%s)"%(name,kwargs.pop('Value')))
-            self._init(name,'RooConstVar')
-            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        else:
-            self._init(name,'RooConstVar')
-            # Make sure we are the same as last time
-            for k, v in kwargs.iteritems():
-                # Skip these to avoid failure in case we were loaded from a
-                # DataSet in the mean time
-                if k == 'Value': continue
-                assert v == self[k]
+         # construct factory string on the fly...
+         __check_req_kw__( 'Value', kwargs )
+         self._declare("ConstVar::%s(%s)"%(name,kwargs.pop('Value')))
+         self._init(name,'RooConstVar')
+         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         
 class P2VVAngleBasis (RooObject) : 
     # TODO: move 'c' out of this class (and into an explicit product), 
@@ -368,7 +325,6 @@ class RealEffMoment( AbsRealMoment ):
         self._pdf       = PDF
         self._normSet   = NormSet
 
-
         # build a RooFit normalisation set
         from ROOT import RooArgSet
         self._rooNormSet = RooArgSet( __dref__(var) for var in self._normSet )
@@ -391,6 +347,7 @@ class RealVar (RooObject):
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
                ,'Constant'   : lambda s,v : s.setConstant(v)
+               ,'nBins'      : lambda s,v : s.setBins(v)
                }
 
     def __init__(self,Name ,**kwargs):
@@ -407,7 +364,7 @@ class RealVar (RooObject):
             else:
                 (mi,ma) = kwargs.pop('MinMax')
                 val = kwargs.pop('Value')
-                if val < mi or val > ma : raise RuntimeError('Specified Value not contained in MinMax')
+                if val < mi or val > ma : raise RuntimeError('Specified Value %s not contained in MinMax (%s,%s)' % ( val,mi,ma))
                 self._declare("%s[%s,%s,%s]"%(Name,val,mi,ma))
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')

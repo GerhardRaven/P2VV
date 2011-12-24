@@ -149,7 +149,7 @@ if generateData :
 
 else :
   from P2VVGeneralUtils import readData
-  data = readData( dataSetFile, dataSetName, NTuple )
+  data = readData( dataSetFile, dataSetName, observables, NTuple )
 
   # TODO: a trick to change the observables in a data set ( iTag( +1, -1 ) <--> iTag( +1, -1, 0 ) )
   data = RooDataSet( dataSetName + '1', '', data, ( obs._var for obs in observables ) )
