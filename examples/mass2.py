@@ -17,10 +17,14 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
 
 observables = [ iTag, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st ]
 
+# TODO: add a wrapper that allows one to pass ranges as dict: m.setRanges( { 'leftsideband' : (m.getMin(),5330), 'signal' : (5330,5410), ... } )
+#       even more fance: allow None in the upper or lower limit to indicate it should extend to getMax resp. getMin...
+#       m.setRanges( { 'leftsideband'  : ( None, 5330 )
+#                    , 'signal'        : ( 5330, 5410 )
+#                    , 'rightsideband' : ( 5410, None ) } )
 m.setRange('leftsideband', (m.getMin(),5330) )
 m.setRange('signal',(5330,5410) )
 m.setRange('rightsideband',(5410,m.getMax()) )
-
 
 #unbiased data only: /data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_DTT_after_yuehongs_script_20111220.root
 from P2VVGeneralUtils import readData
@@ -30,7 +34,6 @@ data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , True
                , observables
                )
-
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5368, MinMax = (5363,5372) ) )
@@ -78,7 +81,6 @@ sig_t = Signal_Time(     Name = 'sig_t', time = t, resolutionModel = tres.model(
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_psi_fll'), t_bkg_ll_tau = dict( Name = 't_psi_ll_tau'), t_bkg_ml_tau = dict( Name = 't_psi_ml_tau') )
 cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_cmb_fll'), t_bkg_ll_tau = dict( Name = 't_cmb_ll_tau'), t_bkg_ml_tau = dict( Name = 't_cmb_ml_tau') )
 
-
 # itag distribution (background only)
 from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
 bkg_tag = Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.0 )
@@ -108,8 +110,8 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     obs =  [ o for o in obs if o in pdf.Observables() ]
     obs =  [ o for o in obs if hasattr(o,'frame') ]
     for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
-        dataRng = { 'CutRange'        : rng }        if rng else dict()
-        pdfRng  = { 'ProjectionRange' : rng } if rng else dict()
+        dataRng = dict( CutRange =        rng ) if rng else dict()
+        pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
         from P2VVGeneralUtils import plot
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                             , 'psi*'     : dict( LineColor = kRed,   LineStyle = kDashed )
@@ -117,5 +119,5 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
                                             }
                              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataRng )
                              , pdfOpts  = dict( LineWidth = 2, **pdfRng )
-                             , logy = o == t
+                             , logy = ( o == t )
                              )
