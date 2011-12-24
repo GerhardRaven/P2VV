@@ -17,9 +17,13 @@ class efficiency :
         p = legendre( self.cpsi.getVal() )
         y = spharmonic( self.ctheta.getVal(), self.phi.getVal() )
         from random import random
-        assert ( p[0]+0.4*p[2] )/1.4  < 1.0001
-        return random() < ( p[0]+0.4*p[1] )/1.4 
-        #return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 * ( y[0][0] + 0.1*y[1][-1+1] + 0.2*y[1][0+1] + 0.3*y[1][1+1] )
+        e =  ( p[0]+p[2] )/2
+        #e =  ( p[0]+p[1] )/2
+        #e =  ( p[0]+0.5*p[1]+p[2])/3
+        # e =  (y[0][0]+y[1][-1+1])/2
+        #assert e < 1.0001 and e>= 0
+        #return random() < e
+        return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 * ( y[0][0] + 0.1*y[1][-1+1] + 0.2*y[1][0+1] + 0.3*y[1][1+1] )
 
 
 from RooFitWrappers import *
@@ -37,13 +41,15 @@ for i in angles.angles.itervalues() : i.setBins(16)
 # build new PDFs with angular coefficients
 from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-indices = [ (0,0,0) ]
-cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
+indices = [ (0,0,0, 1), (1,0,0,0.5), (2,1,0,0.1) ]
+from math import sqrt
+indices = [ ( 0,  0,  0 , 4. ), ( 0,  2,  0 , -sqrt( 16. / 5.)), ( 2,  0,  0 ,   8.) , ( 2, 2,  0 ,  -sqrt( 64. / 5.)) ]
+cnvrtInd = lambda i : ('%s'%i).replace('-','m') 
 coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angles.angles
                                           , **dict( (  'C%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
                                                      , {  'Name'    : 'Cab%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
-                                                        , 'Value'   : 1.
-                                                        , 'MinMax'  : ( -1., +1. )
+                                                        , 'Value'   : inds[3]
+                                                        , 'MinMax'  : ( -10., +10. )
                                                         , 'Indices' : inds
                                                        }
                                                     ) for inds in indices
@@ -52,6 +58,19 @@ coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angles.angles
 mcpdf = coefPDFTerms.buildSumPdf('angCoefsPDF')
 #mcpdf.Print("T")
 
+eindices = [ (0,0,0,1),(1,0,0,0.5),(2,0,0,1) ]
+effPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angles.angles
+                                          , **dict( (  'C%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
+                                                     , {  'Name'    : 'C_ab%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
+                                                        , 'Value'   : inds[3]
+                                                        , 'MinMax'  : ( -10., +10. )
+                                                        , 'Indices' : inds[0:3]
+                                                       }
+                                                    ) for inds in eindices
+                                                  )
+                                         )
+epdf = effPDFTerms.buildSumPdf('angeCoefsPDF')
+epdf.Print("T")
 
 
 data = mcpdf.generate(observables,10000)
@@ -74,8 +93,8 @@ data = inEffData;
 ###################################
 from P2VVGeneralUtils import RealMomentsBuilder
 eff = RealMomentsBuilder()
-indices  = [ ( i, l, m ) for i in range(3)
-                         for l in range(3)
+indices  = [ ( i, l, m ) for i in range(4)
+                         for l in range(2)
                          for m in range(-l,l+1) ]
 eff.appendPYList( angles.angles, indices, PDF = mcpdf, NormSet = allObs)
 ###################################
@@ -124,13 +143,13 @@ eff.appendPYList( angles.angles, indices, PDF = mcpdf, NormSet = allObs)
 
 ##################################
 eff.compute(data)
-from math import sqrt, pi
+from math import sqrt,pi
 eff.Print( MinSignificance = 0., Names = 'p2vvab.*', Scales = ( 1. / (2*sqrt(pi)), 1. / (2*sqrt(pi)), 1. ) )
 
 
-#pdf.Print("T")
 pdf = eff * mcpdf
 print pdf.GetName(), type(pdf)
+pdf.Print("T")
 #pdf2.Print("T")
 
 # create generic PDF to describe the angular distribution
@@ -147,7 +166,7 @@ for (ccc,o) in zip(c.pads(len(obs)),obs) :
     from P2VVGeneralUtils import plot
     plot( ccc, o, data, pdf, addPDFs = [ mcpdf ]
                            , dataOpts = dict( MarkerSize = 0.8, MarkerColor = RooFit.kBlack )
-                           , pdfOpts  = dict( LineWidth = 2 )
+                           , pdfOpts  = dict( LineWidth = 2 , LineColor = RooFit.kGreen)
                            , addPDFsOpts = [ dict( LineWidth = 2, LineColor = RooFit.kRed ) ]
                            )
     #mom_pdf.plotOn( f, LineColor = RooFit.kGreen)

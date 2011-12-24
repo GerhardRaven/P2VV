@@ -71,13 +71,6 @@ class RooObject(object) :
         """
         create the underlying C++ object in the workspace
         """
-        # TODO: add mapping of name -> spec so we can gate identical invocations.
-        #       problem is that we don't know 'name' a-priori....
-        #       so maybe we either require a name, and verify what we got back has
-        #       the matching name, or, in case name is 'None' then it has to be unique
-        #       and not yet used???
-        #   No! we turn the mapping around, from spec -> ( object -> ) name
-        #
         # canonicalize 'spec' a bit by getting rid of spaces
         spec = spec.strip()
         # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
@@ -233,10 +226,9 @@ class SuperCategory( Category ) :
 class MappedCategory( Category ) :
     def __init__(self,name,cat,mapper,**kwargs):
         if name not in self.ws():
-            # construct factory string on the fly: no factory string for SuperCategory???
+            # construct factory string on the fly: no factory string for MappedCategory???
             from ROOT import RooMappedCategory
-            cast = lambda i : i._target_() if hasattr(i,'_target_') else i
-            obj =  RooMappedCategory(name,name,cast(cat) )
+            obj =  RooMappedCategory(name,name,__dref__(cat) )
             for k,vs in mapper.iteritems() : 
                 for v in vs : obj.map( v, k )
             self.ws()._objects[ name ] = self.ws().put( obj )
@@ -332,7 +324,6 @@ class RealEffMoment( AbsRealMoment ):
         self._norm      = Norm
         self._pdf       = PDF
         self._normSet   = NormSet
-
 
         # build a RooFit normalisation set
         from ROOT import RooArgSet

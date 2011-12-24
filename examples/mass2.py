@@ -1,10 +1,11 @@
 from RooFitWrappers import *
 ws = RooObject( workspace = 'workspace')
 
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14) )
+# define observables
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14),    nBins = 48 )
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5259, 5451), nBins = 48 )
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3025, 3169), nBins = 32 )
-mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1020-8, 1020+8) )
+mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1012, 1028), nBins = 16 )
 iTag = Category( 'tagdecision' , Title = 'initial state flavour tag',   Observable = True,  States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
@@ -14,6 +15,11 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     )
 
 observables = [ iTag, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'] ]
+
+m.setRange('leftsideband', (m.getMin(),5330) )
+m.setRange('signal',(5330,5410) )
+m.setRange('rightsideband',(5410,m.getMax()) )
+
 
 #unbiased data only: /data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_DTT_after_yuehongs_script_20111220.root
 from P2VVGeneralUtils import readData
@@ -87,15 +93,19 @@ pdf.fitTo(data, NumCPU = numCPU() , Timer=1, Extended = True, Verbose = False,  
 
 # Plot: TODO: define mass ranges for signal, sideband, and restrict plots to those... (see sig.py for an example)
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
-canvas = TCanvas('canvas', 'canvas', 1000, 500)
-obs = [ o for o in observables if o in pdf.Observables() ]
-for (p,o) in zip( canvas.pads(len(obs)), obs ) :
-    from P2VVGeneralUtils import plot
-    plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                                        , 'psi*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                                        , 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
-                                        }
-                         , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack )
-                         , pdfOpts  = dict( LineWidth = 2 )
-                         , logy = o == t
-                         )
+canvas = dict()
+obs = observables # [ o for o in observables if o in pdf.Observables() ]
+for rng in ( None, 'signal','leftsideband,rightsideband' ) :
+    canvas[rng] = TCanvas('%s'%rng)
+    dataRng = dict( CutRange = rng )        if rng else dict()
+    pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
+    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+        from P2VVGeneralUtils import plot
+        plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                                            , 'psi*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                                            , 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                                            }
+                             , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataRng )
+                             , pdfOpts  = dict( LineWidth = 2, **pdfRng )
+                             , logy = o == t
+                             )

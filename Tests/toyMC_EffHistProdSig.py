@@ -110,10 +110,8 @@ comp_pdf = buildPdf( (signal,bkg), Observables = observables,  Name = 'jointpdf'
 ### Define acceptance function a la Wouter ###
 ##############################################
 effh1 = TH1F( "effh1", "effh1", nbins, w.var('t').getMin(), w.var('t').getMax()) 
-for i in range(1, int(0.6 * nbins)):
-    effh1.SetBinContent(i, 1. / nbins * i)
-for i in range(int(0.6 * nbins), nbins + 1):
-    effh1.SetBinContent(i, 1) 
+for i in range(1, int(0.6 * nbins)):         effh1.SetBinContent(i, 1. / nbins * i)
+for i in range(int(0.6 * nbins), nbins + 1): effh1.SetBinContent(i, 1) 
 
 effdatahist = RooDataHist("effdatahist", "effdatahist", RooArgList(w.var('t')), effh1) 
 

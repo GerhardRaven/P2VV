@@ -138,9 +138,9 @@ Int_t computeRooRealMoments(RooAbsData& data, RooRealMomentsVector& moments,
 
     if (prog) ++*prog;
   }
-  cout << endl;
-  if (prog) delete prog;
-
+  if (prog) { 
+    cout << endl;
+    delete prog;
+  }
   return dataIter;
 }
-
