@@ -155,6 +155,7 @@ result_params.add(seed)
 
 # The dataset to store the results
 result_data = RooDataSet('result_data', 'result_data', result_params)
+data_params = result_data.get()
 
 for i in range(options.ntoys):
     # Reset pdf parameters to initial values
@@ -168,6 +169,9 @@ for i in range(options.ntoys):
         print 'Fit result status = %s' % fit_result.status()
         continue
     NLL.setVal(fit_result.minNll())
+    for result_param in result_params:
+        data_param = data_params.find(result_param.GetName())
+        data_param.setVal(result_param.getVal())
     result_data.fill()
 
 # Write the results to a file
