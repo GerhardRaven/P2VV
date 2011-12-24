@@ -2,8 +2,8 @@ from RooFitWrappers import *
 ws = RooObject( workspace = 'workspace')
 
 # define observables
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14),    nBins =  48 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.001, 0.2), nBins = 100 )
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14),    nBins =  54 )
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5259, 5451), nBins =  48 )
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3025, 3169), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1012, 1028), nBins =  16 )
@@ -44,9 +44,9 @@ bkg_mpsi = Background_PsiMass( Name = 'bkg_mpsi', mass = mpsi )
 
 # sigma(t) pdf
 from P2VVParameterizations.TimeResolution import Gamma_Sigmat
-sig_st = Gamma_Sigmat( Name = 'sig_st', st = st )
-cmb_st = Gamma_Sigmat( Name = 'cmb_st', st = st, st_sig_gamma = dict( Name = 'st_cmb_gamma' ), st_sig_beta = dict( Name = 'st_cmb_beta' ) )
-psi_st = Gamma_Sigmat( Name = 'psi_st', st = st, st_sig_gamma = dict( Name = 'st_psi_gamma' ), st_sig_beta = dict( Name = 'st_psi_beta' ) )
+sig_st = Gamma_Sigmat( Name = 'sig_st', st = st, st_sig_gamma = dict( Name = 'st_sig_gamma', Value = 12. ), st_sig_beta = dict( Name = 'st_sig_beta', Value = 0.003 ) )
+cmb_st = Gamma_Sigmat( Name = 'cmb_st', st = st, st_sig_gamma = dict( Name = 'st_cmb_gamma', Value = 9.6 ), st_sig_beta = dict( Name = 'st_cmb_beta', Value = 0.004 ) )
+psi_st = Gamma_Sigmat( Name = 'psi_st', st = st, st_sig_gamma = dict( Name = 'st_psi_gamma', Value = 5.5 ), st_sig_beta = dict( Name = 'st_psi_beta', Value = 0.008 ) )
 
 # phi mass pdf
 
@@ -75,8 +75,8 @@ tres.setConstant('.*')
 
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Signal_Time, LP2011_Background_Time as Background_Time
 sig_t = Signal_Time(     Name = 'sig_t', time = t, resolutionModel = tres.model(), t_sig_tau = dict( Value = 1.5, Name = 't_sig_tau', MinMax=(1.0,2.0) ) )
-psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model() )
-cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model() )
+psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_psi_fll'), t_bkg_ll_tau = dict( Name = 't_psi_ll_tau'), t_bkg_ml_tau = dict( Name = 't_psi_ml_tau') )
+cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_cmb_fll'), t_bkg_ll_tau = dict( Name = 't_cmb_ll_tau'), t_bkg_ml_tau = dict( Name = 't_cmb_ml_tau') )
 
 
 # itag distribution (background only)
@@ -84,12 +84,12 @@ from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
 bkg_tag = Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.0 )
 
 # Create components
-(ntot,nsig,fpsi) = (data.numEntries(), 20000, 0.4)
+(ntot,nsig,fpsi) = (data.numEntries(), 23000, 0.43)
 npsi = (ntot-nsig)*fpsi
 ncmb = (ntot-nsig)*(1-fpsi)
-signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf(), bkg_angles, sig_st.pdf() ), Yield = ( nsig, 0.8*nsig, 1.2*nsig) )
-psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf(), bkg_angles, psi_st.pdf() ), Yield = ( npsi, 0.6*npsi, 1.4*npsi) )
-cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf(), bkg_angles, cmb_st.pdf() ), Yield = ( ncmb, 0.6*ncmb, 1.4*ncmb) )
+signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf(), sig_st.pdf(), bkg_angles ), Yield = ( nsig, 0.9*nsig, 1.1*nsig) )
+psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf(), sig_st.pdf(), bkg_angles ), Yield = ( npsi, 0.7*npsi, 1.3*npsi) )
+cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf(), cmb_st.pdf(), bkg_angles ), Yield = ( ncmb, 0.7*ncmb, 1.3*ncmb) )
 
 # Build PDF
 pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,st), Name='pdf')
@@ -104,12 +104,12 @@ from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 canvas = dict()
 for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     canvas[rng] = TCanvas('%s'%rng)
-    dataRng = dict( CutRange = rng )        if rng else dict()
-    pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
-    obs = observables # [ o for o in observables if o in pdf.Observables() ]
-    obs =  [ o for o in observables if o in pdf.Observables() ]
+    obs = observables
+    obs =  [ o for o in obs if o in pdf.Observables() ]
     obs =  [ o for o in obs if hasattr(o,'frame') ]
     for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+        dataRng = { 'CutRange'        : rng }        if rng else dict()
+        pdfRng  = { 'ProjectionRange' : rng } if rng else dict()
         from P2VVGeneralUtils import plot
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                             , 'psi*'     : dict( LineColor = kRed,   LineStyle = kDashed )
