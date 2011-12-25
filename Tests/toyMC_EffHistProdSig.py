@@ -10,6 +10,8 @@ parser.add_option("--ncpu", dest = "ncpu", default = 4,
                   type = 'int', help = 'number of CPUs to use')
 parser.add_option("-e", "--nevents", dest = "nevents", default = 10000,
                   type = 'int', help = 'number of events to generate')
+parser.add_option("-a", dest = "acceptance", default = False,
+                  action = 'store_true', help = 'use the acceptance')
 
 (options, args) = parser.parse_args()
 if len(args) != 1:
@@ -123,11 +125,15 @@ w.addClassImplImportDir("..")
 w.importClassCode()
 
 # Get the PDF which included the acceptance
-acc_pdf = w.pdf('acc_pdf')
+pdf = None
+if options.acceptance:
+    pdf= w.pdf('acc_pdf')
+else:
+    pdf = w.pdf('jointpdf')
 
 # Get the bare observable objects and copy them
 obs = w.argSet(','.join([o['Name'] for o in observables]))
-pdf_params = acc_pdf.getParameters(obs)
+pdf_params = pdf.getParameters(obs)
 gen_params = pdf_params.snapshot(True)
 
 # Make another ArgSet to put the fit results in
@@ -155,9 +161,9 @@ data_params = result_data.get()
 for i in range(options.ntoys):
     # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
     pdf_params.assignValueOnly( gen_params ) 
-    data = acc_pdf.generate(obs, options.nevents)
+    data = pdf.generate(obs, options.nevents)
     from ROOTDecorators import  ROOTversion as Rv
-    fit_result = acc_pdf.fitTo(data, RooFit.NumCPU(options.ncpu), RooFit.Save(True),
+    fit_result = pdf.fitTo(data, RooFit.NumCPU(options.ncpu), RooFit.Save(True),
                                RooFit.Optimize( True if Rv()[1]<32 else 0 ),
                                RooFit.Minos(False), RooFit.Minimizer('Minuit2'))
     if fit_result.status() != 0:
@@ -182,7 +188,7 @@ output_file.Close()
 
 ## gfs = RooGenFitStudy();
 ## obs = ','.join([o.GetName() for o in observables])
-## gfs.setGenConfig("acc_pdf", obs, RooFit.NumEvents(1000))
-## gfs.setFitConfig("acc_pdf", obs, RooFit.Minimizer("Minuit2"))
+## gfs.setGenConfig("pdf", obs, RooFit.NumEvents(1000))
+## gfs.setFitConfig("pdf", obs, RooFit.Minimizer("Minuit2"))
 
 ## mgr = RooStudyManager(w, gfs)
