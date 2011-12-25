@@ -167,6 +167,8 @@ for i in range(options.ntoys):
     for result_param in result_params:
         data_param = data_params.find(result_param.GetName())
         data_param.setVal(result_param.getVal())
+        # This sets a symmetric error, but since we don't run Minos, that's ok
+        data_param.setError(result_param.getError())
     result_data.fill()
 
 # Write the results to a file
