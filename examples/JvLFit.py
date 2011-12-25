@@ -71,7 +71,7 @@ from RooFitWrappers import *
 ws = RooObject(workspace = 'ws')
 
 # constants
-zero = ConstVar( 'zero', Value = 0. )
+zero = ConstVar( Name = 'zero', Value = 0 )
 
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles

@@ -53,7 +53,7 @@ class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
 
         # build angular terms ( list of products of coefficients and functions: Re[C*F] = Re(C)*Re(F) - Im(C)*Im(F) )
         from RooFitWrappers import ConstVar, Product
-        minus = ConstVar('minus',  Value = -1  )
+        minus = ConstVar(Name = 'minus',  Value = -1  )
         newAngTerm = lambda func, coef, minSign :\
               [ Product( coef.GetName() + '_x_' + func.GetName(), [ minSign, coef, func ] if minSign else [ coef, func ] ) ]\
               if func and coef else [ ]
@@ -109,7 +109,7 @@ class AngleBasis_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
         if not hasC000 :
             from RooFitWrappers import ConstVar,P2VVAngleBasis
             keys.insert( 0, ( 'C000', None ) )
-            angCoefs[ keys[0] ] = ( ConstVar( 'Cab000', Value = 1. ), None )
+            angCoefs[ keys[0] ] = ( ConstVar( Name = 'Cab000', Value = 1. ), None )
             angFuncs[ keys[0] ] = ( P2VVAngleBasis( self._angles, ( 0, 0, 0, 0 ), 1. ), None )
 
         # check if there are no arguments left

@@ -17,8 +17,8 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__( self, angFuncs, Amplitudes, CP, order ) :
         def combine( name, afun, A, CPparams, i, j ) :
             from RooFitWrappers import ConstVar, FormulaVar, Product
-            plus  = ConstVar('plus', Value = 1)
-            minus = ConstVar('minus',  Value = -1  )
+            plus  = ConstVar( Name = 'plus',  Value =  1 )
+            minus = ConstVar( Name = 'minus', Value = -1 )
             one   = plus
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
             # TODO: replace by Addition & Product... why? (only parameters)
@@ -66,8 +66,8 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         def combine( name, afun, A, CPparams, tag, i, j) :
             # TODO: deal with tag = None: create the untagged PDF in that case!
             from RooFitWrappers import ConstVar, FormulaVar, Product
-            plus  = ConstVar('plus', Value = 1)
-            minus = ConstVar('minus',  Value = -1  )
+            plus  = ConstVar( Name = 'plus',  Value =  1 )
+            minus = ConstVar( Name = 'minus', Value = -1 )
             Norm = FormulaVar('Norm','1.0/(1.0+@0*@1)',[tag,CP['C']] )
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
             # TODO: replace by Addition & Product... why? (only parameters)
@@ -128,9 +128,15 @@ class LP2011_Background_Time( TimePdf ) :
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay
         Name = kwargs.pop('Name',self.__class__.__name__)
-        ml = Pdf( kwargs.pop('t_bkg_ml',Name+'_t_bkg_ml'),Type =Decay, Parameters = (time,self._t_bkg_ml_tau,resolutionModel,'SingleSided'))
-        ll = Pdf( kwargs.pop('t_bkg_ll',Name+'_t_bkg_ll'),Type =Decay, Parameters = (time,self._t_bkg_ll_tau,resolutionModel,'SingleSided'))
-        TimePdf.__init__(self, pdf = SumPdf(Name = Name,   PDFs = (  ml, ll)  , Yields = { ml.GetName() : self._t_bkg_fll } ) )
+        ml = Pdf( Name = kwargs.pop('t_bkg_ml',Name+'_t_bkg_ml')
+                , Type = Decay
+                , Parameters = ( time, self._t_bkg_ml_tau, resolutionModel, 'SingleSided'))
+        ll = Pdf( Name = kwargs.pop('t_bkg_ll',Name+'_t_bkg_ll')
+                , Type = Decay
+                , Parameters = (time,self._t_bkg_ll_tau,resolutionModel,'SingleSided'))
+        TimePdf.__init__(self, pdf = SumPdf( Name = Name
+                                           , PDFs = (  ml, ll)
+                                           , Yields = { ml.GetName() : self._t_bkg_fll } ) )
 
 
 class Single_Exponent_Time( TimePdf ) :
@@ -138,4 +144,6 @@ class Single_Exponent_Time( TimePdf ) :
         self._parseArg('t_sig_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 1.5, MinMax = (0.5,2.5) )
         from RooFitWrappers import Pdf
         from ROOT import RooDecay as Decay
-        TimePdf.__init__(self, pdf = Pdf(kwargs.pop('Name',self.__class__.__name__),Type =Decay, Parameters = (time, self._t_sig_tau,resolutionModel,'SingleSided')) )
+        TimePdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name',self.__class__.__name__)
+                                        , Type =Decay
+                                        , Parameters = (time, self._t_sig_tau,resolutionModel,'SingleSided')) )
