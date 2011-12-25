@@ -35,6 +35,9 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
       print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
       chain = TChain(dataSetName)
       chain.Add(filePath)
+      # TODO: how to check that filePath is a proper path? Explicitly checking for a file
+      #       doesn't work, as it may be a wildcard...
+      #       Also, file might not contain the right tree....
 
       noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
       data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN )
@@ -44,10 +47,10 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
 
       # get data set from file
       print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
-      file = TFile.Open( filePath, 'READ' )
-      assert file, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
-      data = file.Get(dataSetName)
-      file.Close()
+      f = TFile.Open( filePath, 'READ' )
+      assert f, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
+      data = f.Get(dataSetName)
+      f.Close()
 
     print 'P2VV - INFO: read dataset with %s entries' % data.numEntries()
 
@@ -62,11 +65,11 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
 
     print "P2VV - INFO: writeData: writing RooDataSet '%s' to file '%s'" % ( dataSetName, filePath )
 
-    file = TFile.Open( filePath, 'RECREATE' )
-    assert file, "P2VV - ERROR: writeData: file '%s' could not be opened" % filePath
+    f = TFile.Open( filePath, 'RECREATE' )
+    assert f, "P2VV - ERROR: writeData: file '%s' could not be opened" % filePath
     if NTuple : data.tree().Write(dataSetName)
     else : data.Write(dataSetName)
-    file.Close()
+    f.Close()
 
 
 def addTaggingObservables( dataSet, estimWTag, tagCatBinBoundaries = None ) :
@@ -574,7 +577,7 @@ class RealMomentsBuilder ( dict ) :
 
             # create the coefficient parameter for the PDF term
             if self._basisFuncIndices[name] == ( 0, 0, 0 ) :
-                angCoefs[( name, None )] = ( ConstVar( namePref + name, Value = coefVal ), None )
+                angCoefs[( name, None )] = ( ConstVar( Name = namePref + name, Value = coefVal ), None )
             else :
                 coefMin = coefVal - numStdDevs * coefErr
                 coefMax = coefVal + numStdDevs * coefErr
@@ -589,7 +592,7 @@ class RealMomentsBuilder ( dict ) :
         # TODO: verify we've either been computed or read
         ( name, coef, fun ) = zip( *self._iterFuncAndCoef() )
         from RooFitWrappers import ConstVar,RealSumPdf
-        return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( 'C_%3.6f'%c, Value = c ) for c in coef[0] ) )
+        return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( Name = 'C_%3.6f'%c, Value = c ) for c in coef[0] ) )
 
     def __mul__( self, pdf ) :
         from RooFitWrappers import Pdf

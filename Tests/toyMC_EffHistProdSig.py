@@ -27,21 +27,19 @@ w = w.ws()
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
-t      = RealVar('t', Title = 'decay time', Unit = 'ps', Observable = True, MinMax=(-3,14))
+t      = RealVar('t', Title = 'decay time', Unit = 'ps', Observable = True, MinMax=(-3,14), nBins = 48)
 iTag   = Category('tagdecision' , Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1 } ) # , 'untagged' : 0 } )
 eta    = RealVar('eta', Title = 'estimated mis tag', Observable = False, Constant = True, Value = 0.3, MinMax=(0,0.5) )
-mass   = RealVar('m', Observable = True, Unit = 'MeV/c^2', MinMax = (5200, 5550))
+mass   = RealVar('m', Observable = True, Unit = 'MeV/c^2', MinMax = (5200, 5550), nBins = 48)
 observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag, mass ]
 
 for i in angles.angles.itervalues() : i.setBins(16)
-t.setBins(48)
-mass.setBins(48)
 mass.setRange('leftsideband', (mass.getMin(),5330) )
 mass.setRange('signal',(5330,5410) )
 mass.setRange('rightsideband',(5410,mass.getMax()) )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.4, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
+CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.4, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar(Name ='one',Value=1) )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
@@ -86,8 +84,10 @@ args = { 'time'      : t
 # TODO: should be able to write BTagDecay('mypdf', **lifetimeParams.BTagDecay() + **basisCoefficients.BTagDecay() + **taggingParams.BTagDecay() )
 
 # update resolution model, and build again...
-from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
-args[ 'resolutionModel' ]  = LP2011_TimeResolution(time = t)['model']
+from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
+tres =  TimeResolution(time = t)
+tres.setConstant('.*')
+args[ 'resolutionModel' ]  = tres.model()
 
 pdf = BTagDecay( 'pdf', **args  )
 
@@ -99,7 +99,7 @@ from P2VVParameterizations.TimePDFs import LP2011_Background_Time
 from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
 from P2VVParameterizations.AngularPDFs import Uniform_Angles
 bkg  = Component('bkg',(  LP2011_Background_Mass( mass = mass ).pdf()
-                       ,  LP2011_Background_Time( time = t , resolutionModel = LP2011_TimeResolution(time = t)['model']).pdf()
+                       ,  LP2011_Background_Time( time = t , resolutionModel = tres.model()).pdf()
                        ,  Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.3 ).pdf()
                        ,  Uniform_Angles( angles = angles.angles ).pdf()
                        ), Yield = (4000,1000,15000) )
@@ -113,13 +113,9 @@ effh1 = TH1F( "effh1", "effh1", nbins, w.var('t').getMin(), w.var('t').getMax())
 for i in range(1, int(0.6 * nbins)):         effh1.SetBinContent(i, 1. / nbins * i)
 for i in range(int(0.6 * nbins), nbins + 1): effh1.SetBinContent(i, 1) 
 
-effdatahist = RooDataHist("effdatahist", "effdatahist", RooArgList(w.var('t')), effh1) 
-
-_import = getattr(w, 'import')
-_import(effdatahist)
-
+#TODO: add wrapper for this...
+w.put( RooDataHist("effdatahist", "effdatahist", RooArgList(w.var('t')), effh1) )
 w.factory("HistFunc::eff(t, effdatahist)")
-
 w.factory("EffHistProd::acc_pdf(jointpdf, eff)")
 
 w.addClassDeclImportDir("..")
@@ -138,9 +134,8 @@ gen_params = pdf_params.snapshot(True)
 result_params = RooArgSet(pdf_params, "result_params")
 
 # Get a good random seed, set it and store it
-import struct
-rndm = open('/dev/random','rb')
-seed = struct.unpack('I', rndm.read(4))[0]
+import struct,os
+seed = struct.unpack('I', os.urandom(4))[0]
 
 from ROOT import RooRandom
 RooRandom.randomGenerator().SetSeed(seed)
@@ -158,12 +153,12 @@ result_data = RooDataSet('result_data', 'result_data', result_params)
 data_params = result_data.get()
 
 for i in range(options.ntoys):
-    # Reset pdf parameters to initial values
-    for gen_param in gen_params:
-        pdf_param = pdf_params.find(gen_param.GetName())
-        pdf_param.setVal(gen_param.getVal())
+    # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
+    pdf_params.assignValueOnly( gen_params ) 
     data = acc_pdf.generate(obs, options.nevents)
+    from ROOTDecorators import  ROOTversion as Rv
     fit_result = acc_pdf.fitTo(data, RooFit.NumCPU(options.ncpu), RooFit.Save(True),
+                               RooFit.Optimize( True if Rv()[1]<32 else 0 ),
                                RooFit.Minos(False), RooFit.Minimizer('Minuit2'))
     if fit_result.status() != 0:
         print 'Fit result status = %s' % fit_result.status()

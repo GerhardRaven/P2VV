@@ -21,8 +21,8 @@ class Trivial_CEvenOdd( CEvenOdd ) :
     def __init__( self ) :
         from RooFitWrappers import ConstVar
 
-        self._zero   = ConstVar('zero', Value = 0)
-        self._one    = ConstVar('one',  Value = 1)
+        self._zero   = ConstVar( Name = 'zero', Value = 0 )
+        self._one    = ConstVar( Name =  'one', Value = 1 )
         self._params = [ self._one, self._zero ]
 
         CEvenOdd.__init__( self, avgCEven = self._one, avgCOdd = self._zero )
@@ -47,7 +47,7 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
         self._parseArg( 'ATagEff', kwargs, Title = 'tagging efficiency asymmetry', Value = 0., MinMax = ( -1., 1. ) )
 
         if 'C' in kwargs or 'CPParam' in kwargs:
-          self._minus = ConstVar( 'minus', Value = -1. )
+          self._minus = ConstVar( Name = 'minus', Value = -1. )
           if 'C' in kwargs :
             self._parseArg( 'C', kwargs, Title = 'CPV param. C', Value = 0., MinMax = ( -1., 1. ) )
           else :
