@@ -640,3 +640,26 @@ class RealMomentsBuilder ( dict ) :
                                   , [ _createProduct( comp, f, c[0] ) for n,c,f in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
                                   )
         return EditPdf( Name = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), Original = pdf, Rules = subst )
+
+
+class SData( object ) :
+    def __init__(self, Pdf, Data, Name) :
+        from ROOT import RooStats,RooArgList
+        self._Name = Name
+        self._yields = [ p for p in Pdf.Parameters() if p.getAttribute('Yield')  ]
+        self._splot = RooStats.SPlot(Name+"_splotdata",Name+"_splotdata",Data,Pdf._var, RooArgList( p._var for p in self._yields ) )
+        self._sdata = self._splot.GetSDataSet()
+        self._data = dict()
+    def data( self, Component ) :
+        if Component not in self._data :
+            from ROOT import RooDataSet
+            # check if component in the weight column. If not, raise KeyError
+            yname = 'N_%s'% Component
+            if yname not in [ i.GetName() for i in self._yields ] :
+                raise KeyError('unknown Component %s' % Component )
+            wname = '%s_sw'% yname
+            if wname not in [ i.GetName() for i in self._sdata.get() ] :
+                raise KeyError('no weight in dataset for Component %s' % Component )
+            dname = '%s_weighted_%s' % ( self._sdata.GetName(), Component )
+            self._data[Component] = RooDataSet( dname, dname, self._sdata, self._sdata.get(),"1>0",wname) # use a dummy cut as (const char*)0 is tricky...
+        return self._data[Component]

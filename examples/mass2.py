@@ -182,11 +182,10 @@ pdf_m = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi
 c_m = FitAndPlot(pdf_m,data)
 for p in pdf_m.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 #TODO: move more into Moment_Angles... and allow one to get RooRealVar (centered on the moment) as coefficients instead of ConstVar...
-from ROOT import RooStats
-splot_m = RooStats.SPlot("splotdata","splotdata",data,pdf_m._var, RooArgList( p._var for p in pdf_m.Parameters() if p.getAttribute('Yield') ) )
-sdata   = splot_m.GetSDataSet()
-from P2VVParameterizations.AngularPDFs import Moment_Angles
-mompdfBuilder = Moment_Angles( angles.angles , splot_m.GetSDataSet() )
+from P2VVGeneralUtils import SData
+splot_m = SData(pdf_m,data,'MassSplot')
+from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
+mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
 psi_background += mompdfBuilder.pdf( Component = 'psi_background', Indices = [ i for i in indices(3,3) ], Name = 'psi_angles' )
 cmb_background += mompdfBuilder.pdf( Component = 'cmb_background', Indices = [ i for i in indices(3,3) ], Name = 'cmb_angles' )
 
