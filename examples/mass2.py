@@ -198,7 +198,7 @@ def FitAndPlot( pdf, data, fitOpts = dict(), sdata = None ) :
                          , 'psi_background'     : dict( LineColor = kRed )
                          , 'cmb_background'     : dict( LineColor = kBlue )
                          }
-                plot( pp, o, sdata.data( c_name ), pdf, pdfOpts = c_opts[c_name] if c_name in c_opts else {}, logy = ( o == t )
+                plot( pp, o, sdata.data( c_name ), pdf, pdfOpts = c_opts[c_name] if c_name in c_opts else {})
                 # and put back the original value!
                 for (i,v) in _yields.iteritems() : i.setVal(v)
     return (result,canvas)
