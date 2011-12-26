@@ -741,7 +741,7 @@ class Component(object):
         assert n>=nlo
         assert n<=nhi
         Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n)
-        # Component._d[self.name]['Yield'].Print('V')
+        Component._d[self.name]['Yield'].setAttribute('Yield',True)
     def __iadd__(self,pdf) :
         self.append(pdf)
         return self
