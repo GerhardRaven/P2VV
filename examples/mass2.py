@@ -94,7 +94,7 @@ CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinM
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
 amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.60, A0Phase = 0
-                                    , AperpMag2 = 0.160, AperpPhase = -0.17
+                                    , AperpMag2 = 0.160, AperpPhase = dict( Value = -0.17, Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                     , AparPhase = 2.5
                                     , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True ) 
                                     )
@@ -137,11 +137,11 @@ bkg_tag = Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.0 )
 npsi = (ntot-nsig)*fpsi
 ncmb = (ntot-nsig)*(1-fpsi)
 signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(), sig_st.pdf(), sig_t_angles_tag                       ), Yield = ( nsig, 0.9*nsig, 1.1*nsig) )
-psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(), sig_st.pdf(), psi_t.pdf(),  bkg_tag.pdf() ), Yield = ( npsi, 0.7*npsi, 1.3*npsi) )
+psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(), psi_st.pdf(), psi_t.pdf(),  bkg_tag.pdf() ), Yield = ( npsi, 0.7*npsi, 1.3*npsi) )
 cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(), cmb_st.pdf(), cmb_t.pdf(),  bkg_tag.pdf() ), Yield = ( ncmb, 0.7*ncmb, 1.3*ncmb) )
 
 
-def FitAndPlot( pdf, data, fitOpts = dict() ) :
+def FitAndPlot( pdf, data, fitOpts = dict(), sdata = None ) :
     # Fit
     from P2VVGeneralUtils import numCPU
     from ROOTDecorators import  ROOTversion as Rv
@@ -174,6 +174,33 @@ def FitAndPlot( pdf, data, fitOpts = dict() ) :
                                  , pdfOpts  = dict( LineWidth = 2, **pdfRng )
                                  , logy = ( o == t )
                                  )
+    # TODO: move this bit to a dedicated function...
+    # sPlot if sdata. Only do this for observables NOT used to create the sData
+    if sdata :
+        canvas['splot'] = TCanvas('splot')
+        obs = observables
+        obs = [ o for o in obs if o in pdf.Observables() ]
+        obs = [ o for o in obs if hasattr(o,'frame') ]
+        obs = [ o for o in obs if o not in sdata.usedObservables() ]
+        for (p,o) in zip( canvas['splot'].pads(len(obs)), obs ) :
+            # snapshot yeilds
+            _yields = dict( (p,p.getVal()) for p in pdf.Parameters() if p.getAttribute('Yield')  )
+            # loop over components
+            for (pp,i) in zip( p.pads(1,len(_yields)), _yields.iterkeys() ) :
+                # switch off all yields, except current one
+                for j in _yields.iterkeys() :   
+                    if i!=j :   j.setVal(0)
+                # and plot both weighed data and PDF
+                from P2VVGeneralUtils import plot
+                # TODO: add the same color coding as above...
+                c_name = i.GetName()[2:]
+                c_opts = { 'signal'   : dict( LineColor = kGreen )
+                         , 'psi_background'     : dict( LineColor = kRed )
+                         , 'cmb_background'     : dict( LineColor = kBlue )
+                         }
+                plot( pp, o, sdata.data( c_name ), pdf, pdfOpts = c_opts[c_name] if c_name in c_opts else {}, logy = ( o == t )
+                # and put back the original value!
+                for (i,v) in _yields.iteritems() : i.setVal(v)
     return (result,canvas)
 
 # Build, Fit and Plot PDFs
@@ -181,16 +208,16 @@ def FitAndPlot( pdf, data, fitOpts = dict() ) :
 pdf_m = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi), Name='pdf_m')
 c_m = FitAndPlot(pdf_m,data)
 for p in pdf_m.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-#TODO: move more into Moment_Angles... and allow one to get RooRealVar (centered on the moment) as coefficients instead of ConstVar...
 from P2VVGeneralUtils import SData
-splot_m = SData(pdf_m,data,'MassSplot')
+splot_m = SData(Pdf = pdf_m, Data = data, Name = 'MassSplot')
 from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
 mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
-psi_background += mompdfBuilder.pdf( Component = 'psi_background', Indices = [ i for i in indices(3,3) ], Name = 'psi_angles' )
-cmb_background += mompdfBuilder.pdf( Component = 'cmb_background', Indices = [ i for i in indices(3,3) ], Name = 'cmb_angles' )
+#TODO: allow one to get RooRealVar (centered on the computed moment, with an +-N signma range) as coefficients instead of ConstVar...
+psi_background += mompdfBuilder.pdf( Component = 'psi_background', Indices = [ i for i in indices(2,3) ], Name = 'psi_angles' )
+cmb_background += mompdfBuilder.pdf( Component = 'cmb_background', Indices = [ i for i in indices(3,4) ], Name = 'cmb_angles' )
 
 pdf_mst = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,st), Name='pdf_mst')
-c_mst = FitAndPlot(pdf_mst,data)
+c_mst = FitAndPlot(pdf_mst,data,sdata = splot_m)
 for p in pdf_mst.Parameters() : p.setConstant(True)
 
 # first fit background angles in sidebands, then fix the background angle parameters
@@ -201,5 +228,5 @@ for p in pdf_mst.Parameters() : p.setConstant(True)
 
 # full fit
 pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,iTag)+tuple(angles.angles.itervalues()), Name='pdf')
-c_pdf = FitAndPlot(pdf,data)
+c_pdf = FitAndPlot(pdf,data, sdata = splot_m)
 
