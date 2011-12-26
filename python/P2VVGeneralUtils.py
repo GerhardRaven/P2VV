@@ -588,11 +588,17 @@ class RealMomentsBuilder ( dict ) :
 
     def createPDF( self, **kwargs ) :
         # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
+        #        maybe take MinMax = ( -5 * c[1], 5*c[1] ) ??? and make the 5 settable??
         # TODO: verify we've got moments, and not EffMoments???
         # TODO: verify we've either been computed or read
         ( name, coef, fun ) = zip( *self._iterFuncAndCoef() )
         from RooFitWrappers import ConstVar,RealSumPdf
-        return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( Name = 'C_%3.6f'%c, Value = c ) for c in coef[0] ) )
+        # TODO: renornmalize wrt. 0,0,0? require 0,0,0 to be present??
+        return RealSumPdf( kwargs.pop('Name')
+                         , functions = fun
+                         , coefficients = ( ConstVar( Name = ('C_%3.6f'%c[0]).replace('-','m').replace('.','d')
+                                                    , Value = c[0] ) for c in coef ) 
+                         )
 
     def __mul__( self, pdf ) :
         from RooFitWrappers import Pdf
