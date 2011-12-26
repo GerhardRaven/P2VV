@@ -109,12 +109,12 @@ comp_pdf = buildPdf( (signal,bkg), Observables = observables,  Name = 'jointpdf'
 ##############################################
 ### Define acceptance function a la Wouter ###
 ##############################################
-effh1 = TH1F( "effh1", "effh1", nbins, w.var('t').getMin(), w.var('t').getMax()) 
+effh1 = TH1F( "effh1", "effh1", nbins, w['t'].getMin(), w.['t'].getMax()) 
 for i in range(1, int(0.6 * nbins)):         effh1.SetBinContent(i, 1. / nbins * i)
 for i in range(int(0.6 * nbins), nbins + 1): effh1.SetBinContent(i, 1) 
 
 #TODO: add wrapper for this...
-w.put( RooDataHist("effdatahist", "effdatahist", RooArgList(w.var('t')), effh1) )
+w.put( RooDataHist("effdatahist", "effdatahist", RooArgList(w['t']), effh1) )
 w.factory("HistFunc::eff(t, effdatahist)")
 w.factory("EffHistProd::acc_pdf(jointpdf, eff)")
 
@@ -157,7 +157,7 @@ for i in range(options.ntoys):
     data = acc_pdf.generate(obs, options.nevents)
     from ROOTDecorators import  ROOTversion as Rv
     fit_result = acc_pdf.fitTo(data, RooFit.NumCPU(options.ncpu), RooFit.Save(True),
-                               RooFit.Optimize( True if Rv()[1]<32 else 0 ),
+                               RooFit.Optimize( True if Rv[1]<32 else 0 ),
                                RooFit.Minos(False), RooFit.Minimizer('Minuit2'))
     if fit_result.status() != 0:
         print 'Fit result status = %s' % fit_result.status()
