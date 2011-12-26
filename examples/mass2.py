@@ -56,6 +56,7 @@ psi_st = Gamma_Sigmat( Name = 'psi_st', st = st, st_sig_gamma = dict( Name = 'st
 # angle pdfs (background only)
 from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
+###TODO: this builds a RealSumPdf with coefficients one, and functions prod( C,fun ). Replace with coef C, functions fun
 coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angles.angles
                                           , **dict( (  ('C%d%d%d' % i ).replace('-','m')
                                                      , {  'Name'     : ( 'C_%d%d%d' % i ).replace('-','m')
@@ -64,11 +65,11 @@ coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angles.angles
                                                         , 'Indices'  : i
                                                         , 'Constant' : i == (0,0,0)
                                                        }
-                                                    ) for i in indices(4,3)
+                                                    ) for i in indices(3,3)
                                                   )
                                          )
 #TODO: adjust syntax to match the rest... move Name into __init__ as kw...
-bkg_angles = coefPDFTerms.buildSumPdf('angCoefsPDF')
+bkg_angles = coefPDFTerms.buildSumPdf('bkg_angles_PDF')
 #from P2VVParameterizations.AngularPDFs import Uniform_Angles
 #bkg_angles =  Uniform_Angles( angles = angles.angles )
 
@@ -76,6 +77,51 @@ bkg_angles = coefPDFTerms.buildSumPdf('angCoefsPDF')
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
+
+from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, deltaGamma = 0.05, deltaM = dict( Value = 17.8, MinMax = (16,19), Constant = True) )
+
+from P2VVParameterizations.FlavourTagging import Trivial_TaggingParams
+#taggingParams = Trivial_TaggingParams( wTag = eta ) # FormulaVar('wTag','@2 + @3*(@0-@1)',[eta,etaAverage,p0,p1] ) )
+taggingParams = Trivial_TaggingParams( wTag = ConstVar( Name = 'half', Value = 0.5 ) ) # FormulaVar('wTag','@2 + @3*(@0-@1)',[eta,etaAverage,p0,p1] ) )
+
+from math import pi
+from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
+CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = True )
+                        , lambdaCPSq = ConstVar( Name = 'one', Value = 1 ) 
+                        )
+
+# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
+from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
+amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.60, A0Phase = 0
+                                    , AperpMag2 = 0.160, AperpPhase = -0.17
+                                    , AparPhase = 2.5
+                                    , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True ) 
+                                    )
+#amplitudes.setConstant('.*') # not all parameters appear in the untagged PDF...
+
+# need to specify order in which to traverse...
+from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
+basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
+
+# TODO: should be able to write BTagDecay('mypdf', **lifetimeParams.BTagDecay() + **basisCoefficients.BTagDecay() + **taggingParams.BTagDecay() )
+# TODO: unify keys left and right....
+sig_t_angles_tag = BTagDecay( Name      = 'sig_t_angles_tag'
+                            , time      = t
+                            , iTag      = iTag
+                            , dm        = lifetimeParams['deltaM'] 
+                            , tau       = lifetimeParams['MeanLifetime']
+                            , dGamma    = lifetimeParams['deltaGamma'] 
+                            , resolutionModel = tres.model()
+                            , coshCoef  = basisCoefficients['cosh']
+                            , cosCoef   = basisCoefficients['cos']
+                            , sinhCoef  = basisCoefficients['sinh']
+                            , sinCoef   = basisCoefficients['sin']
+                            , avgCEven  = taggingParams['avgCEven'] 
+                            , avgCOdd   = taggingParams['avgCOdd']
+                            , dilution  = taggingParams['dilution']
+                            , ADilWTag  = taggingParams['ADilWTag']
+                            )
 
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Signal_Time, LP2011_Background_Time as Background_Time
 sig_t = Signal_Time(     Name = 'sig_t', time = t, resolutionModel = tres.model(), t_sig_tau = dict( Value = 1.5, Name = 't_sig_tau', MinMax=(1.0,2.0) ) )
@@ -90,40 +136,71 @@ bkg_tag = Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.0 )
 (ntot,nsig,fpsi) = (data.numEntries(), 23000, 0.43)
 npsi = (ntot-nsig)*fpsi
 ncmb = (ntot-nsig)*(1-fpsi)
-signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(),  sig_t.pdf(), sig_st.pdf(), bkg_angles ), Yield = ( nsig, 0.9*nsig, 1.1*nsig) )
-psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(),  psi_t.pdf(), sig_st.pdf(), bkg_angles ), Yield = ( npsi, 0.7*npsi, 1.3*npsi) )
-cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(),  cmb_t.pdf(), cmb_st.pdf(), bkg_angles ), Yield = ( ncmb, 0.7*ncmb, 1.3*ncmb) )
+signal         = Component('signal',         ( sig_m.pdf(),  sig_mpsi.pdf(), sig_st.pdf(), sig_t_angles_tag                       ), Yield = ( nsig, 0.9*nsig, 1.1*nsig) )
+psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(), sig_st.pdf(), psi_t.pdf(),  bkg_tag.pdf() ), Yield = ( npsi, 0.7*npsi, 1.3*npsi) )
+cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(), cmb_st.pdf(), cmb_t.pdf(),  bkg_tag.pdf() ), Yield = ( ncmb, 0.7*ncmb, 1.3*ncmb) )
 
-# Build PDF
-pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,st), Name='pdf')
-#pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='pdf')
 
-# Fit
-from P2VVGeneralUtils import numCPU
-from ROOTDecorators import  ROOTversion as Rv
-pdf.fitTo(data, NumCPU = numCPU() 
-              , Timer=1
-              , Verbose = False
-              , Optimize = True if Rv()[1]<32 else 0 # do NOT optimize in 5.32 or later... ( Optimize = 1 only works on a single CPU, 2 doesn't work at all )
-              , Minimizer = ('Minuit2','minimize'))
+def FitAndPlot( pdf, data, fitOpts = dict() ) :
+    # Fit
+    from P2VVGeneralUtils import numCPU
+    from ROOTDecorators import  ROOTversion as Rv
+    result = pdf.fitTo(data, NumCPU = numCPU() 
+                           , Timer=1
+                           , Save = True
+                           , Verbose = False
+                           , Optimize = True if Rv[1]<32 else 0 # do NOT optimize in 5.32 or later... ( Optimize = 1 only works on a single CPU, 2 doesn't work at all )
+                           , Minimizer = ('Minuit2','minimize')
+                           , **fitOpts
+                           )
 
-# Plot: TODO: define mass ranges for signal, sideband, and restrict plots to those... (see sig.py for an example)
-from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
-canvas = dict()
-for rng in ( None, 'signal','leftsideband','rightsideband','leftsideband,rightsideband' ) :
-    canvas[rng] = TCanvas('%s'%rng)
-    obs = observables
-    obs =  [ o for o in obs if o in pdf.Observables() ]
-    obs =  [ o for o in obs if hasattr(o,'frame') ]
-    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
-        dataRng = dict( CutRange =        rng ) if rng else dict()
-        pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
-        from P2VVGeneralUtils import plot
-        plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                                            , 'psi*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                                            , 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
-                                            }
-                             , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataRng )
-                             , pdfOpts  = dict( LineWidth = 2, **pdfRng )
-                             , logy = ( o == t )
-                             )
+    # Plot: 
+    from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
+    canvas = dict()
+    for rng in ( None, 'signal','leftsideband','rightsideband','leftsideband,rightsideband' ) :
+        canvas[rng] = TCanvas('%s'%rng)
+        obs = observables
+        obs =  [ o for o in obs if o in pdf.Observables() ]
+        obs =  [ o for o in obs if hasattr(o,'frame') ]
+        for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+            dataRng = dict( CutRange =        rng ) if rng else dict()
+            pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
+            from P2VVGeneralUtils import plot
+            plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                                                , 'psi*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                                                , 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                                                }
+                                 , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataRng )
+                                 , pdfOpts  = dict( LineWidth = 2, **pdfRng )
+                                 , logy = ( o == t )
+                                 )
+    return (result,canvas)
+
+# Build, Fit and Plot PDFs
+# TODO: add sPlots for various components
+pdf_m = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi), Name='pdf_m')
+c_m = FitAndPlot(pdf_m,data)
+for p in pdf_m.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+#TODO: move more into Moment_Angles... and allow one to get RooRealVar (centered on the moment) as coefficients instead of ConstVar...
+from ROOT import RooStats
+splot_m = RooStats.SPlot("splotdata","splotdata",data,pdf_m._var, RooArgList( p._var for p in pdf_m.Parameters() if p.getAttribute('Yield') ) )
+sdata   = splot_m.GetSDataSet()
+from P2VVParameterizations.AngularPDFs import Moment_Angles
+mompdfBuilder = Moment_Angles( angles.angles , splot_m.GetSDataSet() )
+psi_background += mompdfBuilder.pdf( Component = 'psi_background', Indices = [ i for i in indices(3,3) ], Name = 'psi_angles' )
+cmb_background += mompdfBuilder.pdf( Component = 'cmb_background', Indices = [ i for i in indices(3,3) ], Name = 'cmb_angles' )
+
+pdf_mst = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,st), Name='pdf_mst')
+c_mst = FitAndPlot(pdf_mst,data)
+for p in pdf_mst.Parameters() : p.setConstant(True)
+
+# first fit background angles in sidebands, then fix the background angle parameters
+# TODO: compute moments -- that's a LOT faster...
+#bkg_pdf  = buildPdf((cmb_background, psi_background), Observables = (m,mpsi)+tuple(angles.angles.itervalues()), Name='bkg_pdf')
+#c_bkg = FitAndPlot( bkg_pdf, data, fitOpts = dict( Range = 'leftsideband,rightsideband' ) )
+#for p in bkg_pdf.Parameters() : p.setConstant(True)
+
+# full fit
+pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,iTag)+tuple(angles.angles.itervalues()), Name='pdf')
+c_pdf = FitAndPlot(pdf,data)
+

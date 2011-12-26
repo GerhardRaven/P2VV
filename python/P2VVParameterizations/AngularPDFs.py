@@ -171,3 +171,30 @@ class Uniform_Angles( _util_parse_mixin ) :
         self._pdf =  UniformPdf('Uniform_AnglesPdf', Arguments = ( angles['phi'],angles['ctheta'],angles['cpsi'] ) )
         for (k,v) in kwargs.iteritems() :
             setattr(self,'_'+k,v)
+
+
+class Moment_Angles( object ) :
+    def pdf(self, Component, Indices, Name ) :
+        # check if component in the weight column. If not, raise KeyError
+        wname = 'N_%s_sw'% Component
+        if wname not in [ i.GetName() for i in self._data.get() ] :
+            print wname
+            print self._data.get().Print("V")
+            raise KeyError('no weight in dataset for component %s' % Component )
+        dname = '%s_weighted_%s' % ( self._data.GetName(), Component )
+        from ROOT import RooDataSet
+        dataw = RooDataSet( dname, dname, self._data, self._data.get(),"1>0",wname) # use a dummy cut as (const char*)0 is tricky...
+        from P2VVGeneralUtils import RealMomentsBuilder
+        mb = RealMomentsBuilder()
+        mb.appendPYList( self._angles, Indices )
+        mb.compute( dataw )
+        mb.Print()
+        print 'computed moments, creating PDF with name %s' % Name
+        return mb.createPDF( Name = Name )
+
+    def __init__(self, angles, data ) :
+        from ROOT import RooDataSet
+        from P2VVGeneralUtils import RealMomentsBuilder
+        self._data   = data
+        self._angles = angles
+
