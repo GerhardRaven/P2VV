@@ -171,3 +171,19 @@ class Uniform_Angles( _util_parse_mixin ) :
         self._pdf =  UniformPdf('Uniform_AnglesPdf', Arguments = ( angles['phi'],angles['ctheta'],angles['cpsi'] ) )
         for (k,v) in kwargs.iteritems() :
             setattr(self,'_'+k,v)
+
+
+class SPlot_Moment_Angles( object ) :
+    def pdf(self, Component, Indices, Name ) :
+        from P2VVGeneralUtils import RealMomentsBuilder
+        mb = RealMomentsBuilder()
+        mb.appendPYList( self._angles, Indices )
+        mb.compute( self._splot.data( Component ) )
+        mb.Print()
+        print 'computed moments, creating PDF with name %s' % Name
+        return mb.createPDF( Name = Name )
+
+    def __init__(self, angles, splot ) :
+        self._splot  = splot
+        self._angles = angles
+

@@ -27,7 +27,7 @@ TPad.pads       = __pads
 TPad.frames     = __frames
 TPad.frameHists = __frameHists
 
-def ROOTversion() :
+def __ROOTversion() :
     from ROOT import gROOT
     versionInt = gROOT.GetVersionInt()
     versionMajor = versionInt/10000
@@ -35,3 +35,4 @@ def ROOTversion() :
     versionPatch = versionInt%100 
     return (versionMajor, versionMinor, versionPatch)
 
+ROOTversion = __ROOTversion()

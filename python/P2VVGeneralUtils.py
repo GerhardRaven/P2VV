@@ -588,11 +588,17 @@ class RealMomentsBuilder ( dict ) :
 
     def createPDF( self, **kwargs ) :
         # TODO: decide whether coefficients are ConstVar or RealVar?? (add keyword for that! -- what MinMax to give if RealVar??)
+        #        maybe take MinMax = ( -5 * c[1], 5*c[1] ) ??? and make the 5 settable??
         # TODO: verify we've got moments, and not EffMoments???
         # TODO: verify we've either been computed or read
         ( name, coef, fun ) = zip( *self._iterFuncAndCoef() )
         from RooFitWrappers import ConstVar,RealSumPdf
-        return RealSumPdf( kwargs.pop('Name'), functions = fun, coefficients = ( ConstVar( Name = 'C_%3.6f'%c, Value = c ) for c in coef[0] ) )
+        # TODO: renornmalize wrt. 0,0,0? require 0,0,0 to be present??
+        return RealSumPdf( kwargs.pop('Name')
+                         , functions = fun
+                         , coefficients = ( ConstVar( Name = ('C_%3.6f'%c[0]).replace('-','m').replace('.','d')
+                                                    , Value = c[0] ) for c in coef ) 
+                         )
 
     def __mul__( self, pdf ) :
         from RooFitWrappers import Pdf
@@ -634,3 +640,29 @@ class RealMomentsBuilder ( dict ) :
                                   , [ _createProduct( comp, f, c[0] ) for n,c,f in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
                                   )
         return EditPdf( Name = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), Original = pdf, Rules = subst )
+
+
+class SData( object ) :
+    def __init__(self, Pdf, Data, Name) :
+        from ROOT import RooStats,RooArgList
+        self._Name = Name
+        self._yields = [ p for p in Pdf.Parameters() if p.getAttribute('Yield')  ]
+        self._observables = Pdf.Observables() 
+        self._splot = RooStats.SPlot(Name+"_splotdata",Name+"_splotdata",Data,Pdf._var, RooArgList( p._var for p in self._yields ) )
+        self._sdata = self._splot.GetSDataSet()
+        self._data = dict()
+    def usedObservables( self ) :
+        return self._observables
+    def data( self, Component ) :
+        if Component not in self._data :
+            # check if component in the weight column. If not, raise KeyError
+            yname = 'N_%s'% Component
+            if yname not in [ i.GetName() for i in self._yields ] :
+                raise KeyError('unknown Component %s' % Component )
+            wname = '%s_sw'% yname
+            if wname not in [ i.GetName() for i in self._sdata.get() ] :
+                raise KeyError('no weight in dataset for Component %s' % Component )
+            dname = '%s_weighted_%s' % ( self._sdata.GetName(), Component )
+            from ROOT import RooDataSet
+            self._data[Component] = RooDataSet( dname, dname, self._sdata, self._sdata.get(),"1>0",wname) # use a dummy cut as (const char*)0 is tricky...
+        return self._data[Component]
