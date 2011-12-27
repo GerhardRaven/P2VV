@@ -117,7 +117,7 @@ comb_pdf = buildPdf((signal, bkg), Observables = observables,  Name = 'comb_pdf'
 ##############################################
 ### Define acceptance function a la Wouter ###
 ##############################################
-effh1 = TH1F( "effh1", "effh1", nbins, w['t'].getMin(), w.['t'].getMax()) 
+effh1 = TH1F( "effh1", "effh1", nbins, w['t'].getMin(), w['t'].getMax()) 
 for i in range(1, int(0.6 * nbins)):         effh1.SetBinContent(i, 1. / nbins * i)
 for i in range(int(0.6 * nbins), nbins + 1): effh1.SetBinContent(i, 1) 
 
@@ -170,7 +170,7 @@ for i in range(options.ntoys):
     data = pdf.generate(obs, options.nevents)
     from ROOTDecorators import  ROOTversion as Rv
     fit_result = pdf.fitTo(data, RooFit.NumCPU(options.ncpu), RooFit.Save(True),
-                           RooFit.Optimize( True if Rv()[1]<32 else 0 ),
+                           RooFit.Optimize( True if Rv[1]<32 else 0 ),
                            RooFit.Minos(False), RooFit.Minimizer('Minuit2'))
     if fit_result.status() != 0:
         print 'Fit result status = %s' % fit_result.status()
