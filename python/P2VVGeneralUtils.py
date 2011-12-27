@@ -34,10 +34,8 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
       # create data set from NTuple file(s)
       print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
       chain = TChain(dataSetName)
-      chain.Add(filePath)
-      # TODO: how to check that filePath is a proper path? Explicitly checking for a file
-      #       doesn't work, as it may be a wildcard...
-      #       Also, file might not contain the right tree....
+      status = chain.Add(filePath,-1)
+      if status == 0 : raise RuntimeError('Could not locate tree %s in file %s'% (dataSetName,filePath) )
 
       noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
       data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN )
@@ -263,6 +261,29 @@ def plot(  canv, obs, data, pdf, addPDFs = [ ], components = None, xTitle = '', 
 
     canv.Update()
     return canv
+
+
+def splot( canv, sdata, pdf, frameOpts = dict(), dataOpts = dict() , pdfOpts = dict() ) :
+    obs = [ o for o in pdf.Observables() if hasattr(o,'frame') and o not in sdata.usedObservables() ]
+    for (p,o) in zip( canv.pads(len(obs)), obs ) :
+        # snapshot yeilds
+        _yields = dict( (p,p.getVal()) for p in pdf.Parameters() if p.getAttribute('Yield')  )
+        # loop over components
+        for (pp,i) in zip( p.pads(1,len(_yields)), _yields.iterkeys() ) :
+            # switch off all yields, except current one
+            for j in filter( lambda x: x!=i, _yields.iterkeys() ) : j.setVal(0)
+            # and plot both weighed data and PDF
+            from P2VVGeneralUtils import plot
+            c_name = i.GetName()[2:]
+            if 'Title' not in frameOpts : frameOpts['Title'] =  '%s : %s' % ( c_name , o.GetTitle() )
+            plot( pp, o, sdata.data( c_name ), pdf
+                , pdfOpts = pdfOpts[c_name] if c_name in pdfOpts else {}
+                , frameOpts = frameOpts
+                , dataOpts = dataOpts
+                )
+            # and put back the original value!
+            for (i,v) in _yields.iteritems() : i.setVal(v)
+
 
 
 class RealMomentsBuilder ( dict ) :
