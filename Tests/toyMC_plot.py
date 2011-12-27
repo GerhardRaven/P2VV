@@ -92,12 +92,16 @@ def make_gaus(pv):
 from ROOT import gStyle
 gStyle.SetOptTitle(0)
 
+frames = {}
 for i, pv in enumerate(plot_vars):
     canvas.cd(i + 1)
     pull_pdf = make_gaus(pv)
-    pull_pdf.fitTo(data, RooFit.Minimizer('Minuit2'))
+    r = pull_pdf.fitTo(data, RooFit.Minimizer('Minuit2'), RooFit.Save(True))
     frame = pv.frame(RooFit.Range(-5, 5))
     data.plotOn(frame)
-    pull_pdf.plotOn(frame)
-    pull_pdf.paramOn(frame)
+    if r.status() == 0:
+        pull_pdf.plotOn(frame)
+        pull_pdf.paramOn(frame)
+    frames[pv.GetName()] = frame
     frame.Draw()
+canvas.Update()

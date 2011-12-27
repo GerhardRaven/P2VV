@@ -12,12 +12,18 @@ parser.add_option("-e", "--nevents", dest = "nevents", default = 10000,
                   type = 'int', help = 'number of events to generate')
 parser.add_option("-a", dest = "acceptance", default = False,
                   action = 'store_true', help = 'use the acceptance')
+parser.add_option("-p", dest = "pdf", default = 'comb_pdf',
+                  action = 'store', help = 'which pdf to use')
 
 (options, args) = parser.parse_args()
 if len(args) != 1:
     print parser.usage
     sys.exit(-1)
 nbins = int(args[0])
+
+if options.pdf not in ['sig_pdf', 'comb_pdf']:
+    print "PDF must be either sig_pdf or comb_pdf"
+    sys.exit(-2)
 
 from ROOT import RooDataHist
 from RooFitWrappers import *
@@ -91,10 +97,10 @@ tres =  TimeResolution(time = t)
 tres.setConstant('.*')
 args[ 'resolutionModel' ]  = tres.model()
 
-pdf = BTagDecay( 'pdf', **args  )
+sig_pdf = BTagDecay('sig_pdf', **args )
 
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
-signal = Component('sig', (LP2011_Signal_Mass(mass = mass).pdf(), pdf), Yield = (1000,0,15000))
+signal = Component('signal', (LP2011_Signal_Mass(mass = mass).pdf(), sig_pdf), Yield = (1000,0,15000))
 
 from P2VVParameterizations.MassPDFs import LP2011_Background_Mass
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time
@@ -106,7 +112,7 @@ bkg  = Component('bkg',(  LP2011_Background_Mass( mass = mass ).pdf()
                        ,  Uniform_Angles( angles = angles.angles ).pdf()
                        ), Yield = (4000,1000,15000) )
 
-comp_pdf = buildPdf( (signal,bkg), Observables = observables,  Name = 'jointpdf' )
+comb_pdf = buildPdf((signal, bkg), Observables = observables,  Name = 'comb_pdf')
 
 ##############################################
 ### Define acceptance function a la Wouter ###
@@ -118,7 +124,7 @@ for i in range(int(0.6 * nbins), nbins + 1): effh1.SetBinContent(i, 1)
 #TODO: add wrapper for this...
 w.put( RooDataHist("effdatahist", "effdatahist", RooArgList(w.var('t')), effh1) )
 w.factory("HistFunc::eff(t, effdatahist)")
-w.factory("EffHistProd::acc_pdf(jointpdf, eff)")
+w.factory("EffHistProd::acc_pdf(%s, eff)" % options.pdf)
 
 w.addClassDeclImportDir("..")
 w.addClassImplImportDir("..")
@@ -129,7 +135,7 @@ pdf = None
 if options.acceptance:
     pdf= w.pdf('acc_pdf')
 else:
-    pdf = w.pdf('jointpdf')
+    pdf = w.pdf(options.pdf)
 
 # Get the bare observable objects and copy them
 obs = w.argSet(','.join([o['Name'] for o in observables]))
