@@ -74,8 +74,10 @@ if l > 15:
     ncolumns = l / 3 if l % 3 == 0 else l / 3 + 1
     hsize = int(1500 / ncolumns)
     vsize = hsize
-canvas = TCanvas('canvas', 'canvas', ncolumns * hsize, 3 * vsize)
-canvas.Divide(ncolumns, 3)
+nrows = l / ncolumns if l % ncolumns == 0 else l / ncolumns + 1
+
+canvas = TCanvas('canvas', 'canvas', ncolumns * hsize, nrows * vsize)
+canvas.Divide(ncolumns, nrows)
 
 from ROOT import (RooRealVar, RooGaussian,
                   SetOwnership, RooFit)
