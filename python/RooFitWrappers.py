@@ -349,6 +349,7 @@ class RealVar (RooObject):
                ,'MinMax'     : lambda s,v : s.setRange(v)
                ,'Constant'   : lambda s,v : s.setConstant(v)
                ,'nBins'      : lambda s,v : s.setBins(v)
+               ,'Ranges'     : lambda s,v : s.setRanges(v)
                }
 
     def __init__(self,Name ,**kwargs):
@@ -398,12 +399,20 @@ class RealVar (RooObject):
         assert args
         if type(args[0]) == str :
             assert len(args)==2
-            self._var.setRange( args[0], *args[1] )
+            (mi,ma) = args[1]
+            if mi == None : mi = self._var.getMin()
+            if ma == None : ma = self._var.getMax()
+            self._var.setRange( args[0], mi, ma )
         else  :
             assert len(args)==1
             (mi,ma) = args[0]
+            if mi == None : mi = self._var.getMin()
+            if ma == None : ma = self._var.getMax()
             self._var.setRange(mi,ma)
-            if self.getVal() < mi or self.getVal() > ma : self.setVal(0.5*(ma+mi) )
+            if self.getVal() < mi or self.getVal() > ma : self.setVal( 0.5*(ma+mi) )
+
+    def setRanges(self,arg) :
+        for k,v in arg.iteritems() : self.setRange(k,v)
 
     def getRange(self):
         return self._target_().getMin(), self._target_().getMax()
@@ -482,9 +491,8 @@ class Pdf(RooObject):
         return set( i for i in self.Observables() if i.GetName() in self._conditionals )
     def setConditionalObservables(self, obs ) :
         # TODO: check if we have a conditional request for something which isn't one of 
-        #       out observables and provide a warning...
+        #       our observables and provide a warning...
         self._conditionals = set( o if type(o)==str else o.GetName() for o in obs )
-        print '%s:setConditionalObsersvables: %s '% ( self.GetName(), self.ConditionalObservables() )
         
 
     @wraps(RooAbsPdf.fitTo)
@@ -510,8 +518,6 @@ class Pdf(RooObject):
 
 
 class ProdPdf(Pdf):
-    # TODO: support conditional terms, use 'Conditional' key word for that...
-    # ProdPdf( 'foo', [a,b], Conditional = [c,d] ) -> PROD::foo(a,b|c,d)
     def __init__(self, Name, PDFs, **kwargs):
         self._dict = { 'PDFs' : frozenset(PDFs)
                      , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
@@ -542,8 +548,6 @@ class ProdPdf(Pdf):
             if cond : name += '|{%s}'%( ','.join(i.GetName() for i in cond))
             return name
         pdfs = ','.join( _handleConditional(p) for p in self._dict['PDFs'])
-        #pdfs = ','.join( p.GetName() for p in self._dict['PDFs'])
-        print 'ProdPdf::recipe = %s' % ( 'PROD::%s(%s)' % (self._dict['Name'], pdfs) )
         return 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
 
     def _separator(self):
