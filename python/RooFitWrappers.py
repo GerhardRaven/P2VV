@@ -682,6 +682,28 @@ class UniformPdf( Pdf ) :
         Pdf.__init__(self , Name = Name , Type = 'RooUniform')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
+
+class BDecay( Pdf ) :
+    def __init__(self,Name, **kwargs) :
+        d = dict( name = Name
+                , time = kwargs.pop('time')
+                , tau = kwargs.pop('tau')
+                , dGamma = kwargs.pop('dGamma')
+                , dm = kwargs.pop('dm')
+                , resolutionModel = kwargs.pop('resolutionModel')
+                , coshCoef = kwargs.pop('coshCoef') if 'coshCoef' in kwargs else kwargs.pop('cosh')
+                , sinhCoef = kwargs.pop('sinhCoef') if 'sinhCoef' in kwargs else kwargs.pop('sinh')
+                , cosCoef = kwargs.pop('cosCoef') if 'cosCoef' in kwargs else kwargs.pop('cos')
+                , sinCoef = kwargs.pop('sinCoef') if 'sinCoef' in kwargs else kwargs.pop('sin')
+                , decayType = kwargs.pop( 'decayType', 'SingleSided' )
+                )
+        self._declare("BDecay::%(name)s( %(time)s, %(tau)s, %(dGamma)s, "\
+                                          " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                          " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
+        self._init(Name,'RooBDecay')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+            
+ 
 class BTagDecay( Pdf ) :
     def _make_pdf(self) : pass
     def __init__( self, Name, **kwargs ) :
