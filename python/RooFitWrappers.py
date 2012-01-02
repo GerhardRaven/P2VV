@@ -82,7 +82,6 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters 
         #       a conflict.
         if spec not in self.ws()._spec : 
-            #print 'creating %s' % spec
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
@@ -601,6 +600,22 @@ class RealSumPdf( Pdf ):
         coefficients = ','.join( [ coef.GetName() for coef in self._dict['Coefficients'] ] )
         functions    = ','.join( [ func.GetName() for func in self._dict['Functions'] ] )
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
+
+class HistPdf( Pdf ) :
+    def _make_pdf(self) : pass
+    def __init__(self,Name,**kwargs) :
+        d = { 'Name' : Name 
+            , 'Observables' : kwargs.pop('Observables') 
+            , 'Data' : kwargs.pop('Data')
+            }
+        dhs_name =  Name + '_' + '_'.join( i.GetName() for i in d['Observables'] )
+        from ROOT import RooDataHist, RooArgSet
+        rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgSet( i._var for i in d['Observables'] ), d['Data']))
+        # construct factory string on the fly...
+        self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name )  )
+        self._init(Name,'RooHistPdf')
+        Pdf.__init__(self , Name = Name , Type = 'RooHistPdf')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class EditPdf( Pdf ) :
     def _make_pdf(self) : pass
