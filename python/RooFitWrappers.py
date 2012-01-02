@@ -355,18 +355,26 @@ class RealVar (RooObject):
         if 'name' in kwargs : raise RuntimeError('Please replace name argument with Name = xyz' )
         if Name not in self.ws():
             # construct factory string on the fly...
-            if 'Value'  not in kwargs  and 'MinMax' not in kwargs:
-                raise KeyError('%s does not exist yet, neither Value nor MinMax specified'%Name)
-            if 'Value' not in kwargs:
-                (mi,ma) = kwargs.pop('MinMax')
-                self._declare("%s[%s,%s]"%(Name,mi,ma))
-            elif 'MinMax' not in kwargs:
-                self._declare("%s[%s]"%(Name,kwargs.pop('Value')))
-            else:
-                (mi,ma) = kwargs.pop('MinMax')
-                val = kwargs.pop('Value')
-                if val < mi or val > ma : raise RuntimeError('Specified Value %s not contained in MinMax (%s,%s)' % ( val,mi,ma))
-                self._declare("%s[%s,%s,%s]"%(Name,val,mi,ma))
+            if 'Value'  not in kwargs  and 'MinMax' not in kwargs and 'Formula' not in kwargs:
+                raise KeyError('%s does not exist yet, neither Value nor MinMax nor Formula specified'%Name)
+            if 'Formula' not in kwargs :
+                if 'Value' not in kwargs:
+                    (mi,ma) = kwargs.pop('MinMax')
+                    self._declare("%s[%s,%s]"%(Name,mi,ma))
+                elif 'MinMax' not in kwargs:
+                    self._declare("%s[%s]"%(Name,kwargs.pop('Value')))
+                else:
+                    (mi,ma) = kwargs.pop('MinMax')
+                    val = kwargs.pop('Value')
+                    if val < mi or val > ma : raise RuntimeError('Specified Value %s not contained in MinMax (%s,%s)' % ( val,mi,ma))
+                    self._declare("%s[%s,%s,%s]"%(Name,val,mi,ma))
+            else :
+                assert 'Value' not in kwargs
+                (formula, args, dset) = kwargs.pop('Formula')
+                fname = '_%s__formula'%Name
+                dummy  = self._declare("expr::%s('%s',{%s})"%(fname,formula,','.join(i.GetName() for i in args) ) )
+                self._declare("dataobs::%s(%s,%s)"%(Name,dset.GetName(),dummy.GetName()))
+
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
                 _type = b[0] if type(b[0])==str else b[0].__name__ 
