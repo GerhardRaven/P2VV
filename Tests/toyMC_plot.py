@@ -68,15 +68,25 @@ for pv in pull_vars:
 from ROOT import TCanvas
 hsize = 300
 vsize = 300
-ncolumns = 5
+from math import sqrt
 l = len(plot_vars)
-if l > 15:
-    ncolumns = l / 3 if l % 3 == 0 else l / 3 + 1
+nrows = int(sqrt(l))
+ncolumns = 1
+if nrows == 1:
+    ncolumns = l
+elif l % nrows == 0:
+    ncolumns = l / nrows
+else:
+    ncolumns = l / nrows + 1
+hsize = 300 * ncolumns
+vsize = 300 * nrows
+if hsize > 1500:
     hsize = int(1500 / ncolumns)
     vsize = hsize
-nrows = l / ncolumns if l % ncolumns == 0 else l / ncolumns + 1
-
-canvas = TCanvas('canvas', 'canvas', ncolumns * hsize, nrows * vsize)
+elif vsize > 900:
+    vsize = 900 / nrows
+    hsize = vsize
+canvas = TCanvas('canvas', 'canvas', hsize, vsize)
 canvas.Divide(ncolumns, nrows)
 
 from ROOT import (RooRealVar, RooGaussian,
