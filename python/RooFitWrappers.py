@@ -82,7 +82,6 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters 
         #       a conflict.
         if spec not in self.ws()._spec : 
-            #print 'creating %s' % spec
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
@@ -410,6 +409,9 @@ class Pdf(RooObject):
     _getters = {'Type'        : lambda s : s._get('Type')
                ,'Parameters'  : lambda s : s._get('Parameters')
                ,'Name'        : lambda s : s._get('Name')
+               ,'ConditionalObservables' : lambda s : s.ConditionalObservables()
+               }
+    _setters = { 'ConditionalObservables' : lambda s,v : s.setConditionalObservables(v)
                }
 
     ## TODO: define operators
@@ -467,6 +469,15 @@ class Pdf(RooObject):
     def _separator(self):
         return '_'
 
+    def ConditionalObservables(self) :
+        if not hasattr(self,'_conditionals') : return set()
+        return set( i for i in self.Observables() if i.GetName() in self._conditionals )
+    def setConditionalObservables(self, obs ) :
+        # TODO: check if we have a conditional request for something which isn't one of 
+        #       out observables and provide a warning...
+        self._conditionals = set( o if type(o)==str else o.GetName() for o in obs )
+        print '%s:setConditionalObsersvables: %s '% ( self.GetName(), self.ConditionalObservables() )
+        
 
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
@@ -517,7 +528,14 @@ class ProdPdf(Pdf):
                 assert v == self._get(k)
 
     def _makeRecipe(self):
-        pdfs = ','.join([p.GetName() for p in self._dict['PDFs']])
+        def _handleConditional( pdf ) :
+            name = pdf.GetName()
+            cond = pdf.ConditionalObservables()
+            if cond : name += '|{%s}'%( ','.join(i.GetName() for i in cond))
+            return name
+        pdfs = ','.join( _handleConditional(p) for p in self._dict['PDFs'])
+        #pdfs = ','.join( p.GetName() for p in self._dict['PDFs'])
+        print 'ProdPdf::recipe = %s' % ( 'PROD::%s(%s)' % (self._dict['Name'], pdfs) )
         return 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
 
     def _separator(self):
@@ -601,6 +619,22 @@ class RealSumPdf( Pdf ):
         coefficients = ','.join( [ coef.GetName() for coef in self._dict['Coefficients'] ] )
         functions    = ','.join( [ func.GetName() for func in self._dict['Functions'] ] )
         return 'RealSumPdf::%s({%s}, {%s})' % ( self._dict['Name'], functions, coefficients )
+
+class HistPdf( Pdf ) :
+    def _make_pdf(self) : pass
+    def __init__(self,Name,**kwargs) :
+        d = { 'Name' : Name 
+            , 'Observables' : kwargs.pop('Observables') 
+            , 'Data' : kwargs.pop('Data')
+            }
+        dhs_name =  Name + '_' + '_'.join( i.GetName() for i in d['Observables'] )
+        from ROOT import RooDataHist, RooArgSet
+        rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgSet( i._var for i in d['Observables'] ), d['Data']))
+        # construct factory string on the fly...
+        self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name )  )
+        self._init(Name,'RooHistPdf')
+        Pdf.__init__(self , Name = Name , Type = 'RooHistPdf')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class EditPdf( Pdf ) :
     def _make_pdf(self) : pass
@@ -731,9 +765,7 @@ class Component(object):
             if type(args[0]) == dict :
                 for i,j in args[0].iteritems() : self[i] = j
             else :
-                for j in args[0] :
-                    i = tuple( o.GetName() for o in j.getVariables() if o.getAttribute('Observable') )
-                    self[i] = j 
+                for j in args[0] : self.append(j)
         if 'Yield' in kw : self.setYield( *kw.pop('Yield') )
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
@@ -746,14 +778,15 @@ class Component(object):
         self.append(pdf)
         return self
     def append(self,pdf ) :
-        self[ pdf.Observables() ] = pdf
+        obs = ( o for o in pdf.Observables() if o not in pdf.ConditionalObservables() ) 
+        self[ obs ] = pdf
         
     def __setitem__(self, observable, pdf) :
         if not hasattr(observable,'__iter__') : observable = (observable,)
 
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
-        assert k == set( i.GetName() for i in pdf.Observables() )
+        assert k == set( i.GetName() for i in pdf.Observables() if i not in pdf.ConditionalObservables() )
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
         present = set()
@@ -768,6 +801,8 @@ class Component(object):
         ## Get the right sub-pdf from the Pdf object
         Component._d[self.name][frozenset(k)] = pdf
 
+
+    def GetName(self) : return self.name
 
     def __getitem__(self,k) :
         # TODO: if we return one a-priori build PDF, rename it properly??
@@ -792,6 +827,7 @@ class Component(object):
             if nk : raise IndexError('could not construct matching product -- no PDF for observables: %s' % [i for i in nk ])
             nk = frozenset.union(*terms)
             pdfs = [self[i] for i in terms]
+            #TODO: check that the conditional handling is internally consistent...
             d[nk] = ProdPdf(self.name, PDFs = pdfs)
         return d[k]
 
