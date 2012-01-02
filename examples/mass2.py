@@ -29,6 +29,7 @@ data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitt
                )
 obj.ws().put(data)
 Di  = RealVar('tagdilution', Title = 'estimated dilution', Observable = True, Formula = ( "@0*(1-2*@1)",[iTag,eta], data ), MinMax=(-1,1),nBins =  51)
+observables = [ Di, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st ]
 
 
 # TODO: add a wrapper that allows one to pass ranges as dict: m.setRanges( { 'leftsideband' : (m.getMin(),5330), 'signal' : (5330,5410), ... } )
@@ -204,12 +205,9 @@ splot_m = SData(Pdf = pdf_m, Data = data, Name = 'MassSplot')
 from RooFitWrappers import HistPdf
 for c in [ signal, psi_background,cmb_background ] :
     # Must remove the spike of the untagged events!!!
-    tmpdata = splot_m.data( c.GetName() )
-
-    c += HistPdf(Name = "eta_%s_pdf"%c.GetName(), Observables = [ eta ], Data = splot_m.data(c.GetName() ) )
+    c += HistPdf(Name = "dilution_%s_pdf"%c.GetName(), Observables = [ Di ], Data = splot_m.data(c.GetName() ) )
 
 
-#signal.setConditional( [ eta, tagdecision ], True )
 
 from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
 mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
@@ -222,6 +220,6 @@ c_mst = FitAndPlot(pdf_mst,data,sdata = splot_m)
 for p in pdf_mst.Parameters() : p.setConstant(True)
 
 # full fit
-pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,iTag,eta)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,Di)+tuple(angles.angles.itervalues()), Name='pdf')
 c_pdf = FitAndPlot(pdf,data, sdata = splot_m)
 
