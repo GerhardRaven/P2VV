@@ -194,12 +194,13 @@ class Trivial_Background_Tag( _util_parse_mixin ) :
         if triple : self._parseArg('bkg_tag_eps',   kwargs, Title = 'background tagging efficiency ', Value = 0.25, MinMax = (0.0,1.0) )
         self._parseArg('bkg_tag_delta', kwargs, Title = 'background tagging asymmetry ', Value = 0.0, MinMax = (-0.5,0.5) )
         from RooFitWrappers import GenericPdf
+        name = kwargs.pop('Name','Trivial_Background_TagPdf')
         if triple :
-            self._pdf = GenericPdf('Trivial_Background_TagPdf', Formula = '(@0==0)*(1-@1)+(@0!=0)*@1*0.5*(1+@0*@2)'
-                                                              , Arguments = [ tagdecision,self._bkg_tag_eps,self._bkg_tag_delta ] )
+            self._pdf = GenericPdf( name, Formula = '(@0==0)*(1-@1)+(@0!=0)*@1*0.5*(1+@0*@2)'
+                                        , Arguments = [ tagdecision,self._bkg_tag_eps,self._bkg_tag_delta ] )
         else :
-            self._pdf = GenericPdf('Trivial_Background_TagPdf', Formula = '0.5*(1+@0*@1)'
-                                                              , Arguments = [ tagdecision,self._bkg_tag_delta ] )
+            self._pdf = GenericPdf( name, Formula = '0.5*(1+@0*@1)'
+                                        , Arguments = [ tagdecision,self._bkg_tag_delta ] )
 
         for (k,v) in kwargs.iteritems() :
             setattr(self,'_'+k,v)
