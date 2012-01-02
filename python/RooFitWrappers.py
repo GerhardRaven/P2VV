@@ -531,7 +531,7 @@ class ProdPdf(Pdf):
         def _handleConditional( pdf ) :
             name = pdf.GetName()
             cond = pdf.ConditionalObservables()
-            if cond : name += '|%s'%( ','.join(i.GetName() for i in cond))
+            if cond : name += '|{%s}'%( ','.join(i.GetName() for i in cond))
             return name
         pdfs = ','.join( _handleConditional(p) for p in self._dict['PDFs'])
         #pdfs = ','.join( p.GetName() for p in self._dict['PDFs'])
