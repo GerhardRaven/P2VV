@@ -664,7 +664,10 @@ class EditPdf( Pdf ) :
         # construct factory string on the fly...
         self._declare("EDIT::%s( %s, %s )" % ( Name, d['Original'].GetName(), ','.join([ '%s=%s'%(k.GetName(),v.GetName()) for k,v in d['Rules'].iteritems()])  ) )
         self._init(Name,type(__dref__(d['Original'])).__name__)
-        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__)
+        extraOpts = dict()
+        cond =  d['Original'].ConditionalObservables()
+        if cond : extraOpts['ConditionalObservables'] = cond
+        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class GenericPdf( Pdf ) :
