@@ -549,8 +549,8 @@ class ProdPdf(Pdf):
                 # first define a named set for our conditionals, as the
                 # parsing of this is utterly borken in case we try PROD::name( f | { x,y }, g )
                 # as it interprets this as f|x ,y, g due to not recognizing the closing } as
-                # token being parsed is already split on the ',', hance asSET gets "{x" and
-                # is very happy with that...
+                # the token being parsed is already split on the ',', hence asSET gets "{x" and
+                # is very happy with that... and the closing } silenty disappears as well...
                 __borken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
                 name += '|%s'% __borken_parser_workaround.GetName()
             return name

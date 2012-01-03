@@ -37,9 +37,9 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
 from P2VVGeneralUtils import readData
 #data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
 data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-               , 'DecayTree'
-               , True
-               , [ iTag,eta, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st, sel ]
+               , dataSetName = 'DecayTree'
+               , NTuple = True
+               , observables = [ iTag,eta, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st, sel ]
                )
 
 # B mass pdf
@@ -175,7 +175,9 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     dataOpts = dict( CutRange =        rng ) if rng else dict()
     pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
     from ROOT import RooArgSet
-    pdfOpts['ProjWData'] = ( RooArgSet( eta._var ),  data, True ) # TODO: grab the data in the relevant range... data.reduce( **dataOpts )
+    # TODO: grab the data in the relevant range... data.reduce( **dataOpts ) 
+    #       and remove the spike at 0.5 to take into account its correlation to iTag = 0!!!
+    pdfOpts['ProjWData'] = ( RooArgSet( eta._var ),  data, True ) 
     obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
     for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
         from P2VVGeneralUtils import plot
