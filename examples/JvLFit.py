@@ -8,52 +8,54 @@ from math import pi, sin, cos, sqrt
 generateData   = False
 addTaggingVars = True
 fitData        = False
-makePlots      = False
+makePlots      = True
 
 nEvents = 200000
 plotsFile = 'JvLFitTagCats.ps'
 
-#dataSetName = 'JpsiphiData'
-#dataSetFile = 'JvLFitTagCats.root'
-#dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
-#NTuple = False
+dataSetName = 'JpsiphiData'
+dataSetFile = 'JvLFitTagCats.root'
+dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
+NTuple = False
 
-dataSetName = 'DecayTree'
-dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-NTuple = True
+#dataSetName = 'DecayTree'
+#dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+#NTuple = True
 
 # transversity amplitudes
-A0Mag2Val    =  0.4
+A0Mag2Val    =  0.52
 A0PhVal      =  0.
-AparMag2Val  =  0.3
-AparPhVal    = -2.4
-AperpMag2Val =  0.3
-AperpPhVal   = -0.79
-ASMag2Val    =  0.3
-ASPhVal      =  2.4
+AparMag2Val  =  0.23
+AparPhVal    =  pi - 3.3
+AperpMag2Val =  0.25
+AperpPhVal   =  3.0
+ASMag2Val    =  0.04
+ASPhVal      =  3.0
 
 # CP violation parameters
 carthLambdaCP = False
-phiCPVal      = -pi / 4.
-lambdaCPSqVal = 0.6
+phiCPVal      = 0.
+lambdaCPSqVal = 1.
 
 # B lifetime parameters
-GammaVal        = 0.68
-dGammaVal       = 0.05
+GammaVal        = 0.66
+dGammaVal       = 0.12
 dmVal           = 17.8
 timeResSigmaVal = 0.05
 
 # asymmetries
-AProdVal = 0.4
+AProdVal = 0.
 
 # tagging parameters
-numTagCats    = 11
-cat5Min       = 9
+numTagCats    = 6
+cat5Min       = 5
 taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
 tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
-tagCatCoefs   = [ 0.090, 0.060, 0.045, 0.025, 0.016, 0.013, 0.010, 0.008, 0.006, 0.004 ]
+#tagCatCoefs   = [ 0.090, 0.060, 0.045, 0.025, 0.016, 0.013, 0.010, 0.008, 0.006, 0.004 ]
+tagCatCoefs   = [ 0.15, 0.07, 0.03, 0.01, 0.003 ]
 ATagEffs      = ( numTagCats - 1 ) * [ 0. ]
-wTags         = [ 0.42, 0.38, 0.35, 0.32, 0.27, 0.25, 0.24, 0.20, 0.15, 0.10 ]
+#wTags         = [ 0.42, 0.38, 0.35, 0.32, 0.27, 0.25, 0.24, 0.20, 0.15, 0.10 ]
+wTags         = [ 0.40, 0.35, 0.27, 0.24, 0.12 ]
 wTagBars      = wTags
 
 # plot options
@@ -76,12 +78,9 @@ from RooFitWrappers import *
 # workspace
 ws = RooObject(workspace = 'ws')
 
-# constants
-zero = ConstVar( Name = 'zero', Value = 0 )
-
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
-angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
+angleFuncs = JpsiphiHelicityAngles( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 # variables in PDF
 time       = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.,   MinMax = ( -0.5, 5. ) )
@@ -183,10 +182,10 @@ else :
     from P2VVGeneralUtils import readData
     if NTuple :
         from P2VVGeneralUtils import addTaggingObservables
-        data = readData( dataSetFile, dataSetName, NTuple, obsSetNTuple )
+        data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
         addTaggingObservables( data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName() )
     else :
-        data = readData( dataSetFile, dataSetName )
+        data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetP2VV )
 
 if fitData :
     # fix values of some parameters

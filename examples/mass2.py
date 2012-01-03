@@ -27,9 +27,9 @@ observables = [ iTag,eta, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['cth
 from P2VVGeneralUtils import readData
 #data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
 data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-               , 'DecayTree'
-               , True
-               , observables
+               , dataSetName = 'DecayTree'
+               , NTuple      = True
+               , observables = observables
                )
 tag  = RealVar('tagdilution', Title = 'estimated dilution', Observable = True, Formula = ( "@0*(1-2*@1)",[iTag,eta], data ), MinMax=(-1,1),nBins =  51)
 observables = [ tag, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st ]

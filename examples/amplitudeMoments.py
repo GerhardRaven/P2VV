@@ -118,7 +118,7 @@ if generateData :
 else :
     # read data from file
     from P2VVGeneralUtils import readData
-    data = readData( dataSetFile, dataSetName, NTuple )
+    data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple )
 
 if fitDataOriginal :
     # fit data
