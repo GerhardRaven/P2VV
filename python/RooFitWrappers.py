@@ -349,24 +349,33 @@ class RealVar (RooObject):
                ,'MinMax'     : lambda s,v : s.setRange(v)
                ,'Constant'   : lambda s,v : s.setConstant(v)
                ,'nBins'      : lambda s,v : s.setBins(v)
+               ,'Ranges'     : lambda s,v : s.setRanges(v)
                }
 
     def __init__(self,Name ,**kwargs):
         if 'name' in kwargs : raise RuntimeError('Please replace name argument with Name = xyz' )
         if Name not in self.ws():
             # construct factory string on the fly...
-            if 'Value'  not in kwargs  and 'MinMax' not in kwargs:
-                raise KeyError('%s does not exist yet, neither Value nor MinMax specified'%Name)
-            if 'Value' not in kwargs:
-                (mi,ma) = kwargs.pop('MinMax')
-                self._declare("%s[%s,%s]"%(Name,mi,ma))
-            elif 'MinMax' not in kwargs:
-                self._declare("%s[%s]"%(Name,kwargs.pop('Value')))
-            else:
-                (mi,ma) = kwargs.pop('MinMax')
-                val = kwargs.pop('Value')
-                if val < mi or val > ma : raise RuntimeError('Specified Value %s not contained in MinMax (%s,%s)' % ( val,mi,ma))
-                self._declare("%s[%s,%s,%s]"%(Name,val,mi,ma))
+            if 'Value'  not in kwargs  and 'MinMax' not in kwargs and 'Formula' not in kwargs:
+                raise KeyError('%s does not exist yet, neither Value nor MinMax nor Formula specified'%Name)
+            if 'Formula' not in kwargs :
+                if 'Value' not in kwargs:
+                    (mi,ma) = kwargs.pop('MinMax')
+                    self._declare("%s[%s,%s]"%(Name,mi,ma))
+                elif 'MinMax' not in kwargs:
+                    self._declare("%s[%s]"%(Name,kwargs.pop('Value')))
+                else:
+                    (mi,ma) = kwargs.pop('MinMax')
+                    val = kwargs.pop('Value')
+                    if val < mi or val > ma : raise RuntimeError('Specified Value %s not contained in MinMax (%s,%s)' % ( val,mi,ma))
+                    self._declare("%s[%s,%s,%s]"%(Name,val,mi,ma))
+            else :
+                assert 'Value' not in kwargs
+                (formula, args, dset) = kwargs.pop('Formula')
+                fname = '_%s__formula'%Name
+                dummy  = self._declare("expr::%s('%s',{%s})"%(fname,formula,','.join(i.GetName() for i in args) ) )
+                self._declare("dataobs::%s(%s,%s)"%(Name,dset.GetName(),dummy.GetName()))
+
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
                 _type = b[0] if type(b[0])==str else b[0].__name__ 
@@ -390,12 +399,20 @@ class RealVar (RooObject):
         assert args
         if type(args[0]) == str :
             assert len(args)==2
-            self._var.setRange( args[0], *args[1] )
+            (mi,ma) = args[1]
+            if mi == None : mi = self._var.getMin()
+            if ma == None : ma = self._var.getMax()
+            self._var.setRange( args[0], mi, ma )
         else  :
             assert len(args)==1
             (mi,ma) = args[0]
+            if mi == None : mi = self._var.getMin()
+            if ma == None : ma = self._var.getMax()
             self._var.setRange(mi,ma)
-            if self.getVal() < mi or self.getVal() > ma : self.setVal(0.5*(ma+mi) )
+            if self.getVal() < mi or self.getVal() > ma : self.setVal( 0.5*(ma+mi) )
+
+    def setRanges(self,arg) :
+        for k,v in arg.iteritems() : self.setRange(k,v)
 
     def getRange(self):
         return self._target_().getMin(), self._target_().getMax()
@@ -474,9 +491,8 @@ class Pdf(RooObject):
         return set( i for i in self.Observables() if i.GetName() in self._conditionals )
     def setConditionalObservables(self, obs ) :
         # TODO: check if we have a conditional request for something which isn't one of 
-        #       out observables and provide a warning...
+        #       our observables and provide a warning...
         self._conditionals = set( o if type(o)==str else o.GetName() for o in obs )
-        print '%s:setConditionalObsersvables: %s '% ( self.GetName(), self.ConditionalObservables() )
         
 
     @wraps(RooAbsPdf.fitTo)
@@ -502,8 +518,6 @@ class Pdf(RooObject):
 
 
 class ProdPdf(Pdf):
-    # TODO: support conditional terms, use 'Conditional' key word for that...
-    # ProdPdf( 'foo', [a,b], Conditional = [c,d] ) -> PROD::foo(a,b|c,d)
     def __init__(self, Name, PDFs, **kwargs):
         self._dict = { 'PDFs' : frozenset(PDFs)
                      , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
@@ -534,8 +548,6 @@ class ProdPdf(Pdf):
             if cond : name += '|{%s}'%( ','.join(i.GetName() for i in cond))
             return name
         pdfs = ','.join( _handleConditional(p) for p in self._dict['PDFs'])
-        #pdfs = ','.join( p.GetName() for p in self._dict['PDFs'])
-        print 'ProdPdf::recipe = %s' % ( 'PROD::%s(%s)' % (self._dict['Name'], pdfs) )
         return 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
 
     def _separator(self):
@@ -674,6 +686,28 @@ class UniformPdf( Pdf ) :
         Pdf.__init__(self , Name = Name , Type = 'RooUniform')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
+
+class BDecay( Pdf ) :
+    def __init__(self,Name, **kwargs) :
+        d = dict( name = Name
+                , time = kwargs.pop('time')
+                , tau = kwargs.pop('tau')
+                , dGamma = kwargs.pop('dGamma')
+                , dm = kwargs.pop('dm')
+                , resolutionModel = kwargs.pop('resolutionModel')
+                , coshCoef = kwargs.pop('coshCoef') if 'coshCoef' in kwargs else kwargs.pop('cosh')
+                , sinhCoef = kwargs.pop('sinhCoef') if 'sinhCoef' in kwargs else kwargs.pop('sinh')
+                , cosCoef = kwargs.pop('cosCoef') if 'cosCoef' in kwargs else kwargs.pop('cos')
+                , sinCoef = kwargs.pop('sinCoef') if 'sinCoef' in kwargs else kwargs.pop('sin')
+                , decayType = kwargs.pop( 'decayType', 'SingleSided' )
+                )
+        self._declare("BDecay::%(name)s( %(time)s, %(tau)s, %(dGamma)s, "\
+                                          " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                          " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
+        self._init(Name,'RooBDecay')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+            
+ 
 class BTagDecay( Pdf ) :
     def _make_pdf(self) : pass
     def __init__( self, Name, **kwargs ) :

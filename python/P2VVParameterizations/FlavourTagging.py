@@ -41,6 +41,17 @@ class Trivial_TaggingParams( TaggingParams ) :
                               , CEvenOdds = [ Trivial_CEvenOdd() ]
                               )
 
+class Trivial_Dilution( TaggingParams ) :
+    def __init__( self, **kwargs ) :
+        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
+        from RooFitWrappers import ConstVar
+        TaggingParams.__init__( self
+                              , Dilutions = kwargs.pop('Dilution')
+                              , ADilWTags = [ ConstVar( Name = 'zero',Value = 0) ]
+                              , CEvenOdds = [ Trivial_CEvenOdd() ]
+                              )
+        self._check_extraneous_kw( kwargs )
+
 class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import FormulaVar
