@@ -555,7 +555,6 @@ class ProdPdf(Pdf):
                 name += '|%s'% __borken_parser_workaround.GetName()
             return name
         pdfs = ','.join( _handleConditional(p) for p in self._dict['PDFs'])
-        print 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
         return 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
 
     def _separator(self):
