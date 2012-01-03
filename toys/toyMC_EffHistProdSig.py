@@ -1,6 +1,6 @@
 import optparse
 import sys
-parser = optparse.OptionParser(usage = '%prog nbins')
+parser = optparse.OptionParser(usage = '%prog')
 
 parser.add_option("-o", "--output", dest = "output", default = 'toy.root',
                   type = 'string', help = "set output filename")
@@ -10,22 +10,18 @@ parser.add_option("--ncpu", dest = "ncpu", default = 4,
                   type = 'int', help = 'number of CPUs to use')
 parser.add_option("-e", "--nevents", dest = "nevents", default = 10000,
                   type = 'int', help = 'number of events to generate')
-parser.add_option("-a", dest = "acceptance", default = False,
-                  action = 'store_true', help = 'use the acceptance')
+parser.add_option("-a", dest = "acceptance", default = '',
+                  type = 'string', action = 'store', help = 'use the acceptance')
 parser.add_option("-p", dest = "pdf", default = 'comb_pdf',
                   action = 'store', help = 'which pdf to use')
 
 (options, args) = parser.parse_args()
-if len(args) != 1:
-    print parser.usage
-    sys.exit(-1)
-nbins = int(args[0])
 
 if options.pdf not in ['sig_pdf', 'comb_pdf']:
     print "PDF must be either sig_pdf or comb_pdf"
     sys.exit(-2)
 
-from ROOT import RooDataHist
+from ROOT import RooDataHist, RooHistFunc
 from RooFitWrappers import *
 from ROOT import TH1F, TFile
 
@@ -117,14 +113,13 @@ comb_pdf = buildPdf((signal, bkg), Observables = observables,  Name = 'comb_pdf'
 ##############################################
 ### Define acceptance function a la Wouter ###
 ##############################################
-effh1 = TH1F( "effh1", "effh1", nbins, w['t'].getMin(), w['t'].getMax()) 
-for i in range(1, int(0.6 * nbins)):         effh1.SetBinContent(i, 1. / nbins * i)
-for i in range(int(0.6 * nbins), nbins + 1): effh1.SetBinContent(i, 1) 
-
-#TODO: add wrapper for this...
-w.put( RooDataHist("effdatahist", "effdatahist", RooArgList(w['t']), effh1) )
-w.factory("HistFunc::eff(t, effdatahist)")
-w.factory("EffHistProd::acc_pdf(%s, eff)" % options.pdf)
+if options.acceptance:
+    acc_file = TFile.Open(options.acceptance)
+    acc_workspace = acc_file.Get('w')
+    eff_hist = acc_workspace.data('eff_hist')
+    eff_func = RooHistFunc('acceptance', 'time acceptance', RooArgSet(t._target_()), eff_hist)
+    w.put(eff_func)
+    w.factory("EffHistProd::acc_pdf(%s, acceptance)" % options.pdf)
 
 w.addClassDeclImportDir("..")
 w.addClassImplImportDir("..")
@@ -140,25 +135,18 @@ else:
 # Get the bare observable objects and copy them
 obs = w.argSet(','.join([o['Name'] for o in observables]))
 pdf_params = pdf.getParameters(obs)
-for param in pdf_params:
-    if param.GetName() not in ['Gamma', 'deltaGamma']:
-        param.setConstant()
+## for param in pdf_params:
+##     if param.GetName() not in ['Gamma', 'deltaGamma']:
+##         param.setConstant()
 gen_params = pdf_params.snapshot(True)
 
 # Make another ArgSet to put the fit results in
 result_params = RooArgSet(pdf_params, "result_params")
 
-# Get a good random seed, set it and store it
-import struct,os
-seed = struct.unpack('I', os.urandom(4))[0]
-
-from ROOT import RooRandom
-RooRandom.randomGenerator().SetSeed(seed)
-
 # Some extra numbers of interest
 NLL = RooRealVar('NLL', '-log(Likelihood', 1.)
 ngen = RooRealVar('ngen', 'number of generated events', options.nevents)
-seed = RooRealVar('seed', 'random seed', seed)
+seed = RooRealVar('seed', 'random seed', 0.)
 result_params.add(NLL)
 result_params.add(ngen)
 result_params.add(seed)
@@ -167,7 +155,15 @@ result_params.add(seed)
 result_data = RooDataSet('result_data', 'result_data', result_params)
 data_params = result_data.get()
 
+from ROOT import RooRandom
+import struct, os
+
 for i in range(options.ntoys):
+    # Get a good random seed, set it and store it
+    s = struct.unpack('I', os.urandom(4))[0]    
+    RooRandom.randomGenerator().SetSeed(s)
+    seed.setVal(s)
+
     # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
     pdf_params.assignValueOnly( gen_params ) 
     data = pdf.generate(obs, options.nevents)
@@ -201,3 +197,5 @@ output_file.Close()
 ## gfs.setFitConfig("pdf", obs, RooFit.Minimizer("Minuit2"))
 
 ## mgr = RooStudyManager(w, gfs)
+
+

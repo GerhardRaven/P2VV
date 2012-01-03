@@ -5,16 +5,22 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-generateData = True
-fitData      = False
-makePlots    = True
+generateData   = False
+addTaggingVars = True
+fitData        = False
+makePlots      = False
 
 nEvents = 200000
-dataSetName = 'JpsiphiData'
-dataSetFile = 'JvLFitTagCats.root'
-#dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
-NTuple = False
 plotsFile = 'JvLFitTagCats.ps'
+
+#dataSetName = 'JpsiphiData'
+#dataSetFile = 'JvLFitTagCats.root'
+#dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
+#NTuple = False
+
+dataSetName = 'DecayTree'
+dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+NTuple = True
 
 # transversity amplitudes
 A0Mag2Val    =  0.4
@@ -78,19 +84,28 @@ from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
 
 # variables in PDF
-time   = RealVar(  't',          Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-iTag   = Category( 'tagInitial', Title = 'Initial state flavour tag', Observable = True, States = {'B' : +1, 'Bbar' : -1} )
-tagCat = Category( 'tagCat'    , Title = 'Tagging Category',          Observable = True
-                  , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, numTagCats ) ]
-                 )
+time       = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.,   MinMax = ( -0.5, 5. ) )
+iTag       = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
+tagCatP2VV = Category( 'tagCatP2VV',   Title = 'P2VV Tagging Category',     Observable = True
+                      , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, numTagCats ) ]
+                      )
+angles     = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
+obsSetP2VV = [ time ] + list(angles) + [ iTag, tagCatP2VV ]
 
-angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
-observables = [ time ] + list(angles) + [ iTag, tagCat ]
+# ntuple variables
+tagDecision  = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
+                        , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
+                       )
+tagOmega     = RealVar(  'tagomega_os',    Title = 'Estimated wrong tag',       Observable = True, Value = 0.25, MinMax = ( 0., 0.50001 ) )
+tagCat       = Category( 'tagcat_os',      Title = 'Tagging Category',          Observable = True
+                       , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
+                       )
+obsSetNTuple = [ time ] + list(angles) + [ tagDecision, tagOmega, tagCat ]
 
 # variable ranges
-tagCat.setRange( 'UntaggedRange', 'Untagged'    )
-tagCat.setRange( 'TaggedRange',   taggedCatsStr )
-tagCat.setRange( 'TagCat5Range',  tagCat5Str    )
+tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
+tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
+tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
@@ -120,7 +135,7 @@ tagParamVals  = dict(  [ ( 'tagCatCoef%d' % ( cat + 1 ), coef ) for cat, coef in
                      + [ ( 'wTag%d'       % ( cat + 1 ), wTag ) for cat, wTag in enumerate(wTags)       ]
                      + [ ( 'wTagBar%d'    % ( cat + 1 ), wTag ) for cat, wTag in enumerate(wTagBars)    ]
                     )
-taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCat.numTypes(), AProd = AProdVal, ANorm = -lambdaCP['C'].getVal()
+taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCatP2VV.numTypes(), AProd = AProdVal, ANorm = -lambdaCP['C'].getVal()
                                              , **tagParamVals
                                             )
 
@@ -132,7 +147,7 @@ timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients( angleFuncs.functions, transA
 args = {
     'time'            : time
   , 'iTag'            : iTag
-  , 'tagCat'          : tagCat
+  , 'tagCat'          : tagCatP2VV
   , 'tau'             : lifetimeParams['MeanLifetime']
   , 'dGamma'          : lifetimeParams['deltaGamma']
   , 'dm'              : lifetimeParams['deltaM']
@@ -158,26 +173,31 @@ pdf = BTagDecay('JpsiphiPDF', **args)
 # generate data
 from P2VVLoad import RooFitOutput
 if generateData :
-  print 'JvLFit: generating %d events' % nEvents
-  data = pdf.generate( observables, nEvents )
+    print 'JvLFit: generating %d events' % nEvents
+    data = pdf.generate( obsSetP2VV, nEvents )
 
-  from P2VVGeneralUtils import writeData
-  writeData( dataSetFile, dataSetName, data, NTuple )
+    from P2VVGeneralUtils import writeData
+    writeData( dataSetFile, dataSetName, data, NTuple )
 
 else :
-  from P2VVGeneralUtils import readData
-  data = readData( dataSetFile, dataSetName, NTuple, observables )
+    from P2VVGeneralUtils import readData
+    if NTuple :
+        from P2VVGeneralUtils import addTaggingObservables
+        data = readData( dataSetFile, dataSetName, NTuple, obsSetNTuple )
+        addTaggingObservables( data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName() )
+    else :
+        data = readData( dataSetFile, dataSetName )
 
 if fitData :
-  # fix values of some parameters
-  for CEvenOdd in taggingParams['CEvenOdds'][ 1 : ] :
-      CEvenOdd.setConstant('avgCEven.*')
-      CEvenOdd.setConstant('avgCOdd.*')
-  taggingParams.setConstant('wTag.*')
+    # fix values of some parameters
+    for CEvenOdd in taggingParams['CEvenOdds'][ 1 : ] :
+        CEvenOdd.setConstant('avgCEven.*')
+        CEvenOdd.setConstant('avgCOdd.*')
+    taggingParams.setConstant('wTag.*')
 
-  # fit data
-  print 'JvLFit: fitting %d events' % data.numEntries()
-  pdf.fitTo( data, NumCPU = 12, Timer = 1 )
+    # fit data
+    print 'JvLFit: fitting %d events' % data.numEntries()
+    pdf.fitTo( data, NumCPU = 12, Timer = 1 )
 
 
 ###########################################################################################################################################
@@ -194,9 +214,9 @@ if makePlots :
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
     for ( pad, obs, nBins, plotTitle, xTitle )\
             in zip(  timeAnglesCanv.pads( 2, 2 )
-                   , observables[ : -1 ]
+                   , obsSetP2VV[ : -1 ]
                    , numBins
-                   , [ var.GetTitle() for var in observables[ : -1 ] ]
+                   , [ var.GetTitle() for var in obsSetP2VV[ : -1 ] ]
                    , ( '', ) + angleNames
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
@@ -244,21 +264,21 @@ if makePlots :
     timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
     for ( pad, nBins, plotTitle, dataCuts, pdfCuts )\
         in zip(  timeCanv1.pads( 3, 2 )
-               , 3 * numTimeBins
-               , timePlotTitles1
-               ,   ( { 'Cut' : '{tag} == +1 && {cat} == 0'.format(    tag = iTag.GetName(), cat = tagCat.GetName()                 ) }, )
-                 + ( { 'Cut' : '{tag} == +1 && {cat} >  0'.format(    tag = iTag.GetName(), cat = tagCat.GetName()                 ) }, )
-                 + ( { 'Cut' : '{tag} == +1 && {cat} >= {c5:d}'.format( tag = iTag.GetName(), cat = tagCat.GetName(), c5 = cat5Min ) }, )
-                 + ( { 'Cut' : '{tag} == -1 && {cat} == 0'.format(    tag = iTag.GetName(), cat = tagCat.GetName()                 ) }, )
-                 + ( { 'Cut' : '{tag} == -1 && {cat} >  0'.format(    tag = iTag.GetName(), cat = tagCat.GetName()                 ) }, )
-                 + ( { 'Cut' : '{tag} == -1 && {cat} >= {c5:d}'.format( tag = iTag.GetName(), cat = tagCat.GetName(), c5 = cat5Min ) }, )
-               ,   ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'UntaggedRange' }, )
-                 + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TaggedRange'   }, )
-                 + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TagCat5Range'  }, )
-                 + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'UntaggedRange' }, )
-                 + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TaggedRange'   }, )
-                 + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TagCat5Range'  }, )
-              ) :
+             , 3 * numTimeBins
+             , timePlotTitles1
+             ,   ( { 'Cut' : '{tag} == +1 && {cat} == 0'.format(    tag = iTag.GetName(), cat = tagCatP2VV.GetName()                 ) }, )
+               + ( { 'Cut' : '{tag} == +1 && {cat} >  0'.format(    tag = iTag.GetName(), cat = tagCatP2VV.GetName()                 ) }, )
+               + ( { 'Cut' : '{tag} == +1 && {cat} >= {c5:d}'.format( tag = iTag.GetName(), cat = tagCatP2VV.GetName(), c5 = cat5Min ) }, )
+               + ( { 'Cut' : '{tag} == -1 && {cat} == 0'.format(    tag = iTag.GetName(), cat = tagCatP2VV.GetName()                 ) }, )
+               + ( { 'Cut' : '{tag} == -1 && {cat} >  0'.format(    tag = iTag.GetName(), cat = tagCatP2VV.GetName()                 ) }, )
+               + ( { 'Cut' : '{tag} == -1 && {cat} >= {c5:d}'.format( tag = iTag.GetName(), cat = tagCatP2VV.GetName(), c5 = cat5Min ) }, )
+             ,   ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'UntaggedRange' }, )
+               + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TaggedRange'   }, )
+               + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TagCat5Range'  }, )
+               + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'UntaggedRange' }, )
+               + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TaggedRange'   }, )
+               + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TagCat5Range'  }, )
+            ) :
         plot(  pad, time, data, pdf
              , frameOpts = dict( Bins = nBins, Title = plotTitle )
              , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )

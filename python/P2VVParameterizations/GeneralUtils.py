@@ -52,6 +52,8 @@ class _util_parse_mixin( object ) :
         nrexp = re.compile(pattern)
         for i in self.parameters(): 
             if not nrexp.match( i.GetName() ) : continue
+            from ROOT import RooAbsLValue
+            if not isinstance( i._var, RooAbsLValue) : continue
             i.setConstant (constant)
             rc += 1
         return rc
