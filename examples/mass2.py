@@ -52,9 +52,7 @@ psi_st = Gamma_Sigmat( Name = 'psi_st', st = st, st_sig_gamma = dict( Name = 'st
 cmb_st = Gamma_Sigmat( Name = 'cmb_st', st = st, st_sig_gamma = dict( Name = 'st_cmb_gamma', Value = 9.6 ), st_sig_beta = dict( Name = 'st_cmb_beta', Value = 0.004 ) )
 
 # phi mass pdf
-
 # angle pdfs (background only)
-indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 
 # Decay time pdf
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
@@ -62,7 +60,7 @@ tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can 
 tres.setConstant('.*')
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, deltaGamma = 0.05, deltaM = dict( Value = 17.8, MinMax = (16,19), Constant = True) )
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65, deltaGamma = 0.10, deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) )
 
 from P2VVParameterizations.FlavourTagging import Trivial_Dilution
 taggingParams = Trivial_Dilution( Dilution = tag ) # TODO: add calibration...
@@ -75,8 +73,8 @@ CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinM
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
-amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.60, A0Phase = 0
-                                    , AperpMag2 = 0.160, AperpPhase = dict( Value = -0.17 ) # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.50, A0Phase = 0
+                                    , AperpMag2 = 0.25, AperpPhase = dict( Value = -0.17 ) # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                     , AparPhase = 2.5
                                     , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True ) 
                                     )
@@ -90,22 +88,22 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes
 # TODO: unify keys left and right....
 from RooFitWrappers import BDecay
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
-                            , time      = t
-                            , dm        = lifetimeParams['deltaM'] 
-                            , tau       = lifetimeParams['MeanLifetime']
-                            , dGamma    = lifetimeParams['deltaGamma'] 
-                            , resolutionModel = tres.model()
-                            , coshCoef  = basisCoefficients['cosh']
-                            , cosCoef   = basisCoefficients['cos']
-                            , sinhCoef  = basisCoefficients['sinh']
-                            , sinCoef   = basisCoefficients['sin']
-                            , ConditionalObservables = ( tag, )
-                            )
+                     , time      = t
+                     , dm        = lifetimeParams['deltaM'] 
+                     , tau       = lifetimeParams['MeanLifetime']
+                     , dGamma    = lifetimeParams['deltaGamma'] 
+                     , resolutionModel = tres.model()
+                     , coshCoef  = basisCoefficients['cosh']
+                     , cosCoef   = basisCoefficients['cos']
+                     , sinhCoef  = basisCoefficients['sinh']
+                     , sinCoef   = basisCoefficients['sin']
+                     , ConditionalObservables = ( tag, )
+                     )
 
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Signal_Time, LP2011_Background_Time as Background_Time
 sig_t = Signal_Time(     Name = 'sig_t', time = t, resolutionModel = tres.model(), t_sig_tau = dict( Value = 1.5, Name = 't_sig_tau', MinMax=(1.0,2.0) ) )
-psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_psi_fll'), t_bkg_ll_tau = dict( Name = 't_psi_ll_tau'), t_bkg_ml_tau = dict( Name = 't_psi_ml_tau') )
-cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_cmb_fll'), t_bkg_ll_tau = dict( Name = 't_cmb_ll_tau'), t_bkg_ml_tau = dict( Name = 't_cmb_ml_tau') )
+psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_psi_fll', Value = 0.47), t_bkg_ll_tau = dict( Name = 't_psi_ll_tau', Value = 1.3), t_bkg_ml_tau = dict( Name = 't_psi_ml_tau', Value = 0.21) )
+cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_cmb_fll', Value = 0.61), t_bkg_ll_tau = dict( Name = 't_cmb_ll_tau', Value = 2.9, MinMax = (2.5,3.5)), t_bkg_ml_tau = dict( Name = 't_cmb_ml_tau', Value = 0.43) )
 
 # itag distribution (background only)
 #from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
@@ -144,15 +142,23 @@ def FitAndPlot( pdf, data, fitOpts = dict(), sdata = None ) :
         obs =  [ o for o in obs if o in pdf.Observables() ]
         obs =  [ o for o in obs if hasattr(o,'frame') ]
         for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
-            dataRng = dict( CutRange =        rng ) if rng else dict()
-            pdfRng  = dict( ProjectionRange = rng ) if rng else dict()
+            dataOpts = dict( CutRange =        rng ) if rng else dict()
+            pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
+            if o == t  and tag in pdf.Observables() : 
+                # why does prod( f(x,y)|y , g(y) ), when g(y) is a histogram, 
+                # perform a numerical integral over y when plotting as a function
+                # of x -- it could instead just sum over the histogram bins of g(y),
+                # weighted with the binheights, i.e. sum_i g_i f(x,y_i) where 
+                # g_i is g(y_i), with i = 1,Nbins....
+                from ROOT import RooArgSet
+                pdfOpts[ 'ProjWData' ] = ( RooArgSet(tag._var), data, True )
             from P2VVGeneralUtils import plot
             plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                                 , 'psi*'     : dict( LineColor = kRed,   LineStyle = kDashed )
                                                 , 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                                                 }
-                                 , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataRng )
-                                 , pdfOpts  = dict( LineWidth = 2, **pdfRng )
+                                 , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
+                                 , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
                                  , logy = ( o == t )
                                  )
     return (result,canvas)
@@ -204,8 +210,10 @@ c_di = splot( pdf_di, splot_m)
 from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
 mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
 #TODO: allow one to get RooRealVar (centered on the computed moment, with an +-N signma range) as coefficients instead of ConstVar...
-psi_background += mompdfBuilder.pdf( Component = psi_background.GetName(), Indices = [ i for i in indices(2,3) ], Name = 'psi_angles' )
-cmb_background += mompdfBuilder.pdf( Component = cmb_background.GetName(), Indices = [ i for i in indices(3,4) ], Name = 'cmb_angles' )
+indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
+from math import sqrt
+psi_background += mompdfBuilder.pdf( Component = psi_background.GetName(), Indices = [ i for i in indices(2,3) ], Name = 'psi_angles', MinSignificance = 0.5, Scale = sqrt(50.) )
+cmb_background += mompdfBuilder.pdf( Component = cmb_background.GetName(), Indices = [ i for i in indices(3,4) ], Name = 'cmb_angles', MinSignificance = 0.5, Scale = sqrt(50.) )
 
 #pdf_mst = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,st), Name='pdf_mst')
 #c_mst = FitAndPlot(pdf_mst,data,sdata = splot_m)
