@@ -39,6 +39,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
 
       noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
       data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN )
+      data = observables[0].ws().put(data)
 
     else :
       from ROOT import TFile
