@@ -20,7 +20,7 @@ root_finder = RooBrentRootFinder(binding)
 t_min = t.getMin()
 t_max = t.getMax()
 bin_max = 1.
-dy = 0.025
+dy = 0.075
 
 # The bin boundaries
 from array import array
