@@ -545,9 +545,17 @@ class ProdPdf(Pdf):
         def _handleConditional( pdf ) :
             name = pdf.GetName()
             cond = pdf.ConditionalObservables()
-            if cond : name += '|{%s}'%( ','.join(i.GetName() for i in cond))
+            if cond : 
+                # first define a named set for our conditionals, as the
+                # parsing of this is utterly borken in case we try PROD::name( f | { x,y }, g )
+                # as it interprets this as f|x ,y, g due to not recognizing the closing } as
+                # token being parsed is already split on the ',', hance asSET gets "{x" and
+                # is very happy with that...
+                __borken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
+                name += '|%s'% __borken_parser_workaround.GetName()
             return name
         pdfs = ','.join( _handleConditional(p) for p in self._dict['PDFs'])
+        print 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
         return 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
 
     def _separator(self):
