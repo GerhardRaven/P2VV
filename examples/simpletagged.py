@@ -1,12 +1,11 @@
 from math import sqrt, pi
 from RooFitWrappers import *
 
-obj  = RooObject( workspace = 'workspace')
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
+obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
 from ROOTDecorators import  ROOTversion as Rv
-
 fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
@@ -36,8 +35,8 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     )
 
 from P2VVGeneralUtils import readData
-#data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+#data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , 'DecayTree'
                , True
                , [ iTag,eta, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st, sel ]
@@ -52,6 +51,8 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
+#externalConstraints = list()
+#externalConstraints += tres.ExternalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
@@ -59,12 +60,12 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
                                      , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) 
                                      )
 
-# define tagging parameter TODO: move into dedicated class...
-eta_average  = ConstVar(Name = 'eta_average', Value = 0.379 )
-p0  = RealVar('p0', Value = 0.384, MinMax = (0.2, 0.5), Constant = True )
-p1  = RealVar('p1', Value = 1.037, MinMax = (0.8, 1.2), Constant = True )
-tag = FormulaVar('tag','@0 * ( 1 - 2 * ( @2 + @3 * (@1 - @4 ) ) )', [ iTag,eta,p0,p1,eta_average ] )
+# define tagging parameter 
+from P2VVParameterizations.FlavourTagging import Trivial_PerEventTaggingParams as TaggingParams
+tagging = TaggingParams( wTag = eta ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
+#externalConstraints += tagging.ExternalConstraints()
+
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta !!!
 eta_pdf = UniformPdf( Name = 'eta_pdf', Arguments = (eta,) )
 
@@ -81,7 +82,6 @@ sig_tag = Trivial_Background_Tag( Name = 'sig_tag'
                                 , bkg_tag_delta = dict( Name = 'tag_sig_delta', Value = 0, MinMax = (-0.1,0.1) ) 
                                 )
 
-
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False )
                         , lambdaCPSq = ConstVar( Name = 'one', Value = 1 ) 
@@ -96,7 +96,11 @@ amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.50, A0Phase = 0
                                     )
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
-basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes,CP, tag, ['A0','Apar','Aperp','AS'] ) 
+basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
+                                                  , amplitudes
+                                                  , CP
+                                                  , Product('tag',(iTag,tagging['dilution']))
+                                                  , ['A0','Apar','Aperp','AS'] ) 
 
 from RooFitWrappers import BDecay
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
@@ -161,4 +165,5 @@ for p in pdf_itag.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 
 # tagged fit
 pdf   = buildPdf((signal,bkg_background ), Observables = (m,t,eta,iTag)+tuple(angles.angles.itervalues()), Name='pdf')
+# fitOpts[ 'ExternalConstraints' ] = externalConstraints
 c_pdf = pdf.fitTo(data, **fitOpts)

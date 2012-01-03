@@ -41,6 +41,22 @@ class Trivial_TaggingParams( TaggingParams ) :
                               , CEvenOdds = [ Trivial_CEvenOdd() ]
                               )
 
+class Trivial_PerEventTaggingParams( TaggingParams ) :
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import FormulaVar,ConstVar
+        self._parseArg( 'wTag', kwargs, Title = 'B wrong tag probability',    Value = 0.25, MinMax = ( 0., 0.5 ) )
+        self._parseArg( 'p0', kwargs, Title = 'p0  tagging parameter',    Value = 0.384, Constant = True, MinMax = ( 0., 0.5 ) )
+        self._parseArg( 'p1', kwargs, Title = 'p1  tagging parameter',    Value = 1.037, Constant = True, MinMax = ( 0.8, 1.2 ) )
+        self._parseArg( 'etaAverage', kwargs, Title = 'etaAverage  tagging parameter',    Value = 0.379, Constant = True, MinMax = ( 0., 0.5 ) )
+        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
+        self._check_extraneous_kw( kwargs )
+        TaggingParams.__init__( self
+                              , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
+                                                         , [ self._wTag, self._etaAverage, self._p0, self._p1 ], Title = 'Calibrated Per-Event Dilution' ) ]
+                              , ADilWTags = [ ConstVar( Name = 'zero',Value = 0) ]
+                              , CEvenOdds = [ Trivial_CEvenOdd() ]
+                              )
+
 class Trivial_Dilution( TaggingParams ) :
     def __init__( self, **kwargs ) :
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
