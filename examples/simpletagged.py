@@ -1,10 +1,12 @@
+from math import sqrt, pi
 from RooFitWrappers import *
+
 obj  = RooObject( workspace = 'workspace')
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 
-
 from P2VVGeneralUtils import numCPU
 from ROOTDecorators import  ROOTversion as Rv
+
 fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
@@ -34,7 +36,6 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     )
 
 from P2VVGeneralUtils import readData
-#data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , 'DecayTree'
                , True
@@ -56,10 +57,9 @@ from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65, deltaGamma = 0.10, deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) )
 
 from P2VVParameterizations.FlavourTagging import Trivial_Dilution
-taggingParams = Trivial_Dilution( Dilution = tag ) # TODO: add calibration... Dilution = FormulaVar( ... "...",{p0,p1,etaAverage,tag} )
+taggingParams = Trivial_Dilution( Dilution = tag ) # TODO: add calibration: Dilution = FormulaVar("calibrated_tag","...",{p0,p1,etaAverage,tag} )
 # TODO: add external constraint terms for p0 and p1...
 
-from math import pi
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False )
                         , lambdaCPSq = ConstVar( Name = 'one', Value = 1 ) 
@@ -92,6 +92,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 
 ### TODO: fit MC version of sig_t_angles on MC data and get efficiency,
 ###       then multiply sig_t_angles with the efficiency...
+###       
 
 #mcpdf = BDecay( ... )
 #from P2VVGeneralUtils import RealMomentsBuilder
@@ -112,7 +113,7 @@ ntot= data.numEntries()
 signal         = Component('signal',         ( sig_m.pdf(), sig_t_angles, ), Yield = ( nsig, 0, 1.1*nsig) )
 cmb_background = Component('cmb_background', ( cmb_m.pdf(), cmb_t.pdf(),  ), Yield = ( ncmb, 0, 1.3*ncmb) )
 
-# Build, Fit PDFs
+# make sweighted dataset using J/psi phi mass
 pdf_m = buildPdf((signal, cmb_background ), Observables = (m,), Name='pdf_m')
 c_m = pdf_m.fitTo(data,**fitOpts)
 for p in pdf_m.Parameters() : p.setConstant( not p.getAttribute('Yield') )
@@ -126,7 +127,6 @@ for c in [ signal, cmb_background ] :
 
 # create PDF for angular background
 from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
-from math import sqrt
 mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
 cmb_background += mompdfBuilder.pdf( Component = cmb_background.GetName(), Indices = [ i for i in indices(3,4) ], Name = 'cmb_angles', MinSignificance = 0.5, Scale = sqrt(50.) )
 
