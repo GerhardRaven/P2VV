@@ -135,9 +135,9 @@ else:
 # Get the bare observable objects and copy them
 obs = w.argSet(','.join([o['Name'] for o in observables]))
 pdf_params = pdf.getParameters(obs)
-for param in pdf_params:
-    if param.GetName() not in ['Gamma', 'deltaGamma']:
-        param.setConstant()
+## for param in pdf_params:
+##     if param.GetName() not in ['Gamma', 'deltaGamma']:
+##         param.setConstant()
 gen_params = pdf_params.snapshot(True)
 
 # Make another ArgSet to put the fit results in
