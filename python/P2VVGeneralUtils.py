@@ -39,6 +39,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
 
       noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
       data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN )
+      data = observables[0].ws().put(data)
 
     else :
       from ROOT import TFile
@@ -320,7 +321,7 @@ class RealMomentsBuilder ( dict ) :
         nameExpr = re.compile(names) if names else None
 
         # check if there are no arguments left
-        assert not kwargs
+        assert not kwargs, 'extraneous kw args: %s' % kwargs
 
         # yield name, coefficient and function for selected moments
         for funcName in self._basisFuncNames :
@@ -612,13 +613,17 @@ class RealMomentsBuilder ( dict ) :
         #        maybe take MinMax = ( -5 * c[1], 5*c[1] ) ??? and make the 5 settable??
         # TODO: verify we've got moments, and not EffMoments???
         # TODO: verify we've either been computed or read
-        ( name, coef, fun ) = zip( *self._iterFuncAndCoef() )
+        scale = kwargs.pop('Scale', 1. )
+        name = kwargs.pop('Name')
+        ( names, coefs, funs ) = zip( *self._iterFuncAndCoef( MinSignificance = kwargs.pop( 'MinSignificance', float('-inf') )
+                                                         , Names           = kwargs.pop( 'Names', None)
+                                                         ) )
         from RooFitWrappers import ConstVar,RealSumPdf
         # TODO: renornmalize wrt. 0,0,0? require 0,0,0 to be present??
-        return RealSumPdf( kwargs.pop('Name')
-                         , functions = fun
+        return RealSumPdf( name
+                         , functions = funs
                          , coefficients = ( ConstVar( Name = ('C_%3.6f'%c[0]).replace('-','m').replace('.','d')
-                                                    , Value = c[0] ) for c in coef ) 
+                                                    , Value = c[0]*scale ) for c in coefs ) 
                          )
 
     def __mul__( self, pdf ) :
