@@ -143,17 +143,10 @@ gen_params = pdf_params.snapshot(True)
 # Make another ArgSet to put the fit results in
 result_params = RooArgSet(pdf_params, "result_params")
 
-# Get a good random seed, set it and store it
-import struct,os
-seed = struct.unpack('I', os.urandom(4))[0]
-
-from ROOT import RooRandom
-RooRandom.randomGenerator().SetSeed(seed)
-
 # Some extra numbers of interest
 NLL = RooRealVar('NLL', '-log(Likelihood', 1.)
 ngen = RooRealVar('ngen', 'number of generated events', options.nevents)
-seed = RooRealVar('seed', 'random seed', seed)
+seed = RooRealVar('seed', 'random seed', 0.)
 result_params.add(NLL)
 result_params.add(ngen)
 result_params.add(seed)
@@ -162,7 +155,15 @@ result_params.add(seed)
 result_data = RooDataSet('result_data', 'result_data', result_params)
 data_params = result_data.get()
 
+from ROOT import RooRandom
+import struct, os
+
 for i in range(options.ntoys):
+    # Get a good random seed, set it and store it
+    s = struct.unpack('I', os.urandom(4))[0]    
+    RooRandom.randomGenerator().SetSeed(s)
+    seed.setVal(s)
+
     # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
     pdf_params.assignValueOnly( gen_params ) 
     data = pdf.generate(obs, options.nevents)
