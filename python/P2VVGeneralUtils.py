@@ -27,9 +27,6 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
     """reads data from file (RooDataSet or TTree(s))
     """
 
-    # get current workspace
-    ws = RooObject().ws()
-
     if NTuple :
       from ROOT import RooDataSet, TChain
       assert observables != None, "P2VV - ERROR: readData: set of observables is required for reading an NTuple"
@@ -55,7 +52,9 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
 
     print 'P2VV - INFO: read dataset with %s entries' % data.numEntries()
 
-    return ws().put(data)
+    # import data set into current workspace
+    from RooFitWrappers import RooObject
+    return RooObject().ws().put(data)
 
 
 def writeData( filePath, dataSetName, data, NTuple = False ) :
