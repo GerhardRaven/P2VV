@@ -23,9 +23,11 @@ def numCPU( Max = sys.maxint ) :
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
 
-def readData( filePath, dataSetName, NTuple = False, observables = None ) :
+def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = None ) :
     """reads data from file (RooDataSet or TTree(s))
     """
+
+    if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
 
     if NTuple :
       from ROOT import RooDataSet, TChain
@@ -34,21 +36,27 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
       # create data set from NTuple file(s)
       print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
       chain = TChain(dataSetName)
-      status = chain.Add(filePath,-1)
-      if status == 0 : raise RuntimeError('Could not locate tree %s in file %s'% (dataSetName,filePath) )
+      status = chain.Add( filePath, -1 )
+      if status == 0 : raise RuntimeError('Could not locate tree %s in file %s' % ( dataSetName, filePath ) )
 
-      noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
-      data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN )
+      data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN + ' && ' + cuts if cuts else noNAN )
 
     else :
       from ROOT import TFile
 
       # get data set from file
       print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
-      f = TFile.Open( filePath, 'READ' )
-      assert f, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
-      data = f.Get(dataSetName)
-      f.Close()
+      file = TFile.Open( filePath, 'READ' )
+      assert file, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
+
+      if observables :
+          from ROOT import RooDataSet
+          data = RooDataSet(  dataSetName, dataSetName, file.Get(dataSetName), [ obs._var for obs in observables ]
+                            , noNAN + ' && ' + cuts if cuts else noNAN )
+      else :
+          data = file.Get(dataSetName)
+
+      file.Close()
 
     print 'P2VV - INFO: read dataset with %s entries' % data.numEntries()
 
@@ -77,24 +85,51 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
     """
 
     # get observables from data set
-    obsSet = dataSet.get(0)
-    estimWTag = obsSet.find(estimWTagName)
+    obsSet      = dataSet.get(0)
+    tagDecision = obsSet.find(tagDecisionName)
+    estimWTag   = obsSet.find(estimWTagName)
+
+    # create initial state tag
+    from ROOT import RooTagDecisionWrapper
+    iTagWrapper = RooTagDecisionWrapper(iTagName, 'Tagging Category', tagDecision)
 
     # create tagging category
     from ROOT import RooThresholdCategory
-    if not tagCatBins : tagCatBins = [  ( 'Untagged', 0           )
-                                      , ( 'tagCat1',  1, 0.499999 )
-                                      , ( 'tagCat2',  2, 0.38     )
-                                      , ( 'tagCat3',  3, 0.31     )
-                                      , ( 'tagCat4',  4, 0.24     )
-                                      , ( 'tagCat5',  5, 0.17     )
-                                     ]
+    if tagCatBins :
+        binOneThresh = tagCatBins[1][2]
+    else :
+        binOneThresh = 0.499999
+        tagCatBins = [  ( 'Untagged', 0               )
+                      , ( 'tagCat1',  1, binOneThresh )
+                      , ( 'tagCat2',  2, 0.38         )
+                      , ( 'tagCat3',  3, 0.31         )
+                      , ( 'tagCat4',  4, 0.24         )
+                      , ( 'tagCat5',  5, 0.17         )
+                     ]
     tagCatFormula = RooThresholdCategory( tagCatName, 'P2VV tagging category', estimWTag, tagCatBins[0][0], tagCatBins[0][1] )
     for cat in range( 1, len(tagCatBins) ) : tagCatFormula.addThreshold( tagCatBins[cat][2], tagCatBins[cat][0], tagCatBins[cat][1] )
 
-    # create tagging category column in data set
+    # create new columns in data set
+    iTag   = dataSet.addColumn(iTagWrapper)
     tagCat = dataSet.addColumn(tagCatFormula)
+    iTag.createFundamental()
     tagCat.createFundamental()
+
+    # check tagging columns
+    for obsSet in dataSet :
+        assert obsSet.getCatIndex(iTagName) == +1 or obsSet.getCatIndex(iTagName) == -1,\
+                'P2VV - ERROR: addTaggingObservables: initial state flavour tag has value %+d' % obsSet.getCatIndex(iTagName)
+        assert obsSet.getCatIndex(tagDecisionName) == 0 or obsSet.getCatIndex(iTagName) == obsSet.getCatIndex(tagDecisionName),\
+                'P2VV - ERROR: addTaggingObservables: initial state flavour tag and tag decision have different values: %+d and %+d'\
+                % ( obsSet.getCatIndex(iTagName), obsSet.getCatIndex(tagDecisionName) )
+        assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getRealValue(estimWTagName) >= binOneThresh )\
+                or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getRealValue(estimWTagName) < binOneThresh ),\
+                'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while tagging category = %d'\
+                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getCatIndex(tagCatName) )
+        assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getCatIndex(tagCatName) == 0 )\
+                or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getCatIndex(tagCatName) > 0 ),\
+                'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while tagging category = %d'\
+                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getCatIndex(tagCatName) )
 
 
 ###########################################################################################################################################

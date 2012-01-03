@@ -26,6 +26,7 @@
 
 #include <memory>
 
+#include "Riostream.h"
 #include "RooFit.h"
 #include "RooMsgService.h"
 
