@@ -1,6 +1,6 @@
 import optparse
 import sys
-parser = optparse.OptionParser(usage = '%prog nbins')
+parser = optparse.OptionParser(usage = '%prog')
 
 parser.add_option("-o", "--output", dest = "output", default = 'toy.root',
                   type = 'string', help = "set output filename")
@@ -10,14 +10,18 @@ parser.add_option("--ncpu", dest = "ncpu", default = 4,
                   type = 'int', help = 'number of CPUs to use')
 parser.add_option("-e", "--nevents", dest = "nevents", default = 10000,
                   type = 'int', help = 'number of events to generate')
+parser.add_option("-a", dest = "acceptance", default = '',
+                  type = 'string', action = 'store', help = 'use the acceptance')
+parser.add_option("-p", dest = "pdf", default = 'comb_pdf',
+                  action = 'store', help = 'which pdf to use')
 
 (options, args) = parser.parse_args()
-if len(args) != 1:
-    print parser.usage
-    sys.exit(-1)
-nbins = int(args[0])
 
-from ROOT import RooDataHist
+if options.pdf not in ['sig_pdf', 'comb_pdf']:
+    print "PDF must be either sig_pdf or comb_pdf"
+    sys.exit(-2)
+
+from ROOT import RooDataHist, RooHistFunc
 from RooFitWrappers import *
 from ROOT import TH1F, TFile
 
@@ -89,10 +93,10 @@ tres =  TimeResolution(time = t)
 tres.setConstant('.*')
 args[ 'resolutionModel' ]  = tres.model()
 
-pdf = BTagDecay( 'pdf', **args  )
+sig_pdf = BTagDecay('sig_pdf', **args )
 
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
-signal = Component('sig', (LP2011_Signal_Mass(mass = mass).pdf(), pdf), Yield = (1000,0,15000))
+signal = Component('signal', (LP2011_Signal_Mass(mass = mass).pdf(), sig_pdf), Yield = (1000,0,15000))
 
 from P2VVParameterizations.MassPDFs import LP2011_Background_Mass
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time
@@ -104,70 +108,84 @@ bkg  = Component('bkg',(  LP2011_Background_Mass( mass = mass ).pdf()
                        ,  Uniform_Angles( angles = angles.angles ).pdf()
                        ), Yield = (4000,1000,15000) )
 
-comp_pdf = buildPdf( (signal,bkg), Observables = observables,  Name = 'jointpdf' )
+comb_pdf = buildPdf((signal, bkg), Observables = observables,  Name = 'comb_pdf')
 
 ##############################################
 ### Define acceptance function a la Wouter ###
 ##############################################
-effh1 = TH1F( "effh1", "effh1", nbins, w['t'].getMin(), w.['t'].getMax()) 
-for i in range(1, int(0.6 * nbins)):         effh1.SetBinContent(i, 1. / nbins * i)
-for i in range(int(0.6 * nbins), nbins + 1): effh1.SetBinContent(i, 1) 
-
-#TODO: add wrapper for this...
-w.put( RooDataHist("effdatahist", "effdatahist", RooArgList(w['t']), effh1) )
-w.factory("HistFunc::eff(t, effdatahist)")
-w.factory("EffHistProd::acc_pdf(jointpdf, eff)")
+if options.acceptance:
+    acc_file = TFile.Open(options.acceptance)
+    acc_workspace = acc_file.Get('w')
+    eff_hist = acc_workspace.data('eff_hist')
+    eff_func = RooHistFunc('acceptance', 'time acceptance', RooArgSet(t._target_()), eff_hist)
+    w.put(eff_func)
+    w.factory("EffHistProd::acc_pdf(%s, acceptance)" % options.pdf)
 
 w.addClassDeclImportDir("..")
 w.addClassImplImportDir("..")
 w.importClassCode()
 
 # Get the PDF which included the acceptance
-acc_pdf = w.pdf('acc_pdf')
+pdf = None
+if options.acceptance:
+    pdf= w.pdf('acc_pdf')
+else:
+    pdf = w.pdf(options.pdf)
 
 # Get the bare observable objects and copy them
 obs = w.argSet(','.join([o['Name'] for o in observables]))
-pdf_params = acc_pdf.getParameters(obs)
+pdf_params = pdf.getParameters(obs)
+## for param in pdf_params:
+##     if param.GetName() not in ['Gamma', 'deltaGamma']:
+##         param.setConstant()
 gen_params = pdf_params.snapshot(True)
 
 # Make another ArgSet to put the fit results in
 result_params = RooArgSet(pdf_params, "result_params")
 
-# Get a good random seed, set it and store it
-import struct,os
-seed = struct.unpack('I', os.urandom(4))[0]
-
-from ROOT import RooRandom
-RooRandom.randomGenerator().SetSeed(seed)
-
 # Some extra numbers of interest
 NLL = RooRealVar('NLL', '-log(Likelihood', 1.)
 ngen = RooRealVar('ngen', 'number of generated events', options.nevents)
-seed = RooRealVar('seed', 'random seed', seed)
+seed = RooRealVar('seed', 'random seed', 0.)
 result_params.add(NLL)
 result_params.add(ngen)
 result_params.add(seed)
 
 # The dataset to store the results
 result_data = RooDataSet('result_data', 'result_data', result_params)
+data_params = result_data.get()
+
+from ROOT import RooRandom
+import struct, os
 
 for i in range(options.ntoys):
+    # Get a good random seed, set it and store it
+    s = struct.unpack('I', os.urandom(4))[0]    
+    RooRandom.randomGenerator().SetSeed(s)
+    seed.setVal(s)
+
     # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
     pdf_params.assignValueOnly( gen_params ) 
-    data = acc_pdf.generate(obs, options.nevents)
+    data = pdf.generate(obs, options.nevents)
     from ROOTDecorators import  ROOTversion as Rv
-    fit_result = acc_pdf.fitTo(data, RooFit.NumCPU(options.ncpu), RooFit.Save(True),
-                               RooFit.Optimize( True if Rv[1]<32 else 0 ),
-                               RooFit.Minos(False), RooFit.Minimizer('Minuit2'))
+    fit_result = pdf.fitTo(data, RooFit.NumCPU(options.ncpu), RooFit.Save(True),
+                           RooFit.Optimize( True if Rv[1]<32 else 0 ),
+                           RooFit.Minos(False), RooFit.Minimizer('Minuit2'))
     if fit_result.status() != 0:
         print 'Fit result status = %s' % fit_result.status()
         continue
     NLL.setVal(fit_result.minNll())
+    for result_param in result_params:
+        data_param = data_params.find(result_param.GetName())
+        data_param.setVal(result_param.getVal())
+        # This sets a symmetric error, but since we don't run Minos, that's ok
+        data_param.setError(result_param.getError())
     result_data.fill()
 
 # Write the results to a file
 output_file = TFile.Open(options.output, 'recreate')
 output_file.WriteTObject(result_data, result_data.GetName())
+output_file.WriteTObject(gen_params, 'gen_params')
 output_file.Close()
 
 ## from ROOT import RooFit, RooGenFitStudy
@@ -175,7 +193,9 @@ output_file.Close()
 
 ## gfs = RooGenFitStudy();
 ## obs = ','.join([o.GetName() for o in observables])
-## gfs.setGenConfig("acc_pdf", obs, RooFit.NumEvents(1000))
-## gfs.setFitConfig("acc_pdf", obs, RooFit.Minimizer("Minuit2"))
+## gfs.setGenConfig("pdf", obs, RooFit.NumEvents(1000))
+## gfs.setFitConfig("pdf", obs, RooFit.Minimizer("Minuit2"))
 
 ## mgr = RooStudyManager(w, gfs)
+
+
