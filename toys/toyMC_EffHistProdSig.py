@@ -1,5 +1,7 @@
 import optparse
 import sys
+import os
+
 parser = optparse.OptionParser(usage = '%prog')
 
 parser.add_option("-o", "--output", dest = "output", default = 'toy.root',
@@ -14,6 +16,8 @@ parser.add_option("-a", dest = "acceptance", default = '',
                   type = 'string', action = 'store', help = 'use the acceptance')
 parser.add_option("-p", dest = "pdf", default = 'comb_pdf',
                   action = 'store', help = 'which pdf to use')
+parser.add_option("-s", "--snapshot", dest = "snapshot", default = '',
+                  action = 'store', help = 'Extract a snapshot to current directory.')
 
 (options, args) = parser.parse_args()
 
@@ -21,6 +25,29 @@ if options.pdf not in ['sig_pdf', 'comb_pdf']:
     print "PDF must be either sig_pdf or comb_pdf"
     sys.exit(-2)
 
+if options.snapshot:
+    import tarfile
+    try:
+        archive = tarfile.open(options.snapshot, 'r:bz2')
+        python_dirs = []
+        for member in archive.getmembers():
+            if member.isfile() and os.path.exists(member.path):
+                print "File %s already exists, skipping" % member.path
+            else:
+                archive.extract(member)
+            if member.isdir() and member.path.endswith('python'):
+                python_dirs.append(member.path)
+        sys.path.extend(python_dirs)
+    except OSError, e:
+        print e
+        sys.exit(-2)
+    finally:
+        archive.close()
+    try:
+        print 'Running with snapshot %(comment)s' % archive.pax_headers
+    except KeyError:
+        pass
+    
 from ROOT import RooDataHist, RooHistFunc
 from RooFitWrappers import *
 
