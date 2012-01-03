@@ -1,4 +1,4 @@
-from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult, RooFit
+from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult, RooFit, RooDataHist
 from ROOT import gStyle,gROOT
 import ROOTDecorators
 gStyle.SetPalette(1)
