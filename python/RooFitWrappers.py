@@ -640,7 +640,6 @@ class HistPdf( Pdf ) :
             , 'Data' : kwargs.pop('Data')
             }
         dhs_name =  Name + '_' + '_'.join( i.GetName() for i in d['Observables'] )
-        from ROOT import RooDataHist, RooArgSet
         rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgSet( i._var for i in d['Observables'] ), d['Data']))
         # construct factory string on the fly...
         self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name )  )
