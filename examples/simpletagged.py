@@ -24,7 +24,7 @@ mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1012, 1028), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
 st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
-eta  = RealVar('tagomega_os',      Title = 'estimated mistag',          Observable = True, MinMax = (0,0.50001),  nBins =  50)
+eta  = RealVar('tagomega_os',      Title = 'estimated mistag',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 iTag = Category( 'tagdecision_os', Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 sel  = Category( 'sel',            Title = 'selection',                 Observable = True, States = { 'good': +1 } )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
@@ -91,7 +91,7 @@ CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinM
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
 amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.50, A0Phase = 0
                                     , AperpMag2 = 0.25, AperpPhase = dict( Value = -3.1 ) # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                    , AparPhase = 3.4 - 2*pi
+                                    , AparPhase = -2.9
                                     , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True ) 
                                     )
 # need to specify order in which to traverse...
@@ -167,3 +167,22 @@ for p in pdf_itag.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 pdf   = buildPdf((signal,bkg_background ), Observables = (m,t,eta,iTag)+tuple(angles.angles.itervalues()), Name='pdf')
 # fitOpts[ 'ExternalConstraints' ] = externalConstraints
 c_pdf = pdf.fitTo(data, **fitOpts)
+
+from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
+canvas = dict()
+for rng in ( None, 'signal','leftsideband,rightsideband' ) :
+    canvas[rng] = TCanvas('%s'%rng)
+    dataOpts = dict( CutRange =        rng ) if rng else dict()
+    pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
+    from ROOT import RooArgSet
+    pdfOpts['ProjWData'] = ( RooArgSet( eta._var ),  data, True ) # TODO: grab the data in the relevant range... data.reduce( **dataOpts )
+    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+        from P2VVGeneralUtils import plot
+        plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                                            , 'bkg*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                                            }
+                             , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
+                             , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+                             , logy = ( o == t )
+                             )
