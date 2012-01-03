@@ -16,8 +16,6 @@ fitOpts = dict( NumCPU = numCPU()
               )
 
 # define observables
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5259, 5451), nBins =  48
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
@@ -25,9 +23,11 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                                   } )
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3025, 3169), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1012, 1028), nBins =  16 )
-iTag = Category( 'tagdecision_os', Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
-sel  = Category( 'sel', Title = 'selection', Observable = True, States = { 'good': +1 } )
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
 eta  = RealVar('tagomega_os',      Title = 'estimated mistag',          Observable = True, MinMax = (0,0.50001),  nBins =  50)
+iTag = Category( 'tagdecision_os', Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
+sel  = Category( 'sel',            Title = 'selection',                 Observable = True, States = { 'good': +1 } )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',        nBins = 24 )
@@ -36,17 +36,17 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     )
 
 from P2VVGeneralUtils import readData
+#data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , 'DecayTree'
                , True
                , [ iTag,eta, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st, sel ]
                )
-tag  = RealVar('tagdilution', Title = 'estimated dilution', Observable = True, Formula = ( "@0*(1-2*@1)",[iTag,eta], data ), MinMax=(-1,1),nBins =  51)
 
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5368, MinMax = (5363,5372) ) )
-cmb_m = Background_BMass( Name = 'cmb_m', mass = m, m_bkg_exp  = dict( Name = 'm_cmb_exp' ) )
+bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 # Decay time pdf
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
@@ -54,11 +54,33 @@ tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can 
 tres.setConstant('.*')
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65, deltaGamma = 0.10, deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) )
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
+                                     , deltaGamma = 0.10
+                                     , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) 
+                                     )
 
-from P2VVParameterizations.FlavourTagging import Trivial_Dilution
-taggingParams = Trivial_Dilution( Dilution = tag ) # TODO: add calibration: Dilution = FormulaVar("calibrated_tag","...",{p0,p1,etaAverage,tag} )
-# TODO: add external constraint terms for p0 and p1...
+# define tagging parameter TODO: move into dedicated class...
+eta_average  = ConstVar(Name = 'eta_average', Value = 0.379 )
+p0  = RealVar('p0', Value = 0.384, MinMax = (0.2, 0.5), Constant = True )
+p1  = RealVar('p1', Value = 1.037, MinMax = (0.8, 1.2), Constant = True )
+tag = FormulaVar('tag','@0 * ( 1 - 2 * ( @2 + @3 * (@1 - @4 ) ) )', [ iTag,eta,p0,p1,eta_average ] )
+# TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
+# WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta !!!
+eta_pdf = UniformPdf( Name = 'eta_pdf', Arguments = (eta,) )
+
+# itag distribution
+from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
+bkg_tag = Trivial_Background_Tag( Name = 'bkg_tag'
+                                , tagdecision   = iTag
+                                , bkg_tag_eps   = dict( Name = 'tag_bkg_eff', Value = 0.27 )
+                                , bkg_tag_delta = dict( Name = 'tag_bkg_delta', Value = 0 , MinMax = (-0.1,0.1) ) 
+                                )
+sig_tag = Trivial_Background_Tag( Name = 'sig_tag'
+                                , tagdecision   = iTag
+                                , bkg_tag_eps   = dict( Name = 'tag_sig_eff', Value = 0.35 )
+                                , bkg_tag_delta = dict( Name = 'tag_sig_delta', Value = 0, MinMax = (-0.1,0.1) ) 
+                                )
+
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False )
@@ -68,8 +90,8 @@ CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinM
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
 amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.50, A0Phase = 0
-                                    , AperpMag2 = 0.25, AperpPhase = dict( Value = -0.17 ) # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                    , AparPhase = 2.5
+                                    , AperpMag2 = 0.25, AperpPhase = dict( Value = -3.1 ) # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                    , AparPhase = 3.4 - 2*pi
                                     , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True ) 
                                     )
 # need to specify order in which to traverse...
@@ -87,7 +109,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , cosCoef   = basisCoefficients['cos']
                      , sinhCoef  = basisCoefficients['sinh']
                      , sinCoef   = basisCoefficients['sin']
-                     , ConditionalObservables = ( tag, )
+                     , ConditionalObservables = ( eta, iTag, )
                      )
 
 ### TODO: fit MC version of sig_t_angles on MC data and get efficiency,
@@ -102,34 +124,41 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 #
 ## replace signal pdf with efficiency corrected signal pdf
 #sig_t_angles = eff * sig_t_angles
+# TODO: verify that after multiplication the new PDF still has the same ConditionalObservables!!!!!!!
 
 #####
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
-cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_cmb_fll', Value = 0.61), t_bkg_ll_tau = dict( Name = 't_cmb_ll_tau', Value = 2.5, MinMax = (1.0,3.5)), t_bkg_ml_tau = dict( Name = 't_cmb_ml_tau', Value = 0.43) )
+bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres.model()
+                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.6 )
+                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 2.5, MinMax = (0.5,3.5) )
+                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.1 ) )
 
 # Create components
-ntot= data.numEntries()
-(nsig,ncmb) = ( 0.9*ntot, 0.1*ntot) 
-signal         = Component('signal',         ( sig_m.pdf(), sig_t_angles, ), Yield = ( nsig, 0, 1.1*nsig) )
-cmb_background = Component('cmb_background', ( cmb_m.pdf(), cmb_t.pdf(),  ), Yield = ( ncmb, 0, 1.3*ncmb) )
+(ntot,fsig) = ( data.numEntries(), 0.8 ) # 0.8 is for t>0.3 ; for t > 0.5, it's more like 0.9...
+(nsig,nbkg) = ( fsig*ntot, (1-fsig)*ntot) 
+signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, sig_tag.pdf()), Yield = ( nsig, 0, 1.1*nsig) )
+bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 
+# create PDF for angular background
 # make sweighted dataset using J/psi phi mass
-pdf_m = buildPdf((signal, cmb_background ), Observables = (m,), Name='pdf_m')
+pdf_m = buildPdf((signal, bkg_background ), Observables = (m,), Name='pdf_m')
 c_m = pdf_m.fitTo(data,**fitOpts)
 for p in pdf_m.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 from P2VVGeneralUtils import SData
 splot_m = SData(Pdf = pdf_m, Data = data, Name = 'MassSplot')
 
-# create hist pdf for dilution
-from RooFitWrappers import HistPdf
-for c in [ signal, cmb_background ] :
-    c += HistPdf(Name = "dilution_%s_pdf"%c.GetName(), Observables = [ tag ], Data = splot_m.data(c.GetName() ) )
-
-# create PDF for angular background
 from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
 mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
-cmb_background += mompdfBuilder.pdf( Component = cmb_background.GetName(), Indices = [ i for i in indices(3,4) ], Name = 'cmb_angles', MinSignificance = 0.5, Scale = sqrt(50.) )
+bkg_background += mompdfBuilder.pdf( Component = bkg_background.GetName()
+                                   , Indices = [ i for i in indices(3,4) ]
+                                   , Name = 'bkg_angles'
+                                   , MinSignificance = 0.5
+                                   , Scale = sqrt(50.) )
+# fit & fix iTag parameters
+pdf_itag   = buildPdf((signal,bkg_background ), Observables = (m,iTag), Name='pdf_itag')
+pdf_itag.fitTo( data,**fitOpts)
+for p in pdf_itag.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 
 # tagged fit
-pdf   = buildPdf((signal, cmb_background, ), Observables = (m,t,tag)+tuple(angles.angles.itervalues()), Name='pdf')
-c_pdf = pdf.fitTo(data,**fitOpts)
+pdf   = buildPdf((signal,bkg_background ), Observables = (m,t,eta,iTag)+tuple(angles.angles.itervalues()), Name='pdf')
+c_pdf = pdf.fitTo(data, **fitOpts)
