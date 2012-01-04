@@ -735,3 +735,21 @@ class SData( object ) :
             from ROOT import RooDataSet
             self._data[Component] = RooDataSet( dname, dname, self._sdata, self._sdata.get(),"1>0",wname) # use a dummy cut as (const char*)0 is tricky...
         return self._data[Component]
+
+
+def createSData( **kwargs ) :
+    # make sweighted dataset using J/psi phi mass
+    Observables = kwargs.pop('Observables')
+    Data        = kwargs.pop('Data')
+    FitOpts     = kwargs.pop('FitOpts')
+    Components  = kwargs.pop('Components')
+    Name        = kwargs.pop('Name')
+    from RooFitWrappers import buildPdf
+    pdf = buildPdf( Components, Observables = Observables, Name= Name + '_splot_pdf')
+    c_m = pdf.fitTo(Data,**FitOpts)
+    c_state = dict( ( p, p.isConstant() ) for p in pdf.Parameters() )
+    for p in pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+    sdata =  SData(Pdf = pdf, Data = Data, Name = Name + '_sdata')
+    for p,c in c_state.iteritems() : p.setConstant(c)
+    return sdata
+
