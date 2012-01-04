@@ -167,7 +167,7 @@ else :
                                           , angles.angles['ctheta'] : 7
                                           , angles.angles['phi' ] : 9
                                           }
-                             , Data = data
+                             , Data = data.reduce( CutRange = 'leftsideband,rightsideband') 
                              )
 
 # fit & fix iTag parameters
