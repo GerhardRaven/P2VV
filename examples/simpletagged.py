@@ -147,20 +147,28 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, sig_t
 bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 
 # create PDF for angular background
-if True :
+if False :
     # make sweighted dataset using J/psi phi mass
     from P2VVGeneralUtils import createSData
-    splot_m = createSData( Name = 'Mass' , Components =  (signal,bkg_background), Observables = (m,), FitOpts = fitOpts, Data = data )
-
     from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
+    splot_m = createSData( Name = 'Mass' , Components =  (signal,bkg_background), Observables = (m,), FitOpts = fitOpts, Data = data )
     mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
     bkg_background += mompdfBuilder.pdf( Component = bkg_background.GetName()
                                        , Indices = [ i for i in indices(3,4) ]
                                        , Name = 'bkg_angles'
                                        , MinSignificance = 0.5
                                        , Scale = sqrt(50.) )
-else :
+elif False:
     bkg_background += UniformPdf( Name = 'bkg_angles', Arguments = angles.angles.itervalues() )
+else :
+    bkg_background += HistPdf( Name = 'bkg_angles'
+                             , Observables = angles.angles.itervalues()
+                             , Binning =  { angles.angles['cpsi'] : 5
+                                          , angles.angles['ctheta'] : 7
+                                          , angles.angles['phi' ] : 9
+                                          }
+                             , Data = data
+                             )
 
 # fit & fix iTag parameters
 pdf_itag   = buildPdf((signal,bkg_background ), Observables = (m,iTag), Name='pdf_itag')
