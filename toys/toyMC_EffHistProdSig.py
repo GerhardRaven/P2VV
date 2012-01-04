@@ -51,6 +51,7 @@ if options.snapshot:
         pass
     
 from ROOT import RooDataHist, RooHistFunc
+from ROOT import TFile
 from RooFitWrappers import *
 
 w = RooObject( workspace = 'w' )

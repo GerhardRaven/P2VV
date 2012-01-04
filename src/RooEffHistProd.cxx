@@ -28,45 +28,134 @@
 #include "RooNameReg.h"
 #include "RooRealVar.h"
 #include "RooRandom.h"
+#include "RooCategory.h"
+#include "RooCatType.h"
+#include "TString.h"
+
 #include <memory>
 #include <algorithm>
+#include <exception>
 
 ClassImp(RooEffHistProd);
+
+namespace {
+
+class Exception : public exception
+{
+public:
+   Exception(const std::string& message)
+      : m_message(message)
+   {
+
+   }
+
+   virtual ~Exception() throw()
+   {
+      
+   }
+
+   virtual const char* what() const throw()
+   {
+      return m_message.c_str();
+   }
+
+private:
+   const std::string m_message;
+   
+};
+
+//_____________________________________________________________________________
+void cloneRanges(const RooArgSet& observables, const RooArgSet& iset,
+            const RooArgSet* nset, const char* rangeName,
+            const char* newName)
+{
+   assert(rangeName != 0);
+   assert(newName != rangeName);
+   // Create a set which is the union of iset and nset to find other variables with the same range
+   RooArgSet uni(iset);
+   uni.add(*nset, kTRUE);
+
+   // Skip the observables for which we are explicitely modifying the range
+   uni.remove(observables);
+
+   std::auto_ptr<TIterator> iter(uni.createIterator());
+   RooAbsArg* arg = 0;
+   while ((arg = static_cast<RooAbsArg*>(iter->Next()))) {
+      if (arg->hasRange(rangeName)) {
+         if (RooRealVar* real = dynamic_cast<RooRealVar*>(arg)) {
+            const RooAbsBinning& range = real->getBinning(rangeName);
+            std::cout << "Cloned regular range " << rangeName << " to " << newName 
+                      << " for var " << real->GetName() << " (";
+            if (range.isParameterized()) {
+               // Deal with parametrized ranges
+               real->setRange(newName, *range.lowBoundFunc(), *range.highBoundFunc());
+               cout << range.lowBoundFunc()->GetName() << "," 
+                    << range.highBoundFunc()->GetName() << ")";
+            } else {
+               // Regular range
+               real->setRange(newName, range.lowBound(), range.highBound());
+               cout << range.lowBound() << "," << range.highBound() << ")";
+            }
+            std::cout << std::endl;
+         } else if (RooCategory* cat = dynamic_cast<RooCategory*>(arg)) {
+            std::auto_ptr<TIterator> it(cat->typeIterator());
+            TString states;
+            const RooCatType* ct = 0;
+            while ((ct = static_cast<const RooCatType*>(it->Next()))) {
+               if (cat->isStateInRange(rangeName, ct->GetName())) {
+                  states.Append(ct->GetName());
+                  states.Append(",");
+               }
+            }
+            states.Remove(TString::kTrailing, ',');
+            cat->setRange(newName, states.Data());
+            std::cout << "Cloned range " << rangeName << " to " << newName << " with states " 
+                      << states.Data() << " for category " << cat->GetName() << std::endl;
+         } else {
+            throw Exception("Got type for which a range cannot be cloned");
+         }
+      }
+   }
+}
+}
 
 //_____________________________________________________________________________
 RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,const RooArgSet& iset,
                                      const RooArgSet* nset, const char *rangeName)
-   : I(0),xmin(0),xmax(0)
+   : I(0), xmin(0), xmax(0)
 {
    // create a function object for the corresponding integral of the underlying PDF.
    // i.e. if we have  eps(x)f(x,y)  and we get (x,y) as allVars, 
    // construct I(xmin,xmax) = int_xmin^xmax dx int dy f(x,y)
    // so that later we can do sum_i eps( (x_i+x_i+1)/2 ) * I(x_i,x_i+1)
    RooArgSet *x_ = parent->eff()->getObservables(&iset); // the subset of iset on which _eff depends
-   const char *myRange = rangeName;
    assert(x_->getSize() < 2); // for now, we only do 1D efficiency histograms...
    if (x_->getSize() == 1) {
-      assert(rangeName == 0); // deal with ranges later -- this is a bit non-trivial.... need to clone the original...
       assert( *x_->first() == parent->x() );
+
       // TODO: add original rangeName in here!
-      const char *name = parent->makeFPName(parent->GetName(), iset, nset, "_I_Range_min");
-      xmin = new RooRealVar(name,name,parent->x().getMin(rangeName),
-                            parent->x().getMin(rangeName),parent->x().getMax(rangeName));
-      name = parent->makeFPName(parent->GetName(), iset, nset, "_I_Range_max");
-      xmax = new RooRealVar(name, name,parent->x().getMax(rangeName),
+      TString range("_I_Range");
+      if (0 != rangeName) range.Replace(3, 8, rangeName);
+      
+      // Craete a RealVar to parametrize the lower bound
+      const char *name = parent->makeFPName(parent->GetName(), iset, nset, range + "_min");
+      xmin = new RooRealVar(name, name, parent->x().getMin(rangeName),
                             parent->x().getMin(rangeName), parent->x().getMax(rangeName));
-      myRange = parent->makeFPName(parent->GetName(), iset, nset, "_I_Range");
-      // if (parent->x().hasRange(myRange)) {
-      //    cout << "RooEffHistProd(" << parent->GetName() << ")::CacheElem  range " << myRange 
-      //         << " already exists!!!" << endl;
-      // }
-      parent->x().setRange(myRange,*xmin,*xmax);
-      // cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem created range " 
-      //      << myRange << " from " << xmin->GetName() << " to " << xmax->GetName() << endl;
+
+      // Create a RealVar to parametrize the high bound
+      name = parent->makeFPName(parent->GetName(), iset, nset, range + "_max");
+      xmax = new RooRealVar(name, name, parent->x().getMax(rangeName),
+                            parent->x().getMin(rangeName), parent->x().getMax(rangeName));
+
+      // Create a new name for the range
+      name = parent->makeFPName(parent->GetName(), iset, nset, range);
+      parent->x().setRange(name, *xmin, *xmax);
+      if (0 != rangeName) {
+         cloneRanges(parent->observables(), iset, nset, rangeName, name);
+      }
    }
-   I = parent->pdf()->createIntegral(iset,nset,parent->getIntegratorConfig(),myRange);
-   // cout << "RooEffHistProd("<<parent->GetName() << ")::CacheElem created integral " 
-   //      << I->GetName() << " over " << iset << " in range " << (myRange ? myRange : "<none>") << endl;
+   I = parent->pdf()->createIntegral(iset,nset,parent->getIntegratorConfig(), rangeName);
+
    //I->setOperMode(ADirty);
 }
 //_____________________________________________________________________________
@@ -166,12 +255,12 @@ RooAbsGenContext* RooEffHistProd::genContext(const RooArgSet &vars, const RooDat
 }
 
 //_____________________________________________________________________________
-const char* RooEffHistProd::makeFPName(const char *prefix,const RooArgSet& iset, 
-                                       const RooArgSet* nset, const char *postfix) const
+const char* RooEffHistProd::makeFPName(const TString& prefix,const RooArgSet& iset, 
+                                       const RooArgSet* nset, const TString& postfix) const
 {
    static TString pname;
    pname = prefix;
-   if (prefix) pname.Append("_");
+   if (prefix.Sizeof()) pname.Append("_");
    std::auto_ptr<TIterator> i(iset.createIterator());
    RooAbsArg *arg;
    Bool_t first(kTRUE);
@@ -248,7 +337,6 @@ RooEffHistProd::CacheElem *RooEffHistProd::getCache(const RooArgSet* nset,
 Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                             const char* rangeName) const 
 {
-   assert(rangeName == 0);
    //cout << "RooEffHistProd("<<GetName()<<")::getAnalyticalIntegral("; allVars.printValue(cout);
    //cout << ","<< ( rangeName? rangeName : "<none>" ) <<")"<<endl;
    if (_forceNumInt) return 0;

@@ -47,7 +47,8 @@ public:
 
 private:
   
-   const char* makeFPName(const char *prefix,const RooArgSet& iset, const RooArgSet *nset, const char *postfix) const;
+   const char* makeFPName(const TString& prefix, const RooArgSet& iset, const RooArgSet *nset,
+                          const TString& postfix) const;
 
    const RooAbsPdf* pdf() const { 
       // Return pointer to pdf in product
@@ -58,6 +59,8 @@ private:
       return (RooAbsReal*) _eff.absArg() ; 
    }
    RooRealVar& x() const { return *static_cast<RooRealVar*>(  _observables.first() ) ; }
+
+   const RooArgSet& observables() const { return static_cast<const RooArgSet&>(_observables); }
   
    // Function evaluation
    virtual Double_t evaluate() const ;
