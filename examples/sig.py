@@ -100,7 +100,7 @@ else  :
     mcfilename =  '/data/bfys/graven/aladaan.root'
     mcfilename =  '/tmp/aladaan.root'
     from P2VVGeneralUtils import readData
-    data = readData( mcfilename, 'MyTree', True, observables )
+    data = readData( mcfilename, dataSetName = 'MyTree', NTuple = True, observables = observables )
     print 'got dataset with %s entries' % data.numEntries()
 
 

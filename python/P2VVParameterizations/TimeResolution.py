@@ -10,9 +10,15 @@ from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
 
 class TimeResolution ( _util_parse_mixin ) :
-    def __init__( self, model ) : self._model = model
+    def __init__( self, model, constraints = None ) : 
+        self._model = model
+        # constraints should be a type which can be put on rhs of a list.__iadd__ ( += ), i.e.
+        # c = list()
+        # c += TimeResolution.ExternalConstraints()
+        self._constraints = constraints
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
     def model( self ) : return self._model
+    def ExternalConstraints( self ) : return self._constraints
 
 
 class Truth_TimeResolution ( TimeResolution ) :
@@ -51,8 +57,21 @@ class LP2011_TimeResolution ( TimeResolution ) :
         self._timeResSigmas = [ ConstVar( Name = 'timeResSigma%s' % num, Value = val ) for num, val in sigmas ]
         self._timeResFracs  = [ ConstVar( Name = 'timeResFrac%s'  % num, Value = val ) for num, val in fracs  ]
 
+        Name =  kwargs.pop('Name','timeResModelLP2011')
+        #TODO: add a kw which indicates
+        #        1) leave parameters fixed   
+        #        2) leave parameters free, and define an external constraint
+        #      note that 2 does not imply that one has to actually use the constraint... 
+        #      in case 2, it would be nice if one could specify the values of the constraint parameters...
+        if False :
+            from ROOT import RooGaussian as Gaussian
+            constraint = Pdf( Name = Name+'_constraint', Type = Gaussian, Parameters = [ self._timeResSF
+                                                                                       , ConstVar( Name = 'tres_SF_constraint_mean',  Value = 1.00 )
+                                                                                       , ConstVar( Name = 'tres_SF_constraint_sigma', Value = 0.04 ) ] )
+
+
         from ROOT import RooGaussModel as GaussModel
-        TimeResolution.__init__( self, AddModel( 'timeResModelLP2011'
+        TimeResolution.__init__( self, AddModel( Name
                                                , [ ResolutionModel( Name = 'timeResLP2011_%s' % numVal[0]
                                                                   , Type = GaussModel
                                                                   , Parameters  = [ self._time, self._timeResMu, sigma, self._timeResSF ]

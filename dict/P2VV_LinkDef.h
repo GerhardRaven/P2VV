@@ -20,5 +20,6 @@
 #pragma link C++ class RooThresholdPdf+;
 #pragma link C++ class RooEffHistProd+;
 #pragma link C++ class RooRelBreitWigner+;
+#pragma link C++ class RooTagDecisionWrapper+;
 
 #endif

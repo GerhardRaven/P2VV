@@ -174,14 +174,15 @@ class Uniform_Angles( _util_parse_mixin ) :
 
 
 class SPlot_Moment_Angles( object ) :
-    def pdf(self, Component, Indices, Name ) :
+    def pdf(self, **kwargs ) :
         from P2VVGeneralUtils import RealMomentsBuilder
         mb = RealMomentsBuilder()
-        mb.appendPYList( self._angles, Indices )
-        mb.compute( self._splot.data( Component ) )
-        mb.Print()
-        print 'computed moments, creating PDF with name %s' % Name
-        return mb.createPDF( Name = Name )
+        mb.appendPYList( self._angles, kwargs.pop('Indices') )
+        mb.compute( self._splot.data( kwargs.pop('Component') ) )
+        if kwargs.pop('Verbose',False) : 
+            mb.Print()
+            print 'computed moments, creating PDF with name %s' % kwargs['Name']
+        return mb.createPDF( **kwargs )
 
     def __init__(self, angles, splot ) :
         self._splot  = splot

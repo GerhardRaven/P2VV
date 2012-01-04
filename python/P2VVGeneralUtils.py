@@ -23,9 +23,11 @@ def numCPU( Max = sys.maxint ) :
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
 
-def readData( filePath, dataSetName, NTuple = False, observables = None ) :
+def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = None ) :
     """reads data from file (RooDataSet or TTree(s))
     """
+
+    if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
 
     if NTuple :
       from ROOT import RooDataSet, TChain
@@ -34,26 +36,33 @@ def readData( filePath, dataSetName, NTuple = False, observables = None ) :
       # create data set from NTuple file(s)
       print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
       chain = TChain(dataSetName)
-      status = chain.Add(filePath,-1)
-      if status == 0 : raise RuntimeError('Could not locate tree %s in file %s'% (dataSetName,filePath) )
+      status = chain.Add( filePath, -1 )
+      if status == 0 : raise RuntimeError('Could not locate tree %s in file %s' % ( dataSetName, filePath ) )
 
-      noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
-      data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN )
-      data = observables[0].ws().put(data)
+      data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN + ' && ' + cuts if cuts else noNAN )
 
     else :
       from ROOT import TFile
 
       # get data set from file
       print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
-      f = TFile.Open( filePath, 'READ' )
-      assert f, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
-      data = f.Get(dataSetName)
-      f.Close()
+      file = TFile.Open( filePath, 'READ' )
+      assert file, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
+
+      if observables :
+          from ROOT import RooDataSet
+          data = RooDataSet(  dataSetName, dataSetName, file.Get(dataSetName), [ obs._var for obs in observables ]
+                            , noNAN + ' && ' + cuts if cuts else noNAN )
+      else :
+          data = file.Get(dataSetName)
+
+      file.Close()
 
     print 'P2VV - INFO: read dataset with %s entries' % data.numEntries()
 
-    return data
+    # import data set into current workspace
+    from RooFitWrappers import RooObject
+    return RooObject().ws().put(data)
 
 
 def writeData( filePath, dataSetName, data, NTuple = False ) :
@@ -71,22 +80,56 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
     f.Close()
 
 
-def addTaggingObservables( dataSet, estimWTag, tagCatBinBoundaries = None ) :
+def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estimWTagName, tagCatBins = None ) :
     """add tagging observables to data set
     """
 
-    # create binning
-    from array import array
-    from ROOT import RooBinning
-    if not tagCatBinBoundaries : tagCatBinBoundaries = array( 'd', [ 0.50001, 0.49999, 0.38, 0.31, 0.24, 0.17, 0. ] )
-    bins = RooBinning( len( tagCatBinBoundaries - 1 ), tagCatBinBoundaries, 'estWTagBins' )
-    estimWTag.setBinning( bins, 'estWTagBins' )
+    # get observables from data set
+    obsSet      = dataSet.get(0)
+    tagDecision = obsSet.find(tagDecisionName)
+    estimWTag   = obsSet.find(estimWTagName)
 
-    # create tagging category column
-    from ROOT import RooBinningCategory
-    tagCatFormula = RooBinningCategory( 'tagCatP2VV', 'P2VV tagging category', estimWTag, 'estWTagBins' )
+    # create initial state tag
+    from ROOT import RooTagDecisionWrapper
+    iTagWrapper = RooTagDecisionWrapper(iTagName, 'Tagging Category', tagDecision)
+
+    # create tagging category
+    from ROOT import RooThresholdCategory
+    if tagCatBins :
+        binOneThresh = tagCatBins[1][2]
+    else :
+        binOneThresh = 0.499999
+        tagCatBins = [  ( 'Untagged', 0               )
+                      , ( 'tagCat1',  1, binOneThresh )
+                      , ( 'tagCat2',  2, 0.38         )
+                      , ( 'tagCat3',  3, 0.31         )
+                      , ( 'tagCat4',  4, 0.24         )
+                      , ( 'tagCat5',  5, 0.17         )
+                     ]
+    tagCatFormula = RooThresholdCategory( tagCatName, 'P2VV tagging category', estimWTag, tagCatBins[0][0], tagCatBins[0][1] )
+    for cat in range( 1, len(tagCatBins) ) : tagCatFormula.addThreshold( tagCatBins[cat][2], tagCatBins[cat][0], tagCatBins[cat][1] )
+
+    # create new columns in data set
+    iTag   = dataSet.addColumn(iTagWrapper)
     tagCat = dataSet.addColumn(tagCatFormula)
+    iTag.createFundamental()
     tagCat.createFundamental()
+
+    # check tagging columns
+    for obsSet in dataSet :
+        assert obsSet.getCatIndex(iTagName) == +1 or obsSet.getCatIndex(iTagName) == -1,\
+                'P2VV - ERROR: addTaggingObservables: initial state flavour tag has value %+d' % obsSet.getCatIndex(iTagName)
+        assert obsSet.getCatIndex(tagDecisionName) == 0 or obsSet.getCatIndex(iTagName) == obsSet.getCatIndex(tagDecisionName),\
+                'P2VV - ERROR: addTaggingObservables: initial state flavour tag and tag decision have different values: %+d and %+d'\
+                % ( obsSet.getCatIndex(iTagName), obsSet.getCatIndex(tagDecisionName) )
+        assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getRealValue(estimWTagName) >= binOneThresh )\
+                or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getRealValue(estimWTagName) < binOneThresh ),\
+                'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while tagging category = %d'\
+                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getCatIndex(tagCatName) )
+        assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getCatIndex(tagCatName) == 0 )\
+                or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getCatIndex(tagCatName) > 0 ),\
+                'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while tagging category = %d'\
+                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getCatIndex(tagCatName) )
 
 
 ###########################################################################################################################################
@@ -321,7 +364,7 @@ class RealMomentsBuilder ( dict ) :
         nameExpr = re.compile(names) if names else None
 
         # check if there are no arguments left
-        assert not kwargs
+        assert not kwargs, 'extraneous kw args: %s' % kwargs
 
         # yield name, coefficient and function for selected moments
         for funcName in self._basisFuncNames :
@@ -613,13 +656,17 @@ class RealMomentsBuilder ( dict ) :
         #        maybe take MinMax = ( -5 * c[1], 5*c[1] ) ??? and make the 5 settable??
         # TODO: verify we've got moments, and not EffMoments???
         # TODO: verify we've either been computed or read
-        ( name, coef, fun ) = zip( *self._iterFuncAndCoef() )
+        scale = kwargs.pop('Scale', 1. )
+        name = kwargs.pop('Name')
+        ( names, coefs, funs ) = zip( *self._iterFuncAndCoef( MinSignificance = kwargs.pop( 'MinSignificance', float('-inf') )
+                                                         , Names           = kwargs.pop( 'Names', None)
+                                                         ) )
         from RooFitWrappers import ConstVar,RealSumPdf
         # TODO: renornmalize wrt. 0,0,0? require 0,0,0 to be present??
-        return RealSumPdf( kwargs.pop('Name')
-                         , functions = fun
+        return RealSumPdf( name
+                         , functions = funs
                          , coefficients = ( ConstVar( Name = ('C_%3.6f'%c[0]).replace('-','m').replace('.','d')
-                                                    , Value = c[0] ) for c in coef ) 
+                                                    , Value = c[0]*scale ) for c in coefs ) 
                          )
 
     def __mul__( self, pdf ) :

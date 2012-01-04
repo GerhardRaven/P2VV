@@ -52,7 +52,6 @@ if options.snapshot:
     
 from ROOT import RooDataHist, RooHistFunc
 from RooFitWrappers import *
-from ROOT import TH1F, TFile
 
 w = RooObject( workspace = 'w' )
 w = w.ws()
@@ -64,7 +63,7 @@ t      = RealVar('t', Title = 'decay time', Unit = 'ps', Observable = True, MinM
 iTag   = Category('tagdecision' , Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1 } ) # , 'untagged' : 0 } )
 eta    = RealVar('eta', Title = 'estimated mis tag', Observable = False, Constant = True, Value = 0.3, MinMax=(0,0.5) )
 mass   = RealVar('m', Observable = True, Unit = 'MeV/c^2', MinMax = (5200, 5550), nBins = 48)
-observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag, mass ]
+observables = list( angles.angles.itervalues() ) + [ t,iTag, mass ]
 
 for i in angles.angles.itervalues() : i.setBins(16)
 mass.setRange('leftsideband', (mass.getMin(),5330) )
@@ -212,6 +211,7 @@ for i in range(options.ntoys):
     result_data.fill()
 
 # Write the results to a file
+from ROOT import TFile
 output_file = TFile.Open(options.output, 'recreate')
 output_file.WriteTObject(result_data, result_data.GetName())
 output_file.WriteTObject(gen_params, 'gen_params')

@@ -12,5 +12,6 @@
 #include "RooThresholdPdf.h"
 #include "RooEffHistProd.h"
 #include "RooRelBreitWigner.h"
+#include "RooTagDecisionWrapper.h"
 
 #endif // P2VV_H

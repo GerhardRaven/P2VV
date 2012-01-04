@@ -545,7 +545,14 @@ class ProdPdf(Pdf):
         def _handleConditional( pdf ) :
             name = pdf.GetName()
             cond = pdf.ConditionalObservables()
-            if cond : name += '|{%s}'%( ','.join(i.GetName() for i in cond))
+            if cond : 
+                # first define a named set for our conditionals, as the
+                # parsing of this is utterly borken in case we try PROD::name( f | { x,y }, g )
+                # as it interprets this as f|x ,y, g due to not recognizing the closing } as
+                # the token being parsed is already split on the ',', hence asSET gets "{x" and
+                # is very happy with that... and the closing } silenty disappears as well...
+                __borken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
+                name += '|%s'% __borken_parser_workaround.GetName()
             return name
         pdfs = ','.join( _handleConditional(p) for p in self._dict['PDFs'])
         return 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
@@ -640,7 +647,6 @@ class HistPdf( Pdf ) :
             , 'Data' : kwargs.pop('Data')
             }
         dhs_name =  Name + '_' + '_'.join( i.GetName() for i in d['Observables'] )
-        from ROOT import RooDataHist, RooArgSet
         rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgSet( i._var for i in d['Observables'] ), d['Data']))
         # construct factory string on the fly...
         self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name )  )
@@ -658,7 +664,10 @@ class EditPdf( Pdf ) :
         # construct factory string on the fly...
         self._declare("EDIT::%s( %s, %s )" % ( Name, d['Original'].GetName(), ','.join([ '%s=%s'%(k.GetName(),v.GetName()) for k,v in d['Rules'].iteritems()])  ) )
         self._init(Name,type(__dref__(d['Original'])).__name__)
-        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__)
+        extraOpts = dict()
+        cond =  d['Original'].ConditionalObservables()
+        if cond : extraOpts['ConditionalObservables'] = cond
+        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class GenericPdf( Pdf ) :

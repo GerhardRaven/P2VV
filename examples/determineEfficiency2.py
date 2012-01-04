@@ -38,7 +38,7 @@ for i in angles.angles.itervalues() : i.setBins(16)
 t.setBins(48)
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar('one',Value=1) )
+CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar(Name = 'one',Value=1) )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
