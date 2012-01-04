@@ -27,8 +27,7 @@ if options.pdf not in ['sig_pdf', 'comb_pdf']:
 
 if options.snapshot:
     import tarfile
-    try:
-        archive = tarfile.open(options.snapshot, 'r:bz2')
+    with tarfile.open(options.snapshot, 'r:bz2') as archive:
         python_dirs = []
         for member in archive.getmembers():
             if member.isfile() and os.path.exists(member.path):
@@ -38,11 +37,6 @@ if options.snapshot:
             if member.isdir() and member.path.endswith('python'):
                 python_dirs.append(member.path)
         sys.path.extend(python_dirs)
-    except OSError, e:
-        print e
-        sys.exit(-2)
-    finally:
-        archive.close()
     try:
         print 'Running with snapshot %(comment)s' % archive.pax_headers
     except KeyError:

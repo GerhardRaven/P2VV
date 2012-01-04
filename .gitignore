@@ -16,3 +16,4 @@ p2vv_dict.*
 #*
 build/*
 !build/Makefile
+*.tar.bz2
