@@ -1,5 +1,9 @@
-from ROOT import RooDataHist, RooHistPdf
 from RooFitWrappers import *
+#from ROOT import RooMsgService, RooFit
+#msgService = RooMsgService.instance()
+#msgService -= (RooFit.INFO,    RooFit.Topic(RooFit.Plotting))
+#msgService += (RooFit.PROGRESS,RooFit.Topic(RooFit.Plotting))
+
 obj  = RooObject( workspace = 'workspace')
 
 # define observables
@@ -25,13 +29,15 @@ observables = [ iTag,eta, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['cth
 
 #unbiased data only: /data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_DTT_after_yuehongs_script_20111220.root
 from P2VVGeneralUtils import readData
-#data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+#data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , dataSetName = 'DecayTree'
                , NTuple      = True
                , observables = observables
                )
-tag  = RealVar('tagdilution', Title = 'estimated dilution', Observable = True, Formula = ( "@0*(1-2*@1)",[iTag,eta], data ), MinMax=(-1,1),nBins =  51)
+#tag  = RealVar('tagdilution', Title = 'estimated dilution', Observable = True, Formula = ( "@0*(1-2*@1)",[iTag,eta], data ), MinMax=(-1,1),nBins =  51)
+tag  = ConstVar(Name = 'tagdilution', Title = 'estimated dilution',  Value = 0)
+#observables = [ tag, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st ]
 observables = [ tag, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st ]
 
 # B mass pdf
@@ -97,7 +103,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , cosCoef   = basisCoefficients['cos']
                      , sinhCoef  = basisCoefficients['sinh']
                      , sinCoef   = basisCoefficients['sin']
-                     , ConditionalObservables = ( tag, )
+                     #, ConditionalObservables = ( tag, )
                      )
 
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Signal_Time, LP2011_Background_Time as Background_Time
@@ -120,7 +126,7 @@ psi_background = Component('psi_background', ( psi_m.pdf(),  sig_mpsi.pdf(), psi
 cmb_background = Component('cmb_background', ( cmb_m.pdf(),  bkg_mpsi.pdf(), cmb_st.pdf(), cmb_t.pdf(),  ), Yield = ( ncmb, 0.7*ncmb, 1.3*ncmb) )
 
 
-def FitAndPlot( pdf, data, fitOpts = dict(), sdata = None ) :
+def FitAndPlot( pdf, data, fitOpts = dict() ) :
     # Fit
     from P2VVGeneralUtils import numCPU
     from ROOTDecorators import  ROOTversion as Rv
@@ -163,33 +169,38 @@ def FitAndPlot( pdf, data, fitOpts = dict(), sdata = None ) :
                                  )
     return (result,canvas)
 
+
+
+# TODO: find a way (using sorted?) to specify the order of components & observables,
+#       and too pass the value of 'c_opts' from outside this bit of code...
 def splot( pdf, sdata ) :
+    # switch off all yields, except current one
+    from contextlib import contextmanager
+    @contextmanager
+    def __select_component( i, yields ):
+        orig = dict( (j,j.getVal()) for j in yields )
+        [ j.setVal(0) for j in orig.iterkeys() if j!=i ]
+        try     : yield
+        finally : [ j.setVal(v) for (j,v) in orig.iteritems() ]
     from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
-    canvas = dict()
-    canvas['splot'] = TCanvas('splot')
-    obs = observables
-    obs = [ o for o in obs if o in pdf.Observables() ]
-    obs = [ o for o in obs if hasattr(o,'frame') ]
-    obs = [ o for o in obs if o not in sdata.usedObservables() ]
-    for (p,o) in zip( canvas['splot'].pads(len(obs)), obs ) :
-        # snapshot yeilds
-        _yields = dict( (p,p.getVal()) for p in pdf.Parameters() if p.getAttribute('Yield')  )
+    canvas = TCanvas(pdf.GetName() + '_splot')
+    obs = [ o for o in pdf.Observables() if hasattr(o,'frame') and o not in sdata.usedObservables() ]
+    for (p,o) in zip( canvas.pads(len(obs)), obs ) :
+        # select yields
+        _yields = [ p for p in pdf.Parameters() if p.getAttribute('Yield') ]
         # loop over components
-        for (pp,i) in zip( p.pads(1,len(_yields)), _yields.iterkeys() ) :
+        for (pp,i) in zip( p.pads(1,len(_yields)), _yields ) :
             # switch off all yields, except current one
-            for j in _yields.iterkeys() :   
-                if i!=j :   j.setVal(0)
-            # and plot both weighed data and PDF
-            from P2VVGeneralUtils import plot
-            # TODO: add the same color coding as above...
-            c_name = i.GetName()[2:]
-            c_opts = { 'signal'             : dict( LineColor = kGreen )
-                     , 'psi_background'     : dict( LineColor = kRed )
-                     , 'cmb_background'     : dict( LineColor = kBlue )
-                     }
-            plot( pp, o, sdata.data( c_name ), pdf, pdfOpts = c_opts[c_name] if c_name in c_opts else {})
-            # and put back the original value!
-            for (i,v) in _yields.iteritems() : i.setVal(v)
+            with __select_component( i, _yields ) :
+                # plot both weighed data and PDF
+                # TODO: add the same color coding as above...
+                c_name = i.GetName()[2:]
+                c_opts = { 'signal'             : dict( LineColor = kGreen )
+                         , 'psi_background'     : dict( LineColor = kRed )
+                         , 'cmb_background'     : dict( LineColor = kBlue )
+                         }
+                from P2VVGeneralUtils import plot
+                plot( pp, o, sdata.data( c_name ), pdf, pdfOpts = c_opts[c_name] if c_name in c_opts else {})
     return canvas
 
 # Build, Fit and Plot PDFs
@@ -200,12 +211,12 @@ from P2VVGeneralUtils import SData
 splot_m = SData(Pdf = pdf_m, Data = data, Name = 'MassSplot')
 
 # get histograms for dilution...
-from RooFitWrappers import HistPdf
-for c in [ signal, psi_background,cmb_background ] :
-    c += HistPdf(Name = "dilution_%s_pdf"%c.GetName(), Observables = [ tag ], Data = splot_m.data(c.GetName() ) )
-
-pdf_di = buildPdf( (signal, cmb_background, psi_background), Observables = (tag,), Name = 'pdf_di')
-c_di = splot( pdf_di, splot_m)
+#from RooFitWrappers import HistPdf
+#for c in [ signal, psi_background,cmb_background ] :
+#    c += HistPdf(Name = "dilution_%s_pdf"%c.GetName(), Observables = [ tag ], Data = splot_m.data(c.GetName() ) )
+#
+#pdf_di = buildPdf( (signal, cmb_background, psi_background), Observables = (tag,), Name = 'pdf_di')
+#c_di = splot( pdf_di, splot_m)
 
 from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
 mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
@@ -219,7 +230,13 @@ cmb_background += mompdfBuilder.pdf( Component = cmb_background.GetName(), Indic
 #c_mst = FitAndPlot(pdf_mst,data,sdata = splot_m)
 #for p in pdf_mst.Parameters() : p.setConstant(True)
 
-# full fit
-pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,tag)+tuple(angles.angles.itervalues()), Name='pdf')
-c_pdf = FitAndPlot(pdf,data, sdata = splot_m)
+# untagged fit
+pdf_untagged  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='untagged_pdf')
+CP.setConstant('.*')
+amplitudes.setConstant('AperpPhase')
+u_res = FitAndPlot(pdf_untagged, data )
+u_spl = splot( pdf_untagged, splot_m )
+# tagged fit
+#pdf  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t,tag)+tuple(angles.angles.itervalues()), Name='pdf')
+#c_pdf = FitAndPlot(pdf,data, sdata = splot_m)
 

@@ -15,6 +15,7 @@ fitOpts = dict( NumCPU = numCPU()
               )
 
 # define observables
+#TODO:  add biased vs. unbiased category...
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5259, 5451), nBins =  48
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
@@ -119,7 +120,6 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 ### TODO: fit MC version of sig_t_angles on MC data and get efficiency,
 ###       then multiply sig_t_angles with the efficiency...
 ###       
-
 #mcpdf = BDecay( ... )
 #from P2VVGeneralUtils import RealMomentsBuilder
 #eff = RealMomentsBuilder()
@@ -129,6 +129,9 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 ## replace signal pdf with efficiency corrected signal pdf
 #sig_t_angles = eff * sig_t_angles
 # TODO: verify that after multiplication the new PDF still has the same ConditionalObservables!!!!!!!
+
+### TODO: multiply sig_t_angles with proper time efficiency using RooEffHistProd
+###       and register as PDF for biased data...
 
 #####
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
