@@ -40,8 +40,8 @@ AProdVal =  0.4
 ANormVal = -( 1. - lambdaCPSqVal ) / ( 1. + lambdaCPSqVal )
 
 # tagging parameters
-wTagVal    = 0.1
-wTagBarVal = 0.2
+WTagVal  = ( 0.1 + 0.2 ) / 2.
+AWTagVal = ( 0.1 - 0.2 ) / ( 0.1 + 0.2 )
 
 # plot options
 angleNames   = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
@@ -62,9 +62,6 @@ from RooFitWrappers import *
 
 # workspace
 ws = RooObject(workspace = 'ws')
-
-# constants
-zero = ConstVar( Name = 'zero', Value = 0 )
 
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
@@ -107,7 +104,7 @@ else :
 
 # tagging parameters
 from P2VVParameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
-taggingParams = WTagsCoefAsyms_TaggingParams( wTag = wTagVal, wTagBar = wTagBarVal, AProd = AProdVal, ANorm = ANormVal )
+taggingParams = WTagsCoefAsyms_TaggingParams( WTag = WTagVal, AWTag = AWTagVal, AProd = AProdVal, ANorm = ANormVal )
 
 # coefficients for time functions
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
@@ -158,7 +155,7 @@ if fitData :
   # fix values of some parameters
   #ANuissance.setConstant('avgCOdd')
   #lambdaCP.setConstant('phiCP')
-  taggingParams.setConstant('wTag.*')
+  #taggingParams.setConstant('AWTag')
 
   # fit data
   print 'timeAnglesSignal: fitting %d events' % data.numEntries()
