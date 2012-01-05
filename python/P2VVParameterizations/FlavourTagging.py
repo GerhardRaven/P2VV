@@ -313,12 +313,12 @@ class Linear_TaggingCategories( TaggingCategories ) :
         if 'TagCatBins' in kwargs :
             self._tagCatBins = kwargs.pop('TagCatBins')
         else :
-            self._tagCatBins = [  ( 'Untagged', 0, 0.500001 )
-                                , ( 'tagCat1',  1, 0.499999 )
-                                , ( 'tagCat2',  2, 0.38     )
-                                , ( 'tagCat3',  3, 0.31     )
-                                , ( 'tagCat4',  4, 0.24     )
-                                , ( 'tagCat5',  5, 0.17     )
+            self._tagCatBins = [  ( 'Untagged', 0, 0.500001, 0.50 )
+                                , ( 'tagCat1',  1, 0.499999, 0.43 )
+                                , ( 'tagCat2',  2, 0.38,     0.35 )
+                                , ( 'tagCat3',  3, 0.31,     0.28 )
+                                , ( 'tagCat4',  4, 0.24,     0.21 )
+                                , ( 'tagCat5',  5, 0.17,     0.14 )
                                ]
 
         tagCat = kwargs.pop( 'tagCat', 'tagCat' )
