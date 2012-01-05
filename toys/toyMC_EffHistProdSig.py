@@ -27,6 +27,7 @@ if options.pdf not in ['sig_pdf', 'comb_pdf']:
 
 if options.snapshot:
     import tarfile
+    archive = None
     try:
         archive = tarfile.open(options.snapshot, 'r:bz2')
         python_dirs = []
@@ -42,13 +43,15 @@ if options.snapshot:
         print e
         sys.exit(-2)
     finally:
-        archive.close()
+        if archive:
+            archive.close()
     try:
         print 'Running with snapshot %(comment)s' % archive.pax_headers
     except KeyError:
         pass
     
 from ROOT import RooDataHist, RooHistFunc
+from ROOT import TFile
 from RooFitWrappers import *
 
 w = RooObject( workspace = 'w' )
