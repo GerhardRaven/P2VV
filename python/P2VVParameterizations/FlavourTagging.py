@@ -273,8 +273,61 @@ class WTagCatsCoefAsyms_TaggingParams( TaggingParams ) :
                                , CEvenOdds   = CEvenOdds
                               )
 
+class TaggingCategories( _util_parse_mixin ) :
+    def __init__( self, **kwargs ) :
+        # get tagging category variable
+        self._numTagCats = kwargs.pop('NumTagCats')
+        self._parseArg(  'tagCat', kwargs, ObjectType = 'Category', SingleArgKey = 'Name'
+                       , Title = 'Tagging Category', Observable = True
+                       , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, self._numTagCats ) ]
+                      )
 
-from P2VVParameterizations.GeneralUtils import _util_parse_mixin
+        self._tagCatCoefs = kwargs.pop('TagCatCoefs')
+        self._ATagEffs    = kwargs.pop('ATagEffs'   )
+        self._WTags       = kwargs.pop('WTags'      )
+        self._AWTags      = kwargs.pop('AWTags'     )
+
+    def __getitem__( self, kw ) : return getattr( self, '_' + kw )
+
+    def tagCatsDict( self ) :
+        tagCatsDict = dict(  [ ( 'NumTagCats', self._numTagCats ) ]
+                           + [ ( 'tagCatCoef%d' % ( cat + 1 ), coef  ) for cat, coef  in enumerate( self._tagCatCoefs[ 1 : ] ) ]
+                           + [ ( 'ATagEff%d'    % ( cat + 1 ), asym  ) for cat, asym  in enumerate( self._ATagEffs[ 1 : ]    ) ]
+                           + [ ( 'WTag%d'       % ( cat + 1 ), WTag  ) for cat, WTag  in enumerate( self._WTags[ 1 : ]       ) ]
+                           + [ ( 'AWTag%d'      % ( cat + 1 ), AWTag ) for cat, AWTag in enumerate( self._AWTags[ 1 : ]      ) ]
+                          )
+
+
+class Independent_TaggingCategories( TaggingCategories ) :
+    def __init__( self, **kwargs ) :
+        tagCat = kwargs.pop( 'tagCat', 'tagCat' )
+
+        TaggingCategories.__init__(  NumTagCats = numTagCats, tagCat = tagCat, TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs
+                                   , WTags = WTags, AWTags = AWTags
+                                  )
+
+
+class Linear_TaggingCategories( TaggingCategories ) :
+    def __init__( self, **kwargs ) :
+        # set tagging category binning in estimated wrong-tag probability (eta)
+        if 'TagCatBins' in kwargs :
+            self._tagCatBins = kwargs.pop('TagCatBins')
+        else :
+            self._tagCatBins = [  ( 'Untagged', 0, 0.500001 )
+                                , ( 'tagCat1',  1, 0.499999 )
+                                , ( 'tagCat2',  2, 0.38     )
+                                , ( 'tagCat3',  3, 0.31     )
+                                , ( 'tagCat4',  4, 0.24     )
+                                , ( 'tagCat5',  5, 0.17     )
+                               ]
+
+        tagCat = kwargs.pop( 'tagCat', 'tagCat' )
+
+        TaggingCategories.__init__(  NumTagCats = numTagCats, tagCat = tagCat, TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs
+                                   , WTags = WTags, AWTags = AWTags
+                                  )
+
+
 class Trivial_Background_Tag( _util_parse_mixin ) :
     def pdf(self) :
         return self._pdf

@@ -80,7 +80,7 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
     f.Close()
 
 
-def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estimWTagName, tagCatBins = None ) :
+def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estimWTagName, tagCatBins ) :
     """add tagging observables to data set
     """
 
@@ -95,17 +95,7 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
 
     # create tagging category
     from ROOT import RooThresholdCategory
-    if tagCatBins :
-        binOneThresh = tagCatBins[1][2]
-    else :
-        binOneThresh = 0.499999
-        tagCatBins = [  ( 'Untagged', 0               )
-                      , ( 'tagCat1',  1, binOneThresh )
-                      , ( 'tagCat2',  2, 0.38         )
-                      , ( 'tagCat3',  3, 0.31         )
-                      , ( 'tagCat4',  4, 0.24         )
-                      , ( 'tagCat5',  5, 0.17         )
-                     ]
+    binOneThresh = tagCatBins[1][2]
     tagCatFormula = RooThresholdCategory( tagCatName, 'P2VV tagging category', estimWTag, tagCatBins[0][0], tagCatBins[0][1] )
     for cat in range( 1, len(tagCatBins) ) : tagCatFormula.addThreshold( tagCatBins[cat][2], tagCatBins[cat][0], tagCatBins[cat][1] )
 

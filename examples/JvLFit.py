@@ -104,21 +104,17 @@ else :
     #tagCatCoefs   = [ 0.090, 0.060, 0.045, 0.025, 0.016, 0.013, 0.010, 0.008, 0.006, 0.004 ]
     tagCatCoefs   = [ 0.15, 0.07, 0.03, 0.01, 0.003 ]
     ATagEffs      = ( numTagCats - 1 ) * [ 0. ]
-    #wTags         = [ 0.42, 0.38, 0.35, 0.32, 0.27, 0.25, 0.24, 0.20, 0.15, 0.10 ]
-    wTags         = [ 0.40, 0.35, 0.27, 0.24, 0.12 ]
-    wTagBars      = wTags
+    #WTags         = [ 0.42, 0.38, 0.35, 0.32, 0.27, 0.25, 0.24, 0.20, 0.15, 0.10 ]
+    WTags         = [ 0.40, 0.35, 0.27, 0.24, 0.12 ]
+    AWTags        = ( numTagCats - 1 ) * [ 0. ]
 
     # create tagging categories
     from P2VVParameterizations.FlavourTagging import Independent_TaggingCategories
     tagCats = Independent_TaggingCategories( tagCat = 'tagCatP2VV' )
 
-    tagCatP2VV = Category( 'tagCatP2VV',   Title = 'P2VV Tagging Category',     Observable = True
-                          , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, numTagCats ) ]
-                         )
-
 # get tagging category variable
 tagCatP2VV = tagCats['tagCat']
-obsSetP2VV.append( tagCats['tagCatP2VV'] )
+obsSetP2VV.append( tagCats['tagCat'] )
 
 # tagging category ranges
 tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
@@ -148,14 +144,7 @@ lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
 # tagging parameters
 from P2VVParameterizations.FlavourTagging import WTagCatsCoefAsyms_TaggingParams
-tagParamVals  = dict(  [ ( 'tagCatCoef%d' % ( cat + 1 ), coef ) for cat, coef in enumerate(tagCatCoefs) ]
-                     + [ ( 'ATagEff%d'    % ( cat + 1 ), asym ) for cat, asym in enumerate(ATagEffs)    ]
-                     + [ ( 'wTag%d'       % ( cat + 1 ), wTag ) for cat, wTag in enumerate(wTags)       ]
-                     + [ ( 'wTagBar%d'    % ( cat + 1 ), wTag ) for cat, wTag in enumerate(wTagBars)    ]
-                    )
-taggingParams = WTagCatsCoefAsyms_TaggingParams(  NumTagCats = tagCatP2VV.numTypes(), AProd = AProdVal, ANorm = -lambdaCP['C'].getVal()
-                                                , **tagParamVals
-                                               )
+taggingParams = WTagCatsCoefAsyms_TaggingParams( AProd = AProdVal, ANorm = -lambdaCP['C'].getVal(), **tagCats.tagCatsDict() )
 
 # coefficients for time functions
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
@@ -203,7 +192,7 @@ else :
         if not data : data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
 
         from P2VVGeneralUtils import addTaggingObservables
-        addTaggingObservables(data, tagCats['binBounds'], iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName())
+        addTaggingObservables(data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName(), tagCats['tagCatBins'])
 
     else :
         data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetP2VV )

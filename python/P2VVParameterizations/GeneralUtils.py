@@ -10,17 +10,18 @@ class _util_parse_mixin( object ) :
     def parameters( self ) :
         return self._params
 
-    def _parseArg( self, arg, kwargs, ContainerList = None, SingleArgKey = 'Value', **d ) :
+    def _parseArg( self, arg, kwargs, ContainerList = None, ObjectType = 'RealVar', SingleArgKey = 'Value', **d ) :
         def _create( arg,kwargs, **d ) :
-            from RooFitWrappers import RealVar, RooObject
+            import RooFitWrappers
             from copy import copy
             _d = copy(d) # make sure we do not modify the input!!!
             if arg in kwargs :
                 a = kwargs.pop(arg)
-                if isinstance( a, RooObject ) : return a
+                if isinstance( a, RooFitWrappers.RooObject ) : return a
                 _d.update( a if type(a) == dict else { SingleArgKey : a } )
             if 'Name' not in _d : _d[ 'Name' ] = arg
-            return RealVar(**_d)
+
+            return vars(RooFitWrappers)[ObjectType](**_d)
 
         # create object
         obj = _create( arg, kwargs, **d )
