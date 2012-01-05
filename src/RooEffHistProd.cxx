@@ -84,19 +84,18 @@ void cloneRanges(const RooArgSet& observables, const RooArgSet& iset,
       if (arg->hasRange(rangeName)) {
          if (RooRealVar* real = dynamic_cast<RooRealVar*>(arg)) {
             const RooAbsBinning& range = real->getBinning(rangeName);
-            std::cout << "Cloned regular range " << rangeName << " to " << newName 
-                      << " for var " << real->GetName() << " (";
+            cout << "Cloned regular range " << rangeName << " to " << newName 
+                 << " for var " << real->GetName() << " (";
             if (range.isParameterized()) {
                // Deal with parametrized ranges
-               real->setRange(newName, *range.lowBoundFunc(), *range.highBoundFunc());
                cout << range.lowBoundFunc()->GetName() << "," 
-                    << range.highBoundFunc()->GetName() << ")";
+                    << range.highBoundFunc()->GetName() << ")" << endl;
+               real->setRange(newName, *range.lowBoundFunc(), *range.highBoundFunc());
             } else {
                // Regular range
+               cout << range.lowBound() << "," << range.highBound() << ")" << endl;
                real->setRange(newName, range.lowBound(), range.highBound());
-               cout << range.lowBound() << "," << range.highBound() << ")";
             }
-            std::cout << std::endl;
          } else if (RooCategory* cat = dynamic_cast<RooCategory*>(arg)) {
             std::auto_ptr<TIterator> it(cat->typeIterator());
             TString states;
