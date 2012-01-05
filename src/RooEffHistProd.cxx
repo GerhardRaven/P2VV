@@ -130,12 +130,13 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,const RooArgSe
    // so that later we can do sum_i eps( (x_i+x_i+1)/2 ) * I(x_i,x_i+1)
    RooArgSet *x_ = parent->eff()->getObservables(&iset); // the subset of iset on which _eff depends
    assert(x_->getSize() < 2); // for now, we only do 1D efficiency histograms...
+   const char* newRange = rangeName;
    if (x_->getSize() == 1) {
       assert( *x_->first() == parent->x() );
 
       // TODO: add original rangeName in here!
       TString range("_I_Range");
-      if (0 != rangeName) range.Replace(3, 8, rangeName);
+      if (0 != newRange) range.Replace(3, 8, newRange);
       
       // Craete a RealVar to parametrize the lower bound
       const char *name = parent->makeFPName(parent->GetName(), iset, nset, range + "_min");
@@ -148,13 +149,13 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,const RooArgSe
                             parent->x().getMin(rangeName), parent->x().getMax(rangeName));
 
       // Create a new name for the range
-      name = parent->makeFPName(parent->GetName(), iset, nset, range);
-      parent->x().setRange(name, *xmin, *xmax);
+      newRange = parent->makeFPName(parent->GetName(), iset, nset, range);
+      parent->x().setRange(newRange, *xmin, *xmax);
       if (0 != rangeName) {
-         cloneRanges(parent->observables(), iset, nset, rangeName, name);
+         cloneRanges(parent->observables(), iset, nset, rangeName, newRange);
       }
    }
-   I = parent->pdf()->createIntegral(iset,nset,parent->getIntegratorConfig(), rangeName);
+   I = parent->pdf()->createIntegral(iset,nset,parent->getIntegratorConfig(), newRange);
 
    //I->setOperMode(ADirty);
 }
