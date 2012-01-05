@@ -36,8 +36,8 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     )
 
 from P2VVGeneralUtils import readData
-#data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+#data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , dataSetName = 'DecayTree'
                , NTuple = True
                , observables = [ iTag,eta, mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], st, sel ]
@@ -147,20 +147,29 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, sig_t
 bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 
 # create PDF for angular background
-# make sweighted dataset using J/psi phi mass
-pdf_m = buildPdf((signal, bkg_background ), Observables = (m,), Name='pdf_m')
-c_m = pdf_m.fitTo(data,**fitOpts)
-for p in pdf_m.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-from P2VVGeneralUtils import SData
-splot_m = SData(Pdf = pdf_m, Data = data, Name = 'MassSplot')
+if False :
+    # make sweighted dataset using J/psi phi mass
+    from P2VVGeneralUtils import createSData
+    from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
+    splot_m = createSData( Name = 'Mass' , Components =  (signal,bkg_background), Observables = (m,), FitOpts = fitOpts, Data = data )
+    mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
+    bkg_background += mompdfBuilder.pdf( Component = bkg_background.GetName()
+                                       , Indices = [ i for i in indices(3,4) ]
+                                       , Name = 'bkg_angles'
+                                       , MinSignificance = 0.5
+                                       , Scale = sqrt(50.) )
+elif False:
+    bkg_background += UniformPdf( Name = 'bkg_angles', Arguments = angles.angles.itervalues() )
+else :
+    bkg_background += HistPdf( Name = 'bkg_angles'
+                             , Observables = angles.angles.itervalues()
+                             , Binning =  { angles.angles['cpsi'] : 5
+                                          , angles.angles['ctheta'] : 7
+                                          , angles.angles['phi' ] : 9
+                                          }
+                             , Data = data.reduce( CutRange = 'leftsideband,rightsideband') 
+                             )
 
-from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
-mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
-bkg_background += mompdfBuilder.pdf( Component = bkg_background.GetName()
-                                   , Indices = [ i for i in indices(3,4) ]
-                                   , Name = 'bkg_angles'
-                                   , MinSignificance = 0.5
-                                   , Scale = sqrt(50.) )
 # fit & fix iTag parameters
 pdf_itag   = buildPdf((signal,bkg_background ), Observables = (m,iTag), Name='pdf_itag')
 pdf_itag.fitTo( data,**fitOpts)
@@ -179,7 +188,7 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
     from ROOT import RooArgSet
     # TODO: grab the data in the relevant range... data.reduce( **dataOpts ) 
-    #       and remove the spike at 0.5 to take into account its correlation to iTag = 0!!!
+    #       and remove the spike at 0.5 to avoid double counting it due to its correlation with iTag = 0!!!
     pdfOpts['ProjWData'] = ( RooArgSet( eta._var ),  data, True ) 
     obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
     for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :

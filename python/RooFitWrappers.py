@@ -343,6 +343,7 @@ class RealVar (RooObject):
     _getters = {'Unit'       : lambda s : s.getUnit() 
                ,'Value'      : lambda s : s.getVal()
                ,'MinMax'     : lambda s : s.getRange()
+               ,'nBins'      : lambda s : s.getBins()
                }
     _setters = {'Unit'       : lambda s,v : s.setUnit(v) 
                ,'Value'      : lambda s,v : s.setVal(v)
@@ -643,13 +644,22 @@ class HistPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
         d = { 'Name' : Name 
-            , 'Observables' : kwargs.pop('Observables') 
+            , 'Observables' : list(kwargs.pop('Observables') )
             , 'Data' : kwargs.pop('Data')
             }
+        binning = kwargs.pop('Binning', None )
+        nbins = dict()
+        if binning :
+            for o,n in binning.iteritems() :
+                if o not in d['Observables'] or o.getBins()==n : continue
+                nbins[o] = o.getBins()
+                o.setBins(n)
         dhs_name =  Name + '_' + '_'.join( i.GetName() for i in d['Observables'] )
         rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgSet( i._var for i in d['Observables'] ), d['Data']))
+
+        for o,n in nbins.iteritems() : o.setBins(n) 
         # construct factory string on the fly...
-        self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name )  )
+        self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name  )  )
         self._init(Name,'RooHistPdf')
         Pdf.__init__(self , Name = Name , Type = 'RooHistPdf')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
