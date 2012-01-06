@@ -680,6 +680,27 @@ class EditPdf( Pdf ) :
         Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
+class EffProd(Pdf):
+    def _make_pdf(self) : pass
+    def __init__(self, Name, **kwargs):
+        d = { 'Name' : Name 
+            , 'Original' : kwargs.pop('Original')
+            , 'Efficiency' : kwargs.pop('Efficiency')
+            }
+        if 'Type' in kwargs:
+            d['Type'] = kwargs.pop('Type').__name__
+        elif type(__dref__(d['Efficiency'])).__name__.find('Hist') != -1:
+            d['Type'] = 'RooEffHistProd'
+        else:
+            d['Type'] = 'RooEffProd'
+        # construct factory string
+        self._declare("%s::%s(%s, %s)" % ( d['Type'], Name, d['Original'].GetName(),
+                                           d['Efficiency'].GetName()))
+        self._init(Name, d['Type'])
+        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__)
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+        
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
