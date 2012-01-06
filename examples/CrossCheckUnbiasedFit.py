@@ -102,8 +102,8 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.676
                                      )
 
 # define tagging parameter 
-from P2VVParameterizations.FlavourTagging import Trivial_PerEventTaggingParams as TaggingParams
-tagging = TaggingParams( wTag = eta ) # Constant = False, Constrain = True )
+from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams  as TaggingParams
+tagging = TaggingParams( estWTag = eta ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
 #externalConstraints += tagging.ExternalConstraints()
 
@@ -192,7 +192,7 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres.model(
 #signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, sig_tag.pdf()), Yield = ( nsig, 0, 1.1*nsig) )
 #bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, ), Yield = ( nsig, 0, 1.1*nsig) )
-bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag), Yield = ( nbkg, 0, 2.0*nbkg) )
+bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 
 sidebanddata = data.reduce(CutRange = 'leftsideband')
 rightsidebanddata = data.reduce(CutRange = 'rightsideband')
