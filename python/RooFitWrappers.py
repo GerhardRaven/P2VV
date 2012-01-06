@@ -195,7 +195,7 @@ class Category (RooObject):
                ,'Constant'   : lambda s,v : s.setConstant(v)
                }
 
-    def __init__(self,name,**kwargs):
+    def __init__(self,Name,**kwargs):
         # construct factory string on the fly...
         __check_req_kw__( 'States', kwargs )
         states = kwargs.pop('States')
@@ -204,11 +204,11 @@ class Category (RooObject):
         elif type(states) == dict:
             states = ','.join(['%s=%d' % i for i in states.iteritems()])
         else:
-            raise KeyError('%s does not exist yet, bad States %s defined.' % (name,states))
+            raise KeyError('%s does not exist yet, bad States %s defined.' % (Name,states))
 
         # Create the category and extract states into storage
-        self._declare("%s[%s]"%(name,states))
-        self._init(name,'RooCategory')
+        self._declare("%s[%s]"%(Name,states))
+        self._init(Name,'RooCategory')
         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
@@ -216,26 +216,26 @@ class Category (RooObject):
         return self._states
 
 class SuperCategory( Category ) :
-    def __init__(self,name,cats,**kwargs):
-        self._declare("SuperCategory::%s({%s})"%(name,','.join( [ c.GetName() for c in cats ] ) ) )
-        self._init(name,'RooSuperCategory')
+    def __init__(self,Name,cats,**kwargs):
+        self._declare("SuperCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
+        self._init(Name,'RooSuperCategory')
         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class MappedCategory( Category ) :
-    def __init__(self,name,cat,mapper,**kwargs):
-        if name not in self.ws():
+    def __init__(self,Name,cat,mapper,**kwargs):
+        if Name not in self.ws():
             # construct factory string on the fly: no factory string for MappedCategory???
             from ROOT import RooMappedCategory
-            obj =  RooMappedCategory(name,name,__dref__(cat) )
+            obj =  RooMappedCategory(Name,Name,__dref__(cat) )
             for k,vs in mapper.iteritems() : 
                 for v in vs : obj.map( v, k )
-            self.ws()._objects[ name ] = self.ws().put( obj )
-            self._init(name,'RooMappedCategory')
+            self.ws()._objects[ Name ] = self.ws().put( obj )
+            self._init(Name,'RooMappedCategory')
             self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
-            self._init(name,'RooMappedCategory')
+            self._init(Name,'RooMappedCategory')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
                 # Skip these to avoid failure in case we were loaded from a
@@ -245,18 +245,18 @@ class MappedCategory( Category ) :
 
 
 class Product(RooObject) :
-    def __init__(self,name,fargs,**kwargs) :
-        spec =  "prod::%s(%s)"%(name,','.join(i['Name'] for i in fargs)) 
+    def __init__(self,Name,fargs,**kwargs) :
+        spec =  "prod::%s(%s)"%(Name,','.join(i['Name'] for i in fargs)) 
         self._declare( spec )
-        self._init(name,'RooProduct')
+        self._init(Name,'RooProduct')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
             
 
 class Addition(RooObject) :
-    def __init__(self,name,fargs,**kwargs) :
+    def __init__(self,Name,fargs,**kwargs) :
         # construct factory string on the fly...
-        self._declare("sum::%s(%s)"%(name,','.join(i.GetName() for i in fargs)) )
-        self._init(name,'RooAddition')
+        self._declare("sum::%s(%s)"%(Name,','.join(i.GetName() for i in fargs)) )
+        self._init(Name,'RooAddition')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class FormulaVar (RooObject): 
@@ -264,11 +264,11 @@ class FormulaVar (RooObject):
                ,'Dependents' : lambda s : s.dependents()
                ,'Value'      : lambda s : s.getVal()
                }
-    def __init__(self, name, formula, fargs, **kwargs):
+    def __init__(self, Name, formula, fargs, **kwargs):
         # construct factory string on the fly...
-        spec = "expr::%s('%s',{%s})" % (name, formula, ','.join(i.GetName() for i in fargs)) 
+        spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs)) 
         self._declare(spec)
-        self._init(name, 'RooFormulaVar')
+        self._init(Name, 'RooFormulaVar')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class ConstVar (RooObject): 
@@ -277,8 +277,8 @@ class ConstVar (RooObject):
          __check_req_kw__( 'Value', kwargs )
          __check_req_kw__( 'Name', kwargs )
          self._declare("ConstVar::%(Name)s(%(Value)s)" % kwargs )
-         (name,value) = (kwargs.pop('Name'),kwargs.pop('Value'))
-         self._init(name,'RooConstVar')
+         (Name,value) = (kwargs.pop('Name'),kwargs.pop('Value'))
+         self._init(Name,'RooConstVar')
          for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         
 class P2VVAngleBasis (RooObject) : 
