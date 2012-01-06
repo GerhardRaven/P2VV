@@ -20,7 +20,7 @@ root_finder = RooBrentRootFinder(binding)
 t_min = t.getMin()
 t_max = t.getMax()
 bin_max = 1.
-dy = 0.075
+dy = 0.025
 
 # The bin boundaries
 from array import array
@@ -75,6 +75,6 @@ frame.Draw()
 _import = getattr(w, 'import')
 _import(eff_hist)
 
-root_file = TFile.Open('LP_binning.root', 'recreate')
+root_file = TFile.Open('LP_0_025.root', 'recreate')
 root_file.WriteTObject(w, 'w')
 root_file.Close()
