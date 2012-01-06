@@ -179,7 +179,7 @@ class WTagCatsCoefAsyms_TaggingParams( TaggingParams ) :
             self._wTags.append(None)
             self._wTagBars.append(None)
             self._WTags.append(None)
-            self._AWTag.append(None)
+            self._AWTags.append(None)
 
             from RooFitWrappers import ConstVar
             dilutions.append( ConstVar( Name = 'tagDilution0', Value = 0. ) )
@@ -218,9 +218,9 @@ class WTagCatsCoefAsyms_TaggingParams( TaggingParams ) :
 
             from P2VVParameterizations.BBbarAsymmetries import Coefficients_CEvenOdd
             CEvenOddSum = Coefficients_CEvenOdd(  avgCEven = avgCEvenSum if isinstance( avgCEvenSum, RooObject ) \
-                                                             else { 'Name' : 'avgCEvenSum', 'Value' : avgCEven }
+                                                             else { 'Name' : 'avgCEvenSum', 'Value' : avgCEvenSum }
                                                 , avgCOdd  = avgCOddSum if isinstance( avgCOddSum, RooObject )   \
-                                                             else { 'Name' : 'avgCOddSum', 'Value' : avgCOdd }
+                                                             else { 'Name' : 'avgCOddSum', 'Value' : avgCOddSum }
                                                )
 
         CEvenOdds.append(CEvenOddSum)
@@ -315,7 +315,7 @@ class WTagCatsCoefAsyms_TaggingParams( TaggingParams ) :
                                , MinMax = ( -1., 1. )
                               )
                 dilutions.append( FormulaVar(  'tagDilution%d' % index, '1. - 2. * @0'
-                                             , [ self._WTags[index], self._AWTags[index] ]
+                                             , [ self._WTags[index] ]
                                              , Title = 'Average tagging dilution %d' % index
                                             )
                                 )
@@ -353,12 +353,12 @@ class TaggingCategories( _util_parse_mixin ) :
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
 
     def tagCatsDict( self ) :
-        tagCatsDict = dict(  [ ( 'NumTagCats', self._numTagCats ) ]
-                           + [ ( 'tagCatCoef%d' % ( cat + 1 ), coef  ) for cat, coef  in enumerate( self._tagCatCoefs[ 1 : ] ) ]
-                           + [ ( 'ATagEff%d'    % ( cat + 1 ), asym  ) for cat, asym  in enumerate( self._ATagEffs[ 1 : ]    ) ]
-                           + [ ( 'WTag%d'       % ( cat + 1 ), WTag  ) for cat, WTag  in enumerate( self._WTags[ 1 : ]       ) ]
-                           + [ ( 'AWTag%d'      % ( cat + 1 ), AWTag ) for cat, AWTag in enumerate( self._AWTags[ 1 : ]      ) ]
-                          )
+        return dict(  [ ( 'NumTagCats', self._numTagCats ) ]
+                    + [ ( 'tagCatCoef%d' % ( cat + 1 ), coef  ) for cat, coef  in enumerate( self._tagCatCoefs ) ]
+                    + [ ( 'ATagEff%d'    % ( cat + 1 ), asym  ) for cat, asym  in enumerate( self._ATagEffs    ) ]
+                    + [ ( 'WTag%d'       % ( cat + 1 ), WTag  ) for cat, WTag  in enumerate( self._WTags       ) ]
+                    + [ ( 'AWTag%d'      % ( cat + 1 ), AWTag ) for cat, AWTag in enumerate( self._AWTags      ) ]
+                   )
 
 
 class Independent_TaggingCategories( TaggingCategories ) :
@@ -389,12 +389,18 @@ class Independent_TaggingCategories( TaggingCategories ) :
             if not catParams[1] : catParams[1] = 5 * [ 0. ]
             if not catParams[2] : catParams[2] = [ 0.40, 0.35, 0.27, 0.24, 0.12  ]
             if not catParams[3] : catParams[3] = 5 * [ 0. ]
+
         else :
             # loop over tagging categories and set default parameters
             for cat in range( numTagCats - 1 ) :
-                if len(catParams[0]) == cat : pass
+                if len(catParams[0]) == cat :
+                    from math import pow
+                    numCatsFrac = float(numTagCats) / 6.
+                    tagCatCoef  = 0.15 / numCatsFrac * pow( 0.5, float(cat) / numCatsFrac )
+                    catParams[0].append( tagCatCoef )
+
                 if len(catParams[1]) == cat : catParams[1].append(0.)
-                if len(catParams[2]) == cat : pass
+                if len(catParams[2]) == cat : catParams[2].append( 0.5 * ( 1. - float(cat + 1) / float(numTagCats) ) )
                 if len(catParams[3]) == cat : catParams[3].append(0.)
 
         # check for remaining arguments and initialize
@@ -404,21 +410,88 @@ class Independent_TaggingCategories( TaggingCategories ) :
                                   )
 
 
+def getTagCatParamsFromData( data, paramNames = [ 'all' ], tagCats = [ ], avgEstWTag = 0.38, P0 = 0.38, P1 = 1., AP0 = 0., AP1 = 0. ) :
+    from RooFitWrappers import RooObject
+    if isinstance( avgEstWTag, RooObject ) : avgEstWTag = avgEstWTag.getVal()
+    if isinstance( P0,         RooObject ) : P0         = P0.getVal()
+    if isinstance( P1,         RooObject ) : P1         = P1.getVal()
+    if isinstance( AP0,        RooObject ) : AP0        = AP0.getVal()
+    if isinstance( AP1,        RooObject ) : AP1        = AP1.getVal()
+
+    return tagCats
+
 class Linear_TaggingCategories( Independent_TaggingCategories ) :
     def __init__( self, **kwargs ) :
-        # set tagging category binning in estimated wrong-tag probability (eta)
-        if 'TagCatBins' in kwargs :
-            self._tagCatBins = kwargs.pop('TagCatBins')
-        else :
-            self._tagCatBins = [  ( 'Untagged', 0, 0.500001, 0.50 )
-                                , ( 'tagCat1',  1, 0.499999, 0.43 )
-                                , ( 'tagCat2',  2, 0.38,     0.35 )
-                                , ( 'tagCat3',  3, 0.31,     0.28 )
-                                , ( 'tagCat4',  4, 0.24,     0.21 )
-                                , ( 'tagCat5',  5, 0.17,     0.14 )
-                               ]
+        # get tagging category variable (or its name)
+        tagCat = kwargs.pop( 'tagCat', 'tagCat' )
 
-        TaggingCategories.__init__( self, **dict( list(kwargs.items()) + list(addArgs.items()) ) )
+        # estimated wrong tag variable
+        if 'estWTag' in kwargs :
+            self._parseArg( 'estWTag', kwargs, Title = 'Estimated wrong tag probability', Value = 0.25, MinMax = ( 0., 0.5 ) )
+
+        # get linear calibration parameters
+        self._parseArg( 'avgEstWTag', kwargs, Value = 0.38, ObjectType = 'ConstVar' )
+        self._parseArg( 'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.38, MinMax = (  0., 0.5 ) )
+        self._parseArg( 'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.,   MinMax = (  0., 2.  ) )
+        self._parseArg( 'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,   MinMax = ( -1., 1.  ) )
+        self._parseArg( 'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry', Value = 0.,   MinMax = ( -1., 1.  ) )
+
+        # get data set
+        data        = kwargs.pop( 'DataSet',           None )
+        detFromData = kwargs.pop( 'DetermineFromData', [ ]  )
+
+        # initialize tagging category binning in estimated wrong-tag probability (eta)
+        tagCats = [  ( 'Untagged', 0, 0.500001, 0.50, 0.50, 0., 0.718, 0. )
+                   , ( 'tagCat1',  1, 0.499999, 0.43, 0.44, 0., 0.163, 0. )
+                   , ( 'tagCat2',  2, 0.38,     0.35, 0.36, 0., 0.073, 0. )
+                   , ( 'tagCat3',  3, 0.31,     0.28, 0.28, 0., 0.029, 0. )
+                   , ( 'tagCat4',  4, 0.24,     0.21, 0.21, 0., 0.013, 0. )
+                   , ( 'tagCat5',  5, 0.17,     0.14, 0.14, 0., 0.004, 0. )
+                  ]
+
+        # determine tagging category parameters from data
+        self._tagCats = getTagCatParamsFromData(  data, detFromData, tagCats
+                                                , self._avgEstWTag, self._wTagP0, self._wTagP1, self._wTagAP0, self._wTagAP1
+                                               )
+
+        tagCatCoefs = [ catPars[6] for catPars in self._tagCats[ 1 : ] ]
+        ATagEffs    = [ catPars[7] for catPars in self._tagCats[ 1 : ] ]
+        WTags  = [ ]
+        AWTags = [ ]
+        from RooFitWrappers import FormulaVar
+        for cat, catPars in enumerate( self._tagCats[ 1 : ] ) :
+            if hasattr( self, '_estWTag' ) :
+                WTags.append( FormulaVar(  'WTag%d' % ( cat + 1 )
+                                         , '@2 + @3 * (@0 - @1)'
+                                         , [ self._estWTag, self._avgEstWTag, self._wTagP0, self._wTagP1 ]
+                                         , Title = 'Average wrong tag probability %d' % ( cat + 1 )
+                                        )
+                            )
+                AWTags.append( FormulaVar(  'AWTag%d' % ( cat + 1 )
+                                          , '(@2 * @4 + @3 * @5 * (@0 - @1)) / (@2 + @3 * (@0 - @1))'
+                                          , [ self._estWTag, self._avgEstWTag, self._wTagP0, self._wTagP1, self._wTagAP0, self._wTagAP1 ]
+                                          , Title = 'Wrong tag probability asymmetry %d' % ( cat + 1 )
+                                         )
+                             )
+
+            else :
+                WTags.append( FormulaVar(  'WTag%d' % ( cat + 1 )
+                                         , '@1 + @2 * (%f - @0)' % catPars[3]
+                                         , [ self._avgEstWTag, self._wTagP0, self._wTagP1 ]
+                                         , Title = 'Average wrong tag probability %d' % ( cat + 1 )
+                                        )
+                            )
+                AWTags.append( FormulaVar(  'AWTag%d' % ( cat + 1 )
+                                          , '(@1 * @3 + @2 * @4 * (%f - @0)) / (@1 + @2 * (%f - @0))' % ( catPars[3], catPars[3] )
+                                          , [ self._avgEstWTag, self._wTagP0, self._wTagP1, self._wTagAP0, self._wTagAP1 ]
+                                          , Title = 'Wrong tag probability asymmetry %d' % ( cat + 1 )
+                                         )
+                             )
+
+        # check for remaining arguments and initialize
+        self._check_extraneous_kw( kwargs )
+        TaggingCategories.__init__( self, NumTagCats = len(self._tagCats), tagCat = tagCat
+                                   , TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs, WTags = WTags, AWTags = AWTags )
 
 
 class Trivial_Background_Tag( _util_parse_mixin ) :

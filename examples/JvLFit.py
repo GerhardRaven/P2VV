@@ -89,32 +89,27 @@ if not generateData and NTuple :
     obsSetNTuple = [ time ] + list(angles) + [ tagDecision, tagOmega, tagCat ]
 
     # read ntuple and add P2VV tagging variables
+    from P2VVGeneralUtils import readData
     data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
 
     # create tagging categories
     from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories
-    tagCats = Linear_TaggingCategories( data, tagCat = 'tagCatP2VV' )
+    tagCats = Linear_TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data, DetermineFromData = ['all'] )
 
 else :
-    # tagging parameters
-    numTagCats    = 6
-    cat5Min       = 5
-    taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
-    tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
-    #tagCatCoefs   = [ 0.090, 0.060, 0.045, 0.025, 0.016, 0.013, 0.010, 0.008, 0.006, 0.004 ]
-    tagCatCoefs   = [ 0.15, 0.07, 0.03, 0.01, 0.003 ]
-    ATagEffs      = ( numTagCats - 1 ) * [ 0. ]
-    #WTags         = [ 0.42, 0.38, 0.35, 0.32, 0.27, 0.25, 0.24, 0.20, 0.15, 0.10 ]
-    WTags         = [ 0.40, 0.35, 0.27, 0.24, 0.12 ]
-    AWTags        = ( numTagCats - 1 ) * [ 0. ]
-
     # create tagging categories
-    from P2VVParameterizations.FlavourTagging import Independent_TaggingCategories
-    tagCats = Independent_TaggingCategories( tagCat = 'tagCatP2VV' )
+    from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories
+    tagCats = Linear_TaggingCategories( tagCat = 'tagCatP2VV' )
 
 # get tagging category variable
 tagCatP2VV = tagCats['tagCat']
-obsSetP2VV.append( tagCats['tagCat'] )
+obsSetP2VV.append( tagCatP2VV )
+
+# tagging parameters
+numTagCats    = 6
+cat5Min       = 5
+taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
+tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
 
 # tagging category ranges
 tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
@@ -192,7 +187,7 @@ else :
         if not data : data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
 
         from P2VVGeneralUtils import addTaggingObservables
-        addTaggingObservables(data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName(), tagCats['tagCatBins'])
+        addTaggingObservables(data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName(), tagCats['tagCats'])
 
     else :
         data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetP2VV )
