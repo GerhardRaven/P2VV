@@ -657,11 +657,11 @@ class HistPdf( Pdf ) :
         dhs_name =  Name + '_' + '_'.join( i.GetName() for i in d['Observables'] )
         rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgSet( i._var for i in d['Observables'] ), d['Data']))
 
-        for o,n in nbins.iteritems() : o.setBins(n) 
         # construct factory string on the fly...
         self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name  )  )
         self._init(Name,'RooHistPdf')
         Pdf.__init__(self , Name = Name , Type = 'RooHistPdf')
+        for o,n in nbins.iteritems() : o.setBins(n) 
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class EditPdf( Pdf ) :
@@ -697,7 +697,10 @@ class EffProd(Pdf):
         self._declare("%s::%s(%s, %s)" % ( d['Type'], Name, d['Original'].GetName(),
                                            d['Efficiency'].GetName()))
         self._init(Name, d['Type'])
-        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__)
+        extraOpts = dict()
+        cond =  d['Original'].ConditionalObservables()
+        if cond : extraOpts['ConditionalObservables'] = cond
+        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
         
