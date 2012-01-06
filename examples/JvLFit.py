@@ -13,14 +13,14 @@ makePlots      = True
 nEvents = 200000
 plotsFile = 'JvLFitTagCats.ps'
 
-dataSetName = 'JpsiphiData'
-dataSetFile = 'JvLFitTagCats.root'
-dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
-NTuple = False
+#dataSetName = 'JpsiphiData'
+#dataSetFile = 'JvLFitTagCats.root'
+#dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
+#NTuple = False
 
-#dataSetName = 'DecayTree'
-#dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-#NTuple = True
+dataSetName = 'DecayTree'
+dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+NTuple = True
 
 # transversity amplitudes
 A0Mag2Val    =  0.52
@@ -46,18 +46,6 @@ timeResSigmaVal = 0.05
 # asymmetries
 AProdVal = 0.
 
-# tagging parameters
-numTagCats    = 6
-cat5Min       = 5
-taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
-tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
-#tagCatCoefs   = [ 0.090, 0.060, 0.045, 0.025, 0.016, 0.013, 0.010, 0.008, 0.006, 0.004 ]
-tagCatCoefs   = [ 0.15, 0.07, 0.03, 0.01, 0.003 ]
-ATagEffs      = ( numTagCats - 1 ) * [ 0. ]
-#wTags         = [ 0.42, 0.38, 0.35, 0.32, 0.27, 0.25, 0.24, 0.20, 0.15, 0.10 ]
-wTags         = [ 0.40, 0.35, 0.27, 0.24, 0.12 ]
-wTagBars      = wTags
-
 # plot options
 angleNames   = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
 numBins      = ( 60, 30, 30, 30 )
@@ -82,26 +70,53 @@ ws = RooObject(workspace = 'ws')
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
 angleFuncs = JpsiphiHelicityAngles( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
-# variables in PDF
+# variables in PDF (except for tagging category)
 time       = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.,   MinMax = ( -0.5, 5. ) )
 iTag       = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
-tagCatP2VV = Category( 'tagCatP2VV',   Title = 'P2VV Tagging Category',     Observable = True
-                      , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, numTagCats ) ]
-                      )
 angles     = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
-obsSetP2VV = [ time ] + list(angles) + [ iTag, tagCatP2VV ]
+obsSetP2VV = [ time ] + list(angles) + [ iTag ]
 
-# ntuple variables
-tagDecision  = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
-                        , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
-                       )
-tagOmega     = RealVar(  'tagomega_os',    Title = 'Estimated wrong tag',       Observable = True, Value = 0.25, MinMax = ( 0., 0.50001 ) )
-tagCat       = Category( 'tagcat_os',      Title = 'Tagging Category',          Observable = True
-                       , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
-                       )
-obsSetNTuple = [ time ] + list(angles) + [ tagDecision, tagOmega, tagCat ]
+# tagging categories
+if not generateData and NTuple :
+    # ntuple variables
+    tagDecision = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
+                           , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
+                          )
+    tagOmega = RealVar( 'tagomega_os', Title = 'Estimated wrong tag', Observable = True, Value = 0.25, MinMax = ( 0., 0.50001 ) )
+    tagCat = Category( 'tagcat_os',   Title = 'Tagging Category', Observable = True
+                      , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
+                     )
+    obsSetNTuple = [ time ] + list(angles) + [ tagDecision, tagOmega, tagCat ]
 
-# variable ranges
+    # read ntuple and add P2VV tagging variables
+    data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
+
+    # create tagging categories
+    from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories
+    tagCats = Linear_TaggingCategories( data, tagCat = 'tagCatP2VV' )
+
+else :
+    # tagging parameters
+    numTagCats    = 6
+    cat5Min       = 5
+    taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
+    tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
+    #tagCatCoefs   = [ 0.090, 0.060, 0.045, 0.025, 0.016, 0.013, 0.010, 0.008, 0.006, 0.004 ]
+    tagCatCoefs   = [ 0.15, 0.07, 0.03, 0.01, 0.003 ]
+    ATagEffs      = ( numTagCats - 1 ) * [ 0. ]
+    #WTags         = [ 0.42, 0.38, 0.35, 0.32, 0.27, 0.25, 0.24, 0.20, 0.15, 0.10 ]
+    WTags         = [ 0.40, 0.35, 0.27, 0.24, 0.12 ]
+    AWTags        = ( numTagCats - 1 ) * [ 0. ]
+
+    # create tagging categories
+    from P2VVParameterizations.FlavourTagging import Independent_TaggingCategories
+    tagCats = Independent_TaggingCategories( tagCat = 'tagCatP2VV' )
+
+# get tagging category variable
+tagCatP2VV = tagCats['tagCat']
+obsSetP2VV.append( tagCats['tagCat'] )
+
+# tagging category ranges
 tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
 tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
 tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
@@ -128,15 +143,8 @@ from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
 # tagging parameters
-from P2VVParameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
-tagParamVals  = dict(  [ ( 'tagCatCoef%d' % ( cat + 1 ), coef ) for cat, coef in enumerate(tagCatCoefs) ]
-                     + [ ( 'ATagEff%d'    % ( cat + 1 ), asym ) for cat, asym in enumerate(ATagEffs)    ]
-                     + [ ( 'wTag%d'       % ( cat + 1 ), wTag ) for cat, wTag in enumerate(wTags)       ]
-                     + [ ( 'wTagBar%d'    % ( cat + 1 ), wTag ) for cat, wTag in enumerate(wTagBars)    ]
-                    )
-taggingParams = WTagsCoefAsyms_TaggingParams(  NumTagCats = tagCatP2VV.numTypes(), AProd = AProdVal, ANorm = -lambdaCP['C'].getVal()
-                                             , **tagParamVals
-                                            )
+from P2VVParameterizations.FlavourTagging import WTagCatsCoefAsyms_TaggingParams
+taggingParams = WTagCatsCoefAsyms_TaggingParams( AProd = AProdVal, ANorm = -lambdaCP['C'].getVal(), **tagCats.tagCatsDict() )
 
 # coefficients for time functions
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
@@ -181,9 +189,11 @@ if generateData :
 else :
     from P2VVGeneralUtils import readData
     if NTuple :
+        if not data : data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
+
         from P2VVGeneralUtils import addTaggingObservables
-        data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
-        addTaggingObservables( data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName() )
+        addTaggingObservables(data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName(), tagCats['tagCatBins'])
+
     else :
         data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetP2VV )
 

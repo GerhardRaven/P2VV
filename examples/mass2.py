@@ -68,8 +68,8 @@ tres.setConstant('.*')
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65, deltaGamma = 0.10, deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) )
 
-from P2VVParameterizations.FlavourTagging import Trivial_Dilution
-taggingParams = Trivial_Dilution( Dilution = tag ) # TODO: add calibration...
+from P2VVParameterizations.FlavourTagging import Dilution_TaggingParams
+taggingParams = Dilution_TaggingParams( dilution = tag ) # TODO: add calibration...
 
 from math import pi
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam

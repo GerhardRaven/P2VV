@@ -62,8 +62,8 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
                                      )
 
 # define tagging parameter 
-from P2VVParameterizations.FlavourTagging import Trivial_PerEventTaggingParams as TaggingParams
-tagging = TaggingParams( wTag = eta ) # Constant = False, Constrain = True )
+from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
+tagging = TaggingParams( estWTag = eta ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
 #externalConstraints += tagging.ExternalConstraints()
 

@@ -27,6 +27,7 @@ if options.pdf not in ['sig_pdf', 'comb_pdf']:
 
 if options.snapshot:
     import tarfile
+    archive = None
     try:
         archive = tarfile.open(options.snapshot, 'r:bz2')
         python_dirs = []
@@ -42,13 +43,15 @@ if options.snapshot:
         print e
         sys.exit(-2)
     finally:
-        archive.close()
+        if archive:
+            archive.close()
     try:
         print 'Running with snapshot %(comment)s' % archive.pax_headers
     except KeyError:
         pass
     
 from ROOT import RooDataHist, RooHistFunc
+from ROOT import TFile
 from RooFitWrappers import *
 
 w = RooObject( workspace = 'w' )
@@ -87,8 +90,8 @@ basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitu
 #from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 #basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes,CP, iTag,  ['A0','Apar','Aperp','AS'] ) 
 
-from P2VVParameterizations.FlavourTagging import Trivial_TaggingParams
-taggingParams = Trivial_TaggingParams( wTag = eta ) # FormulaVar('wTag','@2 + @3*(@0-@1)',[eta,etaAverage,p0,p1] ) )
+from P2VVParameterizations.FlavourTagging import WTag_TaggingParams
+taggingParams = WTag_TaggingParams( wTag = eta ) # FormulaVar('wTag','@2 + @3*(@0-@1)',[eta,etaAverage,p0,p1] ) )
 
 # now build the actual signal PDF...
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
