@@ -281,9 +281,9 @@ def _RooFitResultParamsLatex(self,name,toys):
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
             string += '%s & '%i.GetName()
-            string += '%s $\pm$ %s & '%(round(i.getVal(),3),round(i.getError(),3))
-            string += '%s & '%round(j.getVal(),3)
-            string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),3))
+            string += '%s $\pm$ %s & '%(round(i.getVal(),4),round(i.getError(),4))
+            string += '%s & '%round(j.getVal(),4)
+            string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),4))
     else:
         string += '\\begin{tabular}{|c|c|}\n'
         string += '\\hline\n'
@@ -293,7 +293,7 @@ def _RooFitResultParamsLatex(self,name,toys):
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
             string += '%s & '%i.GetName()
-            string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),3),round(i.getError(),3))
+            string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),4),round(i.getError(),4))
 
     string += '\\hline\n'
     string += '\\end{tabular}\n'
