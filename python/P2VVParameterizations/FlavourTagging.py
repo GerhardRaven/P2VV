@@ -231,3 +231,14 @@ class Trivial_Background_Tag( _util_parse_mixin ) :
 
         for (k,v) in kwargs.iteritems() :
             setattr(self,'_'+k,v)
+
+class Uniform_Background_Tag( _util_parse_mixin ) :
+    def pdf(self) :
+        return self._pdf
+    def __init__( self, tagdecision, **kwargs ) :
+        from RooFitWrappers import GenericPdf
+        name = kwargs.pop('Name','Uniform_Background_TagPdf')
+        self._pdf = GenericPdf( name, Formula = '1'
+                                , Arguments = [ tagdecision ] )
+        for (k,v) in kwargs.iteritems() :
+            setattr(self,'_'+k,v)
