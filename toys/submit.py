@@ -18,6 +18,8 @@ p = subprocess.Popen(cmd, stdout = subprocess.PIPE,
 # Open bz2 file
 snapshot_file = bz2.BZ2File(os.path.join(location, 'snapshot.tar.bz2'), 'w')
 
+acceptance = 'LP_0_005'
+
 # Read the git output and put it into the bz2 file
 data = None
 while True:
@@ -67,8 +69,9 @@ for var, d in env_vars.iteritems():
 j.application.env = env
 
 # Add the inputsandbox
-j.inputsandbox = ['/project/bfys/raaij/p2vv/code/examples/LP_0_015.root',
+j.inputsandbox = ['/project/bfys/raaij/p2vv/code/examples/%s.root' % acceptance,
                   '/project/bfys/raaij/p2vv/code/toys/toyMC_EffHistProdSig.py',
+                  '/project/bfys/raaij/p2vv/code/lib/libP2VV.so',
                   os.path.join(location, 'snapshot.tar.bz2')]
 
 # Add the outputsandbox
@@ -81,13 +84,16 @@ j.merger = CustomMerger(
     )
 
 # Add the splitter
-args = ['toyMC_EffHistProdSig.py', '-p', 'sig_pdf', '--ncpu=2', '-n',
-        '10', '-a', 'LP_0_015.root', '-s', 'snapshot.tar.bz2']
+args = ['toyMC_EffHistProdSig.py', '-p', 'sig_pdf', '--ncpu=1', '-n',
+        '10', '-a', '%s.root' % acceptance, '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
-    values = [args for i in range(5)]
+    values = [args for i in range(100)]
     )
-j.name = 'EffHistProdSig_toy_variable_bins_0_015'
+j.name = 'EffHistProdSig_toy_vbins_%s' % acceptance
 
 # backend
 j.backend = PBS(queue = 'stbcq')
+
+# change back to original location
+os.chdir(location)

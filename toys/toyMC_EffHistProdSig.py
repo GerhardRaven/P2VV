@@ -128,11 +128,9 @@ from ROOT import TFile
 from ROOT import RooDataHist, RooHistFunc
 if options.acceptance:
     acc_file = TFile.Open(options.acceptance)
-    acc_workspace = acc_file.Get('w')
-    eff_hist = acc_workspace.data('eff_hist')
-    eff_func = RooHistFunc('acceptance', 'time acceptance', RooArgSet(t._target_()), eff_hist)
-    w.put(eff_func)
-    sig_pdf = EffProd('sig_pdf_acc', Original = sig_pdf, Efficiency = eff_func)
+    _hist = acc_file.Get('eff_hist')
+    eff_func = HistFunc('acceptance', Observables = [t], Histogram = _hist)
+    sig_pdf = eff_func * sig_pdf
 
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
 signal = Component('signal', (LP2011_Signal_Mass(mass = mass).pdf(), sig_pdf), Yield = (1000,0,15000))

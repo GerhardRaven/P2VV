@@ -517,6 +517,11 @@ class Pdf(RooObject):
             kwargs['Slices'] = [ ( __dref__(sl[0]), sl[1] ) for sl in sls ]
         return self._var.plotOn( frame, **kwargs )
 
+    def __rmul__(self, eff):
+        if not isinstance(eff, FormulaVar) and not isinstance(eff, HistFunc):
+            raise RuntimeError, 'trying to multiply a %s with %s; this is not supported!' % (type(self), type(eff))
+        name = eff.GetName() + '_X_' + self['Name']
+        return EffProd(name, Original = self, Efficiency = eff)
 
 class ProdPdf(Pdf):
     def __init__(self, Name, PDFs, **kwargs):
@@ -680,6 +685,26 @@ class EditPdf( Pdf ) :
         Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
+class HistFunc(RooObject):
+    _getters = {'Histogram'   : lambda s: s.dataHist() 
+               ,'Value'       : lambda s: s.getVal()
+               ,'Observables' : lambda s: s.getDependents()
+               } 
+    def __init__(self, Name, **kwargs):
+        __check_req_kw__( 'Histogram', kwargs )
+        __check_req_kw__( 'Observables', kwargs )
+        _hist = kwargs.pop('Histogram')
+        if str(type(_hist)).find('TH1') == -1:
+            raise TypeError, "HistFunc can only handle 1D historgrams"
+        _dn = Name + '_data_hist'
+        # Create Datahist and Import with density set to false
+        _data = RooDataHist(_dn, _dn, RooArgList(*[__dref__(o) for o in kwargs['Observables']]),
+                            RooFit.Import(_hist, False))
+        self.ws().put(_data)
+        self._declare('RooHistFunc::%s({%s}, %s)' % (Name, ','.join([o.GetName() for o in kwargs.pop('Observables')]), _dn))
+        self._init(Name, 'RooHistFunc')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        
 class EffProd(Pdf):
     def _make_pdf(self) : pass
     def __init__(self, Name, **kwargs):
@@ -693,6 +718,8 @@ class EffProd(Pdf):
             d['Type'] = 'RooEffHistProd'
         else:
             d['Type'] = 'RooEffProd'
+        if d['Type'] not in ['RooEffProd', 'RooEffHistProd']:
+            raise TypeError, "An efficiency can only be of type RooEffProd or RooEffHistProd"
         # construct factory string
         self._declare("%s::%s(%s, %s)" % ( d['Type'], Name, d['Original'].GetName(),
                                            d['Efficiency'].GetName()))
@@ -703,7 +730,6 @@ class EffProd(Pdf):
         Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-        
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
