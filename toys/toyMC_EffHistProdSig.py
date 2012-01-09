@@ -14,7 +14,7 @@ parser.add_option("-e", "--nevents", dest = "nevents", default = 10000,
                   type = 'int', help = 'number of events to generate')
 parser.add_option("-a", dest = "acceptance", default = '',
                   type = 'string', action = 'store', help = 'use the acceptance')
-parser.add_option("-p", dest = "pdf", default = 'comb_pdf',
+parser.add_option("-p", dest = "pdf", default = 'sig_pdf',
                   action = 'store', help = 'which pdf to use')
 parser.add_option("-s", "--snapshot", dest = "snapshot", default = '',
                   action = 'store', help = 'Extract a snapshot to current directory.')
@@ -124,6 +124,14 @@ args[ 'resolutionModel' ]  = tres.model()
 
 sig_pdf = BTagDecay('sig_pdf', **args )
 
+from ROOT import TFile
+from ROOT import RooDataHist, RooHistFunc
+if options.acceptance:
+    acc_file = TFile.Open(options.acceptance)
+    _hist = acc_file.Get('eff_hist')
+    eff_func = HistFunc('acceptance', Observables = [t], Histogram = _hist)
+    sig_pdf = eff_func * sig_pdf
+
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass
 signal = Component('signal', (LP2011_Signal_Mass(mass = mass).pdf(), sig_pdf), Yield = (1000,0,15000))
 
@@ -139,27 +147,12 @@ bkg  = Component('bkg',(  LP2011_Background_Mass( mass = mass ).pdf()
 
 comb_pdf = buildPdf((signal, bkg), Observables = observables,  Name = 'comb_pdf')
 
-##############################################
-### Define acceptance function a la Wouter ###
-##############################################
-if options.acceptance:
-    acc_file = TFile.Open(options.acceptance)
-    acc_workspace = acc_file.Get('w')
-    eff_hist = acc_workspace.data('eff_hist')
-    eff_func = RooHistFunc('acceptance', 'time acceptance', RooArgSet(t._target_()), eff_hist)
-    w.put(eff_func)
-    w.factory("EffHistProd::acc_pdf(%s, acceptance)" % options.pdf)
-
 w.addClassDeclImportDir("..")
 w.addClassImplImportDir("..")
 w.importClassCode()
 
-# Get the PDF which included the acceptance
-pdf = None
-if options.acceptance:
-    pdf= w.pdf('acc_pdf')
-else:
-    pdf = w.pdf(options.pdf)
+# Get the PDF which we want to use
+pdf = locals()[options.pdf]
 
 # Get the bare observable objects and copy them
 obs = w.argSet(','.join([o['Name'] for o in observables]))
@@ -197,9 +190,9 @@ for i in range(options.ntoys):
     pdf_params.assignValueOnly( gen_params ) 
     data = pdf.generate(obs, options.nevents)
     from ROOTDecorators import  ROOTversion as Rv
-    fit_result = pdf.fitTo(data, RooFit.NumCPU(options.ncpu), RooFit.Save(True),
-                           RooFit.Optimize( True if Rv[1]<32 else 0 ),
-                           RooFit.Minos(False), RooFit.Minimizer('Minuit2'))
+    fit_result = pdf.fitTo(data, NumCPU = options.ncpu, Save = True,
+                           Optimize = True if Rv[1]<32 else False,
+                           Minos = False, Minimizer = 'Minuit2')
     if fit_result.status() != 0:
         print 'Fit result status = %s' % fit_result.status()
         continue

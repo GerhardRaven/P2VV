@@ -1,26 +1,52 @@
+#!/usr/bin/env python
+import optparse
+import sys
+import os
+
+parser = optparse.OptionParser(usage = '%prog dy_size')
+parser.add_option("-p", '--prefix', dest = "prefix", default = 'LP',
+                  action = 'store', help = 'which prefix to use for the output filename')
+parser.add_option('--plot', dest = "plot", default = False,
+                  action = 'store_true', help = 'plot function and histo')
+
+(options, args) = parser.parse_args()
+
+if len(args) != 1:
+    print parser.usage
+    sys.exit(-2)
+
+dy = None
+try:
+    dy = float(args[0])
+except ValueError:
+    print 'Bad dy size given, must be convertible to float'
+    sys.exit(-2)
+
 import ROOT
 from ROOT import (RooDataHist, RooWorkspace,
                   RooBrentRootFinder, RooRealBinding,
                   RooArgSet, RooArgList, RooHistFunc,
                   RooFit)
 from ROOT import (TH1F, TFile, TCanvas, Double)
+from RooFitWrappers import *
 
-w = RooWorkspace('w')
+# Create a HistFunc
+obj = RooObject(workspace = 'w')
+w = obj.ws()
 
-w.factory('t[-3., 14.]')
-w.factory("expr::eff_shape('(t > 0.) ? (1 / (1 + (a * t) ** (-c))) : 0.0001', t, a[1.45], c[2.37])")
-eff = w.function('eff_shape')
-t = w.var('t')
+t = RealVar('t', Title = 'decay time', Unit='ps', Observable = True,  MinMax=(-3,14)  )
+a = ConstVar(Name = 'a', Value = 1.45)
+c = ConstVar(Name = 'c', Value = 2.37)
+eff = FormulaVar('eff_shape', "(t > 0.) ? (1 / (1 + (%f * t) ** (-%f))) : 0.0001" % (1.45, 2.37), [t])
 
 # Bind the expression to a function and create the root finder object
-binding = RooRealBinding(eff, RooArgSet(t))
+binding = RooRealBinding(eff._target_(), RooArgSet(t._target_()))
 root_finder = RooBrentRootFinder(binding)
 
 # Some parameter values
 t_min = t.getMin()
 t_max = t.getMax()
 bin_max = 1.
-dy = 0.075
 
 # The bin boundaries
 from array import array
@@ -62,19 +88,16 @@ for i, low in enumerate(boundaries):
         break
 _hist.SetEntries(len(boundaries) - 1)
 
-# Create a RooHistFunc
-eff_hist = RooDataHist('eff_hist', 'eff_hist', RooArgList(t), RooFit.Import(_hist, False))
-eff_func = RooHistFunc('acceptance', 'time acceptance', RooArgSet(t), eff_hist)
-frame = t.frame()
-canvas = TCanvas('canvas', 'canvas', 500, 500)
-canvas.cd(1)
-eff.plotOn(frame, RooFit.LineColor(ROOT.kBlack))
-eff_func.plotOn(frame)
-frame.Draw()
+eff_func = HistFunc('t_acceptance', Histogram = _hist, Observables = [t])
 
-_import = getattr(w, 'import')
-_import(eff_hist)
+if options.plot:
+    frame = t.frame()
+    canvas = TCanvas('canvas', 'canvas', 500, 500)
+    canvas.cd(1)
+    eff.plotOn(frame, RooFit.LineColor(ROOT.kBlack))
+    eff_func.plotOn(frame)
+    frame.Draw()
 
-root_file = TFile.Open('LP_binning.root', 'recreate')
-root_file.WriteTObject(w, 'w')
+root_file = TFile.Open('%s.root' % '_'.join((options.prefix, str(dy).replace('.', '_'))), 'recreate')
+root_file.WriteTObject(_hist, 'eff_hist')
 root_file.Close()
