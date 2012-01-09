@@ -18,7 +18,7 @@
 #include <map>
 #include <vector>
 
-#include "RooAbsReal.h"
+#include "RooAbsPdf.h"
 #include "RooListProxy.h"
 
 class RooAbsCategory;
@@ -26,7 +26,7 @@ class RooAbsRealLValue;
 class RooArgSet;
 class TObjArray;
 
-class RooMultiMultinomial : public RooAbsReal
+class RooMultiMultinomial : public RooAbsPdf
 {
 
 public:
@@ -86,14 +86,13 @@ private:
   RooListProxy _baseVarsList;
   TObjArray    _coefLists;
 
-  std::vector<Int_t>                    _missingCoefs;
   std::vector< std::map<Int_t, Int_t> > _indexPositions;
   std::vector<TString>                  _binningNames;
+  std::vector<Bool_t>                   _calcCoefZeros;
 
   Bool_t _continuousBase;
   Bool_t _binIntegralCoefs;
   Bool_t _ignoreFirstBin;
-  Bool_t _calcLastCoefs;
 
   ClassDef(RooMultiMultinomial, 1) // multi-multinomial function
 };

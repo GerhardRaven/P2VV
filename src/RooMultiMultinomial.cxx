@@ -16,24 +16,24 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // BEGIN_HTML
-// <p>RooMultiMultinomial is a binned function (not a PDF) with an arbitrary
-// number of binnings. Optionally, the bins are associated with values of
-// continuous variables (which results in a step function).</p>
+// <p>RooMultiMultinomial is a binned PDF with an arbitrary number of binnings.
+// Optionally, the bins are associated with values of continuous variables
+// (which results in a step function PDF).</p>
 //
-// <p>A coefficient is specified by the user for each bin. The function's value
-// is determined with the value of a particular bin's coefficient. In case of
-// multiple binnings, the function's value is the product of the values of the
-// binnings. The coefficients are either interpreted as bin heights or as bin
-// integrals.</p>
+// <p>A coefficient is specified by the user for each bin. The PDF function's
+// value is determined with the value of a particular bin's coefficient. In
+// case of multiple binnings, the function's value equals the product of the
+// values of the binnings. The coefficients are either interpreted as bin
+// heights or as bin integrals.</p>
 //
 // <p>The user may either specify coefficients for all the bins of a binning or
-// leave it to the function to calculate the value of the last bin. In the
-// former case, the coefficients may have any value. In the latter case, the
-// value of the last bin's coefficient is equal to one minus the sum of the
-// other bin coefficients. Negative bin values are then considered to be zero.
-// If the sum of the specified bin coefficients is larger than one, the
-// coefficient of the last bin is zero and the other coefficients are scaled
-// such that their sum yields one.</p>
+// leave it to the function to calculate the value for bin 0. In the former
+// case, the coefficients may have any value. In the latter case, the value of
+// the coefficient of bin 0 is equal to one minus the sum of the other bin
+// coefficients. Negative bin values are then considered to be zero.  If the
+// sum of the specified bin coefficients is larger than one, the coefficient of
+// bin 0 equals zero and the other coefficients are scaled such that their sum
+// yields one.</p>
 // END_HTML
 //
 
@@ -52,15 +52,14 @@ ClassImp(RooMultiMultinomial);
 //_____________________________________________________________________________
 RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
     RooAbsCategory& baseCat, RooArgList& coefList, Bool_t ignoreFirstBin) :
-  RooAbsReal(name, title),
+  RooAbsPdf(name, title),
   _numCats(1),
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
   _continuousBase(kFALSE),
   _binIntegralCoefs(kTRUE),
-  _ignoreFirstBin(ignoreFirstBin),
-  _calcLastCoefs(kFALSE)
+  _ignoreFirstBin(ignoreFirstBin)
 {
   // constructor with one binning, which depends on the value of a category
   //
@@ -88,15 +87,14 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
 RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
     const RooArgList& baseCats, const TObjArray& coefLists,
     Bool_t ignoreFirstBin) :
-  RooAbsReal(name, title),
+  RooAbsPdf(name, title),
   _numCats(0),
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
   _continuousBase(kFALSE),
   _binIntegralCoefs(kTRUE),
-  _ignoreFirstBin(ignoreFirstBin),
-  _calcLastCoefs(kFALSE)
+  _ignoreFirstBin(ignoreFirstBin)
 {
   // constructor with an arbitrary number of binnings, which depend on the
   // values of an equal number of categories
@@ -143,15 +141,14 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
 RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
     RooAbsRealLValue& baseVar, const char* binningName,
     RooArgList& coefList, Bool_t binIntegralCoefs, Bool_t ignoreFirstBin) :
-  RooAbsReal(name, title),
+  RooAbsPdf(name, title),
   _numCats(0),
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
   _continuousBase(kTRUE),
   _binIntegralCoefs(binIntegralCoefs),
-  _ignoreFirstBin(ignoreFirstBin),
-  _calcLastCoefs(kFALSE)
+  _ignoreFirstBin(ignoreFirstBin)
 {
   // constructor with one binning, which depends on the value of a continuous
   // variable with a binning
@@ -189,15 +186,14 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
     const RooArgList& baseVars, const TObjArray& binningNames,
     const TObjArray& coefLists, Bool_t binIntegralCoefs,
     Bool_t ignoreFirstBin) :
-  RooAbsReal(name, title),
+  RooAbsPdf(name, title),
   _numCats(0),
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
   _continuousBase(kTRUE),
   _binIntegralCoefs(binIntegralCoefs),
-  _ignoreFirstBin(ignoreFirstBin),
-  _calcLastCoefs(kFALSE)
+  _ignoreFirstBin(ignoreFirstBin)
 {
   // constructor with an arbitrary number of binnings, which depend on the
   // values of continuous variables with binnings
@@ -225,18 +221,17 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
 //_____________________________________________________________________________
 RooMultiMultinomial::RooMultiMultinomial(const RooMultiMultinomial& other,
     const char* name) :
-  RooAbsReal(other, name),
+  RooAbsPdf(other, name),
   _numCats(other._numCats),
   _baseCatsList(TString(name) + "_baseCatsList", this, other._baseCatsList),
   _baseVarsList(TString(name) + "_baseVarsList", this, other._baseVarsList),
   _coefLists(_numCats, 0),
-  _missingCoefs(other._missingCoefs),
   _indexPositions(other._indexPositions),
   _binningNames(other._binningNames),
+  _calcCoefZeros(other._calcCoefZeros),
   _continuousBase(other._continuousBase),
   _binIntegralCoefs(other._binIntegralCoefs),
-  _ignoreFirstBin(other._ignoreFirstBin),
-  _calcLastCoefs(other._calcLastCoefs)
+  _ignoreFirstBin(other._ignoreFirstBin)
 {
   // copy constructor
 
@@ -267,7 +262,7 @@ RooMultiMultinomial::~RooMultiMultinomial()
 //_____________________________________________________________________________
 Double_t RooMultiMultinomial::evaluate() const
 {
-  // evaluates and returns the current value of the function
+  // evaluates and returns the current value of the PDF's function
 
   // temporary result of evaluation
   Double_t value = 1.;
@@ -277,72 +272,72 @@ Double_t RooMultiMultinomial::evaluate() const
 
   // loop over base categories
   Bool_t ignoreBin = _ignoreFirstBin;
+  Bool_t calcCoefZeros = kFALSE;
   for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
     // get coefficient position
     std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
     cPos[catIter] = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
         ->getIndex()];
     if (cPos[catIter] != 0) ignoreBin = kFALSE;
+    if (_calcCoefZeros[catIter]) calcCoefZeros = kTRUE;
 
     // multiply temporary result with value of coefficient
-    if (_missingCoefs[catIter] != cPos[catIter]) {
-      value *= ((RooAbsReal*)((RooArgList*)_coefLists.UncheckedAt(catIter))
-          ->at(cPos[catIter]))->getVal();
+    if (!_calcCoefZeros[catIter] || cPos[catIter] != 0) {
+      // get coefficient's value
+      Double_t cVal = ((RooAbsReal*)((RooArgList*)_coefLists
+          .UncheckedAt(catIter))->at(cPos[catIter] - _calcCoefZeros[catIter]))
+          ->getVal();
+
+      // make negative values equal to zero
+      if (cVal <= 0.) return 0.;
+
+      // multiply by coefficient't value
+      value *= cVal;
+
+      // divide by bin width if coefficients are bin integrals
+      if (_continuousBase && _binIntegralCoefs)
+        value /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+            ->getBinning(_binningNames[catIter]).binWidth(cPos[catIter]);
+    }
+  }
+
+  // return value if we don't have to calculate any bin 0 coefficients
+  if (ignoreBin) return 0.;
+  if (!calcCoefZeros) return value;
+
+  // loop over base categories again
+  for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+    if (!_calcCoefZeros[catIter]) continue;
+
+    // coefficient of bin 0 is not explicitely specified for this category
+    // * coefficients have values between zero and one
+    // * sum of coefficients is equal to one
+    // * coefficient of bin 0 is given by one minus the sum of the other coefs.
+
+    // loop over specified coefficients (#category types - 1)
+    Double_t coefSum = 0.;
+    RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(catIter);
+    for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
+      // get coefficient's value
+      Double_t cVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
+
+      // make negative values equal to zero, add positive values to sum
+      if (cVal > 0) coefSum += cVal;
+    }
+
+    if (cPos[catIter] == 0) {
+      // multiply result with the calculated value of bin 0 coefficient
+      if (coefSum > 1.) return 0.;
+      value *= 1. - coefSum;
 
       // divide by bin width if coefficients are bin integrals
       if (_continuousBase && _binIntegralCoefs) {
         value /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
             ->getBinning(_binningNames[catIter]).binWidth(cPos[catIter]);
       }
-    }
-  }
-
-  // return value if we don't have to calculate last coefficients
-  if (ignoreBin) return 0.;
-  if (!_calcLastCoefs || !(TMath::Abs(value) > 0.)) return value;
-
-  // loop over base categories again
-  for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
-    if (_missingCoefs[catIter] >= 0) {
-      // last coefficient is not explicitely specified for this category
-      // * coefficients have values between zero and one
-      // * sum of coefficients is equal to one
-      // * last coefficient is given by one minus the sum of the other coefs.
-
-      // loop over specified coefficients (#category types - 1)
-      Double_t coefSum = 0.;
-      RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(catIter);
-      for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
-        // get coefficient's value
-        Double_t coefVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
-
-        // check for negative coefficients
-        if (coefVal < 0) {
-          // make negative values equal to zero
-          if (coefIter == cPos[catIter]) return 0.;
-        } else {
-          // add positive values to sum
-          coefSum += coefVal;
-        }
-      }
-
-      if (_missingCoefs[catIter] == cPos[catIter]) {
-        // multiply result with the calculated value of last coefficient
-        if (coefSum > 1.) {
-          return 0.;
-        } else {
-          value *= 1. - coefSum;
-
-          // divide by bin width if coefficients are bin integrals
-          if (_continuousBase && _binIntegralCoefs) {
-            value /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
-                ->getBinning(_binningNames[catIter]).binWidth(cPos[catIter]);
-          }
-        }
-      } else if (coefSum > 1.) {
-        // scale these coefficients to make their sum equal to one
-        value /= coefSum;
-      }
+    } else if (coefSum > 1.) {
+      // scale these coefficients to make their sum equal to one
+      value /= coefSum;
     }
   }
 
@@ -451,10 +446,9 @@ Int_t RooMultiMultinomial::initCoefs(const TObjArray& coefLists)
 
     // set/check number of coefficients
     if (cListProxy->getSize() == cat->numTypes()) {
-      _missingCoefs.push_back(-1);
+      _calcCoefZeros.push_back(kFALSE);
     } else if (cListProxy->getSize() == cat->numTypes() - 1) {
-      _calcLastCoefs = kTRUE;
-      _missingCoefs.push_back(cListProxy->getSize());
+      _calcCoefZeros.push_back(kTRUE);
     } else {
       coutF(InputArguments) << "RooMultiMultinomial::initCoefs("
           << GetName() << ") number of coefficients (" << cListProxy->getSize()
@@ -516,9 +510,8 @@ void RooMultiMultinomial::reset()
   _baseCatsList.removeAll();
   _baseVarsList.removeAll();
   _coefLists.Clear();
-  _missingCoefs.clear();
   _indexPositions.clear();
   _binningNames.clear();
-  _calcLastCoefs = kFALSE;
+  _calcCoefZeros.clear();
 }
 
