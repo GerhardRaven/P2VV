@@ -410,7 +410,7 @@ class Independent_TaggingCategories( TaggingCategories ) :
                                   )
 
 
-def getTagCatParamsFromData( data, paramNames = [ 'all' ], tagCats = [ ], avgEstWTag = 0.38, P0 = 0.38, P1 = 1., AP0 = 0., AP1 = 0. ) :
+def getTagCatParamsFromData( data, tagCats = [ ], avgEstWTag = 0.38, P0 = 0.38, P1 = 1., AP0 = 0., AP1 = 0. ) :
     from RooFitWrappers import RooObject
     if isinstance( avgEstWTag, RooObject ) : avgEstWTag = avgEstWTag.getVal()
     if isinstance( P0,         RooObject ) : P0         = P0.getVal()
@@ -437,20 +437,21 @@ class Linear_TaggingCategories( Independent_TaggingCategories ) :
         self._parseArg( 'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry', Value = 0.,   MinMax = ( -1., 1.  ) )
 
         # get data set
-        data        = kwargs.pop( 'DataSet',           None )
-        detFromData = kwargs.pop( 'DetermineFromData', [ ]  )
+        data = kwargs.pop( 'DataSet', None )
 
-        # initialize tagging category binning in estimated wrong-tag probability (eta)
-        tagCats = [  ( 'Untagged', 0, 0.500001, 0.50, 0.50, 0., 0.718, 0. )
-                   , ( 'tagCat1',  1, 0.499999, 0.43, 0.44, 0., 0.163, 0. )
-                   , ( 'tagCat2',  2, 0.38,     0.35, 0.36, 0., 0.073, 0. )
-                   , ( 'tagCat3',  3, 0.31,     0.28, 0.28, 0., 0.029, 0. )
-                   , ( 'tagCat4',  4, 0.24,     0.21, 0.21, 0., 0.013, 0. )
-                   , ( 'tagCat5',  5, 0.17,     0.14, 0.14, 0., 0.004, 0. )
-                  ]
+        # get tagging category binning in estimated wrong-tag probability (eta)
+        tagCats = kwargs.pop(  'TagCats'
+                             , [  ( 'Untagged', 0, 0.500001, 0.50, 0.50, 0., 0.718, 0. )
+                                , ( 'tagCat1',  1, 0.499999, 0.43, 0.44, 0., 0.163, 0. )
+                                , ( 'tagCat2',  2, 0.38,     0.35, 0.36, 0., 0.073, 0. )
+                                , ( 'tagCat3',  3, 0.31,     0.28, 0.28, 0., 0.029, 0. )
+                                , ( 'tagCat4',  4, 0.24,     0.21, 0.21, 0., 0.013, 0. )
+                                , ( 'tagCat5',  5, 0.17,     0.14, 0.14, 0., 0.004, 0. )
+                               ]
+                            )
 
         # determine tagging category parameters from data
-        self._tagCats = getTagCatParamsFromData(  data, detFromData, tagCats
+        self._tagCats = getTagCatParamsFromData(  data, tagCats
                                                 , self._avgEstWTag, self._wTagP0, self._wTagP1, self._wTagAP0, self._wTagAP1
                                                )
 

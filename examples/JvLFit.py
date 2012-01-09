@@ -7,20 +7,19 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = False
+fitData        = True
 makePlots      = True
 
 nEvents = 200000
 plotsFile = 'JvLFitTagCats.ps'
 
-#dataSetName = 'JpsiphiData'
-#dataSetFile = 'JvLFitTagCats.root'
-#dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/testSample.root'
-#NTuple = False
+dataSetName = 'JpsiphiData'
+dataSetFile = 'JvLFitTagCats.root'
+NTuple = False
 
-dataSetName = 'DecayTree'
-dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-NTuple = True
+#dataSetName = 'DecayTree'
+#dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+#NTuple = True
 
 # transversity amplitudes
 A0Mag2Val    =  0.52
@@ -79,6 +78,17 @@ obsSetP2VV = [ time ] + list(angles) + [ iTag ]
 # tagging categories
 if not generateData and NTuple :
     # ntuple variables
+    mass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = ( 5200., 5550. ), nBins = 48
+                          ,  Ranges =  {  'LeftSideband'  : ( None,  5330. )
+                                        , 'Signal'        : ( 5330., 5410. )
+                                        , 'RightSideband' : ( 5410., None  )
+                                       }
+                  )
+    mpsi = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60.,   3150. + 60.   ), nBins =  32 )
+    mphi = RealVar( 'mdau2', Title = 'M(KK)',     Unit = 'MeV', Observable = True, MinMax = ( 1019.46 - 12., 1019.46 + 12. ), nBins =  16 )
+
+    timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.15 ), nBins =  50 )
+
     tagDecision = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
                            , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
                           )
@@ -86,28 +96,27 @@ if not generateData and NTuple :
     tagCat = Category( 'tagcat_os',   Title = 'Tagging Category', Observable = True
                       , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                      )
-    obsSetNTuple = [ time ] + list(angles) + [ tagDecision, tagOmega, tagCat ]
+
+    sel   = Category( 'sel',             Title = 'Selection',        Observable = True, States = { 'selected' : +1 } )
+    trig  = Category( 'triggerDecision', Title = 'Trigger Decision', Observable = True, States = { 'selected' : +1 } )
+
+    obsSetNTuple = [ time ] + list(angles) +  [ mass, mpsi, mphi ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
 
     # read ntuple and add P2VV tagging variables
     from P2VVGeneralUtils import readData
     data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
 
-    # create tagging categories
-    from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories
-    tagCats = Linear_TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data, DetermineFromData = ['all'] )
-
 else :
-    # create tagging categories
-    from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories
-    tagCats = Linear_TaggingCategories( tagCat = 'tagCatP2VV' )
+    data = None
 
-# get tagging category variable
+from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories
+tagCats = Linear_TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data )
 tagCatP2VV = tagCats['tagCat']
 obsSetP2VV.append( tagCatP2VV )
 
 # tagging parameters
-numTagCats    = 6
-cat5Min       = 5
+numTagCats    = tagCats['numTagCats']
+cat5Min       = 1 + 4 * int( float( numTagCats - 1 ) / 5. )
 taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
 tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
 
@@ -194,10 +203,11 @@ else :
 
 if fitData :
     # fix values of some parameters
-    for CEvenOdd in taggingParams['CEvenOdds'][ 1 : ] :
+    for CEvenOdd in taggingParams['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
-    taggingParams.setConstant('wTag.*')
+    transAmps.setConstant('ReA.*')
+    transAmps.setConstant('ImA.*')
 
     # fit data
     print 'JvLFit: fitting %d events' % data.numEntries()
