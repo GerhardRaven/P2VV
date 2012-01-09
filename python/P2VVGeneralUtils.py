@@ -23,7 +23,7 @@ def numCPU( Max = sys.maxint ) :
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
 
-def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = None ) :
+def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = None, **kwargs ) :
     """reads data from file (RooDataSet or TTree(s))
     """
 
@@ -62,7 +62,7 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
 
     # import data set into current workspace
     from RooFitWrappers import RooObject
-    return RooObject().ws().put(data)
+    return RooObject().ws().put(data,**kwargs)
 
 
 def writeData( filePath, dataSetName, data, NTuple = False ) :
