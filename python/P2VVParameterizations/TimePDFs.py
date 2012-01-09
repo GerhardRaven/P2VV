@@ -68,7 +68,7 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
             from RooFitWrappers import ConstVar, FormulaVar, Product
             plus  = ConstVar( Name = 'plus',  Value =  1 )
             minus = ConstVar( Name = 'minus', Value = -1 )
-            Norm = FormulaVar('Norm','1.0/(1.0+@0*@1)',[tag,CP['C']] )# TODO: replace @0 with sign(@0) so we can use per-event dilution
+            Norm = FormulaVar('Norm','1.0/(1.0+sign(@0)*@1)',[tag,CP['C']] )# TODO: replace @0 with sign(@0) so we can use per-event dilution
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
             # TODO: replace by Addition & Product... why? (only parameters)
             Re        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
