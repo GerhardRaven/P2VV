@@ -458,13 +458,14 @@ class RealMomentsBuilder ( dict ) :
         minSignif = kwargs.pop('MinSignificance', float('-inf') )
 
         # get scale factors
-        scale = kwargs.pop('Scales', None )
+        scale  = kwargs.pop( 'Scale',  None )
+        scales = kwargs.pop( 'Scales', ( scale, scale, 1. ) if scale != None else None )
 
         # print header
         print 'P2VV - INFO: RealMomentsBuilder.printMoments:'
         print '  name requirement: \'' + ( names if names else '' ) + '\''
         print '  minimum significance = %.1f' % minSignif
-        print '  scale = ' + ( str(scale) if scale else '(1., 1., 1.)' )
+        print '  scales = ' + ( str(scales) if scales else '(1., 1., 1.)' )
         print '  ' + '-' * (45 + maxLenName)
         print ( '  {0:<%d}   {1:<12}   {2:<12}   {3:<12}' % maxLenName )\
                 .format( 'basis function', 'coefficient', 'std. dev.', 'significance' )
@@ -478,10 +479,10 @@ class RealMomentsBuilder ( dict ) :
             print ( '  {0:<%d}' % maxLenName ).format(func if len(func) <= maxLenName else '...' + func[3 - maxLenName : ]),
             if func in self._coefficients :
                 coef = self._coefficients[func]
-                if scale :
-                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0] * scale[0], coef[1] * scale[1], coef[2] * scale[2] )
+                if scales :
+                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0] * scales[0], coef[1] * scales[1], coef[2] * scales[2] )
                 else :
-                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0],            coef[1],            coef[2] )
+                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0],             coef[1],             coef[2]             )
             else : print
 
         print '  ' + '-' * (45 + maxLenName)
@@ -608,7 +609,8 @@ class RealMomentsBuilder ( dict ) :
         names = kwargs.pop( 'Names', None )
 
         # get scale factors
-        scales = kwargs.pop( 'Scales', ( None, None ) )
+        scale  = kwargs.pop( 'Scale',  None )
+        scales = kwargs.pop( 'Scales', ( scale, scale ) if scale != None else ( None, None ) )
 
         # get number of standard deviations for range of the PDF coefficients
         numStdDevs = kwargs.pop( 'RangeNumStdDevs', 5. )
