@@ -12,8 +12,8 @@
  * listed in LICENSE (http://roofit.sourceforge.net/license.txt)             *
  *****************************************************************************/
 
-#ifndef ROO_MULTI_MULTINOMIAL
-#define ROO_MULTI_MULTINOMIAL
+#ifndef ROO_BINNED_PDF
+#define ROO_BINNED_PDF
 
 #include <map>
 #include <vector>
@@ -26,38 +26,46 @@ class RooAbsRealLValue;
 class RooArgSet;
 class TObjArray;
 
-class RooMultiMultinomial : public RooAbsPdf
+class RooBinnedPdf : public RooAbsPdf
 {
 
 public:
-  inline RooMultiMultinomial() {}
+  inline RooBinnedPdf() {}
 
-  RooMultiMultinomial(const char *name, const char *title,
+  RooBinnedPdf(const char *name, const char *title,
       RooAbsCategory& baseCat, RooArgList& coefList,
       Bool_t ignoreFirstBin = kFALSE);
 
-  RooMultiMultinomial(const char *name, const char *title,
+  RooBinnedPdf(const char *name, const char *title,
       const RooArgList& baseCats, const TObjArray& coefLists,
       Bool_t ignoreFirstBin = kFALSE);
 
-  RooMultiMultinomial(const char *name, const char *title,
+  RooBinnedPdf(const char *name, const char *title,
       RooAbsRealLValue& baseVar, const char* binningName,
       RooArgList& coefList, Bool_t binIntegralCoefs = kFALSE,
       Bool_t ignoreFirstBin = kFALSE);
 
-  RooMultiMultinomial(const char *name, const char *title,
+  RooBinnedPdf(const char *name, const char *title,
       const RooArgList& baseVars, const TObjArray& binningNames,
       const TObjArray& coefLists, Bool_t binIntegralCoefs = kFALSE,
       Bool_t ignoreFirstBin = kFALSE);
 
-  RooMultiMultinomial(const RooMultiMultinomial& other, const char* name = 0);
+  RooBinnedPdf(const char* name, const char* title,
+      const RooArgList& baseVars, const TObjArray& binningNames,
+      RooAbsReal* function);
+
+  RooBinnedPdf(const char* name, const char* title,
+      const RooAbsArg& baseVar, const char* binning,
+      RooAbsReal* function);
+
+  RooBinnedPdf(const RooBinnedPdf& other, const char* name = 0);
 
   virtual TObject* clone(const char* newname) const 
   { 
-    return new RooMultiMultinomial(*this, newname);
+    return new RooBinnedPdf(*this, newname);
   }
 
-  virtual ~RooMultiMultinomial();
+  virtual ~RooBinnedPdf();
 
   RooArgList* baseVariables();
 
@@ -79,12 +87,20 @@ private:
   Int_t initCoefs(const TObjArray& coefLists);
 
   void reset();
+   
+  const RooAbsRealLValue& function() {
+    return dynamic_cast<const RooAbsRealLValue&>(_function.arg());
+  }
+
+  Double_t evaluateCoef() const;
+  Double_t evaluateFunction() const;
 
   Int_t _numCats;
 
   RooListProxy _baseCatsList;
   RooListProxy _baseVarsList;
   TObjArray    _coefLists;
+  RooRealProxy _function;
 
   std::vector< std::map<Int_t, Int_t> > _indexPositions;
   std::vector<TString>                  _binningNames;
@@ -94,7 +110,7 @@ private:
   Bool_t _binIntegralCoefs;
   Bool_t _ignoreFirstBin;
 
-  ClassDef(RooMultiMultinomial, 1) // multi-multinomial function
+  ClassDef(RooBinnedPdf, 1) // multi-multinomial function
 };
 
 #endif

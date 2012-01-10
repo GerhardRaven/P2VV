@@ -7,7 +7,7 @@
 #include "RooBTagDecay.h"
 #include "RooTrivialTagDecay.h"
 #include "RooMultiCatGenerator.h"
-#include "RooMultiMultinomial.h"
+#include "RooBinnedPdf.h"
 #include "RooP2VVAngleBasis.h"
 #include "RooThresholdPdf.h"
 #include "RooEffHistProd.h"

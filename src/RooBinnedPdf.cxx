@@ -16,7 +16,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // BEGIN_HTML
-// <p>RooMultiMultinomial is a binned PDF with an arbitrary number of binnings.
+// <p>RooBinnedPdf is a binned PDF with an arbitrary number of binnings.
 // Optionally, the bins are associated with values of continuous variables
 // (which results in a step function PDF).</p>
 //
@@ -42,21 +42,24 @@
 #include "RooBinningCategory.h"
 #include "RooArgSet.h"
 #include "RooMsgService.h"
-#include "RooMultiMultinomial.h"
+#include "RooBinnedPdf.h"
 #include "TMath.h"
 #include "TObjArray.h"
 #include "TObjString.h"
 
-ClassImp(RooMultiMultinomial);
+#include <memory>
+
+ClassImp(RooBinnedPdf);
 
 //_____________________________________________________________________________
-RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
+RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     RooAbsCategory& baseCat, RooArgList& coefList, Bool_t ignoreFirstBin) :
   RooAbsPdf(name, title),
   _numCats(1),
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
+  _function(TString(name) + "_function", 0, this),
   _continuousBase(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(ignoreFirstBin)
@@ -84,7 +87,7 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
 }
 
 //_____________________________________________________________________________
-RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
+RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     const RooArgList& baseCats, const TObjArray& coefLists,
     Bool_t ignoreFirstBin) :
   RooAbsPdf(name, title),
@@ -92,6 +95,7 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
+  _function(TString(name) + "_function", 0, this),
   _continuousBase(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(ignoreFirstBin)
@@ -119,7 +123,7 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
   while ((cat = (RooAbsArg*)catIter->Next()) != 0) {
     // check if this is a category
     if (dynamic_cast<RooAbsCategory*>(cat) == 0) {
-      coutF(InputArguments) << "RooMultiMultinomial::RooMultiMultinomial("
+      coutF(InputArguments) << "RooBinnedPdf::RooBinnedPdf("
           << GetName() << ") base category '" << cat->GetName()
           << "' is not a RooAbsCategory" << endl;
       reset();
@@ -138,7 +142,7 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
 }
 
 //_____________________________________________________________________________
-RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
+RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     RooAbsRealLValue& baseVar, const char* binningName,
     RooArgList& coefList, Bool_t binIntegralCoefs, Bool_t ignoreFirstBin) :
   RooAbsPdf(name, title),
@@ -146,6 +150,7 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
+  _function(TString(name) + "_function", 0, this),
   _continuousBase(kTRUE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(ignoreFirstBin)
@@ -182,7 +187,7 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
 }
 
 //_____________________________________________________________________________
-RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
+RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     const RooArgList& baseVars, const TObjArray& binningNames,
     const TObjArray& coefLists, Bool_t binIntegralCoefs,
     Bool_t ignoreFirstBin) :
@@ -191,6 +196,7 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
+  _function(TString(name) + "_function", 0, this),
   _continuousBase(kTRUE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(ignoreFirstBin)
@@ -219,7 +225,77 @@ RooMultiMultinomial::RooMultiMultinomial(const char* name, const char* title,
 }
 
 //_____________________________________________________________________________
-RooMultiMultinomial::RooMultiMultinomial(const RooMultiMultinomial& other,
+RooBinnedPdf::RooBinnedPdf
+(const char* name, const char* title, const RooArgList& baseVars,
+ const TObjArray& binningNames, RooAbsReal* function):
+  RooAbsPdf(name, title),
+  _numCats(0),
+  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+  _coefLists(),
+  _function(TString(name) + "_function", TString(name) + "_function", function, this),
+  _continuousBase(kTRUE),
+  _binIntegralCoefs(kFALSE),
+  _ignoreFirstBin(kFALSE)
+{
+  // constructor with a list of variables, the corresponding binnings to be used 
+  // and a function.
+  //
+  // The "current bins" are given by the values of the RooAbsRealLValues
+  // contained by "baseVars" and their binnings with N_i bins, given by
+  // "binningNames". Exactly one variable is specified for each binning. The
+  // "binningNames" are TObjStrings.
+  //
+  // The supplied function will be evaluated a bin centers to give the value.
+
+  // create base categories and initialize coefficients
+  assert(baseVars.getSize() == binningNames.GetEntries());
+
+  std::auto_ptr<const RooArgSet> comps(function->getComponents());
+  std::auto_ptr<TIterator> it(baseVars.createIterator());
+  RooAbsArg* arg = 0;
+  while ((arg = static_cast<RooAbsArg*>(it->Next()))) {
+    assert(comps->contains(*arg));
+  }
+
+  _baseVarsList.add(baseVars);
+  it.reset(binningNames.MakeIterator());
+  TObjString* s = 0;
+  while ((s = static_cast<TObjString*>(it->Next()))) {
+    _binningNames.push_back(s->GetString());
+  }
+}
+
+//_____________________________________________________________________________
+RooBinnedPdf::RooBinnedPdf
+(const char* name, const char* title, const RooAbsArg& baseVar,
+ const char* binning, RooAbsReal* function):
+  RooAbsPdf(name, title),
+  _numCats(0),
+  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+  _coefLists(),
+  _function(TString(name) + "_function", TString(name) + "_function", function, this),
+  _continuousBase(kTRUE),
+  _binIntegralCoefs(kFALSE),
+  _ignoreFirstBin(kFALSE)
+{
+  // constructor with a list of variables, the corresponding binnings to be used 
+  // and a function.
+  //
+  // The "current bins" are given by the values of the RooAbsRealLValues
+  // contained by "baseVars" and their binnings with N_i bins, given by
+  // "binningNames". Exactly one variable is specified for each binning. The
+  // "binningNames" are TObjStrings.
+  //
+  // The supplied function will be evaluated a bin centers to give the value.
+
+  std::auto_ptr<RooArgSet> components(function->getComponents());
+  assert(components->contains(baseVar));
+}
+
+//_____________________________________________________________________________
+RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other,
     const char* name) :
   RooAbsPdf(other, name),
   _numCats(other._numCats),
@@ -254,13 +330,55 @@ RooMultiMultinomial::RooMultiMultinomial(const RooMultiMultinomial& other,
 }
 
 //_____________________________________________________________________________
-RooMultiMultinomial::~RooMultiMultinomial()
+RooBinnedPdf::~RooBinnedPdf()
 {
   // destructor
 }
 
 //_____________________________________________________________________________
-Double_t RooMultiMultinomial::evaluate() const
+Double_t RooBinnedPdf::evaluate() const
+{
+  if (_function.absArg()) {
+    return evaluateFunction();
+  } else {
+    return evaluateCoef();
+  }
+}
+
+//_____________________________________________________________________________
+Double_t RooBinnedPdf::evaluateFunction() const
+{
+  std::vector<Double_t> originals(_baseVarsList.getSize(), 0);
+  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
+    originals[i] = static_cast<const RooAbsReal*>(_baseVarsList.at(i))->getVal();
+  }
+
+  // Cache requirement
+  Bool_t origState = inhibitDirty();
+  setDirtyInhibit(kTRUE);
+
+  // Set vars to bin center
+  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
+    const char* name = _binningNames[i].Data();
+    RooAbsRealLValue* var = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(i));
+    const RooAbsBinning& binning = var->getBinning(name);
+    Int_t bin = binning.binNumber(originals[i]);
+    var->setVal(binning.binCenter(bin));
+  }
+  // Get function value
+  Double_t value = _function.arg().getVal();
+
+  // Restore original vars
+  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
+    RooAbsRealLValue* var = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(i));
+    var->setVal(originals[i]);
+  }
+  setDirtyInhibit(origState) ;	
+  return value;
+}
+
+//_____________________________________________________________________________
+Double_t RooBinnedPdf::evaluateCoef() const
 {
   // evaluates and returns the current value of the PDF's function
 
@@ -347,7 +465,7 @@ Double_t RooMultiMultinomial::evaluate() const
 }
 
 //_____________________________________________________________________________
-Int_t RooMultiMultinomial::createBaseCats(const RooArgList& baseVars,
+Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
     const TObjArray& binningNames)
 {
   // creates a base category for each continuous input base variable
@@ -356,7 +474,7 @@ Int_t RooMultiMultinomial::createBaseCats(const RooArgList& baseVars,
 
   // check the number of specified binnings
   if (binningNames.GetEntries() != _numCats) {
-    coutF(InputArguments) << "RooMultiMultinomial::createBaseCats("
+    coutF(InputArguments) << "RooBinnedPdf::createBaseCats("
         << GetName() << ") number of binnings (" << binningNames.GetEntries()
         << ") does not match the number of base variables (" << _numCats << ")"
         << endl;
@@ -374,7 +492,7 @@ Int_t RooMultiMultinomial::createBaseCats(const RooArgList& baseVars,
 
     // check type of input variable
     if (var == 0) {
-      coutF(InputArguments) << "RooMultiMultinomial::createBaseCats("
+      coutF(InputArguments) << "RooBinnedPdf::createBaseCats("
           << GetName() << ") base variable '" << var->GetName()
           << "' is not a RooAbsRealLValue" << endl;
       reset();
@@ -383,7 +501,7 @@ Int_t RooMultiMultinomial::createBaseCats(const RooArgList& baseVars,
 
     // check if list of base variables already contains this variable
     if (_baseVarsList.find(var->GetName()) != 0) {
-      coutF(InputArguments) << "RooMultiMultinomial::createBaseCats("
+      coutF(InputArguments) << "RooBinnedPdf::createBaseCats("
           << GetName() << ") variable '" << var->GetName()
           << "' is not unique in set of base variables" << endl;
       reset();
@@ -411,7 +529,7 @@ Int_t RooMultiMultinomial::createBaseCats(const RooArgList& baseVars,
 }
 
 //_____________________________________________________________________________
-Int_t RooMultiMultinomial::initCoefs(const TObjArray& coefLists)
+Int_t RooBinnedPdf::initCoefs(const TObjArray& coefLists)
 {
   // initializes bin coefficients
 
@@ -450,7 +568,7 @@ Int_t RooMultiMultinomial::initCoefs(const TObjArray& coefLists)
     } else if (cListProxy->getSize() == cat->numTypes() - 1) {
       _calcCoefZeros.push_back(kTRUE);
     } else {
-      coutF(InputArguments) << "RooMultiMultinomial::initCoefs("
+      coutF(InputArguments) << "RooBinnedPdf::initCoefs("
           << GetName() << ") number of coefficients (" << cListProxy->getSize()
           << ") does not match number of base variable types ("
           << cat->numTypes() << ")" << endl;
@@ -480,7 +598,7 @@ Int_t RooMultiMultinomial::initCoefs(const TObjArray& coefLists)
 
   // check number of coefficient lists
   if (_coefLists.GetEntries() != _numCats) {
-    coutF(InputArguments) << "RooMultiMultinomial::initCoefs("
+    coutF(InputArguments) << "RooBinnedPdf::initCoefs("
         << GetName() << ") number of coefficient lists ("
         << _coefLists.GetEntries()
         << ") does not match number of base variables (" << _numCats << ")"
@@ -493,7 +611,7 @@ Int_t RooMultiMultinomial::initCoefs(const TObjArray& coefLists)
 }
 
 //_____________________________________________________________________________
-RooArgList* RooMultiMultinomial::baseVariables()
+RooArgList* RooBinnedPdf::baseVariables()
 {
   // Returns the list of base variables (continuous variables or categories).
   // The caller of this function is responsible for deleting the returned
@@ -504,7 +622,7 @@ RooArgList* RooMultiMultinomial::baseVariables()
 }
 
 //_____________________________________________________________________________
-void RooMultiMultinomial::reset()
+void RooBinnedPdf::reset()
 {
   _numCats = 0;
   _baseCatsList.removeAll();
@@ -514,4 +632,3 @@ void RooMultiMultinomial::reset()
   _binningNames.clear();
   _calcCoefZeros.clear();
 }
-

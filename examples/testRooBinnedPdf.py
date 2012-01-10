@@ -1,6 +1,6 @@
 ###########################################################################################################################################
-## testRooMultiMultinomial:                                                                                                              ##
-##   test/demonstrate the behaviour of the class RooMultiMultinomial                                                                     ##
+## testRooBinnedPdf:                                                                                                              ##
+##   test/demonstrate the behaviour of the class RooBinnedPdf                                                                     ##
 ##                                                                                                                                       ##
 ## authors:                                                                                                                              ##
 ##   JvL, Jeroen van Leerdam, Nikhef, j.van.leerdam@nikhef.nl                                                                            ##
@@ -8,7 +8,7 @@
 ###########################################################################################################################################
 
 # plots file
-plotsFile = 'MultiMultinomialPlots.ps'
+plotsFile = 'BinnedPdfPlots.ps'
 
 ###########################################################################################################################################
 
@@ -32,8 +32,8 @@ c4 = RooRealVar( 'c4', 'c4', 0.20, 0., 2. )
 cList = RooArgList( c1, c2, c3, c4 )
 
 # create a step function
-from ROOT import RooMultiMultinomial
-mmn = RooMultiMultinomial( 'mmn', 'mmn', baseVar, 'baseVarBins', cList, 0, 0 )
+from ROOT import RooBinnedPdf
+mmn = RooBinnedPdf( 'mmn', 'mmn', baseVar, 'baseVarBins', cList, 0, 0 )
 
 # create a Gaussian PDF
 from ROOT import RooGaussian

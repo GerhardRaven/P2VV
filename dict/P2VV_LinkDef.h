@@ -15,7 +15,7 @@
 #pragma link C++ class RooBTagDecay+;
 #pragma link C++ class RooTrivialTagDecay+;
 #pragma link C++ class RooMultiCatGenerator+;
-#pragma link C++ class RooMultiMultinomial+;
+#pragma link C++ class RooBinnedPdf+;
 #pragma link C++ class RooP2VVAngleBasis+;
 #pragma link C++ class RooThresholdPdf+;
 #pragma link C++ class RooEffHistProd+;
