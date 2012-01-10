@@ -20,7 +20,6 @@ makePlots       = True
 dataSetName = 'JpsiKstarData'
 dataSetFile = 'amplitudeMoments_hel.root'
 #dataSetFile = 'amplitudeMoments_trans.root'
-NTuple = False
 plotsFile = 'amplitudeMoments.ps'
 
 # angular moments
@@ -39,12 +38,21 @@ if physicsPDF :
     ASPhVal      =  0.
 
 else :
-    coefPDFParams = [  ( ( 0, 2,  0 ), ( 0.1, 0., 0.2 ) )
-                     , ( ( 0, 2, -1 ), ( 0.1, 0., 0.2 ) )
-                     , ( ( 0, 2,  2 ), ( 0.1, 0., 0.2 ) )
-                     , ( ( 1, 0,  0 ), ( 0.1, 0., 0.2 ) )
-                     , ( ( 2, 2,  1 ), ( 0.1, 0., 0.2 ) )
-                    ]
+    # P_i( cos(theta_K) ) * Y_jk( cos(theta_l, phi) ) terms in angular PDF: ( ( i, j, k ), ( value, min. value, max. value ) )
+    angPDFParams = [  ( ( 0, 2,  0 ), ( 0.1, 0., 0.2 ) )
+                    , ( ( 0, 2, -1 ), ( 0.1, 0., 0.2 ) )
+                    , ( ( 0, 2,  2 ), ( 0.1, 0., 0.2 ) )
+                    , ( ( 1, 0,  0 ), ( 0.1, 0., 0.2 ) )
+                    , ( ( 2, 2,  1 ), ( 0.1, 0., 0.2 ) )
+                   ]
+
+# P_i( cos(theta_K) ) * Y_jk( cos(theta_l, phi) ) terms in coefficients PDF: ( ( i, j, k ), ( value, min. value, max. value ) )
+coefPDFParams = [  ( ( 0, 2,  0 ), ( 0., -0.6, +0.6 ) )
+                 , ( ( 0, 2, -1 ), ( 0., -0.6, +0.6 ) )
+                 , ( ( 0, 2,  2 ), ( 0., -0.6, +0.6 ) )
+                 , ( ( 1, 0,  0 ), ( 0., -0.6, +0.6 ) )
+                 , ( ( 2, 2,  1 ), ( 0., -0.6, +0.6 ) )
+                ]
 
 # plot options
 angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
@@ -53,6 +61,9 @@ numBins    = ( 30, 30, 30 )
 lineWidth  = 2
 markStyle  = 8
 markSize   = 0.4
+
+# moments overall scale
+scale = 4. * sqrt(pi)
 
 
 ###########################################################################################################################################
@@ -75,8 +86,9 @@ angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
 observables = list(angles)
 
+# build terms for angular PDF
 if physicsPDF :
-    # transversity amplitudes
+    # terms with transversity amplitudes
     from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
     transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                                           , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
@@ -86,25 +98,26 @@ if physicsPDF :
                                           , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
                                          )
 
-    # build angular PDF
     from P2VVParameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
     pdfTerms = Amplitudes_AngularPdfTerms( AmpNames = ampsToUse, Amplitudes = transAmps, AngFunctions = angleFuncs.functions )
-    pdf = pdfTerms.buildSumPdf('AngularPDF')
 
 else :
+    # terms with angular basis functions
     from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
     cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
-    coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
-                                              , **dict( (  'C%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
-                                                         , {  'Name'    : 'COab%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
-                                                            , 'Value'   : term[1][0]
-                                                            , 'MinMax'  : term[1][ 1 : 3 ]
-                                                            , 'Indices' : term[0]
-                                                           }
-                                                        ) for term in coefPDFParams
-                                                      )
-                                             )
-    pdf = coefPDFTerms.buildSumPdf('AngularPDF')
+    pdfTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
+                                          , **dict( (  'C%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
+                                                     , {  'Name'    : 'COab%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
+                                                        , 'Value'   : term[1][0]
+                                                        , 'MinMax'  : term[1][ 1 : 3 ]
+                                                        , 'Indices' : term[0]
+                                                       }
+                                                    ) for term in angPDFParams
+                                                  )
+                                         )
+
+# build angular PDF
+pdf = pdfTerms.buildSumPdf('AngularPDF')
 
 from P2VVLoad import RooFitOutput
 if generateData :
@@ -113,12 +126,12 @@ if generateData :
     data = pdf.generate( observables, nEvents )
 
     from P2VVGeneralUtils import writeData
-    writeData( dataSetFile, dataSetName, data, NTuple )
+    writeData( dataSetFile, dataSetName, data )
 
 else :
     # read data from file
     from P2VVGeneralUtils import readData
-    data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple )
+    data = readData( dataSetFile, dataSetName = dataSetName )
 
 if fitDataOriginal :
     # fit data
@@ -139,9 +152,6 @@ names0 = 'p2vvab_00..'
 names1 = names0 + '|p2vvab_10..'
 names2 = names1 + '|p2vvab_20..'
 
-# moments overall scales
-scales = ( 4. * sqrt(pi), 4. * sqrt(pi), 1 )
-
 from P2VVGeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
@@ -156,16 +166,16 @@ else :
     moments.read(momentsFile)
 
 # print moments to screen
-moments.Print( Scales = scales, MinSignificance = 3., Names = names0 )
-moments.Print( Scales = scales, MinSignificance = 3., Names = names1 )
-moments.Print( Scales = scales, MinSignificance = 3., Names = names2 )
-moments.Print( Scales = scales, MinSignificance = 0.                 )
+moments.Print( Scale = scale, MinSignificance = 3., Names = names0 )
+moments.Print( Scale = scale, MinSignificance = 3., Names = names1 )
+moments.Print( Scale = scale, MinSignificance = 3., Names = names2 )
+moments.Print( Scale = scale, MinSignificance = 0.                 )
 
 # build new PDFs with angular moments
-momPDFTerms0 = moments.buildPDFTerms(MinSignificance = 3., Names = names0, Scales = scales, CoefNamePrefix = 'C0_')
-momPDFTerms1 = moments.buildPDFTerms(MinSignificance = 3., Names = names1, Scales = scales, CoefNamePrefix = 'C1_')
-momPDFTerms2 = moments.buildPDFTerms(MinSignificance = 3., Names = names2, Scales = scales, CoefNamePrefix = 'C2_')
-momPDFTerms  = moments.buildPDFTerms(MinSignificance = 0.                , Scales = scales                        , RangeNumStdDevs = 5.)
+momPDFTerms0 = moments.buildPDFTerms(MinSignificance = 3., Names = names0, Scale = scale, CoefNamePrefix = 'C0_')
+momPDFTerms1 = moments.buildPDFTerms(MinSignificance = 3., Names = names1, Scale = scale, CoefNamePrefix = 'C1_')
+momPDFTerms2 = moments.buildPDFTerms(MinSignificance = 3., Names = names2, Scale = scale, CoefNamePrefix = 'C2_')
+momPDFTerms  = moments.buildPDFTerms(MinSignificance = 0.                , Scale = scale                        , RangeNumStdDevs = 5.)
 
 momPDF0 = momPDFTerms0.buildSumPdf('angMomentsPDF0')
 momPDF1 = momPDFTerms1.buildSumPdf('angMomentsPDF1')
@@ -194,16 +204,15 @@ if fitDataMoments :
 
 # build new PDF with angular coefficients
 from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
-coefIndices = [ ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 2, 2, 0 ), ( 2, 2, 2 ) ]
 cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
 coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
-                                          , **dict( (  'C%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
-                                                     , {  'Name'    : 'Cab%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
-                                                        , 'Value'   : 0.
-                                                        , 'MinMax'  : ( -0.6, +0.6 )
-                                                        , 'Indices' : inds
+                                          , **dict( (  'C%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
+                                                     , {  'Name'    : 'Cab%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
+                                                        , 'Value'   : term[1][0]
+                                                        , 'MinMax'  : term[1][ 1 : 3 ]
+                                                        , 'Indices' : term[0]
                                                        }
-                                                    ) for inds in coefIndices
+                                                    ) for term in coefPDFParams
                                                   )
                                          )
 coefPDF = coefPDFTerms.buildSumPdf('angCoefsPDF')
