@@ -942,7 +942,8 @@ class Component(object):
 
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
-        assert k == set( i.GetName() for i in pdf.Observables() if i not in pdf.ConditionalObservables() )
+        if pdf :
+            assert k == set( i.GetName() for i in pdf.Observables() if i not in pdf.ConditionalObservables() )
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
         present = set()
@@ -982,7 +983,7 @@ class Component(object):
                 nk = nk - kmax 
             if nk : raise IndexError('could not construct matching product -- no PDF for observables: %s' % [i for i in nk ])
             nk = frozenset.union(*terms)
-            pdfs = [self[i] for i in terms]
+            pdfs = [self[i] for i in terms if type(self[i])!=type(None)]
             #TODO: check that the conditional handling is internally consistent...
             d[nk] = ProdPdf(self.name, PDFs = pdfs)
         return d[k]
