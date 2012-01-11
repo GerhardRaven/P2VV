@@ -54,7 +54,8 @@ ClassImp(RooBinnedPdf);
 
 //_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
-    RooAbsCategory& baseCat, RooArgList& coefList, Bool_t ignoreFirstBin) :
+    RooAbsCategory& baseCat, const RooArgList& coefList,
+    Bool_t ignoreFirstBin) :
   RooAbsPdf(name, title),
   _numCats(1),
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
@@ -83,7 +84,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
 
   // initialize coefficients
   TObjArray coefLists(1, 0);
-  coefLists.Add(&coefList);
+  coefLists.Add(coefList.clone(TString(name) + "_" + coefList.GetName()));
   initCoefs(coefLists);
 }
 
@@ -145,7 +146,8 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
 //_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     RooAbsRealLValue& baseVar, const char* binningName,
-    RooArgList& coefList, Bool_t binIntegralCoefs, Bool_t ignoreFirstBin) :
+    const RooArgList& coefList, Bool_t binIntegralCoefs,
+    Bool_t ignoreFirstBin) :
   RooAbsPdf(name, title),
   _numCats(0),
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
@@ -182,7 +184,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   // create base category and initialize coefficients
   if (createBaseCats(baseVars, binningNames) > 0) {
     TObjArray coefLists(1, 0);
-    coefLists.Add(&coefList);
+    coefLists.Add(coefList.clone(TString(name) + "_" + coefList.GetName()));
     initCoefs(coefLists);
   }
 }
