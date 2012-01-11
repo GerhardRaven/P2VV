@@ -982,5 +982,6 @@ def buildPdf(Components, Observables, Name) :
         pdf = c[obs]
         args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
+    if len(Components)==1 : return args['PDFs'][0]
     # and sum components (inputs should already be extended)
     return SumPdf(Name,**args)
