@@ -935,16 +935,22 @@ class Component(object):
         self.append(pdf)
         return self
     def append(self,pdf ) :
-        obs = ( o for o in pdf.Observables() if o not in pdf.ConditionalObservables() ) 
-        self[ obs ] = pdf
+        if hasattr(pdf,'iteritems'):
+            for obs,pdf in pdf.iteritems() : 
+                self[obs] = pdf
+        else :
+            if not hasattr(pdf,'__iter__') : pdf = (pdf,)
+            for p in pdf :
+                obs = ( o for o in p.Observables() if o not in p.ConditionalObservables() ) 
+                self[ obs ] = p
         
     def __setitem__(self, observable, pdf) :
         if not hasattr(observable,'__iter__') : observable = (observable,)
 
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
-        if type(pdf)==type(None) : # allow 'None' as a placeholder for 'no PDF', which in RooFit turns into an implicit uniform PDF
-            assert k == set( i.etName() for i in pdf.Observables() if i not in pdf.ConditionalObservables() )
+        if type(pdf)!=type(None) : # allow 'None' as a placeholder for 'no PDF', which in RooFit turns into an implicit uniform PDF
+            assert k == set( i.GetName() for i in pdf.Observables() if i not in pdf.ConditionalObservables() )
         ####
         # do NOT allow overlaps with already registered observables!!!!!! (maybe allow in future....)
         present = set()
@@ -998,6 +1004,6 @@ def buildPdf(Components, Observables, Name) :
         pdf = c[obs]
         args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
-    if len(Components)==1 : return args['PDFs'][0]
+    if len(Components)==1 : return args['PDFs'][0] # TODO: how to change the name?
     # and sum components (inputs should already be extended)
     return SumPdf(Name,**args)
