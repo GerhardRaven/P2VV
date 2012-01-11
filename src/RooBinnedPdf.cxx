@@ -4,6 +4,7 @@
  *    File: $Id$
  * Authors:                                                                  *
  *   JvL, Jeroen van Leerdam, Nikhef, j.van.leerdam@nikhef.nl                *
+ *   RA,  Roel Aaij,          Nikhef,                                        *
  *                                                                           *
  * Copyright (c) 2011, Nikhef. All rights reserved.                          *
  *                                                                           *
@@ -39,10 +40,10 @@
 
 #include "RooAbsCategory.h"
 #include "RooAbsRealLValue.h"
+#include "RooBinnedPdf.h"
 #include "RooBinningCategory.h"
 #include "RooArgSet.h"
 #include "RooMsgService.h"
-#include "RooBinnedPdf.h"
 #include "TMath.h"
 #include "TObjArray.h"
 #include "TObjString.h"

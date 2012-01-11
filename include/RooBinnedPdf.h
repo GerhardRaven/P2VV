@@ -4,6 +4,7 @@
  *    File: $Id$
  * Authors:                                                                  *
  *   JvL, Jeroen van Leerdam, Nikhef, j.van.leerdam@nikhef.nl                *
+ *   RA,  Roel Aaij,          Nikhef                                         *
  *                                                                           *
  * Copyright (c) 2011, Nikhef. All rights reserved.                          *
  *                                                                           *
@@ -19,6 +20,7 @@
 #include <vector>
 
 #include "RooAbsPdf.h"
+#include "RooRealProxy.h"
 #include "RooListProxy.h"
 
 class RooAbsCategory;
