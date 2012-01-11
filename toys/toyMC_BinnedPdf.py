@@ -67,7 +67,7 @@ while dt < t_max:
     else:
         boundaries.append(high)
     dt = boundaries[i]
-    print '{:>5d} {: 7.5f} {: 7.5f} {: 7.5f} {: b} {: 7.5f} {: 7.5f}'.format(i, low, high, val, r, result, dt)
+    ## print '{:>5d} {: 7.5f} {: 7.5f} {: 7.5f} {: b} {: 7.5f} {: 7.5f}'.format(i, low, high, val, r, result, dt)
     i += 1
 boundaries[-1] = t_max
 
@@ -79,7 +79,7 @@ for i, low in enumerate(boundaries):
     t.setVal(mid)
     val = eff.getVal()
     _hist.SetBinContent(i + 1, val)
-    print '{:>5d} {: 7.5f} {: 7.5f} {: 7.5f} {: 7.5f}'.format(i, low, mid, high, val)
+    ## print '{:>5d} {: 7.5f} {: 7.5f} {: 7.5f} {: 7.5f}'.format(i, low, mid, high, val)
     if i == len(boundaries) - 2:
         break
 _hist.SetEntries(len(boundaries) - 1)
