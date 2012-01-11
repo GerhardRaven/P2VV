@@ -7,19 +7,20 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = True
-makePlots      = True
+fitData        = False
+makePlots      = False
 
 nEvents = 200000
+sigFrac = 0.8
 plotsFile = 'JvLFitTagCats.ps'
 
-dataSetName = 'JpsiphiData'
-dataSetFile = 'JvLFitTagCats.root'
-NTuple = False
+#dataSetName = 'JpsiphiData'
+#dataSetFile = 'JvLFitTagCats.root'
+#realData = False
 
-#dataSetName = 'DecayTree'
-#dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
-#NTuple = True
+dataSetName = 'DecayTree'
+dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+realData = True
 
 # transversity amplitudes
 A0Mag2Val    =  0.52
@@ -40,7 +41,6 @@ lambdaCPSqVal = 1.
 GammaVal        = 0.66
 dGammaVal       = 0.12
 dmVal           = 17.8
-timeResSigmaVal = 0.05
 
 # asymmetries
 AProdVal = 0.
@@ -56,8 +56,8 @@ markSize     = 0.4
 
 
 ###########################################################################################################################################
-## build the PDF ##
-###################
+## create variables and read real data ##
+#########################################
 
 # import RooFit wrappers
 from RooFitWrappers import *
@@ -66,24 +66,26 @@ from RooFitWrappers import *
 ws = RooObject(workspace = 'ws')
 
 # angular functions
-from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
-angleFuncs = JpsiphiHelicityAngles( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
+from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
+angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 # variables in PDF (except for tagging category)
 time       = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.,   MinMax = ( -0.5, 5. ) )
 iTag       = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
 angles     = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
-obsSetP2VV = [ time ] + list(angles) + [ iTag ]
+
+BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = ( 5200., 5550. ), nBins = 48
+                       ,  Ranges =  {  'LeftSideBand'  : ( None,  5330. )
+                                     , 'Signal'        : ( 5330., 5410. )
+                                     , 'RightSideBand' : ( 5410., None  )
+                                    }
+               )
+
+obsSetP2VV = [ time ] + list(angles) + [ iTag, BMass ]
 
 # tagging categories
-if not generateData and NTuple :
+if not generateData and realData :
     # ntuple variables
-    mass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = ( 5200., 5550. ), nBins = 48
-                          ,  Ranges =  {  'LeftSideband'  : ( None,  5330. )
-                                        , 'Signal'        : ( 5330., 5410. )
-                                        , 'RightSideband' : ( 5410., None  )
-                                       }
-                  )
     mpsi = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60.,   3150. + 60.   ), nBins =  32 )
     mphi = RealVar( 'mdau2', Title = 'M(KK)',     Unit = 'MeV', Observable = True, MinMax = ( 1019.46 - 12., 1019.46 + 12. ), nBins =  16 )
 
@@ -100,17 +102,17 @@ if not generateData and NTuple :
     sel   = Category( 'sel',             Title = 'Selection',        Observable = True, States = { 'selected' : +1 } )
     trig  = Category( 'triggerDecision', Title = 'Trigger Decision', Observable = True, States = { 'selected' : +1 } )
 
-    obsSetNTuple = [ time ] + list(angles) +  [ mass, mpsi, mphi ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
+    obsSetNTuple = [ time ] + list(angles) +  [ BMass, mpsi, mphi ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
 
     # read ntuple and add P2VV tagging variables
     from P2VVGeneralUtils import readData
-    data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
+    data = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetNTuple )
 
 else :
     data = None
 
-from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories
-tagCats = Linear_TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data )
+from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
+tagCats = TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data )
 tagCatP2VV = tagCats['tagCat']
 obsSetP2VV.append( tagCatP2VV )
 
@@ -125,56 +127,134 @@ tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
 tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
 tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
 
+
+###########################################################################################################################################
+## initialize PDF component objects ##
+######################################
+
+nSignal     = data.numEntries() * sigFrac          if data else nEvents * sigFrac
+nBackground = data.numEntries() * ( 1. - sigFrac ) if data else nEvents * ( 1. - sigFrac )
+
+signalComps     = Component('signal', [ ], Yield = ( nSignal,     0., 1.1 * nSignal     ) )
+backgroundComps = Component('bkg'   , [ ], Yield = ( nBackground, 0., 2.0 * nBackground ) )
+
+
+###########################################################################################################################################
+## build mass PDFs ##
+#####################
+
+# build the signal and background mass PDFs
+from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass, LP2011_Background_Mass as BackgroundBMass
+signalBMass     = SignalBMass(     Name = 'sig_m', mass = BMass, m_sig_mean = dict( Value = 5368., MinMax = ( 5363., 5372. ) ) )
+backgroundBMass = BackgroundBMass( Name = 'bkg_m', mass = BMass, m_bkg_exp  = dict( Name = 'bkg_m_exp' ) )
+
+signalComps     += signalBMass.pdf()
+backgroundComps += backgroundBMass.pdf()
+
+
+###########################################################################################################################################
+## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
+#####################################################################
+
 # transversity amplitudes
-from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
-transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
-                                      , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
-                                      , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
-                                      , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
-                                      , ReAS    = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal)
-                                      , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
-                                     )
+from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes as Amplitudes
+amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
+                        , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
+                        , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
+                        , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
+                        , ReAS    = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal)
+                        , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
+                       )
 
 # B lifetime
-from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = GammaVal, deltaGamma = dGammaVal, deltaM = dmVal )
+from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
+lifetimeParams = LifetimeParams( Gamma = GammaVal, deltaGamma = dGammaVal, deltaM = dmVal )
 
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution
-timeResModel = Gaussian_TimeResolution( time = time, timeResSigma = timeResSigmaVal )
+#from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
+timeResModel = TimeResolution( time = time )
 
 # CP violation parameters
-from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
+from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
+lambdaCP = CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
 # tagging parameters
-from P2VVParameterizations.FlavourTagging import WTagCatsCoefAsyms_TaggingParams
-taggingParams = WTagCatsCoefAsyms_TaggingParams( AProd = AProdVal, ANorm = -lambdaCP['C'].getVal(), **tagCats.tagCatsDict() )
+from P2VVParameterizations.FlavourTagging import WTagCatsCoefAsyms_TaggingParams as TaggingParams
+taggingParams = TaggingParams( AProd = AProdVal, ANorm = -lambdaCP['C'].getVal(), **tagCats.tagCatsDict() )
 
 # coefficients for time functions
-from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
-timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients( angleFuncs.functions, transAmps, lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
+from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
+timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
-# build the B_s -> J/psi phi signal PDF
-args = {
-    'time'            : time
-  , 'iTag'            : iTag
-  , 'tagCat'          : tagCatP2VV
-  , 'tau'             : lifetimeParams['MeanLifetime']
-  , 'dGamma'          : lifetimeParams['deltaGamma']
-  , 'dm'              : lifetimeParams['deltaM']
-  , 'dilutions'       : taggingParams['dilutions']
-  , 'ADilWTags'       : taggingParams['ADilWTags']
-  , 'avgCEvens'       : taggingParams['avgCEvens']
-  , 'avgCOdds'        : taggingParams['avgCOdds']
-  , 'tagCatCoefs'     : taggingParams['tagCatCoefs']
-  , 'coshCoef'        : timeBasisCoefs['cosh']
-  , 'sinhCoef'        : timeBasisCoefs['sinh']
-  , 'cosCoef'         : timeBasisCoefs['cos']
-  , 'sinCoef'         : timeBasisCoefs['sin']
-  , 'resolutionModel' : timeResModel['model']
-}
+# build signal PDF
+args = dict(  time            = time
+            , iTag            = iTag
+            , tagCat          = tagCatP2VV
+            , tau             = lifetimeParams['MeanLifetime']
+            , dGamma          = lifetimeParams['deltaGamma']
+            , dm              = lifetimeParams['deltaM']
+            , dilutions       = taggingParams['dilutions']
+            , ADilWTags       = taggingParams['ADilWTags']
+            , avgCEvens       = taggingParams['avgCEvens']
+            , avgCOdds        = taggingParams['avgCOdds']
+            , tagCatCoefs     = taggingParams['tagCatCoefs']
+            , coshCoef        = timeBasisCoefs['cosh']
+            , sinhCoef        = timeBasisCoefs['sinh']
+            , cosCoef         = timeBasisCoefs['cos']
+            , sinCoef         = timeBasisCoefs['sin']
+            , resolutionModel = timeResModel['model']
+           )
 
-pdf = BTagDecay('JpsiphiPDF', **args)
+signalComps += BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+
+
+###########################################################################################################################################
+## build background time PDF ##
+###############################
+
+from P2VVParameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
+backgroundTime = BackgroundTime(  Name = 'bkg_t', time = time, resolutionModel = timeResModel['model']
+                                , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.6                        )
+                                , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 2.5, MinMax = ( 0.5, 3.5 ) )
+                                , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.1                        )
+                               )
+backgroundComps += backgroundTime.pdf()
+
+
+###########################################################################################################################################
+## build background angular PDF ##
+##################################
+
+backgroundComps += HistPdf(  Name = 'bkg_angles'
+                           , Observables = angles
+                           , Binning =  {  angleFuncs.angles['cpsi']   : 5
+                                         , angleFuncs.angles['ctheta'] : 7
+                                         , angleFuncs.angles['phi' ]   : 9
+                                        }
+                           , Data = data.reduce( CutRange = 'LeftSideBand,RightSideBand' ) 
+                          )
+
+
+###########################################################################################################################################
+## build background tagging PDF ##
+##################################
+
+backgroundComps += BinnedPdf(  'bkg_tagCat_iTag'
+                             , baseCats = ( tagCatP2VV, iTag )
+                             , coefLists = [  taggingParams['tagCatCoefs']
+                                            , [  RealVar( 'bkg_BbarFrac'
+                                               , Title = 'Anti-B fraction in background'
+                                               , Value = 0.5, MinMax = ( 0., 1. ) )
+                                              ]
+                                           ]
+                            )
+
+
+###########################################################################################################################################
+## build full PDF ##
+####################
+
+pdf = buildPdf( ( signalComps, backgroundComps ), Observables = obsSetP2VV, Name = 'JpsiphiPDF' )
 
 
 ###########################################################################################################################################
@@ -188,26 +268,25 @@ if generateData :
     data = pdf.generate( obsSetP2VV, nEvents )
 
     from P2VVGeneralUtils import writeData
-    writeData( dataSetFile, dataSetName, data, NTuple )
+    writeData( dataSetFile, dataSetName, data )
 
 else :
     from P2VVGeneralUtils import readData
-    if NTuple :
-        if not data : data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetNTuple )
-
+    if realData :
         from P2VVGeneralUtils import addTaggingObservables
         addTaggingObservables(data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName(), tagCats['tagCats'])
 
     else :
-        data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = obsSetP2VV )
+        data = readData( dataSetFile, dataSetName = dataSetName, observables = obsSetP2VV )
 
 if fitData :
     # fix values of some parameters
     for CEvenOdd in taggingParams['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
-    transAmps.setConstant('ReA.*')
-    transAmps.setConstant('ImA.*')
+    amplitudes.setConstant('ReA.*')
+    amplitudes.setConstant('ImA.*')
+    timeResModel.setConstant('.*')
 
     # fit data
     print 'JvLFit: fitting %d events' % data.numEntries()
@@ -240,11 +319,11 @@ if makePlots :
             )
 
     # plot lifetime
-    timePlotTitles = tuple( [ time.GetTitle() + str for str in (  ' - B (linear)'
-                                                                , ' - B (logarithmic)'
-                                                                , ' - #bar{B} (linear)'
-                                                                , ' - #bar{B} (logarithmic)'
-                                                               )
+    timePlotTitles = tuple( [ time.GetTitle() + title for title in (  ' - B (linear)'
+                                                                    , ' - B (logarithmic)'
+                                                                    , ' - #bar{B} (linear)'
+                                                                    , ' - #bar{B} (logarithmic)'
+                                                                   )
                             ] )
     timeCanv = TCanvas( 'timeCanv', 'Lifetime' )
     for ( pad, nBins, plotTitle, dataCuts, pdfCuts, logY )\
@@ -267,13 +346,13 @@ if makePlots :
     for pad in timeCanv.pads() : pad.Draw()
 
     # plot lifetime (tagged/untagged)
-    timePlotTitles1 = tuple( [ time.GetTitle() + str for str in (  ' - B (untagged)'
-                                                                 , ' - B (tagged)'
-                                                                 , ' - B (tagging category 5)'
-                                                                 , ' - #bar{B} (untagged)'
-                                                                 , ' - #bar{B} (tagged)'
-                                                                 , ' - #bar{B} (tagging category 5)'
-                                                                )
+    timePlotTitles1 = tuple( [ time.GetTitle() + title for title in (  ' - B (untagged)'
+                                                                     , ' - B (tagged)'
+                                                                     , ' - B (tagging category 5)'
+                                                                     , ' - #bar{B} (untagged)'
+                                                                     , ' - #bar{B} (tagged)'
+                                                                     , ' - #bar{B} (tagging category 5)'
+                                                                    )
                             ] )
     timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
     for ( pad, nBins, plotTitle, dataCuts, pdfCuts )\

@@ -823,20 +823,21 @@ class BTagDecay( Pdf ) :
 class BinnedPdf( Pdf ) :
     def __init__( self, Name, **kwargs ) :
         from P2VVLoad import P2VVLibrary
-        argDict = { 'Name' : Name, 'ignoreFirstBin' : kwargs.pop( 'ignoreFirstBin', 0 ) }
+        argDict = { 'Name' : Name }
 
         # declare PDF in workspace
         if 'baseCat' in kwargs :
             # single category dependence
             argDict['baseCat']  = str(kwargs.pop('baseCat'))
             argDict['coefList'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('coefList') )
-            self._declare( "BinnedPdf::%(Name)s( %(baseCat)s, %(coefList)s, %(ignoreFirstBin)s )" % argDict )
+            self._declare( "BinnedPdf::%(Name)s( %(baseCat)s, %(coefList)s )" % argDict )
 
         elif 'baseCats' in kwargs :
             # multiple category dependence
             listArrayName = Name + '_coefLists'
-            argDict['baseCats']  = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('baseCats') )
-            argDict['coefLists'] = listArrayName
+            argDict['ignoreFirstBin'] = kwargs.pop( 'ignoreFirstBin', 0 )
+            argDict['baseCats']       = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('baseCats') )
+            argDict['coefLists']      = listArrayName
 
             # create an array for the coefficient lists
             from ROOT import TObjArray
