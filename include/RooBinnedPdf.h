@@ -35,7 +35,7 @@ public:
   inline RooBinnedPdf() {}
 
   RooBinnedPdf(const char *name, const char *title,
-      RooAbsCategory& baseCat, RooArgList& coefList,
+      RooAbsCategory& baseCat, const RooArgList& coefList,
       Bool_t ignoreFirstBin = kFALSE);
 
   RooBinnedPdf(const char *name, const char *title,
@@ -44,7 +44,7 @@ public:
 
   RooBinnedPdf(const char *name, const char *title,
       RooAbsRealLValue& baseVar, const char* binningName,
-      RooArgList& coefList, Bool_t binIntegralCoefs = kFALSE,
+      const RooArgList& coefList, Bool_t binIntegralCoefs = kFALSE,
       Bool_t ignoreFirstBin = kFALSE);
 
   RooBinnedPdf(const char *name, const char *title,

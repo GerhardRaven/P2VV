@@ -825,11 +825,12 @@ class BinnedPdf( Pdf ) :
         from P2VVLoad import P2VVLibrary
         argDict = { 'Name' : Name, 'ignoreFirstBin' : kwargs.pop( 'ignoreFirstBin', 0 ) }
 
+        # declare PDF in workspace
         if 'baseCat' in kwargs :
             # single category dependence
             argDict['baseCat']  = str(kwargs.pop('baseCat'))
             argDict['coefList'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('coefList') )
-            self._declare("BinnedPdf::%(Name)s( %(baseCat)s, %(coefList), %(ignoreFirstBin)s )") % argDict
+            self._declare( "BinnedPdf::%(Name)s( %(baseCat)s, %(coefList)s, %(ignoreFirstBin)s )" % argDict )
 
         elif 'baseCats' in kwargs :
             # multiple category dependence
@@ -837,16 +838,21 @@ class BinnedPdf( Pdf ) :
             argDict['baseCats']  = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('baseCats') )
             argDict['coefLists'] = listArrayName
 
-            self.ws().factory( 'TObjArray::%s()' % listArrayName )
-            wsListArray = self.ws().obj( listArrayName )
+            # create an array for the coefficient lists
+            from ROOT import TObjArray
+            wsListArray = TObjArray()
+            wsListArray.SetName(listArrayName)
+
+            # create coefficient lists
+            from ROOT import RooArgList
             for varNum, coefList in enumerate( kwargs.pop('coefLists') ) :
                 listName = Name + '_coefList%d' % varNum
-                self.ws().factory( 'ArgList::%s()' % listName )
-                wsList = self.ws().obj( listName )
+                wsList = RooArgList(listName)
                 for coef in coefList : wsList.add( self.ws().arg( str(coef) ) )
                 wsListArray.Add(wsList)
 
-            self._declare("BinnedPdf::%(Name)s( %(baseCats)s, %(coefLists), %(ignoreFirstBin)s )") % argDict
+            self.ws().put(wsListArray)
+            self._declare( "BinnedPdf::%(Name)s( %(baseCats)s, %(coefLists)s, %(ignoreFirstBin)s )" % argDict )
 
         elif 'baseVar' in kwargs or 'baseVars' in kwargs :
             # continuous variable(s) dependence
@@ -854,6 +860,14 @@ class BinnedPdf( Pdf ) :
 
         else :
             raise KeyError('P2VV - ERROR: BinnedPdf: please specify variable(s)')
+
+        # initialize PDF
+        self._init( Name, 'RooBinnedPdf' )
+        Pdf.__init__(  self
+                     , Name = Name
+                     , Type = 'RooBinnedPdf'
+                    )
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
 
     def _make_pdf(self) : pass
 
