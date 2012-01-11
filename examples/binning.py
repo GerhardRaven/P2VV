@@ -92,10 +92,14 @@ eff_func = HistFunc('t_acceptance', Histogram = _hist, Observables = [t])
 
 if options.plot:
     frame = t.frame()
-    canvas = TCanvas('canvas', 'canvas', 500, 500)
+    canvas = TCanvas('canvas', 'canvas', 1000, 500)
+    canvas.Divide(2, 1)
     canvas.cd(1)
     eff.plotOn(frame, RooFit.LineColor(ROOT.kBlack))
     eff_func.plotOn(frame)
+    frame.Draw()
+    canvas.cd(2)
+    frame = t.frame()    
     frame.Draw()
 
 root_file = TFile.Open('%s.root' % '_'.join((options.prefix, str(dy).replace('.', '_'))), 'recreate')
