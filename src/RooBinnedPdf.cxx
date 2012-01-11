@@ -59,8 +59,8 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _numCats(1),
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
-  _coefLists(1, 0),
-  _function(TString(name) + "_function", 0, this),
+  _coefLists(1, 0),  
+  _function(TString(name) + "_function", TString(name) + "_function", this),
   _continuousBase(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(ignoreFirstBin)
@@ -96,7 +96,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
-  _function(TString(name) + "_function", 0, this),
+  _function(TString(name) + "_function", TString(name) + "_function", this),
   _continuousBase(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(ignoreFirstBin)
@@ -151,7 +151,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
-  _function(TString(name) + "_function", 0, this),
+  _function(TString(name) + "_function", TString(name) + "_function", this),
   _continuousBase(kTRUE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(ignoreFirstBin)
@@ -197,7 +197,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(1, 0),
-  _function(TString(name) + "_function", 0, this),
+  _function(TString(name) + "_function", TString(name) + "_function", this),
   _continuousBase(kTRUE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(ignoreFirstBin)
@@ -234,7 +234,7 @@ RooBinnedPdf::RooBinnedPdf
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(),
-  _function(TString(name) + "_function", TString(name) + "_function", function, this),
+  _function(TString(name) + "_function", TString(name) + "_function", this, *function),
   _continuousBase(kTRUE),
   _binIntegralCoefs(kFALSE),
   _ignoreFirstBin(kFALSE)
@@ -252,7 +252,7 @@ RooBinnedPdf::RooBinnedPdf
   // create base categories and initialize coefficients
   assert(baseVars.getSize() == binningNames.GetEntries());
 
-  std::auto_ptr<const RooArgSet> comps(function->getComponents());
+  std::auto_ptr<const RooArgSet> comps(function->getVariables());
   std::auto_ptr<TIterator> it(baseVars.createIterator());
   RooAbsArg* arg = 0;
   while ((arg = static_cast<RooAbsArg*>(it->Next()))) {
@@ -276,7 +276,7 @@ RooBinnedPdf::RooBinnedPdf
   _baseCatsList(TString(name) + "_baseCatsList", 0, this),
   _baseVarsList(TString(name) + "_baseVarsList", 0, this),
   _coefLists(),
-  _function(TString(name) + "_function", TString(name) + "_function", function, this),
+  _function(TString(name) + "_function", TString(name) + "_function", this, *function),
   _continuousBase(kTRUE),
   _binIntegralCoefs(kFALSE),
   _ignoreFirstBin(kFALSE)
@@ -291,8 +291,10 @@ RooBinnedPdf::RooBinnedPdf
   //
   // The supplied function will be evaluated a bin centers to give the value.
 
-  std::auto_ptr<RooArgSet> components(function->getComponents());
-  assert(components->contains(baseVar));
+  std::auto_ptr<RooArgSet> vars(function->getVariables());
+  assert(vars->contains(baseVar));
+  _baseVarsList.add(baseVar);
+  _binningNames.push_back(binning);
 }
 
 //_____________________________________________________________________________
@@ -303,6 +305,7 @@ RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other,
   _baseCatsList(TString(name) + "_baseCatsList", this, other._baseCatsList),
   _baseVarsList(TString(name) + "_baseVarsList", this, other._baseVarsList),
   _coefLists(_numCats, 0),
+  _function(TString(name) + "_baseVarsList", this, other._function),
   _indexPositions(other._indexPositions),
   _binningNames(other._binningNames),
   _calcCoefZeros(other._calcCoefZeros),
@@ -339,7 +342,7 @@ RooBinnedPdf::~RooBinnedPdf()
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::evaluate() const
 {
-  if (_function.absArg()) {
+  if (_function.absArg() != 0) {
     return evaluateFunction();
   } else {
     return evaluateCoef();
