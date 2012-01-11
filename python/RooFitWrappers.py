@@ -800,10 +800,10 @@ class BTagDecay( Pdf ) :
                          )
         else :
             for argName in [  'time', 'iTag', 'tau', 'dGamma', 'dm'
-                        , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
-                        , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
-                        , 'resolutionModel', 'decayType', 'checkVars'
-                       ] :
+                            , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
+                            , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                            , 'resolutionModel', 'decayType', 'checkVars'
+                           ] :
                 if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
 
             self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
@@ -818,6 +818,45 @@ class BTagDecay( Pdf ) :
                      , Type = 'RooBTagDecay'
                     )
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
+
+
+class BinnedPdf( Pdf ) :
+    def __init__( self, Name, **kwargs ) :
+        from P2VVLoad import P2VVLibrary
+        argDict = { 'Name' : Name, 'ignoreFirstBin' : kwargs.pop( 'ignoreFirstBin', 0 ) }
+
+        if 'baseCat' in kwargs :
+            # single category dependence
+            argDict['baseCat']  = str(kwargs.pop('baseCat'))
+            argDict['coefList'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('coefList') )
+            self._declare("BinnedPdf::%(Name)s( %(baseCat)s, %(coefList), %(ignoreFirstBin)s )") % argDict
+
+        elif 'baseCats' in kwargs :
+            # multiple category dependence
+            listArrayName = Name + '_coefLists'
+            argDict['baseCats']  = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('baseCats') )
+            argDict['coefLists'] = listArrayName
+
+            self.ws().factory( 'TObjArray::%s()' % listArrayName )
+            wsListArray = self.ws().obj( listArrayName )
+            for varNum, coefList in enumerate( kwargs.pop('coefLists') ) :
+                listName = Name + '_coefList%d' % varNum
+                self.ws().factory( 'ArgList::%s()' % listName )
+                wsList = self.ws().obj( listName )
+                for coef in coefList : wsList.add( self.ws().arg( str(coef) ) )
+                wsListArray.Add(wsList)
+
+            self._declare("BinnedPdf::%(Name)s( %(baseCats)s, %(coefLists), %(ignoreFirstBin)s )") % argDict
+
+        elif 'baseVar' in kwargs or 'baseVars' in kwargs :
+            # continuous variable(s) dependence
+            raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables not (yet) implemented')
+
+        else :
+            raise KeyError('P2VV - ERROR: BinnedPdf: please specify variable(s)')
+
+    def _make_pdf(self) : pass
+
 
 class ResolutionModel(RooObject):
     _getters = { 'Parameters'  : lambda s : s._get('Parameters') }

@@ -40,6 +40,10 @@ class AmplitudeSet ( dict, _util_parse_mixin ) :
         # require the names in args to be unique...
         assert( len(self)==len(args) )
 
+    def __getitem__( self, kw ) :
+        if kw in self : return dict.__getitem__( self, kw )
+        return getattr( self, '_' + kw )
+
 
 class JpsiVCarthesianAmplitudes ( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
