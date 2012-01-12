@@ -1,14 +1,10 @@
-#!/usr/bin/env python
-import optparse
 import sys
 import os
+from ToyMCUtils import Toy
 
-parser = optparse.OptionParser(usage = '%prog dy_size')
-parser.add_option("-p", '--prefix', dest = "prefix", default = 'LP',
-                  action = 'store', help = 'which prefix to use for the output filename')
-
-(options, args) = parser.parse_args()
-
+toy = Toy()
+parser = toy.parser()
+(options, args) = toy.configure()
 if len(args) != 1:
     print parser.usage
     sys.exit(-2)
@@ -19,13 +15,12 @@ try:
 except ValueError:
     print 'Bad dy size given, must be convertible to float'
     sys.exit(-2)
-
-import ROOT
 from ROOT import (RooDataHist, RooWorkspace,
                   RooBrentRootFinder, RooRealBinding,
                   RooArgSet, RooArgList, RooHistFunc,
                   RooFit)
 from ROOT import (TH1F, TFile, TCanvas, Double)
+from P2VVLoad import P2VVLibrary
 from RooFitWrappers import *
 
 # Create a HistFunc
@@ -72,7 +67,7 @@ while dt < t_max:
     else:
         boundaries.append(high)
     dt = boundaries[i]
-    print '{:>5d} {: 7.5f} {: 7.5f} {: 7.5f} {: b} {: 7.5f} {: 7.5f}'.format(i, low, high, val, r, result, dt)
+    ## print '{:>5d} {: 7.5f} {: 7.5f} {: 7.5f} {: b} {: 7.5f} {: 7.5f}'.format(i, low, high, val, r, result, dt)
     i += 1
 boundaries[-1] = t_max
 
@@ -84,33 +79,22 @@ for i, low in enumerate(boundaries):
     t.setVal(mid)
     val = eff.getVal()
     _hist.SetBinContent(i + 1, val)
-    print '{:>5d} {: 7.5f} {: 7.5f} {: 7.5f} {: 7.5f}'.format(i, low, mid, high, val)
+    ## print '{:>5d} {: 7.5f} {: 7.5f} {: 7.5f} {: 7.5f}'.format(i, low, mid, high, val)
     if i == len(boundaries) - 2:
         break
 _hist.SetEntries(len(boundaries) - 1)
 
 from ROOT import RooBinning
 binning = RooBinning(len(boundaries) - 1, boundaries, "binning")
-## t.setBinning(binning)
 
 ## Use EffHistProd to generate events
 t_flat = UniformPdf('t_flat', Arguments = [t])
 eff_func = HistFunc('t_acceptance', Histogram = _hist, Observables = [t])
 pdf = eff_func * t_flat
 
-data = pdf.generate([t], 10000)
-
 from ROOT import RooBinnedPdf
 binned_pdf = RooBinnedPdf('binned_pdf', 'binned_pdf', t._target_(), "binning", eff._target_())
-result = binned_pdf.fitTo(data, RooFit.Save(True), RooFit.Minimizer('Minuit2'))
 
-frame = t.frame()
-canvas = TCanvas('canvas', 'canvas', 1000, 500)
-canvas.Divide(2, 1)
-canvas.cd(1)
-data.plotOn(frame, RooFit.Binning(binning))
-binned_pdf.plotOn(frame)
-frame.Draw()
+toy.run(Observables = w.argSet('t'), Pdf = binned_pdf, GenPdf = pdf)
 
-canvas.cd(2)
-_hist.Draw()
+toy.write_output()
