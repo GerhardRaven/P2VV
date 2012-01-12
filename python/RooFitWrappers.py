@@ -945,7 +945,9 @@ class Component(object):
                 self[ obs ] = p
         
     def __setitem__(self, observable, pdf) :
-        if not hasattr(observable,'__iter__') : observable = (observable,)
+        from ROOT import RooAbsCategory
+        #TODO: Need to deal with fact the categories have iterators
+        if not hasattr(observable,'__iter__') or isinstance(observable._var if hasattr(observable,'_var') else observable ,RooAbsCategory) : observable = (observable,)
 
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
