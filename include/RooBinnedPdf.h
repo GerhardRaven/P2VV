@@ -35,30 +35,27 @@ public:
   inline RooBinnedPdf() {}
 
   RooBinnedPdf(const char *name, const char *title,
-      RooAbsCategory& baseCat, const RooArgList& coefList,
-      Bool_t ignoreFirstBin = kFALSE);
+      RooAbsCategory& baseCat, const RooArgList& coefList);
 
   RooBinnedPdf(const char *name, const char *title,
       const RooArgList& baseCats, const TObjArray& coefLists,
       Bool_t ignoreFirstBin = kFALSE);
 
+  RooBinnedPdf(const char* name, const char* title,
+      const RooArgList& baseVars, const TObjArray& binningNames,
+      RooAbsReal& function);
+
+  RooBinnedPdf(const char* name, const char* title,
+      RooAbsArg& baseVar, const char* binning, RooAbsReal& function);
+
   RooBinnedPdf(const char *name, const char *title,
       RooAbsRealLValue& baseVar, const char* binningName,
-      const RooArgList& coefList, Bool_t binIntegralCoefs = kFALSE,
-      Bool_t ignoreFirstBin = kFALSE);
+      const RooArgList& coefList, Bool_t binIntegralCoefs = kFALSE);
 
   RooBinnedPdf(const char *name, const char *title,
       const RooArgList& baseVars, const TObjArray& binningNames,
       const TObjArray& coefLists, Bool_t binIntegralCoefs = kFALSE,
       Bool_t ignoreFirstBin = kFALSE);
-
-  RooBinnedPdf(const char* name, const char* title,
-      const RooArgList& baseVars, const TObjArray& binningNames,
-      RooAbsReal* function);
-
-  RooBinnedPdf(const char* name, const char* title,
-      const RooAbsArg& baseVar, const char* binning,
-      RooAbsReal* function);
 
   RooBinnedPdf(const RooBinnedPdf& other, const char* name = 0);
 
@@ -80,6 +77,10 @@ public:
   }
 
   Bool_t ignoreFirstBin() {return _ignoreFirstBin;}
+  void   setIgnoreFirstBin(Bool_t ignoreFirstBin = kTRUE)
+  {
+    _ignoreFirstBin = ignoreFirstBin;
+  }
 
 private:
   virtual Double_t evaluate() const;
@@ -112,7 +113,7 @@ private:
   Bool_t _binIntegralCoefs;
   Bool_t _ignoreFirstBin;
 
-  ClassDef(RooBinnedPdf, 1) // multi-multinomial function
+  ClassDef(RooBinnedPdf, 1) // binned PDF
 };
 
 #endif
