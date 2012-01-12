@@ -39,7 +39,10 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
       status = chain.Add( filePath, -1 )
       if status == 0 : raise RuntimeError('Could not locate tree %s in file %s' % ( dataSetName, filePath ) )
 
-      data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN + ' && ' + cuts if cuts else noNAN )
+      data = RooDataSet( dataSetName, dataSetName
+                       , [ obs._var for obs in observables ]
+                       , Import = chain
+                       , Cut = noNAN + ' && ' + cuts if cuts else noNAN )
 
     else :
       from ROOT import TFile
@@ -51,8 +54,11 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
 
       if observables :
           from ROOT import RooDataSet
-          data = RooDataSet(  dataSetName, dataSetName, file.Get(dataSetName), [ obs._var for obs in observables ]
-                            , noNAN + ' && ' + cuts if cuts else noNAN )
+          data = RooDataSet( dataSetName, dataSetName
+                           , [ obs._var for obs in observables ]
+                           , Import = file.Get(dataSetName)
+                           , Cut = noNAN + ' && ' + cuts if cuts else noNAN 
+                           )
       else :
           data = file.Get(dataSetName)
 
