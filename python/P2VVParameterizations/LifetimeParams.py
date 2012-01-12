@@ -21,7 +21,7 @@ class LifetimeParams ( _util_parse_mixin ):
 
 class Gamma_LifetimeParams( LifetimeParams ) :
     def __init__( self, **kwargs ) :
-        from RooFitWrappers import FormulaVar, ConstVar
+        from RooFitWrappers import FormulaVar, ConstVar, Pdf
 
         self._parseArg( 'Gamma',      kwargs, Title = 'Gamma',       Unit = 'ps^{-1}', Value = 0.68, MinMax = (  0.4,  0.9 ) )
         self._parseArg( 'deltaGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = 0.05, MinMax = (- 0.3,  0.3)  )
@@ -30,7 +30,6 @@ class Gamma_LifetimeParams( LifetimeParams ) :
         self._check_extraneous_kw( kwargs )
 
         from ROOT import RooGaussian as Gaussian
-        from RooFitWrappers import Pdf
         constraint = Pdf( Name = self._deltaM.GetName()+'_constraint', Type = Gaussian, Parameters = [ self._deltaM
                                                                                                        , ConstVar( Name = 'deltaM_mean',  Value = 17.63 )
                                                                                                        , ConstVar( Name = 'deltaM_sigma', Value = 0.11 ) ] )
