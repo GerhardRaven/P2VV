@@ -179,7 +179,7 @@ class ArgSet(RooObject) :
         x.setName( name ) # argsets come out of the ws as brand new clones without name...
         return x
     def __init__(self,name,args) :
-        spec = 'set::%s(%s)' % (name, ','.join( i['Name'] for i in args) )
+        spec = 'set::%s(%s)' % (name, ','.join( i.GetName() for i in args) )
         self._declare(spec)
         self._init(name,'RooArgSet')
 
