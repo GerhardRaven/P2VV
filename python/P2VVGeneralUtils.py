@@ -480,9 +480,9 @@ class RealMomentsBuilder ( dict ) :
             if func in self._coefficients :
                 coef = self._coefficients[func]
                 if scales :
-                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0] * scales[0], coef[1] * scales[1], coef[2] * scales[2] )
+                    print '  {0:<+12.5g}   {1:<12.5g}   {2:<12.5g}'.format( coef[0] * scales[0], coef[1] * scales[1], coef[2] * scales[2] )
                 else :
-                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0],             coef[1],             coef[2]             )
+                    print '  {0:<+12.5g}   {1:<12.5g}   {2:<12.5g}'.format( coef[0],             coef[1],             coef[2]             )
             else : print
 
         print '  ' + '-' * (45 + maxLenName)

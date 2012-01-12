@@ -15,27 +15,23 @@ fitOpts = dict( NumCPU = numCPU()
               )
 
 # define observables
-m    = RealVar('m',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
+m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
                                   , 'rightsideband' : ( 5410, None ) 
                                   } )
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
-mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1007.46,1031.46), nBins =  16 )
-#mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
+mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
 st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
-eta  = RealVar('tagomega_os',      Title = 'estimated mistag',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
-iTag = Category( 'tagdecision_os', Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
+eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
+#The peak at 0.5 seems to be shifted to -2 in the SS eta!
+eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (-2.0001,0.50001),  nBins =  25)
+iTag_os = Category( 'tagdecision_os', Title = 'initial state flavour tag OS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
+#The peak at 0 seems to be shifted to -1000 in the SS tagdecision
+iTag_ss = Category( 'tagdecision_ss', Title = 'initial state flavour tag SS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : -1000 } )
 sel  = Category( 'sel',            Title = 'selection',                 Observable = True, States = { 'good': +1 } )
 triggerdec = Category( 'triggerDecision',            Title = 'triggerdec',                 Observable = True, States = { 'triggered': +1 } )
-bkgcat = Category( 'bkgcat',            Title = 'bkgcat',                 Observable = True, States = { 'bkgcat0': 0, 'bkgcat10': 10 } )
-
-#For Old Unbiased comparison
-unbiased  = Category( 'unbiased',            Title = 'unbiased',                 Observable = True, States = { 'Unbiased': +1, 'NotUnbiased': 0 } )
-#unbiased  = Category( 'unbiased',            Title = 'unbiased',                 Observable = True, States = { 'Unbiased': +1})
-biased  = Category( 'biased',            Title = 'biased',                 Observable = True, States = { 'Biased': +1, 'NotBiased': 0 } )
-
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',        nBins = 24 )
@@ -43,49 +39,57 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 
+#For MC dataset only
+bkgcat = Category( 'bkgcat',            Title = 'bkgcat',                 Observable = True, States = { 'bkgcat0': 0, 'bkgcat10': 10 } )
+
 from P2VVGeneralUtils import readData
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2_2012.root'
-#data = readData( '/tmp/Pass3Version2.root'
-                 , dataSetName = 'MyTree'
+#Read MC data
+MCdata = readData('/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
+                  , dataSetName = 'DecayTree'
+                  , NTuple = True
+                  , observables = [ t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], iTag_os,eta_os, triggerdec,sel,bkgcat,mphi]
+                  )
+
+#Read data
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+                 , dataSetName = 'DecayTree'
                  , NTuple = True
-                 #We already demanded sel=1 in this file!
-                 , observables = [ iTag,eta,mpsi,mphi,m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], unbiased, biased]
+                 , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
+                 , Rename = 'DecayTree_Renamed'
                  )
 
+#TODO: Fix bug: When Rename is on, data = nil, but the dataset is imported in the ws anyway, so this is quick fix:
+data = obj.ws().data('DecayTree_Renamed')
+
 print 'Number of events', data.numEntries()
+print 'Number of events', MCdata.numEntries()
 
-data.table(iTag).Print('v')
+data.table(iTag_os).Print('v')
+data.table(iTag_ss).Print('v')
 
-print 'TAGDECISION FOR UNBIASED EVENTS ONLY'
-data.table(iTag,'unbiased == 1').Print('v')
+## # Make SuperCategory from (iTag_os and iTag_ss)
+## TypeCat = SuperCategory('TypeCat',[biased,unbiased])
+## data.table(TypeCat).Print('v')
+## fitcat = MappedCategory('fitcat',TypeCat,{"AllUnbiased":["{NotBiased;Unbiased}","{Biased;Unbiased}"],"FullyBiased":["{Biased;NotUnbiased}"]})
+## data.table(fitcat).Print('v')
 
-print 'TRIGGER SUMMARY FOR ALL EVENTS'
-data.table(biased).Print('v')
-data.table(unbiased).Print('v')
+## fitcat = data.addColumn(fitcat._var)#Whaa, hackie?
+## fitcat.SetName('fitcat')
+## fitcat.setRange("unbiased","AllUnbiased")
+## fitcat.setRange("fullybiased","FullyBiased")
 
-# Make SuperCategory from (triggeredByUnbiasedHlt1AndHlt2,triggeredByBiasedHlt1AndHlt2)
-TypeCat = SuperCategory('TypeCat',[biased,unbiased])
-data.table(TypeCat).Print('v')
-fitcat = MappedCategory('fitcat',TypeCat,{"AllUnbiased":["{NotBiased;Unbiased}","{Biased;Unbiased}"],"FullyBiased":["{Biased;NotUnbiased}"]})
-data.table(fitcat).Print('v')
+## unbiaseddata = data.reduce(RooFit.CutRange('unbiased'))
+## fullybiaseddata = data.reduce(RooFit.CutRange('fullybiased'))
 
-fitcat = data.addColumn(fitcat._var)#Whaa, hackie?
-fitcat.SetName('fitcat')
-fitcat.setRange("unbiased","AllUnbiased")
-fitcat.setRange("fullybiased","FullyBiased")
+## unbiaseddata.SetTitle('unbiaseddata')
+## unbiaseddata.SetName('unbiaseddata')
+## fullybiaseddata.SetTitle('fullybiaseddata')
+## fullybiaseddata.SetName('fullybiaseddata')
 
-unbiaseddata = data.reduce(RooFit.CutRange('unbiased'))
-fullybiaseddata = data.reduce(RooFit.CutRange('fullybiased'))
-
-unbiaseddata.SetTitle('unbiaseddata')
-unbiaseddata.SetName('unbiaseddata')
-fullybiaseddata.SetTitle('fullybiaseddata')
-fullybiaseddata.SetName('fullybiaseddata')
-
-fulldata = data.reduce(RooFit.CutRange('unbiased'))
-fulldata.SetTitle('fulldata')
-fulldata.SetName('fulldata')
-fulldata.append(fullybiaseddata)
+## fulldata = data.reduce(RooFit.CutRange('unbiased'))
+## fulldata.SetTitle('fulldata')
+## fulldata.SetName('fulldata')
+## fulldata.append(fullybiaseddata)
 
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
@@ -98,54 +102,55 @@ from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTi
 tresdata = DataTimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tresdata.setConstant('.*')
 
-#MC
+#Time Resolution Model for MC
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
+#TODO:
 #externalConstraints = list()
 #externalConstraints += tres.ExternalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = 0.681
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                        , deltaGamma = 0.060
-#                                       , deltaGamma = 0.0
                                        , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) 
                                        )
 
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import WTag_TaggingParams as TaggingParams
-tagging = TaggingParams( wTag = eta ) # Constant = False, Constrain = True )
+tagging = TaggingParams( wTag = eta_os ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
 #externalConstraints += tagging.ExternalConstraints()
 
-# WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta !!!
-#Need this, because eta is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
-eta_pdf = UniformPdf( Name = 'eta_pdf', Arguments = (eta,) )
+# WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
+#Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
+eta_os_pdf = UniformPdf( Name = 'eta__os_pdf', Arguments = (eta_os,) )
 
 # Uniform bkg itag distribution
 from P2VVParameterizations.FlavourTagging import Uniform_Background_Tag
 bkg_tag = Uniform_Background_Tag( Name = 'bkg_tag'
-                                , tagdecision   = iTag
-                                )
+                                  , tagdecision   = iTag_os
+                                  )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 from P2VVParameterizations.CPVParams import ArgOnly_CPParam
 CP = ArgOnly_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False ))
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
-amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
-                                      , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                      , AparPhase = 2.5
-                                      , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True )
-                                    )
+from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
+amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
+                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                          , AparPhase = 2.5
+                                          , f_S = dict( Value = 0.0, Constant = False )
+                                          , ASPhase = dict( Value = 0.0, Constant = False )
+                                          )
 
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , amplitudes
                                                   , CP
-                                                  , Product('tag',(iTag,tagging['dilution']))
+                                                  , Product('tag',(iTag_os,tagging['dilution']))
                                                   , ['A0','Apar','Aperp','AS'] ) 
 
 from RooFitWrappers import BDecay
@@ -159,8 +164,8 @@ MC_sig_t_angles = BDecay( Name      = 'MC_sig_t_angles'
                        , cosCoef   = basisCoefficients['cos']
                        , sinhCoef  = basisCoefficients['sinh']
                        , sinCoef   = basisCoefficients['sin']
-#                       , ConditionalObservables = ( eta, )
-                       #                     , ConditionalObservables = ( eta, iTag, )
+#                       , ConditionalObservables = ( eta_os, )
+                       #                     , ConditionalObservables = ( eta_os, iTag_os, )
                        )
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
@@ -173,21 +178,11 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , cosCoef   = basisCoefficients['cos']
                        , sinhCoef  = basisCoefficients['sinh']
                        , sinCoef   = basisCoefficients['sin']
-#                       , ConditionalObservables = ( eta, )
-                       #                     , ConditionalObservables = ( eta, iTag, )
+#                       , ConditionalObservables = ( eta_os, )
+                       #                     , ConditionalObservables = ( eta_os, iTag_os, )
                        )
 
 MCpdf = MC_sig_t_angles
-MCdata = readData('/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
-#                  ,'/data/bfys/dveijk/MC/2011/MC2011_UB_and_B.root'
-                  #,'/data/bfys/dveijk/MC/2011/MC2011_UB.root'
-#                  , dataSetName = 'MyTree'
-                  , dataSetName = 'DecayTree'
-                  , NTuple = True
-#                  , observables = [ t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], iTag,eta ]
-#                  , Rename = 'RenameTree'
-                  , observables = [ t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], iTag,eta, triggerdec,sel,bkgcat,mphi]
-                  )
 
 print 'Number of MC events', MCdata.numEntries()
 allObs = MCpdf.getObservables( MCdata.get() )
@@ -198,9 +193,10 @@ from P2VVGeneralUtils import RealMomentsBuilder
 nset = angles.angles.values()
 
 canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
-#canomoms.compute(MCdata)
+canomoms.compute(MCdata)
 canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 
+assert False
 #nset = MCpdf.getObservables( MCdata.get() )
 #for a in angles.angles.itervalues() : nset.remove( a._var )
 bfun = lambda i,l,m : P2VVAngleBasis( angles.angles, (i,0,l,m))
@@ -254,7 +250,7 @@ for (j,event) in enumerate(fitdata) :
 
 #CHECK 1: MC on MC Data
 #MCpdf.Print("T")
-#MCpdf.fitTo(MCdata,ConditionalObservables = (eta, ),**fitOpts)
+#MCpdf.fitTo(MCdata,ConditionalObservables = (eta_os, ),**fitOpts)
 #MCresult =  MCpdf.fitTo(MCdata,**fitOpts)
 #MCresult.writepars('MCresult',False)
 
@@ -283,7 +279,7 @@ sidebanddata.append(rightsidebanddata)
 nbkg = 20000
 #bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 #The following doesn't make a difference, indeed!
-bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(), eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
+bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(), eta_os_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 bkg_background += UniformPdf( Name = 'bkg_angles', Arguments = angles.angles.itervalues() )
 bkgpdf = buildPdf((bkg_background,), Observables = (m,t)+tuple(angles.angles.itervalues()), Name = 'bkgpdf')
 
@@ -302,8 +298,8 @@ bkgpdf = buildPdf((bkg_background,), Observables = (m,t)+tuple(angles.angles.ite
 #CHECK 4: SIG
 nsig = 20000
 signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( nsig, 0, 2.0*nsig) )
-#sig_t_angles also depends on eta, but it is conditional on eta, so only ask for iTag here....
-sigpdf = buildPdf((signal,), Observables = (m,t,iTag,eta)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
+#sig_t_angles also depends on eta_os, but it is conditional on eta_os, so only ask for iTag_os here....
+sigpdf = buildPdf((signal,), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
 
 sigdata = data.reduce(CutRange = 'signal')
 sigdata.Print()
@@ -331,14 +327,12 @@ for i in ['ASMag2','ASPhase'] :
     amplitudes[i].setVal(0.)
     amplitudes[i].setConstant(True)
 
-sig_m._m_sig_sigma_2_scale.setConstant(True)
-
 fullsignal         = Component('fullsignal', ( sig_m.pdf(), sig_t_angles), Yield = ( nsig, 0, 1.1*nsig) )
 fullbkg = Component('fullbkg'   , ( bkg_m.pdf(), bkg_t.pdf(), bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
-fullbkg[eta]=None
+fullbkg[eta_os]=None
 fullbkg += UniformPdf( Name = 'fullbkg_angles', Arguments = angles.angles.itervalues() )
-#sig_t_angles depends on eta, and is NOT conditional on eta, so also ask for eta here....
-fullpdf   = buildPdf((fullsignal,fullbkg), Observables = (m,t,iTag,eta)+tuple(angles.angles.itervalues()), Name='fullpdf')
+#sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....
+fullpdf   = buildPdf((fullsignal,fullbkg), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
 
 fullpdf.Print()
 
@@ -364,12 +358,12 @@ data=MCdata
 (ntot,fsig) = ( data.numEntries(), 0.65 )
 (nsig,nbkg) = ( fsig*ntot, (1-fsig)*ntot) 
 nsig = ntot
-#signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, sig_tag.pdf()), Yield = ( nsig, 0, 1.1*nsig) )
-#bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
-signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, ), Yield = ( nsig, 0, 1.1*nsig) )
-bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
+#signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_os_pdf, sig_tag.pdf()), Yield = ( nsig, 0, 1.1*nsig) )
+#bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_os_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
+signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_os_pdf, ), Yield = ( nsig, 0, 1.1*nsig) )
+bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_os_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 
-MCpdf = buildPdf( (signal,),Observables =tuple(angles.angles.itervalues())+(t,eta,iTag),Name='sig_only_mc')
+MCpdf = buildPdf( (signal,),Observables =tuple(angles.angles.itervalues())+(t,eta_os,iTag_os),Name='sig_only_mc')
 
 MCpdf.fitTo(MCdata,**fitOpts)
 assert False
@@ -400,8 +394,8 @@ else :
 
 bkganglepdf = buildPdf((bkg_background,), Observables = tuple(angles.angles.itervalues()), Name = 'bkganglepdf')
 
-# fit & fix iTag parameters
-#pdf_itag   = buildPdf((signal,bkg_background), Observables = (m,iTag), Name='pdf_itag')
+# fit & fix iTag_os parameters
+#pdf_itag   = buildPdf((signal,bkg_background), Observables = (m,iTag_os), Name='pdf_itag')
 #pdf_itag.fitTo( data,**fitOpts)
 #for p in pdf_itag.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 
@@ -414,7 +408,7 @@ m_result = masspdf.fitTo(fitdata, **fitOpts)
 m_result.writepars('massfit',False)
 
 # tagged fit
-pdf   = buildPdf((signal,bkg_background ), Observables = (m,t,eta,iTag)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf   = buildPdf((signal,bkg_background ), Observables = (m,t,eta_os,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
 # fitOpts[ 'ExternalConstraints' ] = externalConstraints
 c_pdf = pdf.fitTo(fitdata, **fitOpts)
 
@@ -443,8 +437,8 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
     from ROOT import RooArgSet
     # TODO: grab the data in the relevant range... data.reduce( **dataOpts ) 
-    #       and remove the spike at 0.5 to take into account its correlation to iTag = 0!!!
-    pdfOpts['ProjWData'] = ( RooArgSet( eta._var ),  data, True ) 
+    #       and remove the spike at 0.5 to take into account its correlation to iTag_os = 0!!!
+    pdfOpts['ProjWData'] = ( RooArgSet( eta_os._var ),  data, True ) 
     obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
     for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )

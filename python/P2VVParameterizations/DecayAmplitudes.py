@@ -105,3 +105,26 @@ class CrossCheckOldFitAmplitudes ( AmplitudeSet ) :
                                    , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPhase,    -1 )
                              )
 
+class JpsiPhiAmplitudesWinter2012 ( AmplitudeSet ) :
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import FormulaVar
+        from math import pi
+        self._parseArg('A0Mag2',    kwargs,  Title = '|A0|^2',      Value = 0.601,   MinMax = (0., 1.) )
+        self._parseArg('A0Phase',   kwargs,  Title = 'delta_0',     Value = 0.                         )
+        self._parseArg('AperpMag2', kwargs,  Title = '|A_perp|^2',  Value = 0.160,   MinMax = ( 0., 1.))
+        self._parseArg('AperpPhase',kwargs,  Title = 'delta_perp',  Value = -0.17,   MinMax = ( -2. * pi, 2. * pi))
+        self._AparMag2  = FormulaVar('AparMag2', '1. - @0 - @1', [self._A0Mag2, self._AperpMag2],  Title = '|A_par|^2' )
+        self._parseArg('AparPhase', kwargs,  Title = 'delta_par',   Value = 2.50,    MinMax = ( -2. * pi, 2. * pi))
+
+        self._parseArg('f_S', kwargs, Title = 'S wave fraction', Value = 0.01, MinMax = (0.,1.))
+        self._ASMag2 = FormulaVar('ASMag2', '@0/(1. - @0)', [self._f_S],  Title = '|A_S|^2' )
+        #self._parseArg('ASMag2',    kwargs,  Title = '|A_S|^2',     Value = 0.10,    MinMax = ( 0., 1.))
+        self._parseArg('ASPhase',   kwargs,  Title = 'delta_S',     Value = 2.2,     MinMax = ( -2. * pi, 2. * pi))
+        
+        self._check_extraneous_kw( kwargs ) 
+        AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Phase,    +1 )
+                                   , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPhase,  +1 )
+                                   , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPhase, -1 )
+                                   , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPhase,    -1 )
+                             )
+
