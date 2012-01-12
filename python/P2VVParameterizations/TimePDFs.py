@@ -135,8 +135,8 @@ class LP2011_Background_Time( TimePdf ) :
                 , Type = Decay
                 , Parameters = (time,self._t_bkg_ll_tau,resolutionModel,'SingleSided'))
         TimePdf.__init__(self, pdf = SumPdf( Name = Name
-                                           , PDFs = (  ml, ll)
-                                           , Yields = { ml.GetName() : self._t_bkg_fll } ) )
+                                           , PDFs = (  ll, ml)
+                                           , Yields = { ll.GetName() : self._t_bkg_fll } ) )
 
 
 class Single_Exponent_Time( TimePdf ) :
