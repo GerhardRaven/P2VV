@@ -9,9 +9,10 @@ gROOT.SetStyle("Plain")
 #from ROOT import * 
 
 def __wrap_kw_subs( fun ) :
-    from ROOT import RooCmdArg,RooFit,RooAbsCollection
+    from ROOT import RooCmdArg,RooFit,RooAbsCollection,TObject
+    __doNotConvert = [ RooAbsCollection, TObject ]
     __tbl  = lambda k : getattr(RooFit,k)
-    __disp = lambda k,v : ( __tbl(k)(v) if isinstance( v, RooAbsCollection ) or not hasattr( v,'__iter__' ) else __tbl(k)(*v) ) if type(v) != type(None) \
+    __disp = lambda k,v : ( __tbl(k)(v) if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) else __tbl(k)(*v) ) if type(v) != type(None) \
                           else __tbl(k)()
     from functools import wraps
     @wraps(fun)
