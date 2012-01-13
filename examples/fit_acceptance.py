@@ -77,7 +77,7 @@ data = readData(input_file, tree_name, cuts = '(triggerDecisionUnbiased == 1)',
 
 ## Fit
 ## print 'fitting data'
-## pdf.fitTo(data, NumCPU = 4 , Timer=1)
+pdf.fitTo(data, NumCPU = 4 , Timer=1, Minimizer = 'Minuit2')
 
 ## from ROOT import kDashed, kRed, kGreen
 ## from ROOT import TCanvas
