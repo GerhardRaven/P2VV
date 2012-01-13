@@ -947,7 +947,7 @@ class Component(object):
         y = None
         if len(args) == 1 and type(args[0]) == RealVar:
             y = args[0]
-        elif len(args) == 3:
+        else :
             n, nlo, nhi = args
             assert n>=nlo
             assert n<=nhi
