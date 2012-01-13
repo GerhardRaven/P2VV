@@ -100,37 +100,30 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 #Data
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
-tresdata.setConstant('.*')
+
+externalConstraints = list()
+externalConstraints += tresdata.ExternalConstraints()
 
 #Time Resolution Model for MC
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
-#TODO:
-#externalConstraints = list()
-#externalConstraints += tres.ExternalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                        , deltaGamma = 0.060
-                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) 
+                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
                                        )
+externalConstraints += lifetimeParams.ExternalConstraints()
 
 # define tagging parameter 
-from P2VVParameterizations.FlavourTagging import WTag_TaggingParams as TaggingParams
-tagging = TaggingParams( wTag = eta_os ) # Constant = False, Constrain = True )
-# TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
-#externalConstraints += tagging.ExternalConstraints()
+from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
+tagging = TaggingParams( estWTag = eta_os ) # Constant = False, Constrain = True ) TODO!!!
+externalConstraints += tagging.ExternalConstraints()
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
 #eta_os_pdf = UniformPdf( Name = 'eta__os_pdf', Arguments = (eta_os,) )
-
-## # Uniform bkg itag distribution
-## from P2VVParameterizations.FlavourTagging import Uniform_Background_Tag
-## bkg_tag = Uniform_Background_Tag( Name = 'bkg_tag'
-##                                   , tagdecision   = iTag_os
-##                                   )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 from P2VVParameterizations.CPVParams import ArgOnly_CPParam
@@ -161,18 +154,18 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.mo
 
 from RooFitWrappers import BDecay
 MC_sig_t_angles = BDecay( Name      = 'MC_sig_t_angles'
-                       , time      = t
-                       , dm        = lifetimeParams['deltaM'] 
-                       , tau       = lifetimeParams['MeanLifetime']
-                       , dGamma    = lifetimeParams['deltaGamma'] 
-                       , resolutionModel = tres.model()
-                       , coshCoef  = basisCoefficients['cosh']
-                       , cosCoef   = basisCoefficients['cos']
-                       , sinhCoef  = basisCoefficients['sinh']
-                       , sinCoef   = basisCoefficients['sin']
-#                       , ConditionalObservables = ( eta_os, )
-                       #                     , ConditionalObservables = ( eta_os, iTag_os, )
-                       )
+                          , time      = t
+                          , dm        = lifetimeParams['deltaM'] 
+                          , tau       = lifetimeParams['MeanLifetime']
+                          , dGamma    = lifetimeParams['deltaGamma'] 
+                          , resolutionModel = tres.model()
+                          , coshCoef  = basisCoefficients['cosh']
+                          , cosCoef   = basisCoefficients['cos']
+                          , sinhCoef  = basisCoefficients['sinh']
+                          , sinCoef   = basisCoefficients['sin']
+#                          , ConditionalObservables = ( eta_os, )
+#                          , ConditionalObservables = ( eta_os, iTag_os, )
+                          )
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , time      = t
@@ -185,9 +178,12 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , sinhCoef  = basisCoefficients['sinh']
                        , sinCoef   = basisCoefficients['sin']
 #                       , ConditionalObservables = ( eta_os, )
-                       #                     , ConditionalObservables = ( eta_os, iTag_os, )
+#                       , ConditionalObservables = ( eta_os, iTag_os, )
                        )
 
+#####################################
+### Angular acceptance correction ###
+#####################################
 MCpdf = MC_sig_t_angles
 
 print 'Number of MC events', MCdata.numEntries()
@@ -212,6 +208,10 @@ moments = ( RealEffMoment( bfun(*ind), float(2*ind[0]+1)/2, MCpdf, nset ) for in
 eff = RealMomentsBuilder( Moments = moments )
 #eff.compute(MCdata)
 eff.Print()
+
+##################
+### Build PDFs ###
+##################
 
 #BKG ONLY
 sidebanddata = data.reduce(CutRange = 'leftsideband')
@@ -286,6 +286,9 @@ for i in ['ASPhase','f_S'] :
 pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
 
 pdf.Print()
+
+consSet = ArgSet('consSet',(i for i in externalConstraints))
+fitOpts['ExternalConstraints'] = consSet._var
 
 pdf.fitTo(data,**fitOpts)
 
