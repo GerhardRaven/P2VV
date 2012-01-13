@@ -26,7 +26,7 @@ def numCPU( Max = sys.maxint ) :
 def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = None, **kwargs ) :
     """reads data from file (RooDataSet or TTree(s))
     """
-
+    from ROOT import RooFit
     if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
 
     if NTuple :
