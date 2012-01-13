@@ -302,8 +302,37 @@ def plot(  canv, obs, data, pdf, addPDFs = [ ], components = None, xTitle = '', 
     canv.Update()
     return canv
 
+def splot( pdf, sdata ) :
+    # switch off all yields, except current one
+    from contextlib import contextmanager
+    @contextmanager
+    def __select_component( i, yields ):
+        orig = dict( (j,j.getVal()) for j in yields )
+        [ j.setVal(0) for j in orig.iterkeys() if j!=i ]
+        try     : yield
+        finally : [ j.setVal(v) for (j,v) in orig.iteritems() ]
+    from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
+    canvas = TCanvas(pdf.GetName() + '_splot')
+    obs = [ o for o in pdf.Observables() if hasattr(o,'frame') and o not in sdata.usedObservables() ]
+    for (p,o) in zip( canvas.pads(len(obs)), obs ) :
+        # select yields
+        _yields = [ y for y in pdf.Parameters() if y.getAttribute('Yield') ]
+        # loop over components
+        for (pp,i) in zip( p.pads(1,len(_yields)), _yields ) :
+            # switch off all yields, except current one
+            with __select_component( i, _yields ) :
+                # plot both weighed data and PDF
+                # TODO: add the same color coding as above...
+                c_name = i.GetName()[2:]
+                c_opts = { 'signal'             : dict( LineColor = kGreen )
+                         , 'psi_background'     : dict( LineColor = kRed )
+                         , 'cmb_background'     : dict( LineColor = kBlue )
+                         }
+                from P2VVGeneralUtils import plot
+                plot( pp, o, sdata.data( c_name ), pdf, pdfOpts = c_opts[c_name] if c_name in c_opts else {})
+    return canvas
 
-def splot( canv, sdata, pdf, frameOpts = dict(), dataOpts = dict() , pdfOpts = dict() ) :
+def Oldsplot( canv, sdata, pdf, frameOpts = dict(), dataOpts = dict() , pdfOpts = dict() ) :
     obs = [ o for o in pdf.Observables() if hasattr(o,'frame') and o not in sdata.usedObservables() ]
     for (p,o) in zip( canv.pads(len(obs)), obs ) :
         # snapshot yeilds

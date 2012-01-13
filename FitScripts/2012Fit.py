@@ -10,7 +10,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
               , Verbose = False
-              , Optimize = 2
+              , Optimize = False
               , Minimizer = ('Minuit2','minimize')
               )
 
@@ -198,19 +198,16 @@ canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for 
 canomoms.compute(MCdata)
 canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 
-#nset = MCpdf.getObservables( MCdata.get() )
-#for a in angles.angles.itervalues() : nset.remove( a._var )
-bfun = lambda i,l,m : P2VVAngleBasis( angles.angles, (i,0,l,m))
 from itertools import chain
 momindices = indices(3,3)
-momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,20) for j0 in [1,-2]))
-moments = ( RealEffMoment( bfun(*ind), float(2*ind[0]+1)/2, MCpdf, nset ) for ind in momindices )
-eff = RealMomentsBuilder( Moments = moments )
+momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,3) for j0 in [1,-2]))
+
+eff = RealMomentsBuilder()
+eff.appendPYList( angles.angles, momindices, PDF = MCpdf, NormSet = nset)
 eff.compute(MCdata)
 eff.Print()
 
 #Reimplement the comparison between 10 canonical moments and the full series again to check?
-#Does this work?
 sig_t_angles = eff * sig_t_angles
 
 ##################
@@ -298,70 +295,40 @@ for i in ['ASPhase','f_S'] :
     amplitudes[i].setVal(0.01)
     #amplitudes[i].setConstant(False)
 
-#Keep this close to the final fitTo statement, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-consSet = ArgSet('consSet',(i for i in externalConstraints))
-fitOpts['ExternalConstraints'] = consSet._var
-pdf.fitTo(data,**fitOpts)
+#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
+#pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
 
 ############
 ### SFIT ###
 ############
-def splot( pdf, sdata ) :
-    # switch off all yields, except current one
-    from contextlib import contextmanager
-    @contextmanager
-    def __select_component( i, yields ):
-        orig = dict( (j,j.getVal()) for j in yields )
-        [ j.setVal(0) for j in orig.iterkeys() if j!=i ]
-        try     : yield
-        finally : [ j.setVal(v) for (j,v) in orig.iteritems() ]
-    from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
-    canvas = TCanvas(pdf.GetName() + '_splot')
-    obs = [ o for o in pdf.Observables() if hasattr(o,'frame') and o not in sdata.usedObservables() ]
-    for (p,o) in zip( canvas.pads(len(obs)), obs ) :
-        # select yields
-        _yields = [ y for y in pdf.Parameters() if y.getAttribute('Yield') ]
-        # loop over components
-        for (pp,i) in zip( p.pads(1,len(_yields)), _yields ) :
-            # switch off all yields, except current one
-            with __select_component( i, _yields ) :
-                # plot both weighed data and PDF
-                # TODO: add the same color coding as above...
-                c_name = i.GetName()[2:]
-                c_opts = { 'signal'             : dict( LineColor = kGreen )
-                         , 'psi_background'     : dict( LineColor = kRed )
-                         , 'cmb_background'     : dict( LineColor = kBlue )
-                         }
-                from P2VVGeneralUtils import plot
-                plot( pp, o, sdata.data( c_name ), pdf, pdfOpts = c_opts[c_name] if c_name in c_opts else {})
-    return canvas
-
 # make sweighted dataset. TODO: using J/psi phi mass
-from P2VVGeneralUtils import SData
+from P2VVGeneralUtils import SData, splot
 from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
 from ROOT import TCanvas
 #This works, but the titles are not right...
-splotcanvas = splot(pdf, splot_m)
+#splotcanvas = splot(pdf, splot_m)
 
 S_sigdata = splot_m.data('signal')
 S_bkgdata = splot_m.data('bkg')
 
-canvas2 = TCanvas()
-canvas2.Divide(2)
-canvas2.cd(1)
-mframe = m.frame()
-S_sigdata.plotOn(mframe)
-mframe.Draw()
-canvas2.cd(2)
-mframe = m.frame()
-S_bkgdata.plotOn(mframe)
-mframe.Draw()
+## canvas2 = TCanvas()
+## canvas2.Divide(2)
+## canvas2.cd(1)
+## mframe = m.frame()
+## S_sigdata.plotOn(mframe)
+## mframe.Draw()
+## canvas2.cd(2)
+## mframe = m.frame()
+## S_bkgdata.plotOn(mframe)
+## mframe.Draw()
 
-consSet = ArgSet('consSet',(i for i in externalConstraints))
-fitOpts['ExternalConstraints'] = consSet._var
-sigpdf.fitTo(S_sigdata,**fitOpts)
+sfitsignal = Component('sfitsignal', ( sig_t_angles, ), Yield = ( nsig, 0, 2.0*nsig) )
+sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
+#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
+sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
+sfitresult.writepars('sfitresult',False)
 
 assert False
 
