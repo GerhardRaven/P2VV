@@ -287,8 +287,7 @@ pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(a
 
 pdf.Print()
 
-consSet = ArgSet('consSet',(i for i in externalConstraints))
-fitOpts['ExternalConstraints'] = consSet._var
+fitOpts['ExternalConstraints'] = externalConstraints
 
 pdf.fitTo(data,**fitOpts)
 

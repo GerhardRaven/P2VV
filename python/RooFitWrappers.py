@@ -498,8 +498,8 @@ class Pdf(RooObject):
 
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
-        if 'ConditionalObservables' in kwargs :
-            kwargs['ConditionalObservables'] = RooArgSet( __dref__(var) for var in kwargs.pop('ConditionalObservables') )
+        for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
+            kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
         return self._var.fitTo( data, **kwargs )
 
     @wraps(RooAbsPdf.generate)
