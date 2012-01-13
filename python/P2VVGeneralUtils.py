@@ -26,7 +26,7 @@ def numCPU( Max = sys.maxint ) :
 def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = None, **kwargs ) :
     """reads data from file (RooDataSet or TTree(s))
     """
-
+    from ROOT import RooFit
     if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
 
     if NTuple :
@@ -39,7 +39,7 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
       status = chain.Add( filePath, -1 )
       if status == 0 : raise RuntimeError('Could not locate tree %s in file %s' % ( dataSetName, filePath ) )
 
-      data = RooDataSet( dataSetName, dataSetName, chain, [ obs._var for obs in observables ], noNAN + ' && ' + cuts if cuts else noNAN )
+      data = RooDataSet(dataSetName, dataSetName, [obs._var for obs in observables], RooFit.Import(chain), RooFit.Cut(noNAN + ' && ' + cuts if cuts else noNAN))
 
     else :
       from ROOT import TFile

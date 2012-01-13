@@ -352,7 +352,7 @@ class RealVar (RooObject):
                ,'nBins'      : lambda s,v : s.setBins(v)
                ,'Ranges'     : lambda s,v : s.setRanges(v)
                }
-
+    # TODO: provide a copy constructor
     def __init__(self,Name ,**kwargs):
         if 'name' in kwargs : raise RuntimeError('Please replace name argument with Name = xyz' )
         if Name not in self.ws():
@@ -449,7 +449,7 @@ class Pdf(RooObject):
         return getattr(self._target_(), '_' + name.lower())
     
     def __getitem__(self, k):
-        if self._dict and k in self._dict:
+        if hasattr(self, '_dict') and self._dict and k in self._dict:
             return self._dict[k]
         else:
             try:
@@ -608,6 +608,23 @@ class SumPdf(Pdf):
 
     def _separator(self):
         return '_P_'
+
+class SimultaneousPdf(Pdf):
+    def __init__(self, Name, **kwargs):
+        d = { 'Name' : Name 
+            , 'States' : kwargs.pop('States')
+            , 'Cat' : kwargs.pop('SplitCategory')['Name']
+            }
+        # construct factory string on the fly...
+        ## pdfs = sorted([(s, pdf) for s, pdf in d['States'].iteritems()], key = lambda (s, pdf): d['Cat'].lookupType(s).getVal())
+        ## pdfs = [e[1] for e in pdfs]
+        d['States'] = ','.join(['%s = %s' % (s, pdf['Name']) for s, pdf in d['States'].iteritems()])
+        s = "SIMUL::%(Name)s(%(Cat)s,%(States)s)" % d
+        self._declare(s)
+        self._init(Name,'RooSimultaneous')
+        Pdf.__init__(self , Name = Name , Type = 'RooSimultaneous')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+    def _make_pdf(self) : pass
 
 class RealSumPdf( Pdf ):
     def __init__( self, name, functions, **kwargs ) :
@@ -926,10 +943,16 @@ class Component(object):
         if 'Yield' in kw : self.setYield( *kw.pop('Yield') )
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
-    def setYield(self, n, nlo, nhi) :
-        assert n>=nlo
-        assert n<=nhi
-        Component._d[self.name]['Yield'] = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n)
+    def setYield(self, *args):
+        y = None
+        if len(args) == 1 and type(args[0]) == RealVar:
+            y = args[0]
+        elif len(args) == 3:
+            n, nlo, nhi = args
+            assert n>=nlo
+            assert n<=nhi
+            y = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n)
+        Component._d[self.name]['Yield'] = y
         Component._d[self.name]['Yield'].setAttribute('Yield',True)
     def __iadd__(self,pdf) :
         self.append(pdf)
@@ -966,6 +989,15 @@ class Component(object):
         ## Get the right sub-pdf from the Pdf object
         Component._d[self.name][frozenset(k)] = pdf
 
+    def __eq__(self, other):
+        o = other if type(other) == str else other.GetName()
+        return self.GetName() == o
+
+    def __eq__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return self.GetName().__hash__()
 
     def GetName(self) : return self.name
 
@@ -977,7 +1009,7 @@ class Component(object):
         if type(k)==str and k in d : return d[k]
 
         if type(k) != frozenset : k = frozenset(k)
-        if k not in d : 
+        if k not in d: 
             # try to build product -- note that d.keys() are non-overlapping by requirement
             # first, find the entry with the largest overlap, which is a subset (otherwise we'd have to marginalize)
             terms = []
@@ -1008,3 +1040,54 @@ def buildPdf(Components, Observables, Name) :
     if len(Components)==1 : return args['PDFs'][0] # TODO: how to change the name?
     # and sum components (inputs should already be extended)
     return SumPdf(Name,**args)
+
+def buildSimultaneousPdf(Components, Observables, Spec, Name) :
+    # multiply PDFs for observables (for each component)
+    if not Observables : raise RuntimeError('no Observables??')
+    if not Spec : raise RuntimeError('no Spec??')
+
+    if len(Components)==1 : return args['PDFs'][0] # TODO: how to change the name?
+
+    obs = [o if type(o)==str else o.GetName() for o in Observables]
+    if len(Spec) != 1:
+        raise ValueError, "Cannot handle more than one split category."
+    states = {}
+    key = Spec.keys()[0]
+    observables, split_cat = key
+
+    # - Figure out which components to clone
+    # - Create new components where needed (don't forget yields)
+    # - Make appropriate PDFs using new compoments when needed
+    # - Make simultaneous PDF
+    yield_names = {}
+    for state, split_def in Spec[key].iteritems():
+        args = {'Yields' : {}, 'PDFs' : []}
+        suffix = '_'.join((split_cat['Name'], state))
+        for c in Components:
+            y = c['Yield']
+            if not c in yield_names:
+                yield_names[c] = y['Name']
+            name = c['Name']
+            rest = list(set(Observables) - set(observables))
+            assert(set(rest).union(set(observables)) == set(Observables))
+            rest_pdf = c[rest]
+            if c in split_def:
+                pdfs = []
+                comp = Component('_'.join((name, suffix)), (split_def[c], rest_pdf),
+                                 Yield = [y['Value']] + list(y['MinMax']))
+                pdf = comp[obs]
+                y = comp['Yield']
+                yield_names[c]
+            else:
+                obs_pdf = c[observables]
+                comp = Component('_'.join((name, suffix)), (obs_pdf, rest_pdf),
+                                 Yield = [y['Value']] + list(y['MinMax']))
+                pdf = comp[obs]
+                y = comp['Yield']
+            args['Yields'][pdf.GetName()] = y
+            args['PDFs'].append(pdf)
+        states[state] = SumPdf('_'.join((Name, suffix)) , **args)
+    ## return states
+    return SimultaneousPdf(Name, SplitCategory = split_cat, States = states)
+
+                                 
