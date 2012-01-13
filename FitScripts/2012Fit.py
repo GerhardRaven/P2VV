@@ -10,8 +10,8 @@ fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
               , Verbose = False
-              , Optimize = True if Rv[1]<32 else 0 # do NOT optimize in 5.32 or later... ( Optimize = 1 only works on a single CPU, 2 doesn't work at all )
-#              , Minimizer = ('Minuit2','minimize')
+              , Optimize = 2
+              , Minimizer = ('Minuit2','minimize')
               )
 
 # define observables
@@ -286,10 +286,7 @@ for i in ['ASPhase','f_S'] :
 pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
 
 pdf.Print()
-
-fitOpts['ExternalConstraints'] = externalConstraints
-
-pdf.fitTo(data,**fitOpts)
+pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
 
 assert False
 
