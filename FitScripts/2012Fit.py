@@ -195,25 +195,31 @@ from P2VVGeneralUtils import RealMomentsBuilder
 nset = angles.angles.values()
 
 canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
-#canomoms.compute(MCdata)
+canomoms.compute(MCdata)
 canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 
 #nset = MCpdf.getObservables( MCdata.get() )
 #for a in angles.angles.itervalues() : nset.remove( a._var )
 bfun = lambda i,l,m : P2VVAngleBasis( angles.angles, (i,0,l,m))
 from itertools import chain
-#momindices = indices(3,3)
+momindices = indices(3,3)
 momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,20) for j0 in [1,-2]))
 moments = ( RealEffMoment( bfun(*ind), float(2*ind[0]+1)/2, MCpdf, nset ) for ind in momindices )
 eff = RealMomentsBuilder( Moments = moments )
-#eff.compute(MCdata)
+eff.compute(MCdata)
 eff.Print()
+
+#Reimplement the comparison between 10 canonical moments and the full series again to check?
+#Does this work?
+sig_t_angles = eff * sig_t_angles
 
 ##################
 ### Build PDFs ###
 ##################
 
-#BKG ONLY
+############
+# BKG ONLY #
+############
 sidebanddata = data.reduce(CutRange = 'leftsideband')
 rightsidebanddata = data.reduce(CutRange = 'rightsideband')
 sidebanddata.append(rightsidebanddata)
@@ -255,7 +261,9 @@ bkgpdf = buildPdf((background,), Observables = (m,t,iTag_os,eta_os)+tuple(angles
 
 #bkgpdf.fitTo(sidebanddata,**fitOpts)
 
-#SIG ONLY
+############
+# SIG ONLY #
+############
 sigdata = data.reduce(CutRange = 'signal')
 sigdata.Print()
 
@@ -270,30 +278,120 @@ for i in ['ASPhase','f_S'] :
 
 #sigpdf.fitTo(sigdata,**fitOpts)
 
-#MASS ONLY
-signalmass = Component('signalmass',(sig_m.pdf(),), Yield = (nsig,0,2.0*nsig))
-bkgmass = Component('bkgmass',(bkg_m.pdf(),), Yield = (nbkg,0,2.0*nbkg))
-masspdf = buildPdf((signalmass,bkgmass), Observables = (m,), Name = 'masspdf')
-
+#############
+# MASS ONLY #
+#############
+masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 #masspdf.fitTo(data,**fitOpts)
 
-#SIG+BKG
+###########
+# SIG+BKG #
+###########
+#sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....
+pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+pdf.Print()
+
+###################
+### CLASSIC FIT ###
+###################
 for i in ['ASPhase','f_S'] :
     amplitudes[i].setVal(0.01)
     #amplitudes[i].setConstant(False)
 
-#sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....
-pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+#Keep this close to the final fitTo statement, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
+consSet = ArgSet('consSet',(i for i in externalConstraints))
+fitOpts['ExternalConstraints'] = consSet._var
+pdf.fitTo(data,**fitOpts)
 
-pdf.Print()
+############
+### SFIT ###
+############
+def splot( pdf, sdata ) :
+    # switch off all yields, except current one
+    from contextlib import contextmanager
+    @contextmanager
+    def __select_component( i, yields ):
+        orig = dict( (j,j.getVal()) for j in yields )
+        [ j.setVal(0) for j in orig.iterkeys() if j!=i ]
+        try     : yield
+        finally : [ j.setVal(v) for (j,v) in orig.iteritems() ]
+    from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
+    canvas = TCanvas(pdf.GetName() + '_splot')
+    obs = [ o for o in pdf.Observables() if hasattr(o,'frame') and o not in sdata.usedObservables() ]
+    for (p,o) in zip( canvas.pads(len(obs)), obs ) :
+        # select yields
+        _yields = [ y for y in pdf.Parameters() if y.getAttribute('Yield') ]
+        # loop over components
+        for (pp,i) in zip( p.pads(1,len(_yields)), _yields ) :
+            # switch off all yields, except current one
+            with __select_component( i, _yields ) :
+                # plot both weighed data and PDF
+                # TODO: add the same color coding as above...
+                c_name = i.GetName()[2:]
+                c_opts = { 'signal'             : dict( LineColor = kGreen )
+                         , 'psi_background'     : dict( LineColor = kRed )
+                         , 'cmb_background'     : dict( LineColor = kBlue )
+                         }
+                from P2VVGeneralUtils import plot
+                plot( pp, o, sdata.data( c_name ), pdf, pdfOpts = c_opts[c_name] if c_name in c_opts else {})
+    return canvas
+
+# make sweighted dataset. TODO: using J/psi phi mass
+from P2VVGeneralUtils import SData
+from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
+splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
+
+from ROOT import TCanvas
+#This works, but the titles are not right...
+splotcanvas = splot(pdf, splot_m)
+
+S_sigdata = splot_m.data('signal')
+S_bkgdata = splot_m.data('bkg')
+
+canvas2 = TCanvas()
+canvas2.Divide(2)
+canvas2.cd(1)
+mframe = m.frame()
+S_sigdata.plotOn(mframe)
+mframe.Draw()
+canvas2.cd(2)
+mframe = m.frame()
+S_bkgdata.plotOn(mframe)
+mframe.Draw()
 
 consSet = ArgSet('consSet',(i for i in externalConstraints))
 fitOpts['ExternalConstraints'] = consSet._var
-
-pdf.fitTo(data,**fitOpts)
+sigpdf.fitTo(S_sigdata,**fitOpts)
 
 assert False
 
+################
+### Blinding ###
+################
+
+testblindvar = RealVar('test', Title = 'test',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 , Blind = ['UnblindUniform','Blindingstring',0.2])
+
+blinded = True
+if blinded:
+    tau = RealVar('sig_tau',Observable=False,Blinded=('UnblindUniform','blindingString', 1.),MinMax=(1,2) )
+    ws.factory("RooUnblindUniform::t_sig_dG_blind('BsRooBarbMoriond2012',0.02,t_sig_dG)")
+    ws.factory("RooUnblindUniform::phis_blind('BsCustardMoriond2012',0.3,phis)")    
+    
+    #calling RooCustomizer
+    customizer = RooCustomizer(pdfbeforeblinding,'blinded')
+    customizer.replaceArg( ws['t_sig_dG'], ws['t_sig_dG_blind'] )
+    customizer.replaceArg( ws['phis'], ws['phis_blind'] )
+
+assert False
+
+
+
+
+
+
+################
+# FROM GERHARD #
+################
 
 # fit & fix iTag_os parameters
 #pdf_itag   = buildPdf((signal,background), Observables = (m,iTag_os), Name='pdf_itag')
