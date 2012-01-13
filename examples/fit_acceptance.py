@@ -21,7 +21,7 @@ c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2))
 eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
 
 from P2VVBinningBuilders import build1DVerticalBinning
-binning, eff_func = build1DVerticalBinning('binning', eff, t, 0.05, 1.)
+binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -37,7 +37,9 @@ tres = LP2011_TimeResolution(time = t)['model']
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t,signal_tau, tres, 'SingleSided'])
-sig_t_acc = eff_func * sig_t
+acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff,
+                       Binning = binning)
+sig_t_acc = acceptance * sig_t
 
 # B mass pdf
 m_mean  = RealVar('m_mean',   Unit = 'MeV', Value = 5300, MinMax = (5200, 5800))

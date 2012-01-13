@@ -349,6 +349,48 @@ Double_t RooBinnedPdf::evaluate() const
   }
 }
 
+//______________________________________________________________________________
+std::list<Double_t>* RooBinnedPdf::binBoundaries
+(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const 
+{
+   // Return sampling hint for making curves of (projections) of this function
+   // as the recursive division strategy of RooCurve cannot deal efficiently
+   // with the vertical lines that occur in a non-interpolated histogram
+   
+   // No boundaries can be supplied when there is no binning
+   if (_binningNames.empty()) {
+      return 0 ;
+   }
+   
+   // Check that we have observable, if not no binning is returned
+   RooAbsArg* arg = 0;
+   int i = 0;
+   for (; i < _baseVarsList.getSize(); ++i) {
+      arg = _baseVarsList.at(i);
+      if (arg && arg->GetName() == obs.GetName()) break;
+   }
+   RooAbsLValue* lvarg = dynamic_cast<RooAbsLValue*>(arg);
+   if (!lvarg) {
+      return 0;
+   }
+   
+   // Retrieve position of all bin boundaries
+   const RooAbsBinning* binning = lvarg->getBinningPtr(_binningNames[i]);
+   Double_t* boundaries = binning->array() ;
+   
+   std::list<Double_t>* hint = new list<Double_t> ;
+   
+   // Construct array with pairs of points positioned epsilon to the left and
+   // right of the bin boundaries
+   for (Int_t i=0 ; i<binning->numBoundaries() ; i++) {
+      if (boundaries[i]>=xlo && boundaries[i]<=xhi) {
+         hint->push_back(boundaries[i]) ;
+      }
+   }
+   
+   return hint ;
+}
+
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::evaluateFunction() const
 {

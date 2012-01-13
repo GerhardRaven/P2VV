@@ -197,6 +197,10 @@ RooEffHistProd::RooEffHistProd(const char *name, const char *title,
    // an interesting hack. need to discuss with wouter. one idea: let
    // every function that is 'binned' (discrete,quantized,..) add a 
    // special binning object to its dependents.
+#if ROOT_VERSION_CODE >= ROOT_VERSION(5,32,0)
+   std::list<Double_t>* binboundaries = inEff.binBoundaries(x(), x().getMin(), x().getMax());
+   std::copy(binboundaries->begin(), binboundaries->end(), std::back_inserter(_binboundaries));
+#else
    std::list<Double_t>* binboundaries = inEff.plotSamplingHint(x(), x().getMin(), x().getMax());
    if (binboundaries) {
       for(std::list<Double_t>::const_iterator it = binboundaries->begin();
@@ -205,6 +209,7 @@ RooEffHistProd::RooEffHistProd(const char *name, const char *title,
          _binboundaries.push_back(0.5 * (x1 + x2));
       }
    }
+#endif
    delete binboundaries;
 }
 
