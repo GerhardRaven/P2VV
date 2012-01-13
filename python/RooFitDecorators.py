@@ -168,6 +168,8 @@ RooFitResult.result = __RooFitResultResult
 
 
 from ROOT import RooFit
+from ROOT import RooSimultaneous
+RooSimultaneous.plotOn     = __wrap_kw_subs( RooSimultaneous.plotOn )
 from ROOT import RooAbsPdf
 RooAbsPdf.generate         = __wrap_kw_subs( RooAbsPdf.generate )
 RooAbsPdf.fitTo            = __wrap_kw_subs( RooAbsPdf.fitTo )

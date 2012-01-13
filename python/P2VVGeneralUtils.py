@@ -43,7 +43,6 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
                        , [ obs._var for obs in observables ]
                        , Import = chain
                        , Cut = noNAN + ' && ' + cuts if cuts else noNAN )
-
     else :
       from ROOT import TFile
 
