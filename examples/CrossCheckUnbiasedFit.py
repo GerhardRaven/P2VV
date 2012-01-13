@@ -10,7 +10,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
               , Verbose = False
-              , Optimize = True if Rv[1]<32 else 0 # do NOT optimize in 5.32 or later... ( Optimize = 1 only works on a single CPU, 2 doesn't work at all )
+              , Optimize = True if Rv[1]<32 else 2 
 #              , Minimizer = ('Minuit2','minimize')
               )
 
@@ -334,11 +334,10 @@ for i in ['ASMag2','ASPhase'] :
 sig_m._m_sig_sigma_2_scale.setConstant(True)
 
 fullsignal         = Component('fullsignal', ( sig_m.pdf(), sig_t_angles), Yield = ( nsig, 0, 1.1*nsig) )
-#fullbkg = Component('fullbkg'   , ( bkg_m.pdf(), bkg_t.pdf(), bkg_tag.pdf(),eta_pdf), Yield = ( nbkg, 0, 2.0*nbkg) )
 fullbkg = Component('fullbkg'   , ( bkg_m.pdf(), bkg_t.pdf(), bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 fullbkg[eta]=None
 fullbkg += UniformPdf( Name = 'fullbkg_angles', Arguments = angles.angles.itervalues() )
-#sig_t_angles also depends on eta, but it is conditional on eta, so only ask for iTag here....
+#sig_t_angles depends on eta, and is NOT conditional on eta, so also ask for eta here....
 fullpdf   = buildPdf((fullsignal,fullbkg), Observables = (m,t,iTag,eta)+tuple(angles.angles.itervalues()), Name='fullpdf')
 
 fullpdf.Print()
@@ -353,105 +352,3 @@ for (j,event) in enumerate(fitdata) :
 
 fullpdf.fitTo(fitdata,**fitOpts)
 
-assert False
-
-
-
-
-
-
-# Create components
-data=MCdata
-(ntot,fsig) = ( data.numEntries(), 0.65 )
-(nsig,nbkg) = ( fsig*ntot, (1-fsig)*ntot) 
-nsig = ntot
-#signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, sig_tag.pdf()), Yield = ( nsig, 0, 1.1*nsig) )
-#bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
-signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, eta_pdf, ), Yield = ( nsig, 0, 1.1*nsig) )
-bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_tag.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
-
-MCpdf = buildPdf( (signal,),Observables =tuple(angles.angles.itervalues())+(t,eta,iTag),Name='sig_only_mc')
-
-MCpdf.fitTo(MCdata,**fitOpts)
-assert False
-
-# create PDF for angular background
-if False :
-    # make sweighted dataset using J/psi phi mass
-    from P2VVGeneralUtils import createSData
-    from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
-    splot_m = createSData( Name = 'Mass' , Components =  (signal,bkg_background), Observables = (m,), FitOpts = fitOpts, Data = data )
-    mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
-    bkg_background += mompdfBuilder.pdf( Component = bkg_background.GetName()
-                                       , Indices = [ i for i in indices(3,4) ]
-                                       , Name = 'bkg_angles'
-                                       , MinSignificance = 0.5
-                                       , Scale = sqrt(50.) )
-elif True:
-    bkg_background += UniformPdf( Name = 'bkg_angles', Arguments = angles.angles.itervalues() )
-else :
-    bkg_background += HistPdf( Name = 'bkg_angles'
-                             , Observables = angles.angles.itervalues()
-                             , Binning =  { angles.angles['cpsi'] : 7
-                                          , angles.angles['ctheta'] : 5
-                                          , angles.angles['phi' ] : 9
-                                          }
-                             , Data  = sidebanddata
-                             )
-
-bkganglepdf = buildPdf((bkg_background,), Observables = tuple(angles.angles.itervalues()), Name = 'bkganglepdf')
-
-# fit & fix iTag parameters
-#pdf_itag   = buildPdf((signal,bkg_background), Observables = (m,iTag), Name='pdf_itag')
-#pdf_itag.fitTo( data,**fitOpts)
-#for p in pdf_itag.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-
-#fitdata = unbiaseddata
-fitdata = data
-fitdata.numEntries()
-
-masspdf = buildPdf((signal,bkg_background), Observables = (m,), Name = 'm_pdf')
-m_result = masspdf.fitTo(fitdata, **fitOpts)
-m_result.writepars('massfit',False)
-
-# tagged fit
-pdf   = buildPdf((signal,bkg_background ), Observables = (m,t,eta,iTag)+tuple(angles.angles.itervalues()), Name='pdf')
-# fitOpts[ 'ExternalConstraints' ] = externalConstraints
-c_pdf = pdf.fitTo(fitdata, **fitOpts)
-
-
-
-from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
-from P2VVGeneralUtils import plot
-
-#Old bkganglecanvas
-#for (p,o) in zip(canvas.pads(3),angles.angles.itervalues()):
-    #p.cd()
-    #f = o.frame()
-    #sidebanddata.plotOn(f)
-    ##bkg_background[angles.angles.itervalues()].dataHist().plotOn(f)
-    #bkganglepdf.plotOn(f)
-    #f.Draw()
-
-bkganglecanvas = TCanvas()
-for (p,o) in zip(bkganglecanvas.pads(3),angles.angles.itervalues()):
-    plot(p,o,sidebanddata,bkganglepdf)
-
-canvas = dict()
-for rng in ( None, 'signal','leftsideband,rightsideband' ) :
-    canvas[rng] = TCanvas('%s'%rng)
-    dataOpts = dict( CutRange =        rng ) if rng else dict()
-    pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
-    from ROOT import RooArgSet
-    # TODO: grab the data in the relevant range... data.reduce( **dataOpts ) 
-    #       and remove the spike at 0.5 to take into account its correlation to iTag = 0!!!
-    pdfOpts['ProjWData'] = ( RooArgSet( eta._var ),  data, True ) 
-    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
-    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
-        plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                                            , 'bkg*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
-                                            }
-                             , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
-                             , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
-                             , logy = ( o == t )
-                             )

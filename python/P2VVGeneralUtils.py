@@ -39,8 +39,10 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
       status = chain.Add( filePath, -1 )
       if status == 0 : raise RuntimeError('Could not locate tree %s in file %s' % ( dataSetName, filePath ) )
 
-      data = RooDataSet(dataSetName, dataSetName, [obs._var for obs in observables], RooFit.Import(chain), RooFit.Cut(noNAN + ' && ' + cuts if cuts else noNAN))
-
+      data = RooDataSet( dataSetName, dataSetName
+                       , [ obs._var for obs in observables ]
+                       , Import = chain
+                       , Cut = noNAN + ' && ' + cuts if cuts else noNAN )
     else :
       from ROOT import TFile
 
@@ -51,8 +53,11 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
 
       if observables :
           from ROOT import RooDataSet
-          data = RooDataSet(  dataSetName, dataSetName, file.Get(dataSetName), [ obs._var for obs in observables ]
-                            , noNAN + ' && ' + cuts if cuts else noNAN )
+          data = RooDataSet( dataSetName, dataSetName
+                           , [ obs._var for obs in observables ]
+                           , Import = file.Get(dataSetName)
+                           , Cut = noNAN + ' && ' + cuts if cuts else noNAN 
+                           )
       else :
           data = file.Get(dataSetName)
 
@@ -480,9 +485,9 @@ class RealMomentsBuilder ( dict ) :
             if func in self._coefficients :
                 coef = self._coefficients[func]
                 if scales :
-                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0] * scales[0], coef[1] * scales[1], coef[2] * scales[2] )
+                    print '  {0:<+12.5g}   {1:<12.5g}   {2:<12.5g}'.format( coef[0] * scales[0], coef[1] * scales[1], coef[2] * scales[2] )
                 else :
-                    print '  {0:<+12.4g}   {1:<12.4g}   {2:<12.4g}'.format( coef[0],             coef[1],             coef[2]             )
+                    print '  {0:<+12.5g}   {1:<12.5g}   {2:<12.5g}'.format( coef[0],             coef[1],             coef[2]             )
             else : print
 
         print '  ' + '-' * (45 + maxLenName)

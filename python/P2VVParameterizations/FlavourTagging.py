@@ -16,6 +16,7 @@ class TaggingParams ( _util_parse_mixin ):
         self._dilutions  = kwargs.pop('Dilutions')
         self._ADilWTags  = kwargs.pop('ADilWTags')
         self._CEvenOdds  = kwargs.pop('CEvenOdds')
+        self._constraints = kwargs.pop('constraints',None)
         if self._numTagCats > 1 : self._tagCatCoefs = kwargs.pop('TagCatCoefs')
 
     def __getitem__( self, kw ) :
@@ -27,6 +28,8 @@ class TaggingParams ( _util_parse_mixin ):
         if kw in [ 'avgCEvens', 'avgCOdds' ] : return [ CEvenOdd[ kw[:-1] ] for CEvenOdd in self._CEvenOdds ]
 
         return getattr( self, '_' + kw )
+
+    def ExternalConstraints( self ) : return self._constraints
 
 class Trivial_TaggingParams( TaggingParams ) :
     def __init__( self ) :
@@ -54,18 +57,30 @@ class WTag_TaggingParams( TaggingParams ) :
 
 class LinearEstWTag_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
-        from RooFitWrappers import FormulaVar,ConstVar
+        from RooFitWrappers import FormulaVar,ConstVar, Pdf
         self._parseArg( 'estWTag', kwargs, Title = 'Estimated wrong tag probability',    Value = 0.25, MinMax = ( 0., 0.5 ) )
-        self._parseArg( 'p0', kwargs, Title = 'p0  tagging parameter',    Value = 0.384, Constant = True, MinMax = ( 0., 0.5 ) )
-        self._parseArg( 'p1', kwargs, Title = 'p1  tagging parameter',    Value = 1.037, Constant = True, MinMax = ( 0.8, 1.2 ) )
+        self._parseArg( 'p0', kwargs, Title = 'p0  tagging parameter',    Value = 0.384, Constant = False, MinMax = ( 0., 0.5 ) )
+        self._parseArg( 'p1', kwargs, Title = 'p1  tagging parameter',    Value = 1.037, Constant = False, MinMax = ( 0.8, 1.2 ) )
         self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong tag probability',    Value = 0.379, Constant = True, MinMax = ( 0., 0.5 ) )
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         self._check_extraneous_kw( kwargs )
+        
+        from ROOT import RooGaussian as Gaussian
+        if True:
+            constraintp0 = Pdf( Name = self._p0.GetName()+'_constraint', Type = Gaussian, Parameters = [ self._p0
+                                                                                                       , ConstVar( Name = 'p0_mean',  Value = 0.384 )
+                                                                                                       , ConstVar( Name = 'p0_sigma', Value = 0.010 ) ] )
+            
+            constraintp1 = Pdf( Name = self._p1.GetName()+'_constraint', Type = Gaussian, Parameters = [ self._p1
+                                                                                                         , ConstVar( Name = 'p1_mean',  Value = 1.037 )
+                                                                                                         , ConstVar( Name = 'p1_sigma', Value = 0.081 ) ] )
+
         TaggingParams.__init__( self
-                              , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
-                                                         , [ self._estWTag, self._avgEstWTag, self._p0, self._p1 ], Title = 'Calibrated Per-Event Dilution' ) ]
-                              , ADilWTags = [ ConstVar( Name = 'zero',Value = 0) ]
-                              , CEvenOdds = [ Trivial_CEvenOdd() ]
+                                , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
+                                                             , [ self._estWTag, self._avgEstWTag, self._p0, self._p1 ], Title = 'Calibrated Per-Event Dilution' ) ]
+                                , ADilWTags = [ ConstVar( Name = 'zero',Value = 0) ]
+                                , CEvenOdds = [ Trivial_CEvenOdd() ]
+                                , constraints = [constraintp0,constraintp1]
                               )
 
 class Dilution_TaggingParams( TaggingParams ) :
@@ -516,13 +531,3 @@ class Trivial_Background_Tag( _util_parse_mixin ) :
         for (k,v) in kwargs.iteritems() :
             setattr(self,'_'+k,v)
 
-class Uniform_Background_Tag( _util_parse_mixin ) :
-    def pdf(self) :
-        return self._pdf
-    def __init__( self, tagdecision, **kwargs ) :
-        from RooFitWrappers import GenericPdf
-        name = kwargs.pop('Name','Uniform_Background_TagPdf')
-        self._pdf = GenericPdf( name, Formula = '1'
-                                , Arguments = [ tagdecision ] )
-        for (k,v) in kwargs.iteritems() :
-            setattr(self,'_'+k,v)

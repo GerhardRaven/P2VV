@@ -63,11 +63,11 @@ class LP2011_TimeResolution ( TimeResolution ) :
         #        2) leave parameters free, and define an external constraint
         #      note that 2 does not imply that one has to actually use the constraint... 
         #      in case 2, it would be nice if one could specify the values of the constraint parameters...
-        if False :
-            from ROOT import RooGaussian as Gaussian
-            constraint = Pdf( Name = Name+'_constraint', Type = Gaussian, Parameters = [ self._timeResSF
-                                                                                       , ConstVar( Name = 'tres_SF_constraint_mean',  Value = 1.00 )
-                                                                                       , ConstVar( Name = 'tres_SF_constraint_sigma', Value = 0.04 ) ] )
+        from ROOT import RooGaussian as Gaussian
+        from RooFitWrappers import Pdf
+        constraint = Pdf( Name = self._timeResSF.GetName()+'_constraint', Type = Gaussian, Parameters = [ self._timeResSF
+                                                                                                          , ConstVar( Name = 'tres_SF_constraint_mean',  Value = 1.00 )
+                                                                                                          , ConstVar( Name = 'tres_SF_constraint_sigma', Value = 0.04 ) ] )
 
 
         from ROOT import RooGaussModel as GaussModel
@@ -78,6 +78,7 @@ class LP2011_TimeResolution ( TimeResolution ) :
                                                                   )\
                                                    for ( numVal, sigma ) in zip( sigmas, self._timeResSigmas ) ]
                                                , self._timeResFracs )
+                                 , constraints = [constraint]
                                )
 
 class Gamma_Sigmat( _util_parse_mixin ) :

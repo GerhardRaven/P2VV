@@ -179,7 +179,7 @@ class ArgSet(RooObject) :
         x.setName( name ) # argsets come out of the ws as brand new clones without name...
         return x
     def __init__(self,name,args) :
-        spec = 'set::%s(%s)' % (name, ','.join( i['Name'] for i in args) )
+        spec = 'set::%s(%s)' % (name, ','.join( i.GetName() for i in args) )
         self._declare(spec)
         self._init(name,'RooArgSet')
 
@@ -498,8 +498,8 @@ class Pdf(RooObject):
 
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
-        if 'ConditionalObservables' in kwargs :
-            kwargs['ConditionalObservables'] = RooArgSet( __dref__(var) for var in kwargs.pop('ConditionalObservables') )
+        for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
+            kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
         return self._var.fitTo( data, **kwargs )
 
     @wraps(RooAbsPdf.generate)
@@ -968,7 +968,9 @@ class Component(object):
                 self[ obs ] = p
         
     def __setitem__(self, observable, pdf) :
-        if not hasattr(observable,'__iter__') : observable = (observable,)
+        from ROOT import RooAbsCategory
+        #TODO: Need to deal with fact the categories have iterators
+        if not hasattr(observable,'__iter__') or isinstance(observable._var if hasattr(observable,'_var') else observable ,RooAbsCategory) : observable = (observable,)
 
         # create a set of incoming observables
         k = set(o if type(o)==str else o.GetName() for o in observable )
