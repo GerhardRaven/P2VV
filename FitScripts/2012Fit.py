@@ -10,8 +10,8 @@ fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
               , Verbose = False
-              , Optimize = True if Rv[1]<32 else 0 # do NOT optimize in 5.32 or later... ( Optimize = 1 only works on a single CPU, 2 doesn't work at all )
-#              , Minimizer = ('Minuit2','minimize')
+              , Optimize = 2
+              , Minimizer = ('Minuit2','minimize')
               )
 
 # define observables

@@ -9,7 +9,7 @@ obj  = RooObject( workspace = 'workspace')
 # define observables
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.5, 14),    nBins =  54 )
 st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
-m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  100
+m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  50 
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
                                   , 'rightsideband' : ( 5410, None ) 
@@ -20,11 +20,15 @@ eta  = RealVar('tagomega_os',      Title = 'estimated mistag',          Observab
 iTag = Category( 'tagdecision_os', Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 sel  = Category( 'sel',            Title = 'selection',                 Observable = True, States = { 'good': +1 } )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
-angles    = HelAngles( cpsi = dict ( Name = 'helcosthetaK', nBins=24), ctheta = dict(Name = 'helcosthetaL', nBins=24), phi =dict( Name= 'helphi',nBins=24) )
-#angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',        nBins = 24 )
-#                    , ctheta = dict( Name = 'trcostheta', Title = 'cos(#theta_{tr})', nBins = 24 )
-#                    , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
-#                    )
+if True :
+    angles    = HelAngles( cpsi   = dict( Name = 'helcosthetaK', nBins=24)
+                         , ctheta = dict( Name = 'helcosthetaL', nBins=24)
+                         , phi    = dict( Name = 'helphi',       nBins=24) )
+else :
+    angles    =  TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',        nBins = 24 )
+                         , ctheta = dict( Name = 'trcostheta', Title = 'cos(#theta_{tr})', nBins = 24 )
+                         , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
+                         )
 
 
 #unbiased data only: /data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_DTT_after_yuehongs_script_20111220.root
@@ -107,7 +111,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Signal_Time, LP2011_Background_Time as Background_Time
 sig_t = Signal_Time(     Name = 'sig_t', time = t, resolutionModel = tres.model(), t_sig_tau = dict( Value = 1.5, Name = 't_sig_tau', MinMax=(1.0,2.0) ) )
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_psi_fll', Value = 0.47), t_bkg_ll_tau = dict( Name = 't_psi_ll_tau', Value = 1.3), t_bkg_ml_tau = dict( Name = 't_psi_ml_tau', Value = 0.21) )
-cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_cmb_fll', Value = 0.61), t_bkg_ll_tau = dict( Name = 't_cmb_ll_tau', Value = 2.9, MinMax = (1.5,3.5)), t_bkg_ml_tau = dict( Name = 't_cmb_ml_tau', Value = 0.43) )
+cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_cmb_fll', Value = 0.61), t_bkg_ll_tau = dict( Name = 't_cmb_ll_tau', Value = 1.5, MinMax = (0.5,2.5)), t_bkg_ml_tau = dict( Name = 't_cmb_ml_tau', Value = 0.43) )
 
 # itag distribution (background only)
 from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
@@ -212,9 +216,11 @@ mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
 #TODO: allow one to get RooRealVar (centered on the computed moment, with an +-N signma range) as coefficients instead of ConstVar...
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 from math import sqrt
-psi_background += mompdfBuilder.pdf( Component = psi_background.GetName(), Indices = [ i for i in indices(3,2) ], Name = 'psi_angles', MinSignificance = 0.5, Scale = sqrt(50.) )
-cmb_background += mompdfBuilder.pdf( Component = cmb_background.GetName(), Indices = [ i for i in indices(3,2) ], Name = 'cmb_angles', MinSignificance = 0.5, Scale = sqrt(50.) )
+psi_background += mompdfBuilder.pdf( Component = psi_background.GetName(), Indices = [ i for i in indices(2,2) ], Name = 'psi_angles', MinSignificance = 0.5, Scale = sqrt(50.) )
+cmb_background += mompdfBuilder.pdf( Component = cmb_background.GetName(), Indices = [ i for i in indices(2,2) ], Name = 'cmb_angles', MinSignificance = 0.5, Scale = sqrt(50.) )
 
+
+assert False
 # untagged fit
 pdf_untagged  = buildPdf((signal, cmb_background, psi_background), Observables = (m,mpsi,t)+tuple(angles.angles.itervalues()), Name='untagged_pdf')
 CP.setConstant('.*')
