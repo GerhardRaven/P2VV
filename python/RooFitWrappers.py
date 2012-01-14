@@ -67,6 +67,14 @@ class RooObject(object) :
         if type(Name)!=str : Name = Name.GetName()
         return self.ws()._rooobject[Name]
 
+    def _addObject(self, o):
+        if not self.ws()[o.GetName()]:
+            self.ws().put(o)
+        if o.GetName() not in self.ws()._objects:
+            self.ws()._objects[o.GetName()] = o
+        else:
+            raise TypeError, "Adding the same object twice should not happen! %s" % o.GetName()
+        
     def _declare(self,spec):
         """
         create the underlying C++ object in the workspace
@@ -88,7 +96,8 @@ class RooObject(object) :
             #  
             # Keep the PyROOT objects in a container so they don't get garbage
             # collected.
-            self.ws()._objects[x.GetName()] = x # Note: use explicit GetName, not str, as x is a 'bare' PyROOT object!!!
+            # Note: use explicit GetName, not str, as x is a 'bare' PyROOT object!!!
+            self._addObject(x)
             # and keep track what we made 
             self.ws()._spec[ spec ] = x
         else :
@@ -230,7 +239,7 @@ class MappedCategory( Category ) :
             obj =  RooMappedCategory(Name,Name,__dref__(cat) )
             for k,vs in mapper.iteritems() : 
                 for v in vs : obj.map( v, k )
-            self.ws()._objects[ Name ] = self.ws().put( obj )
+            self._addObject(obj)
             self._init(Name,'RooMappedCategory')
             self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
@@ -522,7 +531,12 @@ class Pdf(RooObject):
         return self._var.plotOn( frame, **kwargs )
 
     def __rmul__(self, eff):
-        if not isinstance(eff, FormulaVar) and not isinstance(eff, HistFunc):
+        good = False
+        for t in [FormulaVar, HistFunc, BinnedPdf]:
+            if isinstance(eff, t):
+                good = True
+                break
+        if not good:
             raise RuntimeError, 'trying to multiply a %s with %s; this is not supported!' % (type(self), type(eff))
         name = eff.GetName() + '_X_' + self['Name']
         return EffProd(name, Original = self, Efficiency = eff)
@@ -847,40 +861,70 @@ class BinnedPdf( Pdf ) :
         argDict = { 'Name' : Name }
 
         # declare PDF in workspace
-        if 'baseCat' in kwargs :
+        if 'Categories' in kwargs and len(kwargs['Categories']) == 1:
             # single category dependence
-            argDict['baseCat']  = str(kwargs.pop('baseCat'))
-            argDict['coefList'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('coefList') )
-            self._declare( "BinnedPdf::%(Name)s( %(baseCat)s, %(coefList)s )" % argDict )
+            argDict['cat']   = str(kwargs.pop('Category')[0])
+            argDict['coefs'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Coefficients') )
+            self._declare( "BinnedPdf::%(Name)s( %(cat)s, %(coefs)s )" % argDict )
 
-        elif 'baseCats' in kwargs :
+        elif 'Categories' in kwargs :
             # multiple category dependence
             listArrayName = Name + '_coefLists'
-            argDict['ignoreFirstBin'] = kwargs.pop( 'ignoreFirstBin', 0 )
-            argDict['baseCats']       = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('baseCats') )
-            argDict['coefLists']      = listArrayName
+            argDict['ignore'] = kwargs.pop( 'IgnoreFirstBin', 0 )
+            argDict['cats']   = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Categories') )
+            argDict['coefs']  = listArrayName
 
             # create an array for the coefficient lists
+            #!!! We use this weird workspace put/wsImport construct to avoid ROOT crashes when importing a TObjArray of RooArgLists
+            #!!! when there are already blinded parameters in the workspace. Weird? Yes, weird...
             from ROOT import TObjArray
             wsListArray = TObjArray()
             wsListArray.SetName(listArrayName)
-            self.ws().put(wsListArray)
+            self.ws().put(wsListArray)    # first put the TObjArray in workspace, ...
 
             # create coefficient lists
             from ROOT import RooArgList, RooWorkspace
             wsImport = getattr( RooWorkspace, 'import' )
-            for varNum, coefList in enumerate( kwargs.pop('coefLists') ) :
+            for varNum, coefList in enumerate( kwargs.pop('Coefficients') ):
                 listName = Name + '_coefList%d' % varNum
                 wsList = RooArgList(listName)
                 for coef in coefList : wsList.add( self.ws().arg( str(coef) ) )
-                wsImport( self.ws(), wsList, listName, 0 )
-                self.ws().obj(listArrayName).Add( self.ws().obj(listName) )
+                wsImport( self.ws(), wsList, listName, 0 )                     # ... then import RooArgList into workspace (with name!) ...
+                self.ws().obj(listArrayName).Add( self.ws().obj(listName) )    # ... and then add RooArgList to TObjArray
 
-            self._declare( "BinnedPdf::%(Name)s( %(baseCats)s, %(coefLists)s, %(ignoreFirstBin)s )" % argDict )
+            self._declare( "BinnedPdf::%(Name)s( %(cats)s, %(coefs)s, %(ignore)s )" % argDict )
 
-        elif 'baseVar' in kwargs or 'baseVars' in kwargs :
-            # continuous variable(s) dependence
-            raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables not (yet) implemented')
+        # continuous variable(s) dependence
+        elif 'Observables' in kwargs and len(kwargs['Observables']) == 1:
+            if 'Function' in kwargs:
+                var = kwargs.pop('Observables')[0]
+                binning = None
+                if type(kwargs['Binning']) == str:
+                    binning = var.getBinning(kwargs.pop('Binning'))
+                else:
+                    binning = kwargs.pop('Binning')
+                from ROOT import RooBinnedPdf
+                pdf = RooBinnedPdf(argDict['Name'], argDict['Name'], __dref__(var), binning.GetName(),
+                                   __dref__(kwargs.pop('Function')))
+                self.ws()._addObject(pdf)
+                self.ws().put(pdf)
+
+        elif 'Observables' in kwargs :
+            if 'Function' in kwargs:
+                argDict['function'] = kwargs.pop('Function').GetName()
+                name = Name + '_varList'
+                argDict['vars'] = name
+                argDict['binnings'] = kwargs.pop('Binnings')
+                # create coefficient lists
+                from ROOT import RooArgList
+                l = RooArgList(name)
+                for var in kwargs.pop('Observables'):
+                    l.add(self.ws().arg(str(var)))
+                self.ws().put(l)
+                self._declare('BinnedPdf::%(Name)s(%(vars)s, %(binnings)s, %(function)s)' % argDict)
+            else:
+                raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables with' +
+                               'coef lists not (yet) implemented')
 
         else :
             raise KeyError('P2VV - ERROR: BinnedPdf: please specify variable(s)')

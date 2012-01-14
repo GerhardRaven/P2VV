@@ -26,7 +26,7 @@ RooWorkspace* toyMC() {
    w->factory("Decay::pdf(t,tau[2,0.01,4.0],tres,SingleSided)");
    w->defineSet("observables","t");
 
-   unsigned int nbins = 100;
+   unsigned int nbins = 10;
    TH1F* effh1 = new TH1F( "effh1", "effh1", nbins, w->var("t")->getMin(), w->var("t")->getMax());
    for (unsigned int i = 1; i < 6; ++i) {
       effh1->SetBinContent(i, 0.1 * i);
@@ -46,23 +46,32 @@ RooWorkspace* toyMC() {
 
    RooAbsPdf* acc_pdf = w->pdf("acc_pdf");
 
-   RooGenFitStudy gfs;
-   gfs.setGenConfig("acc_pdf", "t", NumEvents(10000));
-   gfs.setFitConfig("acc_pdf", "t", PrintLevel(-1));
+   RooDataSet* data = acc_pdf->generate(*(w->set("observables")), 10000);
 
-   RooStudyManager mgr(*w, gfs);
-
-   mgr.run(1000);
-   mgr.prepareBatchInput("aap", 100, kTRUE);
-
-   RooDataSet* data = gfs.summaryData();
-   const RooArgSet* args = data->get();
-   RooPullVar tau_pull("tau_pull", "tau_pull", *(static_cast<RooRealVar*>(args->find("tau"))), *(w->var("t")));
-   data->addColumn(tau_pull);
-
-   TCanvas* canvas = new TCanvas("canvas", "canvas", 1000, 1000);
-   canvas->Divide(2, 2);
+   TCanvas* canvas = new TCanvas("canvas", "canvas", 500, 500);
    canvas->cd(1);
+   RooPlot* frame = w->var("t")->frame(RooFit::Bins(30));
+   data->plotOn(frame, RooFit::MarkerSize(0.5), RooFit::XErrorSize(0));
+   acc_pdf->plotOn(frame, RooFit::LineWidth(2));
+   frame->Draw();
+
+   // RooGenFitStudy gfs;
+   // gfs.setGenConfig("acc_pdf", "t", NumEvents(10000));
+   // gfs.setFitConfig("acc_pdf", "t", PrintLevel(-1));
+
+   // RooStudyManager mgr(*w, gfs);
+
+   // mgr.run(1000);
+   // mgr.prepareBatchInput("aap", 100, kTRUE);
+
+   // RooDataSet* data = gfs.summaryData();
+   // const RooArgSet* args = data->get();
+   // RooPullVar tau_pull("tau_pull", "tau_pull", *(static_cast<RooRealVar*>(args->find("tau"))), *(w->var("t")));
+   // data->addColumn(tau_pull);
+
+   // TCanvas* canvas = new TCanvas("canvas", "canvas", 1000, 1000);
+   // canvas->Divide(2, 2);
+   // canvas->cd(1);
 
    return w;
 }

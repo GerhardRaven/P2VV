@@ -256,13 +256,14 @@ backgroundComps += HistPdf(  Name = 'bkg_angles'
 ##################################
 
 backgroundComps += BinnedPdf(  'bkg_tagCat_iTag'
-                             , baseCats = ( tagCatP2VV, iTag )
-                             , coefLists = [  taggingParams['tagCatCoefs']
-                                            , [  RealVar( 'bkg_BbarFrac'
-                                               , Title = 'Anti-B fraction in background'
-                                               , Value = 0.5, MinMax = ( 0., 1. ) )
+                             , Categories   = ( tagCatP2VV, iTag )
+                             , Coefficients = [  taggingParams['tagCatCoefs']
+                                               , [  RealVar( 'bkg_BbarFrac'
+                                                            , Title = 'Anti-B fraction in background'
+                                                            , Value = 0.5, MinMax = ( 0., 1. )
+                                                           )
+                                                 ]
                                               ]
-                                           ]
                             )
 
 

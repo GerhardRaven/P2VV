@@ -49,7 +49,7 @@ public:
       RooAbsArg& baseVar, const char* binning, RooAbsReal& function);
 
   RooBinnedPdf(const char *name, const char *title,
-      RooAbsRealLValue& baseVar, const char* binningName,
+      RooAbsRealLValue& baseVar, const char* binning,
       const RooArgList& coefList, Bool_t binIntegralCoefs = kFALSE);
 
   RooBinnedPdf(const char *name, const char *title,
@@ -65,6 +65,9 @@ public:
   }
 
   virtual ~RooBinnedPdf();
+
+  virtual std::list<Double_t>* binBoundaries
+  (RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const;
 
   RooArgList* baseVariables();
 
