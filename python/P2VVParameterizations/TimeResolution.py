@@ -24,8 +24,9 @@ class TimeResolution ( _util_parse_mixin ) :
 class Truth_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import ResolutionModel
-        self._parseArg( 'time',         kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+        self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
 
+        self._check_extraneous_kw( kwargs )
         from ROOT import RooTruthModel as TruthModel
         TimeResolution.__init__( self, ResolutionModel( Name = 'timeResModelTruth'
                                                       , Type = TruthModel
@@ -39,6 +40,7 @@ class Gaussian_TimeResolution ( TimeResolution ) :
         self._parseArg( 'timeResMu',    kwargs, Title = 'Decay time resolution mean',  Value = 0.,  )
         self._parseArg( 'timeResSigma', kwargs, Title = 'Decay time resolution width', Value = 0.05 )
 
+        self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__( self, ResolutionModel( Name = 'timeResModelGauss'
                                                       , Type = GaussModel
@@ -49,7 +51,7 @@ class LP2011_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
         self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._parseArg( 'timeResMu', kwargs, Value = -0.0027, Constant = True )
+        self._parseArg( 'timeResMu', kwargs, Value = -0.0027 )
         self._parseArg( 'timeResSF', kwargs, Value = 1.0, MinMax = ( 0.5, 5. ) )
 
         sigmas = [ ( 3, 0.513  ), ( 2, 0.0853 ), ( 1, 0.0434 ) ]
@@ -57,7 +59,6 @@ class LP2011_TimeResolution ( TimeResolution ) :
         self._timeResSigmas = [ ConstVar( Name = 'timeResSigma%s' % num, Value = val ) for num, val in sigmas ]
         self._timeResFracs  = [ ConstVar( Name = 'timeResFrac%s'  % num, Value = val ) for num, val in fracs  ]
 
-        Name =  kwargs.pop('Name','timeResModelLP2011')
         #TODO: add a kw which indicates
         #        1) leave parameters fixed   
         #        2) leave parameters free, and define an external constraint
@@ -65,11 +66,15 @@ class LP2011_TimeResolution ( TimeResolution ) :
         #      in case 2, it would be nice if one could specify the values of the constraint parameters...
         from ROOT import RooGaussian as Gaussian
         from RooFitWrappers import Pdf
-        constraint = Pdf( Name = self._timeResSF.GetName()+'_constraint', Type = Gaussian, Parameters = [ self._timeResSF
-                                                                                                          , ConstVar( Name = 'tres_SF_constraint_mean',  Value = 1.00 )
-                                                                                                          , ConstVar( Name = 'tres_SF_constraint_sigma', Value = 0.04 ) ] )
+        constraint = Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
+                         , Parameters = [  self._timeResSF
+                                         , ConstVar( Name = 'tres_SF_constraint_mean',  Value = 1.00 )
+                                         , ConstVar( Name = 'tres_SF_constraint_sigma', Value = 0.04 )
+                                        ]
+                        )
 
-
+        Name =  kwargs.pop( 'Name', 'timeResModelLP2011' )
+        self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__( self, AddModel( Name
                                                , [ ResolutionModel( Name = 'timeResLP2011_%s' % numVal[0]

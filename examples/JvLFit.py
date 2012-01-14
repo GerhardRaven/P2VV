@@ -27,6 +27,7 @@ nEvents    = 200000
 sigFrac    = 0.8
 
 # transversity amplitudes
+amplitudeParam = 'phasesSWaveFrac'
 A0Mag2Val    =  0.52
 A0PhVal      =  0.
 AparMag2Val  =  0.23
@@ -44,7 +45,6 @@ lambdaCPSqVal = 1.
 # B lifetime parameters
 GammaVal        = 0.66
 dGammaVal       = 0.12
-dmVal           = 17.8
 
 # asymmetries
 AProdVal = 0.
@@ -78,7 +78,7 @@ time       = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Obse
 iTag       = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
 angles     = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
-BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = ( 5200., 5550. ), nBins = 48
+BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, Value = 5368., MinMax = ( 5200., 5550. ), nBins = 48
                        ,  Ranges =  {  'LeftSideBand'  : ( None,  5330. )
                                      , 'Signal'        : ( 5330., 5410. )
                                      , 'RightSideBand' : ( 5410., None  )
@@ -161,22 +161,32 @@ backgroundComps += backgroundBMass.pdf()
 #####################################################################
 
 # transversity amplitudes
-from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes as Amplitudes
-amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
-                        , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
-                        , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
-                        , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
-                        , ReAS    = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal)
-                        , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
-                       )
+if amplitudeParam == 'phasesSWaveFrac' :
+    from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012 as Amplitudes
+    amplitudes = Amplitudes(  A0Mag2    = A0Mag2Val
+                            , A0Phase   = A0PhVal
+                            , AperpMag2 = AperpMag2Val
+                            , AparPhase = AparPhVal
+                            , f_S       = ASMag2Val / ( 1. + ASMag2Val )
+                            , ASPhase   = ASPhVal
+                           )
+
+else :
+    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes as Amplitudes
+    amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
+                            , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
+                            , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
+                            , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
+                            , ReAS    = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal)
+                            , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
+                           )
 
 # B lifetime
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
 lifetimeParams = LifetimeParams(  Gamma = GammaVal
-                                , deltaGamma = dict(  Value = dGammaVal
+                                , deltaGamma = dict(  Name = 'dGamma', Value = dGammaVal
                                                     , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                    )
-                                , deltaM = dmVal
                                )
 
 #from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
@@ -312,13 +322,12 @@ if fitData :
     taggingParams.setConstant('tagCatCoef.*')
     tagCats.setConstant('wTag.*')
 
-    amplitudes.setConstant('ReA.*')
-    amplitudes.setConstant('ImA.*')
+    amplitudes.setConstant('.*')
 
-    timeResModel.setConstant('.*')
+    timeResModel.setConstant('timeResSF')
+    backgroundTime.setConstant('.*')
     signalBMass.setConstant('.*')
     backgroundBMass.setConstant('.*')
-    backgroundTime.setConstant('.*')
 
     # fit data
     print 'JvLFit: fitting %d events' % data.numEntries()
