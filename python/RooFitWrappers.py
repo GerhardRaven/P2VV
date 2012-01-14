@@ -909,8 +909,7 @@ class BinnedPdf( Pdf ) :
                 # the ws.
                 pdf = RooBinnedPdf(argDict['Name'], argDict['Name'], __dref__(var), binning.GetName(),
                                    __dref__(kwargs.pop('Function')))
-                self.ws()._addObject(pdf)
-                self.ws().put(pdf)
+                self._addObject(pdf)
             else:
                 raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables with' +
                                'coef lists not (yet) implemented')
