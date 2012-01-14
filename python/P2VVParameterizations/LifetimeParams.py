@@ -27,8 +27,6 @@ class Gamma_LifetimeParams( LifetimeParams ) :
         self._parseArg( 'deltaGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = 0.05, MinMax = (- 0.3,  0.3 ) )
         self._parseArg( 'deltaM',     kwargs, Title = 'delta m',     Unit = 'ps^{-1}', Value = 17.8, MinMax = ( 16.5, 18.5 ) )
         
-        self._check_extraneous_kw( kwargs )
-
         from ROOT import RooGaussian as Gaussian
         constraint = Pdf(  Name = self._deltaM.GetName() + '_constraint', Type = Gaussian
                          , Parameters = [  self._deltaM
@@ -37,6 +35,7 @@ class Gamma_LifetimeParams( LifetimeParams ) :
                                         ]
                         )
 
+        self._check_extraneous_kw( kwargs )
         LifetimeParams.__init__( self
                                  , MeanLifetime = FormulaVar( 'MeanLifetime', '1. / @0', [self._Gamma], Title = 'B Mean lifetime' )
                                  , deltaGamma  = self._deltaGamma

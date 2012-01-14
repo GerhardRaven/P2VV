@@ -64,8 +64,6 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong tag probability', Value = 0.379, MinMax = ( 0.,  0.5 )
                        , Constant = True
                       )
-        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
-        self._check_extraneous_kw( kwargs )
         
         from ROOT import RooGaussian as Gaussian
         p0Constraint = Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
@@ -82,6 +80,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                                           ]
                           )
 
+        self._check_extraneous_kw( kwargs )
+        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__(  self
                                , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
                                                           , [ self._estWTag, self._avgEstWTag, self._p0, self._p1 ]
