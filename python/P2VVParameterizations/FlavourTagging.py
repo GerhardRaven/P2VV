@@ -44,10 +44,11 @@ class Trivial_TaggingParams( TaggingParams ) :
 
 class WTag_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
-        from RooFitWrappers import FormulaVar,ConstVar
-        self._parseArg( 'wTag', kwargs, Title = 'B wrong tag probability',    Value = 0.25, MinMax = ( 0., 0.5 ) )
-        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
+        self._parseArg( 'wTag', kwargs, Title = 'B wrong tag probability', Value = 0.25, MinMax = ( 0., 0.5 ) )
+
         self._check_extraneous_kw( kwargs )
+        from RooFitWrappers import FormulaVar, ConstVar
+        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__( self
                               , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2*@0 '
                                                          , [ self._wTag ], Title = 'Tagging dilution' ) ]
@@ -64,8 +65,6 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong tag probability', Value = 0.379, MinMax = ( 0.,  0.5 )
                        , Constant = True
                       )
-        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
-        self._check_extraneous_kw( kwargs )
         
         from ROOT import RooGaussian as Gaussian
         p0Constraint = Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
@@ -82,6 +81,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                                           ]
                           )
 
+        self._check_extraneous_kw( kwargs )
+        from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__(  self
                                , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
                                                           , [ self._estWTag, self._avgEstWTag, self._p0, self._p1 ]
@@ -96,6 +97,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
 class Dilution_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
         self._parseArg( 'dilution', kwargs, Title = 'Tagging dilution', Value = 0., MinMax = ( 0., 1. ) )
+
+        self._check_extraneous_kw( kwargs )
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         from RooFitWrappers import ConstVar
         TaggingParams.__init__( self
@@ -103,7 +106,6 @@ class Dilution_TaggingParams( TaggingParams ) :
                               , ADilWTags = [ ConstVar( Name = 'zero',Value = 0) ]
                               , CEvenOdds = [ Trivial_CEvenOdd() ]
                               )
-        self._check_extraneous_kw( kwargs )
 
 class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
     """flavour tagging parameters with wrong-tag parameters and asymmetry coefficients

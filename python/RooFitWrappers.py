@@ -863,21 +863,24 @@ class BinnedPdf( Pdf ) :
         # declare PDF in workspace
         if 'Categories' in kwargs and len(kwargs['Categories']) == 1:
             # single category dependence
-            argDict['cat']  = str(kwargs.pop('Category')[0])
-            argDict['coefs'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('coefList') )
+            argDict['cat']   = str(kwargs.pop('Category')[0])
+            argDict['coefs'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Coefficients') )
             self._declare( "BinnedPdf::%(Name)s( %(cat)s, %(coefs)s )" % argDict )
+
         elif 'Categories' in kwargs :
             # multiple category dependence
             listArrayName = Name + '_coefLists'
             argDict['ignore'] = kwargs.pop( 'IgnoreFirstBin', 0 )
-            argDict['cats']  = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Categories') )
-            argDict['coefs'] = listArrayName
+            argDict['cats']   = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Categories') )
+            argDict['coefs']  = listArrayName
 
             # create an array for the coefficient lists
+            #!!! We use this weird workspace put/wsImport construct to avoid ROOT crashes when importing a TObjArray of RooArgLists
+            #!!! when there are already blinded parameters in the workspace. Weird? Yes, weird...
             from ROOT import TObjArray
             wsListArray = TObjArray()
             wsListArray.SetName(listArrayName)
-            self.ws().put(wsListArray)
+            self.ws().put(wsListArray)    # first put the TObjArray in workspace, ...
 
             # create coefficient lists
             from ROOT import RooArgList, RooWorkspace
@@ -886,10 +889,10 @@ class BinnedPdf( Pdf ) :
                 listName = Name + '_coefList%d' % varNum
                 wsList = RooArgList(listName)
                 for coef in coefList : wsList.add( self.ws().arg( str(coef) ) )
-                wsImport( self.ws(), wsList, listName, 0 )
-                self.ws().obj(listArrayName).Add( self.ws().obj(listName) )
-            self.ws().put(wsListArray)
+                wsImport( self.ws(), wsList, listName, 0 )                     # ... then import RooArgList into workspace (with name!) ...
+                self.ws().obj(listArrayName).Add( self.ws().obj(listName) )    # ... and then add RooArgList to TObjArray
             self._declare( "BinnedPdf::%(Name)s( %(cats)s, %(coefs)s, %(ignore)s )" % argDict )
+
         # continuous variable(s) dependence
         elif 'Observables' in kwargs and len(kwargs['Observables']) == 1:
             if 'Function' in kwargs:
@@ -900,10 +903,17 @@ class BinnedPdf( Pdf ) :
                 else:
                     binning = kwargs.pop('Binning')
                 from ROOT import RooBinnedPdf
+                # Since the Workspace factory doesn't know about RooBinnedPdf
+                # and its default approach doesn't seem to work very well,
+                # create the object directly and then add it to RooObject and
+                # the ws.
                 pdf = RooBinnedPdf(argDict['Name'], argDict['Name'], __dref__(var), binning.GetName(),
                                    __dref__(kwargs.pop('Function')))
                 self.ws()._addObject(pdf)
                 self.ws().put(pdf)
+            else:
+                raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables with' +
+                               'coef lists not (yet) implemented')
         elif 'Observables' in kwargs :
             if 'Function' in kwargs:
                 argDict['function'] = kwargs.pop('Function').GetName()

@@ -40,20 +40,8 @@ class LambdaSqArg_CPParam( CPParam ) :
         self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
         self._check_extraneous_kw( kwargs )
-        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',               [ self._lambdaCPSq              ] )
-                             , D = FormulaVar('D', '2 * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
-                             , S = FormulaVar('S', '2 * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
-                        )
-
-class ArgOnly_CPParam( CPParam ) :
-    def __init__( self, **kwargs ) :
-        from RooFitWrappers import FormulaVar, ConstVar
-        from math import pi
-
-        self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
-        self._check_extraneous_kw( kwargs )
-        CPParam.__init__(self, C = ConstVar(Name = 'C', Value = 0 )
-                             , D = FormulaVar('D', 'cos(-@0)', [ self._phiCP ] )
-                             , S = FormulaVar('S', 'sin(-@0)', [ self._phiCP ] )
+        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',                [ self._lambdaCPSq              ] )
+                             , D = FormulaVar('D', '2. * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
+                             , S = FormulaVar('S', '2. * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                         )
 

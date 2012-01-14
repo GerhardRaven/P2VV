@@ -126,8 +126,9 @@ externalConstraints += tagging.ExternalConstraints()
 #eta_os_pdf = UniformPdf( Name = 'eta__os_pdf', Arguments = (eta_os,) )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-from P2VVParameterizations.CPVParams import ArgOnly_CPParam
-CP = ArgOnly_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False ))
+CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False )
+                         , lambdaCPSq = dict( Value = 1., Constant = True )
+                        )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
 from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012

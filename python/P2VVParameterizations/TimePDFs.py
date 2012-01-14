@@ -75,7 +75,7 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
             Im        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
             # define functions which return the coefficients that define the time-dependence...
             _minus_if = lambda b, x : [ minus ] + x if b else  x 
-            coef = { 'cosh' : lambda ai,aj,CP : ( Norm  if ai.CP == aj.CP else Product("Re_%s_%s_cosh", [ Norm, CP['C'] ] )
+            coef = { 'cosh' : lambda ai,aj,CP : ( Norm  if ai.CP == aj.CP else Product("Re_%s_%s_cosh"%(ai,aj), [ Norm, CP['C'] ] )
                                                 , None )
                    , 'cos'  : lambda ai,aj,CP : ( Product('Re_%s_%s_cos'%(ai,aj), [tag, Norm ] + ( [ CP['C'] ] if ai.CP == aj.CP else [ ] )  )
                                                 , None )
