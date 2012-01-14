@@ -364,6 +364,7 @@ class RealVar (RooObject):
     # TODO: provide a copy constructor
     def __init__(self,Name ,**kwargs):
         if 'name' in kwargs : raise RuntimeError('Please replace name argument with Name = xyz' )
+        blindName = '__' + Name + '__' if 'Blind' in kwargs else Name
         if Name not in self.ws():
             # construct factory string on the fly...
             if 'Value'  not in kwargs  and 'MinMax' not in kwargs and 'Formula' not in kwargs:
@@ -371,28 +372,31 @@ class RealVar (RooObject):
             if 'Formula' not in kwargs :
                 if 'Value' not in kwargs:
                     (mi,ma) = kwargs.pop('MinMax')
-                    self._declare("%s[%s,%s]"%(Name,mi,ma))
+                    self._declare("%s[%s,%s]"%(blindName,mi,ma))
                 elif 'MinMax' not in kwargs:
-                    self._declare("%s[%s]"%(Name,kwargs.pop('Value')))
+                    self._declare("%s[%s]"%(blindName,kwargs.pop('Value')))
                 else:
                     (mi,ma) = kwargs.pop('MinMax')
                     val = kwargs.pop('Value')
                     if val < mi or val > ma : raise RuntimeError('Specified Value %s not contained in MinMax (%s,%s)' % ( val,mi,ma))
-                    self._declare("%s[%s,%s,%s]"%(Name,val,mi,ma))
+                    self._declare("%s[%s,%s,%s]"%(blindName,val,mi,ma))
             else :
                 assert 'Value' not in kwargs
                 (formula, args, dset) = kwargs.pop('Formula')
                 fname = '_%s__formula'%Name
                 dummy  = self._declare("expr::%s('%s',{%s})"%(fname,formula,','.join(i.GetName() for i in args) ) )
-                self._declare("dataobs::%s(%s,%s)"%(Name,dset.GetName(),dummy.GetName()))
+                self._declare("dataobs::%s(%s,%s)"%(blindName, dset.GetName(), dummy.GetName()))
 
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
                 _type = b[0] if type(b[0])==str else b[0].__name__ 
                 _bs   = b[1]
                 _args = b[2:]
-                self._declare("%s::%s_blind('%s',%s,%s)"%(_type,Name,_bs,','.join('%s'%i for i in _args),Name))
-            self._init(Name,'RooRealVar')
+                self._declare("%s::%s('%s',%s,%s)"%(_type,Name,_bs,','.join('%s'%i for i in _args),blindName))
+                self._init(Name,_type if _type.startswith('Roo') else 'Roo' + _type)
+            else :
+                self._init(Name,'RooRealVar')
+
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
             self._init(Name,'RooRealVar')
@@ -873,15 +877,17 @@ class BinnedPdf( Pdf ) :
             from ROOT import TObjArray
             wsListArray = TObjArray()
             wsListArray.SetName(listArrayName)
+            self.ws().put(wsListArray)
 
             # create coefficient lists
-            from ROOT import RooArgList
+            from ROOT import RooArgList, RooWorkspace
+            wsImport = getattr( RooWorkspace, 'import' )
             for varNum, coefList in enumerate( kwargs.pop('Coefficients') ):
                 listName = Name + '_coefList%d' % varNum
                 wsList = RooArgList(listName)
                 for coef in coefList : wsList.add( self.ws().arg( str(coef) ) )
-                wsListArray.Add(wsList)
-
+                wsImport( self.ws(), wsList, listName, 0 )
+                self.ws().obj(listArrayName).Add( self.ws().obj(listName) )
             self.ws().put(wsListArray)
             self._declare( "BinnedPdf::%(Name)s( %(cats)s, %(coefs)s, %(ignore)s )" % argDict )
         # continuous variable(s) dependence
@@ -985,7 +991,7 @@ class Component(object):
         y = None
         if len(args) == 1 and type(args[0]) == RealVar:
             y = args[0]
-        elif len(args) == 3:
+        else :
             n, nlo, nhi = args
             assert n>=nlo
             assert n<=nhi
