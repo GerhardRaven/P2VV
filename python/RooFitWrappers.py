@@ -22,26 +22,26 @@ RooAbsData.table = __wrap__dref_var__( RooAbsData.table )
 class RooObject(object) :
     _ws = None
     _setters = {'Title'      : lambda s,v : s.SetTitle(v)
-               ,'Observable' : lambda s,v : s.setObservable(v) 
+               ,'Observable' : lambda s,v : s.setObservable(v)
                }
     _getters = {'Name'       : lambda s : s.GetName()
                ,'Title'      : lambda s : s.GetTitle()
                ,'Value'      : lambda s : s.getVal()
                ,'Type'       : lambda s : s.Type()
-               ,'Observable' : lambda s : s.observable() 
-               ,'Constant'   : lambda s : s.isConstant() 
+               ,'Observable' : lambda s : s.observable()
+               ,'Constant'   : lambda s : s.isConstant()
                }
     def _factory(self,spec) :
         return self.ws().factory(spec)
-        
+
     def __setitem__(self,k,v):
         from itertools import ifilter, imap
-        for setters in imap( lambda x: x._setters, ifilter( lambda x : hasattr(x,'_setters'), type(self).__mro__) ): 
+        for setters in imap( lambda x: x._setters, ifilter( lambda x : hasattr(x,'_setters'), type(self).__mro__) ) :
             if k in setters :  return setters[k](self,v )
         raise KeyError('\'%s\' is not known for class %s' % (k, type(self) ) )
     def __getitem__(self,k):
         from itertools import ifilter, imap
-        for getters in imap( lambda x: x._getters, ifilter( lambda x : hasattr(x,'_getters'), type(self).__mro__) ): 
+        for getters in imap( lambda x: x._getters, ifilter( lambda x : hasattr(x,'_getters'), type(self).__mro__) ) :
             if k in getters :  return getters[k](self)
         raise KeyError('\'%s\' is not known for class %s' % (k, type(self) ) )
 
@@ -52,7 +52,7 @@ class RooObject(object) :
             if type(workspace) != RooWorkspace : workspace = RooWorkspace(workspace)
             self.setWorkspace(workspace)
 
-    def ws(self) : 
+    def ws(self) :
         if not RooObject._ws : raise RuntimeError('No workspace defined!')
         return RooObject._ws
 
@@ -62,7 +62,7 @@ class RooObject(object) :
         if not hasattr(ws, '_rooobject') : ws._rooobjects  = {} # name -> rooobject
         if not hasattr(ws, '_mappings') :  ws._mappings    = {}
         if not hasattr(ws, '_spec') :      ws._spec        = {} # factory string -> object
-        
+
     def _rooobject(self,Name) :
         if type(Name)!=str : Name = Name.GetName()
         return self.ws()._rooobject[Name]
@@ -74,41 +74,41 @@ class RooObject(object) :
             self.ws()._objects[o.GetName()] = o
         else:
             raise TypeError, "Adding the same object twice should not happen! %s" % o.GetName()
-        
+
     def _declare(self,spec):
         """
         create the underlying C++ object in the workspace
         """
         # canonicalize 'spec' a bit by getting rid of spaces
         spec = spec.strip()
-        # TODO: Wouter promised to add a method that, given the factory 'spec' above returns 
+        # TODO: Wouter promised to add a method that, given the factory 'spec' above returns
         #       the value of 'factory_tag' which is used internally in the conflict resolution
         #       and which is the 'canonical' recipe to build an object
         #       That way, we can improve the check for re-use, as currently it _is_ possible
         #       to get collisions, as two different 'spec' may end up trying to build the same object
         #       where 'same' is defined as having the same name.
-        #       For now, we deal with this by raising an exception when the factory call encounters 
+        #       For now, we deal with this by raising an exception when the factory call encounters
         #       a conflict.
-        if spec not in self.ws()._spec : 
+        if spec not in self.ws()._spec :
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
-            if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec) 
-            #  
+            if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec)
+            #
             # Keep the PyROOT objects in a container so they don't get garbage
             # collected.
             # Note: use explicit GetName, not str, as x is a 'bare' PyROOT object!!!
             self._addObject(x)
-            # and keep track what we made 
+            # and keep track what we made
             self.ws()._spec[ spec ] = x
         else :
-            x = self.ws()._spec[ spec ] 
+            x = self.ws()._spec[ spec ]
             # print 'INFO: spec not unique, returning pre-existing object: %s -> %s' %( spec, x.GetName() )
         return x
 
     def _init(self,name,type_) :
         """
         match ourselves to the underlying C++ object in the workspace
-        This is done by assigning _var 
+        This is done by assigning _var
         """
         # If the object was mapped to something from the dataset, put the right
         # variable behind it.
@@ -117,13 +117,13 @@ class RooObject(object) :
 
         # Get the right object from our own cache, KeyError is raised correctly.
         x = self.ws()._objects[name]
-        if not x.InheritsFrom(type_): 
+        if not x.InheritsFrom(type_) :
             raise KeyError('%s is %s, not %s' % (name, x.ClassName(), type_))
         self._var = x
         self.ws()._rooobjects[x.GetName()] = self
 
     def __getattr__(self, name):
-        return getattr(self._target_(), name)      
+        return getattr(self._target_(), name)
 
     def _target_(self) :
         return self._var
@@ -156,9 +156,9 @@ class RooObject(object) :
         _t = self._dict['Type']
         return _t if type(_t)==str else _t.__name__
 
-        
+
     ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
-    def observable(self) : 
+    def observable(self) :
         return self._var.getAttribute('Observable')
     def setObservable(self, observable) :
         from ROOT import RooAbsLValue
@@ -194,11 +194,11 @@ class ArgSet(RooObject) :
 
 
 
-class Category (RooObject): 
-    _getters = {'Index'      : lambda s : s.getIndex() 
+class Category (RooObject) :
+    _getters = {'Index'      : lambda s : s.getIndex()
                ,'Label'      : lambda s : s.getLabel()
                ,'States'     : lambda s : s.states()
-               } 
+               }
     _setters = {'Index'      : lambda s,v : s.setIndex(v)
                ,'Label'      : lambda s,v : s.setLabel(v)
                ,'Constant'   : lambda s,v : s.setConstant(v)
@@ -220,7 +220,7 @@ class Category (RooObject):
         self._init(Name,'RooCategory')
         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-            
+
     def states(self):
         return self._states
 
@@ -237,7 +237,7 @@ class MappedCategory( Category ) :
             # construct factory string on the fly: no factory string for MappedCategory???
             from ROOT import RooMappedCategory
             obj =  RooMappedCategory(Name,Name,__dref__(cat) )
-            for k,vs in mapper.iteritems() : 
+            for k,vs in mapper.iteritems() :
                 for v in vs : obj.map( v, k )
             self._addObject(obj)
             self._init(Name,'RooMappedCategory')
@@ -255,11 +255,11 @@ class MappedCategory( Category ) :
 
 class Product(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
-        spec =  "prod::%s(%s)"%(Name,','.join(i['Name'] for i in fargs)) 
+        spec =  "prod::%s(%s)"%(Name,','.join(i['Name'] for i in fargs))
         self._declare( spec )
         self._init(Name,'RooProduct')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-            
+
 
 class Addition(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
@@ -268,19 +268,19 @@ class Addition(RooObject) :
         self._init(Name,'RooAddition')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-class FormulaVar (RooObject): 
+class FormulaVar (RooObject) :
     _getters = {'Formula'    : lambda s : s.formula()
                ,'Dependents' : lambda s : s.dependents()
                ,'Value'      : lambda s : s.getVal()
                }
     def __init__(self, Name, formula, fargs, **kwargs):
         # construct factory string on the fly...
-        spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs)) 
+        spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs))
         self._declare(spec)
         self._init(Name, 'RooFormulaVar')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-class ConstVar (RooObject): 
+class ConstVar (RooObject) :
     def __init__(self,**kwargs):
          # construct factory string on the fly...
          __check_req_kw__( 'Value', kwargs )
@@ -289,10 +289,10 @@ class ConstVar (RooObject):
          (Name,value) = (kwargs.pop('Name'),kwargs.pop('Value'))
          self._init(Name,'RooConstVar')
          for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        
-class P2VVAngleBasis (RooObject) : 
-    # TODO: move 'c' out of this class (and into an explicit product), 
-    #       which will allow more re-use of existing objects, and hence 
+
+class P2VVAngleBasis (RooObject) :
+    # TODO: move 'c' out of this class (and into an explicit product),
+    #       which will allow more re-use of existing objects, and hence
     #       make things faster
     def __init__(self, angles, ind,c=1,ind2 = None) :
         assert c!=0
@@ -306,17 +306,17 @@ class P2VVAngleBasis (RooObject) :
         spec += "%d,%d,%d,%d, " % ind
         if ind2 : spec += "%d,%d,%d,%d, " % ind2
         spec += " %f)"% c
-        #NOTE: this requires libP2VV.so to be loaded 
+        #NOTE: this requires libP2VV.so to be loaded
         from P2VVLoad import P2VVLibrary
         self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
- 
+
 
 class AbsRealMoment( object ):
     def __init__( self, moment )  : self._var = moment
-    def __getattr__( self, name ) : return getattr(self._var, name)      
+    def __getattr__( self, name ) : return getattr(self._var, name)
     def GetName( self )           : return self.basisFunc().GetName()
- 
+
 class RealMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm ) :
         # get arguments
@@ -326,7 +326,7 @@ class RealMoment( AbsRealMoment ):
         from P2VVLoad import P2VVLibrary
         from ROOT import RooRealMoment
         AbsRealMoment.__init__( self, RooRealMoment( __dref__(self._basisFunc), self._norm ) )
-          
+
 class RealEffMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm, PDF, NormSet ) :
         # get arguments
@@ -345,16 +345,16 @@ class RealEffMoment( AbsRealMoment ):
         AbsRealMoment.__init__( self, RooRealEffMoment( __dref__(self._basisFunc), self._norm, __dref__(self._pdf), self._rooNormSet ) )
 
 
-class RealVar (RooObject): 
+class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...
     # TODO: provide scaffolding in RooObject to extend getters & setters on a class-by-class basis
-    _getters = {'Unit'       : lambda s : s.getUnit() 
+    _getters = {'Unit'       : lambda s : s.getUnit()
                ,'Value'      : lambda s : s.getVal()
                ,'MinMax'     : lambda s : s.getRange()
                ,'nBins'      : lambda s : s.getBins()
                }
-    _setters = {'Unit'       : lambda s,v : s.setUnit(v) 
+    _setters = {'Unit'       : lambda s,v : s.setUnit(v)
                ,'Value'      : lambda s,v : s.setVal(v)
                ,'MinMax'     : lambda s,v : s.setRange(v)
                ,'Constant'   : lambda s,v : s.setConstant(v)
@@ -389,7 +389,7 @@ class RealVar (RooObject):
 
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
-                _type = b[0] if type(b[0])==str else b[0].__name__ 
+                _type = b[0] if type(b[0])==str else b[0].__name__
                 _bs   = b[1]
                 _args = b[2:]
                 self._declare("%s::%s('%s',%s,%s)"%(_type,Name,_bs,','.join('%s'%i for i in _args),blindName))
@@ -406,7 +406,7 @@ class RealVar (RooObject):
                 # DataSet in the mean time
                 if k == 'Value': continue
                 assert v == self[k], '\'%s\' is not the same for %s' % ( k, Name )
-            
+
     # overrule RooRealVar.setRange
     @wraps(RooRealVar.setRange)
     def setRange(self, *args):
@@ -460,7 +460,7 @@ class Pdf(RooObject):
 
     def _get(self, name):
         return getattr(self._target_(), '_' + name.lower())
-    
+
     def __getitem__(self, k):
         if hasattr(self, '_dict') and self._dict and k in self._dict:
             return self._dict[k]
@@ -504,10 +504,10 @@ class Pdf(RooObject):
         if not hasattr(self,'_conditionals') : return set()
         return set( i for i in self.Observables() if i.GetName() in self._conditionals )
     def setConditionalObservables(self, obs ) :
-        # TODO: check if we have a conditional request for something which isn't one of 
+        # TODO: check if we have a conditional request for something which isn't one of
         #       our observables and provide a warning...
         self._conditionals = set( o if type(o)==str else o.GetName() for o in obs )
-        
+
 
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
@@ -531,12 +531,9 @@ class Pdf(RooObject):
         return self._var.plotOn( frame, **kwargs )
 
     def __rmul__(self, eff):
-        good = False
-        for t in [FormulaVar, HistFunc, BinnedPdf]:
-            if isinstance(eff, t):
-                good = True
-                break
-        if not good:
+        if not any( map( lambda _type : isinstance( eff, _type )
+                       , [ FormulaVar, HistFunc, BinnedPdf ]
+                       ) ) :
             raise RuntimeError, 'trying to multiply a %s with %s; this is not supported!' % (type(self), type(eff))
         name = eff.GetName() + '_X_' + self['Name']
         return EffProd(name, Original = self, Efficiency = eff)
@@ -548,7 +545,7 @@ class ProdPdf(Pdf):
                      }
         self._make_pdf()
         del self._dict
-        
+
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
@@ -569,7 +566,7 @@ class ProdPdf(Pdf):
         def _handleConditional( pdf ) :
             name = pdf.GetName()
             cond = pdf.ConditionalObservables()
-            if cond : 
+            if cond :
                 # first define a named set for our conditionals, as the
                 # parsing of this is utterly borken in case we try PROD::name( f | { x,y }, g )
                 # as it interprets this as f|x ,y, g due to not recognizing the closing } as
@@ -599,7 +596,7 @@ class SumPdf(Pdf):
         # self._dict['Name'] = self._separator().join([p.GetName() for p in pdfs])
         self._make_pdf()
         del self._dict
-        
+
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
@@ -629,7 +626,7 @@ class SumPdf(Pdf):
 
 class SimultaneousPdf(Pdf):
     def __init__(self, Name, **kwargs):
-        d = { 'Name' : Name 
+        d = { 'Name' : Name
             , 'States' : kwargs.pop('States')
             , 'Cat' : kwargs.pop('SplitCategory')['Name']
             }
@@ -683,7 +680,7 @@ class RealSumPdf( Pdf ):
 class HistPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
-        d = { 'Name' : Name 
+        d = { 'Name' : Name
             , 'Observables' : list(kwargs.pop('Observables') )
             , 'Data' : kwargs.pop('Data')
             }
@@ -701,13 +698,13 @@ class HistPdf( Pdf ) :
         self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name  )  )
         self._init(Name,'RooHistPdf')
         Pdf.__init__(self , Name = Name , Type = 'RooHistPdf')
-        for o,n in nbins.iteritems() : o.setBins(n) 
+        for o,n in nbins.iteritems() : o.setBins(n)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class EditPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
-        d = { 'Name' : Name 
+        d = { 'Name' : Name
             , 'Original' : kwargs.pop('Original')
             , 'Rules' : kwargs.pop('Rules')
             }
@@ -721,10 +718,10 @@ class EditPdf( Pdf ) :
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class HistFunc(RooObject):
-    _getters = {'Histogram'   : lambda s: s.dataHist() 
+    _getters = {'Histogram'   : lambda s: s.dataHist()
                ,'Value'       : lambda s: s.getVal()
                ,'Observables' : lambda s: s.getDependents()
-               } 
+               }
     def __init__(self, Name, **kwargs):
         __check_req_kw__( 'Histogram', kwargs )
         __check_req_kw__( 'Observables', kwargs )
@@ -739,11 +736,11 @@ class HistFunc(RooObject):
         self._declare('RooHistFunc::%s({%s}, %s)' % (Name, ','.join([o.GetName() for o in kwargs.pop('Observables')]), _dn))
         self._init(Name, 'RooHistFunc')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        
+
 class EffProd(Pdf):
     def _make_pdf(self) : pass
     def __init__(self, Name, **kwargs):
-        d = { 'Name' : Name 
+        d = { 'Name' : Name
             , 'Original' : kwargs.pop('Original')
             , 'Efficiency' : kwargs.pop('Efficiency')
             }
@@ -768,7 +765,7 @@ class EffProd(Pdf):
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
-        d = { 'Name' : Name 
+        d = { 'Name' : Name
             , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
             , 'Formula' : kwargs.pop('Formula')
             }
@@ -781,7 +778,7 @@ class GenericPdf( Pdf ) :
 class UniformPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
-        d = { 'Name' : Name 
+        d = { 'Name' : Name
             , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
             }
         # construct factory string on the fly...
@@ -810,8 +807,8 @@ class BDecay( Pdf ) :
                                           " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
         self._init(Name,'RooBDecay')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-            
- 
+
+
 class BTagDecay( Pdf ) :
     def _make_pdf(self) : pass
     def __init__( self, Name, **kwargs ) :
@@ -969,7 +966,7 @@ class ResolutionModel(RooObject):
 
     def _get(self, name):
         return getattr(self,'_' + name.lower())
-            
+
 
 class AddModel(ResolutionModel) :
     def __init__(self,name,models,fractions,**kwargs) :
@@ -977,7 +974,6 @@ class AddModel(ResolutionModel) :
         self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
         self._init(name,'RooAddModel')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-            
 
 
 class Component(object):
@@ -1013,14 +1009,14 @@ class Component(object):
         return self
     def append(self,pdf ) :
         if hasattr(pdf,'iteritems'):
-            for obs,pdf in pdf.iteritems() : 
+            for obs,pdf in pdf.iteritems() :
                 self[obs] = pdf
         else :
             if not hasattr(pdf,'__iter__') : pdf = (pdf,)
             for p in pdf :
-                obs = ( o for o in p.Observables() if o not in p.ConditionalObservables() ) 
+                obs = ( o for o in p.Observables() if o not in p.ConditionalObservables() )
                 self[ obs ] = p
-        
+
     def __setitem__(self, observable, pdf) :
         from ROOT import RooAbsCategory
         #TODO: Need to deal with fact the categories have iterators
@@ -1037,7 +1033,7 @@ class Component(object):
         for i in  Component._d[self.name].iterkeys() :
             if type(i) != frozenset : continue # not an observable, but either name or yield
             for j in i : present.add(j)
-                
+
         if not k.isdisjoint(present) : raise KeyError('sets are not disjoint, overlap: %s' % k.intersection(present))
         # TODO: check whether observable exists in the workspace...
         # TODO: and check it has its observable flag set
@@ -1060,12 +1056,12 @@ class Component(object):
     def __getitem__(self,k) :
         # TODO: if we return one a-priori build PDF, rename it properly??
         d = Component._d[self.name]
-        
+
         # Catch yields and name here
         if type(k)==str and k in d : return d[k]
 
         if type(k) != frozenset : k = frozenset(k)
-        if k not in d: 
+        if k not in d :
             # try to build product -- note that d.keys() are non-overlapping by requirement
             # first, find the entry with the largest overlap, which is a subset (otherwise we'd have to marginalize)
             terms = []
@@ -1076,7 +1072,7 @@ class Component(object):
                 (kmax,mo) = max(((i,overlap(i)) for i in d.iterkeys()), key = itemgetter(1))
                 if not mo : break # no overlap left...
                 terms.append(kmax)
-                nk = nk - kmax 
+                nk = nk - kmax
             if nk : raise IndexError('could not construct matching product -- no PDF for observables: %s' % [i for i in nk ])
             nk = frozenset.union(*terms)
             pdfs = [self[i] for i in terms if type(self[i])!=type(None)]
@@ -1146,4 +1142,4 @@ def buildSimultaneousPdf(Components, Observables, Spec, Name) :
     ## return states
     return SimultaneousPdf(Name, SplitCategory = split_cat, States = states)
 
-                                 
+
