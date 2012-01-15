@@ -267,7 +267,13 @@ class Product(RooObject) :
 class Addition(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
         # construct factory string on the fly...
-        self._declare("sum::%s(%s)"%(Name,','.join(i.GetName() for i in fargs)) )
+        def cn( x ) :
+            try :
+                return x.GetName()
+            except :
+                (a,b) = x
+                return '%s*%s' % ( a.GetName(),b.GetName() )
+        self._declare( "sum::%s(%s)" % ( Name,','.join( cs(i) for i in fargs ) ) )
         self._init(Name,'RooAddition')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
