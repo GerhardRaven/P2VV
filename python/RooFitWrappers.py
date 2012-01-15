@@ -538,7 +538,7 @@ class Pdf(RooObject):
                 break
         if not good:
             raise RuntimeError, 'trying to multiply a %s with %s; this is not supported!' % (type(self), type(eff))
-        name = eff.GetName() + '_X_' + self['Name']
+        name = eff.GetName() + '_X_' + self.GetName()
         return EffProd(name, Original = self, Efficiency = eff)
 
 class ProdPdf(Pdf):
