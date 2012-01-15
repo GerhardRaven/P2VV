@@ -460,7 +460,8 @@ class RealMomentsBuilder ( dict ) :
             self._basisFuncNames.append(momName)
             if momIndices : self._basisFuncIndices[momName] = momIndices
             else :          self._basisFuncIndices[momName] = None
-            self._basisFuncs[momName] = func
+            if func : assert func == moment.basisFunc()
+            self._basisFuncs[momName] = moment.basisFunc()
             self[momName] = moment
 
     def compute( self, data ) :
