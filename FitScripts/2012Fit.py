@@ -11,7 +11,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Save = True
               , Verbose = False
               , Optimize = False
-              , Minimizer = ('Minuit2','minimize')
+#              , Minimizer = ('Minuit2','minimize')
               )
 
 # define observables
@@ -55,17 +55,21 @@ data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitt
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
-                 , Rename = 'DecayTree_Renamed'
+                 , Rename = 'Data_DecayTree'
                  )
 
-#TODO: Fix bug: When Rename is on, data = nil, but the dataset is imported in the ws anyway, so this is quick fix:
-data = obj.ws().data('DecayTree_Renamed')
+#TODO: Fix bug: When Rename is on, data = nil, but the dataset is imported in the ws anyway, so this is a quick fix:
+data = obj.ws().data('Data_DecayTree')
 
 print 'Number of events', data.numEntries()
 print 'Number of events', MCdata.numEntries()
 
 data.table(iTag_os).Print('v')
 data.table(iTag_ss).Print('v')
+
+#####################
+#Use this formalism later for adding the SS tagger
+####################
 
 ## # Make SuperCategory from (iTag_os and iTag_ss)
 ## TypeCat = SuperCategory('TypeCat',[biased,unbiased])
@@ -100,7 +104,6 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 #Data
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
-
 externalConstraints = list()
 externalConstraints += tresdata.ExternalConstraints()
 
@@ -111,7 +114,10 @@ tres.setConstant('.*')
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                       , deltaGamma = 0.060
+                                       , deltaGamma = dict( Name = 'dGamma'
+                                                            , Value = 0.060
+                                                            , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+                                                            )
                                        , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
                                        )
 externalConstraints += lifetimeParams.ExternalConstraints()
@@ -126,18 +132,32 @@ externalConstraints += tagging.ExternalConstraints()
 #eta_os_pdf = UniformPdf( Name = 'eta__os_pdf', Arguments = (eta_os,) )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False )
+CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
+                                              , Value = -0.04
+                                              , MinMax = (-pi,pi)
+                                              #Can't have kwarg Constant when blinded???
+                                              #, Constant = False
+                                              , Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
                          , lambdaCPSq = dict( Value = 1., Constant = True )
                         )
 
-# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
-amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
-                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                          , AparPhase = 2.5
-                                          , f_S = dict( Value = 0.0, Constant = False )
-                                          , ASPhase = dict( Value = 0.0, Constant = False )
-                                          )
+# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
+#from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
+#amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
+#                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                          , AparPhase = 2.5
+#                                          , f_S = dict( Value = 0.0, Constant = False )
+#                                          , ASPhase = dict( Value = 0.0, Constant = False )
+#                                          )
+
+# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
+from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
+amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
+                                         , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                         , AparPhase = 2.5
+                                         , ASMag2 = dict( Value = 0.0, Constant = False )
+                                         , ASPhase = dict( Value = 0.0, Constant = False )
+                                         )
 
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
@@ -200,16 +220,53 @@ canomoms.compute(MCdata)
 canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 
 from itertools import chain
-momindices = indices(3,3)
-momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,3) for j0 in [1,-2]))
+#momindices = indices(3,3)
+momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
 
 eff = RealMomentsBuilder()
 eff.appendPYList( angles.angles, momindices, PDF = MCpdf, NormSet = nset)
 eff.compute(MCdata)
 eff.Print()
 
-#Reimplement the comparison between 10 canonical moments and the full series again to check?
+def calc_moments_from_series( c ) :
+    return { 'Re_ang_A0_A0'       :   4*( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
+           , 'Re_ang_Apar_Apar'   :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
+           , 'Re_ang_Aperp_Aperp' :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
+           , 'Im_ang_Apar_Aperp'  :   4*sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
+           , 'Re_ang_A0_Apar'     :   4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 - 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16384)
+           , 'Im_ang_A0_Aperp'    :  -4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16384)
+           , 'Re_ang_AS_AS'       :   2*(2*c[(0,0,0)]+sqrt(1./5)*c[(0,2,0)]-sqrt(3./5)*c[(0,2,2)])
+           , 'Re_ang_Apar_AS' :   12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)] - c[(2,2,-2)]/8 - c[(4,2,-2)]/64 - 5*pi*c[(6,2,-2)]/1024 -35*pi*c[(8,2,-2)]/16384)
+           , 'Im_ang_Aperp_AS'     :  -12*sqrt(2./5.)*pi/8 *( c[(0,2,1)] - c[(2,2,1)]/8 - c[(4,2,1)]/64 - 5*pi*c[(6,2,1)]/1024 -35*pi*c[(8,2,1)]/16384)
+           , 'Re_ang_A0_AS'       :   (2./3)*(4*sqrt(3)*c[(1,0,0)]+2*sqrt(3./5)*c[(1,2,0)]-6*sqrt(1./5)*c[(1,2,2)])
+           }
+
+def compare_methods (canomoments,moments): #compute the 'canonical' moments given the Fourier series
+    c = dict()
+    for m in moments :
+        c[ ( moments.basisFuncIndices()[m][0],moments.basisFuncIndices()[m][1],moments.basisFuncIndices()[m][2] ) ] = moments.coefficients()[m][0]
+    xi_c = calc_moments_from_series( c )
+    
+    for name in xi_c.iterkeys() :
+        print '%s : direct moment: %s ;  from Fourier series: %s ; ratio = %s ' % ( name, canomoments.coefficients()[name][0], xi_c[name], canomoments.coefficients()[name][0]/xi_c[name])    
+
+compare_methods(canomoms,eff)
+
+#Build Angular acceptance corrected PDF
 sig_t_angles = eff * sig_t_angles
+
+##############################
+### Proper time acceptance ###
+##############################
+a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2))
+c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2))
+eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
+
+from P2VVBinningBuilders import build1DVerticalBinning
+binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
+
+acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
+#sig_t_angles = acceptance * sig_t_angles
 
 ##################
 ### Build PDFs ###
@@ -257,7 +314,8 @@ else :
 
 bkgpdf = buildPdf((background,), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name = 'bkgpdf')
 
-#bkgpdf.fitTo(sidebanddata,**fitOpts)
+#bkgresult = bkgpdf.fitTo(sidebanddata,**fitOpts)
+#bkgresult .writepars('bkgresult',False)
 
 ############
 # SIG ONLY #
@@ -270,12 +328,15 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 #sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....
 sigpdf = buildPdf((signal,), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
 
-for i in ['ASPhase','f_S'] :
-    amplitudes[i].setVal(0.01)
-    #amplitudes[i].setConstant(False)
+#for i in ['ASPhase','f_S'] :
+for i in ['ASPhase','ASMag2'] :
+    amplitudes[i].setVal(0.)
+    amplitudes[i].setConstant(True)
 
-#sigpdf.fitTo(sigdata,**fitOpts)
+sigresult = sigpdf.fitTo(sigdata,**fitOpts)
+sigresult.writepars('classicfitresult_As2Free_NoAngAcc_NoTimeAcc',False)
 
+assert False
 #############
 # MASS ONLY #
 #############
@@ -292,12 +353,14 @@ pdf.Print()
 ###################
 ### CLASSIC FIT ###
 ###################
-for i in ['ASPhase','f_S'] :
-    amplitudes[i].setVal(0.01)
-    #amplitudes[i].setConstant(False)
+#for i in ['ASPhase','f_S'] :
+for i in ['ASPhase','ASMag2'] :
+    amplitudes[i].setVal(0.0)
+    amplitudes[i].setConstant(False)
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
+#classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
+#classicfitresult.writepars('classicfitresult',False)
 
 ############
 ### SFIT ###
@@ -306,10 +369,6 @@ for i in ['ASPhase','f_S'] :
 from P2VVGeneralUtils import SData, splot
 from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
-
-from ROOT import TCanvas
-#This works, but the titles are not right...
-#splotcanvas = splot(pdf, splot_m)
 
 S_sigdata = splot_m.data('signal')
 S_bkgdata = splot_m.data('bkg')
@@ -327,11 +386,10 @@ S_bkgdata = splot_m.data('bkg')
 
 sfitsignal = Component('sfitsignal', ( sig_t_angles, ), Yield = ( nsig, 0, 2.0*nsig) )
 sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
-#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
-sfitresult.writepars('sfitresult',False)
 
-assert False
+#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
+#sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
+#sfitresult.writepars('sfitresult',False)
 
 ################
 ### Blinding ###
@@ -351,11 +409,6 @@ if blinded:
     customizer.replaceArg( ws['phis'], ws['phis_blind'] )
 
 assert False
-
-
-
-
-
 
 ################
 # FROM GERHARD #
