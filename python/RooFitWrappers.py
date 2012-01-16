@@ -360,7 +360,7 @@ class RealEffMoment( AbsRealMoment ):
         self._normSet   = NormSet
 
         # build a RooFit normalisation set
-        normSet = self._pdf.ws().argSet( '.'.join( str(var) for var in self._normSet ) )
+        normSet = self._pdf.ws().argSet( ','.join( str(var) for var in self._normSet ) )
 
         # create efficiency moment
         from P2VVLoad import P2VVLibrary
