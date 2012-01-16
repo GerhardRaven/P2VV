@@ -88,7 +88,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                               )
 
         self._check_extraneous_kw( kwargs )
-        from RooFitWrappers import FormulaVar
+        from RooFitWrappers import FormulaVar,ConstVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__(  self
                                , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
