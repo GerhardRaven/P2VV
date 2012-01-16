@@ -65,12 +65,12 @@ class RooObject(object) :
 
     def _rooobject(self,Name) :
         if type(Name)!=str : Name = Name.GetName()
-        return self.ws()._rooobject[Name]
+        return self.ws()._rooobjects[Name]
 
     # WARNING: the object 'o' given to _addObject should NEVER be used again
     # instead, use the item returned by _addObject
     def _addObject(self, o):
-        if not self.ws()[o.GetName()]: self.ws().put(o)
+        if o.GetName() not in self.ws(): self.ws().put(o)
         o = self.ws()[o.GetName()]
         if o.GetName() not in self.ws()._objects:
             self.ws()._objects[o.GetName()] = o
@@ -150,9 +150,9 @@ class RooObject(object) :
         return self.GetName()
 
     def Observables(self) :
-        return set( self.ws()._rooobjects[i.GetName()] for i in self._var.getVariables() if i.getAttribute('Observable') )
+        return set( self._rooobject(i) for i in self._var.getVariables() if i.getAttribute('Observable') )
     def Parameters(self) :
-        return set( self.ws()._rooobjects[i.GetName()] for i in self._var.getVariables() if not i.getAttribute('Observable') )
+        return set( self._rooobject(i) for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
     ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
     def Type(self) :
@@ -181,6 +181,9 @@ class RooObject(object) :
 
 
 class ArgSet(RooObject) :
+    def _addObject(self,o) : 
+        if o.GetName() not in self.ws()._objects :
+            self.ws()._objects[o.GetName()] = o
     def _factory(self,spec):
         import re
         match = re.match('set::([^(]+)\(.*\)',spec)
