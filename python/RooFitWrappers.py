@@ -334,7 +334,9 @@ class P2VVAngleBasis (RooObject) :
 class AbsRealMoment( object ):
     def __init__( self, moment )  : self._var = moment
     def __getattr__( self, name ) : return getattr(self._var, name)
-    def GetName( self )           : return self.basisFunc().GetName()
+    def basisFunc( self )         : return self._basisFunc
+    def pdf( self )               : return self._pdf
+    def normSet( self )           : return self._normSet
 
 class RealMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm ) :
@@ -355,13 +357,12 @@ class RealEffMoment( AbsRealMoment ):
         self._normSet   = NormSet
 
         # build a RooFit normalisation set
-        from ROOT import RooArgSet
-        self._rooNormSet = RooArgSet( __dref__(var) for var in self._normSet )
+        normSet = self._pdf.ws().argSet( '.'.join( str(var) for var in self._normSet ) )
 
         # create efficiency moment
         from P2VVLoad import P2VVLibrary
         from ROOT import RooRealEffMoment
-        AbsRealMoment.__init__( self, RooRealEffMoment( __dref__(self._basisFunc), self._norm, __dref__(self._pdf), self._rooNormSet ) )
+        AbsRealMoment.__init__( self, RooRealEffMoment( __dref__(self._basisFunc), self._norm, __dref__(self._pdf), normSet ) )
 
 
 class RealVar (RooObject) :

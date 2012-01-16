@@ -88,7 +88,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                               )
 
         self._check_extraneous_kw( kwargs )
-        from RooFitWrappers import FormulaVar
+        from RooFitWrappers import FormulaVar, ConstVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__(  self
                                , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
@@ -455,7 +455,7 @@ def getTagCatParamsFromData( data, tagCats = [ ], avgEstWTag = 0.38, P0 = 0.38, 
 
     return tagCats
 
-class Linear_TaggingCategories( Independent_TaggingCategories ) :
+class Linear_TaggingCategories( TaggingCategories ) :
     def __init__( self, **kwargs ) :
         # get tagging category variable (or its name)
         tagCat = kwargs.pop( 'tagCat', 'tagCat' )

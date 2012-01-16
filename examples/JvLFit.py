@@ -320,27 +320,25 @@ else :
 
 if fitData :
     # fix values of some parameters
-    #lifetimeParams.setConstant('deltaM')
+    lifetimeParams.setConstant('deltaM')
     lambdaCP.setConstant('lambdaCPSq')
 
     for CEvenOdd in taggingParams['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
     taggingParams.setConstant('tagCatCoef.*')
-    #tagCats.setConstant('wTag.*')
+    tagCats.setConstant('wTag.*')
 
     amplitudes.setConstant('f_S|ASPhase')
 
-    #timeResModel.setConstant('timeResSF')
+    timeResModel.setConstant('timeResSF')
     backgroundTime.setConstant('.*')
     #signalBMass.setConstant('.*')
     #backgroundBMass.setConstant('.*')
 
     # fit data
     print 'JvLFit: fitting %d events' % data.numEntries()
-    print 'JvLFit: external constraints:'
-    for constrPdf in extConstraints : print '    %s' % constrPdf.GetName()
-    fitResult = pdf.fitTo( data, ExternalConstraints = extConstraints, NumCPU = 12, Timer = 1, Minos = False, Hesse = False, Save = True )
+    fitResult = pdf.fitTo( data, NumCPU = 12, Timer = 1, Minos = False, Hesse = False, Save = True, ExternalConstraints = extConstraints )
 
 
 ###########################################################################################################################################

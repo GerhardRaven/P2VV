@@ -29,6 +29,7 @@ public:
   virtual ~RooAbsRealMoment() {};
 
   const char* name() {return _name.c_str();}
+  const char* GetName() {return name();}
   RooAbsReal& basisFunc() {return _basisFunc;}
   Double_t norm() {return _norm;}
 
