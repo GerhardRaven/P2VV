@@ -34,8 +34,8 @@ AparMag2Val  =  0.23
 AparPhVal    =  pi - 3.3
 AperpMag2Val =  0.25
 AperpPhVal   =  3.0
-ASMag2Val    =  0.04
-ASPhVal      =  3.0
+ASMag2Val    =  0.
+ASPhVal      =  0.
 
 # CP violation parameters
 carthLambdaCP = False
@@ -43,8 +43,8 @@ phiCPVal      = -0.04
 lambdaCPSqVal = 1.
 
 # B lifetime parameters
-GammaVal        = 0.66
-dGammaVal       = 0.12
+GammaVal        = 0.679
+dGammaVal       = 0.06  # 0.12
 
 # asymmetries
 AProdVal = 0.
@@ -69,14 +69,17 @@ from RooFitWrappers import *
 # workspace
 ws = RooObject(workspace = 'ws')
 
+# fit parameter constraints
+extConstraints = [ ]
+
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
 angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 # variables in PDF (except for tagging category)
-time       = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.5, 14. ) )
-iTag       = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
-angles     = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
+time   = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.5, 14. ) )
+iTag   = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
+angles = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
 BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, Value = 5368., MinMax = ( 5200., 5550. ), nBins = 48
                        ,  Ranges =  {  'LeftSideBand'  : ( None,  5330. )
@@ -116,9 +119,10 @@ else :
     data = None
 
 from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
-tagCats = TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data )
+tagCats = TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data, wTagP0Constraint = True, wTagP1Constraint = True )
 tagCatP2VV = tagCats['tagCat']
 obsSetP2VV.append( tagCatP2VV )
+extConstraints += tagCats.externalConstraints()
 
 # tagging parameters
 numTagCats    = tagCats['numTagCats']
@@ -183,15 +187,18 @@ else :
 
 # B lifetime
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
-lifetimeParams = LifetimeParams(  Gamma = GammaVal
+lifetimeParams = LifetimeParams(  Gamma = dict(Value = GammaVal)
                                 , deltaGamma = dict(  Name = 'dGamma', Value = dGammaVal
                                                     , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                    )
+                                , deltaMConstraint = True
                                )
+extConstraints += lifetimeParams.externalConstraints()
 
 #from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
-timeResModel = TimeResolution( time = time )
+timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
+extConstraints += timeResModel.externalConstraints()
 
 # CP violation parameters
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
@@ -313,25 +320,27 @@ else :
 
 if fitData :
     # fix values of some parameters
-    lifetimeParams.setConstant('deltaM')
+    #lifetimeParams.setConstant('deltaM')
     lambdaCP.setConstant('lambdaCPSq')
 
     for CEvenOdd in taggingParams['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
     taggingParams.setConstant('tagCatCoef.*')
-    tagCats.setConstant('wTag.*')
+    #tagCats.setConstant('wTag.*')
 
-    amplitudes.setConstant('.*')
+    amplitudes.setConstant('f_S|ASPhase')
 
-    timeResModel.setConstant('timeResSF')
+    #timeResModel.setConstant('timeResSF')
     backgroundTime.setConstant('.*')
-    signalBMass.setConstant('.*')
-    backgroundBMass.setConstant('.*')
+    #signalBMass.setConstant('.*')
+    #backgroundBMass.setConstant('.*')
 
     # fit data
     print 'JvLFit: fitting %d events' % data.numEntries()
-    fitResult = pdf.fitTo( data, Minos = False, Hesse = False )  #, NumCPU = 12, Timer = 1, Save = True )
+    print 'JvLFit: external constraints:'
+    for constrPdf in extConstraints : print '    %s' % constrPdf.GetName()
+    fitResult = pdf.fitTo( data, ExternalConstraints = extConstraints, NumCPU = 12, Timer = 1, Minos = False, Hesse = False, Save = True )
 
 
 ###########################################################################################################################################

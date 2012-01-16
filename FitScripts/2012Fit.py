@@ -10,7 +10,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
               , Verbose = False
-              , Optimize = False
+              , Optimize = True
 #              , Minimizer = ('Minuit2','minimize')
               )
 
@@ -39,16 +39,7 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 
-#For MC dataset only
-bkgcat = Category( 'bkgcat',            Title = 'bkgcat',                 Observable = True, States = { 'bkgcat0': 0, 'bkgcat10': 10 } )
-
 from P2VVGeneralUtils import readData
-#Read MC data
-MCdata = readData('/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
-                  , dataSetName = 'DecayTree'
-                  , NTuple = True
-                  , observables = [ t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], iTag_os,eta_os, triggerdec,sel,bkgcat,mphi]
-                  )
 
 #Read data
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
@@ -61,8 +52,7 @@ data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitt
 #TODO: Fix bug: When Rename is on, data = nil, but the dataset is imported in the ws anyway, so this is a quick fix:
 #data = obj.ws().data('Data_DecayTree')
 
-print 'data: number of events', data.numEntries()
-print 'mc:   number of events', MCdata.numEntries()
+print 'Number of events', data.numEntries()
 
 data.table(iTag_os).Print('v')
 data.table(iTag_ss).Print('v')
@@ -103,14 +93,9 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 #Time Resolution Model
 #Data
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
-tresdata = DataTimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
+tresdata = DataTimeResolution( time = t, timeResSFConstraint = True ) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 externalConstraints = list()
-externalConstraints += tresdata.ExternalConstraints()
-
-#Time Resolution Model for MC
-from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
-tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
-tres.setConstant('.*')
+externalConstraints += tresdata.externalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
@@ -119,13 +104,14 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                                             , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
                                        , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
-                                       )
-externalConstraints += lifetimeParams.ExternalConstraints()
+                                       , deltaMConstraint = True
+                                      )
+externalConstraints += lifetimeParams.externalConstraints()
 
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
-tagging = TaggingParams( estWTag = eta_os ) # Constant = False, Constrain = True ) TODO!!!
-externalConstraints += tagging.ExternalConstraints()
+tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True ) # Constant = False, Constrain = True ) TODO!!!
+externalConstraints += tagging.externalConstraints()
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
@@ -142,22 +128,22 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-#from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
-#amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
-#                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                          , AparPhase = 2.5
-#                                          , f_S = dict( Value = 0.0, Constant = False )
-#                                          , ASPhase = dict( Value = 0.0, Constant = False )
-#                                          )
+from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
+amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
+                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                          , AparPhase = 2.5
+                                          , f_S = dict( Value = 0.0, Constant = False )
+                                          , ASPhase = dict( Value = 0.0, Constant = False )
+                                          )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
-amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
-                                         , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                         , AparPhase = 2.5
-                                         , ASMag2 = dict( Value = 0.0, Constant = False )
-                                         , ASPhase = dict( Value = 0.0, Constant = False )
-                                         )
+#from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
+#amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
+#                                         , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                         , AparPhase = 2.5
+#                                         , ASMag2 = dict( Value = 0.01, Constant = False )
+#                                         , ASPhase = dict( Value = 0.5, Constant = False )
+#                                         )
 
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
@@ -172,21 +158,6 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.mo
                        , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
                        , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
-
-from RooFitWrappers import BDecay
-MC_sig_t_angles = BDecay( Name      = 'MC_sig_t_angles'
-                          , time      = t
-                          , dm        = lifetimeParams['deltaM'] 
-                          , tau       = lifetimeParams['MeanLifetime']
-                          , dGamma    = lifetimeParams['deltaGamma'] 
-                          , resolutionModel = tres.model()
-                          , coshCoef  = basisCoefficients['cosh']
-                          , cosCoef   = basisCoefficients['cos']
-                          , sinhCoef  = basisCoefficients['sinh']
-                          , sinCoef   = basisCoefficients['sin']
-#                          , ConditionalObservables = ( eta_os, )
-#                          , ConditionalObservables = ( eta_os, iTag_os, )
-                          )
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , time      = t
@@ -205,55 +176,25 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 #####################################
 ### Angular acceptance correction ###
 #####################################
-MCpdf = MC_sig_t_angles
-
-print 'Number of MC events', MCdata.numEntries()
-allObs = MCpdf.getObservables( MCdata.get() )
-print 'MCobservables:', [ i.GetName() for i in allObs ]
-o = MCpdf.getObservables(MCdata.get() )
-
 from P2VVGeneralUtils import RealMomentsBuilder
-nset = angles.angles.values()
+#nset = angles.angles.values()
 
-canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
-canomoms.compute(MCdata)
-canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
+#canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
+#canomoms.compute(MCdata)
+#canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 
 from itertools import chain
 #momindices = indices(3,3)
 momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
 
 eff = RealMomentsBuilder()
-eff.appendPYList( angles.angles, momindices, PDF = MCpdf, NormSet = nset)
-eff.compute(MCdata)
+#Don't specify pdf and normset here, we're gonna read moments and not calculate any.
+eff.appendPYList( angles.angles, momindices)
+eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments.txt')
 eff.Print()
 
-def calc_moments_from_series( c ) :
-    return { 'Re_ang_A0_A0'       :   4*( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
-           , 'Re_ang_Apar_Apar'   :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
-           , 'Re_ang_Aperp_Aperp' :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
-           , 'Im_ang_Apar_Aperp'  :   4*sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
-           , 'Re_ang_A0_Apar'     :   4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 - 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16384)
-           , 'Im_ang_A0_Aperp'    :  -4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16384)
-           , 'Re_ang_AS_AS'       :   2*(2*c[(0,0,0)]+sqrt(1./5)*c[(0,2,0)]-sqrt(3./5)*c[(0,2,2)])
-           , 'Re_ang_Apar_AS' :   12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)] - c[(2,2,-2)]/8 - c[(4,2,-2)]/64 - 5*pi*c[(6,2,-2)]/1024 -35*pi*c[(8,2,-2)]/16384)
-           , 'Im_ang_Aperp_AS'     :  -12*sqrt(2./5.)*pi/8 *( c[(0,2,1)] - c[(2,2,1)]/8 - c[(4,2,1)]/64 - 5*pi*c[(6,2,1)]/1024 -35*pi*c[(8,2,1)]/16384)
-           , 'Re_ang_A0_AS'       :   (2./3)*(4*sqrt(3)*c[(1,0,0)]+2*sqrt(3./5)*c[(1,2,0)]-6*sqrt(1./5)*c[(1,2,2)])
-           }
-
-def compare_methods (canomoments,moments): #compute the 'canonical' moments given the Fourier series
-    c = dict()
-    for m in moments :
-        c[ ( moments.basisFuncIndices()[m][0],moments.basisFuncIndices()[m][1],moments.basisFuncIndices()[m][2] ) ] = moments.coefficients()[m][0]
-    xi_c = calc_moments_from_series( c )
-    
-    for name in xi_c.iterkeys() :
-        print '%s : direct moment: %s ;  from Fourier series: %s ; ratio = %s ' % ( name, canomoments.coefficients()[name][0], xi_c[name], canomoments.coefficients()[name][0]/xi_c[name])    
-
-compare_methods(canomoms,eff)
-
 #Build Angular acceptance corrected PDF
-sig_t_angles = eff * sig_t_angles
+#sig_t_angles = eff * sig_t_angles
 
 ##############################
 ### Proper time acceptance ###
@@ -266,6 +207,8 @@ from P2VVBinningBuilders import build1DVerticalBinning
 binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 
 acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
+
+#Build proper time acceptance corrected PDF
 #sig_t_angles = acceptance * sig_t_angles
 
 ##################
@@ -329,9 +272,14 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 sigpdf = buildPdf((signal,), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
 
 #for i in ['ASPhase','f_S'] :
-for i in ['ASPhase','ASMag2'] :
-    amplitudes[i].setVal(0.)
-    amplitudes[i].setConstant(True)
+#for i in ['ASPhase','ASMag2'] :
+#    amplitudes[i].setVal(0.0)
+#    amplitudes[i].setConstant(True)
+
+amplitudes['ASPhase'].setVal(2.5)
+amplitudes['ASPhase'].setConstant(False)
+amplitudes['f_S'].setVal(0.01)
+amplitudes['f_S'].setConstant(False)
 
 sigresult = sigpdf.fitTo(sigdata,**fitOpts)
 sigresult.writepars('classicfitresult_As2Free_NoAngAcc_NoTimeAcc',False)
@@ -359,7 +307,7 @@ for i in ['ASPhase','ASMag2'] :
     amplitudes[i].setConstant(False)
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
+#classicfitresult = pdf.fitTo(data,externalConstraints = externalConstraints, **fitOpts)
 #classicfitresult.writepars('classicfitresult',False)
 
 ############
@@ -388,27 +336,8 @@ sfitsignal = Component('sfitsignal', ( sig_t_angles, ), Yield = ( nsig, 0, 2.0*n
 sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
+#sfitresult = sfitpdf.fitTo(S_sigdata,externalConstraints = externalConstraints, **fitOpts)
 #sfitresult.writepars('sfitresult',False)
-
-################
-### Blinding ###
-################
-
-testblindvar = RealVar('test', Title = 'test',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 , Blind = ['UnblindUniform','Blindingstring',0.2])
-
-blinded = True
-if blinded:
-    tau = RealVar('sig_tau',Observable=False,Blinded=('UnblindUniform','blindingString', 1.),MinMax=(1,2) )
-    ws.factory("RooUnblindUniform::t_sig_dG_blind('BsRooBarbMoriond2012',0.02,t_sig_dG)")
-    ws.factory("RooUnblindUniform::phis_blind('BsCustardMoriond2012',0.3,phis)")    
-    
-    #calling RooCustomizer
-    customizer = RooCustomizer(pdfbeforeblinding,'blinded')
-    customizer.replaceArg( ws['t_sig_dG'], ws['t_sig_dG_blind'] )
-    customizer.replaceArg( ws['phis'], ws['phis_blind'] )
-
-assert False
 
 ################
 # FROM GERHARD #
