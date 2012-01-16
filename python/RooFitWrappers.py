@@ -764,9 +764,10 @@ class EffProd(Pdf):
             , 'Original' : kwargs.pop('Original')
             , 'Efficiency' : kwargs.pop('Efficiency')
             }
+        eff = d['Efficiency']
         if 'Type' in kwargs:
             d['Type'] = kwargs.pop('Type').__name__
-        elif type(__dref__(d['Efficiency'])).__name__.find('Hist') != -1:
+        elif str(type(__dref__(eff))).find('Hist') != -1 or type(eff) == BinnedPdf:
             d['Type'] = 'RooEffHistProd'
         else:
             d['Type'] = 'RooEffProd'

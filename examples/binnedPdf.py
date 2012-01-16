@@ -39,24 +39,24 @@ c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, -2))
 eff = FormulaVar('eff_shape', "(t > 0.) ? (1 / (1 + (a * t) ** (c))) : 0.0001", [t, a, c])
 
 from P2VVBinningBuilders import build1DVerticalBinning
-binning, eff_func = build1DVerticalBinning('binning', eff, t, 0.05, 1.)
+binning, eff_func = build1DVerticalBinning('binning', eff, t, dy, 1.)
 
 ## Use EffHistProd to generate events
 t_flat = UniformPdf('t_flat', Arguments = [t])
-pdf = eff_func * t_flat
+acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff,
+                       Binning = binning)
+pdf = acceptance * t_flat
 pdf.Print('t')
 
-data = pdf.generate([t], 10000)
+data = pdf.generate([t], 100000)
 
-from ROOT import RooBinnedPdf
-binned_pdf = RooBinnedPdf('binned_pdf', 'binned_pdf', t._target_(), "binning", eff._target_())
-result = binned_pdf.fitTo(data, Save = True, Minimizer = 'Minuit2')
+result = pdf.fitTo(data, Save = True, Minimizer = 'Minuit2')
 
 frame = t.frame()
 canvas = TCanvas('canvas', 'canvas', 1000, 500)
 canvas.Divide(2, 1)
 canvas.cd(1)
 data.plotOn(frame)
-binned_pdf.plotOn(frame)
+pdf.plotOn(frame)
 frame.Draw()
 

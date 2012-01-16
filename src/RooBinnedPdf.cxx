@@ -340,13 +340,102 @@ RooBinnedPdf::~RooBinnedPdf()
 }
 
 //_____________________________________________________________________________
-Double_t RooBinnedPdf::evaluate() const
+Int_t RooBinnedPdf::getMaxVal(const RooArgSet& vars) const 
 {
-  if (_function.absArg() != 0) {
-    return evaluateFunction();
-  } else {
-    return evaluateCoef();
-  }
+   // Only implemented 1 dimensional pdf for now.
+   if (vars.getSize() != 1) {
+      return 0;
+   }
+   RooAbsCollection* common = _baseVarsList.selectCommon(vars);
+   if (common->getSize()==_baseVarsList.getSize()) {
+      delete common;
+      return 1;
+   }
+   // delete common;
+   // common = _baseCatsList.selectCommon(vars);
+   // if (common->getSize()==_baseCatsList.getSize()) {
+   //    delete common;
+   //    return 1;
+   // }
+   return 0;
+}
+
+//_____________________________________________________________________________
+Double_t RooBinnedPdf::maxVal(Int_t code) const 
+{
+   // We only do the case of a 1D function
+   assert(code==1);
+   assert(_function.absArg() != 0);
+   
+   Double_t max = -1;
+   
+   Bool_t origState = inhibitDirty();
+   setDirtyInhibit(kTRUE);
+   
+   RooAbsRealLValue* lvar = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(0));
+   double original = lvar->getVal();
+
+   const RooAbsBinning* binning = lvar->getBinningPtr(_binningNames[0].Data());
+   for (Int_t i = 0; i < binning->numBins(); ++i) {
+      lvar->setVal(binning->binCenter(i));
+      // Get function value
+      Double_t value = _function.arg().getVal();
+      if (value > max) max = value;
+   }
+   lvar->setVal(original);
+
+   setDirtyInhibit(origState);	
+
+   return max * 1.05;
+}
+
+//_____________________________________________________________________________
+list<Double_t>* RooBinnedPdf::plotSamplingHint(RooAbsRealLValue& obs,
+                                               Double_t xlo, Double_t xhi) const
+{
+   // Return sampling hint for making curves of (projections) of this function
+   // as the recursive division strategy of RooCurve cannot deal efficiently
+   // with the vertical lines that occur in a non-interpolated histogram
+
+   if (!_function.absArg()) {
+      return 0;
+   }
+
+   // Check that observable is in dataset, if not no hint is generated
+   Int_t i = 0;
+   RooAbsLValue* lvar = 0;
+   for (; i < _baseVarsList.getSize(); ++i) {
+      RooAbsArg* var = _baseVarsList.at(i);
+      lvar = dynamic_cast<RooAbsLValue*>(var);
+      if (lvar && var->GetName() == obs.GetName()) {
+         break;
+      }
+   }
+   if (!lvar) {
+      return 0;
+   }
+
+   // Retrieve position of all bin boundaries
+   const RooAbsBinning* binning = lvar->getBinningPtr(_binningNames[i].Data());
+   Double_t* boundaries = binning->array();
+
+   list<Double_t>* hint = new list<Double_t>;
+
+   // Widen range slighty
+   xlo = xlo - 0.01 * (xhi - xlo);
+   xhi = xhi + 0.01 * (xhi - xlo);
+
+   Double_t delta = (xhi-xlo)*1e-8;
+ 
+   // Construct array with pairs of points positioned epsilon to the left and
+   // right of the bin boundaries
+   for (Int_t i = 0; i < binning->numBoundaries(); ++i) {
+      if (boundaries[i] >= xlo && boundaries[i] <= xhi) {
+         hint->push_back(boundaries[i] - delta);
+         hint->push_back(boundaries[i] + delta);
+      }
+   }
+   return hint;
 }
 
 //______________________________________________________________________________
@@ -359,7 +448,7 @@ std::list<Double_t>* RooBinnedPdf::binBoundaries
    
    // No boundaries can be supplied when there is no binning
    if (_binningNames.empty()) {
-      return 0 ;
+      return 0;
    }
    
    // Check that we have observable, if not no binning is returned
@@ -376,19 +465,28 @@ std::list<Double_t>* RooBinnedPdf::binBoundaries
    
    // Retrieve position of all bin boundaries
    const RooAbsBinning* binning = lvarg->getBinningPtr(_binningNames[i]);
-   Double_t* boundaries = binning->array() ;
+   Double_t* boundaries = binning->array();
    
-   std::list<Double_t>* hint = new list<Double_t> ;
+   std::list<Double_t>* bounds = new list<Double_t>;
    
    // Construct array with pairs of points positioned epsilon to the left and
    // right of the bin boundaries
-   for (Int_t i=0 ; i<binning->numBoundaries() ; i++) {
+   for (Int_t i=0; i<binning->numBoundaries(); i++) {
       if (boundaries[i]>=xlo && boundaries[i]<=xhi) {
-         hint->push_back(boundaries[i]) ;
+         bounds->push_back(boundaries[i]);
       }
    }
-   
-   return hint ;
+   return bounds;
+}
+
+//_____________________________________________________________________________
+Double_t RooBinnedPdf::evaluate() const
+{
+  if (_function.absArg() != 0) {
+    return evaluateFunction();
+  } else {
+    return evaluateCoef();
+  }
 }
 
 //_____________________________________________________________________________
@@ -419,7 +517,7 @@ Double_t RooBinnedPdf::evaluateFunction() const
     RooAbsRealLValue* var = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(i));
     var->setVal(originals[i]);
   }
-  setDirtyInhibit(origState) ;	
+  setDirtyInhibit(origState);	
   return value;
 }
 
