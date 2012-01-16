@@ -57,7 +57,6 @@ class WTag_TaggingParams( TaggingParams ) :
 
 class LinearEstWTag_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
-        from RooFitWrappers import FormulaVar,ConstVar, Pdf
         self._parseArg( 'estWTag',    kwargs, Title = 'Estimated wrong tag probability',         Value = 0.25,  MinMax = ( 0.,  0.5 ) )
         self._parseArg( 'p0',         kwargs, Title = 'p0  tagging parameter',                   Value = 0.384, MinMax = ( 0.,  0.5 ) )
         self._parseArg( 'p1',         kwargs, Title = 'p1  tagging parameter',                   Value = 1.037, MinMax = ( 0.8, 1.2 ) )
@@ -67,6 +66,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
 
         constraints = [ ]
         if kwargs.pop( 'p0Constraint', None ) :
+            from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p0
@@ -77,6 +77,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                               )
 
         if kwargs.pop( 'p1Constraint', None ) :
+            from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p1
@@ -87,6 +88,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                               )
 
         self._check_extraneous_kw( kwargs )
+        from RooFitWrappers import FormulaVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__(  self
                                , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
@@ -366,7 +368,7 @@ class WTagCatsCoefAsyms_TaggingParams( TaggingParams ) :
                                , CEvenOdds   = CEvenOdds
                               )
 
-class TaggingCategories( _util_parse_mixin ) :
+class TaggingCategories( _util_parse_mixin, _util_extConstraints_mixin ) :
     def __init__( self, **kwargs ) :
         # get tagging category variable
         self._numTagCats = kwargs.pop('NumTagCats')
@@ -380,6 +382,7 @@ class TaggingCategories( _util_parse_mixin ) :
         self._WTags       = kwargs.pop('WTags'      )
         self._AWTags      = kwargs.pop('AWTags'     )
 
+        _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw( kwargs )
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
@@ -462,11 +465,37 @@ class Linear_TaggingCategories( Independent_TaggingCategories ) :
             self._parseArg( 'estWTag', kwargs, Title = 'Estimated wrong tag probability', Value = 0.25, MinMax = ( 0., 0.5 ) )
 
         # get linear calibration parameters
-        self._parseArg( 'avgEstWTag', kwargs, Value = 0.38, ObjectType = 'ConstVar' )
-        self._parseArg( 'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.38, MinMax = (  0., 0.5 ) )
-        self._parseArg( 'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.,   MinMax = (  0., 2.  ) )
-        self._parseArg( 'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,   MinMax = ( -1., 1.  ) )
-        self._parseArg( 'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry', Value = 0.,   MinMax = ( -1., 1.  ) )
+        self._parseArg(  'avgEstWTag', kwargs, Value = 0.38, ObjectType = 'ConstVar' )
+        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.384, MinMax = (  0., 0.5 ) )
+        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.037, MinMax = (  0., 2.  ) )
+        self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
+                       , Constant = True )
+        self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
+                       , Constant = True )
+
+        # constrain calibration parameters
+        constraints = [ ]
+        if kwargs.pop( 'wTagP0Constraint', None ) :
+            from RooFitWrappers import Pdf, ConstVar
+            from ROOT import RooGaussian as Gaussian
+            constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._wTagP0
+                                                    , ConstVar( Name = 'wTagP0_mean',  Value = 0.384 )
+                                                    , ConstVar( Name = 'wTagP0_sigma', Value = 0.010 )
+                                                   ]
+                                   )
+                              )
+
+        if kwargs.pop( 'wTagP1Constraint', None ) :
+            from RooFitWrappers import Pdf, ConstVar
+            from ROOT import RooGaussian as Gaussian
+            constraints.append( Pdf(  Name = self._wTagP1.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._wTagP1
+                                                    , ConstVar( Name = 'wTagP1_mean',  Value = 1.037 )
+                                                    , ConstVar( Name = 'wTagP1_sigma', Value = 0.081 )
+                                                   ]
+                                   )
+                              )
 
         # get data set
         data = kwargs.pop( 'DataSet', None )
@@ -524,7 +553,9 @@ class Linear_TaggingCategories( Independent_TaggingCategories ) :
         # check for remaining arguments and initialize
         self._check_extraneous_kw( kwargs )
         TaggingCategories.__init__( self, NumTagCats = len(self._tagCats), tagCat = tagCat
-                                   , TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs, WTags = WTags, AWTags = AWTags )
+                                   , TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs, WTags = WTags, AWTags = AWTags
+                                   , Constraints = constraints
+                                  )
 
 
 class Trivial_Background_Tag( _util_parse_mixin ) :
