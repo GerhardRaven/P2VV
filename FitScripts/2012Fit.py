@@ -10,7 +10,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
               , Verbose = False
-              , Optimize = False
+              , Optimize = True
 #              , Minimizer = ('Minuit2','minimize')
               )
 
@@ -128,22 +128,22 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-#from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
-#amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
-#                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                          , AparPhase = 2.5
-#                                          , f_S = dict( Value = 0.0, Constant = False )
-#                                          , ASPhase = dict( Value = 0.0, Constant = False )
-#                                          )
+from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
+amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
+                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                          , AparPhase = 2.5
+                                          , f_S = dict( Value = 0.0, Constant = False )
+                                          , ASPhase = dict( Value = 0.0, Constant = False )
+                                          )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
-amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
-                                         , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                         , AparPhase = 2.5
-                                         , ASMag2 = dict( Value = 0.0, Constant = False )
-                                         , ASPhase = dict( Value = 0.0, Constant = False )
-                                         )
+#from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
+#amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
+#                                         , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                         , AparPhase = 2.5
+#                                         , ASMag2 = dict( Value = 0.01, Constant = False )
+#                                         , ASPhase = dict( Value = 0.5, Constant = False )
+#                                         )
 
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
@@ -188,38 +188,13 @@ from itertools import chain
 momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
 
 eff = RealMomentsBuilder()
-eff.appendPYList( angles.angles, momindices, PDF = MCpdf, NormSet = nset)
+#Don't specify pdf and normset here, we're gonna read moments and not calculate any.
+eff.appendPYList( angles.angles, momindices)
 eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments.txt')
 eff.Print()
 
-assert False
-
-def calc_moments_from_series( c ) :
-    return { 'Re_ang_A0_A0'       :   4*( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
-           , 'Re_ang_Apar_Apar'   :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
-           , 'Re_ang_Aperp_Aperp' :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
-           , 'Im_ang_Apar_Aperp'  :   4*sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
-           , 'Re_ang_A0_Apar'     :   4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 - 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16384)
-           , 'Im_ang_A0_Aperp'    :  -4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16384)
-           , 'Re_ang_AS_AS'       :   2*(2*c[(0,0,0)]+sqrt(1./5)*c[(0,2,0)]-sqrt(3./5)*c[(0,2,2)])
-           , 'Re_ang_Apar_AS' :   12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)] - c[(2,2,-2)]/8 - c[(4,2,-2)]/64 - 5*pi*c[(6,2,-2)]/1024 -35*pi*c[(8,2,-2)]/16384)
-           , 'Im_ang_Aperp_AS'     :  -12*sqrt(2./5.)*pi/8 *( c[(0,2,1)] - c[(2,2,1)]/8 - c[(4,2,1)]/64 - 5*pi*c[(6,2,1)]/1024 -35*pi*c[(8,2,1)]/16384)
-           , 'Re_ang_A0_AS'       :   (2./3)*(4*sqrt(3)*c[(1,0,0)]+2*sqrt(3./5)*c[(1,2,0)]-6*sqrt(1./5)*c[(1,2,2)])
-           }
-
-def compare_methods (canomoments,moments): #compute the 'canonical' moments given the Fourier series
-    c = dict()
-    for m in moments :
-        c[ ( moments.basisFuncIndices()[m][0],moments.basisFuncIndices()[m][1],moments.basisFuncIndices()[m][2] ) ] = moments.coefficients()[m][0]
-    xi_c = calc_moments_from_series( c )
-    
-    for name in xi_c.iterkeys() :
-        print '%s : direct moment: %s ;  from Fourier series: %s ; ratio = %s ' % ( name, canomoments.coefficients()[name][0], xi_c[name], canomoments.coefficients()[name][0]/xi_c[name])    
-
-compare_methods(canomoms,eff)
-
 #Build Angular acceptance corrected PDF
-sig_t_angles = eff * sig_t_angles
+#sig_t_angles = eff * sig_t_angles
 
 ##############################
 ### Proper time acceptance ###
@@ -232,6 +207,8 @@ from P2VVBinningBuilders import build1DVerticalBinning
 binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 
 acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
+
+#Build proper time acceptance corrected PDF
 #sig_t_angles = acceptance * sig_t_angles
 
 ##################
@@ -295,9 +272,14 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 sigpdf = buildPdf((signal,), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
 
 #for i in ['ASPhase','f_S'] :
-for i in ['ASPhase','ASMag2'] :
-    amplitudes[i].setVal(0.)
-    amplitudes[i].setConstant(True)
+#for i in ['ASPhase','ASMag2'] :
+#    amplitudes[i].setVal(0.0)
+#    amplitudes[i].setConstant(True)
+
+amplitudes['ASPhase'].setVal(2.5)
+amplitudes['ASPhase'].setConstant(False)
+amplitudes['f_S'].setVal(0.01)
+amplitudes['f_S'].setConstant(False)
 
 sigresult = sigpdf.fitTo(sigdata,**fitOpts)
 sigresult.writepars('classicfitresult_As2Free_NoAngAcc_NoTimeAcc',False)
