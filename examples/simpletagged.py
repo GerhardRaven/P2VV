@@ -53,7 +53,7 @@ from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeRe
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
 #externalConstraints = list()
-#externalConstraints += tres.ExternalConstraints()
+#externalConstraints += tres.externalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
@@ -65,7 +65,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
-#externalConstraints += tagging.ExternalConstraints()
+#externalConstraints += tagging.externalConstraints()
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta !!!
 eta_pdf = UniformPdf( Name = 'eta_pdf', Arguments = (eta,) )

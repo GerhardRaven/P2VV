@@ -7,8 +7,8 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = True
-makePlots      = True
+fitData        = False
+makePlots      = False
 
 plotsFile = 'JvLFitTagCats.ps'
 
@@ -43,8 +43,8 @@ phiCPVal      = -0.04
 lambdaCPSqVal = 1.
 
 # B lifetime parameters
-GammaVal        = 0.66
-dGammaVal       = 0.12
+GammaVal        = 0.679
+dGammaVal       = 0.06  # 0.12
 
 # asymmetries
 AProdVal = 0.
@@ -74,9 +74,9 @@ from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as Angl
 angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 # variables in PDF (except for tagging category)
-time       = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.5, 14. ) )
-iTag       = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
-angles     = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
+time   = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.5, 14. ) )
+iTag   = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
+angles = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
 BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, Value = 5368., MinMax = ( 5200., 5550. ), nBins = 48
                        ,  Ranges =  {  'LeftSideBand'  : ( None,  5330. )
@@ -183,7 +183,7 @@ else :
 
 # B lifetime
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
-lifetimeParams = LifetimeParams(  Gamma = GammaVal
+lifetimeParams = LifetimeParams(  Gamma = dict(Value = GammaVal, Constant = True)
                                 , deltaGamma = dict(  Name = 'dGamma', Value = dGammaVal
                                                     , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                    )

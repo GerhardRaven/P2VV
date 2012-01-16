@@ -103,9 +103,9 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 #Time Resolution Model
 #Data
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
-tresdata = DataTimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
+tresdata = DataTimeResolution( time = t, timeResSFConstraint = True ) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 externalConstraints = list()
-externalConstraints += tresdata.ExternalConstraints()
+externalConstraints += tresdata.externalConstraints()
 
 #Time Resolution Model for MC
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
@@ -119,13 +119,14 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                                             , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
                                        , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
-                                       )
-externalConstraints += lifetimeParams.ExternalConstraints()
+                                       , deltaMConstraint = True
+                                      )
+externalConstraints += lifetimeParams.externalConstraints()
 
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
-tagging = TaggingParams( estWTag = eta_os ) # Constant = False, Constrain = True ) TODO!!!
-externalConstraints += tagging.ExternalConstraints()
+tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True ) # Constant = False, Constrain = True ) TODO!!!
+externalConstraints += tagging.externalConstraints()
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
@@ -359,7 +360,7 @@ for i in ['ASPhase','ASMag2'] :
     amplitudes[i].setConstant(False)
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
+#classicfitresult = pdf.fitTo(data,externalConstraints = externalConstraints, **fitOpts)
 #classicfitresult.writepars('classicfitresult',False)
 
 ############
@@ -388,7 +389,7 @@ sfitsignal = Component('sfitsignal', ( sig_t_angles, ), Yield = ( nsig, 0, 2.0*n
 sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
+#sfitresult = sfitpdf.fitTo(S_sigdata,externalConstraints = externalConstraints, **fitOpts)
 #sfitresult.writepars('sfitresult',False)
 
 ################
