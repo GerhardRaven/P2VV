@@ -7,17 +7,18 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
-from P2VVParameterizations.GeneralUtils import _util_parse_mixin
+from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin
 
 
-class TaggingParams ( _util_parse_mixin ):
+class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin ):
     def __init__( self, **kwargs ) :
         self._numTagCats  = kwargs.pop( 'NumTagCats', 1 )
         self._dilutions   = kwargs.pop('Dilutions')
         self._ADilWTags   = kwargs.pop('ADilWTags')
         self._CEvenOdds   = kwargs.pop('CEvenOdds')
-        self._constraints = kwargs.pop( 'Constraints', None )
         if self._numTagCats > 1 : self._tagCatCoefs = kwargs.pop('TagCatCoefs')
+
+        _util_extConstraints_mixin.__init__( self, kwargs )
 
     def __getitem__( self, kw ) :
         def raiseError(kw) : raise RuntimeError( 'TaggingParams.__getitem__(\'%s\'): need to specify tagging category' % kw )
@@ -28,8 +29,6 @@ class TaggingParams ( _util_parse_mixin ):
         if kw in [ 'avgCEvens', 'avgCOdds' ] : return [ CEvenOdd[ kw[:-1] ] for CEvenOdd in self._CEvenOdds ]
 
         return getattr( self, '_' + kw )
-
-    def ExternalConstraints( self ) : return self._constraints
 
 class Trivial_TaggingParams( TaggingParams ) :
     def __init__( self ) :
@@ -65,21 +64,27 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong tag probability', Value = 0.379, MinMax = ( 0.,  0.5 )
                        , Constant = True
                       )
-        
-        from ROOT import RooGaussian as Gaussian
-        p0Constraint = Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
-                           , Parameters = [  self._p0
-                                           , ConstVar( Name = 'p0_mean',  Value = 0.384 )
-                                           , ConstVar( Name = 'p0_sigma', Value = 0.010 )
-                                          ]
-                          )
 
-        p1Constraint = Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
-                           , Parameters = [  self._p1
-                                           , ConstVar( Name = 'p1_mean',  Value = 1.037 )
-                                           , ConstVar( Name = 'p1_sigma', Value = 0.081 )
-                                          ]
-                          )
+        constraints = [ ]
+        if kwargs.pop( 'p0Constraint', None ) :
+            from ROOT import RooGaussian as Gaussian
+            constraints.append( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._p0
+                                                    , ConstVar( Name = 'p0_mean',  Value = 0.384 )
+                                                    , ConstVar( Name = 'p0_sigma', Value = 0.010 )
+                                                   ]
+                                   )
+                              )
+
+        if kwargs.pop( 'p1Constraint', None ) :
+            from ROOT import RooGaussian as Gaussian
+            constraints.append( Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._p1
+                                                    , ConstVar( Name = 'p1_mean',  Value = 1.037 )
+                                                    , ConstVar( Name = 'p1_sigma', Value = 0.081 )
+                                                   ]
+                                   )
+                              )
 
         self._check_extraneous_kw( kwargs )
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
@@ -91,7 +96,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                                              ]
                                 , ADilWTags = [ ConstVar( Name = 'zero', Value = 0) ]
                                 , CEvenOdds = [ Trivial_CEvenOdd() ]
-                                , Constraints = [ p0Constraint, p1Constraint ]
+                                , Constraints = constraints
                               )
 
 class Dilution_TaggingParams( TaggingParams ) :

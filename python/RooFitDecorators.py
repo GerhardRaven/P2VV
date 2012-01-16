@@ -12,7 +12,7 @@ def __wrap_kw_subs( fun ) :
     from ROOT import RooCmdArg,RooFit,RooAbsCollection,TObject
     __doNotConvert = [ RooAbsCollection, TObject ]
     __tbl  = lambda k : getattr(RooFit,k)
-    __disp = lambda k,v : ( __tbl(k)(v) if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) else __tbl(k)(*v) ) if type(v) != type(None) \
+    __disp = lambda k,v : ( __tbl(k)(v) if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) else __tbl(k)(*v)) if type(v) != type(None) \
                           else __tbl(k)()
     from functools import wraps
     @wraps(fun)
@@ -68,7 +68,7 @@ def __createRooIterator( create_iterator ) :
         i = create_iterator(self)
         while True :
             obj = i.Next()
-            if not obj : return
+            if not obj : raise StopIteration
             yield obj
     return __iter
 
@@ -93,12 +93,14 @@ RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 def __create_RooAbsCollectionInit(t) :
     def cnvrt(i) :
         from ROOT import TObject
-        if not hasattr(i,'__iter__') or isinstance(i,TObject): return i
+        if str(type(i)).find('.Category') != -1:
+            return i._target_()
+        if not hasattr(i,'__iter__') or isinstance(i, TObject): return i
         _i = t()
         for j in i : 
-               from ROOT import RooAbsArg
-               if not isinstance(j,RooAbsArg) : return i
-               _i.add( j )
+            from ROOT import RooAbsArg
+            if not isinstance(j,RooAbsArg) : return i
+            _i.add( j._target_() if hasattr(j, '_target_') else j )
         return _i
     __init = t.__init__
     return lambda self,*args : __init(self,*tuple( cnvrt(i) for i in args ))

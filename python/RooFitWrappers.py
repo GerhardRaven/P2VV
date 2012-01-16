@@ -227,6 +227,16 @@ class Category (RooObject) :
     def states(self):
         return self._states
 
+    def __iter__(self):
+        return self._target_().__iter__()
+
+    def __contains__(self, v):
+        for cat in self:
+            if cat.getVal() == v or cat.GetName() == v:
+                return True
+        else:
+            return False
+
 class SuperCategory( Category ) :
     def __init__(self,Name,cats,**kwargs):
         self._declare("SuperCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
@@ -915,8 +925,8 @@ class BinnedPdf( Pdf ) :
                 # create the object directly and then add it to RooObject and
                 # the ws.
                 self._addObject( RooBinnedPdf( argDict['Name'], argDict['Name']
-                                             , __dref__(var), binning.GetName()
-                                             , __dref__(kwargs.pop('Function'))) )
+                                               , __dref__(var), binning.GetName()
+                                               , __dref__(kwargs.pop('Function'))) )
             else:
                 raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables with' +
                                'coef lists not (yet) implemented')
@@ -1115,40 +1125,42 @@ def buildSimultaneousPdf(Components, Observables, Spec, Name) :
     states = {}
     key = Spec.keys()[0]
     observables, split_cat = key
+    s_obs = set(observables)
+    s_Obs = set(Observables)
+    # Either full overlap or no overlap
+    assert(s_obs.issubset(s_Obs) or s_obs.isdisjoint(s_Obs))
 
     # - Figure out which components to clone
     # - Create new components where needed (don't forget yields)
     # - Make appropriate PDFs using new compoments when needed
     # - Make simultaneous PDF
-    yield_names = {}
     for state, split_def in Spec[key].iteritems():
         args = {'Yields' : {}, 'PDFs' : []}
         suffix = '_'.join((split_cat['Name'], state))
         for c in Components:
             y = c['Yield']
-            if not c in yield_names:
-                yield_names[c] = y['Name']
             name = c['Name']
             rest = list(set(Observables) - set(observables))
-            assert(set(rest).union(set(observables)) == set(Observables))
-            rest_pdf = c[rest]
             if c in split_def:
-                pdfs = []
-                comp = Component('_'.join((name, suffix)), (split_def[c], rest_pdf),
-                                 Yield = [y['Value']] + list(y['MinMax']))
-                pdf = comp[obs]
-                y = comp['Yield']
-                yield_names[c]
+                if 'Yield' in split_def[c]:
+                    yld = split_def[c]['Yield']
+                else:
+                    yld = [y['Value']] + list(y['MinMax'])
+                if s_obs.issubset(s_Obs) and 'PDF' in split_def[c]:
+                    pdfs = (split_def[c]['PDF'], c[rest])
+                else:
+                    pdfs = c[obs],
+                comp = Component('_'.join((name, suffix)), pdfs, Yield = yld)
             else:
-                obs_pdf = c[observables]
-                comp = Component('_'.join((name, suffix)), (obs_pdf, rest_pdf),
+                if s_obs.issubset(s_Obs):
+                    pdfs = (c[observables], c[rest])
+                else:
+                    pdfs = c[obs],
+                comp = Component('_'.join((name, suffix)), pdfs,
                                  Yield = [y['Value']] + list(y['MinMax']))
-                pdf = comp[obs]
-                y = comp['Yield']
-            args['Yields'][pdf.GetName()] = y
+            pdf = comp[obs]
+            args['Yields'][pdf.GetName()] = comp['Yield']
             args['PDFs'].append(pdf)
         states[state] = SumPdf('_'.join((Name, suffix)) , **args)
     ## return states
     return SimultaneousPdf(Name, SplitCategory = split_cat, States = states)
-
-

@@ -10,7 +10,7 @@ w = obj.ws()
 
 from math import pi
 t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
-m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5155, 5450))
+m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550))
 biased = Category('triggerDecision', States = {'True' : 1, 'False' : 0})
 unbiased = Category('triggerDecisionUnbiased', States = {'True' : 1, 'False' : 0})
 observables = [t, m, biased, unbiased]
@@ -42,8 +42,8 @@ acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = e
 sig_t_acc = acceptance * sig_t
 
 # B mass pdf
-m_mean  = RealVar('m_mean',   Unit = 'MeV', Value = 5300, MinMax = (5200, 5800))
-m_sigma = RealVar('m_sigma',  Unit = 'MeV', Value = 15, MinMax = (10, 30))
+m_mean  = RealVar('m_mean',   Unit = 'MeV', Value = 5370, MinMax = (5200, 5500))
+m_sigma = RealVar('m_sigma',  Unit = 'MeV', Value = 8, MinMax = (5, 15))
 sig_m = Pdf(Name = 'sig_m', Type = Gaussian,  Parameters = (m,m_mean, m_sigma ))
 
 # Create signal component
@@ -54,16 +54,21 @@ m_c = RealVar( 'm_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.00001
 bkg_m = Pdf(Name = 'bkg_m', Type = Exponential, Parameters = [m, m_c])
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
 comb_t = Pdf(Name = 'comb_t', Type = Decay,  Parameters = [t,bkg_tau, tres, 'SingleSided'])
-comb_background = Component('comb_background', (bkg_m, comb_t), Yield = (5000,100,15000) )
+comb_background = Component('comb_background', (bkg_m, comb_t), Yield = (50000,100,300000) )
 
 # Build PDF
-spec = {((t,), biased) : {'True' : {signal : [sig_t_acc]},
-                         'False' : {}
-                         }
+spec = {((t,), biased) : {'True' : {signal          : {'PDF'   : [sig_t_acc],
+                                                       'Yield' : (20000, 1000, 50000)},
+                                    comb_background : {'Yield' : (10000, 500, 50000)}
+                                    },
+                         'False' : {signal          : {'Yield' : (10000, 500, 50000)},
+                                    comb_background : {'Yield' : (200000, 100000, 500000)}
+                                    }
+                          }
         }
 
-pdf = buildSimultaneousPdf(Components = (signal, comb_background), Observables = (m,), Spec = spec, Name='pdf')
-
+pdf = buildSimultaneousPdf(Components = (signal, comb_background), Observables = (m, t), Spec = spec,
+                           Name='pdf')
 pdf.Print("t")
 
 # Apply acceptance (dirty way)
@@ -83,26 +88,32 @@ profiler_start("acceptance.log")
 pdf.fitTo(data, NumCPU = 4 , Timer=1, Minimizer = 'Minuit2')
 profiler_stop()
 
-## from ROOT import kDashed, kRed, kGreen
-## from ROOT import TCanvas
+from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
+from ROOT import TCanvas
+canvas = {}
+print 'plotting'
+for cat in biased:
+    idx, label = cat.getVal(), cat.GetName()
+    name = biased.GetName() + '_' + label
+    canv = canvas[name] = TCanvas(name, name, 500, 500)
+    obs =  [o for o in pdf.Observables() if hasattr(o,'frame')]
+    for (p,o) in zip(canv.pads(len(obs)), obs):
+        dataOpts = dict(Cut = '{0} == {0}::{1}'.format(biased['Name'], label) )
+        pdfOpts  = dict(Slice = (biased, label), ProjWData = (RooArgSet(biased), data))
+        from P2VVGeneralUtils import plot
+        plot( p, o, data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
+                                            , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)
+                                              }
+              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
+              , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+              , logy = ( o == t )
+              )
 
-## print 'plotting'
 ## m_frame = m.frame()
-## data.plotOn(m_frame)
-## pdf.plotOn(m_frame, LineWidth = 2)
-## pdf.plotOn(m_frame, Components = ('sig_m'), LineStyle= kDashed, LineWidth = 2)
-## pdf.plotOn(m_frame, Components = ('bkg_m'), LineStyle= kDashed, LineWidth = 2, LineColor= kRed)
-
-## mpsi_frame = mpsi.frame()
-## data.plotOn(mpsi_frame)
-## pdf.plotOn(mpsi_frame, LineWidth= 2)
-## pdf.plotOn(mpsi_frame, Components='sig_mpsi', LineStyle=kDashed, LineWidth=2)
-## pdf.plotOn(mpsi_frame, Components='bkg_mpsi', LineStyle=kDashed, LineWidth=2, LineColor=kRed)
-
-## canvas = TCanvas('canvas', 'canvas', 1000, 500)
-## canvas.Divide(2, 1)
-## canvas.cd(1)
-## m_frame.Draw()
-
-## canvas.cd(2)
-## mpsi_frame.Draw()
+## data.plotOn(m_frame, Cut = 'triggerDecision == triggerDecision::True')
+## pdf.plotOn(m_frame, LineWidth = 2, Slice = (biased, 'True'),
+##            ProjWData = (RooArgSet(biased), data))
+## pdf.plotOn(m_frame, Components = ('sig_m'), LineStyle = kDashed, LineWidth = 2,
+##            Slice = (biased, 'True'), ProjWData = (RooArgSet(biased), data))
+## pdf.plotOn(m_frame, Components = ('bkg_m'), LineStyle = kDashed, LineWidth = 2, LineColor= kRed,
+##            Slice = (biased, 'True'), ProjWData = (RooArgSet(biased), data))
