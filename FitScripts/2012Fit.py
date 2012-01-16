@@ -39,16 +39,7 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 
-#For MC dataset only
-bkgcat = Category( 'bkgcat',            Title = 'bkgcat',                 Observable = True, States = { 'bkgcat0': 0, 'bkgcat10': 10 } )
-
 from P2VVGeneralUtils import readData
-#Read MC data
-MCdata = readData('/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
-                  , dataSetName = 'DecayTree'
-                  , NTuple = True
-                  , observables = [ t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], iTag_os,eta_os, triggerdec,sel,bkgcat,mphi]
-                  )
 
 #Read data
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
@@ -61,8 +52,7 @@ data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitt
 #TODO: Fix bug: When Rename is on, data = nil, but the dataset is imported in the ws anyway, so this is a quick fix:
 #data = obj.ws().data('Data_DecayTree')
 
-print 'data: number of events', data.numEntries()
-print 'mc:   number of events', MCdata.numEntries()
+print 'Number of events', data.numEntries()
 
 data.table(iTag_os).Print('v')
 data.table(iTag_ss).Print('v')
@@ -106,11 +96,6 @@ from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTi
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True ) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 externalConstraints = list()
 externalConstraints += tresdata.externalConstraints()
-
-#Time Resolution Model for MC
-from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
-tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
-tres.setConstant('.*')
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
@@ -174,21 +159,6 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.mo
                        , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
 
-from RooFitWrappers import BDecay
-MC_sig_t_angles = BDecay( Name      = 'MC_sig_t_angles'
-                          , time      = t
-                          , dm        = lifetimeParams['deltaM'] 
-                          , tau       = lifetimeParams['MeanLifetime']
-                          , dGamma    = lifetimeParams['deltaGamma'] 
-                          , resolutionModel = tres.model()
-                          , coshCoef  = basisCoefficients['cosh']
-                          , cosCoef   = basisCoefficients['cos']
-                          , sinhCoef  = basisCoefficients['sinh']
-                          , sinCoef   = basisCoefficients['sin']
-#                          , ConditionalObservables = ( eta_os, )
-#                          , ConditionalObservables = ( eta_os, iTag_os, )
-                          )
-
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , time      = t
                        , dm        = lifetimeParams['deltaM'] 
@@ -206,19 +176,12 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 #####################################
 ### Angular acceptance correction ###
 #####################################
-MCpdf = MC_sig_t_angles
-
-print 'Number of MC events', MCdata.numEntries()
-allObs = MCpdf.getObservables( MCdata.get() )
-print 'MCobservables:', [ i.GetName() for i in allObs ]
-o = MCpdf.getObservables(MCdata.get() )
-
 from P2VVGeneralUtils import RealMomentsBuilder
-nset = angles.angles.values()
+#nset = angles.angles.values()
 
-canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
-canomoms.compute(MCdata)
-canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
+#canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
+#canomoms.compute(MCdata)
+#canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 
 from itertools import chain
 #momindices = indices(3,3)
@@ -226,8 +189,10 @@ momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2
 
 eff = RealMomentsBuilder()
 eff.appendPYList( angles.angles, momindices, PDF = MCpdf, NormSet = nset)
-eff.compute(MCdata)
+eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments.txt')
 eff.Print()
+
+assert False
 
 def calc_moments_from_series( c ) :
     return { 'Re_ang_A0_A0'       :   4*( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
@@ -391,25 +356,6 @@ sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 #sfitresult = sfitpdf.fitTo(S_sigdata,externalConstraints = externalConstraints, **fitOpts)
 #sfitresult.writepars('sfitresult',False)
-
-################
-### Blinding ###
-################
-
-testblindvar = RealVar('test', Title = 'test',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 , Blind = ['UnblindUniform','Blindingstring',0.2])
-
-blinded = True
-if blinded:
-    tau = RealVar('sig_tau',Observable=False,Blinded=('UnblindUniform','blindingString', 1.),MinMax=(1,2) )
-    ws.factory("RooUnblindUniform::t_sig_dG_blind('BsRooBarbMoriond2012',0.02,t_sig_dG)")
-    ws.factory("RooUnblindUniform::phis_blind('BsCustardMoriond2012',0.3,phis)")    
-    
-    #calling RooCustomizer
-    customizer = RooCustomizer(pdfbeforeblinding,'blinded')
-    customizer.replaceArg( ws['t_sig_dG'], ws['t_sig_dG_blind'] )
-    customizer.replaceArg( ws['phis'], ws['phis_blind'] )
-
-assert False
 
 ################
 # FROM GERHARD #
