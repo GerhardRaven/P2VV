@@ -50,7 +50,7 @@ data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitt
                  )
 
 #TODO: Fix bug: When Rename is on, data = nil, but the dataset is imported in the ws anyway, so this is a quick fix:
-data = obj.ws().data('Data_DecayTree')
+#data = obj.ws().data('Data_DecayTree')
 
 print 'Number of events', data.numEntries()
 

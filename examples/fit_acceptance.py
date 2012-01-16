@@ -62,7 +62,7 @@ spec = {((t,), biased) : {'True' : {signal : [sig_t_acc]},
                          }
         }
 
-pdf = buildSimultaneousPdf(Components = (signal, comb_background), Observables = (m, t), Spec = spec, Name='pdf')
+pdf = buildSimultaneousPdf(Components = (signal, comb_background), Observables = (m,), Spec = spec, Name='pdf')
 
 pdf.Print("t")
 
@@ -73,13 +73,15 @@ input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120
 data = readData(input_file, tree_name, cuts = '(triggerDecisionUnbiased == 1)',
                 NTuple = True, observables = [m, t, biased, unbiased])
 
-
 ## from Helpers import Mapping
 ## mapping = Mapping({m : 'm', t : 'tau'}, data)
 
 ## Fit
 ## print 'fitting data'
+from profiler import profiler_start, profiler_stop
+profiler_start("acceptance.log")
 pdf.fitTo(data, NumCPU = 4 , Timer=1, Minimizer = 'Minuit2')
+profiler_stop()
 
 ## from ROOT import kDashed, kRed, kGreen
 ## from ROOT import TCanvas

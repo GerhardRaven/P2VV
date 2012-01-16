@@ -122,7 +122,7 @@ RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 def __RooWorkspacePut( self ,x, **kwargs ) :
     _import = getattr(RooWorkspace,'import')
     if _import(self,x,**kwargs) : return None
-    return self[x.GetName()]
+    return self[kwargs.get('Rename',x.GetName())]
 
 setattr( RooWorkspace, 'import',  __wrap_kw_subs( getattr(RooWorkspace, 'import' ) ) )
 RooWorkspace.put = __RooWorkspacePut

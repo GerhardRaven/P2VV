@@ -67,13 +67,16 @@ class RooObject(object) :
         if type(Name)!=str : Name = Name.GetName()
         return self.ws()._rooobject[Name]
 
+    # WARNING: the object 'o' given to _addObject should NEVER be used again
+    # instead, use the item returned by _addObject
     def _addObject(self, o):
-        if not self.ws()[o.GetName()]:
-            self.ws().put(o)
+        if not self.ws()[o.GetName()]: self.ws().put(o)
+        o = self.ws()[o.GetName()]
         if o.GetName() not in self.ws()._objects:
             self.ws()._objects[o.GetName()] = o
         else:
             raise TypeError, "Adding the same object twice should not happen! %s" % o.GetName()
+        return o
 
     def _declare(self,spec):
         """
@@ -97,7 +100,7 @@ class RooObject(object) :
             # Keep the PyROOT objects in a container so they don't get garbage
             # collected.
             # Note: use explicit GetName, not str, as x is a 'bare' PyROOT object!!!
-            self._addObject(x)
+            x = self._addObject(x)
             # and keep track what we made
             self.ws()._spec[ spec ] = x
         else :
@@ -239,7 +242,7 @@ class MappedCategory( Category ) :
             obj =  RooMappedCategory(Name,Name,__dref__(cat) )
             for k,vs in mapper.iteritems() :
                 for v in vs : obj.map( v, k )
-            self._addObject(obj)
+            obj = self._addObject(obj)
             self._init(Name,'RooMappedCategory')
             self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
@@ -264,7 +267,13 @@ class Product(RooObject) :
 class Addition(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
         # construct factory string on the fly...
-        self._declare("sum::%s(%s)"%(Name,','.join(i.GetName() for i in fargs)) )
+        def cn( x ) :
+            try :
+                return x.GetName()
+            except :
+                (a,b) = x
+                return '%s*%s' % ( a.GetName(),b.GetName() )
+        self._declare( "sum::%s(%s)" % ( Name,','.join( cn(i) for i in fargs ) ) )
         self._init(Name,'RooAddition')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -531,11 +540,12 @@ class Pdf(RooObject):
         return self._var.plotOn( frame, **kwargs )
 
     def __rmul__(self, eff):
-        if not any( map( lambda _type : isinstance( eff, _type )
+        from itertools import imap
+        if not any( imap( lambda _type : isinstance( eff, _type )
                        , [ FormulaVar, HistFunc, BinnedPdf ]
                        ) ) :
             raise RuntimeError, 'trying to multiply a %s with %s; this is not supported!' % (type(self), type(eff))
-        name = eff.GetName() + '_X_' + self['Name']
+        name = eff.GetName() + '_X_' + self.GetName()
         return EffProd(name, Original = self, Efficiency = eff)
 
 class ProdPdf(Pdf):
@@ -904,9 +914,9 @@ class BinnedPdf( Pdf ) :
                 # and its default approach doesn't seem to work very well,
                 # create the object directly and then add it to RooObject and
                 # the ws.
-                pdf = RooBinnedPdf(argDict['Name'], argDict['Name'], __dref__(var), binning.GetName(),
-                                   __dref__(kwargs.pop('Function')))
-                self._addObject(pdf)
+                self._addObject( RooBinnedPdf( argDict['Name'], argDict['Name']
+                                             , __dref__(var), binning.GetName()
+                                             , __dref__(kwargs.pop('Function'))) )
             else:
                 raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables with' +
                                'coef lists not (yet) implemented')
