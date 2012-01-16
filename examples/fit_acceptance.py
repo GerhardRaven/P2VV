@@ -83,10 +83,10 @@ data = readData(input_file, tree_name, cuts = '(triggerDecisionUnbiased == 1)',
 
 ## Fit
 ## print 'fitting data'
-from profiler import profiler_start, profiler_stop
-profiler_start("acceptance.log")
+## from profiler import profiler_start, profiler_stop
+## profiler_start("acceptance.log")
 pdf.fitTo(data, NumCPU = 4 , Timer=1, Minimizer = 'Minuit2')
-profiler_stop()
+## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
