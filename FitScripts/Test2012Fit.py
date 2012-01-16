@@ -128,7 +128,7 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
+#from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
 #amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
 #                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
 #                                          , AparPhase = 2.5
@@ -203,13 +203,13 @@ eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments.txt')
 eff.Print()
 
 #Build Angular acceptance corrected PDF
-sig_t_angles = eff * sig_t_angles
+#sig_t_angles = eff * sig_t_angles
 
 ##############################
 ### Proper time acceptance ###
 ##############################
-a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
-c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
+a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2))
+c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2))
 eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
 
 from P2VVBinningBuilders import build1DVerticalBinning
@@ -218,23 +218,23 @@ binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
 
 ##################
 ### Build PDFs ###
 ##################
 
 ############
-# BKG COMP #
+# BKG ONLY #
 ############
 sidebanddata = data.reduce(CutRange = 'leftsideband')
 rightsidebanddata = data.reduce(CutRange = 'rightsideband')
 sidebanddata.append(rightsidebanddata)
 
-nbkg = 10500
+nbkg = 20000
 #background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 #The following doesn't make a difference, indeed!
-background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf()), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
 background[eta_os]=None
 background[iTag_os]=None
 
@@ -264,16 +264,46 @@ else :
                              , Data  = sidebanddata
                              )
 
-############
-# SIG COMP #
-############
-nsig = 22000
-signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( nsig, 0.9, 1.1*nsig) )
+bkgpdf = buildPdf((background,), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name = 'bkgpdf')
 
+#bkgresult = bkgpdf.fitTo(sidebanddata,**fitOpts)
+#bkgresult .writepars('bkgresult',False)
+
+############
+# SIG ONLY #
+############
+sigdata = data.reduce(CutRange = 'signal')
+sigdata.Print()
+
+nsig = 20000
+signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( nsig, 0, 2.0*nsig) )
+#sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....
+sigpdf = buildPdf((signal,), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
+
+#for i in ['ASPhase','f_S'] :
+#for i in ['ASPhase','ASMag2'] :
+#    amplitudes[i].setVal(0.0)
+#    amplitudes[i].setConstant(True)
+
+#amplitudes['ASPhase'].setVal(2.5)
+#amplitudes['ASPhase'].setConstant(False)
+#amplitudes['f_S'].setVal(0.01)
+#amplitudes['f_S'].setConstant(False)
+
+#amplitudes['ASPhase'].setVal(2.5)
+#amplitudes['ASPhase'].setConstant(False)
+#amplitudes['ASMag2'].setVal(0.01)
+#amplitudes['ASMag2'].setConstant(False)
+
+sigpdf.Print()
+sigresult = sigpdf.fitTo(sigdata, ExternalConstraints = externalConstraints, **fitOpts)
+sigresult.writepars('signalfitresult_As2Free_AngAcc_NoTimeAcc', False)
+
+assert False
 #############
 # MASS ONLY #
 #############
-#masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
+masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 #masspdf.fitTo(data,**fitOpts)
 
 ###########
@@ -287,12 +317,84 @@ pdf.Print()
 ### CLASSIC FIT ###
 ###################
 
-#amplitudes['ASPhase'].setVal(2.5)
-#amplitudes['ASPhase'].setConstant(False)
-#amplitudes['f_S'].setVal(0.01)
-#amplitudes['f_S'].setConstant(False)
+amplitudes['ASPhase'].setVal(2.5)
+amplitudes['ASPhase'].setConstant(False)
+amplitudes['f_S'].setVal(0.01)
+amplitudes['f_S'].setConstant(False)
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
-classicfitresult.writepars('classicfitresult',False)
+#classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
+#classicfitresult.writepars('classicfitresult',False)
 
+############
+### SFIT ###
+############
+# make sweighted dataset. TODO: using J/psi phi mass
+from P2VVGeneralUtils import SData, splot
+from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
+splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
+
+S_sigdata = splot_m.data('signal')
+S_bkgdata = splot_m.data('bkg')
+
+## canvas2 = TCanvas()
+## canvas2.Divide(2)
+## canvas2.cd(1)
+## mframe = m.frame()
+## S_sigdata.plotOn(mframe)
+## mframe.Draw()
+## canvas2.cd(2)
+## mframe = m.frame()
+## S_bkgdata.plotOn(mframe)
+## mframe.Draw()
+
+sfitsignal = Component('sfitsignal', ( sig_t_angles, ), Yield = ( nsig, 0, 2.0*nsig) )
+sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
+
+#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
+#sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
+#sfitresult.writepars('sfitresult',False)
+
+################
+# FROM GERHARD #
+################
+
+# fit & fix iTag_os parameters
+#pdf_itag   = buildPdf((signal,background), Observables = (m,iTag_os), Name='pdf_itag')
+#pdf_itag.fitTo( data,**fitOpts)
+#for p in pdf_itag.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+
+from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
+from P2VVGeneralUtils import plot
+
+#Old bkganglecanvas
+#for (p,o) in zip(canvas.pads(3),angles.angles.itervalues()):
+    #p.cd()
+    #f = o.frame()
+    #sidebanddata.plotOn(f)
+    ##background[angles.angles.itervalues()].dataHist().plotOn(f)
+    #bkganglepdf.plotOn(f)
+    #f.Draw()
+
+bkganglecanvas = TCanvas()
+for (p,o) in zip(bkganglecanvas.pads(3),angles.angles.itervalues()):
+    plot(p,o,sidebanddata,bkganglepdf)
+
+canvas = dict()
+for rng in ( None, 'signal','leftsideband,rightsideband' ) :
+    canvas[rng] = TCanvas('%s'%rng)
+    dataOpts = dict( CutRange =        rng ) if rng else dict()
+    pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
+    from ROOT import RooArgSet
+    # TODO: grab the data in the relevant range... data.reduce( **dataOpts ) 
+    #       and remove the spike at 0.5 to take into account its correlation to iTag_os = 0!!!
+    pdfOpts['ProjWData'] = ( RooArgSet( eta_os._var ),  data, True ) 
+    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+        plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                                            , 'bkg*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                                            }
+                             , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
+                             , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+                             , logy = ( o == t )
+                             )
