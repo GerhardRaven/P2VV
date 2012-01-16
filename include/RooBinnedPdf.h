@@ -68,6 +68,8 @@ public:
 
   virtual std::list<Double_t>* binBoundaries
   (RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const;
+  list<Double_t>* plotSamplingHint
+  (RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const;
 
   RooArgList* baseVariables();
 
@@ -85,9 +87,13 @@ public:
     _ignoreFirstBin = ignoreFirstBin;
   }
 
-private:
+  virtual Int_t getMaxVal(const RooArgSet& vars) const;
+  virtual Double_t maxVal(Int_t code) const;
+
+protected:
   virtual Double_t evaluate() const;
 
+private:
   Int_t createBaseCats(const RooArgList& baseVars,
       const TObjArray& binningNames);
   Int_t initCoefs(const TObjArray& coefLists);
