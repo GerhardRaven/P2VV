@@ -88,6 +88,37 @@ class LP2011_TimeResolution ( TimeResolution ) :
                                 , Constraints = constraints
                                )
 
+class Moriond2012_TimeResolution ( TimeResolution ) :
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
+        self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+        self._parseArg( 'timeResMU', kwargs, Value = 0.0, MinMax = ( -0.5,0.5), Constant = True )
+        self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
+        self._parseArg( 'timeResSF', kwargs, Value = 1.45, MinMax = ( 0.5, 5. ) )
+
+        constraints = [ ]
+        if kwargs.pop( 'timeResSFConstraint', None ) :
+            from ROOT import RooGaussian as Gaussian
+            from RooFitWrappers import Pdf
+            constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._timeResSF
+                                                    , ConstVar( Name = 'tres_SF_constraint_mean',  Value = 1.45 )
+                                                    , ConstVar( Name = 'tres_SF_constraint_sigma', Value = 0.06 )
+                                                   ]
+                                   )
+                             )
+
+        Name =  kwargs.pop( 'Name', 'timeResModelMoriond2012' )
+        self._check_extraneous_kw( kwargs )
+        from ROOT import RooGaussModel as GaussModel
+        TimeResolution.__init__(  self
+                                  , Model =  ResolutionModel( Name = 'timeResMoriond2012'
+                                                              , Type = GaussModel
+                                                              , Parameters = [self._time, self._timeResMU, self._sigmat, self._timeResSF]
+                                                              )
+                                  , Constraints = constraints
+                                  )
+
 class Gamma_Sigmat( _util_parse_mixin ) :
     def pdf(self) :
         return self._pdf
