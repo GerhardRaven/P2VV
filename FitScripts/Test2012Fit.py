@@ -128,31 +128,32 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-#from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
-#amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
-#                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                          , AparPhase = 2.5
-#                                          , f_S = dict( Value = 0.0, Constant = False )
-#                                          , ASPhase = dict( Value = 0.0, Constant = False )
-#                                          )
+#from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
+#amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+#                                              , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                              , AparPhase = 2.5
+#                                              , f_S = dict( Value = 0.0, Constant = False )
+#                                              , ASPhase = dict( Value = 0.0, Constant = False )
+#                                             )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012_ReIm_Swave
-amplitudes = JpsiPhiAmplitudesWinter2012_ReIm_Swave( A0Mag2 = 0.60, A0Phase = 0
-                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                          , AparPhase = 2.5
-                                          , ReAS = dict( Value = sqrt(0.10 / 0.60) * cos( 2.20), Constant = False)
-                                          , ImAS = dict( Value = sqrt(0.10 / 0.60) * sin( 2.20), Constant = False)
-                                          )
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
+amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+                                              , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                              , AparPhase = 2.5
+                                              , f_S_Re = dict( Value = 0.10 / ( 1. + 0.10 ) * cos(2.20), Constant = False )
+                                              , f_S_Im = dict( Value = 0.10 / ( 1. + 0.10 ) * sin(2.20), Constant = False )
+                                             )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-#from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
-#amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
-#                                         , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                         , AparPhase = 2.5
-#                                         , ASMag2 = dict( Value = 0.01, Constant = False )
-#                                         , ASPhase = dict( Value = 0.5, Constant = False )
-#                                         )
+#from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+#amplitudes = JpsiVPolar_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+#                                     , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                     , AparPhase = 2.5
+#                                     , ASMag2 = dict( Value = 0.01, Constant = False )
+#                                     , ASPhase = dict( Value = 0.5, Constant = False )
+#                                     , PWaveNorm = False
+#                                    )
 
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients

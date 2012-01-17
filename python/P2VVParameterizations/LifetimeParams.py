@@ -22,9 +22,9 @@ class Gamma_LifetimeParams( LifetimeParams ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import FormulaVar, ConstVar, Pdf
 
-        self._parseArg( 'Gamma',      kwargs, Title = 'Gamma',       Unit = 'ps^{-1}', Value = 0.68, MinMax = (  0.4,  0.9 ) )
-        self._parseArg( 'deltaGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = 0.1,  MinMax = (- 1.,   1.  ) )
-        self._parseArg( 'deltaM',     kwargs, Title = 'delta m',     Unit = 'ps^{-1}', Value = 17.8, MinMax = ( 16.5, 18.5 ) )
+        self._parseArg( 'Gamma',      kwargs, Title = 'Gamma',       Unit = 'ps^{-1}', Value = 0.667,  MinMax = (  0.4,  0.9 ) )
+        self._parseArg( 'deltaGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = 0.13,   MinMax = (- 1.,   1.  ) )
+        self._parseArg( 'deltaM',     kwargs, Title = 'delta m',     Unit = 'ps^{-1}', Value = 17.58,  MinMax = ( 16.5, 18.5 ) )
         
         constraints = [  ]
         if kwargs.pop( 'deltaMConstraint', None ) :

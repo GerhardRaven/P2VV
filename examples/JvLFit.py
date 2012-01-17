@@ -28,26 +28,41 @@ sigFrac    = 0.8
 
 # transversity amplitudes
 amplitudeParam = 'phasesSWaveFrac'
-A0Mag2Val    =  0.52
-A0PhVal      =  0.
-AparMag2Val  =  0.23
-AparPhVal    =  pi - 3.3
-AperpMag2Val =  0.25
-AperpPhVal   =  3.0
-ASMag2Val    =  0.
-ASPhVal      =  0.
+
+A0Mag2Val    = 0.522
+AperpMag2Val = 0.249
+Apar2MagVal  = 1. - A0Mag2Val - AperpMag2Val
+
+A0PhVal      = 0.
+AperpPhVal   = 2.77
+AparPhVal    = 3.32
+
+fSVal        = 0.016
+ASMag2Val    = fSVal / ( 1. - fSVal )
+ASPhVal      = 2.74
+
 
 # CP violation parameters
 carthLambdaCP = False
-phiCPVal      = -0.04
+phiCPVal      = 0.13
 lambdaCPSqVal = 1.
 
 # B lifetime parameters
-GammaVal        = 0.679
-dGammaVal       = 0.06  # 0.12
+GammaVal        = 0.656
+dGammaVal       = 0.123
 
 # asymmetries
 AProdVal = 0.
+
+# fit options
+extConstraints = [ ]
+fitOpts = dict(  NumCPU              = 5
+               , Timer               = 1
+               , Minos               = False
+               , Hesse               = False
+               , Save                = True
+               , ExternalConstraints = extConstraints
+              )
 
 # plot options
 angleNames   = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
@@ -68,9 +83,6 @@ from RooFitWrappers import *
 
 # workspace
 ws = RooObject(workspace = 'ws')
-
-# fit parameter constraints
-extConstraints = [ ]
 
 # angular functions
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
@@ -96,7 +108,7 @@ if not generateData and realData :
     mpsi = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. ), nBins =  32 )
     mphi = RealVar( 'mdau2', Title = 'M(KK)',     Unit = 'MeV', Observable = True, MinMax = ( 1020. - 12., 1020. + 12. ), nBins =  16 )
 
-    timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.15 ), nBins =  50 )
+    timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.12 ), nBins =  50 )
 
     tagDecision = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
                            , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
@@ -166,17 +178,17 @@ backgroundComps += backgroundBMass.pdf()
 
 # transversity amplitudes
 if amplitudeParam == 'phasesSWaveFrac' :
-    from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012 as Amplitudes
+    from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
     amplitudes = Amplitudes(  A0Mag2    = A0Mag2Val
                             , A0Phase   = A0PhVal
                             , AperpMag2 = AperpMag2Val
                             , AparPhase = AparPhVal
-                            , f_S       = ASMag2Val / ( 1. + ASMag2Val )
+                            , f_S       = fSVal
                             , ASPhase   = ASPhVal
                            )
 
 else :
-    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes as Amplitudes
+    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
     amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                             , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                             , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
@@ -189,13 +201,12 @@ else :
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
 lifetimeParams = LifetimeParams(  Gamma = dict(Value = GammaVal)
                                 , deltaGamma = dict(  Name = 'dGamma', Value = dGammaVal
-                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+#                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                    )
                                 , deltaMConstraint = True
                                )
 extConstraints += lifetimeParams.externalConstraints()
 
-#from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
 timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
 extConstraints += timeResModel.externalConstraints()
@@ -204,7 +215,7 @@ extConstraints += timeResModel.externalConstraints()
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
 lambdaCP = CPParam(  lambdaCPSq = lambdaCPSqVal
                    , phiCP = dict(  Value = phiCPVal
-                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+#                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
                                  )
                   )
 
@@ -235,7 +246,8 @@ args = dict(  time            = time
             , resolutionModel = timeResModel['model']
            )
 
-signalComps += BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+signalComps += sig_t_angles_tagCat_iTag
 
 
 ###########################################################################################################################################
@@ -276,8 +288,10 @@ backgroundComps += BinnedPdf(  'bkg_tagCat_iTag'
                              , Categories   = ( tagCatP2VV, iTag )
                              , Coefficients = [  taggingParams['tagCatCoefs']
                                                , [  RealVar( 'bkg_BbarFrac'
-                                                            , Title = 'Anti-B fraction in background'
-                                                            , Value = 0.5, MinMax = ( 0., 1. )
+                                                            , Title    = 'Anti-B fraction in background'
+                                                            , Value    = 0.5
+                                                            , MinMax = ( 0., 1. )
+                                                            , Constant = True
                                                            )
                                                  ]
                                               ]
@@ -301,7 +315,7 @@ else :
 ################################
 
 # generate data
-from P2VVLoad import RooFitOutput
+#from P2VVLoad import RooFitOutput
 if generateData :
     print 'JvLFit: generating %d events' % nEvents
     data = pdf.generate(obsSetP2VV)
@@ -320,25 +334,28 @@ else :
 
 if fitData :
     # fix values of some parameters
-    lifetimeParams.setConstant('deltaM')
+    #lifetimeParams.setConstant('deltaM')
+    lifetimeParams.setConstant('dGamma')
     lambdaCP.setConstant('lambdaCPSq')
+    lambdaCP.setConstant('phiCP')
 
     for CEvenOdd in taggingParams['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
     taggingParams.setConstant('tagCatCoef.*')
-    tagCats.setConstant('wTag.*')
+    #tagCats.setConstant('wTag.*')
 
     amplitudes.setConstant('f_S|ASPhase')
+    #amplitudes.setConstant('.*')
 
-    timeResModel.setConstant('timeResSF')
-    backgroundTime.setConstant('.*')
+    #timeResModel.setConstant('timeResSF')
+    #backgroundTime.setConstant('.*')
     #signalBMass.setConstant('.*')
     #backgroundBMass.setConstant('.*')
 
     # fit data
     print 'JvLFit: fitting %d events' % data.numEntries()
-    fitResult = pdf.fitTo( data, NumCPU = 12, Timer = 1, Minos = False, Hesse = False, Save = True, ExternalConstraints = extConstraints )
+    fitResult = pdf.fitTo( data, **fitOpts )
 
 
 ###########################################################################################################################################

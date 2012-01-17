@@ -6,7 +6,7 @@ obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
 from ROOTDecorators import  ROOTversion as Rv
-fitOpts = dict( NumCPU = numCPU() 
+fitOpts = dict( NumCPU = 8
               , Timer=1
               , Save = True
               , Verbose = False
@@ -23,7 +23,7 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
 eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (-2.0001,0.50001),  nBins =  25)
@@ -128,31 +128,32 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
-#amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
-#                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                          , AparPhase = 2.5
-#                                          , f_S = dict( Value = 0.0, Constant = False )
-#                                          , ASPhase = dict( Value = 0.0, Constant = False )
-#                                          )
+#from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
+#amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+#                                              , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                              , AparPhase = 2.5
+#                                              , f_S = dict( Value = 0.0, Constant = False )
+#                                              , ASPhase = dict( Value = 0.0, Constant = False )
+#                                             )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012_ReIm_Swave
-amplitudes = JpsiPhiAmplitudesWinter2012_ReIm_Swave( A0Mag2 = 0.60, A0Phase = 0
-                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                          , AparPhase = 2.5
-                                          , ReAS = dict( Value = sqrt(0.10 / 0.60) * cos( 2.20), Constant = False)
-                                          , ImAS = dict( Value = sqrt(0.10 / 0.60) * sin( 2.20), Constant = False)
-                                          )
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
+amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+                                              , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                              , AparPhase = 2.5
+                                              , f_S_Re = dict( Value = 0.10 / ( 1. + 0.10 ) * cos(2.20), Constant = False )
+                                              , f_S_Im = dict( Value = 0.10 / ( 1. + 0.10 ) * sin(2.20), Constant = False )
+                                             )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-#from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
-#amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
-#                                         , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                         , AparPhase = 2.5
-#                                         , ASMag2 = dict( Value = 0.01, Constant = False )
-#                                         , ASPhase = dict( Value = 0.5, Constant = False )
-#                                         )
+#from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+#amplitudes = JpsiVPolar_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+#                                     , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                     , AparPhase = 2.5
+#                                     , ASMag2 = dict( Value = 0.01, Constant = False )
+#                                     , ASPhase = dict( Value = 0.5, Constant = False )
+#                                     , PWaveNorm = False
+#                                    )
 
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
@@ -199,7 +200,7 @@ momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments.txt')
+eff.read('effmoments.txt')
 eff.Print()
 
 #Build Angular acceptance corrected PDF
@@ -208,17 +209,17 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 ### Proper time acceptance ###
 ##############################
-a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
-c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
-eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
+#a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
+#c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
+#eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
 
-from P2VVBinningBuilders import build1DVerticalBinning
-binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
+#from P2VVBinningBuilders import build1DVerticalBinning
+#binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 
-acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
+#acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
 
 ##################
 ### Build PDFs ###

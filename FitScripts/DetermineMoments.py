@@ -65,13 +65,14 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
-amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
-                                         , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                         , AparPhase = 2.5
-                                         , ASMag2 = dict( Value = 0.0, Constant = True )
-                                         , ASPhase = dict( Value = 0.0, Constant = True )
-                                         )
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+amplitudes = JpsiVPolar_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+                                     , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                     , AparPhase = 2.5
+                                     , ASMag2 = dict( Value = 0.0, Constant = True )
+                                     , ASPhase = dict( Value = 0.0, Constant = True )
+                                     , PWaveNorm = False
+                                    )
 
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients

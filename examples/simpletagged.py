@@ -89,8 +89,8 @@ CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinM
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
-amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.50, A0Phase = 0
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+amplitudes = JpsiVPolar_AmplitudeSet( A0Mag2 = 0.50, A0Phase = 0
                                     , AperpMag2 = 0.25, AperpPhase = dict( Value = -3.1 ) # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                     , AparPhase = -2.9
                                     , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True ) 
