@@ -172,7 +172,7 @@ momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments.txt')
+eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_0.3.txt')
 eff.Print()
 
 #Build Angular acceptance corrected PDF
@@ -181,8 +181,8 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 ### Proper time acceptance ###
 ##############################
-a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2))
-c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2))
+a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
+c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
 eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
 
 from P2VVBinningBuilders import build1DVerticalBinning
@@ -191,7 +191,7 @@ binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
-#sig_t_angles = acceptance * sig_t_angles
+sig_t_angles = acceptance * sig_t_angles
 
 ##################
 ### Build PDFs ###
@@ -278,5 +278,5 @@ sfitpdf.Print()
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
-sfitresult.writepars('sfitresult',False)
+sfitresult.writepars('sfitresult_TimeAccON',False)
 
