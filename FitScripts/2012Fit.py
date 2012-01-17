@@ -129,21 +129,21 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012
-#amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.60, A0Phase = 0
-#                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                          , AparPhase = 2.5
-#                                          , f_S = dict( Value = 0.0, Constant = False )
-#                                          , ASPhase = dict( Value = 0.0, Constant = False )
-#                                          )
+amplitudes = JpsiPhiAmplitudesWinter2012( A0Mag2 = 0.52, A0Phase = 0
+                                          , AperpMag2 = 0.25, AperpPhase = 2.7 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                          , AparPhase = 3.2
+                                          , f_S = dict( Value = 0.02, Constant = False )
+                                          , ASPhase = dict( Value = 2.7, Constant = False )
+                                          )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012_ReIm_Swave
-amplitudes = JpsiPhiAmplitudesWinter2012_ReIm_Swave( A0Mag2 = 0.60, A0Phase = 0
-                                          , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                          , AparPhase = 2.5
-                                          , ReAS = dict( Value = sqrt(0.10 / 0.60) * cos( 2.20), Constant = False)
-                                          , ImAS = dict( Value = sqrt(0.10 / 0.60) * sin( 2.20), Constant = False)
-                                          )
+#from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012_ReIm_Swave
+#amplitudes = JpsiPhiAmplitudesWinter2012_ReIm_Swave( A0Mag2 = 0.52, A0Phase = 0
+#                                          , AperpMag2 = 0.25, AperpPhase = 2.7 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                          , AparPhase = 3.2
+#                                          , ReAS = dict( Value = sqrt(0.02) * cos( 2.7), Constant = False)
+#                                          , ImAS = dict( Value = sqrt(0.02) * sin( 2.7), Constant = False)
+#                                          )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 #from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
@@ -164,9 +164,9 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.model()
-                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
-                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
-                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
+                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.21 )
+                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.06, MinMax = (0.5,2.5) )
+                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.15, MinMax = (0.01,0.5) ) )
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , time      = t
@@ -199,7 +199,7 @@ momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments.txt')
+eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_0.3.txt')
 eff.Print()
 
 #Build Angular acceptance corrected PDF
@@ -218,7 +218,7 @@ binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
 
 ##################
 ### Build PDFs ###

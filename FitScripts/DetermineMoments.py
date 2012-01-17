@@ -12,7 +12,8 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                                   } )
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
+
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3,14.), nBins =  54 )
 st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
@@ -29,6 +30,13 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 bkgcat = Category( 'bkgcat',            Title = 'bkgcat',                 Observable = True, States = { 'bkgcat0': 0, 'bkgcat10': 10 } )
+
+####################
+### Set time cut ###
+####################
+
+tcut = 0.3
+t['MinMax'] = (tcut,14.)
 
 from P2VVGeneralUtils import readData
 #Read MC data
@@ -113,7 +121,7 @@ nset = angles.angles.values()
 canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
 canomoms.compute(MCdata)
 canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
-canomoms.write('canomoms.txt')
+canomoms.write('canomoms_tcut_%s.txt'%(str(tcut)))
 
 from itertools import chain
 #momindices = indices(3,3)
@@ -123,7 +131,7 @@ eff = RealMomentsBuilder()
 eff.appendPYList( angles.angles, momindices, PDF = MCpdf, NormSet = nset)
 eff.compute(MCdata)
 eff.Print()
-eff.write('effmoments.txt')
+eff.write('effmoments_tcut_%s.txt'%(str(tcut)))
 
 def calc_moments_from_series( c ) :
     return { 'Re_ang_A0_A0'       :   4*( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
