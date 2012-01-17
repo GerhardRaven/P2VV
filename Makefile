@@ -1,7 +1,7 @@
 DEPDIR = .deps
 SRCDIR = src
 INCDIR = include
-BUILDDIR = build
+BUILDDIR = .build
 LIBDIR = lib
 DICTDIR = dict
 df = $(DEPDIR)/$(*F)
