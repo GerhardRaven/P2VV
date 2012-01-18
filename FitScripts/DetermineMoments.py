@@ -125,8 +125,8 @@ canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 canomoms.write('canomoms_tcut_%s.txt'%(str(tcut)))
 
 from itertools import chain
-#momindices = indices(3,3)
-momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
+momindices = indices(3,3)
+#momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
 
 eff = RealMomentsBuilder()
 eff.appendPYList( angles.angles, momindices, PDF = MCpdf, NormSet = nset)
@@ -139,11 +139,11 @@ def calc_moments_from_series( c ) :
            , 'Re_ang_Apar_Apar'   :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
            , 'Re_ang_Aperp_Aperp' :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
            , 'Im_ang_Apar_Aperp'  :   4*sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
-           , 'Re_ang_A0_Apar'     :   4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 - 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16384)
-           , 'Im_ang_A0_Aperp'    :  -4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16384)
+           , 'Re_ang_A0_Apar'     :   4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)] - c[(3,2,-2)]/4 - 5*c[(5,2,-2)]/128  - 7*c[(7,2,-2)]/512 - 105*c[(9,2,-2)]/16384 )# - 231*c[(11,2,-2)]/65536 - 9009*c[(13,2,-2)]/4194304 - 23595*c[(15,2,-2)]/16777216 - 1042899*c[(17,2,-2)]/1073741824 )
+           , 'Im_ang_A0_Aperp'    :  -4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)] - c[(3,2, 1)]/4 - 5*c[(5,2, 1)]/128  - 7*c[(7,2, 1)]/512 - 105*c[(9,2, 1)]/16384 )# - 231*c[(11,2, 1)]/65536 - 9009*c[(13,2, 1)]/4194304 - 23595*c[(15,2, 1)]/16777216 - 1042899*c[(17,2, 1)]/1073741824 )
            , 'Re_ang_AS_AS'       :   2*(2*c[(0,0,0)]+sqrt(1./5)*c[(0,2,0)]-sqrt(3./5)*c[(0,2,2)])
-           , 'Re_ang_Apar_AS' :   12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)] - c[(2,2,-2)]/8 - c[(4,2,-2)]/64 - 5*pi*c[(6,2,-2)]/1024 -35*pi*c[(8,2,-2)]/16384)
-           , 'Im_ang_Aperp_AS'     :  -12*sqrt(2./5.)*pi/8 *( c[(0,2,1)] - c[(2,2,1)]/8 - c[(4,2,1)]/64 - 5*pi*c[(6,2,1)]/1024 -35*pi*c[(8,2,1)]/16384)
+           , 'Re_ang_Apar_AS'     :   12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)] - c[(2,2,-2)]/8 - c[(4,2,-2)]/64 - 5*c[(6,2,-2)]/1024 - 35*c[(8,2,-2)]/16384 )# - 147*c[(10,2,-2)]/131072 - 693*c[(12,2,-2)]/1048576 - 14157*c[(14,2,-2)]/33554432 - 306735*c[(16,2,-2)]/1073741842 )  
+           , 'Im_ang_Aperp_AS'    :  -12*sqrt(2./5.)*pi/8 *( c[(0,2, 1)] - c[(2,2, 1)]/8 - c[(4,2, 1)]/64 - 5*c[(6,2, 1)]/1024 - 35*c[(8,2, 1)]/16384 )# - 147*c[(10,2, 1)]/131072 - 693*c[(12,2, 1)]/1048576 - 14157*c[(14,2, 1)]/33554432 - 306735*c[(16,2, 1)]/1073741842 )
            , 'Re_ang_A0_AS'       :   (2./3)*(4*sqrt(3)*c[(1,0,0)]+2*sqrt(3./5)*c[(1,2,0)]-6*sqrt(1./5)*c[(1,2,2)])
            }
 
@@ -156,4 +156,30 @@ def compare_methods (canomoments,moments): #compute the 'canonical' moments give
     for name in xi_c.iterkeys() :
         print '%s : direct moment: %s ;  from Fourier series: %s ; ratio = %s ' % ( name, canomoments.coefficients()[name][0], xi_c[name], canomoments.coefficients()[name][0]/xi_c[name])    
 
-compare_methods(canomoms,eff)
+#compare_methods(canomoms,eff)
+
+MCpdf_eff = eff * MC_sig_t_angles
+assert False
+terms = eff.buildPDFTerms()
+effshape = Addition('effshape',terms)
+
+# make some plots...
+from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kOrange
+c = TCanvas("c1","Determine efficiency moments",900,600)
+c.Divide(3,2);
+for (i,var) in enumerate(angles.angles.values()) :
+    c.cd(1+i)
+    plot2 = var.frame()
+    effshape.plotOn(plot2)
+    plot2.Draw()
+    c.cd(4+i) # start argument of enumerate is python >= 2.6...
+    plot = var.frame()
+    MCdata.plotOn(plot)
+    MC_sig_t_angles.plotOn(plot,LineColor = kBlue)
+    MCpdf_eff.plotOn(plot,LineColor = kRed)
+    #MCpdf_mom.plotOn(plot,RooFit.LineColor(kOrange))
+    plot.Draw()
+
+c.Flush()
+c.Update()
+c.Print("AngularAcceptanceCorrectionMC.eps")
