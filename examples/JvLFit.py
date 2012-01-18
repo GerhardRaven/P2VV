@@ -7,7 +7,7 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = True
+fitData        = False
 makePlots      = True
 
 plotsFile = 'JvLFitTagCats.ps'
@@ -55,7 +55,7 @@ AProdVal = 0.
 
 # fit options
 extConstraints = [ ]
-fitOpts = dict(  NumCPU              = 5
+fitOpts = dict(  NumCPU              = 1
                , Timer               = 1
                , Minos               = False
                , Hesse               = False
@@ -88,7 +88,7 @@ from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as Angl
 angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 # variables in PDF (except for tagging category)
-time   = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.5, 14. ) )
+time   = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.3, 14. ) )
 iTag   = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
 angles = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
@@ -200,7 +200,7 @@ else :
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
 lifetimeParams = LifetimeParams(  Gamma = dict(Value = GammaVal)
                                 , deltaGamma = dict(  Name = 'dGamma', Value = dGammaVal
-                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+#                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                    )
                                 , deltaMConstraint = True
                                )
@@ -214,7 +214,7 @@ extConstraints += timeResModel.externalConstraints()
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
 lambdaCP = CPParam(  lambdaCPSq = lambdaCPSqVal
                    , phiCP = dict(  Value = phiCPVal
-                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+#                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
                                  )
                   )
 
@@ -330,9 +330,9 @@ else :
 if fitData :
     # fix values of some parameters
     #lifetimeParams.setConstant('deltaM')
-    lifetimeParams.setConstant('dGamma')
+    #lifetimeParams.setConstant('dGamma')
     lambdaCP.setConstant('lambdaCPSq')
-    lambdaCP.setConstant('phiCP')
+    #lambdaCP.setConstant('phiCP')
 
     for CEvenOdd in taggingParams['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')

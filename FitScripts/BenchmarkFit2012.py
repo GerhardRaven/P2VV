@@ -6,11 +6,11 @@ obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
 from ROOTDecorators import  ROOTversion as Rv
-fitOpts = dict( NumCPU = 8
+fitOpts = dict( NumCPU = 4
               , Timer=1
               , Save = True
-              , Verbose = False
-              , Optimize = True
+#              , Verbose = False
+#              , Optimize = True
 #              , Minimizer = ('Minuit2','minimize')
               )
 

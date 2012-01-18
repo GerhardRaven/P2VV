@@ -23,7 +23,7 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
 eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (-2.0001,0.50001),  nBins =  25)
@@ -128,22 +128,22 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
-amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
-                                              , AperpMag2 = 0.25, AperpPhase = 2.7 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                              , AparPhase = 3.2
-                                              , f_S = dict( Value = 0.02, Constant = False )
-                                              , ASPhase = dict( Value = 2.7, Constant = False )
-                                             )
-
-# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 #from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
 #amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
 #                                              , AperpMag2 = 0.25, AperpPhase = 2.7 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
 #                                              , AparPhase = 3.2
-#                                              , f_S_Re = dict( Value = 0.02 * cos(2.20), Constant = False )
-#                                              , f_S_Im = dict( Value = 0.02 * sin(2.20), Constant = False )
+#                                              , f_S = dict( Value = 0.02, Constant = False )
+#                                              , ASPhase = dict( Value = 2.7, Constant = False )
 #                                             )
+
+# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
+amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
+                                              , AperpMag2 = 0.25, AperpPhase = 2.7 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                              , AparPhase = 3.2
+                                              , f_S_Re = dict( Value = 0.02 * cos(2.7), Constant = False )
+                                              , f_S_Im = dict( Value = 0.02 * sin(2.7), Constant = False )
+                                             )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 #from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet

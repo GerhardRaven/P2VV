@@ -23,7 +23,7 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.15),  nBins =  50 )
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
 eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (-2.0001,0.50001),  nBins =  25)
@@ -100,32 +100,23 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-#from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
-#amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
-#                                              , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                              , AparPhase = 2.5
-#                                              , f_S = dict( Value = 0.0, Constant = False )
-#                                              , ASPhase = dict( Value = 0.0, Constant = False )
-#                                             )
-
-# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
-amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
-                                              , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                              , AparPhase = 2.5
-                                              , f_S_Re = dict( Value = 0.10 / ( 1. + 0.10 ) * cos(2.20), Constant = False )
-                                              , f_S_Im = dict( Value = 0.10 / ( 1. + 0.10 ) * sin(2.20), Constant = False )
+amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
+                                              , AperpMag2 = 0.25, AperpPhase = 2.77 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                              , AparPhase = 3.2
+                                              , f_S = dict( Value = 0.02, Constant = False )
+                                              , ASPhase = dict( Value = 2.7, Constant = False )
                                              )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-#from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
-#amplitudes = JpsiVPolar_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
-#                                     , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                     , AparPhase = 2.5
-#                                     , ASMag2 = dict( Value = 0.01, Constant = False )
-#                                     , ASPhase = dict( Value = 0.5, Constant = False )
-#                                     , PWaveNorm = False
-#                                    )
+#from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
+#amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
+#                                              , AperpMag2 = 0.25, AperpPhase = 2.77 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                              , AparPhase = 3.2
+#                                              , f_S_Re = dict( Value = 0.02 * cos(2.7), Constant = False )
+#                                              , f_S_Im = dict( Value = 0.02 * sin(2.7), Constant = False )
+#                                             )
+
 
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
@@ -191,7 +182,7 @@ binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
 
 ##################
 ### Build PDFs ###
@@ -260,17 +251,17 @@ splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 S_sigdata = splot_m.data('signal')
 S_bkgdata = splot_m.data('bkg')
 
-from ROOT import TCanvas
-canvas2 = TCanvas()
-canvas2.Divide(2)
-canvas2.cd(1)
-mframe = m.frame()
-S_sigdata.plotOn(mframe)
-mframe.Draw()
-canvas2.cd(2)
-mframe = m.frame()
-S_bkgdata.plotOn(mframe)
-mframe.Draw()
+## from ROOT import TCanvas
+## canvas2 = TCanvas()
+## canvas2.Divide(2)
+## canvas2.cd(1)
+## mframe = m.frame()
+## S_sigdata.plotOn(mframe)
+## mframe.Draw()
+## canvas2.cd(2)
+## mframe = m.frame()
+## S_bkgdata.plotOn(mframe)
+## mframe.Draw()
 
 sfitsignal = Component('sfitsignal', ( sig_t_angles, ), Yield = ( nsig, 0, 2.0*nsig) )
 sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
@@ -278,5 +269,5 @@ sfitpdf.Print()
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
-sfitresult.writepars('sfitresult_TimeAccON',False)
+sfitresult.writepars('sfitresult_NOTimeAcc',False)
 
