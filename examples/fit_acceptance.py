@@ -37,7 +37,7 @@ tres = LP2011_TimeResolution(time = t)['model']
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t,signal_tau, tres, 'SingleSided'])
-acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff,
+acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff,
                        Binning = binning)
 sig_t_acc = acceptance * sig_t
 

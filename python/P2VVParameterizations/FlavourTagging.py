@@ -453,6 +453,12 @@ def getTagCatParamsFromData( data, tagCats = [ ], avgEstWTag = 0.38, P0 = 0.38, 
     if isinstance( AP0,        RooObject ) : AP0        = AP0.getVal()
     if isinstance( AP1,        RooObject ) : AP1        = AP1.getVal()
 
+    tagCatsCalc = [ ]
+
+    if tagCats :
+        numTagCats = len(tagCatsCalc)
+        
+
     return tagCats
 
 class Linear_TaggingCategories( TaggingCategories ) :
