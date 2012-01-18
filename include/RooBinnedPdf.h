@@ -41,13 +41,6 @@ public:
       const RooArgList& baseCats, const TObjArray& coefLists,
       Bool_t ignoreFirstBin = kFALSE);
 
-  RooBinnedPdf(const char* name, const char* title,
-      const RooArgList& baseVars, const TObjArray& binningNames,
-      RooAbsReal& function);
-
-  RooBinnedPdf(const char* name, const char* title,
-      RooAbsArg& baseVar, const char* binning, RooAbsReal& function);
-
   RooBinnedPdf(const char *name, const char *title,
       RooAbsRealLValue& baseVar, const char* binning,
       const RooArgList& coefList, Bool_t binIntegralCoefs = kFALSE);
@@ -56,6 +49,13 @@ public:
       const RooArgList& baseVars, const TObjArray& binningNames,
       const TObjArray& coefLists, Bool_t binIntegralCoefs = kFALSE,
       Bool_t ignoreFirstBin = kFALSE);
+
+  RooBinnedPdf(const char* name, const char* title,
+      RooAbsArg& baseVar, const char* binning, RooAbsReal& function);
+
+  RooBinnedPdf(const char* name, const char* title,
+      const RooArgList& baseVars, const TObjArray& binningNames,
+      RooAbsReal& function);
 
   RooBinnedPdf(const RooBinnedPdf& other, const char* name = 0);
 

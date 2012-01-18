@@ -43,7 +43,7 @@ binning, eff_func = build1DVerticalBinning('binning', eff, t, dy, 1.)
 
 ## Use EffHistProd to generate events
 t_flat = UniformPdf('t_flat', Arguments = [t])
-acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff,
+acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff,
                        Binning = binning)
 pdf = acceptance * t_flat
 pdf.Print('t')

@@ -216,7 +216,7 @@ eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.000
 from P2VVBinningBuilders import build1DVerticalBinning
 binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 
-acceptance = BinnedPdf(Name = 'time_acceptance', Observables = [t], Function = eff, Binning = binning)
+acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
 #sig_t_angles = acceptance * sig_t_angles

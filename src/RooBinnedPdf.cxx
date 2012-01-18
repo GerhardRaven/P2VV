@@ -143,78 +143,6 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
 }
 
 //_____________________________________________________________________________
-RooBinnedPdf::RooBinnedPdf
-(const char* name, const char* title, const RooArgList& baseVars,
- const TObjArray& binningNames, RooAbsReal& function):
-  RooAbsPdf(name, title),
-  _numCats(0),
-  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
-  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
-  _coefLists(),
-  _function(TString(name) + "_func", TString(name) + "_func", this, function),
-  _continuousBase(kTRUE),
-  _binIntegralCoefs(kFALSE),
-  _ignoreFirstBin(kFALSE)
-{
-  // constructor with a list of variables, the corresponding binnings to be
-  // used and a function.
-  //
-  // The "current bins" are given by the values of the RooAbsRealLValues
-  // contained by "baseVars" and their binnings with N_i bins, given by
-  // "binningNames". Exactly one variable is specified for each binning. The
-  // "binningNames" are TObjStrings.
-  //
-  // The supplied function will be evaluated a bin centers to give the value.
-
-  // create base categories and initialize coefficients
-  assert(baseVars.getSize() == binningNames.GetEntries());
-
-  std::auto_ptr<const RooArgSet> comps(function.getVariables());
-  std::auto_ptr<TIterator> it(baseVars.createIterator());
-  RooAbsArg* arg = 0;
-  while ((arg = static_cast<RooAbsArg*>(it->Next()))) {
-    assert(comps->contains(*arg));
-  }
-
-  _baseVarsList.add(baseVars);
-  it.reset(binningNames.MakeIterator());
-  TObjString* s = 0;
-  while ((s = static_cast<TObjString*>(it->Next()))) {
-    _binningNames.push_back(s->GetString());
-  }
-}
-
-//_____________________________________________________________________________
-RooBinnedPdf::RooBinnedPdf
-(const char* name, const char* title, RooAbsArg& baseVar,
- const char* binning, RooAbsReal& function):
-  RooAbsPdf(name, title),
-  _numCats(0),
-  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
-  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
-  _coefLists(),
-  _function(TString(name) + "_func", TString(name) + "_func", this, function),
-  _continuousBase(kTRUE),
-  _binIntegralCoefs(kFALSE),
-  _ignoreFirstBin(kFALSE)
-{
-  // constructor with a list of variables, the corresponding binnings to be
-  // used and a function.
-  //
-  // The "current bins" are given by the values of the RooAbsRealLValues
-  // contained by "baseVars" and their binnings with N_i bins, given by
-  // "binningNames". Exactly one variable is specified for each binning. The
-  // "binningNames" are TObjStrings.
-  //
-  // The supplied function will be evaluated a bin centers to give the value.
-
-  std::auto_ptr<RooArgSet> vars(function.getVariables());
-  assert(vars->contains(baseVar));
-  _baseVarsList.add(baseVar);
-  _binningNames.push_back(binning);
-}
-
-//_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     RooAbsRealLValue& baseVar, const char* binningName,
     const RooArgList& coefList, Bool_t binIntegralCoefs) :
@@ -295,6 +223,78 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
 
   // create base categories and initialize coefficients
   if (createBaseCats(baseVars, binningNames) > 0) initCoefs(coefLists);
+}
+
+//_____________________________________________________________________________
+RooBinnedPdf::RooBinnedPdf
+(const char* name, const char* title, RooAbsArg& baseVar,
+    const char* binning, RooAbsReal& function) :
+  RooAbsPdf(name, title),
+  _numCats(0),
+  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+  _coefLists(),
+  _function(TString(name) + "_func", TString(name) + "_func", this, function),
+  _continuousBase(kTRUE),
+  _binIntegralCoefs(kFALSE),
+  _ignoreFirstBin(kFALSE)
+{
+  // constructor with a list of variables, the corresponding binnings to be
+  // used and a function.
+  //
+  // The "current bins" are given by the values of the RooAbsRealLValues
+  // contained by "baseVars" and their binnings with N_i bins, given by
+  // "binningNames". Exactly one variable is specified for each binning. The
+  // "binningNames" are TObjStrings.
+  //
+  // The supplied function will be evaluated a bin centers to give the value.
+
+  std::auto_ptr<RooArgSet> vars(function.getVariables());
+  assert(vars->contains(baseVar));
+  _baseVarsList.add(baseVar);
+  _binningNames.push_back(binning);
+}
+
+//_____________________________________________________________________________
+RooBinnedPdf::RooBinnedPdf
+(const char* name, const char* title, const RooArgList& baseVars,
+    const TObjArray& binningNames, RooAbsReal& function) :
+  RooAbsPdf(name, title),
+  _numCats(0),
+  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+  _coefLists(),
+  _function(TString(name) + "_func", TString(name) + "_func", this, function),
+  _continuousBase(kTRUE),
+  _binIntegralCoefs(kFALSE),
+  _ignoreFirstBin(kFALSE)
+{
+  // constructor with a list of variables, the corresponding binnings to be
+  // used and a function.
+  //
+  // The "current bins" are given by the values of the RooAbsRealLValues
+  // contained by "baseVars" and their binnings with N_i bins, given by
+  // "binningNames". Exactly one variable is specified for each binning. The
+  // "binningNames" are TObjStrings.
+  //
+  // The supplied function will be evaluated a bin centers to give the value.
+
+  // create base categories and initialize coefficients
+  assert(baseVars.getSize() == binningNames.GetEntries());
+
+  std::auto_ptr<const RooArgSet> comps(function.getVariables());
+  std::auto_ptr<TIterator> it(baseVars.createIterator());
+  RooAbsArg* arg = 0;
+  while ((arg = static_cast<RooAbsArg*>(it->Next()))) {
+    assert(comps->contains(*arg));
+  }
+
+  _baseVarsList.add(baseVars);
+  it.reset(binningNames.MakeIterator());
+  TObjString* s = 0;
+  while ((s = static_cast<TObjString*>(it->Next()))) {
+    _binningNames.push_back(s->GetString());
+  }
 }
 
 //_____________________________________________________________________________
@@ -391,7 +391,7 @@ Double_t RooBinnedPdf::maxVal(Int_t code) const
 
 //_____________________________________________________________________________
 list<Double_t>* RooBinnedPdf::plotSamplingHint(RooAbsRealLValue& obs,
-                                               Double_t xlo, Double_t xhi) const
+    Double_t xlo, Double_t xhi) const
 {
    // Return sampling hint for making curves of (projections) of this function
    // as the recursive division strategy of RooCurve cannot deal efficiently
@@ -439,8 +439,8 @@ list<Double_t>* RooBinnedPdf::plotSamplingHint(RooAbsRealLValue& obs,
 }
 
 //______________________________________________________________________________
-std::list<Double_t>* RooBinnedPdf::binBoundaries
-(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const 
+std::list<Double_t>* RooBinnedPdf::binBoundaries(RooAbsRealLValue& obs,
+    Double_t xlo, Double_t xhi) const 
 {
    // Return sampling hint for making curves of (projections) of this function
    // as the recursive division strategy of RooCurve cannot deal efficiently
