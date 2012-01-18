@@ -25,6 +25,11 @@ class AngularPdfTerms ( list ) :
         from RooFitWrappers import RealSumPdf
         return RealSumPdf( Name, self )
 
+    def buildAddition( self, Name ) :
+        # build an Addition function from the current angular terms
+        from RooFitWrappers import Addition
+        return Addition( Name, self )
+
 class Coefficients_AngularPdfTerms ( AngularPdfTerms ) :
     def __init__( self, **kwargs ) :
         # get angular functions from arguments (dictionary with complex ( Re, Im ) wrapped RooFit objects)

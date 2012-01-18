@@ -283,14 +283,18 @@ if nominalFit :
                          , Data = sideBandData
                         )
 elif binnedBkgAngles :
-    bkg_angles = HistPdf(  Name = 'bkg_angles'
-                         , Observables = angles
-                         , Binning =  {  angleFuncs.angles['cpsi']   : 5
-                                       , angleFuncs.angles['ctheta'] : 32
-                                       , angleFuncs.angles['phi' ]   : 5
-                                      }
-                         , Data = sideBandData
-                        )
+    #bkg_angles = HistPdf(  Name = 'bkg_angles'
+    #                     , Observables = angles
+    #                     , Binning =  {  angleFuncs.angles['cpsi']   : 5
+    #                                   , angleFuncs.angles['ctheta'] : 32
+    #                                   , angleFuncs.angles['phi' ]   : 5
+    #                                  }
+    #                     , Data = sideBandData
+    #                    )
+
+    angles[0]
+    bkg_angles = BinnedPdf( Name = 'bkg_angles', Observables = angles )
+
 else :
     pass
 

@@ -995,7 +995,8 @@ class BinnedPdf( Pdf ) :
 
                 from ROOT import RooBinnedPdf
                 self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                              , __dref__(var), binningList, coefLists, kwargs.pop( 'BinIntegralCoefs', 0 )
+                                              , __dref__(var), binningList, coefLists
+                                              , kwargs.pop( 'BinIntegralCoefs', 0 ), kwargs.pop( 'IgnoreFirstBin', 0 )
                                              )
                                )
 
