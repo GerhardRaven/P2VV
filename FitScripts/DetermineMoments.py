@@ -125,8 +125,8 @@ canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 canomoms.write('canomoms_tcut_%s.txt'%(str(tcut)))
 
 from itertools import chain
-momindices = indices(3,3)
-#momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,18) for j0 in [1,-2]))
+#momindices = indices(3,3)
+momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
 
 eff = RealMomentsBuilder()
 eff.appendPYList( angles.angles, momindices, PDF = MCpdf, NormSet = nset)
@@ -134,115 +134,18 @@ eff.compute(MCdata)
 eff.Print()
 eff.write('effmoments_tcut_%s.txt'%(str(tcut)))
 
-momindices2 = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
-eff2 = RealMomentsBuilder()
-eff2.appendPYList( angles.angles, momindices2, PDF = MCpdf, NormSet = nset)
-eff2.compute(MCdata)
-eff2.Print()
-
 def calc_moments_from_series( c ) :
     return { 'Re_ang_A0_A0'       :   4*( c[(0,0,0)]+2*c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]+2*c[(2,2,0)]/5) - sqrt(3./20)*(c[(0,2,2)]+2*c[(2,2,2)]/5)  )
            , 'Re_ang_Apar_Apar'   :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 + sqrt(1./20)*( c[(0,2,0)]-  c[(2,2,0)]/5) + sqrt(3./20)*(c[(0,2,2)]-  c[(2,2,2)]/5)  )
            , 'Re_ang_Aperp_Aperp' :   4*( c[(0,0,0)]-  c[(2,0,0)]/5 - sqrt(1./ 5)*( c[(0,2,0)]-  c[(2,2,0)]/5 ) )
            , 'Im_ang_Apar_Aperp'  :   4*sqrt(3./5.)*( c[(0,2,-1)] - c[(2,2,-1)]/5 )
-           , 'Re_ang_A0_Apar'     :   4*sqrt(6./5.)* 3*pi/32. *( c[(1,2,-2)] - c[(3,2,-2)]/4. - 5*c[(5,2,-2)]/128.  - 7*c[(7,2,-2)]/512. - 105*c[(9,2,-2)]/16384. - 231*c[(11,2,-2)]/65536 - 9009*c[(13,2,-2)]/4194304 - 23595*c[(15,2,-2)]/16777216 - 1042899*c[(17,2,-2)]/1073741824 )
-           , 'Im_ang_A0_Aperp'    :  -4*sqrt(6./5.)* 3*pi/32. *( c[(1,2, 1)] - c[(3,2, 1)]/4. - 5*c[(5,2, 1)]/128.  - 7*c[(7,2, 1)]/512. - 105*c[(9,2, 1)]/16384. - 231*c[(11,2, 1)]/65536 - 9009*c[(13,2, 1)]/4194304 - 23595*c[(15,2, 1)]/16777216 - 1042899*c[(17,2, 1)]/1073741824 )
+           , 'Re_ang_A0_Apar'     :   4*sqrt(6./5.)* 3*pi/32. *( c[(1,2,-2)] - c[(3,2,-2)]/4. - 5*c[(5,2,-2)]/128.  - 7*c[(7,2,-2)]/512. - 105*c[(9,2,-2)]/16384. )# - 231*c[(11,2,-2)]/65536 - 9009*c[(13,2,-2)]/4194304 - 23595*c[(15,2,-2)]/16777216 - 1042899*c[(17,2,-2)]/1073741824 )
+           , 'Im_ang_A0_Aperp'    :  -4*sqrt(6./5.)* 3*pi/32. *( c[(1,2, 1)] - c[(3,2, 1)]/4. - 5*c[(5,2, 1)]/128.  - 7*c[(7,2, 1)]/512. - 105*c[(9,2, 1)]/16384. )#- 231*c[(11,2, 1)]/65536 - 9009*c[(13,2, 1)]/4194304 - 23595*c[(15,2, 1)]/16777216 - 1042899*c[(17,2, 1)]/1073741824 )
            , 'Re_ang_AS_AS'       :   2*(2*c[(0,0,0)]+sqrt(1./5)*c[(0,2,0)]-sqrt(3./5)*c[(0,2,2)])
-           , 'Re_ang_Apar_AS'     :   12*sqrt(2./5.)*pi/8. *( c[(0,2,-2)] - c[(2,2,-2)]/8. - c[(4,2,-2)]/64. - 5*c[(6,2,-2)]/1024. - 35*c[(8,2,-2)]/16384. - 147*c[(10,2,-2)]/131072 - 693*c[(12,2,-2)]/1048576 - 14157*c[(14,2,-2)]/33554432 - 306735*c[(16,2,-2)]/1073741842 )  
-           , 'Im_ang_Aperp_AS'    :  -12*sqrt(2./5.)*pi/8. *( c[(0,2, 1)] - c[(2,2, 1)]/8. - c[(4,2, 1)]/64. - 5*c[(6,2, 1)]/1024. - 35*c[(8,2, 1)]/16384. - 147*c[(10,2, 1)]/131072 - 693*c[(12,2, 1)]/1048576 - 14157*c[(14,2, 1)]/33554432 - 306735*c[(16,2, 1)]/1073741842 )
+           , 'Re_ang_Apar_AS'     :   12*sqrt(2./5.)*pi/8. *( c[(0,2,-2)] - c[(2,2,-2)]/8. - c[(4,2,-2)]/64. - 5*c[(6,2,-2)]/1024. - 35*c[(8,2,-2)]/16384. )# - 147*c[(10,2,-2)]/131072 - 693*c[(12,2,-2)]/1048576 - 14157*c[(14,2,-2)]/33554432 - 306735*c[(16,2,-2)]/1073741842 )  
+           , 'Im_ang_Aperp_AS'    :  -12*sqrt(2./5.)*pi/8. *( c[(0,2, 1)] - c[(2,2, 1)]/8. - c[(4,2, 1)]/64. - 5*c[(6,2, 1)]/1024. - 35*c[(8,2, 1)]/16384. )# - 147*c[(10,2, 1)]/131072 - 693*c[(12,2, 1)]/1048576 - 14157*c[(14,2, 1)]/33554432 - 306735*c[(16,2, 1)]/1073741842 )
            , 'Re_ang_A0_AS'       :   (2./3)*(4*sqrt(3)*c[(1,0,0)]+2*sqrt(3./5)*c[(1,2,0)]-6*sqrt(1./5)*c[(1,2,2)])
            }
-
-def print_terms(c):
-  
-    print "**************************************"
-    print "These are the terms for AperpAS: "
-    aperpas_0  = -12*sqrt(2./5.)*pi/8 *( c[(0,2, 1)])
-    aperpas_2  = -12*sqrt(2./5.)*pi/8 *( -c[(2,2, 1)]/8.)
-    aperpas_4  = -12*sqrt(2./5.)*pi/8 *( -c[(4,2, 1)]/64.)
-    aperpas_6  = -12*sqrt(2./5.)*pi/8 *( -5*c[(6,2, 1)]/1024.)
-    aperpas_8  = -12*sqrt(2./5.)*pi/8 *( -35*c[(8,2, 1)]/16384.)
-    aperpas_10 = -12*sqrt(2./5.)*pi/8 *( -147*c[(10,2, 1)]/131072.)
-    aperpas_12 = -12*sqrt(2./5.)*pi/8 *( -693*c[(12,2, 1)]/1048576.)
-    aperpas_14 = -12*sqrt(2./5.)*pi/8 *( -14157*c[(14,2, 1)]/33554432.)
-    aperpas_16 = -12*sqrt(2./5.)*pi/8 *( -306735*c[(16,2, 1)]/1073741842.)
-    print " -12*sqrt(2./5.)*pi/8 *( c[(0,2, 1)]) " , aperpas_0
-    print " -12*sqrt(2./5.)*pi/8 *( -c[(2,2, 1)]/8.) " , aperpas_2 
-    print " -12*sqrt(2./5.)*pi/8 *( -c[(4,2, 1)]/64.) " , aperpas_4
-    print " -12*sqrt(2./5.)*pi/8 *( -5*c[(6,2, 1)]/1024.) " , aperpas_6
-    print " -12*sqrt(2./5.)*pi/8 *( -35*c[(8,2, 1)]/16384.) " , aperpas_8
-    print " -12*sqrt(2./5.)*pi/8 *( -147*c[(10,2, 1)]/131072.) " , aperpas_10
-    print " -12*sqrt(2./5.)*pi/8 *( -693*c[(12,2, 1)]/1048576.) " , aperpas_12
-    print " -12*sqrt(2./5.)*pi/8 *( -14157*c[(14,2, 1)]/33554432.) " , aperpas_14
-    print " -12*sqrt(2./5.)*pi/8 *( -306735*c[(16,2, 1)]/1073741842.) " , aperpas_16
-    print "Final number is sum of these = ", aperpas_0+aperpas_2+aperpas_4+aperpas_6+aperpas_8+aperpas_10+aperpas_12+aperpas_14+aperpas_16
-
-    print "**************************************"
-    print "These are the terms for AparAS: "
-    aparas_0  = 12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)])
-    aparas_2  = 12*sqrt(2./5.)*pi/8 *( -c[(2,2,-2)]/8.)
-    aparas_4  = 12*sqrt(2./5.)*pi/8 *( -c[(4,2,-2)]/64.)
-    aparas_6  = 12*sqrt(2./5.)*pi/8 *( -5*c[(6,2,-2)]/1024.)
-    aparas_8  = 12*sqrt(2./5.)*pi/8 *( -35*c[(8,2,-2)]/16384.)
-    aparas_10 = 12*sqrt(2./5.)*pi/8 *( -147*c[(10,2,-2)]/131072.)
-    aparas_12 = 12*sqrt(2./5.)*pi/8 *( -693*c[(12,2,-2)]/1048576.)
-    aparas_14 = 12*sqrt(2./5.)*pi/8 *( -14157*c[(14,2,-2)]/33554432.)
-    aparas_16 = 12*sqrt(2./5.)*pi/8 *( -306735*c[(16,2,-2)]/1073741842.)
-    print " 12*sqrt(2./5.)*pi/8 *( c[(0,2,-2)]) " , aparas_0
-    print " 12*sqrt(2./5.)*pi/8 *( -c[(2,2,-2)]/8.) " , aparas_2 
-    print " 12*sqrt(2./5.)*pi/8 *( -c[(4,2,-2)]/64.) " , aparas_4
-    print " 12*sqrt(2./5.)*pi/8 *( -5*c[(6,2,-2)]/1024.) " , aparas_6
-    print " 12*sqrt(2./5.)*pi/8 *( -35*c[(8,2,-2)]/16384.) " , aparas_8
-    print " 12*sqrt(2./5.)*pi/8 *( -147*c[(10,2,-2)]/131072.) " , aparas_10
-    print " 12*sqrt(2./5.)*pi/8 *( -693*c[(12,2,-2)]/1048576.) " , aparas_12
-    print " 12*sqrt(2./5.)*pi/8 *( -14157*c[(14,2,-2)]/33554432.) " , aparas_14
-    print " 12*sqrt(2./5.)*pi/8 *( -306735*c[(16,2,-2)]/1073741842.) " , aparas_16
-    print "Final number is sum of these = ", aparas_0+aparas_2+aparas_4+aparas_6+aparas_8+aparas_10+aparas_12+aparas_14+aparas_16
-
-    print "**************************************"
-    print "These are the terms for A0Apar: "
-    a0apar_1  = 4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)])
-    a0apar_3  = 4*sqrt(6./5.)* 3*pi/32 *( -c[(3,2,-2)]/4.)
-    a0apar_5  = 4*sqrt(6./5.)* 3*pi/32 *( -5*c[(5,2,-2)]/128.)
-    a0apar_7  = 4*sqrt(6./5.)* 3*pi/32 *( -7*c[(7,2,-2)]/512.)
-    a0apar_9  = 4*sqrt(6./5.)* 3*pi/32 *( -105*c[(9,2,-2)]/16384.)
-    a0apar_11 = 4*sqrt(6./5.)* 3*pi/32 *( -231*c[(11,2,-2)]/65536.)
-    a0apar_13 = 4*sqrt(6./5.)* 3*pi/32 *( -9009*c[(13,2,-2)]/4194304.)
-    a0apar_15 = 4*sqrt(6./5.)* 3*pi/32 *( -23595*c[(15,2,-2)]/16777216.)
-    a0apar_17 = 4*sqrt(6./5.)* 3*pi/32 *( -1042899*c[(17,2,-2)]/1073741824.)
-    print "4*sqrt(6./5.)* 3*pi/32 *( c[(1,2,-2)]) = "             , a0apar_1
-    print "4*sqrt(6./5.)* 3*pi/32 *( -c[(3,2,-2)]/4) = "          , a0apar_3 
-    print "4*sqrt(6./5.)* 3*pi/32 *( -5*c[(5,2,-2)]/128.) = "     , a0apar_5
-    print "4*sqrt(6./5.)* 3*pi/32 *( -7*c[(7,2,-2)]/512.) = "     , a0apar_7
-    print "4*sqrt(6./5.)* 3*pi/32 *( -105*c[(9,2,-2)]/16384) = "  , a0apar_9
-    print "4*sqrt(6./5.)* 3*pi/32 *( -231*c[(11,2,-2)]/65536.) = "  , a0apar_11
-    print "4*sqrt(6./5.)* 3*pi/32 *( -9009*c[(13,2,-2)]/4194304) = "  , a0apar_13
-    print "4*sqrt(6./5.)* 3*pi/32 *( -23595*c[(15,2,-2)]/16777216) = "  , a0apar_15
-    print "4*sqrt(6./5.)* 3*pi/32 *( -1042899*c[(17,2,-2)]/1073741824) = "  , a0apar_17
-    print "Final number is sum of these = ", a0apar_1+a0apar_3+a0apar_5+a0apar_7+a0apar_9+a0apar_11+a0apar_13+a0apar_15+a0apar_17
-
-    print "**************************************"
-    print "These are the terms for A0Aperp: "
-    a0aperp_1  = -4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)])
-    a0aperp_3  = -4*sqrt(6./5.)* 3*pi/32 *( -c[(3,2, 1)]/4.)
-    a0aperp_5  = -4*sqrt(6./5.)* 3*pi/32 *( -5*c[(5,2, 1)]/128.)
-    a0aperp_7  = -4*sqrt(6./5.)* 3*pi/32 *( -7*c[(7,2, 1)]/512.)
-    a0aperp_9  = -4*sqrt(6./5.)* 3*pi/32 *( -105*c[(9,2, 1)]/16384.)
-    a0aperp_11 = -4*sqrt(6./5.)* 3*pi/32 *( -231*c[(11,2, 1)]/65536.)
-    a0aperp_13 = -4*sqrt(6./5.)* 3*pi/32 *( -9009*c[(13,2, 1)]/4194304.)
-    a0aperp_15 = -4*sqrt(6./5.)* 3*pi/32 *( -23595*c[(15,2, 1)]/16777216.)
-    a0aperp_17 = -4*sqrt(6./5.)* 3*pi/32 *( -1042899*c[(17,2, 1)]/1073741824.)
-    print "-4*sqrt(6./5.)* 3*pi/32 *( c[(1,2, 1)]) = "             , a0aperp_1
-    print "-4*sqrt(6./5.)* 3*pi/32 *( -c[(3,2, 1)]/4) = "          , a0aperp_3 
-    print "-4*sqrt(6./5.)* 3*pi/32 *( -5*c[(5,2, 1)]/128.) = "     , a0aperp_5
-    print "-4*sqrt(6./5.)* 3*pi/32 *( -7*c[(7,2, 1)]/512.) = "     , a0aperp_7
-    print "-4*sqrt(6./5.)* 3*pi/32 *( -105*c[(9,2, 1)]/16384) = "  , a0aperp_9
-    print "-4*sqrt(6./5.)* 3*pi/32 *( -231*c[(11,2, 1)]/65536.) = "  , a0aperp_11
-    print "-4*sqrt(6./5.)* 3*pi/32 *( -9009*c[(13,2, 1)]/4194304) = "  , a0aperp_13
-    print "-4*sqrt(6./5.)* 3*pi/32 *( -23595*c[(15,2, 1)]/16777216) = "  , a0aperp_15
-    print "-4*sqrt(6./5.)* 3*pi/32 *( -1042899*c[(17,2, 1)]/1073741824) = "  , a0aperp_17
-    print "Final number is sum of these = ", a0aperp_1+a0aperp_3+a0aperp_5+a0aperp_7+a0aperp_9+a0aperp_11+a0aperp_13+a0aperp_15+a0aperp_17
-
                                                                               
 def compare_methods (canomoments,moments): #compute the 'canonical' moments given the Fourier series
     c = dict()
@@ -253,40 +156,6 @@ def compare_methods (canomoments,moments): #compute the 'canonical' moments give
     for name in xi_c.iterkeys() :
         print '%s : direct moment: %s ;  from Fourier series: %s ; ratio = %s ' % ( name, canomoments.coefficients()[name][0], xi_c[name], canomoments.coefficients()[name][0]/xi_c[name])
 
-    print "#########################################################"
-    
-    for name in xi_c.iterkeys() :
-        print '%s : direct moment/2 : %s ; from Fourier series: %s ; difference = %s ' % ( name, (canomoments.coefficients()[name][0])/2., xi_c[name], (canomoments.coefficients()[name][0]/2.)-xi_c[name])
-
     return c
         
 mydict = compare_methods(canomoms,eff)
-
-MCpdf_eff = eff * MC_sig_t_angles
-#MCpdf_eff2 = eff2 * MC_sig_t_angles
-
-#Make some plots.
-#Problems when asking more then indices(3,3) angular terms with string name in ROOT 5.30.05
-if True:
-    terms = eff.buildPDFTerms()
-    effshape = terms.buildAddition('effshape')
-
-    from ROOT import TCanvas, kGreen, kBlue, kOrange
-    c = TCanvas("c1","Determine efficiency moments",900,600)
-    c.Divide(3,2);
-    for (i,var) in enumerate(angles.angles.values()) :
-        c.cd(1+i)
-        plot2 = var.frame()
-        effshape.plotOn(plot2)
-        plot2.Draw()
-        c.cd(4+i) # start argument of enumerate is python >= 2.6...
-        plot = var.frame()
-        MCdata.plotOn(plot)
-        MC_sig_t_angles.plotOn(plot,LineColor = kBlue)
-        MCpdf_eff.plotOn(plot,LineColor = kGreen)
-        #MCpdf_eff2.plotOn(plot,LineColor = kOrange)
-        plot.Draw()
-
-    c.Flush()
-    c.Update()
-    c.Print("AngularAcceptanceCorrectionMC.eps")
