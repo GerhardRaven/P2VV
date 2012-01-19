@@ -9,7 +9,7 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
+t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.2, 14))
 m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550))
 
 # Categories
@@ -49,7 +49,7 @@ tres = LP2011_TimeResolution(time = t)['model']
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, tres, 'SingleSided'])
 # Detached
 biased_acceptance   = BinnedPdf(Name = 'biased_acceptance', Observables = [t], Function = biased_eff,
-                              Binning = binning)
+                                Binning = binning)
 biased_pdf          = biased_acceptance * sig_t
 # Prescaled
 unbiased_acceptance = BinnedPdf(Name = 'unbiased_acceptance', Observables = [t], Function = unbiased_eff,
@@ -61,25 +61,29 @@ both_acceptance     = BinnedPdf(Name = 'both_acceptance', Observables = [t], Fun
 both_pdf            = both_acceptance * sig_t
 
 # B mass pdf
-m_mean  = RealVar('m_mean',   Unit = 'MeV', Value = 5370, MinMax = (5200, 5500))
-m_sigma = RealVar('m_sigma',  Unit = 'MeV', Value = 8, MinMax = (5, 15))
-sig_m = Pdf(Name = 'sig_m', Type = Gaussian,  Parameters = (m,m_mean, m_sigma ))
+from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
 
 # Create signal component
-signal = Component('signal', (sig_m, sig_t), Yield = (30000,100,100000))
+signal = Component('signal', (sig_m.pdf(), sig_t), Yield = (30000,100,100000))
 
 # Create combinatorical background component
-m_c = RealVar( 'm_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.00001))
-bkg_m = Pdf(Name = 'bkg_m', Type = Exponential, Parameters = [m, m_c])
-bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
-comb_t = Pdf(Name = 'comb_t', Type = Decay,  Parameters = [t, bkg_tau, tres, 'SingleSided'])
-comb_background = Component('comb_background', (bkg_m, comb_t), Yield = (50000,100,300000) )
+bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
-# Apply acceptance (dirty way)
+bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
+
+from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres
+                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
+                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
+                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
+background = Component('background', (bkg_m.pdf(), bkg_t.pdf()), Yield = (50000,100,300000) )
+
+# Apply acceptance
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
-input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120118.root'
 read_data = False
 if read_data:
     data = readData(input_file, tree_name, cuts = '(sel == 1)',
@@ -96,33 +100,33 @@ else:
     pdfs = {}
     datasets = {}
     for label, (time_pdf, sig_yld, bkg_yld) in time_pdfs.iteritems():
-        signal = Component('signal_%s' % label, (sig_m, time_pdf), Yield = sig_yld)
-        bkg = Component('background_%s' % label, (bkg_m, comb_t), Yield = bkg_yld)
+        signal = Component('signal_%s' % label, (sig_m.pdf(), time_pdf), Yield = sig_yld)
+        bkg = Component('background_%s' % label, (bkg_m.pdf(), bkg_t.pdf()), Yield = bkg_yld)
         pdfs[label] = buildPdf(Components = (signal, bkg), Observables = (m, t), Name = 'pdf_%s' % label)
         datasets[label] = pdfs[label].generate((m, t), sig_yld[0] + bkg_yld[0])
     split_cat = Category('split_cat', States = dict([(label, i) for i, label in enumerate(time_pdfs.iterkeys())]))
     data = RooDataSet("combined", "combined", RooArgSet(m, t), RooFit.Index(split_cat._target_()),
-                      Import = datasets)
+                      Imports = datasets.items())
 
 data.table(split_cat).Print('v')
     
 ## Build PDF
 spec = {((t,), split_cat)   : {'OnlyBiased'   : {signal          : {'PDF'   : [biased_pdf],
                                                                     'Yield' : (10000, 1000, 50000)},
-                                                 comb_background : {'Yield' : (10000, 500,  50000)}
+                                                 background : {'Yield' : (10000, 500,  50000)}
                                                  },
                                'OnlyUnbiased' : {signal          : {'PDF'   : [unbiased_pdf],
                                                                     'Yield' : (500, 100, 5000)},
-                                                 comb_background : {'Yield' : (1000, 100, 5000)}
+                                                 background : {'Yield' : (1000, 100, 5000)}
                                                  },
                                'Both'         : {signal          : {'PDF'   : [both_pdf],
                                                                     'Yield' : (10000, 1000, 50000)},
-                                                 comb_background : {'Yield' : (10000, 500,  50000)}
+                                                 background : {'Yield' : (10000, 500,  50000)}
                                                  }
                                }
         }
 
-pdf = buildSimultaneousPdf(Components = (signal, comb_background), Observables = (m, t), Spec = spec,
+pdf = buildSimultaneousPdf(Components = (signal, background), Observables = (m, t), Spec = spec,
                            Name='pdf')
 pdf.Print("t")
 

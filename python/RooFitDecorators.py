@@ -24,13 +24,12 @@ def __wrap_kw_subs( fun ) :
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
-        if 'Slices' in kwargs :
+        if 'Slices' in kwargs:
             args += tuple( RooCmdArg( __disp('Slice', slice) ) for slice in kwargs.pop('Slices') )
+        if 'Imports' in kwargs:
+            args += tuple( RooCmdArg( __disp('Import', slice) ) for slice in kwargs.pop('Imports') )
         for k,v in kwargs.iteritems():
-            if k in ['Import'] and type(v) == dict:
-                args += tuple(RooCmdArg( __disp(k,e) ) for e in v.iteritems())
-            else:
-                args += ( RooCmdArg( __disp(k,v) ),)
+            args += (RooCmdArg( __disp(k,v)),)
         return fun(self,*args)
     return _fun
 
