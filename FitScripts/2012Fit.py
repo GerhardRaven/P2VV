@@ -14,7 +14,7 @@ fitOpts = dict( NumCPU = numCPU()
 #              , Minimizer = ('Minuit2','minimize')
               )
 
-tmincut = 0.3
+tmincut = 0.5
 
 # define observables
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
@@ -202,12 +202,14 @@ from P2VVGeneralUtils import RealMomentsBuilder
 
 from itertools import chain
 momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
+#These are the relevant terms as found with MinSignificance>3
 #momindices = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
 
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
 eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(str(tmincut)))
+#Check the significant terms
 #eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(str(tmincut)),MinSignificance = 3)
 eff.Print()
 
