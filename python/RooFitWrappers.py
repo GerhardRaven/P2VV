@@ -242,8 +242,17 @@ class Category (RooObject) :
 
 class SuperCategory( Category ) :
     def __init__(self,Name,cats,**kwargs):
-        self._declare("SuperCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
-        self._init(Name,'RooSuperCategory')
+        data = kwargs.pop('Data', None)
+        t = 'RooSuperCategory'
+        if data:
+            from ROOT import RooSuperCategory
+            obj = RooSuperCategory(Name, Name, RooArgSet(*cats))
+            obj = data.addColumn(__dref__(obj))
+            obj = self._addObject(obj)
+            t = 'RooCategory'
+        else:
+            self._declare("SuperCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
+        self._init(Name, t)
         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -255,8 +264,15 @@ class MappedCategory( Category ) :
             obj =  RooMappedCategory(Name,Name,__dref__(cat) )
             for k,vs in mapper.iteritems() :
                 for v in vs : obj.map( v, k )
-            obj = self._addObject(obj)
-            self._init(Name,'RooMappedCategory')
+            data = kwargs.pop('Data', None)
+            def init(o, t):
+                obj = self._addObject(o)
+                self._init(obj.GetName(), t)
+            if data:
+                obj = data.addColumn(__dref__(obj))
+                init(obj, 'RooCategory')
+            else:
+                init(obj, 'RooMappedCategory')
             self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
@@ -268,6 +284,21 @@ class MappedCategory( Category ) :
                 if k in ['Index', 'Label']: continue
                 assert v == self[k]
 
+## class MultiCategory( Category ) :
+##     def __init__(self,Name,cats,**kwargs):
+##         data = kwargs.pop('Data', None)
+##         t = 'RooMultiCategory'
+##         if data:
+##             from ROOT import RooMultiCategory
+##             obj = RooMultiCategory(Name, Name, RooArgSet(*cats))
+##             obj = data.addColumn(__dref__(obj))
+##             obj = self._addObject(obj)
+##             t = 'RooCategory'
+##         else:
+##             self._declare("MultiCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
+##         self._init(Name, t)
+##         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+##         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class Product(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
@@ -464,15 +495,14 @@ class RealVar (RooObject) :
 ##TODO, factor out common code in Pdf and ResolutionModel
 
 class Pdf(RooObject):
-    # TODO: support conditional observables!!!
-    #       multiply automatically with flat PDF for conditional observables in no PDF for them is given??
-    #       or intercept fitTo and add ConditionalObservables = ( ... ) ??
     _getters = {'Type'        : lambda s : s._get('Type')
                ,'Parameters'  : lambda s : s._get('Parameters')
                ,'Name'        : lambda s : s._get('Name')
                ,'ConditionalObservables' : lambda s : s.ConditionalObservables()
+               ,'ExternalConstraints'    : lambda s : s.ExternalConstraints()
                }
     _setters = { 'ConditionalObservables' : lambda s,v : s.setConditionalObservables(v)
+               , 'ExternalConstraints'    : lambda s,v : s.setExternalConstraints(v)
                }
 
     ## TODO: define operators
@@ -483,6 +513,9 @@ class Pdf(RooObject):
         # Save the keyword args as properties
         self._dict = kwargs
         self._make_pdf()
+        for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
+            self[d] = kwargs.pop(d)
+
 
     def __str__(self):
         d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
@@ -537,10 +570,20 @@ class Pdf(RooObject):
         # TODO: check if we have a conditional request for something which isn't one of
         #       our observables and provide a warning...
         self._conditionals = set( o if type(o)==str else o.GetName() for o in obs )
+    def ExternalConstraints(self) :
+        if not hasattr(self,'_externalConstraints') : return list()
+        return self._externalConstraints
+    def setExternalConstraints(self, constraints ) :
+        self._externalConstraints = constraints
 
 
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
+        extConst = self.ExternalConstraints()
+        if extConst : 
+            assert 'ExernalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
+            print 'INFO: adding ExternalConstraints: %s' % extConst
+            kwargs['ExternalConstraints'] = extConst 
         for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
         return self._var.fitTo( data, **kwargs )
@@ -613,19 +656,15 @@ class ProdPdf(Pdf):
         return '_X_'
 
 class SumPdf(Pdf):
-    def __init__(self, Name, PDFs, Yields):
+    def __init__(self, **kwargs) :
         self._yields = {}
-        self._dict = {'Name'  : Name,
-                      'Yields': Yields,
-                      'PDFs'  : PDFs,
-                      'Type'  : 'RooAddPdf'}
-        pdfs = list(PDFs)
-        diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(Yields.keys()))
+        pdfs = list(kwargs['PDFs'])
+        diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
                                 + 'less then the number of PDFs.')
         # self._dict['Name'] = self._separator().join([p.GetName() for p in pdfs])
-        self._make_pdf()
+        Pdf.__init__( self, Type = 'RooAddPdf', **kwargs )
         del self._dict
 
     def _make_pdf(self):
@@ -745,6 +784,8 @@ class EditPdf( Pdf ) :
         extraOpts = dict()
         cond =  d['Original'].ConditionalObservables()
         if cond : extraOpts['ConditionalObservables'] = cond
+        exCon = d['Original'].ExternalConstraints()
+        if exCon : extraOpts['ExternalConstraints' ] = exCon
         Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -791,6 +832,8 @@ class EffProd(Pdf):
         extraOpts = dict()
         cond =  d['Original'].ConditionalObservables()
         if cond : extraOpts['ConditionalObservables'] = cond
+        exCon = d['Original'].ExternalConstraints()
+        if exCon : extraOpts['ExternalConstraints' ] = exCon
         Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -838,7 +881,8 @@ class BDecay( Pdf ) :
                                           " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
                                           " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
         self._init(Name,'RooBDecay')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        for (k,v) in kwargs.iteritems() : 
+            self.__setitem__(k,v)
 
 
 class BTagDecay( Pdf ) :
@@ -926,7 +970,7 @@ class BinnedPdf( Pdf ) :
         elif 'Observable' in kwargs :
             # single continuous variable dependence
 	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	    # !!! work very well. We vreate the object directly and then add it to RooObject and the workspace.
+	    # !!! work very well. We create the object directly and then add it to RooObject and the workspace.
             var = kwargs.pop('Observable')
             binning = kwargs.pop('Binning')
             binning = var.getBinning(binning).GetName() if type(binning) == str else binning.GetName()
@@ -956,7 +1000,7 @@ class BinnedPdf( Pdf ) :
         elif 'Observables' in kwargs :
             # multiple continuous variable dependence
 	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	    # !!! work very well. We vreate the object directly and then add it to RooObject and the workspace.
+	    # !!! work very well. We create the object directly and then add it to RooObject and the workspace.
 
             # build list of base variables
             from ROOT import RooArgList
@@ -1164,22 +1208,24 @@ class Component(object):
             if nk : raise IndexError('could not construct matching product -- no PDF for observables: %s' % [i for i in nk ])
             nk = frozenset.union(*terms)
             pdfs = [self[i] for i in terms if type(self[i])!=type(None)]
-            #TODO: check that the conditional handling is internally consistent...
-            d[nk] = ProdPdf(self.name, PDFs = pdfs)
+            externalConstraints = [ ec for pdf in pdfs for ec in pdf.externalConstraints() ]
+            d[nk] = ProdPdf(self.name, PDFs = pdfs, ExternalConstraints = externalConstraints )
         return d[k]
 
 def buildPdf(Components, Observables, Name) :
     # multiply PDFs for observables (for each component)
     if not Observables : raise RuntimeError('no Observables??')
     obs = [o if type(o)==str else o.GetName() for o in Observables]
-    args = {'Yields' : {}, 'PDFs'   : [] }
+    args = {'Yields' : {}, 'PDFs'   : [], 'ExternalConstraints' : [] }
     for c in Components:
         pdf = c[obs]
         args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
+        print 'buildPDF: %s has constraints %s' % ( pdf.GetName(), pdf.ExternalConstraints() )
+        args['ExternalConstraints'] += pdf.ExternalConstraints()
     if len(Components)==1 : return args['PDFs'][0] # TODO: how to change the name?
     # and sum components (inputs should already be extended)
-    return SumPdf(Name,**args)
+    return SumPdf(Name=Name,**args)
 
 def buildSimultaneousPdf(Components, Observables, Spec, Name) :
     # multiply PDFs for observables (for each component)
@@ -1230,6 +1276,6 @@ def buildSimultaneousPdf(Components, Observables, Spec, Name) :
             pdf = comp[obs]
             args['Yields'][pdf.GetName()] = comp['Yield']
             args['PDFs'].append(pdf)
-        states[state] = SumPdf('_'.join((Name, suffix)) , **args)
+        states[state] = SumPdf(Name = '_'.join((Name, suffix)) , **args)
     ## return states
     return SimultaneousPdf(Name, SplitCategory = split_cat, States = states)

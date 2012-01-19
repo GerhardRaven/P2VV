@@ -11,15 +11,25 @@ gROOT.SetStyle("Plain")
 def __wrap_kw_subs( fun ) :
     from ROOT import RooCmdArg,RooFit,RooAbsCollection,TObject
     __doNotConvert = [ RooAbsCollection, TObject ]
-    __tbl  = lambda k : getattr(RooFit,k)
-    __disp = lambda k,v : ( __tbl(k)(v) if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) else __tbl(k)(*v)) if type(v) != type(None) \
-                          else __tbl(k)()
+    __tbl  = lambda k : getattr(RooFit, k)
+    def __disp(k, v):
+        if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) \
+           or str(type(v)).find('.Category') != -1:
+            return __tbl(k)(v._target_() if hasattr(v, '_target_') else v)
+        elif type(v) != type(None):
+            return __tbl(k)(*v)
+        else:
+            __tbl(k)()
+
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
-        if 'Slices' in kwargs :
+        if 'Slices' in kwargs:
             args += tuple( RooCmdArg( __disp('Slice', slice) ) for slice in kwargs.pop('Slices') )
-        args += tuple( RooCmdArg( __disp(k,v) ) for k,v in kwargs.iteritems() )
+        if 'Imports' in kwargs:
+            args += tuple( RooCmdArg( __disp('Import', slice) ) for slice in kwargs.pop('Imports') )
+        for k,v in kwargs.iteritems():
+            args += (RooCmdArg( __disp(k,v)),)
         return fun(self,*args)
     return _fun
 
@@ -95,15 +105,20 @@ def __create_RooAbsCollectionInit(t) :
         from ROOT import TObject
         if str(type(i)).find('.Category') != -1:
             return i._target_()
-        if not hasattr(i,'__iter__') or isinstance(i, TObject): return i
+        elif not hasattr(i, '__iter__') and hasattr(i, '_target_'):
+            return i._target_()
+        elif not hasattr(i, '__iter__') or isinstance(i, TObject):
+            return i
         _i = t()
         for j in i : 
             from ROOT import RooAbsArg
-            if not isinstance(j,RooAbsArg) : return i
+            if not isinstance(j,RooAbsArg):
+                print "Not a RooAbsArg"
+                return i
             _i.add( j._target_() if hasattr(j, '_target_') else j )
         return _i
     __init = t.__init__
-    return lambda self,*args : __init(self,*tuple( cnvrt(i) for i in args ))
+    return lambda self,*args : __init(self, *tuple(cnvrt(i) for i in args))
 
 def _RooTypedUnary2Binary( t,op ) :
     return lambda x,y : getattr(t,op)(t(x),y)
