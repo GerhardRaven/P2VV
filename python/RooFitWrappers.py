@@ -982,23 +982,38 @@ class BinnedPdf( Pdf ) :
 
             else:
                 # independent bin coefficients are specified
+                if hasattr( kwargs['Coefficients'][0], '__iter__' ) :
+                    # coefficients for different variables factorize
 
-                # build coefficients lists
-                assert len(kwargs['Coefficients']) == len(observables),\
-                        'P2VV - ERROR: BinnedPdf: number of specified coefficient lists is not equal to the number of specified variables'
-                from ROOT import TObjArray, RooArgList
-                coefLists = TObjArray()
-                for coefficients in kwargs.pop('Coefficients') :
+                    # build coefficients lists
+                    assert len(kwargs['Coefficients']) == len(observables),\
+                            'P2VV - ERROR: BinnedPdf: number of specified coefficient lists is not equal to the number of specified variables'
+                    from ROOT import TObjArray, RooArgList
+                    coefLists = TObjArray()
+                    for coefficients in kwargs.pop('Coefficients') :
+                        coefList = RooArgList()
+                        for coef in coefficients : coefList.add(__dref__(coef))
+                        coefLists.Add(coefList)
+
+                    from ROOT import RooBinnedPdf
+                    self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
+                                                  , varList, binningList, coefLists
+                                                  , kwargs.pop( 'BinIntegralCoefs', 0 ), kwargs.pop( 'IgnoreFirstBin', 0 )
+                                                 )
+                                   )
+                else :
+                    # coefficients for different variables don't factorize
+
+                    # build coefficients list
+                    from ROOT import RooArgList
                     coefList = RooArgList()
-                    for coef in coefficients : coefList.add(__dref__(coef))
-                    coefLists.Add(coefList)
+                    for coef in kwargs.pop('Coefficients') : coefList.add(__dref__(coef))
 
-                from ROOT import RooBinnedPdf
-                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                              , __dref__(var), binningList, coefLists
-                                              , kwargs.pop( 'BinIntegralCoefs', 0 ), kwargs.pop( 'IgnoreFirstBin', 0 )
-                                             )
-                               )
+                    from ROOT import RooBinnedPdf
+                    self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
+                                                  , varList, binningList, coefList, kwargs.pop( 'BinIntegralCoefs', 0 )
+                                                 )
+                                   )
 
         else :
             raise KeyError('P2VV - ERROR: BinnedPdf: please specify variable(s)')

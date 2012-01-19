@@ -47,6 +47,10 @@ public:
 
   RooBinnedPdf(const char *name, const char *title,
       const RooArgList& baseVars, const TObjArray& binningNames,
+      const RooArgList& coefList, Bool_t binIntegralCoefs = kFALSE);
+
+  RooBinnedPdf(const char *name, const char *title,
+      const RooArgList& baseVars, const TObjArray& binningNames,
       const TObjArray& coefLists, Bool_t binIntegralCoefs = kFALSE,
       Bool_t ignoreFirstBin = kFALSE);
 
@@ -96,7 +100,7 @@ protected:
 private:
   Int_t createBaseCats(const RooArgList& baseVars,
       const TObjArray& binningNames);
-  Int_t initCoefs(const TObjArray& coefLists);
+  Int_t initCoefs(const TObjArray& coefLists, Bool_t factorize = kTRUE);
 
   void reset();
    
@@ -105,6 +109,7 @@ private:
   }
 
   Double_t evaluateCoef() const;
+  Double_t evaluateMultipleCoefs() const;
   Double_t evaluateFunction() const;
 
   Int_t _numCats;

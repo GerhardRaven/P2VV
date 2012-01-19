@@ -7,7 +7,7 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = True
+fitData        = False
 makePlots      = True
 
 plotsFile = 'JvLFitTagCats.ps'
@@ -64,14 +64,19 @@ fitOpts = dict(  NumCPU              = 10
                , Save                = True
                , ExternalConstraints = extConstraints
               )
+bkg_anglesFitOpts = dict(  NumCPU              = 10
+                         , Timer               = 1
+                         , Minos               = False
+                         , Hesse               = False
+                        )
 
 # plot options
 if nominalFit : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
 else          : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
 numBins         = ( 60, 30, 30, 30 )
 numTimeBins     = ( 60, 60 )
-numAngleBins    = ( 20, 32, 20 )
-numBkgAngleBins = ( 20, 32, 20 )
+numAngleBins    = ( 20, 40, 20 )
+numBkgAngleBins = ( 20, 40, 20 )
 lineWidth       = 2
 markStyle       = 8
 markSize        = 0.4
@@ -286,14 +291,46 @@ elif binnedBkgAngles :
     #bkg_angles = HistPdf(  Name = 'bkg_angles'
     #                     , Observables = angles
     #                     , Binning =  {  angleFuncs.angles['cpsi']   : 5
-    #                                   , angleFuncs.angles['ctheta'] : 32
+    #                                   , angleFuncs.angles['ctheta'] : 40
     #                                   , angleFuncs.angles['phi' ]   : 5
     #                                  }
     #                     , Data = sideBandData
     #                    )
 
-    angles[0]
-    bkg_angles = BinnedPdf( Name = 'bkg_angles', Observables = angles )
+    from array import array
+    from ROOT import RooBinning
+    cthetaKBinBounds = array( 'd', [ -1.,                      -0.6,      -0.2,      0.2,      0.6,                   1. ] )
+    cthetalBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
+    phiBinBounds     = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
+    cthetaKBins = RooBinning( len(cthetaKBinBounds) - 1, cthetaKBinBounds, 'bkg_cthetaKBins' )
+    cthetalBins = RooBinning( len(cthetalBinBounds) - 1, cthetalBinBounds, 'bkg_cthetalBins' )
+    phiBins     = RooBinning( len(phiBinBounds)     - 1, phiBinBounds,     'bkg_phiBins'     )
+    angles[0].setBinning( cthetaKBins, 'bkg_cthetaKBins' )
+    angles[1].setBinning( cthetalBins, 'bkg_cthetalBins' )
+    angles[2].setBinning( phiBins,     'bkg_phiBins'     )
+    bkg_angCoefs = [ RealVar(  'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
+                             , Title = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
+                             , Value = 1. / ( len(cthetaKBinBounds) - 1 ) / ( len(cthetalBinBounds) - 1 ) / ( len(phiBinBounds) - 1 )
+                             , MinMax = ( 0., 1. )
+                            )\
+                     if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
+                     for bin0 in range( len(cthetaKBinBounds) - 1 )\
+                     for bin1 in range( len(cthetalBinBounds) - 1 )\
+                     for bin2 in range( len(phiBinBounds)    - 1 )
+                   ]
+    del bkg_angCoefs[0]
+
+    bkg_angles = BinnedPdf(  Name = 'bkg_angles'
+                           , Observables = angles
+                           , Binnings = [ cthetaKBins, cthetalBins, phiBins ]
+                           , Coefficients = bkg_angCoefs
+                          )
+
+    #bkg_angles.fitTo(sideBandData, **bkg_anglesFitOpts)
+    #sideBandDataTree = sideBandData.tree()
+    #for bin, coef in enumerate(bkg_angCoefs) :
+    #    cthetaKBin = 
+    #    coef.setConstant()
 
 else :
     pass
