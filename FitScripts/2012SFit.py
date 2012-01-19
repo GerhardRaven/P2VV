@@ -9,8 +9,8 @@ from ROOTDecorators import  ROOTversion as Rv
 fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
-              , Verbose = False
-              , Optimize = True
+#              , Verbose = False
+#              , Optimize = True
               , Minimizer = ('Minuit2','minimize')
               )
 
@@ -44,7 +44,7 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
 from P2VVGeneralUtils import readData
 
 #Read data
-data = readData( '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -74,12 +74,12 @@ externalConstraints += tresdata.externalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                     , deltaGamma = dict( Name = 'dGamma'
-                                                        , Value = 0.060
-                                                        #, Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-                                                        )
-                                     , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
-                                     , deltaMConstraint = True
+                                       , deltaGamma = dict( Name = 'dGamma'
+                                                            , Value = 0.060
+                                                            , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+                                                            )
+                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
+                                       , deltaMConstraint = True
                                      )
 externalConstraints += lifetimeParams.externalConstraints()
 
@@ -96,10 +96,10 @@ from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                                               , Value = -0.04
                                               , MinMax = (-pi,pi)
-                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
+                                              , Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
                                               )
-                         , lambdaCPSq = dict( Value = 1., Constant = True )
-                        )
+                           , lambdaCPSq = dict( Value = 1., Constant = True )
+                           )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
