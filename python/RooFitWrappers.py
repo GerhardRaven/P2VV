@@ -957,7 +957,7 @@ class BinnedPdf( Pdf ) :
         elif 'Observable' in kwargs :
             # single continuous variable dependence
 	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	    # !!! work very well. We vreate the object directly and then add it to RooObject and the workspace.
+	    # !!! work very well. We create the object directly and then add it to RooObject and the workspace.
             var = kwargs.pop('Observable')
             binning = kwargs.pop('Binning')
             binning = var.getBinning(binning).GetName() if type(binning) == str else binning.GetName()
@@ -987,7 +987,7 @@ class BinnedPdf( Pdf ) :
         elif 'Observables' in kwargs :
             # multiple continuous variable dependence
 	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	    # !!! work very well. We vreate the object directly and then add it to RooObject and the workspace.
+	    # !!! work very well. We create the object directly and then add it to RooObject and the workspace.
 
             # build list of base variables
             from ROOT import RooArgList

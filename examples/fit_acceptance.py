@@ -49,15 +49,15 @@ tres = LP2011_TimeResolution(time = t)['model']
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, tres, 'SingleSided'])
 # Detached
 biased_acceptance   = BinnedPdf(Name = 'biased_acceptance', Observables = [t], Function = biased_eff,
-                                Binning = binning)
+                                Binning = binning, ConditionalObservables = ( t,))
 biased_pdf          = biased_acceptance * sig_t
 # Prescaled
 unbiased_acceptance = BinnedPdf(Name = 'unbiased_acceptance', Observables = [t], Function = unbiased_eff,
-                                Binning = binning)
+                                Binning = binning, ConditionalObservables = ( t,))
 unbiased_pdf        = unbiased_acceptance * sig_t
 # Both
 both_acceptance     = BinnedPdf(Name = 'both_acceptance', Observables = [t], Function = both_eff,
-                                Binning = binning)
+                                Binning = binning, ConditionalObservables = ( t,))
 both_pdf            = both_acceptance * sig_t
 
 # B mass pdf

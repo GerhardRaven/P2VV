@@ -11,7 +11,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Save = True
               , Verbose = False
               , Optimize = True
-#              , Minimizer = ('Minuit2','minimize')
+              , Minimizer = ('Minuit2','minimize')
               )
 
 # define observables
@@ -22,7 +22,7 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                                   } )
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.2, 14),    nBins =  54 )
 st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
@@ -42,7 +42,7 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
 from P2VVGeneralUtils import readData
 
 #Read data
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+data = readData( '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -131,7 +131,6 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 #                       , ConditionalObservables = ( eta_os, )
 #                       , ConditionalObservables = ( eta_os, iTag_os, )
                        )
-
 #####################################
 ### Angular acceptance correction ###
 #####################################
@@ -142,7 +141,7 @@ momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_0.3.txt')
+eff.read('effmoments_tcut_0.3.txt')
 eff.Print()
 
 #Build Angular acceptance corrected PDF
@@ -151,8 +150,8 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 ### Proper time acceptance ###
 ##############################
-from P2VVParameterizations.TimeAcceptance import LP2011_TimeAcceptance
-acceptance = LP2011_TimeAcceptance( time = t )
+from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
+acceptance = Moriond2012_TimeAcceptance( time = t )
 sig_t_angles = acceptance.acceptance() * sig_t_angles
 
 ##################
@@ -179,9 +178,11 @@ for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
 sfitsignal = Component('sfitsignal', ( sig_t_angles, ), Yield = ( nsig, 0, 2.0*nsig) )
-sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
-sfitpdf.Print()
+sfitpdf = buildPdf((sfitsignal,), Observables = (t, iTag_os, eta_os) + tuple(angles.angles.itervalues()),
+                   Name='sfitpdf')
+sfitpdf.Print('t')
 
-sfitresult = sfitpdf.fitTo( splot_m.data('signal'),ExternalConstraints = externalConstraints,SumW2Error = True,  **fitOpts)
-sfitresult.writepars('sfitresult_NOTimeAcc',False)
+sfitresult = sfitpdf.fitTo( splot_m.data('signal'),ExternalConstraints = externalConstraints,
+                            SumW2Error = True,  **fitOpts)
+sfitresult.writepars('sfitresult', False)
 

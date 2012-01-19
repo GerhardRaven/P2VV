@@ -30,13 +30,6 @@ biased_eff   = FormulaVar('biased_eff',   "@0 * (1 - @1)", [b_eff, ub_eff])
 unbiased_eff = FormulaVar('unbiased_eff', "@0 * (1 - @1)", [ub_eff, b_eff])
 both_eff     = FormulaVar('both_eff',     "@0 * @1",       [ub_eff, b_eff])
 
-## from P2VVBinningBuilders import build1DVerticalBinning
-## binning, eff_func = build1DVerticalBinning('time_binning', b_eff, t, 0.05, 1.)
-from ROOT import TFile
-acceptance_file = TFile.Open('acceptance.root')
-acceptance_hist = acceptance_file.Get('BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
-time_acceptance = HistFunc('time_acceptance', Histogram = acceptance_hist, Observables = [t])
-
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential
@@ -51,19 +44,11 @@ tres = LP2011_TimeResolution(time = t)['model']
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, tres, 'SingleSided'])
+
+# Time acceptance
+from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
+time_acceptance = Moriond2012_TimeAcceptance( time = t ).acceptance()
 sig_t = time_acceptance * sig_t
-# Detached
-## biased_acceptance   = BinnedPdf(Name = 'biased_acceptance', Observables = [t], Function = biased_eff,
-##                                 Binning = binning)
-## biased_pdf          = biased_acceptance * sig_t
-# Prescaled
-## unbiased_acceptance = BinnedPdf(Name = 'unbiased_acceptance', Observables = [t], Function = unbiased_eff,
-##                                 Binning = binning)
-## unbiased_pdf        = unbiased_acceptance * sig_t
-# Both
-## both_acceptance     = BinnedPdf(Name = 'both_acceptance', Observables = [t], Function = both_eff,
-##                                 Binning = binning)
-## both_pdf            = both_acceptance * sig_t
 
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
