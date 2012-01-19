@@ -242,8 +242,17 @@ class Category (RooObject) :
 
 class SuperCategory( Category ) :
     def __init__(self,Name,cats,**kwargs):
-        self._declare("SuperCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
-        self._init(Name,'RooSuperCategory')
+        data = kwargs.pop('Data', None)
+        t = 'RooSuperCategory'
+        if data:
+            from ROOT import RooSuperCategory
+            obj = RooSuperCategory(Name, Name, RooArgSet(*cats))
+            obj = data.addColumn(__dref__(obj))
+            obj = self._addObject(obj)
+            t = 'RooCategory'
+        else:
+            self._declare("SuperCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
+        self._init(Name, t)
         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -255,8 +264,15 @@ class MappedCategory( Category ) :
             obj =  RooMappedCategory(Name,Name,__dref__(cat) )
             for k,vs in mapper.iteritems() :
                 for v in vs : obj.map( v, k )
-            obj = self._addObject(obj)
-            self._init(Name,'RooMappedCategory')
+            data = kwargs.pop('Data', None)
+            def init(o, t):
+                obj = self._addObject(o)
+                self._init(obj.GetName(), t)
+            if data:
+                obj = data.addColumn(__dref__(obj))
+                init(obj, 'RooCategory')
+            else:
+                init(obj, 'RooMappedCategory')
             self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
@@ -268,6 +284,21 @@ class MappedCategory( Category ) :
                 if k in ['Index', 'Label']: continue
                 assert v == self[k]
 
+## class MultiCategory( Category ) :
+##     def __init__(self,Name,cats,**kwargs):
+##         data = kwargs.pop('Data', None)
+##         t = 'RooMultiCategory'
+##         if data:
+##             from ROOT import RooMultiCategory
+##             obj = RooMultiCategory(Name, Name, RooArgSet(*cats))
+##             obj = data.addColumn(__dref__(obj))
+##             obj = self._addObject(obj)
+##             t = 'RooCategory'
+##         else:
+##             self._declare("MultiCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
+##         self._init(Name, t)
+##         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+##         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class Product(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
@@ -926,7 +957,7 @@ class BinnedPdf( Pdf ) :
         elif 'Observable' in kwargs :
             # single continuous variable dependence
 	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	    # !!! work very well. We vreate the object directly and then add it to RooObject and the workspace.
+	    # !!! work very well. We create the object directly and then add it to RooObject and the workspace.
             var = kwargs.pop('Observable')
             binning = kwargs.pop('Binning')
             binning = var.getBinning(binning).GetName() if type(binning) == str else binning.GetName()
@@ -956,7 +987,7 @@ class BinnedPdf( Pdf ) :
         elif 'Observables' in kwargs :
             # multiple continuous variable dependence
 	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	    # !!! work very well. We vreate the object directly and then add it to RooObject and the workspace.
+	    # !!! work very well. We create the object directly and then add it to RooObject and the workspace.
 
             # build list of base variables
             from ROOT import RooArgList
