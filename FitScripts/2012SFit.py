@@ -14,7 +14,7 @@ fitOpts = dict( NumCPU = numCPU()
 #              , Minimizer = ('Minuit2','minimize')
               )
 
-tmincut = 0.5
+tmincut = 0.3
 
 # define observables
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
@@ -175,9 +175,6 @@ sig_t_angles = acceptance.acceptance() * sig_t_angles
 ### Build PDFs ###
 ##################
 
-############
-# SIG ONLY #
-############
 nsig = 20000
 nbkg = 10000
 signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( nsig, 0, 2.0*nsig) )
@@ -201,7 +198,7 @@ if pereventerror:
     sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='sfitpdf')
     sfitpdf.Print()
     #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-    sfitresult = sfitpdf.fitTo( splot_m.data('signal'),ExternalConstraints = externalConstraints,SumW2Error = True,ConditionalObservables = [st],  **fitOpts)
+    sfitresult = sfitpdf.fitTo( splot_m.data('signal'), ExternalConstraints = externalConstraints, SumW2Error = True, ConditionalObservables = [st], **fitOpts)
 
 else:
     sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
