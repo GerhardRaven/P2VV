@@ -1,0 +1,27 @@
+
+from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin
+
+class TimeAcceptance ( _util_parse_mixin, _util_extConstraints_mixin ) :
+    def __init__( self, **kwargs ) : 
+        if 'Acceptance' in kwargs : self._acceptance = kwargs.pop( 'Acceptance' )
+        else :                 raise KeyError('TimeResolution: please specify a resolution model')
+        _util_extConstraints_mixin.__init__( self, kwargs )
+        self._check_extraneous_kw(kwargs)
+
+    def __getitem__( self, kw ) : return getattr( self, '_' + kw )
+    def acceptance( self ) : return self._acceptance
+
+
+class LP2011_TimeAcceptance ( TimeAcceptance ) :
+    def __init__(self, **kwargs ) :
+        from RooFitWrappers import ConstVar, FormulaVar, BinnedPdf
+        self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+        self._a = ConstVar(Name = 'eff_a', Value =  1.45 )
+        self._c = ConstVar(Name = 'eff_c', Value = -2.37 )
+        self._eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1.0 / (1.0 + (@1 * @0) ** (@2))) : 0.0", [self._time, self._a, self._c])
+
+        from P2VVBinningBuilders import build1DVerticalBinning
+        self._binning, self._eff_func = build1DVerticalBinning('time_binning', self._eff, self._time, 0.05, 1.)
+
+        TimeAcceptance.__init__( self, Acceptance = BinnedPdf(Name = 'time_acceptance', Observable = self._time, Function = self._eff, Binning = self._binning
+                                                             , ConditionalObservables = ( self._time,)) )

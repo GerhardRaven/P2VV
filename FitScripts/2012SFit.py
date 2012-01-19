@@ -51,9 +51,6 @@ data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitt
                  , Rename = 'Data_DecayTree'
                  )
 
-#TODO: Fix bug: When Rename is on, data = nil, but the dataset is imported in the ws anyway, so this is a quick fix:
-#data = obj.ws().data('Data_DecayTree')
-
 print 'Number of events', data.numEntries()
 
 data.table(iTag_os).Print('v')
@@ -65,7 +62,6 @@ sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 #Time Resolution Model
-#Data
 #Three Gaussians
 #from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
 #tresdata = DataTimeResolution( time = t, timeResSFConstraint = True ) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
@@ -78,13 +74,13 @@ externalConstraints += tresdata.externalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                       , deltaGamma = dict( Name = 'dGamma'
-                                                            , Value = 0.060
-                                                            , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-                                                            )
-                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
-                                       , deltaMConstraint = True
-                                      )
+                                     , deltaGamma = dict( Name = 'dGamma'
+                                                        , Value = 0.060
+                                                        #, Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+                                                        )
+                                     , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
+                                     , deltaMConstraint = True
+                                     )
 externalConstraints += lifetimeParams.externalConstraints()
 
 # define tagging parameter 
@@ -100,9 +96,8 @@ from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                                               , Value = -0.04
                                               , MinMax = (-pi,pi)
-                                              #Can't have kwarg Constant when blinded???
-                                              #, Constant = False
-                                              , Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
+                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
+                                              )
                          , lambdaCPSq = dict( Value = 1., Constant = True )
                         )
 
@@ -114,9 +109,6 @@ amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
                                               , f_S = dict( Value = 0.02, Constant = False )
                                               , ASPhase = dict( Value = 2.7, Constant = False )
                                              )
-
-# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-#from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
 #amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
 #                                              , AperpMag2 = 0.25, AperpPhase = 2.77 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
 #                                              , AparPhase = 3.2
@@ -142,12 +134,6 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , Product('tag',(iTag_os,tagging['dilution']))
                                                   , ['A0','Apar','Aperp','AS'] ) 
 
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
-bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.model()
-                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
-                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
-                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
-
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , time      = t
                        , dm        = lifetimeParams['deltaM'] 
@@ -166,14 +152,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 ### Angular acceptance correction ###
 #####################################
 from P2VVGeneralUtils import RealMomentsBuilder
-#nset = angles.angles.values()
-
-#canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
-#canomoms.compute(MCdata)
-#canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
-
 from itertools import chain
-#momindices = indices(3,3)
 momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
 
 eff = RealMomentsBuilder()
@@ -188,96 +167,32 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 ### Proper time acceptance ###
 ##############################
-a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
-c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
-eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
-
-from P2VVBinningBuilders import build1DVerticalBinning
-binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
-
-acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
-
-#Build proper time acceptance corrected PDF
-#sig_t_angles = acceptance * sig_t_angles
+from P2VVParameterizations.TimeAcceptance import LP2011_TimeAcceptance
+acceptance = LP2011_TimeAcceptance( time = t )
+sig_t_angles = acceptance.acceptance() * sig_t_angles
 
 ##################
 ### Build PDFs ###
 ##################
 
 ############
-# BKG ONLY #
-############
-sidebanddata = data.reduce(CutRange = 'leftsideband')
-rightsidebanddata = data.reduce(CutRange = 'rightsideband')
-sidebanddata.append(rightsidebanddata)
-
-nbkg = 20000
-#background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
-#The following doesn't make a difference, indeed!
-background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf()), Yield = ( nbkg, 0, 2.0*nbkg) )
-background[eta_os]=None
-background[iTag_os]=None
-
-# create PDF for angular background
-if False :
-    # make sweighted dataset using J/psi phi mass
-    from P2VVGeneralUtils import createSData
-    from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
-    splot_m = createSData( Name = 'Mass' , Components =  (signal,background), Observables = (m,), FitOpts = fitOpts, Data = data )
-    mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
-    background += mompdfBuilder.pdf( Component = background.GetName()
-                                       , Indices = [ i for i in indices(3,4) ]
-                                       , Name = 'bkg_angles'
-                                       , MinSignificance = 0.5
-                                       , Scale = sqrt(50.) )
-elif False:
-    for i in angles.angles.itervalues():
-        background[i]=None
-    #background += UniformPdf( Name = 'bkg_angles', Arguments = angles.angles.itervalues() )
-else :
-    background += HistPdf( Name = 'bkg_angles'
-                             , Observables = angles.angles.itervalues()
-                             , Binning =  { angles.angles['cpsi'] : 7
-                                          , angles.angles['ctheta'] : 5
-                                          , angles.angles['phi' ] : 9
-                                          }
-                             , Data  = sidebanddata
-                             )
-
-############
 # SIG ONLY #
 ############
 nsig = 20000
+nbkg = 10000
 signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( nsig, 0, 2.0*nsig) )
-
-#############
-# MASS ONLY #
-#############
-masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
-#masspdf.fitTo(data,**fitOpts)
+background     = Component('bkg',    ( bkg_m.pdf(), ),              Yield = ( nbkg, 0, 2.0*nbkg) )
 
 ############
 ### SFIT ###
 ############
 # make sweighted dataset. TODO: using J/psi phi mass
 from P2VVGeneralUtils import SData, splot
-from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
+
+masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
+masspdf.fitTo(data,**fitOpts)
+for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
-
-S_sigdata = splot_m.data('signal')
-S_bkgdata = splot_m.data('bkg')
-
-## from ROOT import TCanvas
-## canvas2 = TCanvas()
-## canvas2.Divide(2)
-## canvas2.cd(1)
-## mframe = m.frame()
-## S_sigdata.plotOn(mframe)
-## mframe.Draw()
-## canvas2.cd(2)
-## mframe = m.frame()
-## S_bkgdata.plotOn(mframe)
-## mframe.Draw()
 
 sfitsignal = Component('sfitsignal', ( sig_t_angles, ), Yield = ( nsig, 0, 2.0*nsig) )
 
@@ -286,14 +201,13 @@ if pereventerror:
     sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='sfitpdf')
     sfitpdf.Print()
     #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-    sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, ConditionalObservables = [st], **fitOpts)
+    sfitresult = sfitpdf.fitTo( splot_m.data('signal'),ExternalConstraints = externalConstraints,SumW2Error = True,ConditionalObservables = [st],  **fitOpts)
 
 else:
     sfitpdf = buildPdf((sfitsignal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='sfitpdf')
     sfitpdf.Print()
-
     #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-    sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, **fitOpts)
+    sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, SumW2Error = True, **fitOpts)
 
 sfitresult.writepars('sfitresult_NOTimeAcc',False)
 
