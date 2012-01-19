@@ -12,6 +12,7 @@ class TimeAcceptance ( _util_parse_mixin, _util_extConstraints_mixin ) :
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
     def acceptance( self ) : return self._acceptance
+    def __mul__(self,rhs) : return self.acceptance() * rhs
 
 
 class LP2011_TimeAcceptance ( TimeAcceptance ) :
