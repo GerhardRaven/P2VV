@@ -7,40 +7,42 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
-from P2VVParameterizations.GeneralUtils import _util_parse_mixin
+from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin
 
 
-class LifetimeParams ( _util_parse_mixin ):
+class LifetimeParams ( _util_parse_mixin, _util_extConstraints_mixin ):
     def __init__( self, **kwargs ) :
         for coef in [ 'MeanLifetime', 'deltaGamma', 'deltaM' ] : setattr( self, '_' + coef, kwargs.pop(coef) )
-        self._constraints = kwargs.pop( 'Constraints', None )
+        _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw( kwargs )
 
     def __getitem__( self, kw )     : return getattr( self, '_' + kw )
-    def ExternalConstraints( self ) : return self._constraints
 
 class Gamma_LifetimeParams( LifetimeParams ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import FormulaVar, ConstVar, Pdf
 
-        self._parseArg( 'Gamma',      kwargs, Title = 'Gamma',       Unit = 'ps^{-1}', Value = 0.68, MinMax = (  0.4,  0.9 ) )
-        self._parseArg( 'deltaGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = 0.1,  MinMax = (- 1.,   1.  ) )
-        self._parseArg( 'deltaM',     kwargs, Title = 'delta m',     Unit = 'ps^{-1}', Value = 17.8, MinMax = ( 16.5, 18.5 ) )
+        self._parseArg( 'Gamma',      kwargs, Title = 'Gamma',       Unit = 'ps^{-1}', Value = 0.667,  MinMax = (  0.4,  0.9 ) )
+        self._parseArg( 'deltaGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = 0.12,   MinMax = (- 1.,   1.  ) )
+        self._parseArg( 'deltaM',     kwargs, Title = 'delta m',     Unit = 'ps^{-1}', Value = 17.58,  MinMax = ( 16.5, 18.5 ) )
         
-        from ROOT import RooGaussian as Gaussian
-        constraint = Pdf(  Name = self._deltaM.GetName() + '_constraint', Type = Gaussian
-                         , Parameters = [  self._deltaM
-                                         , ConstVar( Name = 'deltaM_mean',  Value = 17.63 )
-                                         , ConstVar( Name = 'deltaM_sigma', Value = 0.11 )
-                                        ]
-                        )
+        constraints = [  ]
+        if kwargs.pop( 'deltaMConstraint', None ) :
+            from ROOT import RooGaussian as Gaussian
+            constraints.append( Pdf(  Name = self._deltaM.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._deltaM
+                                                    , ConstVar( Name = 'deltaM_mean',  Value = 17.63 )
+                                                    , ConstVar( Name = 'deltaM_sigma', Value = 0.11 )
+                                                   ]
+                                   )
+                              )
 
         self._check_extraneous_kw( kwargs )
         LifetimeParams.__init__( self
                                  , MeanLifetime = FormulaVar( 'MeanLifetime', '1. / @0', [self._Gamma], Title = 'B Mean lifetime' )
                                  , deltaGamma  = self._deltaGamma
                                  , deltaM      = self._deltaM
-                                 , Constraints = [constraint]
+                                 , Constraints = constraints
                                )
 
 class Tau_LifetimeParams( LifetimeParams ) :

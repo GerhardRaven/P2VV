@@ -9,6 +9,8 @@
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
+phiCP      = 0.17
+lambdaCPSq = 1.
 
 class CPParam ( _util_parse_mixin ):
     def __init__( self, **kwargs ) :
@@ -22,8 +24,8 @@ class LambdaCarth_CPParam( CPParam ) :
         from RooFitWrappers import FormulaVar
         from math import cos, sin
 
-        self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-0.04), MinMax = ( -2., 2. ) )
-        self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-0.04), MinMax = ( -2., 2. ) )
+        self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(phiCP), MinMax = ( -2., 2. ) )
+        self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(phiCP), MinMax = ( -2., 2. ) )
 
         self._check_extraneous_kw( kwargs )
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
@@ -37,8 +39,8 @@ class LambdaSqArg_CPParam( CPParam ) :
         from RooFitWrappers import FormulaVar
         from math import pi
 
-        self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value =  1.,   MinMax = ( 0.,       5.      ) )
-        self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = -0.04, MinMax = ( -2. * pi, 2. * pi ) )
+        self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value = lambdaCPSq, MinMax = (  0.,      5.      ) )
+        self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = phiCP,      MinMax = ( -2. * pi, 2. * pi ) )
         self._check_extraneous_kw( kwargs )
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',                [ self._lambdaCPSq              ] )
                              , D = FormulaVar('D', '2. * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )

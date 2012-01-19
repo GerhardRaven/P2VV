@@ -12,6 +12,6 @@ msgServ = RooMsgService.instance()
 
 # remove plotting streams with "INFO" as a minimum level
 for stream in msgServ :
-    if stream.minLevel == RooFit.INFO : stream -= RooFit.Minimization
+#    if stream.minLevel == RooFit.INFO : stream -= RooFit.Minimization
     if stream.minLevel == RooFit.INFO : stream -= RooFit.Plotting
 

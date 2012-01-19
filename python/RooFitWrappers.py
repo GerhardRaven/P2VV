@@ -65,12 +65,12 @@ class RooObject(object) :
 
     def _rooobject(self,Name) :
         if type(Name)!=str : Name = Name.GetName()
-        return self.ws()._rooobject[Name]
+        return self.ws()._rooobjects[Name]
 
     # WARNING: the object 'o' given to _addObject should NEVER be used again
     # instead, use the item returned by _addObject
     def _addObject(self, o):
-        if not self.ws()[o.GetName()]: self.ws().put(o)
+        if o.GetName() not in self.ws(): self.ws().put(o)
         o = self.ws()[o.GetName()]
         if o.GetName() not in self.ws()._objects:
             self.ws()._objects[o.GetName()] = o
@@ -150,9 +150,9 @@ class RooObject(object) :
         return self.GetName()
 
     def Observables(self) :
-        return set( self.ws()._rooobjects[i.GetName()] for i in self._var.getVariables() if i.getAttribute('Observable') )
+        return set( self._rooobject(i) for i in self._var.getVariables() if i.getAttribute('Observable') )
     def Parameters(self) :
-        return set( self.ws()._rooobjects[i.GetName()] for i in self._var.getVariables() if not i.getAttribute('Observable') )
+        return set( self._rooobject(i) for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
     ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
     def Type(self) :
@@ -181,6 +181,9 @@ class RooObject(object) :
 
 
 class ArgSet(RooObject) :
+    def _addObject(self,o) : 
+        if o.GetName() not in self.ws()._objects :
+            self.ws()._objects[o.GetName()] = o
     def _factory(self,spec):
         import re
         match = re.match('set::([^(]+)\(.*\)',spec)
@@ -366,12 +369,16 @@ class AbsRealMoment( object ):
     def __init__( self, moment )  : self._var = moment
     def __getattr__( self, name ) : return getattr(self._var, name)
     def GetName( self )           : return self.basisFunc().GetName()
+    def basisFunc( self )         : return self._basisFunc
+    def pdf( self )               : return self._pdf
+    def normSet( self )           : return self._normSet
 
 class RealMoment( AbsRealMoment ):
     def __init__( self, BasisFunc, Norm ) :
         # get arguments
         self._basisFunc = BasisFunc
         self._norm      = Norm
+
         # create moment
         from P2VVLoad import P2VVLibrary
         from ROOT import RooRealMoment
@@ -386,13 +393,17 @@ class RealEffMoment( AbsRealMoment ):
         self._normSet   = NormSet
 
         # build a RooFit normalisation set
-        from ROOT import RooArgSet
-        self._rooNormSet = RooArgSet( __dref__(var) for var in self._normSet )
+        self._rooNormSet = ArgSet( self._basisFunc.GetName() + '_normSet', ( var for var in self._normSet ) )
 
         # create efficiency moment
         from P2VVLoad import P2VVLibrary
         from ROOT import RooRealEffMoment
-        AbsRealMoment.__init__( self, RooRealEffMoment( __dref__(self._basisFunc), self._norm, __dref__(self._pdf), self._rooNormSet ) )
+        AbsRealMoment.__init__( self, RooRealEffMoment(  __dref__(self._basisFunc)
+                                                       , self._norm
+                                                       , __dref__(self._pdf)
+                                                       , __dref__(self._rooNormSet)
+                                                      )
+                              )
 
 
 class RealVar (RooObject) :
@@ -910,11 +921,11 @@ class BinnedPdf( Pdf ) :
         argDict = { 'Name' : Name }
 
         # declare PDF in workspace
-        if 'Categories' in kwargs and len(kwargs['Categories']) == 1:
+        if 'Category' in kwargs :
             # single category dependence
             argDict['cat']   = str(kwargs.pop('Category')[0])
             argDict['coefs'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Coefficients') )
-            self._declare( "BinnedPdf::%(Name)s( %(cat)s, %(coefs)s )" % argDict )
+            self._declare( "BinnedPdf::%(Name)s(%(cat)s, %(coefs)s)" % argDict )
 
         elif 'Categories' in kwargs :
             # multiple category dependence
@@ -940,44 +951,86 @@ class BinnedPdf( Pdf ) :
                 for coef in coefList : wsList.add( self.ws().arg( str(coef) ) )
                 wsImport( self.ws(), wsList, listName, 0 )                     # ... then import RooArgList into workspace (with name!) ...
                 self.ws().obj(listArrayName).Add( self.ws().obj(listName) )    # ... and then add RooArgList to TObjArray
-            self._declare( "BinnedPdf::%(Name)s( %(cats)s, %(coefs)s, %(ignore)s )" % argDict )
 
-        # continuous variable(s) dependence
-        elif 'Observables' in kwargs and len(kwargs['Observables']) == 1:
-            if 'Function' in kwargs:
-                var = kwargs.pop('Observables')[0]
-                binning = None
-                if type(kwargs['Binning']) == str:
-                    binning = var.getBinning(kwargs.pop('Binning'))
-                else:
-                    binning = kwargs.pop('Binning')
+            self._declare( "BinnedPdf::%(Name)s(%(cats)s, %(coefs)s, %(ignore)s)" % argDict )
+
+        elif 'Observable' in kwargs :
+            # single continuous variable dependence
+	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
+	    # !!! work very well. We vreate the object directly and then add it to RooObject and the workspace.
+            var = kwargs.pop('Observable')
+            binning = kwargs.pop('Binning')
+            binning = var.getBinning(binning).GetName() if type(binning) == str else binning.GetName()
+
+            if 'Function' in kwargs :
+                # bin coefficients are given by a function
                 from ROOT import RooBinnedPdf
-                # Since the Workspace factory doesn't know about RooBinnedPdf
-                # and its default approach doesn't seem to work very well,
-                # create the object directly and then add it to RooObject and
-                # the ws.
-                self._addObject( RooBinnedPdf( argDict['Name'], argDict['Name']
-                                               , __dref__(var), binning.GetName()
-                                               , __dref__(kwargs.pop('Function'))) )
+                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
+                                              , __dref__(var), binning, __dref__(kwargs.pop('Function'))
+                                             )
+                               )
+
             else:
-                raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables with' +
-                               'coef lists not (yet) implemented')
-        elif 'Observables' in kwargs :
-            if 'Function' in kwargs:
-                argDict['function'] = kwargs.pop('Function').GetName()
-                name = Name + '_varList'
-                argDict['vars'] = name
-                argDict['binnings'] = kwargs.pop('Binnings')
-                # create coefficient lists
+                # independent bin coefficients are specified
+
+                # build coefficients list
                 from ROOT import RooArgList
-                l = RooArgList(name)
-                for var in kwargs.pop('Observables'):
-                    l.add(self.ws().arg(str(var)))
-                self.ws().put(l)
-                self._declare('BinnedPdf::%(Name)s(%(vars)s, %(binnings)s, %(function)s)' % argDict)
+                coefList = RooArgList()
+                for coef in kwargs.pop('Coefficients') : coefList.add(__dref__(coef))
+
+                from ROOT import RooBinnedPdf
+                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
+                                              , __dref__(var), binning, coefList, kwargs.pop( 'BinIntegralCoefs', 0 )
+                                             )
+                               )
+
+        elif 'Observables' in kwargs :
+            # multiple continuous variable dependence
+	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
+	    # !!! work very well. We vreate the object directly and then add it to RooObject and the workspace.
+
+            # build list of base variables
+            from ROOT import RooArgList
+            varList = RooArgList()
+            observables = kwargs.pop('Observables')
+            for var in observables : varList.add(__dref__(var))
+
+            # build list of binning names
+            assert len(kwargs['Binnings']) == len(observables),\
+                    'P2VV - ERROR: BinnedPdf: number of specified binnings is not equal to the number of specified variables'
+            from ROOT import TObjArray, TObjString
+            binningList = TObjArray()
+            for binning, var in zip( kwargs.pop('Binnings'), observables ) :
+                binningList.Add( TObjString( var.getBinning(binning).GetName() if type(binning) == str else binning.GetName() ) )
+
+            if 'Function' in kwargs:
+                # bin coefficients are given by a function
+                from ROOT import RooBinnedPdf
+                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
+                                              , varList, binningList, __dref__(kwargs.pop('Function'))
+                                             )
+                               )
+
             else:
-                raise KeyError('P2VV - ERROR: BinnedPdf: dependence on continuous variables with' +
-                               'coef lists not (yet) implemented')
+                # independent bin coefficients are specified
+
+                # build coefficients lists
+                assert len(kwargs['Coefficients']) == len(observables),\
+                        'P2VV - ERROR: BinnedPdf: number of specified coefficient lists is not equal to the number of specified variables'
+                from ROOT import TObjArray, RooArgList
+                coefLists = TObjArray()
+                for coefficients in kwargs.pop('Coefficients') :
+                    coefList = RooArgList()
+                    for coef in coefficients : coefList.add(__dref__(coef))
+                    coefLists.Add(coefList)
+
+                from ROOT import RooBinnedPdf
+                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
+                                              , __dref__(var), binningList, coefLists
+                                              , kwargs.pop( 'BinIntegralCoefs', 0 ), kwargs.pop( 'IgnoreFirstBin', 0 )
+                                             )
+                               )
+
         else :
             raise KeyError('P2VV - ERROR: BinnedPdf: please specify variable(s)')
 

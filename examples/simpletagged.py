@@ -53,7 +53,7 @@ from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeRe
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
 #externalConstraints = list()
-#externalConstraints += tres.ExternalConstraints()
+#externalConstraints += tres.externalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
@@ -65,7 +65,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
-#externalConstraints += tagging.ExternalConstraints()
+#externalConstraints += tagging.externalConstraints()
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta !!!
 eta_pdf = UniformPdf( Name = 'eta_pdf', Arguments = (eta,) )
@@ -89,8 +89,8 @@ CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinM
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
-amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.50, A0Phase = 0
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+amplitudes = JpsiVPolar_AmplitudeSet( A0Mag2 = 0.50, A0Phase = 0
                                     , AperpMag2 = 0.25, AperpPhase = dict( Value = -3.1 ) # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                     , AparPhase = -2.9
                                     , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True ) 

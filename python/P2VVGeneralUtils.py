@@ -202,7 +202,9 @@ def plot(  canv, obs, data, pdf, addPDFs = [ ], components = None, xTitle = '', 
         if components :
             # plot separate components of the pdf
             for num, comp in enumerate( components.keys() ) :
-                drawOpts = dict( list(components[comp].items()) + list(pdfOpts.items()) )
+                drawOpts = components[comp]
+                for opt, optVal in pdfOpts.iteritems() :
+                    if opt not in drawOpts : drawOpts[opt] = optVal
                 plotPDFWithSlices( pdf, obsFrame, 'comp%d' % num, Components = comp, **drawOpts )
 
         # plot total pdf

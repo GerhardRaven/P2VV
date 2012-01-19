@@ -103,7 +103,7 @@ from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeRes
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
 #externalConstraints = list()
-#externalConstraints += tres.ExternalConstraints()
+#externalConstraints += tres.externalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.681
@@ -116,7 +116,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.681
 from P2VVParameterizations.FlavourTagging import WTag_TaggingParams as TaggingParams
 tagging = TaggingParams( wTag = eta ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
-#externalConstraints += tagging.ExternalConstraints()
+#externalConstraints += tagging.externalConstraints()
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta !!!
 #Need this, because eta is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
@@ -134,11 +134,12 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s', Value = -0.04, Min
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import CrossCheckOldFitAmplitudes
-amplitudes = CrossCheckOldFitAmplitudes( A0Mag2 = 0.60, A0Phase = 0
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+amplitudes = JpsiVPolar_AmplitudeSet( A0Mag2 = 0.60, A0Phase = 0
                                       , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                       , AparPhase = 2.5
                                       , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True )
+                                      , PWaveNorm = False
                                     )
 
 # need to specify order in which to traverse...

@@ -6,15 +6,13 @@ obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
 from ROOTDecorators import  ROOTversion as Rv
-fitOpts = dict( NumCPU = numCPU() 
+fitOpts = dict( NumCPU = 4
               , Timer=1
               , Save = True
-              , Verbose = False
-              , Optimize = True
+#              , Verbose = False
+#              , Optimize = True
 #              , Minimizer = ('Minuit2','minimize')
               )
-
-tmincut = 0.3
 
 # define observables
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
@@ -24,7 +22,7 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                                   } )
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
-t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (tmincut, 14),    nBins =  54 )
+t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (0.3, 14),    nBins =  54 )
 st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
@@ -94,13 +92,8 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 
 #Time Resolution Model
 #Data
-#Three Gaussians
-#from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
-#tresdata = DataTimeResolution( time = t, timeResSFConstraint = True ) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')'
-#Per event error
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
-tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
-
+from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
+tresdata = DataTimeResolution( time = t, timeResSFConstraint = True ) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 externalConstraints = list()
 externalConstraints += tresdata.externalConstraints()
 
@@ -135,22 +128,22 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
-amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
-                                              , AperpMag2 = 0.25, AperpPhase = 2.77 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-                                              , AparPhase = 3.2
-                                              , f_S = dict( Value = 0.02, Constant = False )
-                                              , ASPhase = dict( Value = 2.7, Constant = False )
-                                             )
-
-# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0, |f_S|^2 = (f_S_Re)^2+(f_S_Im)^2
 #from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
-#amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
-#                                              , AperpMag2 = 0.25, AperpPhase = 2.7 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
-#                                              , AparPhase = 3.2
-#                                              , f_S_Re = dict( Value = 0.02 * cos(2.7), Constant = False )
-#                                              , f_S_Im = dict( Value = 0.02 * sin(2.7), Constant = False )
+#amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+#                                              , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+#                                              , AparPhase = 2.5
+#                                              , f_S = dict( Value = 0.0, Constant = False )
+#                                              , ASPhase = dict( Value = 0.0, Constant = False )
 #                                             )
+
+# polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
+amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
+                                              , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
+                                              , AparPhase = 2.5
+                                              , f_S_Re = dict( Value = 0.10 / ( 1. + 0.10 ) * cos(2.20), Constant = False )
+                                              , f_S_Im = dict( Value = 0.10 / ( 1. + 0.10 ) * sin(2.20), Constant = False )
+                                             )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 #from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
@@ -172,9 +165,9 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.model()
-                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.21 )
-                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.06, MinMax = (0.5,2.5) )
-                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.15, MinMax = (0.01,0.5) ) )
+                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
+                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
+                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , time      = t
@@ -201,14 +194,13 @@ from P2VVGeneralUtils import RealMomentsBuilder
 #canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 
 from itertools import chain
+#momindices = indices(3,3)
 momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
-#momindices = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
 
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(str(tmincut)))
-#eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(str(tmincut)),MinSignificance = 3)
+eff.read('effmoments.txt')
 eff.Print()
 
 #Build Angular acceptance corrected PDF
@@ -217,14 +209,14 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 ### Proper time acceptance ###
 ##############################
-a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
-c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
-eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
+#a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
+#c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
+#eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
 
-from P2VVBinningBuilders import build1DVerticalBinning
-binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
+#from P2VVBinningBuilders import build1DVerticalBinning
+#binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 
-acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
+#acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
 #sig_t_angles = acceptance * sig_t_angles
@@ -285,20 +277,23 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 #masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 #masspdf.fitTo(data,**fitOpts)
 
-pereventerror = True
+###########
+# SIG+BKG #
+###########
+#sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....
+pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+pdf.Print()
 
-if pereventerror:
-    pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='fullpdf')
-    pdf.Print()
-    classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, ConditionalObservables = [st], **fitOpts)
+###################
+### CLASSIC FIT ###
+###################
 
-else:
-    #sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....
-    pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
-    #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-    classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
+#amplitudes['ASPhase'].setVal(2.5)
+#amplitudes['ASPhase'].setConstant(False)
+#amplitudes['f_S'].setVal(0.01)
+#amplitudes['f_S'].setConstant(False)
 
+#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
+classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
 classicfitresult.writepars('classicfitresult',False)
-
-
 

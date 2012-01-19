@@ -60,6 +60,15 @@ class _util_parse_mixin( object ) :
         return rc
 
 
+class _util_extConstraints_mixin( object ) :
+    def __init__( self, kwargs ) :
+        if   'Constraints' in kwargs : self._constraints = [ constraint for constraint in kwargs.pop('Constraints') ]
+        elif 'Constraint'  in kwargs : self._constraints = [ kwargs.pop('Constraint') ]
+        else                         : self._constraints = [  ]
+
+    def externalConstraints( self ) : return self._constraints
+    def hasExtConstraints( self )   : return len(self._constraints) > 0
+
 
 #def normalize_individual( name, pdf, tag ) :
 #    pl = RooArgList()

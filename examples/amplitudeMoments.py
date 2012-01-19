@@ -89,7 +89,7 @@ observables = list(angles)
 # build terms for angular PDF
 if physicsPDF :
     # terms with transversity amplitudes
-    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes
+    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet
     transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                                           , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                                           , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)

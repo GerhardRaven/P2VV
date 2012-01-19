@@ -20,43 +20,61 @@ dataSetName = 'DecayTree'
 dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
 realData = True
 
-components = ''
-#components = 'signal'
-#components = 'background'
 nEvents    = 200000
 sigFrac    = 0.8
 
+# PDF options
+nominalFit      = False
+components      = '' # 'signal' # 'background'
+binnedBkgAngles = True
+
 # transversity amplitudes
 amplitudeParam = 'phasesSWaveFrac'
-A0Mag2Val    =  0.52
-A0PhVal      =  0.
-AparMag2Val  =  0.23
-AparPhVal    =  pi - 3.3
-AperpMag2Val =  0.25
-AperpPhVal   =  3.0
-ASMag2Val    =  0.04
-ASPhVal      =  3.0
+
+A0Mag2Val    = 0.522
+AperpMag2Val = 0.249
+Apar2MagVal  = 1. - A0Mag2Val - AperpMag2Val
+
+A0PhVal      = 0.
+AperpPhVal   = 2.77
+AparPhVal    = 3.32
+
+fSVal        = 0.016
+ASMag2Val    = fSVal / ( 1. - fSVal )
+ASPhVal      = 2.74
 
 # CP violation parameters
 carthLambdaCP = False
-phiCPVal      = -0.04
+phiCPVal      = 0.17
 lambdaCPSqVal = 1.
 
 # B lifetime parameters
-GammaVal        = 0.66
+GammaVal        = 0.667
 dGammaVal       = 0.12
 
 # asymmetries
 AProdVal = 0.
 
+# fit options
+extConstraints = [ ]
+fitOpts = dict(  NumCPU              = 10
+               , Timer               = 1
+               , Minos               = False
+               , Hesse               = False
+               , Save                = True
+               , ExternalConstraints = extConstraints
+              )
+
 # plot options
-angleNames   = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
-numBins      = ( 60, 30, 30, 30 )
-numTimeBins  = ( 60, 60 )
-numAngleBins = ( 30, 30, 30 )
-lineWidth    = 2
-markStyle    = 8
-markSize     = 0.4
+if nominalFit : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
+else          : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
+numBins         = ( 60, 30, 30, 30 )
+numTimeBins     = ( 60, 60 )
+numAngleBins    = ( 20, 32, 20 )
+numBkgAngleBins = ( 20, 32, 20 )
+lineWidth       = 2
+markStyle       = 8
+markSize        = 0.4
 
 
 ###########################################################################################################################################
@@ -70,13 +88,17 @@ from RooFitWrappers import *
 ws = RooObject(workspace = 'ws')
 
 # angular functions
-from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
-angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
+if nominalFit :
+    from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
+    angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
+else :
+    from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
+    angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 # variables in PDF (except for tagging category)
-time       = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.5, 14. ) )
-iTag       = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
-angles     = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
+time   = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.3, 14. ) )
+iTag   = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
+angles = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
 BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, Value = 5368., MinMax = ( 5200., 5550. ), nBins = 48
                        ,  Ranges =  {  'LeftSideBand'  : ( None,  5330. )
@@ -93,7 +115,7 @@ if not generateData and realData :
     mpsi = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. ), nBins =  32 )
     mphi = RealVar( 'mdau2', Title = 'M(KK)',     Unit = 'MeV', Observable = True, MinMax = ( 1020. - 12., 1020. + 12. ), nBins =  16 )
 
-    timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.15 ), nBins =  50 )
+    timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.12 ), nBins =  50 )
 
     tagDecision = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
                            , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
@@ -106,7 +128,7 @@ if not generateData and realData :
     sel   = Category( 'sel',             Title = 'Selection',        Observable = True, States = { 'selected' : +1 } )
     trig  = Category( 'triggerDecision', Title = 'Trigger Decision', Observable = True, States = { 'selected' : +1 } )
 
-    obsSetNTuple = [ time ] + list(angles) +  [ BMass, mpsi, mphi ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
+    obsSetNTuple = [ time ] + angles +  [ BMass, mpsi, mphi ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
 
     # read ntuple and add P2VV tagging variables
     from P2VVGeneralUtils import readData
@@ -116,9 +138,10 @@ else :
     data = None
 
 from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
-tagCats = TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data )
+tagCats = TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data, wTagP0Constraint = True, wTagP1Constraint = True )
 tagCatP2VV = tagCats['tagCat']
 obsSetP2VV.append( tagCatP2VV )
+extConstraints += tagCats.externalConstraints()
 
 # tagging parameters
 numTagCats    = tagCats['numTagCats']
@@ -149,8 +172,8 @@ backgroundComps = Component('bkg'   , [ ], Yield = ( nBackground, 0., 2.0 * nBac
 
 # build the signal and background mass PDFs
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass, LP2011_Background_Mass as BackgroundBMass
-signalBMass     = SignalBMass(     Name = 'sig_m', mass = BMass, m_sig_mean = dict( Value = 5365., MinMax = ( 5363., 5372. ) ) )
-backgroundBMass = BackgroundBMass( Name = 'bkg_m', mass = BMass, m_bkg_exp  = dict( Name = 'bkg_m_exp' ) )
+signalBMass     = SignalBMass(     Name = 'sig_m', mass = BMass )
+backgroundBMass = BackgroundBMass( Name = 'bkg_m', mass = BMass )
 
 signalComps     += signalBMass.pdf()
 backgroundComps += backgroundBMass.pdf()
@@ -162,17 +185,17 @@ backgroundComps += backgroundBMass.pdf()
 
 # transversity amplitudes
 if amplitudeParam == 'phasesSWaveFrac' :
-    from P2VVParameterizations.DecayAmplitudes import JpsiPhiAmplitudesWinter2012 as Amplitudes
+    from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
     amplitudes = Amplitudes(  A0Mag2    = A0Mag2Val
                             , A0Phase   = A0PhVal
                             , AperpMag2 = AperpMag2Val
                             , AparPhase = AparPhVal
-                            , f_S       = ASMag2Val / ( 1. + ASMag2Val )
-                            , ASPhase   = ASPhVal
+                            , f_S_Re    = fSVal * cos(ASPhVal)
+                            , f_S_Im    = fSVal * sin(ASPhVal)
                            )
 
 else :
-    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesianAmplitudes as Amplitudes
+    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
     amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                             , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                             , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
@@ -183,21 +206,23 @@ else :
 
 # B lifetime
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
-lifetimeParams = LifetimeParams(  Gamma = GammaVal
+lifetimeParams = LifetimeParams(  Gamma = dict(Value = GammaVal)
                                 , deltaGamma = dict(  Name = 'dGamma', Value = dGammaVal
-                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+#                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                    )
+                                , deltaMConstraint = True
                                )
+extConstraints += lifetimeParams.externalConstraints()
 
-#from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
-timeResModel = TimeResolution( time = time )
+timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
+extConstraints += timeResModel.externalConstraints()
 
 # CP violation parameters
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
 lambdaCP = CPParam(  lambdaCPSq = lambdaCPSqVal
                    , phiCP = dict(  Value = phiCPVal
-                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+#                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
                                  )
                   )
 
@@ -228,7 +253,8 @@ args = dict(  time            = time
             , resolutionModel = timeResModel['model']
            )
 
-signalComps += BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+signalComps += sig_t_angles_tagCat_iTag
 
 
 ###########################################################################################################################################
@@ -236,11 +262,7 @@ signalComps += BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
 ###############################
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
-backgroundTime = BackgroundTime(  Name = 'bkg_t', time = time, resolutionModel = timeResModel['model']
-                                , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.6                        )
-                                , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 2.5, MinMax = ( 0.5, 3.5 ) )
-                                , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.1                        )
-                               )
+backgroundTime = BackgroundTime( Name = 'bkg_t', time = time, resolutionModel = timeResModel['model'] )
 backgroundComps += backgroundTime.pdf()
 
 
@@ -251,14 +273,48 @@ backgroundComps += backgroundTime.pdf()
 sideBandData = data.reduce( CutRange = 'LeftSideBand' )
 sideBandData.append( data.reduce( CutRange = 'RightSideBand' ) )
 
-backgroundComps += HistPdf(  Name = 'bkg_angles'
-                           , Observables = angles
-                           , Binning =  {  angleFuncs.angles['cpsi']   : 5
-                                         , angleFuncs.angles['ctheta'] : 7
-                                         , angleFuncs.angles['phi' ]   : 9
-                                        }
-                           , Data = sideBandData
-                          )
+if nominalFit :
+    bkg_angles = HistPdf(  Name = 'bkg_angles'
+                         , Observables = angles
+                         , Binning =  {  angleFuncs.angles['cpsi']   : 5
+                                       , angleFuncs.angles['ctheta'] : 7
+                                       , angleFuncs.angles['phi' ]   : 9
+                                      }
+                         , Data = sideBandData
+                        )
+elif binnedBkgAngles :
+    #bkg_angles = HistPdf(  Name = 'bkg_angles'
+    #                     , Observables = angles
+    #                     , Binning =  {  angleFuncs.angles['cpsi']   : 5
+    #                                   , angleFuncs.angles['ctheta'] : 32
+    #                                   , angleFuncs.angles['phi' ]   : 5
+    #                                  }
+    #                     , Data = sideBandData
+    #                    )
+
+    angles[0]
+    bkg_angles = BinnedPdf( Name = 'bkg_angles', Observables = angles )
+
+else :
+    pass
+
+backgroundComps += bkg_angles
+
+if makePlots :
+    # import plotting tools
+    from P2VVLoad import ROOTStyle
+    from P2VVGeneralUtils import plot
+    from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
+
+    # plot background angles
+    bkgAnglesCanv = TCanvas( 'bkgAnglesCanv', 'Background Decay Angles' )
+    for ( pad, obs, nBins, plotTitle, xTitle )\
+            in zip( bkgAnglesCanv.pads( 3, 2 ), angles, numBkgAngleBins, [ angle.GetTitle() for angle in angles ], angleNames ) :
+        plot(  pad, obs, sideBandData, bkg_angles, xTitle = xTitle
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle                )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize )
+             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth       )
+            )
 
 
 ###########################################################################################################################################
@@ -269,8 +325,10 @@ backgroundComps += BinnedPdf(  'bkg_tagCat_iTag'
                              , Categories   = ( tagCatP2VV, iTag )
                              , Coefficients = [  taggingParams['tagCatCoefs']
                                                , [  RealVar( 'bkg_BbarFrac'
-                                                            , Title = 'Anti-B fraction in background'
-                                                            , Value = 0.5, MinMax = ( 0., 1. )
+                                                            , Title    = 'Anti-B fraction in background'
+                                                            , Value    = 0.5
+                                                            , MinMax = ( 0., 1. )
+                                                            , Constant = True
                                                            )
                                                  ]
                                               ]
@@ -314,7 +372,9 @@ else :
 if fitData :
     # fix values of some parameters
     lifetimeParams.setConstant('deltaM')
+    lifetimeParams.setConstant('dGamma')
     lambdaCP.setConstant('lambdaCPSq')
+    lambdaCP.setConstant('phiCP')
 
     for CEvenOdd in taggingParams['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
@@ -322,16 +382,17 @@ if fitData :
     taggingParams.setConstant('tagCatCoef.*')
     tagCats.setConstant('wTag.*')
 
-    amplitudes.setConstant('.*')
+    #amplitudes.setConstant('f_S|ASPhase')
+    #amplitudes.setConstant('.*')
 
-    timeResModel.setConstant('timeResSF')
-    backgroundTime.setConstant('.*')
-    signalBMass.setConstant('.*')
-    backgroundBMass.setConstant('.*')
+    #timeResModel.setConstant('timeResSF')
+    #backgroundTime.setConstant('.*')
+    #signalBMass.setConstant('.*')
+    #backgroundBMass.setConstant('.*')
 
     # fit data
     print 'JvLFit: fitting %d events' % data.numEntries()
-    fitResult = pdf.fitTo( data, Minos = False, Hesse = False )  #, NumCPU = 12, Timer = 1, Save = True )
+    fitResult = pdf.fitTo( data, **fitOpts )
 
 
 ###########################################################################################################################################
@@ -342,21 +403,24 @@ if makePlots :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
-    from ROOT import TCanvas
+    from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
 
     # plot lifetime and angles
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
     for ( pad, obs, nBins, plotTitle, xTitle )\
             in zip(  timeAnglesCanv.pads( 2, 2 )
-                   , obsSetP2VV[ : -1 ]
+                   , obsSetP2VV[ : 5 ]
                    , numBins
-                   , [ var.GetTitle() for var in obsSetP2VV[ : -1 ] ]
+                   , [ var.GetTitle() for var in obsSetP2VV[ : 5 ] ]
                    , ( '', ) + angleNames
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
-             , frameOpts = { 'Bins' : nBins, 'Title' : plotTitle }
-             , dataOpts  = { 'MarkerStyle' : markStyle, 'MarkerSize' : markSize }
-             , pdfOpts   = { 'LineWidth' : lineWidth }
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle                )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize )
+             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth       )
+             , components = { 'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
+                            , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+                            }
             )
 
     # plot lifetime
@@ -376,9 +440,12 @@ if makePlots :
                    , 2 * ( False, True )
                   ) :
         plot(  pad, time, data, pdf, logy = logY
-             , frameOpts = dict( Bins = nBins, Title = plotTitle )
-             , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
-             , pdfOpts   = dict( LineWidth = lineWidth, **pdfCuts )
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle                            )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
+             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts        )
+             , components = { 'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
+                            , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+                            }
             )
 
     # set Y-axis maximum for lifetime plots
@@ -414,9 +481,12 @@ if makePlots :
                + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TagCat5Range'  }, )
             ) :
         plot(  pad, time, data, pdf
-             , frameOpts = dict( Bins = nBins, Title = plotTitle )
-             , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
-             , pdfOpts   = dict( LineWidth = lineWidth, **pdfCuts )
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle                            )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
+             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts      )
+             , components = { 'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
+                            , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+                            }
             )
 
     # plot angles
@@ -433,9 +503,12 @@ if makePlots :
                    , 3 * ( { 'Slice' : ( iTag, 'B' ) }, ) + 3 * ( { 'Slice' : ( iTag, 'Bbar' ) }, )
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
-             , frameOpts = dict( Bins = nBins, Title = plotTitle )
-             , dataOpts  = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts )
-             , pdfOpts   = dict( LineWidth = lineWidth, **pdfCuts )
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle                             )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts )
+             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts       )
+             , components = { 'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
+                            , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+                            }
             )
 
     # set Y-axis maximum for angles plots
@@ -451,5 +524,6 @@ if makePlots :
     timeAnglesCanv.Print(plotsFile + '(')
     timeCanv.Print(plotsFile)
     timeCanv1.Print(plotsFile)
-    anglesCanv.Print(plotsFile + ')')
+    anglesCanv.Print(plotsFile)
+    bkgAnglesCanv.Print(plotsFile + ')')
 

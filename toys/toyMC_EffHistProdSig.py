@@ -39,8 +39,8 @@ from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.4, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar(Name ='one',Value=1) )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import JpsiphiAmplitudesLP2011
-amplitudes = JpsiphiAmplitudesLP2011( A0Mag2 = 0.60, A0Phase = 0
+from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+amplitudes = JpsiVPolar_AmplitudeSet( A0Mag2 = 0.60, A0Phase = 0
                                     , AperpMag2 = 0.160, AperpPhase = -0.17
                                     , AparPhase = 2.5
                                     , ASMag2 = { 'Value' : 0, 'Constant': True} , ASPhase = { 'Value': 0, 'Constant':True } )
