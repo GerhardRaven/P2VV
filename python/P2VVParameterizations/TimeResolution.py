@@ -53,7 +53,7 @@ class LP2011_TimeResolution ( TimeResolution ) :
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
         self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
         self._parseArg( 'timeResMu', kwargs, Value = -0.0027 )
-        self._parseArg( 'timeResSF', kwargs, Value = 1.0, MinMax = ( 0.5, 5. ) )
+        self._parseArg( 'timeResSF', kwargs, Value = 1.0, MinMax = ( 0.5, 5. ), Constant = True )
 
         sigmas = [ ( 3, 0.513  ), ( 2, 0.0853 ), ( 1, 0.0434 ) ]
         fracs  = [ ( 3, 0.0017 ), ( 2, 0.165 ) ]

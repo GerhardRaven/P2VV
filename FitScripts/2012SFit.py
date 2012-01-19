@@ -11,7 +11,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Save = True
               , Verbose = False
               , Optimize = True
-#              , Minimizer = ('Minuit2','minimize')
+              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -44,7 +44,7 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
 from P2VVGeneralUtils import readData
 
 #Read data
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+data = readData( '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -147,7 +147,6 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 #                       , ConditionalObservables = ( eta_os, )
 #                       , ConditionalObservables = ( eta_os, iTag_os, )
                        )
-
 #####################################
 ### Angular acceptance correction ###
 #####################################
@@ -167,8 +166,8 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 ### Proper time acceptance ###
 ##############################
-from P2VVParameterizations.TimeAcceptance import LP2011_TimeAcceptance
-acceptance = LP2011_TimeAcceptance( time = t )
+from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
+acceptance = Moriond2012_TimeAcceptance( time = t )
 sig_t_angles = acceptance.acceptance() * sig_t_angles
 
 ##################
@@ -207,4 +206,5 @@ else:
     sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, SumW2Error = True, **fitOpts)
 
 sfitresult.writepars('sfitresult_NOTimeAcc',False)
+
 
