@@ -5,7 +5,6 @@ indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) fo
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-from ROOTDecorators import  ROOTversion as Rv
 fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
@@ -41,9 +40,9 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
                     , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 
-from P2VVGeneralUtils import readData
 
 #Read data
+from P2VVGeneralUtils import readData
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
@@ -81,12 +80,10 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                        , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
                                      )
-externalConstraints += lifetimeParams.externalConstraints()
 
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True ) # Constant = False, Constrain = True ) TODO!!!
-externalConstraints += tagging.externalConstraints()
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
@@ -109,6 +106,7 @@ amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
                                               , f_S = dict( Value = 0.02, Constant = False )
                                               , ASPhase = dict( Value = 2.7, Constant = False )
                                              )
+
 #amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
 #                                              , AperpMag2 = 0.25, AperpPhase = 2.77 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
 #                                              , AparPhase = 3.2
@@ -133,20 +131,22 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , CP
                                                   , Product('tag',(iTag_os,tagging['dilution']))
                                                   , ['A0','Apar','Aperp','AS'] ) 
+basisCoefficients.externalConstraints = tagging.externalConstraints()
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
-                       , time      = t
-                       , dm        = lifetimeParams['deltaM'] 
-                       , tau       = lifetimeParams['MeanLifetime']
-                       , dGamma    = lifetimeParams['deltaGamma'] 
-                       , resolutionModel = tresdata.model()
-                       , coshCoef  = basisCoefficients['cosh']
-                       , cosCoef   = basisCoefficients['cos']
-                       , sinhCoef  = basisCoefficients['sinh']
-                       , sinCoef   = basisCoefficients['sin']
-#                       , ConditionalObservables = ( eta_os, )
-#                       , ConditionalObservables = ( eta_os, iTag_os, )
-                       )
+                     , time      = t
+                     , dm        = lifetimeParams['deltaM'] 
+                     , tau       = lifetimeParams['MeanLifetime']
+                     , dGamma    = lifetimeParams['deltaGamma'] 
+                     , resolutionModel = tresdata.model()
+                     , coshCoef  = basisCoefficients['cosh']
+                     , cosCoef   = basisCoefficients['cos']
+                     , sinhCoef  = basisCoefficients['sinh']
+                     , sinCoef   = basisCoefficients['sin']
+#                     , ConditionalObservables = ( eta_os, )
+#                     , ConditionalObservables = ( eta_os, iTag_os, )
+                     , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
+                     )
 #####################################
 ### Angular acceptance correction ###
 #####################################
@@ -167,12 +167,12 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t )
-sig_t_angles = acceptance.acceptance() * sig_t_angles
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/acceptance.root' )
+sig_t_angles = acceptance * sig_t_angles
 
-##################
-### Build PDFs ###
-##################
+####################
+### Compose PDFs ###
+####################
 
 nsig = 20000
 nbkg = 10000
@@ -182,7 +182,7 @@ background     = Component('bkg',    ( bkg_m.pdf(), ),              Yield = ( nb
 ############
 ### SFIT ###
 ############
-# make sweighted dataset. TODO: using J/psi phi mass
+# make sweighted dataset. TODO: use mumu mass as well...
 from P2VVGeneralUtils import SData, splot
 
 masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
@@ -206,5 +206,4 @@ else:
     sfitresult = sfitpdf.fitTo(S_sigdata,ExternalConstraints = externalConstraints, SumW2Error = True, **fitOpts)
 
 sfitresult.writepars('sfitresult_NOTimeAcc',False)
-
 
