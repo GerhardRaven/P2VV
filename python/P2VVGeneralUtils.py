@@ -762,7 +762,7 @@ class SData( object ) :
                 raise KeyError('no weight in dataset for Component %s' % Component )
             dname = '%s_weighted_%s' % ( self._sdata.GetName(), Component )
             from ROOT import RooDataSet
-            self._data[Component] = RooDataSet( dname, dname, self._sdata, self._sdata.get(),"1>0",wname) # use a dummy cut as (const char*)0 is tricky...
+            self._data[Component] = RooDataSet( dname, dname, self._sdata.get(),Import = self._sdata, WeightVar = wname)
         return self._data[Component]
 
 
