@@ -171,6 +171,33 @@ Double_t RooTrivialTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code, cons
   return ( p ? p->arg().analyticalIntegral(code,rangeName) : 0 ) * ( _tag!=0 ? _tageff : 1.-_tageff );
 }
 
+//_____________________________________________________________________________
+Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const 
+{
+  cout << "TrivialTagDecay::isDirectGenSafe" << endl;;
+  // Check if given observable can be safely generated using the
+  // pdfs internal generator mechanism (if that existsP). Observables
+  // on which a PDF depends via more than route are not safe
+  // for use with internal generators because they introduce
+  // correlations not known to the internal generator
+
+  // Arg must be direct server of self
+  if (!findServer(arg.GetName())) return kFALSE ;
+
+  // There must be no other dependency routes
+  TIterator* sIter = serverIterator() ;
+  const RooAbsArg *server = 0;
+  while((server=(const RooAbsArg*)sIter->Next())) {
+    if(server == &arg) continue;
+    if(server->dependsOn(arg)) {
+      cout << "case 2 fails " << server->GetName() << " " << arg.GetName() << endl;
+      delete sIter ;
+      return kFALSE ;
+    }
+  }
+  delete sIter ;
+  return kTRUE ;
+}
 
 
 //_____________________________________________________________________________
