@@ -112,12 +112,13 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__(  self
-                                  , Model =  ResolutionModel( Name = 'timeResMoriond2012'
-                                                              , Type = GaussModel
-                                                              , Parameters = [self._time, self._timeResMU, self._sigmat, self._timeResSF]
-                                                              )
-                                  , Constraints = constraints
-                                  )
+                               , Model =  ResolutionModel( Name = 'timeResMoriond2012'
+                                                         , Type = GaussModel
+                                                         , Parameters = [self._time, self._timeResMU, self._sigmat, self._timeResSF]
+                                                         , ConditionalObservables = [ self._sigmat ]
+                                                         )
+                               , Constraints = constraints
+                               )
 
 class Gamma_Sigmat( _util_parse_mixin ) :
     def pdf(self) :

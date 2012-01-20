@@ -579,6 +579,11 @@ class Pdf(RooObject):
 
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
+        condObs  = self.ConditionalObservables()
+        if condObs :
+            assert 'ConditionalObservables' not in kwargs or condObs == kwargs['ConditionalObservables'] , 'Inconsistent Conditional Observables'
+            print 'INFO: adding ConditionalObservables: %s' % condObs
+            kwargs['ConditionalObservables'] = condObs 
         extConst = self.ExternalConstraints()
         if extConst : 
             assert 'ExernalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
@@ -619,6 +624,11 @@ class ProdPdf(Pdf):
                      }
         self._make_pdf()
         del self._dict
+        # TODO: call Pdf.__init__ instead!!!
+        assert 'ConditionalObservables' not in kwargs, 'ConditionalObservables are done automatically. Do not specify'
+            
+        for d in set(('ExternalConstraints',)).intersection( kwargs ) :
+            self[d] = kwargs.pop(d)
 
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
@@ -649,8 +659,12 @@ class ProdPdf(Pdf):
                 __borken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
                 name += '|%s'% __borken_parser_workaround.GetName()
             return name
+        # NOTE: this construction 'absorbs' all conditional observables, so the output
+        #       does not have any explicit conditional observables anymore...
         pdfs = ','.join( _handleConditional(p) for p in self._dict['PDFs'])
         return 'PROD::%s(%s)' % (self._dict['Name'], pdfs)
+        # TODO: check wheter the result has explicitly conditional observables,
+        #       or whether they have been 'eaten' by the other PDFs in the product
 
     def _separator(self):
         return '_X_'
@@ -877,6 +891,9 @@ class BDecay( Pdf ) :
                 , sinCoef = kwargs.pop('sinCoef') if 'sinCoef' in kwargs else kwargs.pop('sin')
                 , decayType = kwargs.pop( 'decayType', 'SingleSided' )
                 )
+        cstr = lambda arg : arg if type(arg) == str else arg.GetName() if hasattr(arg,'GetName') else str(arg)
+        for k in d.keys() : d[k] = cstr(d[k])
+        if type(d['resolutionModel'])!=str : d['resolutionModel'] = d['resolutionModel'].GetName()
         self._declare("BDecay::%(name)s( %(time)s, %(tau)s, %(dGamma)s, "\
                                           " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
                                           " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
@@ -892,7 +909,8 @@ class BTagDecay( Pdf ) :
         argDict = { 'Name' : Name, 'checkVars' : '1', 'decayType' : 'SingleSided' }
 
         # construct factory string on the fly...
-        convert = lambda arg : str(arg) if type(arg) != list else '{%s}' % ','.join( str(listItem) for listItem in arg )
+        cstr = lambda arg : arg if type(arg) == str else arg.GetName() if hasattr(arg,'GetName') else str(arg)
+        convert = lambda arg : cstr(arg) if type(arg) != list else '{%s}' % ','.join( str(listItem) for listItem in arg )
         if 'tagCat' in kwargs :
             for argName in [  'time', 'iTag', 'tagCat', 'tau', 'dGamma', 'dm'
                             , 'dilutions', 'ADilWTags', 'avgCEvens', 'avgCOdds', 'tagCatCoefs'
@@ -1058,35 +1076,14 @@ class BinnedPdf( Pdf ) :
     def _make_pdf(self) : pass
 
 
-class ResolutionModel(RooObject):
-    _getters = { 'Parameters'  : lambda s : s._get('Parameters') }
-
+class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
-        __check_req_kw__( 'Type', kwargs )
-        __check_req_kw__( 'Name', kwargs )
-
-        # Save the keyword args as properties
-        _dict = {}
-        for k, v in kwargs.iteritems(): _dict[k] = v
-        variables = list()
-        if 'Parameters' in _dict: variables += list( _dict['Parameters'])
-        deps = ','.join([v.GetName() for v in variables])
-        _t = kwargs.pop('Type')
-        if type(_t) != str : _t = _t.__name__
-        name = kwargs.pop('Name')
-        self._declare(  '%s::%s(%s)' % ( _t, name, deps) )
-        self._init(name, 'RooResolutionModel')
-        for k, v in _dict.iteritems():
-            attr = '_' + k.lower()
-            if hasattr(v, '__iter__'): v = frozenset(v)
-            setattr(self._target_(), attr, v)
-
-    def _get(self, name):
-        return getattr(self,'_' + name.lower())
-
+        if type(kwargs['Type']) != str : kwargs['Type'] = kwargs['Type'].__name__
+        Pdf.__init__(self,**kwargs)
 
 class AddModel(ResolutionModel) :
     def __init__(self,name,models,fractions,**kwargs) :
+        #TODO: forward conditionalObservables and ExternalConstraints from dependents...
         # construct factory string on the fly...
         self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
         self._init(name,'RooAddModel')
@@ -1193,7 +1190,7 @@ class Component(object):
             if nk : raise IndexError('could not construct matching product -- no PDF for observables: %s' % [i for i in nk ])
             nk = frozenset.union(*terms)
             pdfs = [self[i] for i in terms if type(self[i])!=type(None)]
-            externalConstraints = [ ec for pdf in pdfs for ec in pdf.externalConstraints() ]
+            externalConstraints = [ ec for pdf in pdfs for ec in pdf.ExternalConstraints() ]
             d[nk] = ProdPdf(self.name, PDFs = pdfs, ExternalConstraints = externalConstraints )
         return d[k]
 
@@ -1206,7 +1203,6 @@ def buildPdf(Components, Observables, Name) :
         pdf = c[obs]
         args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
-        print 'buildPDF: %s has constraints %s' % ( pdf.GetName(), pdf.ExternalConstraints() )
         args['ExternalConstraints'] += pdf.ExternalConstraints()
     if len(Components)==1 : return args['PDFs'][0] # TODO: how to change the name?
     # and sum components (inputs should already be extended)
