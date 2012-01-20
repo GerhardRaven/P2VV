@@ -190,7 +190,7 @@ Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const
   while((server=(const RooAbsArg*)sIter->Next())) {
     if(server == &arg) continue;
     if(server->dependsOn(arg)) {
-      cout << "case 2 fails " << server->GetName() << " " << arg.GetName() << endl;
+      if ( &arg == &_tag.arg() && ( server == &_fcos.arg() || server == &_fsin.arg() ) )  continue;
       delete sIter ;
       return kFALSE ;
     }
