@@ -10,7 +10,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Save = True
 #              , Verbose = False
 #              , Optimize = True
-              , Minimizer = ('Minuit2','minimize')
+#              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -27,10 +27,10 @@ t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True
 st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
-eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (-2.0001,0.50001),  nBins =  25)
+eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 iTag_os = Category( 'tagdecision_os', Title = 'initial state flavour tag OS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 #The peak at 0 seems to be shifted to -1000 in the SS tagdecision
-iTag_ss = Category( 'tagdecision_ss', Title = 'initial state flavour tag SS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : -1000 } )
+iTag_ss = Category( 'tagdecision_ss', Title = 'initial state flavour tag SS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 sel  = Category( 'sel',            Title = 'selection',                 Observable = True, States = { 'good': +1 } )
 triggerdec = Category( 'triggerDecision',            Title = 'triggerdec',                 Observable = True, States = { 'triggered': +1 } )
 from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
@@ -43,7 +43,8 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
 
 #Read data
 from P2VVGeneralUtils import readData
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+#                 ,'/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -68,14 +69,13 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
 
-
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                        , deltaGamma = dict( Name = 'dGamma'
                                                             , Value = 0.060
                                                             , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
-                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
+                                       , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
                                      )
 
@@ -112,6 +112,7 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , CP
                                                   , Product('tag',(iTag_os,tagging['dilution']))
                                                   , ['A0','Apar','Aperp','AS'] ) 
+
 basisCoefficients.externalConstraints = tagging.externalConstraints()
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
@@ -129,6 +130,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , ConditionalObservables = tresdata.model().ConditionalObservables()
                      , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
                      )
+
 #####################################
 ### Angular acceptance correction ###
 #####################################
@@ -151,7 +153,7 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/propertimeacceptance.root', Histogram = 'timeacceptancehisto')
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
 sig_t_angles = acceptance * sig_t_angles
 
 ####################
