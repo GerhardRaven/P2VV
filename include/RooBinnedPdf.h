@@ -38,6 +38,9 @@ public:
       RooAbsCategory& baseCat, const RooArgList& coefList);
 
   RooBinnedPdf(const char *name, const char *title,
+      const RooArgList& baseCats, const RooArgList& coefList);
+
+  RooBinnedPdf(const char *name, const char *title,
       const RooArgList& baseCats, const TObjArray& coefLists,
       Bool_t ignoreFirstBin = kFALSE);
 

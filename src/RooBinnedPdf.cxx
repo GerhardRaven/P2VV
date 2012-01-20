@@ -89,6 +89,61 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
 
 //_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
+    const RooArgList& baseCats, const RooArgList& coefList) :
+  RooAbsPdf(name, title),
+  _numCats(0),
+  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+  _coefLists(1, 0),
+  _function(TString(name) + "_func", TString(name) + "_func", this),
+  _continuousBase(kFALSE),
+  _binIntegralCoefs(kTRUE),
+  _ignoreFirstBin(kFALSE)
+{
+  // constructor with an arbitrary number of binnings, which depend on the
+  // values of an equal number of categories
+  //
+  // The "current bin" is given by the values of the RooAbsCategories contained
+  // by "baseCats". Exactly one category is specified for each binning. The
+  // number of bins in a binning is given by the number of category types
+  // (N_i).
+  //
+  // Bin coefficients are specified in the RooArgList "coefList".  The
+  // coefficients inherit from RooAbsReal. One may either specify N_i * N_j *
+  // ... * N_n or N_i * N_j * ... * N_k - 1 coefficients (see also the class
+  // description). The order of the coefficients is given by the indices of the
+  // "baseCats".
+
+  // loop over input categories
+  TIterator* catIter = baseCats.createIterator();
+  RooAbsArg* cat = 0;
+  while ((cat = (RooAbsArg*)catIter->Next()) != 0) {
+    // check if this is a category
+    if (dynamic_cast<RooAbsCategory*>(cat) == 0) {
+      coutF(InputArguments) << "RooBinnedPdf::RooBinnedPdf("
+          << GetName() << ") base category '" << cat->GetName()
+          << "' is not a RooAbsCategory" << endl;
+      reset();
+      break;
+    }
+
+    // add category to list of base categories
+    ++_numCats;
+    _baseCatsList.add(*cat);
+  }
+
+  delete catIter;
+
+  // initialize coefficients
+  if (_numCats > 0) {
+    TObjArray coefLists(1, 0);
+    coefLists.Add(coefList.clone(TString(name) + "_" + coefList.GetName()));
+    initCoefs(coefLists, kFALSE);
+  }
+}
+
+//_____________________________________________________________________________
+RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     const RooArgList& baseCats, const TObjArray& coefLists,
     Bool_t ignoreFirstBin) :
   RooAbsPdf(name, title),
