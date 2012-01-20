@@ -14,7 +14,7 @@ fitOpts = dict( NumCPU = numCPU()
 #              , Minimizer = ('Minuit2','minimize')
               )
 
-tmincut = 0.5
+tmincut = 0.3
 
 # define observables
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
@@ -101,9 +101,6 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 
-externalConstraints = list()
-externalConstraints += tresdata.externalConstraints()
-
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                        , deltaGamma = dict( Name = 'dGamma'
@@ -113,12 +110,10 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                        , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
                                       )
-externalConstraints += lifetimeParams.externalConstraints()
 
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True ) # Constant = False, Constrain = True ) TODO!!!
-externalConstraints += tagging.externalConstraints()
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
@@ -169,6 +164,7 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , CP
                                                   , Product('tag',(iTag_os,tagging['dilution']))
                                                   , ['A0','Apar','Aperp','AS'] ) 
+basisCoefficients.externalConstraints = tagging.externalConstraints()
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.model()
@@ -188,6 +184,8 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , sinCoef   = basisCoefficients['sin']
 #                       , ConditionalObservables = ( eta_os, )
 #                       , ConditionalObservables = ( eta_os, iTag_os, )
+                       , ConditionalObservables = tresdata.model().ConditionalObservables()
+                       , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
                        )
 
 #####################################
@@ -201,14 +199,14 @@ from P2VVGeneralUtils import RealMomentsBuilder
 #canomoms.Print(Scales = [1./(16.*sqrt(pi)),1./(16.*sqrt(pi)),1./(16.*sqrt(pi))])
 
 from itertools import chain
-momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
+#momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
 #These are the relevant terms as found with MinSignificance>3
-#momindices = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
+momindices = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
 
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(str(tmincut)))
+eff.read('/data/bfys/dveijk/DataJpsiPhi/2012/effmoments_tcut_%s.txt'%(str(tmincut)))
 #Check the significant terms
 #eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(str(tmincut)),MinSignificance = 3)
 eff.Print()
@@ -219,14 +217,16 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 ### Proper time acceptance ###
 ##############################
-a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
-c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
-eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
+from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
 
-from P2VVBinningBuilders import build1DVerticalBinning
-binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
-
-acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
+## Define a shape yourself
+#a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
+#c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
+#eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
+#from P2VVBinningBuilders import build1DVerticalBinning
+#binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
+#acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
 #sig_t_angles = acceptance * sig_t_angles
@@ -290,9 +290,14 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 pereventerror = True
 
 if pereventerror:
-    pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='fullpdf')
+    for i in sig_t_angles.ConditionalObservables(): print 'conditional observable in signal component =', i
+    for i in bkg_t.pdf().ConditionalObservables(): print 'conditional observable in background component =', i
+    pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+    #pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='fullpdf')
     pdf.Print()
-    classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, ConditionalObservables = [st], **fitOpts)
+    for i in pdf.ConditionalObservables(): print 'conditional observable in full pdf =', i
+    #classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, ConditionalObservables = [st], **fitOpts)
+    classicfitresult = pdf.fitTo(data, **fitOpts)
 
 else:
     #sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....

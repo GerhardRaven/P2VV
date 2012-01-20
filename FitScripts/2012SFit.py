@@ -10,7 +10,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Save = True
 #              , Verbose = False
 #              , Optimize = True
-              , Minimizer = ('Minuit2','minimize')
+#              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -68,7 +68,6 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
 
-
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                        , deltaGamma = dict( Name = 'dGamma'
@@ -112,6 +111,7 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , CP
                                                   , Product('tag',(iTag_os,tagging['dilution']))
                                                   , ['A0','Apar','Aperp','AS'] ) 
+
 basisCoefficients.externalConstraints = tagging.externalConstraints()
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
@@ -129,6 +129,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , ConditionalObservables = tresdata.model().ConditionalObservables()
                      , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
                      )
+
 #####################################
 ### Angular acceptance correction ###
 #####################################
@@ -151,8 +152,8 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/propertimeacceptance.root', Histogram = 'timeacceptancehisto')
-sig_t_angles = acceptance * sig_t_angles
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
+#sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###

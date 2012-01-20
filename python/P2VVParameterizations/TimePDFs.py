@@ -129,14 +129,19 @@ class LP2011_Background_Time( TimePdf ) :
         from ROOT import RooDecay as Decay
         Name = kwargs.pop('Name',self.__class__.__name__)
         ml = Pdf( Name = kwargs.pop('t_bkg_ml',Name+'_t_bkg_ml')
-                , Type = Decay
-                , Parameters = ( time, self._t_bkg_ml_tau, resolutionModel, 'SingleSided'))
+                  , Type = Decay
+                  , Parameters = ( time, self._t_bkg_ml_tau, resolutionModel, 'SingleSided')
+                  )
         ll = Pdf( Name = kwargs.pop('t_bkg_ll',Name+'_t_bkg_ll')
-                , Type = Decay
-                , Parameters = (time,self._t_bkg_ll_tau,resolutionModel,'SingleSided'))
+                  , Type = Decay
+                  , Parameters = (time,self._t_bkg_ll_tau,resolutionModel,'SingleSided')
+                  )
         TimePdf.__init__(self, pdf = SumPdf( Name = Name
-                                           , PDFs = (  ll, ml)
-                                           , Yields = { ll.GetName() : self._t_bkg_fll } ) )
+                                             , PDFs = (  ll, ml)
+                                             , Yields = { ll.GetName() : self._t_bkg_fll }
+                                             , ConditionalObservables = resolutionModel.ConditionalObservables()
+                                             )
+                         )
 
 
 class Single_Exponent_Time( TimePdf ) :
