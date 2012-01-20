@@ -1,14 +1,11 @@
 /*****************************************************************************
  * Project: RooFit                                                           *
  * Package: RooFitModels                                                     *
- * @(#)root/roofit:$Id: RooTrivialTagDecay.cxx 24286 2008-06-16 15:47:04Z wouter $
+ * @(#)root/roofit:$Id$
  * Authors:                                                                  *
- *   PL, Parker C Lund,   UC Irvine                                          *
- *   DK, David Kirkby,    UC Irvine,         dkirkby@uci.edu                 *
- *   WV, Wouter Verkerke, UC Santa Barbara, verkerke@slac.stanford.edu       *
+ *   GR, Gerhard Raven, VU Amsterdam & NIKHEF, Gerhard.Raven@nikhef.nl       *
  *                                                                           *
- * Copyright (c) 2000-2005, Regents of the University of California          *
- *                          and Stanford University. All rights reserved.    *
+ * Copyright (c) 2012                                                        *
  *                                                                           *
  * Redistribution and use in source and binary forms,                        *
  * with or without modification, are permitted according to the terms        *
@@ -45,8 +42,6 @@ ClassImp(RooTrivialTagDecay);
 // get multiplied by  1 + _tag * C where C = (1-|lambda|^2)/(1+|lambda|^2)
 // TODO: this can be incorporated by passing 8 coefficients, namely the
 //       'even' and 'odd' for each of the 4 basis functions...
-// TODO: multiply all coefficients by 
-//   "(@0==0)*@1 + (@1!=0)*(1-@1)",RooArgList( _tag,_tageff )
 RooTrivialTagDecay::RooTrivialTagDecay(const char *name, const char* title, 
 	       RooRealVar& t, RooAbsCategory& tag, RooAbsReal& tau, RooAbsReal& dgamma, RooAbsReal& dm,  RooAbsReal& tageff,
 	       RooAbsReal& fcosh /*even*/, RooAbsReal& fsinh /*even*/, RooAbsReal& fcos /*odd*/, RooAbsReal& fsin /*odd*/, 
@@ -176,7 +171,6 @@ Double_t RooTrivialTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code, cons
 //_____________________________________________________________________________
 Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const 
 {
-  cout << "TrivialTagDecay::isDirectGenSafe" << endl;;
   // Check if given observable can be safely generated using the
   // pdfs internal generator mechanism (if that existsP). Observables
   // on which a PDF depends via more than route are not safe
@@ -187,17 +181,15 @@ Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const
   if (!findServer(arg.GetName())) return kFALSE ;
 
   // There must be no other dependency routes
-  TIterator* sIter = serverIterator() ;
+  std::auto_ptr<TIterator> sIter( serverIterator()) ;
   const RooAbsArg *server = 0;
   while((server=(const RooAbsArg*)sIter->Next())) {
     if(server == &arg) continue;
     if(server->dependsOn(arg)) {
-      if ( &arg == &_tag.arg() && ( server == &_fcos.arg() || server == &_fsin.arg() ) )  continue;
-      delete sIter ;
+      if ( &arg == &_tag.arg() && ( server == &_fcos.arg() || server == &_fsin.arg() ) ) continue;
       return kFALSE ;
     }
   }
-  delete sIter ;
   return kTRUE ;
 }
 
@@ -224,7 +216,7 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
         if ( t<_t.min() || t>_t.max() ) continue;
 
         Double_t dgt = _dgamma*t/2;
-        Double_t ft = fabs(t);
+        Double_t ft = TMath::Abs(t);
         Double_t even = _fcosh*cosh(dgt)+_fsinh*sinh(dgt);
         Double_t f = exp(-ft/_tau)*even;
         if(f < 0) throw(string(Form( "RooTrivialTagDecay::generateEvent(%s) ERROR: PDF value less than zero" ,GetName())));
@@ -243,8 +235,7 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
     Double_t dmt = _dm*_t;
     Double_t o =  _fcos *cos (dmt)+_fsin *sin (dmt);
     Double_t e =  _fcosh*cosh(dgt)+_fsinh*sinh(dgt);
-    Double_t A = o/e;
-    _tag =  ( 2*RooRandom::uniform() < (1.0+A) ) > 0 ? +1 : -1 ;
+    _tag =  ( 2*e*RooRandom::uniform() < (e+o) ) > 0 ? +1 : -1 ;
     break;
   }
 }
