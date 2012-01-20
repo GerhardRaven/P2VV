@@ -58,9 +58,9 @@ class WTag_TaggingParams( TaggingParams ) :
 class LinearEstWTag_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
         self._parseArg( 'estWTag',    kwargs, Title = 'Estimated wrong tag probability',         Value = 0.25,  MinMax = ( 0.,  0.5 ) )
-        self._parseArg( 'p0',         kwargs, Title = 'p0  tagging parameter',                   Value = 0.384, MinMax = ( 0.,  0.5 ) )
-        self._parseArg( 'p1',         kwargs, Title = 'p1  tagging parameter',                   Value = 1.037, MinMax = ( 0.8, 1.2 ) )
-        self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong tag probability', Value = 0.379, MinMax = ( 0.,  0.5 )
+        self._parseArg( 'p0',         kwargs, Title = 'p0  tagging parameter',                   Value = 0.393, MinMax = ( 0.,  0.5 ) )
+        self._parseArg( 'p1',         kwargs, Title = 'p1  tagging parameter',                   Value = 1.023, MinMax = ( 0.8, 1.2 ) )
+        self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong tag probability', Value = 0.393, MinMax = ( 0.,  0.5 )
                        , Constant = True
                       )
 
@@ -70,8 +70,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p0
-                                                    , ConstVar( Name = 'p0_mean',  Value = 0.384 )
-                                                    , ConstVar( Name = 'p0_sigma', Value = 0.010 )
+                                                    , ConstVar( Name = 'p0_mean',  Value = 0.393 )
+                                                    , ConstVar( Name = 'p0_sigma', Value = 0.007 )
                                                    ]
                                    )
                               )
@@ -81,8 +81,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p1
-                                                    , ConstVar( Name = 'p1_mean',  Value = 1.037 )
-                                                    , ConstVar( Name = 'p1_sigma', Value = 0.081 )
+                                                    , ConstVar( Name = 'p1_mean',  Value = 1.023 )
+                                                    , ConstVar( Name = 'p1_sigma', Value = 0.040 )
                                                    ]
                                    )
                               )
@@ -471,9 +471,9 @@ class Linear_TaggingCategories( TaggingCategories ) :
             self._parseArg( 'estWTag', kwargs, Title = 'Estimated wrong tag probability', Value = 0.25, MinMax = ( 0., 0.5 ) )
 
         # get linear calibration parameters
-        self._parseArg(  'avgEstWTag', kwargs, Value = 0.379, ObjectType = 'ConstVar' )
-        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.384, MinMax = (  0., 0.5 ) )
-        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.037, MinMax = (  0., 2.  ) )
+        self._parseArg(  'avgEstWTag', kwargs, Value = 0.393, ObjectType = 'ConstVar' )
+        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.393, MinMax = (  0., 0.5 ) )
+        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.023, MinMax = (  0., 2.  ) )
         self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
                        , Constant = True )
         self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
@@ -486,8 +486,8 @@ class Linear_TaggingCategories( TaggingCategories ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP0
-                                                    , ConstVar( Name = 'wTagP0_mean',  Value = 0.384 )
-                                                    , ConstVar( Name = 'wTagP0_sigma', Value = 0.010 )
+                                                    , ConstVar( Name = 'wTagP0_mean',  Value = 0.393 )
+                                                    , ConstVar( Name = 'wTagP0_sigma', Value = 0.007 )
                                                    ]
                                    )
                               )
@@ -497,8 +497,8 @@ class Linear_TaggingCategories( TaggingCategories ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP1
-                                                    , ConstVar( Name = 'wTagP1_mean',  Value = 1.037 )
-                                                    , ConstVar( Name = 'wTagP1_sigma', Value = 0.081 )
+                                                    , ConstVar( Name = 'wTagP1_mean',  Value = 1.023 )
+                                                    , ConstVar( Name = 'wTagP1_sigma', Value = 0.040 )
                                                    ]
                                    )
                               )
