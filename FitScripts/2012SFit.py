@@ -74,7 +74,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                                             , Value = 0.060
                                                             , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
-                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
+                                       , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
                                      )
 

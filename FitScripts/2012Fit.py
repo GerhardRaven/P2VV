@@ -107,7 +107,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                                             , Value = 0.060
                                                             , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
-                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
+                                       , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
                                       )
 
@@ -268,8 +268,8 @@ elif False:
 else :
     background += HistPdf( Name = 'bkg_angles'
                              , Observables = angles.angles.itervalues()
-                             , Binning =  { angles.angles['cpsi'] : 7
-                                          , angles.angles['ctheta'] : 5
+                             , Binning =  { angles.angles['cpsi'] : 5
+                                          , angles.angles['ctheta'] : 7
                                           , angles.angles['phi' ] : 9
                                           }
                              , Data  = sidebanddata
