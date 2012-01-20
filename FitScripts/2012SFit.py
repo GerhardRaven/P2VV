@@ -152,12 +152,14 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 #####################################
 from P2VVGeneralUtils import RealMomentsBuilder
 from itertools import chain
-momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
+#momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
+#These are the relevant terms as found with MinSignificance>3
+momindices = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
 
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(tmincut))
+eff.read('/data/bfys/dveijk/DataJpsiPhi/2012/effmoments_tcut_%s.txt'%(tmincut))
 eff.Print()
 
 #Build Angular acceptance corrected PDF
@@ -167,7 +169,7 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/acceptance.root' )
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/propertimeacceptance.root', Histogram = 'timeacceptancehisto')
 sig_t_angles = acceptance * sig_t_angles
 
 ####################
