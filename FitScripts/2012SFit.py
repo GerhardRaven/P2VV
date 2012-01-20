@@ -8,7 +8,8 @@ from P2VVGeneralUtils import numCPU
 fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
-              , Verbose = False
+#              , Verbose = False
+#              , Optimize = True
               , Minimizer = ('Minuit2','minimize')
               )
 
@@ -70,12 +71,12 @@ tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                     , deltaGamma = dict( Name = 'dGamma'
-                                                        , Value = 0.060
-                                                        , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-                                                        )
-                                     , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
-                                     , deltaMConstraint = True
+                                       , deltaGamma = dict( Name = 'dGamma'
+                                                            , Value = 0.060
+                                                            , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+                                                            )
+                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
+                                       , deltaMConstraint = True
                                      )
 
 # define tagging parameter 
@@ -90,9 +91,10 @@ from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s'
                                               , Value = -0.04
                                               , MinMax = (-pi,pi)
-                                              , Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
-                        , lambdaCPSq = dict( Value = 1., Constant = True )
-                        )
+                                              , Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+                                              )
+                           , lambdaCPSq = dict( Value = 1., Constant = True )
+                           )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
@@ -132,7 +134,9 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 #####################################
 from P2VVGeneralUtils import RealMomentsBuilder
 from itertools import chain
-momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
+#momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
+#These are the relevant terms as found with MinSignificance>3
+momindices = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
 
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
@@ -147,7 +151,7 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/propertimeacceptance.root', Histogram = 'timeacceptancehisto' )
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/propertimeacceptance.root', Histogram = 'timeacceptancehisto')
 sig_t_angles = acceptance * sig_t_angles
 
 ####################

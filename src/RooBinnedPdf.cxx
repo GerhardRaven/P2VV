@@ -190,6 +190,44 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
 //_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     const RooArgList& baseVars, const TObjArray& binningNames,
+    const RooArgList& coefList, Bool_t binIntegralCoefs) :
+  RooAbsPdf(name, title),
+  _numCats(0),
+  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+  _coefLists(1, 0),
+  _function(TString(name) + "_func", TString(name) + "_func", this),
+  _continuousBase(kTRUE),
+  _binIntegralCoefs(binIntegralCoefs),
+  _ignoreFirstBin(kFALSE)
+{
+  // constructor with an arbitrary number of binnings, which depend on the
+  // values of continuous variables with binnings
+  //
+  // The "current bin" is given by the values of the RooAbsRealLValues
+  // contained by "baseVars" and their binnings with N_i bins, given by
+  // "binningNames". Exactly one variable is specified for each binning. The
+  // "binningNames" are TObjStrings.
+  //
+  // Bin coefficients are specified in the list "coefList". The coefficients
+  // inherit from RooAbsReal. One may either specify N_i * N_j * ... * N_n or
+  // N_i * N_j * ... * N_n - 1 coefficients (see also the class description).
+  // The order of the coefficients is given by the order of the "baseVars"
+  // bins. The coefficients may either be interpreted as bin heights or as bin
+  // integrals.  This is controlled by "binIntegralCoefs".
+
+  // create base categories and initialize coefficients
+  if (createBaseCats(baseVars, binningNames) > 0) {
+    TObjArray coefLists(1, 0);
+    coefLists.Add(coefList.clone(TString(name) + "_" + coefList.GetName()));
+    initCoefs(coefLists, kFALSE);
+  }
+
+}
+
+//_____________________________________________________________________________
+RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
+    const RooArgList& baseVars, const TObjArray& binningNames,
     const TObjArray& coefLists, Bool_t binIntegralCoefs,
     Bool_t ignoreFirstBin) :
   RooAbsPdf(name, title),
@@ -319,7 +357,8 @@ RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other,
   _coefLists.SetOwner(kTRUE);
 
   // copy coefficient lists
-  for (Int_t cListIter = 0; cListIter < _numCats; ++cListIter) {
+  for (Int_t cListIter = 0; cListIter < other._coefLists.GetEntries();
+      ++cListIter) {
     // get other's coefficients list
     RooListProxy* cListOther
         = (RooListProxy*)other._coefLists.UncheckedAt(cListIter);
@@ -482,49 +521,88 @@ std::list<Double_t>* RooBinnedPdf::binBoundaries(RooAbsRealLValue& obs,
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::evaluate() const
 {
-  if (_function.absArg() != 0) {
-    return evaluateFunction();
-  } else {
-    return evaluateCoef();
-  }
-}
-
-//_____________________________________________________________________________
-Double_t RooBinnedPdf::evaluateFunction() const
-{
-  std::vector<Double_t> originals(_baseVarsList.getSize(), 0);
-  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
-    originals[i] = static_cast<const RooAbsReal*>(_baseVarsList.at(i))->getVal();
-  }
-
-  // Cache requirement
-  Bool_t origState = inhibitDirty();
-  setDirtyInhibit(kTRUE);
-
-  // Set vars to bin center
-  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
-    const char* name = _binningNames[i].Data();
-    RooAbsRealLValue* var = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(i));
-    const RooAbsBinning& binning = var->getBinning(name);
-    Int_t bin = binning.binNumber(originals[i]);
-    var->setVal(binning.binCenter(bin));
-  }
-  // Get function value
-  Double_t value = _function.arg().getVal();
-
-  // Restore original vars
-  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
-    RooAbsRealLValue* var = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(i));
-    var->setVal(originals[i]);
-  }
-  setDirtyInhibit(origState);	
-  return value;
+  if (_function.absArg() != 0) return evaluateFunction();
+  else if (_coefLists.GetEntries() == _numCats) return evaluateMultipleCoefs();
+  else return evaluateCoef();
 }
 
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::evaluateCoef() const
 {
   // evaluates and returns the current value of the PDF's function
+  // in case there is a coefficient for each bin
+
+  // temporary result of evaluation
+  Double_t value = 1.;
+
+  // temporary bin position
+  Int_t binPos     = 0;
+  Int_t coefPosFac = 1;
+
+  // loop over base categories
+  for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+    // get position of coefficient
+    std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
+    Int_t cPos = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
+        ->getIndex()];
+
+    // update position of bin
+    binPos += coefPosFac * cPos;
+    coefPosFac *= ((RooAbsCategory*)_baseCatsList.at(catIter))->numTypes();
+
+    // divide by bin widths if coefficients are bin integrals
+    if (_continuousBase && _binIntegralCoefs)
+      value /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+          ->getBinning(_binningNames[catIter]).binWidth(cPos);
+  }
+
+  RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(0);
+  if (!_calcCoefZeros[0] || binPos > 0) {
+    // multiply by coefficient value for bin
+    value *= ((RooAbsReal*)coefList->at(binPos - (Int_t)_calcCoefZeros[0]))
+        ->getVal();
+
+    // make negative values equal to zero
+    if (value <= 0.) return 0.;
+  }
+
+  // return if we don't have to calculate the coefficient of bin 0
+  if (_ignoreFirstBin && binPos == 0) return 0.;
+  if (!_calcCoefZeros[0]) return value;
+
+  // coefficient of bin 0 is not explicitely specified
+  // * coefficients have values between zero and one
+  // * sum of coefficients is equal to one
+  // * coefficient of bin 0 is given by one minus the sum of the other coefs.
+
+  // loop over coefficients and calculate sum
+  Double_t coefSum = 0.;
+  for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
+    // get coefficient's value
+    Double_t cVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
+
+    // make negative values equal to zero, add positive values to sum
+    if (cVal > 0) coefSum += cVal;
+  }
+
+  if (binPos == 0) {
+    // multiply result with the calculated value of bin 0 coefficient
+    if (coefSum > 1.) return 0.;
+    value *= 1. - coefSum;
+  } else if (coefSum > 1.) {
+    // scale the coefficients to make their sum equal to one
+    value /= coefSum;
+  }
+
+  return value;
+}
+
+//_____________________________________________________________________________
+Double_t RooBinnedPdf::evaluateMultipleCoefs() const
+{
+  // evaluates and returns the current value of the PDF's function
+  // in case the coefficients factorize and there is a list of coefficients for
+  // each base category
 
   // temporary result of evaluation
   Double_t value = 1.;
@@ -547,8 +625,8 @@ Double_t RooBinnedPdf::evaluateCoef() const
     if (!_calcCoefZeros[catIter] || cPos[catIter] != 0) {
       // get coefficient's value
       Double_t cVal = ((RooAbsReal*)((RooArgList*)_coefLists
-          .UncheckedAt(catIter))->at(cPos[catIter] - _calcCoefZeros[catIter]))
-          ->getVal();
+          .UncheckedAt(catIter))
+          ->at(cPos[catIter] - (Int_t)_calcCoefZeros[catIter]))->getVal();
 
       // make negative values equal to zero
       if (cVal <= 0.) return 0.;
@@ -605,6 +683,38 @@ Double_t RooBinnedPdf::evaluateCoef() const
 
   delete[] cPos;
 
+  return value;
+}
+
+//_____________________________________________________________________________
+Double_t RooBinnedPdf::evaluateFunction() const
+{
+  std::vector<Double_t> originals(_baseVarsList.getSize(), 0);
+  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
+    originals[i] = static_cast<const RooAbsReal*>(_baseVarsList.at(i))->getVal();
+  }
+
+  // Cache requirement
+  Bool_t origState = inhibitDirty();
+  setDirtyInhibit(kTRUE);
+
+  // Set vars to bin center
+  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
+    const char* name = _binningNames[i].Data();
+    RooAbsRealLValue* var = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(i));
+    const RooAbsBinning& binning = var->getBinning(name);
+    Int_t bin = binning.binNumber(originals[i]);
+    var->setVal(binning.binCenter(bin));
+  }
+  // Get function value
+  Double_t value = _function.arg().getVal();
+
+  // Restore original vars
+  for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
+    RooAbsRealLValue* var = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(i));
+    var->setVal(originals[i]);
+  }
+  setDirtyInhibit(origState);
   return value;
 }
 
@@ -673,29 +783,32 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
 }
 
 //_____________________________________________________________________________
-Int_t RooBinnedPdf::initCoefs(const TObjArray& coefLists)
+Int_t RooBinnedPdf::initCoefs(const TObjArray& coefLists, Bool_t factorize)
 {
   // initializes bin coefficients
 
   // set size of coefficient lists array
-  _coefLists.Expand(_numCats);
+  if (factorize) _coefLists.Expand(_numCats);
 
   // make array owner of the coefficient lists
   _coefLists.SetOwner(kTRUE);
 
   // loop over coefficient lists
-  Int_t catPos = 0;
+  Int_t listPos = -1;
   TIterator* cListIter = coefLists.MakeIterator();
   RooArgList* cList = 0;
   while ((cList = dynamic_cast<RooArgList*>(cListIter->Next())) != 0) {
+    // update list position
+    ++listPos;
+
     // create new coefficients list
     TString cListName(GetName());
     cListName += "_coefList";
-    cListName += catPos;
+    if (factorize) cListName += listPos;
     RooListProxy* cListProxy = new RooListProxy(cListName, 0, this);
     _coefLists.Add(cListProxy);
 
-    // loop over coefficients
+    // add coefficients to list proxy
     TIterator* coefIter = cList->createIterator();
     RooAbsReal* coef = 0;
     while ((coef = dynamic_cast<RooAbsReal*>(coefIter->Next())) != 0)
@@ -703,52 +816,90 @@ Int_t RooBinnedPdf::initCoefs(const TObjArray& coefLists)
 
     delete coefIter;
 
-    // get category corresponding to this list
-    RooAbsCategory* cat = (RooAbsCategory*)_baseCatsList.at(catPos);
+    // loop over base categories
+    TIterator* catIter = _baseCatsList.createIterator();
+    RooAbsCategory* cat = 0;
+    Int_t catPos = -1;
+    Int_t numBins = 1;
+    while ((cat = (RooAbsCategory*)catIter->Next()) != 0) {
+      // update category position
+      ++catPos;
 
-    // set/check number of coefficients
-    if (cListProxy->getSize() == cat->numTypes()) {
-      _calcCoefZeros.push_back(kFALSE);
-    } else if (cListProxy->getSize() == cat->numTypes() - 1) {
-      _calcCoefZeros.push_back(kTRUE);
-    } else {
-      coutF(InputArguments) << "RooBinnedPdf::initCoefs("
-          << GetName() << ") number of coefficients (" << cListProxy->getSize()
-          << ") does not match number of base variable types ("
-          << cat->numTypes() << ")" << endl;
-      reset();
-      return -2;
+      // only look at the category for the current list of coefficients
+      if (factorize && catPos != listPos) continue;
+
+      if (factorize) {
+        // set/check number of coefficients
+        if (cListProxy->getSize() == cat->numTypes()) {
+          _calcCoefZeros.push_back(kFALSE);
+        } else if (cListProxy->getSize() == cat->numTypes() - 1) {
+          _calcCoefZeros.push_back(kTRUE);
+        } else {
+          coutF(InputArguments) << "RooBinnedPdf::initCoefs("
+              << GetName() << ") number of coefficients ("
+              << cListProxy->getSize()
+              << ") does not match number of base variable types ("
+              << cat->numTypes() << ")" << endl;
+          reset();
+          return -2;
+        }
+      } else {
+        // get number of category types
+        numBins *= cat->numTypes();
+      }
+
+      // get category indices
+      vector<Int_t> catIndices;
+      RooCatType* catType = 0;
+      TIterator* catTypeIter = cat->typeIterator();
+      while ((catType = (RooCatType*)catTypeIter->Next()) != 0)
+        catIndices.push_back(catType->getVal());
+      delete catTypeIter;
+      sort(catIndices.begin(), catIndices.end()); // sort indices!!!!!!!!!!!!
+
+      // set position of category indices
+      map<Int_t, Int_t> indexPosMap;
+      for (Int_t indexPos = 0; indexPos < (Int_t)catIndices.size(); ++indexPos)
+        indexPosMap[catIndices.at(indexPos)] = indexPos;
+      _indexPositions.push_back(indexPosMap);
     }
 
-    // get category indices
-    vector<Int_t> catIndices;
-    RooCatType* catType = 0;
-    TIterator* catTypeIter = cat->typeIterator();
-    while ((catType = (RooCatType*)catTypeIter->Next()) != 0)
-      catIndices.push_back(catType->getVal());
-    delete catTypeIter;
-    sort(catIndices.begin(), catIndices.end());
+    delete catIter;
 
-    // set position of category indices
-    map<Int_t, Int_t> indexPosMap;
-    for (Int_t indexPos = 0; indexPos < (Int_t)catIndices.size(); ++indexPos)
-      indexPosMap[catIndices.at(indexPos)] = indexPos;
-    _indexPositions.push_back(indexPosMap);
-
-    ++catPos;
+    if (!factorize) {
+      // check/set number of coefficients
+      if (cListProxy->getSize() == numBins) {
+        _calcCoefZeros.push_back(kFALSE);
+      } else if (cListProxy->getSize() == numBins - 1) {
+        _calcCoefZeros.push_back(kTRUE);
+      } else {
+        coutF(InputArguments) << "RooBinnedPdf::initCoefs("
+            << GetName() << ") number of coefficients ("
+            << cListProxy->getSize() << ") does not match number of bins ("
+            << numBins << ")" << endl;
+        reset();
+        return -2;
+      }
+    }
   }
 
   delete cListIter;
 
   // check number of coefficient lists
-  if (_coefLists.GetEntries() != _numCats) {
+  if (factorize && _coefLists.GetEntries() != _numCats) {
     coutF(InputArguments) << "RooBinnedPdf::initCoefs("
         << GetName() << ") number of coefficient lists ("
         << _coefLists.GetEntries()
         << ") does not match number of base variables (" << _numCats << ")"
         << endl;
     reset();
-    return -2;
+    return -1;
+  } else if (!factorize && _coefLists.GetEntries() != 1) {
+    coutF(InputArguments) << "RooBinnedPdf::initCoefs("
+        << GetName() << ") multiple coefficient lists specified for non-factorizing coefficients"
+        << endl;
+    reset();
+    return -1;
   }
 
   return _numCats;

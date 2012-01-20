@@ -471,7 +471,7 @@ class Linear_TaggingCategories( TaggingCategories ) :
             self._parseArg( 'estWTag', kwargs, Title = 'Estimated wrong tag probability', Value = 0.25, MinMax = ( 0., 0.5 ) )
 
         # get linear calibration parameters
-        self._parseArg(  'avgEstWTag', kwargs, Value = 0.38, ObjectType = 'ConstVar' )
+        self._parseArg(  'avgEstWTag', kwargs, Value = 0.379, ObjectType = 'ConstVar' )
         self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.384, MinMax = (  0., 0.5 ) )
         self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.037, MinMax = (  0., 2.  ) )
         self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
