@@ -89,6 +89,61 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
 
 //_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
+    const RooArgList& baseCats, const RooArgList& coefList) :
+  RooAbsPdf(name, title),
+  _numCats(0),
+  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+  _coefLists(1, 0),
+  _function(TString(name) + "_func", TString(name) + "_func", this),
+  _continuousBase(kFALSE),
+  _binIntegralCoefs(kTRUE),
+  _ignoreFirstBin(kFALSE)
+{
+  // constructor with an arbitrary number of binnings, which depend on the
+  // values of an equal number of categories
+  //
+  // The "current bin" is given by the values of the RooAbsCategories contained
+  // by "baseCats". Exactly one category is specified for each binning. The
+  // number of bins in a binning is given by the number of category types
+  // (N_i).
+  //
+  // Bin coefficients are specified in the RooArgList "coefList".  The
+  // coefficients inherit from RooAbsReal. One may either specify N_i * N_j *
+  // ... * N_n or N_i * N_j * ... * N_k - 1 coefficients (see also the class
+  // description). The order of the coefficients is given by the indices of the
+  // "baseCats".
+
+  // loop over input categories
+  TIterator* catIter = baseCats.createIterator();
+  RooAbsArg* cat = 0;
+  while ((cat = (RooAbsArg*)catIter->Next()) != 0) {
+    // check if this is a category
+    if (dynamic_cast<RooAbsCategory*>(cat) == 0) {
+      coutF(InputArguments) << "RooBinnedPdf::RooBinnedPdf("
+          << GetName() << ") base category '" << cat->GetName()
+          << "' is not a RooAbsCategory" << endl;
+      reset();
+      break;
+    }
+
+    // add category to list of base categories
+    ++_numCats;
+    _baseCatsList.add(*cat);
+  }
+
+  delete catIter;
+
+  // initialize coefficients
+  if (_numCats > 0) {
+    TObjArray coefLists(1, 0);
+    coefLists.Add(coefList.clone(TString(name) + "_" + coefList.GetName()));
+    initCoefs(coefLists, kFALSE);
+  }
+}
+
+//_____________________________________________________________________________
+RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     const RooArgList& baseCats, const TObjArray& coefLists,
     Bool_t ignoreFirstBin) :
   RooAbsPdf(name, title),
@@ -376,6 +431,56 @@ RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other,
 RooBinnedPdf::~RooBinnedPdf()
 {
   // destructor
+}
+
+//_____________________________________________________________________________
+Int_t RooBinnedPdf::getAnalyticalIntegral(RooArgSet& allVars,
+    RooArgSet& analVars, const char* rangeName) const
+{
+  if (_function.absArg() != 0
+      || (_coefLists.GetEntries() == _numCats && _numCats != 1)
+      || _numCats > 20)
+    return 0;
+
+  // determine integration code
+  Int_t subCode = 0;
+  for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+    if (_continuousBase) {
+      // continuous variable dependence
+      RooAbsRealLValue* var = (RooAbsRealLValue*)_baseVarsList.at(catIter);
+      if (!allVars.contains(*var)
+          || TMath::Abs(var->getMin(rangeName) - var->getMin()) > 1.e-10
+          || TMath::Abs(var->getMax(rangeName) - var->getMax()) > 1.e-10)
+        continue;
+      analVars.add(*var);
+    } else {
+      // category dependence
+      RooAbsCategory* cat = (RooAbsCategory*)_baseCatsList.at(catIter);
+      if (!allVars.contains(*cat) || cat->hasRange(rangeName)) continue;
+      analVars.add(*cat);
+    }
+
+    subCode += TMath::Nint(TMath::Power(2., catIter));
+  }
+
+  // return integration code
+  if (subCode == TMath::Nint(TMath::Power(2., _numCats)) - 1) return 1;
+  return 2 + 32 * subCode;
+}
+
+//_____________________________________________________________________________
+Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
+    const char* /*rangeName*/) const
+{
+  if (code == 1) return 1.;
+
+  if (code % 32 == 2) {
+    // determine integration sub-code, which specifies integration variables
+    Int_t subCode = code / 32;
+    if (subCode == 0) return getVal();
+  }
+
+  return 0.;
 }
 
 //_____________________________________________________________________________
@@ -811,8 +916,19 @@ Int_t RooBinnedPdf::initCoefs(const TObjArray& coefLists, Bool_t factorize)
     // add coefficients to list proxy
     TIterator* coefIter = cList->createIterator();
     RooAbsReal* coef = 0;
-    while ((coef = dynamic_cast<RooAbsReal*>(coefIter->Next())) != 0)
+    while ((coef = dynamic_cast<RooAbsReal*>(coefIter->Next())) != 0) {
+      // check if coefficient does not depend on our variables
+      if ((_continuousBase && coef->dependsOn(_baseVarsList))
+          || (!_continuousBase && coef->dependsOn(_baseCatsList))) {
+        coutF(InputArguments) << "RooBinnedPdf::initCoefs("
+            << GetName() << ") coefficient dependence on base variables is not supported (yet)"
+            << endl;
+        reset();
+        return -3;
+      }
+
       cListProxy->add(*coef);
+    }
 
     delete coefIter;
 

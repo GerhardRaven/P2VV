@@ -24,9 +24,9 @@ nEvents    = 200000
 sigFrac    = 0.8
 
 # PDF options
-nominalFit      = False
-components      = '' # 'signal' # 'background'
-binnedBkgAngles = True
+nominalFit = False
+components = '' # 'signal' # 'background'
+bkgAngles  = '' # 'histPdf'
 
 # transversity amplitudes
 amplitudeParam = 'phasesSWaveFrac'
@@ -64,11 +64,6 @@ fitOpts = dict(  NumCPU              = 10
                , Save                = True
                , ExternalConstraints = extConstraints
               )
-bkg_anglesFitOpts = dict(  NumCPU              = 10
-                         , Timer               = 1
-                         , Minos               = False
-                         , Hesse               = False
-                        )
 
 # plot options
 if nominalFit : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
@@ -240,22 +235,25 @@ from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as 
 timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
 # build signal PDF
-args = dict(  time            = time
-            , iTag            = iTag
-            , tagCat          = tagCatP2VV
-            , tau             = lifetimeParams['MeanLifetime']
-            , dGamma          = lifetimeParams['deltaGamma']
-            , dm              = lifetimeParams['deltaM']
-            , dilutions       = taggingParams['dilutions']
-            , ADilWTags       = taggingParams['ADilWTags']
-            , avgCEvens       = taggingParams['avgCEvens']
-            , avgCOdds        = taggingParams['avgCOdds']
-            , tagCatCoefs     = taggingParams['tagCatCoefs']
-            , coshCoef        = timeBasisCoefs['cosh']
-            , sinhCoef        = timeBasisCoefs['sinh']
-            , cosCoef         = timeBasisCoefs['cos']
-            , sinCoef         = timeBasisCoefs['sin']
-            , resolutionModel = timeResModel['model']
+args = dict(  time                = time
+            , iTag                = iTag
+            , tagCat              = tagCatP2VV
+            , tau                 = lifetimeParams['MeanLifetime']
+            , dGamma              = lifetimeParams['deltaGamma']
+            , dm                  = lifetimeParams['deltaM']
+            , dilutions           = taggingParams['dilutions']
+            , ADilWTags           = taggingParams['ADilWTags']
+            , avgCEvens           = taggingParams['avgCEvens']
+            , avgCOdds            = taggingParams['avgCOdds']
+            , tagCatCoefs         = taggingParams['tagCatCoefs']
+            , coshCoef            = timeBasisCoefs['cosh']
+            , sinhCoef            = timeBasisCoefs['sinh']
+            , cosCoef             = timeBasisCoefs['cos']
+            , sinCoef             = timeBasisCoefs['sin']
+            , resolutionModel     = timeResModel['model']
+            , ExternalConstraints = lifetimeParams.externalConstraints()\
+                                    + timeResModel.externalConstraints()\
+                                    + tagCats.externalConstraints()
            )
 
 sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
@@ -287,53 +285,64 @@ if nominalFit :
                                       }
                          , Data = sideBandData
                         )
-elif binnedBkgAngles :
-    #bkg_angles = HistPdf(  Name = 'bkg_angles'
-    #                     , Observables = angles
-    #                     , Binning =  {  angleFuncs.angles['cpsi']   : 5
-    #                                   , angleFuncs.angles['ctheta'] : 40
-    #                                   , angleFuncs.angles['phi' ]   : 5
-    #                                  }
-    #                     , Data = sideBandData
-    #                    )
+elif bkgAngles == 'histPdf' :
+    bkg_angles = HistPdf(  Name = 'bkg_angles'
+                         , Observables = angles
+                         , Binning =  {  angleFuncs.angles['cpsi']   : 5
+                                       , angleFuncs.angles['ctheta'] : 40
+                                       , angleFuncs.angles['phi' ]   : 5
+                                      }
+                         , Data = sideBandData
+                        )
 
+else :
     from array import array
     from ROOT import RooBinning
-    cthetaKBinBounds = array( 'd', [ -1.,                      -0.6,      -0.2,      0.2,      0.6,                   1. ] )
-    cthetalBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
-    phiBinBounds     = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
-    cthetaKBins = RooBinning( len(cthetaKBinBounds) - 1, cthetaKBinBounds, 'bkg_cthetaKBins' )
-    cthetalBins = RooBinning( len(cthetalBinBounds) - 1, cthetalBinBounds, 'bkg_cthetalBins' )
-    phiBins     = RooBinning( len(phiBinBounds)     - 1, phiBinBounds,     'bkg_phiBins'     )
-    angles[0].setBinning( cthetaKBins, 'bkg_cthetaKBins' )
-    angles[1].setBinning( cthetalBins, 'bkg_cthetalBins' )
-    angles[2].setBinning( phiBins,     'bkg_phiBins'     )
+    ctKBinBounds = array( 'd', [ -1.,                      -0.6,      -0.2,      0.2,      0.6,                   1. ] )
+    ctlBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
+    phiBinBounds = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
+    ctKBins = RooBinning( len(ctKBinBounds) - 1, ctKBinBounds, 'bkg_ctKBins' )
+    ctlBins = RooBinning( len(ctlBinBounds) - 1, ctlBinBounds, 'bkg_ctlBins' )
+    phiBins = RooBinning( len(phiBinBounds) - 1, phiBinBounds, 'bkg_phiBins' )
+    angles[0].setBinning( ctKBins, 'bkg_ctKBins' )
+    angles[1].setBinning( ctlBins, 'bkg_ctlBins' )
+    angles[2].setBinning( phiBins, 'bkg_phiBins' )
     bkg_angCoefs = [ RealVar(  'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
                              , Title = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
-                             , Value = 1. / ( len(cthetaKBinBounds) - 1 ) / ( len(cthetalBinBounds) - 1 ) / ( len(phiBinBounds) - 1 )
+                             , Value = 1. / ( len(ctKBinBounds) - 1 ) / ( len(ctlBinBounds) - 1 ) / ( len(phiBinBounds) - 1 )
                              , MinMax = ( 0., 1. )
                             )\
                      if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
-                     for bin0 in range( len(cthetaKBinBounds) - 1 )\
-                     for bin1 in range( len(cthetalBinBounds) - 1 )\
-                     for bin2 in range( len(phiBinBounds)    - 1 )
+                     for bin2 in range( len(phiBinBounds) - 1 )\
+                     for bin1 in range( len(ctlBinBounds) - 1 )\
+                     for bin0 in range( len(ctKBinBounds) - 1 )
                    ]
     del bkg_angCoefs[0]
 
     bkg_angles = BinnedPdf(  Name = 'bkg_angles'
                            , Observables = angles
-                           , Binnings = [ cthetaKBins, cthetalBins, phiBins ]
+                           , Binnings = [ ctKBins, ctlBins, phiBins ]
                            , Coefficients = bkg_angCoefs
                           )
 
-    #bkg_angles.fitTo(sideBandData, **bkg_anglesFitOpts)
-    #sideBandDataTree = sideBandData.tree()
-    #for bin, coef in enumerate(bkg_angCoefs) :
-    #    cthetaKBin = 
-    #    coef.setConstant()
+    sideBandDataTree = sideBandData.tree()
+    for bin, coef in enumerate(bkg_angCoefs) :
+        ctKBin, ctlBin, phiBin = coef.GetName()[ 11 : ].split('_')
+        selection = dict(  ctK = angles[0].GetName(), ctl = angles[1].GetName(), phi = angles[2].GetName()
+                         , ctKMin = ctKBinBounds[ int(ctKBin) ], ctKMax = ctKBinBounds[ int(ctKBin) + 1 ]
+                         , ctlMin = ctlBinBounds[ int(ctlBin) ], ctlMax = ctlBinBounds[ int(ctlBin) + 1 ]
+                         , phiMin = phiBinBounds[ int(phiBin) ], phiMax = phiBinBounds[ int(phiBin) + 1 ]
+                        )
 
-else :
-    pass
+        value = float( sideBandDataTree.GetEntries( (     '%(ctK)s >= %(ctKMin)f && %(ctK)s < %(ctKMax)f'\
+                                                     + '&& %(ctl)s >= %(ctlMin)f && %(ctl)s < %(ctlMax)f'\
+                                                     + '&& %(phi)s >= %(phiMin)f && %(phi)s < %(phiMax)f'
+                                                    ) % selection
+                                                  )
+                     ) / sideBandDataTree.GetEntries()
+        coef.setVal(value)
+        coef.setError( 0.1 * value )
+        coef.setConstant()
 
 backgroundComps += bkg_angles
 

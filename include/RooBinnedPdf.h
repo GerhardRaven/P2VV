@@ -38,6 +38,9 @@ public:
       RooAbsCategory& baseCat, const RooArgList& coefList);
 
   RooBinnedPdf(const char *name, const char *title,
+      const RooArgList& baseCats, const RooArgList& coefList);
+
+  RooBinnedPdf(const char *name, const char *title,
       const RooArgList& baseCats, const TObjArray& coefLists,
       Bool_t ignoreFirstBin = kFALSE);
 
@@ -90,6 +93,11 @@ public:
   {
     _ignoreFirstBin = ignoreFirstBin;
   }
+
+  virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars,
+      const char* rangeName = 0) const;
+  virtual Double_t analyticalIntegral(Int_t code,
+      const char* rangeName = 0) const;
 
   virtual Int_t getMaxVal(const RooArgSet& vars) const;
   virtual Double_t maxVal(Int_t code) const;
