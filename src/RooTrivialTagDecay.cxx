@@ -64,10 +64,19 @@ RooTrivialTagDecay::RooTrivialTagDecay(const char *name, const char* title,
   _tageff("tageff","tageff",this,tageff),
   _fcosh("fcosh", "Cosh Coefficient", this, fcosh), 
   _fsinh("fsinh", "Sinh Coefficient", this, fsinh),
-  _fcos("fcos", "q x Cos Coefficient", this, *new RooProduct("__tag_fcos__","__tag_fcos__", RooArgSet(tag,fcos))), // ,kTRUE,kFALSE,kTRUE),
-  _fsin("fsin", "q x Sin Coefficient", this, *new RooProduct("__tag_fsin__","__tag_fsin__", RooArgSet(tag,fsin))), // ,kTRUE,kFALSE,kTRUE),
+  _fcos("fcos", "q x Cos Coefficient", this ),
+  _fsin("fsin", "q x Sin Coefficient", this ),
   _type(type)
 {
+  string n_q_fcos = Form("%s_q_cos",GetName()) ;
+  string n_q_fsin = Form("%s_q_sin",GetName()) ;
+
+  RooProduct *q_fcos = new RooProduct(n_q_fcos.c_str(),n_q_fcos.c_str(), RooArgSet(tag,fcos)); 
+  addOwnedComponents(*q_fcos);
+  _fcos.setArg(*q_fcos);
+  RooProduct *q_fsin = new RooProduct(n_q_fsin.c_str(),n_q_fsin.c_str(), RooArgSet(tag,fsin));
+  addOwnedComponents(*q_fsin);
+  _fsin.setArg(*q_fsin);
   //Constructor
   switch(type)
     {
@@ -90,7 +99,6 @@ RooTrivialTagDecay::RooTrivialTagDecay(const char *name, const char* title,
       _basisSin = declareBasis("exp(-abs(@0)/@1)*sin(@0*@2)",RooArgList(tau, dm));
       break;
     }
-  cout << " RooTrivialTagDecay("<< this <<")::ctor" << endl;
 }
 
 //_____________________________________________________________________________
@@ -101,7 +109,7 @@ RooTrivialTagDecay::RooTrivialTagDecay(const RooTrivialTagDecay& other, const ch
   _tau("tau", this, other._tau),
   _dgamma("dgamma", this, other._dgamma),
   _dm("dm", this, other._dm),
-  _tageff("tageff","tageff",this,other._tageff),
+  _tageff("tageff",this,other._tageff),
   _fcosh("fcosh", this, other._fcosh),
   _fsinh("fsinh", this, other._fsinh),
   _fcos("fcos", this, other._fcos),
@@ -112,16 +120,12 @@ RooTrivialTagDecay::RooTrivialTagDecay(const RooTrivialTagDecay& other, const ch
   _basisSin(other._basisSin),
   _type(other._type)
 {
-  cout << " RooTrivialTagDecay("<< this <<")::copy ctor("<< &other <<"," << (name ? name : "<none>" )<< ")" << endl;
   //Copy constructor
 }
 
 TObject* RooTrivialTagDecay::clone(const char* newname) const 
 { 
-    cout << "RooTrivialTagDecay("<< this <<")::clone(" << (newname? newname : "<none>" ) << ")" << endl;
-    RooTrivialTagDecay *p = new RooTrivialTagDecay(*this,newname);
-    cout << "RooTrivialTagDecay("<< this <<")::clone -- return "  << p << endl;
-    return p;
+    return new RooTrivialTagDecay(*this,newname);
 }
 
 
@@ -136,7 +140,7 @@ RooTrivialTagDecay::~RooTrivialTagDecay()
 Double_t RooTrivialTagDecay::coefficient(Int_t basisIndex) const
 {
   const RooRealProxy* p = proxy( basisIndex );
-  return (p ? double(*p) : 0. ) * ( _tag ? _tageff : 1.-_tageff );
+  return  (p!=0 ? double(*p) : 0. ) * ( int(_tag)!=0 ? double(_tageff) : 1.-double(_tageff) );
 }
 
 
@@ -172,6 +176,8 @@ Double_t RooTrivialTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code, cons
 //_____________________________________________________________________________
 Int_t RooTrivialTagDecay::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
 {
+  cout << "::getGenerator" << endl;
+  directVars.Print("V");
   if (matchArgs(directVars, generateVars, _t,_tag)) return 1;
   if (matchArgs(directVars, generateVars, _t)) return 2;
   if (matchArgs(directVars, generateVars, _tag)) return 3;
@@ -203,8 +209,10 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
     // and now for the tagging...
     Double_t dgt = _dgamma*_t/2;
     Double_t dmt = _dm*_t;
-    int tag = RooRandom::uniform() < _tageff  ? 0 : (2*RooRandom::uniform() > 1.+fabs(_fcos *cos (dmt)+_fsin *sin (dmt))/(_fcosh*cosh(dgt)+_fsinh*sinh(dgt) )  ) > 0 ? +1 : -1 ;
-    if ( code == 2 && _tag != tag ) continue; // hit-miss on required answer...
+    int tag = ( RooRandom::uniform() < double(_tageff))  ? 0 : (2*RooRandom::uniform() > 1.+fabs(_fcos *cos (dmt)+_fsin *sin (dmt))/(_fcosh*cosh(dgt)+_fsinh*sinh(dgt) )  ) > 0 ? +1 : -1 ;
+    if ( code == 2 && _tag != tag ) { 
+            continue; // hit-miss on required answer...
+    }
     _tag = tag;
     break;
   }
