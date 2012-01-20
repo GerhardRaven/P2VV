@@ -42,7 +42,7 @@ RooP2VVAngleBasis::RooP2VVAngleBasis()
 RooP2VVAngleBasis::RooP2VVAngleBasis( const char *name, const char *title
                                     , RooAbsReal& cpsi, RooAbsReal& ctheta, RooAbsReal& phi
                                     , Int_t i, Int_t j, Int_t l, Int_t m, Double_t c )
- : RooProduct(name, title,RooArgSet())
+ : RooProduct(name, title,RooArgList())
  , _c(c)
  , _i(i), _j(j), _l(l), _m(m)
  , _prod(false)
@@ -71,7 +71,7 @@ RooP2VVAngleBasis::RooP2VVAngleBasis( const char *name, const char *title
                                     , Int_t i1, Int_t j1, Int_t l1, Int_t m1
                                     , Int_t i2, Int_t j2, Int_t l2, Int_t m2
                                     , Double_t c )
- : RooProduct(name, title,RooArgSet())
+ : RooProduct(name, title,RooArgList())
  , _c(c)
  , _i(i1), _j(j1), _l(l1), _m(m1)
  , _prod(true)
