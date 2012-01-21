@@ -322,6 +322,7 @@ ws['data'].table(ws['fitcat']).Print('v')
 ws['fitcat'].setRange("unbiased","AllUnbiased")
 ws['fitcat'].setRange("fullybiased","FullyBiased")
 
+assert False
 unbiaseddata = ws['data'].reduce(RooFit.CutRange('unbiased'))
 fullybiaseddata = ws['data'].reduce(RooFit.CutRange('fullybiased'))
 
