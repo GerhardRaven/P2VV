@@ -1,14 +1,11 @@
 /*****************************************************************************
  * Project: RooFit                                                           *
  * Package: RooFitModels                                                     *
- * @(#)root/roofit:$Id: RooTrivialTagDecay.cxx 24286 2008-06-16 15:47:04Z wouter $
+ * @(#)root/roofit:$Id$
  * Authors:                                                                  *
- *   PL, Parker C Lund,   UC Irvine                                          *
- *   DK, David Kirkby,    UC Irvine,         dkirkby@uci.edu                 *
- *   WV, Wouter Verkerke, UC Santa Barbara, verkerke@slac.stanford.edu       *
+ *   GR, Gerhard Raven, VU Amsterdam & NIKHEF, Gerhard.Raven@nikhef.nl       *
  *                                                                           *
- * Copyright (c) 2000-2005, Regents of the University of California          *
- *                          and Stanford University. All rights reserved.    *
+ * Copyright (c) 2012                                                        *
  *                                                                           *
  * Redistribution and use in source and binary forms,                        *
  * with or without modification, are permitted according to the terms        *
@@ -39,18 +36,12 @@
 
 ClassImp(RooTrivialTagDecay);
 
-namespace {
-
-};
-
 //_____________________________________________________________________________
 // For now, we assume that the cos (cosh) and sin (sinh) coefficients are odd (even) wrt. tag 
 // this is not quite right as soon as eg. |lambda|^2 != 1 -- then all coefficients
 // get multiplied by  1 + _tag * C where C = (1-|lambda|^2)/(1+|lambda|^2)
 // TODO: this can be incorporated by passing 8 coefficients, namely the
 //       'even' and 'odd' for each of the 4 basis functions...
-// TODO: multiply all coefficients by 
-//   "(@0==0)*@1 + (@1!=0)*(1-@1)",RooArgList( _tag,_tageff )
 RooTrivialTagDecay::RooTrivialTagDecay(const char *name, const char* title, 
 	       RooRealVar& t, RooAbsCategory& tag, RooAbsReal& tau, RooAbsReal& dgamma, RooAbsReal& dm,  RooAbsReal& tageff,
 	       RooAbsReal& fcosh /*even*/, RooAbsReal& fsinh /*even*/, RooAbsReal& fcos /*odd*/, RooAbsReal& fsin /*odd*/, 
@@ -140,7 +131,8 @@ RooTrivialTagDecay::~RooTrivialTagDecay()
 Double_t RooTrivialTagDecay::coefficient(Int_t basisIndex) const
 {
   const RooRealProxy* p = proxy( basisIndex );
-  return  (p!=0 ? double(*p) : 0. ) * ( int(_tag)!=0 ? double(_tageff) : 1.-double(_tageff) );
+  assert(p!=0);
+  return  (p!=0 ? double(*p) : 0. ) * ( int(_tag)!=0 ? double(_tageff)/2 : 1.-double(_tageff) );
 }
 
 
@@ -148,6 +140,7 @@ Double_t RooTrivialTagDecay::coefficient(Int_t basisIndex) const
 RooArgSet* RooTrivialTagDecay::coefVars(Int_t basisIndex) const 
 {
   const RooRealProxy* p = proxy( basisIndex );
+  assert(p!=0);
   return  p ? p->arg().getVariables() : 0 ;
 }
 
@@ -156,25 +149,28 @@ RooArgSet* RooTrivialTagDecay::coefVars(Int_t basisIndex) const
 //_____________________________________________________________________________
 Int_t RooTrivialTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const 
 {
+  assert(rangeName==0);
   // Note: what if we are integrating over _tag???? remove _tag from allVars!!!
   RooArgSet redVars(allVars);
   redVars.remove(_tag.arg());
   const RooRealProxy* p = proxy( coef );
+  assert(p!=0);
   return p ? p->arg().getAnalyticalIntegral(redVars,analVars,rangeName) : 0; 
 }
 
 //_____________________________________________________________________________
 Double_t RooTrivialTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code, const char* rangeName) const 
 {
+  assert(rangeName==0);
   // TODO: what if we are integrating over _tag???? Should not happen, as getCoefAnalyticalIntegral will not select it!
   const RooRealProxy* p = proxy( coef );
-  return ( p ? p->arg().analyticalIntegral(code,rangeName) : 0 ) * ( _tag!=0 ? _tageff : 1.-_tageff );
+  assert(p!=0);
+  return ( p ? p->arg().analyticalIntegral(code,rangeName) : 0 ) * ( int(_tag)!=0 ? double(_tageff)/2 : 1.-double(_tageff) );
 }
 
 //_____________________________________________________________________________
 Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const 
 {
-  cout << "TrivialTagDecay::isDirectGenSafe" << endl;;
   // Check if given observable can be safely generated using the
   // pdfs internal generator mechanism (if that existsP). Observables
   // on which a PDF depends via more than route are not safe
@@ -185,17 +181,15 @@ Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const
   if (!findServer(arg.GetName())) return kFALSE ;
 
   // There must be no other dependency routes
-  TIterator* sIter = serverIterator() ;
+  std::auto_ptr<TIterator> sIter( serverIterator()) ;
   const RooAbsArg *server = 0;
   while((server=(const RooAbsArg*)sIter->Next())) {
     if(server == &arg) continue;
     if(server->dependsOn(arg)) {
-      if ( &arg == &_tag.arg() && ( server == &_fcos.arg() || server == &_fsin.arg() ) )  continue;
-      delete sIter ;
+      if ( &arg == &_tag.arg() && ( server == &_fcos.arg() || server == &_fsin.arg() ) ) continue;
       return kFALSE ;
     }
   }
-  delete sIter ;
   return kTRUE ;
 }
 
@@ -203,10 +197,8 @@ Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const
 //_____________________________________________________________________________
 Int_t RooTrivialTagDecay::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
 {
-  cout << "::getGenerator" << endl;
-  directVars.Print("V");
   if (matchArgs(directVars, generateVars, _t,_tag)) return 1;
-  if (matchArgs(directVars, generateVars, _t)) return 2;
+  // if (matchArgs(directVars, generateVars, _t)) return 2;
   if (matchArgs(directVars, generateVars, _tag)) return 3;
   return 0;
 }
@@ -224,7 +216,7 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
         if ( t<_t.min() || t>_t.max() ) continue;
 
         Double_t dgt = _dgamma*t/2;
-        Double_t ft = fabs(t);
+        Double_t ft = TMath::Abs(t);
         Double_t even = _fcosh*cosh(dgt)+_fsinh*sinh(dgt);
         Double_t f = exp(-ft/_tau)*even;
         if(f < 0) throw(string(Form( "RooTrivialTagDecay::generateEvent(%s) ERROR: PDF value less than zero" ,GetName())));
@@ -234,13 +226,16 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
         _t = t;
     }
     // and now for the tagging...
+    if ( RooRandom::uniform() > double(_tageff)) {
+         _tag = 0;
+         break;
+    }
+    _tag = 1;
     Double_t dgt = _dgamma*_t/2;
     Double_t dmt = _dm*_t;
-    int tag = ( RooRandom::uniform() < double(_tageff))  ? 0 : (2*RooRandom::uniform() > 1.+fabs(_fcos *cos (dmt)+_fsin *sin (dmt))/(_fcosh*cosh(dgt)+_fsinh*sinh(dgt) )  ) > 0 ? +1 : -1 ;
-    if ( code == 2 && _tag != tag ) { 
-            continue; // hit-miss on required answer...
-    }
-    _tag = tag;
+    Double_t o =  _fcos *cos (dmt)+_fsin *sin (dmt);
+    Double_t e =  _fcosh*cosh(dgt)+_fsinh*sinh(dgt);
+    _tag =  ( 2*e*RooRandom::uniform() < (e+o) ) > 0 ? +1 : -1 ;
     break;
   }
 }
