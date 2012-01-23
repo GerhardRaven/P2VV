@@ -70,32 +70,34 @@ private:
    RooRealProxy _eff;      // Efficiency function
    RooSetProxy  _observables ; // Observables in the efficiency histogram
 
-   struct CacheElem : public RooAbsCacheElement {
-      CacheElem(const RooEffHistProd* parent,const RooArgSet& iset, const RooArgSet* nset,const char *rangeName);
-      CacheElem() : I(0),xmin(0),xmax(0) {}
+   typedef std::vector<double> BinBoundaries ;
+
+   class CacheElem : public RooAbsCacheElement {
+   public:
+      CacheElem(const RooEffHistProd* parent,const RooArgSet& iset, const RooArgSet* nset,
+                const char *rangeName);
+      CacheElem() {}
       virtual ~CacheElem();
-      // Payload
-      RooAbsReal  *I ;
-      RooRealVar  *xmin ;
-      RooRealVar  *xmax ;
+
       virtual RooArgList containedArgs(Action) ;
-      Double_t getVal(double a, double b) { 
-         Double_t xminOrig = xmin->getVal() ;
-         Double_t xmaxOrig = xmax->getVal() ;
-         xmin->setVal(a); xmax->setVal(b); 
-         Double_t ret = getVal(); 
-         xmin->setVal(xminOrig) ;
-         xmax->setVal(xmaxOrig) ;
-         return ret ;
+      Double_t getVal(Int_t i = 0) { 
+         return _I[i]->getVal();
       }
-      Double_t getVal() { /*I->Print("t"); */ return I->getVal() ; }
+      
+      bool trivial() const { return _trivial; }
+
+   private:
+      // Payload
+      std::vector<RooAbsReal*> _I;
+      bool _trivial;
    };
+   
    friend class CacheElem;
-   CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, const char* rangeName=0) const ;
+   CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, 
+                       const char* rangeName = 0) const;
 
    mutable RooObjCacheManager _cacheMgr;
-   typedef std::vector<double> BinBoundaries ;
-   BinBoundaries _binboundaries ;
+   BinBoundaries _binboundaries;
   
    ClassDef(RooEffHistProd, 4) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
 };
