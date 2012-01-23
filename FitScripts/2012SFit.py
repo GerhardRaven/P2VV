@@ -24,7 +24,8 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (tmincut, 14),    nBins =  54 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.12),  nBins =  50 )
+#Set the left boundary of sigmat to non-zero to prevent problems with integration when making plots?
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.001, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
 eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
@@ -154,7 +155,7 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -176,8 +177,32 @@ masspdf.fitTo(data,**fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-sfitpdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='sfitpdf')
+pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='pdf')
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-sfitresult = sfitpdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
+#sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
 
-sfitresult.writepars('sfitresult_NOTimeAcc',False)
+#sfitresult.writepars('sfitresult_NOTimeAcc',False)
+
+########
+# PLOT #
+########
+
+from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
+from P2VVGeneralUtils import plot
+
+canvas = dict()
+for rng in ( None,) :
+    canvas[rng] = TCanvas('%s'%rng)
+    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+        dataOpts = dict( CutRange =        rng ) if rng else dict()
+        pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
+        from P2VVGeneralUtils import plot
+        from ROOT import RooArgSet
+        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var), data, True )
+        plot( p, o, splot_m.data('signal'), pdf
+              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
+              , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+#Error for events with negative weight for negative log
+#              , logy = ( o == t )
+              )
