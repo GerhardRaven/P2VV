@@ -199,6 +199,7 @@ class ArgSet(RooObject) :
         self._init(name,'RooArgSet')
 
 
+    
 
 class Category (RooObject) :
     _getters = {'Index'      : lambda s : s.getIndex()
@@ -332,6 +333,13 @@ class FormulaVar (RooObject) :
         self._declare(spec)
         self._init(Name, 'RooFormulaVar')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+class RealCategory( RooObject ) :
+    def __init__(self, Name,Category ) :
+        spec = 'RooRealCategory::%s(%s)'%(Name,Category)
+        self._declare(spec)
+        self._init(Name,'RooRealCategory')
+
 
 class ConstVar (RooObject) :
     def __init__(self,**kwargs):
@@ -582,12 +590,12 @@ class Pdf(RooObject):
         condObs  = self.ConditionalObservables()
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == kwargs['ConditionalObservables'] , 'Inconsistent Conditional Observables'
-            print 'INFO: adding ConditionalObservables: %s' % condObs
+            print 'INFO: adding ConditionalObservables: %s' % [ i.GetName() for i in  condObs ]
             kwargs['ConditionalObservables'] = condObs 
         extConst = self.ExternalConstraints()
         if extConst : 
             assert 'ExernalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
-            print 'INFO: adding ExternalConstraints: %s' % extConst
+            print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
             kwargs['ExternalConstraints'] = extConst 
         for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
