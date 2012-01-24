@@ -156,11 +156,9 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
             cloneRanges(parent->observables(), iset, nset, rangeName, newRange);
          }
          _I[i] = parent->pdf()->createIntegral(iset, nset, parent->getIntegratorConfig(), newRange);
-         _I[i]->printMultiline(cout, 1, kFALSE, "");
       }
    } else {
       _I[0] = parent->pdf()->createIntegral(iset, nset, parent->getIntegratorConfig(), rangeName);
-      _I[0]->printMultiline(cout, 1, kFALSE, "");
    }
    //I->setOperMode(ADirty);
 }
