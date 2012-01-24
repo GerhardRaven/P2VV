@@ -1,7 +1,7 @@
 from ROOT import *
  
 gSystem.Load('libP2VV')
-RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
+#RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 
 w = RooWorkspace()
 tag = w.factory('tag[unmixed=1,untagged=0,mixed=-1]')
