@@ -377,9 +377,7 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    assert(_binboundaries.back() - xmax > -1e-10);
 
    if (cache->trivial()) {
-      double eps = eff()->getVal();
-      double xxx = cache->getVal(); // no integral over efficiency dependant...
-      return eps * xxx;
+      return eff()->getVal() * cache->getVal();// no integral over efficiency dependant...
    }
 
    double xorig = x().getVal();
