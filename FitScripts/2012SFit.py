@@ -154,7 +154,7 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -176,9 +176,32 @@ masspdf.fitTo(data,**fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-sfitpdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='sfitpdf')
-sfitpdf.Print('T')
+pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='pdf')
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-sfitresult = sfitpdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
+#sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
 
-sfitresult.writepars('sfitresult_NOTimeAcc',False)
+#sfitresult.writepars('sfitresult_NOTimeAcc',False)
+
+########
+# PLOT #
+########
+
+from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
+from P2VVGeneralUtils import plot
+
+canvas = dict()
+for rng in ( None,) :
+    canvas[rng] = TCanvas('%s'%rng)
+    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+        dataOpts = dict( CutRange =        rng ) if rng else dict()
+        pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
+        from P2VVGeneralUtils import plot
+        from ROOT import RooArgSet
+        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var), data, True )
+        plot( p, o, splot_m.data('signal'), pdf
+              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
+              , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+#Error for events with negative weight for negative log
+#              , logy = ( o == t )
+              )
