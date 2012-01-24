@@ -1,15 +1,17 @@
 from math import sqrt, pi, cos, sin
 from RooFitWrappers import *
+from ROOT import RooMsgService
+#RooMsgService.instance().addStream(RooFit.DEBUG, RooFit.Topic(RooFit.Integration))
+
 
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = 1 # numCPU() 
+fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
               , Verbose = True
-#              , Optimize = True
               , Minimizer = ('Minuit2','minimize')
               )
 
@@ -24,7 +26,7 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (tmincut, 14),    nBins =  54 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.010, 0.12),  nBins =  50 )
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.005, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
 eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
@@ -68,6 +70,7 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 #Per event error
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
+tresdata.model().setCacheIntegrals(True)
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
@@ -87,13 +90,12 @@ tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = T
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
 #eta_os_pdf = { eta_os : None }
 
-from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s'
+from P2VVParameterizations.CPVParams import LambdaArg_CPParam
+CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
                                               , Value = -0.04
                                               , MinMax = (-pi,pi)
                                               , Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
                                               )
-                           , lambdaCPSq = dict( Value = 1., Constant = True )
                            )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
@@ -110,7 +112,8 @@ from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , amplitudes
                                                   , CP
-                                                  , Product('tag',(iTag_os,tagging['dilution']))
+                                                  , iTag_os
+                                                  , tagging['dilution']
                                                   , ['A0','Apar','Aperp','AS'] ) 
 
 basisCoefficients.externalConstraints = tagging.externalConstraints()
@@ -127,6 +130,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , sinCoef   = basisCoefficients['sin']
 #                     , ConditionalObservables = ( eta_os, )
 #                     , ConditionalObservables = ( eta_os, iTag_os, )
+#                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
                      , ConditionalObservables = tresdata.model().ConditionalObservables()
                      , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
                      )
@@ -154,7 +158,7 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-#sig_t_angles = acceptance * sig_t_angles
+sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -162,8 +166,8 @@ acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/Da
 
 nsig = 21000
 nbkg = 10500
-signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, { st : None } ), Yield = ( nsig, 0, 1.4*nsig) )
-background     = Component('bkg',    ( bkg_m.pdf(), ),                             Yield = ( nbkg, 0, 1.4*nbkg) )
+signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, {  st : None } ), Yield = ( nsig, 0, 1.4*nsig) )
+background     = Component('bkg',    ( bkg_m.pdf(), ),                                            Yield = ( nbkg, 0, 1.4*nbkg) )
 
 ############
 ### SFIT ###
@@ -176,9 +180,9 @@ masspdf.fitTo(data,**fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
+sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
 
 #sfitresult.writepars('sfitresult_NOTimeAcc',False)
 
