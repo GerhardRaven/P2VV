@@ -19,3 +19,4 @@ p2vv_dict.*
 *.tar.bz2
 *.callgrind
 .*history
+.gdb*

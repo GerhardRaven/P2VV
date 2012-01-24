@@ -431,6 +431,13 @@ class RealEffMoment( AbsRealMoment ):
                                                       )
                               )
 
+class CalibratedDilution(RooObject):
+    def __init__(self, Name, P0, P1, WTag, AvWTag, **kwargs):
+         # construct factory string on the fly...
+         print 'CalibratedDilution::%s(%s)'%(Name,','.join(i.GetName() for i in (P0,P1,WTag,AvWTag)))
+         self._declare( 'CalibratedDilution::%s(%s)'%(Name,','.join(i.GetName() for i in (P0,P1,WTag,AvWTag))) )
+         self._init(Name,'RooCalibratedDilution')
+         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...
