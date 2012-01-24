@@ -354,7 +354,16 @@ def Oldsplot( canv, sdata, pdf, frameOpts = dict(), dataOpts = dict() , pdfOpts 
             # and put back the original value!
             for (i,v) in _yields.iteritems() : i.setVal(v)
 
+#To help sort the pads in the plot fucntion
+class Sorter(object):
+    def __init__(self, d):
+        self.__d = d
 
+    def __call__(self, o):
+        if o in self.__d:
+            return self.__d[o]
+        else:
+            return len(self.__d) + 1
 
 class RealMomentsBuilder ( dict ) :
     # TODO:  implement reduce: clone self, selecting a subset of available moments...

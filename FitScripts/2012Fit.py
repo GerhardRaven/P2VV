@@ -25,7 +25,8 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (tmincut, 14),    nBins =  54 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.0, 0.12),  nBins =  50 )
+#Set the left boundary of sigmat to non-zero to prevent problems with integration when making plots?
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.001, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
 eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
@@ -230,7 +231,7 @@ acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/Da
 #acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
 
 #Build proper time acceptance corrected PDF
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
 
 ##################
 ### Build PDFs ###
@@ -288,25 +289,46 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 #masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 #masspdf.fitTo(data,**fitOpts)
 
-pereventerror = True
+#######
+# FIT #
+#######
 
-if pereventerror:
-    for i in sig_t_angles.ConditionalObservables(): print 'conditional observable in signal component =', i
-    for i in bkg_t.pdf().ConditionalObservables(): print 'conditional observable in background component =', i
-    pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
-    #pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='fullpdf')
-    pdf.Print()
-    for i in pdf.ConditionalObservables(): print 'conditional observable in full pdf =', i
-    #classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, ConditionalObservables = [st], **fitOpts)
-    classicfitresult = pdf.fitTo(data, **fitOpts)
+pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+##pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='fullpdf')
+pdf.Print()
+##classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, ConditionalObservables = [st], **fitOpts)
+#classicfitresult = pdf.fitTo(data, **fitOpts)
+#classicfitresult.writepars('classicfitresult',False)
 
-else:
-    #sig_t_angles depends on eta_os, and is NOT conditional on eta_os, so also ask for eta_os here....
-    pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
-    #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-    classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, **fitOpts)
+########
+# PLOT #
+########
+orderplotobs = [m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
+orderdict = {}
+for i in enumerate(orderplotobs):
+    orderdict[i[1].GetName()]= i[0]
 
-classicfitresult.writepars('classicfitresult',False)
+from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
+from P2VVGeneralUtils import plot
 
+canvas = dict()
+for rng in ( None, 'signal','leftsideband,rightsideband' ) :
+    canvas[rng] = TCanvas('%s'%rng)
+    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    from P2VVGeneralUtils import Sorter
+    obs = sorted(obs, key = Sorter(orderdict))
 
-
+    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+        dataOpts = dict( CutRange =        rng ) if rng else dict()
+        pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
+        from P2VVGeneralUtils import plot
+        from ROOT import RooArgSet
+        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var), data, True )
+        plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                                              , 'bkg*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                                              #, 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                                              }
+              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
+              , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+              , logy = ( o == t )
+              )

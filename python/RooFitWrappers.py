@@ -241,6 +241,24 @@ class Category (RooObject) :
         else:
             return False
 
+class ThresholdCategory( Category ) :
+    def __init__(self,Name,**kwargs):
+        __check_req_kw__( 'Observable', kwargs )
+        __check_req_kw__( 'Data', kwargs )
+        obs = __dref__(kwargs.pop('Observable'))
+        data = kwargs.pop('Data', None)
+        boundlist = kwargs.pop('Boundaries')
+        defaultstring = kwargs.pop('Default')
+        from ROOT import RooThresholdCategory
+        obj = RooThresholdCategory(Name, Name, obs, defaultstring)
+        for i,value in [(i,v) for i,v in enumerate(boundlist)][1:]:
+            obj.addThreshold(value,"Bin%s"%(i))
+        obj = data.addColumn(__dref__(obj))
+        obj = self._addObject(obj)
+        t = 'RooCategory'
+        self._init(Name, t)
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
 class SuperCategory( Category ) :
     def __init__(self,Name,cats,**kwargs):
         data = kwargs.pop('Data', None)
@@ -718,15 +736,21 @@ class SumPdf(Pdf):
 
 class SimultaneousPdf(Pdf):
     def __init__(self, Name, **kwargs):
-        d = { 'Name' : Name
-            , 'States' : kwargs.pop('States')
-            , 'Cat' : kwargs.pop('SplitCategory')['Name']
-            }
-        # construct factory string on the fly...
-        ## pdfs = sorted([(s, pdf) for s, pdf in d['States'].iteritems()], key = lambda (s, pdf): d['Cat'].lookupType(s).getVal())
-        ## pdfs = [e[1] for e in pdfs]
-        d['States'] = ','.join(['%s = %s' % (s, pdf['Name']) for s, pdf in d['States'].iteritems()])
-        s = "SIMUL::%(Name)s(%(Cat)s,%(States)s)" % d
+        if 'States' in kwargs:
+            d = { 'Name' : Name
+                  , 'States' : kwargs.pop('States')
+                  , 'Cat' : kwargs.pop('SplitCategory')['Name']
+                  }
+            # construct factory string on the fly...
+            ## pdfs = sorted([(s, pdf) for s, pdf in d['States'].iteritems()], key = lambda (s, pdf): d['Cat'].lookupType(s).getVal())
+            ## pdfs = [e[1] for e in pdfs]
+            d['States'] = ','.join(['%s = %s' % (s, pdf['Name']) for s, pdf in d['States'].iteritems()])
+            s = "SIMUL::%(Name)s(%(Cat)s,%(States)s)" % d
+        elif 'SplitParameters' in kwargs:
+            splitstring = ','.join(i.GetName() for i in kwargs.pop('SplitParameters'))
+            s = "SIMCLONE::%s(%s,$SplitParam({%s},%s))"%(Name,kwargs.pop('MasterPdf').GetName(),splitstring,kwargs.pop('SplitCategory'))
+        else:
+            raise KeyError, 'P2VV - ERROR: SimultaneousdPdf: Must specify either SplitParameters or States'
         self._declare(s)
         self._init(Name,'RooSimultaneous')
         Pdf.__init__(self , Name = Name , Type = 'RooSimultaneous')
