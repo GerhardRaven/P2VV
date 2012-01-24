@@ -21,5 +21,6 @@
 #pragma link C++ class RooEffHistProd+;
 #pragma link C++ class RooRelBreitWigner+;
 #pragma link C++ class RooTagDecisionWrapper+;
+#pragma link C++ class RooCalibratedDilution+;
 
 #endif
