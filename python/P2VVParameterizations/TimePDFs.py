@@ -131,15 +131,16 @@ class LP2011_Background_Time( TimePdf ) :
         ml = Pdf( Name = kwargs.pop('t_bkg_ml',Name+'_t_bkg_ml')
                   , Type = Decay
                   , Parameters = ( time, self._t_bkg_ml_tau, resolutionModel, 'SingleSided')
+                  , ConditionalObservables = resolutionModel.ConditionalObservables()
                   )
         ll = Pdf( Name = kwargs.pop('t_bkg_ll',Name+'_t_bkg_ll')
                   , Type = Decay
                   , Parameters = (time,self._t_bkg_ll_tau,resolutionModel,'SingleSided')
+                  , ConditionalObservables = resolutionModel.ConditionalObservables()
                   )
         TimePdf.__init__(self, pdf = SumPdf( Name = Name
                                              , PDFs = (  ll, ml)
                                              , Yields = { ll.GetName() : self._t_bkg_fll }
-                                             , ConditionalObservables = resolutionModel.ConditionalObservables()
                                              )
                          )
 
