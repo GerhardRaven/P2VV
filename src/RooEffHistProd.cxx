@@ -112,53 +112,78 @@ void cloneRanges(const RooArgSet& observables, const RooArgSet& iset,
 }
 
 //_____________________________________________________________________________
-RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,const RooArgSet& iset,
+RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgSet& iset,
                                      const RooArgSet* nset, const char *rangeName)
-   : I(0), xmin(0), xmax(0)
+   : _I(parent->_binboundaries.size() - 1, 0)
 {
    // create a function object for the corresponding integral of the underlying PDF.
    // i.e. if we have  eps(x)f(x,y)  and we get (x,y) as allVars, 
-   // construct I(xmin,xmax) = int_xmin^xmax dx int dy f(x,y)
+   // construct I_i,j = int_xmin,i^xmax,j dx int dy f(x,y)
    // so that later we can do sum_i eps( (x_i+x_i+1)/2 ) * I(x_i,x_i+1)
    RooArgSet *x_ = parent->eff()->getObservables(&iset); // the subset of iset on which _eff depends
    assert(x_->getSize() < 2); // for now, we only do 1D efficiency histograms...
-   const char* newRange = rangeName;
+   const BinBoundaries& bounds = parent->_binboundaries;
+
    if (x_->getSize() == 1) {
       assert( *x_->first() == parent->x() );
-
-      TString range("_I_Range");
-      // Add original rangeName if there is one
-      if (0 != newRange) range.Replace(3, 8, newRange);
-      
-      // Craete a RealVar to parametrize the lower bound
-      const char *name = parent->makeFPName(parent->GetName(), iset, nset, range + "_min");
-      xmin = new RooRealVar(name, name, parent->x().getMin(rangeName),
-                            parent->x().getMin(rangeName), parent->x().getMax(rangeName));
-
-      // Create a RealVar to parametrize the high bound
-      name = parent->makeFPName(parent->GetName(), iset, nset, range + "_max");
-      xmax = new RooRealVar(name, name, parent->x().getMax(rangeName),
-                            parent->x().getMin(rangeName), parent->x().getMax(rangeName));
-
-      // Create a new name for the range
-      newRange = parent->makeFPName(parent->GetName(), iset, nset, range);
-      parent->x().setRange(newRange, *xmin, *xmax);
-      if (0 != rangeName) {
-         cloneRanges(parent->observables(), iset, nset, rangeName, newRange);
-      }
+      _trivial = false;
+   } else {
+      _trivial = true;
    }
-   I = parent->pdf()->createIntegral(iset,nset,parent->getIntegratorConfig(), newRange);
-}
-//_____________________________________________________________________________
-RooEffHistProd::CacheElem::~CacheElem() 
-{
+
+   Double_t xmin = parent->x().getMin(rangeName);
+   Double_t xmax = parent->x().getMax(rangeName);
+
+   if (!trivial()) {
+      for(unsigned int i = 0; i < bounds.size() - 1; ++i) {
+         const char* newRange = rangeName;
+         Double_t low = bounds[i];
+         Double_t high = bounds[i + 1];
+         if (high < xmin) continue; // not there yet...
+         if (low  > xmax) break;    // past the requested interval...
+
+         Double_t thisxmin = std::max(low,  xmin);
+         Double_t thisxmax = std::min(high, xmax);
+
+         TString range = TString::Format("_I_Range_%d", i);
+         // Add original rangeName if there is one
+         if (0 != newRange) range.Replace(3, 8, newRange);
+      
+         // Create a new name for the range
+         newRange = parent->makeFPName(parent->GetName(), iset, nset, range);
+         parent->x().setRange(newRange, thisxmin, thisxmax);
+         if (0 != rangeName) {
+            cloneRanges(parent->observables(), iset, nset, rangeName, newRange);
+         }
+         _I[i] = parent->pdf()->createIntegral(iset, nset, parent->getIntegratorConfig(), newRange);
+         _I[i]->printMultiline(cout, 1, kFALSE, "");
+      }
+   } else {
+      _I[0] = parent->pdf()->createIntegral(iset, nset, parent->getIntegratorConfig(), rangeName);
+      _I[0]->printMultiline(cout, 1, kFALSE, "");
+   }
+   //I->setOperMode(ADirty);
 }
 
 //_____________________________________________________________________________
 RooArgList RooEffHistProd::CacheElem::containedArgs(Action) 
 {
    // Return list of all RooAbsArgs in cache element
-   return RooArgList(*I,*xmin,*xmax); 
+   RooArgList l;
+   for (std::vector<RooAbsReal*>::const_iterator it = _I.begin(), end = _I.end();
+        it != end; ++it) {
+      l.add(**it);
+   }
+   return l;
+}
+
+//_____________________________________________________________________________
+RooEffHistProd::CacheElem::~CacheElem() 
+{
+   for(std::vector<RooAbsReal*>::const_iterator it = _I.begin(), end = _I.end();
+       it != end; ++it) {
+      if (*it) delete *it;
+   }
 }
 
 //_____________________________________________________________________________
@@ -327,8 +352,7 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
    iset.add(allVars);
 
    RooArgSet *nset = &iset;
-   CacheElem* cache = getCache(nset,&iset,rangeName);
-   assert(cache!=0);
+   CacheElem* cache = getCache(nset, &iset, rangeName);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;
 }
@@ -352,7 +376,7 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    assert(xmin >= _binboundaries.front());
    assert(_binboundaries.back() - xmax > -1e-10);
 
-   if (cache->xmin == 0 && cache->xmax == 0)  {
+   if (cache->trivial()) {
       double eps = eff()->getVal();
       double xxx = cache->getVal(); // no integral over efficiency dependant...
       return eps * xxx;
@@ -363,18 +387,21 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    setDirtyInhibit(kTRUE);
 
    double sum(0);
-   for(BinBoundaries::const_iterator i = _binboundaries.begin(), end = _binboundaries.end();
-       i+1 != end; ++i) {
-      if (*(i + 1) < xmin) continue; // not there yet...
-      if (*i       > xmax) break;    // past the requested interval...
-      Double_t thisxmin = std::max(*i,       xmin);
-      Double_t thisxmax = std::min(*(i + 1), xmax);
+   for(unsigned int i = 0; i < _binboundaries.size() - 1; ++i) {
+      Double_t low = _binboundaries[i];
+      Double_t high = _binboundaries[i + 1];
+      if (high < xmin) continue; // not there yet...
+      if (low  > xmax) break;    // past the requested interval...
+      Double_t thisxmin = std::max(low,       xmin);
+      Double_t thisxmax = std::min(high, xmax);
       if (thisxmin >= thisxmax) continue;
 
       x().setVal(0.5 * (thisxmin + thisxmax)); // get the efficiency for this bin
       double eps = eff()->getVal();
       x().setVal(xorig);  // and restore the original value ASAP...
-      sum += eps * cache->getVal(thisxmin, thisxmax);
+
+      // Passing the bin index is not very nice, but I prefer not having to loop twice.
+      sum += eps * cache->getVal(i);
    }
    eff()->getVal() ; // restore original state
    setDirtyInhibit(origState) ;	
