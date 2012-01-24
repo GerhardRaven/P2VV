@@ -32,7 +32,6 @@ class RooObject(object) :
                ,'Constant'   : lambda s : s.isConstant()
                }
     def _factory(self,spec) :
-        print spec
         return self.ws().factory(spec)
 
     def __setitem__(self,k,v):
