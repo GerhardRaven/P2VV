@@ -148,8 +148,6 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent,const RooArgSe
       }
    }
    I = parent->pdf()->createIntegral(iset,nset,parent->getIntegratorConfig(), newRange);
-
-   //I->setOperMode(ADirty);
 }
 //_____________________________________________________________________________
 RooEffHistProd::CacheElem::~CacheElem() 
@@ -314,9 +312,7 @@ RooEffHistProd::CacheElem *RooEffHistProd::getCache(const RooArgSet* nset,
    Int_t sterileIndex(-1);
    CacheElem* cache = (CacheElem*) _cacheMgr.getObj(nset, iset, &sterileIndex,
                                                     RooNameReg::ptr(rangeName));
-   if (cache) { 
-      return cache;
-   }
+   if (cache) return cache;
    _cacheMgr.setObj(nset, iset, new CacheElem(this, *iset, nset, rangeName),
                     RooNameReg::ptr(rangeName));
    return getCache(nset, iset, rangeName);
@@ -332,7 +328,7 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
 
    RooArgSet *nset = &iset;
    CacheElem* cache = getCache(nset,&iset,rangeName);
-   assert(cache);
+   assert(cache!=0);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;
 }
@@ -347,7 +343,6 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    std::auto_ptr<RooArgSet> nset( _cacheMgr.nameSet1ByIndex(code - 1)->select(*vars));
 
    CacheElem* cache = getCache(_normSet, iset.get(), rangeName);
-   //CacheElem* cache = (CacheElem*)_cacheMgr.getObjByIndex( code-1);
 
    Double_t xmin = x().getMin(rangeName), xmax = x().getMax(rangeName);
 
@@ -379,11 +374,9 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
       x().setVal(0.5 * (thisxmin + thisxmax)); // get the efficiency for this bin
       double eps = eff()->getVal();
       x().setVal(xorig);  // and restore the original value ASAP...
-
       sum += eps * cache->getVal(thisxmin, thisxmax);
    }
-
-   eff()->getVal() ;
+   eff()->getVal() ; // restore original state
    setDirtyInhibit(origState) ;	
    return  sum;
 }
