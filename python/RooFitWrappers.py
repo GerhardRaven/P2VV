@@ -32,6 +32,7 @@ class RooObject(object) :
                ,'Constant'   : lambda s : s.isConstant()
                }
     def _factory(self,spec) :
+        print spec
         return self.ws().factory(spec)
 
     def __setitem__(self,k,v):
@@ -673,6 +674,13 @@ class SumPdf(Pdf):
     def __init__(self, **kwargs) :
         self._yields = {}
         pdfs = list(kwargs['PDFs'])
+        co = set([ i for pdf in pdfs for i in pdf.ConditionalObservables() ])
+        if 'ConditionalObservables' in kwargs :
+            if co != kwargs['ConditionalObservables'] :
+                print 'WARNING: inconsistent conditional observables: %s vs %s' % ( co, kwargs['ConditionalObservables'] )
+        elif co :
+            kwargs['ConditionalObservables'] = co
+            
         diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
