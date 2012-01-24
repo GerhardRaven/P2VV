@@ -88,14 +88,10 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                               )
 
         self._check_extraneous_kw( kwargs )
-        from RooFitWrappers import FormulaVar, ConstVar
+        from RooFitWrappers import CalibratedDilution, ConstVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__(  self
-                               , Dilutions = [ FormulaVar(  'tagDilution', '1. - 2. * ( @2 + @3 * ( @0 - @1 ) ) '
-                                                          , [ self._estWTag, self._avgEstWTag, self._p0, self._p1 ]
-                                                          , Title = 'Calibrated Per-Event Dilution'
-                                                         )
-                                             ]
+                                , Dilutions = [ CalibratedDilution('tagDilution', self._p0, self._p1, self._estWTag, self._avgEstWTag) ]
                                 , ADilWTags = [ ConstVar( Name = 'zero', Value = 0) ]
                                 , CEvenOdds = [ Trivial_CEvenOdd() ]
                                 , Constraints = constraints
