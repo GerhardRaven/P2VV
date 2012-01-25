@@ -1,4 +1,6 @@
-from ROOT import RooArgSet, RooArgList, RooDataSet, RooWorkspace, RooFitResult, RooFit, RooDataHist
+from ROOT import (RooArgSet, RooArgList, RooDataSet,
+                  RooWorkspace, RooFitResult, RooFit,
+                  RooDataHist, RooLinkedList, RooCmdArg)
 from ROOT import gStyle,gROOT
 import ROOTDecorators
 gStyle.SetPalette(1)
@@ -9,7 +11,7 @@ gROOT.SetStyle("Plain")
 #from ROOT import * 
 
 def __wrap_kw_subs( fun ) :
-    from ROOT import RooCmdArg,RooFit,RooAbsCollection,TObject
+    from ROOT import RooFit, RooAbsCollection, TObject
     __doNotConvert = [ RooAbsCollection, TObject ]
     __tbl  = lambda k : getattr(RooFit, k)
     def __disp(k, v):
@@ -30,7 +32,15 @@ def __wrap_kw_subs( fun ) :
             args += tuple( RooCmdArg( __disp('Import', slice) ) for slice in kwargs.pop('Imports') )
         for k,v in kwargs.iteritems():
             args += (RooCmdArg( __disp(k,v)),)
-        return fun(self,*args)
+        try:
+            return fun(self, *args)
+        except:
+            l = RooLinkedList()
+            fun_args = [a for a in args if not isinstance(a, RooCmdArg)]
+            for a in args:
+                if isinstance(a, RooCmdArg):
+                    l.Add(a)
+            return fun(self, *tuple(fun_args + [l]))
     return _fun
 
 ##########################################

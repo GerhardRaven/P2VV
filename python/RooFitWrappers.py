@@ -93,6 +93,7 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters
         #       a conflict.
         if spec not in self.ws()._spec :
+            print "Spec: %s" % spec
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec)
@@ -550,11 +551,6 @@ class Pdf(RooObject):
         for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
             self[d] = kwargs.pop(d)
 
-
-    def __str__(self):
-        d = dict([(a, self[a]) for a in Pdf._getters if hasattr(self, a)])
-        return '%s' % d
-
     def _get(self, name):
         return getattr(self._target_(), '_' + name.lower())
 
@@ -615,7 +611,7 @@ class Pdf(RooObject):
     def fitTo( self, data, **kwargs ) :
         condObs  = self.ConditionalObservables()
         if condObs :
-            assert 'ConditionalObservables' not in kwargs or condObs == kwargs['ConditionalObservables'] , 'Inconsistent Conditional Observables'
+            assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'
             print 'INFO: adding ConditionalObservables: %s' % [ i.GetName() for i in  condObs ]
             kwargs['ConditionalObservables'] = condObs 
         extConst = self.ExternalConstraints()
@@ -653,16 +649,18 @@ class Pdf(RooObject):
 
 class ProdPdf(Pdf):
     def __init__(self, Name, PDFs, **kwargs):
-        self._dict = { 'PDFs' : frozenset(PDFs)
-                     , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
-                     }
-        self._make_pdf()
-        del self._dict
-        # TODO: call Pdf.__init__ instead!!!
         assert 'ConditionalObservables' not in kwargs, 'ConditionalObservables are done automatically. Do not specify'
-            
-        for d in set(('ExternalConstraints',)).intersection( kwargs ) :
-            self[d] = kwargs.pop(d)
+        conds = set()
+        obs = set()
+        for pdf in PDFs:
+            for o in pdf.Observables():
+                if o not in pdf.ConditionalObservables(): obs.add(o)
+            for c in pdf.ConditionalObservables(): conds.add(o)
+        d = { 'PDFs' : frozenset(PDFs)
+              , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
+              , 'ConditionalObservables' : list(conds - obs)
+              }
+        Pdf.__init__(self, Type = 'RooProdPdf', **d)
 
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
@@ -686,13 +684,13 @@ class ProdPdf(Pdf):
             cond = pdf.ConditionalObservables()
             if cond :
                 # first define a named set for our conditionals, as the
-                # parsing of this is utterly borken in case we try PROD::name( f | { x,y }, g )
+                # parsing of this is utterly broken in case we try PROD::name( f | { x,y }, g )
                 # as it interprets this as f|x ,y, g due to not recognizing the closing } as
                 # the token being parsed is already split on the ',', hence asSET gets "{x" and
                 # is very happy with that... and the closing } silenty disappears as well...
-                __borken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
+                __broken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
                 print 'Adding Conditional Observables %s to %s'%(','.join(i.GetName() for i in cond),name)
-                name += '|%s'% __borken_parser_workaround.GetName()
+                name += '|%s'% __broken_parser_workaround.GetName()
             return name
         # NOTE: this construction 'absorbs' all conditional observables, so the output
         #       does not have any explicit conditional observables anymore...
@@ -867,7 +865,7 @@ class HistFunc(RooObject):
         _data = RooDataHist(_dn, _dn, RooArgList(*[__dref__(o) for o in kwargs['Observables']]),
                             RooFit.Import(_hist, False))
         self.ws().put(_data)
-        self._declare('RooHistFunc::%s({%s}, %s)' % (Name, ','.join([o.GetName() for o in kwargs.pop('Observables')]), _dn))
+        self._declare('RooHistFunc::%s({%s}, %s)' % (Name, ','.join([o.GetName() for o in kwargs.pop('Observables')]), _data.GetName()))
         self._init(Name, 'RooHistFunc')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -1191,7 +1189,7 @@ class Component(object):
         else :
             if not hasattr(pdf,'__iter__') : pdf = (pdf,)
             for p in pdf :
-                obs = ( o for o in p.Observables() if o not in p.ConditionalObservables() )
+                obs = [o for o in p.Observables() if o not in p.ConditionalObservables()]
                 self[ obs ] = p
 
     def __setitem__(self, observable, pdf) :

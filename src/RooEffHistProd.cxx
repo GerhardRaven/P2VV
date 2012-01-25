@@ -350,7 +350,7 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
    iset.add(allVars);
 
    RooArgSet *nset = &iset;
-   CacheElem* cache = getCache(nset, &iset, rangeName);
+   getCache(nset, &iset, rangeName);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;
 }
@@ -360,10 +360,14 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
 {
    assert(code > 0);
 
-   std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
-   std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
+   CacheElem* cache = static_cast<CacheElem*>(_cacheMgr.getObjByIndex(code - 1));
 
-   CacheElem* cache = getCache(_normSet, iset.get(), rangeName);
+   if (!cache) {
+      std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
+      std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
+      cache = getCache(_normSet, iset.get(), rangeName);
+   }
+
 
    Double_t xmin = x().getMin(rangeName), xmax = x().getMax(rangeName);
 
