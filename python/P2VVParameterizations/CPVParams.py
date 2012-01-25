@@ -47,3 +47,14 @@ class LambdaSqArg_CPParam( CPParam ) :
                              , S = FormulaVar('S', '2. * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                         )
 
+class LambdaArg_CPParam( CPParam ) :
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import FormulaVar,ConstVar
+        from math import pi
+
+        self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = phiCP,      MinMax = ( -2. * pi, 2. * pi ) )
+        self._check_extraneous_kw( kwargs )
+        CPParam.__init__(self, C = ConstVar( Name = 'C', Value = 0. )
+                             , D = FormulaVar('D', ' cos(-@0) ', [  self._phiCP ] )
+                             , S = FormulaVar('S', ' sin(-@0) ', [  self._phiCP ] )
+                        )

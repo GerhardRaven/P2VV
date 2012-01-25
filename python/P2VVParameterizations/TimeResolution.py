@@ -119,6 +119,8 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                                                          )
                                , Constraints = constraints
                                )
+        from ROOT import RooArgSet
+        self.model().setParameterizeIntegral(RooArgSet( self._sigmat._var ))
 
 class Gamma_Sigmat( _util_parse_mixin ) :
     def pdf(self) :

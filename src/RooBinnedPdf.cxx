@@ -439,11 +439,11 @@ Int_t RooBinnedPdf::getAnalyticalIntegral(RooArgSet& allVars,
 {
   if (_function.absArg() != 0
       || (_coefLists.GetEntries() == _numCats && _numCats != 1)
-      || _numCats > 20)
+      || _numCats > 26)
     return 0;
 
-  // determine integration code
-  Int_t subCode = 0;
+  // determine integration code for independent bin coefficients (1 or x..x2)
+  Int_t varsCode = 0;
   for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
     if (_continuousBase) {
       // continuous variable dependence
@@ -460,24 +460,129 @@ Int_t RooBinnedPdf::getAnalyticalIntegral(RooArgSet& allVars,
       analVars.add(*cat);
     }
 
-    subCode += TMath::Nint(TMath::Power(2., catIter));
+    varsCode += 1 << catIter;
   }
 
+  // check if we have to integrate over all variables, calculate the
+  // coefficient of bin 0 and coefficients are bin integrals
+  if (_calcCoefZeros[0] && (!_continuousBase || _binIntegralCoefs)
+      && varsCode == (1 << _numCats) - 1)
+    return 1;
+
   // return integration code
-  if (subCode == TMath::Nint(TMath::Power(2., _numCats)) - 1) return 1;
-  return 2 + 32 * subCode;
+  return 2 + (varsCode << 5);
 }
 
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
     const char* /*rangeName*/) const
 {
+  // integral over all variables equals 1 if the coefficient of bin 0 is
+  // calculated and coefficients are bin integrals
   if (code == 1) return 1.;
 
+  // determine the code that specifies integration variables
+  Int_t varsCode = code >> 5;
+  if (varsCode == 0) return getVal();
+
   if (code % 32 == 2) {
-    // determine integration sub-code, which specifies integration variables
-    Int_t subCode = code / 32;
-    if (subCode == 0) return getVal();
+    // create array of bin positions for categories
+    Int_t* binPos = new Int_t[_numCats];
+    binPos[0] = (Int_t)_calcCoefZeros[0];
+    for (Int_t catIter = 1; catIter < _numCats; ++catIter) binPos[catIter] = 0;
+
+    // loop over coefficients and calculate integral sum
+    Double_t integral = 0.;
+    Double_t coefSum  = 0.;
+    RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(0);
+    for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
+      // check if we have to add this bin's coefficient to the integral
+      Bool_t addCoef = kTRUE;
+      Double_t binVolumeFac = 1.;
+      for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+        if (addCoef && (varsCode & 1 << catIter) == 0) {
+          // check if the category index corresponds to this bin
+          std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
+          Int_t cPos = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
+              ->getIndex()];
+          if (cPos != binPos[catIter])
+            // don't use coefficient's value
+            addCoef = kFALSE;
+        }
+
+        if (addCoef && _continuousBase) {
+          // update bin volume factor
+          if (!_binIntegralCoefs && (varsCode & 1 << catIter) != 0)
+            // multiply bin volume by bin width of this bin
+            binVolumeFac *= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+                ->getBinning(_binningNames[catIter]).binWidth(binPos[catIter]);
+          else if (_binIntegralCoefs && (varsCode & 1 << catIter) == 0)
+            // divide bin volume by bin width of this bin
+            binVolumeFac /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+                ->getBinning(_binningNames[catIter]).binWidth(binPos[catIter]);
+        }
+
+        // update bin position for next iteration
+        if (catIter == 0 || binPos[catIter - 1]
+            == ((RooAbsCategory*)_baseCatsList.at(catIter - 1))->numTypes()) {
+          binPos[catIter] = binPos[catIter] + 1;
+          if (catIter != 0) binPos[catIter - 1] = 0;
+        }
+      }
+
+      // get coefficient's value
+      Double_t cVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
+
+      // add value to sum
+      if (_calcCoefZeros[0] && cVal > 0.) coefSum += cVal;
+
+      // make negative values equal to zero, add positive values to integral
+      if (addCoef && cVal > 0.) integral += cVal * binVolumeFac;
+    }
+
+    delete[] binPos;
+
+    if (_calcCoefZeros[0]) {
+      // return integral if bin 0 coefficient equals zero
+      if (coefSum >= 1.) return integral /= coefSum;
+
+      if (_continuousBase) {
+        // check if we have to add the bin 0 coefficient to the integral
+        Double_t binVolumeFac = 1.;
+        for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+          if ((varsCode & 1 << catIter) == 0) {
+            // check if the category index corresponds to this bin
+            std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
+            Int_t cPos = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
+                ->getIndex()];
+            if (cPos != 0)
+              // don't use coefficient's value
+              return integral;
+          }
+
+          // update bin volume factor
+          if (!_binIntegralCoefs && (varsCode & 1 << catIter) != 0)
+            // multiply bin volume by bin width of bin 0
+            binVolumeFac *= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+                ->getBinning(_binningNames[catIter]).binWidth(0);
+          else if (_binIntegralCoefs && (varsCode & 1 << catIter) == 0)
+            // divide bin volume by bin width of bin 0
+            binVolumeFac /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+                ->getBinning(_binningNames[catIter]).binWidth(0);
+          
+        }
+
+        // add bin 0 value to integral and return integral
+        return integral + (1. - coefSum) * binVolumeFac;
+      }
+
+      // add bin 0 value to integral and return integral
+      return integral + 1. - coefSum;
+    }
+
+    // return integral value
+    return integral;
+
   }
 
   return 0.;
@@ -692,7 +797,7 @@ Double_t RooBinnedPdf::evaluateCoef() const
 
   if (binPos == 0) {
     // multiply result with the calculated value of bin 0 coefficient
-    if (coefSum > 1.) return 0.;
+    if (coefSum >= 1.) return 0.;
     value *= 1. - coefSum;
   } else if (coefSum > 1.) {
     // scale the coefficients to make their sum equal to one
@@ -772,7 +877,7 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
 
     if (cPos[catIter] == 0) {
       // multiply result with the calculated value of bin 0 coefficient
-      if (coefSum > 1.) return 0.;
+      if (coefSum >= 1.) return 0.;
       value *= 1. - coefSum;
 
       // divide by bin width if coefficients are bin integrals

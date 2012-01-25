@@ -22,6 +22,7 @@
 // END_HTML
 //
 
+#include <memory>
 
 #include "RooFit.h"
 
@@ -68,7 +69,6 @@ RooTrivialTagDecay::RooTrivialTagDecay(const char *name, const char* title,
   RooProduct *q_fsin = new RooProduct(n_q_fsin.c_str(),n_q_fsin.c_str(), RooArgSet(tag,fsin));
   addOwnedComponents(*q_fsin);
   _fsin.setArg(*q_fsin);
-  //Constructor
   switch(type)
     {
     case SingleSided:
@@ -131,7 +131,6 @@ RooTrivialTagDecay::~RooTrivialTagDecay()
 Double_t RooTrivialTagDecay::coefficient(Int_t basisIndex) const
 {
   const RooRealProxy* p = proxy( basisIndex );
-  assert(p!=0);
   return  (p!=0 ? double(*p) : 0. ) * ( int(_tag)!=0 ? double(_tageff)/2 : 1.-double(_tageff) );
 }
 
@@ -140,7 +139,6 @@ Double_t RooTrivialTagDecay::coefficient(Int_t basisIndex) const
 RooArgSet* RooTrivialTagDecay::coefVars(Int_t basisIndex) const 
 {
   const RooRealProxy* p = proxy( basisIndex );
-  assert(p!=0);
   return  p ? p->arg().getVariables() : 0 ;
 }
 
@@ -154,7 +152,6 @@ Int_t RooTrivialTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVa
   RooArgSet redVars(allVars);
   redVars.remove(_tag.arg());
   const RooRealProxy* p = proxy( coef );
-  assert(p!=0);
   return p ? p->arg().getAnalyticalIntegral(redVars,analVars,rangeName) : 0; 
 }
 
@@ -162,9 +159,8 @@ Int_t RooTrivialTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVa
 Double_t RooTrivialTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code, const char* rangeName) const 
 {
   assert(rangeName==0);
-  // TODO: what if we are integrating over _tag???? Should not happen, as getCoefAnalyticalIntegral will not select it!
+  // Note: what if we are integrating over _tag???? Should not happen, as getCoefAnalyticalIntegral will not select it!
   const RooRealProxy* p = proxy( coef );
-  assert(p!=0);
   return ( p ? p->arg().analyticalIntegral(code,rangeName) : 0 ) * ( int(_tag)!=0 ? double(_tageff)/2 : 1.-double(_tageff) );
 }
 
@@ -208,9 +204,14 @@ Int_t RooTrivialTagDecay::getGenerator(const RooArgSet& directVars, RooArgSet &g
 void RooTrivialTagDecay::generateEvent(Int_t code)
 {
   Double_t gammamin = 1/_tau-TMath::Abs(_dgamma)/2;
+  Double_t wmax = 1.001*(TMath::Abs(_fcosh)+TMath::Abs(_fsinh));
   while(1) {
     // first untagged...
     if (code == 1 || code == 2 ) {
+        // TODO: compute integral of both large and small lifetime component
+        //       in the range (evaluate four exp)
+        //       Next, decide which lifetime to use to generate
+        //       Finally, generate with the right lifetime...
         Double_t t = -log(RooRandom::uniform())/gammamin;
         if (_type == Flipped || (_type == DoubleSided && RooRandom::uniform() <0.5) ) t *= -1;
         if ( t<_t.min() || t>_t.max() ) continue;
@@ -220,7 +221,7 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
         Double_t even = _fcosh*cosh(dgt)+_fsinh*sinh(dgt);
         Double_t f = exp(-ft/_tau)*even;
         if(f < 0) throw(string(Form( "RooTrivialTagDecay::generateEvent(%s) ERROR: PDF value less than zero" ,GetName())));
-        Double_t w = 1.001*exp(-ft*gammamin)*(TMath::Abs(_fcosh)+TMath::Abs(_fsinh));
+        Double_t w = wmax*exp(-ft*gammamin);
         if(w < f) throw(string(Form( "RooTrivialTagDecay::generateEvent(%s) ERROR: Envelope function less than p.d.f. " ,GetName())));
         if(w*RooRandom::uniform() > f) continue;
         _t = t;

@@ -83,11 +83,14 @@ pdf.Print("t")
 ## from Helpers import Mapping
 ## mapping = Mapping({m : 'm', t : 'tau'}, data)
 
+## from ROOT import RooMsgService
+## RooMsgService.instance().addStream(RooFit.DEBUG, RooFit.Topic(RooFit.Integration))
+
 ## Fit
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-pdf.fitTo(data, NumCPU = 4 , Timer = 1, Minimizer = 'Minuit2')
+pdf.fitTo(data, NumCPU = 1 , Timer = 1, Minimizer = 'Minuit2')
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack

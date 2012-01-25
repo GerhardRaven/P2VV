@@ -14,5 +14,6 @@
 #include "RooRelBreitWigner.h"
 #include "RooTagDecisionWrapper.h"
 #include "RooRealCategory.h"
+#include "RooCalibratedDilution.h"
 
 #endif // P2VV_H

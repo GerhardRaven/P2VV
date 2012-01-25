@@ -431,6 +431,14 @@ class RealEffMoment( AbsRealMoment ):
                                                       )
                               )
 
+class CalibratedDilution(RooObject):
+    def __init__(self, Name, P0, P1, WTag, AvWTag, **kwargs):
+         # construct factory string on the fly...
+         from ROOT import RooCalibratedDilution
+         obj = RooCalibratedDilution(Name, Name, *tuple(__dref__(i) for i in (P0, P1, WTag, AvWTag)))
+         obj = self._addObject(obj)
+         self._init(Name,'RooCalibratedDilution')
+         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...
@@ -683,6 +691,7 @@ class ProdPdf(Pdf):
                 # the token being parsed is already split on the ',', hence asSET gets "{x" and
                 # is very happy with that... and the closing } silenty disappears as well...
                 __borken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
+                print 'Adding Conditional Observables %s to %s'%(','.join(i.GetName() for i in cond),name)
                 name += '|%s'% __borken_parser_workaround.GetName()
             return name
         # NOTE: this construction 'absorbs' all conditional observables, so the output
@@ -699,6 +708,13 @@ class SumPdf(Pdf):
     def __init__(self, **kwargs) :
         self._yields = {}
         pdfs = list(kwargs['PDFs'])
+        co = set([ i for pdf in pdfs for i in pdf.ConditionalObservables() ])
+        if 'ConditionalObservables' in kwargs :
+            if co != kwargs['ConditionalObservables'] :
+                print 'WARNING: inconsistent conditional observables: %s vs %s' % ( co, kwargs['ConditionalObservables'] )
+        elif co :
+            kwargs['ConditionalObservables'] = co
+            
         diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
@@ -993,7 +1009,7 @@ class BinnedPdf( Pdf ) :
         elif 'Categories' in kwargs :
             # multiple category dependence
             listArrayName = Name + '_coefLists'
-            argDict['ignore'] = kwargs.pop( 'IgnoreFirstBin', 0 )
+            argDict['ignore'] = int( kwargs.pop( 'IgnoreFirstBin', 0 ) )
             argDict['cats']   = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Categories') )
             argDict['coefs']  = listArrayName
 
@@ -1043,7 +1059,7 @@ class BinnedPdf( Pdf ) :
 
                 from ROOT import RooBinnedPdf
                 self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                              , __dref__(var), binning, coefList, kwargs.pop( 'BinIntegralCoefs', 0 )
+                                              , __dref__(var), binning, coefList, int( kwargs.pop( 'BinIntegralCoefs', 0 ) )
                                              )
                                )
 
@@ -1092,7 +1108,7 @@ class BinnedPdf( Pdf ) :
                     from ROOT import RooBinnedPdf
                     self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
                                                   , varList, binningList, coefLists
-                                                  , kwargs.pop( 'BinIntegralCoefs', 0 ), kwargs.pop( 'IgnoreFirstBin', 0 )
+                                                  , kwargs.pop( 'BinIntegralCoefs', 0 ), int( kwargs.pop( 'IgnoreFirstBin', 0 ) )
                                                  )
                                    )
                 else :
@@ -1105,7 +1121,7 @@ class BinnedPdf( Pdf ) :
 
                     from ROOT import RooBinnedPdf
                     self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                                  , varList, binningList, coefList, kwargs.pop( 'BinIntegralCoefs', 0 )
+                                                  , varList, binningList, coefList, int( kwargs.pop( 'BinIntegralCoefs', 0 ) )
                                                  )
                                    )
 
