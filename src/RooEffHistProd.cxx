@@ -160,7 +160,6 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
    } else {
       _I[0] = parent->pdf()->createIntegral(iset, nset, parent->getIntegratorConfig(), rangeName);
    }
-   //I->setOperMode(ADirty);
 }
 
 //_____________________________________________________________________________
@@ -361,24 +360,22 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    assert(code > 0);
 
    CacheElem* cache = static_cast<CacheElem*>(_cacheMgr.getObjByIndex(code - 1));
-
    if (!cache) {
       std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
       std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
       cache = getCache(_normSet, iset.get(), rangeName);
    }
 
-
    Double_t xmin = x().getMin(rangeName), xmax = x().getMax(rangeName);
 
-   // make sure the range does is contained within the binboundaries...
+   // make sure the range is contained within the binboundaries...
    assert(_binboundaries.size() > 1);
    assert(xmin <= xmax);
    assert(xmin >= _binboundaries.front());
    assert(_binboundaries.back() - xmax > -1e-10);
 
-   if (cache->trivial()) {
-      return eff()->getVal() * cache->getVal();// no integral over efficiency dependant...
+   if (cache->trivial()) {// no integral over efficiency dependant...
+      return eff()->getVal() * cache->getVal();
    }
 
    double xorig = x().getVal();
