@@ -294,11 +294,9 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 #######
 
 pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
-##pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os,st)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf.Print()
-##classicfitresult = pdf.fitTo(data,ExternalConstraints = externalConstraints, ConditionalObservables = [st], **fitOpts)
-#classicfitresult = pdf.fitTo(data, **fitOpts)
-#classicfitresult.writepars('classicfitresult',False)
+classicfitresult = pdf.fitTo(data, **fitOpts)
+classicfitresult.writepars('classicfitresult',False)
 
 ########
 # PLOT #

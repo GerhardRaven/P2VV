@@ -193,6 +193,7 @@ RooAbsPdf.fitTo            = __wrap_kw_subs( RooAbsPdf.fitTo )
 RooAbsPdf.plotOn           = __wrap_kw_subs( RooAbsPdf.plotOn )
 RooAbsPdf.paramOn          = __wrap_kw_subs( RooAbsPdf.paramOn )
 RooAbsPdf.createCdf        = __wrap_kw_subs( RooAbsPdf.createCdf )
+RooAbsPdf.createNLL        = __wrap_kw_subs( RooAbsPdf.createNLL )
 from ROOT import RooAbsData
 RooAbsData.createHistogram = __wrap_kw_subs( RooAbsData.createHistogram )
 RooAbsData.reduce          = __wrap_kw_subs( RooAbsData.reduce )
