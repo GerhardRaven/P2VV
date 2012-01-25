@@ -7,7 +7,7 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = False
+fitData        = True
 makePlots      = True
 
 plotsFile = 'JvLFitTagCats.ps'
@@ -26,7 +26,7 @@ sigFrac    = 0.8
 # PDF options
 nominalFit = False
 components = '' # 'signal' # 'background'
-bkgAngles  = '' # 'histPdf'
+bkgAngles  = ''#'histPdf'
 
 # transversity amplitudes
 amplitudeParam = 'phasesSWaveFrac'
@@ -56,13 +56,11 @@ dGammaVal       = 0.12
 AProdVal = 0.
 
 # fit options
-extConstraints = [ ]
 fitOpts = dict(  NumCPU              = 10
                , Timer               = 1
                , Minos               = False
                , Hesse               = False
                , Save                = True
-               , ExternalConstraints = extConstraints
               )
 
 # plot options
@@ -71,7 +69,7 @@ else          : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'    
 numBins         = ( 60, 30, 30, 30 )
 numTimeBins     = ( 60, 60 )
 numAngleBins    = ( 20, 40, 20 )
-numBkgAngleBins = ( 20, 40, 20 )
+numBkgAngleBins = ( 5, 40, 5 )
 lineWidth       = 2
 markStyle       = 8
 markSize        = 0.4
@@ -141,7 +139,6 @@ from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as Tag
 tagCats = TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data, wTagP0Constraint = True, wTagP1Constraint = True )
 tagCatP2VV = tagCats['tagCat']
 obsSetP2VV.append( tagCatP2VV )
-extConstraints += tagCats.externalConstraints()
 
 # tagging parameters
 numTagCats    = tagCats['numTagCats']
@@ -212,11 +209,9 @@ lifetimeParams = LifetimeParams(  Gamma = dict(Value = GammaVal)
                                                    )
                                 , deltaMConstraint = True
                                )
-extConstraints += lifetimeParams.externalConstraints()
 
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
 timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
-extConstraints += timeResModel.externalConstraints()
 
 # CP violation parameters
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
@@ -235,25 +230,26 @@ from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as 
 timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
 # build signal PDF
-args = dict(  time                = time
-            , iTag                = iTag
-            , tagCat              = tagCatP2VV
-            , tau                 = lifetimeParams['MeanLifetime']
-            , dGamma              = lifetimeParams['deltaGamma']
-            , dm                  = lifetimeParams['deltaM']
-            , dilutions           = taggingParams['dilutions']
-            , ADilWTags           = taggingParams['ADilWTags']
-            , avgCEvens           = taggingParams['avgCEvens']
-            , avgCOdds            = taggingParams['avgCOdds']
-            , tagCatCoefs         = taggingParams['tagCatCoefs']
-            , coshCoef            = timeBasisCoefs['cosh']
-            , sinhCoef            = timeBasisCoefs['sinh']
-            , cosCoef             = timeBasisCoefs['cos']
-            , sinCoef             = timeBasisCoefs['sin']
-            , resolutionModel     = timeResModel['model']
-            , ExternalConstraints = lifetimeParams.externalConstraints()\
-                                    + timeResModel.externalConstraints()\
-                                    + tagCats.externalConstraints()
+args = dict(  time                   = time
+            , iTag                   = iTag
+            , tagCat                 = tagCatP2VV
+            , tau                    = lifetimeParams['MeanLifetime']
+            , dGamma                 = lifetimeParams['deltaGamma']
+            , dm                     = lifetimeParams['deltaM']
+            , dilutions              = taggingParams['dilutions']
+            , ADilWTags              = taggingParams['ADilWTags']
+            , avgCEvens              = taggingParams['avgCEvens']
+            , avgCOdds               = taggingParams['avgCOdds']
+            , tagCatCoefs            = taggingParams['tagCatCoefs']
+            , coshCoef               = timeBasisCoefs['cosh']
+            , sinhCoef               = timeBasisCoefs['sinh']
+            , cosCoef                = timeBasisCoefs['cos']
+            , sinCoef                = timeBasisCoefs['sin']
+            , resolutionModel        = timeResModel['model']
+            , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                       + timeResModel.externalConstraints()\
+                                       + tagCats.externalConstraints()
+#            , ConditionalObservables = timeResModel.ConditionalObservables()
            )
 
 sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
@@ -323,6 +319,7 @@ else :
                            , Observables = angles
                            , Binnings = [ ctKBins, ctlBins, phiBins ]
                            , Coefficients = bkg_angCoefs
+                           , BinIntegralCoefs = True
                           )
 
     sideBandDataTree = sideBandData.tree()
@@ -361,7 +358,6 @@ if makePlots :
              , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize )
              , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth       )
             )
-
 
 ###########################################################################################################################################
 ## build background tagging PDF ##

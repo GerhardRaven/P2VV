@@ -335,9 +335,7 @@ RooEffHistProd::CacheElem *RooEffHistProd::getCache(const RooArgSet* nset,
    Int_t sterileIndex(-1);
    CacheElem* cache = (CacheElem*) _cacheMgr.getObj(nset, iset, &sterileIndex,
                                                     RooNameReg::ptr(rangeName));
-   if (cache) { 
-      return cache;
-   }
+   if (cache) return cache;
    _cacheMgr.setObj(nset, iset, new CacheElem(this, *iset, nset, rangeName),
                     RooNameReg::ptr(rangeName));
    return getCache(nset, iset, rangeName);
@@ -353,7 +351,6 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
 
    RooArgSet *nset = &iset;
    CacheElem* cache = getCache(nset, &iset, rangeName);
-   assert(cache);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;
 }
@@ -365,10 +362,8 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
 
    std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
    std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
-   std::auto_ptr<RooArgSet> nset( _cacheMgr.nameSet1ByIndex(code - 1)->select(*vars));
 
    CacheElem* cache = getCache(_normSet, iset.get(), rangeName);
-   //CacheElem* cache = (CacheElem*)_cacheMgr.getObjByIndex( code-1);
 
    Double_t xmin = x().getMin(rangeName), xmax = x().getMax(rangeName);
 
@@ -379,14 +374,11 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    assert(_binboundaries.back() - xmax > -1e-10);
 
    if (cache->trivial()) {
-      double eps = eff()->getVal();
-      double xxx = cache->getVal(); // no integral over efficiency dependant...
-      return eps * xxx;
+      return eff()->getVal() * cache->getVal();// no integral over efficiency dependant...
    }
 
    double xorig = x().getVal();
    Bool_t origState = inhibitDirty();
-   setDirtyInhibit(kTRUE);
 
    double sum(0);
    for(unsigned int i = 0; i < _binboundaries.size() - 1; ++i) {
@@ -398,15 +390,17 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
       Double_t thisxmax = std::min(high, xmax);
       if (thisxmin >= thisxmax) continue;
 
+      setDirtyInhibit(kTRUE);
       x().setVal(0.5 * (thisxmin + thisxmax)); // get the efficiency for this bin
       double eps = eff()->getVal();
       x().setVal(xorig);  // and restore the original value ASAP...
+      eff()->getVal() ; // restore original state
+      setDirtyInhibit(origState) ;	
 
       // Passing the bin index is not very nice, but I prefer not having to loop twice.
       sum += eps * cache->getVal(i);
    }
-
-   eff()->getVal() ;
+   eff()->getVal() ; // restore original state
    setDirtyInhibit(origState) ;	
    return  sum;
 }

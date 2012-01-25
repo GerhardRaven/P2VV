@@ -199,6 +199,7 @@ class ArgSet(RooObject) :
         self._init(name,'RooArgSet')
 
 
+    
 
 class Category (RooObject) :
     _getters = {'Index'      : lambda s : s.getIndex()
@@ -239,6 +240,24 @@ class Category (RooObject) :
                 return True
         else:
             return False
+
+class ThresholdCategory( Category ) :
+    def __init__(self,Name,**kwargs):
+        __check_req_kw__( 'Observable', kwargs )
+        __check_req_kw__( 'Data', kwargs )
+        obs = __dref__(kwargs.pop('Observable'))
+        data = kwargs.pop('Data', None)
+        boundlist = kwargs.pop('Boundaries')
+        defaultstring = kwargs.pop('Default')
+        from ROOT import RooThresholdCategory
+        obj = RooThresholdCategory(Name, Name, obs, defaultstring)
+        for i,value in [(i,v) for i,v in enumerate(boundlist)][1:]:
+            obj.addThreshold(value,"Bin%s"%(i))
+        obj = data.addColumn(__dref__(obj))
+        obj = self._addObject(obj)
+        t = 'RooCategory'
+        self._init(Name, t)
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class SuperCategory( Category ) :
     def __init__(self,Name,cats,**kwargs):
@@ -332,6 +351,13 @@ class FormulaVar (RooObject) :
         self._declare(spec)
         self._init(Name, 'RooFormulaVar')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+class RealCategory( RooObject ) :
+    def __init__(self, Name,Category ) :
+        spec = 'RooRealCategory::%s(%s)'%(Name,Category)
+        self._declare(spec)
+        self._init(Name,'RooRealCategory')
+
 
 class ConstVar (RooObject) :
     def __init__(self,**kwargs):
@@ -590,12 +616,12 @@ class Pdf(RooObject):
         condObs  = self.ConditionalObservables()
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == kwargs['ConditionalObservables'] , 'Inconsistent Conditional Observables'
-            print 'INFO: adding ConditionalObservables: %s' % condObs
+            print 'INFO: adding ConditionalObservables: %s' % [ i.GetName() for i in  condObs ]
             kwargs['ConditionalObservables'] = condObs 
         extConst = self.ExternalConstraints()
         if extConst : 
             assert 'ExernalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
-            print 'INFO: adding ExternalConstraints: %s' % extConst
+            print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
             kwargs['ExternalConstraints'] = extConst 
         for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
@@ -665,6 +691,7 @@ class ProdPdf(Pdf):
                 # the token being parsed is already split on the ',', hence asSET gets "{x" and
                 # is very happy with that... and the closing } silenty disappears as well...
                 __borken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
+                print 'Adding Conditional Observables %s to %s'%(','.join(i.GetName() for i in cond),name)
                 name += '|%s'% __borken_parser_workaround.GetName()
             return name
         # NOTE: this construction 'absorbs' all conditional observables, so the output
@@ -681,6 +708,13 @@ class SumPdf(Pdf):
     def __init__(self, **kwargs) :
         self._yields = {}
         pdfs = list(kwargs['PDFs'])
+        co = set([ i for pdf in pdfs for i in pdf.ConditionalObservables() ])
+        if 'ConditionalObservables' in kwargs :
+            if co != kwargs['ConditionalObservables'] :
+                print 'WARNING: inconsistent conditional observables: %s vs %s' % ( co, kwargs['ConditionalObservables'] )
+        elif co :
+            kwargs['ConditionalObservables'] = co
+            
         diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
@@ -718,15 +752,21 @@ class SumPdf(Pdf):
 
 class SimultaneousPdf(Pdf):
     def __init__(self, Name, **kwargs):
-        d = { 'Name' : Name
-            , 'States' : kwargs.pop('States')
-            , 'Cat' : kwargs.pop('SplitCategory')['Name']
-            }
-        # construct factory string on the fly...
-        ## pdfs = sorted([(s, pdf) for s, pdf in d['States'].iteritems()], key = lambda (s, pdf): d['Cat'].lookupType(s).getVal())
-        ## pdfs = [e[1] for e in pdfs]
-        d['States'] = ','.join(['%s = %s' % (s, pdf['Name']) for s, pdf in d['States'].iteritems()])
-        s = "SIMUL::%(Name)s(%(Cat)s,%(States)s)" % d
+        if 'States' in kwargs:
+            d = { 'Name' : Name
+                  , 'States' : kwargs.pop('States')
+                  , 'Cat' : kwargs.pop('SplitCategory')['Name']
+                  }
+            # construct factory string on the fly...
+            ## pdfs = sorted([(s, pdf) for s, pdf in d['States'].iteritems()], key = lambda (s, pdf): d['Cat'].lookupType(s).getVal())
+            ## pdfs = [e[1] for e in pdfs]
+            d['States'] = ','.join(['%s = %s' % (s, pdf['Name']) for s, pdf in d['States'].iteritems()])
+            s = "SIMUL::%(Name)s(%(Cat)s,%(States)s)" % d
+        elif 'SplitParameters' in kwargs:
+            splitstring = ','.join(i.GetName() for i in kwargs.pop('SplitParameters'))
+            s = "SIMCLONE::%s(%s,$SplitParam({%s},%s))"%(Name,kwargs.pop('MasterPdf').GetName(),splitstring,kwargs.pop('SplitCategory'))
+        else:
+            raise KeyError, 'P2VV - ERROR: SimultaneousdPdf: Must specify either SplitParameters or States'
         self._declare(s)
         self._init(Name,'RooSimultaneous')
         Pdf.__init__(self , Name = Name , Type = 'RooSimultaneous')
@@ -969,7 +1009,7 @@ class BinnedPdf( Pdf ) :
         elif 'Categories' in kwargs :
             # multiple category dependence
             listArrayName = Name + '_coefLists'
-            argDict['ignore'] = kwargs.pop( 'IgnoreFirstBin', 0 )
+            argDict['ignore'] = int( kwargs.pop( 'IgnoreFirstBin', 0 ) )
             argDict['cats']   = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Categories') )
             argDict['coefs']  = listArrayName
 
@@ -1019,7 +1059,7 @@ class BinnedPdf( Pdf ) :
 
                 from ROOT import RooBinnedPdf
                 self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                              , __dref__(var), binning, coefList, kwargs.pop( 'BinIntegralCoefs', 0 )
+                                              , __dref__(var), binning, coefList, int( kwargs.pop( 'BinIntegralCoefs', 0 ) )
                                              )
                                )
 
@@ -1068,7 +1108,7 @@ class BinnedPdf( Pdf ) :
                     from ROOT import RooBinnedPdf
                     self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
                                                   , varList, binningList, coefLists
-                                                  , kwargs.pop( 'BinIntegralCoefs', 0 ), kwargs.pop( 'IgnoreFirstBin', 0 )
+                                                  , kwargs.pop( 'BinIntegralCoefs', 0 ), int( kwargs.pop( 'IgnoreFirstBin', 0 ) )
                                                  )
                                    )
                 else :
@@ -1081,7 +1121,7 @@ class BinnedPdf( Pdf ) :
 
                     from ROOT import RooBinnedPdf
                     self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                                  , varList, binningList, coefList, kwargs.pop( 'BinIntegralCoefs', 0 )
+                                                  , varList, binningList, coefList, int( kwargs.pop( 'BinIntegralCoefs', 0 ) )
                                                  )
                                    )
 

@@ -18,4 +18,5 @@ p2vv_dict.*
 !build/Makefile
 *.tar.bz2
 *.callgrind
+.*history
 .gdb*

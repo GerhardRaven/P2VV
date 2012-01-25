@@ -49,6 +49,7 @@ public:
 
   Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK=kTRUE) const;
   void generateEvent(Int_t code);
+  Bool_t isDirectGenSafe(const RooAbsArg& arg) const ;
 
 private:
   const RooRealProxy* proxy(Int_t basisIndex) const {
