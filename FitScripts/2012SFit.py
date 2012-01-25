@@ -8,7 +8,7 @@ indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) fo
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = 1 # numCPU() 
+fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
               , Verbose = True
@@ -47,8 +47,7 @@ for i in [ eta_os, st ] : i.setBins( 20 , 'cache' )
 
 #Read data
 from P2VVGeneralUtils import readData
-#data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
-data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -72,8 +71,6 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 #Per event error
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
-from ROOT import RooArgSet
-tresdata.model().setParameterizeIntegral(RooArgSet( st._var ))
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
@@ -135,8 +132,8 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , sinCoef   = basisCoefficients['sin']
 #                     , ConditionalObservables = ( eta_os, )
 #                     , ConditionalObservables = ( eta_os, iTag_os, )
-#                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
-                     , ConditionalObservables = tresdata.model().ConditionalObservables()
+                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
+#                     , ConditionalObservables = tresdata.model().ConditionalObservables()
                      , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
                      )
 
@@ -152,8 +149,7 @@ momindices = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-#eff.read('/data/bfys/dveijk/DataJpsiPhi/2012/effmoments_tcut_%s.txt'%(tmincut))
-eff.read('/tmp/effmoments_tcut_%s.txt'%(tmincut))
+eff.read('/data/bfys/dveijk/DataJpsiPhi/2012/effmoments_tcut_%s.txt'%(tmincut))
 eff.Print()
 
 #Build Angular acceptance corrected PDF
@@ -163,9 +159,8 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/tmp/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-#sig_t_angles = acceptance * sig_t_angles
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
+sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -187,11 +182,11 @@ masspdf.fitTo(data,**fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
 
-#sfitresult.writepars('sfitresult_NOTimeAcc',False)
+sfitresult.writepars('sfitresult_NOTimeAcc',False)
 
 ########
 # PLOT #
