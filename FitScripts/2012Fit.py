@@ -9,7 +9,7 @@ fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
               , Verbose = False
-              , Minimizer = ('Minuit2','minimize')
+#              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -23,8 +23,8 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (tmincut, 14),    nBins =  54 )
-#Set the left boundary of sigmat to non-zero to prevent problems with integration when making plots?
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.001, 0.12),  nBins =  50 )
+#Set the left boundary of sigmat to non-zero to prevent problems with integration when making plots. Checked the data: no events below 0.007.
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.007, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
 eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
@@ -44,7 +44,6 @@ from P2VVGeneralUtils import readData
 
 #Read data
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
-#                 , '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -137,10 +136,11 @@ amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
 # need to specify order in which to traverse...
 from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
-                                                  , amplitudes
-                                                  , CP
-                                                  , Product('tag',(iTag_os,tagging['dilution']))
-                                                  , ['A0','Apar','Aperp','AS'] ) 
+                                                    , amplitudes
+                                                    , CP
+                                                    , iTag_os
+                                                    , tagging['dilution']
+                                                    , ['A0','Apar','Aperp','AS'] ) 
 basisCoefficients.externalConstraints = tagging.externalConstraints()
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
@@ -197,6 +197,15 @@ sig_t_angles = eff * sig_t_angles
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
 #acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/propertimeacceptance.root', Histogram = 'timeacceptancehisto')
+
+## Define a shape yourself
+#a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
+#c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
+#eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
+#from P2VVBinningBuilders import build1DVerticalBinning
+#binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
+#acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
+
 sig_t_angles = acceptance * sig_t_angles
 
 ##################
@@ -257,6 +266,7 @@ pdf.Print()
 classicfitresult = pdf.fitTo(data, **fitOpts)
 classicfitresult.writepars('classicfitresult',False)
 
+assert False
 ########
 # PLOT #
 ########

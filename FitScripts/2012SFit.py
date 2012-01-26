@@ -11,8 +11,8 @@ from P2VVGeneralUtils import numCPU
 fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
-              , Verbose = True
-              , Minimizer = ('Minuit2','minimize')
+#              , Verbose = True
+#              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -26,7 +26,8 @@ m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
 mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = (3030, 3150), nBins =  32 )
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (tmincut, 14),    nBins =  54 )
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.005, 0.12),  nBins =  50 )
+#Set the left boundary of sigmat to non-zero to prevent problems with integrations (eg when making plots). Checked the data: no events below 0.007.
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.007, 0.12),  nBins =  50 )
 eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
 eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
@@ -119,7 +120,9 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
 
 basisCoefficients.externalConstraints = tagging.externalConstraints()
 
+print "*****************************"
 print [ i.GetName() for i in set( tresdata.model().ConditionalObservables() ).union(set( [eta_os] ) ) ]
+print "*****************************"
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , time      = t
                      , dm        = lifetimeParams['deltaM'] 
@@ -130,8 +133,6 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , cosCoef   = basisCoefficients['cos']
                      , sinhCoef  = basisCoefficients['sinh']
                      , sinCoef   = basisCoefficients['sin']
-#                     , ConditionalObservables = ( eta_os, )
-#                     , ConditionalObservables = ( eta_os, iTag_os, )
                      , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
 #                     , ConditionalObservables = tresdata.model().ConditionalObservables()
                      , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
@@ -160,7 +161,7 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -183,10 +184,16 @@ for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
 pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
+#pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
 
+fitset = pdf._var.getParameters(data)
+sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
+#fitset.writeToFile("nominalsfitresult.txt")
 sfitresult.writepars('sfitresult_NOTimeAcc',False)
+
+assert False
+fitset.readFromFile("nominalsfitresult.txt")
 
 ########
 # PLOT #
