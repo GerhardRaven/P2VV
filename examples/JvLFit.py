@@ -8,7 +8,7 @@ from math import pi, sin, cos, sqrt
 generateData   = False
 addTaggingVars = True
 fitData        = False
-makePlots      = False
+makePlots      = True
 
 plotsFile = 'JvLFitTagCats.ps'
 
@@ -144,7 +144,7 @@ obsSetP2VV.append( tagCatP2VV )
 
 # tagging parameters
 numTagCats    = tagCats['numTagCats']
-cat5Min       = 1 + 4 * int( float( numTagCats - 1 ) / 5. )
+cat5Min       = tagCats.traditionalCatRange(5)[0]
 taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
 tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
 
