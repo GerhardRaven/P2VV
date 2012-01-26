@@ -93,7 +93,7 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters
         #       a conflict.
         if spec not in self.ws()._spec :
-            print "Spec: %s" % spec
+            #print "Spec: %s" % spec
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec)
