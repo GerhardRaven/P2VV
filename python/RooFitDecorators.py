@@ -34,7 +34,7 @@ def __wrap_kw_subs( fun ) :
             args += (RooCmdArg( __disp(k,v)),)
         try:
             return fun(self, *args)
-        except:
+        except TypeError:
             l = RooLinkedList()
             fun_args = [a for a in args if not isinstance(a, RooCmdArg)]
             for a in args:
