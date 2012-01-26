@@ -7,7 +7,7 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = False
+fitData        = True
 makePlots      = True
 
 plotsFile = 'JvLFitTagCats.ps'
