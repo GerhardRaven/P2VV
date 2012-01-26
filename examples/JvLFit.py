@@ -7,8 +7,8 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = True
-makePlots      = True
+fitData        = False
+makePlots      = False
 
 plotsFile = 'JvLFitTagCats.ps'
 
@@ -17,16 +17,16 @@ plotsFile = 'JvLFitTagCats.ps'
 #realData = False
 
 dataSetName = 'DecayTree'
-dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
+dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
 realData = True
 
 nEvents    = 200000
 sigFrac    = 0.8
 
 # PDF options
-nominalFit = False
+nominalFit = True
 components = '' # 'signal' # 'background'
-bkgAngles  = ''#'histPdf'
+bkgAngles  = '' #'histPdf'
 
 # transversity amplitudes
 amplitudeParam = 'phasesSWaveFrac'
@@ -56,7 +56,7 @@ dGammaVal       = 0.12
 AProdVal = 0.
 
 # fit options
-fitOpts = dict(  NumCPU              = 10
+fitOpts = dict(  NumCPU              = 1
                , Timer               = 1
                , Minos               = False
                , Hesse               = False
@@ -136,7 +136,9 @@ else :
     data = None
 
 from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
-tagCats = TaggingCategories( tagCat = 'tagCatP2VV', DataSet = data, wTagP0Constraint = True, wTagP1Constraint = True )
+tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = data, estWTagName = tagOmega.GetName() if tagOmega else 'tagomega_os'
+                            , TagCats = [ ], wTagP0Constraint = True, wTagP1Constraint = True
+                           )
 tagCatP2VV = tagCats['tagCat']
 obsSetP2VV.append( tagCatP2VV )
 
@@ -181,7 +183,17 @@ backgroundComps += backgroundBMass.pdf()
 #####################################################################
 
 # transversity amplitudes
-if amplitudeParam == 'phasesSWaveFrac' :
+if nominalFit :
+    from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
+    amplitudes = Amplitudes(  A0Mag2    = A0Mag2Val
+                            , A0Phase   = A0PhVal
+                            , AperpMag2 = AperpMag2Val
+                            , AparPhase = AparPhVal
+                            , f_S       = fSVal
+                            , ASPhase   = ASPhVal
+                           )
+
+elif amplitudeParam == 'phasesSWaveFrac' :
     from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
     amplitudes = Amplitudes(  A0Mag2    = A0Mag2Val
                             , A0Phase   = A0PhVal
@@ -205,7 +217,7 @@ else :
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
 lifetimeParams = LifetimeParams(  Gamma = dict(Value = GammaVal)
                                 , deltaGamma = dict(  Name = 'dGamma', Value = dGammaVal
-#                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                    )
                                 , deltaMConstraint = True
                                )
@@ -217,7 +229,7 @@ timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
 lambdaCP = CPParam(  lambdaCPSq = lambdaCPSqVal
                    , phiCP = dict(  Value = phiCPVal
-#                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
                                  )
                   )
 
@@ -413,16 +425,16 @@ else :
 
 if fitData :
     # fix values of some parameters
-    lifetimeParams.setConstant('deltaM')
-    lifetimeParams.setConstant('dGamma')
+    #lifetimeParams.setConstant('deltaM')
+    #lifetimeParams.setConstant('dGamma')
     lambdaCP.setConstant('lambdaCPSq')
-    lambdaCP.setConstant('phiCP')
+    #lambdaCP.setConstant('phiCP')
 
     for CEvenOdd in taggingParams['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
     taggingParams.setConstant('tagCatCoef.*')
-    tagCats.setConstant('wTag.*')
+    #tagCats.setConstant('wTag.*')
 
     #amplitudes.setConstant('f_S|ASPhase')
     #amplitudes.setConstant('.*')
