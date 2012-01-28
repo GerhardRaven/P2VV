@@ -7,8 +7,8 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = True
-makePlots      = True
+fitData        = False
+makePlots      = False
 
 plotsFile = 'JvLFitTagCats.ps'
 
@@ -534,7 +534,7 @@ if makePlots :
                + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TaggedRange'   }, )
                + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TagCat5Range'  }, )
             ) :
-        plot(  pad, time, data, pdf
+        plot(  pad, time, data, pdf, logy = True
              , frameOpts  = dict( Bins = nBins, Title = plotTitle                            )
              , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
              , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts      )

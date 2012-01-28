@@ -92,6 +92,11 @@ def __createRooIterator( create_iterator ) :
             yield obj
     return __iter
 
+def __RooDataSetToTree( self, branchList = '' ) :
+    from ROOT import RooDataSetToTree
+    return RooDataSetToTree( self, branchList )
+RooDataSet.buildTree = __RooDataSetToTree
+
 # RooAbsCategory functions
 from operator import methodcaller
 from ROOT import RooAbsCategory
