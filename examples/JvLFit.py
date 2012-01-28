@@ -7,8 +7,8 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = False
-makePlots      = False
+fitData        = True
+makePlots      = True
 
 plotsFile = 'JvLFitTagCats.ps'
 
@@ -24,7 +24,7 @@ nEvents    = 200000
 sigFrac    = 0.8
 
 # PDF options
-nominalFit = True
+nominalFit = False
 components = '' # 'signal' # 'background'
 bkgAngles  = '' #'histPdf'
 
@@ -67,9 +67,9 @@ fitOpts = dict(  NumCPU              = 1
 if nominalFit : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
 else          : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
 numBins         = ( 60, 30, 30, 30 )
-numTimeBins     = ( 60, 60 )
-numAngleBins    = ( 20, 40, 20 )
-numBkgAngleBins = ( 5, 40, 5 )
+numTimeBins     = ( 40, 40 )
+numAngleBins    = ( 20, 20, 20 )
+numBkgAngleBins = ( 5, 7, 9 )
 lineWidth       = 2
 markStyle       = 8
 markSize        = 0.4
@@ -284,67 +284,64 @@ backgroundComps += backgroundTime.pdf()
 sideBandData = data.reduce( CutRange = 'LeftSideBand' )
 sideBandData.append( data.reduce( CutRange = 'RightSideBand' ) )
 
-if nominalFit :
+if bkgAngles == 'histPdf' :
     bkg_angles = HistPdf(  Name = 'bkg_angles'
                          , Observables = angles
                          , Binning =  {  angleFuncs.angles['cpsi']   : 5
-                                       , angleFuncs.angles['ctheta'] : 7
-                                       , angleFuncs.angles['phi' ]   : 9
-                                      }
-                         , Data = sideBandData
-                        )
-elif bkgAngles == 'histPdf' :
-    bkg_angles = HistPdf(  Name = 'bkg_angles'
-                         , Observables = angles
-                         , Binning =  {  angleFuncs.angles['cpsi']   : 5
-                                       , angleFuncs.angles['ctheta'] : 40
-                                       , angleFuncs.angles['phi' ]   : 5
+                                       , angleFuncs.angles['ctheta'] : 7 if nominalFit else 40
+                                       , angleFuncs.angles['phi' ]   : 9 if nominalFit else 5
                                       }
                          , Data = sideBandData
                         )
 
 else :
     from array import array
+    if nominalFit :
+        cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
+        cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
+        phiBinBounds = array( 'd', [ -pi ] + [ pi * ( -1. + 2. / 9. * float(i) ) for i in range( 1, 9 ) ] + [ pi ] )
+    else :
+        cpsBinBounds = array( 'd', [ -1.,                      -0.6,      -0.2,      0.2,      0.6,                   1. ] )
+        cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
+        phiBinBounds = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
+
     from ROOT import RooBinning
-    ctKBinBounds = array( 'd', [ -1.,                      -0.6,      -0.2,      0.2,      0.6,                   1. ] )
-    ctlBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
-    phiBinBounds = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
-    ctKBins = RooBinning( len(ctKBinBounds) - 1, ctKBinBounds, 'bkg_ctKBins' )
-    ctlBins = RooBinning( len(ctlBinBounds) - 1, ctlBinBounds, 'bkg_ctlBins' )
+    cpsBins = RooBinning( len(cpsBinBounds) - 1, cpsBinBounds, 'bkg_cpsBins' )
+    cthBins = RooBinning( len(cthBinBounds) - 1, cthBinBounds, 'bkg_cthBins' )
     phiBins = RooBinning( len(phiBinBounds) - 1, phiBinBounds, 'bkg_phiBins' )
-    angles[0].setBinning( ctKBins, 'bkg_ctKBins' )
-    angles[1].setBinning( ctlBins, 'bkg_ctlBins' )
+    angles[0].setBinning( cpsBins, 'bkg_cpsBins' )
+    angles[1].setBinning( cthBins, 'bkg_cthBins' )
     angles[2].setBinning( phiBins, 'bkg_phiBins' )
     bkg_angCoefs = [ RealVar(  'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
                              , Title = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
-                             , Value = 1. / ( len(ctKBinBounds) - 1 ) / ( len(ctlBinBounds) - 1 ) / ( len(phiBinBounds) - 1 )
+                             , Value = 1. / ( len(cpsBinBounds) - 1 ) / ( len(cthBinBounds) - 1 ) / ( len(phiBinBounds) - 1 )
                              , MinMax = ( 0., 1. )
                             )\
                      if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
                      for bin2 in range( len(phiBinBounds) - 1 )\
-                     for bin1 in range( len(ctlBinBounds) - 1 )\
-                     for bin0 in range( len(ctKBinBounds) - 1 )
+                     for bin1 in range( len(cthBinBounds) - 1 )\
+                     for bin0 in range( len(cpsBinBounds) - 1 )
                    ]
     del bkg_angCoefs[0]
 
     bkg_angles = BinnedPdf(  Name = 'bkg_angles'
                            , Observables = angles
-                           , Binnings = [ ctKBins, ctlBins, phiBins ]
+                           , Binnings = [ cpsBins, cthBins, phiBins ]
                            , Coefficients = bkg_angCoefs
                            , BinIntegralCoefs = True
                           )
 
-    sideBandDataTree = sideBandData.tree()
+    sideBandDataTree = sideBandData.buildTree( ','.join( angle.GetName() for angle in angles ) )
     for bin, coef in enumerate(bkg_angCoefs) :
-        ctKBin, ctlBin, phiBin = coef.GetName()[ 11 : ].split('_')
-        selection = dict(  ctK = angles[0].GetName(), ctl = angles[1].GetName(), phi = angles[2].GetName()
-                         , ctKMin = ctKBinBounds[ int(ctKBin) ], ctKMax = ctKBinBounds[ int(ctKBin) + 1 ]
-                         , ctlMin = ctlBinBounds[ int(ctlBin) ], ctlMax = ctlBinBounds[ int(ctlBin) + 1 ]
+        cpsBin, cthBin, phiBin = coef.GetName()[ 11 : ].split('_')
+        selection = dict(  cps = angles[0].GetName(), cth = angles[1].GetName(), phi = angles[2].GetName()
+                         , cpsMin = cpsBinBounds[ int(cpsBin) ], cpsMax = cpsBinBounds[ int(cpsBin) + 1 ]
+                         , cthMin = cthBinBounds[ int(cthBin) ], cthMax = cthBinBounds[ int(cthBin) + 1 ]
                          , phiMin = phiBinBounds[ int(phiBin) ], phiMax = phiBinBounds[ int(phiBin) + 1 ]
                         )
 
-        value = float( sideBandDataTree.GetEntries( (     '%(ctK)s >= %(ctKMin)f && %(ctK)s < %(ctKMax)f'\
-                                                     + '&& %(ctl)s >= %(ctlMin)f && %(ctl)s < %(ctlMax)f'\
+        value = float( sideBandDataTree.GetEntries( (     '%(cps)s >= %(cpsMin)f && %(cps)s < %(cpsMax)f'\
+                                                     + '&& %(cth)s >= %(cthMin)f && %(cth)s < %(cthMax)f'\
                                                      + '&& %(phi)s >= %(phiMin)f && %(phi)s < %(phiMax)f'
                                                     ) % selection
                                                   )
