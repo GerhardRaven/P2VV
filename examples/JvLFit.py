@@ -9,6 +9,7 @@ generateData   = False
 addTaggingVars = True
 fitData        = True
 makePlots      = True
+blind          = True
 
 plotsFile = 'JvLFitTagCats.ps'
 
@@ -45,12 +46,12 @@ ASPhVal      = 2.74
 
 # CP violation parameters
 carthLambdaCP = False
-phiCPVal      = 0.17
+phiCPVal      = 0.21 if blind else 0.
 lambdaCPSqVal = 1.
 
 # B lifetime parameters
 GammaVal        = 0.667
-dGammaVal       = 0.12
+dGammaVal       = 0.13 if blind else 0.1
 
 # asymmetries
 AProdVal = 0.
@@ -67,7 +68,7 @@ fitOpts = dict(  NumCPU              = 1
 if nominalFit : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
 else          : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
 numBins         = ( 60, 30, 30, 30 )
-numTimeBins     = ( 40, 40 )
+numTimeBins     = ( 30, 30, 30 )
 numAngleBins    = ( 20, 20, 20 )
 numBkgAngleBins = ( 5, 7, 9 )
 lineWidth       = 2
@@ -94,15 +95,17 @@ else :
     angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 # variables in PDF (except for tagging category)
-time   = RealVar(  'time',         Title = 'Decay time', Unit = 'ps',   Observable = True, Value = 0.5,   MinMax = ( 0.3, 14. ) )
-iTag   = Category( 'iTag',         Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
+time   = RealVar(  'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
+                 , Ranges = dict( Bulk = ( None, 5. ) )
+                )
+iTag   = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
 angles = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
 BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, Value = 5368., MinMax = ( 5200., 5550. ), nBins = 48
-                       ,  Ranges =  {  'LeftSideBand'  : ( None,  5330. )
-                                     , 'Signal'        : ( 5330., 5410. )
-                                     , 'RightSideBand' : ( 5410., None  )
-                                    }
+                ,  Ranges = dict(  LeftSideBand  = ( None,  5330. )
+                                 , Signal        = ( 5330., 5410. )
+                                 , RightSideBand = ( 5410., None  )
+                                )
                )
 
 obsSetP2VV = [ time ] + angles + [ iTag, BMass ]
@@ -215,23 +218,18 @@ else :
 
 # B lifetime
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
-lifetimeParams = LifetimeParams(  Gamma = dict(Value = GammaVal)
-                                , deltaGamma = dict(  Name = 'dGamma', Value = dGammaVal
-                                                    , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-                                                   )
-                                , deltaMConstraint = True
-                               )
+dGamma = dict( Name = 'dGamma', Value = dGammaVal )
+if blind : dGamma['Blind'] = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+lifetimeParams = LifetimeParams( Gamma = dict(Value = GammaVal), deltaGamma = dGamma, deltaMConstraint = True )
 
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
 timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
 
 # CP violation parameters
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
-lambdaCP = CPParam(  lambdaCPSq = lambdaCPSqVal
-                   , phiCP = dict(  Value = phiCPVal
-                                  , Blind = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-                                 )
-                  )
+phiCP = dict( Value = phiCPVal )
+if blind: phiCP['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+lambdaCP = CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCP )
 
 # tagging parameters
 from P2VVParameterizations.FlavourTagging import WTagCatsCoefAsyms_TaggingParams as TaggingParams
@@ -458,14 +456,15 @@ if makePlots :
 
     # plot lifetime and angles
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
-    for ( pad, obs, nBins, plotTitle, xTitle )\
+    for ( pad, obs, nBins, plotTitle, xTitle, logY )\
             in zip(  timeAnglesCanv.pads( 2, 2 )
                    , obsSetP2VV[ : 5 ]
                    , numBins
                    , [ var.GetTitle() for var in obsSetP2VV[ : 5 ] ]
                    , ( '', ) + angleNames
+                   , ( True, False, False, False )
                   ) :
-        plot(  pad, obs, data, pdf, xTitle = xTitle
+        plot(  pad, obs, data, pdf, xTitle = xTitle, logy = logY
              , frameOpts  = dict( Bins = nBins, Title = plotTitle                )
              , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize )
              , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth       )
@@ -475,23 +474,22 @@ if makePlots :
             )
 
     # plot lifetime
-    timePlotTitles = tuple( [ time.GetTitle() + title for title in (  ' - B (linear)'
-                                                                    , ' - B (logarithmic)'
-                                                                    , ' - #bar{B} (linear)'
-                                                                    , ' - #bar{B} (logarithmic)'
+    timePlotTitles = tuple( [ time.GetTitle() + title for title in (  ' - linear'
+                                                                    , ' - logarithmic'
+                                                                    , ' - B/#bar{B} asymmetry'
                                                                    )
                             ] )
     timeCanv = TCanvas( 'timeCanv', 'Lifetime' )
     for ( pad, nBins, plotTitle, dataCuts, pdfCuts, logY )\
             in zip(  timeCanv.pads( 2, 2 )
-                   , 2 * numTimeBins
+                   , numTimeBins
                    , timePlotTitles
-                   , 2 * ( { 'Cut' : iTag.GetName() + ' == +1' }, ) + 2 * ( { 'Cut' : iTag.GetName() + ' == -1' }, )
-                   , 2 * ( { 'Slice' : ( iTag, 'B' ) }, ) + 2 * ( { 'Slice' : ( iTag, 'Bbar' ) }, )
-                   , 2 * ( False, True )
+                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTag ), )
+                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTag ), )
+                   , ( False, True, False )
                   ) :
         plot(  pad, time, data, pdf, logy = logY
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle                            )
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle, Range = 'Bulk'            )
              , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
              , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts        )
              , components = { 'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
@@ -499,40 +497,36 @@ if makePlots :
                             }
             )
 
-    # set Y-axis maximum for lifetime plots
-    timeYMax = max( frame.GetMaximum() for frame in timeCanv.frameHists() )
-    map( lambda obj : obj.SetMaximum(timeYMax), ( frame for frame in timeCanv.frameHists() ) )
-    for pad in timeCanv.pads() : pad.Draw()
-
     # plot lifetime (tagged/untagged)
-    timePlotTitles1 = tuple( [ time.GetTitle() + title for title in (  ' - B (untagged)'
-                                                                     , ' - B (tagged)'
-                                                                     , ' - B (tagging category 5)'
-                                                                     , ' - #bar{B} (untagged)'
-                                                                     , ' - #bar{B} (tagged)'
-                                                                     , ' - #bar{B} (tagging category 5)'
+    timePlotTitles1 = tuple( [ time.GetTitle() + title for title in (  ' - untagged'
+                                                                     , ' - tagged'
+                                                                     , ' - tagging category 5'
+                                                                     , ' - B/#bar{B} asymmetry untagged'
+                                                                     , ' - B/#bar{B} asymmetry tagged'
+                                                                     , ' - B/#bar{B} asymmetry tagging category 5'
                                                                     )
                             ] )
     timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
-    for ( pad, nBins, plotTitle, dataCuts, pdfCuts )\
+    for ( pad, nBins, plotTitle, dataCuts, pdfCuts, logY )\
         in zip(  timeCanv1.pads( 3, 2 )
              , 3 * numTimeBins
              , timePlotTitles1
-             ,   ( { 'Cut' : '{tag} == +1 && {cat} == 0'.format(    tag = iTag.GetName(), cat = tagCatP2VV.GetName()                 ) }, )
-               + ( { 'Cut' : '{tag} == +1 && {cat} >  0'.format(    tag = iTag.GetName(), cat = tagCatP2VV.GetName()                 ) }, )
-               + ( { 'Cut' : '{tag} == +1 && {cat} >= {c5:d}'.format( tag = iTag.GetName(), cat = tagCatP2VV.GetName(), c5 = cat5Min ) }, )
-               + ( { 'Cut' : '{tag} == -1 && {cat} == 0'.format(    tag = iTag.GetName(), cat = tagCatP2VV.GetName()                 ) }, )
-               + ( { 'Cut' : '{tag} == -1 && {cat} >  0'.format(    tag = iTag.GetName(), cat = tagCatP2VV.GetName()                 ) }, )
-               + ( { 'Cut' : '{tag} == -1 && {cat} >= {c5:d}'.format( tag = iTag.GetName(), cat = tagCatP2VV.GetName(), c5 = cat5Min ) }, )
-             ,   ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'UntaggedRange' }, )
-               + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TaggedRange'   }, )
-               + ( { 'Slice' : ( iTag, 'B'    ), 'ProjectionRange' : 'TagCat5Range'  }, )
-               + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'UntaggedRange' }, )
-               + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TaggedRange'   }, )
-               + ( { 'Slice' : ( iTag, 'Bbar' ), 'ProjectionRange' : 'TagCat5Range'  }, )
+             ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()          )                   ), )
+               + ( dict( Cut = '%s >  0'  % ( tagCatP2VV.GetName()          )                   ), )
+               + ( dict( Cut = '%s >= %d' % ( tagCatP2VV.GetName(), cat5Min )                   ), )
+               + ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()          ), Asymmetry = iTag ), )
+               + ( dict( Cut = '%s >  0'  % ( tagCatP2VV.GetName()          ), Asymmetry = iTag ), )
+               + ( dict( Cut = '%s >= %d' % ( tagCatP2VV.GetName(), cat5Min ), Asymmetry = iTag ), )
+             ,   ( dict( ProjectionRange = 'UntaggedRange'                   ), )
+               + ( dict( ProjectionRange = 'TaggedRange'                     ), )
+               + ( dict( ProjectionRange = 'TagCat5Range'                    ), )
+               + ( dict( Slice = ( tagCatP2VV, 'Untagged' ), Asymmetry = iTag ), )
+               + ( dict( Slice = ( tagCatP2VV, 'TagCat2' ),  Asymmetry = iTag ), )
+               + ( dict( Slice = ( tagCatP2VV, 'TagCat17' ), Asymmetry = iTag ), )
+             , 3 * ( True, ) + 3 * ( False, )
             ) :
-        plot(  pad, time, data, pdf, logy = True
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle                            )
+        plot(  pad, time, data, pdf, logy = logY
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle, Range = 'Bulk'            )
              , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
              , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts      )
              , components = { 'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
@@ -541,8 +535,8 @@ if makePlots :
             )
 
     # plot angles
-    anglePlotTitles =   tuple(  [ angle.GetTitle() + ' - B'       for angle in angles ]\
-                              + [ angle.GetTitle() + ' - #bar{B}' for angle in angles ] )
+    anglePlotTitles =   tuple(  [ angle.GetTitle()                            for angle in angles ]\
+                              + [ angle.GetTitle() + ' - B/#bar{B} asymmetry' for angle in angles ] )
     anglesCanv = TCanvas( 'anglesCanv', 'Decay Angles' )
     for ( pad, obs, nBins, plotTitle, xTitle, dataCuts, pdfCuts )\
             in zip(  anglesCanv.pads( 3, 2 )
@@ -550,8 +544,8 @@ if makePlots :
                    , 2 * numAngleBins
                    , anglePlotTitles
                    , 2 * angleNames
-                   , 3 * ( { 'Cut' : iTag.GetName() + ' == +1' }, ) + 3 * ( { 'Cut' : iTag.GetName() + ' == -1' }, )
-                   , 3 * ( { 'Slice' : ( iTag, 'B' ) }, ) + 3 * ( { 'Slice' : ( iTag, 'Bbar' ) }, )
+                   , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
+                   , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
              , frameOpts  = dict( Bins = nBins, Title = plotTitle                             )
@@ -561,15 +555,6 @@ if makePlots :
                             , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
                             }
             )
-
-    # set Y-axis maximum for angles plots
-    from collections import defaultdict
-    maxVal = defaultdict(float)
-    for frame in anglesCanv.frameHists() :
-        maxVal[ frame.GetXaxis().GetTitle() ] = max( frame.GetMaximum(), maxVal[ frame.GetXaxis().GetTitle() ] )
-    for frame in anglesCanv.frameHists() :
-        frame.SetMaximum( maxVal[ frame.GetXaxis().GetTitle() ] )
-    for pad  in anglesCanv.pads() : pad.Draw()
 
     # print canvas to file
     timeAnglesCanv.Print(plotsFile + '(')
