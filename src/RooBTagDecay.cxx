@@ -512,18 +512,26 @@ RooArgSet* RooBTagDecay::coefVars(Int_t basisIndex) const
     // add tagging variables
     std::auto_ptr<RooArgSet> tempSet;
     if (_tags > 0) {
+      // add tagging category
+      if (_tagCatType > 1) coefVars->add(_tagCat.arg());
+
+      // add initial state tag
       coefVars->add(_iTag.arg());
 
       if (_tags > 1) {
+        // add final state tag
         coefVars->add(_fTag.arg());
         tempSet.reset(_ANorm.arg().getVariables());
         coefVars->add((tempSet->getSize() > 0) ? *tempSet : _ANorm.arg());
       }
+
+      // add average tagging category coefficient sums
       tempSet.reset(_avgCEvenSum.arg().getVariables());
       coefVars->add((tempSet->getSize() > 0) ? *tempSet: _avgCEvenSum.arg());
       tempSet.reset(_avgCOddSum.arg().getVariables());
       coefVars->add((tempSet->getSize() > 0) ? *tempSet : _avgCOddSum.arg());
 
+      // add tagging category parameters
       Int_t  numTagCats = (_tagCatType > 1 ? _tagCat.arg().numTypes() : 1);
       for (Int_t tagCatIter = 0; tagCatIter < numTagCats; ++tagCatIter) {
         tempSet.reset( _dilutions.at(tagCatIter)->getVariables());
@@ -630,7 +638,7 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   }
   delete analVarIter;
 
-  if (intTagCat && !_tagCat.hasRange(rangeName)) {
+  if (intTagCat && (rangeName == 0 || !_tagCat.hasRange(rangeName))) {
     // add the tagging category to integration variables
     intCode += 4;
     analVars.add(_tagCat.arg());
@@ -639,13 +647,13 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
     if (_tagCatIndices.empty()) initTagCatMaps();
   }
 
-  if (intITag && !_iTag.hasRange(rangeName)) {
+  if (intITag && (rangeName == 0 || !_iTag.hasRange(rangeName))) {
     // add the initial state tag to integration variables
     intCode += 2;
     analVars.add(_iTag.arg());
   }
 
-  if (intFTag && !_fTag.hasRange(rangeName)) {
+  if (intFTag && (rangeName == 0 || !_fTag.hasRange(rangeName))) {
     // add the final state tag to integration variables
     intCode += 1;
     analVars.add(_fTag.arg());
@@ -694,8 +702,8 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
       coefInt = _sinCoef.arg().getVal();
   }
 
-  // return the integral if there are no explicit tags
-  if (_tags == 0) return coefInt;
+  // return the integral if we don't have to evaluate explicit tags
+  if (_tags == 0 || coefInt == 0.) return coefInt;
 
   // get value of initial state flavour tag
   Int_t iTagValue = _iTagVal;

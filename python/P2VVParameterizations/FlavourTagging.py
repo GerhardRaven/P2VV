@@ -598,9 +598,12 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                ]
                             )
 
+        # get number of calibration parameter standard deviations for tagging category bins
+        nSigmaTagBins = kwargs.pop( 'NumSigmaTagBins', 1. )
+
         # determine tagging category parameters from data
         if data and etaName :
-            self._tagCats = getTagCatParamsFromData(  data, estWTagName = etaName, tagCats = tagCats, numSigmas = 1.
+            self._tagCats = getTagCatParamsFromData(  data, estWTagName = etaName, tagCats = tagCats, numSigmas = nSigmaTagBins
                                                     , avgEstWTag = self._avgEstWTag
                                                     , P0    = self._wTagP0,  P1    = self._wTagP1
                                                     , P0Err = 0.007,         P1Err = 0.040

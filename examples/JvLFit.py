@@ -25,7 +25,7 @@ nEvents    = 200000
 sigFrac    = 0.8
 
 # PDF options
-nominalFit = False
+nominalPdf = False
 components = '' # 'signal' # 'background'
 bkgAngles  = '' #'histPdf'
 
@@ -65,7 +65,7 @@ fitOpts = dict(  NumCPU              = 1
               )
 
 # plot options
-if nominalFit : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
+if nominalPdf : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
 else          : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
 numBins         = ( 60, 30, 30, 30 )
 numTimeBins     = ( 30, 30, 30 )
@@ -82,12 +82,13 @@ markSize        = 0.4
 
 # import RooFit wrappers
 from RooFitWrappers import *
+from P2VVLoad import RooFitOutput
 
 # workspace
 ws = RooObject(workspace = 'ws')
 
 # angular functions
-if nominalFit :
+if nominalPdf :
     from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
     angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 else :
@@ -131,7 +132,7 @@ if not generateData and realData :
 
     obsSetNTuple = [ time ] + angles +  [ BMass, mpsi, mphi ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
 
-    # read ntuple and add P2VV tagging variables
+    # read ntuple
     from P2VVGeneralUtils import readData
     data = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetNTuple )
 
@@ -140,16 +141,16 @@ else :
 
 from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
 tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = data, estWTagName = tagOmega.GetName() if tagOmega else 'tagomega_os'
-                            , TagCats = [ ], wTagP0Constraint = True, wTagP1Constraint = True
+                            , TagCats = [ ], NumSigmaTagBins = 1., wTagP0Constraint = True, wTagP1Constraint = True
                            )
 tagCatP2VV = tagCats['tagCat']
 obsSetP2VV.append( tagCatP2VV )
 
 # tagging parameters
 numTagCats    = tagCats['numTagCats']
-cat5Min       = tagCats.traditionalCatRange(5)[0]
+tagCat5Min    = tagCats.traditionalCatRange(5)[0]
 taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,       numTagCats ) ] )
-tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( cat5Min, numTagCats ) ] )
+tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
 
 # tagging category ranges
 tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
@@ -186,7 +187,7 @@ backgroundComps += backgroundBMass.pdf()
 #####################################################################
 
 # transversity amplitudes
-if nominalFit :
+if nominalPdf :
     from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
     amplitudes = Amplitudes(  A0Mag2    = A0Mag2Val
                             , A0Phase   = A0PhVal
@@ -286,15 +287,15 @@ if bkgAngles == 'histPdf' :
     bkg_angles = HistPdf(  Name = 'bkg_angles'
                          , Observables = angles
                          , Binning =  {  angleFuncs.angles['cpsi']   : 5
-                                       , angleFuncs.angles['ctheta'] : 7 if nominalFit else 40
-                                       , angleFuncs.angles['phi' ]   : 9 if nominalFit else 5
+                                       , angleFuncs.angles['ctheta'] : 7 if nominalPdf else 40
+                                       , angleFuncs.angles['phi' ]   : 9 if nominalPdf else 5
                                       }
                          , Data = sideBandData
                         )
 
 else :
     from array import array
-    if nominalFit :
+    if nominalPdf :
         cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
         cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
         phiBinBounds = array( 'd', [ -pi ] + [ pi * ( -1. + 2. / 9. * float(i) ) for i in range( 1, 9 ) ] + [ pi ] )
@@ -401,7 +402,6 @@ else :
 ################################
 
 # generate data
-from P2VVLoad import RooFitOutput
 if generateData :
     print 'JvLFit: generating %d events' % nEvents
     data = pdf.generate(obsSetP2VV)
@@ -499,11 +499,11 @@ if makePlots :
 
     # plot lifetime (tagged/untagged)
     timePlotTitles1 = tuple( [ time.GetTitle() + title for title in (  ' - untagged'
-                                                                     , ' - tagged'
-                                                                     , ' - tagging category 5'
+                                                                     , ' - tagging category 2'
+                                                                     , ' - tagging category %d' % tagCat5Min
                                                                      , ' - B/#bar{B} asymmetry untagged'
-                                                                     , ' - B/#bar{B} asymmetry tagged'
-                                                                     , ' - B/#bar{B} asymmetry tagging category 5'
+                                                                     , ' - B/#bar{B} asymmetry tagging category 2'
+                                                                     , ' - B/#bar{B} asymmetry tagging category %d' % tagCat5Min
                                                                     )
                             ] )
     timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
@@ -511,18 +511,18 @@ if makePlots :
         in zip(  timeCanv1.pads( 3, 2 )
              , 3 * numTimeBins
              , timePlotTitles1
-             ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()          )                   ), )
-               + ( dict( Cut = '%s >  0'  % ( tagCatP2VV.GetName()          )                   ), )
-               + ( dict( Cut = '%s >= %d' % ( tagCatP2VV.GetName(), cat5Min )                   ), )
-               + ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()          ), Asymmetry = iTag ), )
-               + ( dict( Cut = '%s >  0'  % ( tagCatP2VV.GetName()          ), Asymmetry = iTag ), )
-               + ( dict( Cut = '%s >= %d' % ( tagCatP2VV.GetName(), cat5Min ), Asymmetry = iTag ), )
-             ,   ( dict( ProjectionRange = 'UntaggedRange'                   ), )
-               + ( dict( ProjectionRange = 'TaggedRange'                     ), )
-               + ( dict( ProjectionRange = 'TagCat5Range'                    ), )
-               + ( dict( Slice = ( tagCatP2VV, 'Untagged' ), Asymmetry = iTag ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat2' ),  Asymmetry = iTag ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat17' ), Asymmetry = iTag ), )
+             ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()             )                   ), )
+               + ( dict( Cut = '%s == 2'  % ( tagCatP2VV.GetName()             )                   ), )
+               + ( dict( Cut = '%s == %d' % ( tagCatP2VV.GetName(), tagCat5Min )                   ), )
+               + ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()             ), Asymmetry = iTag ), )
+               + ( dict( Cut = '%s == 2'  % ( tagCatP2VV.GetName()             ), Asymmetry = iTag ), )
+               + ( dict( Cut = '%s == %d' % ( tagCatP2VV.GetName(), tagCat5Min ), Asymmetry = iTag ), )
+             ,   ( dict( Slice = ( tagCatP2VV, 'Untagged'              )                   ), )
+               + ( dict( Slice = ( tagCatP2VV, 'TagCat2'               )                   ), )
+               + ( dict( Slice = ( tagCatP2VV, 'TagCat%d' % tagCat5Min )                   ), )
+               + ( dict( Slice = ( tagCatP2VV, 'Untagged'              ), Asymmetry = iTag ), )
+               + ( dict( Slice = ( tagCatP2VV, 'TagCat2'               ), Asymmetry = iTag ), )
+               + ( dict( Slice = ( tagCatP2VV, 'TagCat%d' % tagCat5Min ), Asymmetry = iTag ), )
              , 3 * ( True, ) + 3 * ( False, )
             ) :
         plot(  pad, time, data, pdf, logy = logY
