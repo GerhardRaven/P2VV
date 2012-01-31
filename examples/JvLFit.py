@@ -7,11 +7,13 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = False
+fitData        = True
 makePlots      = True
 blind          = True
+nominalPdf     = False
 
 plotsFile = 'JvLFitTagCats.ps'
+angEffMomentsFile = 'effMomentsTransBasis' if nominalPdf else 'effMomentsHelBasis'
 
 #dataSetName = 'JpsiphiData'
 #dataSetFile = 'JvLFitTagCats.root'
@@ -25,7 +27,6 @@ nEvents    = 200000
 sigFrac    = 0.8
 
 # PDF options
-nominalPdf = False
 components = '' # 'signal' # 'background'
 bkgAngles  = '' #'histPdf'
 
@@ -264,7 +265,19 @@ args = dict(  time                   = time
            )
 
 sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
-signalComps += sig_t_angles_tagCat_iTag
+
+# multiply signal PDF with angular efficiency
+if angEffMomentsFile :
+    from P2VVGeneralUtils import RealMomentsBuilder
+    moments = RealMomentsBuilder()
+    moments.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not nominalPdf \
+                                        else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+                        )
+    moments.read(angEffMomentsFile)
+    moments.Print()
+    sig_t_angles_tagCat_iTag_eff = moments * sig_t_angles_tagCat_iTag
+
+signalComps += sig_t_angles_tagCat_iTag_eff
 
 
 ###########################################################################################################################################
