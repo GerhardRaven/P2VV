@@ -34,10 +34,9 @@ class Trivial_TaggingParams( TaggingParams ) :
     def __init__( self ) :
         from RooFitWrappers import ConstVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
-        self._check_extraneous_kw( kwargs )
         TaggingParams.__init__( self
-                              , Dilutions = [ ConstVar( Name = 'Tagging dilution', Value = 1. ) ]
-                              , ADilWTags = [ ConstVar( Name = 'zero', Value = 0. ) ]
+                              , Dilutions = [ ConstVar( Name = 'one',  Value = 1 ) ]
+                              , ADilWTags = [ ConstVar( Name = 'zero', Value = 0 ) ]
                               , CEvenOdds = [ Trivial_CEvenOdd() ]
                               )
 

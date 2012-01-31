@@ -7,7 +7,7 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = True
+fitData        = False
 makePlots      = True
 blind          = True
 
@@ -34,7 +34,7 @@ amplitudeParam = 'phasesSWaveFrac'
 
 A0Mag2Val    = 0.522
 AperpMag2Val = 0.249
-Apar2MagVal  = 1. - A0Mag2Val - AperpMag2Val
+AparMag2Val  = 1. - A0Mag2Val - AperpMag2Val
 
 A0PhVal      = 0.
 AperpPhVal   = 2.77
@@ -130,7 +130,7 @@ if not generateData and realData :
     sel   = Category( 'sel',             Title = 'Selection',        Observable = True, States = { 'selected' : +1 } )
     trig  = Category( 'triggerDecision', Title = 'Trigger Decision', Observable = True, States = { 'selected' : +1 } )
 
-    obsSetNTuple = [ time ] + angles +  [ BMass, mpsi, mphi ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
+    obsSetNTuple = [ time ] + angles +  [ BMass, mpsi, mphi, timeRes ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
 
     # read ntuple
     from P2VVGeneralUtils import readData

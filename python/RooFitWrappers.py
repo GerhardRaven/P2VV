@@ -476,8 +476,9 @@ class RealVar (RooObject) :
         blindName = '__' + Name + '__' if 'Blind' in kwargs else Name
         if Name not in self.ws():
             # construct factory string on the fly...
-            if 'Value'  not in kwargs  and 'MinMax' not in kwargs and 'Formula' not in kwargs:
+            if not any( kw in kwargs for kw in [ 'Value', 'MinMax', 'Formula' ] ) :
                 raise KeyError('%s does not exist yet, neither Value nor MinMax nor Formula specified'%Name)
+
             if 'Formula' not in kwargs :
                 if 'Value' not in kwargs:
                     (mi,ma) = kwargs.pop('MinMax')
@@ -491,10 +492,27 @@ class RealVar (RooObject) :
                     self._declare("%s[%s,%s,%s]"%(blindName,val,mi,ma))
             else :
                 assert 'Value' not in kwargs
-                (formula, args, dset) = kwargs.pop('Formula')
-                fname = '_%s__formula'%Name
-                dummy  = self._declare("expr::%s('%s',{%s})"%(fname,formula,','.join(i.GetName() for i in args) ) )
-                self._declare("dataobs::%s(%s,%s)"%(blindName, dset.GetName(), dummy.GetName()))
+
+                ( formula, args, data ) = kwargs.pop('Formula')
+                formName = '_%s__formula'%Name
+                dummyForm = self._declare( "expr::%s('%s',{%s})" % ( formName,formula,','.join( arg.GetName() for arg in args ) ) )
+                self._declare( "dataobs::%s(%s,%s)" % ( blindName, data.GetName(), dummyForm.GetName() ) )
+
+                varMin = float('+infinity')
+                varMax = float('-infinity')
+                for varSet in data :
+                    varVal = varSet.getRealValue(blindName)
+                    if varVal < varMin : varMin = varVal
+                    if varVal > varMax : varMax = varVal
+                varMin -= 0.0001 * abs(varMin)
+                varMax += 0.0001 * abs(varMax)
+
+                if 'MinMax' in kwargs :
+                    if kwargs['MinMax'][0] > varMin or kwargs['MinMax'][1] < varMax :
+                        raise RuntimeError( 'RealVar(%s): Not all values in data set "%s" (%s, %s) contained within MinMax (%s, %s)'\
+                                            % (  blindName, data.GetName(), varMin, varMax, kwargs['MinMax'][0], kwargs['MinMax'][1] ) )
+                else :
+                    kwargs['MinMax'] = ( varMin, varMax )
 
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')

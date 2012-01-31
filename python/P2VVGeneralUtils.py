@@ -105,10 +105,8 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
     for cat in range( 1, len(tagCatBins) ) : tagCatFormula.addThreshold( tagCatBins[cat][2], tagCatBins[cat][0], tagCatBins[cat][1] )
 
     # create new columns in data set
-    iTag   = dataSet.addColumn(iTagWrapper)
-    tagCat = dataSet.addColumn(tagCatFormula)
-    iTag.createFundamental()
-    tagCat.createFundamental()
+    dataSet.addColumn(iTagWrapper)
+    dataSet.addColumn(tagCatFormula)
 
     # check tagging columns
     for obsSet in dataSet :

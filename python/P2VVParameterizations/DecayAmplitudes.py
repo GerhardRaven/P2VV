@@ -68,7 +68,7 @@ class JpsiVCarthesian_AmplitudeSet( AmplitudeSet ) :
         self._parseArg( 'ReAperp', kwargs, Title = 'Re(A_perp)', Value = sqrt( Aperp2 / A02 ) * cos(AperpPh), MinMax = ( -1., 1. ) )
         self._parseArg( 'ImAperp', kwargs, Title = 'Im(A_perp)', Value = sqrt( Aperp2 / A02 ) * sin(AperpPh), MinMax = ( -1., 1. ) )
         self._parseArg( 'ReAS',    kwargs, Title = 'Re(A_S)',    Value = sqrt( AS2    / A02 ) * cos(ASPh   ), MinMax = ( -1., 1. ) )
-        self._parseArg( 'ImAS',    kwargs, Title = 'Im(A_S)',    Value = sqrt( AS2    / A02 ) * sin(ASph   ), MinMax = ( -1., 1. ) )
+        self._parseArg( 'ImAS',    kwargs, Title = 'Im(A_S)',    Value = sqrt( AS2    / A02 ) * sin(ASPh   ), MinMax = ( -1., 1. ) )
 
         self._check_extraneous_kw( kwargs )
         AmplitudeSet.__init__( self, Carthesian_Amplitude( 'A0',    self._ReA0,    self._ImA0,    +1 )
