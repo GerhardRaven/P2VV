@@ -6,6 +6,10 @@ def __check_req_kw__( name, kwargs ) :
 def __check_exists_already__( self ) :
     if self._name in self.ws() :
         raise StandardError( 'Recreating %s is not supported atm' % type(self) )
+def __check_name_syntax__( name ) :
+    from string import whitespace
+    if any( whiteChar in name for whiteChar in whitespace ) :
+        raise KeyError( 'Whitespace in variable names not supported: "%s"' % name )
 
 __dref__ = lambda i : i._var if hasattr(i,'_var') else i
 
@@ -194,6 +198,7 @@ class ArgSet(RooObject) :
         x.setName( name ) # argsets come out of the ws as brand new clones without name...
         return x
     def __init__(self,name,args) :
+        __check_name_syntax__(name)
         spec = 'set::%s(%s)' % (name, ','.join( i.GetName() for i in args) )
         self._declare(spec)
         self._init(name,'RooArgSet')
@@ -214,6 +219,7 @@ class Category (RooObject) :
     def __init__(self,Name,**kwargs):
         # construct factory string on the fly...
         __check_req_kw__( 'States', kwargs )
+        __check_name_syntax__(Name)
         states = kwargs.pop('States')
         if   type(states) == list:
             states = ','.join(states)
@@ -261,6 +267,7 @@ class ThresholdCategory( Category ) :
 
 class SuperCategory( Category ) :
     def __init__(self,Name,cats,**kwargs):
+        __check_name_syntax__(Name)
         data = kwargs.pop('Data', None)
         t = 'RooSuperCategory'
         if data:
@@ -305,6 +312,7 @@ class MappedCategory( Category ) :
 
 ## class MultiCategory( Category ) :
 ##     def __init__(self,Name,cats,**kwargs):
+##         __check_name_syntax__(Name)
 ##         data = kwargs.pop('Data', None)
 ##         t = 'RooMultiCategory'
 ##         if data:
@@ -321,6 +329,7 @@ class MappedCategory( Category ) :
 
 class Product(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
+        __check_name_syntax__(Name)
         spec =  "prod::%s(%s)"%(Name,','.join(i['Name'] for i in fargs))
         self._declare( spec )
         self._init(Name,'RooProduct')
@@ -330,6 +339,7 @@ class Product(RooObject) :
 class Addition(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
         # construct factory string on the fly...
+        __check_name_syntax__(Name)
         def cn( x ) :
             try :
                 return x.GetName()
@@ -347,6 +357,7 @@ class FormulaVar (RooObject) :
                }
     def __init__(self, Name, formula, fargs, **kwargs):
         # construct factory string on the fly...
+        __check_name_syntax__(Name)
         spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs))
         self._declare(spec)
         self._init(Name, 'RooFormulaVar')
@@ -354,6 +365,7 @@ class FormulaVar (RooObject) :
 
 class RealCategory( RooObject ) :
     def __init__(self, Name,Category ) :
+        __check_name_syntax__(Name)
         spec = 'RooRealCategory::%s(%s)'%(Name,Category)
         self._declare(spec)
         self._init(Name,'RooRealCategory')
@@ -361,13 +373,14 @@ class RealCategory( RooObject ) :
 
 class ConstVar (RooObject) :
     def __init__(self,**kwargs):
-         # construct factory string on the fly...
-         __check_req_kw__( 'Value', kwargs )
-         __check_req_kw__( 'Name', kwargs )
-         self._declare("ConstVar::%(Name)s(%(Value)s)" % kwargs )
-         (Name,value) = (kwargs.pop('Name'),kwargs.pop('Value'))
-         self._init(Name,'RooConstVar')
-         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        # construct factory string on the fly...
+        __check_req_kw__( 'Value', kwargs )
+        __check_req_kw__( 'Name', kwargs )
+        __check_name_syntax__( kwargs['Name'] )
+        self._declare("ConstVar::%(Name)s(%(Value)s)" % kwargs )
+        (Name,value) = (kwargs.pop('Name'),kwargs.pop('Value'))
+        self._init(Name,'RooConstVar')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class P2VVAngleBasis (RooObject) :
     # TODO: move 'c' out of this class (and into an explicit product),
@@ -433,11 +446,12 @@ class RealEffMoment( AbsRealMoment ):
 
 class CalibratedDilution(RooObject):
     def __init__(self, Name, P0, P1, WTag, AvWTag, **kwargs):
-         # construct factory string on the fly...
-         print 'CalibratedDilution::%s(%s)'%(Name,','.join(i.GetName() for i in (P0,P1,WTag,AvWTag)))
-         self._declare( 'CalibratedDilution::%s(%s)'%(Name,','.join(i.GetName() for i in (P0,P1,WTag,AvWTag))) )
-         self._init(Name,'RooCalibratedDilution')
-         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        # construct factory string on the fly...
+        __check_name_syntax__(Name)
+        print 'CalibratedDilution::%s(%s)'%(Name,','.join(i.GetName() for i in (P0,P1,WTag,AvWTag)))
+        self._declare( 'CalibratedDilution::%s(%s)'%(Name,','.join(i.GetName() for i in (P0,P1,WTag,AvWTag))) )
+        self._init(Name,'RooCalibratedDilution')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...
@@ -458,6 +472,7 @@ class RealVar (RooObject) :
     # TODO: provide a copy constructor
     def __init__(self,Name ,**kwargs):
         if 'name' in kwargs : raise RuntimeError('Please replace name argument with Name = xyz' )
+        __check_name_syntax__(Name)
         blindName = '__' + Name + '__' if 'Blind' in kwargs else Name
         if Name not in self.ws():
             # construct factory string on the fly...
@@ -542,6 +557,7 @@ class Pdf(RooObject):
     def __init__(self, **kwargs):
         __check_req_kw__( 'Type', kwargs )
         __check_req_kw__( 'Name', kwargs )
+        __check_name_syntax__( kwargs['Name'] )
 
         # Save the keyword args as properties
         self._dict = kwargs
@@ -773,6 +789,7 @@ class SimultaneousPdf(Pdf):
 class RealSumPdf( Pdf ):
     def __init__( self, name, functions, **kwargs ) :
         # get the name of the PDF, its functions and its coefficients
+        __check_name_syntax__(name)
         self._dict = { 'Name' : name }
         self._dict['Functions'] = functions
         from itertools import repeat
@@ -856,6 +873,7 @@ class HistFunc(RooObject):
     def __init__(self, Name, **kwargs):
         __check_req_kw__( 'Histogram', kwargs )
         __check_req_kw__( 'Observables', kwargs )
+        __check_name_syntax__(Name)
         _hist = kwargs.pop('Histogram')
         if str(type(_hist)).find('TH1') == -1:
             raise TypeError, "HistFunc can only handle 1D historgrams"
@@ -924,6 +942,7 @@ class UniformPdf( Pdf ) :
 
 class BDecay( Pdf ) :
     def __init__(self,Name, **kwargs) :
+        __check_name_syntax__(Name)
         d = dict( name = Name
                 , time = kwargs.pop('time')
                 , tau = kwargs.pop('tau')
@@ -1145,6 +1164,7 @@ class AddModel(ResolutionModel) :
     def __init__(self,name,models,fractions,**kwargs) :
         #TODO: forward conditionalObservables and ExternalConstraints from dependents...
         # construct factory string on the fly...
+        __check_name_syntax__(name)
         self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
         self._init(name,'RooAddModel')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
