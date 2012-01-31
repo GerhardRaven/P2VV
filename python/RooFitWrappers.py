@@ -386,9 +386,11 @@ class P2VVAngleBasis (RooObject) :
     # TODO: move 'c' out of this class (and into an explicit product),
     #       which will allow more re-use of existing objects, and hence
     #       make things faster
-    def __init__(self, angles, ind,c=1,ind2 = None) :
+    def __init__(self, angles, ind,c=1,ind2 = None,**kwargs) :
         assert c!=0
-        name =      'p2vvab_%d%d%d%d' % ind
+        namePostFix = kwargs.pop( 'NamePostFix', '')
+        if namePostFix : namePostFix += '_'
+        name = 'p2vvab_%s%d%d%d%d' % ( namePostFix, ind[0], ind[1], ind[2], ind[3] )
         if ind2 : name += '_%d%d%d%d' % ind2
         if c!=1 : name += '_%3.2f' % c
         name = name.replace('.','d').replace('-','m')
@@ -402,6 +404,7 @@ class P2VVAngleBasis (RooObject) :
         from P2VVLoad import P2VVLibrary
         self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 
 class AbsRealMoment( object ):
@@ -513,6 +516,8 @@ class RealVar (RooObject) :
                                             % (  blindName, data.GetName(), varMin, varMax, kwargs['MinMax'][0], kwargs['MinMax'][1] ) )
                 else :
                     kwargs['MinMax'] = ( varMin, varMax )
+
+                if not 'Constant' in kwargs : kwargs['Constant'] = False
 
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
