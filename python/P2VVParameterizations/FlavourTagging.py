@@ -36,7 +36,7 @@ class Trivial_TaggingParams( TaggingParams ) :
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         self._check_extraneous_kw( kwargs )
         TaggingParams.__init__( self
-                              , Dilutions = [ ConstVar( Name = 'Tagging dilution', Value = 0. ) ]
+                              , Dilutions = [ ConstVar( Name = 'Tagging dilution', Value = 1. ) ]
                               , ADilWTags = [ ConstVar( Name = 'zero', Value = 0. ) ]
                               , CEvenOdds = [ Trivial_CEvenOdd() ]
                               )
@@ -99,7 +99,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
 
 class Dilution_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
-        self._parseArg( 'dilution', kwargs, Title = 'Tagging dilution', Value = 0., MinMax = ( 0., 1. ) )
+        self._parseArg( 'dilution', kwargs, Title = 'Tagging dilution', Value = 0.5, MinMax = ( 0., 1. ) )
 
         self._check_extraneous_kw( kwargs )
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
