@@ -7,7 +7,7 @@ from math import pi, sin, cos, sqrt
 # job parameters
 readMoments = False
 makePlots   = True
-transAngles = False
+transAngles = True
 
 momentsFile = 'effMoments' + ( 'Trans' if transAngles else 'Hel' )
 plotsFile   = 'effMoments' + ( 'Trans' if transAngles else 'Hel' ) + '.ps'
@@ -63,7 +63,7 @@ else :
 # variables in PDF
 time     = RealVar(  'time',     Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14.    ) )
 trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ns', Observable = True, Value = 0.,  MinMax = ( 0.,   0.020 ) )
-iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
+iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
 angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
 # ntuple variables
@@ -87,7 +87,7 @@ trueTimeP2VV = RealVar(  'trueTimeP2VV', Title = 'True decay time', Unit = 'ps',
                        , Formula = ( '1000. * @0', [ trueTime ], data )
                       )
 
-obsSetP2VV = [ trueTimeP2VV ] + angles + [ iTag ]
+obsSetP2VV = [ trueTimeP2VV ] + angles
 
 
 ###########################################################################################################################################
@@ -140,8 +140,7 @@ args = dict(  time                   = trueTimeP2VV
             , resolutionModel        = timeResModel['model']
            )
 
-sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
-pdf = sig_t_angles_tagCat_iTag.createProjection( ArgSet = [ iTag ] )
+pdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
 
 
 ###########################################################################################################################################
@@ -192,8 +191,7 @@ basisMoments.Print( Scale = 1. /  2. / sqrt(pi), MinSignificance = 3. )
 ## multiply PDF with angular efficiency ##
 ##########################################
 
-eff_sig_t_angles_tagCat_iTag = basisMoments * sig_t_angles_tagCat_iTag
-effPdf = eff_sig_t_angles_tagCat_iTag.createProjection( ArgSet = [ iTag ] )
+effPdf = basisMoments * pdf
 
 basisMomentsSignif = RealMomentsBuilder()
 basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles \
@@ -202,11 +200,7 @@ basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), 
 basisMomentsSignif.read(momentsFile + 'Basis')
 basisMomentsSignif.Print( Scale = 1. / 2. / sqrt(pi) )
 
-effSignif_sig_t_angles_tagCat_iTag = basisMomentsSignif.multiplyPDFWithEff(  sig_t_angles_tagCat_iTag
-                                                                           , Name = 'sig_t_angles_tagCat_iTag_x_EffSignif'
-                                                                           , EffName = 'effSignif'
-                                                                          )
-effSignifPdf = effSignif_sig_t_angles_tagCat_iTag.createProjection( ArgSet = [ iTag ] )
+effSignifPdf = basisMomentsSignif.multiplyPDFWithEff( pdf, Name = 'sig_t_angles_tagCat_iTag_x_EffSignif', EffName = 'effSignif' )
 
 
 ###########################################################################################################################################

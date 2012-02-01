@@ -10,7 +10,7 @@ addTaggingVars = True
 fitData        = True
 makePlots      = True
 blind          = True
-nominalPdf     = False
+nominalPdf     = True
 
 plotsFile = 'JvLFitTagCats.ps'
 angEffMomentsFile = 'effMomentsTransBasis' if nominalPdf else 'effMomentsHelBasis'
@@ -27,8 +27,9 @@ nEvents    = 200000
 sigFrac    = 0.8
 
 # PDF options
-components = '' # 'signal' # 'background'
-bkgAngles  = '' #'histPdf'
+components      = '' # 'signal' # 'background'
+bkgAngles       = '' #'histPdf'
+perEventTimeRes = True
 
 # transversity amplitudes
 amplitudeParam = 'phasesSWaveFrac'
