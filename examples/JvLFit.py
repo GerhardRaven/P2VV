@@ -7,7 +7,7 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = True
+fitData        = False
 makePlots      = True
 blind          = True
 nominalPdf     = True
@@ -27,9 +27,10 @@ nEvents    = 200000
 sigFrac    = 0.8
 
 # PDF options
-components      = '' # 'signal' # 'background'
+components      = 'all' # 'signal' # 'background'
 bkgAngles       = '' #'histPdf'
-perEventTimeRes = True
+perEventTimeRes = False
+multiplyTimeEff = '' #'signal'
 
 # transversity amplitudes
 amplitudeParam = 'phasesSWaveFrac'
@@ -59,7 +60,7 @@ dGammaVal       = 0.13 if blind else 0.1
 AProdVal = 0.
 
 # fit options
-fitOpts = dict(  NumCPU              = 2
+fitOpts = dict(  NumCPU              = 1
                , Timer               = 1
                , Minos               = False
                , Hesse               = False
@@ -119,7 +120,7 @@ if not generateData and realData :
     mpsi = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. ), nBins =  32 )
     mphi = RealVar( 'mdau2', Title = 'M(KK)',     Unit = 'MeV', Observable = True, MinMax = ( 1020. - 12., 1020. + 12. ), nBins =  16 )
 
-    timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.12 ), nBins =  50 )
+    timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0., 0.12 ), nBins =  50 )
 
     tagDecision = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
                            , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
@@ -136,7 +137,7 @@ if not generateData and realData :
 
     # read ntuple
     from P2VVGeneralUtils import readData
-    data = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetNTuple )
+    data = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetNTuple, Rename = 'JpsiphiData' )
 
 else :
     data = None
@@ -182,6 +183,18 @@ backgroundBMass = BackgroundBMass( Name = 'bkg_m', mass = BMass )
 
 signalComps     += signalBMass.pdf()
 backgroundComps += backgroundBMass.pdf()
+
+
+###########################################################################################################################################
+## time acceptance function ##
+##############################
+
+if multiplyTimeEff in [ 'all', 'signal', 'background' ] :
+    from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
+    timeAcceptance = TimeAcceptance(  time = time
+                                    , Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
+                                    , Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
+                                   )
 
 
 ###########################################################################################################################################
@@ -266,8 +279,8 @@ args = dict(  time                = time
 
 sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
 
-# multiply signal PDF with angular efficiency
 if angEffMomentsFile :
+    # multiply signal PDF with angular efficiency
     from P2VVGeneralUtils import RealMomentsBuilder
     moments = RealMomentsBuilder()
     moments.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not nominalPdf \
@@ -275,9 +288,13 @@ if angEffMomentsFile :
                         )
     moments.read(angEffMomentsFile)
     moments.Print()
-    sig_t_angles_tagCat_iTag_eff = moments * sig_t_angles_tagCat_iTag
+    sig_t_angles_tagCat_iTag = moments * sig_t_angles_tagCat_iTag
 
-signalComps += sig_t_angles_tagCat_iTag_eff
+if multiplyTimeEff in [ 'all', 'signal' ] :
+    # multiply signal PDF with time acceptance
+    sig_t_angles_tagCat_iTag = timeAcceptance * sig_t_angles_tagCat_iTag
+
+signalComps += sig_t_angles_tagCat_iTag
 
 
 ###########################################################################################################################################
@@ -286,7 +303,13 @@ signalComps += sig_t_angles_tagCat_iTag_eff
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
 backgroundTime = BackgroundTime( Name = 'bkg_t', time = time, resolutionModel = timeResModel['model'] )
-backgroundComps += backgroundTime.pdf()
+bkg_t = backgroundTime.pdf()
+
+if multiplyTimeEff in [ 'all', 'background' ] :
+    # multiply background time PDF with time acceptance
+    bkg_t = timeAcceptance * bkg_t
+
+backgroundComps += bkg_t
 
 
 ###########################################################################################################################################
@@ -475,7 +498,7 @@ if makePlots :
                    , numBins
                    , [ var.GetTitle() for var in obsSetP2VV[ : 5 ] ]
                    , ( '', ) + angleNames
-                   , ( True, False, False, False )
+                   , ( False, False, False, False )
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle, logy = logY
              , frameOpts  = dict( Bins = nBins, Title = plotTitle                )
