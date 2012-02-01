@@ -97,6 +97,7 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters
         #       a conflict.
         if spec not in self.ws()._spec :
+            #print "Spec: %s" % spec
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec)
@@ -696,7 +697,9 @@ class ProdPdf(Pdf):
                 if o not in pdf.ConditionalObservables(): obs.add(o)
             for c in pdf.ConditionalObservables(): conds.add(c)
             for c in pdf.ExternalConstraints(): ec.add(c)
-            
+        #print "Conditional Observables %s: %s" % (Name, [o['Name'] for o in conds])
+        #print "Free Observables %s: %s" % (Name, [o['Name'] for o in obs])
+
         d = { 'PDFs' : frozenset(PDFs)
               , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
               , 'ConditionalObservables' : list(conds - obs)
