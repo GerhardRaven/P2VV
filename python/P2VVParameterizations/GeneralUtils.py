@@ -59,7 +59,6 @@ class _util_parse_mixin( object ) :
             rc += 1
         return rc
 
-
 class _util_extConstraints_mixin( object ) :
     def __init__( self, kwargs ) :
         if   'Constraints' in kwargs : self._constraints = [ constraint for constraint in kwargs.pop('Constraints') ]

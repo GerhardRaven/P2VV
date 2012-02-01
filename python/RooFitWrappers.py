@@ -614,11 +614,12 @@ class Pdf(RooObject):
             kwargs['ConditionalObservables'] = condObs 
         extConst = self.ExternalConstraints()
         if extConst : 
-            assert 'ExernalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
+            assert 'ExternalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
             print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
             kwargs['ExternalConstraints'] = extConst 
         for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
+        print kwargs
         return self._var.fitTo( data, **kwargs )
 
     @wraps(RooAbsPdf.generate)
@@ -650,14 +651,17 @@ class ProdPdf(Pdf):
         assert 'ConditionalObservables' not in kwargs, 'ConditionalObservables are done automatically. Do not specify'
         conds = set()
         obs = set()
+        ec = set()
         for pdf in PDFs:
             for o in pdf.Observables():
                 if o not in pdf.ConditionalObservables(): obs.add(o)
             for c in pdf.ConditionalObservables(): conds.add(c)
-        
+            for c in pdf.ExternalConstraints(): ec.add(c)
+            
         d = { 'PDFs' : frozenset(PDFs)
               , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
               , 'ConditionalObservables' : list(conds - obs)
+              , 'ExternalConstraints' : list(ec)
               }
         Pdf.__init__(self, Type = 'RooProdPdf', **d)
 
@@ -707,11 +711,18 @@ class SumPdf(Pdf):
         pdfs = list(kwargs['PDFs'])
         co = set([ i for pdf in pdfs for i in pdf.ConditionalObservables() ])
         if 'ConditionalObservables' in kwargs :
-            if co != kwargs['ConditionalObservables'] :
+            if co != set(kwargs['ConditionalObservables']):
                 print 'WARNING: inconsistent conditional observables: %s vs %s' % ( co, kwargs['ConditionalObservables'] )
         elif co :
-            kwargs['ConditionalObservables'] = co
+            kwargs['ConditionalObservables'] = list(co)
             
+        ec = set([ i for pdf in pdfs for i in pdf.ExternalConstraints() ])
+        if 'ExternalConstraints' in kwargs:
+            if ec != set(kwargs['ExternalConstraints']):
+                print 'WARNING: inconsistent external constraints: %s vs %s' % ( ec, kwargs['ExternalConstraints'] )
+        elif ec:
+            kwargs['ExternalConstraints'] = list(ec)
+
         diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
@@ -1250,7 +1261,7 @@ class Component(object):
             if nk : raise IndexError('could not construct matching product -- no PDF for observables: %s' % [i for i in nk ])
             nk = frozenset.union(*terms)
             pdfs = [self[i] for i in terms if type(self[i])!=type(None)]
-            externalConstraints = [ ec for pdf in pdfs for ec in pdf.ExternalConstraints() ]
+            externalConstraints = set([ec for pdf in pdfs for ec in pdf.ExternalConstraints()])
             d[nk] = ProdPdf(self.name, PDFs = pdfs, ExternalConstraints = externalConstraints )
         return d[k]
 
@@ -1258,12 +1269,14 @@ def buildPdf(Components, Observables, Name) :
     # multiply PDFs for observables (for each component)
     if not Observables : raise RuntimeError('no Observables??')
     obs = [o if type(o)==str else o.GetName() for o in Observables]
-    args = {'Yields' : {}, 'PDFs'   : [], 'ExternalConstraints' : [] }
+    args = {'Yields' : {}, 'PDFs'   : [], 'ExternalConstraints' : set() }
     for c in Components:
         pdf = c[obs]
         args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
-        args['ExternalConstraints'] += pdf.ExternalConstraints()
+        for ec in pdf.ExternalConstraints():
+            args['ExternalConstraints'].add(ec)
+    args['ExternalConstraints'] = list(args['ExternalConstraints'])
     if len(Components)==1 : return args['PDFs'][0] # TODO: how to change the name?
     # and sum components (inputs should already be extended)
     return SumPdf(Name=Name,**args)
