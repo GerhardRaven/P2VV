@@ -8,7 +8,7 @@ from math import pi, sin, cos, sqrt
 generateData   = False
 addTaggingVars = True
 fitData        = True
-makePlots      = False
+makePlots      = True
 blind          = True
 nominalPdf     = True
 
@@ -243,26 +243,25 @@ from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as 
 timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
 # build signal PDF
-args = dict(  time                   = time
-            , iTag                   = iTag
-            , tagCat                 = tagCatP2VV
-            , tau                    = lifetimeParams['MeanLifetime']
-            , dGamma                 = lifetimeParams['deltaGamma']
-            , dm                     = lifetimeParams['deltaM']
-            , dilutions              = taggingParams['dilutions']
-            , ADilWTags              = taggingParams['ADilWTags']
-            , avgCEvens              = taggingParams['avgCEvens']
-            , avgCOdds               = taggingParams['avgCOdds']
-            , tagCatCoefs            = taggingParams['tagCatCoefs']
-            , coshCoef               = timeBasisCoefs['cosh']
-            , sinhCoef               = timeBasisCoefs['sinh']
-            , cosCoef                = timeBasisCoefs['cos']
-            , sinCoef                = timeBasisCoefs['sin']
-            , resolutionModel        = timeResModel['model']
-            , ExternalConstraints    = lifetimeParams.externalConstraints()\
-                                       + timeResModel.externalConstraints()\
-                                       + tagCats.externalConstraints()
-#            , ConditionalObservables = timeResModel.ConditionalObservables()
+args = dict(  time                = time
+            , iTag                = iTag
+            , tagCat              = tagCatP2VV
+            , tau                 = lifetimeParams['MeanLifetime']
+            , dGamma              = lifetimeParams['deltaGamma']
+            , dm                  = lifetimeParams['deltaM']
+            , dilutions           = taggingParams['dilutions']
+            , ADilWTags           = taggingParams['ADilWTags']
+            , avgCEvens           = taggingParams['avgCEvens']
+            , avgCOdds            = taggingParams['avgCOdds']
+            , tagCatCoefs         = taggingParams['tagCatCoefs']
+            , coshCoef            = timeBasisCoefs['cosh']
+            , sinhCoef            = timeBasisCoefs['sinh']
+            , cosCoef             = timeBasisCoefs['cos']
+            , sinCoef             = timeBasisCoefs['sin']
+            , resolutionModel     = timeResModel['model']
+            , ExternalConstraints = lifetimeParams.externalConstraints()\
+                                    + timeResModel.externalConstraints()\
+                                    + tagCats.externalConstraints()
            )
 
 sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )

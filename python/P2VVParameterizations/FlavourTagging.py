@@ -19,6 +19,7 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin ):
         if self._numTagCats > 1 : self._tagCatCoefs = kwargs.pop('TagCatCoefs')
 
         _util_extConstraints_mixin.__init__( self, kwargs )
+        self._check_extraneous_kw( kwargs )
 
     def __getitem__( self, kw ) :
         def raiseError(kw) : raise RuntimeError( 'TaggingParams.__getitem__(\'%s\'): need to specify tagging category' % kw )

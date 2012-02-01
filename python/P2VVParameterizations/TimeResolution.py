@@ -9,12 +9,14 @@
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin
 
 
-class TimeResolution (_util_parse_mixin):
+class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin ):
     def __init__( self, **kwargs ) : 
         if 'Model' in kwargs : self._model = kwargs.pop( 'Model' )
         else :                 raise KeyError('TimeResolution: please specify a resolution model')
         if 'Name' in kwargs: self._Name = kwargs.pop('Name')
-        self._check_extraneous_kw(kwargs)
+
+        _util_extConstraints_mixin.__init__( self, kwargs )
+        self._check_extraneous_kw( kwargs )
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
     def model( self ) : return self._model
@@ -76,17 +78,18 @@ class LP2011_TimeResolution ( TimeResolution ) :
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__(  self, Name = Name,
-                                  Model = AddModel( Name
-                                                    , [ ResolutionModel(  Name = 'timeResLP2011_%s' % numVal[0]
-                                                                          , Type = GaussModel
-                                                                          , Parameters = [self._time, self._timeResMu, sigma, self._timeResSF]
-                                                                          , ExternalConstraints = constraints
-                                                                          )\
-                                                        for ( numVal, sigma ) in zip( sigmas, self._timeResSigmas )
-                                                        ]
-                                                    , self._timeResFracs
-                                                    )
-                                  )
+                                  Model = AddModel(  Name
+                                                   , [ ResolutionModel(  Name = 'timeResLP2011_%s' % numVal[0]
+                                                                       , Type = GaussModel
+                                                                       , Parameters = [self._time, self._timeResMu, sigma, self._timeResSF]
+                                                                       , ExternalConstraints = constraints
+                                                                      )\
+                                                       for ( numVal, sigma ) in zip( sigmas, self._timeResSigmas )
+                                                     ]
+                                                   , self._timeResFracs
+                                                  )
+                                  , Constraints = constraints
+                               )
 
 class Moriond2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -113,12 +116,13 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__(  self
-                               , Model =  ResolutionModel( Name = 'timeResMoriond2012'
-                                                         , Type = GaussModel
-                                                         , Parameters = [self._time, self._timeResMU, self._sigmat, self._timeResMuSF, self._timeResSF]
-                                                         , ConditionalObservables = [ self._sigmat ]
-                                                         , ExternalConstraints = constraints
-                                                         )
+                                , Model =  ResolutionModel(  Name = 'timeResMoriond2012'
+                                                           , Type = GaussModel
+                                                           , Parameters = [self._time, self._timeResMU, self._sigmat, self._timeResMuSF, self._timeResSF]
+                                                           , ConditionalObservables = [ self._sigmat ]
+                                                           , ExternalConstraints = constraints
+                                                          )
+                                , Constraints = constraints
                                )
         from ROOT import RooArgSet
         self.model().setParameterizeIntegral(RooArgSet( self._sigmat._var ))
