@@ -136,18 +136,19 @@ class LP2011_Background_Time( TimePdf ) :
                   , Type = Decay
                   , Parameters = ( time, self._t_bkg_ml_tau, resolutionModel, 'SingleSided')
                   , ConditionalObservables = resolutionModel.ConditionalObservables()
+                  , ExternalConstraints = resolutionModel.ExternalConstraints()
                   )
         ll = Pdf( Name = kwargs.pop('t_bkg_ll',Name+'_t_bkg_ll')
                   , Type = Decay
                   , Parameters = (time,self._t_bkg_ll_tau,resolutionModel,'SingleSided')
                   , ConditionalObservables = resolutionModel.ConditionalObservables()
+                  , ExternalConstraints = resolutionModel.ExternalConstraints()
                   )
         TimePdf.__init__(self, pdf = SumPdf( Name = Name
                                              , PDFs = (  ll, ml)
                                              , Yields = { ll.GetName() : self._t_bkg_fll }
                                              )
                          )
-
 
 class Single_Exponent_Time( TimePdf ) :
     def __init__(self,time,resolutionModel,**kwargs) :
