@@ -8,7 +8,7 @@ from math import pi, sin, cos, sqrt
 generateData   = False
 addTaggingVars = True
 fitData        = True
-makePlots      = True
+makePlots      = False
 blind          = True
 nominalPdf     = True
 
@@ -59,7 +59,7 @@ dGammaVal       = 0.13 if blind else 0.1
 AProdVal = 0.
 
 # fit options
-fitOpts = dict(  NumCPU              = 1
+fitOpts = dict(  NumCPU              = 2
                , Timer               = 1
                , Minos               = False
                , Hesse               = False
