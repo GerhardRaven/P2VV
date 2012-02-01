@@ -15,5 +15,6 @@
 #include "RooTagDecisionWrapper.h"
 #include "RooRealCategory.h"
 #include "RooCalibratedDilution.h"
+#include "RooDataSetToTree.h"
 
 #endif // P2VV_H

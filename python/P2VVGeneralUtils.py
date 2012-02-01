@@ -136,8 +136,9 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, pdf = None, data = None, addPDFs = [ ], components = None, xTitle = '', frameOpts = { }, dataOpts = { }, pdfOpts = { }
-         , addPDFsOpts = [ { } ], plotResidHist = False, logy = False, normalize = True, symmetrize = True, usebar = True ) :
+def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', frameOpts = { }, dataOpts = { }
+         , pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False, normalize = True, symmetrize = True, usebar = True
+        ) :
     """makes a P2VV plot
 
     example usage:
@@ -211,13 +212,13 @@ def plot(  canv, obs, pdf = None, data = None, addPDFs = [ ], components = None,
         plotPDFWithSlices( pdf, obsFrame, 'pdf', **pdfOpts )
 
         # draw data after drawing the PDF
-        if data : obsFrame.drawAfter( 'pdf',  'data' )
+        if data and 'Asymmetry' not in pdfOpts : obsFrame.drawAfter( 'pdf',  'data' )
 
     # plot additional PDFs
     if addPDFs :
         for num, addPDF in enumerate(addPDFs) :
             addPDF.plotOn( obsFrame, Name = 'addPDF' + str(num), **(addPDFsOpts[num]) )
-            if data : obsFrame.drawAfter( 'addPDF' + str(num), 'data' )
+            if data and 'Asymmetry' not in adddPDFOpts[num] : obsFrame.drawAfter( 'addPDF' + str(num), 'data' )
 
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
