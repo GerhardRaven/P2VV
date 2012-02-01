@@ -105,10 +105,8 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
     for cat in range( 1, len(tagCatBins) ) : tagCatFormula.addThreshold( tagCatBins[cat][2], tagCatBins[cat][0], tagCatBins[cat][1] )
 
     # create new columns in data set
-    iTag   = dataSet.addColumn(iTagWrapper)
-    tagCat = dataSet.addColumn(tagCatFormula)
-    iTag.createFundamental()
-    tagCat.createFundamental()
+    dataSet.addColumn(iTagWrapper)
+    dataSet.addColumn(tagCatFormula)
 
     # check tagging columns
     for obsSet in dataSet :
@@ -136,8 +134,9 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, pdf = None, data = None, addPDFs = [ ], components = None, xTitle = '', frameOpts = { }, dataOpts = { }, pdfOpts = { }
-         , addPDFsOpts = [ { } ], plotResidHist = False, logy = False, normalize = True, symmetrize = True, usebar = True ) :
+def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', frameOpts = { }, dataOpts = { }
+         , pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False, normalize = True, symmetrize = True, usebar = True
+        ) :
     """makes a P2VV plot
 
     example usage:
@@ -211,13 +210,13 @@ def plot(  canv, obs, pdf = None, data = None, addPDFs = [ ], components = None,
         plotPDFWithSlices( pdf, obsFrame, 'pdf', **pdfOpts )
 
         # draw data after drawing the PDF
-        if data : obsFrame.drawAfter( 'pdf',  'data' )
+        if data and 'Asymmetry' not in pdfOpts : obsFrame.drawAfter( 'pdf',  'data' )
 
     # plot additional PDFs
     if addPDFs :
         for num, addPDF in enumerate(addPDFs) :
             addPDF.plotOn( obsFrame, Name = 'addPDF' + str(num), **(addPDFsOpts[num]) )
-            if data : obsFrame.drawAfter( 'addPDF' + str(num), 'data' )
+            if data and 'Asymmetry' not in addPDFsOpts[num] : obsFrame.drawAfter( 'addPDF' + str(num), 'data' )
 
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
@@ -715,7 +714,7 @@ class RealMomentsBuilder ( dict ) :
 
     def multiplyPDFWithEff( self, pdf, **kwargs ) :
 
-        def _createProduct( f1, f2, c ) :
+        def _createProduct( f1, f2, c, namePF ) :
             assert not f1.prod()
             assert not f2.prod()
             assert f1.c()!=0
@@ -734,6 +733,7 @@ class RealMomentsBuilder ( dict ) :
                                  , ( f1.i(),f1.j(),f1.l(),f1.m() )
                                  , f1.c()*f2.c()*c
                                  , ( f2.i(),f2.j(),f2.l(),f2.m() )
+                                 , NamePostFix = namePF
                                  ) # build a wrapped object inside workspace
             
         # TODO: check that 'we' contain efficiency moments?
@@ -742,9 +742,10 @@ class RealMomentsBuilder ( dict ) :
         subst = dict()
         # TODO: do not use type to recognize, but name??
         from RooFitWrappers import Addition,EditPdf
+        effName = kwargs.pop( 'EffName', 'eff' )
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
-            subst[comp] = Addition( '%s_x_eff' % ( comp.GetName() )
-                                  , [ _createProduct( comp, f, c[0] ) for n,c,f in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
+            subst[comp] = Addition( '%s_x_%s' % ( comp.GetName(), effName )
+                                  , [ _createProduct( comp, f, c[0], effName ) for n,c,f in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ]
                                   )
         return EditPdf( Name = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), Original = pdf, Rules = subst )
 

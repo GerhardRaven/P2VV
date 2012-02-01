@@ -30,6 +30,18 @@ def __wrap_kw_subs( fun ) :
             args += tuple( RooCmdArg( __disp('Slice', slice) ) for slice in kwargs.pop('Slices') )
         if 'Imports' in kwargs:
             args += tuple( RooCmdArg( __disp('Import', slice) ) for slice in kwargs.pop('Imports') )
+        if 'ArgSet' in kwargs or 'ArgList' in kwargs:
+            if 'ArgSet' in kwargs :
+                from ROOT import RooArgSet
+                P2VVVars = kwargs.pop('ArgSet')
+                RooVars = RooArgSet()
+            else :
+                from ROOT import RooArgList
+                P2VVVars = kwargs.pop('ArgList')
+                RooVars = RooArgList()
+            for var in P2VVVars : RooVars.add( var._target_() if hasattr( var, '_target_' ) else var )
+            args += (RooVars,)
+
         for k,v in kwargs.iteritems():
             args += (RooCmdArg( __disp(k,v)),)
         try:
@@ -91,6 +103,11 @@ def __createRooIterator( create_iterator ) :
             if not obj : raise StopIteration
             yield obj
     return __iter
+
+def __RooDataSetToTree( self, branchList = '' ) :
+    from ROOT import RooDataSetToTree
+    return RooDataSetToTree( self, branchList )
+RooDataSet.buildTree = __RooDataSetToTree
 
 # RooAbsCategory functions
 from operator import methodcaller
@@ -204,6 +221,7 @@ RooAbsPdf.plotOn           = __wrap_kw_subs( RooAbsPdf.plotOn )
 RooAbsPdf.paramOn          = __wrap_kw_subs( RooAbsPdf.paramOn )
 RooAbsPdf.createCdf        = __wrap_kw_subs( RooAbsPdf.createCdf )
 RooAbsPdf.createNLL        = __wrap_kw_subs( RooAbsPdf.createNLL )
+RooAbsPdf.createProjection = __wrap_kw_subs( RooAbsPdf.createProjection )
 from ROOT import RooAbsData
 RooAbsData.createHistogram = __wrap_kw_subs( RooAbsData.createHistogram )
 RooAbsData.reduce          = __wrap_kw_subs( RooAbsData.reduce )

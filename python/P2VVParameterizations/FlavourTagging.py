@@ -34,10 +34,9 @@ class Trivial_TaggingParams( TaggingParams ) :
     def __init__( self ) :
         from RooFitWrappers import ConstVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
-        self._check_extraneous_kw( kwargs )
         TaggingParams.__init__( self
-                              , Dilutions = [ ConstVar( Name = 'Tagging dilution', Value = 0. ) ]
-                              , ADilWTags = [ ConstVar( Name = 'zero', Value = 0. ) ]
+                              , Dilutions = [ ConstVar( Name = 'one',  Value = 1 ) ]
+                              , ADilWTags = [ ConstVar( Name = 'zero', Value = 0 ) ]
                               , CEvenOdds = [ Trivial_CEvenOdd() ]
                               )
 
@@ -99,7 +98,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
 
 class Dilution_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
-        self._parseArg( 'dilution', kwargs, Title = 'Tagging dilution', Value = 0., MinMax = ( 0., 1. ) )
+        self._parseArg( 'dilution', kwargs, Title = 'Tagging dilution', Value = 0.5, MinMax = ( 0., 1. ) )
 
         self._check_extraneous_kw( kwargs )
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
@@ -527,11 +526,17 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
 
     # print tagging category binning to screen
     print 'P2VV - INFO: getTagCatParamsFromData(): tagging category binning:'
-    print '    P0 = %.3f +- %.3f   P1 = %.3f +- %.3f    P0 asym. = %.3f    P1 asym. = %.3f' % ( P0, P0Err, P1, P1Err, AP0, AP1 )
+    print '    <eta> = %.3f   P0 = %.3f +- %.3f   P1 = %.3f +- %.3f    P0 asym. = %.3f    P1 asym. = %.3f'\
+          % ( avgEstWTag, P0, P0Err, P1, P1Err, AP0, AP1 )
     print '    minimum eta = %.3f    average eta = %.3f' % ( etaMin, data.mean( data.get(0).find(estWTagName) ) )
     for bin, cat in enumerate(tagCatsCalc) :
-        print '    {0:<10s}: {1:.3f} -- {2:.3f}'\
-              .format( cat[0], cat[2], tagCatsCalc[bin + 1][2] if bin < len(tagCatsCalc) - 1 else etaMin )
+        deltaEta = ( cat[2] - tagCatsCalc[bin + 1][2] ) / 2. if bin < len(tagCatsCalc) - 1 else ( cat[2] - etaMin ) / 2.
+        if cat[2] >= avgEstWTag : binRangeSig = P1 * deltaEta / ( P0Err + P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
+        else                    : binRangeSig = P1 * deltaEta / ( P0Err - P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
+        print '    {0:<10s}  :  {1:.3f} -- {2:.3f} ({3:.2f} sigma)  :  <eta> = {4:.3f}  <w> = {5:.3f}  efficiency = {6:.3f}'\
+              .format(  cat[0], cat[2], tagCatsCalc[bin + 1][2] if bin < len(tagCatsCalc) - 1 else etaMin
+                      , binRangeSig, cat[3], cat[4], cat[6]
+                     )
 
     return tagCatsCalc
 
@@ -592,9 +597,12 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                ]
                             )
 
+        # get number of calibration parameter standard deviations for tagging category bins
+        nSigmaTagBins = kwargs.pop( 'NumSigmaTagBins', 1. )
+
         # determine tagging category parameters from data
         if data and etaName :
-            self._tagCats = getTagCatParamsFromData(  data, estWTagName = etaName, tagCats = tagCats, numSigmas = 1.
+            self._tagCats = getTagCatParamsFromData(  data, estWTagName = etaName, tagCats = tagCats, numSigmas = nSigmaTagBins
                                                     , avgEstWTag = self._avgEstWTag
                                                     , P0    = self._wTagP0,  P1    = self._wTagP1
                                                     , P0Err = 0.007,         P1Err = 0.040
@@ -643,6 +651,19 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                    , TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs, WTags = WTags, AWTags = AWTags
                                    , Constraints = constraints
                                   )
+
+
+    def traditionalCatRange( self, tradCat ) :
+        tradCatEdges = [ ( 0.5, 0.5 ), ( 0.499, 0.38 ), ( 0.38, 0.31 ), ( 0.31, 0.24 ), ( 0.24, 0.17 ), ( 0.17, 0. ) ]
+        catLowEdge  = 0
+        catHighEdge = 0
+        for cat in range(len(self._tagCats)) :
+            highEdge = self._tagCats[cat][2]
+            lowEdge  = self._tagCats[cat + 1][2] if bin < len(self._tagCats) - 1 else -0.0001
+            if tradCatEdges[tradCat][0] < highEdge and tradCatEdges[tradCat][0] >= lowEdge : catHighEdge = cat
+            if tradCatEdges[tradCat][1] < highEdge and tradCatEdges[tradCat][1] >= lowEdge : catLowEdge  = cat
+
+        return ( catHighEdge, catLowEdge )
 
 
 class Trivial_Background_Tag( _util_parse_mixin ) :
