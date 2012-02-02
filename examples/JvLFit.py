@@ -7,12 +7,12 @@ from math import pi, sin, cos, sqrt
 # job parameters
 generateData   = False
 addTaggingVars = True
-fitData        = False
-makePlots      = True
+fitData        = True
+makePlots      = False
 blind          = True
 nominalPdf     = True
 
-plotsFile = 'JvLFitTagCats.ps'
+plotsFile = 'JvLFit.ps'
 angEffMomentsFile = 'effMomentsTransBasis' if nominalPdf else 'effMomentsHelBasis'
 
 #dataSetName = 'JpsiphiData'
@@ -23,38 +23,38 @@ dataSetName = 'DecayTree'
 dataSetFile = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
 realData = True
 
-nEvents    = 200000
-sigFrac    = 0.8
+nEvents    = 31656
+sigFrac    = 0.67
 
 # PDF options
 components      = 'all' # 'signal' # 'background'
 bkgAngles       = '' #'histPdf'
 perEventTimeRes = False
-multiplyTimeEff = '' #'signal'
+multiplyTimeEff = '' # 'all' #'signal'
 
 # transversity amplitudes
 amplitudeParam = 'phasesSWaveFrac'
 
-A0Mag2Val    = 0.522
-AperpMag2Val = 0.249
+A0Mag2Val    = 0.50
+AperpMag2Val = 0.25
 AparMag2Val  = 1. - A0Mag2Val - AperpMag2Val
 
 A0PhVal      = 0.
-AperpPhVal   = 2.77
-AparPhVal    = 3.32
+AperpPhVal   = 3.
+AparPhVal    = 3.
 
-fSVal        = 0.016
+fSVal        = 0.02
 ASMag2Val    = fSVal / ( 1. - fSVal )
-ASPhVal      = 2.74
+ASPhVal      = 3.
 
 # CP violation parameters
 carthLambdaCP = False
-phiCPVal      = 0.21 if blind else 0.
+phiCPVal      = 0.2 if blind else 0.
 lambdaCPSqVal = 1.
 
 # B lifetime parameters
-GammaVal        = 0.667
-dGammaVal       = 0.13 if blind else 0.1
+GammaVal        = 0.67
+dGammaVal       = 0.1
 
 # asymmetries
 AProdVal = 0.
@@ -62,9 +62,9 @@ AProdVal = 0.
 # fit options
 fitOpts = dict(  NumCPU              = 1
                , Timer               = 1
-               , Minos               = False
-               , Hesse               = False
-               , Save                = True
+#               , Minos               = False
+#               , Hesse               = False
+#               , Save                = True
               )
 
 # plot options

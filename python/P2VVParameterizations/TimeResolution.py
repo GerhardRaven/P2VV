@@ -52,11 +52,12 @@ class Gaussian_TimeResolution ( TimeResolution ) :
 
 class LP2011_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
+        namePF = kwargs.pop( 'ResolutionNamePrefix', '' )
+
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
-        Name = kwargs.pop('Name', 'timeResModelLP2011')
         self._parseArg('time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ))
-        self._timeResMu = self._parseArg('%s_timeResMu' % Name, kwargs, Value = -0.0027)
-        self._timeResSF = self._parseArg('%s_timeResSF' % Name, kwargs, Value = 1.0, MinMax = ( 0.5, 5. ))
+        self._timeResMu = self._parseArg('%stimeResMu' % namePF, kwargs, Value = -0.0027)
+        self._timeResSF = self._parseArg('%stimeResSF' % namePF, kwargs, Value = 1.0, MinMax = ( 0.5, 5. ))
 
         sigmas = [ ( 3, 0.513  ), ( 2, 0.0853 ), ( 1, 0.0434 ) ]
         fracs  = [ ( 3, 0.0017 ), ( 2, 0.165 ) ]
@@ -69,13 +70,14 @@ class LP2011_TimeResolution ( TimeResolution ) :
             from RooFitWrappers import Pdf
             constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._timeResSF
-                                                    , ConstVar( Name = '%s_tres_SF_constraint_mean' % Name,  Value = 1.00 )
-                                                    , ConstVar( Name = '%s_tres_SF_constraint_sigma' % Name, Value = 0.04 )
+                                                    , ConstVar( Name = '%stres_SF_constraint_mean' % namePF,  Value = 1.00 )
+                                                    , ConstVar( Name = '%stres_SF_constraint_sigma' % namePF, Value = 0.04 )
                                                    ]
                                    )
                              )
 
         self._check_extraneous_kw( kwargs )
+        Name = kwargs.pop('Name', 'timeResModelLP2011')
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__(  self, Name = Name,
                                   Model = AddModel(  Name
