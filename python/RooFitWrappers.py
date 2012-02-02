@@ -1318,7 +1318,7 @@ def buildPdf(Components, Observables, Name) :
     args = {'Yields' : {}, 'PDFs'   : [], 'ExternalConstraints' : set() }
     for c in Components:
         pdf = c[obs]
-        args['Yields'][pdf.GetName()] = c['Yield']
+        if len(Components) > 1 : args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
         for ec in pdf.ExternalConstraints():
             args['ExternalConstraints'].add(ec)
