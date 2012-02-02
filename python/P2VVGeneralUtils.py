@@ -134,8 +134,9 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', frameOpts = { }, dataOpts = { }
-         , pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False, normalize = True, symmetrize = True, usebar = True
+def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', yScale = ( None, None )
+         ,frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False
+         , normalize = True, symmetrize = True, usebar = True
         ) :
     """makes a P2VV plot
 
@@ -156,10 +157,8 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     # create frame for observable
     obsFrame = obs.frame(**frameOpts)  if frameOpts else obs.frame()
     xAxis = obsFrame.GetXaxis()
+    yAxis = obsFrame.GetYaxis()
     _P2VVPlotStash.append(obsFrame)
-
-    # set x-axis title
-    if xTitle : xAxis.SetTitle(xTitle)
 
     # plot data
     if data : data.plotOn( obsFrame, Name = 'data', **dataOpts )
@@ -221,6 +220,14 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
     #nbins = obsFrame.GetNbinsX()
+
+    # set y scale
+    if yScale[0] : obsFrame.SetMinimum(yScale[0])
+    if yScale[1] : obsFrame.SetMaximum(yScale[1])
+
+    # set axis titles
+    if xTitle : xAxis.SetTitle(xTitle)
+    if yTitle : yAxis.SetTitle(yTitle)
 
     # get residuals histogram
     if plotResidHist and data and pdf :
