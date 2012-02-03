@@ -114,6 +114,7 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                                                    ]
                                    )
                              )
+            self._timeResSF['Error'] = 0.06
 
         Name =  kwargs.pop( 'Name', 'timeResModelMoriond2012' )
         self._check_extraneous_kw( kwargs )
