@@ -75,6 +75,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                                                    ]
                                    )
                               )
+            self._p0['Error'] = 0.007
 
         if kwargs.pop( 'p1Constraint', None ) :
             from RooFitWrappers import Pdf, ConstVar
@@ -86,6 +87,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                                                    ]
                                    )
                               )
+            self._p1['Error'] = 0.040
 
         self._check_extraneous_kw( kwargs )
         from RooFitWrappers import CalibratedDilution, ConstVar

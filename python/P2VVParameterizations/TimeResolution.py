@@ -75,6 +75,7 @@ class LP2011_TimeResolution ( TimeResolution ) :
                                                    ]
                                    )
                              )
+            self._timeResSF['Error'] = 0.04
 
         self._check_extraneous_kw( kwargs )
         Name = kwargs.pop('Name', 'timeResModelLP2011')

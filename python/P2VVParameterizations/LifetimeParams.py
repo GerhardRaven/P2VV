@@ -36,6 +36,7 @@ class Gamma_LifetimeParams( LifetimeParams ) :
                                                    ]
                                    )
                               )
+            self._deltaM['Error'] = 0.11
 
         self._check_extraneous_kw( kwargs )
         LifetimeParams.__init__( self
