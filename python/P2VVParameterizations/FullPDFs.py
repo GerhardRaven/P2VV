@@ -9,9 +9,15 @@
 Bs2Jpsiphi_Winter2012 = {}
 
 class PdfBuilder ( object ) :
-    def __init__( self, pdf ) : self._pdf = pdf
+    def __init__( self, pdf, observables, parameters ) :
+        self._pdf         = pdf
+        self._observables = observables
+        self._parameters  = parameters
+
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
-    def pdf(self) : return self._pdf
+    def pdf(self)         : return self._pdf
+    def observables(self) : return self._observables
+    def parameters(self)  : return self._parameters
 
 
 class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
@@ -103,11 +109,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
         # variables in PDF (except for tagging category)
-        self._time = RealVar(  'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
+        time = RealVar(  'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
                              , Ranges = dict( Bulk = ( None, 5. ) )
                             )
-        self._iTag = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
-        angles = [ self._angleFuncs.angles['cpsi'], self._angleFuncs.angles['ctheta'], self._angleFuncs.angles['phi'] ]
+        cpsi   = self._angleFuncs.angles['cpsi']
+        ctheta = self._angleFuncs.angles['ctheta']
+        phi    = self._angleFuncs.angles['phi']
+        iTag = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = 48
@@ -117,8 +125,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                         )
                        )
 
-        self._obsSetP2VV = [ self._time ] + angles + [ self._iTag ]
-        if not SFit : self._obsSetP2VV += [ BMass ]
+        angles = [ cpsi, ctheta, phi ]
+        obsSetP2VV = [ time ] + angles + [ iTag ]
+        if not SFit : obsSetP2VV += [ BMass ]
 
         # ntuple variables
         mpsi = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. ), nBins =  32 )
@@ -137,7 +146,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         sel   = Category( 'sel',             Title = 'Selection',        Observable = True, States = { 'selected' : +1 } )
         trig  = Category( 'triggerDecision', Title = 'Trigger Decision', Observable = True, States = { 'selected' : +1 } )
 
-        obsSetNTuple = [ self._time ] + angles +  [ BMass, mpsi, mphi, timeRes ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
+        observables = {  time.GetName()        : time
+                       , angles[0].GetName()   : angles[0]
+                       , angles[1].GetName()   : angles[1]
+                       , angles[2].GetName()   : angles[2]
+                       , iTag.GetName()        : iTag
+                       , tagDecision.GetName() : tagDecision
+                       , tagOmega.GetName()    : tagOmega
+                       , tagCat.GetName()      : tagCat
+                       , BMass.GetName()       : BMass
+                       , mpsi.GetName()        : mpsi
+                       , mphi.GetName()        : mphi
+                       , timeRes.GetName()     : timeRes
+                       , sel.GetName()         : sel
+                       , trig.GetName()        : trig
+                      }
+
+        obsSetNTuple = [ time ] + angles +  [ BMass, mpsi, mphi, timeRes ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
 
         # read ntuple
         from P2VVGeneralUtils import readData
@@ -156,26 +181,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # build tagging categories
         from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
-        tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._data, estWTagName = tagOmega.GetName(), TagCats = [ ]
+        self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._data, estWTagName = tagOmega.GetName(), TagCats = [ ]
                                     , NumSigmaTagBins = 1., wTagP0Constraint = True, wTagP1Constraint = True )
-        tagCatP2VV = tagCats['tagCat']
-        self._obsSetP2VV.append( tagCatP2VV )
+        tagCatP2VV = self._tagCats['tagCat']
+        observables[tagCatP2VV.GetName()] = tagCatP2VV
+        obsSetP2VV.append( tagCatP2VV )
 
         # add tagging category to data set
         from P2VVGeneralUtils import addTaggingObservables
-        addTaggingObservables(  self._data, self._iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName()
-                              , tagCats['tagCats'] )
-
-        # tagging parameters
-        numTagCats    = tagCats['numTagCats']
-        tagCat5Min    = tagCats.traditionalCatRange(5)[0]
-        taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
-        tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
-
-        # tagging category ranges
-        tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
-        tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
-        tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
+        addTaggingObservables(  self._data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName()
+                              , self._tagCats['tagCats'] )
 
 
         ###################################################################################################################################
@@ -240,7 +255,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
             from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
-            timeAcceptance = TimeAcceptance(  time = self._time, Input = timeEffHistFile, Histogram = timeEffHistName )
+            timeAcceptance = TimeAcceptance(  time = time, Input = timeEffHistFile, Histogram = timeEffHistName )
 
 
         ###################################################################################################################################
@@ -287,7 +302,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         lifetimeParams = LifetimeParams( Gamma = dict(Value = Gamma), deltaGamma = dGammaVar, deltaMConstraint = True )
 
         from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
-        timeResModel = TimeResolution( time = self._time, timeResSFConstraint = True )
+        timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
 
         # CP violation parameters
         from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
@@ -297,15 +312,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # tagging parameters
         from P2VVParameterizations.FlavourTagging import WTagCatsCoefAsyms_TaggingParams as TaggingParams
-        self._taggingParams = TaggingParams( AProd = AProd, ANorm = -self._lambdaCP['C'].getVal(), **tagCats.tagCatsDict() )
+        self._taggingParams = TaggingParams( AProd = AProd, ANorm = -self._lambdaCP['C'].getVal(), **self._tagCats.tagCatsDict() )
 
         # coefficients for time functions
         from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
         timeBasisCoefs = TimeBasisCoefs( self._angleFuncs.functions, amplitudes, self._lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
         # build signal PDF
-        args = dict(  time                = self._time
-                    , iTag                = self._iTag
+        args = dict(  time                = time
+                    , iTag                = iTag
                     , tagCat              = tagCatP2VV
                     , tau                 = lifetimeParams['MeanLifetime']
                     , dGamma              = lifetimeParams['deltaGamma']
@@ -322,7 +337,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     , resolutionModel     = timeResModel['model']
                     , ExternalConstraints = lifetimeParams.externalConstraints()\
                                             + timeResModel.externalConstraints()\
-                                            + tagCats.externalConstraints()
+                                            + self._tagCats.externalConstraints()
                    )
 
         from RooFitWrappers import BTagDecay
@@ -352,7 +367,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if not SFit :
             from P2VVParameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
-            backgroundTime = BackgroundTime( Name = 'bkg_t', time = self._time, resolutionModel = timeResModel['model'] )
+            backgroundTime = BackgroundTime( Name = 'bkg_t', time = time, resolutionModel = timeResModel['model'] )
             bkg_t = backgroundTime.pdf()
 
             if multiplyByTimeEff in [ 'all', 'background' ] :
@@ -367,16 +382,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##################################
 
         if not SFit :
+            bkgAngleData = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
             if bkgAnglePdf == 'histPdf' :
                 # create a HistPdf from background data
                 from RooFitWrappers import HistPdf
                 self._bkg_angles = HistPdf(  Name = 'bkg_angles'
                                            , Observables = angles
-                                           , Binning =  {  self._angleFuncs.angles['cpsi']   : numBkgAngleBins[0]
-                                                         , self._angleFuncs.angles['ctheta'] : numBkgAngleBins[1]
-                                                         , self._angleFuncs.angles['phi' ]   : numBkgAngleBins[2]
-                                                        }
-                                           , Data = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
+                                           , Binning = { cpsi : numBkgAngleBins[0], ctheta : numBkgAngleBins[1], phi : numBkgAngleBins[2] }
+                                           , Data = bkgAngleData
                                           )
 
             else :
@@ -392,24 +405,26 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
                     phiBinBounds = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
 
+                cpsNumBins = len(cpsBinBounds) - 1
+                cthNumBins = len(cthBinBounds) - 1
+                phiNumBins = len(phiBinBounds) - 1
+
                 from ROOT import RooBinning
-                cpsBins = RooBinning( len(cpsBinBounds) - 1, cpsBinBounds, 'bkg_cpsBins' )
-                cthBins = RooBinning( len(cthBinBounds) - 1, cthBinBounds, 'bkg_cthBins' )
-                phiBins = RooBinning( len(phiBinBounds) - 1, phiBinBounds, 'bkg_phiBins' )
-                self._angleFuncs.angles['cpsi'].setBinning(   cpsBins, 'bkg_cpsBins' )
-                self._angleFuncs.angles['ctheta'].setBinning( cthBins, 'bkg_cthBins' )
-                self._angleFuncs.angles['phi'].setBinning(    phiBins, 'bkg_phiBins' )
+                cpsBins = RooBinning( cpsNumBins, cpsBinBounds, 'bkg_cpsBins' )
+                cthBins = RooBinning( cthNumBins, cthBinBounds, 'bkg_cthBins' )
+                phiBins = RooBinning( phiNumBins, phiBinBounds, 'bkg_phiBins' )
+                cpsi.setBinning(   cpsBins, 'bkg_cpsBins' )
+                ctheta.setBinning( cthBins, 'bkg_cthBins' )
+                phi.setBinning(    phiBins, 'bkg_phiBins' )
 
                 # create bin coefficients
                 self._bkgAngCoefs = [ RealVar(  'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
                                               , Title = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
-                                              , Value = 1. / ( len(cpsBinBounds) - 1 ) / ( len(cthBinBounds) - 1 ) / ( len(phiBinBounds) - 1 )
+                                              , Value = 1. / cpsNumBins / cthNumBins / phiNumBins
                                               , MinMax = ( 0., 1. )
                                              )\
                                       if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
-                                      for bin2 in range( len(phiBinBounds) - 1 )\
-                                      for bin1 in range( len(cthBinBounds) - 1 )\
-                                      for bin0 in range( len(cpsBinBounds) - 1 )
+                                      for bin2 in range( phiNumBins ) for bin1 in range( cthNumBins ) for bin0 in range( cpsNumBins )
                                     ]
                 del self._bkgAngCoefs[0]
 
@@ -423,26 +438,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                             )
 
                 # determine bin coefficient values
-                self._bkg_angles.fitTo( self._bkgRangeData if massRangeBackground else self._bkgSWeightData, SumW2Error = False )
+                sumWeights = 0.
+                sumBinWeights = ( cpsNumBins * cthNumBins * phiNumBins - 1 ) * [ 0. ]
+                for obsSet in bkgAngleData :
+                    for angle in angles : angle.setVal( obsSet.getRealValue( angle.GetName() ) )
+                    sumWeights += bkgAngleData.weight()
+                    cpsBin = cpsi.getBin('bkg_cpsBins')
+                    cthBin = ctheta.getBin('bkg_cthBins')
+                    phiBin = phi.getBin('bkg_phiBins')
+                    bin = cpsBin + cthBin * cpsNumBins + phiBin * cpsNumBins * cthNumBins - 1
+                    if bin >= 0 : sumBinWeights[ bin ] += bkgAngleData.weight()
 
-                ## set bin coefficient values
-                #for bin, coef in enumerate(self._bkgAngCoefs) :
-                #    cpsBin, cthBin, phiBin = coef.GetName()[ 11 : ].split('_')
-                #    selection = dict(  cps = angles[0].GetName(), cth = angles[1].GetName(), phi = angles[2].GetName()
-                #                     , cpsMin = cpsBinBounds[ int(cpsBin) ], cpsMax = cpsBinBounds[ int(cpsBin) + 1 ]
-                #                     , cthMin = cthBinBounds[ int(cthBin) ], cthMax = cthBinBounds[ int(cthBin) + 1 ]
-                #                     , phiMin = phiBinBounds[ int(phiBin) ], phiMax = phiBinBounds[ int(phiBin) + 1 ]
-                #                    )
-
-                #    value = float( sideBandDataTree.GetEntries( (     '%(cps)s >= %(cpsMin)f && %(cps)s < %(cpsMax)f'\
-                #                                                 + '&& %(cth)s >= %(cthMin)f && %(cth)s < %(cthMax)f'\
-                #                                                 + '&& %(phi)s >= %(phiMin)f && %(phi)s < %(phiMax)f'
-                #                                                ) % selection
-                #                                              )
-                #                 ) / sideBandDataTree.GetEntries()
-                #    coef.setVal(value)
-                #    coef.setError( 0.1 * value )
-                #    coef.setConstant()
+                # set bin coefficient values
+                for coef, weight in zip( self._bkgAngCoefs, sumBinWeights ) :
+                    value = weight / sumWeights
+                    assert value >= 0.,\
+                        'Bs2Jpsiphi_PdfBuilder: background angular PDF coefficient \"%s\" has negative value: %f' % (coef.GetName(), value)
+                    coef.setVal(value)
+                    coef.setConstant()
 
             backgroundComps += self._bkg_angles
 
@@ -456,12 +469,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 self._bkgAnglesCanv = TCanvas( 'bkgAnglesCanv', 'Background Decay Angles' )
                 for ( pad, obs, data, nBins, plotTitle, xTitle )\
                       in zip(  self._bkgAnglesCanv.pads( 3, 2 )
-                             , angles
+                             , 2 * angles
                              , 3 * ( self._bkgRangeData, ) + 3 * ( self._bkgSWeightData, )
                              , 2 * numBkgAngleBins
                              , [ angle.GetTitle() + ' - mass side bands' for angle in angles ]
                              + [ angle.GetTitle() + ' - mass S-weights'  for angle in angles ]
-                             , 2 * angleNames
+                             , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                             ) :
                     plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle
                          , frameOpts  = dict( Bins = nBins, Title = plotTitle   )
@@ -477,7 +490,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if not SFit :
             from RooFitWrappers import BinnedPdf
             backgroundComps += BinnedPdf(  'bkg_tagCat_iTag'
-                                         , Categories   = ( tagCatP2VV, self._iTag )
+                                         , Categories   = ( tagCatP2VV, iTag )
                                          , Coefficients = [  self._taggingParams['tagCatCoefs']
                                                            , [  RealVar( 'bkg_BbarFrac'
                                                                         , Title    = 'Anti-B fraction in background'
@@ -496,15 +509,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         from RooFitWrappers import buildPdf
         if SFit :
-            pdf = buildPdf( [ signalComps ], Observables = self._obsSetP2VV, Name = 'Jpsiphi' )
+            pdf = buildPdf( [ signalComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
 
         else :
             if components == 'signal' :
-                pdf = buildPdf( [ signalComps                  ], Observables = self._obsSetP2VV, Name = 'JpsiphiSig' )
+                pdf = buildPdf( [ signalComps                  ], Observables = obsSetP2VV, Name = 'JpsiphiSig' )
             elif components == 'background' :
-                pdf = buildPdf( [ backgroundComps              ], Observables = self._obsSetP2VV, Name = 'JpsiphiBkg' )
+                pdf = buildPdf( [ backgroundComps              ], Observables = obsSetP2VV, Name = 'JpsiphiBkg' )
             else :
-                pdf = buildPdf( [ signalComps, backgroundComps ], Observables = self._obsSetP2VV, Name = 'Jpsiphi'    )
+                pdf = buildPdf( [ signalComps, backgroundComps ], Observables = obsSetP2VV, Name = 'Jpsiphi'    )
 
-        PdfBuilder.__init__( self, pdf )
+        PdfBuilder.__init__( self, pdf, observables, { } )
 

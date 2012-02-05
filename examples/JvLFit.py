@@ -28,7 +28,7 @@ pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweight
 # PDF options
 pdfConfig['components']         = 'all'  # 'all' / 'signal' / 'background'
 pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']        = 'histPdf'     # '' / 'histPdf'
+pdfConfig['bkgAnglePdf']        = ''     # '' / 'histPdf'
 pdfConfig['perEventTimeRes']    = False
 pdfConfig['multiplyByTimeEff']  = ''     # 'all' / 'signal'
 
@@ -74,8 +74,18 @@ fitOpts = dict(  NumCPU              = 1
 pdfConfig['fitOptions'] = fitOpts
 
 # plot options
-if pdfConfig['nominalPdf'] : pdfConfig['angleNames'] = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
-else                       : pdfConfig['angleNames'] = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
+if pdfConfig['nominalPdf'] :
+    pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
+                               , ( 'trcostheta', 'cos(#theta_{tr})' )
+                               , ( 'trphi',      '#phi_{tr}'        )
+                              )
+else :
+    pdfConfig['angleNames'] = (  ( 'helcosthetaK', 'cos(#theta_{K})' )
+                               , ( 'helcosthetaL', 'cos(#theta_{l})' )
+                               , ( 'helphi',       '#phi'            )
+                              )
+angleNames = pdfConfig['angleNames']
+
 numBins      = ( 60, 30, 30, 30 )
 numTimeBins  = ( 30, 30, 30 )
 numAngleBins = ( 20, 20, 20 )
@@ -142,10 +152,23 @@ if doFit :
 
 if pdfConfig['makePlots'] :
     # get variables
-    obsSetP2VV = pdfBuild['obsSetP2VV']
-    time       = pdfBuild['time']
-    iTag       = pdfBuild['iTag']
-    angles = [ pdfBuild['angleFuncs'].angles['cpsi'], pdfBuild['angleFuncs'].angles['ctheta'], pdfBuild['angleFuncs'].angles['phi'] ]
+    obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [  'time', angleNames[0][0], angleNames[1][0], angleNames[2][0]
+                                                            , 'iTag', 'tagCatP2VV' ] ]
+    time       = obsSetP2VV[0]
+    angles     = obsSetP2VV[ 1 : 4 ]
+    iTag       = obsSetP2VV[4]
+    tagCatP2VV = obsSetP2VV[5]
+
+    # tagging parameters
+    numTagCats    = pdfBuild['tagCats']['numTagCats']
+    tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
+    taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
+    tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
+
+    # tagging category ranges
+    tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
+    tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
+    tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
 
     # import plotting tools
     from P2VVLoad import ROOTStyle
@@ -166,7 +189,7 @@ if pdfConfig['makePlots'] :
                    , obsSetP2VV[ : 5 ]
                    , numBins
                    , [ var.GetTitle() for var in obsSetP2VV[ : 5 ] ]
-                   , ( '', ) + pdfConfig['angleNames']
+                   , ( '', angleNames[0][1], angleNames[1][1], angleNames[1][1] )
                    , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
                    , ( True, ) + 3 * ( False, )
                   ) :
@@ -246,7 +269,7 @@ if pdfConfig['makePlots'] :
                    , 2 * angles
                    , 2 * numAngleBins
                    , anglePlotTitles
-                   , 2 * pdfConfig['angleNames']
+                   , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[1][1] )
                    , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
                    , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
                    , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
