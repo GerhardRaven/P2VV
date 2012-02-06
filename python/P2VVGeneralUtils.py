@@ -105,10 +105,8 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
     for cat in range( 1, len(tagCatBins) ) : tagCatFormula.addThreshold( tagCatBins[cat][2], tagCatBins[cat][0], tagCatBins[cat][1] )
 
     # create new columns in data set
-    iTag   = dataSet.addColumn(iTagWrapper)
-    tagCat = dataSet.addColumn(tagCatFormula)
-    iTag.createFundamental()
-    tagCat.createFundamental()
+    dataSet.addColumn(iTagWrapper)
+    dataSet.addColumn(tagCatFormula)
 
     # check tagging columns
     for obsSet in dataSet :
@@ -136,8 +134,9 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', frameOpts = { }, dataOpts = { }
-         , pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False, normalize = True, symmetrize = True, usebar = True
+def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', yScale = ( None, None )
+         ,frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False
+         , normalize = True, symmetrize = True, usebar = True
         ) :
     """makes a P2VV plot
 
@@ -158,10 +157,8 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     # create frame for observable
     obsFrame = obs.frame(**frameOpts)  if frameOpts else obs.frame()
     xAxis = obsFrame.GetXaxis()
+    yAxis = obsFrame.GetYaxis()
     _P2VVPlotStash.append(obsFrame)
-
-    # set x-axis title
-    if xTitle : xAxis.SetTitle(xTitle)
 
     # plot data
     if data : data.plotOn( obsFrame, Name = 'data', **dataOpts )
@@ -218,11 +215,19 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     if addPDFs :
         for num, addPDF in enumerate(addPDFs) :
             addPDF.plotOn( obsFrame, Name = 'addPDF' + str(num), **(addPDFsOpts[num]) )
-            if data and 'Asymmetry' not in adddPDFOpts[num] : obsFrame.drawAfter( 'addPDF' + str(num), 'data' )
+            if data and 'Asymmetry' not in addPDFsOpts[num] : obsFrame.drawAfter( 'addPDF' + str(num), 'data' )
 
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
     #nbins = obsFrame.GetNbinsX()
+
+    # set y scale
+    if yScale[0] : obsFrame.SetMinimum(yScale[0])
+    if yScale[1] : obsFrame.SetMaximum(yScale[1])
+
+    # set axis titles
+    if xTitle : xAxis.SetTitle(xTitle)
+    if yTitle : yAxis.SetTitle(yTitle)
 
     # get residuals histogram
     if plotResidHist and data and pdf :
@@ -716,7 +721,7 @@ class RealMomentsBuilder ( dict ) :
 
     def multiplyPDFWithEff( self, pdf, **kwargs ) :
 
-        def _createProduct( f1, f2, c ) :
+        def _createProduct( f1, f2, c, namePF ) :
             assert not f1.prod()
             assert not f2.prod()
             assert f1.c()!=0
@@ -735,6 +740,7 @@ class RealMomentsBuilder ( dict ) :
                                  , ( f1.i(),f1.j(),f1.l(),f1.m() )
                                  , f1.c()*f2.c()*c
                                  , ( f2.i(),f2.j(),f2.l(),f2.m() )
+                                 , NamePostFix = namePF
                                  ) # build a wrapped object inside workspace
             
         # TODO: check that 'we' contain efficiency moments?
@@ -743,9 +749,10 @@ class RealMomentsBuilder ( dict ) :
         subst = dict()
         # TODO: do not use type to recognize, but name??
         from RooFitWrappers import Addition,EditPdf
+        effName = kwargs.pop( 'EffName', 'eff' )
         for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
-            subst[comp] = Addition( '%s_x_eff' % ( comp.GetName() )
-                                  , [ _createProduct( comp, f, c[0] ) for n,c,f in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ] 
+            subst[comp] = Addition( '%s_x_%s' % ( comp.GetName(), effName )
+                                  , [ _createProduct( comp, f, c[0], effName ) for n,c,f in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ]
                                   )
         return EditPdf( Name = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), Original = pdf, Rules = subst )
 

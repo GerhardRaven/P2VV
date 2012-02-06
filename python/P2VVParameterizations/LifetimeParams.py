@@ -24,7 +24,7 @@ class Gamma_LifetimeParams( LifetimeParams ) :
 
         self._parseArg( 'Gamma',      kwargs, Title = 'Gamma',       Unit = 'ps^{-1}', Value = 0.667,  MinMax = (  0.4,  0.9 ) )
         self._parseArg( 'deltaGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = 0.12,   MinMax = (- 1.,   1.  ) )
-        self._parseArg( 'deltaM',     kwargs, Title = 'delta m',     Unit = 'ps^{-1}', Value = 17.58,  MinMax = ( 16.5, 18.5 ) )
+        self._parseArg( 'deltaM',     kwargs, Title = 'delta m',     Unit = 'ps^{-1}', Value = 17.63,  MinMax = ( 16.5, 18.5 ) )
         
         constraints = [  ]
         if kwargs.pop( 'deltaMConstraint', None ) :
@@ -36,6 +36,7 @@ class Gamma_LifetimeParams( LifetimeParams ) :
                                                    ]
                                    )
                               )
+            self._deltaM['Error'] = 0.11
 
         self._check_extraneous_kw( kwargs )
         LifetimeParams.__init__( self

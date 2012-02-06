@@ -19,6 +19,7 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin ):
         if self._numTagCats > 1 : self._tagCatCoefs = kwargs.pop('TagCatCoefs')
 
         _util_extConstraints_mixin.__init__( self, kwargs )
+        self._check_extraneous_kw( kwargs )
 
     def __getitem__( self, kw ) :
         def raiseError(kw) : raise RuntimeError( 'TaggingParams.__getitem__(\'%s\'): need to specify tagging category' % kw )
@@ -34,10 +35,9 @@ class Trivial_TaggingParams( TaggingParams ) :
     def __init__( self ) :
         from RooFitWrappers import ConstVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
-        self._check_extraneous_kw( kwargs )
         TaggingParams.__init__( self
-                              , Dilutions = [ ConstVar( Name = 'Tagging dilution', Value = 1. ) ]
-                              , ADilWTags = [ ConstVar( Name = 'zero', Value = 0. ) ]
+                              , Dilutions = [ ConstVar( Name = 'one',  Value = 1 ) ]
+                              , ADilWTags = [ ConstVar( Name = 'zero', Value = 0 ) ]
                               , CEvenOdds = [ Trivial_CEvenOdd() ]
                               )
 
@@ -75,6 +75,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                                                    ]
                                    )
                               )
+            self._p0['Error'] = 0.007
 
         if kwargs.pop( 'p1Constraint', None ) :
             from RooFitWrappers import Pdf, ConstVar
@@ -86,6 +87,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                                                    ]
                                    )
                               )
+            self._p1['Error'] = 0.040
 
         self._check_extraneous_kw( kwargs )
         from RooFitWrappers import CalibratedDilution, ConstVar
