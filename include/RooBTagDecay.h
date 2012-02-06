@@ -155,6 +155,7 @@ protected:
   Int_t        _fTagVal;
   Bool_t       _checkVars;
 
+private:
   ClassDef(RooBTagDecay, 1) // PDF of B decay time distribution with flavour tagging
 };
 

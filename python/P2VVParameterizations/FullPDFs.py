@@ -55,6 +55,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         perEventTimeRes   = pdfConfig.pop('perEventTimeRes')
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')
 
+        tagConds = pdfConfig.pop('taggingConditionals')
+
         sigFrac = pdfConfig.pop('signalFraction')
         massRangeBackground = pdfConfig.pop('massRangeBackground')
 
@@ -71,7 +73,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         ASMag2 = pdfConfig.pop('ASMag2')
         ASPh   = pdfConfig.pop('ASPhase')
-        if 'f_S' in pdfConfig                   : fS = pdfConfig.pop('f_S')
+        if 'f_S' in pdfConfig                : fS = pdfConfig.pop('f_S')
         elif isinstance( ASMag2, RooObject ) : fS = ASMag2.GetVal() / ( 1. + ASMag2.GetVal() )
         else                                 : fS = ASMag2 / ( 1. + ASMag2 )
 
@@ -133,12 +135,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         mpsi = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. ), nBins =  32 )
         mphi = RealVar( 'mdau2', Title = 'M(KK)',     Unit = 'MeV', Observable = True, MinMax = ( 1020. - 12., 1020. + 12. ), nBins =  16 )
 
-        timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0., 0.12 ), nBins =  50 )
+        timeRes = RealVar( 'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = ( 0., 0.12 ), nBins = 50 )
+        timeRes.setBins( 20, 'cache' )
 
         tagDecision = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
                                , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
                               )
-        tagOmega = RealVar( 'tagomega_os', Title = 'Estimated wrong tag', Observable = True, Value = 0.25, MinMax = ( 0., 0.50001 ) )
+        estWTag = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability', Observable = True
+                           , Value = 0.25, MinMax = ( 0., 0.50001 ) )
+        estWTag.setBins( 20, 'cache' )
         tagCat = Category( 'tagcat_os',   Title = 'Tagging Category', Observable = True
                           , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                          )
@@ -152,7 +157,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                        , angles[2].GetName()   : angles[2]
                        , iTag.GetName()        : iTag
                        , tagDecision.GetName() : tagDecision
-                       , tagOmega.GetName()    : tagOmega
+                       , estWTag.GetName()     : estWTag
                        , tagCat.GetName()      : tagCat
                        , BMass.GetName()       : BMass
                        , mpsi.GetName()        : mpsi
@@ -162,7 +167,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                        , trig.GetName()        : trig
                       }
 
-        obsSetNTuple = [ time ] + angles +  [ BMass, mpsi, mphi, timeRes ] + [ tagDecision, tagOmega, tagCat ] + [ sel, trig ]
+        obsSetNTuple = [ time ] + angles +  [ BMass, mpsi, mphi, timeRes ] + [ tagDecision, estWTag, tagCat ] + [ sel, trig ]
 
         # read ntuple
         from P2VVGeneralUtils import readData
@@ -181,15 +186,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # build tagging categories
         from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
-        self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._data, estWTagName = tagOmega.GetName(), TagCats = [ ]
-                                    , NumSigmaTagBins = 1., wTagP0Constraint = True, wTagP1Constraint = True )
+        if tagConds == 'estWTag' :
+            self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._data, estWTag = estWTag
+                                              , wTagP0Constraint = True, wTagP1Constraint = True )
+        else :
+            self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._data, estWTagName = estWTag.GetName()
+                                              , TagCats = [ ], NumSigmaTagBins = 1., wTagP0Constraint = True, wTagP1Constraint = True )
+
         tagCatP2VV = self._tagCats['tagCat']
         observables[tagCatP2VV.GetName()] = tagCatP2VV
         obsSetP2VV.append( tagCatP2VV )
 
         # add tagging category to data set
         from P2VVGeneralUtils import addTaggingObservables
-        addTaggingObservables(  self._data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), tagOmega.GetName()
+        addTaggingObservables(  self._data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), estWTag.GetName()
                               , self._tagCats['tagCats'] )
 
 
@@ -311,7 +321,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self._lambdaCP = CPParam( lambdaCPSq = lambdaCPSq, phiCP = phiCPVar )
 
         # tagging parameters
-        from P2VVParameterizations.FlavourTagging import WTagCatsCoefAsyms_TaggingParams as TaggingParams
+        from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
         self._taggingParams = TaggingParams( AProd = AProd, ANorm = -self._lambdaCP['C'].getVal(), **self._tagCats.tagCatsDict() )
 
         # coefficients for time functions
@@ -319,25 +329,26 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         timeBasisCoefs = TimeBasisCoefs( self._angleFuncs.functions, amplitudes, self._lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
         # build signal PDF
-        args = dict(  time                = time
-                    , iTag                = iTag
-                    , tagCat              = tagCatP2VV
-                    , tau                 = lifetimeParams['MeanLifetime']
-                    , dGamma              = lifetimeParams['deltaGamma']
-                    , dm                  = lifetimeParams['deltaM']
-                    , dilutions           = self._taggingParams['dilutions']
-                    , ADilWTags           = self._taggingParams['ADilWTags']
-                    , avgCEvens           = self._taggingParams['avgCEvens']
-                    , avgCOdds            = self._taggingParams['avgCOdds']
-                    , tagCatCoefs         = self._taggingParams['tagCatCoefs']
-                    , coshCoef            = timeBasisCoefs['cosh']
-                    , sinhCoef            = timeBasisCoefs['sinh']
-                    , cosCoef             = timeBasisCoefs['cos']
-                    , sinCoef             = timeBasisCoefs['sin']
-                    , resolutionModel     = timeResModel['model']
-                    , ExternalConstraints = lifetimeParams.externalConstraints()\
-                                            + timeResModel.externalConstraints()\
-                                            + self._tagCats.externalConstraints()
+        args = dict(  time                   = time
+                    , iTag                   = iTag
+                    , tagCat                 = tagCatP2VV
+                    , tau                    = lifetimeParams['MeanLifetime']
+                    , dGamma                 = lifetimeParams['deltaGamma']
+                    , dm                     = lifetimeParams['deltaM']
+                    , dilutions              = self._taggingParams['dilutions']
+                    , ADilWTags              = self._taggingParams['ADilWTags']
+                    , avgCEvens              = self._taggingParams['avgCEvens']
+                    , avgCOdds               = self._taggingParams['avgCOdds']
+                    , tagCatCoefs            = self._taggingParams['tagCatCoefs']
+                    , coshCoef               = timeBasisCoefs['cosh']
+                    , sinhCoef               = timeBasisCoefs['sinh']
+                    , cosCoef                = timeBasisCoefs['cos']
+                    , sinCoef                = timeBasisCoefs['sin']
+                    , resolutionModel        = timeResModel['model']
+                    , ConditionalObservables = timeResModel.conditionalObservables() + self._tagCats.conditionalObservables()
+                    , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                               + timeResModel.externalConstraints()\
+                                               + self._tagCats.externalConstraints()
                    )
 
         from RooFitWrappers import BTagDecay
@@ -345,6 +356,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if angEffMomentsFile :
             # multiply signal PDF with angular efficiency
+            print 120 * '='
+            print 'Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"' % angEffMomentsFile
+
             from P2VVGeneralUtils import RealMomentsBuilder
             moments = RealMomentsBuilder()
             moments.appendPYList( self._angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not nominalPdf \
@@ -354,11 +368,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             moments.Print()
             sig_t_angles_tagCat_iTag = moments * sig_t_angles_tagCat_iTag
 
+            print 120 * '=' + '\n'
+
         if multiplyByTimeEff in [ 'all', 'signal' ] :
             # multiply signal PDF with time acceptance
             sig_t_angles_tagCat_iTag = timeAcceptance * sig_t_angles_tagCat_iTag
 
         signalComps += sig_t_angles_tagCat_iTag
+
+        if tagConds == 'estWTag' :
+            # tagging category is used as conditional observable: register dummy PDF for tagging category
+            from RooFitWrappers import UniformPdf
+            signalComps += UniformPdf( 'tagCatDummyPdf', Arguments = [ tagCatP2VV ] )
 
 
         ###################################################################################################################################
@@ -382,6 +403,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##################################
 
         if not SFit :
+            print 120 * '='
+            print 'Bs2Jpsiphi_PdfBuilder: determining angular shape of background from %s data'\
+                  % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
+
             bkgAngleData = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
             if bkgAnglePdf == 'histPdf' :
                 # create a HistPdf from background data
@@ -481,6 +506,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
                          , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
                         )
+
+            print 120 * '=' + '\n'
 
 
         ###################################################################################################################################

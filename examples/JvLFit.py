@@ -8,7 +8,7 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as pdfConfig
 generateData   = False
 doFit          = False
 
-pdfConfig['makePlots']  = True
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = True
 pdfConfig['nominalPdf'] = True
@@ -31,6 +31,8 @@ pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''     # '' / 'histPdf'
 pdfConfig['perEventTimeRes']    = False
 pdfConfig['multiplyByTimeEff']  = ''     # 'all' / 'signal'
+
+pdfConfig['taggingConditionals'] = 'estWTag'
 
 nEvents = 30000
 pdfConfig['signalFraction'] = 0.67
@@ -236,7 +238,7 @@ if pdfConfig['makePlots'] :
     timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
     for ( pad, nBins, plotTitle, yTitle, dataCuts, pdfCuts, logY )\
         in zip(  timeCanv1.pads( 3, 2 )
-             , 3 * numTimeBins
+             , 2 * numTimeBins
              , timePlotTitles1
              , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
              ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()             )                   ), )
@@ -256,7 +258,7 @@ if pdfConfig['makePlots'] :
         plot(  pad, time, fitData, pdf, yTitle = yTitle, logy = logY
              , frameOpts  = dict( Bins = nBins, Title = plotTitle, Range = 'Bulk'            )
              , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
-             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts      )
+             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts        )
              , components = comps
             )
 
@@ -277,7 +279,7 @@ if pdfConfig['makePlots'] :
         plot(  pad, obs, fitData, pdf, xTitle = xTitle, yTitle = yTitle
              , frameOpts  = dict( Bins = nBins, Title = plotTitle                             )
              , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts )
-             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts       )
+             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts         )
              , components = comps
             )
 
