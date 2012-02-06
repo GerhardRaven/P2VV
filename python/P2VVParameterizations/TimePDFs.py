@@ -88,6 +88,13 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
                                                 , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > aj.CP ,  [ tag, CP['D'] ] )) )
                    }
             (c_re,c_im) = coef[name](A[i],A[j],CPparams)
+            for c in c_re, c_im :
+                if not c : continue
+                from ROOT import RooAbsReal, RooArgSet
+                realObs = RooArgSet( [ o._var for o in c.Observables() if isinstance(o._var,RooAbsReal)  ]  )
+                if not len(realObs) : continue
+                print 'adding cache of integral of %s as function of %s' % ( c.GetName(), [ o.GetName() for o in realObs ] )
+                c.setParameterizeIntegral( realObs  )
             (f_re,f_im) = afun[(i,j)]
             (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) )
             # NOTE: thes sign are just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c),
