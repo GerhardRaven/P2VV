@@ -15,7 +15,7 @@ fitOpts = dict( NumCPU = numCPU()
 #              , Minimizer = ('Minuit2','minimize')
               )
 
-tmincut = 0.3
+tmincut = 0.5
 
 # define observables
 m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
@@ -133,8 +133,8 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , cosCoef   = basisCoefficients['cos']
                      , sinhCoef  = basisCoefficients['sinh']
                      , sinCoef   = basisCoefficients['sin']
-                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
-#                     , ConditionalObservables = tresdata.model().ConditionalObservables()
+#                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
+                     , ConditionalObservables = tresdata.model().ConditionalObservables()
                      , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
                      )
 
@@ -160,8 +160,11 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-#sig_t_angles = acceptance * sig_t_angles
+#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
+
+#fot timecut = 0.5
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/propertimeacceptance.root', Histogram = 'timeacceptancehisto')
+sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -183,14 +186,14 @@ masspdf.fitTo(data,**fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
-#pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
+#pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 
 fitset = pdf._var.getParameters(data)
-sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
+sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
 #fitset.writeToFile("nominalsfitresult.txt")
-sfitresult.writepars('sfitresult_NOTimeAcc',False)
+sfitresult.writepars('sfitresult_TimeAcc_NOSum2Error_%s_etaosconditional'%(tmincut),False)
 
 assert False
 fitset.readFromFile("nominalsfitresult.txt")
