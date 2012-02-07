@@ -284,14 +284,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                    )
 
         elif amplitudeParam == 'phasesSWaveFrac' :
-            from math import cos, sin
+            from math import cos, sin, sqrt
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
             amplitudes = Amplitudes(  A0Mag2    = A0Mag2
                                     , A0Phase   = A0Ph
                                     , AperpMag2 = AperpMag2
                                     , AparPhase = AparPh
-                                    , f_S_Re    = fS * cos(ASPh)
-                                    , f_S_Im    = fS * sin(ASPh)
+                                    , sqrtfS_Re = sqrt(fS)* cos(ASPh)
+                                    , sqrtfS_Im = sqrt(fS)* sin(ASPh)
                                    )
 
         else :
