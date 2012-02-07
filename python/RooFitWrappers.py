@@ -448,14 +448,27 @@ class RealEffMoment( AbsRealMoment ):
                                                       )
                               )
 
-class CalibratedDilution(RooObject):
-    def __init__(self, Name, P0, P1, WTag, AvWTag, **kwargs):
-        # construct factory string on the fly...
+class CalibratedDilution( RooObject ) :
+    def __init__( self, **kwargs ) :
+        __check_req_kw__( 'Name', kwargs )
+        Name = kwargs.pop('Name')
         __check_name_syntax__(Name)
-        print 'CalibratedDilution::%s(%s)'%(Name,','.join(i.GetName() for i in (P0,P1,WTag,AvWTag)))
-        self._declare( 'CalibratedDilution::%s(%s)'%(Name,','.join(i.GetName() for i in (P0,P1,WTag,AvWTag))) )
-        self._init(Name,'RooCalibratedDilution')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+        if 'WTag' in kwargs :
+            arguments = [ 'WTag' ]
+            if 'AWTag' in kwargs : arguments.append('AWTag')
+
+        else :
+            arguments = [ 'EstWTag', 'AvgEstWTag', 'P0', 'P1' ]
+            for arg in arguments : __check_req_kw__( arg, kwargs )
+            if all( kw in kwargs for kw in [ 'AP0', 'AP1' ] ) : arguments += [ 'AP0', 'AP1' ]
+
+        self._declare( 'CalibratedDilution::%s(%s)' % ( Name, ','.join( kwargs.pop(arg).GetName() for arg in arguments ) ) )
+        for arg in [ 'WTag', 'AWTag', 'EstWTag', 'AvgEstWTag', 'P0', 'P1', 'AP0', 'AP1' ] :
+            assert arg not in kwargs, 'CalibratedDilution: superfluous argument found: %s' % arg
+
+        self._init( Name, 'RooCalibratedDilution' )
+        for k, v in kwargs.iteritems() : self.__setitem__( k, v )
 
 class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...

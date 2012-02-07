@@ -6,15 +6,16 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
-from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin
+from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin
 
 
-class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin ):
+class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin ):
     def __init__( self, **kwargs ) : 
         if 'Model' in kwargs : self._model = kwargs.pop( 'Model' )
         else :                 raise KeyError('TimeResolution: please specify a resolution model')
         if 'Name' in kwargs: self._Name = kwargs.pop('Name')
 
+        _util_conditionalObs_mixin.__init__( self, kwargs )
         _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw( kwargs )
 
@@ -123,10 +124,16 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         TimeResolution.__init__(  self
                                 , Model =  ResolutionModel(  Name = 'timeResMoriond2012'
                                                            , Type = GaussModel
-                                                           , Parameters = [self._time, self._timeResMU, self._sigmat, self._timeResMuSF, self._timeResSF]
+                                                           , Parameters = [  self._time
+                                                                           , self._timeResMU
+                                                                           , self._sigmat
+                                                                           , self._timeResMuSF
+                                                                           , self._timeResSF
+                                                                          ]
                                                            , ConditionalObservables = [ self._sigmat ]
                                                            , ExternalConstraints = constraints
                                                           )
+                                , Conditional = self._sigmat
                                 , Constraints = constraints
                                )
         from ROOT import RooArgSet
