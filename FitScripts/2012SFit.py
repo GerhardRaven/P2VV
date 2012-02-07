@@ -2,13 +2,15 @@ from math import sqrt, pi, cos, sin
 from RooFitWrappers import *
 from ROOT import RooMsgService
 #RooMsgService.instance().addStream(RooFit.DEBUG, RooFit.Topic(RooFit.Integration))
+RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
+RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = numCPU() 
+fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
 #              , Verbose = True
@@ -133,8 +135,8 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , cosCoef   = basisCoefficients['cos']
                      , sinhCoef  = basisCoefficients['sinh']
                      , sinCoef   = basisCoefficients['sin']
-                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
-#                     , ConditionalObservables = tresdata.model().ConditionalObservables()
+#                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
+                     , ConditionalObservables = tresdata.model().ConditionalObservables()
                      , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
                      )
 
@@ -161,6 +163,7 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
+
 #sig_t_angles = acceptance * sig_t_angles
 
 ####################
@@ -183,14 +186,15 @@ masspdf.fitTo(data,**fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
-#pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
+#pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 
-fitset = pdf._var.getParameters(data)
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
+sfitresult.writepars('sfitresult_NoTimeAcc_Sum2Error_%s_etaosconditional'%(tmincut),False)
+
+#fitset = pdf._var.getParameters(data)
 #fitset.writeToFile("nominalsfitresult.txt")
-sfitresult.writepars('sfitresult_NOTimeAcc',False)
 
 assert False
 fitset.readFromFile("nominalsfitresult.txt")
