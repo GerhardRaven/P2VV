@@ -93,7 +93,13 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         from RooFitWrappers import CalibratedDilution, ConstVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__(  self
-                                , Dilutions = [ CalibratedDilution('tagDilution', self._p0, self._p1, self._estWTag, self._avgEstWTag) ]
+                                , Dilutions = [ CalibratedDilution(  Name       = 'tagDilution'
+                                                                   , EstWTag    = self._estWTag
+                                                                   , AvgEstWTag = self._avgEstWTag
+                                                                   , P0         = self._p0
+                                                                   , P1         = self._p1
+                                                                  )
+                                              ]
                                 , ADilWTags = [ ConstVar( Name = 'zero', Value = 0) ]
                                 , CEvenOdds = [ Trivial_CEvenOdd() ]
                                 , Constraints = constraints
