@@ -18,6 +18,12 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin ):
         self._CEvenOdds   = kwargs.pop('CEvenOdds')
         if self._numTagCats > 1 : self._tagCatCoefs = kwargs.pop('TagCatCoefs')
 
+        # cache integrals as a function of observables
+        for d in self._dilutions :
+            from ROOT import RooAbsReal, RooArgSet
+            realObs = RooArgSet( [ o._var for o in d.Observables() if isinstance(o._var,RooAbsReal)  ]  )
+            if len(realObs) : d.setParameterizeIntegral( realObs )
+
         _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw( kwargs )
 
