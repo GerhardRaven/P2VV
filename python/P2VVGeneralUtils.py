@@ -200,13 +200,14 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         if components :
             # plot separate components of the pdf
             for num, comp in enumerate( components.keys() ) :
-                drawOpts = components[comp]
+                drawOpts = components[comp].copy()
                 for opt, optVal in pdfOpts.iteritems() :
                     if opt not in drawOpts : drawOpts[opt] = optVal
                 plotPDFWithSlices( pdf, obsFrame, 'comp%d' % num, Components = comp, **drawOpts )
 
         # plot total pdf
-        plotPDFWithSlices( pdf, obsFrame, 'pdf', **pdfOpts )
+        drawOpts = pdfOpts.copy()
+        plotPDFWithSlices( pdf, obsFrame, 'pdf', **drawOpts )
 
         # draw data after drawing the PDF
         if data and 'Asymmetry' not in pdfOpts : obsFrame.drawAfter( 'pdf',  'data' )

@@ -107,7 +107,7 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
 
 class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
-        from math import pi, sin, cos
+        from math import pi
         from RooFitWrappers import FormulaVar
         self._parseArg( 'A0Mag2',    kwargs, Title = '|A0|^2',     Value = A02,    MinMax = ( 0., 1. ) )
         self._parseArg( 'AperpMag2', kwargs, Title = '|A_perp|^2', Value = Aperp2, MinMax = ( 0., 1. ) )
@@ -131,10 +131,11 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                                  )
 
         else :
-            self._parseArg( 'f_S_Re', kwargs, Title = 'S wave fraction * cos(delta_S)', Value = f_S * cos(ASPh), MinMax = ( -1., 1. ) )
-            self._parseArg( 'f_S_Im', kwargs, Title = 'S wave fraction * sin(delta_S)', Value = f_S * sin(ASPh), MinMax = ( -1., 1. ) )
-            self._ReAS = FormulaVar( 'ReAS', '@0 / (1. - sqrt(@0*@0 + @1*@1))', [ self._f_S_Re, self._f_S_Im ], Title = 'Re(A_S)' )
-            self._ImAS = FormulaVar( 'ImAS', '@1 / (1. - sqrt(@0*@0 + @1*@1))', [ self._f_S_Re, self._f_S_Im ], Title = 'Im(A_S)' )
+            from math import sin, cos, sqrt
+            self._parseArg( 'sqrtfS_Re', kwargs, Title = 'sqrt(S wave fraction) * cos(delta_S)', Value = sqrt(f_S) * cos(ASPh), MinMax = ( -1., 1. ) )
+            self._parseArg( 'sqrtfS_Im', kwargs, Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(ASPh), MinMax = ( -1., 1. ) )
+            self._ReAS = FormulaVar( 'ReAS', '@0 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im ], Title = 'Re(A_S)' )
+            self._ImAS = FormulaVar( 'ImAS', '@1 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im ], Title = 'Im(A_S)' )
 
             self._check_extraneous_kw( kwargs ) 
             AmplitudeSet.__init__( self, Polar2_Amplitude(     'A0',    self._A0Mag2,    self._A0Phase,    +1 )

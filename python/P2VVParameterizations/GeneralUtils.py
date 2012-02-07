@@ -68,6 +68,15 @@ class _util_extConstraints_mixin( object ) :
     def externalConstraints( self ) : return self._constraints
     def hasExtConstraints( self )   : return len(self._constraints) > 0
 
+class _util_conditionalObs_mixin( object ) :
+    def __init__( self, kwargs ) :
+        if   'Conditionals' in kwargs : self._conditionals = [ constraint for constraint in kwargs.pop('Conditionals') ]
+        elif 'Conditional'  in kwargs : self._conditionals = [ kwargs.pop('Conditional') ]
+        else                          : self._conditionals = [  ]
+
+    def conditionalObservables( self ) : return self._conditionals
+    def hasCondObservables( self )     : return len(self._conditionals) > 0
+
 
 #def normalize_individual( name, pdf, tag ) :
 #    pl = RooArgList()
