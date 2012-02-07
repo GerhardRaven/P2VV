@@ -43,3 +43,4 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         if not self._hist:
             raise ValueError, 'Cannot get acceptance historgram %s from file' % histogram
         TimeAcceptance.__init__( self, Acceptance = HistFunc('time_acceptance', Histogram = self._hist, Observables = [self._time]))
+        acceptance_file.Close()

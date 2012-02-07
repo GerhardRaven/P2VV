@@ -465,6 +465,7 @@ class RealVar (RooObject) :
                ,'Value'      : lambda s : s.getVal()
                ,'MinMax'     : lambda s : s.getRange()
                ,'nBins'      : lambda s : s.getBins()
+               ,'Error'      : lambda s : s.getError()
                }
     _setters = {'Unit'       : lambda s,v : s.setUnit(v)
                ,'Value'      : lambda s,v : s.setVal(v)
@@ -472,6 +473,7 @@ class RealVar (RooObject) :
                ,'Constant'   : lambda s,v : s.setConstant(v)
                ,'nBins'      : lambda s,v : s.setBins(v)
                ,'Ranges'     : lambda s,v : s.setRanges(v)
+               ,'Error'      : lambda s,v : s.setError(v)
                }
     # TODO: provide a copy constructor
     def __init__(self,Name ,**kwargs):
@@ -1318,7 +1320,7 @@ def buildPdf(Components, Observables, Name) :
     args = {'Yields' : {}, 'PDFs'   : [], 'ExternalConstraints' : set() }
     for c in Components:
         pdf = c[obs]
-        args['Yields'][pdf.GetName()] = c['Yield']
+        if len(Components) > 1 : args['Yields'][pdf.GetName()] = c['Yield']
         args['PDFs'].append(pdf)
         for ec in pdf.ExternalConstraints():
             args['ExternalConstraints'].add(ec)

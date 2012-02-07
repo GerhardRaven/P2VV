@@ -107,6 +107,11 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         except:
             from compatibility import cwr
 
+        from ROOT import RooAbsReal, RooArgSet
+        realObs = RooArgSet( [ o._var for o in dilution.Observables() if isinstance(o._var,RooAbsReal)  ]  )
+        if len(realObs) : 
+            print 'adding cache of integral of %s as function of %s' % ( dilution.GetName(), [ o.GetName() for o in realObs ] )
+            dilution.setParameterizeIntegral( realObs )
         tag = Product('tag',( RealCategory('tag_real', itag ),dilution))
         for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
             # NOTE: 'Amplitudes'  must be traversed 'in order' -- so we cannot use Amplitudes.keys() out of the box, but use the
