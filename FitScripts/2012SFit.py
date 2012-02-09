@@ -13,8 +13,8 @@ from P2VVGeneralUtils import numCPU
 fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
-#              , Verbose = True
-#              , Minimizer = ('Minuit2','minimize')
+              , Verbose = True
+              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -106,8 +106,8 @@ from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeS
 amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
                                               , AperpMag2 = 0.25, AperpPhase = 2.77 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                               , AparPhase = 3.2
-                                              , f_S = dict( Value = 0.02, Constant = False )
-                                              , ASPhase = dict( Value = 2.7, Constant = False )
+                                              #, f_S = dict( Value = 0.02, Constant = False )
+                                              #, ASPhase = dict( Value = 2.7, Constant = False )
                                              )
 
 # need to specify order in which to traverse...
@@ -122,9 +122,6 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
 
 basisCoefficients.externalConstraints = tagging.externalConstraints()
 
-print "*****************************"
-print [ i.GetName() for i in set( tresdata.model().ConditionalObservables() ).union(set( [eta_os] ) ) ]
-print "*****************************"
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , time      = t
                      , dm        = lifetimeParams['deltaM'] 
@@ -135,10 +132,12 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , cosCoef   = basisCoefficients['cos']
                      , sinhCoef  = basisCoefficients['sinh']
                      , sinCoef   = basisCoefficients['sin']
-#                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
-                     , ConditionalObservables = tresdata.model().ConditionalObservables()
+                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
                      , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
                      )
+print "*****************************"
+print [ i.GetName() for i in sig_t_angles.ConditionalObservables()  ]
+print "*****************************"
 
 #####################################
 ### Angular acceptance correction ###
@@ -163,8 +162,7 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-
-#sig_t_angles = acceptance * sig_t_angles
+sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -172,8 +170,8 @@ acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/Da
 
 nsig = 21000
 nbkg = 10500
-signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, {  st : None } ), Yield = ( nsig, 0, 1.4*nsig) )
-background     = Component('bkg',    ( bkg_m.pdf(), ),                                            Yield = ( nbkg, 0, 1.4*nbkg) )
+signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, { eta_os: None, st : None } ), Yield = ( nsig, 0, 1.4*nsig) )
+background     = Component('bkg',    ( bkg_m.pdf(), ),                                           Yield = ( nbkg, 0, 1.4*nbkg) )
 
 ############
 ### SFIT ###
@@ -186,18 +184,17 @@ masspdf.fitTo(data,**fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-#pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
-pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
-#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
+pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
 
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
 sfitresult.writepars('sfitresult_NoTimeAcc_Sum2Error_%s_etaosconditional'%(tmincut),False)
 
 #fitset = pdf._var.getParameters(data)
 #fitset.writeToFile("nominalsfitresult.txt")
+sfitresult.Print()
+sfitresult.writepars('sfitresult_NOTimeAcc',False)
 
-assert False
-fitset.readFromFile("nominalsfitresult.txt")
+#fitset.readFromFile("nominalsfitresult.txt")
 
 ########
 # PLOT #
@@ -205,17 +202,19 @@ fitset.readFromFile("nominalsfitresult.txt")
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 from P2VVGeneralUtils import plot
+orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
 
 canvas = dict()
-for rng in ( None,) :
+for rng in ( None, ) :
     canvas[rng] = TCanvas('%s'%rng)
     obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
-    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+    from P2VVGeneralUtils import Sorter
+    for (p,o) in zip( canvas[rng].pads(len(obs)), sorted(obs, key = Sorter(orderdict)) ) :
         dataOpts = dict( CutRange =        rng ) if rng else dict()
         pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
         from P2VVGeneralUtils import plot
         from ROOT import RooArgSet
-        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var), data, True )
+        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var), data, True )
         plot( p, o, splot_m.data('signal'), pdf
               , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
               , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
