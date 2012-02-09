@@ -122,7 +122,8 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                              )
             self._timeResSF['Error'] = 0.06
 
-        Name =  kwargs.pop( 'Name', 'timeResModelMoriond2012' )
+        Name =  kwargs.pop('Name', 'timeResModelMoriond2012')
+        cache = kwargs.pop('Cache', True)
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__(  self
@@ -140,6 +141,9 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                                 , Conditional = self._sigmat
                                 , Constraints = constraints
                                )
+
+        from ROOT import RooArgSet
+        if cache: self.model().setParameterizeIntegral( RooArgSet( self._sigmat._var ) )
 
 class Gamma_Sigmat( _util_parse_mixin ) :
     def pdf(self) :

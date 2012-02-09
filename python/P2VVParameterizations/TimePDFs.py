@@ -125,28 +125,28 @@ class TimePdf( _util_parse_mixin ) :
         return self._pdf
 
 class LP2011_Background_Time( TimePdf ) :
-    def __init__(self,time,resolutionModel,**kwargs) :
-        self._parseArg('t_bkg_ml_tau', kwargs, Title = 'medium lifetime background ', Unit = 'ps', Value = 0.152, MinMax = (0.01,0.5) )
-        self._parseArg('t_bkg_ll_tau', kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.06, MinMax = (0.5,2.5) )
-        self._parseArg('t_bkg_fll',kwargs, Title = 'fraction long lifetime background', Value = 0.2, MinMax = (0., 1.) )
+    def __init__(self, time, resolutionModel, **kwargs) :
+        Name = kwargs.pop('Name', self.__class__.__name__)
+        self._ml_tau = self._parseArg('%s_ml_tau' % Name, kwargs, Title = 'medium lifetime background ', Unit = 'ps', Value = 0.152, MinMax = (0.01,0.5) )
+        self._ll_tau = self._parseArg('%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.06, MinMax = (0.5,2.5) )
+        self._fll = self._parseArg('%s_fll' % Name, kwargs, Title = 'fraction long lifetime background', Value = 0.2, MinMax = (0., 1.) )
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay
-        Name = kwargs.pop('Name',self.__class__.__name__)
-        ml = Pdf( Name = kwargs.pop('t_bkg_ml',Name+'_t_bkg_ml')
+        ml = Pdf( Name = Name + '_ml'
                   , Type = Decay
-                  , Parameters = ( time, self._t_bkg_ml_tau, resolutionModel, 'SingleSided')
+                  , Parameters = (time, self._ml_tau, resolutionModel, 'SingleSided')
                   , ConditionalObservables = resolutionModel.ConditionalObservables()
                   , ExternalConstraints = resolutionModel.ExternalConstraints()
                   )
-        ll = Pdf( Name = kwargs.pop('t_bkg_ll',Name+'_t_bkg_ll')
+        ll = Pdf( Name = Name + '_ll'
                   , Type = Decay
-                  , Parameters = (time,self._t_bkg_ll_tau,resolutionModel,'SingleSided')
+                  , Parameters = (time, self._ll_tau, resolutionModel, 'SingleSided')
                   , ConditionalObservables = resolutionModel.ConditionalObservables()
                   , ExternalConstraints = resolutionModel.ExternalConstraints()
                   )
         TimePdf.__init__(self, pdf = SumPdf( Name = Name
                                              , PDFs = (  ll, ml)
-                                             , Yields = { ll.GetName() : self._t_bkg_fll }
+                                             , Yields = { ll.GetName() : self._fll }
                                              )
                          )
 
