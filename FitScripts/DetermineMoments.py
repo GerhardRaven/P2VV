@@ -40,7 +40,8 @@ t['MinMax'] = (tcut,14.)
 
 from P2VVGeneralUtils import readData
 #Read MC data
-MCdata = readData('/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
+MCdata = readData('/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120209.root'
+#                  '/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
                   , dataSetName = 'DecayTree'
                   , NTuple = True
                   , observables = [ t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi'], iTag_os,eta_os, triggerdec,sel,bkgcat,mphi]
@@ -87,10 +88,9 @@ from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , amplitudes
                                                   , CP
-                                                  , Product('tag',(iTag_os,tagging['dilution']))
-                                                  , ['A0','Apar','Aperp','AS'] ) 
-
-
+                                                  , iTag_os
+                                                  , tagging['dilution']
+                                                  , ['A0','Apar','Aperp','AS'] )
 from RooFitWrappers import BDecay
 MC_sig_t_angles = BDecay( Name      = 'MC_sig_t_angles'
                           , time      = t

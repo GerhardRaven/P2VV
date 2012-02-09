@@ -1,16 +1,14 @@
 from math import sqrt, pi, cos, sin
 from RooFitWrappers import *
-
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict(NumCPU = numCPU()
-               , Timer=1
-               , Save = True
-               , Verbose = False
-               , Optimize = 2
-#              , Minimizer = ('Minuit2','minimize')
+fitOpts = dict( NumCPU = 1
+              , Timer=1
+              , Save = True
+              , Verbose = True
+              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -103,7 +101,8 @@ sigtres = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
 
 #Background
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution as BkgTimeResolution
-bkgtres = BkgTimeResolution( time = t)
+#bkgtres = BkgTimeResolution( time = t)
+bkgtres = sigtres
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
@@ -165,10 +164,10 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , cosCoef   = basisCoefficients['cos']
                        , sinhCoef  = basisCoefficients['sinh']
                        , sinCoef   = basisCoefficients['sin']
-#                       , ConditionalObservables = ( eta_os, )
 #                       , ConditionalObservables = ( eta_os, iTag_os, )
 #                       , ConditionalObservables = tres.model().ConditionalObservables()
-                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,] ) )                 
+#                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,] ) )                 
+                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,iTag_os] ) )                 
                        , ExternalConstraints = lifetimeParams.externalConstraints() + sigtres.externalConstraints() + basisCoefficients.externalConstraints
                        )
 
@@ -198,6 +197,7 @@ eff.Print()
 #Build Angular acceptance corrected PDF
 sig_t_angles = eff * sig_t_angles
 
+
 ##############################
 ### Proper time acceptance ###
 ##############################
@@ -213,8 +213,8 @@ acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/Da
 #binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 #acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
 
-#sig_t_angles = acceptance * sig_t_angles
-#bkg_t = acceptance * bkg_t.pdf()
+sig_t_angles = acceptance * sig_t_angles
+sig_t_angles._var.setAttribute("NOCacheAndTrack")
 
 ##################
 ### Build PDFs ###
@@ -227,7 +227,7 @@ sidebanddata =      data.reduce(CutRange = 'leftsideband' )
 sidebanddata.append(data.reduce(CutRange = 'rightsideband'))
 
 nbkg = 10500
-background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+background = Component('bkg'   , ( bkg_m.pdf(), acceptance*bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
 
 # create PDF for angular background
 if False :
@@ -269,27 +269,22 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 # FIT #
 #######
 
-#pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
-pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
-pdf.Print()
-pdf = acceptance * pdf
+#pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf.Print()
 
-from ROOT import RooMsgService
-RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
-RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
+#from ROOT import RooMsgService
+#RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
+#RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult_numcpu4',False)
+classicfitresult.writepars('classicfitresult',False)
+classicfitresult.Print()
 
-assert False
 ########
 # PLOT #
 ########
-orderplotobs = [m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
-orderdict = {}
-for i in enumerate(orderplotobs):
-    orderdict[i[1].GetName()]= i[0]
+orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 from P2VVGeneralUtils import plot

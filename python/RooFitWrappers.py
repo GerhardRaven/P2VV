@@ -1070,7 +1070,7 @@ class BinnedPdf( Pdf ) :
         # declare PDF in workspace
         if 'Category' in kwargs :
             # single category dependence
-            argDict['cat']   = str(kwargs.pop('Category')[0])
+            argDict['cat']   = str(kwargs.pop('Category'))
             argDict['coefs'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Coefficients') )
             self._declare( "BinnedPdf::%(Name)s(%(cat)s, %(coefs)s)" % argDict )
 

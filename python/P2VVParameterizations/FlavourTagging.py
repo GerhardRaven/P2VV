@@ -20,9 +20,15 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin ):
 
         # cache integrals as a function of observables
         for d in self._dilutions :
+            print ' requesting CacheAndTrack for  %s' % d.GetName()
+            d.setAttribute("CacheAndTrack") ;
             from ROOT import RooAbsReal, RooArgSet
             realObs = RooArgSet( [ o._var for o in d.Observables() if isinstance(o._var,RooAbsReal)  ]  )
-            if len(realObs) : d.setParameterizeIntegral( realObs )
+            if len(realObs) : 
+                print 'invoking %s.parameterizeIntegral(%s)' % ( d.GetName(),[o.GetName() for o in realObs] )
+                d.setParameterizeIntegral( realObs )
+
+
 
         _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw( kwargs )
@@ -77,11 +83,11 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
             constraints.append( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p0
                                                     , ConstVar( Name = 'p0_mean',  Value = 0.393 )
-                                                    , ConstVar( Name = 'p0_sigma', Value = 0.007 )
+                                                    , ConstVar( Name = 'p0_sigma', Value = 0.010 )
                                                    ]
                                    )
                               )
-            self._p0['Error'] = 0.007
+            self._p0['Error'] = 0.010
 
         if kwargs.pop( 'p1Constraint', None ) :
             from RooFitWrappers import Pdf, ConstVar
@@ -335,7 +341,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
 
 
 def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., avgEstWTag = 0.38, P0    = 0.393, P1    = 1.02
-                                                                                                , P0Err = 0.007, P1Err = 0.04
+                                                                                                , P0Err = 0.010, P1Err = 0.04
                                                                                                 , AP0   = 0.,     AP1  = 0.
                            ) :
     assert data, 'getTagCatParamsFromData(): no data set found'
@@ -539,10 +545,11 @@ class Linear_TaggingCategories( TaggingCategories ) :
             constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP0
                                                     , ConstVar( Name = 'wTagP0_mean',  Value = 0.393 )
-                                                    , ConstVar( Name = 'wTagP0_sigma', Value = 0.007 )
+                                                    , ConstVar( Name = 'wTagP0_sigma', Value = 0.010 )
                                                    ]
                                    )
                               )
+            self._wTagP0['Error'] = 0.010
 
         if kwargs.pop( 'wTagP1Constraint', None ) :
             from RooFitWrappers import Pdf, ConstVar
@@ -554,6 +561,7 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                                    ]
                                    )
                               )
+            self._wTagP1['Error'] = 0.040
 
         # get data set
         data    = kwargs.pop( 'DataSet', None )

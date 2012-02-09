@@ -17,8 +17,10 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
 
         # cache integrals as a function of observables
         from ROOT import RooAbsReal, RooArgSet
-        realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal)  ]  )
-        if len(realObs) : self._model.setParameterizeIntegral( realObs )
+        realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal) and o != self._time  ]  )
+        if len(realObs) : 
+            print 'invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
+            self._model.setParameterizeIntegral( realObs )
 
         _util_conditionalObs_mixin.__init__( self, kwargs )
         _util_extConstraints_mixin.__init__( self, kwargs )
@@ -122,7 +124,8 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                              )
             self._timeResSF['Error'] = 0.06
 
-        Name =  kwargs.pop( 'Name', 'timeResModelMoriond2012' )
+        Name =  kwargs.pop('Name', 'timeResModelMoriond2012')
+        cache = kwargs.pop('Cache', True)
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__(  self
@@ -140,6 +143,9 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                                 , Conditional = self._sigmat
                                 , Constraints = constraints
                                )
+
+        from ROOT import RooArgSet
+        if cache: self.model().setParameterizeIntegral( RooArgSet( self._sigmat._var ) )
 
 class Gamma_Sigmat( _util_parse_mixin ) :
     def pdf(self) :
