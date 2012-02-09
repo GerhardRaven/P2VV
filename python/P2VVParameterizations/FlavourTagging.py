@@ -20,11 +20,15 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin ):
 
         # cache integrals as a function of observables
         for d in self._dilutions :
+            print ' requesting CacheAndTrack for  %s' % d.GetName()
+            d.setAttribute("CacheAndTrack") ;
             from ROOT import RooAbsReal, RooArgSet
             realObs = RooArgSet( [ o._var for o in d.Observables() if isinstance(o._var,RooAbsReal)  ]  )
             if len(realObs) : 
                 print 'invoking %s.parameterizeIntegral(%s)' % ( d.GetName(),[o.GetName() for o in realObs] )
                 d.setParameterizeIntegral( realObs )
+
+
 
         _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw( kwargs )
