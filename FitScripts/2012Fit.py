@@ -5,10 +5,11 @@ indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) fo
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = numCPU() 
-              , Timer=1
-              , Save = True
-              , Verbose = False
+fitOpts = dict(NumCPU = numCPU()
+               , Timer=1
+               , Save = True
+               , Verbose = False
+               , Optimize = 2
 #              , Minimizer = ('Minuit2','minimize')
               )
 
@@ -94,10 +95,15 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 #Time Resolution Model
 #Three Gaussians
 #from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
-#tresdata = DataTimeResolution( time = t, timeResSFConstraint = True ) 
-#Per event error
+#tres = DataTimeResolution( time = t, timeResSFConstraint = True ) 
+
+#Signal: per-event error
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
-tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
+sigtres = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
+
+#Background
+from P2VVParameterizations.TimeResolution import Truth_TimeResolution as BkgTimeResolution
+bkgtres = BkgTimeResolution( time = t)
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
@@ -144,7 +150,7 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
 basisCoefficients.externalConstraints = tagging.externalConstraints()
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
-bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.model()
+bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = bkgtres.model()
                        , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.21 )
                        , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.06, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.15, MinMax = (0.01,0.5) ) )
@@ -154,15 +160,16 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , dm        = lifetimeParams['deltaM'] 
                        , tau       = lifetimeParams['MeanLifetime']
                        , dGamma    = lifetimeParams['deltaGamma'] 
-                       , resolutionModel = tresdata.model()
+                       , resolutionModel = sigtres.model()
                        , coshCoef  = basisCoefficients['cosh']
                        , cosCoef   = basisCoefficients['cos']
                        , sinhCoef  = basisCoefficients['sinh']
                        , sinCoef   = basisCoefficients['sin']
 #                       , ConditionalObservables = ( eta_os, )
 #                       , ConditionalObservables = ( eta_os, iTag_os, )
-                       , ConditionalObservables = tresdata.model().ConditionalObservables()
-                       , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
+#                       , ConditionalObservables = tres.model().ConditionalObservables()
+                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,] ) )                 
+                       , ExternalConstraints = lifetimeParams.externalConstraints() + sigtres.externalConstraints() + basisCoefficients.externalConstraints
                        )
 
 #####################################
@@ -206,7 +213,8 @@ acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/Da
 #binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
 #acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
 
-sig_t_angles = acceptance * sig_t_angles
+#sig_t_angles = acceptance * sig_t_angles
+#bkg_t = acceptance * bkg_t.pdf()
 
 ##################
 ### Build PDFs ###
@@ -261,10 +269,18 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 # FIT #
 #######
 
-pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+#pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf.Print()
+pdf = acceptance * pdf
+pdf.Print()
+
+from ROOT import RooMsgService
+RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
+RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
+
 classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult',False)
+classicfitresult.writepars('classicfitresult_numcpu4',False)
 
 assert False
 ########
