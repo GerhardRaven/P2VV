@@ -456,7 +456,9 @@ Int_t RooBinnedPdf::getAnalyticalIntegral(RooArgSet& allVars,
     } else {
       // category dependence
       RooAbsCategory* cat = (RooAbsCategory*)_baseCatsList.at(catIter);
-      if (!allVars.contains(*cat) || cat->hasRange(rangeName)) continue;
+      if (!allVars.contains(*cat) || (rangeName != 0
+          && cat->hasRange(rangeName)))
+        continue;
       analVars.add(*cat);
     }
 

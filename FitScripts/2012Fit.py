@@ -4,7 +4,7 @@ indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) fo
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = max(1,numCPU() - 2)
+fitOpts = dict( NumCPU = 1
               , Timer=1
               , Save = True
               , Verbose = True
@@ -278,7 +278,7 @@ pdf.Print()
 #RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult_numcpu4',False)
+classicfitresult.writepars('classicfitresult',False)
 classicfitresult.Print()
 
 ########
