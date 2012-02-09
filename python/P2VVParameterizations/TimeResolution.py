@@ -17,8 +17,10 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
 
         # cache integrals as a function of observables
         from ROOT import RooAbsReal, RooArgSet
-        realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal)  ]  )
-        if len(realObs) : self._model.setParameterizeIntegral( realObs )
+        realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal) and o != self._time  ]  )
+        if len(realObs) : 
+            print 'invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
+            self._model.setParameterizeIntegral( realObs )
 
         _util_conditionalObs_mixin.__init__( self, kwargs )
         _util_extConstraints_mixin.__init__( self, kwargs )
