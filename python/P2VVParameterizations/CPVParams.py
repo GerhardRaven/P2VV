@@ -39,9 +39,11 @@ class LambdaSqArg_CPParam( CPParam ) :
         from RooFitWrappers import FormulaVar
         from math import pi
 
-        self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value = lambdaCPSq, MinMax = (  0.,      5.      ) )
+        self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value = lambdaCPSq, MinMax = (  0.5,     2.      ) )
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = phiCP,      MinMax = ( -2. * pi, 2. * pi ) )
+        self._lambdaCPSq.setError(0.1)
         self._check_extraneous_kw( kwargs )
+
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',                [ self._lambdaCPSq              ] )
                              , D = FormulaVar('D', '2. * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                              , S = FormulaVar('S', '2. * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
