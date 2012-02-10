@@ -132,18 +132,20 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
 basisCoefficients.externalConstraints = tagging.externalConstraints()
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
-                     , time      = t
-                     , dm        = lifetimeParams['deltaM'] 
-                     , tau       = lifetimeParams['MeanLifetime']
-                     , dGamma    = lifetimeParams['deltaGamma'] 
-                     , resolutionModel = tresdata.model()
-                     , coshCoef  = basisCoefficients['cosh']
-                     , cosCoef   = basisCoefficients['cos']
-                     , sinhCoef  = basisCoefficients['sinh']
-                     , sinCoef   = basisCoefficients['sin']
-                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [iTag_os,eta_os]))
-                     , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
-                     )
+                       , time      = t
+                       , dm        = lifetimeParams['deltaM'] 
+                       , tau       = lifetimeParams['MeanLifetime']
+                       , dGamma    = lifetimeParams['deltaGamma'] 
+                       , resolutionModel = tresdata.model()
+                       , coshCoef  = basisCoefficients['cosh']
+                       , cosCoef   = basisCoefficients['cos']
+                       , sinhCoef  = basisCoefficients['sinh']
+                       , sinCoef   = basisCoefficients['sin']
+                       , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
+                       #, ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [iTag_os,eta_os]))
+                       , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
+                       )
+
 print "*****************************"
 print [ i.GetName() for i in sig_t_angles.ConditionalObservables()  ]
 print "*****************************"
@@ -193,11 +195,11 @@ masspdf.fitTo(data,**fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-#pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
-pdf = buildPdf((signal,), Observables = (t,)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
+#pdf = buildPdf((signal,), Observables = (t,)+tuple(angles.angles.itervalues()), Name='pdf')
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-CP._lambdaCPSq._var.setConstant(True)
+#CP._lambdaCPSq._var.setConstant(True)
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
 sfitresult.writepars('sfitresult_NoTimeAcc_Sum2Error_%s_etaosconditional'%(tmincut),False)
 
