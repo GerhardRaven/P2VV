@@ -9,7 +9,7 @@
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
-phiCP      = 0.17
+phiCP      = -0.04
 lambdaCPSq = 1.
 
 class CPParam ( _util_parse_mixin ):
