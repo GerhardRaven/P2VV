@@ -13,8 +13,8 @@ from P2VVGeneralUtils import numCPU
 fitOpts = dict( NumCPU = 1
               , Timer=1
               , Save = True
-              , Verbose = True
-              , Minimizer = ('Minuit2','minimize')
+#              , Verbose = True
+#              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -50,7 +50,8 @@ for i in [ eta_os, st ] : i.setBins( 20 , 'cache' )
 
 #Read data
 from P2VVGeneralUtils import readData
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+#                 '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -93,30 +94,30 @@ tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = T
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
 #eta_os_pdf = { eta_os : None }
 
-#from P2VVParameterizations.CPVParams import LambdaArg_CPParam
-#CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
+from P2VVParameterizations.CPVParams import LambdaArg_CPParam
+CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
+                                              , Value = -0.04
+                                              , MinMax = (-pi,pi)
+                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+                                              )
+                           )
+
+#Fit for |lambda|^2
+#from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
+#CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s'
 #                                              , Value = -0.04
 #                                              , MinMax = (-pi,pi)
 #                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
 #                                              )
 #                           )
 
-#Fit for |lambda|^2
-from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s'
-                                              , Value = -0.04
-                                              , MinMax = (-pi,pi)
-#                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-                                              )
-                           )
-
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
 amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
                                               , AperpMag2 = 0.25, AperpPhase = 2.77 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                               , AparPhase = 3.2
-                                              #, f_S = dict( Value = 0.02, Constant = False )
-                                              #, ASPhase = dict( Value = 2.7, Constant = False )
+                                              , f_S = dict( Value = 0.02, Constant = False )
+                                              , ASPhase = dict( Value = 2.7, Constant = False )
                                              )
 
 # need to specify order in which to traverse...
@@ -172,8 +173,8 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-sig_t_angles = acceptance * sig_t_angles
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
+#sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -182,7 +183,7 @@ sig_t_angles = acceptance * sig_t_angles
 nsig = 21000
 nbkg = 10500
 signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, { eta_os: None, st : None } ), Yield = ( nsig, 0, 1.4*nsig) )
-background     = Component('bkg',    ( bkg_m.pdf(), ),                                           Yield = ( nbkg, 0, 1.4*nbkg) )
+background     = Component('background',    ( bkg_m.pdf(), ),                                           Yield = ( nbkg, 0, 1.4*nbkg) )
 
 ############
 ### SFIT ###
@@ -192,6 +193,28 @@ from P2VVGeneralUtils import SData, splot
 
 masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 masspdf.fitTo(data,**fitOpts)
+
+massplot = True
+if massplot:
+    from ROOT import kDashed, kRed, kGreen, kTRUE
+    from ROOT import TCanvas, TLatex
+    canvas = TCanvas()
+    mframe = m.frame()
+    data.plotOn(mframe)
+    masspdf.plotOn(mframe, LineWidth = 3)
+    masspdf.plotOn(mframe, Components=('sig_m'), LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
+    masspdf.plotOn(mframe, Components=('bkg_m'), LineStyle = kDashed, LineWidth=3, LineColor = kRed)
+    mframe.SetTitle("")
+    mframe.SetTitleOffset(1.2,'y')
+    x1=0.55
+    tlat =  TLatex(x1,.8,"LHCb preliminary")
+    tlat2 =  TLatex(x1,.75,"#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}")
+    tlat.SetNDC(kTRUE)
+    tlat2.SetNDC(kTRUE)
+    mframe.Draw()
+    tlat.Draw('same')
+    tlat2.Draw('same')
+
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
@@ -201,13 +224,10 @@ pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalu
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 #CP._lambdaCPSq._var.setConstant(True)
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
-sfitresult.writepars('sfitresult_NoTimeAcc_Sum2Error_%s_etaosconditional'%(tmincut),False)
+sfitresult.writepars('sfitresult_NoTimeAcc',False)
 
 #fitset = pdf._var.getParameters(data)
 #fitset.writeToFile("nominalsfitresult.txt")
-sfitresult.Print()
-sfitresult.writepars('sfitresult_NOTimeAcc',False)
-
 #fitset.readFromFile("nominalsfitresult.txt")
 
 ########
