@@ -68,19 +68,12 @@ sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 #Time Resolution Model
-#Three Gaussians
-#from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
-#tresdata = DataTimeResolution( time = t, timeResSFConstraint = True )
-#Per event error
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                       , deltaGamma = dict( Name = 'dGamma'
-                                                            , Value = 0.060
-                                                            #, Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-                                                            )
+                                       , deltaGamma = dict( Name = 'dGamma' , Value = 0.060)
                                        , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
                                      )
@@ -93,22 +86,12 @@ tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = T
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
 #eta_os_pdf = { eta_os : None }
 
-#from P2VVParameterizations.CPVParams import LambdaArg_CPParam
-#CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
-#                                              , Value = -0.04
-#                                              , MinMax = (-pi,pi)
-#                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-#                                              )
-#                           )
 
-#Fit for |lambda|^2
-from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s'
-                                              , Value = -0.04
-                                              , MinMax = (-pi,pi)
-#                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-                                              )
-                           )
+from P2VVParameterizations.CPVParams import LambdaArg_CPParam,LambdaSqArg_CPParam, CDS_CPParam, LambdaCarth_CPParam
+CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s' , MinMax = (-pi,pi)))
+#CP = LambdaArg_CPParam(   phiCP      = dict( Name = 'phi_s' ,MinMax = (-pi,pi)))
+#CP = CDS_CPParam( )
+#CP = LambdaCarth_CPParam( )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
@@ -199,7 +182,6 @@ pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalu
 #pdf = buildPdf((signal,), Observables = (t,)+tuple(angles.angles.itervalues()), Name='pdf')
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#CP._lambdaCPSq._var.setConstant(True)
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
 sfitresult.writepars('sfitresult_NoTimeAcc_Sum2Error_%s_etaosconditional'%(tmincut),False)
 
@@ -208,6 +190,7 @@ sfitresult.writepars('sfitresult_NoTimeAcc_Sum2Error_%s_etaosconditional'%(tminc
 sfitresult.Print()
 sfitresult.writepars('sfitresult_NOTimeAcc',False)
 
+assert False
 #fitset.readFromFile("nominalsfitresult.txt")
 
 ########

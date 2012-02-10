@@ -4,7 +4,7 @@ indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) fo
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = 1
+fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
               , Verbose = True
@@ -108,7 +108,7 @@ from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                        , deltaGamma = dict( Name = 'dGamma'
                                                             , Value = 0.060
-                                                            , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+                                                            #, Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
                                        , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
@@ -125,8 +125,8 @@ CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
                                               , MinMax = (-pi,pi)
                                               #Can't have kwarg Constant when blinded???
                                               #, Constant = False
-                                              , Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
-                         , lambdaCPSq = dict( Value = 1., Constant = True )
+                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
+                         , lambdaCPSq = dict( Value = 1., Constant = False )
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
