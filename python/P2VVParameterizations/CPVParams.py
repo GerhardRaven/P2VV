@@ -18,6 +18,14 @@ class CPParam ( _util_parse_mixin ):
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
 
+class CDS_CPParam( CPParam ) :
+    def __init__( self, **kwargs ) :
+        from math import cos, sin
+
+        self._parseArg('C', kwargs,  Title = 'CPV param. C', Value = 0,          MinMax = ( -0.5, 0.5 ) )
+        self._parseArg('D', kwargs,  Title = 'CPV param. D', Value = cos(phiCP), MinMax = ( -2. , 2.  ) )
+        self._parseArg('S', kwargs,  Title = 'CPV param. S', Value = sin(phiCP), MinMax = ( -2. , 2.  ) )
+        self._check_extraneous_kw( kwargs )
 
 class LambdaCarth_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
@@ -27,11 +35,11 @@ class LambdaCarth_CPParam( CPParam ) :
         self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(phiCP), MinMax = ( -2., 2. ) )
         self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(phiCP), MinMax = ( -2., 2. ) )
 
-        self._check_extraneous_kw( kwargs )
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
                              , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
                              , S = FormulaVar('S', '2. * @1 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
                         )
+        self._check_extraneous_kw( kwargs )
 
 
 class LambdaSqArg_CPParam( CPParam ) :
@@ -41,13 +49,12 @@ class LambdaSqArg_CPParam( CPParam ) :
 
         self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. lambda^2', Value = lambdaCPSq, MinMax = (  0.5,     2.      ) )
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = phiCP,      MinMax = ( -2. * pi, 2. * pi ) )
-        self._lambdaCPSq.setError(0.1)
-        self._check_extraneous_kw( kwargs )
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',                [ self._lambdaCPSq              ] )
                              , D = FormulaVar('D', '2. * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                              , S = FormulaVar('S', '2. * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                         )
+        self._check_extraneous_kw( kwargs )
 
 class LambdaArg_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
@@ -55,8 +62,8 @@ class LambdaArg_CPParam( CPParam ) :
         from math import pi
 
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',      Value = phiCP,      MinMax = ( -2. * pi, 2. * pi ) )
-        self._check_extraneous_kw( kwargs )
         CPParam.__init__(self, C = ConstVar( Name = 'C', Value = 0. )
                              , D = FormulaVar('D', ' cos(-@0) ', [  self._phiCP ] )
                              , S = FormulaVar('S', ' sin(-@0) ', [  self._phiCP ] )
                         )
+        self._check_extraneous_kw( kwargs )
