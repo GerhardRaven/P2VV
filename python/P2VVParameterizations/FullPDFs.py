@@ -56,12 +56,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')
 
         tagConds = pdfConfig.pop('taggingConditionals')
+        numEstWTagBins = pdfConfig.pop('numEstWTagBins')
 
         sigFrac = pdfConfig.pop('signalFraction')
         massRangeBackground = pdfConfig.pop('massRangeBackground')
 
         # transversity amplitudes
-        pdfConfig['amplitudeParam'] = pdfConfig.pop('amplitudeParam')
+        amplitudeParam = pdfConfig.pop('amplitudeParam')
 
         A0Mag2    = pdfConfig.pop('A0Mag2')
         AperpMag2 = pdfConfig.pop('AperpMag2')
@@ -94,6 +95,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         angleNames = pdfConfig.pop('angleNames')
         numBkgAngleBins = pdfConfig['numBkgAngleBins']
 
+        if makePlots :
+            # import plotting tools
+            from P2VVLoad import ROOTStyle
+            from P2VVGeneralUtils import plot
+            from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
 
         ###################################################################################################################################
         ## create variables (except for tagging category) and read real data ##
@@ -117,7 +123,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         cpsi   = self._angleFuncs.angles['cpsi']
         ctheta = self._angleFuncs.angles['ctheta']
         phi    = self._angleFuncs.angles['phi']
+
         iTag = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'B' : +1, 'Bbar' : -1 } )
+        estWTag = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability', Observable = True
+                          , Value = 0.25, MinMax = ( 0., 0.50001 ) )
+        estWTag.setBins( numEstWTagBins, 'cache' )
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = 48
@@ -129,6 +139,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         angles = [ cpsi, ctheta, phi ]
         obsSetP2VV = [ time ] + angles + [ iTag ]
+        #if tagConds == 'estWTag' : obsSetP2VV += [ estWTag ]
         if not SFit : obsSetP2VV += [ BMass ]
 
         # ntuple variables
@@ -141,9 +152,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         tagDecision = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True
                                , States = { 'B' : +1, 'Bbar' : -1 , 'Untagged' : 0 }
                               )
-        estWTag = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability', Observable = True
-                           , Value = 0.25, MinMax = ( 0., 0.50001 ) )
-        estWTag.setBins( 20, 'cache' )
         tagCat = Category( 'tagcat_os',   Title = 'Tagging Category', Observable = True
                           , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                          )
@@ -195,7 +203,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         tagCatP2VV = self._tagCats['tagCat']
         observables[tagCatP2VV.GetName()] = tagCatP2VV
-        obsSetP2VV.append( tagCatP2VV )
+        if not tagConds == 'estWTag' : obsSetP2VV.append( tagCatP2VV )
 
         # add tagging category to data set
         from P2VVGeneralUtils import addTaggingObservables
@@ -265,7 +273,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
             from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
-            timeAcceptance = TimeAcceptance(  time = time, Input = timeEffHistFile, Histogram = timeEffHistName )
+            timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histogram = timeEffHistName )
 
 
         ###################################################################################################################################
@@ -273,6 +281,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         #####################################################################
 
         # transversity amplitudes
+        from math import cos, sin, sqrt
         if nominalPdf :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
             amplitudes = Amplitudes(  A0Mag2    = A0Mag2
@@ -281,17 +290,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                     , AparPhase = AparPh
                                     , f_S       = fS
                                     , ASPhase   = ASPh
+                                    #, sqrtfS_Re = sqrt(fS) * cos(ASPh)
+                                    #, sqrtfS_Im = sqrt(fS) * sin(ASPh)
                                    )
 
         elif amplitudeParam == 'phasesSWaveFrac' :
-            from math import cos, sin, sqrt
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
             amplitudes = Amplitudes(  A0Mag2    = A0Mag2
                                     , A0Phase   = A0Ph
                                     , AperpMag2 = AperpMag2
                                     , AparPhase = AparPh
-                                    , sqrtfS_Re = sqrt(fS)* cos(ASPh)
-                                    , sqrtfS_Im = sqrt(fS)* sin(ASPh)
+                                    , sqrtfS_Re = sqrt(fS) * cos(ASPh)
+                                    , sqrtfS_Im = sqrt(fS) * sin(ASPh)
                                    )
 
         else :
@@ -376,11 +386,60 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         signalComps += sig_t_angles_tagCat_iTag
 
-        if tagConds == 'estWTag' :
-            # tagging category is used as conditional observable: register dummy PDF for tagging category
-            from RooFitWrappers import UniformPdf
-            signalComps += UniformPdf( 'tagCatDummyPdf', Arguments = [ tagCatP2VV ] )
+        # print tagging category distribution for signal and background
+        print 120 * '='
+        print 'Bs2Jpsiphi_PdfBuilder: distribution in tagging category for signal:'
+        self._sigSWeightData.table(tagCatP2VV).Print('v')
+        print 'Bs2Jpsiphi_PdfBuilder: distribution in tagging category for background:'
+        self._bkgSWeightData.table(tagCatP2VV).Print('v')
+        print 120 * '=' + '\n'
 
+
+        ###################################################################################################################################
+        ## build PDFs for conditional tagging parameters ##
+        ###################################################
+
+        # build PDF for estimated wrong-tag probability
+        print 120 * '='
+        print 'Bs2Jpsiphi_PdfBuilder: building PDF for estimated wrong-tag probability'
+        from RooFitWrappers import HistPdf
+        self._estWTagData = self._sigSWeightData.reduce( '%s > 0' % tagCatP2VV.GetName() ) if SFit\
+                                 else self._data.reduce( '%s > 0' % tagCatP2VV.GetName() )
+        self._sig_bkg_estWTag = HistPdf(  Name = 'sig_bkg_estWTag'
+                                        , Observables = [ estWTag ]
+                                        , Binning = { estWTag : numEstWTagBins }
+                                        , Data = self._estWTagData
+                                       )
+
+        if makePlots :
+            # get normalization correction for tagged events only
+            untagFrac    = self._data.table(tagCatP2VV).getFrac('untagged')
+            untagFracSig = self._sigSWeightData.table(tagCatP2VV).getFrac('untagged')
+            untagFracBkg = self._bkgSWeightData.table(tagCatP2VV).getFrac('untagged')
+
+            # plot estimated wrong-tag probability for signal and for background
+            self._estWTagCanv = TCanvas( 'estWTagCanv', 'Estimated wrong-tag probability' )
+            for ( pad, data, nBins, plotTitle, norm )\
+                  in zip(  self._estWTagCanv.pads( 1, 1 ) if SFit else self._estWTagCanv.pads( 2, 2 )
+                         , [ self._sigSWeightData, self._bkgSWeightData, self._data ]
+                         , 3 * [ numEstWTagBins ]
+                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)', '' ]
+                         , [ 1. - untagFracSig, 1. - untagFracBkg, 1. - untagFrac ]
+                        ) :
+                plot(  pad, estWTag, data, self._sig_bkg_estWTag
+                     , frameOpts  = dict( Bins = nBins, Title = estWTag.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                              )
+                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2, Normalization = norm                         )
+                    )
+
+        #if tagConds == 'estWTag' :
+            # signal PDF is conditional on tagging category, but distribution is given by PDF
+            #signalComps[tagCatP2VV] = None
+
+            # multiply by the PDF for the estimated wrong-tag probability
+            #signalComps += self._sig_bkg_estWTag
+
+        print 120 * '=' + '\n'
 
         ###################################################################################################################################
         ## build background time PDF ##
@@ -485,11 +544,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             backgroundComps += self._bkg_angles
 
             if makePlots :
-                # import plotting tools
-                from P2VVLoad import ROOTStyle
-                from P2VVGeneralUtils import plot
-                from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
-
                 # plot background angles
                 self._bkgAnglesCanv = TCanvas( 'bkgAnglesCanv', 'Background Decay Angles' )
                 for ( pad, obs, data, nBins, plotTitle, xTitle )\
@@ -516,18 +570,26 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if not SFit :
             from RooFitWrappers import BinnedPdf
-            backgroundComps += BinnedPdf(  'bkg_tagCat_iTag'
-                                         , Categories   = ( tagCatP2VV, iTag )
-                                         , Coefficients = [  self._taggingParams['tagCatCoefs']
-                                                           , [  RealVar( 'bkg_BbarFrac'
-                                                                        , Title    = 'Anti-B fraction in background'
-                                                                        , Value    = 0.5
-                                                                        , MinMax = ( 0., 1. )
-                                                                        , Constant = True
-                                                                       )
-                                                             ]
+            backgroundComps += BinnedPdf(  'bkg_tagCat'
+                                         , Category     = tagCatP2VV
+                                         , Coefficients = self._taggingParams['tagCatCoefs']
+                                        )
+
+            backgroundComps += BinnedPdf(  'bkg_iTag'
+                                         , Category     = iTag
+                                         , Coefficients = [ RealVar( 'bkg_BbarFrac'
+                                                                    , Title    = 'Anti-B fraction in background'
+                                                                    , Value    = 0.5
+                                                                    , MinMax = ( 0., 1. )
+                                                                    , Constant = True
+                                                                   )
                                                           ]
                                         )
+
+            #if tagConds == 'estWTag' :
+                # multiply by the PDF for the estimated wrong-tag probability
+                #backgroundComps += self._sig_bkg_estWTag
+
 
 
         ###################################################################################################################################

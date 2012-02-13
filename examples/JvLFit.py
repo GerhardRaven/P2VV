@@ -6,33 +6,34 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as pdfConfig
 
 # job parameters
 generateData   = False
-doFit          = False
+doFit          = True
 
-pdfConfig['makePlots']  = False
+pdfConfig['makePlots']  = True
 pdfConfig['SFit']       = False
-pdfConfig['blind']      = True
+pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = True
 
 plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
 pdfConfig['angEffMomentsFile'] = angEffMomentsFile = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
 
 pdfConfig['nTupleName'] = 'DecayTree'
-pdfConfig['nTupleFile'] = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
 if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLFit.root'
 
-pdfConfig['timeEffHistFile'] = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
+pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
 pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
 # PDF options
 pdfConfig['components']         = 'all'  # 'all' / 'signal' / 'background'
 pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']        = ''     # '' / 'histPdf'
+pdfConfig['bkgAnglePdf']        = 'histPdf'     # '' / 'histPdf'
 pdfConfig['perEventTimeRes']    = False
 pdfConfig['multiplyByTimeEff']  = ''     # 'all' / 'signal'
 
-pdfConfig['taggingConditionals'] = 'estWTag'
+pdfConfig['taggingConditionals'] = 'estWTag' #'estWTag'
+pdfConfig['numEstWTagBins']      = 20
 
 nEvents = 30000
 pdfConfig['signalFraction'] = 0.67
@@ -67,7 +68,7 @@ pdfConfig['deltaM']     = 17.6
 pdfConfig['AProd'] = 0.
 
 # fit options
-fitOpts = dict(  NumCPU              = 1
+fitOpts = dict(  NumCPU              = 8
                , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
@@ -112,6 +113,25 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
+# get variables
+obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [  'time', angleNames[0][0], angleNames[1][0], angleNames[2][0]
+                                                        , 'iTag', 'tagCatP2VV' ] ]
+time       = obsSetP2VV[0]
+angles     = obsSetP2VV[ 1 : 4 ]
+iTag       = obsSetP2VV[4]
+tagCatP2VV = obsSetP2VV[5]
+
+# tagging parameters
+numTagCats    = pdfBuild['tagCats']['numTagCats']
+tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
+taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
+tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
+
+# tagging category ranges
+tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
+tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
+tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
+
 
 ###########################################################################################################################################
 ## generate/read data and fit ##
@@ -131,19 +151,20 @@ else :
 
 if doFit :
     # fix values of some parameters
-    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    if pdfConfig['nominalPdf'] : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
     pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
-    for coef in pdfBuild['bkgAngCoefs'] : coef.setConstant()
+    if pdfConfig['bkgAnglePdf'] == '' :
+        for coef in pdfBuild['bkgAngCoefs'] : coef.setConstant()
 
     # fit data
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = True, **fitOpts )
-    else    : fitResult = pdf.fitTo( fitData,                    **fitOpts )
+    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = False, **fitOpts )
+    else                 : fitResult = pdf.fitTo( fitData,                    **fitOpts )
 
     print 120 * '=' + '\n'
 
@@ -152,26 +173,7 @@ if doFit :
 ## make some plots ##
 #####################
 
-if pdfConfig['makePlots'] :
-    # get variables
-    obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [  'time', angleNames[0][0], angleNames[1][0], angleNames[2][0]
-                                                            , 'iTag', 'tagCatP2VV' ] ]
-    time       = obsSetP2VV[0]
-    angles     = obsSetP2VV[ 1 : 4 ]
-    iTag       = obsSetP2VV[4]
-    tagCatP2VV = obsSetP2VV[5]
-
-    # tagging parameters
-    numTagCats    = pdfBuild['tagCats']['numTagCats']
-    tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
-    taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
-    tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
-
-    # tagging category ranges
-    tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
-    tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
-    tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
-
+if False:#pdfConfig['makePlots'] :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
@@ -287,9 +289,10 @@ if pdfConfig['makePlots'] :
     timeAnglesCanv.Print(plotsFile + '(')
     timeCanv.Print(plotsFile)
     timeCanv1.Print(plotsFile)
+    anglesCanv.Print(plotsFile)
     if pdfConfig['SFit'] :
-      anglesCanv.Print(plotsFile + ')')
+      pdfBuild['estWTagCanv'].Print(plotsFile + ')')
     else :
-      anglesCanv.Print(plotsFile)
+      pdfBuild['estWTagCanv'].Print(plotsFile)
       pdfBuild['bkgAnglesCanv'].Print(plotsFile + ')')
 
