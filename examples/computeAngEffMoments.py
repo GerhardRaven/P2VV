@@ -13,7 +13,8 @@ momentsFile = 'effMoments' + ( 'Trans' if transAngles else 'Hel' )
 plotsFile   = 'effMoments' + ( 'Trans' if transAngles else 'Hel' ) + '.ps'
 
 dataSetName = 'DecayTree'
-dataSetFile = '/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
+#dataSetFile = '/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120209.root'
 
 # transversity amplitudes
 A0Mag2Val    = 0.60

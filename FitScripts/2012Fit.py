@@ -2,13 +2,17 @@ from math import sqrt, pi, cos, sin
 from RooFitWrappers import *
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')
+from ROOT import RooMsgService
+#RooMsgService.instance().addStream(RooFit.DEBUG, RooFit.Topic(RooFit.Integration))
+RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
+RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 from P2VVGeneralUtils import numCPU
 fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
-              , Verbose = True
-              , Minimizer = ('Minuit2','minimize')
+#              , Verbose = True
+#              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -42,7 +46,7 @@ angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',  
 from P2VVGeneralUtils import readData
 
 #Read data
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -119,15 +123,23 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True )
 
-from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
+from P2VVParameterizations.CPVParams import LambdaArg_CPParam
+CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
                                               , Value = -0.04
                                               , MinMax = (-pi,pi)
-                                              #Can't have kwarg Constant when blinded???
-                                              #, Constant = False
-                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
-                         , lambdaCPSq = dict( Value = 1., Constant = False )
-                        )
+                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+                                              )
+                           )
+
+#from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
+#CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s'
+#                                              , Value = -0.04
+#                                              , MinMax = (-pi,pi)
+#                                              #Can't have kwarg Constant when blinded???
+#                                              #, Constant = False
+#                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 ))
+#                         , lambdaCPSq = dict( Value = 1., Constant = True )
+#                        )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
@@ -166,8 +178,8 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , sinCoef   = basisCoefficients['sin']
 #                       , ConditionalObservables = ( eta_os, iTag_os, )
 #                       , ConditionalObservables = tres.model().ConditionalObservables()
-#                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,] ) )                 
-                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,iTag_os] ) )                 
+                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,] ) )                 
+#                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,iTag_os] ) )                 
                        , ExternalConstraints = lifetimeParams.externalConstraints() + sigtres.externalConstraints() + basisCoefficients.externalConstraints
                        )
 
@@ -202,8 +214,7 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/propertimeacceptance.root', Histogram = 'timeacceptancehisto')
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
 
 ## Define a shape yourself
 #a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
@@ -269,8 +280,8 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( ns
 # FIT #
 #######
 
-#pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
-pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
+pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+#pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf.Print()
 
 #from ROOT import RooMsgService
