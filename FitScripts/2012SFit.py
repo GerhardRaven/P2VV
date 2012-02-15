@@ -10,10 +10,10 @@ indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) fo
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = 1
+fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
-#              , Verbose = True
+              , Verbose = True
 #              , Minimizer = ('Minuit2','minimize')
               )
 
@@ -223,8 +223,11 @@ pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalu
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 #CP._lambdaCPSq._var.setConstant(True)
+
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
 sfitresult.writepars('sfitresult_NoTimeAcc',False)
+
+assert False
 
 #fitset = pdf._var.getParameters(data)
 #fitset.writeToFile("nominalsfitresult.txt")
