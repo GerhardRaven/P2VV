@@ -51,7 +51,6 @@ for i in [ eta_os, st ] : i.setBins( 20 , 'cache' )
 #Read data
 from P2VVGeneralUtils import readData
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
-#                 '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -69,19 +68,12 @@ sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 #Time Resolution Model
-#Three Gaussians
-#from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
-#tresdata = DataTimeResolution( time = t, timeResSFConstraint = True )
-#Per event error
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                       , deltaGamma = dict( Name = 'dGamma'
-                                                            , Value = 0.060
-                                                            #, Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-                                                            )
+                                       , deltaGamma = dict( Name = 'dGamma' , Value = 0.060)
                                        , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
                                      )
@@ -94,21 +86,10 @@ tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = T
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
 #eta_os_pdf = { eta_os : None }
 
-from P2VVParameterizations.CPVParams import LambdaArg_CPParam
-CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
-                                              , Value = -0.04
-                                              , MinMax = (-pi,pi)
-                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-                                              )
-                           )
-
+from P2VVParameterizations.CPVParams import LambdaArg_CPParam, LambdaSqArg_CPParam
+CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s' , Value = -0.04 , MinMax = (-pi,pi)))
 #Fit for |lambda|^2
-#from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
-#CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s'
-#                                              , Value = -0.04
-#                                              , MinMax = (-pi,pi)
-#                                              #, Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-#                                              )
+#CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s' , Value = -0.04 , MinMax = (-pi,pi))
 #                           )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
@@ -196,24 +177,18 @@ masspdf.fitTo(data,**fitOpts)
 
 massplot = True
 if massplot:
-    from ROOT import kDashed, kRed, kGreen, kTRUE
-    from ROOT import TCanvas, TLatex
+    from ROOT import kDashed, kRed, kGreen, TCanvas, TLatex
+    from P2VVGeneralUtils import plot
     canvas = TCanvas()
-    mframe = m.frame()
-    data.plotOn(mframe)
-    masspdf.plotOn(mframe, LineWidth = 3)
-    masspdf.plotOn(mframe, Components=('sig_m'), LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
-    masspdf.plotOn(mframe, Components=('bkg_m'), LineStyle = kDashed, LineWidth=3, LineColor = kRed)
-    mframe.SetTitle("")
-    mframe.SetTitleOffset(1.2,'y')
-    x1=0.55
-    tlat =  TLatex(x1,.8,"LHCb preliminary")
-    tlat2 =  TLatex(x1,.75,"#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}")
-    tlat.SetNDC(kTRUE)
-    tlat2.SetNDC(kTRUE)
-    mframe.Draw()
-    tlat.Draw('same')
-    tlat2.Draw('same')
+    plot( canvas, m, data, masspdf, components = { 'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
+                                                 , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
+                                                 }
+                                  , pdfOpts = dict( LineWidth = 3 )
+                                  , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
+                                                    , TitleOffset = (1.2,'y')
+                                                    , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                                                    , Bins=70 ) 
+                                  )
 
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
@@ -223,7 +198,6 @@ pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalu
 
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 #CP._lambdaCPSq._var.setConstant(True)
-
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
 sfitresult.writepars('sfitresult_NoTimeAcc',False)
 
@@ -231,6 +205,8 @@ assert False
 
 #fitset = pdf._var.getParameters(data)
 #fitset.writeToFile("nominalsfitresult.txt")
+sfitresult.Print()
+
 #fitset.readFromFile("nominalsfitresult.txt")
 
 ########

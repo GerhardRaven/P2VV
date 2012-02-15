@@ -26,10 +26,9 @@ def __wrap_kw_subs( fun ) :
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
-        if 'Slices' in kwargs:
-            args += tuple( RooCmdArg( __disp('Slice', slice) ) for slice in kwargs.pop('Slices') )
-        if 'Imports' in kwargs:
-            args += tuple( RooCmdArg( __disp('Import', slice) ) for slice in kwargs.pop('Imports') )
+        args += tuple( RooCmdArg( __disp('Slice',  s) ) for s in kwargs.pop('Slices',  []) )
+        args += tuple( RooCmdArg( __disp('Import', i) ) for i in kwargs.pop('Imports', []) )
+        # TODO: this 'if' block needs to move to RooFitWrappers...
         if 'ArgSet' in kwargs or 'ArgList' in kwargs:
             if 'ArgSet' in kwargs :
                 from ROOT import RooArgSet
@@ -42,19 +41,36 @@ def __wrap_kw_subs( fun ) :
             for var in P2VVVars : RooVars.add( var._target_() if hasattr( var, '_target_' ) else var )
             args += (RooVars,)
 
-        for k,v in kwargs.iteritems():
-            args += (RooCmdArg( __disp(k,v)),)
+        dispatch = ( (k,v) for k,v in kwargs.iteritems() if hasattr(RooFit,k) )
+        args += tuple(RooCmdArg(__disp(k,v)) for k,v in dispatch )
+        for k in kwargs.keys() :
+            if hasattr(RooFit,k) : del kwargs[k]
         try:
-            return fun(self, *args)
+            return fun(self, *args, **kwargs)
         except TypeError:
-            l = RooLinkedList()
-            fun_args = [a for a in args if not isinstance(a, RooCmdArg)]
-            for a in args:
-                if isinstance(a, RooCmdArg):
-                    l.Add(a)
-            return fun(self, *tuple(fun_args + [l]))
+            fun_args        =  [ a for a in args if not isinstance(a, RooCmdArg) ]
+            l = RooLinkedList( [ a for a in args if     isinstance(a, RooCmdArg) ] )
+            return fun(self, *tuple(fun_args + [l]), **kwargs)
     return _fun
 
+def __convert_init_kw_to_setter( cl ) :
+    init = cl.__init__
+    from functools import wraps
+    @wraps(init)
+    def _init(self,*args,**kwargs) :
+        calls = tuple()
+        for i in kwargs.keys() :
+            for m in ['Set','set','Add','add'] :
+                if hasattr(self,m+i ) :
+                    margs = kwargs.pop(i)
+                    calls += (methodcaller( m+i, margs ),)
+                    break
+        init(self,*args,**kwargs)
+        for c in calls : c(self)
+    cl.__init__ =  _init
+
+from ROOT import TLatex
+__convert_init_kw_to_setter( TLatex )
 ##########################################
 
 from ROOT import RooPlot
@@ -230,8 +246,6 @@ from ROOT import RooAbsReal
 RooAbsReal.plotOn          = __wrap_kw_subs( RooAbsReal.plotOn )
 RooAbsReal.fillHistogram   = __wrap_kw_subs( RooAbsReal.fillHistogram )
 RooAbsReal.createIntegral  = __wrap_kw_subs( RooAbsReal.createIntegral )
-from ROOT import RooAbsRealLValue
-RooAbsRealLValue.frame     = __wrap_kw_subs( RooAbsRealLValue.frame )
 from ROOT import RooRealVar
 RooRealVar.format          = __wrap_kw_subs( RooRealVar.format )
 from ROOT import RooAbsCollection
@@ -242,6 +256,26 @@ RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 from ROOT import RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy
 for i in  [ RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy ] :
     i.__init__ = __wrap_kw_subs( i.__init__ )
+
+
+from ROOT import RooAbsRealLValue
+def __convert_kw_to_setter( fun, ret ) :
+    from functools import wraps
+    @wraps(fun)
+    def _fun(self,*args,**kwargs) :
+        calls = tuple()
+        for i in kwargs.keys() :
+            for m in ['Set','set','Add','add'] :
+                if hasattr(ret,m+i ) and not hasattr(RooFit,i): 
+                    calls += (methodcaller( m+i, *kwargs.pop(i) ),)
+                    break
+        o = fun(self,*args,**kwargs)
+        for c in calls : c(o)
+        return o
+    return _fun
+
+RooAbsRealLValue.frame     = __convert_kw_to_setter( RooAbsRealLValue.frame, RooPlot )
+RooAbsRealLValue.frame     = __wrap_kw_subs( RooAbsRealLValue.frame )
 
 from ROOT import RooMsgService
 RooMsgService.addStream = __wrap_kw_subs( RooMsgService.addStream )

@@ -8,7 +8,7 @@ RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
 RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = 1
+fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
 #              , Verbose = True
@@ -47,7 +47,6 @@ from P2VVGeneralUtils import readData
 
 #Read data
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
-                 #'/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
