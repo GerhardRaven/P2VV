@@ -180,15 +180,16 @@ if massplot:
     from ROOT import kDashed, kRed, kGreen, TCanvas, TLatex
     from P2VVGeneralUtils import plot
     canvas = TCanvas()
-    tlat  =  TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True)
     plot( canvas, m, data, masspdf, components = { 'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
                                                  , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
                                                  }
                                   , pdfOpts = dict( LineWidth = 3 )
-                                  , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi', TitleOffset = (1.2,'y'), Object = (tlat,), Bins=70 ) 
+                                  , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
+                                                    , TitleOffset = (1.2,'y')
+                                                    , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                                                    , Bins=70 ) 
                                   )
 
-assert False
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
