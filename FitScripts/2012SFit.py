@@ -10,12 +10,14 @@ indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) fo
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = numCPU()
-              , Timer=1
-              , Save = True
-              , Verbose = True
-#              , Minimizer = ('Minuit2','minimize')
-              )
+fitOpts = dict(
+    NumCPU = 1
+    #NumCPU = numCPU()
+    , Timer=1
+    , Save = True
+    #, Verbose = True
+    #, Minimizer = ('Minuit2','minimize')
+    )
 
 tmincut = 0.3
 
@@ -205,9 +207,34 @@ assert False
 
 #fitset = pdf._var.getParameters(data)
 #fitset.writeToFile("nominalsfitresult.txt")
-sfitresult.Print()
-
+#sfitresult.Print()
 #fitset.readFromFile("nominalsfitresult.txt")
+
+#Turn this on when fit is fast with NumCPU = numCPU() working!!!
+#######################
+# Profile likelihoods #
+#######################
+
+pllvar = lifetimeParams._deltaM._var
+
+from ROOT import RooMinuit
+#Need to implement conditionalobservables and externalconstraints here
+
+nll = pdf.createNLL(splot_m.data('signal'), NumCPU = numCPU()
+                    , Verbose = False
+                    #, ConditionalObservables =
+                    #, ExternalConstraints = 
+                    )
+minuit = RooMinuit(nll)
+minuit.setProfile(1) #Timer =1
+minimize = minuit.migrad() #Save = True
+sfitresult = minuit.save()
+pll = nll.createProfile(RooArgSet(pllvar)) #This creates a RooProfileLL object!
+from ROOT import TCanvas
+canvas = TCanvas()
+frame = pllvar.frame()
+pll.plotOn(frame)
+frame.Draw()
 
 ########
 # PLOT #

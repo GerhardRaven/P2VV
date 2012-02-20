@@ -8,12 +8,14 @@ RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
 RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = numCPU()
-              , Timer=1
-              , Save = True
-#              , Verbose = True
-#              , Minimizer = ('Minuit2','minimize')
-              )
+fitOpts = dict(
+    NumCPU = 1
+    #NumCPU = numCPU()
+    , Timer=1
+    , Save = True
+    #, Verbose = True
+    #, Minimizer = ('Minuit2','minimize')
+    )
 
 tmincut = 0.3
 
@@ -291,6 +293,8 @@ pdf.Print()
 classicfitresult = pdf.fitTo(data, **fitOpts)
 classicfitresult.writepars('classicfitresult',False)
 classicfitresult.Print()
+
+assert False
 
 ########
 # PLOT #
