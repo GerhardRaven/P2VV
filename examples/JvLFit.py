@@ -15,17 +15,17 @@ pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = True
 
 plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
-#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
+#pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
+pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 pdfConfig['nTupleName'] = 'DecayTree'
-pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLFit.root'
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
+pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 
 # PDF options
 pdfConfig['components']         = 'all'      # 'all' / 'signal' / 'background'
@@ -33,7 +33,7 @@ pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = 'histPdf'  # '' / 'histPdf'
 pdfConfig['bkgTagCatPdf']       = 'histPdf'  # '' / 'histPdf'
 pdfConfig['bkgITagPdf']         = 'histPdf'  # '' / 'histPdf'
-pdfConfig['multiplyByTimeEff']  = 'signal'   # 'all' / 'signal'
+pdfConfig['multiplyByTimeEff']  = 'all'   # 'all' / 'signal'
 pdfConfig['numBMassBins']       = [ 50, 10, 10 ]
 
 pdfConfig['taggingConditionals'] = 'all'   # 'all' / 'tagCat' / 'estWTag' / 'iTag'
@@ -339,6 +339,7 @@ if makeObservablePlots :
 elif pdfConfig['makePlots'] :
     pdfBuild['massCanv'].Print(plotsFile + '(')
     if pdfConfig['SFit'] :
-      pdfBuild['estWTagCanv'].Print(plotsFile)
+      pdfBuild['estWTagCanv'].Print(plotsFile + ')')
     else :
+      pdfBuild['estWTagCanv'].Print(plotsFile)
       pdfBuild['bkgAnglesCanv'].Print(plotsFile + ')')
