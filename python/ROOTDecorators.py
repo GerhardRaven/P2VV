@@ -3,7 +3,7 @@ from ROOT import TPad
 def __pads( self, n = None, m = None, predicate = lambda x : True ) :
     if n : 
         if m : self.Divide( n, m )
-        else : self.Divide(n)
+        else : self.Divide( n )
     i = 1
     while self.GetPad(i) :
         if predicate(i) : yield self.cd(i)
@@ -11,14 +11,14 @@ def __pads( self, n = None, m = None, predicate = lambda x : True ) :
 
 def __frames(self) :
     for prim in self.GetListOfPrimitives() :
-        if type(prim) == TPad :
+        if isinstance(prim,TPad) :
             for prim1 in prim.frames() : yield prim1
         elif prim.GetName().startswith('TFrame') :
             yield prim
 
 def __frameHists(self) :
     for prim in self.GetListOfPrimitives() :
-        if type(prim) == TPad :
+        if isinstance(prim,TPad) :
             for prim1 in prim.frameHists() : yield prim1
         elif prim.GetName().startswith('frame') :
             yield prim
