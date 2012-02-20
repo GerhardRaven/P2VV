@@ -14,10 +14,12 @@ def __wrap_kw_subs( fun ) :
     from ROOT import RooFit, RooAbsCollection, TObject
     __doNotConvert = [ RooAbsCollection, TObject ]
     __tbl  = lambda k : getattr(RooFit, k)
+    # TODO: anything relying on _target_ or _var should move to RooFitWrappers...
+    __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
     def __disp(k, v):
         if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) \
            or str(type(v)).find('.Category') != -1:
-            return __tbl(k)(v._target_() if hasattr(v, '_target_') else v)
+            return __tbl(k)( __dref(v)  )
         elif type(v) != type(None):
             return __tbl(k)(*v)
         else:
@@ -38,13 +40,11 @@ def __wrap_kw_subs( fun ) :
                 from ROOT import RooArgList
                 P2VVVars = kwargs.pop('ArgList')
                 RooVars = RooArgList()
-            for var in P2VVVars : RooVars.add( var._target_() if hasattr( var, '_target_' ) else var )
+            for var in P2VVVars : RooVars.add( __dref(var) ) 
             args += (RooVars,)
 
-        dispatch = ( (k,v) for k,v in kwargs.iteritems() if hasattr(RooFit,k) )
+        dispatch = ( (k,kwargs.pop(k)) for k in kwargs.keys() if hasattr(RooFit,k) )
         args += tuple(RooCmdArg(__disp(k,v)) for k,v in dispatch )
-        for k in kwargs.keys() :
-            if hasattr(RooFit,k) : del kwargs[k]
         try:
             return fun(self, *args, **kwargs)
         except TypeError:
