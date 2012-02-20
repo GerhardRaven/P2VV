@@ -10,7 +10,7 @@ doFit          = True
 
 makeObservablePlots     = False
 pdfConfig['makePlots']  = True
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = True
 
@@ -33,7 +33,7 @@ pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = 'histPdf'  # '' / 'histPdf'
 pdfConfig['bkgTagCatPdf']       = 'histPdf'  # '' / 'histPdf'
 pdfConfig['bkgITagPdf']         = 'histPdf'  # '' / 'histPdf'
-pdfConfig['multiplyByTimeEff']  = 'all'   # 'all' / 'signal'
+pdfConfig['multiplyByTimeEff']  = ''   # 'all' / 'signal'
 pdfConfig['numBMassBins']       = [ 50, 10, 10 ]
 
 pdfConfig['taggingConditionals'] = 'all'   # 'all' / 'tagCat' / 'estWTag' / 'iTag'
