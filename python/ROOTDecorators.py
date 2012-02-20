@@ -1,12 +1,12 @@
 ###### decorate TPad with pads...
 from ROOT import TPad
-def __pads( self, n = None, m = None, returnPads = [ ] ) :
+def __pads( self, n = None, m = None, predicate = lambda x : True ) :
     if n : 
         if m : self.Divide( n, m )
         else : self.Divide(n)
     i = 1
     while self.GetPad(i) :
-        if not returnPads or i in returnPads : yield self.cd(i)
+        if predicate(i) : yield self.cd(i)
         i += 1
 
 def __frames(self) :
