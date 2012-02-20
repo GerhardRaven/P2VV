@@ -9,8 +9,8 @@ generateData   = False
 doFit          = True
 
 makeObservablePlots     = False
-pdfConfig['makePlots']  = True
-pdfConfig['SFit']       = False
+pdfConfig['makePlots']  = False
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = True
 
@@ -36,6 +36,9 @@ pdfConfig['bkgITagPdf']         = 'histPdf'  # '' / 'histPdf'
 pdfConfig['multiplyByTimeEff']  = ''   # 'all' / 'signal'
 pdfConfig['numBMassBins']       = [ 50, 10, 10 ]
 
+pdfConfig['iTagZeroTrick'] = False
+pdfConfig['iTagStates'] = { }  # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
+
 pdfConfig['taggingConditionals'] = 'all'   # 'all' / 'tagCat' / 'estWTag' / 'iTag'
 pdfConfig['numEstWTagBins']      = 100
 
@@ -54,12 +57,12 @@ pdfConfig['AperpMag2'] = 0.25
 pdfConfig['AparMag2']  = 1. - pdfConfig['A0Mag2'] - pdfConfig['AperpMag2']
 
 pdfConfig['A0Phase']    = 0.
-pdfConfig['AperpPhase'] = 3.
-pdfConfig['AparPhase']  = 3.
+pdfConfig['AperpPhase'] = 2.9
+pdfConfig['AparPhase']  = 3.3
 
 pdfConfig['f_S']     = 0.02
 pdfConfig['ASMag2']  = pdfConfig['f_S'] / ( 1. - pdfConfig['f_S'] )
-pdfConfig['ASPhase'] = 3.
+pdfConfig['ASPhase'] = 2.9
 
 # CP violation parameters
 pdfConfig['carthLambdaCP'] = False
@@ -122,25 +125,28 @@ pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
 # get variables
-obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta', 'phi', 'iTag', 'tagCatP2VV' ] ]
+obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta', 'phi', 'iTag' ] ]
 time       = obsSetP2VV[0]
 angles     = obsSetP2VV[ 1 : 4 ]
 iTag       = obsSetP2VV[4]
-tagCatP2VV = obsSetP2VV[5]
 BMass      = pdfBuild['observables']['BMass']
 estWTag    = pdfBuild['observables']['estWTag']
 timeRes    = pdfBuild['observables']['timeRes']
 
-# tagging parameters
-numTagCats    = pdfBuild['tagCats']['numTagCats']
-tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
-taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
-tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
+if not pdfBuild['iTagZeroTrick'] :
+    tagCatP2VV = pdfBuild['observables']['tagCatP2VV']
+    obsSetP2VV.append(tagCatP2VV)
 
-# tagging category ranges
-tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
-tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
-tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
+    # tagging parameters
+    numTagCats    = pdfBuild['tagCats']['numTagCats']
+    tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
+    taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
+    tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
+
+    # tagging category ranges
+    tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
+    tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
+    tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
 
 
 ###########################################################################################################################################
@@ -183,7 +189,7 @@ if doFit :
 ## make some plots ##
 #####################
 
-if makeObservablePlots :
+if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
