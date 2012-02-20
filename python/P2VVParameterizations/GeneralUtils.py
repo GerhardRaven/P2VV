@@ -70,7 +70,7 @@ class _util_extConstraints_mixin( object ) :
 
 class _util_conditionalObs_mixin( object ) :
     def __init__( self, kwargs ) :
-        if   'Conditionals' in kwargs : self._conditionals = [ constraint for constraint in kwargs.pop('Conditionals') ]
+        if   'Conditionals' in kwargs : self._conditionals = [ conditional for conditional in kwargs.pop('Conditionals') ]
         elif 'Conditional'  in kwargs : self._conditionals = [ kwargs.pop('Conditional') ]
         else                          : self._conditionals = [  ]
 
