@@ -292,9 +292,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if makePlots :
             # plot mass distributions
             self._massCanv = TCanvas( 'massCanv', 'B mass' )
-            selPads = lambda pad : True if pad != 2 else False
             for ( pad, frameRange, nBins, plotTitle )\
-                  in zip(  self._massCanv.pads( 2, 2, selPads )
+                  in zip(  self._massCanv.pads( 2, 2, lambda x : x!=2 )
                          , [ 'Signal', 'LeftSideBand', 'RightSideBand' ]
                          , numBMassBins
                          , [  BMass.GetTitle() + ' mass fit - signal'
