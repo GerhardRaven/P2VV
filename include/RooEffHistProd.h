@@ -37,7 +37,10 @@ public:
       // Return kTRUE to force RooRealIntegral to offer all observables for internal integration
       return kTRUE ; 
    }
-   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+
+   Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
+                                 const RooArgSet* normSet, const char* rangeName) const;
+   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const;
    Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
 
    virtual void selectNormalization(const RooArgSet*,Bool_t);
@@ -69,6 +72,7 @@ private:
    RooRealProxy _pdf ;     // Probability Density function
    RooRealProxy _eff;      // Efficiency function
    RooSetProxy  _observables ; // Observables in the efficiency histogram
+   mutable const RooArgSet* _pdfNormSet;
 
    typedef std::vector<double> BinBoundaries ;
 
@@ -99,7 +103,7 @@ private:
    mutable RooObjCacheManager _cacheMgr;
    BinBoundaries _binboundaries;
   
-   ClassDef(RooEffHistProd, 4) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
+   ClassDef(RooEffHistProd, 5) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
 };
 
 #endif

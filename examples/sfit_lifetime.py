@@ -98,7 +98,7 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
                        , t_bkg_ll_tau = dict( Name = 'bkg_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 'bkg_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          )
-bkg_t = bkg_t.pdf()
+bkg_t = acceptance * bkg_t.pdf()
 
 # Create psi background component
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
@@ -106,10 +106,9 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.mo
                        , t_bkg_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          )
-psi_t = psi_t.pdf()
+psi_t = acceptance * psi_t.pdf()
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t), Yield= (10000,500,50000) )
 
-## bkg_t = bkg_t.pdf()
 background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t), Yield = (20000,2000,50000) )
 
 # Apply acceptance
@@ -133,8 +132,8 @@ pdf.Print("t")
 
 from ROOT import RooMsgService
 ## RooMsgService.instance().addStream(RooFit.DEBUG)
-RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
-RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
+## RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
+## RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 ## Fit options
 fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 0)
@@ -144,7 +143,7 @@ from P2VVGeneralUtils import SData, splot
 masspdf = buildPdf(Name = 'mpsi_mass_pdf', Components = (psi_background, background), Observables = (mpsi,))
 masspdf.fitTo(bkg_data, **fitOpts)
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-splot_mpsi = SData(Pdf = masspdf, Data = data, Name = 'PsiMassSplot')
+splot_mpsi = SData(Pdf = masspdf, Data = bkg_data, Name = 'PsiMassSplot')
 psi_sdata = splot_mpsi.data('psi_background')
 bkg_sdata = splot_mpsi.data('background')
 
@@ -155,7 +154,6 @@ print 'fitting data'
 sig_pdf = signal[m, t]
 bkg_pdf = background[t,mpsi]
 
-
 from P2VVGeneralUtils import plot
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
@@ -163,7 +161,7 @@ print 'plotting'
 canvas = TCanvas('canvas', 'canvas', 1000, 500)
 canvas.Divide(2, 1)
 obs = [t]
-for i, (pdf, sdata) in enumerate([(bkg_t, bkg_sdata), (psi_t, psi_sdata)]):
+for i, (pdf, sdata) in enumerate([(psi_t, psi_sdata)]):
     result = pdf.fitTo(sdata, SumW2Error = True, **fitOpts)
     result.Print('v')
     pdfOpts  = dict()

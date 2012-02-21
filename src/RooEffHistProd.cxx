@@ -185,12 +185,13 @@ RooEffHistProd::CacheElem::~CacheElem()
 
 //_____________________________________________________________________________
 RooEffHistProd::RooEffHistProd(const char *name, const char *title, 
-                               RooAbsPdf& inPdf, RooAbsReal& inEff) :
-   RooAbsPdf(name, title),
-   _pdf("pdf", "pre-efficiency pdf", this, inPdf),
-   _eff("eff", "efficiency function", this, inEff),
-   _observables("obs", "observables in efficiency function", this),
-   _cacheMgr(this, 10)
+                               RooAbsPdf& inPdf, RooAbsReal& inEff)
+   : RooAbsPdf(name, title),
+     _pdf("pdf", "pre-efficiency pdf", this, inPdf),
+     _eff("eff", "efficiency function", this, inEff),
+     _observables("obs", "observables in efficiency function", this),
+     _pdfNormSet(0),
+     _cacheMgr(this, 10)
 {  
    // Constructor of a a production of p.d.f inPdf with efficiency
    // function inEff.
@@ -239,6 +240,7 @@ RooEffHistProd::RooEffHistProd(const RooEffHistProd& other, const char* name):
    _pdf("pdf", this, other._pdf),
    _eff("acc", this, other._eff),
    _observables("obs", this, other._observables), 
+   _pdfNormSet(other._pdfNormSet),
    _cacheMgr(other._cacheMgr, this),
    _binboundaries(other._binboundaries)
 {
@@ -341,6 +343,21 @@ RooEffHistProd::CacheElem *RooEffHistProd::getCache(const RooArgSet* nset,
 }
 
 //_____________________________________________________________________________
+Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
+                                              const RooArgSet* normSet, const char* rangeName) const
+{
+  // Variant of getAnalyticalIntegral that is also passed the normalization set
+  // that should be applied to the integrand of which the integral is request.
+  // For certain operator p.d.f it is useful to overload this function rather
+  // than analyticalIntegralWN() as the additional normalization information
+  // may be useful in determining a more efficient decomposition of the
+  // requested integral
+
+  _pdfNormSet = normSet;
+  return _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
+}
+
+//_____________________________________________________________________________
 Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                             const char* rangeName) const 
 {
@@ -348,8 +365,8 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
    if (allVars.getSize() == 0) return 0;
    iset.add(allVars);
 
-   RooArgSet *nset = &iset;
-   getCache(nset, &iset, rangeName);
+   // RooArgSet *nset = &iset;
+   getCache(_pdfNormSet, &iset, rangeName);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;
 }

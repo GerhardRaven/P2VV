@@ -100,7 +100,7 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
                          , bkg_t_ll_tau = dict( Name = 'bkg_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                          , bkg_t_ml_tau = dict( Name = 'bkg_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          , ExternalConstraints = sig_tres.model().ExternalConstraints())
-bkg_t = bkg_t.pdf()
+bkg_t = acceptance * bkg_t.pdf()
 
 # Create psi background component
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
@@ -108,7 +108,7 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.mo
                          , psi_t_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                          , psi_t_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          , ExternalConstraints = sig_tres.model().ExternalConstraints())
-psi_t = psi_t.pdf()
+psi_t = acceptance * psi_t.pdf()
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t), Yield= (10000,500,50000) )
 
 ## bkg_t = bkg_t.pdf()
@@ -135,14 +135,14 @@ pdf.Print("t")
 
 from ROOT import RooMsgService
 ## RooMsgService.instance().addStream(RooFit.DEBUG)
-RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
-RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
+## RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
+## RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 ## Fit
 ## print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 0)
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 2)
 sig_pdf = signal[m, t]
 bkg_pdf = background[t,mpsi]
 ## signal[m, t].fitTo(signal_data, **fitOpts)
