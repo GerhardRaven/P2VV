@@ -10,7 +10,7 @@
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin
 
 
-class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin ):
+class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin ):
     def __init__( self, **kwargs ) :
         self._numTagCats  = kwargs.pop( 'NumTagCats', 1 )
         self._dilutions   = kwargs.pop('Dilutions')
@@ -30,6 +30,7 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin ):
 
 
 
+        _util_conditionalObs_mixin.__init__( self, kwargs )
         _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw( kwargs )
 
@@ -105,16 +106,17 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         from RooFitWrappers import CalibratedDilution, ConstVar
         from P2VVParameterizations.BBbarAsymmetries import Trivial_CEvenOdd
         TaggingParams.__init__(  self
-                                , Dilutions = [ CalibratedDilution(  Name       = 'tagDilution'
-                                                                   , EstWTag    = self._estWTag
-                                                                   , AvgEstWTag = self._avgEstWTag
-                                                                   , P0         = self._p0
-                                                                   , P1         = self._p1
-                                                                  )
-                                              ]
-                                , ADilWTags = [ ConstVar( Name = 'zero', Value = 0) ]
-                                , CEvenOdds = [ Trivial_CEvenOdd() ]
-                                , Constraints = constraints
+                                , Dilutions    = [ CalibratedDilution(  Name       = 'tagDilution'
+                                                                      , EstWTag    = self._estWTag
+                                                                      , AvgEstWTag = self._avgEstWTag
+                                                                      , P0         = self._p0
+                                                                      , P1         = self._p1
+                                                                     )
+                                                 ]
+                                , ADilWTags    = [ ConstVar( Name = 'zero', Value = 0) ]
+                                , CEvenOdds    = [ Trivial_CEvenOdd() ]
+                                , Conditionals = [ self._estWTag ]
+                                , Constraints  = constraints
                               )
 
 class Dilution_TaggingParams( TaggingParams ) :
@@ -330,13 +332,21 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
 
                 CEvenOdds.append(CEvenOdd)
 
+        # get conditional observables
+        conditionals = kwargs.pop( 'Conditionals', [] )
+
+        # get external constraints
+        constraints = kwargs.pop( 'Constraints', [] )
+
         # check for remaining keyword arguments and initialize
         self._check_extraneous_kw( kwargs )
         TaggingParams.__init__(  self, NumTagCats = numTagCats
-                               , TagCatCoefs = tagCatCoefs
-                               , Dilutions   = dilutions
-                               , ADilWTags   = ADilWTags
-                               , CEvenOdds   = CEvenOdds
+                               , TagCatCoefs  = tagCatCoefs
+                               , Dilutions    = dilutions
+                               , ADilWTags    = ADilWTags
+                               , CEvenOdds    = CEvenOdds
+                               , Conditionals = conditionals
+                               , Constraints  = constraints
                               )
 
 
@@ -467,6 +477,8 @@ class TaggingCategories( _util_parse_mixin, _util_extConstraints_mixin, _util_co
                     + [ ( 'ATagEff%d'     % ( cat + 1 ), asym     ) for cat, asym     in enumerate( self._ATagEffs     ) ]
                     + [ ( 'tagDilution%d' % ( cat + 1 ), dilution ) for cat, dilution in enumerate( self._tagDilutions ) ]
                     + [ ( 'ADilWTag%d'    % ( cat + 1 ), ADilWTag ) for cat, ADilWTag in enumerate( self._ADilWTags    ) ]
+                    + [ ( 'Conditionals', self.conditionalObservables() ) ]
+                    + [ ( 'Constraints',  self.externalConstraints()    ) ]
                    )
 
 
@@ -530,9 +542,9 @@ class Linear_TaggingCategories( TaggingCategories ) :
 
         # get linear calibration parameters
         self._parseArg(  'avgEstWTag', kwargs, Value = 0.391, ObjectType = 'ConstVar' )
-        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.392, MinMax = (  0., 0.5 ) )
-        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.035, MinMax = (  0., 2.  ) )
-        self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
+        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.392, MinMax = (  0.,  0.5 ) )
+        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.035, MinMax = (  0.8, 1.2 ) )
+        self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,    MinMax = ( -1.,  1.  )
                        , Constant = True )
         self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
                        , Constant = True )
