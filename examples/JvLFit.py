@@ -6,33 +6,44 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as pdfConfig
 
 # job parameters
 generateData   = False
-doFit          = False
+doFit          = True
 
+makeObservablePlots     = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = False
-pdfConfig['blind']      = True
+pdfConfig['SFit']       = True
+pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = True
 
 plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
-pdfConfig['angEffMomentsFile'] = angEffMomentsFile = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
+#pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
+pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 pdfConfig['nTupleName'] = 'DecayTree'
-pdfConfig['nTupleFile'] = '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLFit.root'
 
-pdfConfig['timeEffHistFile'] = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
+pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
+pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 
 # PDF options
-pdfConfig['components']         = 'all'  # 'all' / 'signal' / 'background'
+pdfConfig['components']         = 'all'      # 'all' / 'signal' / 'background'
 pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']        = ''     # '' / 'histPdf'
-pdfConfig['perEventTimeRes']    = False
-pdfConfig['multiplyByTimeEff']  = ''     # 'all' / 'signal'
+pdfConfig['bkgAnglePdf']        = 'histPdf'  # '' / 'histPdf'
+pdfConfig['bkgTagCatPdf']       = 'histPdf'  # '' / 'histPdf'
+pdfConfig['bkgITagPdf']         = 'histPdf'  # '' / 'histPdf'
+pdfConfig['multiplyByTimeEff']  = ''   # 'all' / 'signal'
+pdfConfig['numBMassBins']       = [ 50, 10, 10 ]
 
-pdfConfig['taggingConditionals'] = 'estWTag'
+pdfConfig['iTagZeroTrick'] = False
+pdfConfig['iTagStates'] = { }  # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
+
+pdfConfig['taggingConditionals'] = 'all'   # 'all' / 'tagCat' / 'estWTag' / 'iTag'
+pdfConfig['numEstWTagBins']      = 100
+
+pdfConfig['eventTimeResolution'] = True
+pdfConfig['numTimeResBins']      = 100
 
 nEvents = 30000
 pdfConfig['signalFraction'] = 0.67
@@ -46,12 +57,12 @@ pdfConfig['AperpMag2'] = 0.25
 pdfConfig['AparMag2']  = 1. - pdfConfig['A0Mag2'] - pdfConfig['AperpMag2']
 
 pdfConfig['A0Phase']    = 0.
-pdfConfig['AperpPhase'] = 3.
-pdfConfig['AparPhase']  = 3.
+pdfConfig['AperpPhase'] = 2.9
+pdfConfig['AparPhase']  = 3.3
 
 pdfConfig['f_S']     = 0.02
 pdfConfig['ASMag2']  = pdfConfig['f_S'] / ( 1. - pdfConfig['f_S'] )
-pdfConfig['ASPhase'] = 3.
+pdfConfig['ASPhase'] = 2.9
 
 # CP violation parameters
 pdfConfig['carthLambdaCP'] = False
@@ -72,6 +83,7 @@ fitOpts = dict(  NumCPU              = 1
 #               , Minos               = False
 #               , Hesse               = False
 #               , Save                = True
+#               , Minimizer           = 'Minuit2'
               )
 pdfConfig['fitOptions'] = fitOpts
 
@@ -112,6 +124,30 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
+# get variables
+obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta', 'phi', 'iTag' ] ]
+time       = obsSetP2VV[0]
+angles     = obsSetP2VV[ 1 : 4 ]
+iTag       = obsSetP2VV[4]
+BMass      = pdfBuild['observables']['BMass']
+estWTag    = pdfBuild['observables']['estWTag']
+timeRes    = pdfBuild['observables']['timeRes']
+
+if not pdfBuild['iTagZeroTrick'] :
+    tagCatP2VV = pdfBuild['observables']['tagCatP2VV']
+    obsSetP2VV.append(tagCatP2VV)
+
+    # tagging parameters
+    numTagCats    = pdfBuild['tagCats']['numTagCats']
+    tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
+    taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
+    tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
+
+    # tagging category ranges
+    tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
+    tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
+    tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
+
 
 ###########################################################################################################################################
 ## generate/read data and fit ##
@@ -131,19 +167,20 @@ else :
 
 if doFit :
     # fix values of some parameters
-    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    if pdfConfig['nominalPdf'] : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
     pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
-    for coef in pdfBuild['bkgAngCoefs'] : coef.setConstant()
+    if pdfConfig['bkgAnglePdf'] == '' :
+        for coef in pdfBuild['bkgAngCoefs'] : coef.setConstant()
 
     # fit data
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = True, **fitOpts )
-    else    : fitResult = pdf.fitTo( fitData,                    **fitOpts )
+    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = False, **fitOpts )
+    else                 : fitResult = pdf.fitTo( fitData,                    **fitOpts )
 
     print 120 * '=' + '\n'
 
@@ -152,26 +189,7 @@ if doFit :
 ## make some plots ##
 #####################
 
-if pdfConfig['makePlots'] :
-    # get variables
-    obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [  'time', angleNames[0][0], angleNames[1][0], angleNames[2][0]
-                                                            , 'iTag', 'tagCatP2VV' ] ]
-    time       = obsSetP2VV[0]
-    angles     = obsSetP2VV[ 1 : 4 ]
-    iTag       = obsSetP2VV[4]
-    tagCatP2VV = obsSetP2VV[5]
-
-    # tagging parameters
-    numTagCats    = pdfBuild['tagCats']['numTagCats']
-    tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
-    taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
-    tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
-
-    # tagging category ranges
-    tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
-    tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
-    tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
-
+if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
@@ -183,6 +201,21 @@ if pdfConfig['makePlots'] :
         comps = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
                  , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
                 }
+
+    projWDataSet = []
+    if   pdfConfig['taggingConditionals'] == 'all'     : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
+    elif pdfConfig['taggingConditionals'] == 'estWTag' : projWDataSet += [ tagCatP2VV, estWTag       ]
+    elif pdfConfig['taggingConditionals'] == 'tagCat'  : projWDataSet += [ tagCatP2VV                ]
+    elif pdfConfig['taggingConditionals'] == 'iTag'    : projWDataSet += [ iTag                      ]
+    if   pdfConfig['eventTimeResolution']              : projWDataSet += [ timeRes                   ]
+
+    if projWDataSet :
+        bulkData = fitData.reduce( CutRange = 'Bulk' )
+        projWData     = dict( ProjWData = ( fitData.reduce(  ArgSet = projWDataSet ), True ) )
+        projWDataBulk = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataSet ), True ) )
+    else :
+        projWData     = dict()
+        projWDataBulk = dict()
 
     # plot lifetime and angles
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
@@ -196,9 +229,9 @@ if pdfConfig['makePlots'] :
                    , ( True, ) + 3 * ( False, )
                   ) :
         plot(  pad, obs, fitData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle                )
-             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize )
-             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth       )
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle                                     )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize                      )
+             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth )
              , components = comps
             )
 
@@ -220,9 +253,9 @@ if pdfConfig['makePlots'] :
                    , ( False, True, False )
                   ) :
         plot(  pad, time, fitData, pdf, yTitle = yTitle, yScale = yScale, logy = logY
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle, Range = 'Bulk'            )
-             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
-             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts        )
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle, Range = 'Bulk'                                    )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts                         )
+             , pdfOpts    = dict( list( projWDataBulk.items() ), LineColor = kBlue, LineWidth = lineWidth, **pdfCuts )
              , components = comps
             )
 
@@ -256,9 +289,9 @@ if pdfConfig['makePlots'] :
              , 3 * ( False, ) + 3 * ( False, )
             ) :
         plot(  pad, time, fitData, pdf, yTitle = yTitle, logy = logY
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle, Range = 'Bulk'            )
-             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts )
-             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts        )
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle, Range = 'Bulk'                                )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize, **dataCuts                     )
+             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth, **pdfCuts )
              , components = comps
             )
 
@@ -277,9 +310,19 @@ if pdfConfig['makePlots'] :
                    , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
                   ) :
         plot(  pad, obs, fitData, pdf, xTitle = xTitle, yTitle = yTitle
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle                             )
-             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts )
-             , pdfOpts    = dict( LineColor = kBlue, LineWidth = lineWidth, **pdfCuts         )
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle                                                )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts                    )
+             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth, **pdfCuts )
+             , components = comps
+            )
+
+    if not pdfConfig['SFit'] :
+        # plot signal mass
+        pad = pdfBuild['massCanv'].cd(2)
+        plot(  pad, BMass, fitData, pdf
+             , frameOpts  = dict( Range = 'Signal', Bins = pdfConfig['numBMassBins'][0], Title = BMass.GetTitle() + ' full fit - signal' )
+             , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                                      )
+             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 2                                            )
              , components = comps
             )
 
@@ -287,9 +330,22 @@ if pdfConfig['makePlots'] :
     timeAnglesCanv.Print(plotsFile + '(')
     timeCanv.Print(plotsFile)
     timeCanv1.Print(plotsFile)
-    if pdfConfig['SFit'] :
-      anglesCanv.Print(plotsFile + ')')
-    else :
-      anglesCanv.Print(plotsFile)
-      pdfBuild['bkgAnglesCanv'].Print(plotsFile + ')')
+    if pdfConfig['makePlots'] :
+        anglesCanv.Print(plotsFile)
+        pdfBuild['massCanv'].Print(plotsFile)
+        if pdfConfig['SFit'] :
+          pdfBuild['estWTagCanv'].Print(plotsFile + ')')
+        else :
+          pdfBuild['estWTagCanv'].Print(plotsFile)
+          pdfBuild['bkgAnglesCanv'].Print(plotsFile + ')')
 
+    else :
+        anglesCanv.Print(plotsFile + ')')
+
+elif pdfConfig['makePlots'] :
+    pdfBuild['massCanv'].Print(plotsFile + '(')
+    if pdfConfig['SFit'] :
+      pdfBuild['estWTagCanv'].Print(plotsFile + ')')
+    else :
+      pdfBuild['estWTagCanv'].Print(plotsFile)
+      pdfBuild['bkgAnglesCanv'].Print(plotsFile + ')')
