@@ -240,7 +240,9 @@ sidebanddata =      data.reduce(CutRange = 'leftsideband' )
 sidebanddata.append(data.reduce(CutRange = 'rightsideband'))
 
 nbkg = 10500
-background = Component('bkg'   , ( bkg_m.pdf(), acceptance*bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+#background = Component('bkg'   , ( bkg_m.pdf(), acceptance*bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+#Don't multiply background with proper time acceptance!!!
+background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
 
 # create PDF for angular background
 if False :

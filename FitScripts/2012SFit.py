@@ -158,7 +158,8 @@ sig_t_angles = eff * sig_t_angles
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-#sig_t_angles = acceptance * sig_t_angles
+#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/flatacceptance.root', Histogram = 'flathisto')
+sig_t_angles = acceptance * sig_t_angles
 
 ####################
 ### Compose PDFs ###
@@ -202,7 +203,7 @@ pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalu
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 #CP._lambdaCPSq._var.setConstant(True)
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
-sfitresult.writepars('sfitresult_NoTimeAcc',False)
+sfitresult.writepars('sfitresult',False)
 
 assert False
 
