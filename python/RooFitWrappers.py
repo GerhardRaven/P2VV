@@ -1226,7 +1226,7 @@ class Component(object):
     _d = {}
     def __init__(self,Name,*args,**kw) :
         # TODO: make things singletons, indexed by 'Name'
-        if Name in Component._d : raise KeyError('Name %s is not unique'%name)
+        if Name in Component._d : raise KeyError('Name %s is not unique' % Name)
         self.name = Name
         Component._d[Name] = dict()
         Component._d[Name]['Name'] = Name

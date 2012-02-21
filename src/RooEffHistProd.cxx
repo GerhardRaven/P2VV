@@ -114,7 +114,7 @@ void cloneRanges(const RooArgSet& observables, const RooArgSet& iset,
 //_____________________________________________________________________________
 RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgSet& iset,
                                      const RooArgSet* nset, const char *rangeName)
-   : _I(parent->_binboundaries.size() - 1, 0)
+   : _clone(0), _I(parent->_binboundaries.size() - 1, 0)
 {
    // create a function object for the corresponding integral of the underlying PDF.
    // i.e. if we have  eps(x)f(x,y)  and we get (x,y) as allVars, 
@@ -122,6 +122,9 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
    // so that later we can do sum_i eps( (x_i+x_i+1)/2 ) * I(x_i,x_i+1)
    RooArgSet *x_ = parent->eff()->getObservables(&iset); // the subset of iset on which _eff depends
    assert(x_->getSize() < 2); // for now, we only do 1D efficiency histograms...
+
+   _intObs.addClone(*nset);
+
    const BinBoundaries& bounds = parent->_binboundaries;
 
    if (x_->getSize() == 1) {
@@ -166,11 +169,12 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
 RooArgList RooEffHistProd::CacheElem::containedArgs(Action) 
 {
    // Return list of all RooAbsArgs in cache element
-   RooArgList l;
+   RooArgList l(_intObs);
    for (std::vector<RooAbsReal*>::const_iterator it = _I.begin(), end = _I.end();
         it != end; ++it) {
       l.add(**it);
    }
+   l.add(*_clone);
    return l;
 }
 
@@ -181,6 +185,7 @@ RooEffHistProd::CacheElem::~CacheElem()
        it != end; ++it) {
       if (*it) delete *it;
    }
+   if (_clone) delete _clone;
 }
 
 //_____________________________________________________________________________
@@ -191,6 +196,7 @@ RooEffHistProd::RooEffHistProd(const char *name, const char *title,
      _eff("eff", "efficiency function", this, inEff),
      _observables("obs", "observables in efficiency function", this),
      _pdfNormSet(0),
+     _fixedNormSet(0),
      _cacheMgr(this, 10)
 {  
    // Constructor of a a production of p.d.f inPdf with efficiency
@@ -241,6 +247,7 @@ RooEffHistProd::RooEffHistProd(const RooEffHistProd& other, const char* name):
    _eff("acc", this, other._eff),
    _observables("obs", this, other._observables), 
    _pdfNormSet(other._pdfNormSet),
+   _fixedNormSet(other._fixedNormSet),
    _cacheMgr(other._cacheMgr, this),
    _binboundaries(other._binboundaries)
 {
@@ -254,10 +261,22 @@ RooEffHistProd::~RooEffHistProd()
 }
 
 //_____________________________________________________________________________
+Double_t RooEffHistProd::getValV(const RooArgSet* normSet) const 
+{  
+   // Return p.d.f. value normalized over given set of observables
+   // cout << "RooEffHistProd::getValV " << (normSet ? *normSet : RooArgSet()) << endl;
+   _pdfNormSet = _fixedNormSet ? _fixedNormSet : normSet;
+   return RooAbsPdf::getValV(normSet) ;
+}
+
+//_____________________________________________________________________________
 Double_t RooEffHistProd::evaluate() const
 {
    // Calculate and return 'raw' unnormalized value of p.d.f
-   return eff()->getVal() * pdf()->getVal(_normSet);
+   double effVal = eff()->getVal();
+   double pdfVal = pdf()->getVal(_pdfNormSet);
+   // cout << "RooEffHistProd::evaluate " << effVal << " " << pdfVal << " " << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) << endl;
+   return effVal * pdfVal;
 }
 
 //_____________________________________________________________________________
@@ -331,30 +350,62 @@ Double_t RooEffHistProd::expectedEvents(const RooArgSet* nset) const
 //_____________________________________________________________________________
 RooEffHistProd::CacheElem *RooEffHistProd::getCache(const RooArgSet* nset,
                                                     const RooArgSet* iset,
-                                                    const char* rangeName) const 
+                                                    const char* rangeName,
+                                                    const bool makeClone) const 
 {
    Int_t sterileIndex(-1);
    CacheElem* cache = (CacheElem*) _cacheMgr.getObj(nset, iset, &sterileIndex,
                                                     RooNameReg::ptr(rangeName));
    if (cache) return cache;
-   _cacheMgr.setObj(nset, iset, new CacheElem(this, *iset, nset, rangeName),
-                    RooNameReg::ptr(rangeName));
-   return getCache(nset, iset, rangeName);
+
+   const RooEffHistProd* parent = makeClone ? static_cast<const RooEffHistProd*>
+      (clone(Form("%s_clone", GetName()))) : this;
+   
+   cache = new CacheElem(parent, *iset, nset, rangeName);
+   _cacheMgr.setObj(nset, iset, cache, RooNameReg::ptr(rangeName));
+
+   if (makeClone) {
+      cache->setClone(const_cast<RooEffHistProd*>(parent));
+      cache->clone()->_fixedNormSet = &cache->intObs();
+   }
+   return getCache(nset, iset, rangeName, makeClone);
 }
 
 //_____________________________________________________________________________
 Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
                                               const RooArgSet* normSet, const char* rangeName) const
 {
-  // Variant of getAnalyticalIntegral that is also passed the normalization set
-  // that should be applied to the integrand of which the integral is request.
-  // For certain operator p.d.f it is useful to overload this function rather
-  // than analyticalIntegralWN() as the additional normalization information
-  // may be useful in determining a more efficient decomposition of the
-  // requested integral
+   // Variant of getAnalyticalIntegral that is also passed the normalization set
+   // that should be applied to the integrand of which the integral is request.
+   // For certain operator p.d.f it is useful to overload this function rather
+   // than analyticalIntegralWN() as the additional normalization information
+   // may be useful in determining a more efficient decomposition of the
+   // requested integral
+   
+   // No special handling required if a normalization set is given
+   if (normSet && normSet->getSize() > 0) {
+      _pdfNormSet = normSet;
+      Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
+      // coutI(Integration) << "RooEffHistProd::getAnalyticalIntegralWN " << allDeps << " " << analDeps << " "
+      //      << (normSet ? *normSet : RooArgSet()) << " " << rangeName << endl;
+      return code;
+   } else if (_fixedNormSet) {    
+      _pdfNormSet = _fixedNormSet;
+      Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
+      // coutI(Integration) << "RooEffHistProd::getAnalyticalIntegralWN " << allDeps << " " << analDeps << " "
+      //      << (normSet ? *normSet : RooArgSet()) << " " << rangeName << endl;
+      return code;
+   } else {
+      // No normSet passed
 
-  _pdfNormSet = normSet;
-  return _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
+      // Declare that we can analytically integrate all requested observables
+      analDeps.add(allDeps);
+
+      // Construct cache with clone of p.d.f that has fixed normalization set that is passed to input pdf
+      getCache(&allDeps, &allDeps, rangeName, true);
+      Int_t code = _cacheMgr.lastIndex();
+      return 1 + code;
+   }
 }
 
 //_____________________________________________________________________________
@@ -377,11 +428,12 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    assert(code > 0);
 
    CacheElem* cache = static_cast<CacheElem*>(_cacheMgr.getObjByIndex(code - 1));
-   if (!cache) {
-      std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
-      std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
-      cache = getCache(_normSet, iset.get(), rangeName);
-   }
+   assert(cache != 0);
+   // if (!cache) {
+   //    std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
+   //    std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
+   //    cache = getCache(_normSet, iset.get(), rangeName);
+   // }
 
    Double_t xmin = x().getMin(rangeName), xmax = x().getMax(rangeName);
 

@@ -48,6 +48,13 @@ public:
 
    virtual Double_t expectedEvents(const RooArgSet* nset) const;
 
+   // Function evaluation
+   virtual Double_t getValV(const RooArgSet* set = 0) const;
+
+protected:
+
+   virtual Double_t evaluate() const;
+
 private:
   
    const char* makeFPName(const TString& prefix, const RooArgSet& iset, const RooArgSet *nset,
@@ -64,15 +71,13 @@ private:
    RooRealVar& x() const { return *static_cast<RooRealVar*>(  _observables.first() ) ; }
 
    const RooArgSet& observables() const { return static_cast<const RooArgSet&>(_observables); }
-  
-   // Function evaluation
-   virtual Double_t evaluate() const ;
 
    // the real stuff...
    RooRealProxy _pdf ;     // Probability Density function
    RooRealProxy _eff;      // Efficiency function
    RooSetProxy  _observables ; // Observables in the efficiency histogram
    mutable const RooArgSet* _pdfNormSet;
+   mutable const RooArgSet* _fixedNormSet;
 
    typedef std::vector<double> BinBoundaries ;
 
@@ -90,15 +95,23 @@ private:
       
       bool trivial() const { return _trivial; }
 
+      void setClone(RooEffHistProd* cl) { _clone = cl; }
+
+      RooEffHistProd* clone() { return _clone; }
+
+      RooArgSet& intObs() { return _intObs; }
+
    private:
       // Payload
+      RooArgSet _intObs ;
+      RooEffHistProd* _clone;
       std::vector<RooAbsReal*> _I;
       bool _trivial;
    };
    
    friend class CacheElem;
    CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, 
-                       const char* rangeName = 0) const;
+                       const char* rangeName = 0, const bool makeClone = false) const;
 
    mutable RooObjCacheManager _cacheMgr;
    BinBoundaries _binboundaries;
