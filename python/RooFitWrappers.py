@@ -331,7 +331,7 @@ class MappedCategory( Category ) :
 class Product(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
         __check_name_syntax__(Name)
-        spec =  "prod::%s(%s)"%(Name,','.join(i['Name'] for i in fargs))
+        spec =  "prod::%s(%s)"%(Name,','.join(i.GetName() for i in fargs))
         self._declare( spec )
         self._init(Name,'RooProduct')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
