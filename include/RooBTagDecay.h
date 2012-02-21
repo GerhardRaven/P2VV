@@ -17,6 +17,7 @@
 #define ROO_B_TAG_DECAY
 
 #include "RooAbsAnaConvPdf.h"
+#include "RooArgList.h"
 #include "RooRealProxy.h"
 #include "RooCategoryProxy.h"
 #include "RooListProxy.h"
@@ -100,6 +101,31 @@ public:
 
   Int_t getTagCatPosition(Int_t tagCatIndex) const;
   Int_t getTagCatIndex(Int_t tagCatPosition) const;
+
+  RooArgList* dilutions()
+  {
+    return new RooArgList(_dilutions, "dilutions");
+  }
+
+  RooArgList* ADilWTags()
+  {
+    return new RooArgList(_ADilWTags, "ADilWTags");
+  }
+
+  RooArgList* avgCEvens()
+  {
+    return new RooArgList(_avgCEvens, "avgCEvens");
+  }
+
+  RooArgList* avgCOdds()
+  {
+    return new RooArgList(_avgCOdds, "avgCOdds");
+  }
+
+  RooArgList* tagCatCoefs()
+  {
+    return new RooArgList(_tagCatCoefs, "tagCatCoefs");
+  }
 
 protected:
   void initTaggingCats(const RooArgList& tagCatCoefs,
