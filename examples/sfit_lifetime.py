@@ -136,7 +136,7 @@ from ROOT import RooMsgService
 ## RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 ## Fit options
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 0)
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 2)
 
 # make sweighted dataset. TODO: use mumu mass as well...
 from P2VVGeneralUtils import SData, splot
