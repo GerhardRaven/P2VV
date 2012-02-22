@@ -52,8 +52,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         components        = pdfConfig.pop('components')
         transAngles       = pdfConfig.pop('transversityAngles')
         bkgAnglePdf       = pdfConfig.pop('bkgAnglePdf')
-        bkgTagCatPdf      = pdfConfig.pop('bkgTagCatPdf')
-        bkgITagPdf        = pdfConfig.pop('bkgITagPdf')
+        bkgTaggingPdf     = pdfConfig.pop('bkgTaggingPdf')
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')
         numBMassBins      = pdfConfig.pop('numBMassBins')
 
@@ -104,8 +103,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         AProd = pdfConfig.pop('AProd')
 
         # plots
-        angleNames = pdfConfig.pop('angleNames')
-        numBkgAngleBins = pdfConfig.pop('numBkgAngleBins')
+        angleNames   = pdfConfig.pop('angleNames')
+        numTimeBins  = pdfConfig.pop('numTimeBins')
+        numAngleBins = pdfConfig.pop('numAngleBins')
 
         if makePlots :
             # import plotting tools
@@ -119,6 +119,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # RooObject wrappers
         from RooFitWrappers import RooObject, RealVar, Category
+        ws = RooObject().ws()
 
         # angular functions
         if nominalPdf :
@@ -129,9 +130,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
         # variables in PDF (except for tagging category)
-        time = RealVar(  'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
-                             , Ranges = dict( Bulk = ( None, 5. ) )
-                            )
+        time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
+                       , Ranges = dict( Bulk = ( None, 5. ) ), nBins = numTimeBins )
         timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.007, MinMax = (0.007, 0.12)
                           , nBins = numTimeResBins )
         timeRes.setBins( numTimeResBins, 'cache' )
@@ -293,7 +293,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # plot mass distributions
             self._massCanv = TCanvas( 'massCanv', 'B mass' )
             for ( pad, frameRange, nBins, plotTitle )\
-                  in zip(  self._massCanv.pads( 2, 2, lambda x : x!=2 )
+                  in zip(  self._massCanv.pads( 2, 2, lambda pad : pad != 2 )
                          , [ 'Signal', 'LeftSideBand', 'RightSideBand' ]
                          , numBMassBins
                          , [  BMass.GetTitle() + ' mass fit - signal'
@@ -394,7 +394,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._taggingParams = TaggingParams(  estWTag = estWTag, p0 = dict( Name = 'wTagP0' ), p1 = dict( Name = 'wTagP1' )
                                                 , p0Constraint = True, p1Constraint = True )
 
-            args = dict(  dilution = self._taggingParams['dilution']
+            args = dict(  iTag     = tagDecision
+                        , dilution = self._taggingParams['dilution']
                         , ADilWTag = self._taggingParams['ADilWTag']
                         , avgCEven = self._taggingParams['avgCEven']
                         , avgCOdd  = self._taggingParams['avgCOdd']
@@ -405,6 +406,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._taggingParams = TaggingParams( AProd = AProd, ANorm = -self._lambdaCP['C'].getVal(), **self._tagCats.tagCatsDict() )
 
             args = dict(  tagCat      = tagCatP2VV
+                        , iTag        = iTag
                         , dilutions   = self._taggingParams['dilutions']
                         , ADilWTags   = self._taggingParams['ADilWTags']
                         , avgCEvens   = self._taggingParams['avgCEvens']
@@ -413,7 +415,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                        )
 
         args = dict(  time                   = time
-                    , iTag                   = iTag if not self._iTagZeroTrick else tagDecision
                     , tau                    = lifetimeParams['MeanLifetime']
                     , dGamma                 = lifetimeParams['deltaGamma']
                     , dm                     = lifetimeParams['deltaM']
@@ -462,34 +463,36 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
         ###################################################################################################################################
-        ## build PDFs for conditional tagging parameters ##
+        ## build PDF for estimated wrong-tag probability ##
         ###################################################
 
         if makePlots :
+            tempTagCat = tagCat if self._iTagZeroTrick else tagCatP2VV
+
             # build PDF for estimated wrong-tag probability
             print 'Bs2Jpsiphi_PdfBuilder: building PDF for estimated wrong-tag probability'
             from RooFitWrappers import HistPdf
-            self._estWTagData = self._sigSWeightData.reduce( '%s > 0' % tagCat.GetName() ) if SFit\
-                                     else self._data.reduce( '%s > 0' % tagCat.GetName() )
+            self._estWTagData = self._sigSWeightData.reduce( '%s > 0' % tempTagCat.GetName() ) if SFit\
+                                     else self._data.reduce( '%s > 0' % tempTagCat.GetName() )
             self._sig_bkg_estWTag = HistPdf(  Name = 'sig_bkg_estWTag'
                                             , Observables = [ estWTag ]
                                             , Binning = { estWTag : numEstWTagBins }
                                             , Data = self._estWTagData
                                            )
 
-            # get normalization correction for tagged events only
-            untagFrac    = self._data.table(tagCat).getFrac('Untagged')
-            untagFracSig = self._sigSWeightData.table(tagCat).getFrac('Untagged')
-            untagFracBkg = self._bkgSWeightData.table(tagCat).getFrac('Untagged')
+            # get normalization correction for tagged events
+            untagFrac    = self._data.table(tempTagCat).getFrac('Untagged')
+            untagFracSig = self._sigSWeightData.table(tempTagCat).getFrac('Untagged')
+            untagFracBkg = self._bkgSWeightData.table(tempTagCat).getFrac('Untagged')
 
             # plot estimated wrong-tag probability for signal and for background
             self._estWTagCanv = TCanvas( 'estWTagCanv', 'Estimated wrong-tag probability' )
             for ( pad, data, nBins, plotTitle, norm )\
-                  in zip(  self._estWTagCanv.pads( 1, 1 ) if SFit else self._estWTagCanv.pads( 2, 2 )
-                         , [ self._sigSWeightData, self._bkgSWeightData, self._data ]
+                  in zip(  self._estWTagCanv.pads( 1, 1 ) if SFit else self._estWTagCanv.pads( 2, 2, lambda pad : pad != 2 )
+                         , [ self._data, self._sigSWeightData, self._bkgSWeightData ]
                          , 3 * [ numEstWTagBins ]
-                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)', '' ]
-                         , [ 1. - untagFracSig, 1. - untagFracBkg, 1. - untagFrac ]
+                         , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                         , [ 1. - untagFrac, 1. - untagFracSig, 1. - untagFracBkg ]
                         ) :
                 plot(  pad, estWTag, data, self._sig_bkg_estWTag
                      , frameOpts  = dict( Bins = nBins, Title = estWTag.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
@@ -502,23 +505,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## build background time PDF ##
         ###############################
 
-        if not SFit :
+        if not SFit or makePlots :
             from P2VVParameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
             backgroundTime = BackgroundTime( Name = 'bkg_t', time = time, resolutionModel = timeResModel['model'] )
-            bkg_t = backgroundTime.pdf()
+            self._bkg_t = backgroundTime.pdf()
 
             if multiplyByTimeEff in [ 'all', 'background' ] :
                 # multiply background time PDF with time acceptance
-                bkg_t = timeAcceptance * bkg_t
+                self._bkg_t = timeAcceptance * self._bkg_t
 
-            backgroundComps += bkg_t
+            backgroundComps += self._bkg_t
 
 
         ###################################################################################################################################
         ## build background angular PDF ##
         ##################################
 
-        if not SFit :
+        if not SFit or makePlots :
             print 'Bs2Jpsiphi_PdfBuilder: determining angular shape of background from %s data'\
                   % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
 
@@ -528,7 +531,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 from RooFitWrappers import HistPdf
                 self._bkg_angles = HistPdf(  Name = 'bkg_angles'
                                            , Observables = angles
-                                           , Binning = { cpsi : numBkgAngleBins[0], ctheta : numBkgAngleBins[1], phi : numBkgAngleBins[2] }
+                                           , Binning = { cpsi : numAngleBins[0], ctheta : numAngleBins[1], phi : numAngleBins[2] }
                                            , Data = bkgAngleData
                                           )
 
@@ -597,7 +600,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     coef.setVal(value)
                     coef.setConstant()
 
-            backgroundComps += self._bkg_angles
+            if not SFit : backgroundComps += self._bkg_angles
 
             if makePlots :
                 # plot background angles
@@ -606,7 +609,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                       in zip(  self._bkgAnglesCanv.pads( 3, 2 )
                              , 2 * angles
                              , 3 * ( self._bkgRangeData, ) + 3 * ( self._bkgSWeightData, )
-                             , 2 * numBkgAngleBins
+                             , 2 * numAngleBins
                              , [ angle.GetTitle() + ' - mass side bands' for angle in angles ]
                              + [ angle.GetTitle() + ' - mass S-weights'  for angle in angles ]
                              , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
@@ -623,45 +626,108 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##################################
 
         if not SFit :
-            print 'Bs2Jpsiphi_PdfBuilder: creating background tagging distributions'
+            if self._iTagZeroTrick :
+                if tagConds not in [ 'iTag', 'all' ] :
+                    self._bkg_tagCat_iTag = None
+                    backgroundComps[tagDecision] = self._bkg_tagCat_iTag
 
-            if bkgTagCatPdf == 'histPdf' and not self._iTagZeroTrick :
-                print '    * tagging category histogram'
-                from RooFitWrappers import HistPdf
-                backgroundComps += HistPdf(  Name = 'bkg_tagCat'
-                                           , Observables = [ tagCatP2VV ]
-                                           , Data = self._data
-                                          )
-            elif not self._iTagZeroTrick :
-                print '    * tagging category binned PDF'
-                from RooFitWrappers import BinnedPdf
-                backgroundComps += BinnedPdf(  'bkg_tagCat'
-                                             , Category     = tagCatP2VV
-                                             , Coefficients = self._taggingParams['tagCatCoefs']
-                                            )
-
-            if bkgITagPdf == 'histPdf' :
-                print '    * initial state flavour tag histogram: determine distribution from %s data'\
-                      % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
-                from RooFitWrappers import HistPdf
-                backgroundComps += HistPdf(  Name = 'bkg_iTag'
-                                           , Observables = [ iTag if not self._iTagZeroTrick else tagDecision ]
-                                           , Data = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
-                                          )
             else :
-                print '    * initial state flavour tag binned PDF: 50%% B / 50%% anti-B'
-                from RooFitWrappers import BinnedPdf
-                backgroundComps += BinnedPdf(  'bkg_iTag'
-                                             , Category     = iTag if not self._iTagZeroTrick else tagDecision
-                                             , Coefficients = [ RealVar( 'bkg_BbarFrac'
-                                                                        , Title    = 'Anti-B fraction in background'
-                                                                        , Value    = 0.5
-                                                                        , MinMax = ( 0., 1. )
-                                                                        , Constant = True
-                                                                       )
-                                                              ]
-                                            )
+                bkgTaggingData = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
+                if bkgTaggingPdf == 'histPdf' :
+                    print 'Bs2Jpsiphi_PdfBuilder: creating background tagging PDFs from %s data'\
+                          % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
+                    from RooFitWrappers import HistPdf
+                    self._bkg_tagCat_iTag = HistPdf( Name = 'bkg_tagCat_iTag', Observables = [ tagCatP2VV, iTag ], Data = bkgTaggingData )
+                    backgroundComps += self._bkg_tagCat_iTag
 
+                else :
+                    print 'Bs2Jpsiphi_PdfBuilder: determining tagged category coefficients from %s'\
+                           % ( 'signal PDF' if bkgTaggingPdf == 'signal'\
+                               else ( 'B mass side band data' if massRangeBackground else 'B mass S-weight data' ) )
+
+                    from RooFitWrappers import FormulaVar
+                    if bkgTaggingPdf == 'signal' :
+                        tagCatCoefNames = [ coef.GetName() for coef in sig_t_angles_tagCat_iTag.tagCatCoefs() ]
+                        AUntagged = RealVar(  'bkgAUnt'
+                                            , Title  = 'Untagged-tagged asymmetry in background tagging category coefficients'
+                                            , Value  = bkgTaggingData.table(tagCatP2VV).getFrac('Untagged')\
+                                                       / ws[ tagCatCoefNames[0] ].getVal() - 1.
+                                            , Error  = 0.1
+                                            , MinMax = ( -1., 1. )
+                                           )
+
+                        from RooFitWrappers import ArgSet
+                        catTagTable = bkgTaggingData.table( ArgSet( 'catTagSet', [ tagCatP2VV, iTag ] ) )
+                        nUntB    = catTagTable.getFrac( '{Untagged;B}'    )
+                        nUntBbar = catTagTable.getFrac( '{Untagged;Bbar}' )
+                        AUntaggedBBbar = RealVar(  'bkgAUntBBbar'
+                                                 , Title  = 'B-Bbar asymmetry in untagged background'
+                                                 , Value  = float( nUntB - nUntBbar ) / float( nUntB + nUntBbar )
+                                                 , Error  = 0.1
+                                                 , MinMax = ( -1., 1. )
+                                                )
+
+                        nTagB    = 0
+                        nTagBbar = 0
+                        for catIter in range( 1, tagCatP2VV.numTypes() ) :
+                            nTagB    += catTagTable.getFrac( '{TagCat%d;B}'    % catIter )
+                            nTagBbar += catTagTable.getFrac( '{TagCat%d;Bbar}' % catIter )
+                        ATaggedBBbar = RealVar(  'bkgATagBBbar'
+                                               , Title  = 'B-Bbar asymmetry in tagged background'
+                                               , Value  = float( nTagB - nTagBbar) / float( nTagB + nTagBbar )
+                                               , Error  = 0.1
+                                               , MinMax = ( -1., 1. )
+                                              )
+
+                        untaggedBCoef  = FormulaVar( 'bkgUntaggedBCoef',  '0.5*(1.+@0)*(1.+@1)'
+                                                    , [ AUntagged, AUntaggedBBbar                         ] )
+                        taggedBCoef    = FormulaVar( 'bkgTaggedBCoef',    '0.5*(1.-@2/(1.-@2)*@0)*(1.+@1)'
+                                                    , [ AUntagged, ATaggedBBbar, ws[ tagCatCoefNames[0] ] ] )
+                        taggedBbarCoef = FormulaVar( 'bkgTaggedBbarCoef', '0.5*(1.-@2/(1.-@2)*@0)*(1.-@1)'
+                                                    , [ AUntagged, ATaggedBBbar, ws[ tagCatCoefNames[0] ] ] )
+
+                        tagBinCoefs = [ ]
+                        from RooFitWrappers import Product
+                        for binIter in range( 1, tagCatP2VV.numTypes() * 2 ) :
+                            cat = binIter % tagCatP2VV.numTypes()
+                            tagBinCoefs.append( Product(  'bkgTagBinCoef%d' % binIter
+                                                        , [ ws[ tagCatCoefNames[cat] ], untaggedBCoef if cat == 0\
+                                                            else ( taggedBbarCoef if binIter < tagCatP2VV.numTypes() else taggedBCoef ) ]
+                                                       )
+                                              )
+
+                    else :
+                        ABBbars = [ ]
+                        for catIter in range( tagCatP2VV.numTypes() ) :
+                            ABBbars.append( RealVar(  'bkgABBbar%d' % catIter
+                                                    , Title  = 'B-Bbar asymmetry in background %d' % catIter
+                                                    , Value  = 0.
+                                                    , MinMax = ( -1., 1. )
+                                                   )
+                                          )
+
+                        tagCatCoefs = [ ]
+                        for catIter in range( 1, tagCatP2VV.numTypes() ) :
+                            tagCatCoefs.append( RealVar(  'bkgTagCatCoef%d' % catIter
+                                                        , Title  = 'Background tagging category coefficient %d' % catIter
+                                                        , Value  = bkgTaggingData.table(tagCatP2VV).getFrac( 'TagCat%d' % catIter )
+                                                        , MinMax = ( -1., 1. )
+                                                       )
+                                              )
+
+                        tagBinCoefs = [ ]
+                        for binIter in range( 1, tagCatP2VV.numTypes() * 2 ) :
+                            cat = binIter % tagCatP2VV.numTypes()
+                            tagBinCoefs.append( FormulaVar(  'bkgTagBinCoef%d' % binIter
+                                                           , '0.5*@0*(1%s@2)' % '+' if binIter < tagCatP2VV.numTypes() else '-'
+                                                           , [ tagCatCoefs[cat], ABBbars[cat] ]
+                                                          )
+                                              )
+
+                    # build binned PDF
+                    from RooFitWrappers import BinnedPdf
+                    self._bkg_tagCat_iTag = BinnedPdf( 'bkg_tagCat_iTag', Categories = [ tagCatP2VV, iTag ], Coefficients = tagBinCoefs )
+                    backgroundComps += self._bkg_tagCat_iTag
 
 
         ###################################################################################################################################

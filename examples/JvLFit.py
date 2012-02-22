@@ -6,17 +6,17 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as pdfConfig
 
 # job parameters
 generateData   = False
-doFit          = True
+doFit          = False
 
-makeObservablePlots     = False
-pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+makeObservablePlots     = True
+pdfConfig['makePlots']  = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = True
 
 plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
-#pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
-pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
+pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
+#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 pdfConfig['nTupleName'] = 'DecayTree'
 pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
@@ -25,24 +25,24 @@ if generateData :
     dataSetFile = 'JvLFit.root'
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
+#pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
+pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
 # PDF options
-pdfConfig['components']         = 'all'      # 'all' / 'signal' / 'background'
+pdfConfig['components']         = 'all'       # 'all' / 'signal' / 'background'
 pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']        = 'histPdf'  # '' / 'histPdf'
-pdfConfig['bkgTagCatPdf']       = 'histPdf'  # '' / 'histPdf'
-pdfConfig['bkgITagPdf']         = 'histPdf'  # '' / 'histPdf'
-pdfConfig['multiplyByTimeEff']  = ''   # 'all' / 'signal'
+pdfConfig['bkgAnglePdf']        = 'histPdf'
+pdfConfig['bkgTaggingPdf']      = 'histPdf'
+pdfConfig['multiplyByTimeEff']  = ''          # 'all' / 'signal'
 pdfConfig['numBMassBins']       = [ 50, 10, 10 ]
 
 pdfConfig['iTagZeroTrick'] = False
 pdfConfig['iTagStates'] = { }  # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-pdfConfig['taggingConditionals'] = 'all'   # 'all' / 'tagCat' / 'estWTag' / 'iTag'
+pdfConfig['taggingConditionals'] = ''   # 'all' / 'tagCat' / 'estWTag' / 'iTag'
 pdfConfig['numEstWTagBins']      = 100
 
-pdfConfig['eventTimeResolution'] = True
+pdfConfig['eventTimeResolution'] = False
 pdfConfig['numTimeResBins']      = 100
 
 nEvents = 30000
@@ -100,10 +100,10 @@ else :
                               )
 angleNames = pdfConfig['angleNames']
 
-numBins      = ( 60, 30, 30, 30 )
-numTimeBins  = ( 30, 30, 30 )
+numBins = ( 60, 30, 30, 30 )
+pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
-pdfConfig['numBkgAngleBins'] = ( 5, 7, 9 )
+pdfConfig['numAngleBins'] = ( 5, 7, 9 )
 
 lineWidth = 2
 markStyle = 8
@@ -118,7 +118,7 @@ from P2VVLoad import RooFitOutput
 
 # workspace
 from RooFitWrappers import RooObject
-ws = RooObject(workspace = 'JpsiphiWorkspace')
+ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
 from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
@@ -189,12 +189,13 @@ if doFit :
 ## make some plots ##
 #####################
 
-if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
+if makeObservablePlots or pdfConfig['makePlots'] :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
     from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
 
+    # create projection data set for conditional observables
     if pdfConfig['SFit'] :
         comps = None
     else :
@@ -217,6 +218,26 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
         projWData     = dict()
         projWDataBulk = dict()
 
+if pdfConfig['makePlots'] :
+    # plot background time
+    bkgTimeCanv = TCanvas( 'bkgTimeCanv', 'Background Lifetime' )
+    for ( pad, data, plotTitle, logY )\
+          in zip(  bkgTimeCanv.pads( 2, 2 )
+                 , 2 * [ pdfBuild['bkgRangeData'], pdfBuild['bkgSWeightData'] ]
+                 , [  time.GetTitle() + ' - mass side bands - linear'
+                    , time.GetTitle() + ' - mass S-weights - linear'
+                    , time.GetTitle() + ' - mass side bands - logarithmic'
+                    , time.GetTitle() + ' - mass S-weights - logarithmic'
+                   ]
+                 , 2 * [ False ] + 2 * [ True ]
+                ) :
+        plot(  pad, time, data, pdfBuild['bkg_t'], logy = logY
+             , frameOpts  = dict( Title = plotTitle, Range = 'Bulk', Bins = pdfConfig['numTimeBins'] )
+             , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
+             , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
+            )
+
+if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     # plot lifetime and angles
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
     for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
@@ -244,7 +265,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     timeCanv = TCanvas( 'timeCanv', 'Lifetime' )
     for ( pad, nBins, plotTitle, yTitle, yScale, dataCuts, pdfCuts, logY )\
             in zip(  timeCanv.pads( 2, 2 )
-                   , numTimeBins
+                   , 3 * [ pdfConfig['numTimeBins'] ]
                    , timePlotTitles
                    , 2 * ( None, ) + ( 'B/#bar{B} asymmetry', )
                    , ( ( None, None ), ( 50., None ), ( None, None ) )
@@ -271,7 +292,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
     for ( pad, nBins, plotTitle, yTitle, dataCuts, pdfCuts, logY )\
         in zip(  timeCanv1.pads( 3, 2 )
-             , 2 * numTimeBins
+             , 6 * [ pdfConfig['numTimeBins'] ]
              , timePlotTitles1
              , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
              ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()             )                   ), )
@@ -333,19 +354,15 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     if pdfConfig['makePlots'] :
         anglesCanv.Print(plotsFile)
         pdfBuild['massCanv'].Print(plotsFile)
-        if pdfConfig['SFit'] :
-          pdfBuild['estWTagCanv'].Print(plotsFile + ')')
-        else :
-          pdfBuild['estWTagCanv'].Print(plotsFile)
-          pdfBuild['bkgAnglesCanv'].Print(plotsFile + ')')
+        bkgTimeCanv.Print(plotsFile)
+        pdfBuild['bkgAnglesCanv'].Print(plotsFile)
+        pdfBuild['estWTagCanv'].Print(plotsFile + ')')
 
     else :
         anglesCanv.Print(plotsFile + ')')
 
 elif pdfConfig['makePlots'] :
     pdfBuild['massCanv'].Print(plotsFile + '(')
-    if pdfConfig['SFit'] :
-      pdfBuild['estWTagCanv'].Print(plotsFile + ')')
-    else :
-      pdfBuild['estWTagCanv'].Print(plotsFile)
-      pdfBuild['bkgAnglesCanv'].Print(plotsFile + ')')
+    bkgTimeCanv.Print(plotsFile)
+    pdfBuild['bkgAnglesCanv'].Print(plotsFile)
+    pdfBuild['estWTagCanv'].Print(plotsFile + ')')
