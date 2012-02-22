@@ -71,8 +71,13 @@ sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 #Time Resolution Model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
-tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
+#Per event error
+#from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
+#tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
+
+#Three Gaussians
+from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
+tresdata = DataTimeResolution( time = t, timeResSFConstraint = True )
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
@@ -157,8 +162,8 @@ sig_t_angles = eff * sig_t_angles
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/flatacceptance.root', Histogram = 'flathisto')
+#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/flatacceptance.root', Histogram = 'flathisto')
 sig_t_angles = acceptance * sig_t_angles
 
 ####################
@@ -203,7 +208,7 @@ pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalu
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
 #CP._lambdaCPSq._var.setConstant(True)
 sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
-sfitresult.writepars('sfitresult',False)
+sfitresult.writepars('sfitresult_treso_LP_FlatTimeAcc',False)
 
 assert False
 
