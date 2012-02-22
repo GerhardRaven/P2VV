@@ -14,11 +14,11 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
         if 'Model' in kwargs : self._model = kwargs.pop( 'Model' )
         else :                 raise KeyError('TimeResolution: please specify a resolution model')
         if 'Name' in kwargs: self._Name = kwargs.pop('Name')
-
+        cache = kwargs.pop('Cache', True)
         # cache integrals as a function of observables
         from ROOT import RooAbsReal, RooArgSet
         realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal) and o != self._time  ]  )
-        if len(realObs) : 
+        if cache and len(realObs) : 
             print 'invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
             self._model.setParameterizeIntegral( realObs )
 
@@ -142,10 +142,10 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                                                           )
                                 , Conditional = self._sigmat
                                 , Constraints = constraints
+                                , Cache = cache
                                )
 
         from ROOT import RooArgSet
-        if cache: self.model().setParameterizeIntegral( RooArgSet( self._sigmat._var ) )
 
 class Gamma_Sigmat( _util_parse_mixin ) :
     def pdf(self) :
