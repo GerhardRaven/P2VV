@@ -14,11 +14,12 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
         if 'Model' in kwargs : self._model = kwargs.pop( 'Model' )
         else :                 raise KeyError('TimeResolution: please specify a resolution model')
         if 'Name' in kwargs: self._Name = kwargs.pop('Name')
-        cache = kwargs.pop('Cache', True)
+
         # cache integrals as a function of observables
+        cache = kwargs.pop('Cache', True)
         from ROOT import RooAbsReal, RooArgSet
         realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal) and o != self._time  ]  )
-        if cache and len(realObs) : 
+        if cache and len(realObs) :
             print 'invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
             self._model.setParameterizeIntegral( realObs )
 
