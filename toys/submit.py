@@ -84,11 +84,11 @@ j.merger = CustomMerger(
     )
 
 # Add the splitter
-args = ['toyMC_EffHistProdSig.py', '--ncpu=1', '-n',
-        '24', '-s', 'snapshot.tar.bz2', dy]
+args = ['toyMC_BinnedPdf.py', '--ncpu=1', '-n',
+        '50', '-s', 'snapshot.tar.bz2', dy]
 j.splitter = GenericSplitter(
     attribute = 'application.args',
-    values = [args for i in range(40)]
+    values = [args for i in range(100)]
     )
 j.name = 'BinnedPdf_toy_vbins_%s' % dy.replace('.', '_')
 

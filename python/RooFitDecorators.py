@@ -164,8 +164,9 @@ RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
 
 def __RooWorkspacePut( self ,x, **kwargs ) :
+    __dref__ = lambda i : i._var if hasattr(i,'_var') else i
     _import = getattr(RooWorkspace,'import')
-    if _import(self,x,**kwargs) : return None
+    if _import(self,__dref__(x),**kwargs) : return None
     return self[kwargs.get('Rename',x.GetName())]
 
 setattr( RooWorkspace, 'import',  __wrap_kw_subs( getattr(RooWorkspace, 'import' ) ) )
