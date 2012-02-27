@@ -14,7 +14,7 @@ fitOpts = dict(
     , Save = True
     , Verbose = True
     , Minimizer = ('Minuit2','minimize')
-    , Optimize = 0
+    , Optimize = 2
     )
 
 tmincut = 0.3
@@ -55,7 +55,7 @@ from P2VVGeneralUtils import readData
 data = readData( '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
-                 , observables = [ m, mpsi, mphi, t, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
+                 , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
                  , Rename = 'Data_DecayTree'
                  )
 
@@ -125,9 +125,9 @@ nbkg = 10500
 ######################################################
 ### Turn these three on/off to see the problem !!! ###
 ######################################################
-background = Component('bkg'   , ( MoriondAcceptance*bkg_t.pdf(),), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+#background = Component('bkg'   , ( MoriondAcceptance*bkg_t.pdf(),), Yield = ( nbkg, 0.9, 1.1*nbkg) )
 #background = Component('bkg'   , ( UnityAcceptance*bkg_t.pdf(),), Yield = ( nbkg, 0.9, 1.1*nbkg) )
-#background = Component('bkg'   , ( bkg_t.pdf(),), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+background = Component('bkg'   , ( bkg_t.pdf(),), Yield = ( nbkg, 0.9, 1.1*nbkg) )
 
 ###############
 ### BKG fit ###

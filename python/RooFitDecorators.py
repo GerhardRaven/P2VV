@@ -49,7 +49,9 @@ def __wrap_kw_subs( fun ) :
             return fun(self, *args, **kwargs)
         except TypeError:
             fun_args        =  [ a for a in args if not isinstance(a, RooCmdArg) ]
-            l = RooLinkedList( [ a for a in args if     isinstance(a, RooCmdArg) ] )
+            l = RooLinkedList()
+            for a in args:
+                if isinstance(a, RooCmdArg): l.Add(a)
             return fun(self, *tuple(fun_args + [l]), **kwargs)
     return _fun
 
@@ -180,8 +182,9 @@ RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
 
 def __RooWorkspacePut( self ,x, **kwargs ) :
+    __dref__ = lambda i : i._var if hasattr(i,'_var') else i
     _import = getattr(RooWorkspace,'import')
-    if _import(self,x,**kwargs) : return None
+    if _import(self,__dref__(x),**kwargs) : return None
     return self[kwargs.get('Rename',x.GetName())]
 
 setattr( RooWorkspace, 'import',  __wrap_kw_subs( getattr(RooWorkspace, 'import' ) ) )
