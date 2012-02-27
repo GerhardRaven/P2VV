@@ -1283,8 +1283,8 @@ void RooBTagDecay::initTaggingCats(const RooArgList& tagCatCoefs,
 
   } else if (_tagCatType == 3) {
     // create tagging category coefficient for complementary category
-    RooFormulaVar* tagCatCoef0 = new RooFormulaVar("tagCatCoef00",
-        "tagCatCoef00", tagCatCoefFormString, tagCatCoefList);
+    RooFormulaVar* tagCatCoef0 = new RooFormulaVar("tagCatCoef0",
+        "tagCatCoef0", tagCatCoefFormString, tagCatCoefList);
     _createdVars.addOwned(*tagCatCoef0);
     _tagCatCoefs.add(*tagCatCoef0);
     _tagCatCoefs.add(tagCatCoefList);
@@ -1300,8 +1300,8 @@ void RooBTagDecay::initTaggingCats(const RooArgList& tagCatCoefs,
     tempEvenList.add(*_avgCEvenSum.absArg());
     tempEvenList.add(tagCatCoefList);
     tempEvenList.add(*tagCatCoef0);
-    RooFormulaVar* avgCEven0 = new RooFormulaVar("avgCEven00",
-        "avgCEven00", avgCoefFormString, tempEvenList);
+    RooFormulaVar* avgCEven0 = new RooFormulaVar("avgCEven0",
+        "avgCEven0", avgCoefFormString, tempEvenList);
     _createdVars.addOwned(*avgCEven0);
     _avgCEvens.add(*avgCEven0);
     _avgCEvens.add(avgCEvenList);
@@ -1310,8 +1310,8 @@ void RooBTagDecay::initTaggingCats(const RooArgList& tagCatCoefs,
     tempOddList.add(*_avgCOddSum.absArg());
     tempOddList.add(tagCatCoefList);
     tempOddList.add(*tagCatCoef0);
-    RooFormulaVar* avgCOdd0 = new RooFormulaVar("avgCOdd00",
-        "avgCOdd00", avgCoefFormString, tempOddList);
+    RooFormulaVar* avgCOdd0 = new RooFormulaVar("avgCOdd0",
+        "avgCOdd0", avgCoefFormString, tempOddList);
     _createdVars.addOwned(*avgCOdd0);
     _avgCOdds.add(*avgCOdd0);
     _avgCOdds.add(avgCOddList);

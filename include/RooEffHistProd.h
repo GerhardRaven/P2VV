@@ -37,13 +37,23 @@ public:
       // Return kTRUE to force RooRealIntegral to offer all observables for internal integration
       return kTRUE ; 
    }
-   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+
+   Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
+                                 const RooArgSet* normSet, const char* rangeName) const;
+   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const;
    Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
 
    virtual void selectNormalization(const RooArgSet*,Bool_t);
    virtual ExtendMode extendMode() const;
 
    virtual Double_t expectedEvents(const RooArgSet* nset) const;
+
+   // Function evaluation
+   virtual Double_t getValV(const RooArgSet* set = 0) const;
+
+protected:
+
+   virtual Double_t evaluate() const;
 
 private:
   
@@ -61,14 +71,13 @@ private:
    RooRealVar& x() const { return *static_cast<RooRealVar*>(  _observables.first() ) ; }
 
    const RooArgSet& observables() const { return static_cast<const RooArgSet&>(_observables); }
-  
-   // Function evaluation
-   virtual Double_t evaluate() const ;
 
    // the real stuff...
    RooRealProxy _pdf ;     // Probability Density function
    RooRealProxy _eff;      // Efficiency function
    RooSetProxy  _observables ; // Observables in the efficiency histogram
+   mutable const RooArgSet* _pdfNormSet;
+   mutable const RooArgSet* _fixedNormSet;
 
    typedef std::vector<double> BinBoundaries ;
 
@@ -86,20 +95,28 @@ private:
       
       bool trivial() const { return _trivial; }
 
+      void setClone(RooEffHistProd* cl) { _clone = cl; }
+
+      RooEffHistProd* clone() { return _clone; }
+
+      RooArgSet& intObs() { return _intObs; }
+
    private:
       // Payload
+      RooArgSet _intObs ;
+      RooEffHistProd* _clone;
       std::vector<RooAbsReal*> _I;
       bool _trivial;
    };
    
    friend class CacheElem;
    CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, 
-                       const char* rangeName = 0) const;
+                       const char* rangeName = 0, const bool makeClone = false) const;
 
    mutable RooObjCacheManager _cacheMgr;
    BinBoundaries _binboundaries;
   
-   ClassDef(RooEffHistProd, 4) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
+   ClassDef(RooEffHistProd, 5) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
 };
 
 #endif

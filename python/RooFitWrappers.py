@@ -331,7 +331,7 @@ class MappedCategory( Category ) :
 class Product(RooObject) :
     def __init__(self,Name,fargs,**kwargs) :
         __check_name_syntax__(Name)
-        spec =  "prod::%s(%s)"%(Name,','.join(i['Name'] for i in fargs))
+        spec =  "prod::%s(%s)"%(Name,','.join(i.GetName() for i in fargs))
         self._declare( spec )
         self._init(Name,'RooProduct')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
@@ -1064,47 +1064,56 @@ class BTagDecay( Pdf ) :
 
 class BinnedPdf( Pdf ) :
     def __init__( self, Name, **kwargs ) :
+	# !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
+	# !!! work very well. We create the object directly and then add it to RooObject and the workspace.
         from P2VVLoad import P2VVLibrary
         argDict = { 'Name' : Name }
 
         # declare PDF in workspace
         if 'Category' in kwargs :
             # single category dependence
-            argDict['cat']   = str(kwargs.pop('Category')[0])
+            argDict['cat']   = str(kwargs.pop('Category'))
             argDict['coefs'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Coefficients') )
             self._declare( "BinnedPdf::%(Name)s(%(cat)s, %(coefs)s)" % argDict )
 
         elif 'Categories' in kwargs :
             # multiple category dependence
-            listArrayName = Name + '_coefLists'
-            argDict['ignore'] = int( kwargs.pop( 'IgnoreFirstBin', 0 ) )
-            argDict['cats']   = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Categories') )
-            argDict['coefs']  = listArrayName
 
-            # create an array for the coefficient lists
-            #!!! We use this weird workspace put/wsImport construct to avoid ROOT crashes when importing a TObjArray of RooArgLists
-            #!!! when there are already blinded parameters in the workspace. Weird? Yes, weird...
-            from ROOT import TObjArray
-            wsListArray = TObjArray()
-            wsListArray.SetName(listArrayName)
-            self.ws().put(wsListArray)    # first put the TObjArray in workspace, ...
+            # build list of base categories
+            from ROOT import RooArgList
+            varList = RooArgList()
+            categories = kwargs.pop('Categories')
+            for var in categories : varList.add(__dref__(var))
 
-            # create coefficient lists
-            from ROOT import RooArgList, RooWorkspace
-            wsImport = getattr( RooWorkspace, 'import' )
-            for varNum, coefList in enumerate( kwargs.pop('Coefficients') ):
-                listName = Name + '_coefList%d' % varNum
-                wsList = RooArgList(listName)
-                for coef in coefList : wsList.add( self.ws().arg( str(coef) ) )
-                wsImport( self.ws(), wsList, listName, 0 )                     # ... then import RooArgList into workspace (with name!) ...
-                self.ws().obj(listArrayName).Add( self.ws().obj(listName) )    # ... and then add RooArgList to TObjArray
+            if hasattr( kwargs['Coefficients'][0], '__iter__' ) :
+                # coefficients for different variables factorize
 
-            self._declare( "BinnedPdf::%(Name)s(%(cats)s, %(coefs)s, %(ignore)s)" % argDict )
+                # build coefficients lists
+                assert len(kwargs['Coefficients']) == len(categories),\
+                        'P2VV - ERROR: BinnedPdf: number of specified coefficient lists is not equal to the number of specified variables'
+                from ROOT import TObjArray, RooArgList
+                coefLists = TObjArray()
+                for coefficients in kwargs.pop('Coefficients') :
+                    coefList = RooArgList()
+                    for coef in coefficients : coefList.add(__dref__(coef))
+                    coefLists.Add(coefList)
+
+                from ROOT import RooBinnedPdf
+                self._addObject( RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefLists
+                                              , int( kwargs.pop( 'IgnoreFirstBin', 0 ) ) ) )
+            else :
+                # coefficients for different variables don't factorize
+
+                # build coefficients list
+                from ROOT import RooArgList
+                coefList = RooArgList()
+                for coef in kwargs.pop('Coefficients') : coefList.add(__dref__(coef))
+
+                from ROOT import RooBinnedPdf
+                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name'], varList, coefList ) )
 
         elif 'Observable' in kwargs :
             # single continuous variable dependence
-	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	    # !!! work very well. We create the object directly and then add it to RooObject and the workspace.
             var = kwargs.pop('Observable')
             binning = kwargs.pop('Binning')
             binning = var.getBinning(binning).GetName() if type(binning) == str else binning.GetName()
@@ -1133,8 +1142,6 @@ class BinnedPdf( Pdf ) :
 
         elif 'Observables' in kwargs :
             # multiple continuous variable dependence
-	    # !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	    # !!! work very well. We create the object directly and then add it to RooObject and the workspace.
 
             # build list of base variables
             from ROOT import RooArgList
@@ -1226,7 +1233,7 @@ class Component(object):
     _d = {}
     def __init__(self,Name,*args,**kw) :
         # TODO: make things singletons, indexed by 'Name'
-        if Name in Component._d : raise KeyError('Name %s is not unique'%name)
+        if Name in Component._d : raise KeyError('Name %s is not unique' % Name)
         self.name = Name
         Component._d[Name] = dict()
         Component._d[Name]['Name'] = Name

@@ -70,12 +70,19 @@ class _util_extConstraints_mixin( object ) :
 
 class _util_conditionalObs_mixin( object ) :
     def __init__( self, kwargs ) :
-        if   'Conditionals' in kwargs : self._conditionals = [ constraint for constraint in kwargs.pop('Conditionals') ]
+        if   'Conditionals' in kwargs : self._conditionals = [ conditional for conditional in kwargs.pop('Conditionals') ]
         elif 'Conditional'  in kwargs : self._conditionals = [ kwargs.pop('Conditional') ]
         else                          : self._conditionals = [  ]
 
     def conditionalObservables( self ) : return self._conditionals
     def hasCondObservables( self )     : return len(self._conditionals) > 0
+
+    def addConditional( self, condObs ) :
+        if not condObs in self._conditionals : self._conditionals.append(condObs)
+        else : print 'P2VV - WARNING: _util_conditionalObs_mixin.addConditional(): observable "%s" is already conditional' % condObs
+
+    def addConditionals( self, condObsList ) :
+        for obs in condObsList : self.addConditional(obs)
 
 
 #def normalize_individual( name, pdf, tag ) :

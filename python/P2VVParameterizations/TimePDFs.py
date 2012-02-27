@@ -72,6 +72,7 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
                 Norm = [ ]
             else :
                 Norm = [ FormulaVar('Norm','1.0/(1.0+sign(@0)*@1)',[tag,CP['C']] ) ]
+                Norm[0].setAttribute("CacheAndTrack")
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
             # TODO: replace by Addition & Product... why? (only parameters)
             Re        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
@@ -107,11 +108,6 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         except:
             from compatibility import cwr
 
-        from ROOT import RooAbsReal, RooArgSet
-        realObs = RooArgSet( [ o._var for o in dilution.Observables() if isinstance(o._var,RooAbsReal)  ]  )
-        if len(realObs) : 
-            print 'adding cache of integral of %s as function of %s' % ( dilution.GetName(), [ o.GetName() for o in realObs ] )
-            dilution.setParameterizeIntegral( realObs )
         tag = Product('tag',( RealCategory('tag_real', itag ),dilution))
         for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
             # NOTE: 'Amplitudes'  must be traversed 'in order' -- so we cannot use Amplitudes.keys() out of the box, but use the

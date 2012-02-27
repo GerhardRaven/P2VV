@@ -2,23 +2,28 @@ from math import sqrt, pi, cos, sin
 from RooFitWrappers import *
 from ROOT import RooMsgService
 #RooMsgService.instance().addStream(RooFit.DEBUG, RooFit.Topic(RooFit.Integration))
+RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
+RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict( NumCPU = numCPU() 
-              , Timer=1
-              , Save = True
-#              , Verbose = True
-#              , Minimizer = ('Minuit2','minimize')
-              )
+
+fitOpts = dict(
+    NumCPU = 1
+    #NumCPU = numCPU()
+    , Timer=1
+    , Save = True
+    #, Verbose = True
+    #, Minimizer = ('Minuit2','minimize')
+    )
 
 tmincut = 0.3
 
 # define observables
-m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
+m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV/c^{2}', Observable = True, MinMax = (5200, 5550), nBins =  48
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
                                   , 'rightsideband' : ( 5410, None ) 
@@ -48,7 +53,7 @@ for i in [ eta_os, st ] : i.setBins( 20 , 'cache' )
 
 #Read data
 from P2VVGeneralUtils import readData
-data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
                  , dataSetName = 'DecayTree'
                  , NTuple = True
                  , observables = [ m, mpsi, mphi, t, st, eta_os, eta_ss, iTag_os, iTag_ss, sel, triggerdec, angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]
@@ -66,19 +71,12 @@ sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 #Time Resolution Model
-#Three Gaussians
-#from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
-#tresdata = DataTimeResolution( time = t, timeResSFConstraint = True )
-#Per event error
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                       , deltaGamma = dict( Name = 'dGamma'
-                                                            , Value = 0.060
-                                                            , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-                                                            )
+                                       , deltaGamma = dict( Name = 'dGamma' , Value = 0.060)
                                        , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
                                        , deltaMConstraint = True
                                      )
@@ -86,18 +84,17 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True )
+# addConditional(iTag_os)
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
 #eta_os_pdf = { eta_os : None }
 
-from P2VVParameterizations.CPVParams import LambdaArg_CPParam
-CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
-                                              , Value = -0.04
-                                              , MinMax = (-pi,pi)
-                                              , Blind =  ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-                                              )
-                           )
+from P2VVParameterizations.CPVParams import LambdaArg_CPParam, LambdaSqArg_CPParam
+CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s' , Value = -0.04 , MinMax = (-pi,pi)))
+#Fit for |lambda|^2
+#CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s' , Value = -0.04 , MinMax = (-pi,pi))
+#                           )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
 from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
@@ -110,33 +107,34 @@ amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
 
 # need to specify order in which to traverse...
 from RooFitWrappers import RealCategory
-from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
-basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
-                                                  , amplitudes
-                                                  , CP
-                                                  , iTag_os
-                                                  , tagging['dilution']
-                                                  , ['A0','Apar','Aperp','AS'] ) 
+from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
+basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes, CP, ['A0','Apar','Aperp','AS'] )
 
-basisCoefficients.externalConstraints = tagging.externalConstraints()
+from RooFitWrappers import BTagDecay
+sig_t_angles_iTag = BTagDecay(  Name                   = 'sig_t_angles_iTag'
+                              , time                   = t
+                              , iTag                   = iTag_os
+                              , dm                     = lifetimeParams['deltaM'] 
+                              , tau                    = lifetimeParams['MeanLifetime']
+                              , dGamma                 = lifetimeParams['deltaGamma'] 
+                              , resolutionModel        = tresdata['model']
+                              , coshCoef               = basisCoefficients['cosh']
+                              , cosCoef                = basisCoefficients['cos']
+                              , sinhCoef               = basisCoefficients['sinh']
+                              , sinCoef                = basisCoefficients['sin']
+                              , dilution               = tagging['dilution']
+                              , ADilWTag               = tagging['ADilWTag']
+                              , avgCEven               = tagging['avgCEven']
+                              , avgCOdd                = tagging['avgCOdd']
+                              , ConditionalObservables = tresdata.conditionalObservables() + tagging.conditionalObservables()
+                              , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                                         + tresdata.externalConstraints()\
+                                                         + tagging.externalConstraints()
+                             )
 
 print "*****************************"
-print [ i.GetName() for i in set( tresdata.model().ConditionalObservables() ).union(set( [eta_os] ) ) ]
+print [ i.GetName() for i in sig_t_angles_iTag.ConditionalObservables()  ]
 print "*****************************"
-sig_t_angles = BDecay( Name      = 'sig_t_angles'
-                     , time      = t
-                     , dm        = lifetimeParams['deltaM'] 
-                     , tau       = lifetimeParams['MeanLifetime']
-                     , dGamma    = lifetimeParams['deltaGamma'] 
-                     , resolutionModel = tresdata.model()
-                     , coshCoef  = basisCoefficients['cosh']
-                     , cosCoef   = basisCoefficients['cos']
-                     , sinhCoef  = basisCoefficients['sinh']
-                     , sinCoef   = basisCoefficients['sin']
-                     , ConditionalObservables = set(tresdata.model().ConditionalObservables()).union( set( [eta_os,] ) )
-#                     , ConditionalObservables = tresdata.model().ConditionalObservables()
-                     , ExternalConstraints = lifetimeParams.externalConstraints() + tresdata.externalConstraints() + basisCoefficients.externalConstraints
-                     )
 
 #####################################
 ### Angular acceptance correction ###
@@ -154,14 +152,15 @@ eff.read('/data/bfys/dveijk/DataJpsiPhi/2012/effmoments_tcut_%s.txt'%(tmincut))
 eff.Print()
 
 #Build Angular acceptance corrected PDF
-sig_t_angles = eff * sig_t_angles
+sig_t_angles_iTag = eff * sig_t_angles_iTag
 
 ##############################
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
-#sig_t_angles = acceptance * sig_t_angles
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
+#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/flatacceptance.root', Histogram = 'flathisto')
+sig_t_angles_iTag = acceptance * sig_t_angles_iTag
 
 ####################
 ### Compose PDFs ###
@@ -169,8 +168,8 @@ acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/Da
 
 nsig = 21000
 nbkg = 10500
-signal         = Component('signal', ( sig_m.pdf(), sig_t_angles, {  st : None } ), Yield = ( nsig, 0, 1.4*nsig) )
-background     = Component('bkg',    ( bkg_m.pdf(), ),                                            Yield = ( nbkg, 0, 1.4*nbkg) )
+signal         = Component('signal', ( sig_m.pdf(), sig_t_angles_iTag, { eta_os: None, st : None } ), Yield = ( nsig, 0, 1.4*nsig) )
+background     = Component('background',    ( bkg_m.pdf(), ),                                           Yield = ( nbkg, 0, 1.4*nbkg) )
 
 ############
 ### SFIT ###
@@ -180,20 +179,42 @@ from P2VVGeneralUtils import SData, splot
 
 masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 masspdf.fitTo(data,**fitOpts)
+
+massplot = True
+
+if massplot:
+    from ROOT import kDashed, kRed, kGreen, TCanvas, TLatex
+    from P2VVGeneralUtils import plot
+    canvas = TCanvas()
+    plot( canvas, m, data, masspdf, components = { 'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
+                                                   , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
+                                                   }
+          , pdfOpts   = dict( LineWidth = 3 )
+          , dataOpts  = { 'MarkerSize' : 0.8,      'XErrorSize' : 0  }
+          , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
+                              , TitleOffset = (1.2,'y')
+                              , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                              , Bins=70 ) 
+          )
+
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
 pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
-#pdf = buildPdf((signal,), Observables = (t,iTag_os,eta_os)+tuple(angles.angles.itervalues()), Name='pdf')
+
 #Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
+#CP._lambdaCPSq._var.setConstant(True)
 
-fitset = pdf._var.getParameters(data)
-sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
-#fitset.writeToFile("nominalsfitresult.txt")
-sfitresult.writepars('sfitresult_NOTimeAcc',False)
+read = True
 
-assert False
-fitset.readFromFile("nominalsfitresult.txt")
+if read:
+    fitset = pdf._var.getParameters(data)
+    fitset.readFromFile("sfitparams.txt")
+else:
+    sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
+    sfitresult.writepars('sfitresult',False)
+    fitset = pdf._var.getParameters(data)
+    fitset.writeToFile("sfitparams.txt")
 
 ########
 # PLOT #
@@ -201,20 +222,54 @@ fitset.readFromFile("nominalsfitresult.txt")
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 from P2VVGeneralUtils import plot
+orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
 
 canvas = dict()
-for rng in ( None,) :
+for rng in ( None, ) :
     canvas[rng] = TCanvas('%s'%rng)
     obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
-    for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
+    from P2VVGeneralUtils import Sorter
+    for (p,o) in zip( canvas[rng].pads(len(obs)), sorted(obs, key = Sorter(orderdict)) ) :
         dataOpts = dict( CutRange =        rng ) if rng else dict()
         pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
         from P2VVGeneralUtils import plot
         from ROOT import RooArgSet
-        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var), data, True )
+        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var), data, True )
         plot( p, o, splot_m.data('signal'), pdf
               , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
               , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
 #Error for events with negative weight for negative log
 #              , logy = ( o == t )
               )
+
+assert False
+
+#sfitresult.Print()
+
+
+#Turn this on when fit is fast with NumCPU = numCPU() working!!!
+#######################
+# Profile likelihoods #
+#######################
+
+pllvar = lifetimeParams._deltaM._var
+
+from ROOT import RooMinuit
+#Need to implement conditionalobservables and externalconstraints here
+
+nll = pdf.createNLL(splot_m.data('signal'), NumCPU = numCPU()
+                    , Verbose = False
+                    #, ConditionalObservables =
+                    #, ExternalConstraints = 
+                    )
+minuit = RooMinuit(nll)
+minuit.setProfile(1) #Timer =1
+minimize = minuit.migrad() #Save = True
+sfitresult = minuit.save()
+pll = nll.createProfile(RooArgSet(pllvar)) #This creates a RooProfileLL object!
+from ROOT import TCanvas
+canvas = TCanvas()
+frame = pllvar.frame()
+pll.plotOn(frame)
+frame.Draw()
+

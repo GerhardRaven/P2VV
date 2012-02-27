@@ -456,7 +456,9 @@ Int_t RooBinnedPdf::getAnalyticalIntegral(RooArgSet& allVars,
     } else {
       // category dependence
       RooAbsCategory* cat = (RooAbsCategory*)_baseCatsList.at(catIter);
-      if (!allVars.contains(*cat) || cat->hasRange(rangeName)) continue;
+      if (!allVars.contains(*cat) || (rangeName != 0
+          && cat->hasRange(rangeName)))
+        continue;
       analVars.add(*cat);
     }
 
@@ -546,20 +548,20 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
       // return integral if bin 0 coefficient equals zero
       if (coefSum >= 1.) return integral /= coefSum;
 
-      if (_continuousBase) {
-        // check if we have to add the bin 0 coefficient to the integral
-        Double_t binVolumeFac = 1.;
-        for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
-          if ((varsCode & 1 << catIter) == 0) {
-            // check if the category index corresponds to this bin
-            std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
-            Int_t cPos = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
-                ->getIndex()];
-            if (cPos != 0)
-              // don't use coefficient's value
-              return integral;
-          }
+      // check if we have to add the bin 0 coefficient to the integral
+      Double_t binVolumeFac = 1.;
+      for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+        if ((varsCode & 1 << catIter) == 0) {
+          // check if the category index corresponds to this bin
+          std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
+          Int_t cPos = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
+              ->getIndex()];
+          if (cPos != 0)
+            // don't use coefficient's value
+            return integral;
+        }
 
+        if (_continuousBase) {
           // update bin volume factor
           if (!_binIntegralCoefs && (varsCode & 1 << catIter) != 0)
             // multiply bin volume by bin width of bin 0
@@ -569,15 +571,11 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
             // divide bin volume by bin width of bin 0
             binVolumeFac /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
                 ->getBinning(_binningNames[catIter]).binWidth(0);
-          
         }
-
-        // add bin 0 value to integral and return integral
-        return integral + (1. - coefSum) * binVolumeFac;
       }
 
       // add bin 0 value to integral and return integral
-      return integral + 1. - coefSum;
+      return integral + (1. - coefSum) * binVolumeFac;
     }
 
     // return integral value
