@@ -106,7 +106,7 @@ from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as D
 sigtres = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
 
 #Background
-from P2VVParameterizations.TimeResolution import Truth_TimeResolution as BkgTimeResolution
+#from P2VVParameterizations.TimeResolution import Truth_TimeResolution as BkgTimeResolution
 #bkgtres = BkgTimeResolution( time = t)
 bkgtres = sigtres
 
@@ -153,14 +153,32 @@ amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
                                              )
 
 # need to specify order in which to traverse...
-from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
-basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
-                                                    , amplitudes
-                                                    , CP
-                                                    , iTag_os
-                                                    , tagging['dilution']
-                                                    , ['A0','Apar','Aperp','AS'] ) 
-basisCoefficients.externalConstraints = tagging.externalConstraints()
+from RooFitWrappers import RealCategory
+from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
+basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes, CP, ['A0','Apar','Aperp','AS'] )
+
+from RooFitWrappers import BTagDecay
+sig_t_angles_iTag = BTagDecay(  Name                   = 'sig_t_angles_iTag'
+                              , time                   = t
+                              , iTag                   = iTag_os
+                              , dm                     = lifetimeParams['deltaM'] 
+                              , tau                    = lifetimeParams['MeanLifetime']
+                              , dGamma                 = lifetimeParams['deltaGamma'] 
+                              , resolutionModel        = sigtres['model']
+                              , coshCoef               = basisCoefficients['cosh']
+                              , cosCoef                = basisCoefficients['cos']
+                              , sinhCoef               = basisCoefficients['sinh']
+                              , sinCoef                = basisCoefficients['sin']
+                              , dilution               = tagging['dilution']
+                              , ADilWTag               = tagging['ADilWTag']
+                              , avgCEven               = tagging['avgCEven']
+                              , avgCOdd                = tagging['avgCOdd']
+                              , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
+                              , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                                         + sigtres.externalConstraints()\
+                                                         + tagging.externalConstraints()
+                             )
+
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = bkgtres.model()
@@ -168,22 +186,10 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = bkgtres.mod
                        , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.06, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.15, MinMax = (0.01,0.5) ) )
 
-sig_t_angles = BDecay( Name      = 'sig_t_angles'
-                       , time      = t
-                       , dm        = lifetimeParams['deltaM'] 
-                       , tau       = lifetimeParams['MeanLifetime']
-                       , dGamma    = lifetimeParams['deltaGamma'] 
-                       , resolutionModel = sigtres.model()
-                       , coshCoef  = basisCoefficients['cosh']
-                       , cosCoef   = basisCoefficients['cos']
-                       , sinhCoef  = basisCoefficients['sinh']
-                       , sinCoef   = basisCoefficients['sin']
-#                       , ConditionalObservables = ( eta_os, iTag_os, )
-#                       , ConditionalObservables = tres.model().ConditionalObservables()
-                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,] ) )                 
-#                       , ConditionalObservables = set(sigtres.model().ConditionalObservables()).union( set( [eta_os,iTag_os] ) )                 
-                       , ExternalConstraints = lifetimeParams.externalConstraints() + sigtres.externalConstraints() + basisCoefficients.externalConstraints
-                       )
+
+print "*****************************"
+print [ i.GetName() for i in sig_t_angles_iTag.ConditionalObservables()  ]
+print "*****************************"
 
 #####################################
 ### Angular acceptance correction ###
@@ -209,8 +215,7 @@ eff.read('/data/bfys/dveijk/DataJpsiPhi/2012/effmoments_tcut_%s.txt'%(str(tmincu
 eff.Print()
 
 #Build Angular acceptance corrected PDF
-sig_t_angles = eff * sig_t_angles
-
+sig_t_angles_iTag = eff * sig_t_angles_iTag
 
 ##############################
 ### Proper time acceptance ###
@@ -218,16 +223,8 @@ sig_t_angles = eff * sig_t_angles
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
 
-## Define a shape yourself
-#a = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2), Constant = True)
-#c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, 2), Constant = True)
-#eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
-#from P2VVBinningBuilders import build1DVerticalBinning
-#binning, eff_func = build1DVerticalBinning('time_binning', eff, t, 0.05, 1.)
-#acceptance = BinnedPdf(Name = 'time_acceptance', Observable = t, Function = eff, Binning = binning)
-
-sig_t_angles = acceptance * sig_t_angles
-sig_t_angles._var.setAttribute("NOCacheAndTrack")
+sig_t_angles_iTag = acceptance * sig_t_angles_iTag
+#sig_t_angles_iTag._var.setAttribute("NOCacheAndTrack")
 
 ##################
 ### Build PDFs ###
@@ -241,8 +238,9 @@ sidebanddata.append(data.reduce(CutRange = 'rightsideband'))
 
 nbkg = 10500
 #background = Component('bkg'   , ( bkg_m.pdf(), acceptance*bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
-#Don't multiply background with proper time acceptance!!!
-background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+#Don't multiply background with proper time acceptance
+#background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+background = Component('bkg'   , ( bkg_m.pdf(), acceptance * bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
 
 # create PDF for angular background
 if False :
@@ -272,13 +270,53 @@ else :
 # SIG COMP #
 ############
 nsig = 22000
-signal         = Component('signal', ( sig_m.pdf(), sig_t_angles ), Yield = ( nsig, 0.9, 1.1*nsig) )
+signal         = Component('signal', ( sig_m.pdf(), sig_t_angles_iTag ), Yield = ( nsig, 0.9, 1.1*nsig) )
+
+sigdata =      data.reduce(CutRange = 'signal')
+
+sigpdf =  buildPdf((signal,), Observables = (t,m,iTag_os)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
+sigfitresult = sigpdf.fitTo(sigdata, **fitOpts)
+sigfitresult.writepars('classicfitresult_sigonly',False)
+
+assert False
 
 #############
 # MASS ONLY #
 #############
 #masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 #masspdf.fitTo(data,**fitOpts)
+
+############
+# BKG ONLY #
+############
+#bkgpdf = buildPdf((background,), Observables = (t,m)+tuple(angles.angles.itervalues()), Name = 'bkgpdf')
+#bkgpdf.fitTo(sidebanddata,**fitOpts)
+
+projWDataSet = []
+projWDataSet += [ st ]
+projWData     = dict( ProjWData = ( sidebanddata.reduce(  ArgSet = projWDataSet ), True ) )
+
+bkgtimeplot = False
+if bkgtimeplot:
+    from ROOT import kDashed, kRed, kGreen, TCanvas, TLatex
+    from P2VVGeneralUtils import plot
+    canvas = TCanvas()
+    plot( canvas
+          , t
+          , sidebanddata
+          , bkgpdf
+          #, components = {'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   )
+                          #'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
+          #                }
+          , pdfOpts = dict( list( projWData.items() ), LineWidth = 3 )
+          #, pdfOpts = dict( LineWidth = 3 )
+          , plotResidHist = True
+          , logy = True
+          , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
+                              , TitleOffset = (1.2,'y')
+                              , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                              , Bins=70 ) 
+          )
 
 #######
 # FIT #
@@ -293,8 +331,10 @@ pdf.Print()
 #RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult',False)
-classicfitresult.Print()
+classicfitresult.writepars('classicfitresult_accinbkg',False)
+
+fitset = pdf._var.getParameters(data)
+fitset.writeToFile("cfitparams.txt")
 
 assert False
 
