@@ -428,12 +428,12 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    assert(code > 0);
 
    CacheElem* cache = static_cast<CacheElem*>(_cacheMgr.getObjByIndex(code - 1));
-   assert(cache != 0);
-   // if (!cache) {
-   //    std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
-   //    std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
-   //    cache = getCache(_normSet, iset.get(), rangeName);
-   // }
+   if (!cache) {
+      std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
+      std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
+      const RooArgSet* normSet = _pdfNormSet ? _pdfNormSet : iset.get();
+      cache = getCache(normSet, iset.get(), rangeName, (_pdfNormSet == 0));
+   }
 
    Double_t xmin = x().getMin(rangeName), xmax = x().getMax(rangeName);
 
