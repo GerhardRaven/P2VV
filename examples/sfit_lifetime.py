@@ -98,7 +98,7 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
                        , t_bkg_ll_tau = dict( Name = 'bkg_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 'bkg_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          )
-bkg_t = acceptance * bkg_t.pdf()
+bkg_t = bkg_t.pdf()
 
 # Create psi background component
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
@@ -106,7 +106,7 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.mo
                        , t_bkg_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          )
-psi_t = acceptance * psi_t.pdf()
+psi_t = psi_t.pdf()
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t), Yield= (10000,500,50000) )
 
 background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t), Yield = (20000,2000,50000) )
@@ -136,7 +136,7 @@ from ROOT import RooMsgService
 ## RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 ## Fit options
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 2)
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 2, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
 from P2VVGeneralUtils import SData, splot
@@ -161,14 +161,15 @@ print 'plotting'
 canvas = TCanvas('canvas', 'canvas', 1000, 500)
 canvas.Divide(2, 1)
 obs = [t]
-for i, (pdf, sdata) in enumerate([(psi_t, psi_sdata)]):
+for i, (pdf, sdata) in enumerate([(psi_t, psi_sdata), (bkg_t, bkg_sdata)]):
     result = pdf.fitTo(sdata, SumW2Error = True, **fitOpts)
     result.Print('v')
-    pdfOpts  = dict()
+    pdfOpts  = dict(ProjWData = (RooArgSet(st), sdata, True))
     p = canvas.cd(i + 1)
     plot(p, t, pdf = pdf, data = sdata
          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+         , plotResidHist = True
          )
 
 
