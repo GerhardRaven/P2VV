@@ -16,7 +16,7 @@ m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax =
                          , 'rightsideband' : ( 5410, None ) 
                          } )
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
-st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.009, 0.1))
+st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
 
 # add 20 bins for caching the normalization integral
 for i in [ st ] : i.setBins( 20 , 'cache' )
@@ -28,17 +28,6 @@ selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
 observables = [t, m, mpsi, st, biased, unbiased, selected]
 
-# Build acceptance
-a   = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2))
-c   = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, -1))
-pre = RealVar('eff_pre', Title = 'effective prescale', Value = 0.85, MinMax = (0.5, 0.99), Constant = True)
-ub_eff = FormulaVar('pre', '@0', [pre, t])
-b_eff  = FormulaVar('det', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
-
-biased_eff   = FormulaVar('biased_eff',   "@0 * (1 - @1)", [b_eff, ub_eff])
-unbiased_eff = FormulaVar('unbiased_eff', "@0 * (1 - @1)", [ub_eff, b_eff])
-both_eff     = FormulaVar('both_eff',     "@0 * @1",       [ub_eff, b_eff])
-
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential
@@ -49,19 +38,9 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 
 # Time resolution model
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as SignalTimeResolution
-sig_tres = SignalTimeResolution(Name = 'sig_tres', time = t, timeResSFConstraint = False, sigmat = st,
-                                timeResSF = dict( Name = 'timeResSF', Value = 1.45, MinMax = (0.1,5.), Constant = False)
-                                )
-
-# LP2011 background time
-## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as BackgroundTimeResolution
-## bkg_tres = BackgroundTimeResolution(Name = 'bkg_tres', time = t, timeResSFConstraint = True)
-
-# Use a very simple effective time resolution
-## timeResMu = ConstVar(Name = 'timeResMu', Title = 'Decay time resolution mean',  Value = 0.)
-## timeResSigma = RealVar(Name = 'timeResSigma', Title = 'Decay time resolution width', Value = 0.05, MinMax = (0.001, 0.1), Constant = True)
-## from ROOT import RooGaussModel as GaussModel
-## tresGauss = ResolutionModel( Name = 'timeResGaussModel' , Type = GaussModel, Parameters  = [t, timeResMu, timeResSigma ])
+sig_tres = SignalTimeResolution(Name = 'sig_tres', time = t, timeResSFConstraint = True, sigmat = st,
+                                timeResSF = dict( Name = 'timeResSF', Value = 1.45, MinMax = (0.1,5.),
+                                                  Constant = False))
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -70,8 +49,8 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres
 
 # Time acceptance
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
-sig_t = acceptance * sig_t
+sig_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies_20bins.root', Histogram = 'signal_efficiency')
+sig_t = sig_acceptance * sig_t
 
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
@@ -100,7 +79,8 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
                          , bkg_t_ll_tau = dict( Name = 'bkg_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                          , bkg_t_ml_tau = dict( Name = 'bkg_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          , ExternalConstraints = sig_tres.model().ExternalConstraints())
-bkg_t = acceptance * bkg_t.pdf()
+bkg_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies_20bins.root', Histogram = 'background_efficiency')
+bkg_t = bkg_acceptance * bkg_t.pdf()
 
 # Create psi background component
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
@@ -108,7 +88,8 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.mo
                          , psi_t_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                          , psi_t_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          , ExternalConstraints = sig_tres.model().ExternalConstraints())
-psi_t = acceptance * psi_t.pdf()
+psi_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies_20bins.root', Histogram = 'psi_background_efficiency')
+psi_t = psi_acceptance * psi_t.pdf()
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t), Yield= (10000,500,50000) )
 
 ## bkg_t = bkg_t.pdf()
@@ -119,7 +100,7 @@ from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120120.root'
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecision == 1)',
                 NTuple = True, observables = observables)
 signal_data = data.reduce(CutRange = 'signal')
@@ -127,7 +108,7 @@ bkg_data    = data.reduce(CutRange = 'leftsideband' )
 bkg_data.append(data.reduce(CutRange = 'rightsideband'))
 
 ## Build PDF
-pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,t), Name='pdf')
+pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi,t), Name='pdf')
 pdf.Print("t")
 
 ## from Helpers import Mapping
@@ -142,11 +123,11 @@ from ROOT import RooMsgService
 ## print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 2)
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Minimizer = 'Minuit2', Optimize = 2)
 sig_pdf = signal[m, t]
 bkg_pdf = background[t,mpsi]
 ## signal[m, t].fitTo(signal_data, **fitOpts)
-result = pdf.fitTo(bkg_data, **fitOpts)
+result = pdf.fitTo(data, **fitOpts)
 ## pdf.fitTo(data, **fitOpts)
 ## profiler_stop()
 result.Print('v')
@@ -154,13 +135,18 @@ result.Print('v')
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
 print 'plotting'
-canvas = TCanvas('canvas', 'canvas', 1000, 500)
-obs = [mpsi, t]
+canvas = TCanvas('canvas', 'canvas', 1500, 500)
+obs = [m, mpsi, t]
 for (p,o) in zip(canvas.pads(len(obs)), obs):
     from P2VVGeneralUtils import plot
-    pdfOpts  = dict(ProjWData = (RooArgSet(st), bkg_data, True))
-    plot(p, o, pdf = pdf if o != st else None, data = bkg_data
+    pdfOpts  = dict(ProjWData = (RooArgSet(st), data, True))
+    plot(p, o, pdf = pdf if o != st else None, data = data
+         , plotResidHist = True
          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
          , logy = ( o == t )
+         , components = { 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                          , 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                          , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                          }
          )

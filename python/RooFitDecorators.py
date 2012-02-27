@@ -49,7 +49,9 @@ def __wrap_kw_subs( fun ) :
             return fun(self, *args, **kwargs)
         except TypeError:
             fun_args        =  [ a for a in args if not isinstance(a, RooCmdArg) ]
-            l = RooLinkedList( [ a for a in args if     isinstance(a, RooCmdArg) ] )
+            l = RooLinkedList()
+            for a in args:
+                if isinstance(a, RooCmdArg): l.Add(a)
             return fun(self, *tuple(fun_args + [l]), **kwargs)
     return _fun
 
