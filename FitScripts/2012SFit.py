@@ -84,7 +84,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True )
-# addConditional(iTag_os)
+#tagging.addConditional(iTag_os)
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
@@ -160,7 +160,7 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
 #acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/flatacceptance.root', Histogram = 'flathisto')
-sig_t_angles_iTag = acceptance * sig_t_angles_iTag
+#sig_t_angles_iTag = acceptance * sig_t_angles_iTag
 
 ####################
 ### Compose PDFs ###
@@ -190,11 +190,11 @@ if massplot:
                                                    , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
                                                    }
           , pdfOpts   = dict( LineWidth = 3 )
-          , dataOpts  = { 'MarkerSize' : 0.8,      'XErrorSize' : 0  }
-          , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
-                              , TitleOffset = (1.2,'y')
-                              , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
-                              , Bins=70 ) 
+          , plotResidHist = True
+          , dataOpts  = { 'MarkerSize' : 0.9,      'XErrorSize' : 0  }
+          , frameOpts = dict( Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                              , Bins=60
+                              ) 
           )
 
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
@@ -222,12 +222,23 @@ else:
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 from P2VVGeneralUtils import plot
-orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
+#orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
+orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
+
+observ = [angles.angles['cpsi']
+          ,angles.angles['ctheta']
+          ,angles.angles['phi']
+ #         ,iTag_os
+#          ,eta_os
+          ,t
+#          ,st
+          ]
 
 canvas = dict()
 for rng in ( None, ) :
     canvas[rng] = TCanvas('%s'%rng)
-    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+#    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    obs =  [ o for o in observ if hasattr(o,'frame') ]
     from P2VVGeneralUtils import Sorter
     for (p,o) in zip( canvas[rng].pads(len(obs)), sorted(obs, key = Sorter(orderdict)) ) :
         dataOpts = dict( CutRange =        rng ) if rng else dict()
@@ -238,8 +249,10 @@ for rng in ( None, ) :
         plot( p, o, splot_m.data('signal'), pdf
               , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
               , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
-#Error for events with negative weight for negative log
-#              , logy = ( o == t )
+              , plotResidHist = True
+              , frameOpts = dict( Object = ( TLatex(0.15,.3,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), ))
+              #Error for events with negative weight for negative log
+              , logy = ( o == t )
               )
 
 assert False

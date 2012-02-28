@@ -124,6 +124,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True )
+tagging.addConditional(iTag_os)
 
 from P2VVParameterizations.CPVParams import LambdaArg_CPParam
 CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
@@ -182,13 +183,17 @@ sig_t_angles_iTag = BTagDecay(  Name                   = 'sig_t_angles_iTag'
 
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = bkgtres.model()
-                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.21 )
-                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.06, MinMax = (0.5,2.5) )
-                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.15, MinMax = (0.01,0.5) ) )
-
+                         , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.21 )
+                         , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.06, MinMax = (0.5,2.5) )
+                         , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.15, MinMax = (0.01,0.5) )
+                         )
 
 print "*****************************"
 print [ i.GetName() for i in sig_t_angles_iTag.ConditionalObservables()  ]
+print "*****************************"
+
+print "*****************************"
+print [ i.GetName() for i in bkg_t._pdf.ConditionalObservables()  ]
 print "*****************************"
 
 #####################################
@@ -237,10 +242,9 @@ sidebanddata =      data.reduce(CutRange = 'leftsideband' )
 sidebanddata.append(data.reduce(CutRange = 'rightsideband'))
 
 nbkg = 10500
-#background = Component('bkg'   , ( bkg_m.pdf(), acceptance*bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
 #Don't multiply background with proper time acceptance
-#background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
-background = Component('bkg'   , ( bkg_m.pdf(), acceptance * bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
+#background = Component('bkg'   , ( bkg_m.pdf(), acceptance * bkg_t.pdf(), { eta_os: None, iTag_os : None }), Yield = ( nbkg, 0.9, 1.1*nbkg) )
 
 # create PDF for angular background
 if False :
@@ -274,11 +278,9 @@ signal         = Component('signal', ( sig_m.pdf(), sig_t_angles_iTag ), Yield =
 
 sigdata =      data.reduce(CutRange = 'signal')
 
-sigpdf =  buildPdf((signal,), Observables = (t,m,iTag_os)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
-sigfitresult = sigpdf.fitTo(sigdata, **fitOpts)
-sigfitresult.writepars('classicfitresult_sigonly',False)
-
-assert False
+#sigpdf =  buildPdf((signal,), Observables = (t,m,iTag_os)+tuple(angles.angles.itervalues()), Name = 'sigpdf')
+#sigfitresult = sigpdf.fitTo(sigdata, **fitOpts)
+#sigfitresult.writepars('classicfitresult_sigonly',False)
 
 #############
 # MASS ONLY #
@@ -322,16 +324,12 @@ if bkgtimeplot:
 # FIT #
 #######
 
-pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
-#pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
+#pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
+pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf.Print()
 
-#from ROOT import RooMsgService
-#RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
-#RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
-
 classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult_accinbkg',False)
+classicfitresult.writepars('classicfitresult',False)
 
 fitset = pdf._var.getParameters(data)
 fitset.writeToFile("cfitparams.txt")

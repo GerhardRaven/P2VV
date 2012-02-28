@@ -289,6 +289,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         obsPad.SetNumber(1)
         obsPad.Draw()
         canv.cd(1)
+        obsFrame.SetTitle("")
         obsFrame.Draw()
 
         # draw residuals frame
@@ -299,12 +300,14 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         residPad.SetNumber(2)
         residPad.Draw()
         canv.cd(2)
+        residFrame.SetTitle("")
         residFrame.Draw()
 
     else :
         # draw observable frame
         canv.cd()
         if logy: canv.SetLogy(1)
+        obsFrame.SetTitle("")
         obsFrame.Draw()
 
     canv.Update()
