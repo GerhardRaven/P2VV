@@ -202,18 +202,16 @@ splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
 pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
 
-#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#CP._lambdaCPSq._var.setConstant(True)
 
 read = True
 
 if read:
-    fitset = pdf._var.getParameters(data)
+    fitset = pdf.getParameters(data)
     fitset.readFromFile("sfitparams.txt")
 else:
     sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
     sfitresult.writepars('sfitresult',False)
-    fitset = pdf._var.getParameters(data)
+    fitset = pdf.getParameters(data)
     fitset.writeToFile("sfitparams.txt")
 
 ########
@@ -265,7 +263,7 @@ assert False
 # Profile likelihoods #
 #######################
 
-pllvar = lifetimeParams._deltaM._var
+pllvar = lifetimeParams._deltaM
 
 from ROOT import RooMinuit
 #Need to implement conditionalobservables and externalconstraints here
