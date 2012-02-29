@@ -8,14 +8,12 @@ RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
 RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
 from P2VVGeneralUtils import numCPU
-fitOpts = dict(
-    NumCPU = 1
-    #NumCPU = numCPU()
-    , Timer=1
-    , Save = True
-    #, Verbose = True
-    #, Minimizer = ('Minuit2','minimize')
-    )
+fitOpts = dict( NumCPU = numCPU()
+              , Timer=1
+              , Save = True
+              , Verbose = True
+              , Minimizer = ('Minuit2','minimize')
+              )
 
 tmincut = 0.3
 
@@ -226,10 +224,9 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
-
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
 sig_t_angles_iTag = acceptance * sig_t_angles_iTag
-#sig_t_angles_iTag._var.setAttribute("NOCacheAndTrack")
+sig_t_angles_iTag.setAttribute("NOCacheAndTrack")
 
 ##################
 ### Build PDFs ###
