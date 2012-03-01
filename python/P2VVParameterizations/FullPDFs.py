@@ -748,4 +748,3 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
         PdfBuilder.__init__( self, pdf, observables, { } )
-
