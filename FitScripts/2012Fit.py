@@ -325,18 +325,6 @@ if bkgtimeplot:
 pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf.Print()
 
-<<<<<<< HEAD
-read = True
-
-if read:
-    fitset = pdf._var.getParameters(data)
-    fitset.readFromFile("cfitparams.txt")
-else:
-    classicfitresult = pdf.fitTo(data, **fitOpts)
-    classicfitresult.writepars('classicfitresult',False)
-    fitset = pdf._var.getParameters(data)
-    fitset.writeToFile("cfitparams.txt")
-=======
 def search(fname,path) :
     import os
     for f in ( os.path.join(p,fname) for p in os.path.split(os.pathsep) ) :
@@ -349,11 +337,13 @@ if paramfile :
     fitset = pdf.getParameters(data)
     fitset.readFromFile(paramfile)
 
-classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult',False)
-
-fitset = pdf.getParameters(data)
-fitset.writeToFile("cfitparams.txt")
+fit = True
+if fit or not paramfile:
+    classicfitresult = pdf.fitTo(data, **fitOpts)
+    classicfitresult.writepars('classicfitresult',False)
+    classicfitresult.Print()
+    fitset = pdf.getParameters(data)
+    fitset.writeToFile("cfitparams.txt")
 
 assert False
 
