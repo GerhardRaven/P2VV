@@ -328,13 +328,16 @@ if bkgtimeplot:
 pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf.Print()
 
-classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult',False)
+read = True
 
-fitset = pdf._var.getParameters(data)
-fitset.writeToFile("cfitparams.txt")
-
-assert False
+if read:
+    fitset = pdf._var.getParameters(data)
+    fitset.readFromFile("cfitparams.txt")
+else:
+    classicfitresult = pdf.fitTo(data, **fitOpts)
+    classicfitresult.writepars('classicfitresult',False)
+    fitset = pdf._var.getParameters(data)
+    fitset.writeToFile("cfitparams.txt")
 
 ########
 # PLOT #
@@ -356,7 +359,8 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
         pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
         from P2VVGeneralUtils import plot
         from ROOT import RooArgSet
-        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var), data, True )
+        #pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var, iTag_os._var), data, True )
+        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var), data, True )
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                               , 'bkg*'     : dict( LineColor = kRed,   LineStyle = kDashed )
                                               #, 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )

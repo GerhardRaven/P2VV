@@ -23,7 +23,7 @@ fitOpts = dict(
 tmincut = 0.3
 
 # define observables
-m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV/c^{2}', Observable = True, MinMax = (5200, 5550), nBins =  48
+m    = RealVar('mass',  Title = 'M(J/#psi#varphi)', Unit = 'MeV/c^{2}', Observable = True, MinMax = (5200, 5550), nBins =  48
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
                                   , 'rightsideband' : ( 5410, None ) 
@@ -177,6 +177,16 @@ background     = Component('background',    ( bkg_m.pdf(), ),                   
 # make sweighted dataset. TODO: use mumu mass as well...
 from P2VVGeneralUtils import SData, splot
 
+
+#Test
+## from ROOT import TCanvas
+## canvas = TCanvas()
+## mframe = m.frame()
+## data.plotOn(mframe)
+## mframe.Draw()
+## yaxis = mframe.GetYaxis()
+## yaxis.SetTitleOffset(1.2)
+
 masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 masspdf.fitTo(data,**fitOpts)
 
@@ -194,7 +204,9 @@ if massplot:
           , dataOpts  = { 'MarkerSize' : 0.9,      'XErrorSize' : 0  }
           , frameOpts = dict( Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
                               , Bins=60
-                              ) 
+                              , Title = ""
+                              )
+
           )
 
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
@@ -222,16 +234,12 @@ else:
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 from P2VVGeneralUtils import plot
-#orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
 orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
 
 observ = [angles.angles['cpsi']
           ,angles.angles['ctheta']
           ,angles.angles['phi']
- #         ,iTag_os
-#          ,eta_os
           ,t
-#          ,st
           ]
 
 canvas = dict()
@@ -247,10 +255,13 @@ for rng in ( None, ) :
         from ROOT import RooArgSet
         pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var), data, True )
         plot( p, o, splot_m.data('signal'), pdf
+              , yTitleOffset = 1.5
               , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
               , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
               , plotResidHist = True
-              , frameOpts = dict( Object = ( TLatex(0.15,.3,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), ))
+              , frameOpts = dict( Object = ( TLatex(0.15,.3,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                                  , Title = ""
+                                  )
               #Error for events with negative weight for negative log
               , logy = ( o == t )
               )
