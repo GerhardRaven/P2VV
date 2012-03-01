@@ -49,7 +49,7 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres
 
 # Time acceptance
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-sig_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies_20bins.root', Histogram = 'signal_efficiency')
+sig_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies.root', Histogram = 'signal_efficiency_histo_20bins')
 sig_t = sig_acceptance * sig_t
 
 # B mass pdf
@@ -79,7 +79,7 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
                          , bkg_t_ll_tau = dict( Name = 'bkg_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                          , bkg_t_ml_tau = dict( Name = 'bkg_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          , ExternalConstraints = sig_tres.model().ExternalConstraints())
-bkg_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies_20bins.root', Histogram = 'background_efficiency')
+bkg_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies.root', Histogram = 'background_efficiency_histo_20bins')
 bkg_t = bkg_acceptance * bkg_t.pdf()
 
 # Create psi background component
@@ -88,7 +88,7 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.mo
                          , psi_t_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                          , psi_t_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          , ExternalConstraints = sig_tres.model().ExternalConstraints())
-psi_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies_20bins.root', Histogram = 'psi_background_efficiency')
+psi_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies.root', Histogram = 'psi_background_efficiency_histo_20bins')
 psi_t = psi_acceptance * psi_t.pdf()
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t), Yield= (10000,500,50000) )
 
@@ -102,7 +102,7 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecision == 1)',
-                NTuple = True, observables = observables)
+                NTuple = False, observables = observables)
 signal_data = data.reduce(CutRange = 'signal')
 bkg_data    = data.reduce(CutRange = 'leftsideband' )
 bkg_data.append(data.reduce(CutRange = 'rightsideband'))
@@ -123,7 +123,7 @@ from ROOT import RooMsgService
 ## print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Minimizer = 'Minuit2', Optimize = 2)
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Minimizer = 'Minuit2', Optimize = 2)
 sig_pdf = signal[m, t]
 bkg_pdf = background[t,mpsi]
 ## signal[m, t].fitTo(signal_data, **fitOpts)
