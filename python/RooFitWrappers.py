@@ -217,20 +217,21 @@ class Category (RooObject) :
                ,'Constant'   : lambda s,v : s.setConstant(v)
                }
 
-    def __init__(self,Name,**kwargs):
+    def __init__(self, Name, **kwargs):
         # construct factory string on the fly...
-        __check_req_kw__( 'States', kwargs )
         __check_name_syntax__(Name)
-        states = kwargs.pop('States')
+        states = kwargs.pop('States', None)
         if   type(states) == list:
             states = ','.join(states)
         elif type(states) == dict:
             states = ','.join(['%s=%d' % i for i in states.iteritems()])
+        if states:
+            # Create the category and extract states into storage
+            self._declare("%s[%s]"%(Name,states))
         else:
-            raise KeyError('%s does not exist yet, bad States %s defined.' % (Name,states))
-
-        # Create the category and extract states into storage
-        self._declare("%s[%s]"%(Name,states))
+            from ROOT import RooCategory
+            obj = RooCategory(Name, Name)
+            obj = self._addObject(obj)
         self._init(Name,'RooCategory')
         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)

@@ -8,21 +8,23 @@ from ROOT import RooMsgService
 obj = RooObject( workspace = 'w')
 
 from math import pi
-m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
+m  = RealVar('B_Mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
                          , 'rightsideband' : ( 5410, None ) 
                          } )
-mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
+mpsi = RealVar('Jpsi_Mass', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
+t  = RealVar('tau', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
 
 # Categories
 # Categories
-biased = Category('triggerDecision', States = {'Biased' : 1, 'NotBiased' : 0})
-unbiased = Category('triggerDecisionUnbiased', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
+biased = Category('bdi2_tos', States = {'Biased' : 1, 'NotBiased' : 0})
+unbiased = Category('ubdi2_tos', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
+di1h = Category('di1h_tos', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
-
-observables = [t, m, mpsi, unbiased, biased, selected]
+n_online = Category('n_online', States = {'zero' : 0, 'one' : 1, 'two' : 2, 'three' : 3, 'four' : 4,
+                                          'five' : 5, 'six' : 6})
+observables = [t, m, mpsi, unbiased, biased, di1h, selected, n_online]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -57,11 +59,12 @@ background = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (3054,2000
 
 # Apply acceptance
 from P2VVGeneralUtils import readData
-tree_name = 'DecayTree'
+tree_name = 'Reader_Bs2JpsiPhi'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiased == 1)',
+## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+input_file = '/stuff/PhD/p2vv/data/swimming.root'
+data = readData(input_file, tree_name, cuts = '(sel == 1 && ubdi2_tos == 1 && n_online != 0 && di1h_tos == 1)',
                 NTuple = True, observables = observables)
 ## Build PDF
 pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi), Name='pdf')
