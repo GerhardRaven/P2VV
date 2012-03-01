@@ -385,6 +385,9 @@ class ConstVar (RooObject) :
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class P2VVAngleBasis (RooObject) :
+    # TODO: replace use of RooP2VVAngleBasis with an explicit product with 
+    #       some attribute set so we can recognize it by attribute instead
+    #       of by type...
     # TODO: move 'c' out of this class (and into an explicit product),
     #       which will allow more re-use of existing objects, and hence
     #       make things faster

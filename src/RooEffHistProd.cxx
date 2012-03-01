@@ -121,17 +121,15 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
    // construct I_i,j = int_xmin,i^xmax,j dx int dy f(x,y)
    // so that later we can do sum_i eps( (x_i+x_i+1)/2 ) * I(x_i,x_i+1)
    RooArgSet *x_ = parent->eff()->getObservables(&iset); // the subset of iset on which _eff depends
-   assert(x_->getSize() < 2); // for now, we only do 1D efficiency histograms...
 
    _intObs.addClone(*nset);
 
    const BinBoundaries& bounds = parent->_binboundaries;
 
-   if (x_->getSize() == 1) {
+   assert(x_->getSize() < 2); // for now, we only do 1D efficiency histograms...
+   _trivial = x_->getSize()==0;
+   if (!_trivial) {
       assert( *x_->first() == parent->x() );
-      _trivial = false;
-   } else {
-      _trivial = true;
    }
 
    Double_t xmin = parent->x().getMin(rangeName);
@@ -416,7 +414,6 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
    if (allVars.getSize() == 0) return 0;
    iset.add(allVars);
 
-   // RooArgSet *nset = &iset;
    getCache(_pdfNormSet, &iset, rangeName);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;

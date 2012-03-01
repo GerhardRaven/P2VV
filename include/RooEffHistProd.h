@@ -90,7 +90,7 @@ private:
 
       virtual RooArgList containedArgs(Action) ;
       Double_t getVal(Int_t i = 0) { 
-         return _I[i]->getVal();
+          return _I[i]->getVal(); 
       }
       
       bool trivial() const { return _trivial; }
@@ -102,6 +102,7 @@ private:
       RooArgSet& intObs() { return _intObs; }
 
    private:
+      friend class RooEffHistProd;
       // Payload
       RooArgSet _intObs ;
       RooEffHistProd* _clone;
