@@ -224,7 +224,7 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
 sig_t_angles_iTag = acceptance * sig_t_angles_iTag
 sig_t_angles_iTag.setAttribute("NOCacheAndTrack")
 
@@ -337,11 +337,13 @@ if paramfile :
     fitset = pdf.getParameters(data)
     fitset.readFromFile(paramfile)
 
-classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult',False)
-
-fitset = pdf.getParameters(data)
-fitset.writeToFile("cfitparams.txt")
+fit = True
+if fit or not paramfile:
+    classicfitresult = pdf.fitTo(data, **fitOpts)
+    classicfitresult.writepars('classicfitresult',False)
+    classicfitresult.Print()
+    fitset = pdf.getParameters(data)
+    fitset.writeToFile("cfitparams.txt")
 
 assert False
 
@@ -365,7 +367,8 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
         pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
         from P2VVGeneralUtils import plot
         from ROOT import RooArgSet
-        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var), data, True )
+        #pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var, iTag_os._var), data, True )
+        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var), data, True )
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                               , 'bkg*'     : dict( LineColor = kRed,   LineStyle = kDashed )
                                               #, 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
