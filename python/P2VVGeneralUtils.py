@@ -134,10 +134,11 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', yScale = ( None, None )
-         ,frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False
-         , normalize = True, symmetrize = True, usebar = True
-        ) :
+def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', yTitleOffset = 1, xTitleOffset = 1
+           , yScale = ( None, None )
+           ,frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False
+           , normalize = True, symmetrize = True, usebar = True
+           ) :
     """makes a P2VV plot
 
     example usage:
@@ -230,6 +231,10 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     if xTitle : xAxis.SetTitle(xTitle)
     if yTitle : yAxis.SetTitle(yTitle)
 
+    # set axis title offsets
+    if yTitleOffset: yAxis.SetTitleOffset(yTitleOffset)
+    if xTitleOffset: xAxis.SetTitleOffset(xTitleOffset)
+
     # get residuals histogram
     if plotResidHist and data and pdf :
         residHist = obsFrame.residHist( 'data', 'pdf', normalize )
@@ -238,6 +243,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
 
         # create residuals frame
         residFrame = obsFrame.emptyClone( obsFrame.GetName() + '_resid' )
+        if 'Title' in frameOpts: residFrame.SetTitle(frameOpts['Title'])
         xAxis = residFrame.GetXaxis()
         _P2VVPlotStash.append(residFrame)
 
@@ -287,8 +293,11 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         _P2VVPlotStash.append(obsPad)
         if logy: obsPad.SetLogy(1)
         obsPad.SetNumber(1)
+        obsPad.SetLeftMargin(0.12)
         obsPad.Draw()
         canv.cd(1)
+        if 'Title' in frameOpts and not frameOpts['Title']:
+            obsFrame.SetTitle("")
         obsFrame.Draw()
 
         # draw residuals frame
@@ -297,14 +306,19 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         residPad = TPad( residName, residName, 0, 0, 1, 0.2 )
         _P2VVPlotStash.append(residPad)
         residPad.SetNumber(2)
+        residPad.SetLeftMargin(0.12)
         residPad.Draw()
         canv.cd(2)
+        if 'Title' in frameOpts and not frameOpts['Title']:
+            residFrame.SetTitle("")
         residFrame.Draw()
 
     else :
         # draw observable frame
         canv.cd()
         if logy: canv.SetLogy(1)
+        if 'Title' in frameOpts and not frameOpts['Title']:
+            obsFrame.SetTitle("")
         obsFrame.Draw()
 
     canv.Update()

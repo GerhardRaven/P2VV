@@ -11,19 +11,17 @@ obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
 
-fitOpts = dict(
-    NumCPU = 1
-    #NumCPU = numCPU()
-    , Timer=1
-    , Save = True
-    #, Verbose = True
-    #, Minimizer = ('Minuit2','minimize')
-    )
+fitOpts = dict( NumCPU = numCPU()
+              , Timer=1
+              , Save = True
+              , Verbose = True
+              , Minimizer = ('Minuit2','minimize')
+              )
 
 tmincut = 0.3
 
 # define observables
-m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV/c^{2}', Observable = True, MinMax = (5200, 5550), nBins =  48
+m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV/c^{2}', Observable = True, MinMax = (5200, 5550), nBins =  50
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
                                   , 'rightsideband' : ( 5410, None ) 
@@ -84,7 +82,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True )
-# addConditional(iTag_os)
+#tagging.addConditional(iTag_os)
 
 # WARNING: we don't try to describe wtag, so when plotting you must use ProjWData for eta_os !!!
 #Need this, because eta_os is conditional observable in signal PDF, the actual shape doesn't matter for fitting and plotting purposes
@@ -158,8 +156,7 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
-#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/flatacceptance.root', Histogram = 'flathisto')
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
 sig_t_angles_iTag = acceptance * sig_t_angles_iTag
 
 ####################
@@ -190,11 +187,11 @@ if massplot:
                                                    , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
                                                    }
           , pdfOpts   = dict( LineWidth = 3 )
-          , dataOpts  = { 'MarkerSize' : 0.8,      'XErrorSize' : 0  }
-          , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
-                              , TitleOffset = (1.2,'y')
-                              , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
-                              , Bins=70 ) 
+          , plotResidHist = True
+          , dataOpts  = { 'MarkerSize' : 0.9,      'XErrorSize' : 0  }
+          , frameOpts = dict( Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                              , Bins=60
+                              ) 
           )
 
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
@@ -202,18 +199,25 @@ splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
 pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
 
-#Don't add externalconstraints to fitOpts, otherwise fits for splots might go wrong, you don't want to constrain mass fits!
-#CP._lambdaCPSq._var.setConstant(True)
+def search(fname,path) :
+    import os
+    for f in ( os.path.join(p,fname) for p in os.path.split(os.pathsep) ) :
+        if os.path.exists(f) : return f
+    return None
 
-read = True
+import os
+paramfile = search('sfitparams.txt',os.pathsep.join(['.','FitScripts']) )
+if paramfile :
+    print 'Reading fit result from %s' % paramfile
+    fitset = pdf.getParameters(data)
+    fitset.readFromFile(paramfile)
 
-if read:
-    fitset = pdf._var.getParameters(data)
-    fitset.readFromFile("sfitparams.txt")
-else:
-    sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
+fit = False
+if fit or not paramfile:
+    sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = True, **fitOpts)
+    sfitresult.Print()
     sfitresult.writepars('sfitresult',False)
-    fitset = pdf._var.getParameters(data)
+    fitset = pdf.getParameters(data)
     fitset.writeToFile("sfitparams.txt")
 
 ########
@@ -222,12 +226,17 @@ else:
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 from P2VVGeneralUtils import plot
-orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
+orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([t,angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
+
+obs = [angles.angles['cpsi'] ,angles.angles['ctheta'] ,angles.angles['phi']
+      # ,iTag_os ,eta_os
+      ,t # ,st
+      ]
 
 canvas = dict()
 for rng in ( None, ) :
     canvas[rng] = TCanvas('%s'%rng)
-    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    obs =  filter( lambda x : hasattr(x,'frame'), obs ) 
     from P2VVGeneralUtils import Sorter
     for (p,o) in zip( canvas[rng].pads(len(obs)), sorted(obs, key = Sorter(orderdict)) ) :
         dataOpts = dict( CutRange =        rng ) if rng else dict()
@@ -238,13 +247,14 @@ for rng in ( None, ) :
         plot( p, o, splot_m.data('signal'), pdf
               , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
               , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
-#Error for events with negative weight for negative log
-#              , logy = ( o == t )
+              , plotResidHist = True
+              , frameOpts = dict( Object = ( TLatex(0.15,.3,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), ))
+              #Error for events with negative weight for negative log
+              , logy = ( o == t )
               )
 
 assert False
 
-#sfitresult.Print()
 
 
 #Turn this on when fit is fast with NumCPU = numCPU() working!!!
@@ -252,7 +262,7 @@ assert False
 # Profile likelihoods #
 #######################
 
-pllvar = lifetimeParams._deltaM._var
+pllvar = lifetimeParams['deltaM']
 
 from ROOT import RooMinuit
 #Need to implement conditionalobservables and externalconstraints here

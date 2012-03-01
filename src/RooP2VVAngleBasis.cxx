@@ -53,16 +53,16 @@ RooP2VVAngleBasis::RooP2VVAngleBasis( const char *name, const char *title
   // retrieving it...
   std::stringstream P,Y;
   P << name << "_P" << i << ( j<0 ? "m" : "" )  << (j<0?-j:j) ;
-  _compRList.addOwned(*new RooLegendre(   P.str().c_str(), P.str().c_str(), cpsi,i,j) );
+  _compRSet.addOwned(*new RooLegendre(   P.str().c_str(), P.str().c_str(), cpsi,i,j) );
   Y << name << "_Y" << l << ( m<0 ? "m" : "" )  << (m<0?-m:m) ;
-  _compRList.addOwned(*new RooSpHarmonic( Y.str().c_str(), Y.str().c_str(), ctheta,phi,l,m) );
+  _compRSet.addOwned(*new RooSpHarmonic( Y.str().c_str(), Y.str().c_str(), ctheta,phi,l,m) );
   if (c!=1) {
     std::stringstream C;
     C << ( c<0 ? "_m" : "_" ) << ( c<0?-c:c );
     std::string strC = C.str();
     replace(strC.begin(), strC.end(), '.', 'p');
     strC.insert(0, name);
-    _compRList.addOwned(*new RooConstVar( strC.c_str(), strC.c_str(), c ) );
+    _compRSet.addOwned(*new RooConstVar( strC.c_str(), strC.c_str(), c ) );
   }
 }
 
@@ -82,15 +82,15 @@ RooP2VVAngleBasis::RooP2VVAngleBasis( const char *name, const char *title
     std::string strC = C.str();
     replace(strC.begin(), strC.end(), '.', 'p');
     strC.insert(0, name);
-    _compRList.addOwned(*new RooConstVar( strC.c_str(), strC.c_str(), c ) );
+    _compRSet.addOwned(*new RooConstVar( strC.c_str(), strC.c_str(), c ) );
   }
   std::stringstream P,Y;
   P << name << "_P" << i1 << ( j1<0 ? "m" : "" )  << (j1<0?-j1:j1) 
             << i2 << ( j2<0 ? "m" : "" )  << (j2<0?-j2:j2) ;
-  _compRList.addOwned(*new RooLegendre(   P.str().c_str(), P.str().c_str(), cpsi,i1,j1, i2, j2) );
+  _compRSet.addOwned(*new RooLegendre(   P.str().c_str(), P.str().c_str(), cpsi,i1,j1, i2, j2) );
   Y << name << "_Y" << l1 << ( m1<0 ? "m" : "" )  << (m1<0?-m1:m1) 
             << l2 << ( m2<0 ? "m" : "" )  << (m2<0?-m2:m2) ;
-  _compRList.addOwned(*new RooSpHarmonic( Y.str().c_str(), Y.str().c_str(), ctheta,phi,l1,m1,l2,m2) );
+  _compRSet.addOwned(*new RooSpHarmonic( Y.str().c_str(), Y.str().c_str(), ctheta,phi,l1,m1,l2,m2) );
 }
 //_____________________________________________________________________________
 RooP2VVAngleBasis::RooP2VVAngleBasis(const RooP2VVAngleBasis& other, const char* name) 
