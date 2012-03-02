@@ -213,9 +213,6 @@ eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
 eff.read('/data/bfys/dveijk/DataJpsiPhi/2012/effmoments_tcut_%s.txt'%(str(tmincut)))
-#Check the significant terms
-#eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(str(tmincut)),MinSignificance = 3)
-eff.Print()
 
 #Build Angular acceptance corrected PDF
 sig_t_angles_iTag = eff * sig_t_angles_iTag
@@ -291,39 +288,33 @@ sigdata =      data.reduce(CutRange = 'signal')
 #bkgpdf = buildPdf((background,), Observables = (t,m)+tuple(angles.angles.itervalues()), Name = 'bkgpdf')
 #bkgpdf.fitTo(sidebanddata,**fitOpts)
 
-projWDataSet = []
-projWDataSet += [ st ]
-projWData     = dict( ProjWData = ( sidebanddata.reduce(  ArgSet = projWDataSet ), True ) )
-
 bkgtimeplot = False
 if bkgtimeplot:
     from ROOT import kDashed, kRed, kGreen, TCanvas, TLatex
     from P2VVGeneralUtils import plot
     canvas = TCanvas()
     plot( canvas
-          , t
-          , sidebanddata
-          , bkgpdf
-          #, components = {'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   )
-                          #'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
-          #                }
-          , pdfOpts = dict( list( projWData.items() ), LineWidth = 3 )
-          #, pdfOpts = dict( LineWidth = 3 )
-          , plotResidHist = True
-          , logy = True
-          , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
-                              , TitleOffset = (1.2,'y')
-                              , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
-                              , Bins=70 ) 
-          )
+        , t
+        , sidebanddata
+        , bkgpdf
+        #, components = {'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   )
+                        #'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
+        #                }
+        , pdfOpts = dict(  LineWidth = 3, ProjWData = ( sidebanddata.reduce(  ArgSet = bkgpdf.ConditionalObservables() ), True ) )
+        #, pdfOpts = dict( LineWidth = 3 )
+        , plotResidHist = True
+        , logy = True
+        , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
+                            , TitleOffset = (1.2,'y')
+                            , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                            , Bins=70 ) 
+        )
 
 #######
 # FIT #
 #######
 
-#pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
-pdf.Print()
 
 def search(fname,path) :
     import os
@@ -337,13 +328,14 @@ if paramfile :
     fitset = pdf.getParameters(data)
     fitset.readFromFile(paramfile)
 
-classicfitresult = pdf.fitTo(data, **fitOpts)
-classicfitresult.writepars('classicfitresult',False)
+fit = True
+if fit : 
+    cfitresult = pdf.fitTo(data, **fitOpts)
+    cfitresult.writepars('cfitresult',False)
 
-fitset = pdf.getParameters(data)
-fitset.writeToFile("cfitparams.txt")
+    fitset = pdf.getParameters(data)
+    fitset.writeToFile("cfitparams.txt")
 
-assert False
 
 ########
 # PLOT #
@@ -365,12 +357,15 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
         pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
         from P2VVGeneralUtils import plot
         from ROOT import RooArgSet
-        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var), data, True )
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                               , 'bkg*'     : dict( LineColor = kRed,   LineStyle = kDashed )
                                               #, 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                                               }
-              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
-              , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+              , dataOpts = dict( MarkerSize = 0.8
+                               , MarkerColor = kBlack
+                               , **dataOpts )
+              , pdfOpts  = dict( LineWidth = 2
+                               , ProjWData = ( data.reduce( ArgSet = pdf.ConditionalObservables() ), True )
+                               , **pdfOpts )
               , logy = ( o == t )
               )
