@@ -27,10 +27,10 @@ mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (tmincut, 14),    nBins =  54 )
 #Set the left boundary of sigmat to non-zero to prevent problems with integration when making plots. Checked the data: no events below 0.007.
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.007, 0.12),  nBins =  50 )
-eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.007, 0.12),  nBins =  25 )
+eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  20)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
-eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
+eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  20)
 iTag_os = Category( 'tagdecision_os', Title = 'initial state flavour tag OS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 #The peak at 0 seems to be shifted to -1000 in the SS tagdecision
 iTag_ss = Category( 'tagdecision_ss', Title = 'initial state flavour tag SS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
@@ -328,7 +328,7 @@ if paramfile :
     fitset = pdf.getParameters(data)
     fitset.readFromFile(paramfile)
 
-fit = True
+fit = False
 if fit or not paramfile:
     cfitresult = pdf.fitTo(data, **fitOpts)
     cfitresult.writepars('cfitresult',False)
@@ -344,11 +344,10 @@ orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 from P2VVGeneralUtils import plot
-
 canvas = dict()
 for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     canvas[rng] = TCanvas('%s'%rng)
-    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    obs =  [ o for o in pdf.Observables().difference(pdf.ConditionalObservables()) if hasattr(o,'frame')   ]
     from P2VVGeneralUtils import Sorter
     obs = sorted(obs, key = Sorter(orderdict))
 
