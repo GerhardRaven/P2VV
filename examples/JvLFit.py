@@ -6,7 +6,7 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as pdfConfig
 
 # job parameters
 generateData   = False
-doFit          = False
+doFit          = True
 
 makeObservablePlots     = True
 pdfConfig['makePlots']  = True
@@ -78,7 +78,7 @@ pdfConfig['deltaM']     = 17.6
 pdfConfig['AProd'] = 0.
 
 # fit options
-fitOpts = dict(  NumCPU              = 1
+fitOpts = dict(  NumCPU              = 8
                , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
