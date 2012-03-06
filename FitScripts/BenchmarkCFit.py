@@ -114,8 +114,8 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                                             , Value = 0.060
                                                             #, Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
-                                       , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
-                                       , deltaMConstraint = True
+                                       , dM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
+                                       , dMConstraint = True
                                       )
 
 # define tagging parameter 
@@ -160,9 +160,9 @@ from RooFitWrappers import BTagDecay
 sig_t_angles_iTag = BTagDecay(  Name                   = 'sig_t_angles_iTag'
                               , time                   = t
                               , iTag                   = iTag_os
-                              , dm                     = lifetimeParams['deltaM'] 
+                              , dm                     = lifetimeParams['dM']
                               , tau                    = lifetimeParams['MeanLifetime']
-                              , dGamma                 = lifetimeParams['deltaGamma'] 
+                              , dGamma                 = lifetimeParams['dGamma']
                               , resolutionModel        = sigtres['model']
                               , coshCoef               = basisCoefficients['cosh']
                               , cosCoef                = basisCoefficients['cos']
