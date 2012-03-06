@@ -7,9 +7,9 @@ pdfConfig = PdfConfig()
 
 # job parameters
 generateData   = False
-doFit          = False
+doFit          = True
 
-makeObservablePlots     = True
+makeObservablePlots     = False
 pdfConfig['makePlots']  = True
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
@@ -31,7 +31,7 @@ pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf
 #pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 # fit options
-fitOpts = dict(  NumCPU              = 4
+fitOpts = dict(  NumCPU              = 8
                , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
@@ -178,11 +178,11 @@ if makeObservablePlots or pdfConfig['makePlots'] :
                 }
 
     projWDataSet = []
-    if   pdfConfig['taggingConditionals'] == 'all'     : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
-    elif pdfConfig['taggingConditionals'] == 'estWTag' : projWDataSet += [ tagCatP2VV, estWTag       ]
-    elif pdfConfig['taggingConditionals'] == 'tagCat'  : projWDataSet += [ tagCatP2VV                ]
-    elif pdfConfig['taggingConditionals'] == 'iTag'    : projWDataSet += [ iTag                      ]
-    if   pdfConfig['eventTimeResolution']              : projWDataSet += [ timeRes                   ]
+    if   pdfConfig['taggingConditionals'] == 'all' or pdfConfig['nominalPdf'] : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
+    elif pdfConfig['taggingConditionals'] == 'estWTag'                        : projWDataSet += [ tagCatP2VV, estWTag       ]
+    elif pdfConfig['taggingConditionals'] == 'tagCat'                         : projWDataSet += [ tagCatP2VV                ]
+    elif pdfConfig['taggingConditionals'] == 'iTag'                           : projWDataSet += [ iTag                      ]
+    if   pdfConfig['eventTimeResolution']                                     : projWDataSet += [ timeRes                   ]
 
     if projWDataSet :
         bulkData = fitData.reduce( CutRange = 'Bulk' )

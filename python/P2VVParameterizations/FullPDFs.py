@@ -178,7 +178,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ws = RooObject().ws()
 
         # angular functions
-        if nominalPdf :
+        if nominalPdf or transAngles :
             from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
             self._angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
         else :
@@ -196,7 +196,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ctheta = self._angleFuncs.angles['ctheta']
         phi    = self._angleFuncs.angles['phi']
 
-        if not self._iTagZeroTrick :
+        if nominalPdf or not self._iTagZeroTrick :
             iTag = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = iTagStates )
         estWTag = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability', Observable = True
                           , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
@@ -212,7 +212,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         angles = [ cpsi, ctheta, phi ]
         obsSetP2VV = [ time ] + angles
-        if not tagConds in [ 'all', 'iTag' ] and not self._iTagZeroTrick : obsSetP2VV.append(iTag)
+        if not nominalPdf and not ( tagConds in [ 'all', 'iTag' ] or self._iTagZeroTrick ) : obsSetP2VV.append(iTag)
         if not SFit : obsSetP2VV.append(BMass)
 
         # ntuple variables
@@ -223,7 +223,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         tagCat = Category( 'tagcat_os',   Title = 'Tagging Category', Observable = True
                           , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                          )
-        if not tagConds in [ 'all', 'iTag' ] and self._iTagZeroTrick : obsSetP2VV.append(tagDecision)
+        if not nominalPdf and not tagConds in [ 'all', 'iTag' ] and self._iTagZeroTrick : obsSetP2VV.append(tagDecision)
 
         sel   = Category( 'sel',             Title = 'Selection',        Observable = True, States = { 'selected' : +1 } )
         trig  = Category( 'triggerDecision', Title = 'Trigger Decision', Observable = True, States = { 'selected' : +1 } )
@@ -232,7 +232,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , cpsi        = angles[0]
                            , ctheta      = angles[1]
                            , phi         = angles[2]
-                           , iTag        = iTag if not self._iTagZeroTrick else tagDecision
+                           , iTag        = iTag if nominalPdf or not self._iTagZeroTrick else tagDecision
                            , tagDecision = tagDecision
                            , estWTag     = estWTag
                            , tagCat      = tagCat
@@ -256,10 +256,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## build tagging categories ##
         ##############################
 
-        if not self._iTagZeroTrick :
+        if nominalPdf or not self._iTagZeroTrick :
             # build tagging categories
             from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
-            if tagConds in [ 'estWTag', 'all' ] :
+            if nominalPdf or tagConds in [ 'estWTag', 'all' ] :
                 self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._data, estWTag = estWTag
                                                   , wTagP0Constraint = True, wTagP1Constraint = True )
             else :
@@ -267,12 +267,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                   , TagCats = [ ], NumSigmaTagBins = 1., wTagP0Constraint = True, wTagP1Constraint = True )
                 if tagConds == 'tagCat' : self._tagCats.addConditional( self._tagCats['tagCat'] )
 
-            if tagConds in [ 'all', 'iTag' ] : self._tagCats.addConditional( iTag )
+            if nominalPdf or tagConds in [ 'all', 'iTag' ] : self._tagCats.addConditional( iTag )
 
             tagCatP2VV = self._tagCats['tagCat']
             tagCatP2VV.setIndex(1)
             observables[tagCatP2VV.GetName()] = tagCatP2VV
-            if not tagConds in [ 'all', 'tagCat', 'estWTag' ] : obsSetP2VV.append(tagCatP2VV)
+            if not nominalPdf and not tagConds in [ 'all', 'tagCat', 'estWTag' ] : obsSetP2VV.append(tagCatP2VV)
 
             # add tagging category to data set
             from P2VVGeneralUtils import addTaggingObservables
@@ -383,7 +383,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # transversity amplitudes
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
-            amplitudes = Amplitudes(polarSWave = polarSWave)
+            amplitudes = Amplitudes(polarSWave = True if nominalPdf else polarSWave)
 
         else :
             from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
@@ -422,7 +422,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         timeBasisCoefs = TimeBasisCoefs( self._angleFuncs.functions, amplitudes, self._lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
         # tagging parameters
-        if self._iTagZeroTrick :
+        if not nominalPdf and self._iTagZeroTrick :
             from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams(  estWTag = estWTag, p0 = dict( Name = 'wTagP0' ), p1 = dict( Name = 'wTagP1' )
                                                 , p0Constraint = True, p1Constraint = True )
@@ -488,7 +488,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         signalComps += sig_t_angles_tagCat_iTag
 
         # print tagging category distribution for signal and background
-        if not self._iTagZeroTrick :
+        if nominalPdf or not self._iTagZeroTrick :
             print 'Bs2Jpsiphi_PdfBuilder: distribution in tagging category for signal:'
             self._sigSWeightData.table(tagCatP2VV).Print('v')
             print 'Bs2Jpsiphi_PdfBuilder: distribution in tagging category for background:'
@@ -500,7 +500,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ###################################################
 
         if makePlots :
-            tempTagCat = tagCat if self._iTagZeroTrick else tagCatP2VV
+            tempTagCat = tagCat if not nominalPdf and self._iTagZeroTrick else tagCatP2VV
 
             # build PDF for estimated wrong-tag probability
             print 'Bs2Jpsiphi_PdfBuilder: building PDF for estimated wrong-tag probability'
@@ -659,7 +659,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##################################
 
         if not SFit :
-            if self._iTagZeroTrick :
+            if not nominalPdf and self._iTagZeroTrick :
                 if tagConds not in [ 'iTag', 'all' ] :
                     self._bkg_tagCat_iTag = None
                     backgroundComps[tagDecision] = self._bkg_tagCat_iTag
