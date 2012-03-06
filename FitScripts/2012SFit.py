@@ -215,9 +215,9 @@ fit = True
 if fit or not paramfile:
     sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
     sfitresult.Print()
-    sfitresult.writepars('sfitresult',False)
+    sfitresult.writepars('sfitresult_noacc',False)
     fitset = pdf.getParameters(data)
-    fitset.writeToFile("sfitparams.txt")
+    fitset.writeToFile("sfitparams_noacc.txt")
 
 assert False
 ########
