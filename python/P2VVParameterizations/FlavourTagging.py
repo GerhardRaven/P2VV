@@ -20,7 +20,6 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin, _util_condi
 
         # cache integrals as a function of observables
         for d in self._dilutions :
-            print ' requesting CacheAndTrack for  %s' % d.GetName()
             d.setAttribute("CacheAndTrack") ;
             from ROOT import RooAbsReal, RooArgSet
             realObs = RooArgSet( [ o._var for o in d.Observables() if isinstance(o._var,RooAbsReal)  ]  )

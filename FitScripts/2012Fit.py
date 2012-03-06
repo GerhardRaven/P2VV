@@ -18,7 +18,7 @@ fitOpts = dict( NumCPU = numCPU()
 tmincut = 0.3
 
 # define observables
-m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  48
+m    = RealVar('mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = (5200, 5550), nBins =  50
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
                                   , 'rightsideband' : ( 5410, None ) 
@@ -27,10 +27,10 @@ mpsi = RealVar('mdau1', Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True
 mphi = RealVar('mdau2', Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = (1008,1032), nBins =  16 )
 t    = RealVar('time',  Title = 'decay time',    Unit = 'ps',  Observable = True, MinMax = (tmincut, 14),    nBins =  54 )
 #Set the left boundary of sigmat to non-zero to prevent problems with integration when making plots. Checked the data: no events below 0.007.
-st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.007, 0.12),  nBins =  50 )
-eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
+st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = (0.007, 0.12),  nBins =  20 )
+eta_os  = RealVar('tagomega_os',      Title = 'estimated mistag OS',          Observable = True, MinMax = (0,0.50001),  nBins =  20)
 #The peak at 0.5 seems to be shifted to -2 in the SS eta!
-eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
+eta_ss  = RealVar('tagomega_ss',      Title = 'estimated mistag SS',          Observable = True, MinMax = (0,0.50001),  nBins =  20)
 iTag_os = Category( 'tagdecision_os', Title = 'initial state flavour tag OS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 #The peak at 0 seems to be shifted to -1000 in the SS tagdecision
 iTag_ss = Category( 'tagdecision_ss', Title = 'initial state flavour tag SS', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
@@ -213,9 +213,6 @@ eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
 eff.read('/data/bfys/dveijk/DataJpsiPhi/2012/effmoments_tcut_%s.txt'%(str(tmincut)))
-#Check the significant terms
-#eff.read('/user/dveijk/LHCb/P2VV/FreshStart/p2vv/FitScripts/effmoments_tcut_%s.txt'%(str(tmincut)),MinSignificance = 3)
-eff.Print()
 
 #Build Angular acceptance corrected PDF
 sig_t_angles_iTag = eff * sig_t_angles_iTag
@@ -291,39 +288,33 @@ sigdata =      data.reduce(CutRange = 'signal')
 #bkgpdf = buildPdf((background,), Observables = (t,m)+tuple(angles.angles.itervalues()), Name = 'bkgpdf')
 #bkgpdf.fitTo(sidebanddata,**fitOpts)
 
-projWDataSet = []
-projWDataSet += [ st ]
-projWData     = dict( ProjWData = ( sidebanddata.reduce(  ArgSet = projWDataSet ), True ) )
-
 bkgtimeplot = False
 if bkgtimeplot:
     from ROOT import kDashed, kRed, kGreen, TCanvas, TLatex
     from P2VVGeneralUtils import plot
     canvas = TCanvas()
     plot( canvas
-          , t
-          , sidebanddata
-          , bkgpdf
-          #, components = {'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   )
-                          #'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
-          #                }
-          , pdfOpts = dict( list( projWData.items() ), LineWidth = 3 )
-          #, pdfOpts = dict( LineWidth = 3 )
-          , plotResidHist = True
-          , logy = True
-          , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
-                              , TitleOffset = (1.2,'y')
-                              , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
-                              , Bins=70 ) 
-          )
+        , t
+        , sidebanddata
+        , bkgpdf
+        #, components = {'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   )
+                        #'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
+        #                }
+        , pdfOpts = dict(  LineWidth = 3, ProjWData = ( sidebanddata.reduce(  ArgSet = bkgpdf.ConditionalObservables() ), True ) )
+        #, pdfOpts = dict( LineWidth = 3 )
+        , plotResidHist = True
+        , logy = True
+        , frameOpts = dict( Title = 'B_{s}#rightarrow J/#psi#phi'
+                            , TitleOffset = (1.2,'y')
+                            , Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                            , Bins=70 ) 
+        )
 
 #######
 # FIT #
 #######
 
-#pdf   = buildPdf((signal,background), Observables = (m,t,iTag_os)+tuple(angles.angles.itervalues()), Name='fullpdf')
 pdf   = buildPdf((signal,background), Observables = (m,t,)+tuple(angles.angles.itervalues()), Name='fullpdf')
-pdf.Print()
 
 def search(fname,path) :
     import os
@@ -338,15 +329,14 @@ if paramfile :
     fitset = pdf.getParameters(data)
     fitset.readFromFile(paramfile)
 
-fit = True
+fit = False
 if fit or not paramfile:
-    classicfitresult = pdf.fitTo(data, **fitOpts)
-    classicfitresult.writepars('classicfitresult',False)
-    classicfitresult.Print()
+    cfitresult = pdf.fitTo(data, **fitOpts)
+    cfitresult.writepars('cfitresult',False)
+    cfitresult.Print()
     fitset = pdf.getParameters(data)
     fitset.writeToFile("cfitparams.txt")
 
-assert False
 
 ########
 # PLOT #
@@ -355,11 +345,10 @@ orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([m,t,angles.angles['
 
 from ROOT import TCanvas, kDashed, kRed, kGreen, kBlue, kBlack
 from P2VVGeneralUtils import plot
-
 canvas = dict()
 for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     canvas[rng] = TCanvas('%s'%rng)
-    obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
+    obs =  [ o for o in pdf.Observables().difference(pdf.ConditionalObservables()) if hasattr(o,'frame')   ]
     from P2VVGeneralUtils import Sorter
     obs = sorted(obs, key = Sorter(orderdict))
 
@@ -368,13 +357,15 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
         pdfOpts  = dict( ProjectionRange = rng ) if rng else dict()
         from P2VVGeneralUtils import plot
         from ROOT import RooArgSet
-        #pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var, iTag_os._var), data, True )
-        pdfOpts[ 'ProjWData' ] = ( RooArgSet(st._var, eta_os._var), data, True )
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                               , 'bkg*'     : dict( LineColor = kRed,   LineStyle = kDashed )
                                               #, 'cmb*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                                               }
-              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
-              , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+              , dataOpts = dict( MarkerSize = 0.8
+                               , MarkerColor = kBlack
+                               , **dataOpts )
+              , pdfOpts  = dict( LineWidth = 2
+                               , ProjWData = ( data.reduce( ArgSet = pdf.ConditionalObservables() ), True )
+                               , **pdfOpts )
               , logy = ( o == t )
               )
