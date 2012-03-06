@@ -664,6 +664,23 @@ class Pdf(RooObject):
         self._externalConstraints = constraints
 
 
+    @wraps(RooAbsPdf.createNLL)
+    def createNLL( self, data, **kwargs ) :
+        condObs  = self.ConditionalObservables()
+        if condObs :
+            assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'
+            print 'INFO: adding ConditionalObservables: %s' % [ i.GetName() for i in  condObs ]
+            kwargs['ConditionalObservables'] = condObs 
+        extConst = self.ExternalConstraints()
+        if extConst : 
+            assert 'ExternalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
+            print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
+            kwargs['ExternalConstraints'] = extConst 
+        for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
+            kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
+        print kwargs
+        return self._var.createNLL( data, **kwargs )
+
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
         condObs  = self.ConditionalObservables()
