@@ -323,13 +323,14 @@ def search(fname,path) :
     return None
 
 import os
+
 paramfile = search('cfitparams.txt',os.pathsep.join(['.','FitScripts']) )
 if paramfile :
     print 'Reading fit result from %s' % paramfile
     fitset = pdf.getParameters(data)
     fitset.readFromFile(paramfile)
 
-fit = False
+fit = True
 if fit or not paramfile:
     cfitresult = pdf.fitTo(data, **fitOpts)
     cfitresult.writepars('cfitresult',False)
@@ -337,6 +338,7 @@ if fit or not paramfile:
     fitset = pdf.getParameters(data)
     fitset.writeToFile("cfitparams.txt")
 
+assert False
 
 ########
 # PLOT #
