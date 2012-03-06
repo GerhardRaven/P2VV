@@ -11,8 +11,8 @@ from P2VVGeneralUtils import numCPU
 fitOpts = dict( NumCPU = numCPU()
               , Timer=1
               , Save = True
-              , Verbose = True
-              , Minimizer = ('Minuit2','minimize')
+#              , Verbose = True
+#              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
@@ -223,7 +223,7 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
 sig_t_angles_iTag = acceptance * sig_t_angles_iTag
-sig_t_angles_iTag.setAttribute("NOCacheAndTrack")
+#sig_t_angles_iTag.setAttribute("NOCacheAndTrack")
 
 ##################
 ### Build PDFs ###
@@ -321,14 +321,16 @@ def search(fname,path) :
     for f in ( os.path.join(p,fname) for p in os.path.split(os.pathsep) ) :
         if os.path.exists(f) : return f
     return None
+
 import os
+
 paramfile = search('cfitparams.txt',os.pathsep.join(['.','FitScripts']) )
 if paramfile :
     print 'Reading fit result from %s' % paramfile
     fitset = pdf.getParameters(data)
     fitset.readFromFile(paramfile)
 
-fit = False
+fit = True
 if fit or not paramfile:
     cfitresult = pdf.fitTo(data, **fitOpts)
     cfitresult.writepars('cfitresult',False)
@@ -336,6 +338,7 @@ if fit or not paramfile:
     fitset = pdf.getParameters(data)
     fitset.writeToFile("cfitparams.txt")
 
+assert False
 
 ########
 # PLOT #
