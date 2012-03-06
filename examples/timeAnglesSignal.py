@@ -86,7 +86,7 @@ transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val)
 
 # B lifetime
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = GammaVal, deltaGamma = dGammaVal, deltaM = dmVal )
+lifetimeParams = Gamma_LifetimeParams( Gamma = GammaVal, dGamma = dGammaVal, dM = dmVal )
 
 from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution
 timeResModel = Gaussian_TimeResolution( time = time, timeResSigma = timeResSigmaVal )
@@ -115,8 +115,8 @@ args = {
     'time'            : time
   , 'iTag'            : iTag
   , 'tau'             : lifetimeParams['MeanLifetime']
-  , 'dGamma'          : lifetimeParams['deltaGamma']
-  , 'dm'              : lifetimeParams['deltaM']
+  , 'dGamma'          : lifetimeParams['dGamma']
+  , 'dm'              : lifetimeParams['dM']
   , 'dilution'        : taggingParams['dilution']
   , 'ADilWTag'        : taggingParams['ADilWTag']
   , 'avgCEven'        : taggingParams['avgCEven']

@@ -2,11 +2,12 @@
 ## set script parameters ##
 ###########################
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as pdfConfig
+from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+pdfConfig = PdfConfig()
 
 # job parameters
 generateData   = False
-doFit          = True
+doFit          = False
 
 makeObservablePlots     = True
 pdfConfig['makePlots']  = True
@@ -15,8 +16,6 @@ pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = True
 
 plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
-#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 pdfConfig['nTupleName'] = 'DecayTree'
 pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
@@ -28,57 +27,11 @@ pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPs
 #pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
-# PDF options
-pdfConfig['components']         = 'all'       # 'all' / 'signal' / 'background'
-pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']        = 'histPdf'
-pdfConfig['bkgTaggingPdf']      = 'histPdf'
-pdfConfig['multiplyByTimeEff']  = ''          # 'all' / 'signal'
-pdfConfig['numBMassBins']       = [ 50, 10, 10 ]
-
-pdfConfig['iTagZeroTrick'] = False
-pdfConfig['iTagStates'] = { }  # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
-
-pdfConfig['taggingConditionals'] = ''   # 'all' / 'tagCat' / 'estWTag' / 'iTag'
-pdfConfig['numEstWTagBins']      = 100
-
-pdfConfig['eventTimeResolution'] = False
-pdfConfig['numTimeResBins']      = 100
-
-nEvents = 30000
-pdfConfig['signalFraction'] = 0.67
-pdfConfig['massRangeBackground'] = False
-
-# transversity amplitudes
-pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
-
-pdfConfig['A0Mag2']    = 0.50
-pdfConfig['AperpMag2'] = 0.25
-pdfConfig['AparMag2']  = 1. - pdfConfig['A0Mag2'] - pdfConfig['AperpMag2']
-
-pdfConfig['A0Phase']    = 0.
-pdfConfig['AperpPhase'] = 2.9
-pdfConfig['AparPhase']  = 3.3
-
-pdfConfig['f_S']     = 0.02
-pdfConfig['ASMag2']  = pdfConfig['f_S'] / ( 1. - pdfConfig['f_S'] )
-pdfConfig['ASPhase'] = 2.9
-
-# CP violation parameters
-pdfConfig['carthLambdaCP'] = False
-pdfConfig['phiCP']         = 0.2 if pdfConfig['blind'] else 0.
-pdfConfig['lambdaCPSq']    = 1.
-
-# B lifetime parameters
-pdfConfig['Gamma']      = 0.67
-pdfConfig['deltaGamma'] = 0.1
-pdfConfig['deltaM']     = 17.6
-
-# asymmetries
-pdfConfig['AProd'] = 0.
+pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
+#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 # fit options
-fitOpts = dict(  NumCPU              = 8
+fitOpts = dict(  NumCPU              = 4
                , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
@@ -88,6 +41,31 @@ fitOpts = dict(  NumCPU              = 8
 pdfConfig['fitOptions'] = fitOpts
 
 # plot options
+lineWidth = 2
+markStyle = 8
+markSize  = 0.4
+
+# PDF options
+pdfConfig['transversityAngles'] = False
+pdfConfig['bkgAnglePdf']        = 'histPdf'
+pdfConfig['bkgTaggingPdf']      = 'histPdf'
+pdfConfig['multiplyByTimeEff']  = ''
+
+pdfConfig['taggingConditionals'] = ''
+pdfConfig['numEstWTagBins']      = 100
+
+pdfConfig['eventTimeResolution'] = False
+pdfConfig['numTimeResBins']      = 100
+
+nEvents = 30000
+pdfConfig['signalFraction'] = 0.67
+pdfConfig['massRangeBackground'] = False
+
+pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
+pdfConfig['polarSWave']     = False
+
+pdfConfig['carthLambdaCP'] = False
+
 if pdfConfig['nominalPdf'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
@@ -104,10 +82,6 @@ numBins = ( 60, 30, 30, 30 )
 pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
 pdfConfig['numAngleBins'] = ( 5, 7, 9 )
-
-lineWidth = 2
-markStyle = 8
-markSize  = 0.4
 
 
 ###########################################################################################################################################

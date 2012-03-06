@@ -320,9 +320,8 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                     else :
                         # use values for tagging efficiency asymmetry = 0
                         avgCEven = CEvenOddSum['avgCEven'].getVal()
-                        avgCEven = CEvenOddSum['avgCOdd'].getVal()
+                        avgCOdd  = CEvenOddSum['avgCOdd'].getVal()
 
-                    CEvenOdd = Coefficients_CEvenOdd( avgCEven = avgCEven, avgCOdd = avgCOdd )
                     CEvenOdd = Coefficients_CEvenOdd(  avgCEven = avgCEven if isinstance( avgCEven, RooObject ) \
                                                                   else { 'Name' : 'avgCEven%d' % index, 'Value' : avgCEven }
                                                      , avgCOdd  = avgCOdd if isinstance( avgCOdd, RooObject )   \

@@ -63,7 +63,7 @@ class Toy(object):
         observables = kwargs.pop('Observables')
         pdf_params = pdf.getParameters(observables)
         ## for param in pdf_params:
-        ##     if param.GetName() not in ['Gamma', 'deltaGamma']:
+        ##     if param.GetName() not in ['Gamma', 'dGamma']:
         ##         param.setConstant()
         self._gen_params = pdf_params.snapshot(True)
 

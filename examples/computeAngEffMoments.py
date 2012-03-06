@@ -107,7 +107,7 @@ amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhV
 
 # B lifetime
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
-lifetimeParams = LifetimeParams( Gamma = GammaVal, deltaGamma = dGammaVal, deltaM = dMVal )
+lifetimeParams = LifetimeParams( Gamma = GammaVal, dGamma = dGammaVal, dM = dMVal )
 
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
 timeResModel = TimeResolution( time = trueTimeP2VV )
@@ -128,8 +128,8 @@ timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ '
 args = dict(  time                   = trueTimeP2VV
             , iTag                   = iTag
             , tau                    = lifetimeParams['MeanLifetime']
-            , dGamma                 = lifetimeParams['deltaGamma']
-            , dm                     = lifetimeParams['deltaM']
+            , dGamma                 = lifetimeParams['dGamma']
+            , dm                     = lifetimeParams['dM']
             , dilution               = taggingParams['dilution']
             , ADilWTag               = taggingParams['ADilWTag']
             , avgCEven               = taggingParams['avgCEven']
