@@ -57,8 +57,8 @@ tres.setConstant('.*')
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
-                                     , deltaGamma = 0.10
-                                     , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) 
+                                     , dGamma = 0.10
+                                     , dM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True)
                                      )
 
 # define tagging parameter 
@@ -106,9 +106,9 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
 from RooFitWrappers import BDecay
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , time      = t
-                     , dm        = lifetimeParams['deltaM'] 
+                     , dm        = lifetimeParams['dM']
                      , tau       = lifetimeParams['MeanLifetime']
-                     , dGamma    = lifetimeParams['deltaGamma'] 
+                     , dGamma    = lifetimeParams['dGamma']
                      , resolutionModel = tres.model()
                      , coshCoef  = basisCoefficients['cosh']
                      , cosCoef   = basisCoefficients['cos']

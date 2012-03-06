@@ -99,12 +99,12 @@ externalConstraints += tresdata.externalConstraints()
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                       , deltaGamma = dict( Name = 'dGamma'
+                                       , dGamma = dict( Name = 'dGamma'
                                                             , Value = 0.060
                                                             , Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
-                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False) 
-                                       , deltaMConstraint = True
+                                       , dM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = False)
+                                       , dMConstraint = True
                                       )
 externalConstraints += lifetimeParams.externalConstraints()
 
@@ -143,6 +143,7 @@ amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.60, A0Phase = 0
                                               , AparPhase = 2.5
                                               , sqrtfS_Re = dict( Value = sqrt( 0.10 / ( 1. + 0.10 ) ) * cos(2.20), Constant = False )
                                               , sqrtfS_Im = dict( Value = sqrt( 0.10 / ( 1. + 0.10 ) ) * sin(2.20), Constant = False )
+                                              , polarSWave = False
                                              )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
@@ -171,9 +172,9 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.mo
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , time      = t
-                       , dm        = lifetimeParams['deltaM'] 
+                       , dm        = lifetimeParams['dM']
                        , tau       = lifetimeParams['MeanLifetime']
-                       , dGamma    = lifetimeParams['deltaGamma'] 
+                       , dGamma    = lifetimeParams['dGamma']
                        , resolutionModel = tresdata.model()
                        , coshCoef  = basisCoefficients['cosh']
                        , cosCoef   = basisCoefficients['cos']
