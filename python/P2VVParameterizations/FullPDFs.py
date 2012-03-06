@@ -6,7 +6,86 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
-Bs2Jpsiphi_Winter2012 = {}
+class PdfConfiguration( dict ) :
+    def __init__( self, parameters = None ) :
+        self._parameters = { }
+        if parameters != None : self.addParameters(parameters)
+        self['parameters'] = self._parameters
+
+    def __getitem__( self, key ) :
+        if key not in self and key in self._parameters : return self._parameters[key]
+        return dict.__getitem__( self, key )
+
+    def parameters( self ) : return self._parameters
+
+    def addParameter( self, name, values ) :
+        if hasattr( values, '__iter__' ) and len(values) == 5 :
+            self._parameters[name] = tuple( [ val for val in values ] )
+        else :
+            raise KeyError('PdfConfiguration.addParameter(): format of "values" argument should be ( value, error, min, max, floating? )')
+
+    def addParameters( self, parameters ) :
+        if type(parameters) == dict :
+            for name, vals in parameters.iteritems() : self.addParameter( name, vals )
+        else :
+            raise KeyError('PdfConfiguration.addParameters(): argument "parameters" should be a dictionary')
+
+
+class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
+    def __init__( self ) :
+        # job parameters
+        self['makePlots']  = True
+        self['SFit']       = False
+        self['blind']      = False
+        self['nominalPdf'] = True
+
+        self['nTupleName'] = 'DecayTree'
+        self['nTupleFile'] = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+
+        self['timeEffHistFile'] = 'BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
+        self['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
+
+        self['angEffMomentsFile'] = 'effMoments'
+
+        # fit options
+        self['fitOptions'] = dict( NumCPU = 1, Timer = 1, Save = True )
+
+        # PDF options
+        self['components']         = 'all'              # 'all' / 'signal' / 'background'
+        self['transversityAngles'] = False
+        self['bkgAnglePdf']        = 'histPdf'
+        self['bkgTaggingPdf']      = 'histPdf'
+        self['multiplyByTimeEff']  = ''                 # 'all' / 'signal'
+
+        self['taggingConditionals'] = ''                # 'all' / 'tagCat' / 'estWTag' / 'iTag'
+        self['numEstWTagBins']      = 100
+
+        self['iTagZeroTrick'] = False
+        self['iTagStates'] = { }                        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
+
+        self['eventTimeResolution'] = True
+        self['numTimeResBins']      = 100
+
+        self['signalFraction'] = 0.67
+        self['massRangeBackground'] = False
+
+        self['amplitudeParam'] = 'phasesSWaveFrac'
+        self['polarSWave']     = False
+
+        self['carthLambdaCP'] = False
+
+        self['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
+                              , ( 'trcostheta', 'cos(#theta_{tr})' )
+                              , ( 'trphi',      '#phi_{tr}'        )
+                             )
+
+        self['numBMassBins'] = [ 50, 10, 10 ]
+        self['numTimeBins']  = 30
+        self['numAngleBins'] = ( 5, 7, 9 )
+
+        # initialize PdfConfiguration object
+        PdfConfiguration.__init__( self )
+
 
 class PdfBuilder ( object ) :
     def __init__( self, pdf, observables, parameters ) :
@@ -48,6 +127,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         fitOpts = pdfConfig.pop('fitOptions')
 
+        angleNames   = pdfConfig.pop('angleNames')
+        numTimeBins  = pdfConfig.pop('numTimeBins')
+        numAngleBins = pdfConfig.pop('numAngleBins')
+
+        # PDF parameters
+        parameters = pdfConfig.pop('parameters')
+
         # PDF options
         components        = pdfConfig.pop('components')
         transAngles       = pdfConfig.pop('transversityAngles')
@@ -72,40 +158,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         sigFrac = pdfConfig.pop('signalFraction')
         massRangeBackground = pdfConfig.pop('massRangeBackground')
 
-        # transversity amplitudes
         amplitudeParam = pdfConfig.pop('amplitudeParam')
+        polarSWave     = pdfConfig.pop('polarSWave')
 
-        A0Mag2    = pdfConfig.pop('A0Mag2')
-        AperpMag2 = pdfConfig.pop('AperpMag2')
-        AparMag2  = pdfConfig.pop('AparMag2')
-
-        A0Ph      = pdfConfig.pop('A0Phase')
-        AperpPh   = pdfConfig.pop('AperpPhase')
-        AparPh    = pdfConfig.pop('AparPhase')
-
-        ASMag2 = pdfConfig.pop('ASMag2')
-        ASPh   = pdfConfig.pop('ASPhase')
-        if 'f_S' in pdfConfig                : fS = pdfConfig.pop('f_S')
-        elif isinstance( ASMag2, RooObject ) : fS = ASMag2.GetVal() / ( 1. + ASMag2.GetVal() )
-        else                                 : fS = ASMag2 / ( 1. + ASMag2 )
-
-        # CP violation parameters
         carthLambdaCP = pdfConfig.pop('carthLambdaCP')
-        phiCP         = pdfConfig.pop('phiCP')
-        lambdaCPSq    = pdfConfig.pop('lambdaCPSq')
-
-        # B lifetime parameters
-        Gamma  = pdfConfig.pop('Gamma')
-        dGamma = pdfConfig.pop('deltaGamma')
-        dM     = pdfConfig.pop('deltaM')
-
-        # asymmetries
-        AProd = pdfConfig.pop('AProd')
-
-        # plots
-        angleNames   = pdfConfig.pop('angleNames')
-        numTimeBins  = pdfConfig.pop('numTimeBins')
-        numAngleBins = pdfConfig.pop('numAngleBins')
 
         if makePlots :
             # import plotting tools
@@ -325,64 +381,41 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         #####################################################################
 
         # transversity amplitudes
-        from math import cos, sin, sqrt
-        if nominalPdf :
+        if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
-            amplitudes = Amplitudes(  A0Mag2     = A0Mag2
-                                    , A0Phase    = A0Ph
-                                    , AperpMag2  = AperpMag2
-                                    , AperpPhase = AperpPh
-                                    , AparPhase  = AparPh
-                                    , f_S        = fS
-                                    , ASPhase    = ASPh
-                                    #, sqrtfS_Re = sqrt(fS) * cos(ASPh)
-                                    #, sqrtfS_Im = sqrt(fS) * sin(ASPh)
-                                   )
-
-        elif amplitudeParam == 'phasesSWaveFrac' :
-            from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
-            amplitudes = Amplitudes(  A0Mag2     = A0Mag2
-                                    , A0Phase    = A0Ph
-                                    , AperpMag2  = AperpMag2
-                                    , AperpPhase = AperpPh
-                                    , AparPhase  = AparPh
-                                    , sqrtfS_Re  = sqrt(fS) * cos(ASPh)
-                                    , sqrtfS_Im  = sqrt(fS) * sin(ASPh)
-                                   )
+            amplitudes = Amplitudes(polarSWave = polarSWave)
 
         else :
-            from math import sqrt, cos, sin
             from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
-            amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2  / A0Mag2) * cos(AparPh)
-                                    , ImApar  = sqrt(AparMag2  / A0Mag2) * sin(AparPh)
-                                    , ReAperp = sqrt(AperpMag2 / A0Mag2) * cos(AperpPh)
-                                    , ImAperp = sqrt(AperpMag2 / A0Mag2) * sin(AperpPh)
-                                    , ReAS    = sqrt(ASMag2    / A0Mag2) * cos(ASPh)
-                                    , ImAS    = sqrt(ASMag2    / A0Mag2) * sin(ASPh)
-                                   )
+            amplitudes = Amplitudes()
 
         # B lifetime
         from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
-        dGammaVar = dict( Name = 'dGamma', Value = dGamma )
+        dGammaVar = dict( Name = 'dGamma' )
         if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-        lifetimeParams = LifetimeParams( Gamma = dict(Value = Gamma), deltaGamma = dGammaVar, deltaM = dM, deltaMConstraint = True )
+        lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = True )
 
         if eventTimeRes :
             from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-            timeResModel = TimeResolution(  time = time
-                                          , sigmat = timeRes
-                                          , timeResSF = dict( Value = 1.45, MinMax = ( 1., 2. ) )
-                                          , timeResSFConstraint = True
-                                         )
+            timeResModel = TimeResolution( time = time, sigmat = timeRes, timeResSFConstraint = True )
         else :
             from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
             timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
 
         # CP violation parameters
-        from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
-        phiCPVar = dict( Value = phiCP )
-        if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-        self._lambdaCP = CPParam( lambdaCPSq = lambdaCPSq, phiCP = phiCPVar )
+        if carthLambdaCP : 
+            from P2VVParameterizations.CPVParams import LambdaCarth_CPParam as CPParam
+            ReLambdaCPVar = dict( Name = 'ReLambdaCP' )
+            ImLambdaCPVar = dict( Name = 'ImLambdaCP' )
+            if blind: ReLambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsGoofyMoriond2012', 0.3 )
+            if blind: ImLambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsPlutoMoriond2012', 0.3 )
+            self._lambdaCP = CPParam( ReLambdaCP = ReLambdaCPVar, ImLambdaCP = ImLambdaCPVar )
+
+        else :
+            from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
+            phiCPVar = dict( Name = 'phiCP' )
+            if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+            self._lambdaCP = CPParam( phiCP = phiCPVar )
 
         # coefficients for time functions
         from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
@@ -403,7 +436,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         else :
             from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
-            self._taggingParams = TaggingParams( AProd = AProd, ANorm = -self._lambdaCP['C'].getVal(), **self._tagCats.tagCatsDict() )
+            self._taggingParams = TaggingParams( AProd = 0., ANorm = -self._lambdaCP['C'].getVal(), **self._tagCats.tagCatsDict() )
 
             args = dict(  tagCat      = tagCatP2VV
                         , iTag        = iTag
@@ -416,8 +449,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         args = dict(  time                   = time
                     , tau                    = lifetimeParams['MeanLifetime']
-                    , dGamma                 = lifetimeParams['deltaGamma']
-                    , dm                     = lifetimeParams['deltaM']
+                    , dGamma                 = lifetimeParams['dGamma']
+                    , dm                     = lifetimeParams['dM']
                     , coshCoef               = timeBasisCoefs['cosh']
                     , sinhCoef               = timeBasisCoefs['sinh']
                     , cosCoef                = timeBasisCoefs['cos']
