@@ -7,21 +7,27 @@ pdfConfig = PdfConfig()
 
 # job parameters
 generateData   = False
-doFit          = True
+doFit          = False
 
 makeObservablePlots     = False
-pdfConfig['makePlots']  = True
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = True
+pdfConfig['nominalPdf'] = False
+
+pdfConfig['numEvents'] = 30000
 
 plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
 
-pdfConfig['nTupleName'] = 'DecayTree'
-pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLFit.root'
+    pdfConfig['nTupleName'] = None
+    pdfConfig['nTupleFile'] = None
+
+else :
+    pdfConfig['nTupleName'] = 'DecayTree'
+    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
 #pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
@@ -47,8 +53,8 @@ markSize  = 0.4
 
 # PDF options
 pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']        = 'histPdf'
-pdfConfig['bkgTaggingPdf']      = 'histPdf'
+pdfConfig['bkgAnglePdf']        = ''
+pdfConfig['bkgTaggingPdf']      = ''
 pdfConfig['multiplyByTimeEff']  = ''
 
 pdfConfig['taggingConditionals'] = ''
@@ -65,6 +71,28 @@ pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
 pdfConfig['polarSWave']     = False
 
 pdfConfig['carthLambdaCP'] = False
+
+if generateData :
+    pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.648, 0. )
+                            , ( 'TagCat1',   1, 0.499999, 0.484, 0.488, 0., 0.014, 0. )
+                            , ( 'TagCat2',   2, 0.478,    0.467, 0.471, 0., 0.056, 0. )
+                            , ( 'TagCat3',   3, 0.457,    0.447, 0.450, 0., 0.054, 0. )
+                            , ( 'TagCat4',   4, 0.437,    0.427, 0.430, 0., 0.046, 0. )
+                            , ( 'TagCat5',   5, 0.417,    0.408, 0.410, 0., 0.037, 0. )
+                            , ( 'TagCat6',   6, 0.399,    0.390, 0.391, 0., 0.031, 0. )
+                            , ( 'TagCat7',   7, 0.381,    0.372, 0.373, 0., 0.023, 0. )
+                            , ( 'TagCat8',   8, 0.363,    0.354, 0.354, 0., 0.020, 0. )
+                            , ( 'TagCat9',   9, 0.344,    0.334, 0.333, 0., 0.014, 0. )
+                            , ( 'TagCat10', 10, 0.324,    0.313, 0.311, 0., 0.012, 0. )
+                            , ( 'TagCat11', 11, 0.303,    0.291, 0.289, 0., 0.013, 0. )
+                            , ( 'TagCat12', 12, 0.280,    0.269, 0.266, 0., 0.010, 0. )
+                            , ( 'TagCat13', 13, 0.257,    0.246, 0.241, 0., 0.009, 0. )
+                            , ( 'TagCat14', 14, 0.233,    0.222, 0.217, 0., 0.005, 0. )
+                            , ( 'TagCat15', 15, 0.208,    0.194, 0.189, 0., 0.003, 0. )
+                            , ( 'TagCat16', 16, 0.181,    0.168, 0.161, 0., 0.003, 0. )
+                            , ( 'TagCat17', 17, 0.153,    0.141, 0.134, 0., 0.002, 0. )
+                            , ( 'TagCat18', 18, 0.124,    0.113, 0.104, 0., 0.000, 0. )
+                           ]
 
 if pdfConfig['nominalPdf'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
