@@ -6,28 +6,30 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
+readData       = True
 generateData   = False
-doFit          = False
+doFit          = True
 
 makeObservablePlots     = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False
+pdfConfig['nominalPdf'] = True
 
 pdfConfig['numEvents'] = 30000
 
 plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
 
-if generateData :
-    dataSetName = 'JpsiphiData'
-    dataSetFile = 'JvLFit.root'
+if readData :
+    pdfConfig['nTupleName'] = 'DecayTree'
+    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+else :
     pdfConfig['nTupleName'] = None
     pdfConfig['nTupleFile'] = None
 
-else :
-    pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+if generateData :
+    dataSetName = 'JpsiphiData'
+    dataSetFile = 'JvLFit.root'
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
 #pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
@@ -37,7 +39,7 @@ pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf
 #pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 # fit options
-fitOpts = dict(  NumCPU              = 8
+fitOpts = dict(  NumCPU              = 6
                , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
@@ -52,7 +54,7 @@ markStyle = 8
 markSize  = 0.4
 
 # PDF options
-pdfConfig['transversityAngles'] = False
+pdfConfig['transversityAngles'] = True
 pdfConfig['bkgAnglePdf']        = ''
 pdfConfig['bkgTaggingPdf']      = ''
 pdfConfig['multiplyByTimeEff']  = ''
@@ -68,11 +70,11 @@ pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
 pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
-pdfConfig['polarSWave']     = False
+pdfConfig['polarSWave']     = True
 
 pdfConfig['carthLambdaCP'] = False
 
-if generateData :
+if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.648, 0. )
                             , ( 'TagCat1',   1, 0.499999, 0.484, 0.488, 0., 0.014, 0. )
                             , ( 'TagCat2',   2, 0.478,    0.467, 0.471, 0., 0.056, 0. )
@@ -94,7 +96,7 @@ if generateData :
                             , ( 'TagCat18', 18, 0.124,    0.113, 0.104, 0., 0.000, 0. )
                            ]
 
-if pdfConfig['nominalPdf'] :
+if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
                                , ( 'trphi',      '#phi_{tr}'        )
@@ -169,7 +171,7 @@ else :
 
 if doFit :
     # fix values of some parameters
-    if pdfConfig['nominalPdf'] : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
@@ -247,7 +249,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , obsSetP2VV[ : 5 ]
                    , numBins
                    , [ var.GetTitle() for var in obsSetP2VV[ : 5 ] ]
-                   , ( '', angleNames[0][1], angleNames[1][1], angleNames[1][1] )
+                   , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                    , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
                    , ( True, ) + 3 * ( False, )
                   ) :
@@ -327,7 +329,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , 2 * angles
                    , 2 * numAngleBins
                    , anglePlotTitles
-                   , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[1][1] )
+                   , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                    , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
                    , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
                    , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )

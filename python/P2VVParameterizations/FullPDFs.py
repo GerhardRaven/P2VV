@@ -422,7 +422,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
         lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = True )
 
-        if eventTimeRes :
+        if nominalPdf or eventTimeRes :
             from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
             timeResModel = TimeResolution( time = time, sigmat = timeRes, timeResSFConstraint = True )
         else :
@@ -588,9 +588,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if bkgAngleData and bkgAnglePdf == 'histPdf' :
                 # create a HistPdf from background data
                 from RooFitWrappers import HistPdf
+                nBins = [ 5, 7, 9 ] if nominalPdf else numAngleBins
                 self._bkg_angles = HistPdf(  Name = 'bkg_angles'
                                            , Observables = angles
-                                           , Binning = { cpsi : numAngleBins[0], ctheta : numAngleBins[1], phi : numAngleBins[2] }
+                                           , Binning = { cpsi : nBins[0], ctheta : nBins[1], phi : nBins[2] }
                                            , Data = bkgAngleData
                                           )
 
@@ -598,7 +599,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # define angular bins
                 from math import pi
                 from array import array
-                if nominalPdf :
+                if nominalPdf or transAngles :
                     cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
                     cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
                     phiBinBounds = array( 'd', [ -pi ] + [ pi * ( -1. + 2. / 9. * float(i) ) for i in range( 1, 9 ) ] + [ pi ] )
@@ -621,9 +622,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 # create bin coefficients
                 self._bkgAngCoefs = [ RealVar(  'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
-                                              , Title = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
-                                              , Value = 1. / cpsNumBins / cthNumBins / phiNumBins
-                                              , MinMax = ( 0., 1. )
+                                              , Title    = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
+                                              , Value    = 1. / cpsNumBins / cthNumBins / phiNumBins
+                                              , MinMax   = ( 0., 1. )
+                                              , Constant = True
                                              )\
                                       if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
                                       for bin2 in range( phiNumBins ) for bin1 in range( cthNumBins ) for bin0 in range( cpsNumBins )
@@ -643,6 +645,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 sumBinWeights = ( cpsNumBins * cthNumBins * phiNumBins - 1 ) * [ 0. ]
                 if bkgAngleData :
                     # determine bin coefficient values
+                    angleInitVals = [ angle.getVal() for angle in angles ]
                     for obsSet in bkgAngleData :
                         for angle in angles : angle.setVal( obsSet.getRealValue( angle.GetName() ) )
                         sumWeights += bkgAngleData.weight()
@@ -651,6 +654,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         phiBin = phi.getBin('bkg_phiBins')
                         bin = cpsBin + cthBin * cpsNumBins + phiBin * cpsNumBins * cthNumBins - 1
                         if bin >= 0 : sumBinWeights[ bin ] += bkgAngleData.weight()
+                    for angle, val in zip( angles, angleInitVals ) : angle.setVal(val)
 
                 # set bin coefficient values
                 for coef, weight in zip( self._bkgAngCoefs, sumBinWeights ) :
@@ -660,7 +664,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             'Bs2Jpsiphi_PdfBuilder: background angular PDF coefficient \"%s\" has negative value: %f'\
                             % (coef.GetName(), value)
                         coef.setVal(value)
-                    coef.setConstant()
 
             if not SFit : backgroundComps += self._bkg_angles
 
@@ -695,7 +698,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             else :
                 bkgTaggingData = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
-                if bkgTaggingData and bkgTaggingPdf == 'histPdf' :
+                if not nominalPdf and bkgTaggingData and bkgTaggingPdf == 'histPdf' :
                     print 'Bs2Jpsiphi_PdfBuilder: creating background tagging PDFs from %s data'\
                           % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
                     from RooFitWrappers import HistPdf
@@ -717,8 +720,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         nTagB    = [ 0. for cat in range( tagCatP2VV.numTypes() ) ]
                         nTagBbar = [ 0. for cat in range( tagCatP2VV.numTypes() ) ]
                         for catIter in range( 1, tagCatP2VV.numTypes() ) :
-                            nTagB[catIter]    += catTagTable.get( '{TagCat%d;B}'    % catIter )
-                            nTagBbar[catIter] += catTagTable.get( '{TagCat%d;Bbar}' % catIter )
+                            taggedCatName = ( 'TagCat%d' % catIter ) if tagCatP2VV.numTypes() > 2 else 'Tagged'
+                            nTagB[catIter]    += catTagTable.get( '{%s;B}'    % taggedCatName )
+                            nTagBbar[catIter] += catTagTable.get( '{%s;Bbar}' % taggedCatName )
                             nTagB[0]    += nTagB[catIter]
                             nTagBbar[0] += nTagBbar[catIter]
 
@@ -727,7 +731,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     for iter, type in enumerate(iTag) :
                         if iter == 0 and type.getVal() < 0 : tagRevOrder = True
 
-                    if bkgTaggingPdf == 'signal' :
+                    if nominalPdf or bkgTaggingPdf == 'signal' :
                         tagCatCoefNames = [ coef.GetName() for coef in sig_t_angles_tagCat_iTag.tagCatCoefs() ]
                         AUntagged = RealVar(  'bkgAUnt'
                                             , Title  = 'Untagged-tagged asymmetry in background tagging category coefficients'
@@ -788,9 +792,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 ABBbar = 0.
 
                             ABBbars.append( RealVar(  'bkgABBbar%d' % catIter
-                                                    , Title  = 'B-Bbar asymmetry in background %d' % catIter
-                                                    , Value  = -ABBbar if tagRevOrder else ABBbar
-                                                    , MinMax = ( -1., 1. )
+                                                    , Title    = 'B-Bbar asymmetry in background %d' % catIter
+                                                    , Value    = -ABBbar if tagRevOrder else ABBbar
+                                                    , MinMax   = ( -1., 1. )
+                                                    , Constant = True
                                                    )
                                           )
 
@@ -799,14 +804,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             if bkgTaggingData and catIter == 0. :
                                 tagCatCoef = bkgTaggingData.table(tagCatP2VV).getFrac('Untagged')
                             elif bkgTaggingData :
-                                tagCatCoef = bkgTaggingData.table(tagCatP2VV).getFrac( 'TagCat%d' % catIter )
+                                taggedCatName = ( 'TagCat%d' % catIter ) if tagCatP2VV.numTypes() > 2 else 'Tagged'
+                                tagCatCoef = bkgTaggingData.table(tagCatP2VV).getFrac(taggedCatName)
                             else :
                                 tagCatCoef = 0.
 
                             tagCatCoefs.append( RealVar(  'bkgTagCatCoef%d' % catIter
-                                                        , Title  = 'Background tagging category coefficient %d' % catIter
-                                                        , Value  = tagCatCoef
-                                                        , MinMax = ( -1., 1. )
+                                                        , Title    = 'Background tagging category coefficient %d' % catIter
+                                                        , Value    = tagCatCoef
+                                                        , MinMax   = ( -1., 1. )
+                                                        , Constant = True
                                                        )
                                               )
 
