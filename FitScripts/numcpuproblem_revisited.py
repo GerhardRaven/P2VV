@@ -220,11 +220,21 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 ##############################
 ### Proper time acceptance ###
 ##############################
-from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
-#sig_t_angles_iTag = acceptance * sig_t_angles_iTag
-#sig_t_angles_iTag.setAttribute("NOCacheAndTrack")
+from ROOT import TH1F
+histo = TH1F('timeacceptancehisto','timeacceptancehisto',1,0.3,14)
+histo.SetBinContent(1,1.)
+#histo.SetBinContent(2,0.99)
+acceptance = HistFunc('acceptance',Histogram = histo,Observables = [t])
 
+from ROOT import TCanvas
+tframe = t.frame()
+acceptance.plotOn(tframe)
+tframe.Draw()
+
+#from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
+#acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
+sig_t_angles_iTag = acceptance * sig_t_angles_iTag
+#sig_t_angles_iTag.setAttribute("NOCacheAndTrack")
 ##################
 ### Build PDFs ###
 ##################
@@ -324,7 +334,7 @@ def search(fname,path) :
 
 import os
 
-fitname = 'cfit_noacc'
+fitname = 'cfit_simpleacc'
 
 paramfile = search(fitname+'params.txt',os.pathsep.join(['.','FitScripts']) )
 if paramfile :

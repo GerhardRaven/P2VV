@@ -154,7 +154,7 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
-sig_t_angles_iTag = acceptance * sig_t_angles_iTag
+#sig_t_angles_iTag = acceptance * sig_t_angles_iTag
 
 ####################
 ### Compose PDFs ###
@@ -204,8 +204,9 @@ def search(fname,path) :
         if os.path.exists(f) : return f
     return None
 
+fitname = 'sfit_noacc'
 import os
-paramfile = search('sfitparams.txt',os.pathsep.join(['.','FitScripts']) )
+paramfile = search(fitname+'params.txt',os.pathsep.join(['.','FitScripts']) )
 if paramfile :
     print 'Reading fit result from %s' % paramfile
     fitset = pdf.getParameters(data)
@@ -215,9 +216,9 @@ fit = True
 if fit or not paramfile:
     sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
     sfitresult.Print()
-    sfitresult.writepars('sfitresult_noacc',False)
+    sfitresult.writepars(fitname+'result',False)
     fitset = pdf.getParameters(data)
-    fitset.writeToFile("sfitparams_noacc.txt")
+    fitset.writeToFile(fitname+'params.txt')
 
 assert False
 ########
