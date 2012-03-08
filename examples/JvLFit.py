@@ -10,11 +10,11 @@ readData       = True
 generateData   = False
 doFit          = True
 
-makeObservablePlots     = False
-pdfConfig['makePlots']  = False
+makeObservablePlots     = True
+pdfConfig['makePlots']  = True
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = True
+pdfConfig['nominalPdf'] = False
 
 pdfConfig['numEvents'] = 30000
 
@@ -39,7 +39,7 @@ pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf
 #pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 # fit options
-fitOpts = dict(  NumCPU              = 6
+fitOpts = dict(  NumCPU              = 8
                , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
@@ -54,9 +54,9 @@ markStyle = 8
 markSize  = 0.4
 
 # PDF options
-pdfConfig['transversityAngles'] = True
+pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
-pdfConfig['bkgTaggingPdf']      = ''
+pdfConfig['bkgTaggingPdf']      = 'signal'
 pdfConfig['multiplyByTimeEff']  = ''
 
 pdfConfig['taggingConditionals'] = ''
@@ -70,7 +70,7 @@ pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
 pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
-pdfConfig['polarSWave']     = True
+pdfConfig['polarSWave']     = False
 
 pdfConfig['carthLambdaCP'] = False
 
@@ -154,8 +154,8 @@ if not pdfBuild['iTagZeroTrick'] :
 
 
 ###########################################################################################################################################
-## generate/read data and fit ##
-################################
+## generate data ##
+###################
 
 if generateData :
     # generate data
@@ -169,6 +169,11 @@ elif pdfConfig['SFit'] :
 else :
     fitData = pdfBuild['data']
 
+
+###########################################################################################################################################
+## fit data ##
+##############
+
 if doFit :
     # fix values of some parameters
     pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
@@ -176,8 +181,6 @@ if doFit :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
     pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
-    if pdfConfig['bkgAnglePdf'] == '' :
-        for coef in pdfBuild['bkgAngCoefs'] : coef.setConstant()
 
     # fit data
     print 120 * '='

@@ -279,12 +279,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         from RooFitWrappers import Component
         if SFit :
-            signalComps  = Component( 'signal',  [ ]                                       )
-            sigMassComps = Component( 'sigMass', [ ], Yield = ( nSignal,     0., nEvents ) )
-            bkgMassComps = Component( 'bkgMass', [ ], Yield = ( nBackground, 0., nEvents ) )
+            self._signalComps  = Component( 'signal',  [ ]                                       )
+            self._sigMassComps = Component( 'sigMass', [ ], Yield = ( nSignal,     0., nEvents ) )
+            self._bkgMassComps = Component( 'bkgMass', [ ], Yield = ( nBackground, 0., nEvents ) )
         else :
-            signalComps     = Component( 'signal', [ ], Yield = ( nSignal,     0., nEvents ) )
-            backgroundComps = Component( 'bkg'   , [ ], Yield = ( nBackground, 0., nEvents ) )
+            self._signalComps     = Component( 'signal', [ ], Yield = ( nSignal,     0., nEvents ) )
+            self._backgroundComps = Component( 'bkg'   , [ ], Yield = ( nBackground, 0., nEvents ) )
 
 
         ###################################################################################################################################
@@ -298,14 +298,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         from RooFitWrappers import buildPdf
         if SFit :
-            sigMassComps += signalBMass.pdf()
-            bkgMassComps += backgroundBMass.pdf()
-            self._massPdf = buildPdf( [ sigMassComps, bkgMassComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
+            self._sigMassComps += signalBMass.pdf()
+            self._bkgMassComps += backgroundBMass.pdf()
+            self._massPdf = buildPdf( [ self._sigMassComps, self._bkgMassComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
 
         else :
-            signalComps     += signalBMass.pdf()
-            backgroundComps += backgroundBMass.pdf()
-            self._massPdf = buildPdf( [ signalComps, backgroundComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
+            self._signalComps     += signalBMass.pdf()
+            self._backgroundComps += backgroundBMass.pdf()
+            self._massPdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
 
 
         ###################################################################################################################################
@@ -512,14 +512,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # multiply signal PDF with time acceptance
             sig_t_angles_tagCat_iTag = timeAcceptance * sig_t_angles_tagCat_iTag
 
-        signalComps += sig_t_angles_tagCat_iTag
+        self._signalComps += sig_t_angles_tagCat_iTag
 
         # print tagging category distribution for signal and background
         if self._sigSWeightData and ( nominalPdf or not self._iTagZeroTrick ) :
+            from RooFitWrappers import ArgSet
             print 'Bs2Jpsiphi_PdfBuilder: distribution in tagging category for signal:'
-            self._sigSWeightData.table(tagCatP2VV).Print('v')
+            self._sigSWeightData.table( ArgSet( 'sigTagSet', [ tagCatP2VV, iTag ] ) ).Print('v')
             print 'Bs2Jpsiphi_PdfBuilder: distribution in tagging category for background:'
-            self._bkgSWeightData.table(tagCatP2VV).Print('v')
+            self._bkgSWeightData.table( ArgSet( 'bkgTagSet', [ tagCatP2VV, iTag ] ) ).Print('v')
 
 
         ###################################################################################################################################
@@ -573,7 +574,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # multiply background time PDF with time acceptance
                 self._bkg_t = timeAcceptance * self._bkg_t
 
-            backgroundComps += self._bkg_t
+            self._backgroundComps += self._bkg_t
 
 
         ###################################################################################################################################
@@ -581,12 +582,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##################################
 
         if not SFit or makePlots :
-            print 'Bs2Jpsiphi_PdfBuilder: determining angular shape of background from %s data'\
-                  % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
-
             bkgAngleData = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
             if bkgAngleData and bkgAnglePdf == 'histPdf' :
-                # create a HistPdf from background data
+                # create a histogram from background data and use it for background angular PDF
+                print 'Bs2Jpsiphi_PdfBuilder: determining angular shape of background from %s data'\
+                      % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
+
                 from RooFitWrappers import HistPdf
                 nBins = [ 5, 7, 9 ] if nominalPdf else numAngleBins
                 self._bkg_angles = HistPdf(  Name = 'bkg_angles'
@@ -596,14 +597,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                           )
 
             else :
+                # create a binned PDF for background angular shape
+                print 'Bs2Jpsiphi_PdfBuilder: building a binned angular PDF for background'
+
                 # define angular bins
                 from math import pi
                 from array import array
                 if nominalPdf or transAngles :
+                    nBins = [ 5, 7, 9 ]
                     cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
                     cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
                     phiBinBounds = array( 'd', [ -pi ] + [ pi * ( -1. + 2. / 9. * float(i) ) for i in range( 1, 9 ) ] + [ pi ] )
                 else :
+                    nBins = [ 5, 40, 5 ]
                     cpsBinBounds = array( 'd', [ -1.,                      -0.6,      -0.2,      0.2,      0.6,                   1. ] )
                     cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
                     phiBinBounds = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
@@ -665,22 +671,22 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             % (coef.GetName(), value)
                         coef.setVal(value)
 
-            if not SFit : backgroundComps += self._bkg_angles
+            if not SFit : self._backgroundComps += self._bkg_angles
 
             if self._bkgRangeData and self._bkgSWeightData and makePlots :
                 # plot background angles
                 self._bkgAnglesCanv = TCanvas( 'bkgAnglesCanv', 'Background Decay Angles' )
-                for ( pad, obs, data, nBins, plotTitle, xTitle )\
+                for ( pad, obs, data, bins, plotTitle, xTitle )\
                       in zip(  self._bkgAnglesCanv.pads( 3, 2 )
                              , 2 * angles
                              , 3 * ( self._bkgRangeData, ) + 3 * ( self._bkgSWeightData, )
-                             , 2 * numAngleBins
+                             , 2 * nBins
                              , [ angle.GetTitle() + ' - mass side bands' for angle in angles ]
                              + [ angle.GetTitle() + ' - mass S-weights'  for angle in angles ]
                              , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                             ) :
                     plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle
-                         , frameOpts  = dict( Bins = nBins, Title = plotTitle   )
+                         , frameOpts  = dict( Bins = bins, Title = plotTitle   )
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
                          , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
                         )
@@ -692,23 +698,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if not SFit :
             if not nominalPdf and self._iTagZeroTrick :
+                # no implementation for background tagging PDF with tag = { B, Bbar, Untagged } (yet)
                 if tagConds not in [ 'iTag', 'all' ] :
                     self._bkg_tagCat_iTag = None
-                    backgroundComps[tagDecision] = self._bkg_tagCat_iTag
+                    self._backgroundComps[tagDecision] = self._bkg_tagCat_iTag
 
             else :
+                # tagCat = { Untagged, TagCat1, TagCat2, ... }, tag = { B, Bbar }
                 bkgTaggingData = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
                 if not nominalPdf and bkgTaggingData and bkgTaggingPdf == 'histPdf' :
+                    # create histogram from background data and use the (fixed) bin coefficients for the PDF
                     print 'Bs2Jpsiphi_PdfBuilder: creating background tagging PDFs from %s data'\
                           % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
                     from RooFitWrappers import HistPdf
                     self._bkg_tagCat_iTag = HistPdf( Name = 'bkg_tagCat_iTag', Observables = [ tagCatP2VV, iTag ], Data = bkgTaggingData )
-                    backgroundComps += self._bkg_tagCat_iTag
+                    self._backgroundComps += self._bkg_tagCat_iTag
 
                 else :
-                    print 'Bs2Jpsiphi_PdfBuilder: determining tagged category coefficients from %s'\
-                           % ( 'signal PDF' if bkgTaggingPdf == 'signal'\
-                               else ( 'B mass side band data' if massRangeBackground else 'B mass S-weight data' ) )
+                    # use a PDF with variable bin coefficients
 
                     # get number of events in each category
                     from RooFitWrappers import ArgSet, FormulaVar
@@ -726,13 +733,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             nTagB[0]    += nTagB[catIter]
                             nTagBbar[0] += nTagBbar[catIter]
 
-                    # check order of types in tag
+                    # check order of types in tag (default: B-Bbar, reversed: Bbar-B)
                     tagRevOrder = False
                     for iter, type in enumerate(iTag) :
                         if iter == 0 and type.getVal() < 0 : tagRevOrder = True
 
+                    tagCatCoefNames = [ coef.GetName() for coef in sig_t_angles_tagCat_iTag.tagCatCoefs() ]
                     if nominalPdf or bkgTaggingPdf == 'signal' :
-                        tagCatCoefNames = [ coef.GetName() for coef in sig_t_angles_tagCat_iTag.tagCatCoefs() ]
+                        # couple background tagging category coefficients to signal tagging category coefficients
+                        # and assume B-Bbar asymmetry is equal for all tagged categories
+                        if tagCatP2VV.numTypes() > 2 :
+                            print 'Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
+                                + '    * assuming signal tagging category distribution for tagged categories\n'\
+                                + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
+                        else :
+                            print 'Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
+                                + '    * tagging category coefficients are coupled to signal coefficients'
+
+                        # tagged-untagged and B-Bbar asymmetries
                         AUntagged = RealVar(  'bkgAUnt'
                                             , Title  = 'Untagged-tagged asymmetry in background tagging category coefficients'
                                             , Value  = bkgTaggingData.table(tagCatP2VV).getFrac('Untagged')\
@@ -742,51 +760,61 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                             , MinMax = ( -1., 1. )
                                            )
 
-                        if bkgTaggingData :
-                            AUnt = float( nUntB - nUntBbar ) / float( nUntB + nUntBbar )
-                            ATag = float( nTagB[0] - nTagBbar[0]) / float( nTagB[0] + nTagBbar[0] )
-
-                        else :
-                            AUnt = 0.
-                            ATag = 0.
-
                         AUntaggedBBbar = RealVar(  'bkgAUntBBbar'
-                                                 , Title  = 'B-Bbar asymmetry in untagged background'
-                                                 , Value  = -AUnt if tagRevOrder else AUnt
-                                                 , Error  = 0.1
-                                                 , MinMax = ( -1., 1. )
+                                                 , Title    = 'B-Bbar asymmetry in untagged background'
+                                                 , Value    = 0.
+                                                 , MinMax   = ( -1., 1. )
+                                                 , Constant = True
                                                 )
 
                         ATaggedBBbar = RealVar(  'bkgATagBBbar'
                                                , Title  = 'B-Bbar asymmetry in tagged background'
-                                               , Value  = -ATag if tagRevOrder else ATag
+                                               , Value  = float( nTagB[0] - nTagBbar[0]) / float( nTagB[0] + nTagBbar[0] )\
+                                                          if bkgTaggingData else 0.
                                                , Error  = 0.1
                                                , MinMax = ( -1., 1. )
                                               )
 
-                        untaggedBCoef  = FormulaVar( 'bkgUntaggedBCoef',  '0.5*(1.+@0)*(1.-@1)'
-                                                    , [ AUntagged, AUntaggedBBbar                         ] )
-                        taggedBCoef    = FormulaVar( 'bkgTaggedBCoef',    '0.5*(1.-@2/(1.-@2)*@0)*(1.+@1)'
-                                                    , [ AUntagged, ATaggedBBbar, ws[ tagCatCoefNames[0] ] ] )
-                        taggedBbarCoef = FormulaVar( 'bkgTaggedBbarCoef', '0.5*(1.-@2/(1.-@2)*@0)*(1.-@1)'
-                                                    , [ AUntagged, ATaggedBBbar, ws[ tagCatCoefNames[0] ] ] )
+                        # tagging category asymmetry factors
+                        untaggedBbarCoef = FormulaVar(  'bkgUntaggedBCoef' if tagRevOrder else 'bkgUntaggedBbarCoef'
+                                                      , '0.5*(1.+@0)*(1.%s@1)' % ( '+' if tagRevOrder else '-' )
+                                                      , [ AUntagged, AUntaggedBBbar ]
+                                                     )
+                        taggedBCoef      = FormulaVar(  'bkgTaggedBbarCoef' if tagRevOrder else 'bkgTaggedBCoef'
+                                                      , '0.5*(1.-@2/(1.-@2)*@0)*(1.%s@1)' % ( '-' if tagRevOrder else '+' )
+                                                      , [ AUntagged, ATaggedBBbar, ws[ tagCatCoefNames[0] ] ]
+                                                     )
+                        taggedBbarCoef   = FormulaVar(  'bkgTaggedBCoef' if tagRevOrder else 'bkgTaggedBbarCoef'
+                                                      , '0.5*(1.-@2/(1.-@2)*@0)*(1.%s@1)' % ( '+' if tagRevOrder else '-' )
+                                                      , [ AUntagged, ATaggedBBbar, ws[ tagCatCoefNames[0] ] ]
+                                                     )
 
+                        # tagging bin coefficients
                         tagBinCoefs = [ ]
                         from RooFitWrappers import Product
                         for binIter in range( 1, tagCatP2VV.numTypes() * 2 ) :
                             cat = binIter % tagCatP2VV.numTypes()
                             tagBinCoefs.append( Product(  'bkgTagBinCoef%d' % binIter
-                                                        , [ ws[ tagCatCoefNames[cat] ], untaggedBCoef if cat == 0\
-                                                            else ( taggedBbarCoef if binIter < tagCatP2VV.numTypes() else taggedBCoef ) ]
+                                                        , [ ws[ tagCatCoefNames[cat] ], untaggedBbarCoef if cat == 0\
+                                                            else ( taggedBCoef if binIter < tagCatP2VV.numTypes() else taggedBbarCoef ) ]
                                                        )
                                               )
 
                     else :
+                        # create independent tagging bin coefficients
+                        if bkgTaggingData :
+                            print 'Bs2Jpsiphi_PdfBuilder: determining background tagging coefficients from %s'\
+                                  % ( 'B mass side band data' if massRangeBackground else 'B mass S-weight data' )
+                        else :
+                            print 'Bs2Jpsiphi_PdfBuilder: WARNING:'\
+                                + ' no background data available to determine background tagging coefficients:\n'\
+                                + '    * setting tagging category coefficients to signal values\n'\
+                                + '    * assuming absence of B-Bbar asymmetries'
+
+                        # B-Bbar asymmetries
                         ABBbars = [ ]
                         for catIter in range( tagCatP2VV.numTypes() ) :
-                            if bkgTaggingData and catIter == 0 :
-                                ABBbar = float( nUntB - nUntBbar ) / float( nUntB + nUntBbar )
-                            elif bkgTaggingData :
+                            if catIter != 0 and bkgTaggingData :
                                 ABBbar = float( nTagB[catIter] - nTagBbar[catIter] ) / float( nTagB[catIter] + nTagBbar[catIter] )
                             else :
                                 ABBbar = 0.
@@ -799,6 +827,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                    )
                                           )
 
+                        # tagging category coefficients
                         tagCatCoefs = [ ]
                         for catIter in range( tagCatP2VV.numTypes() ) :
                             if bkgTaggingData and catIter == 0. :
@@ -807,7 +836,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 taggedCatName = ( 'TagCat%d' % catIter ) if tagCatP2VV.numTypes() > 2 else 'Tagged'
                                 tagCatCoef = bkgTaggingData.table(tagCatP2VV).getFrac(taggedCatName)
                             else :
-                                tagCatCoef = 0.
+                                tagCatCoef = ws[ tagCatCoefNames[catIter] ].getVal()
 
                             tagCatCoefs.append( RealVar(  'bkgTagCatCoef%d' % catIter
                                                         , Title    = 'Background tagging category coefficient %d' % catIter
@@ -817,6 +846,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                        )
                                               )
 
+                        # tagging bin coefficients
                         tagBinCoefs = [ ]
                         for binIter in range( 1, tagCatP2VV.numTypes() * 2 ) :
                             cat = binIter % tagCatP2VV.numTypes()
@@ -829,7 +859,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     # build binned PDF
                     from RooFitWrappers import BinnedPdf
                     self._bkg_tagCat_iTag = BinnedPdf( 'bkg_tagCat_iTag', Categories = [ tagCatP2VV, iTag ], Coefficients = tagBinCoefs )
-                    backgroundComps += self._bkg_tagCat_iTag
+                    self._backgroundComps += self._bkg_tagCat_iTag
 
 
         ###################################################################################################################################
@@ -838,15 +868,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         from RooFitWrappers import buildPdf
         if SFit :
-            pdf = buildPdf( [ signalComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
+            pdf = buildPdf( [ self._signalComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
 
         else :
             if components == 'signal' :
-                pdf = buildPdf( [ signalComps                  ], Observables = obsSetP2VV, Name = 'JpsiphiSig' )
+                pdf = buildPdf( [ self._signalComps                        ], Observables = obsSetP2VV, Name = 'JpsiphiSig' )
             elif components == 'background' :
-                pdf = buildPdf( [ backgroundComps              ], Observables = obsSetP2VV, Name = 'JpsiphiBkg' )
+                pdf = buildPdf( [ self._backgroundComps                    ], Observables = obsSetP2VV, Name = 'JpsiphiBkg' )
             else :
-                pdf = buildPdf( [ signalComps, backgroundComps ], Observables = obsSetP2VV, Name = 'Jpsiphi'    )
+                pdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = obsSetP2VV, Name = 'Jpsiphi'    )
 
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
         PdfBuilder.__init__( self, pdf, observables, { } )
