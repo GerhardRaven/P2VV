@@ -154,7 +154,7 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
 acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
-#sig_t_angles_iTag = acceptance * sig_t_angles_iTag
+sig_t_angles_iTag = acceptance * sig_t_angles_iTag
 
 ####################
 ### Compose PDFs ###
@@ -204,7 +204,7 @@ def search(fname,path) :
         if os.path.exists(f) : return f
     return None
 
-fitname = 'sfit_noacc'
+fitname = 'sfit'
 import os
 paramfile = search(fitname+'params.txt',os.pathsep.join(['.','FitScripts']) )
 if paramfile :
