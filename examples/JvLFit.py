@@ -10,8 +10,8 @@ readData       = True
 generateData   = False
 doFit          = True
 
-makeObservablePlots     = True
-pdfConfig['makePlots']  = True
+makeObservablePlots     = False
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False

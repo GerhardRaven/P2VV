@@ -56,7 +56,6 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['tagCats'] = [ ]
 
         # PDF options
-        self['components']         = 'all'              # 'all' / 'signal' / 'background'
         self['transversityAngles'] = False
         self['bkgAnglePdf']        = 'histPdf'
         self['bkgTaggingPdf']      = 'histPdf'
@@ -143,7 +142,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         tagCats    = pdfConfig.pop('tagCats')
 
         # PDF options
-        components        = pdfConfig.pop('components')
         transAngles       = pdfConfig.pop('transversityAngles')
         bkgAnglePdf       = pdfConfig.pop('bkgAnglePdf')
         bkgTaggingPdf     = pdfConfig.pop('bkgTaggingPdf')
@@ -314,7 +312,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if self._data :
             print 120 * '='
-            print 'Bs2Jpsiphi_PdfBuilder: computing S-weights'
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: computing S-weights'
 
             # compute S-weights
             from P2VVGeneralUtils import SData, splot
@@ -496,7 +494,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if angEffMomentsFile :
             # multiply signal PDF with angular efficiency
-            print 'Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"' % angEffMomentsFile
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"'\
+                  % angEffMomentsFile
 
             from P2VVGeneralUtils import RealMomentsBuilder
             moments = RealMomentsBuilder()
@@ -517,9 +516,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # print tagging category distribution for signal and background
         if self._sigSWeightData and ( nominalPdf or not self._iTagZeroTrick ) :
             from RooFitWrappers import ArgSet
-            print 'Bs2Jpsiphi_PdfBuilder: distribution in tagging category for signal:'
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in tagging category for signal:'
             self._sigSWeightData.table( ArgSet( 'sigTagSet', [ tagCatP2VV, iTag ] ) ).Print('v')
-            print 'Bs2Jpsiphi_PdfBuilder: distribution in tagging category for background:'
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in tagging category for background:'
             self._bkgSWeightData.table( ArgSet( 'bkgTagSet', [ tagCatP2VV, iTag ] ) ).Print('v')
 
 
@@ -531,7 +530,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             tempTagCat = tagCat if not nominalPdf and self._iTagZeroTrick else tagCatP2VV
 
             # build PDF for estimated wrong-tag probability
-            print 'Bs2Jpsiphi_PdfBuilder: building PDF for estimated wrong-tag probability'
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building PDF for estimated wrong-tag probability'
             from RooFitWrappers import HistPdf
             self._estWTagData = self._sigSWeightData.reduce( '%s > 0' % tempTagCat.GetName() )
             self._sig_bkg_estWTag = HistPdf(  Name = 'sig_bkg_estWTag'
@@ -585,7 +584,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             bkgAngleData = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
             if bkgAngleData and bkgAnglePdf == 'histPdf' :
                 # create a histogram from background data and use it for background angular PDF
-                print 'Bs2Jpsiphi_PdfBuilder: determining angular shape of background from %s data'\
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: determining angular shape of background from %s data'\
                       % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
 
                 from RooFitWrappers import HistPdf
@@ -598,7 +597,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             else :
                 # create a binned PDF for background angular shape
-                print 'Bs2Jpsiphi_PdfBuilder: building a binned angular PDF for background'
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a binned angular PDF for background'
 
                 # define angular bins
                 from math import pi
@@ -667,7 +666,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     if bkgAngleData :
                         value = weight / sumWeights
                         assert value >= 0.,\
-                            'Bs2Jpsiphi_PdfBuilder: background angular PDF coefficient \"%s\" has negative value: %f'\
+                            'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background angular PDF coefficient \"%s\" has negative value: %f'\
                             % (coef.GetName(), value)
                         coef.setVal(value)
 
@@ -708,7 +707,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 bkgTaggingData = self._bkgRangeData if massRangeBackground else self._bkgSWeightData
                 if not nominalPdf and bkgTaggingData and bkgTaggingPdf == 'histPdf' :
                     # create histogram from background data and use the (fixed) bin coefficients for the PDF
-                    print 'Bs2Jpsiphi_PdfBuilder: creating background tagging PDFs from %s data'\
+                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating background tagging PDFs from %s data'\
                           % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
                     from RooFitWrappers import HistPdf
                     self._bkg_tagCat_iTag = HistPdf( Name = 'bkg_tagCat_iTag', Observables = [ tagCatP2VV, iTag ], Data = bkgTaggingData )
@@ -743,11 +742,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         # couple background tagging category coefficients to signal tagging category coefficients
                         # and assume B-Bbar asymmetry is equal for all tagged categories
                         if tagCatP2VV.numTypes() > 2 :
-                            print 'Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
+                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
                                 + '    * assuming signal tagging category distribution for tagged categories\n'\
                                 + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
                         else :
-                            print 'Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
+                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
                                 + '    * tagging category coefficients are coupled to signal coefficients'
 
                         # tagged-untagged and B-Bbar asymmetries
@@ -803,10 +802,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     else :
                         # create independent tagging bin coefficients
                         if bkgTaggingData :
-                            print 'Bs2Jpsiphi_PdfBuilder: determining background tagging coefficients from %s'\
+                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: determining background tagging coefficients from %s'\
                                   % ( 'B mass side band data' if massRangeBackground else 'B mass S-weight data' )
                         else :
-                            print 'Bs2Jpsiphi_PdfBuilder: WARNING:'\
+                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: WARNING:'\
                                 + ' no background data available to determine background tagging coefficients:\n'\
                                 + '    * setting tagging category coefficients to signal values\n'\
                                 + '    * assuming absence of B-Bbar asymmetries'
@@ -867,16 +866,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ####################
 
         from RooFitWrappers import buildPdf
+        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: requesting %s PDF for observables [%s]'\
+              % ( 'signal' if SFit else 'signal + background', ', '.join( str(obs) for obs in obsSetP2VV ) )
         if SFit :
             pdf = buildPdf( [ self._signalComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
-
         else :
-            if components == 'signal' :
-                pdf = buildPdf( [ self._signalComps                        ], Observables = obsSetP2VV, Name = 'JpsiphiSig' )
-            elif components == 'background' :
-                pdf = buildPdf( [ self._backgroundComps                    ], Observables = obsSetP2VV, Name = 'JpsiphiBkg' )
-            else :
-                pdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = obsSetP2VV, Name = 'Jpsiphi'    )
+            pdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
 
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
         PdfBuilder.__init__( self, pdf, observables, { } )
