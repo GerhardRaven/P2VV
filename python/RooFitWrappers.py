@@ -1339,7 +1339,7 @@ class Component(object):
             d[nk] = ProdPdf(self.name, PDFs = pdfs, ExternalConstraints = externalConstraints )
         return d[k]
 
-def buildPdf( Components, Observables, Name, ManualObservables = None ) :
+def buildPdf( Components, Observables, Name ) :
     # multiply PDFs for observables (for each component)
 
     # get observables
@@ -1349,31 +1349,13 @@ def buildPdf( Components, Observables, Name, ManualObservables = None ) :
     # loop over components
     args = { 'Yields' : {}, 'PDFs' : [], 'ExternalConstraints' : set() }
     for comp in Components:
-        manObsList = [ ]
-        if ManualObservables :
-            # get observables for which we have to multiply by their PDFs manually
-            for manComp in ManualObservables.iterkeys() :
-                if comp.GetName() == ( manComp if type(manComp) == str else manComp.GetName() ) :
-                    manObsList = [ obs if type(obs) == str else obs.GetName() for obs in ManualObservables[manComp] ]
-                    break
-
         # build PDF
-        pdf = comp[ obsList + manObsList ]
+        pdf = comp[obsList]
         if len(Components) > 1 : args['Yields'][pdf.GetName()] = comp['Yield']
         args['PDFs'].append(pdf)
 
-        # add manual observables to conditional observables if they are not in observables
-        condList = [ ]
-        for obs in manObsList :
-            if obs not in obsList : condList.append(obs)
-        if condList :
-            print 'P2VV - INFO: buildPdf(): Adding conditional observables [%s] to %s'\
-                  % ( ', '.join( cObs for cObs in condList ), pdf.GetName() )
-            pdf.addConditionalObservables(condList)
-
         # add external constraints
-        for ec in pdf.ExternalConstraints():
-            args['ExternalConstraints'].add(ec)
+        for ec in pdf.ExternalConstraints(): args['ExternalConstraints'].add(ec)
 
     args['ExternalConstraints'] = list(args['ExternalConstraints'])
 
@@ -1381,7 +1363,7 @@ def buildPdf( Components, Observables, Name, ManualObservables = None ) :
     if len(Components) == 1 : return args['PDFs'][0] # TODO: how to change the name?
 
     # add sum components (inputs should already be extended)
-    return SumPdf(Name=Name,**args)
+    return SumPdf( Name = Name, **args )
 
 def buildSimultaneousPdf(Components, Observables, Spec, Name) :
     # multiply PDFs for observables (for each component)
