@@ -14,7 +14,7 @@ makeObservablePlots     = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False
+pdfConfig['nominalPdf'] = True
 
 pdfConfig['numEvents'] = 30000
 
@@ -56,11 +56,13 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
-pdfConfig['bkgTaggingPdf']      = 'signal'
+pdfConfig['sigTaggingPdf']      = 'TagUntag'
+pdfConfig['bkgTaggingPdf']      = 'TagUntagRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
-pdfConfig['taggingConditionals'] = ''
-pdfConfig['numEstWTagBins']      = 100
+pdfConfig['conditionalTagging'] = False
+pdfConfig['continuousEstWTag']  = False
+pdfConfig['numEstWTagBins']     = 100
 
 pdfConfig['eventTimeResolution'] = False
 pdfConfig['numTimeResBins']      = 100
@@ -211,11 +213,9 @@ if makeObservablePlots or pdfConfig['makePlots'] :
                 }
 
     projWDataSet = []
-    if   pdfConfig['taggingConditionals'] == 'all' or pdfConfig['nominalPdf'] : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
-    elif pdfConfig['taggingConditionals'] == 'estWTag'                        : projWDataSet += [ tagCatP2VV, estWTag       ]
-    elif pdfConfig['taggingConditionals'] == 'tagCat'                         : projWDataSet += [ tagCatP2VV                ]
-    elif pdfConfig['taggingConditionals'] == 'iTag'                           : projWDataSet += [ iTag                      ]
-    if   pdfConfig['eventTimeResolution']                                     : projWDataSet += [ timeRes                   ]
+    if   pdfConfig['continuousEstWTag']   : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
+    elif pdfConfig['conditionalTagging']  : projWDataSet += [ tagCatP2VV, iTag ]
+    if   pdfConfig['eventTimeResolution'] : projWDataSet += [ timeRes ]
 
     if projWDataSet :
         bulkData = fitData.reduce( CutRange = 'Bulk' )
