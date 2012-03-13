@@ -613,7 +613,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , [ self._sigSWeightData if SFit else self._data, self._sigSWeightData, self._bkgSWeightData ]
                          , 3 * [ numEstWTagBins ]
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
-                         , [ 1. - untagFracSig if SFit else untagFrac, 1. - untagFracSig, 1. - untagFracBkg ]
+                         , [ 1. - ( untagFracSig if SFit else untagFrac ), 1. - untagFracSig, 1. - untagFracBkg ]
                         ) :
                 plot(  pad, estWTag, data, self._sig_bkg_estWTag
                      , frameOpts  = dict( Bins = nBins, Title = estWTag.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )

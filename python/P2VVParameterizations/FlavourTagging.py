@@ -416,7 +416,7 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
 
         # update number of events and sum of estimated wrong tag probabilities
         numEvCats[cat]  += data.weight()
-        sumEtaCats[cat] += eta
+        sumEtaCats[cat] += eta * data.weight()
 
     # check number of events
     numEvTotCount = 0.
@@ -426,11 +426,11 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
 
     # update tagging category parameters
     for cat in range(numTagCats) :
-        avgEtaCat = sumEtaCats[cat] / float(numEvCats[cat])
+        avgEtaCat = sumEtaCats[cat] / numEvCats[cat]
         tagCatsCalc[cat] = tagCatsCalc[cat][ : 3 ]\
                            + (  avgEtaCat
                               , P0 + P1 * ( avgEtaCat - avgEstWTag ), 0.
-                              , float(numEvCats[cat]) / float(numEvTot), 0.
+                              , numEvCats[cat] / numEvTot, 0.
                               , numEvCats[cat]
                              )
 
@@ -897,6 +897,7 @@ class TagCats_BinnedTaggingPdf( BinnedTaggingPdf ) :
                                , Value = ACatVal
                                , Error = ACatErr
                                , MinMax = ( -1., 1. )
+                               , Constant = True if self._data else False
                               )
 
             self._ATagCats = [ FormulaVar(  self._namePF + 'ATagCat0'
@@ -922,7 +923,7 @@ class TagCats_BinnedTaggingPdf( BinnedTaggingPdf ) :
                            , Value    = -ABBbarVal if self._tagRevOrder else ABBbarVal
                            , Error    = ABBbarErr
                            , MinMax   = ( -1., 1. )
-                           , Constant = True
+                           , Constant = True if self._data else False
                           )
 
         # tagging bin coefficients

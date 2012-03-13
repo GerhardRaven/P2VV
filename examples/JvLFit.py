@@ -12,7 +12,7 @@ doFit          = True
 
 makeObservablePlots     = True
 pdfConfig['makePlots']  = True
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 
@@ -50,7 +50,7 @@ markSize  = 0.4
 pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
 pdfConfig['sigTaggingPdf']      = 'TagCats'
-pdfConfig['bkgTaggingPdf']      = 'TagCats'
+pdfConfig['bkgTaggingPdf']      = 'TagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
 pdfConfig['conditionalTagging'] = False
@@ -184,7 +184,7 @@ if doFit :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
 
-    #pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
+    pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
     #pdfBuild['sigTaggingPdf'].setConstant('sig_ATagBBbar')
     #pdfBuild['bkgTaggingPdf'].setConstant('bkg_ATagBBbar')
     #pdfBuild['bkgTaggingPdf'].setConstant('bkg_AUntagged')
