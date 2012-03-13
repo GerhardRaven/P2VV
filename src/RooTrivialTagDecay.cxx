@@ -114,6 +114,7 @@ RooTrivialTagDecay::RooTrivialTagDecay(const RooTrivialTagDecay& other, const ch
   //Copy constructor
 }
 
+//_____________________________________________________________________________
 TObject* RooTrivialTagDecay::clone(const char* newname) const 
 { 
     return new RooTrivialTagDecay(*this,newname);
@@ -147,8 +148,8 @@ RooArgSet* RooTrivialTagDecay::coefVars(Int_t basisIndex) const
 //_____________________________________________________________________________
 Int_t RooTrivialTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const 
 {
-  assert(rangeName==0);
-  // Note: what if we are integrating over _tag???? remove _tag from allVars!!!
+  // Note: what to do if we are requested to integrate over _tag???? 
+  //       for now, remove _tag from allVars!!!
   RooArgSet redVars(allVars);
   redVars.remove(_tag.arg());
   const RooRealProxy* p = proxy( coef );
@@ -158,8 +159,8 @@ Int_t RooTrivialTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVa
 //_____________________________________________________________________________
 Double_t RooTrivialTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code, const char* rangeName) const 
 {
-  assert(rangeName==0);
-  // Note: what if we are integrating over _tag???? Should not happen, as getCoefAnalyticalIntegral will not select it!
+  // Note: what if we are integrating over _tag???? 
+  // Should not happen, as getCoefAnalyticalIntegral will never select it!
   const RooRealProxy* p = proxy( coef );
   return ( p ? p->arg().analyticalIntegral(code,rangeName) : 0 ) * ( int(_tag)!=0 ? double(_tageff)/2 : 1.-double(_tageff) );
 }
@@ -168,7 +169,7 @@ Double_t RooTrivialTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code, cons
 Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const 
 {
   // Check if given observable can be safely generated using the
-  // pdfs internal generator mechanism (if that existsP). Observables
+  // pdfs internal generator mechanism (if that exists). Observables
   // on which a PDF depends via more than route are not safe
   // for use with internal generators because they introduce
   // correlations not known to the internal generator
@@ -182,6 +183,7 @@ Bool_t RooTrivialTagDecay::isDirectGenSafe(const RooAbsArg& arg) const
   while((server=(const RooAbsArg*)sIter->Next())) {
     if(server == &arg) continue;
     if(server->dependsOn(arg)) {
+      // make an exception for the product we've explcitly made ourselves...
       if ( &arg == &_tag.arg() && ( server == &_fcos.arg() || server == &_fsin.arg() ) ) continue;
       return kFALSE ;
     }
@@ -199,13 +201,15 @@ Int_t RooTrivialTagDecay::getGenerator(const RooArgSet& directVars, RooArgSet &g
   return 0;
 }
 
-
 //_____________________________________________________________________________
 void RooTrivialTagDecay::generateEvent(Int_t code)
 {
   Double_t gammamin = 1/_tau-TMath::Abs(_dgamma)/2;
   Double_t wmax = 1.001*(TMath::Abs(_fcosh)+TMath::Abs(_fsinh));
+  static unsigned long n(0),i(0),mm(0),env(0);
+  ++n;
   while(1) {
+    ++i;
     // first untagged...
     if (code == 1 || code == 2 ) {
         // TODO: compute integral of both large and small lifetime component
@@ -214,7 +218,7 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
         //       Finally, generate with the right lifetime...
         Double_t t = -log(RooRandom::uniform())/gammamin;
         if (_type == Flipped || (_type == DoubleSided && RooRandom::uniform() <0.5) ) t *= -1;
-        if ( t<_t.min() || t>_t.max() ) continue;
+        if ( t<_t.min() || t>_t.max() ) { ++mm; continue; }
 
         Double_t dgt = _dgamma*t/2;
         Double_t ft = TMath::Abs(t);
@@ -223,20 +227,25 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
         if(f < 0) throw(string(Form( "RooTrivialTagDecay::generateEvent(%s) ERROR: PDF value less than zero" ,GetName())));
         Double_t w = wmax*exp(-ft*gammamin);
         if(w < f) throw(string(Form( "RooTrivialTagDecay::generateEvent(%s) ERROR: Envelope function less than p.d.f. " ,GetName())));
-        if(w*RooRandom::uniform() > f) continue;
+        if(w*RooRandom::uniform() > f) { ++env; continue; }
         _t = t;
     }
     // and now for the tagging...
-    if ( RooRandom::uniform() > double(_tageff)) {
-         _tag = 0;
-         break;
+    if ( RooRandom::uniform() > double(_tageff)) { // we assume that tageff does not depend on q, so we do not have to generate q first...
+        _tag = 0;
+        break;
     }
-    _tag = 1;
     Double_t dgt = _dgamma*_t/2;
     Double_t dmt = _dm*_t;
-    Double_t o =  _fcos *cos (dmt)+_fsin *sin (dmt);
-    Double_t e =  _fcosh*cosh(dgt)+_fsinh*sinh(dgt);
-    _tag =  ( 2*e*RooRandom::uniform() < (e+o) ) > 0 ? +1 : -1 ;
+    // pick one side of the asymmetry
+    _tag = 1;
+    Double_t even =  _fcosh*cosh(dgt)+_fsinh*sinh(dgt);   assert(even>0);
+    Double_t odd  =  _fcos *cos (dmt)+_fsin *sin (dmt);   assert(fabs(odd)<=even);
+    // and use the (1+asymmetry)/2 = (even+odd)/(2*even) to check whether it was the right one...
+    _tag =  ( 2*even*RooRandom::uniform() < (even+odd) ) > 0 ? +1 : -1 ;
     break;
   }
+  //if (n%1000==0) { 
+  //  cout << "efficiency = " << n << " / " << i  << " = " << (n+0.)/(i+0.)<<  " rangecount: " << mm << " enveloppecount " << env <<endl;
+  //}
 }

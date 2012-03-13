@@ -11,17 +11,17 @@ obj  = RooObject( workspace = 'workspace')
 
 from P2VVGeneralUtils import numCPU
 
-fitOpts = dict( Timer=1
-                , NumCPU = numCPU()
-                , Save = True
+fitOpts = dict( Timer = 1
+              , NumCPU = numCPU()
+              , Save = True
+              , Minimizer = ('Minuit2','minimize')
 #              , Verbose = True
-#              , Minimizer = ('Minuit2','minimize')
               )
 
 tmincut = 0.3
 
 # define observables
-m    = RealVar('mass',  Title = 'M(J/#psi#varphi)', Unit = 'MeV/c^{2}', Observable = True, MinMax = (5200, 5550), nBins =  48
+m    = RealVar('mass',  Title = 'M(J/#psi#varphi)', Unit = 'MeV/c^{2}', Observable = True, MinMax = (5200, 5550), nBins =  50
                      ,  Ranges =  { 'leftsideband'  : ( None, 5330 )
                                   , 'signal'        : ( 5330, 5410 )
                                   , 'rightsideband' : ( 5410, None ) 
@@ -63,14 +63,27 @@ print 'Number of events', data.numEntries()
 data.table(iTag_os).Print('v')
 data.table(iTag_ss).Print('v')
 
+####################
+### Create components which will contain the various PDFs ###
+####################
+
+(nsig,nbkg) = (21000,10500)
+signal         = Component('signal',     Yield = ( nsig, 0, 1.4*nsig) )
+background     = Component('background', Yield = ( nbkg, 0, 1.4*nbkg) )
+
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
+signal     += sig_m.pdf()
+background += bkg_m.pdf()
+
 #Time Resolution Model
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st)
+signal     += { st: None }
+background += { st: None }
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
@@ -82,8 +95,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
 # define tagging parameter 
 from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta_os, p0Constraint = True, p1Constraint = True )
-#This is the sFit, so you don't need to uncomment this, in the cFit, you do, since tag is handled differently in S and B!
-#tagging.addConditional(iTag_os)
+tagging.addConditional(iTag_os)
 
 from P2VVParameterizations.CPVParams import LambdaArg_CPParam, LambdaSqArg_CPParam
 CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s' , Value = -0.04 , MinMax = (-pi,pi)))
@@ -101,7 +113,6 @@ amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
                                              )
 
 # need to specify order in which to traverse...
-from RooFitWrappers import RealCategory
 from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
 basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes, CP, ['A0','Apar','Aperp','AS'] )
 
@@ -127,9 +138,13 @@ sig_t_angles_iTag = BTagDecay(  Name                   = 'sig_t_angles_iTag'
                                                          + tagging.externalConstraints()
                              )
 
-print "*****************************"
-print [ i.GetName() for i in sig_t_angles_iTag.ConditionalObservables()  ]
-print "*****************************"
+signal += { eta_os : None }
+if iTag_os in sig_t_angles_iTag.ConditionalObservables():
+    from P2VVParameterizations.FlavourTagging import Trivial_TagPdf
+    print 'Adding PDF for %s' % iTag_os.GetName()
+    # TODO: count # of iTag_os = +1,0,-1 in sweighted data set in order to set the additonal
+    #       parameters to their eventual fit values...
+    signal += Trivial_TagPdf( iTag_os, NamePrefix = 'os_tag_' ).pdf()
 
 #####################################
 ### Angular acceptance correction ###
@@ -153,17 +168,11 @@ sig_t_angles_iTag = eff * sig_t_angles_iTag
 ### Proper time acceptance ###
 ##############################
 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
+acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/data/bfys/dveijk/DataJpsiPhi/2012/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root', Histogram = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins')
 sig_t_angles_iTag = acceptance * sig_t_angles_iTag
 
-####################
-### Compose PDFs ###
-####################
-
-nsig = 21000
-nbkg = 10500
-signal         = Component('signal', ( sig_m.pdf(), sig_t_angles_iTag, { eta_os: None, st : None } ), Yield = ( nsig, 0, 1.4*nsig) )
-background     = Component('background',    ( bkg_m.pdf(), ),                                           Yield = ( nbkg, 0, 1.4*nbkg) )
+# register with the signal component
+signal += sig_t_angles_iTag
 
 ############
 ### SFIT ###
@@ -181,22 +190,22 @@ if massplot:
     from P2VVGeneralUtils import plot
     canvas = TCanvas()
     plot( canvas, m, data, masspdf, components = { 'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
-                                                   , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
-                                                   }
-          , pdfOpts   = dict( LineWidth = 3 )
-          , plotResidHist = True
-          , dataOpts  = { 'MarkerSize' : 0.9,      'XErrorSize' : 0  }
-          , frameOpts = dict( Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
-                              , Bins=60
-                              , Title = ""
-                              )
+                                                 , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
+                                                 }
+        , pdfOpts   = dict( LineWidth = 3 )
+        , plotResidHist = True
+        , dataOpts  = { 'MarkerSize' : 0.9,      'XErrorSize' : 0  }
+        , frameOpts = dict( Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
+                          , Bins  = 50
+                          , Title = ""
+                          )
 
-          )
+        )
 
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
-pdf = buildPdf((signal,), Observables = (t,iTag_os)+tuple(angles.angles.itervalues()), Name='pdf')
+pdf = buildPdf((signal,), Observables = angles.angles.values()+[t,iTag_os] , Name='pdf')
 
 def search(fname,path) :
     import os

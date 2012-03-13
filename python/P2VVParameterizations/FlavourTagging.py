@@ -672,21 +672,22 @@ class Trivial_TagPdf( _util_parse_mixin ) :
         namePF = kwargs.pop( 'NamePrefix', '' )
         if namePF : namePF += '_'
         if triple :
-           self._parseArg( namePF + 'tagEff', kwargs, Title = 'Tagging efficiency', Value = 0.25, MinMax = ( 0., 1. ) )
-        self._parseArg( namePF + 'ATagEff', kwargs, Title = 'background tagging asymmetry ', Value = 0., MinMax = ( -1., 1. ) )
+           self._parseArg( namePF + 'TagEff', kwargs, Title = namePF + 'Tagging efficiency', Value = 0.25, MinMax = ( 0., 1. ) )
+        self._parseArg( namePF + 'ATagEff', kwargs, Title = namePF + 'Tagging asymmetry ', Value = 0., MinMax = ( -1., 1. ) )
 
         from RooFitWrappers import GenericPdf
         name = kwargs.pop( 'Name', namePF + 'Trivial_TagPdf' )
         if triple :
             self._pdf = GenericPdf( name, Formula = '(@0==0)*(1-@1)+(@0!=0)*@1*0.5*(1+@0*@2)'
                                    , Arguments = [  tagdecision
-                                                  , getattr( self, '_' + namePF + 'tagEff'  )
-                                                  , getattr( self, '_' + namePF + 'ATagEff' )
+                                                  , getattr( self, '_%sTagEff'%namePF  )
+                                                  , getattr( self, '_%sATagEff'%namePF )
                                                  ]
                                   )
         else :
             self._pdf = GenericPdf( name, Formula = '0.5*(1+@0*@1)', Arguments = [ tagdecision, getattr(self, '_' + namePF + 'ATagEff') ] )
 
+        self._pdf.setAttribute("CacheAndTrack") ;
         for ( k, v ) in kwargs.iteritems() : setattr( self, '_' + k, v )
 
 
