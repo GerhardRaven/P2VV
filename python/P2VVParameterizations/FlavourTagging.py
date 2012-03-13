@@ -699,6 +699,7 @@ class BinnedTaggingPdf( _util_parse_mixin ) :
         self._tagBinCoefs = tagBinCoefs
         self._pdf         = BinnedPdf( Name, Categories = [ tagCat, iTag ], Coefficients = tagBinCoefs )
 
+    def __getitem__( self, kw ) : return getattr( self, '_' + kw )
     def pdf( self ) : return self._pdf
 
     def _init( self, Name, tagCat, iTag, kwargs ) :

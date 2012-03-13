@@ -610,10 +610,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._estWTagCanv = TCanvas( 'estWTagCanv', 'Estimated wrong-tag probability' )
             for ( pad, data, nBins, plotTitle, norm )\
                   in zip(  self._estWTagCanv.pads( 1, 1 ) if SFit else self._estWTagCanv.pads( 2, 2, lambda pad : pad != 2 )
-                         , [ self._data, self._sigSWeightData, self._bkgSWeightData ]
+                         , [ self._sigSWeightData if SFit else self._data, self._sigSWeightData, self._bkgSWeightData ]
                          , 3 * [ numEstWTagBins ]
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
-                         , [ 1. - untagFrac, 1. - untagFracSig, 1. - untagFracBkg ]
+                         , [ 1. - untagFracSig if SFit else untagFrac, 1. - untagFracSig, 1. - untagFracBkg ]
                         ) :
                 plot(  pad, estWTag, data, self._sig_bkg_estWTag
                      , frameOpts  = dict( Bins = nBins, Title = estWTag.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
@@ -635,7 +635,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # multiply background time PDF with time acceptance
                 self._bkg_t = timeAcceptance * self._bkg_t
 
-            self._backgroundComps += self._bkg_t
+            if not SFit : self._backgroundComps += self._bkg_t
 
 
         ###################################################################################################################################
