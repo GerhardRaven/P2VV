@@ -71,16 +71,18 @@ tagging = TaggingParams( estWTag = eta ) # Constant = False, Constrain = True )
 eta_pdf = UniformPdf( Name = 'eta_pdf', Arguments = (eta,) )
 
 # itag distribution
-from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
-bkg_tag = Trivial_Background_Tag( Name = 'bkg_tag'
-                                , tagdecision   = iTag
-                                , bkg_tag_eps   = dict( Name = 'tag_bkg_eff', Value = 0.27 )
-                                , bkg_tag_delta = dict( Name = 'tag_bkg_delta', Value = 0 , MinMax = (-0.1,0.1) ) 
+from P2VVParameterizations.FlavourTagging import Trivial_TagPdf
+bkg_tag = Trivial_TagPdf( Name = 'tag'
+                                , tagdecision = iTag
+                                , tagEff      = dict( Name = 'tag_bkg_eff', Value = 0.27 )
+                                , ATagEff     = dict( Name = 'tag_bkg_delta', Value = 0 , MinMax = (-0.1,0.1) ) 
+                                , NamePF      = 'bkg'
                                 )
-sig_tag = Trivial_Background_Tag( Name = 'sig_tag'
-                                , tagdecision   = iTag
-                                , bkg_tag_eps   = dict( Name = 'tag_sig_eff', Value = 0.35 )
-                                , bkg_tag_delta = dict( Name = 'tag_sig_delta', Value = 0, MinMax = (-0.1,0.1) ) 
+sig_tag = Trivial_TagPdf( Name = 'tag'
+                                , tagdecision = iTag
+                                , tagEff      = dict( Name = 'tag_sig_eff', Value = 0.35 )
+                                , ATagEff     = dict( Name = 'tag_sig_delta', Value = 0, MinMax = (-0.1,0.1) ) 
+                                , NamePF      = 'sig'
                                 )
 
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam

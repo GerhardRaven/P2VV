@@ -416,7 +416,7 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
 
         # update number of events and sum of estimated wrong tag probabilities
         numEvCats[cat]  += data.weight()
-        sumEtaCats[cat] += eta
+        sumEtaCats[cat] += eta * data.weight()
 
     # check number of events
     numEvTotCount = 0.
@@ -426,11 +426,11 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
 
     # update tagging category parameters
     for cat in range(numTagCats) :
-        avgEtaCat = sumEtaCats[cat] / float(numEvCats[cat])
+        avgEtaCat = sumEtaCats[cat] / numEvCats[cat]
         tagCatsCalc[cat] = tagCatsCalc[cat][ : 3 ]\
                            + (  avgEtaCat
                               , P0 + P1 * ( avgEtaCat - avgEstWTag ), 0.
-                              , float(numEvCats[cat]) / float(numEvTot), 0.
+                              , numEvCats[cat] / numEvTot, 0.
                               , numEvCats[cat]
                              )
 
@@ -643,7 +643,7 @@ class Linear_TaggingCategories( TaggingCategories ) :
         self._check_extraneous_kw( kwargs )
         TaggingCategories.__init__( self, NumTagCats = len(self._tagCats), tagCat = tagCat
                                    , TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs, TagDilutions = dilutions, ADilWTags = ADilWTags
-                                   , Conditionals = [ tagCat, self._estWTag ] if hasattr( self, '_estWTag' ) else [ ]
+                                   , Conditionals = [ self._estWTag ] if hasattr( self, '_estWTag' ) else [ ]
                                    , Constraints = constraints
                                   )
 
@@ -661,24 +661,289 @@ class Linear_TaggingCategories( TaggingCategories ) :
         return ( catHighEdge, catLowEdge )
 
 
-class Trivial_Background_Tag( _util_parse_mixin ) :
-    def pdf(self) :
-        return self._pdf
+class Trivial_TagPdf( _util_parse_mixin ) :
+    def pdf( self ) : return self._pdf
+
     def __init__( self, tagdecision, **kwargs ) :
-        triple =  set([-1,0,+1])==set([ i for i in tagdecision.states().itervalues()] )
-        double =  set([-1,+1])==set([ i for i in tagdecision.states().itervalues()] )
+        triple =  set([ -1, 0, +1 ])==set([ i for i in tagdecision.states().itervalues() ] )
+        double =  set([ -1, +1 ])==set([ i for i in tagdecision.states().itervalues() ] )
         assert triple or double
-        if triple : self._parseArg('bkg_tag_eps',   kwargs, Title = 'background tagging efficiency ', Value = 0.25, MinMax = (0.0,1.0) )
-        self._parseArg('bkg_tag_delta', kwargs, Title = 'background tagging asymmetry ', Value = 0.0, MinMax = (-0.5,0.5) )
+
+        namePF = kwargs.pop( 'NamePrefix', '' )
+        if namePF : namePF += '_'
+        if triple :
+           self._parseArg( namePF + 'TagEff', kwargs, Title = namePF + 'Tagging efficiency', Value = 0.25, MinMax = ( 0., 1. ) )
+        self._parseArg( namePF + 'ATagEff', kwargs, Title = namePF + 'Tagging asymmetry ', Value = 0., MinMax = ( -1., 1. ) )
+
         from RooFitWrappers import GenericPdf
-        name = kwargs.pop('Name','Trivial_Background_TagPdf')
+        name = kwargs.pop( 'Name', namePF + 'Trivial_TagPdf' )
         if triple :
             self._pdf = GenericPdf( name, Formula = '(@0==0)*(1-@1)+(@0!=0)*@1*0.5*(1+@0*@2)'
-                                        , Arguments = [ tagdecision,self._bkg_tag_eps,self._bkg_tag_delta ] )
+                                   , Arguments = [  tagdecision
+                                                  , getattr( self, '_%sTagEff'%namePF  )
+                                                  , getattr( self, '_%sATagEff'%namePF )
+                                                 ]
+                                  )
         else :
-            self._pdf = GenericPdf( name, Formula = '0.5*(1+@0*@1)'
-                                        , Arguments = [ tagdecision,self._bkg_tag_delta ] )
+            self._pdf = GenericPdf( name, Formula = '0.5*(1+@0*@1)', Arguments = [ tagdecision, getattr(self, '_' + namePF + 'ATagEff') ] )
 
-        for (k,v) in kwargs.iteritems() :
-            setattr(self,'_'+k,v)
+        self._pdf.setAttribute("CacheAndTrack") ;
+        for ( k, v ) in kwargs.iteritems() : setattr( self, '_' + k, v )
 
+
+class BinnedTaggingPdf( _util_parse_mixin ) :
+    def __init__( self, Name, tagCat, iTag, tagBinCoefs ) :
+        from RooFitWrappers import BinnedPdf
+        self._name        = Name
+        self._tagCat      = tagCat
+        self._iTag        = iTag
+        self._tagBinCoefs = tagBinCoefs
+        self._pdf         = BinnedPdf( Name, Categories = [ tagCat, iTag ], Coefficients = tagBinCoefs )
+
+    def __getitem__( self, kw ) : return getattr( self, '_' + kw )
+    def pdf( self ) : return self._pdf
+
+    def _init( self, Name, tagCat, iTag, kwargs ) :
+        # set tagging category and tag variables
+        self._tagCat = tagCat
+        self._iTag   = iTag
+
+        # get name prefix from arguments
+        self._namePF = kwargs.pop( 'NamePrefix', '' )
+        if self._namePF : self._namePF += '_'
+
+        # get name
+        self._name = self._namePF + Name
+
+        # get number of tagging categories
+        self._numTagCats = tagCat.numTypes()
+
+        # get tagging bin names
+        self._untCatName = kwargs.pop( 'UntaggedCatName', 'Untagged' )
+        self._tagCatName = kwargs.pop( 'TaggedCatName',   'Tagged'   )
+        self._BName      = kwargs.pop( 'BName',           'B'        )
+        self._BbarName   = kwargs.pop( 'BbarName',        'Bbar'     )
+
+        # get data
+        self._data = kwargs.pop( 'Data', None )
+
+        # get work space
+        from RooFitWrappers import RooObject
+        self._ws = RooObject().ws()
+
+        if self._data :
+            # get number of events in each tagging bin
+            from RooFitWrappers import ArgSet
+            self._tagTable = self._data.table( ArgSet( self._name + '_tagTableSet', [ self._tagCat, self._iTag ] ) )
+            self._nUntB    = self._tagTable.get( '{%s;%s}' % ( self._untCatName, self._BName    ) )
+            self._nUntBbar = self._tagTable.get( '{%s;%s}' % ( self._untCatName, self._BbarName ) )
+
+            self._nTagB    = [ 0. for cat in range(self._numTagCats) ]
+            self._nTagBbar = [ 0. for cat in range(self._numTagCats) ]
+            for catIter in range( 1, tagCat.numTypes() ) :
+                tagCatNameMult = ( '%s%d' % ( self._tagCatName, catIter ) ) if self._numTagCats > 2 else self._tagCatName
+                self._nTagB[catIter]    += self._tagTable.get( '{%s;%s}' % ( tagCatNameMult, self._BName    ) )
+                self._nTagBbar[catIter] += self._tagTable.get( '{%s;%s}' % ( tagCatNameMult, self._BbarName ) )
+                self._nTagB[0]    += self._nTagB[catIter]
+                self._nTagBbar[0] += self._nTagBbar[catIter]
+
+        # check order of types in tag (default: B-Bbar, reversed: Bbar-B)
+        self._tagRevOrder = False
+        for iter, catType in enumerate(iTag) :
+            if iter == 0 and catType.getVal() < 0 : self._tagRevOrder = True
+
+        # get tagging category coefficients
+        self._tagCatCoefs = kwargs.pop( 'TagCatCoefs', None )
+        if self._tagCatCoefs :
+            self._relativeCatCoefs = False if not kwargs.pop( 'RelativeCoefs', True ) else True
+
+        else :
+            # create tagging category coefficients
+            if self._data : from math import sqrt
+            self._relativeCatCoefs = False
+            self._tagCatCoefs = [ ]
+            for coefIter in range( self._numTagCats ) :
+                if self._data :
+                    coefVal = ( self._nUntB + self._nUntBbar ) if coefIter == 0 else ( self._nTagB[coefIter] + self._nTagBbar[coefIter] )
+                    coefErr = 1.2 * sqrt(coefVal)
+                    coefVal /= self._data.sumEntries()
+                    coefErr /= self._data.sumEntries()
+                else :
+                    coefVal = ( 1. - float(coefIter) / float(self._numTagCats) ) / float(self._numTagCats)
+                    coefErr = 0.1
+
+                self._parseArg( self._namePF + 'tagCatCoef%d' % coefIter, kwargs, ContainerList = self._tagCatCoefs
+                               , Title    = 'Tagging category coefficient %d' % coefIter
+                               , Value    = coefVal
+                               , Error    = coefErr
+                               , MinMax   = ( 0., 1. )
+                               , Constant = True if self._data else False
+                              )
+
+            if not self._data :
+                untCoefVal = 1.
+                for coef in self._tagCatCoefs[ 1 : ] : untCoefVal -= coef.getVal()
+                self._tagCatCoefs[0].setVal(untCoefVal)
+
+        # get tagging category coefficient names
+        self._tagCatCoefNames = [ coef if type(coef) == str else coef.GetName() for coef in self._tagCatCoefs ]
+
+
+class TagUntag_BinnedTaggingPdf( BinnedTaggingPdf ) :
+    def __init__( self, Name, tagCat, iTag, **kwargs ) :
+        # initialize
+        self._init( Name, tagCat, iTag, kwargs )
+
+        if self._data : from math import sqrt
+
+        if self._relativeCatCoefs :
+            # asymmetry between this untagged coefficient and provided untagged coefficient
+            if self._data :
+                AUntVal = float( self._nUntB + self._nUntBbar )
+                AUntErr = 1.2 * sqrt(AUntVal)
+                AUntVal = AUntVal / self._data.sumEntries() / self._ws[ self._tagCatCoefNames[0] ].getVal() - 1.
+                AUntErr /=  self._data.sumEntries() * self._ws[ self._tagCatCoefNames[0] ].getVal()
+            else :
+                AUntVal = 0.
+                AUntErr = 0.1
+
+            self._parseArg( self._namePF + 'AUntagged', kwargs, Title  = 'Untagged-tagged asymmetry in tagging category coefficients'
+                           , Value = AUntVal, Error = AUntErr, MinMax = ( -1., 1. ) )
+            AUntagged = getattr( self, '_' + self._namePF + 'AUntagged' )
+
+        # B-Bbar asymmetry for untagged events
+        AUntBBbarErr = 1.2 / sqrt( float( self._nUntB + self._nUntBbar ) ) if self._data else 0.1
+        self._parseArg( self._namePF + 'AUntBBbar', kwargs, Title = 'Untagged B-Bbar asymmetry', Value = 0., Error = AUntBBbarErr
+                       , MinMax = ( -1., 1. ) , Constant = True )
+        AUntBBbar = getattr( self, '_' + self._namePF + 'AUntBBbar' )
+
+        # B-Bbar asymmetry for tagged events
+        ATagBBbarVal = float( self._nTagB[0] - self._nTagBbar[0]) / float( self._nTagB[0] + self._nTagBbar[0] )\
+                       if self._data else 0.
+        ATagBBbarErr = 1.2 / sqrt( float( self._nTagB[0] + self._nTagBbar[0] ) ) if self._data else 0.1
+        self._parseArg( self._namePF + 'ATagBBbar', kwargs, Title = 'Tagged B-Bbar asymmetry', Value = ATagBBbarVal, Error = ATagBBbarErr
+                       , MinMax = ( -1., 1. ) )
+        ATagBBbar = getattr( self, '_' + self._namePF + 'ATagBBbar' )
+
+        # tagging category asymmetry factors
+        from RooFitWrappers import FormulaVar
+        if self._relativeCatCoefs :
+            self._untaggedBbarCoef = FormulaVar(  self._namePF + ( 'untaggedBCoef' if self._tagRevOrder else 'untaggedBbarCoef' )
+                                                , '0.5*(1.+@0)*(1.%s@1)' % ( '+' if self._tagRevOrder else '-' )
+                                                , [ AUntagged, AUntBBbar ]
+                                               )
+            self._taggedBCoef      = FormulaVar(  self._namePF + ( 'taggedBbarCoef' if self._tagRevOrder else 'taggedBCoef' )
+                                                , '0.5*(1.-@2/(1.-@2)*@0)*(1.%s@1)' % ( '-' if self._tagRevOrder else '+' )
+                                                , [ AUntagged, ATagBBbar, self._ws[ self._tagCatCoefNames[0] ] ]
+                                               )
+            self._taggedBbarCoef   = FormulaVar(  self._namePF + ( 'taggedBCoef' if self._tagRevOrder else 'taggedBbarCoef' )
+                                                , '0.5*(1.-@2/(1.-@2)*@0)*(1.%s@1)' % ( '+' if self._tagRevOrder else '-' )
+                                                , [ AUntagged, ATagBBbar, self._ws[ self._tagCatCoefNames[0] ] ]
+                                               )
+        else :
+            self._untaggedBbarCoef = FormulaVar(  self._namePF + ( 'untaggedBCoef' if self._tagRevOrder else 'untaggedBbarCoef' )
+                                                , '0.5*(1.%s@0)' % ( '+' if self._tagRevOrder else '-' )
+                                                , [ AUntBBbar ]
+                                               )
+            self._taggedBCoef      = FormulaVar(  self._namePF + ( 'taggedBbarCoef' if self._tagRevOrder else 'taggedBCoef' )
+                                                , '0.5*(1.%s@0)' % ( '-' if self._tagRevOrder else '+' )
+                                                , [ ATagBBbar ]
+                                               )
+            self._taggedBbarCoef   = FormulaVar(  self._namePF + ( 'taggedBCoef' if self._tagRevOrder else 'taggedBbarCoef' )
+                                                , '0.5*(1.%s@0)' % ( '+' if self._tagRevOrder else '-' )
+                                                , [ ATagBBbar ]
+                                               )
+
+        # tagging bin coefficients
+        tagBinCoefs = [ ]
+        from RooFitWrappers import Product
+        for binIter in range( 1, self._numTagCats * 2 ) :
+            cat = binIter % self._numTagCats
+
+            # product of tagging category coefficient and bin asymmetry factor
+            tagBinCoefs.append( Product(  self._namePF + 'tagBinCoef%d' % binIter
+                                        , [ self._ws[ self._tagCatCoefNames[cat] ], self._untaggedBbarCoef if cat == 0\
+                                            else ( self._taggedBCoef if binIter < self._numTagCats else self._taggedBbarCoef ) ]
+                                       )
+                              )
+
+        # initialize TaggingPdf
+        self._check_extraneous_kw( kwargs )
+        BinnedTaggingPdf.__init__( self, self._name, self._tagCat, self._iTag, tagBinCoefs )
+
+
+class TagCats_BinnedTaggingPdf( BinnedTaggingPdf ) :
+    def __init__( self, Name, tagCat, iTag, **kwargs ) :
+        # initialize
+        self._init( Name, tagCat, iTag, kwargs )
+
+        if self._data : from math import sqrt
+
+        from RooFitWrappers import FormulaVar
+        if self._relativeCatCoefs :
+            # tagging category asymmetries
+            self._ATagCats = [ ]
+            for catIter in range( 1, self._numTagCats ) :
+                if self._data :
+                    ACatVal = float( self._nTagB[catIter] + self._nTagBbar[catIter] )
+                    ACatErr = 1.2 * sqrt(ACatVal)
+                    ACatVal = ACatVal / self._data.sumEntries() / self._ws[ self._tagCatCoefNames[catIter] ].getVal() - 1.
+                    ACatErr /= self._data.sumEntries() * self._ws[ self._tagCatCoefNames[catIter] ].getVal()
+                else :
+                    ACatVal = 0.
+                    ACatErr = 0.1
+
+                self._parseArg( self._namePF + 'ATagCat%s' % catIter, kwargs, ContainerList = self._ATagCats
+                               , Title  = 'Tagging category coefficient asymmetry %d' % catIter
+                               , Value = ACatVal
+                               , Error = ACatErr
+                               , MinMax = ( -1., 1. )
+                               , Constant = True if self._data else False
+                              )
+
+            self._ATagCats = [ FormulaVar(  self._namePF + 'ATagCat0'
+                                          , '-1./@0*(%s)' % '+'.join( '@%d*@%d' % ( cat, cat + self._numTagCats - 1 )\
+                                                                      for cat in range( 1, self._numTagCats ) )
+                                          , [ self._ws[coefName] for coefName in self._tagCatCoefNames ] + self._ATagCats[ : ]
+                                          , Title = 'Tagging category coefficient asymmetry 0'
+                                         )
+                             ] + self._ATagCats
+
+        # B-Bbar asymmetries
+        self._ABBbars = [ ]
+        for catIter in range(self._numTagCats) :
+            if catIter != 0 and self._data :
+                ABBbarVal = float(self._nTagB[catIter] - self._nTagBbar[catIter]) / float(self._nTagB[catIter] + self._nTagBbar[catIter])
+                ABBbarErr = 1.2 / sqrt( float( self._nTagB[catIter] + self._nTagBbar[catIter] ) )
+            else :
+                ABBbarVal = 0.
+                ABBbarErr = 0.1
+
+            self._parseArg(  self._namePF + 'ABBbar%d' % catIter, kwargs, ContainerList = self._ABBbars
+                           , Title    = 'B-Bbar asymmetry tagging category %d' % catIter
+                           , Value    = -ABBbarVal if self._tagRevOrder else ABBbarVal
+                           , Error    = ABBbarErr
+                           , MinMax   = ( -1., 1. )
+                           , Constant = True if self._data else False
+                          )
+
+        # tagging bin coefficients
+        tagBinCoefs = [ ]
+        for binIter in range( 1, self._numTagCats * 2 ) :
+            cat = binIter % self._numTagCats
+            if self._relativeCatCoefs :
+                tagBinCoefs.append( FormulaVar(  self._namePF + 'tagBinCoef%d' % binIter
+                                               , '0.5*@0*(1+@1)*(1%s@2)' % ( '+' if binIter < self._numTagCats else '-' )
+                                               , [ self._ws[ self._tagCatCoefNames[cat] ], self._ATagCats[cat], self._ABBbars[cat] ]
+                                              )
+                                  )
+            else :
+                tagBinCoefs.append( FormulaVar(  self._namePF + 'tagBinCoef%d' % binIter
+                                               , '0.5*@0*(1%s@1)' % ( '+' if binIter < self._numTagCats else '-' )
+                                               , [ self._ws[ self._tagCatCoefNames[cat] ], self._ABBbars[cat] ]
+                                              )
+                                  )
+
+        # initialize TaggingPdf
+        self._check_extraneous_kw( kwargs )
+        BinnedTaggingPdf.__init__( self, self._name, self._tagCat, self._iTag, tagBinCoefs )
