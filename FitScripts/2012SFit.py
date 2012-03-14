@@ -74,9 +74,9 @@ tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                       , deltaGamma = dict( Name = 'dGamma' , Value = 0.060)
-                                       , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
-                                       , deltaMConstraint = True
+                                       , dGamma = dict( Name = 'dGamma' , Value = 0.060)
+                                       , dM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False)
+                                       , dMConstraint = True
                                      )
 
 # define tagging parameter 
@@ -109,9 +109,9 @@ from RooFitWrappers import BTagDecay
 sig_t_angles_iTag = BTagDecay(  Name                   = 'sig_t_angles_iTag'
                               , time                   = t
                               , iTag                   = iTag_os
-                              , dm                     = lifetimeParams['deltaM'] 
+                              , dm                     = lifetimeParams['dM']
                               , tau                    = lifetimeParams['MeanLifetime']
-                              , dGamma                 = lifetimeParams['deltaGamma'] 
+                              , dGamma                 = lifetimeParams['dGamma']
                               , resolutionModel        = tresdata['model']
                               , coshCoef               = basisCoefficients['cosh']
                               , cosCoef                = basisCoefficients['cos']
@@ -204,8 +204,9 @@ def search(fname,path) :
         if os.path.exists(f) : return f
     return None
 
+fitname = 'sfit'
 import os
-paramfile = search('sfitparams.txt',os.pathsep.join(['.','FitScripts']) )
+paramfile = search(fitname+'params.txt',os.pathsep.join(['.','FitScripts']) )
 if paramfile :
     print 'Reading fit result from %s' % paramfile
     fitset = pdf.getParameters(data)
@@ -215,9 +216,9 @@ fit = True
 if fit or not paramfile:
     sfitresult = pdf.fitTo( splot_m.data('signal'), SumW2Error = False, **fitOpts)
     sfitresult.Print()
-    sfitresult.writepars('sfitresult_noacc',False)
+    sfitresult.writepars(fitname+'result',False)
     fitset = pdf.getParameters(data)
-    fitset.writeToFile("sfitparams_noacc.txt")
+    fitset.writeToFile(fitname+'params.txt')
 
 assert False
 ########
@@ -265,7 +266,7 @@ assert False
 # Profile likelihoods #
 #######################
 
-pllvar = lifetimeParams['deltaM']
+pllvar = lifetimeParams['dM']
 
 from ROOT import RooMinuit
 #Need to implement conditionalobservables and externalconstraints here

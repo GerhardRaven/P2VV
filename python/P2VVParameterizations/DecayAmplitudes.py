@@ -109,6 +109,8 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
         from math import pi
         from RooFitWrappers import FormulaVar
+        polarSWave = kwargs.pop( 'polarSWave', True )
+
         self._parseArg( 'A0Mag2',    kwargs, Title = '|A0|^2',     Value = A02,    MinMax = ( 0., 1. ) )
         self._parseArg( 'AperpMag2', kwargs, Title = '|A_perp|^2', Value = Aperp2, MinMax = ( 0., 1. ) )
 
@@ -118,7 +120,7 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
         self._parseArg( 'AparPhase',  kwargs, Title = 'delta_par',  Value = AparPh,  MinMax = ( -2. * pi, 2. * pi ) )
         self._parseArg( 'AperpPhase', kwargs, Title = 'delta_perp', Value = AperpPh, MinMax = ( -2. * pi, 2. * pi ) )
  
-        if 'f_S' in kwargs :
+        if polarSWave :
             self._parseArg( 'f_S',     kwargs, Title = 'S wave fraction', Value = f_S,  MinMax = (  0.,      1.      ) )
             self._parseArg( 'ASPhase', kwargs, Title = 'delta_S',         Value = ASPh, MinMax = ( -2. * pi, 2. * pi ) )
             self._ASMag2 = FormulaVar( 'ASMag2', '@0 / (1. - @0)', [ self._f_S ], Title = '|A_S|^2' )
@@ -132,8 +134,10 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
 
         else :
             from math import sin, cos, sqrt
-            self._parseArg( 'sqrtfS_Re', kwargs, Title = 'sqrt(S wave fraction) * cos(delta_S)', Value = sqrt(f_S) * cos(ASPh), MinMax = ( -1., 1. ) )
-            self._parseArg( 'sqrtfS_Im', kwargs, Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(ASPh), MinMax = ( -1., 1. ) )
+            self._parseArg( 'sqrtfS_Re', kwargs, Title = 'sqrt(S wave fraction) * cos(delta_S)', Value = sqrt(f_S) * cos(ASPh)
+                           , MinMax = ( -1., 1. ) )
+            self._parseArg( 'sqrtfS_Im', kwargs, Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(ASPh)
+                           , MinMax = ( -1., 1. ) )
             self._ReAS = FormulaVar( 'ReAS', '@0 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im ], Title = 'Re(A_S)' )
             self._ImAS = FormulaVar( 'ImAS', '@1 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im ], Title = 'Im(A_S)' )
 
@@ -143,4 +147,3 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                                        , Polar2_Amplitude(     'Aperp', self._AperpMag2, self._AperpPhase, -1 )
                                        , Carthesian_Amplitude( 'AS',    self._ReAS,      self._ImAS,       -1 )
                                  )
-

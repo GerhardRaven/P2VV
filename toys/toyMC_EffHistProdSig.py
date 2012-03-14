@@ -59,14 +59,14 @@ taggingParams = WTag_TaggingParams( wTag = eta ) # FormulaVar('wTag','@2 + @3*(@
 
 # now build the actual signal PDF...
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, deltaGamma = 0.05, deltaM = dict( Value = 17.8, MinMax = (16,19), Constant = True) )
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, dGamma = 0.05, dM = dict( Value = 17.8, MinMax = (16,19), Constant = True) )
 
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution
 args = { 'time'      : t
        , 'iTag'      : iTag
-       , 'dm'        : lifetimeParams['deltaM'] 
+       , 'dm'        : lifetimeParams['dM']
        , 'tau'       : lifetimeParams['MeanLifetime']
-       , 'dGamma'    : lifetimeParams['deltaGamma'] 
+       , 'dGamma'    : lifetimeParams['dGamma']
        , 'resolutionModel' : Truth_TimeResolution(time = t)['model']
        , 'coshCoef'  : basisCoefficients['cosh']
        , 'cosCoef'   : basisCoefficients['cos']

@@ -74,9 +74,9 @@ tresdata = DataTimeResolution( time = t, timeResSFConstraint = True, sigmat = st
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
-                                       , deltaGamma = dict( Name = 'dGamma' , Value = 0.060)
-                                       , deltaM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
-                                       , deltaMConstraint = True
+                                       , dGamma = dict( Name = 'dGamma' , Value = 0.060)
+                                       , dM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False) 
+                                       , dMConstraint = True
                                      )
 
 # define tagging parameter 
@@ -109,9 +109,9 @@ from RooFitWrappers import BTagDecay
 sig_t_angles_iTag = BTagDecay(  Name                   = 'sig_t_angles_iTag'
                               , time                   = t
                               , iTag                   = iTag_os
-                              , dm                     = lifetimeParams['deltaM'] 
+                              , dm                     = lifetimeParams['dM']
                               , tau                    = lifetimeParams['MeanLifetime']
-                              , dGamma                 = lifetimeParams['deltaGamma'] 
+                              , dGamma                 = lifetimeParams['dGamma']
                               , resolutionModel        = tresdata['model']
                               , coshCoef               = basisCoefficients['cosh']
                               , cosCoef                = basisCoefficients['cos']
@@ -265,7 +265,7 @@ assert False
 # Profile likelihoods #
 #######################
 
-pllvar = lifetimeParams['deltaM']
+pllvar = lifetimeParams['dM']
 
 from ROOT import RooMinuit
 #Need to implement conditionalobservables and externalconstraints here

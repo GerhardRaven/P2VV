@@ -2,9 +2,11 @@
 ## set script parameters ##
 ###########################
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as pdfConfig
+from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+pdfConfig = PdfConfig()
 
 # job parameters
+readData       = True
 generateData   = False
 doFit          = True
 
@@ -12,14 +14,19 @@ makeObservablePlots     = True
 pdfConfig['makePlots']  = True
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = True
+pdfConfig['nominalPdf'] = False
+
+pdfConfig['numEvents'] = 30000
 
 plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
-#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
-pdfConfig['nTupleName'] = 'DecayTree'
-pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+if readData :
+    pdfConfig['nTupleName'] = 'DecayTree'
+    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+else :
+    pdfConfig['nTupleName'] = None
+    pdfConfig['nTupleFile'] = None
+
 if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLFit.root'
@@ -28,54 +35,8 @@ pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPs
 #pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
-# PDF options
-pdfConfig['components']         = 'all'       # 'all' / 'signal' / 'background'
-pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']        = 'histPdf'
-pdfConfig['bkgTaggingPdf']      = 'histPdf'
-pdfConfig['multiplyByTimeEff']  = ''          # 'all' / 'signal'
-pdfConfig['numBMassBins']       = [ 50, 10, 10 ]
-
-pdfConfig['iTagZeroTrick'] = False
-pdfConfig['iTagStates'] = { }  # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
-
-pdfConfig['taggingConditionals'] = ''   # 'all' / 'tagCat' / 'estWTag' / 'iTag'
-pdfConfig['numEstWTagBins']      = 100
-
-pdfConfig['eventTimeResolution'] = False
-pdfConfig['numTimeResBins']      = 100
-
-nEvents = 30000
-pdfConfig['signalFraction'] = 0.67
-pdfConfig['massRangeBackground'] = False
-
-# transversity amplitudes
-pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
-
-pdfConfig['A0Mag2']    = 0.50
-pdfConfig['AperpMag2'] = 0.25
-pdfConfig['AparMag2']  = 1. - pdfConfig['A0Mag2'] - pdfConfig['AperpMag2']
-
-pdfConfig['A0Phase']    = 0.
-pdfConfig['AperpPhase'] = 2.9
-pdfConfig['AparPhase']  = 3.3
-
-pdfConfig['f_S']     = 0.02
-pdfConfig['ASMag2']  = pdfConfig['f_S'] / ( 1. - pdfConfig['f_S'] )
-pdfConfig['ASPhase'] = 2.9
-
-# CP violation parameters
-pdfConfig['carthLambdaCP'] = False
-pdfConfig['phiCP']         = 0.2 if pdfConfig['blind'] else 0.
-pdfConfig['lambdaCPSq']    = 1.
-
-# B lifetime parameters
-pdfConfig['Gamma']      = 0.67
-pdfConfig['deltaGamma'] = 0.1
-pdfConfig['deltaM']     = 17.6
-
-# asymmetries
-pdfConfig['AProd'] = 0.
+pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
+#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 # fit options
 fitOpts = dict(  NumCPU              = 8
@@ -88,7 +49,54 @@ fitOpts = dict(  NumCPU              = 8
 pdfConfig['fitOptions'] = fitOpts
 
 # plot options
-if pdfConfig['nominalPdf'] :
+lineWidth = 2
+markStyle = 8
+markSize  = 0.4
+
+# PDF options
+pdfConfig['transversityAngles'] = False
+pdfConfig['bkgAnglePdf']        = ''
+pdfConfig['bkgTaggingPdf']      = 'signal'
+pdfConfig['multiplyByTimeEff']  = ''
+
+pdfConfig['taggingConditionals'] = ''
+pdfConfig['numEstWTagBins']      = 100
+
+pdfConfig['eventTimeResolution'] = False
+pdfConfig['numTimeResBins']      = 100
+
+nEvents = 30000
+pdfConfig['signalFraction'] = 0.67
+pdfConfig['massRangeBackground'] = False
+
+pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
+pdfConfig['polarSWave']     = False
+
+pdfConfig['carthLambdaCP'] = False
+
+if not readData :
+    pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.648, 0. )
+                            , ( 'TagCat1',   1, 0.499999, 0.484, 0.488, 0., 0.014, 0. )
+                            , ( 'TagCat2',   2, 0.478,    0.467, 0.471, 0., 0.056, 0. )
+                            , ( 'TagCat3',   3, 0.457,    0.447, 0.450, 0., 0.054, 0. )
+                            , ( 'TagCat4',   4, 0.437,    0.427, 0.430, 0., 0.046, 0. )
+                            , ( 'TagCat5',   5, 0.417,    0.408, 0.410, 0., 0.037, 0. )
+                            , ( 'TagCat6',   6, 0.399,    0.390, 0.391, 0., 0.031, 0. )
+                            , ( 'TagCat7',   7, 0.381,    0.372, 0.373, 0., 0.023, 0. )
+                            , ( 'TagCat8',   8, 0.363,    0.354, 0.354, 0., 0.020, 0. )
+                            , ( 'TagCat9',   9, 0.344,    0.334, 0.333, 0., 0.014, 0. )
+                            , ( 'TagCat10', 10, 0.324,    0.313, 0.311, 0., 0.012, 0. )
+                            , ( 'TagCat11', 11, 0.303,    0.291, 0.289, 0., 0.013, 0. )
+                            , ( 'TagCat12', 12, 0.280,    0.269, 0.266, 0., 0.010, 0. )
+                            , ( 'TagCat13', 13, 0.257,    0.246, 0.241, 0., 0.009, 0. )
+                            , ( 'TagCat14', 14, 0.233,    0.222, 0.217, 0., 0.005, 0. )
+                            , ( 'TagCat15', 15, 0.208,    0.194, 0.189, 0., 0.003, 0. )
+                            , ( 'TagCat16', 16, 0.181,    0.168, 0.161, 0., 0.003, 0. )
+                            , ( 'TagCat17', 17, 0.153,    0.141, 0.134, 0., 0.002, 0. )
+                            , ( 'TagCat18', 18, 0.124,    0.113, 0.104, 0., 0.000, 0. )
+                           ]
+
+if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
                                , ( 'trphi',      '#phi_{tr}'        )
@@ -104,10 +112,6 @@ numBins = ( 60, 30, 30, 30 )
 pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
 pdfConfig['numAngleBins'] = ( 5, 7, 9 )
-
-lineWidth = 2
-markStyle = 8
-markSize  = 0.4
 
 
 ###########################################################################################################################################
@@ -150,8 +154,8 @@ if not pdfBuild['iTagZeroTrick'] :
 
 
 ###########################################################################################################################################
-## generate/read data and fit ##
-################################
+## generate data ##
+###################
 
 if generateData :
     # generate data
@@ -165,15 +169,18 @@ elif pdfConfig['SFit'] :
 else :
     fitData = pdfBuild['data']
 
+
+###########################################################################################################################################
+## fit data ##
+##############
+
 if doFit :
     # fix values of some parameters
-    if pdfConfig['nominalPdf'] : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
     pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
-    if pdfConfig['bkgAnglePdf'] == '' :
-        for coef in pdfBuild['bkgAngCoefs'] : coef.setConstant()
 
     # fit data
     print 120 * '='
@@ -204,11 +211,11 @@ if makeObservablePlots or pdfConfig['makePlots'] :
                 }
 
     projWDataSet = []
-    if   pdfConfig['taggingConditionals'] == 'all'     : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
-    elif pdfConfig['taggingConditionals'] == 'estWTag' : projWDataSet += [ tagCatP2VV, estWTag       ]
-    elif pdfConfig['taggingConditionals'] == 'tagCat'  : projWDataSet += [ tagCatP2VV                ]
-    elif pdfConfig['taggingConditionals'] == 'iTag'    : projWDataSet += [ iTag                      ]
-    if   pdfConfig['eventTimeResolution']              : projWDataSet += [ timeRes                   ]
+    if   pdfConfig['taggingConditionals'] == 'all' or pdfConfig['nominalPdf'] : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
+    elif pdfConfig['taggingConditionals'] == 'estWTag'                        : projWDataSet += [ tagCatP2VV, estWTag       ]
+    elif pdfConfig['taggingConditionals'] == 'tagCat'                         : projWDataSet += [ tagCatP2VV                ]
+    elif pdfConfig['taggingConditionals'] == 'iTag'                           : projWDataSet += [ iTag                      ]
+    if   pdfConfig['eventTimeResolution']                                     : projWDataSet += [ timeRes                   ]
 
     if projWDataSet :
         bulkData = fitData.reduce( CutRange = 'Bulk' )
@@ -245,7 +252,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , obsSetP2VV[ : 5 ]
                    , numBins
                    , [ var.GetTitle() for var in obsSetP2VV[ : 5 ] ]
-                   , ( '', angleNames[0][1], angleNames[1][1], angleNames[1][1] )
+                   , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                    , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
                    , ( True, ) + 3 * ( False, )
                   ) :
@@ -325,7 +332,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , 2 * angles
                    , 2 * numAngleBins
                    , anglePlotTitles
-                   , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[1][1] )
+                   , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                    , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
                    , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
                    , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )

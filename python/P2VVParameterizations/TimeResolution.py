@@ -110,7 +110,7 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         self._parseArg( 'timeResMU', kwargs, Value = 0.0, MinMax = ( -0.5,0.5), Constant = True )
         self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
         self._parseArg( 'timeResMuSF', kwargs, Value = 1, Constant = True)
-        self._parseArg( 'timeResSF', kwargs, Value = 1.45, MinMax = ( 0.1, 5. ))
+        self._parseArg( 'timeResSF', kwargs, Value = 1.45, MinMax = ( 1., 2. ))
 
         constraints = []
         if kwargs.pop( 'timeResSFConstraint', None ) :

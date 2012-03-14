@@ -320,9 +320,8 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                     else :
                         # use values for tagging efficiency asymmetry = 0
                         avgCEven = CEvenOddSum['avgCEven'].getVal()
-                        avgCEven = CEvenOddSum['avgCOdd'].getVal()
+                        avgCOdd  = CEvenOddSum['avgCOdd'].getVal()
 
-                    CEvenOdd = Coefficients_CEvenOdd( avgCEven = avgCEven, avgCOdd = avgCOdd )
                     CEvenOdd = Coefficients_CEvenOdd(  avgCEven = avgCEven if isinstance( avgCEven, RooObject ) \
                                                                   else { 'Name' : 'avgCEven%d' % index, 'Value' : avgCEven }
                                                      , avgCOdd  = avgCOdd if isinstance( avgCOdd, RooObject )   \
@@ -351,7 +350,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
 
 def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., avgEstWTag = 0.39, P0    = 0.392, P1    = 1.04
                                                                                                 , P0Err = 0.009, P1Err = 0.02
-                                                                                                , AP0   = 0.,     AP1  = 0.
+                                                                                                , AP0   = 0.,    AP1   = 0.
                            ) :
     assert data, 'getTagCatParamsFromData(): no data set found'
     assert estWTagName and data.get(0).find(estWTagName), 'getTagCatParamsFromData(): estimated wrong tag probability not found in data'
@@ -400,7 +399,7 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
 
     # determine tagging category parameters
     numTagCats = len(tagCatsCalc)
-    numEvTot   = data.numEntries()
+    numEvTot   = data.sumEntries()
     numEvCats  = [0]  * numTagCats
     sumEtaCats = [0.] * numTagCats
     for varSet in data :
@@ -416,13 +415,14 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
         if cat < 0 : raise RuntimeError('getTagCatParamsFromData(): estimated wrong tag probability out of range')
 
         # update number of events and sum of estimated wrong tag probabilities
-        numEvCats[cat]  += 1
+        numEvCats[cat]  += data.weight()
         sumEtaCats[cat] += eta
 
     # check number of events
-    numEvTotCount = 0
+    numEvTotCount = 0.
     for numEv in numEvCats : numEvTotCount += numEv
-    assert numEvTotCount == numEvTot, 'getTagCatParamsFromData(): counted number of events is not equal to number of events in data set'
+    assert abs( numEvTotCount - numEvTot ) < 1.e-10 * abs( numEvTotCount + numEvTot ),\
+           'getTagCatParamsFromData(): counted number of events is not equal to number of events in data set'
 
     # update tagging category parameters
     for cat in range(numTagCats) :
@@ -431,6 +431,7 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
                            + (  avgEtaCat
                               , P0 + P1 * ( avgEtaCat - avgEstWTag ), 0.
                               , float(numEvCats[cat]) / float(numEvTot), 0.
+                              , numEvCats[cat]
                              )
 
     # print tagging category binning to screen
@@ -442,9 +443,9 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., a
         deltaEta = ( cat[2] - tagCatsCalc[bin + 1][2] ) / 2. if bin < len(tagCatsCalc) - 1 else ( cat[2] - etaMin ) / 2.
         if cat[2] >= avgEstWTag : binRangeSig = P1 * deltaEta / ( P0Err + P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
         else                    : binRangeSig = P1 * deltaEta / ( P0Err - P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
-        print '    {0:<10s}  :  {1:.3f} -- {2:.3f} ({3:.2f} sigma)  :  <eta> = {4:.3f}  <w> = {5:.3f}  efficiency = {6:.3f}'\
+        print '    {0:<10s}  :  {1:.3f} -- {2:.3f} ({3:.2f} sigma)  :  <eta> = {4:.3f}  <w> = {5:.3f}  efficiency = {6:.4f} ({7:.0f} events)'\
               .format(  cat[0], cat[2], tagCatsCalc[bin + 1][2] if bin < len(tagCatsCalc) - 1 else etaMin
-                      , binRangeSig, cat[3], cat[4], cat[6]
+                      , binRangeSig, cat[3], cat[4], cat[6], cat[8]
                      )
 
     return tagCatsCalc
@@ -579,18 +580,18 @@ class Linear_TaggingCategories( TaggingCategories ) :
         etaName = kwargs.pop( 'estWTagName', self._estWTag.GetName() if hasattr( self, '_estWTag' ) else '' )
 
         # get tagging category binning in estimated wrong-tag probability (eta)
-        tagCats = kwargs.pop(  'TagCats'
-                             , [  ( 'Untagged', 0, 0.500001 )
-                                , ( 'Tagged',   1, 0.499999 )
-                               ] if hasattr( self, '_estWTag' ) else \
-                               [  ( 'Untagged', 0, 0.500001, 0.50, 0.50, 0., 0.65,  0. )
-                                , ( 'TagCat1',  1, 0.499999, 0.44, 0.44, 0., 0.24,  0. )
-                                , ( 'TagCat2',  2, 0.38,     0.35, 0.35, 0., 0.062, 0. )
-                                , ( 'TagCat3',  3, 0.31,     0.28, 0.28, 0., 0.032, 0. )
-                                , ( 'TagCat4',  4, 0.24,     0.21, 0.21, 0., 0.012, 0. )
-                                , ( 'TagCat5',  5, 0.17,     0.15, 0.14, 0., 0.004, 0. )
-                               ]
-                            )
+        tagCats = kwargs.pop( 'TagCats', None )
+        if tagCats == None :
+            tagCats = [  ( 'Untagged', 0, 0.500001 )
+                       , ( 'Tagged',   1, 0.499999 )
+                      ] if hasattr( self, '_estWTag' ) else \
+                      [  ( 'Untagged', 0, 0.500001, 0.50, 0.50, 0., 0.65,  0. )
+                       , ( 'TagCat1',  1, 0.499999, 0.44, 0.44, 0., 0.24,  0. )
+                       , ( 'TagCat2',  2, 0.38,     0.35, 0.35, 0., 0.062, 0. )
+                       , ( 'TagCat3',  3, 0.31,     0.28, 0.28, 0., 0.032, 0. )
+                       , ( 'TagCat4',  4, 0.24,     0.21, 0.21, 0., 0.012, 0. )
+                       , ( 'TagCat5',  5, 0.17,     0.15, 0.14, 0., 0.004, 0. )
+                      ]
 
         # get number of calibration parameter standard deviations for tagging category bins
         nSigmaTagBins = kwargs.pop( 'NumSigmaTagBins', 1. )
