@@ -275,7 +275,7 @@ where the $CP$ asymmetry is given by:
 \\A_{CP}(i) &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\frac{\nu+{\cal A}}{1+\nu{\cal A}}}{1+\delta\frac{\nu+{\cal A}}{1+\nu{\cal A}}}\right] 
 %\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\nu+{\cal A}+\delta\nu{\cal A}}{1+\nu{\cal A}+\delta\nu+\delta{\cal A}} \right]
 \\          &=&    {\cal D}_i \left[ \Delta_i + \frac{{\cal A}(1+\delta\nu)+\delta+\nu}{1+\delta\nu+{\cal A}(\delta+\nu)} \right] \label{eq:ACPintermsofA}
-\\       &\approx& {\cal D}_i \left[ {\cal A}(1+(\delta+\nu)^2+{\cal A}(\nu+\delta) )+\nu+\delta+\Delta - \delta^2\nu - \delta\nu^2  \right]
+%\\       &\approx& {\cal D}_i \left[ {\cal A}(1+(\delta+\nu)^2+{\cal A}(\nu+\delta) )+\nu+\delta+\Delta - \delta^2\nu - \delta\nu^2  \right]
 \end{eqnarray}
 In the limit where $\nu=\delta_i+{\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal O},i}=0, \Delta_i = 0$, this reduces to the expected
 \begin{eqnarray}
@@ -284,10 +284,13 @@ In the limit where $\nu=\delta_i+{\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal 
    A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
 \end{eqnarray}
 In addition, solving eq. \ref{eq:ACPintermsofA} for $\cal A$, it is clear that the effect on ${\cal A}$ comes in the form of a (first order) bias on the central value and (second order) on the dilution (i.e. as a scalefactor in the value of ${\cal A}$):
-\begin{equation}
-    {\cal A} = \frac{ (A_{CP}/{\cal D}-\Delta)(1+\delta\nu)- (\delta+\nu) }{1+\delta\nu - ( A_{CP}/{\cal D}-\Delta ) (\delta+\nu) }
+\begin{eqnarray}
+    {\cal A} &=& %\frac{ (A_{CP}/{\cal D}-\Delta)(1+\delta\nu)- (\delta+\nu) }{1+\delta\nu - ( A_{CP}/{\cal D}-\Delta ) (\delta+\nu) }
+% \\     &=& 
+     \frac{ {A_{CP}(1+\delta\nu)}-{\cal D}\left[ \Delta(1+\delta\nu)  + \delta+\nu \right] }{{\cal D}\left[1+\delta\nu+\Delta(\delta+\nu)\right] -  A_{CP}(\delta+\nu)   }
 %    {\cal A} = \frac{A_{CP}-{\cal D}\left(\nu+\delta+\Delta-\delta^2\nu+\delta\nu^2\right)}{{\cal D}(1+\delta^2+\nu^2+2\delta\nu+{\cal A}(\nu+\delta))}
-\end{equation}
+\\ &=& \frac{A_{CP}}{\cal D}\left[ \frac{1-{\cal D}(\Delta+\frac{\delta+\nu }{1+\delta\nu})}{1-(\frac{A_{CP}}{\cal D}-\Delta)\frac{\delta+\nu}{1+\delta\nu} } \right]
+\end{eqnarray}
 
 As $\nu$ and $\delta_i$ always appear as sum, i.e. as $C_{{\cal O},i}$ (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
 it becomes impossible to disentangle the difference between differences in tagging efficiency for $b$ and $\overline{b}$
