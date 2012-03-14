@@ -58,8 +58,8 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         # PDF options
         self['transversityAngles'] = False
         self['bkgAnglePdf']        = 'histPdf'
-        self['sigTaggingPdf']      = 'TagUntag'          # 'histPdf' / 'TagUntag' / 'TagCats'
-        self['bkgTaggingPdf']      = 'TagUntagRelative'  # 'histPdf' / 'TagUntag' / 'TagCats' / 'TagUntagRelative' / 'TagCatsRelative'
+        self['sigTaggingPdf']      = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats'
+        self['bkgTaggingPdf']      = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['multiplyByTimeEff']  = ''                  # 'all' / 'signal'
 
         self['conditionalTagging'] = False
@@ -476,6 +476,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams( AProd = 0., ANorm = -self._lambdaCP['C'].getVal(), **self._tagCats.tagCatsDict() )
 
+            # set tagging category coefficient errors
+            from math import sqrt
+            sigSWeightNEvents = self._sigSWeightData.sumEntries()
+            for par in self._taggingParams.parameters() :
+                if par.GetName().startswith('tagCatCoef') : par.setError( sqrt( par.getVal() / sigSWeightNEvents ) )
+
             args = dict(  tagCat      = tagCatP2VV
                         , iTag        = iTag
                         , dilutions   = self._taggingParams['dilutions']
@@ -503,7 +509,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # build signal PDF
         from RooFitWrappers import BTagDecay
-        sig_t_angles_tagCat_iTag = BTagDecay( 'sig_t_angles_tagCat_iTag' if not ( nominalPdf or condTagging ) else 'sig_t_angles', **args )
+        if nominalPdf or condTagging : sigPdf = BTagDecay( 'sig_t_angles',             **args )
+        else :                         sigPdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
 
         if angEffMomentsFile :
             # multiply signal PDF with angular efficiency
@@ -517,14 +524,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 )
             moments.read(angEffMomentsFile)
             moments.Print()
-            sig_t_angles_tagCat_iTag = moments * sig_t_angles_tagCat_iTag
+            sigPdf = moments * sigPdf
 
 
         if multiplyByTimeEff in [ 'all', 'signal' ] :
             # multiply signal PDF with time acceptance
-            sig_t_angles_tagCat_iTag = timeAcceptance * sig_t_angles_tagCat_iTag
+            sigPdf = timeAcceptance * sigPdf
 
-        self._signalComps += sig_t_angles_tagCat_iTag
+        self._signalComps += sigPdf
+        if nominalPdf or condTagging : self._sig_t_angles = sigPdf
+        else :                         self._sig_t_angles_tagCat_iTag = sigPdf
 
 
         ###################################################################################################################################
@@ -549,7 +558,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 else :
                     # use a PDF with variable bin coefficients
-                    if nominalPdf or sigTaggingPdf.startswith('TagUntag') or tagCatP2VV.numTypes() == 2 :
+                    if nominalPdf or sigTaggingPdf.startswith('tagUntag') or tagCatP2VV.numTypes() == 2 :
                         # assume B-Bbar asymmetry is equal for all tagged categories
                         if tagCatP2VV.numTypes() > 2 :
                             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: signal tagging PDF:\n'\
@@ -574,7 +583,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     # build PDF
                     self._sigTaggingPdf = TaggingPdf(  'tagCat_iTag', tagCatP2VV, iTag
                                                   , NamePrefix    = 'sig'
-                                                  , TagCatCoefs   = sig_t_angles_tagCat_iTag.tagCatCoefs()
+                                                  , TagCatCoefs   = sigPdf.tagCatCoefs()
                                                   , TaggedCatName = 'TagCat' if tagCatP2VV.numTypes() > 2 else 'Tagged'
                                                   , Data          = sigTaggingData
                                                   , RelativeCoefs = False
@@ -775,7 +784,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 else :
                     # use a PDF with variable bin coefficients
-                    if nominalPdf or bkgTaggingPdf.startswith('TagUntag') or tagCatP2VV.numTypes() == 2 :
+                    if nominalPdf or bkgTaggingPdf.startswith('tagUntag') or tagCatP2VV.numTypes() == 2 :
                         # couple background tagging category coefficients to signal tagging category coefficients
                         # and assume B-Bbar asymmetry is equal for all tagged categories
                         if tagCatP2VV.numTypes() > 2 :
@@ -804,7 +813,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     # build PDF
                     self._bkgTaggingPdf = TaggingPdf(  'tagCat_iTag', tagCatP2VV, iTag
                                                   , NamePrefix    = 'bkg'
-                                                  , TagCatCoefs   = sig_t_angles_tagCat_iTag.tagCatCoefs()\
+                                                  , TagCatCoefs   = sigPdf.tagCatCoefs()\
                                                                     if bkgTaggingPdf.endswith('Relative') else None
                                                   , TaggedCatName = 'TagCat' if tagCatP2VV.numTypes() > 2 else 'Tagged'
                                                   , Data          = bkgTaggingData
