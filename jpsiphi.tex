@@ -157,9 +157,10 @@ PDF for 'true' $B$ and $\overline{B}$ as:
    P_{\overline{B}} &\equiv&\frac{ {\cal E} - {\cal O}}{N_-}
 \end{eqnarray}
 where ${\cal E}$ and ${\cal O}$ are the (propertime and angular dependent) CP-even resp. CP-odd parts of the PDF.
+and their ratio ${\cal A} \equiv {\cal E / O }$.
 Taking the sum over these, we find:
 \begin{equation}
-   P_{B} + P_{\overline{B}} =  \frac{ {\cal E} + \nu{\cal O} }{N} 
+   P_{B} + P_{\overline{B}} =  \frac{ {\cal E} + \nu{\cal O} }{N}  = \frac{\cal E} {N} \left( 1 + \nu \frac{ \cal O }{\cal E} \right) = \frac{\cal E}{N} \left(1 + \nu {\cal A}\right)
    \label{eq:sumbbbar}
 \end{equation}
 where we have defined
@@ -169,9 +170,15 @@ where we have defined
 \end{eqnarray}
 and requiring the total sum of PDFs (\ref{eq:sumbbbar}) to be properly normalized implies
 \begin{equation}
-   N = I_{\cal E} + \nu I_{\cal O}
+   N = I_{\cal E} + \nu I_{\cal O} 
+     = I_{\cal E} \left( 1 + \nu \frac{ I_{\cal O}}{I_{\cal E}}   \right)
 \end{equation}
 where $I_x$ is the integral of $x$ over the propertime and angles.
+Note that taking the difference, we find for the asymmetry:
+\begin{equation}
+  \frac{P_{B} - P_{\overline{B}}}{P_{B} + P_{\overline{B}}} =  \frac{ {\cal A} + \nu}{1+\nu{\cal A}}
+   \label{eq:difbbbar}
+\end{equation}
 
 
 Next we introduce the probability of tagging an (initial,"true") $B$ meson  and
@@ -180,7 +187,14 @@ respectively $\overline{t}_i$ -- at this point we still do not distinguish betwe
 we marginalize over the tagdecision.  This yields the following PDF for events in category $i$:
 \begin{eqnarray}
      P_i & \equiv & t_i P_B + \overline{t}_i P_{\overline B}  \nonumber
-\\       &      = & \frac{\epsilon_i}{N} \left[ (1+\nu\delta_i ){\cal E}+(\delta_i + \nu){\cal O} \right] \label{eq:tagsummed}
+\\       &      = & \frac{\epsilon_i}{N} \left[ (1+\nu\delta_i ){\cal E}+(\delta_i + \nu){\cal O} \right] 
+%\\       &      = & \epsilon_i\frac{\cal E}{N}(1+\nu\delta_i ) \left[1 +\frac{\delta_i + \nu}{1+\nu\delta_i }{\cal A} \right] 
+%\\       &      = & \epsilon_i\frac{\cal E}{2N}\left[ (1+\delta_i)(1+{\cal A})(1+\nu) + (1-\delta_i)(1-{\cal A})(1-\nu) \right]
+%\\       &      = & \epsilon_i\frac{\cal E}{2N}(1+\nu\delta_i + \delta_i { \cal A} + \nu {\cal A} )
+\\  P_i  &      = & \epsilon_i \left[ (1+\delta_i ) P_B + (1-\delta_i) P_{\overline{B}} \right]
+\\       &      = & \epsilon_i \left[ 1+ \delta_i \frac{ P_B -  P_{\overline{B}}}{ P_B +  P_{\overline{B}}} \right]\left[ P_B + P_{\overline{B}}  \right]
+%\\       &      = & \epsilon_i \left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right] \left[ P_B + P_{\overline{B}} \right] \label{eq:tagsummed}
+\\       &      = & \epsilon_i\left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right] \frac{\cal E}{N}( 1 + \nu {\cal A} ) 
 \end{eqnarray}
 where we have defined
 \begin{eqnarray}
@@ -192,6 +206,8 @@ and for the remainder, i.e. the untagged events, which we denote with an index $
      P_0 & \equiv & \left(1-\sum_i t_i\right) P_B + \left(1-\sum_i \overline{t}_i\right) P_{\overline B}  \nonumber
 \\   & = & \frac{1}{N} \left[ \left( 1-\sum_i\epsilon_i\left(1+\nu\delta_i\right) \right) {\cal E} 
                             + \left( \nu - \sum_i \epsilon_i(\delta_i+\nu)   \right) {\cal O} \right] \label{eq:untagged}
+\\   P_0 & \equiv & \left( 1 - \sum_i \frac{P_i }{P_{B} + P_{\overline B}} \right)( P_{B} + P_{\overline B}) 
+\\       & = & \left( 1  - \sum_i \epsilon_i\left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right]\right) \frac{\cal E}{N}( 1 + \nu {\cal A} ) 
 \end{eqnarray}
 Note that at this point, by construction, we have that
 \begin{equation}
@@ -228,9 +244,15 @@ the definition of the tagged PDF becomes\footnote{when summed together, it is ob
 Once more we replace the new parameters $w_i$ and $\overline{w}_i$ by a CP-even and a CP-odd combination, by introducing
 the following parameterization:
 \begin{eqnarray}
-&w_i            = \frac{1}{2}\left[1-{\cal D}_i\left(1-{\Delta}_i\right) \right]; &  {\cal D}_i =1-w_i - \overline{w}_i \\
-&\overline{w}_i = \frac{1}{2}\left[1-{\cal D}_i\left(1+{\Delta}_i\right) \right]; &  {\Delta}_i = \frac{ w_i - \overline{w}_i}{1-w_i-\overline{w}_i}\\
+&w_i            = \frac{1}{2}\left[1-{\cal D}_i\left(1+{\Delta}_i\right) \right]; &  {\cal D}_i =1-w_i - \overline{w}_i \\
+&\overline{w}_i = \frac{1}{2}\left[1-{\cal D}_i\left(1-{\Delta}_i\right) \right]; &  {\Delta}_i =  \frac{\overline{w}_i - w_i }{1-w_i-\overline{w}_i}\\
 \end{eqnarray}
+and thus
+\begin{eqnarray}
+   &1-w_i            = \frac{1}{2}\left[1+{\cal D}_i\left(1+{\Delta}_i\right) \right]; &
+\\ &1-\overline{w}_i = \frac{1}{2}\left[1+{\cal D}_i\left(1-{\Delta}_i\right) \right]; &
+\end{eqnarray}
+
 Note that under $(w\rightarrow 1-w_i, \overline{w}_i\rightarrow 1-\overline{w}_i)$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\Delta}_i\rightarrow{\Delta}_i)$,
 and that the quantities $\nu,\delta_i,{\Delta}_i$ are CP odd, whereas $N,\epsilon_i,{\cal D}_i$ are CP even, so the PDFs
 for $B$ tags and $\overline{B}$ tags are related by the substitution $({\cal E},{\cal O};N,\nu;\epsilon_i,\delta_i;{\cal D}_i,\Delta_i )\rightarrow({\cal E},-{\cal O};N,-\nu;\epsilon_i,-\delta_i;{\cal D}_i,-\Delta_i )$.
@@ -239,22 +261,35 @@ for $B$ tags and $\overline{B}$ tags are related by the substitution $({\cal E},
 After some tedious algebra, the PDFs for tagged events can be written as:
 \begin{eqnarray}
   P_i(q_T\in (-1,+1))  &= \frac{\epsilon_i}{2N}\biggl[& C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O}   \nonumber
-\\           &&+ q_T {\cal D}_i \left[ \left( C_{{\cal O},i} - {\Delta}_i C_{{\cal E},i} \right) {\cal E} 
-                                     + \left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right) {\cal O}  \right] \biggr] \nonumber
+\\           &&+ q_T {\cal D}_i \left[ \left( C_{{\cal O},i} + {\Delta}_i C_{{\cal E},i} \right) {\cal E} 
+                                     + \left( C_{{\cal E},i} + {\Delta}_i C_{{\cal O},i} \right) {\cal O}  \right] \biggr] \nonumber
 % \\ &=& \frac{\epsilon_i}{N} \left[ C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O} \right] \frac{ 1 + q_T A_{CP}(i)}{2}
 \\ &\equiv& P_i \times \left( \frac{ 1}{2} + \frac{1}{2} q_T A_{CP}(i) \right)
 \label{eq:substrule_e}
 \end{eqnarray}
 where the $CP$ asymmetry is given by:
-\begin{equation}
-  A_{CP}(i) =  {\cal D}_i \frac{\left(C_{{\cal O},i}-{\Delta}_i C_{{\cal E},i}\right) {\cal E}+\left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right){\cal O}}
+\begin{eqnarray}
+  A_{CP}(i) &=&  {\cal D}_i \frac{\left(C_{{\cal O},i}+{\Delta}_i C_{{\cal E},i}\right) {\cal E}+\left( C_{{\cal E},i} + {\Delta}_i C_{{\cal O},i} \right){\cal O}}
                                { C_{{\cal E},i}{\cal E}+ C_{{\cal O},i}{\cal O} }
-\end{equation}
-In the limit where $\nu=\delta_i={\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal O},i}=0, \Delta_i = 0$, this reduces to the expected
+\\  &=& {\cal D}_i \left[ \Delta_i + \frac{C_{{\cal E},i}{\cal A}+C_{{\cal O},i} }{ C_{{\cal E},i} + C_{{\cal O},i}{\cal A} }\right]
+\\A_{CP}(i) &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\frac{\nu+{\cal A}}{1+\nu{\cal A}}}{1+\delta\frac{\nu+{\cal A}}{1+\nu{\cal A}}}\right] 
+%\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\nu+{\cal A}+\delta\nu{\cal A}}{1+\nu{\cal A}+\delta\nu+\delta{\cal A}} \right]
+\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{{\cal A}(1+\delta\nu)+\delta+\nu}{1+\delta\nu+{\cal A}(\delta+\nu)} \right] \label{eq:ACPintermsofA}
+%\\       &\approx& {\cal D}_i \left[ {\cal A}(1+(\delta+\nu)^2+{\cal A}(\nu+\delta) )+\nu+\delta+\Delta - \delta^2\nu - \delta\nu^2  \right]
+\end{eqnarray}
+In the limit where $\nu=\delta_i+{\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal O},i}=0, \Delta_i = 0$, this reduces to the expected
 \begin{eqnarray}
    P_0 &=&\frac{1}{N} \left[ 1-\sum_i \epsilon_i \right]{\cal E} \\
    P_i(q_T\in(-1,1)) &=& \frac{\epsilon_i}{N}\left[  {\cal E} +q_T {\cal D}_i {\cal O}\right]  \label{eq:substrule_s}\\
    A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
+\end{eqnarray}
+In addition, solving eq. \ref{eq:ACPintermsofA} for $\cal A$, it is clear that the effect on ${\cal A}$ comes in the form of a (first order) bias on the central value and (second order) on the dilution (i.e. as a scalefactor in the value of ${\cal A}$):
+\begin{eqnarray}
+    {\cal A} &=& %\frac{ (A_{CP}/{\cal D}-\Delta)(1+\delta\nu)- (\delta+\nu) }{1+\delta\nu - ( A_{CP}/{\cal D}-\Delta ) (\delta+\nu) }
+% \\     &=& 
+     \frac{ {A_{CP}(1+\delta\nu)}-{\cal D}\left[ \Delta(1+\delta\nu)  + \delta+\nu \right] }{{\cal D}\left[1+\delta\nu+\Delta(\delta+\nu)\right] -  A_{CP}(\delta+\nu)   }
+%    {\cal A} = \frac{A_{CP}-{\cal D}\left(\nu+\delta+\Delta-\delta^2\nu+\delta\nu^2\right)}{{\cal D}(1+\delta^2+\nu^2+2\delta\nu+{\cal A}(\nu+\delta))}
+\\ &=& \frac{A_{CP}}{\cal D}\left[ \frac{1-{\cal D}(\Delta+\frac{\delta+\nu }{1+\delta\nu})}{1-(\frac{A_{CP}}{\cal D}-\Delta)\frac{\delta+\nu}{1+\delta\nu} } \right]
 \end{eqnarray}
 
 As $\nu$ and $\delta_i$ always appear as sum, i.e. as $C_{{\cal O},i}$ (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
@@ -272,13 +307,13 @@ straightforward substitution rule, which one can read off by comparing Equations
 the initially CP-even terms (i.e. the $\cosh(\Delta\Gamma t/2)$ and $\sinh(\Delta\Gamma t/2)$ terms) obtain an additional
 factor 
 \begin{equation}
-   {\cal E} \rightarrow {\cal E} \left[ C_{{\cal E},i} + q_T {\cal D}_i \left( C_{{\cal O},i}-{\Delta}_i C_{{\cal E},i}) ]\right) \right]
+   {\cal E} \rightarrow {\cal E} \left[ C_{{\cal E},i} + q_T {\cal D}_i \left( C_{{\cal O},i}+{\Delta}_i C_{{\cal E},i}) ]\right) \right]
 \end{equation}
 \item
 the initially CP-odd terms (i.e. the $\cos(\Delta m t) $ and $\sin(\Delta m t)$ terms) obtain, { \em instead of the
 usual factor} $q_T{\cal D}_i$, the factor
 \begin{equation}
-   {\cal O} \rightarrow {\cal O} \left[ C_{{\cal O},i} +  q_T {\cal D}_i  \left( C_{{\cal E},i} - {\Delta}_iC_{{\cal O},i} \right) \right]
+   {\cal O} \rightarrow {\cal O} \left[ C_{{\cal O},i} +  q_T {\cal D}_i  \left( C_{{\cal E},i} + {\Delta}_iC_{{\cal O},i} \right) \right]
 \end{equation}
 \end{enumerate}
 Again, in the limit that $\delta_i=\nu={\Delta}_i=0$, i.e. $(C_{{\cal E},i},C_{{\cal O},i},\Delta_i) = (1,0,0)$ this results in the well-known expected behaviour.

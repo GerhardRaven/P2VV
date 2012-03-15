@@ -243,6 +243,11 @@ void RooTrivialTagDecay::generateEvent(Int_t code)
     Double_t odd  =  _fcos *cos (dmt)+_fsin *sin (dmt);   assert(fabs(odd)<=even);
     // and use the (1+asymmetry)/2 = (even+odd)/(2*even) to check whether it was the right one...
     _tag =  ( 2*even*RooRandom::uniform() < (even+odd) ) > 0 ? +1 : -1 ;
+    // production asymmetry would be: (perfect tagging, efficiency) accept if even*(1+fabs(nu)) * RooRandom::uniform() < even + nu*odd
+    // generate perfect tag
+    // tagging efficiency would be: (perfect tagging) untagged if RooRandom::uniform()< _tageff * (1 + _tag *delta )
+    // mistag would be: flip _tag if RooRandom::uniform()< _mistag*(1+_tag* Delta)
+   
     break;
   }
   //if (n%1000==0) { 
