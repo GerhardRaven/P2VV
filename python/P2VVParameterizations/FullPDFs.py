@@ -476,11 +476,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams( AProd = 0., ANorm = -self._lambdaCP['C'].getVal(), **self._tagCats.tagCatsDict() )
 
-            # set tagging category coefficient errors
-            from math import sqrt
-            sigSWeightNEvents = self._sigSWeightData.sumEntries()
-            for par in self._taggingParams.parameters() :
-                if par.GetName().startswith('tagCatCoef') : par.setError( sqrt( par.getVal() / sigSWeightNEvents ) )
+            if self._sigSWeightData :
+                # set tagging category coefficient errors
+                from math import sqrt
+                sigSWeightNEvents = self._sigSWeightData.sumEntries()
+                for par in self._taggingParams.parameters() :
+                    if par.GetName().startswith('tagCatCoef') :
+                        par.setError( sqrt( par.getVal() / sigSWeightNEvents ) )
+                        par.setConstant(True)
 
             args = dict(  tagCat      = tagCatP2VV
                         , iTag        = iTag
