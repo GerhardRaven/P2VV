@@ -10,11 +10,11 @@ readData       = True
 generateData   = False
 doFit          = True
 
-makeObservablePlots     = True
-pdfConfig['makePlots']  = True
+makeObservablePlots     = False
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False
+pdfConfig['nominalPdf'] = True
 
 pdfConfig['numEvents'] = 30000
 
@@ -32,8 +32,9 @@ if generateData :
     dataSetFile = 'JvLFit.root'
 
 # fit options
-fitOpts = dict(  NumCPU              = 8
+fitOpts = dict(  NumCPU              = 1
                , Timer               = 1
+               , Optimize            = 1
 #               , Minos               = False
 #               , Hesse               = False
 #               , Save                = True
@@ -49,9 +50,9 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
-pdfConfig['sigTaggingPdf']      = 'TagCats'
-pdfConfig['bkgTaggingPdf']      = 'TagCatsRelative'
-pdfConfig['multiplyByTimeEff']  = ''
+pdfConfig['sigTaggingPdf']      = 'tagCats'
+pdfConfig['bkgTaggingPdf']      = 'tagCatsRelative'
+pdfConfig['multiplyByTimeEff']  = 'all'
 
 pdfConfig['conditionalTagging'] = False
 pdfConfig['continuousEstWTag']  = False
@@ -65,7 +66,7 @@ pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
 pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
-pdfConfig['polarSWave']     = False
+pdfConfig['polarSWave']     = True
 
 pdfConfig['carthLambdaCP'] = False
 
@@ -184,12 +185,12 @@ if doFit :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
 
-    pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
-    #pdfBuild['sigTaggingPdf'].setConstant('sig_ATagBBbar')
-    #pdfBuild['bkgTaggingPdf'].setConstant('bkg_ATagBBbar')
-    #pdfBuild['bkgTaggingPdf'].setConstant('bkg_AUntagged')
-    #ws['N_signal'].setConstant()
-    #ws['N_bkg'].setConstant()
+    #pdfBuild['sigTaggingPdf'].setConstant( '.*ABBbar.*', False )
+    pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+
+    #pdfBuild['bkgTaggingPdf'].setConstant( 'bkg_ABBbar.*', False )
+    #pdfBuild['bkgTaggingPdf'].setConstant( 'bkg_ATagCat.*', False )
+    #pdfBuild['bkgTaggingPdf'].setConstant( 'bkg_ABBbar0', True )
 
     # fit data
     print 120 * '='
