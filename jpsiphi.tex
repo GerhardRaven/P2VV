@@ -1,4 +1,5 @@
 \documentclass[a4paper,9pt,twosided]{article}
+\usepackage{amsmath}
 
 \setlength{\oddsidemargin}{0in}
 \setlength{\evensidemargin}{0in}
@@ -195,6 +196,7 @@ we marginalize over the tagdecision.  This yields the following PDF for events i
 \\       &      = & \epsilon_i \left[ 1+ \delta_i \frac{ P_B -  P_{\overline{B}}}{ P_B +  P_{\overline{B}}} \right]\left[ P_B + P_{\overline{B}}  \right]
 %\\       &      = & \epsilon_i \left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right] \left[ P_B + P_{\overline{B}} \right] \label{eq:tagsummed}
 \\       &      = & \epsilon_i\left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right] \frac{\cal E}{N}( 1 + \nu {\cal A} ) 
+\\       &      = & \epsilon_i \frac{ (1+\nu )}{N} \left[1+{\cal A}\frac{\nu+\delta}{1+\nu} \right] {\cal E}
 \end{eqnarray}
 where we have defined
 \begin{eqnarray}
@@ -208,6 +210,7 @@ and for the remainder, i.e. the untagged events, which we denote with an index $
                             + \left( \nu - \sum_i \epsilon_i(\delta_i+\nu)   \right) {\cal O} \right] \label{eq:untagged}
 \\   P_0 & \equiv & \left( 1 - \sum_i \frac{P_i }{P_{B} + P_{\overline B}} \right)( P_{B} + P_{\overline B}) 
 \\       & = & \left( 1  - \sum_i \epsilon_i\left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right]\right) \frac{\cal E}{N}( 1 + \nu {\cal A} ) 
+\\ &=& \frac{\cal E}{N} \left(1+\nu{\cal A} - \sum_i \epsilon_i\left[ (1+\delta_i \nu) \left(1+\frac{\nu+\delta_i}{1+\delta_i\nu} {\cal A}\right)\right] \right) 
 \end{eqnarray}
 Note that at this point, by construction, we have that
 \begin{equation}
@@ -264,32 +267,36 @@ After some tedious algebra, the PDFs for tagged events can be written as:
 \\           &&+ q_T {\cal D}_i \left[ \left( C_{{\cal O},i} + {\Delta}_i C_{{\cal E},i} \right) {\cal E} 
                                      + \left( C_{{\cal E},i} + {\Delta}_i C_{{\cal O},i} \right) {\cal O}  \right] \biggr] \nonumber
 % \\ &=& \frac{\epsilon_i}{N} \left[ C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O} \right] \frac{ 1 + q_T A_{CP}(i)}{2}
-\\ &\equiv& P_i \times \left( \frac{ 1}{2} + \frac{1}{2} q_T A_{CP}(i) \right)
+\\ &\equiv& P_i \times \left( \frac{ 1}{2} + \frac{1}{2} q_T A_{\mathrm{obs}}(i) \right)
 \label{eq:substrule_e}
 \end{eqnarray}
-where the $CP$ asymmetry is given by:
+where the observed $CP$ asymmetry is given by:
 \begin{eqnarray}
-  A_{CP}(i) &=&  {\cal D}_i \frac{\left(C_{{\cal O},i}+{\Delta}_i C_{{\cal E},i}\right) {\cal E}+\left( C_{{\cal E},i} + {\Delta}_i C_{{\cal O},i} \right){\cal O}}
+  A_{\mathrm{obs}}(i) &=&  {\cal D}_i \frac{\left(C_{{\cal O},i}+{\Delta}_i C_{{\cal E},i}\right) {\cal E}+\left( C_{{\cal E},i} + {\Delta}_i C_{{\cal O},i} \right){\cal O}}
                                { C_{{\cal E},i}{\cal E}+ C_{{\cal O},i}{\cal O} }
 \\  &=& {\cal D}_i \left[ \Delta_i + \frac{C_{{\cal E},i}{\cal A}+C_{{\cal O},i} }{ C_{{\cal E},i} + C_{{\cal O},i}{\cal A} }\right]
-\\A_{CP}(i) &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\frac{\nu+{\cal A}}{1+\nu{\cal A}}}{1+\delta\frac{\nu+{\cal A}}{1+\nu{\cal A}}}\right] 
+\\A_{\mathrm{obs}}(i) &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\frac{\nu+{\cal A}}{1+\nu{\cal A}}}{1+\delta\frac{\nu+{\cal A}}{1+\nu{\cal A}}}\right] 
 %\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\nu+{\cal A}+\delta\nu{\cal A}}{1+\nu{\cal A}+\delta\nu+\delta{\cal A}} \right]
-\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{{\cal A}(1+\delta\nu)+\delta+\nu}{1+\delta\nu+{\cal A}(\delta+\nu)} \right] \label{eq:ACPintermsofA}
-%\\       &\approx& {\cal D}_i \left[ {\cal A}(1+(\delta+\nu)^2+{\cal A}(\nu+\delta) )+\nu+\delta+\Delta - \delta^2\nu - \delta\nu^2  \right]
+\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{{\cal A}(1+\delta\nu)+\delta+\nu}{1+\delta\nu+{\cal A}(\delta+\nu)} \right] 
+\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{{\cal A}+\frac{\delta+\nu}{1+\delta\nu}}{1+{\cal A}\frac{\delta+\nu}{1+\delta\nu}} \right] \label{eq:ACPintermsofA}
+\\       &\approx& {\cal D}_i \left[ {\cal A} + \Delta_i + \delta + \nu \right]
 \end{eqnarray}
 In the limit where $\nu=\delta_i+{\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal O},i}=0, \Delta_i = 0$, this reduces to the expected
 \begin{eqnarray}
    P_0 &=&\frac{1}{N} \left[ 1-\sum_i \epsilon_i \right]{\cal E} \\
-   P_i(q_T\in(-1,1)) &=& \frac{\epsilon_i}{N}\left[  {\cal E} +q_T {\cal D}_i {\cal O}\right]  \label{eq:substrule_s}\\
-   A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
+   P_i(q_T\in(-1,1)) &=& \frac{\epsilon_i{\cal E}}{2N}\left[ 1  +q_T {\cal D}_i {\cal A}\right]  \label{eq:substrule_s}\\
+   A_{\mathrm{obs}}(i) &=&   {\cal D}_i {\cal A}
 \end{eqnarray}
 In addition, solving eq. \ref{eq:ACPintermsofA} for $\cal A$, it is clear that the effect on ${\cal A}$ comes in the form of a (first order) bias on the central value and (second order) on the dilution (i.e. as a scalefactor in the value of ${\cal A}$):
 \begin{eqnarray}
-    {\cal A} &=& %\frac{ (A_{CP}/{\cal D}-\Delta)(1+\delta\nu)- (\delta+\nu) }{1+\delta\nu - ( A_{CP}/{\cal D}-\Delta ) (\delta+\nu) }
+    {\cal A} &=& %\frac{ (A_{\mathrm{obs}}/{\cal D}-\Delta)(1+\delta\nu)- (\delta+\nu) }{1+\delta\nu - ( A_{\mathrm{obs}}/{\cal D}-\Delta ) (\delta+\nu) }
 % \\     &=& 
-     \frac{ {A_{CP}(1+\delta\nu)}-{\cal D}\left[ \Delta(1+\delta\nu)  + \delta+\nu \right] }{{\cal D}\left[1+\delta\nu+\Delta(\delta+\nu)\right] -  A_{CP}(\delta+\nu)   }
-%    {\cal A} = \frac{A_{CP}-{\cal D}\left(\nu+\delta+\Delta-\delta^2\nu+\delta\nu^2\right)}{{\cal D}(1+\delta^2+\nu^2+2\delta\nu+{\cal A}(\nu+\delta))}
-\\ &=& \frac{A_{CP}}{\cal D}\left[ \frac{1-{\cal D}(\Delta+\frac{\delta+\nu }{1+\delta\nu})}{1-(\frac{A_{CP}}{\cal D}-\Delta)\frac{\delta+\nu}{1+\delta\nu} } \right]
+%     \frac{ {A_{\mathrm{obs}}(1+\delta\nu)}-{\cal D}\left[ \Delta(1+\delta\nu)  + \delta+\nu \right] }{{\cal D}\left[1+\delta\nu+\Delta(\delta+\nu)\right] -  A_{\mathrm{obs}}(\delta+\nu)   }
+%    {\cal A} = \frac{A_{\mathrm{obs}}-{\cal D}\left(\nu+\delta+\Delta-\delta^2\nu+\delta\nu^2\right)}{{\cal D}(1+\delta^2+\nu^2+2\delta\nu+{\cal A}(\nu+\delta))}
+%\\ &=& 
+\frac{A_{\mathrm{obs}}-{\cal D}(\Delta+\frac{\delta+\nu }{1+\delta\nu})}{ {\cal D}\left[   1+\Delta\frac{\delta+\nu}{1+\delta\nu}\right]-A_{\mathrm{obs}}\frac{\delta+\nu}{1+\delta\nu} } 
+%\\ &\approx& \frac{A_{\mathrm{obs}}-{\cal D}(\Delta+\delta+\nu )}{ {\cal D}\left[   1+\Delta\delta+\Delta\nu\right]-A_{\mathrm{obs}}(\delta+\nu) } 
+\\ &\approx& \frac{ \dfrac{A_{\mathrm{obs}}}{\cal D}-(\Delta+\delta+\nu )}{   1+\Delta\delta+\Delta\nu- \dfrac{A_{\mathrm{obs}}}{\cal D}(\delta+\nu) } 
 \end{eqnarray}
 
 As $\nu$ and $\delta_i$ always appear as sum, i.e. as $C_{{\cal O},i}$ (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
