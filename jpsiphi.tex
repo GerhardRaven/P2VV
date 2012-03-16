@@ -210,7 +210,9 @@ and for the remainder, i.e. the untagged events, which we denote with an index $
                             + \left( \nu - \sum_i \epsilon_i(\delta_i+\nu)   \right) {\cal O} \right] \label{eq:untagged}
 \\   P_0 & \equiv & \left( 1 - \sum_i \frac{P_i }{P_{B} + P_{\overline B}} \right)( P_{B} + P_{\overline B}) 
 \\       & = & \left( 1  - \sum_i \epsilon_i\left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right]\right) \frac{\cal E}{N}( 1 + \nu {\cal A} ) 
-\\ &=& \frac{\cal E}{N} \left(1+\nu{\cal A} - \sum_i \epsilon_i\left[ (1+\delta_i \nu) \left(1+\frac{\nu+\delta_i}{1+\delta_i\nu} {\cal A}\right)\right] \right) 
+%\\ &=& \frac{\cal E}{N} \left(1+\nu{\cal A} - \sum_i \epsilon_i\left[ (1+\delta_i \nu) \left(1+\frac{\nu+\delta_i}{1+\delta_i\nu} {\cal A}\right)\right] \right) 
+\\ &=& \frac{\cal E}{N} \left(1- \sum_i \epsilon_i\left(1+\delta_i \nu \right)+ \left(\nu -\sum_i \epsilon_i (\nu+\delta_i) \right){\cal A} \right) 
+\\ &=& \frac{1- \sum_i \epsilon_i\left(1+\delta_i \nu \right)}{N} \left(1 + \frac{ \nu -\sum_i \epsilon_i (\nu+\delta_i) }{ 1-\sum_i \epsilon_i\left( 1+\delta_i \nu \right) } {\cal A} \right){\cal E} 
 \end{eqnarray}
 Note that at this point, by construction, we have that
 \begin{equation}
