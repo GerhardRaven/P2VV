@@ -191,6 +191,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         self['amplitudeParam'] = 'phasesSWaveFrac'
         self['polarSWave']     = False
+        self['reApar']         = False
 
         self['carthLambdaCP'] = False
 
@@ -285,6 +286,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         amplitudeParam = pdfConfig.pop('amplitudeParam')
         polarSWave     = pdfConfig.pop('polarSWave')
+        reApar         = pdfConfig.pop('reApar')
 
         carthLambdaCP = pdfConfig.pop('carthLambdaCP')
 
@@ -411,18 +413,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # build the signal and background mass PDFs
         from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass, LP2011_Background_Mass as BackgroundBMass
-        signalBMass     = SignalBMass(     Name = 'sig_m', mass = BMass )
-        backgroundBMass = BackgroundBMass( Name = 'bkg_m', mass = BMass )
+        self._signalBMass     = SignalBMass(     Name = 'sig_m', mass = BMass )
+        self._backgroundBMass = BackgroundBMass( Name = 'bkg_m', mass = BMass )
 
         from RooFitWrappers import buildPdf
         if SFit :
-            self._sigMassComps += signalBMass.pdf()
-            self._bkgMassComps += backgroundBMass.pdf()
+            self._sigMassComps += self._signalBMass.pdf()
+            self._bkgMassComps += self._backgroundBMass.pdf()
             self._massPdf = buildPdf( [ self._sigMassComps, self._bkgMassComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
 
         else :
-            self._signalComps     += signalBMass.pdf()
-            self._backgroundComps += backgroundBMass.pdf()
+            self._signalComps     += self._signalBMass.pdf()
+            self._backgroundComps += self._backgroundBMass.pdf()
             self._massPdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
 
 
@@ -537,7 +539,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # transversity amplitudes
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
-            amplitudes = Amplitudes(polarSWave = True if nominalPdf else polarSWave)
+            amplitudes = Amplitudes( PolarSWave = True if nominalPdf else polarSWave, ReApar = False if nominalPdf else reApar )
 
         else :
             from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
@@ -547,14 +549,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
         dGammaVar = dict( Name = 'dGamma' )
         if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-        lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = True )
+        self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = True )
 
         if nominalPdf or eventTimeRes :
             from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-            timeResModel = TimeResolution( time = time, sigmat = timeRes, timeResSFConstraint = True )
+            self._timeResModel = TimeResolution( time = time, sigmat = timeRes, timeResSFConstraint = True )
         else :
             from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
-            timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
+            self._timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
 
         # CP violation parameters
         if carthLambdaCP : 
@@ -634,18 +636,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                        )
 
         args = dict(  time                   = time
-                    , tau                    = lifetimeParams['MeanLifetime']
-                    , dGamma                 = lifetimeParams['dGamma']
-                    , dm                     = lifetimeParams['dM']
+                    , tau                    = self._lifetimeParams['MeanLifetime']
+                    , dGamma                 = self._lifetimeParams['dGamma']
+                    , dm                     = self._lifetimeParams['dM']
                     , coshCoef               = timeBasisCoefs['cosh']
                     , sinhCoef               = timeBasisCoefs['sinh']
                     , cosCoef                = timeBasisCoefs['cos']
                     , sinCoef                = timeBasisCoefs['sin']
-                    , resolutionModel        = timeResModel['model']
-                    , ConditionalObservables = timeResModel.conditionalObservables()\
+                    , resolutionModel        = self._timeResModel['model']
+                    , ConditionalObservables = self._timeResModel.conditionalObservables()\
                                                + self._taggingParams.conditionalObservables()
-                    , ExternalConstraints    = lifetimeParams.externalConstraints()\
-                                               + timeResModel.externalConstraints()\
+                    , ExternalConstraints    = self._lifetimeParams.externalConstraints()\
+                                               + self._timeResModel.externalConstraints()\
                                                + self._taggingParams.externalConstraints()
                     , **args
                    )
@@ -781,8 +783,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if not SFit or makePlots :
             from P2VVParameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
-            backgroundTime = BackgroundTime( Name = 'bkg_t', time = time, resolutionModel = timeResModel['model'] )
-            self._bkg_t = backgroundTime.pdf()
+            self._backgroundTime = BackgroundTime( Name = 'bkg_t', time = time, resolutionModel = self._timeResModel['model'] )
+            self._bkg_t = self._backgroundTime.pdf()
 
             if multiplyByTimeEff in [ 'all', 'background' ] :
                 # multiply background time PDF with time acceptance

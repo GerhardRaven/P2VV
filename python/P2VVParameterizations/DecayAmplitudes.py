@@ -37,9 +37,10 @@ class Carthesian_Amplitude :
 class Polar2_Amplitude( Carthesian_Amplitude ) :
     def __init__( self,name, r2, arg, CP ) :
         from RooFitWrappers import FormulaVar
-        Carthesian_Amplitude.__init__( self,  name, FormulaVar('Re_%s'%name, 'sqrt(@0) * cos(@1)', [r2,arg], Title = 'Re(%s)'% name )
-                                                  , FormulaVar('Im_%s'%name, 'sqrt(@0) * sin(@1)', [r2,arg], Title = 'Im(%s)'% name )
-                                                  , CP )
+        Carthesian_Amplitude.__init__( self, name, FormulaVar('Re%s' % name, 'sqrt(@0) * cos(@1)', [ r2, arg ], Title = 'Re(%s)' % name )
+                                                 , FormulaVar('Im%s' % name, 'sqrt(@0) * sin(@1)', [ r2, arg ], Title = 'Im(%s)' % name )
+                                                 , CP
+                                     )
 
 
 class AmplitudeSet( dict, _util_parse_mixin ) :
@@ -107,33 +108,38 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
 
 class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
-        from math import pi
+        from math import pi, sqrt, sin, cos
         from RooFitWrappers import FormulaVar
-        polarSWave = kwargs.pop( 'polarSWave', True )
+        polarSWave = kwargs.pop( 'PolarSWave', True  )
+        reApar     = kwargs.pop( 'ReApar',     False )
 
-        self._parseArg( 'A0Mag2',    kwargs, Title = '|A0|^2',     Value = A02,    MinMax = ( 0., 1. ) )
-        self._parseArg( 'AperpMag2', kwargs, Title = '|A_perp|^2', Value = Aperp2, MinMax = ( 0., 1. ) )
+        self._parseArg( 'A0Mag2',  kwargs, Title = '|A0|^2',  Value = A02, MinMax = ( 0., 1. ) )
+        self._parseArg( 'A0Phase', kwargs, Title = 'delta_0', Value = 0.,  Constant = True     )
+        A0Amp = Polar2_Amplitude( 'A0', self._A0Mag2, self._A0Phase, +1 )
+
+        self._parseArg( 'AperpMag2',  kwargs, Title = '|A_perp|^2', Value = Aperp2,  MinMax = ( 0., 1. )            )
+        self._parseArg( 'AperpPhase', kwargs, Title = 'delta_perp', Value = AperpPh, MinMax = ( -2. * pi, 2. * pi ) )
+        AperpAmp = Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPhase, -1 )
 
         self._AparMag2 = FormulaVar( 'AparMag2', '1. - @0 - @1',   [ self._A0Mag2, self._AperpMag2 ], Title = '|A_par|^2' )
+        if reApar :
+            from RooFitWrappers import Category
+            self._parseArg( 'ReApar', kwargs, Title = 'Re(A_par)', Value = sqrt(Apar2) * cos(AparPh), MinMax = ( -1., 1. ) )
+            self._ImAparSign = Category( 'ImAparSign', States = { 'plus' : +1, 'minus' : -1 } )
+            self._ImApar = FormulaVar( 'ImApar', '@2*sqrt(@0 - @1*@1)', [ self._AparMag2, self._ReApar, self._ImAparSign ]
+                                       , Title = 'Im(A_par)' )
+            self._ImAparSign.setIndex(-1)
+            AparAmp = Carthesian_Amplitude( 'Apar', self._ReApar, self._ImApar, +1 )
+        else :
+            self._parseArg( 'AparPhase',  kwargs, Title = 'delta_par',  Value = AparPh,  MinMax = ( -2. * pi, 2. * pi ) )
+            AparAmp = Polar2_Amplitude( 'Apar', self._AparMag2, self._AparPhase, +1 )
 
-        self._parseArg( 'A0Phase',    kwargs, Title = 'delta_0',    Value = 0.,      Constant = True                )
-        self._parseArg( 'AparPhase',  kwargs, Title = 'delta_par',  Value = AparPh,  MinMax = ( -2. * pi, 2. * pi ) )
-        self._parseArg( 'AperpPhase', kwargs, Title = 'delta_perp', Value = AperpPh, MinMax = ( -2. * pi, 2. * pi ) )
- 
         if polarSWave :
             self._parseArg( 'f_S',     kwargs, Title = 'S wave fraction', Value = f_S,  MinMax = (  0.,      1.      ) )
             self._parseArg( 'ASPhase', kwargs, Title = 'delta_S',         Value = ASPh, MinMax = ( -2. * pi, 2. * pi ) )
             self._ASMag2 = FormulaVar( 'ASMag2', '@0 / (1. - @0)', [ self._f_S ], Title = '|A_S|^2' )
-
-            self._check_extraneous_kw( kwargs ) 
-            AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Phase,    +1 )
-                                       , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPhase,  +1 )
-                                       , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPhase, -1 )
-                                       , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPhase,    -1 )
-                                 )
-
+            ASAmp = Polar2_Amplitude( 'AS', self._ASMag2, self._ASPhase, -1 )
         else :
-            from math import sin, cos, sqrt
             self._parseArg( 'sqrtfS_Re', kwargs, Title = 'sqrt(S wave fraction) * cos(delta_S)', Value = sqrt(f_S) * cos(ASPh)
                            , MinMax = ( -1., 1. ) )
             self._parseArg( 'sqrtfS_Im', kwargs, Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(ASPh)
@@ -141,9 +147,7 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
             self._ReAS = FormulaVar( 'ReAS', '@0 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im ], Title = 'Re(A_S)' )
             self._ImAS = FormulaVar( 'ImAS', '@1 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im ], Title = 'Im(A_S)' )
 
-            self._check_extraneous_kw( kwargs ) 
-            AmplitudeSet.__init__( self, Polar2_Amplitude(     'A0',    self._A0Mag2,    self._A0Phase,    +1 )
-                                       , Polar2_Amplitude(     'Apar',  self._AparMag2,  self._AparPhase,  +1 )
-                                       , Polar2_Amplitude(     'Aperp', self._AperpMag2, self._AperpPhase, -1 )
-                                       , Carthesian_Amplitude( 'AS',    self._ReAS,      self._ImAS,       -1 )
-                                 )
+            ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1 )
+
+        self._check_extraneous_kw( kwargs )
+        AmplitudeSet.__init__( self, A0Amp, AparAmp, AperpAmp, ASAmp )

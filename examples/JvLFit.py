@@ -9,12 +9,13 @@ pdfConfig = PdfConfig()
 readData       = True
 generateData   = False
 doFit          = True
+fastFit        = False
 
-makeObservablePlots     = False
-pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = False
+makeObservablePlots     = True
+pdfConfig['makePlots']  = True
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = True
+pdfConfig['nominalPdf'] = False
 
 pdfConfig['numEvents'] = 30000
 
@@ -52,7 +53,7 @@ pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
 pdfConfig['sigTaggingPdf']      = 'tagCats'
 pdfConfig['bkgTaggingPdf']      = 'tagCatsRelative'
-pdfConfig['multiplyByTimeEff']  = 'all'
+pdfConfig['multiplyByTimeEff']  = ''
 
 pdfConfig['conditionalTagging'] = False
 pdfConfig['continuousEstWTag']  = False
@@ -66,7 +67,8 @@ pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
 pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
-pdfConfig['polarSWave']     = True
+pdfConfig['polarSWave']     = False
+pdfConfig['reApar']         = True
 
 pdfConfig['carthLambdaCP'] = False
 
@@ -93,8 +95,8 @@ if not readData :
                            ]
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-#pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
-pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
+pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
+#pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
 pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
                                  else 'effMomentsHelBasis'
@@ -179,25 +181,32 @@ else :
 ##############
 
 if doFit :
-    # fix values of some parameters
-    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    # float/fix values of some parameters
+    if pdfConfig['nominalPdf'] : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
-        CEvenOdd.setConstant('avgCOdd.*')
+        if pdfConfig['nominalPdf'] : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-    #pdfBuild['sigTaggingPdf'].setConstant( '.*ABBbar.*', False )
-    pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+    if pdfConfig['nominalPdf'] :
+        pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
-    #pdfBuild['bkgTaggingPdf'].setConstant( 'bkg_ABBbar.*', False )
-    #pdfBuild['bkgTaggingPdf'].setConstant( 'bkg_ATagCat.*', False )
-    #pdfBuild['bkgTaggingPdf'].setConstant( 'bkg_ABBbar0', True )
+    if fastFit :
+        pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+        for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
+        pdfBuild['tagCats'].setConstant('.*')
+        pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
+        pdfBuild['timeResModel'].setConstant('.*')
+        pdfBuild['signalBMass'].setConstant('.*')
+        if not pdfConfig['SFit'] :
+            pdfBuild['backgroundBMass'].setConstant('.*')
+            pdfBuild['backgroundTime'].setConstant('.*')
 
     # fit data
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = False, **fitOpts )
-    else                 : fitResult = pdf.fitTo( fitData,                     **fitOpts )
+    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = True, **fitOpts )
+    else                 : fitResult = pdf.fitTo( fitData,                    **fitOpts )
 
     print 120 * '=' + '\n'
 
