@@ -6,13 +6,14 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-readData       = True
-generateData   = False
-doFit          = True
-fastFit        = False
-
-makeObservablePlots     = True
-pdfConfig['makePlots']  = True
+readData                = True
+generateData            = False
+doFit                   = True
+fastFit                 = False
+makeDLLPlots            = False
+makeObservablePlots     = False
+plotAnglesNoEff         = False
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
@@ -33,9 +34,9 @@ if generateData :
     dataSetFile = 'JvLFit.root'
 
 # fit options
-fitOpts = dict(  NumCPU              = 1
-               , Timer               = 1
-               , Optimize            = 1
+fitOpts = dict(  NumCPU              = 4
+               , Optimize            = 2
+#               , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
 #               , Save                = True
@@ -101,6 +102,7 @@ pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweight
 pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
                                  else 'effMomentsHelBasis'
 #pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
+#pdfConfig['angEffMomentsFile'] = None
 
 if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -209,7 +211,7 @@ if doFit :
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = True, **fitOpts )
+    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = False, **fitOpts )
     else                 : fitResult = pdf.fitTo( fitData,                    **fitOpts )
 
     print 120 * '=' + '\n'
@@ -219,7 +221,7 @@ if doFit :
 ## make some plots ##
 #####################
 
-if makeObservablePlots or pdfConfig['makePlots'] :
+if makeObservablePlots or pdfConfig['makePlots'] or makeDLLPlots :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
@@ -345,6 +347,12 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
             )
 
     # plot angles
+    if plotAnglesNoEff and pdfConfig['SFit'] and pdfConfig['multiplyByTimeEff'] not in [ 'all', 'signal' ]\
+            and ( pdfConfig['nominalPdf'] or not pdfConfig['conditionalTagging'] ) :
+        addPDFs = [ ws['sig_t_angles_tagCat_iTag'] ]
+    else :
+        addPDFs = [ ]
+
     anglePlotTitles =   tuple(  [ angle.GetTitle()                            for angle in angles ]\
                               + [ angle.GetTitle() + ' - B/#bar{B} asymmetry' for angle in angles ] )
     anglesCanv = TCanvas( 'anglesCanv', 'Decay Angles' )
@@ -355,14 +363,15 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , anglePlotTitles
                    , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                    , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
-                   , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
-                   , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
+                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTag ), )
+                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTag ), )
                   ) :
-        plot(  pad, obs, fitData, pdf, xTitle = xTitle, yTitle = yTitle
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle                                                )
-             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts                    )
-             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth, **pdfCuts )
-             , components = comps
+        plot(  pad, obs, fitData, pdf, addPDFs = addPDFs, xTitle = xTitle, yTitle = yTitle
+             , frameOpts   = dict( Bins = nBins, Title = plotTitle                                                )
+             , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts                    )
+             , pdfOpts     = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth, **pdfCuts )
+             , addPDFsOpts = [ dict( list( projWData.items() ), LineColor = kRed, LineWidth = lineWidth, **pdfCuts ) ]
+             , components  = comps
             )
 
     if not pdfConfig['SFit'] :
@@ -394,3 +403,35 @@ elif pdfConfig['makePlots'] :
     bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesCanv'].Print(plotsFile)
     pdfBuild['estWTagCanv'].Print(plotsFile + ')')
+
+
+if makeDLLPlots :
+    from ROOT import RooFit, RooArgSet, TCanvas
+    nll = pdf.createNLL( fitData, **fitOpts )
+    pll = nll.createProfile( RooArgSet( ws['ReApar'] if pdfConfig['reApar'] else ws['AparPhase'] ) )
+
+    if pdfConfig['reApar'] :
+        AparFrame = ws['ReApar'].frame(  RooFit.Range( -0.48, -0.46 )
+                                       , RooFit.Bins(10)
+                                       , RooFit.Title('#DeltaNLL Re(A_{#parallel})')
+                                      )
+    else :
+        AparFrame = ws['AparPhase'].frame(  RooFit.Range( 2.9, 3.5 )
+                                          , RooFit.Bins(10)
+                                          , RooFit.Title('#DeltaNLL #delta_{#parallel}')
+                                         )
+
+    print 'JvLFit: plotting Delta -log(L)'
+    nll.plotOn( AparFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue) )
+
+    print 'JvLFit: plotting profile Delta -log(L)'
+    pll.plotOn( AparFrame, RooFit.LineColor(kRed) )
+
+    if pdfConfig['reApar'] : AparFrame.GetXaxis().SetTitle('Re(A_{#parallel})')
+    else                   : AparFrame.GetXaxis().SetTitle('#delta_{#parallel}')
+    AparFrame.GetYaxis().SetTitle('#DeltaNLL')
+
+    dllCanv = TCanvas( 'dllCanv', 'DLLs' )
+    AparFrame.Draw()
+
+    dllCanv.Print( plotsFile[ : -3 ] + 'DLLs.ps')
