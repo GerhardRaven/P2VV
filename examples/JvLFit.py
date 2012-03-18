@@ -13,7 +13,7 @@ fastFit        = False
 
 makeObservablePlots     = True
 pdfConfig['makePlots']  = True
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 
@@ -157,6 +157,10 @@ if not pdfBuild['iTagZeroTrick'] :
     tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
     tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
     tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
+
+if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
+    # unset cache-and-track
+    for par in pdfBuild['taggingParams'].parameters() : par.setAttribute( 'CacheAndTrack', False )
 
 
 ###########################################################################################################################################
