@@ -189,9 +189,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['signalFraction'] = 0.67
         self['massRangeBackground'] = False
 
-        self['amplitudeParam'] = 'phasesSWaveFrac'
+        self['amplitudeParam'] = 'phasesSWaveFrac'       # 'phasesSWaveFrac' / 'ReIm' / 'bank'
         self['polarSWave']     = False
-        self['reApar']         = False
+        self['AparParam']      = 'cos'                   # 'phase' / 'cos' / 'real' / 'ReIm'
 
         self['carthLambdaCP'] = False
 
@@ -286,7 +286,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         amplitudeParam = pdfConfig.pop('amplitudeParam')
         polarSWave     = pdfConfig.pop('polarSWave')
-        reApar         = pdfConfig.pop('reApar')
+        AparParam      = pdfConfig.pop('AparParam')
 
         carthLambdaCP = pdfConfig.pop('carthLambdaCP')
 
@@ -539,7 +539,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # transversity amplitudes
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
-            amplitudes = Amplitudes( PolarSWave = True if nominalPdf else polarSWave, ReApar = False if nominalPdf else reApar )
+            amplitudes = Amplitudes( PolarSWave = True if nominalPdf else polarSWave
+                                    , AparParameterization = 'phase' if nominalPdf else AparParam )
+
+        elif amplitudeParam == 'bank' :
+            from P2VVParameterizations.DecayAmplitudes import JpsiVBank_AmplitudeSet as Amplitudes
+            amplitudes = Amplitudes( PolarSWave = polarSWave, AparParameterization = AparParam )
 
         else :
             from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
