@@ -10,17 +10,18 @@ readData                = True
 generateData            = False
 doFit                   = True
 fastFit                 = False
-makeDLLPlots            = False
+makeDLLPlots            = True
 makeObservablePlots     = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
+sumW2Error              = False
 
 pdfConfig['numEvents'] = 30000
 
-plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
+plotsFile = 'plots/JvLSFitBank.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
@@ -211,8 +212,8 @@ if doFit :
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = True, **fitOpts )
-    else                 : fitResult = pdf.fitTo( fitData,                    **fitOpts )
+    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = sumW2Error, **fitOpts )
+    else                 : fitResult = pdf.fitTo( fitData,                          **fitOpts )
 
     print 120 * '=' + '\n'
 
@@ -406,6 +407,34 @@ elif pdfConfig['makePlots'] :
 
 
 if makeDLLPlots :
+    wsPars =\
+        {  'ReApar'       : ( '#DeltaNLL Re(A_{#parallel})',           'Re(A_{#parallel})',           -0.480, -0.455, 10, 0.001, 0.01 )
+         , 'ImApar'       : ( '#DeltaNLL Im(A_{#parallel})',           'Im(A_{#parallel})',           -0.2,    0.2,   10, 0.001, 0.01 )
+         , 'cosAparPhase' : ( '#DeltaNLL cos(#delta_{#parallel})',     'cos(#delta_{#parallel})',     -1.,    -0.94,  10, 0.001, 0.01 )
+         , 'AparPhase'    : ( '#DeltaNLL #delta_{#parallel}',          '#delta_{#parallel}',           2.8,    3.5,   10, 0.001, 0.01 )
+         , 'sqrtfS_Re'    : ( '#DeltaNLL #sqrt{f_{S}}^{R}',            '#sqrt{f_{S}}^{R}',            -0.22,  -0.10,  10, 0.001, 0.01 )
+         , 'sqrtfS_Im'    : ( '#DeltaNLL #sqrt{f_{S}}^{I}',            '#sqrt{f_{S}}^{I}',            -0.060,  0.085, 10, 0.001, 0.01 )
+         , 'ReASOdd'      : ( '#DeltaNLL Re(A_{S} / A_{#perp})',       'Re(A_{S} / A_{#perp})',        0.20,   0.44,  10, 0.001, 0.01 )
+         , 'ImASOdd'      : ( '#DeltaNLL Im(A_{S} / A_{#perp})',       'Im(A_{S} / A_{#perp})',       -0.06,   0.04,  10, 0.001, 0.01 )
+         , 'f_S'          : ( '#DeltaNLL f_{S}',                       'f_{S}',                        0.00,   0.05,  10, 0.001, 0.01 )
+         , 'ASPhase'      : ( '#DeltaNLL #delta_{S}',                  '#delta_{S}',                   2.75,   3.30,  10, 0.001, 0.01 )
+         , 'ASOddMag2'    : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',   'A_{S}^{2} / A_{#perp}^{2}',    0.0,    0.2,   10, 0.001, 0.01 )
+         , 'ASOddPhase'   : ( '#DeltaNLL #delta_{S} - #delta_{#perp}', '#delta_{S} - #delta_{#perp}', -0.2,    0.2,   10, 0.001, 0.01 )
+        }
+
+    dllPars = [ ]
+    if   pdfConfig['AparParam'] == 'real' : dllPars.append('ReApar')
+    elif pdfConfig['AparParam'] == 'ReIm' : dllPars.append('ImApar')
+    elif pdfConfig['AparParam'] == 'cos'  : dllPars.append('cosAparPhase')
+    else                                  : dllPars.append('AparPhase')
+
+    if pdfConfig['polarSWave'] :
+        if pdfConfig['amplitudeParam'] == 'bank' : dllPars += [ 'ASOddMag2', 'ASOddPhase' ]
+        else                                     : dllPars += [ 'f_S', 'ASPhase' ]
+    else :
+        if pdfConfig['amplitudeParam'] == 'bank' : dllPars += [ 'ReASOdd', 'ImASOdd' ]
+        else                                     : dllPars += [ 'sqrtfS_Im', 'sqrtfS_Im' ]
+
     # float/fix values of some parameters
     pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
@@ -420,68 +449,29 @@ if makeDLLPlots :
     # create DNLL/PLL plots
     from ROOT import RooFit, RooArgSet, TCanvas
     nll = pdf.createNLL( fitData, **fitOpts )
-    dllCanv = TCanvas( 'dllCanv', 'DLLs' )
-    dllCanv.Divide( 2, 2 )
+    dllCanvs = [ ]
+    canvFileName = plotsFile[ : -3 ] + 'DLLs.ps'
+    for parIter, par in enumerate(dllPars) :
+        pll = nll.createProfile( RooArgSet( ws[par] ) )
+        parFrame = ws[par].frame(  RooFit.Range( wsPars[par][2], wsPars[par][3] )
+                                 , RooFit.Bins( wsPars[par][4] )
+                                 , RooFit.Title( wsPars[par][0] )
+                                )
 
-    # A_par
-    pll = nll.createProfile( RooArgSet( ws['ReApar'] if pdfConfig['AparParam'] == 'real'\
-                                        else ( ws['cosAparPhase'] if pdfConfig['AparParam'] == 'cos' else ws['AparPhase'] ) ) )
+        print 'JvLFit: plotting Delta -log(L) for %s' % par
+        nll.plotOn( parFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue), RooFit.Precision( wsPars[par][5] ) )
 
-    if pdfConfig['AparParam'] == 'real' :
-        AparFrame = ws['ReApar'].frame(  RooFit.Range( -0.480, -0.455 )
-                                       , RooFit.Bins(10)
-                                       , RooFit.Title('#DeltaNLL Re(A_{#parallel})')
-                                      )
-    elif pdfConfig['AparParam'] == 'cos' :
-        AparFrame = ws['cosAparPhase'].frame(  RooFit.Range( -1., -0.94 )
-                                       , RooFit.Bins(10)
-                                       , RooFit.Title('#DeltaNLL cos(#delta_{#parallel})')
-                                      )
-    else :
-        AparFrame = ws['AparPhase'].frame(  RooFit.Range( 2.9, 3.5 )
-                                          , RooFit.Bins(10)
-                                          , RooFit.Title('#DeltaNLL #delta_{#parallel}')
-                                         )
+        print 'JvLFit: plotting profile Delta -log(L) for %s' % par
+        pll.plotOn( parFrame, RooFit.LineColor(kRed), RooFit.Precision( wsPars[par][6] ) )
 
-    print 'JvLFit: plotting Delta -log(L) for A_par'
-    nll.plotOn( AparFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue), RooFit.Precision(0.001) )
+        parFrame.GetXaxis().SetTitle( wsPars[par][1] )
+        parFrame.GetYaxis().SetTitle('#DeltaNLL')
 
-    print 'JvLFit: plotting profile Delta -log(L) for A_par'
-    pll.plotOn( AparFrame, RooFit.LineColor(kRed), RooFit.Precision(0.01) )
+        dllCanvs.append( TCanvas( 'dllCanv%d' % parIter , 'DLL canvas' ) )
+        parFrame.Draw()
 
-    if   pdfConfig['AparParam'] == 'real' : AparFrame.GetXaxis().SetTitle('Re(A_{#parallel})')
-    elif pdfConfig['AparParam'] == 'cos'  : AparFrame.GetXaxis().SetTitle('cos(#delta_{#parallel})')
-    else                                  : AparFrame.GetXaxis().SetTitle('#delta_{#parallel}')
-    AparFrame.GetYaxis().SetTitle('#DeltaNLL')
-
-    dllCanv.cd(1)
-    AparFrame.Draw()
-    dllCanv.Print( plotsFile[ : -3 ] + 'DLLs.ps')
-
-    # A_S
-    pll = nll.createProfile( RooArgSet( ws['ASPhase'] if pdfConfig['polarSWave'] else ws['sqrtfS_Im'] ) )
-
-    if pdfConfig['polarSWave'] :
-        ASFrame = ws['ASPhase'].frame(  RooFit.Range( 2.75, 3.30 )
-                                      , RooFit.Bins(10)
-                                      , RooFit.Title('#DeltaNLL #delta_{S}')
-                                     )
-    else :
-        ASFrame = ws['sqrtfS_Im'].frame(  RooFit.Range( -0.060, 0.85 )
-                                        , RooFit.Bins(10)
-                                        , RooFit.Title('#DeltaNLL #sqrt{f_{S}}^I')
-                                       )
-
-    print 'JvLFit: plotting Delta -log(L) for A_S'
-    nll.plotOn( ASFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue), RooFit.Precision(0.001) )
-
-    print 'JvLFit: plotting profile Delta -log(L) for A_S'
-    pll.plotOn( ASFrame, RooFit.LineColor(kRed), RooFit.Precision(0.01) )
-
-    if   pdfConfig['polarSWave'] : ASFrame.GetXaxis().SetTitle('#delta_{S}')
-    else                         : ASFrame.GetXaxis().SetTitle('#sqrt{f_{S}}^I')
-    ASFrame.GetYaxis().SetTitle('#DeltaNLL')
-
-    dllCanv.cd(2)
-    ASFrame.Draw()
-    dllCanv.Print( plotsFile[ : -3 ] + 'DLLs.ps')
+        for canvIter, canv in enumerate(dllCanvs) :
+            if len(dllCanvs) == 1 or canvIter not in [ 0, len(dllCanvs) - 1 ] : namePF = ''
+            elif canvIter == 0 : namePF = '('
+            else : namePF = ')'
+            canv.Print( canvFileName + namePF )
