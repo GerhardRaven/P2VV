@@ -598,7 +598,7 @@ class RealMomentsBuilder ( dict ) :
             else :
                 cont += '\n'
 
-        cont += '# ' + '-' * (49 + maxLenName) + '\n\n'
+        cont += '# ' + '-' * (49 + maxLenName) + '\n'
 
         # write content to file
         momFile.write(cont)

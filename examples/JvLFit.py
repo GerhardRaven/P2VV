@@ -6,19 +6,22 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-readData       = True
-generateData   = False
-doFit          = True
-
-makeObservablePlots     = True
-pdfConfig['makePlots']  = True
-pdfConfig['SFit']       = False
+readData                = True
+generateData            = False
+doFit                   = True
+fastFit                 = False
+makeDLLPlots            = True
+makeObservablePlots     = False
+plotAnglesNoEff         = False
+pdfConfig['makePlots']  = False
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
+sumW2Error              = False
 
 pdfConfig['numEvents'] = 30000
 
-plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
+plotsFile = 'plots/JvLSFitBank.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
@@ -32,8 +35,9 @@ if generateData :
     dataSetFile = 'JvLFit.root'
 
 # fit options
-fitOpts = dict(  NumCPU              = 8
-               , Timer               = 1
+fitOpts = dict(  NumCPU              = 1
+               , Optimize            = 1
+#               , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
 #               , Save                = True
@@ -49,23 +53,24 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
-pdfConfig['sigTaggingPdf']      = 'TagCats'
-pdfConfig['bkgTaggingPdf']      = 'TagCatsRelative'
+pdfConfig['sigTaggingPdf']      = 'tagCats'
+pdfConfig['bkgTaggingPdf']      = 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
 pdfConfig['conditionalTagging'] = False
 pdfConfig['continuousEstWTag']  = False
 pdfConfig['numEstWTagBins']     = 100
 
-pdfConfig['eventTimeResolution'] = False
+pdfConfig['eventTimeResolution'] = True
 pdfConfig['numTimeResBins']      = 100
 
 nEvents = 30000
 pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
-pdfConfig['amplitudeParam'] = 'phasesSWaveFrac'
-pdfConfig['polarSWave']     = False
+pdfConfig['amplitudeParam'] = 'bank' # 'phasesSWaveFrac'
+pdfConfig['polarSWave']     = True
+pdfConfig['AparParam']      = 'phase'
 
 pdfConfig['carthLambdaCP'] = False
 
@@ -92,12 +97,13 @@ if not readData :
                            ]
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-#pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
-pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
+pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
+#pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
 pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
                                  else 'effMomentsHelBasis'
 #pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
+#pdfConfig['angEffMomentsFile'] = None
 
 if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -155,6 +161,10 @@ if not pdfBuild['iTagZeroTrick'] :
     tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
     tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
 
+if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
+    # unset cache-and-track
+    for par in pdfBuild['taggingParams'].parameters() : par.setAttribute( 'CacheAndTrack', False )
+
 
 ###########################################################################################################################################
 ## generate data ##
@@ -178,25 +188,32 @@ else :
 ##############
 
 if doFit :
-    # fix values of some parameters
-    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    # float/fix values of some parameters
+    if pdfConfig['nominalPdf'] : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
-        CEvenOdd.setConstant('avgCOdd.*')
+        if pdfConfig['nominalPdf'] : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-    pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
-    #pdfBuild['sigTaggingPdf'].setConstant('sig_ATagBBbar')
-    #pdfBuild['bkgTaggingPdf'].setConstant('bkg_ATagBBbar')
-    #pdfBuild['bkgTaggingPdf'].setConstant('bkg_AUntagged')
-    #ws['N_signal'].setConstant()
-    #ws['N_bkg'].setConstant()
+    if pdfConfig['nominalPdf'] :
+        pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+
+    if fastFit :
+        pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+        for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
+        pdfBuild['tagCats'].setConstant('.*')
+        pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
+        pdfBuild['timeResModel'].setConstant('.*')
+        pdfBuild['signalBMass'].setConstant('.*')
+        if not pdfConfig['SFit'] :
+            pdfBuild['backgroundBMass'].setConstant('.*')
+            pdfBuild['backgroundTime'].setConstant('.*')
 
     # fit data
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = False, **fitOpts )
-    else                 : fitResult = pdf.fitTo( fitData,                     **fitOpts )
+    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = sumW2Error, **fitOpts )
+    else                 : fitResult = pdf.fitTo( fitData,                          **fitOpts )
 
     print 120 * '=' + '\n'
 
@@ -205,7 +222,7 @@ if doFit :
 ## make some plots ##
 #####################
 
-if makeObservablePlots or pdfConfig['makePlots'] :
+if makeObservablePlots or pdfConfig['makePlots'] or makeDLLPlots :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
@@ -331,6 +348,12 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
             )
 
     # plot angles
+    if plotAnglesNoEff and pdfConfig['SFit'] and pdfConfig['multiplyByTimeEff'] not in [ 'all', 'signal' ]\
+            and ( pdfConfig['nominalPdf'] or not pdfConfig['conditionalTagging'] ) :
+        addPDFs = [ ws['sig_t_angles_tagCat_iTag'] ]
+    else :
+        addPDFs = [ ]
+
     anglePlotTitles =   tuple(  [ angle.GetTitle()                            for angle in angles ]\
                               + [ angle.GetTitle() + ' - B/#bar{B} asymmetry' for angle in angles ] )
     anglesCanv = TCanvas( 'anglesCanv', 'Decay Angles' )
@@ -341,14 +364,15 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , anglePlotTitles
                    , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                    , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
-                   , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
-                   , 3 * ( dict(), ) + 3 * ( dict( Asymmetry = iTag ), )
+                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTag ), )
+                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTag ), )
                   ) :
-        plot(  pad, obs, fitData, pdf, xTitle = xTitle, yTitle = yTitle
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle                                                )
-             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts                    )
-             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth, **pdfCuts )
-             , components = comps
+        plot(  pad, obs, fitData, pdf, addPDFs = addPDFs, xTitle = xTitle, yTitle = yTitle
+             , frameOpts   = dict( Bins = nBins, Title = plotTitle                                                )
+             , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize , **dataCuts                    )
+             , pdfOpts     = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth, **pdfCuts )
+             , addPDFsOpts = [ dict( list( projWData.items() ), LineColor = kRed, LineWidth = lineWidth, **pdfCuts ) ]
+             , components  = comps
             )
 
     if not pdfConfig['SFit'] :
@@ -380,3 +404,74 @@ elif pdfConfig['makePlots'] :
     bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesCanv'].Print(plotsFile)
     pdfBuild['estWTagCanv'].Print(plotsFile + ')')
+
+
+if makeDLLPlots :
+    wsPars =\
+        {  'ReApar'       : ( '#DeltaNLL Re(A_{#parallel})',           'Re(A_{#parallel})',           -0.480, -0.455, 10, 0.001, 0.01 )
+         , 'ImApar'       : ( '#DeltaNLL Im(A_{#parallel})',           'Im(A_{#parallel})',           -0.2,    0.2,   10, 0.001, 0.01 )
+         , 'cosAparPhase' : ( '#DeltaNLL cos(#delta_{#parallel})',     'cos(#delta_{#parallel})',     -1.,    -0.94,  10, 0.001, 0.01 )
+         , 'AparPhase'    : ( '#DeltaNLL #delta_{#parallel}',          '#delta_{#parallel}',           2.8,    3.5,   10, 0.001, 0.01 )
+         , 'sqrtfS_Re'    : ( '#DeltaNLL #sqrt{f_{S}}^{R}',            '#sqrt{f_{S}}^{R}',            -0.22,  -0.10,  10, 0.001, 0.01 )
+         , 'sqrtfS_Im'    : ( '#DeltaNLL #sqrt{f_{S}}^{I}',            '#sqrt{f_{S}}^{I}',            -0.060,  0.085, 10, 0.001, 0.01 )
+         , 'ReASOdd'      : ( '#DeltaNLL Re(A_{S} / A_{#perp})',       'Re(A_{S} / A_{#perp})',        0.20,   0.44,  10, 0.001, 0.01 )
+         , 'ImASOdd'      : ( '#DeltaNLL Im(A_{S} / A_{#perp})',       'Im(A_{S} / A_{#perp})',       -0.06,   0.04,  10, 0.001, 0.01 )
+         , 'f_S'          : ( '#DeltaNLL f_{S}',                       'f_{S}',                        0.00,   0.05,  10, 0.001, 0.01 )
+         , 'ASPhase'      : ( '#DeltaNLL #delta_{S}',                  '#delta_{S}',                   2.75,   3.30,  10, 0.001, 0.01 )
+         , 'ASOddMag2'    : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',   'A_{S}^{2} / A_{#perp}^{2}',    0.0,    0.2,   10, 0.001, 0.01 )
+         , 'ASOddPhase'   : ( '#DeltaNLL #delta_{S} - #delta_{#perp}', '#delta_{S} - #delta_{#perp}', -0.2,    0.2,   10, 0.001, 0.01 )
+        }
+
+    dllPars = [ ]
+    if   pdfConfig['AparParam'] == 'real' : dllPars.append('ReApar')
+    elif pdfConfig['AparParam'] == 'ReIm' : dllPars.append('ImApar')
+    elif pdfConfig['AparParam'] == 'cos'  : dllPars.append('cosAparPhase')
+    else                                  : dllPars.append('AparPhase')
+
+    if pdfConfig['polarSWave'] :
+        if pdfConfig['amplitudeParam'] == 'bank' : dllPars += [ 'ASOddMag2', 'ASOddPhase' ]
+        else                                     : dllPars += [ 'f_S', 'ASPhase' ]
+    else :
+        if pdfConfig['amplitudeParam'] == 'bank' : dllPars += [ 'ReASOdd', 'ImASOdd' ]
+        else                                     : dllPars += [ 'sqrtfS_Im', 'sqrtfS_Im' ]
+
+    # float/fix values of some parameters
+    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
+    pdfBuild['tagCats'].setConstant('.*')
+    pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
+    pdfBuild['timeResModel'].setConstant('.*')
+    pdfBuild['signalBMass'].setConstant('.*')
+    if not pdfConfig['SFit'] :
+        pdfBuild['backgroundBMass'].setConstant('.*')
+        pdfBuild['backgroundTime'].setConstant('.*')
+
+    # create DNLL/PLL plots
+    from ROOT import RooFit, RooArgSet, TCanvas
+    nll = pdf.createNLL( fitData, **fitOpts )
+    dllCanvs = [ ]
+    canvFileName = plotsFile[ : -3 ] + 'DLLs.ps'
+    for parIter, par in enumerate(dllPars) :
+        pll = nll.createProfile( RooArgSet( ws[par] ) )
+        parFrame = ws[par].frame(  RooFit.Range( wsPars[par][2], wsPars[par][3] )
+                                 , RooFit.Bins( wsPars[par][4] )
+                                 , RooFit.Title( wsPars[par][0] )
+                                )
+
+        print 'JvLFit: plotting Delta -log(L) for %s' % par
+        nll.plotOn( parFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue), RooFit.Precision( wsPars[par][5] ) )
+
+        print 'JvLFit: plotting profile Delta -log(L) for %s' % par
+        pll.plotOn( parFrame, RooFit.LineColor(kRed), RooFit.Precision( wsPars[par][6] ) )
+
+        parFrame.GetXaxis().SetTitle( wsPars[par][1] )
+        parFrame.GetYaxis().SetTitle('#DeltaNLL')
+
+        dllCanvs.append( TCanvas( 'dllCanv%d' % parIter , 'DLL canvas' ) )
+        parFrame.Draw()
+
+        for canvIter, canv in enumerate(dllCanvs) :
+            if len(dllCanvs) == 1 or canvIter not in [ 0, len(dllCanvs) - 1 ] : namePF = ''
+            elif canvIter == 0 : namePF = '('
+            else : namePF = ')'
+            canv.Print( canvFileName + namePF )
