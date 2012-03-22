@@ -7,34 +7,26 @@ location = os.path.realpath(os.curdir)
 atexit.register(os.chdir, location)
 
 # change directory to the git repository
-os.chdir('/project/bfys/raaij/p2vv/code')
-
-# Create subprocess and 
-cmd = ['git', 'archive', '--format=tar', 'HEAD']
-# Run the lines script to get the available Hlt lines
-p = subprocess.Popen(cmd, stdout = subprocess.PIPE,
-                     stderr = subprocess.PIPE)
+os.chdir('/stuff/PhD/p2vv/code')
 
 # Open bz2 file
-snapshot_file = bz2.BZ2File(os.path.join(location, 'snapshot.tar.bz2'), 'w')
+snapshot_file = open(os.path.join(location, 'snapshot.tar.bz2'), 'w')
+
+# Create subprocess and 
+cmd = ['bzip2']
+op = subprocess.Popen(cmd, stdin = subprocess.PIPE, stdout = snapshot_file)
+
+cmd = ['git', 'archive', '--format=tar', 'HEAD']
+# Run the lines script to get the available Hlt lines
+r = subprocess.call(cmd, stdout = op.stdin)
 
 dy = '0.05'
 
 # Read the git output and put it into the bz2 file
-data = None
-while True:
-    ready = select.select([p.stdout], [], [])
-    if ready[0]:
-        data = ready[0][0].read(1024)
-    else:
-        data = None
-    if data:
-        snapshot_file.write(data)
-    else:
-        break
 
 # Check the result of the git command
-r = p.poll()
+r = op.wait()
+
 if r:
     print "Error from git command %d" % r
     print p.stderr.read()

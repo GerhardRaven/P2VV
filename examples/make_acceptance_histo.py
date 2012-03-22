@@ -8,23 +8,20 @@ from ROOT import RooMsgService
 obj = RooObject( workspace = 'w')
 
 from math import pi
-m  = RealVar('B_Mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
+m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
                          , 'rightsideband' : ( 5410, None ) 
                          } )
-mpsi = RealVar('Jpsi_Mass', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
-t  = RealVar('tau', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
+mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
 
 # Categories
 # Categories
-biased = Category('bdi2_tos', States = {'Biased' : 1, 'NotBiased' : 0})
-unbiased = Category('ubdi2_tos', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
-di1h = Category('di1h_tos', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
+biased = Category('triggerDecision', States = {'Biased' : 1, 'NotBiased' : 0})
+unbiased = Category('triggerDecisionUnbiased', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
-n_online = Category('n_online', States = {'zero' : 0, 'one' : 1, 'two' : 2, 'three' : 3, 'four' : 4,
-                                          'five' : 5, 'six' : 6})
-observables = [t, m, mpsi, unbiased, biased, di1h, selected, n_online]
+observables = [t, m, mpsi, unbiased, biased, selected]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -59,15 +56,15 @@ background = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (3054,2000
 
 # Apply acceptance
 from P2VVGeneralUtils import readData
-tree_name = 'Reader_Bs2JpsiPhi'
+tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
-## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
-input_file = '/stuff/PhD/p2vv/data/swimming.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && ubdi2_tos == 1 && n_online != 0 && di1h_tos == 1)',
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+## input_file = '/bfys/raaij/p2vv/data/swimming.root'
+data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiased == 1)',
                 NTuple = True, observables = observables)
 ## Build PDF
-pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi), Name='pdf')
+pdf = buildPdf(Components = (signal, background), Observables = (m,), Name='pdf')
 pdf.Print("t")
 
 ## Fit options
@@ -117,7 +114,7 @@ bins = array('d', [bounds[i] for i in range(0, len(bounds), 2)])
 
 # Create a TEfficiency for each component
 efficiencies = {}
-for component in (signal, background, psi_background):
+for component in (signal, background):
     sdata = splot.data(component.GetName())
     
     observables = sdata.get()
@@ -136,9 +133,10 @@ for component in (signal, background, psi_background):
     efficiencies[component] = efficiency
 
 # Draw the efficiencies
-ec = TCanvas('efficiency_canvas', 'efficiency_canvas', 1500, 500)
-for (p, e) in zip(ec.pads(len(efficiencies)), efficiencies.values()):
+ec = TCanvas('efficiency_canvas', 'efficiency_canvas', 1000, 500)
+for (p, (c, e)) in zip(ec.pads(len(efficiencies)), efficiencies.items()):
     p.cd()
+    e.SetTitle(c.GetName())
     e.Draw()
 
 # Make a TH1F from the efficiencies
