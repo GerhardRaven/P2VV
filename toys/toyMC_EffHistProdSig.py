@@ -100,11 +100,11 @@ signal = Component('signal', (LP2011_Signal_Mass(mass = mass).pdf(), sig_pdf), Y
 
 from P2VVParameterizations.MassPDFs import LP2011_Background_Mass
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time
-from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
+from P2VVParameterizations.FlavourTagging import Trivial_TagPdf
 from P2VVParameterizations.AngularPDFs import Uniform_Angles
 bkg  = Component('bkg',(  LP2011_Background_Mass( mass = mass ).pdf()
                        ,  LP2011_Background_Time( time = t , resolutionModel = tres.model()).pdf()
-                       ,  Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.3 ).pdf()
+                       ,  Trivial_TagPdf( tagdecision = iTag, ATagEff = 0.3, NamePF = 'bkg' ).pdf()
                        ,  Uniform_Angles( angles = angles.angles ).pdf()
                        ), Yield = (4000,1000,15000) )
 

@@ -657,6 +657,8 @@ class Pdf(RooObject):
         # TODO: check if we have a conditional request for something which isn't one of
         #       our observables and provide a warning...
         self._conditionals = set( o if type(o)==str else o.GetName() for o in obs )
+    def addConditionalObservables(self, obs ) :
+        for o in obs if hasattr( obs, '__iter__' ) else [obs] : self._conditionals.add(o)
     def ExternalConstraints(self) :
         if not hasattr(self,'_externalConstraints') : return list()
         return self._externalConstraints
@@ -753,7 +755,7 @@ class ProdPdf(Pdf):
                 # the token being parsed is already split on the ',', hence asSET gets "{x" and
                 # is very happy with that... and the closing } silenty disappears as well...
                 __broken_parser_workaround = ArgSet( name+'_conditional_obs', cond )
-                print 'Adding Conditional Observables %s to %s'%(','.join(i.GetName() for i in cond),name)
+                print 'P2VV - INFO: ProdPdf: Adding conditional observables [%s] to %s ' % ( ', '.join( i.GetName() for i in cond ), name )
                 name += '|%s'% __broken_parser_workaround.GetName()
             return name
         # NOTE: this construction 'absorbs' all conditional observables, so the output
@@ -1337,21 +1339,31 @@ class Component(object):
             d[nk] = ProdPdf(self.name, PDFs = pdfs, ExternalConstraints = externalConstraints )
         return d[k]
 
-def buildPdf(Components, Observables, Name) :
+def buildPdf( Components, Observables, Name ) :
     # multiply PDFs for observables (for each component)
+
+    # get observables
     if not Observables : raise RuntimeError('no Observables??')
-    obs = [o if type(o)==str else o.GetName() for o in Observables]
-    args = {'Yields' : {}, 'PDFs'   : [], 'ExternalConstraints' : set() }
-    for c in Components:
-        pdf = c[obs]
-        if len(Components) > 1 : args['Yields'][pdf.GetName()] = c['Yield']
+    obsList = [ obs if type(obs) == str else obs.GetName() for obs in Observables ]
+
+    # loop over components
+    args = { 'Yields' : {}, 'PDFs' : [], 'ExternalConstraints' : set() }
+    for comp in Components:
+        # build PDF
+        pdf = comp[obsList]
+        if len(Components) > 1 : args['Yields'][pdf.GetName()] = comp['Yield']
         args['PDFs'].append(pdf)
-        for ec in pdf.ExternalConstraints():
-            args['ExternalConstraints'].add(ec)
+
+        # add external constraints
+        for ec in pdf.ExternalConstraints(): args['ExternalConstraints'].add(ec)
+
     args['ExternalConstraints'] = list(args['ExternalConstraints'])
-    if len(Components)==1 : return args['PDFs'][0] # TODO: how to change the name?
-    # and sum components (inputs should already be extended)
-    return SumPdf(Name=Name,**args)
+
+    # return product directly if PDF consists of only one component
+    if len(Components) == 1 : return args['PDFs'][0] # TODO: how to change the name?
+
+    # add sum components (inputs should already be extended)
+    return SumPdf( Name = Name, **args )
 
 def buildSimultaneousPdf(Components, Observables, Spec, Name) :
     # multiply PDFs for observables (for each component)

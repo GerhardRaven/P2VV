@@ -31,13 +31,6 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLFit.root'
 
-pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-#pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
-pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
-
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] else 'effMomentsHelBasis'
-#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
-
 # fit options
 fitOpts = dict(  NumCPU              = 8
                , Timer               = 1
@@ -56,11 +49,13 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
-pdfConfig['bkgTaggingPdf']      = 'signal'
+pdfConfig['sigTaggingPdf']      = 'TagCats'
+pdfConfig['bkgTaggingPdf']      = 'TagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
-pdfConfig['taggingConditionals'] = ''
-pdfConfig['numEstWTagBins']      = 100
+pdfConfig['conditionalTagging'] = False
+pdfConfig['continuousEstWTag']  = False
+pdfConfig['numEstWTagBins']     = 100
 
 pdfConfig['eventTimeResolution'] = False
 pdfConfig['numTimeResBins']      = 100
@@ -95,6 +90,14 @@ if not readData :
                             , ( 'TagCat17', 17, 0.153,    0.141, 0.134, 0., 0.002, 0. )
                             , ( 'TagCat18', 18, 0.124,    0.113, 0.104, 0., 0.000, 0. )
                            ]
+
+pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
+#pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
+pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
+
+pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
+                                 else 'effMomentsHelBasis'
+#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 
 if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -180,14 +183,20 @@ if doFit :
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         CEvenOdd.setConstant('avgCOdd.*')
+
     pdfBuild['taggingParams'].setConstant('tagCatCoef.*')
+    #pdfBuild['sigTaggingPdf'].setConstant('sig_ATagBBbar')
+    #pdfBuild['bkgTaggingPdf'].setConstant('bkg_ATagBBbar')
+    #pdfBuild['bkgTaggingPdf'].setConstant('bkg_AUntagged')
+    #ws['N_signal'].setConstant()
+    #ws['N_bkg'].setConstant()
 
     # fit data
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
     if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = False, **fitOpts )
-    else                 : fitResult = pdf.fitTo( fitData,                    **fitOpts )
+    else                 : fitResult = pdf.fitTo( fitData,                     **fitOpts )
 
     print 120 * '=' + '\n'
 
@@ -211,11 +220,9 @@ if makeObservablePlots or pdfConfig['makePlots'] :
                 }
 
     projWDataSet = []
-    if   pdfConfig['taggingConditionals'] == 'all' or pdfConfig['nominalPdf'] : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
-    elif pdfConfig['taggingConditionals'] == 'estWTag'                        : projWDataSet += [ tagCatP2VV, estWTag       ]
-    elif pdfConfig['taggingConditionals'] == 'tagCat'                         : projWDataSet += [ tagCatP2VV                ]
-    elif pdfConfig['taggingConditionals'] == 'iTag'                           : projWDataSet += [ iTag                      ]
-    if   pdfConfig['eventTimeResolution']                                     : projWDataSet += [ timeRes                   ]
+    if   pdfConfig['continuousEstWTag']   : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
+    elif pdfConfig['conditionalTagging']  : projWDataSet += [ tagCatP2VV, iTag ]
+    if   pdfConfig['eventTimeResolution'] : projWDataSet += [ timeRes ]
 
     if projWDataSet :
         bulkData = fitData.reduce( CutRange = 'Bulk' )

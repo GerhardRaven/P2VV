@@ -76,13 +76,13 @@ observables = [ time ] + list(angles) + [ iTag ]
 
 # transversity amplitudes
 from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet
-transAmps = JpsiVCarthesianAmplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
-                                      , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
-                                      , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
-                                      , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
-                                      , ReAS    = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal)
-                                      , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
-                                     )
+transAmps = JpsiVCarthesian_AmplitudeSet(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
+                                         , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
+                                         , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
+                                         , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
+                                         , ReAS    = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal)
+                                         , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
+                                        )
 
 # B lifetime
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
