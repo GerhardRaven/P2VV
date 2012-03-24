@@ -10,7 +10,6 @@ readData                = True
 generateData            = False
 doFit                   = True
 fastFit                 = False
-makeDLLPlots            = True
 makeObservablePlots     = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
@@ -21,7 +20,7 @@ sumW2Error              = False
 
 pdfConfig['numEvents'] = 30000
 
-plotsFile = 'plots/JvLSFitBank.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
+plotsFile = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
@@ -33,6 +32,8 @@ else :
 if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLFit.root'
+
+dllPars = [ ] # [ ( 'ImApar', True, True ) ] / [ ( 'phiCP', True, True ) ]
 
 # fit options
 fitOpts = dict(  NumCPU              = 1
@@ -53,8 +54,8 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
-pdfConfig['sigTaggingPdf']      = 'tagCats'
-pdfConfig['bkgTaggingPdf']      = 'tagCatsRelative'
+pdfConfig['sigTaggingPdf']      = 'tagCats' #'tagUntag'
+pdfConfig['bkgTaggingPdf']      = 'tagCatsRelative' #'tagUntagRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
 pdfConfig['conditionalTagging'] = False
@@ -68,7 +69,7 @@ nEvents = 30000
 pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
-pdfConfig['amplitudeParam'] = 'bank' # 'phasesSWaveFrac'
+pdfConfig['amplitudeParam'] = 'bank' #'phasesSWaveFrac'
 pdfConfig['polarSWave']     = True
 pdfConfig['AparParam']      = 'phase'
 
@@ -222,7 +223,7 @@ if doFit :
 ## make some plots ##
 #####################
 
-if makeObservablePlots or pdfConfig['makePlots'] or makeDLLPlots :
+if makeObservablePlots or pdfConfig['makePlots'] or dllPars :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
@@ -405,39 +406,43 @@ elif pdfConfig['makePlots'] :
     pdfBuild['bkgAnglesCanv'].Print(plotsFile)
     pdfBuild['estWTagCanv'].Print(plotsFile + ')')
 
+if dllPars :
+    if pdfConfig['amplitudeParam'] == 'phasesSWaveFrac' :
+        RparMin = -0.480
+        RparMax = -0.455
+        IparMin = -0.15
+        IparMax = +0.15
+    else :
+        RparMin = -0.69
+        RparMax = -0.61
+        IparMin = -0.25
+        IparMax = +0.25
 
-if makeDLLPlots :
     wsPars =\
-        {  'ReApar'       : ( '#DeltaNLL Re(A_{#parallel})',           'Re(A_{#parallel})',           -0.480, -0.455, 10, 0.001, 0.01 )
-         , 'ImApar'       : ( '#DeltaNLL Im(A_{#parallel})',           'Im(A_{#parallel})',           -0.2,    0.2,   10, 0.001, 0.01 )
-         , 'cosAparPhase' : ( '#DeltaNLL cos(#delta_{#parallel})',     'cos(#delta_{#parallel})',     -1.,    -0.94,  10, 0.001, 0.01 )
-         , 'AparPhase'    : ( '#DeltaNLL #delta_{#parallel}',          '#delta_{#parallel}',           2.8,    3.5,   10, 0.001, 0.01 )
-         , 'sqrtfS_Re'    : ( '#DeltaNLL #sqrt{f_{S}}^{R}',            '#sqrt{f_{S}}^{R}',            -0.22,  -0.10,  10, 0.001, 0.01 )
-         , 'sqrtfS_Im'    : ( '#DeltaNLL #sqrt{f_{S}}^{I}',            '#sqrt{f_{S}}^{I}',            -0.060,  0.085, 10, 0.001, 0.01 )
-         , 'ReASOdd'      : ( '#DeltaNLL Re(A_{S} / A_{#perp})',       'Re(A_{S} / A_{#perp})',        0.20,   0.44,  10, 0.001, 0.01 )
-         , 'ImASOdd'      : ( '#DeltaNLL Im(A_{S} / A_{#perp})',       'Im(A_{S} / A_{#perp})',       -0.06,   0.04,  10, 0.001, 0.01 )
-         , 'f_S'          : ( '#DeltaNLL f_{S}',                       'f_{S}',                        0.00,   0.05,  10, 0.001, 0.01 )
-         , 'ASPhase'      : ( '#DeltaNLL #delta_{S}',                  '#delta_{S}',                   2.75,   3.30,  10, 0.001, 0.01 )
-         , 'ASOddMag2'    : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',   'A_{S}^{2} / A_{#perp}^{2}',    0.0,    0.2,   10, 0.001, 0.01 )
-         , 'ASOddPhase'   : ( '#DeltaNLL #delta_{S} - #delta_{#perp}', '#delta_{S} - #delta_{#perp}', -0.2,    0.2,   10, 0.001, 0.01 )
+        {  'phiCP'        : ( '#DeltaNLL #phi_{s}',                    '#phi_{s}',                    -0.3,     0.3,    10, 0.001, 0.05 )
+         , 'ReApar'       : ( '#DeltaNLL Re(A_{#parallel})',           'Re(A_{#parallel})',           RparMin, RparMax, 10, 0.001, 0.01 )
+         , 'ImApar'       : ( '#DeltaNLL Im(A_{#parallel})',           'Im(A_{#parallel})',           IparMin, IparMax, 10, 0.001, 0.01 )
+         , 'cosAparPhase' : ( '#DeltaNLL cos(#delta_{#parallel})',     'cos(#delta_{#parallel})',     -1.,     -0.92,   10, 0.001, 0.01 )
+         , 'AparPhase'    : ( '#DeltaNLL #delta_{#parallel}',          '#delta_{#parallel}',           2.8,     3.5,    10, 0.001, 0.01 )
+         , 'sqrtfS_Re'    : ( '#DeltaNLL #sqrt{f_{S}}^{R}',            '#sqrt{f_{S}}^{R}',            -0.22,   -0.10,   10, 0.001, 0.01 )
+         , 'sqrtfS_Im'    : ( '#DeltaNLL #sqrt{f_{S}}^{I}',            '#sqrt{f_{S}}^{I}',            -0.060,   0.085,  10, 0.001, 0.01 )
+         , 'ReASOdd'      : ( '#DeltaNLL Re(A_{S} / A_{#perp})',       'Re(A_{S} / A_{#perp})',        0.20,    0.44,   10, 0.001, 0.01 )
+         , 'ImASOdd'      : ( '#DeltaNLL Im(A_{S} / A_{#perp})',       'Im(A_{S} / A_{#perp})',       -0.06,    0.04,   10, 0.001, 0.01 )
+         , 'f_S'          : ( '#DeltaNLL f_{S}',                       'f_{S}',                        0.00,    0.05,   10, 0.001, 0.01 )
+         , 'ASPhase'      : ( '#DeltaNLL #delta_{S}',                  '#delta_{S}',                   2.7,     3.3,    10, 0.001, 0.01 )
+         , 'ASOddMag2'    : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',   'A_{S}^{2} / A_{#perp}^{2}',    0.0,     0.2,    10, 0.001, 0.01 )
+         , 'ASOddPhase'   : ( '#DeltaNLL #delta_{S} - #delta_{#perp}', '#delta_{S} - #delta_{#perp}', -0.2,     0.2,    10, 0.001, 0.01 )
         }
 
-    dllPars = [ ]
-    if   pdfConfig['AparParam'] == 'real' : dllPars.append('ReApar')
-    elif pdfConfig['AparParam'] == 'ReIm' : dllPars.append('ImApar')
-    elif pdfConfig['AparParam'] == 'cos'  : dllPars.append('cosAparPhase')
-    else                                  : dllPars.append('AparPhase')
-
-    if pdfConfig['polarSWave'] :
-        if pdfConfig['amplitudeParam'] == 'bank' : dllPars += [ 'ASOddMag2', 'ASOddPhase' ]
-        else                                     : dllPars += [ 'f_S', 'ASPhase' ]
-    else :
-        if pdfConfig['amplitudeParam'] == 'bank' : dllPars += [ 'ReASOdd', 'ImASOdd' ]
-        else                                     : dllPars += [ 'sqrtfS_Im', 'sqrtfS_Im' ]
+    # check DNLL parameters
+    for par in dllPars :
+        assert par[0] in wsPars, 'JvLFit - ERROR: unknown DLL parameter: "%s"' % par[0]
+        assert par[0] in ws,     'JvLFit - ERROR: DLL parameter "%s" does not exist in work space' % par[0]
 
     # float/fix values of some parameters
-    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
-    for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
+    if not 'phiCP' in dllPars :
+        pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+        for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
     pdfBuild['tagCats'].setConstant('.*')
     pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
     pdfBuild['timeResModel'].setConstant('.*')
@@ -446,24 +451,34 @@ if makeDLLPlots :
         pdfBuild['backgroundBMass'].setConstant('.*')
         pdfBuild['backgroundTime'].setConstant('.*')
 
-    # create DNLL/PLL plots
+    # build NLL
     from ROOT import RooFit, RooArgSet, TCanvas
     nll = pdf.createNLL( fitData, **fitOpts )
+
+    print 120 * '='
+    print 'JvLFit: parameters in NLL:'
+    for par in nll.getVariables() : par.Print()
+    print 120 * '='
+
+    # create DNLL/PLL plots
     dllCanvs = [ ]
     canvFileName = plotsFile[ : -3 ] + 'DLLs.ps'
-    for parIter, par in enumerate(dllPars) :
-        pll = nll.createProfile( RooArgSet( ws[par] ) )
+    for parIter, ( par, doDLL, doPLL ) in enumerate(dllPars) :
         parFrame = ws[par].frame(  RooFit.Range( wsPars[par][2], wsPars[par][3] )
                                  , RooFit.Bins( wsPars[par][4] )
                                  , RooFit.Title( wsPars[par][0] )
                                 )
 
-        print 'JvLFit: plotting Delta -log(L) for %s' % par
-        nll.plotOn( parFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue), RooFit.Precision( wsPars[par][5] ) )
+        if doDLL :
+            print 'JvLFit: plotting Delta -log(L) for %s' % par
+            nll.plotOn( parFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue), RooFit.Precision( wsPars[par][5] ) )
 
-        print 'JvLFit: plotting profile Delta -log(L) for %s' % par
-        pll.plotOn( parFrame, RooFit.LineColor(kRed), RooFit.Precision( wsPars[par][6] ) )
+        if doPLL :
+            print 'JvLFit: plotting profile Delta -log(L) for %s' % par
+            pll = nll.createProfile( RooArgSet( ws[par] ) )
+            pll.plotOn( parFrame, RooFit.LineColor(kRed), RooFit.Precision( wsPars[par][6] ) )
 
+        if par == 'ImApar' : parFrame.SetMaximum(3.)
         parFrame.GetXaxis().SetTitle( wsPars[par][1] )
         parFrame.GetYaxis().SetTitle('#DeltaNLL')
 
