@@ -23,24 +23,42 @@ AS2     = f_S / ( 1. - f_S )
 ASPh    = 2.74
 
 
-# construct amplitudes with carthesian parameters
-class Carthesian_Amplitude :
-    def __init__( self,name, Re, Im, CP ) :
-        self.name = name
-        self.Re = Re
-        self.Im = Im
-        self.CP = CP # even or odd???
+class Amplitude :
+    def __init__( self, name, Re, Im, Mag2, Phase, CP ) :
+        self.name  = name
+        self.Re    = Re
+        self.Im    = Im
+        self.Mag2  = Mag2
+        self.Phase = Phase
+        self.CP    = CP   # even or odd???
+
     def __str__(self) : return self.name
 
 
-# construct amplitudes with polar parameters
-class Polar2_Amplitude( Carthesian_Amplitude ) :
-    def __init__( self,name, r2, arg, CP ) :
+# construct amplitudes with carthesian parameters
+class Carthesian_Amplitude ( Amplitude ) :
+    def __init__( self, name, Re, Im, CP, Mag2 = None, Phase = None ) :
         from RooFitWrappers import FormulaVar
-        Carthesian_Amplitude.__init__( self, name, FormulaVar('Re%s' % name, 'sqrt(@0) * cos(@1)', [ r2, arg ], Title = 'Re(%s)' % name )
-                                                 , FormulaVar('Im%s' % name, 'sqrt(@0) * sin(@1)', [ r2, arg ], Title = 'Im(%s)' % name )
-                                                 , CP
-                                     )
+        Amplitude.__init__(  self, name
+                           , Re
+                           , Im
+                           , Mag2  if Mag2  else FormulaVar( '%sMag2'  % name, '@0*@0+@1*@1',  [ Re, Im ], Title = '|%s|^2'  % name )
+                           , Phase if Phase else FormulaVar( '%sPhase' % name, 'atan2(@1,@0)', [ Re, Im ], Title = 'arg(%s)' % name )
+                           , CP
+                          )
+
+
+# construct amplitudes with polar parameters
+class Polar2_Amplitude( Amplitude ) :
+    def __init__( self, name, Mag2, Phase, CP, Re = None, Im = None ) :
+        from RooFitWrappers import FormulaVar
+        Amplitude.__init__(  self, name
+                           , Re if Re else FormulaVar('Re%s' % name, 'sqrt(@0) * cos(@1)', [Mag2, Phase], Title = 'Re(%s)' % name )
+                           , Im if Im else FormulaVar('Im%s' % name, 'sqrt(@0) * sin(@1)', [Mag2, Phase], Title = 'Im(%s)' % name )
+                           , Mag2
+                           , Phase
+                           , CP
+                          )
 
 
 class AmplitudeSet( dict, _util_parse_mixin ) :
@@ -48,9 +66,11 @@ class AmplitudeSet( dict, _util_parse_mixin ) :
         # maybe make this thing readonly???
         for v in args: 
             self[ v.name ] = v
-            assert hasattr( v, 'Re' )
-            assert hasattr( v, 'Im' )
-            assert hasattr( v, 'CP' )
+            assert hasattr( v, 'Re'    )
+            assert hasattr( v, 'Im'    )
+            assert hasattr( v, 'Mag2'  )
+            assert hasattr( v, 'Phase' )
+            assert hasattr( v, 'CP'    )
         # require the names in args to be unique...
         assert( len(self)==len(args) )
 

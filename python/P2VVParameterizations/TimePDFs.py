@@ -17,6 +17,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__( self, angFuncs, Amplitudes, CP, order ) :
         def combine( name, afun, A, CPparams, i, j ) :
             from RooFitWrappers import ConstVar, FormulaVar, Product
+            zero  = ConstVar( Name = 'zero',  Value =  0 )
             plus  = ConstVar( Name = 'plus',  Value =  1 )
             minus = ConstVar( Name = 'minus', Value = -1 )
             one   = plus
@@ -37,7 +38,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
                    }
             (c_re,c_im) = coef[name](A[i],A[j],CPparams)
             (f_re,f_im) = afun[(i,j)]
-            (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) )
+            (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) ) if i != j else ( A[i].Mag2, zero )
             # NOTE: thes sign are just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c),
             #       i.e. there is a minus in case there are 2 imaginary contributions
             prod = lambda name, args : [ Product(name, args) ] if all(args) else []
