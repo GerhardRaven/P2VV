@@ -54,8 +54,8 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False
 pdfConfig['bkgAnglePdf']        = ''
-pdfConfig['sigTaggingPdf']      = 'tagUntag' #'tagCats'
-pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative' #'tagCatsRelative'
+pdfConfig['sigTaggingPdf']      = 'tagCats' #'tagUntag'
+pdfConfig['bkgTaggingPdf']      = 'tagCatsRelative' #'tagUntagRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
 pdfConfig['conditionalTagging'] = False
@@ -69,9 +69,9 @@ nEvents = 30000
 pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
-pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' #'bank'
+pdfConfig['amplitudeParam'] = 'bank' #'phasesSWaveFrac'
 pdfConfig['polarSWave']     = True
-pdfConfig['AparParam']      = 'phase'
+pdfConfig['AparParam']      = 'Mag2ReIm'
 
 pdfConfig['carthLambdaCP'] = False
 
@@ -412,6 +412,11 @@ if dllPars :
         RparMax = -0.455
         IparMin = -0.15
         IparMax = +0.15
+    elif pdfConfig['AparParam'] == 'Mag2ReIm' :
+        RparMin = -0.69
+        RparMax = -0.61
+        IparMin = -0.50
+        IparMax = +0.50
     else :
         RparMin = -0.69
         RparMax = -0.61

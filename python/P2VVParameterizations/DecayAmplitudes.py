@@ -208,16 +208,16 @@ class JpsiVBank_AmplitudeSet( AmplitudeSet ) :
         if AparParam != 'ReIm' :
             self._parseArg( 'AparMag2', kwargs, Title = '|A_par|^2', Value = Apar2 / A02, MinMax = ( 0., 1. ) )
 
-        if AparParam in [ 'ReIm', 'real', 'cos' ] :
+        if AparParam in [ 'Mag2ReIm', 'ReIm', 'real', 'cos' ] :
             # Re(A_par)
-            if AparParam in [ 'ReIm', 'real' ] :
+            if AparParam in [ 'Mag2ReIm', 'ReIm', 'real' ] :
                 self._parseArg( 'ReApar', kwargs, Title = 'Re(A_par)', Value = sqrt(Apar2 / A02) * cos(AparPh - A0Ph), MinMax = (-1., 1.) )
             else :
                 self._parseArg( 'cosAparPhase', kwargs, Title = 'cos(delta_par)', Value = cos(AparPh - A0Ph), MinMax = ( -1., 1. ) )
                 self._ReApar = FormulaVar( 'ReApar', 'sqrt(@0)*@1', [ self._AparMag2, self._cosAparPhase ], Title = 'Re(A_par)' )
 
             # Im(A_par)
-            if AparParam != 'ReIm' :
+            if AparParam not in [ 'Mag2ReIm', 'ReIm' ] :
                 from RooFitWrappers import Category
                 self._ImAparSign = Category( 'ImAparSign', States = { 'plus' : +1, 'minus' : -1 } )
                 self._ImAparSign.setIndex(-1)
@@ -226,7 +226,10 @@ class JpsiVBank_AmplitudeSet( AmplitudeSet ) :
             else :
                 self._parseArg( 'ImApar', kwargs, Title = 'Im(A_par)', Value = sqrt(Apar2 / A02) * sin(AparPh - A0Ph), MinMax = (-1., 1.) )
 
-            AparAmp = Carthesian_Amplitude( 'Apar', self._ReApar, self._ImApar, +1 )
+            if AparParam == 'ReIm' :
+                self._AparMag2 = FormulaVar( 'AparMag2', '@0*@0+@1*@1', [ self._ReApar, self._ImApar ], Title = '|A_par|^2' )
+
+            AparAmp = Carthesian_Amplitude( 'Apar', self._ReApar, self._ImApar, +1, self._AparMag2 )
 
         else :
             # delta_par
