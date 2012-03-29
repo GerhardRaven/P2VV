@@ -542,38 +542,40 @@ class Linear_TaggingCategories( TaggingCategories ) :
 
         # get linear calibration parameters
         self._parseArg(  'avgEstWTag', kwargs, Value = 0.391, ObjectType = 'ConstVar' )
-        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.392, MinMax = (  0.,  0.5 ) )
-        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.035, MinMax = (  0.8, 1.2 ) )
-        self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,    MinMax = ( -1.,  1.  )
-                       , Constant = True )
-        self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
-                       , Constant = True )
+        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0'
+                       , Value = 0.392, Error = 0.009, MinMax = (  0.,  0.5 ) )
+        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1'
+                       , Value = 1.035, Error = 0.024, MinMax = (  0.8, 1.2 ) )
+        self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry'
+                       , Value = 0., Constant = True,  MinMax = ( -1.,  1.  ) )
+        self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry'
+                       , Value = 0., Constant = True,  MinMax = ( -1.,  1.  ) )
 
         # constrain calibration parameters
         constraints = [ ]
-        if kwargs.pop( 'wTagP0Constraint', None ) :
+        wTagP0Constraint = kwargs.pop( 'wTagP0Constraint', None )
+        if wTagP0Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP0
-                                                    , ConstVar( Name = 'wTagP0_mean',  Value = 0.392 )
-                                                    , ConstVar( Name = 'wTagP0_sigma', Value = 0.009 )
+                                                    , ConstVar( Name = 'wTagP0_mean',  Value = self._wTagP0.getVal()   )
+                                                    , ConstVar( Name = 'wTagP0_sigma', Value = self._wTagP0.getError() )
                                                    ]
                                    )
                               )
-            self._wTagP0['Error'] = 0.009
 
-        if kwargs.pop( 'wTagP1Constraint', None ) :
+        wTagP1Constraint = kwargs.pop( 'wTagP1Constraint', None )
+        if wTagP1Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP1
-                                                    , ConstVar( Name = 'wTagP1_mean',  Value = 1.035 )
-                                                    , ConstVar( Name = 'wTagP1_sigma', Value = 0.024 )
+                                                    , ConstVar( Name = 'wTagP1_mean',  Value = self._wTagP1.getVal()   )
+                                                    , ConstVar( Name = 'wTagP1_sigma', Value = self._wTagP1.getError() )
                                                    ]
                                    )
                               )
-            self._wTagP1['Error'] = 0.024
 
         # get data set
         data    = kwargs.pop( 'DataSet', None )
@@ -625,6 +627,7 @@ class Linear_TaggingCategories( TaggingCategories ) :
             if hasattr( self, '_estWTag' ) :
                 estWTag = self._estWTag
             else :
+                from RooFitWrappers import ConstVar
                 estWTag = ConstVar( Name = 'estWTag%d' % ( cat + 1 ), Title = 'Estimated wrong tag probability', Value = catPars[3] )
                 self._estWTags.append(estWTag)
 
@@ -646,6 +649,10 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                                  , AP1        = self._wTagAP1
                                                 )
                             )
+
+        # adjust errors on calibration parameters
+        if not wTagP0Constraint : self._wTagP0.setError(  3. * self._wTagP0.getError() )
+        if not wTagP1Constraint : self._wTagP1.setError( 17. * self._wTagP1.getError() )
 
         # check for remaining arguments and initialize
         self._check_extraneous_kw( kwargs )
