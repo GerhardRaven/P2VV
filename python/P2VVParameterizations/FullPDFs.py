@@ -40,6 +40,15 @@ class PdfConfiguration( dict ) :
                                               )
                              )
 
+    def setParametersInPdf( self, pdf ) :
+        for par in pdf.getVariables() :
+            if par.GetName() in self._parameters.keys() :
+                par.setVal(      self._parameters[ par.GetName() ][0]                    )
+                par.setError(    self._parameters[ par.GetName() ][1]                    )
+                par.setMin(      self._parameters[ par.GetName() ][2]                    )
+                par.setMax(      self._parameters[ par.GetName() ][3]                    )
+                par.setConstant( False if self._parameters[ par.GetName() ][4] else True )
+
     def readParametersFromFile( self, filePath = 'parameters', **kwargs ) :
         # get file path
         filePath = filePath.strip()
@@ -179,6 +188,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['conditionalTagging'] = False
         self['continuousEstWTag']  = False
         self['numEstWTagBins']     = 100
+        self['constrainTagging']   = True
 
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }                         # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
@@ -273,9 +283,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if self._iTagZeroTrick : iTagStatesDecision = iTagStates
         else                   : iTagStatesDecision = { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-        condTagging    = pdfConfig.pop('conditionalTagging')
-        contEstWTag    = pdfConfig.pop('continuousEstWTag')
-        numEstWTagBins = pdfConfig.pop('numEstWTagBins')
+        condTagging      = pdfConfig.pop('conditionalTagging')
+        contEstWTag      = pdfConfig.pop('continuousEstWTag')
+        numEstWTagBins   = pdfConfig.pop('numEstWTagBins')
+        constrainTagging = pdfConfig.pop('constrainTagging')
         condTagging = True if contEstWTag else condTagging
 
         eventTimeRes = pdfConfig.pop('eventTimeResolution')
@@ -492,11 +503,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
             if nominalPdf or contEstWTag :
                 self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._sigSWeightData, estWTag = estWTag
-                                                  , wTagP0Constraint = True, wTagP1Constraint = True )
+                                                  , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging )
             else :
                 self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._sigSWeightData, estWTagName = estWTag.GetName()
                                                   , TagCats = tagCats, NumSigmaTagBins = 1.
-                                                  , wTagP0Constraint = True, wTagP1Constraint = True )
+                                                  , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging )
 
             tagCatP2VV = self._tagCats['tagCat']
             tagCatP2VV.setIndex(1)
