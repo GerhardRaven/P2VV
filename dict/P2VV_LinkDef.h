@@ -24,5 +24,6 @@
 #pragma link C++ class RooRealCategory+;
 #pragma link C++ class RooCalibratedDilution+;
 #pragma link C++ function RooDataSetToTree;
+#pragma link C++ class RooTransAngle+;
 
 #endif
