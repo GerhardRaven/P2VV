@@ -811,3 +811,15 @@ def createSData( **kwargs ) :
     for p,c in c_state.iteritems() : p.setConstant(c)
     return sdata
 
+def createProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max,NumCPU=8,Extend=True):
+    print '**************************************************'
+    print 'making profile for %s and %s'%(param1.GetName(),param2.GetName())
+    print '**************************************************'
+
+    nll = pdf.createNLL(data,RooFit.NumCPU(NumCPU),RooFit.Extended(Extend))
+    profile = nll.createProfile(RooArgSet( param1,param2))
+    return profile.createHistogram(name,         param1, RooFit.Binning(npoints,param1_min,param1_max)
+                                  , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
+                                  , RooFit.Scaling(False)
+                                  )
+
