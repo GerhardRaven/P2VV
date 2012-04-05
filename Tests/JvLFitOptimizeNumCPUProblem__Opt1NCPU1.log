@@ -1,0 +1,622 @@
+
+[1mRooFit v3.52 -- Developed by Wouter Verkerke and David Kirkby[0m 
+                Copyright (C) 2000-2012 NIKHEF, University of California & Stanford University
+                All rights reserved, please read http://roofit.sourceforge.net/license.txt
+
+P2VV - INFO: RooFitOutput: setting RooFit output streams
+P2VV - INFO: loading P2VV library
+[#1] INFO:Eval -- RooRealVar::setRange(time) new range named 'Bulk' created with bounds [0.3,5]
+[#1] INFO:Eval -- RooRealVar::setRange(mass) new range named 'Signal' created with bounds [5330,5410]
+[#1] INFO:Eval -- RooRealVar::setRange(mass) new range named 'RightSideBand' created with bounds [5410,5550]
+[#1] INFO:Eval -- RooRealVar::setRange(mass) new range named 'LeftSideBand' created with bounds [5200,5330]
+P2VV - INFO: readData: reading NTuple(s) 'DecayTree' from file(s) '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+[#1] INFO:Eval -- RooAbsReal::attachToTree(time) TTree Float_t branch time will be converted to double precision
+[#1] INFO:Eval -- RooAbsReal::attachToTree(helcosthetaK) TTree Float_t branch helcosthetaK will be converted to double precision
+[#1] INFO:Eval -- RooAbsReal::attachToTree(helcosthetaL) TTree Float_t branch helcosthetaL will be converted to double precision
+[#1] INFO:Eval -- RooAbsReal::attachToTree(helphi) TTree Float_t branch helphi will be converted to double precision
+[#1] INFO:Eval -- RooAbsReal::attachToTree(mass) TTree Float_t branch mass will be converted to double precision
+[#1] INFO:Eval -- RooAbsReal::attachToTree(mdau1) TTree Float_t branch mdau1 will be converted to double precision
+[#1] INFO:Eval -- RooAbsReal::attachToTree(mdau2) TTree Float_t branch mdau2 will be converted to double precision
+[#1] INFO:Eval -- RooAbsReal::attachToTree(sigmat) TTree Float_t branch sigmat will be converted to double precision
+[#1] INFO:DataHandling -- RooAbsCategory::attachToTree(tagdecision_os) TTree branch tagdecision_os will be interpreted as category index
+[#1] INFO:Eval -- RooAbsReal::attachToTree(tagomega_os) TTree Float_t branch tagomega_os will be converted to double precision
+[#1] INFO:DataHandling -- RooAbsCategory::attachToTree(tagcat_os) TTree branch tagcat_os will be interpreted as category index
+[#1] INFO:DataHandling -- RooAbsCategory::attachToTree(sel) TTree branch sel will be interpreted as category index
+[#1] INFO:DataHandling -- RooAbsCategory::attachToTree(triggerDecision) TTree branch triggerDecision will be interpreted as category index
+[#1] INFO:Eval -- RooTreeDataStore::loadValues(DecayTree) Ignored 146545 out of range events
+P2VV - INFO: read dataset with 31656 entries
+[#1] INFO:ObjectHandling -- RooWorkspace::import(JpsiphiWorkspace) importing dataset DecayTree
+[#1] INFO:ObjectHandling -- RooWorkSpace::import(JpsiphiWorkspace) changing name of dataset from  DecayTree to JpsiphiData
+========================================================================================================================
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: computing S-weights
+{'NumCPU': 1, 'Optimize': 1, 'Timer': 1}
+[#1] INFO:Minization -- p.d.f. provides expected number of events, including extended term in likelihood.
+[#1] INFO:Minization -- RooMinuit::optimizeConst: activating const optimization
+ **********
+ **   13 **MIGRAD        2500           1
+ **********
+ FIRST CALL TO USER FUNCTION AT NEW START POINT, WITH IFLAG=4.
+ START MIGRAD MINIMIZATION.  STRATEGY  1.  CONVERGENCE WHEN EDM .LT. 1.00e-03
+ FCN=-146122 FROM MIGRAD    STATUS=INITIATE       24 CALLS          25 TOTAL
+                     EDM= unknown      STRATEGY= 1      NO ERROR MATRIX       
+  EXT PARAMETER               CURRENT GUESS       STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  N_bkg        1.04465e+04   3.16560e+03   2.14988e-01   8.38608e+01
+   2  N_signal     2.12095e+04   3.16560e+03   2.14988e-01  -4.13419e+01
+   3  m_bkg_exp   -1.60000e-03   7.50000e-04   2.18092e-01   1.17223e+01
+   4  m_sig_mean   5.36800e+03   1.20000e+00   2.14402e-01  -4.21017e+02
+   5  m_sig_sigma_1   6.45000e+00   1.70000e+00   2.56223e-01   5.42875e+02
+                               ERR DEF= 0.5
+ MIGRAD MINIMIZATION HAS CONVERGED.
+ MIGRAD WILL VERIFY CONVERGENCE AND ERROR MATRIX.
+ COVARIANCE MATRIX CALCULATED SUCCESSFULLY
+ FCN=-146137 FROM MIGRAD    STATUS=CONVERGED      97 CALLS          98 TOTAL
+                     EDM=4.33161e-05    STRATEGY= 1      ERROR MATRIX ACCURATE 
+  EXT PARAMETER                                   STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  N_bkg        1.04386e+04   1.12386e+02   1.95155e-03   7.28072e-02
+   2  N_signal     2.12167e+04   1.52990e+02   2.67838e-03  -4.80047e-01
+   3  m_bkg_exp   -1.63428e-03   9.79876e-05   7.21500e-03  -6.94830e-02
+   4  m_sig_mean   5.36823e+03   5.49075e-02   2.60273e-03   4.96888e-03
+   5  m_sig_sigma_1   6.28400e+00   4.56650e-02   1.75921e-03   6.71142e-01
+                               ERR DEF= 0.5
+ EXTERNAL ERROR MATRIX.    NDIM=  25    NPAR=  5    ERR DEF=0.5
+  1.263e+04 -2.189e+03  2.167e-04 -3.167e-02 -8.831e-01 
+ -2.189e+03  2.341e+04 -2.164e-04  3.166e-02  8.827e-01 
+  2.167e-04 -2.164e-04  9.604e-09 -1.054e-07 -9.337e-08 
+ -3.167e-02  3.166e-02 -1.054e-07  3.015e-03  4.559e-05 
+ -8.831e-01  8.827e-01 -9.337e-08  4.559e-05  2.085e-03 
+ PARAMETER  CORRELATION COEFFICIENTS  
+       NO.  GLOBAL      1      2      3      4      5
+        1  0.20285   1.000 -0.127  0.020 -0.005 -0.172
+        2  0.16596  -0.127  1.000 -0.014  0.004  0.126
+        3  0.03425   0.020 -0.014  1.000 -0.020 -0.021
+        4  0.02653  -0.005  0.004 -0.020  1.000  0.018
+        5  0.20306  -0.172  0.126 -0.021  0.018  1.000
+[#1] INFO:Minization -- Command timer: Real time 0:00:04, CP time 4.080
+[#1] INFO:Minization -- Session timer: Real time 0:00:04, CP time 4.080, 2 slices
+ **********
+ **   18 **HESSE        2500
+ **********
+ COVARIANCE MATRIX CALCULATED SUCCESSFULLY
+ FCN=-146137 FROM HESSE     STATUS=OK             31 CALLS         129 TOTAL
+                     EDM=4.33232e-05    STRATEGY= 1      ERROR MATRIX ACCURATE 
+  EXT PARAMETER                                INTERNAL      INTERNAL  
+  NO.   NAME      VALUE            ERROR       STEP SIZE       VALUE   
+   1  N_bkg        1.04386e+04   1.12398e+02   7.80621e-05  -3.47443e-01
+   2  N_signal     2.12167e+04   1.53002e+02   1.07135e-04   3.47401e-01
+   3  m_bkg_exp   -1.63428e-03   9.79897e-05   2.88600e-04   7.61551e-01
+   4  m_sig_mean   5.36823e+03   5.49067e-02   1.04109e-04   3.80748e-01
+   5  m_sig_sigma_1   6.28400e+00   4.56685e-02   3.51842e-04  -6.60672e-01
+                               ERR DEF= 0.5
+ EXTERNAL ERROR MATRIX.    NDIM=  25    NPAR=  5    ERR DEF=0.5
+  1.263e+04 -2.195e+03  2.204e-04 -3.146e-02 -8.852e-01 
+ -2.195e+03  2.341e+04 -2.205e-04  3.117e-02  8.851e-01 
+  2.204e-04 -2.205e-04  9.604e-09 -1.059e-07 -9.483e-08 
+ -3.146e-02  3.117e-02 -1.059e-07  3.015e-03  4.264e-05 
+ -8.852e-01  8.851e-01 -9.483e-08  4.264e-05  2.086e-03 
+ PARAMETER  CORRELATION COEFFICIENTS  
+       NO.  GLOBAL      1      2      3      4      5
+        1  0.20332   1.000 -0.128  0.020 -0.005 -0.172
+        2  0.16637  -0.128  1.000 -0.015  0.004  0.127
+        3  0.03470   0.020 -0.015  1.000 -0.020 -0.021
+        4  0.02583  -0.005  0.004 -0.020  1.000  0.017
+        5  0.20343  -0.172  0.127 -0.021  0.017  1.000
+[#1] INFO:Minization -- Command timer: Real time 0:00:01, CP time 1.290
+[#1] INFO:Minization -- Session timer: Real time 0:00:05, CP time 5.370, 3 slices
+[#1] INFO:Minization -- RooMinuit::optimizeConst: deactivating const optimization
+[#1] INFO:Minization --  The following expressions have been identified as constant and will be precalculated and cached: (sig_m,bkg_m)
+[#1] INFO:Fitting -- RooAbsPdf::fitTo(JpsiphiMass) Calculating sum-of-weights-squared correction matrix for covariance matrix
+[#1] INFO:InputArguments -- Printing Yields
+RooArgList:: = (N_signal,N_bkg)
+[#1] INFO:InputArguments -- yield in pdf: N_signal 21217.5
+[#1] INFO:InputArguments -- yield in pdf: N_bkg 10438.6
+[#1] INFO:Eval -- Checking Likelihood normalization:  
+[#1] INFO:Eval -- Yield of specie  Sum of Row in Matrix   Norm
+[#1] INFO:Eval -- 21217.5 21217.5 0.999998
+[#1] INFO:Eval -- 10438.6 10438.7 0.999994
+[#1] INFO:Eval -- Calculating sWeight
+RooDataSet::JpsiphiData_weighted_signal[time,helcosthetaK,helcosthetaL,helphi,mass,mdau1,mdau2,sigmat,tagdecision_os,tagomega_os,tagcat_os,sel,triggerDecision,L_N_signal,N_bkg_sw,L_N_bkg,weight:N_signal_sw] = 31656 entries (21217.5 weighted)
+RooDataSet::JpsiphiData_weighted_bkg[time,helcosthetaK,helcosthetaL,helphi,mass,mdau1,mdau2,sigmat,tagdecision_os,tagomega_os,tagcat_os,sel,triggerDecision,N_signal_sw,L_N_signal,L_N_bkg,weight:N_bkg_sw] = 31656 entries (10438.6 weighted)
+========================================================================================================================
+
+P2VV - INFO: getTagCatParamsFromData(): tagging category binning:
+    <eta> = 0.391   P0 = 0.392 +- 0.009   P1 = 1.035 +- 0.024    P0 asym. = 0.000    P1 asym. = 0.000
+    minimum eta = 0.093    average eta = 0.464
+    Untagged    :  0.500 -- 0.500 (0.00 sigma)  :  <eta> = 0.500  <w> = 0.505  efficiency = 0.6683 (14179 events)
+    TagCat1     :  0.500 -- 0.478 (1.01 sigma)  :  <eta> = 0.484  <w> = 0.489  efficiency = 0.0107 (227 events)
+    TagCat2     :  0.478 -- 0.457 (1.01 sigma)  :  <eta> = 0.467  <w> = 0.470  efficiency = 0.0472 (1001 events)
+    TagCat3     :  0.457 -- 0.437 (1.01 sigma)  :  <eta> = 0.447  <w> = 0.449  efficiency = 0.0494 (1048 events)
+    TagCat4     :  0.437 -- 0.417 (1.01 sigma)  :  <eta> = 0.427  <w> = 0.429  efficiency = 0.0425 (901 events)
+    TagCat5     :  0.417 -- 0.399 (1.01 sigma)  :  <eta> = 0.408  <w> = 0.410  efficiency = 0.0359 (761 events)
+    TagCat6     :  0.399 -- 0.381 (1.01 sigma)  :  <eta> = 0.390  <w> = 0.391  efficiency = 0.0325 (689 events)
+    TagCat7     :  0.381 -- 0.363 (1.01 sigma)  :  <eta> = 0.372  <w> = 0.373  efficiency = 0.0224 (475 events)
+    TagCat8     :  0.363 -- 0.344 (1.01 sigma)  :  <eta> = 0.354  <w> = 0.354  efficiency = 0.0195 (413 events)
+    TagCat9     :  0.344 -- 0.324 (1.01 sigma)  :  <eta> = 0.334  <w> = 0.333  efficiency = 0.0143 (302 events)
+    TagCat10    :  0.324 -- 0.303 (1.01 sigma)  :  <eta> = 0.313  <w> = 0.311  efficiency = 0.0122 (258 events)
+    TagCat11    :  0.303 -- 0.280 (1.00 sigma)  :  <eta> = 0.291  <w> = 0.289  efficiency = 0.0127 (270 events)
+    TagCat12    :  0.280 -- 0.257 (1.00 sigma)  :  <eta> = 0.270  <w> = 0.266  efficiency = 0.0100 (212 events)
+    TagCat13    :  0.257 -- 0.233 (1.00 sigma)  :  <eta> = 0.246  <w> = 0.242  efficiency = 0.0086 (182 events)
+    TagCat14    :  0.233 -- 0.208 (1.00 sigma)  :  <eta> = 0.222  <w> = 0.217  efficiency = 0.0060 (128 events)
+    TagCat15    :  0.208 -- 0.181 (1.00 sigma)  :  <eta> = 0.195  <w> = 0.189  efficiency = 0.0029 (62 events)
+    TagCat16    :  0.181 -- 0.153 (1.00 sigma)  :  <eta> = 0.167  <w> = 0.160  efficiency = 0.0027 (58 events)
+    TagCat17    :  0.153 -- 0.124 (1.00 sigma)  :  <eta> = 0.141  <w> = 0.133  efficiency = 0.0019 (40 events)
+    TagCat18    :  0.124 -- 0.093 (1.00 sigma)  :  <eta> = 0.111  <w> = 0.102  efficiency = 0.0005 (11 events)
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in tagging category for signal:
+
+  Table (tagCatP2VV x iTag) : JpsiphiData_weighted_signal
+  +-----------------+------+
+  |    {Untagged;B} | 7145.59 |
+  |     {TagCat1;B} | 112.393 |
+  |     {TagCat2;B} | 504.807 |
+  |     {TagCat3;B} | 521.367 |
+  |     {TagCat4;B} | 457.91 |
+  |     {TagCat5;B} | 347.89 |
+  |     {TagCat6;B} | 358.863 |
+  |     {TagCat7;B} | 215.752 |
+  |     {TagCat8;B} | 213.91 |
+  |     {TagCat9;B} | 152.909 |
+  |    {TagCat10;B} | 131.303 |
+  |    {TagCat11;B} | 140.07 |
+  |    {TagCat12;B} | 121.392 |
+  |    {TagCat13;B} | 92.3531 |
+  |    {TagCat14;B} | 59.8935 |
+  |    {TagCat15;B} | 32.4853 |
+  |    {TagCat16;B} | 23.4265 |
+  |    {TagCat17;B} | 16.054 |
+  |    {TagCat18;B} | 6.77735 |
+  | {Untagged;Bbar} | 7033.75 |
+  |  {TagCat1;Bbar} | 115.061 |
+  |  {TagCat2;Bbar} | 495.842 |
+  |  {TagCat3;Bbar} | 526.673 |
+  |  {TagCat4;Bbar} | 442.859 |
+  |  {TagCat5;Bbar} | 413.363 |
+  |  {TagCat6;Bbar} | 330.15 |
+  |  {TagCat7;Bbar} | 259.515 |
+  |  {TagCat8;Bbar} | 198.921 |
+  |  {TagCat9;Bbar} | 149.561 |
+  | {TagCat10;Bbar} | 126.924 |
+  | {TagCat11;Bbar} | 130.335 |
+  | {TagCat12;Bbar} | 90.6295 |
+  | {TagCat13;Bbar} | 89.2505 |
+  | {TagCat14;Bbar} | 68.3903 |
+  | {TagCat15;Bbar} | 29.4558 |
+  | {TagCat16;Bbar} | 34.4217 |
+  | {TagCat17;Bbar} | 23.4775 |
+  | {TagCat18;Bbar} | 3.77558 |
+  +-----------------+------+
+
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in tagging category for background:
+
+  Table (tagCatP2VV x iTag) : JpsiphiData_weighted_bkg
+  +-----------------+------+
+  |    {Untagged;B} | 3201.83 |
+  |     {TagCat1;B} | 101.608 |
+  |     {TagCat2;B} | 367.197 |
+  |     {TagCat3;B} | 340.636 |
+  |     {TagCat4;B} | 258.092 |
+  |     {TagCat5;B} | 201.112 |
+  |     {TagCat6;B} | 147.138 |
+  |     {TagCat7;B} | 119.249 |
+  |     {TagCat8;B} | 109.091 |
+  |     {TagCat9;B} | 72.0918 |
+  |    {TagCat10;B} | 55.6974 |
+  |    {TagCat11;B} | 59.9309 |
+  |    {TagCat12;B} | 52.6081 |
+  |    {TagCat13;B} | 54.6474 |
+  |    {TagCat14;B} | 13.1067 |
+  |    {TagCat15;B} | 11.5148 |
+  |    {TagCat16;B} | 21.5736 |
+  |    {TagCat17;B} | 3.94608 |
+  |    {TagCat18;B} | 0.222665 |
+  | {Untagged;Bbar} | 3137.9 |
+  |  {TagCat1;Bbar} | 117.94 |
+  |  {TagCat2;Bbar} | 396.161 |
+  |  {TagCat3;Bbar} | 325.33 |
+  |  {TagCat4;Bbar} | 282.143 |
+  |  {TagCat5;Bbar} | 222.64 |
+  |  {TagCat6;Bbar} | 160.851 |
+  |  {TagCat7;Bbar} | 126.486 |
+  |  {TagCat8;Bbar} | 108.08 |
+  |  {TagCat9;Bbar} | 71.4397 |
+  | {TagCat10;Bbar} | 59.0764 |
+  | {TagCat11;Bbar} | 75.6655 |
+  | {TagCat12;Bbar} | 58.371 |
+  | {TagCat13;Bbar} | 33.7499 |
+  | {TagCat14;Bbar} | 30.61 |
+  | {TagCat15;Bbar} | 20.5444 |
+  | {TagCat16;Bbar} | 13.5785 |
+  | {TagCat17;Bbar} | 4.52261 |
+  | {TagCat18;Bbar} | 2.22444 |
+  +-----------------+------+
+
+invoking timeResMoriond2012.parameterizeIntegral(['sigmat'])
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: tagging in signal PDF:
+    * assuming B-Bbar asymmetries are equal for all tagged categories
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "effMomentsHelBasis"
+P2VV - INFO: MomentsBuilder.readMoments: 3 efficiency moments read from file "effMomentsHelBasis"
+P2VV - INFO: RealMomentsBuilder.printMoments:
+  name requirement: ''
+  minimum significance = -inf
+  scales = (1., 1., 1.)
+  ------------------------------------------------------------
+  basis function    coefficient    std. dev.      significance
+  ------------------------------------------------------------
+  p2vvab_0000       +3.5951        0.0030157      1192.1      
+  p2vvab_2000       -0.10426       0.014311       7.2853      
+  p2vvab_0020       +0.17209       0.0071936      23.922      
+  ------------------------------------------------------------
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: signal tagging PDF:
+    * assuming B-Bbar asymmetries are equal for all tagged categories
+[#1] INFO:ObjectHandling -- RooWorkspace::import(JpsiphiWorkspace) importing RooBinnedPdf::sig_tagCat_iTag
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a binned angular PDF for background
+[#1] INFO:ObjectHandling -- RooWorkspace::import(JpsiphiWorkspace) importing RooBinnedPdf::bkg_angles
+[#1] INFO:ObjectHandling -- RooWorkspace::import(JpsiphiWorkspace) importing RooBinningCategory::helcosthetaK_cat
+[#1] INFO:ObjectHandling -- RooWorkspace::import(JpsiphiWorkspace) importing RooBinningCategory::helcosthetaL_cat
+[#1] INFO:ObjectHandling -- RooWorkspace::import(JpsiphiWorkspace) importing RooBinningCategory::helphi_cat
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background tagging PDF:
+    * assuming signal tagging category distribution for tagged categories
+    * assuming B-Bbar asymmetries are equal for all tagged categories
+[#1] INFO:ObjectHandling -- RooWorkspace::import(JpsiphiWorkspace) importing RooBinnedPdf::bkg_tagCat_iTag
+P2VV - INFO: Bs2Jpsiphi_PdfBuilder: requesting signal + background PDF for observables [time, helcosthetaK, helcosthetaL, helphi, iTag, mass, tagCatP2VV]
+P2VV - INFO: ProdPdf: Adding conditional observables [tagCatP2VV, sigmat, iTag] to sig_t_angles_x_Eff 
+P2VV - INFO: ProdPdf: Adding conditional observables [sigmat] to bkg_t 
+========================================================================================================================
+JvLFit: fitting 31656 events (not weighted)
+INFO: adding ConditionalObservables: ['sigmat']
+INFO: adding ExternalConstraints: ['wTagP0_constraint', 'dM_constraint', 'timeResSF_constraint', 'wTagP1_constraint']
+{'NumCPU': 1, 'ExternalConstraints': <ROOT.RooArgSet object at 0x2678f844>, 'ConditionalObservables': <ROOT.RooArgSet object at 0x2678f6c4>, 'Optimize': 1, 'Timer': 1}
+[#1] INFO:Minization -- p.d.f. provides expected number of events, including extended term in likelihood.
+[#1] INFO:Minization --  Including the following contraint terms in minimization: (wTagP0_constraint,dM_constraint,timeResSF_constraint,wTagP1_constraint)
+[#1] INFO:Fitting -- RooAddition::defaultErrorLevel(nll_Jpsiphi_JpsiphiData_with_constr) Summation contains a RooNLLVar, using its error level
+[#1] INFO:Minization -- RooMinuit::optimizeConst: activating const optimization
+[#1] INFO:Minization --  The following expressions have been identified as constant and will be precalculated and cached: (ReReRe_cosh_A0_A0_sig_t_angles_x_Eff,Re_ang_A0_Apar_sig_t_angles_x_Eff,Im_ang_A0_Aperp_sig_t_angles_x_Eff,Re_ang_A0_AS_sig_t_angles_x_Eff,Re_ang_Apar_Apar_sig_t_angles_x_Eff,Im_ang_Apar_Aperp_sig_t_angles_x_Eff,Re_ang_Apar_AS_sig_t_angles_x_Eff,Re_ang_Aperp_Aperp_sig_t_angles_x_Eff,Im_ang_Aperp_AS_sig_t_angles_x_Eff,Re_ang_AS_AS_sig_t_angles_x_Eff,Re_ang_A0_A0_sig_t_angles_x_Eff,bkg_angles)
+ **********
+ **   13 **MIGRAD     1.4e+04           1
+ **********
+ FIRST CALL TO USER FUNCTION AT NEW START POINT, WITH IFLAG=4.
+ START MIGRAD MINIMIZATION.  STRATEGY  1.  CONVERGENCE WHEN EDM .LT. 1.00e-03
+ FCN=52290.8 FROM MIGRAD    STATUS=INITIATE       88 CALLS          89 TOTAL
+                     EDM= unknown      STRATEGY= 1      NO ERROR MATRIX       
+  EXT PARAMETER               CURRENT GUESS       STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  ASOddMag2    6.53019e-02   3.26509e-02   1.36629e-01  -4.54436e+00
+   2  ASOddPhase  -3.00000e-02   1.25664e+00   2.01360e-01  -1.84167e+01
+   3  AparMag2     4.38697e-01   1.00000e-01   2.02976e-01   2.40516e+00
+   4  AperpMag2    4.77011e-01   1.00000e-01   2.01583e-01   9.97130e+00
+   5  AperpPhase   2.77000e+00   1.25664e+00   2.26183e-01  -2.47988e+01
+   6  Gamma        6.67000e-01   5.00000e-02   2.01851e-01  -1.61776e+00
+   7  ImApar      -1.17541e-01   2.00000e-01   2.02844e-01  -2.10883e+00
+   8  N_bkg        1.04386e+04   1.10741e+02   7.44126e-03   1.00077e+01
+   9  N_signal     2.12175e+04   1.51846e+02   1.02034e-02  -4.86602e+00
+  10  ReApar      -6.51829e-01   1.74085e-01   2.36869e-01   5.97159e+00
+  11  avgCOddSum   0.00000e+00   6.86520e-02   3.43327e-02  -1.27424e+02
+  12  avgCOddTagged   0.00000e+00   6.86520e-02   3.43327e-02   2.77228e+01
+  13  bkg_ATagBBbar  -2.92640e-02   1.56195e-02   1.56268e-02   1.25943e+01
+  14  bkg_AUntagged  -9.12039e-02   1.14138e-02   1.14618e-02   5.18531e+01
+  15  bkg_t_fll    2.00000e-01   1.00000e-01   2.57889e-01  -1.07450e+02
+  16  bkg_t_ll_tau   1.06000e+00   2.00000e-01   2.26066e-01  -2.78267e+01
+  17  bkg_t_ml_tau   1.52000e-01   4.90000e-02   2.23515e-01  -6.23794e+01
+  18  dGamma       1.20000e-01   2.00000e-01   2.02908e-01   3.34568e+01
+  19  dM           1.76300e+01   1.10000e-01   1.11182e-01   1.42301e+01
+  20  lambdaCPSq   1.00000e+00   1.50000e-01   2.14402e-01   2.32518e+01
+  21  m_bkg_exp   -1.63428e-03   9.79897e-05   2.73640e-02   1.52038e-01
+  22  m_sig_mean   5.36823e+03   5.49067e-02   9.85724e-03  -3.09192e+00
+  23  m_sig_sigma_1   6.28400e+00   4.56685e-02   6.80473e-03   1.60893e+01
+  24  phiCP       -4.00000e-02   1.25664e+00   2.01362e-01  -2.02439e+01
+  25  sig_ATagBBbar  -2.70683e-03   1.19198e-02   1.19202e-02  -1.30099e+01
+  26  timeResSF    1.45000e+00   6.00000e-02   1.20908e-01   5.59678e-01
+  27  wTagP0       3.92000e-01   9.00000e-03   4.37749e-02  -2.19963e-01
+  28  wTagP1       1.03500e+00   2.40000e-02   1.22214e-01  -2.94754e-01
+                               ERR DEF= 0.5
+ MIGRAD MINIMIZATION HAS CONVERGED.
+ MIGRAD WILL VERIFY CONVERGENCE AND ERROR MATRIX.
+ COVARIANCE MATRIX CALCULATED SUCCESSFULLY
+ FCN=52284.8 FROM HESSE     STATUS=OK            533 CALLS        1336 TOTAL
+                     EDM=0.000592114    STRATEGY= 1      ERROR MATRIX ACCURATE 
+  EXT PARAMETER                                   STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  ASOddMag2    9.46239e-02   3.98131e-02   1.95490e-02   1.18170e-04
+   2  ASOddPhase  -1.24576e-02   9.30522e-02   2.28661e-03  -1.77924e-01
+   3  AparMag2     4.36722e-01   1.80745e-02   5.19490e-03  -3.55128e-02
+   4  AperpMag2    4.77817e-01   2.22485e-02   4.31837e-03   1.73430e-02
+   5  AperpPhase   3.03900e+00   3.86468e-01   5.05901e-03  -6.02342e-02
+   6  Gamma        6.68343e-01   5.15702e-03   2.95742e-03  -8.72401e-01
+   7  ImApar      -2.36172e-01   4.19181e-01   3.25986e-02   1.43162e-02
+   8  N_bkg        1.04418e+04   1.09498e+02   1.14644e-03  -4.38045e-02
+   9  N_signal     2.12142e+04   1.50869e+02   1.58704e-03   4.46008e-02
+  10  ReApar      -6.58095e-01   2.38837e-02   4.63119e-03  -2.96193e-02
+  11  avgCOddSum   4.41301e-02   3.62821e-02   2.11859e-03   1.66152e-01
+  12  avgCOddTagged   1.95701e-02   6.97371e-02   3.82776e-03  -1.15556e-01
+  13  bkg_ATagBBbar  -3.29296e-02   1.64981e-02   2.59687e-03   3.07019e-02
+  14  bkg_AUntagged  -9.41657e-02   7.56497e-03   1.19978e-03   2.75755e-02
+  15  bkg_t_fll    2.11957e-01   1.00229e-02   2.44051e-03   1.74593e-01
+  16  bkg_t_ll_tau   1.05718e+00   3.96862e-02   5.08406e-03  -8.56199e-02
+  17  bkg_t_ml_tau   1.51209e-01   3.15058e-03   1.63810e-03  -2.54594e-01
+  18  dGamma       1.15874e-01   1.66713e-02   1.76090e-03  -1.72456e+00
+  19  dM           1.76067e+01   8.36660e-02   1.01404e-02  -1.61620e-02
+  20  lambdaCPSq   9.00385e-01   5.31007e-02   1.15942e-02   4.97440e-03
+  21  m_bkg_exp   -1.63357e-03   9.78716e-05   4.31345e-03   9.37225e-03
+  22  m_sig_mean   5.36823e+03   5.40026e-02   1.53054e-03   2.00123e-02
+  23  m_sig_sigma_1   6.27270e+00   4.33914e-02   1.00698e-03   2.43515e-02
+  24  phiCP       -1.90394e-03   1.04261e-01   2.42373e-03  -5.58423e-02
+  25  sig_ATagBBbar  -4.73537e-04   1.23617e-02   1.94471e-03  -4.99827e-02
+  26  timeResSF    1.44590e+00   5.89903e-02   1.87587e-02   6.40509e-02
+  27  wTagP0       3.92023e-01   8.63942e-03   6.58559e-03  -8.34754e-04
+  28  wTagP1       1.03583e+00   2.38978e-02   1.92229e-02   2.22129e-03
+                               ERR DEF= 0.5
+ MIGRAD MINIMIZATION HAS CONVERGED.
+ MIGRAD WILL VERIFY CONVERGENCE AND ERROR MATRIX.
+ COVARIANCE MATRIX CALCULATED SUCCESSFULLY
+ MIGRAD TERMINATED WITHOUT CONVERGENCE.
+ FCN=52284.8 FROM MIGRAD    STATUS=FAILED       2107 CALLS        2108 TOTAL
+                     EDM=0.00941856    STRATEGY= 1      ERR MATRIX APPROXIMATE
+  EXT PARAMETER                APPROXIMATE        STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  ASOddMag2    9.46249e-02   3.98133e-02   1.95556e-02   2.81951e-04
+   2  ASOddPhase  -1.24570e-02   9.30517e-02   2.28782e-03  -1.76997e-01
+   3  AparMag2     4.36722e-01   1.80745e-02   5.19444e-03  -3.54377e-02
+   4  AperpMag2    4.77816e-01   2.22486e-02   4.31779e-03   1.70759e-02
+   5  AperpPhase   3.03901e+00   3.86462e-01   5.05855e-03  -5.99931e-02
+   6  Gamma        6.68343e-01   5.15705e-03   2.95727e-03  -4.88505e+00
+   7  ImApar      -2.36188e-01   4.19175e-01   3.25835e-02   1.42953e-02
+   8  N_bkg        1.04418e+04   1.09498e+02   1.14642e-03  -4.36853e-02
+   9  N_signal     2.12142e+04   1.50869e+02   1.58710e-03   4.41684e-02
+  10  ReApar      -6.58095e-01   2.38838e-02   4.62997e-03  -2.93044e-02
+  11  avgCOddSum   4.41294e-02   3.62821e-02   2.11971e-03   1.65211e-01
+  12  avgCOddTagged   1.95717e-02   6.97361e-02   3.82962e-03  -1.14953e-01
+  13  bkg_ATagBBbar  -3.29296e-02   1.64981e-02   2.59688e-03   3.05368e-02
+  14  bkg_AUntagged  -9.41657e-02   7.56496e-03   1.19978e-03   2.75027e-02
+  15  bkg_t_fll    2.11957e-01   1.00228e-02   2.44047e-03   1.73645e-01
+  16  bkg_t_ll_tau   1.05718e+00   3.96860e-02   5.08540e-03  -8.53473e-02
+  17  bkg_t_ml_tau   1.51209e-01   3.15050e-03   1.63763e-03  -2.55041e-01
+  18  dGamma       1.15875e-01   1.66714e-02   1.76082e-03  -1.72210e+00
+  19  dM           1.76067e+01   8.36659e-02   1.01335e-02  -1.61937e-02
+  20  lambdaCPSq   9.00385e-01   5.31001e-02   1.15931e-02   4.88433e-03
+  21  m_bkg_exp   -1.63357e-03   9.78715e-05   4.31338e-03   9.10435e-03
+  22  m_sig_mean   5.36823e+03   5.40026e-02   1.53056e-03   1.97995e-02
+  23  m_sig_sigma_1   6.27270e+00   4.33914e-02   1.00699e-03   2.41294e-02
+  24  phiCP       -1.90470e-03   1.04261e-01   2.42276e-03  -5.55526e-02
+  25  sig_ATagBBbar  -4.73492e-04   1.23617e-02   1.94470e-03  -4.97138e-02
+  26  timeResSF    1.44589e+00   5.89832e-02   1.87488e-02   6.29475e-02
+  27  wTagP0       3.92023e-01   8.63942e-03   6.58507e-03  -1.01284e-03
+  28  wTagP1       1.03583e+00   2.38978e-02   1.92228e-02   2.16453e-03
+                               ERR DEF= 0.5
+ EXTERNAL ERROR MATRIX.    NDIM= 666    NPAR= 28    ERR DEF=0.5
+ ELEMENTS ABOVE DIAGONAL ARE NOT PRINTED.
+  1.595e-03 
+ -4.867e-06  8.659e-03 
+ -6.883e-05  9.131e-06  3.268e-04 
+ -5.954e-05 -6.460e-06 -1.184e-04  4.953e-04 
+ -3.142e-04 -6.638e-03  1.067e-04 -1.420e-04  1.496e-01 
+  3.146e-05 -1.424e-06 -1.383e-05  4.110e-05 -1.056e-05  2.660e-05 
+ -1.148e-03  6.684e-03 -9.761e-05  2.816e-04 -1.306e-01 -1.070e-05  1.878e-01 
+  1.732e-02  2.570e-03 -3.351e-02 -1.116e-02  4.477e-02 -2.757e-02 -7.341e-02  1.199e+04 
+ -1.731e-02 -2.565e-03  3.349e-02  1.116e-02 -4.475e-02  2.755e-02  7.336e-02 -1.547e+03  2.276e+04 
+ -2.050e-04 -2.911e-05 -2.799e-05 -9.241e-05  2.466e-04 -8.582e-06 -4.152e-05 -2.681e-02  2.680e-02  5.706e-04 
+ -2.226e-04  1.515e-04  1.215e-05  9.317e-06 -4.119e-03 -5.495e-06  4.397e-03 -6.148e-03  6.149e-03  4.009e-05  1.317e-03 
+ -2.963e-05 -3.972e-04  1.743e-05 -3.794e-05  6.302e-03 -4.113e-06 -1.348e-02  5.326e-03 -5.314e-03  2.998e-05  9.942e-04 
+ -2.963e-05 -3.972e-04  1.743e-05 -3.794e-05  6.302e-03 -4.113e-06 -1.348e-02  5.326e-03 -5.314e-03  2.998e-05  9.942e-04  4.865e-03 
+  1.137e-06  1.259e-06  3.285e-07  1.100e-07 -1.855e-05  5.427e-08  1.663e-05  4.095e-04 -4.079e-04 -3.758e-07  1.040e-06 
+  1.137e-06  1.259e-06  3.285e-07  1.100e-07 -1.855e-05  5.427e-08  1.663e-05  4.095e-04 -4.079e-04 -3.758e-07  1.040e-06  7.839e-07  2.722e-04 
+  3.784e-07 -6.691e-08 -1.840e-07  3.547e-08  2.606e-06 -7.971e-09 -8.369e-06  2.979e-03 -2.974e-03  5.183e-08 -1.364e-07 
+  3.784e-07 -6.691e-08 -1.840e-07  3.547e-08  2.606e-06 -7.971e-09 -8.369e-06  2.979e-03 -2.974e-03  5.183e-08 -1.364e-07  9.259e-07  1.741e-08  5.723e-05 
+  1.178e-06  1.167e-06 -4.311e-07 -2.011e-06 -2.925e-06 -2.872e-07  2.789e-06  2.872e-02 -2.868e-02 -2.495e-07 -9.684e-07 
+  1.178e-06  1.167e-06 -4.311e-07 -2.011e-06 -2.925e-06 -2.872e-07  2.789e-06  2.872e-02 -2.868e-02 -2.495e-07 -9.684e-07 -4.794e-07  3.102e-07 -4.226e-08  1.005e-04 
+ -6.775e-07 -1.039e-05 -3.327e-07  3.865e-06  7.378e-05  7.557e-06 -9.087e-05  2.947e-02 -2.944e-02 -7.174e-07  1.272e-07 
+ -6.775e-07 -1.039e-05 -3.327e-07  3.865e-06  7.378e-05  7.557e-06 -9.087e-05  2.947e-02 -2.944e-02 -7.174e-07  1.272e-07  1.055e-05 -4.547e-07  1.090e-06 -2.692e-04  1.576e-03 
+  1.147e-08 -4.167e-07 -1.817e-07  1.686e-07  2.055e-06 -8.160e-09 -1.922e-06  5.416e-03 -5.410e-03 -2.284e-07  4.758e-07 
+  1.147e-08 -4.167e-07 -1.817e-07  1.686e-07  2.055e-06 -8.160e-09 -1.922e-06  5.416e-03 -5.410e-03 -2.284e-07  4.758e-07  5.300e-07 -3.621e-08  2.838e-08 -2.128e-05  6.588e-05  9.926e-06 
+  3.584e-05  3.701e-06  1.699e-05 -2.637e-04  2.705e-05 -2.829e-05 -1.021e-04 -3.935e-03  3.929e-03  3.926e-06 -6.735e-06 
+  3.584e-05  3.701e-06  1.699e-05 -2.637e-04  2.705e-05 -2.829e-05 -1.021e-04 -3.935e-03  3.929e-03  3.926e-06 -6.735e-06  1.462e-05 -9.705e-08 -1.641e-08  1.386e-06 -3.342e-06 -1.654e-07  2.780e-04 
+ -2.344e-04 -1.402e-04  1.380e-05 -1.027e-06  1.679e-02 -4.713e-06 -6.443e-03  4.366e-03 -4.363e-03  2.605e-05 -2.082e-04 
+ -2.344e-04 -1.402e-04  1.380e-05 -1.027e-06  1.679e-02 -4.713e-06 -6.443e-03  4.366e-03 -4.363e-03  2.605e-05 -2.082e-04  2.432e-04 -1.684e-06 -4.051e-07 -1.210e-06  1.341e-05  5.134e-07  2.201e-06  7.017e-03 
+  3.795e-04  2.559e-04 -2.408e-05 -8.925e-06 -5.850e-03  6.342e-06  3.674e-03  1.689e-03 -1.685e-03 -5.716e-05  3.242e-04 
+  3.795e-04  2.559e-04 -2.408e-05 -8.925e-06 -5.850e-03  6.342e-06  3.674e-03  1.689e-03 -1.685e-03 -5.716e-05  3.242e-04 -1.470e-04  2.874e-06  6.485e-07  1.330e-06 -1.120e-05 -4.760e-07  5.574e-06 -8.077e-04  2.826e-03 
+ -1.296e-10 -1.739e-09 -2.628e-09 -1.698e-09  1.239e-08 -2.671e-09 -1.805e-08  1.524e-04 -1.523e-04 -2.373e-09  1.540e-10 
+ -1.296e-10 -1.739e-09 -2.628e-09 -1.698e-09  1.239e-08 -2.671e-09 -1.805e-08  1.524e-04 -1.523e-04 -2.373e-09  1.540e-10  2.589e-09 -2.122e-10  1.266e-10  3.039e-09  5.204e-09  4.685e-10 -2.033e-10  2.156e-09 -8.619e-10  9.581e-09 
+  4.166e-06  5.883e-06 -1.477e-06  1.409e-06  3.903e-06  2.821e-07  1.070e-05 -1.795e-02  1.795e-02 -1.569e-07 -2.486e-06 
+  4.166e-06  5.883e-06 -1.477e-06  1.409e-06  3.903e-06  2.821e-07  1.070e-05 -1.795e-02  1.795e-02 -1.569e-07 -2.486e-06 -3.183e-06 -3.098e-08  7.547e-07 -1.156e-06 -3.245e-06  1.794e-07 -3.084e-07 -4.146e-07  2.915e-07 -7.384e-08  2.916e-03 
+ -1.024e-05  7.039e-06  9.713e-06  4.580e-06 -7.009e-05  6.923e-06  8.666e-05 -5.619e-01  5.618e-01  4.172e-06  4.231e-06 
+ -1.024e-05  7.039e-06  9.713e-06  4.580e-06 -7.009e-05  6.923e-06  8.666e-05 -5.619e-01  5.618e-01  4.172e-06  4.231e-06 -8.240e-06 -1.827e-06 -1.992e-06 -2.109e-05 -3.190e-05 -1.996e-06  5.289e-07 -7.847e-06  3.987e-06 -6.175e-08  3.806e-05 
+ -1.024e-05  7.039e-06  9.713e-06  4.580e-06 -7.009e-05  6.923e-06  8.666e-05 -5.619e-01  5.618e-01  4.172e-06  4.231e-06 -8.240e-06 -1.827e-06 -1.992e-06 -2.109e-05 -3.190e-05 -1.996e-06  5.289e-07 -7.847e-06  3.987e-06 -6.175e-08  3.806e-05  1.883e-03 
+ -1.461e-04  1.679e-04  2.545e-05  4.349e-05 -4.153e-03  5.437e-07  1.163e-02 -1.929e-02  1.927e-02  5.246e-05  5.593e-04 
+ -1.461e-04  1.679e-04  2.545e-05  4.349e-05 -4.153e-03  5.437e-07  1.163e-02 -1.929e-02  1.927e-02  5.246e-05  5.593e-04 -1.247e-03 -9.676e-07 -6.862e-07  5.540e-07 -1.149e-05 -3.971e-07 -5.234e-05 -3.083e-04  8.269e-04 -2.678e-09  1.130e-06 
+ -1.461e-04  1.679e-04  2.545e-05  4.349e-05 -4.153e-03  5.437e-07  1.163e-02 -1.929e-02  1.927e-02  5.246e-05  5.593e-04 -1.247e-03 -9.676e-07 -6.862e-07  5.540e-07 -1.149e-05 -3.971e-07 -5.234e-05 -3.083e-04  8.269e-04 -2.678e-09  1.130e-06  1.248e-05  1.087e-02 
+ -6.487e-07 -7.328e-07 -2.484e-07 -8.596e-08  1.089e-05 -8.232e-08 -9.630e-06  2.526e-03 -2.525e-03  1.699e-07 -6.174e-07 
+ -6.487e-07 -7.328e-07 -2.484e-07 -8.596e-08  1.089e-05 -8.232e-08 -9.630e-06  2.526e-03 -2.525e-03  1.699e-07 -6.174e-07 -4.794e-07 -1.750e-05 -2.018e-07 -1.266e-07  2.867e-07  3.053e-08  4.995e-08  1.010e-06 -1.706e-06  4.020e-10 -3.866e-08 
+ -6.487e-07 -7.328e-07 -2.484e-07 -8.596e-08  1.089e-05 -8.232e-08 -9.630e-06  2.526e-03 -2.525e-03  1.699e-07 -6.174e-07 -4.794e-07 -1.750e-05 -2.018e-07 -1.266e-07  2.867e-07  3.053e-08  4.995e-08  1.010e-06 -1.706e-06  4.020e-10 -3.866e-08  1.241e-07  5.546e-07  1.528e-04 
+  1.218e-05  5.699e-06 -3.514e-06  2.838e-06 -2.142e-05  3.536e-07 -7.373e-05  3.375e-03 -3.371e-03 -1.059e-05  8.903e-05 
+  1.218e-05  5.699e-06 -3.514e-06  2.838e-06 -2.142e-05  3.536e-07 -7.373e-05  3.375e-03 -3.371e-03 -1.059e-05  8.903e-05  6.678e-05  6.326e-08  7.694e-08 -8.219e-06  2.519e-05  3.722e-06  6.403e-07  1.302e-05 -1.001e-05  4.239e-10 -4.562e-07 
+  1.218e-05  5.699e-06 -3.514e-06  2.838e-06 -2.142e-05  3.536e-07 -7.373e-05  3.375e-03 -3.371e-03 -1.059e-05  8.903e-05  6.678e-05  6.326e-08  7.694e-08 -8.219e-06  2.519e-05  3.722e-06  6.403e-07  1.302e-05 -1.001e-05  4.239e-10 -4.562e-07 -1.850e-06 -2.673e-05 -3.347e-08  3.495e-03 
+  1.762e-05 -4.848e-06 -2.518e-06  7.280e-07  2.846e-04  4.496e-07 -2.639e-04  2.878e-04 -2.878e-04 -5.592e-06 -1.172e-05 
+  1.762e-05 -4.848e-06 -2.518e-06  7.280e-07  2.846e-04  4.496e-07 -2.639e-04  2.878e-04 -2.878e-04 -5.592e-06 -1.172e-05  1.219e-05 -3.602e-09  3.801e-08  5.597e-08  3.440e-08 -1.179e-08  7.663e-07  5.655e-05 -1.012e-05  7.763e-11 -1.441e-07 
+  1.762e-05 -4.848e-06 -2.518e-06  7.280e-07  2.846e-04  4.496e-07 -2.639e-04  2.878e-04 -2.878e-04 -5.592e-06 -1.172e-05  1.219e-05 -3.602e-09  3.801e-08  5.597e-08  3.440e-08 -1.179e-08  7.663e-07  5.655e-05 -1.012e-05  7.763e-11 -1.441e-07 -4.405e-07 -3.944e-05  1.350e-09 -1.039e-05  7.468e-05 
+ -3.295e-06 -6.683e-07  5.004e-07 -1.956e-07 -3.300e-06 -1.031e-07  5.472e-05  3.066e-04 -3.062e-04  7.048e-07  1.707e-06 
+ -3.295e-06 -6.683e-07  5.004e-07 -1.956e-07 -3.300e-06 -1.031e-07  5.472e-05  3.066e-04 -3.062e-04  7.048e-07  1.707e-06 -2.516e-06  3.380e-08 -3.387e-08 -3.442e-08  1.149e-07  1.210e-08  5.634e-08  1.891e-05 -2.037e-07  1.108e-11  6.689e-08 
+ -3.295e-06 -6.683e-07  5.004e-07 -1.956e-07 -3.300e-06 -1.031e-07  5.472e-05  3.066e-04 -3.062e-04  7.048e-07  1.707e-06 -2.516e-06  3.380e-08 -3.387e-08 -3.442e-08  1.149e-07  1.210e-08  5.634e-08  1.891e-05 -2.037e-07  1.108e-11  6.689e-08 -2.002e-08 -1.050e-05 -1.818e-08  4.098e-06 -6.265e-08  5.739e-04 
+ERR MATRIX APPROXIMATE
+ PARAMETER  CORRELATION COEFFICIENTS  
+       NO.  GLOBAL      1      2      3      4      5      6      7      8      9     10     11     12     13     14     15     16
+        1  0.41965   1.000 -0.001 -0.095 -0.067 -0.020  0.153 -0.066  0.004 -0.003 -0.215 -0.154 -0.011  0.002  0.001  0.003 -0.000
+        2  0.20706  -0.001  1.000  0.005 -0.003 -0.184 -0.003  0.166  0.000 -0.000 -0.013  0.045 -0.061  0.001 -0.000  0.001 -0.003
+        3  0.43061  -0.095  0.005  1.000 -0.294  0.015 -0.148 -0.012 -0.017  0.012 -0.065  0.019  0.014  0.001 -0.001 -0.002 -0.000
+        4  0.78951  -0.067 -0.003 -0.294  1.000 -0.016  0.358  0.029 -0.005  0.003 -0.174  0.012 -0.024  0.000  0.000 -0.009  0.004
+        5  0.89023  -0.020 -0.184  0.015 -0.016  1.000 -0.005 -0.779  0.001 -0.001  0.027 -0.294  0.234 -0.003  0.001 -0.001  0.005
+        6  0.42451   0.153 -0.003 -0.148  0.358 -0.005  1.000 -0.005 -0.049  0.035 -0.070 -0.029 -0.011  0.001 -0.000 -0.006  0.037
+        7  0.88653  -0.066  0.166 -0.012  0.029 -0.779 -0.005  1.000 -0.002  0.001 -0.004  0.280 -0.446  0.002 -0.003  0.001 -0.005
+        8  0.16148   0.004  0.000 -0.017 -0.005  0.001 -0.049 -0.002  1.000 -0.094 -0.010 -0.002  0.001  0.000  0.004  0.026  0.007
+        9  0.12960  -0.003 -0.000  0.012  0.003 -0.001  0.035  0.001 -0.094  1.000  0.007  0.001 -0.001 -0.000 -0.003 -0.019 -0.005
+       10  0.38181  -0.215 -0.013 -0.065 -0.174  0.027 -0.070 -0.004 -0.010  0.007  1.000  0.046  0.018 -0.001  0.000 -0.001 -0.001
+       11  0.67284  -0.154  0.045  0.019  0.012 -0.294 -0.029  0.280 -0.002  0.001  0.046  1.000  0.393  0.002 -0.000 -0.003  0.000
+       12  0.71861  -0.011 -0.061  0.014 -0.024  0.234 -0.011 -0.446  0.001 -0.001  0.018  0.393  1.000  0.001  0.002 -0.001  0.004
+       13  0.08601   0.002  0.001  0.001  0.000 -0.003  0.001  0.002  0.000 -0.000 -0.001  0.002  0.001  1.000  0.000  0.002 -0.001
+       14  0.00938   0.001 -0.000 -0.001  0.000  0.001 -0.000 -0.003  0.004 -0.003  0.000 -0.000  0.002  0.000  1.000 -0.001  0.004
+       15  0.77645   0.003  0.001 -0.002 -0.009 -0.001 -0.006  0.001  0.026 -0.019 -0.001 -0.003 -0.001  0.002 -0.001  1.000 -0.677
+       16  0.68621  -0.000 -0.003 -0.000  0.004  0.005  0.037 -0.005  0.007 -0.005 -0.001  0.000  0.004 -0.001  0.004 -0.677  1.000
+       17  0.68281   0.000 -0.001 -0.003  0.002  0.002 -0.001 -0.001  0.016 -0.011 -0.003  0.004  0.002 -0.001  0.001 -0.674  0.527
+                     1.000 -0.003  0.002 -0.003  0.002  0.001 -0.015 -0.001  0.001  0.020 -0.000  0.000
+       18  0.74740   0.054  0.002  0.056 -0.711  0.004 -0.329 -0.014 -0.002  0.002  0.010 -0.011  0.013 -0.000 -0.000  0.008 -0.005
+                    -0.003  1.000  0.002  0.006 -0.000 -0.000  0.001 -0.030  0.000  0.001  0.005  0.000
+       19  0.64782  -0.070 -0.018  0.009 -0.001  0.518 -0.011 -0.177  0.000 -0.000  0.013 -0.069  0.042 -0.001 -0.001 -0.001  0.004
+                     0.002  0.002  1.000 -0.181  0.000 -0.000 -0.002 -0.035  0.001  0.003  0.078  0.009
+       20  0.40009   0.179  0.052 -0.025 -0.008 -0.285  0.023  0.159  0.000 -0.000 -0.045  0.168 -0.040  0.003  0.002  0.002 -0.005
+                    -0.003  0.006 -0.181  1.000 -0.000  0.000  0.002  0.149 -0.003 -0.003 -0.022 -0.000
+       21  0.02591  -0.000 -0.000 -0.001 -0.001  0.000 -0.005 -0.000  0.014 -0.010 -0.001  0.000  0.000 -0.000  0.000  0.003  0.001
+                     0.002 -0.000  0.000 -0.000  1.000 -0.014 -0.015 -0.000  0.000  0.000  0.000  0.000
+       22  0.02191   0.002  0.001 -0.002  0.001  0.000  0.001  0.000 -0.003  0.002 -0.000 -0.001 -0.001 -0.000  0.002 -0.002 -0.002
+                     0.001 -0.000 -0.000  0.000 -0.014  1.000  0.016  0.000 -0.000 -0.000 -0.000  0.000
+       23  0.17187  -0.006  0.002  0.012  0.005 -0.004  0.031  0.005 -0.118  0.086  0.004  0.003 -0.003 -0.003 -0.006 -0.048 -0.019
+                    -0.015  0.001 -0.002  0.002 -0.015  0.016  1.000  0.003  0.000 -0.001 -0.001 -0.000
+       24  0.38085  -0.035  0.017  0.014  0.019 -0.103  0.001  0.257 -0.002  0.001  0.021  0.148 -0.171 -0.001 -0.001  0.001 -0.003
+                    -0.001 -0.030 -0.035  0.149 -0.000  0.000  0.003  1.000  0.000 -0.004 -0.044 -0.004
+       25  0.08597  -0.001 -0.001 -0.001 -0.000  0.002 -0.001 -0.002  0.002 -0.001  0.001 -0.001 -0.001 -0.086 -0.002 -0.001  0.001
+                     0.001  0.000  0.001 -0.003  0.000 -0.000  0.000  0.000  1.000 -0.000  0.000 -0.000
+       26  0.05821   0.005  0.001 -0.003  0.002 -0.001  0.001 -0.003  0.001 -0.000 -0.007  0.042  0.016  0.000  0.000 -0.014  0.011
+                     0.020  0.001  0.003 -0.003  0.000 -0.000 -0.001 -0.004 -0.000  1.000 -0.020  0.003
+       27  0.11918   0.051 -0.006 -0.016  0.004  0.085  0.010 -0.070  0.000 -0.000 -0.027 -0.037  0.020 -0.000  0.001  0.001  0.000
+                    -0.000  0.005  0.078 -0.022  0.000 -0.000 -0.001 -0.044  0.000 -0.020  1.000 -0.000
+       28  0.01400  -0.003 -0.000  0.001 -0.000 -0.000 -0.001  0.005  0.000 -0.000  0.001  0.002 -0.002  0.000 -0.000 -0.000  0.000
+                     0.000  0.000  0.009 -0.000  0.000  0.000 -0.000 -0.004 -0.000  0.003 -0.000  1.000
+ ERR MATRIX APPROXIMATE
+[#1] INFO:Minization -- Command timer: Real time 0:33:25, CP time 2005.490
+[#1] INFO:Minization -- Session timer: Real time 0:33:29, CP time 2009.540, 2 slices
+ **********
+ **   18 **HESSE     1.4e+04
+ **********
+ COVARIANCE MATRIX CALCULATED SUCCESSFULLY
+ FCN=52284.8 FROM HESSE     STATUS=OK            515 CALLS        2623 TOTAL
+                     EDM=0.00627447    STRATEGY= 1      ERROR MATRIX ACCURATE 
+  EXT PARAMETER                                INTERNAL      INTERNAL  
+  NO.   NAME      VALUE            ERROR       STEP SIZE       VALUE   
+   1  ASOddMag2    9.46249e-02   4.04035e-02   7.82225e-04  -9.45432e-01
+   2  ASOddPhase  -1.24570e-02   9.30957e-02   4.57565e-04  -1.98259e-03
+   3  AparMag2     4.36722e-01   1.82358e-02   2.07777e-04  -1.26897e-01
+   4  AperpMag2    4.77816e-01   2.43690e-02   1.72712e-04  -4.43821e-02
+   5  AperpPhase   3.03901e+00   3.87312e-01   2.02342e-04   5.04847e-01
+   6  Gamma        6.68343e-01   5.11943e-03   9.68212e-02   7.34393e-02
+   7  ImApar      -2.36188e-01   4.19732e-01   1.30334e-03  -2.38441e-01
+   8  N_bkg        1.04418e+04   1.09483e+02   4.58570e-05  -3.47232e-01
+   9  N_signal     2.12142e+04   1.50850e+02   6.34838e-05   3.47234e-01
+  10  ReApar      -6.58095e-01   2.39010e-02   1.85199e-04  -7.18286e-01
+  11  avgCOddSum   4.41294e-02   3.60473e-02   4.23942e-04   2.20665e-02
+  12  avgCOddTagged   1.95717e-02   7.02136e-02   7.65924e-04   9.78598e-03
+  13  bkg_ATagBBbar  -3.29296e-02   1.64981e-02   5.19376e-04  -3.29356e-02
+  14  bkg_AUntagged  -9.41657e-02   7.56420e-03   4.79911e-05  -9.43055e-02
+  15  bkg_t_fll    2.11957e-01   9.59904e-03   4.88094e-04  -6.13932e-01
+  16  bkg_t_ll_tau   1.05718e+00   3.85706e-02   2.03416e-04  -4.58745e-01
+  17  bkg_t_ml_tau   1.51209e-01   3.06144e-03   5.33561e-02  -4.37455e-01
+  18  dGamma       1.15875e-01   1.83661e-02   5.76803e-02   1.16136e-01
+  19  dM           1.76067e+01   8.41845e-02   4.05341e-04   1.06859e-01
+  20  lambdaCPSq   9.00385e-01   5.34039e-02   4.63723e-04  -4.84938e-01
+  21  m_bkg_exp   -1.63357e-03   9.78610e-05   1.72535e-04   7.61748e-01
+  22  m_sig_mean   5.36823e+03   5.39957e-02   6.12224e-05   3.80969e-01
+  23  m_sig_sigma_1   6.27270e+00   4.33882e-02   4.02796e-05  -6.62356e-01
+  24  phiCP       -1.90470e-03   1.04191e-01   4.84551e-04  -3.03143e-04
+  25  sig_ATagBBbar  -4.73492e-04   1.23617e-02   3.88941e-04  -4.73492e-04
+  26  timeResSF    1.44589e+00   6.11058e-02   3.82476e-01  -1.08423e-01
+  27  wTagP0       3.92023e-01   8.64348e-03   2.63403e-04   6.04188e-01
+  28  wTagP1       1.03583e+00   2.38967e-02   7.68913e-04   1.80110e-01
+                               ERR DEF= 0.5
+ EXTERNAL ERROR MATRIX.    NDIM= 666    NPAR= 28    ERR DEF=0.5
+ ELEMENTS ABOVE DIAGONAL ARE NOT PRINTED.
+  1.643e-03 
+  8.595e-05  8.667e-03 
+ -5.658e-05  3.274e-07  3.327e-04 
+ -1.512e-04 -5.860e-06 -1.479e-04  5.943e-04 
+ -3.449e-04 -6.720e-03  1.230e-04 -1.358e-04  1.503e-01 
+  2.758e-05  8.474e-07 -1.507e-05  3.586e-05 -9.411e-06  2.621e-05 
+ -1.346e-03  6.618e-03 -1.270e-04  3.562e-04 -1.303e-01 -1.514e-05  1.884e-01 
+  1.550e-02  2.730e-03 -3.473e-02 -4.820e-03  5.347e-02 -2.758e-02 -7.844e-02  1.199e+04 
+ -1.564e-02 -2.498e-03  3.539e-02  4.689e-03 -4.081e-02  2.756e-02  8.109e-02 -1.544e+03  2.276e+04 
+ -2.009e-04 -4.042e-05 -2.641e-05 -1.012e-04  2.196e-04 -8.987e-06  4.169e-06 -2.739e-02  2.765e-02  5.714e-04 
+ -2.067e-04  1.319e-04  7.659e-06  2.069e-05 -3.924e-03 -4.710e-06  4.143e-03 -6.136e-03  6.111e-03  3.475e-05  1.300e-03 
+  2.674e-05 -4.097e-04  1.523e-05 -3.825e-05  6.554e-03 -2.139e-06 -1.399e-02  5.664e-03 -6.073e-03  1.663e-05  9.948e-04 
+  2.674e-05 -4.097e-04  1.523e-05 -3.825e-05  6.554e-03 -2.139e-06 -1.399e-02  5.664e-03 -6.073e-03  1.663e-05  9.948e-04  4.932e-03 
+  1.190e-06  1.305e-06  3.196e-07  5.801e-08 -1.798e-05  4.761e-08  1.529e-05  5.572e-04 -5.492e-04 -3.845e-07  9.974e-07 
+  1.190e-06  1.305e-06  3.196e-07  5.801e-08 -1.798e-05  4.761e-08  1.529e-05  5.572e-04 -5.492e-04 -3.845e-07  9.974e-07  8.796e-07  2.722e-04 
+  3.940e-07 -3.888e-08 -1.854e-07  4.883e-08  2.951e-06 -5.754e-09 -8.624e-06  3.073e-03 -2.883e-03  4.526e-08 -1.304e-07 
+  3.940e-07 -3.888e-08 -1.854e-07  4.883e-08  2.951e-06 -5.754e-09 -8.624e-06  3.073e-03 -2.883e-03  4.526e-08 -1.304e-07  9.795e-07  8.776e-09  5.722e-05 
+  1.711e-06  1.046e-06 -3.427e-07 -2.658e-06 -2.108e-06 -3.087e-07  3.656e-07  3.051e-02 -3.062e-02 -3.177e-07 -7.033e-07 
+  1.711e-06  1.046e-06 -3.427e-07 -2.658e-06 -2.108e-06 -3.087e-07  3.656e-07  3.051e-02 -3.062e-02 -3.177e-07 -7.033e-07 -6.468e-08  2.809e-07 -4.223e-08  9.216e-05 
+ -7.335e-07 -9.768e-06 -2.898e-07  3.174e-06  7.041e-05  8.054e-06 -8.306e-05  2.364e-02 -2.281e-02 -4.616e-07 -7.885e-07 
+ -7.335e-07 -9.768e-06 -2.898e-07  3.174e-06  7.041e-05  8.054e-06 -8.306e-05  2.364e-02 -2.281e-02 -4.616e-07 -7.885e-07  9.434e-06 -3.525e-07  1.121e-06 -2.419e-04  1.489e-03 
+ -2.653e-08 -3.755e-07 -1.771e-07  2.048e-07  1.881e-06  6.410e-09 -1.337e-06  4.880e-03 -4.853e-03 -1.977e-07  3.431e-07 
+ -2.653e-08 -3.755e-07 -1.771e-07  2.048e-07  1.881e-06  6.410e-09 -1.337e-06  4.880e-03 -4.853e-03 -1.977e-07  3.431e-07  3.908e-07 -2.322e-08  2.801e-08 -1.869e-05  5.694e-05  9.373e-06 
+  1.250e-04  5.883e-06  4.349e-05 -3.427e-04  2.187e-05 -2.095e-05 -1.712e-04 -9.359e-03  9.313e-03  1.118e-05 -1.693e-05 
+  1.250e-04  5.883e-06  4.349e-05 -3.427e-04  2.187e-05 -2.095e-05 -1.712e-04 -9.359e-03  9.313e-03  1.118e-05 -1.693e-05  1.608e-05 -4.124e-08 -2.299e-08  1.942e-06 -2.295e-06 -1.924e-07  3.374e-04 
+ -2.424e-04 -1.780e-04  1.231e-05  1.257e-05  1.726e-02 -3.752e-06 -6.723e-03  6.623e-03 -1.321e-03  2.145e-05 -2.028e-04 
+ -2.424e-04 -1.780e-04  1.231e-05  1.257e-05  1.726e-02 -3.752e-06 -6.723e-03  6.623e-03 -1.321e-03  2.145e-05 -2.028e-04  2.735e-04 -1.722e-06 -2.683e-07 -1.218e-06  1.366e-05  4.948e-07 -1.014e-05  7.104e-03 
+  4.382e-04  2.707e-04 -2.518e-05 -2.569e-05 -5.601e-03  6.566e-06  2.662e-03  1.355e-03 -2.120e-03 -6.261e-05  3.035e-04 
+  4.382e-04  2.707e-04 -2.518e-05 -2.569e-05 -5.601e-03  6.566e-06  2.662e-03  1.355e-03 -2.120e-03 -6.261e-05  3.035e-04 -5.732e-05  2.856e-06  7.112e-07  1.179e-06 -1.003e-05 -3.970e-07  2.099e-05 -8.651e-04  2.858e-03 
+  3.365e-10 -1.592e-09 -2.682e-09 -1.029e-09  2.026e-08 -2.663e-09 -1.783e-08  1.553e-04 -1.505e-04 -2.302e-09  1.557e-10 
+  3.365e-10 -1.592e-09 -2.682e-09 -1.029e-09  2.026e-08 -2.663e-09 -1.783e-08  1.553e-04 -1.505e-04 -2.302e-09  1.557e-10  2.433e-09 -2.089e-10  2.440e-10  3.163e-09  5.200e-09  4.390e-10 -8.017e-10  5.290e-09 -4.729e-10  9.579e-09 
+  4.066e-06  6.111e-06 -1.375e-06  1.379e-06  6.895e-06  2.579e-07  9.937e-06 -1.710e-02  1.935e-02 -5.435e-08 -2.405e-06 
+  4.066e-06  6.111e-06 -1.375e-06  1.379e-06  6.895e-06  2.579e-07  9.937e-06 -1.710e-02  1.935e-02 -5.435e-08 -2.405e-06 -3.108e-06 -3.213e-08  8.085e-07 -1.077e-06 -3.455e-06  1.551e-07 -3.027e-07  3.598e-07  5.549e-07 -7.272e-08  2.916e-03 
+ -1.025e-05  6.650e-06  1.006e-05  3.799e-06 -6.739e-05  6.913e-06  8.630e-05 -5.618e-01  5.625e-01  4.270e-06  4.033e-06 
+ -1.025e-05  6.650e-06  1.006e-05  3.799e-06 -6.739e-05  6.913e-06  8.630e-05 -5.618e-01  5.625e-01  4.270e-06  4.033e-06 -8.589e-06 -1.898e-06 -2.012e-06 -2.174e-05 -3.010e-05 -1.812e-06  9.863e-07 -7.154e-06  3.307e-06 -6.153e-08  3.672e-05 
+ -1.025e-05  6.650e-06  1.006e-05  3.799e-06 -6.739e-05  6.913e-06  8.630e-05 -5.618e-01  5.625e-01  4.270e-06  4.033e-06 -8.589e-06 -1.898e-06 -2.012e-06 -2.174e-05 -3.010e-05 -1.812e-06  9.863e-07 -7.154e-06  3.307e-06 -6.153e-08  3.672e-05  1.883e-03 
+ -1.663e-04  1.533e-04  2.413e-05  1.975e-05 -4.067e-03 -5.452e-06  1.152e-02 -1.963e-02  2.009e-02  5.342e-05  5.556e-04 
+ -1.663e-04  1.533e-04  2.413e-05  1.975e-05 -4.067e-03 -5.452e-06  1.152e-02 -1.963e-02  2.009e-02  5.342e-05  5.556e-04 -1.264e-03 -1.097e-06 -6.850e-07  2.813e-07 -1.099e-05 -2.929e-07 -3.258e-05 -3.231e-04  7.438e-04 -1.995e-09  1.296e-06 
+ -1.663e-04  1.533e-04  2.413e-05  1.975e-05 -4.067e-03 -5.452e-06  1.152e-02 -1.963e-02  2.009e-02  5.342e-05  5.556e-04 -1.264e-03 -1.097e-06 -6.850e-07  2.813e-07 -1.099e-05 -2.929e-07 -3.258e-05 -3.231e-04  7.438e-04 -1.995e-09  1.296e-06  1.258e-05  1.086e-02 
+ -6.813e-07 -7.484e-07 -2.410e-07 -4.490e-08  1.042e-05 -7.833e-08 -8.642e-06  2.433e-03 -2.416e-03  1.753e-07 -5.885e-07 
+ -6.813e-07 -7.484e-07 -2.410e-07 -4.490e-08  1.042e-05 -7.833e-08 -8.642e-06  2.433e-03 -2.416e-03  1.753e-07 -5.885e-07 -5.530e-07 -1.750e-05 -1.932e-07 -1.081e-07  2.175e-07  2.186e-08  7.326e-09  1.027e-06 -1.694e-06  4.083e-10 -2.259e-08 
+ -6.813e-07 -7.484e-07 -2.410e-07 -4.490e-08  1.042e-05 -7.833e-08 -8.642e-06  2.433e-03 -2.416e-03  1.753e-07 -5.885e-07 -5.530e-07 -1.750e-05 -1.932e-07 -1.081e-07  2.175e-07  2.186e-08  7.326e-09  1.027e-06 -1.694e-06  4.083e-10 -2.259e-08  1.518e-07  6.403e-07  1.528e-04 
+  1.299e-05  5.949e-06 -2.921e-06  7.302e-07 -7.112e-06  3.372e-07 -1.190e-04  1.247e-03 -1.264e-03 -1.030e-05  7.660e-05 
+  1.299e-05  5.949e-06 -2.921e-06  7.302e-07 -7.112e-06  3.372e-07 -1.190e-04  1.247e-03 -1.264e-03 -1.030e-05  7.660e-05  5.128e-05  6.000e-08  6.995e-08  3.015e-07 -8.972e-07 -4.125e-07  2.500e-06  7.881e-06 -1.222e-05  2.383e-10 -5.577e-07 
+  1.299e-05  5.949e-06 -2.921e-06  7.302e-07 -7.112e-06  3.372e-07 -1.190e-04  1.247e-03 -1.264e-03 -1.030e-05  7.660e-05  5.128e-05  6.000e-08  6.995e-08  3.015e-07 -8.972e-07 -4.125e-07  2.500e-06  7.881e-06 -1.222e-05  2.383e-10 -5.577e-07 -1.099e-06 -4.046e-05 -3.536e-08  3.753e-03 
+  1.839e-05 -4.934e-06 -2.407e-06  5.675e-08  2.981e-04  4.600e-07 -2.994e-04  3.107e-04 -2.820e-04 -5.723e-06 -1.162e-05 
+  1.839e-05 -4.934e-06 -2.407e-06  5.675e-08  2.981e-04  4.600e-07 -2.994e-04  3.107e-04 -2.820e-04 -5.723e-06 -1.162e-05  1.703e-05 -4.506e-09  4.279e-08  3.505e-08  1.268e-07  7.562e-10  1.447e-06  5.561e-05 -9.324e-06  1.088e-10 -1.190e-07 
+  1.839e-05 -4.934e-06 -2.407e-06  5.675e-08  2.981e-04  4.600e-07 -2.994e-04  3.107e-04 -2.820e-04 -5.723e-06 -1.162e-05  1.703e-05 -4.506e-09  4.279e-08  3.505e-08  1.268e-07  7.562e-10  1.447e-06  5.561e-05 -9.324e-06  1.088e-10 -1.190e-07 -4.554e-07 -4.495e-05  1.093e-09 -1.020e-05  7.475e-05 
+ -3.351e-06 -7.245e-07  4.655e-07  1.230e-08 -7.253e-08 -8.646e-08  6.212e-05  3.252e-04 -3.812e-04  6.826e-07  1.570e-06 
+ -3.351e-06 -7.245e-07  4.655e-07  1.230e-08 -7.253e-08 -8.646e-08  6.212e-05  3.252e-04 -3.812e-04  6.826e-07  1.570e-06 -3.853e-06  2.839e-08 -3.729e-08 -2.046e-08  5.459e-08  5.760e-09 -1.284e-07  2.102e-05 -9.095e-07  2.448e-11  6.129e-08 
+ -3.351e-06 -7.245e-07  4.655e-07  1.230e-08 -7.253e-08 -8.646e-08  6.212e-05  3.252e-04 -3.812e-04  6.826e-07  1.570e-06 -3.853e-06  2.839e-08 -3.729e-08 -2.046e-08  5.459e-08  5.760e-09 -1.284e-07  2.102e-05 -9.095e-07  2.448e-11  6.129e-08 -3.280e-08 -8.741e-06 -1.883e-08  3.741e-06 -7.838e-08  5.739e-04 
+ PARAMETER  CORRELATION COEFFICIENTS  
+       NO.  GLOBAL      1      2      3      4      5      6      7      8      9     10     11     12     13     14     15     16
+        1  0.44751   1.000  0.023 -0.077 -0.153 -0.022  0.133 -0.077  0.003 -0.003 -0.207 -0.141  0.009  0.002  0.001  0.004 -0.000
+        2  0.20938   0.023  1.000  0.000 -0.003 -0.186  0.002  0.164  0.000 -0.000 -0.018  0.039 -0.063  0.001 -0.000  0.001 -0.003
+        3  0.44709  -0.077  0.000  1.000 -0.333  0.017 -0.161 -0.016 -0.017  0.013 -0.061  0.012  0.012  0.001 -0.001 -0.002 -0.000
+        4  0.82829  -0.153 -0.003 -0.333  1.000 -0.014  0.287  0.034 -0.002  0.001 -0.174  0.024 -0.022  0.000  0.000 -0.011  0.003
+        5  0.89077  -0.022 -0.186  0.017 -0.014  1.000 -0.005 -0.775  0.001 -0.001  0.024 -0.281  0.241 -0.003  0.001 -0.001  0.005
+        6  0.35304   0.133  0.002 -0.161  0.287 -0.005  1.000 -0.007 -0.049  0.036 -0.073 -0.026 -0.006  0.001 -0.000 -0.006  0.041
+        7  0.88693  -0.077  0.164 -0.016  0.034 -0.775 -0.007  1.000 -0.002  0.001  0.000  0.265 -0.459  0.002 -0.003  0.000 -0.005
+        8  0.16121   0.003  0.000 -0.017 -0.002  0.001 -0.049 -0.002  1.000 -0.094 -0.010 -0.002  0.001  0.000  0.004  0.029  0.006
+        9  0.12948  -0.003 -0.000  0.013  0.001 -0.001  0.036  0.001 -0.094  1.000  0.008  0.001 -0.001 -0.000 -0.003 -0.021 -0.004
+       10  0.38352  -0.207 -0.018 -0.061 -0.174  0.024 -0.073  0.000 -0.010  0.008  1.000  0.040  0.010 -0.001  0.000 -0.001 -0.001
+       11  0.66750  -0.141  0.039  0.012  0.024 -0.281 -0.026  0.265 -0.002  0.001  0.040  1.000  0.393  0.002 -0.000 -0.002 -0.001
+       12  0.72316   0.009 -0.063  0.012 -0.022  0.241 -0.006 -0.459  0.001 -0.001  0.010  0.393  1.000  0.001  0.002 -0.000  0.003
+       13  0.08600   0.002  0.001  0.001  0.000 -0.003  0.001  0.002  0.000 -0.000 -0.001  0.002  0.001  1.000  0.000  0.002 -0.001
+       14  0.00953   0.001 -0.000 -0.001  0.000  0.001 -0.000 -0.003  0.004 -0.003  0.000 -0.000  0.002  0.000  1.000 -0.001  0.004
+       15  0.75302   0.004  0.001 -0.002 -0.011 -0.001 -0.006  0.000  0.029 -0.021 -0.001 -0.002 -0.000  0.002 -0.001  1.000 -0.653
+       16  0.66212  -0.000 -0.003 -0.000  0.003  0.005  0.041 -0.005  0.006 -0.004 -0.001 -0.001  0.003 -0.001  0.004 -0.653  1.000
+       17  0.64416  -0.000 -0.001 -0.003  0.003  0.002  0.000 -0.001  0.015 -0.011 -0.003  0.003  0.002 -0.000  0.001 -0.636  0.482
+                     1.000 -0.003  0.002 -0.002  0.001  0.001 -0.014 -0.001  0.001 -0.002  0.000  0.000
+       18  0.78737   0.168  0.003  0.130 -0.765  0.003 -0.223 -0.021 -0.005  0.003  0.025 -0.026  0.012 -0.000 -0.000  0.011 -0.003
+                    -0.003  1.000 -0.007  0.021 -0.000 -0.000  0.001 -0.017  0.000  0.002  0.009 -0.000
+       19  0.65335  -0.071 -0.023  0.008  0.006  0.528 -0.009 -0.184  0.001 -0.000  0.011 -0.067  0.046 -0.001 -0.000 -0.002  0.004
+                     0.002 -0.007  1.000 -0.192  0.001  0.000 -0.002 -0.037  0.001  0.002  0.076  0.010
+       20  0.41202   0.202  0.054 -0.026 -0.020 -0.270  0.024  0.115  0.000 -0.000 -0.049  0.157 -0.015  0.003  0.002  0.002 -0.005
+                    -0.002  0.021 -0.192  1.000 -0.000  0.000  0.001  0.134 -0.003 -0.004 -0.020 -0.001
+       21  0.02588   0.000 -0.000 -0.002 -0.000  0.001 -0.005 -0.000  0.014 -0.010 -0.001  0.000  0.000 -0.000  0.000  0.003  0.001
+                     0.001 -0.000  0.001 -0.000  1.000 -0.014 -0.014 -0.000  0.000  0.000  0.000  0.000
+       22  0.02138   0.002  0.001 -0.001  0.001  0.000  0.001  0.000 -0.003  0.002 -0.000 -0.001 -0.001 -0.000  0.002 -0.002 -0.002
+                     0.001 -0.000  0.000  0.000 -0.014  1.000  0.016  0.000 -0.000 -0.000 -0.000  0.000
+       23  0.17186  -0.006  0.002  0.013  0.004 -0.004  0.031  0.005 -0.118  0.086  0.004  0.003 -0.003 -0.003 -0.006 -0.052 -0.018
+                    -0.014  0.001 -0.002  0.001 -0.014  0.016  1.000  0.003  0.000 -0.000 -0.001 -0.000
+       24  0.37934  -0.039  0.016  0.013  0.008 -0.101 -0.010  0.255 -0.002  0.001  0.021  0.148 -0.173 -0.001 -0.001  0.000 -0.003
+                    -0.001 -0.017 -0.037  0.134 -0.000  0.000  0.003  1.000  0.000 -0.006 -0.050 -0.004
+       25  0.08595  -0.001 -0.001 -0.001 -0.000  0.002 -0.001 -0.002  0.002 -0.001  0.001 -0.001 -0.001 -0.086 -0.002 -0.001  0.000
+                     0.001  0.000  0.001 -0.003  0.000 -0.000  0.000  0.000  1.000 -0.000  0.000 -0.000
+       26  0.04953   0.005  0.001 -0.003  0.000 -0.000  0.001 -0.004  0.000 -0.000 -0.007  0.035  0.012  0.000  0.000  0.001 -0.000
+                    -0.002  0.002  0.002 -0.004  0.000 -0.000 -0.000 -0.006 -0.000  1.000 -0.019  0.003
+       27  0.12324   0.052 -0.006 -0.015  0.000  0.089  0.010 -0.080  0.000 -0.000 -0.028 -0.037  0.028 -0.000  0.001  0.000  0.000
+                     0.000  0.009  0.076 -0.020  0.000 -0.000 -0.001 -0.050  0.000 -0.019  1.000 -0.000
+       28  0.01489  -0.003 -0.000  0.001  0.000 -0.000 -0.001  0.006  0.000 -0.000  0.001  0.002 -0.002  0.000 -0.000 -0.000  0.000
+                     0.000 -0.000  0.010 -0.001  0.000  0.000 -0.000 -0.004 -0.000  0.003 -0.000  1.000
+[#1] INFO:Minization -- Command timer: Real time 0:08:07, CP time 487.520
+[#1] INFO:Minization -- Session timer: Real time 0:41:37, CP time 2497.060, 3 slices
+[#1] INFO:Minization -- RooMinuit::optimizeConst: deactivating const optimization
+========================================================================================================================
+
+2519.39user 3.29system 42:03.12elapsed 99%CPU (0avgtext+0avgdata 2087952maxresident)k
+0inputs+0outputs (0major+136647minor)pagefaults 0swaps
