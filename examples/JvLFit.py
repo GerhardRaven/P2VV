@@ -8,12 +8,12 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = False
+doFit                   = True
 fastFit                 = False
 makeObservablePlots     = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = False
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -35,8 +35,8 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU              = 8
-               , Optimize            = 2
+fitOpts = dict(  NumCPU              = 1
+               , Optimize            = 1
                , Timer               = 1
 #               , Minos               = False
 #               , Hesse               = False
