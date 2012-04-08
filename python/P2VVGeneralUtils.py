@@ -125,6 +125,28 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
                 % ( obsSet.getCatIndex(tagDecisionName), obsSet.getCatIndex(tagCatName) )
 
 
+def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKName, cthetalName, phiName ) :
+    """add transversity angles to data set
+    """
+
+    # get observables from data set
+    obsSet  = dataSet.get(0)
+    cthetaK = obsSet.find(cthetaKName)
+    cthetal = obsSet.find(cthetalName)
+    phi     = obsSet.find(phiName)
+
+    # create transversity angle functions
+    from ROOT import RooTransAngle
+    cpsi     = RooTransAngle( cpsiName,     'Cosine of kaon polarization angle',  cthetaK             )
+    cthetaTr = RooTransAngle( cthetaTrName, 'Cosine of transversity polar angle', cthetal, phi, False )
+    phiTr    = RooTransAngle( phiTrName,    'Transversity azimuthal angle',       cthetal, phi, True  )
+
+    # create new columns in data set
+    dataSet.addColumn(cpsi)
+    dataSet.addColumn(cthetaTr)
+    dataSet.addColumn(phiTr)
+
+
 ###########################################################################################################################################
 ## Plots                                                                                                                                 ##
 ###########################################################################################################################################
@@ -134,11 +156,10 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', yTitleOffset = 1, xTitleOffset = 1
-           , yScale = ( None, None )
-           ,frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False
-           , normalize = True, symmetrize = True, usebar = True
-           ) :
+def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', xTitleOffset = None
+           , yTitleOffset = None, yScale = ( None, None ), frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ]
+           , plotResidHist = False, logy = False, normalize = True, symmetrize = True, usebar = True
+        ) :
     """makes a P2VV plot
 
     example usage:

@@ -8,7 +8,7 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = True
+doFit                   = False
 fastFit                 = False
 makeObservablePlots     = False
 plotAnglesNoEff         = False
@@ -190,6 +190,13 @@ if generateData :
     print 'JvLFit: generating %d events' % nEvents
     fitData = pdf.generate( obsSetP2VV, nEvents )
 
+    # additional observables
+    if not pdfConfig['transversityAngles'] :
+        from P2VVGeneralUtils import addTransversityAngles
+        addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
+                                      , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
+
+    # write data to file
     from P2VVGeneralUtils import writeData
     writeData( dataSetFile, dataSetName, fitData )
 
