@@ -18,7 +18,7 @@ pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
 
-plotsFile     = 'JvLSFit.ps'  if pdfConfig['SFit'] else 'JvLCFit.ps'
+plotsFile     = 'JvLSFitHelAngles.ps'  if pdfConfig['SFit'] else 'JvLCFitHelAngles.ps'
 parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
@@ -51,29 +51,34 @@ markStyle = 8
 markSize  = 0.4
 
 # PDF options
-pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']        = ''
-pdfConfig['sigTaggingPdf']      = 'tagUntag' #'tagCats'
-pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative' #'tagCatsRelative'
+pdfConfig['transversityAngles'] = True  # default: False | nominal: True
+
+pdfConfig['bkgAnglePdf']        = ''  # default/nominal: ''
+pdfConfig['sigTaggingPdf']      = 'tagCats'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['bkgTaggingPdf']      = 'tagCatsRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
-pdfConfig['conditionalTagging'] = True
-pdfConfig['continuousEstWTag']  = False
+pdfConfig['conditionalTagging'] = True  # nominal: True
+pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True
 
-pdfConfig['eventTimeResolution'] = True
+pdfConfig['eventTimeResolution'] = True  # nominal: True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
 pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
-pdfConfig['amplitudeParam'] = 'bank' #'phasesSWaveFrac'
-pdfConfig['polarSWave']     = True
-pdfConfig['AparParam']      = 'Mag2ReIm'
+pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'phasesSWaveFrac'
+pdfConfig['polarSWave']     = True  # default/nominal: True
+pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 
-pdfConfig['carthLambdaCP'] = False
+pdfConfig['carthLambdaCP'] = False  # defautl/nominal: False
+constLambdaCPSq = True  # default: False / nominal: True
+
+constTagCatCoefs = False  # default/nominal: False
+constAvgCEvenOdd = True   # default: False / nominal: True
 
 if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
@@ -101,8 +106,8 @@ pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPs
 pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 #pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
-                                 else 'effMomentsHelBasis'
+pdfConfig['angEffMomentsFile'] = 'effMomentsTransFullBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
+                                 else 'effMomentsHelFullBasis'
 #pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 #pdfConfig['angEffMomentsFile'] = None
 
@@ -213,12 +218,12 @@ else :
 
 if ( readData or generateData ) and doFit :
     # float/fix values of some parameters
-    if pdfConfig['nominalPdf'] : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    if pdfConfig['nominalPdf'] or ( not pdfConfig['carthLambdaCP'] and constLambdaCPSq ) : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
-        if pdfConfig['nominalPdf'] : CEvenOdd.setConstant( 'avgCOdd.*', True )
+        if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-    if pdfConfig['nominalPdf'] :
+    if pdfConfig['nominalPdf'] or not constTagCatCoefs :
         pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
     if fastFit :
@@ -417,7 +422,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
         anglesCanv.Print(plotsFile)
         pdfBuild['massCanv'].Print(plotsFile)
         bkgTimeCanv.Print(plotsFile)
-        pdfBuild['bkgAnglesCanv'].Print(plotsFile)
+        pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
+        pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
         pdfBuild['estWTagCanv'].Print(plotsFile + ')')
 
     else :
@@ -426,10 +432,12 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
 elif pdfConfig['makePlots'] :
     pdfBuild['massCanv'].Print(plotsFile + '(')
     bkgTimeCanv.Print(plotsFile)
-    pdfBuild['bkgAnglesCanv'].Print(plotsFile)
+    pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
+    pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
     pdfBuild['estWTagCanv'].Print(plotsFile + ')')
 
 if dllPars :
+    # make delta log-likelihood plots
     if pdfConfig['amplitudeParam'] == 'phasesSWaveFrac' :
         MparMin =  0.21
         MparMax =  0.25
