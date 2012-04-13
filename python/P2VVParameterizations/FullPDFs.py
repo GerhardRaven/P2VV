@@ -908,22 +908,64 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if not SFit : self._backgroundComps += self._bkg_angles
 
             if self._bkgRangeData and self._bkgSWeightData and makePlots :
-                # plot background angles
-                self._bkgAnglesCanv = TCanvas( 'bkgAnglesCanv', 'Background Decay Angles' )
+                # plot background angles with S-weights
+                self._bkgAnglesSWeightCanv = TCanvas( 'bkgAnglesSWeightCanv', 'Background Decay Angles with S-Weights' )
                 for ( pad, obs, data, bins, plotTitle, xTitle )\
-                      in zip(  self._bkgAnglesCanv.pads( 3, 2 )
-                             , 2 * angles
-                             , 3 * ( self._bkgRangeData, ) + 3 * ( self._bkgSWeightData, )
-                             , 2 * nBins
-                             , [ angle.GetTitle() + ' - mass side bands' for angle in angles ]
-                             + [ angle.GetTitle() + ' - mass S-weights'  for angle in angles ]
-                             , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+                      in zip(  self._bkgAnglesSWeightCanv.pads( 3, 2 )
+                             , angles
+                             , 3 * ( self._bkgSWeightData, )
+                             , nBins
+                             , [ angle.GetTitle() for angle in angles ]
+                             , ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                             ) :
                     plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle
                          , frameOpts  = dict( Bins = bins, Title = plotTitle   )
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
                          , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
                         )
+
+                # plot background angles with side bands
+                self._bkgAnglesSideBandCanv = TCanvas( 'bkgAnglesSideBandCanv', 'Background Decay Angles with Side Bands' )
+                for ( pad, obs, data, bins, plotTitle, xTitle )\
+                      in zip(  self._bkgAnglesSideBandCanv.pads( 3, 2 )
+                             , angles
+                             , 3 * ( self._bkgRangeData, )
+                             , nBins
+                             , [ angle.GetTitle() for angle in angles ]
+                             , ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+                            ) :
+                    plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle
+                         , frameOpts  = dict( Bins = bins, Title = plotTitle   )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
+                         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
+                        )
+
+                # plot 2-D angular distributions
+                from P2VVGeneralUtils import _P2VVPlotStash
+                for angle0, angle1, data, canv, padNr in [  ( 1, 0, self._bkgSWeightData, self._bkgAnglesSWeightCanv,  4 )
+                                                          , ( 2, 0, self._bkgSWeightData, self._bkgAnglesSWeightCanv,  5 )
+                                                          , ( 1, 2, self._bkgSWeightData, self._bkgAnglesSWeightCanv,  6 )
+                                                          , ( 1, 0, self._bkgRangeData,   self._bkgAnglesSideBandCanv, 4 )
+                                                          , ( 2, 0, self._bkgRangeData,   self._bkgAnglesSideBandCanv, 5 )
+                                                          , ( 1, 2, self._bkgRangeData,   self._bkgAnglesSideBandCanv, 6 )
+                                                         ] :
+                    bkgAngHist = data.createHistogram( angles[angle0]._var, angles[angle1]._var, nBins[angle0], nBins[angle1] )
+                    _P2VVPlotStash.append(bkgAngHist)
+                    bkgAngHist.SetStats(False)
+                    bkgAngHist.SetTitle( '%s vs. %s' % ( angleNames[angle0][1], angleNames[angle1][1] ) )
+                    bkgAngHist.SetMinimum(0.)
+                    bkgAngHist.GetXaxis().SetTitle( angleNames[angle0][1] )
+                    bkgAngHist.GetYaxis().SetTitle( angleNames[angle1][1] )
+                    bkgAngHist.GetXaxis().SetLabelOffset(0.01)
+                    bkgAngHist.GetYaxis().SetLabelOffset(0.008)
+                    bkgAngHist.GetXaxis().SetTitleOffset(1.8)
+                    bkgAngHist.GetYaxis().SetTitleOffset(1.8)
+                    bkgAngPad = canv.cd(padNr)
+                    bkgAngPad.SetLeftMargin(0.08)
+                    bkgAngPad.SetRightMargin(0.05)
+                    bkgAngPad.SetBottomMargin(0.05)
+                    bkgAngPad.SetTopMargin(0.05)
+                    bkgAngHist.Draw('lego2')
 
 
         ###################################################################################################################################
