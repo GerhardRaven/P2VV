@@ -18,7 +18,7 @@ pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
 
-plotsFile     = 'JvLSFitHelAngles.ps'  if pdfConfig['SFit'] else 'JvLCFitHelAngles.ps'
+plotsFile     = 'JvLSFit.ps'  if pdfConfig['SFit'] else 'JvLCFit.ps'
 parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
@@ -38,9 +38,8 @@ dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, Tr
 fitOpts = dict(  NumCPU              = 1
                , Optimize            = 1
                , Timer               = 1
-#               , Minos               = False
+#               , Minos               = True
 #               , Hesse               = False
-#               , Save                = True
 #               , Minimizer           = 'Minuit2'
               )
 pdfConfig['fitOptions'] = fitOpts
@@ -51,15 +50,15 @@ markStyle = 8
 markSize  = 0.4
 
 # PDF options
-pdfConfig['transversityAngles'] = True  # default: False | nominal: True
+pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
 pdfConfig['bkgAnglePdf']        = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']      = 'tagCats'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']      = 'tagCatsRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['sigTaggingPdf']      = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
 pdfConfig['conditionalTagging'] = True  # nominal: True
-pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
+pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True
 
@@ -70,15 +69,15 @@ pdfConfig['numEvents'] = 32000
 pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
-pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'phasesSWaveFrac'
+pdfConfig['amplitudeParam'] = 'bank' # default: 'bank' | nominal: 'phasesSWaveFrac'
 pdfConfig['polarSWave']     = True  # default/nominal: True
-pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
+pdfConfig['AparParam']      = 'Mag2ReIm' # default: 'Mag2ReIm' | nominal: 'phase'
 
-pdfConfig['carthLambdaCP'] = False  # defautl/nominal: False
-constLambdaCPSq = True  # default: False / nominal: True
+pdfConfig['carthLambdaCP'] = False  # default/nominal: False
+constLambdaCPSq = False  # default: False / nominal: True
 
-constTagCatCoefs = False  # default/nominal: False
-constAvgCEvenOdd = True   # default: False / nominal: True
+constTagCatCoefs = True  # default: True / nominal: False
+constAvgCEvenOdd = False   # default: False / nominal: True
 
 if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
@@ -241,8 +240,84 @@ if ( readData or generateData ) and doFit :
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = sumW2Error, **fitOpts )
-    else                 : fitResult = pdf.fitTo( fitData,                          **fitOpts )
+    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = sumW2Error, Save = True, **fitOpts )
+    else                 : fitResult = pdf.fitTo( fitData,                          Save = True, **fitOpts )
+
+    # reparameterize amplitudes
+    if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave'] and pdfConfig['AparParam'] == 'Mag2ReIm' :
+        from ROOT import RooArgSet
+        parList = fitResult.floatParsFinal()
+        parSet  = RooArgSet(parList)
+        parCovs = fitResult.covarianceMatrix()
+
+        from math import pi
+        from ROOT import RooRealVar, RooArgList
+        from P2VVParameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
+        ampPhys = [  RooRealVar( 'A0Mag2_phys',     'A0Mag2_phys',     A02,      0.,      1.      )  # 0
+                   , RooRealVar( 'AperpMag2_phys',  'AperpMag2_phys',  Aperp2,   0.,      1.      )  # 1
+                   , RooRealVar( 'f_S_phys',        'f_S_phys',        f_S,      0.,      1.      )  # 2
+                   , RooRealVar( 'AparPhase_phys',  'AparPhase_phys',  AparPh,  -2. * pi, 2. * pi )  # 3
+                   , RooRealVar( 'AperpPhase_phys', 'AperpPhase_phys', AperpPh, -2. * pi, 2. * pi )  # 4
+                   , RooRealVar( 'ASPhase_phys',    'ASPhase_phys',    ASPh,    -2. * pi, 2. * pi )  # 5
+                  ]
+        ampPhysList = RooArgList()
+        for amp in ampPhys : ampPhysList.add(amp)
+
+        ampMeasNames = [  'AparMag2'    # 0
+                        , 'ReApar'      # 1
+                        , 'ImApar'      # 2
+                        , 'AperpMag2'   # 3
+                        , 'AperpPhase'  # 4
+                        , 'ASOddMag2'   # 5
+                        , 'ASOddPhase'  # 6
+                       ]
+        ampMeasFuncs = {  ampMeasNames[0] : '(1.-@0-@1)/@0'
+                        , ampMeasNames[1] : 'sqrt((1.-@0-@1)/@0)*cos(@3)'
+                        , ampMeasNames[2] : 'sqrt((1.-@0-@1)/@0)*sin(@3)'
+                        , ampMeasNames[3] : '@1/@0'
+                        , ampMeasNames[4] : '@4'
+                        , ampMeasNames[5] : '@2/(1.-@2)/@1'
+                        , ampMeasNames[6] : '@5-@4'
+                       }
+
+        from ROOT import RooFormulaVar
+        ampMeasList = RooArgList()
+        ampFuncsList = RooArgList()
+        ampMeasInds = { }
+        ampMeas = [ ]
+        ampFuncs = [ ]
+        for ampName in ampMeasNames :
+            ampMeas.append( RooRealVar( ampName + '_meas', ampName + '_meas', parSet.getRealValue(ampName), -1e+30, 1e+30 ) )
+            ampFuncs.append( RooFormulaVar( ampName + '_func', ampMeasFuncs[ampName], ampPhysList ) )
+            ampMeasList.add( ampMeas[-1] )
+            ampFuncsList.add( ampFuncs[-1] )
+            ampMeasInds[ampName] = parList.index(ampName)
+        ampMeasSet = RooArgSet(ampMeasList)
+
+        from ROOT import TMatrixDSym
+        ampMeasCovs = TMatrixDSym(len(ampMeasNames))
+        for ampIter, ampName in enumerate(ampMeasNames) :
+            for ampIter1, ampName1 in enumerate(ampMeasNames) :
+                ampMeasCovs[ampIter][ampIter1] = parCovs[ampMeasInds[ampName]][ampMeasInds[ampName1]]
+
+        from ROOT import RooDataSet, RooMultiVarGaussian
+        ampsData = RooDataSet( 'ampsData', 'Measured transversity amplitudes', ampMeasSet )
+        ampsGauss = RooMultiVarGaussian( 'ampsGauss', 'Gaussian for measured transversity amplitudes'
+                                        , ampMeasList, ampFuncsList, ampMeasCovs )
+        ampsData.add(ampMeasSet)
+        ampsFitResult = ampsGauss.fitTo( ampsData, Save = True, **fitOpts )
+
+        print '\nJvLFit: reparameterization of transversity amplitudes:'
+        ampsData.Print()
+        ampMeasList.Print('v')
+        ampMeasCovs.Print()
+        ampsFitResult.Print()
+        ampsFitResult.covarianceMatrix().Print()
+
+    print 'JvLFit: parameters:'
+    fitData.Print()
+    fitResult.Print()
+    fitResult.covarianceMatrix().Print()
 
     print 120 * '=' + '\n'
 
