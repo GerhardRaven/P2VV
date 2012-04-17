@@ -5,6 +5,12 @@ from ROOT import RooMsgService
 RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
 RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
+## import RootStyle
+## from ROOT import (gROOT,gStyle,TStyle)
+## MyStyle = RootStyle.MyStyle()
+## gROOT.SetStyle(MyStyle.GetName())
+## gROOT.ForceStyle()
+## gStyle.UseCurrentStyle()   
 
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')

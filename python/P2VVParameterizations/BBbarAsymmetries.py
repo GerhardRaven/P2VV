@@ -32,8 +32,8 @@ class Coefficients_CEvenOdd( CEvenOdd ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import ConstVar
 
-        self._parseArg( 'avgCEven', kwargs, Title = 'CP average even coefficients', Value = 1., MinMax = (  0., 2. ) )
-        self._parseArg( 'avgCOdd',  kwargs, Title = 'CP average odd coefficients',  Value = 0., MinMax = ( -2., 2. ) )
+        self._parseArg( 'avgCEven', kwargs, Title = 'CP average even coefficients', Value = 1., MinMax = (  0.8, 1.2 ) )
+        self._parseArg( 'avgCOdd',  kwargs, Title = 'CP average odd coefficients',  Value = 0., MinMax = ( -1.,  1.  ) )
 
         self._check_extraneous_kw( kwargs ) 
         CEvenOdd.__init__(self, avgCEven = self._avgCEven, avgCOdd = self._avgCOdd )

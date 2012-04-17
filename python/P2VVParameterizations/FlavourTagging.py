@@ -542,38 +542,40 @@ class Linear_TaggingCategories( TaggingCategories ) :
 
         # get linear calibration parameters
         self._parseArg(  'avgEstWTag', kwargs, Value = 0.391, ObjectType = 'ConstVar' )
-        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0',   Value = 0.392, MinMax = (  0.,  0.5 ) )
-        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1',   Value = 1.035, MinMax = (  0.8, 1.2 ) )
-        self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry', Value = 0.,    MinMax = ( -1.,  1.  )
-                       , Constant = True )
-        self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry', Value = 0.,    MinMax = ( -1., 1.  )
-                       , Constant = True )
+        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0'
+                       , Value = 0.392, Error = 0.009, MinMax = (  0.,  0.5 ) )
+        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1'
+                       , Value = 1.035, Error = 0.024, MinMax = (  0.8, 1.2 ) )
+        self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry'
+                       , Value = 0., Constant = True,  MinMax = ( -1.,  1.  ) )
+        self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry'
+                       , Value = 0., Constant = True,  MinMax = ( -1.,  1.  ) )
 
         # constrain calibration parameters
         constraints = [ ]
-        if kwargs.pop( 'wTagP0Constraint', None ) :
+        wTagP0Constraint = kwargs.pop( 'wTagP0Constraint', None )
+        if wTagP0Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP0
-                                                    , ConstVar( Name = 'wTagP0_mean',  Value = 0.392 )
-                                                    , ConstVar( Name = 'wTagP0_sigma', Value = 0.009 )
+                                                    , ConstVar( Name = 'wTagP0_mean',  Value = self._wTagP0.getVal()   )
+                                                    , ConstVar( Name = 'wTagP0_sigma', Value = self._wTagP0.getError() )
                                                    ]
                                    )
                               )
-            self._wTagP0['Error'] = 0.009
 
-        if kwargs.pop( 'wTagP1Constraint', None ) :
+        wTagP1Constraint = kwargs.pop( 'wTagP1Constraint', None )
+        if wTagP1Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP1
-                                                    , ConstVar( Name = 'wTagP1_mean',  Value = 1.035 )
-                                                    , ConstVar( Name = 'wTagP1_sigma', Value = 0.024 )
+                                                    , ConstVar( Name = 'wTagP1_mean',  Value = self._wTagP1.getVal()   )
+                                                    , ConstVar( Name = 'wTagP1_sigma', Value = self._wTagP1.getError() )
                                                    ]
                                    )
                               )
-            self._wTagP1['Error'] = 0.024
 
         # get data set
         data    = kwargs.pop( 'DataSet', None )
@@ -604,10 +606,18 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                                     , P0Err = self._wTagP0.getError(), P1Err = self._wTagP1.getError()
                                                     , AP0   = self._wTagAP0,           AP1   = self._wTagAP1
                                                    )
+
+            from math import sqrt
+            tagCatCoefs = [ dict(  Value = catPars[6]
+                                 , Error = sqrt( catPars[6] / data.sumEntries() )
+                                 , Constant = True
+                                ) for catPars in self._tagCats[ 1 : ]
+                          ]
+
         else :
             self._tagCats = tagCats
+            tagCatCoefs = [ catPars[6] for catPars in self._tagCats[ 1 : ] ]
 
-        tagCatCoefs = [ catPars[6] for catPars in self._tagCats[ 1 : ] ]
         ATagEffs    = [ catPars[7] for catPars in self._tagCats[ 1 : ] ]
         dilutions = [ ]
         ADilWTags = [ ]
@@ -617,6 +627,7 @@ class Linear_TaggingCategories( TaggingCategories ) :
             if hasattr( self, '_estWTag' ) :
                 estWTag = self._estWTag
             else :
+                from RooFitWrappers import ConstVar
                 estWTag = ConstVar( Name = 'estWTag%d' % ( cat + 1 ), Title = 'Estimated wrong tag probability', Value = catPars[3] )
                 self._estWTags.append(estWTag)
 
@@ -638,6 +649,10 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                                  , AP1        = self._wTagAP1
                                                 )
                             )
+
+        # adjust errors on calibration parameters
+        if not wTagP0Constraint : self._wTagP0.setError(  3. * self._wTagP0.getError() )
+        if not wTagP1Constraint : self._wTagP1.setError( 17. * self._wTagP1.getError() )
 
         # check for remaining arguments and initialize
         self._check_extraneous_kw( kwargs )
@@ -764,13 +779,14 @@ class BinnedTaggingPdf( _util_parse_mixin ) :
             self._tagCatCoefs = [ ]
             for coefIter in range( self._numTagCats ) :
                 if self._data :
-                    coefVal = ( self._nUntB + self._nUntBbar ) if coefIter == 0 else ( self._nTagB[coefIter] + self._nTagBbar[coefIter] )
-                    coefErr = 1.2 * sqrt(coefVal)
+                    coefVal = ( self._nUntB + self._nUntBbar ) if coefIter == 0\
+                              else ( self._nTagB[coefIter] + self._nTagBbar[coefIter] )
+                    coefErr = sqrt(coefVal)
                     coefVal /= self._data.sumEntries()
                     coefErr /= self._data.sumEntries()
                 else :
                     coefVal = ( 1. - float(coefIter) / float(self._numTagCats) ) / float(self._numTagCats)
-                    coefErr = 0.1
+                    coefErr = 0.01
 
                 self._parseArg( self._namePF + 'tagCatCoef%d' % coefIter, kwargs, ContainerList = self._tagCatCoefs
                                , Title    = 'Tagging category coefficient %d' % coefIter
@@ -800,29 +816,29 @@ class TagUntag_BinnedTaggingPdf( BinnedTaggingPdf ) :
             # asymmetry between this untagged coefficient and provided untagged coefficient
             if self._data :
                 AUntVal = float( self._nUntB + self._nUntBbar )
-                AUntErr = 1.2 * sqrt(AUntVal)
+                AUntErr = sqrt(AUntVal)
                 AUntVal = AUntVal / self._data.sumEntries() / self._ws[ self._tagCatCoefNames[0] ].getVal() - 1.
                 AUntErr /=  self._data.sumEntries() * self._ws[ self._tagCatCoefNames[0] ].getVal()
             else :
                 AUntVal = 0.
-                AUntErr = 0.1
+                AUntErr = 0.01
 
             self._parseArg( self._namePF + 'AUntagged', kwargs, Title  = 'Untagged-tagged asymmetry in tagging category coefficients'
                            , Value = AUntVal, Error = AUntErr, MinMax = ( -1., 1. ) )
             AUntagged = getattr( self, '_' + self._namePF + 'AUntagged' )
 
         # B-Bbar asymmetry for untagged events
-        AUntBBbarErr = 1.2 / sqrt( float( self._nUntB + self._nUntBbar ) ) if self._data else 0.1
-        self._parseArg( self._namePF + 'AUntBBbar', kwargs, Title = 'Untagged B-Bbar asymmetry', Value = 0., Error = AUntBBbarErr
-                       , MinMax = ( -1., 1. ) , Constant = True )
+        AUntBBbarErr = 1. / sqrt( float( self._nUntB + self._nUntBbar ) ) if self._data else 0.01
+        self._parseArg( self._namePF + 'AUntBBbar', kwargs, Title = 'Untagged B-Bbar asymmetry'
+                       , Value = 0., Error = AUntBBbarErr, MinMax = ( -1., 1. ) , Constant = True )
         AUntBBbar = getattr( self, '_' + self._namePF + 'AUntBBbar' )
 
         # B-Bbar asymmetry for tagged events
         ATagBBbarVal = float( self._nTagB[0] - self._nTagBbar[0]) / float( self._nTagB[0] + self._nTagBbar[0] )\
                        if self._data else 0.
-        ATagBBbarErr = 1.2 / sqrt( float( self._nTagB[0] + self._nTagBbar[0] ) ) if self._data else 0.1
-        self._parseArg( self._namePF + 'ATagBBbar', kwargs, Title = 'Tagged B-Bbar asymmetry', Value = ATagBBbarVal, Error = ATagBBbarErr
-                       , MinMax = ( -1., 1. ) )
+        ATagBBbarErr = 1. / sqrt( float( self._nTagB[0] + self._nTagBbar[0] ) ) if self._data else 0.01
+        self._parseArg( self._namePF + 'ATagBBbar', kwargs, Title = 'Tagged B-Bbar asymmetry'
+                       , Value = ATagBBbarVal, Error = ATagBBbarErr , MinMax = ( -1., 1. ) )
         ATagBBbar = getattr( self, '_' + self._namePF + 'ATagBBbar' )
 
         # tagging category asymmetry factors
@@ -886,12 +902,12 @@ class TagCats_BinnedTaggingPdf( BinnedTaggingPdf ) :
             for catIter in range( 1, self._numTagCats ) :
                 if self._data :
                     ACatVal = float( self._nTagB[catIter] + self._nTagBbar[catIter] )
-                    ACatErr = 1.2 * sqrt(ACatVal)
+                    ACatErr = sqrt(ACatVal)
                     ACatVal = ACatVal / self._data.sumEntries() / self._ws[ self._tagCatCoefNames[catIter] ].getVal() - 1.
                     ACatErr /= self._data.sumEntries() * self._ws[ self._tagCatCoefNames[catIter] ].getVal()
                 else :
                     ACatVal = 0.
-                    ACatErr = 0.1
+                    ACatErr = 0.01
 
                 self._parseArg( self._namePF + 'ATagCat%s' % catIter, kwargs, ContainerList = self._ATagCats
                                , Title  = 'Tagging category coefficient asymmetry %d' % catIter
@@ -914,10 +930,10 @@ class TagCats_BinnedTaggingPdf( BinnedTaggingPdf ) :
         for catIter in range(self._numTagCats) :
             if catIter != 0 and self._data :
                 ABBbarVal = float(self._nTagB[catIter] - self._nTagBbar[catIter]) / float(self._nTagB[catIter] + self._nTagBbar[catIter])
-                ABBbarErr = 1.2 / sqrt( float( self._nTagB[catIter] + self._nTagBbar[catIter] ) )
+                ABBbarErr = 1. / sqrt( float( self._nTagB[catIter] + self._nTagBbar[catIter] ) )
             else :
                 ABBbarVal = 0.
-                ABBbarErr = 0.1
+                ABBbarErr = 0.01
 
             self._parseArg(  self._namePF + 'ABBbar%d' % catIter, kwargs, ContainerList = self._ABBbars
                            , Title    = 'B-Bbar asymmetry tagging category %d' % catIter

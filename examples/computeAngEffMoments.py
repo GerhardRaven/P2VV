@@ -6,8 +6,9 @@ from math import pi, sin, cos, sqrt
 
 # job parameters
 readMoments = False
+multPdfEff  = True
 makePlots   = True
-transAngles = True
+transAngles = False
 
 momentsFile = 'effMoments' + ( 'Trans' if transAngles else 'Hel' )
 plotsFile   = 'effMoments' + ( 'Trans' if transAngles else 'Hel' ) + '.ps'
@@ -166,7 +167,8 @@ physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( func, 1, pdf, normS
 
 # moments builder with angular basis functions
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-#indices += [ ( PIndex, 2, YIndex1 ) for PIndex in range( 3, 10 ) for YIndex1 in [ -2, 1 ] ]
+#indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ +1, -1 ] ]
+#indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ -2, 1 ] ]
 
 basisMoments = RealMomentsBuilder()
 basisMoments.appendPYList( angleFuncs.angles, indices, PDF = pdf, NormSet = normSet )
@@ -185,30 +187,31 @@ else :
 
 # print moments to screen
 physMoments.Print(  Scale = 1. / 16. / sqrt(pi)                       )
-basisMoments.Print( Scale = 1. /  2. / sqrt(pi), MinSignificance = 3. )
+basisMoments.Print( Scale = 1. /  2. / sqrt(pi), MinSignificance = 5. )
 
 
 ###########################################################################################################################################
 ## multiply PDF with angular efficiency ##
 ##########################################
 
-effPdf = basisMoments * pdf
+if multPdfEff :
+  effPdf = basisMoments * pdf
 
-basisMomentsSignif = RealMomentsBuilder()
-basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles \
-                                               else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
-                               )
-basisMomentsSignif.read(momentsFile + 'Basis')
-basisMomentsSignif.Print( Scale = 1. / 2. / sqrt(pi) )
+  basisMomentsSignif = RealMomentsBuilder()
+  basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles \
+                                                 else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+                                 )
+  basisMomentsSignif.read(momentsFile + 'Basis')
+  basisMomentsSignif.Print( Scale = 1. / 2. / sqrt(pi) )
 
-effSignifPdf = basisMomentsSignif.multiplyPDFWithEff( pdf, Name = 'sig_t_angles_tagCat_iTag_x_EffSignif', EffName = 'effSignif' )
+  effSignifPdf = basisMomentsSignif.multiplyPDFWithEff( pdf, Name = 'sig_t_angles_tagCat_iTag_x_EffSignif', EffName = 'effSignif' )
 
 
 ###########################################################################################################################################
 ## make some plots ##
 #####################
 
-if makePlots :
+if multPdfEff and makePlots :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
@@ -235,4 +238,3 @@ if makePlots :
 
     # print canvas to file
     timeAnglesCanv.Print(plotsFile)
-

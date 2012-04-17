@@ -13,7 +13,7 @@ fastFit                 = False
 makeObservablePlots     = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -35,11 +35,12 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU              = 1
-               , Optimize            = 1
+fitOpts = dict(  NumCPU              = 8
+               , Optimize            = 2
                , Timer               = 1
-#               , Minos               = True
+#               , Minos               = False
 #               , Hesse               = False
+#               , Save                = True
 #               , Minimizer           = 'Minuit2'
               )
 pdfConfig['fitOptions'] = fitOpts
@@ -50,34 +51,29 @@ markStyle = 8
 markSize  = 0.4
 
 # PDF options
-pdfConfig['transversityAngles'] = False  # default: False | nominal: True
-
-pdfConfig['bkgAnglePdf']        = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']      = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['transversityAngles'] = False
+pdfConfig['bkgAnglePdf']        = ''
+pdfConfig['sigTaggingPdf']      = 'tagUntag' #'tagCats'
+pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative' #'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
 
-pdfConfig['conditionalTagging'] = True  # nominal: True
-pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
+pdfConfig['conditionalTagging'] = True
+pdfConfig['continuousEstWTag']  = False
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True
 
-pdfConfig['eventTimeResolution'] = True  # nominal: True
+pdfConfig['eventTimeResolution'] = True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
 pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
-pdfConfig['amplitudeParam'] = 'bank' # default: 'bank' | nominal: 'phasesSWaveFrac'
-pdfConfig['polarSWave']     = True  # default/nominal: True
-pdfConfig['AparParam']      = 'Mag2ReIm' # default: 'Mag2ReIm' | nominal: 'phase'
+pdfConfig['amplitudeParam'] = 'bank' #'phasesSWaveFrac'
+pdfConfig['polarSWave']     = True
+pdfConfig['AparParam']      = 'Mag2ReIm'
 
-pdfConfig['carthLambdaCP'] = False  # default/nominal: False
-constLambdaCPSq = False  # default: False / nominal: True
-
-constTagCatCoefs = True  # default: True / nominal: False
-constAvgCEvenOdd = False   # default: False / nominal: True
+pdfConfig['carthLambdaCP'] = False
 
 if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
@@ -105,8 +101,8 @@ pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPs
 pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 #pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransFullBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
-                                 else 'effMomentsHelFullBasis'
+pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
+                                 else 'effMomentsHelBasis'
 #pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 #pdfConfig['angEffMomentsFile'] = None
 
@@ -194,13 +190,6 @@ if generateData :
     print 'JvLFit: generating %d events' % nEvents
     fitData = pdf.generate( obsSetP2VV, nEvents )
 
-    # additional observables
-    if not pdfConfig['transversityAngles'] :
-        from P2VVGeneralUtils import addTransversityAngles
-        addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
-                                      , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
-
-    # write data to file
     from P2VVGeneralUtils import writeData
     writeData( dataSetFile, dataSetName, fitData )
 
@@ -217,12 +206,12 @@ else :
 
 if ( readData or generateData ) and doFit :
     # float/fix values of some parameters
-    if pdfConfig['nominalPdf'] or ( not pdfConfig['carthLambdaCP'] and constLambdaCPSq ) : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    if pdfConfig['nominalPdf'] : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
-        if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
+        if pdfConfig['nominalPdf'] : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-    if pdfConfig['nominalPdf'] or not constTagCatCoefs :
+    if pdfConfig['nominalPdf'] :
         pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
     if fastFit :
@@ -240,84 +229,8 @@ if ( readData or generateData ) and doFit :
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = sumW2Error, Save = True, **fitOpts )
-    else                 : fitResult = pdf.fitTo( fitData,                          Save = True, **fitOpts )
-
-    # reparameterize amplitudes
-    if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave'] and pdfConfig['AparParam'] == 'Mag2ReIm' :
-        from ROOT import RooArgSet
-        parList = fitResult.floatParsFinal()
-        parSet  = RooArgSet(parList)
-        parCovs = fitResult.covarianceMatrix()
-
-        from math import pi
-        from ROOT import RooRealVar, RooArgList
-        from P2VVParameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
-        ampPhys = [  RooRealVar( 'A0Mag2_phys',     'A0Mag2_phys',     A02,      0.,      1.      )  # 0
-                   , RooRealVar( 'AperpMag2_phys',  'AperpMag2_phys',  Aperp2,   0.,      1.      )  # 1
-                   , RooRealVar( 'f_S_phys',        'f_S_phys',        f_S,      0.,      1.      )  # 2
-                   , RooRealVar( 'AparPhase_phys',  'AparPhase_phys',  AparPh,  -2. * pi, 2. * pi )  # 3
-                   , RooRealVar( 'AperpPhase_phys', 'AperpPhase_phys', AperpPh, -2. * pi, 2. * pi )  # 4
-                   , RooRealVar( 'ASPhase_phys',    'ASPhase_phys',    ASPh,    -2. * pi, 2. * pi )  # 5
-                  ]
-        ampPhysList = RooArgList()
-        for amp in ampPhys : ampPhysList.add(amp)
-
-        ampMeasNames = [  'AparMag2'    # 0
-                        , 'ReApar'      # 1
-                        , 'ImApar'      # 2
-                        , 'AperpMag2'   # 3
-                        , 'AperpPhase'  # 4
-                        , 'ASOddMag2'   # 5
-                        , 'ASOddPhase'  # 6
-                       ]
-        ampMeasFuncs = {  ampMeasNames[0] : '(1.-@0-@1)/@0'
-                        , ampMeasNames[1] : 'sqrt((1.-@0-@1)/@0)*cos(@3)'
-                        , ampMeasNames[2] : 'sqrt((1.-@0-@1)/@0)*sin(@3)'
-                        , ampMeasNames[3] : '@1/@0'
-                        , ampMeasNames[4] : '@4'
-                        , ampMeasNames[5] : '@2/(1.-@2)/@1'
-                        , ampMeasNames[6] : '@5-@4'
-                       }
-
-        from ROOT import RooFormulaVar
-        ampMeasList = RooArgList()
-        ampFuncsList = RooArgList()
-        ampMeasInds = { }
-        ampMeas = [ ]
-        ampFuncs = [ ]
-        for ampName in ampMeasNames :
-            ampMeas.append( RooRealVar( ampName + '_meas', ampName + '_meas', parSet.getRealValue(ampName), -1e+30, 1e+30 ) )
-            ampFuncs.append( RooFormulaVar( ampName + '_func', ampMeasFuncs[ampName], ampPhysList ) )
-            ampMeasList.add( ampMeas[-1] )
-            ampFuncsList.add( ampFuncs[-1] )
-            ampMeasInds[ampName] = parList.index(ampName)
-        ampMeasSet = RooArgSet(ampMeasList)
-
-        from ROOT import TMatrixDSym
-        ampMeasCovs = TMatrixDSym(len(ampMeasNames))
-        for ampIter, ampName in enumerate(ampMeasNames) :
-            for ampIter1, ampName1 in enumerate(ampMeasNames) :
-                ampMeasCovs[ampIter][ampIter1] = parCovs[ampMeasInds[ampName]][ampMeasInds[ampName1]]
-
-        from ROOT import RooDataSet, RooMultiVarGaussian
-        ampsData = RooDataSet( 'ampsData', 'Measured transversity amplitudes', ampMeasSet )
-        ampsGauss = RooMultiVarGaussian( 'ampsGauss', 'Gaussian for measured transversity amplitudes'
-                                        , ampMeasList, ampFuncsList, ampMeasCovs )
-        ampsData.add(ampMeasSet)
-        ampsFitResult = ampsGauss.fitTo( ampsData, Save = True, **fitOpts )
-
-        print '\nJvLFit: reparameterization of transversity amplitudes:'
-        ampsData.Print()
-        ampMeasList.Print('v')
-        ampMeasCovs.Print()
-        ampsFitResult.Print()
-        ampsFitResult.covarianceMatrix().Print()
-
-    print 'JvLFit: parameters:'
-    fitData.Print()
-    fitResult.Print()
-    fitResult.covarianceMatrix().Print()
+    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = sumW2Error, **fitOpts )
+    else                 : fitResult = pdf.fitTo( fitData,                          **fitOpts )
 
     print 120 * '=' + '\n'
 
@@ -497,8 +410,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
         anglesCanv.Print(plotsFile)
         pdfBuild['massCanv'].Print(plotsFile)
         bkgTimeCanv.Print(plotsFile)
-        pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
-        pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
+        pdfBuild['bkgAnglesCanv'].Print(plotsFile)
         pdfBuild['estWTagCanv'].Print(plotsFile + ')')
 
     else :
@@ -507,12 +419,10 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
 elif pdfConfig['makePlots'] :
     pdfBuild['massCanv'].Print(plotsFile + '(')
     bkgTimeCanv.Print(plotsFile)
-    pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
-    pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
+    pdfBuild['bkgAnglesCanv'].Print(plotsFile)
     pdfBuild['estWTagCanv'].Print(plotsFile + ')')
 
 if dllPars :
-    # make delta log-likelihood plots
     if pdfConfig['amplitudeParam'] == 'phasesSWaveFrac' :
         MparMin =  0.21
         MparMax =  0.25
