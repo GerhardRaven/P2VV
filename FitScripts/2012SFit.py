@@ -30,6 +30,7 @@ tmincut = 0.3
 path =  '/data/bfys/dveijk/DataJpsiPhi/2012/'
 path =  '/Users/raven/data/'
 fpsi = 0.7
+fpsi = 0
 fitname = 'sfit' if fpsi==0 else 'sfit_mm'
 fitname += '_hel' if useHelicity else '_tr'
 
@@ -192,12 +193,14 @@ from P2VVGeneralUtils import RealMomentsBuilder
 from itertools import chain
 #momindices = chain(indices(3,3),((i0,2,j0) for i0 in range(3,10) for j0 in [1,-2]))
 #These are the relevant terms as found with MinSignificance>3
-momindices = [(0,0,0),(0,2,0),(0,2,2),(2,0,0)]
+momindices = [(0,0,0),(2,0,0),(0,2,0) ] 
+if not useHelicity : momindices += [ (0,2,2) ]
 
 eff = RealMomentsBuilder()
 #Don't specify pdf and normset here, we're gonna read moments and not calculate any.
 eff.appendPYList( angles.angles, momindices)
-eff.read(path+'effmoments_tcut_%s.txt'%(tmincut))
+#eff.read(path+'effmoments_tcut_%s.txt'%(tmincut))
+eff.read(path+'effMoments%sFullBasis.txt'%( 'Hel' if useHelicity else 'Trans') )
 eff.Print()
 
 #Build Angular acceptance corrected PDF
@@ -226,6 +229,8 @@ else :
     masspdf = buildPdf((signal,psi,background), Observables = (m,mpsi), Name = 'mass2pdf')
 
 masspdf.fitTo(data,**fitOpts)
+for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
 
 
 massplot = True
@@ -250,10 +255,6 @@ if massplot:
 
             )
 
-for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
-
-
 if True :
     # TODO: one canvas, overlay all components, normalized area, different color
     mcol = { 'sgnl' : kGreen, 'cmb' : kRed, 'psi' : kBlue }
@@ -273,7 +274,6 @@ if True :
         fr.Draw( pad = p)
     scanvas.Print('%s_splot.pdf'% (fitname),'pdf')
 
-assert False
 
 def search(fname,path) :
     import os
@@ -294,7 +294,7 @@ if fit or not paramfile:
     sfitresult.Print()
     sfitresult.writepars(fitname+'result',False)
     fitset = pdf.getParameters(data)
-    fitset.writeToFile(fitname)
+    fitset.writeToFile(fitname+'_params.txt')
 
 ########
 # PLOT #
