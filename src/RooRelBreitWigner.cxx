@@ -20,9 +20,9 @@
 ClassImp(RooRelBreitWigner)
 
 RooRelBreitWigner::RooRelBreitWigner(const char *name, const char *title,
-			 RooAbsReal& _x, RooAbsReal& _mean,
-			 RooAbsReal& _width, RooAbsReal& _spin, RooAbsReal& _radius,
-                         RooAbsReal& _massa, RooAbsReal& _massb) :
+             RooAbsReal& _x, RooAbsReal& _mean,
+             RooAbsReal& _width, RooAbsReal& _spin, RooAbsReal& _radius,
+             RooAbsReal& _massa, RooAbsReal& _massb) :
   RooAbsPdf(name,title),
   x("x","Dependent",this,_x),
   mean("mean","Mean",this,_mean),

@@ -680,8 +680,8 @@ class Trivial_TagPdf( _util_parse_mixin ) :
     def pdf( self ) : return self._pdf
 
     def __init__( self, tagdecision, **kwargs ) :
+        double =  set([ -1,    +1 ])==set([ i for i in tagdecision.states().itervalues() ] )
         triple =  set([ -1, 0, +1 ])==set([ i for i in tagdecision.states().itervalues() ] )
-        double =  set([ -1, +1 ])==set([ i for i in tagdecision.states().itervalues() ] )
         assert triple or double
 
         namePF = kwargs.pop( 'NamePrefix', '' )
