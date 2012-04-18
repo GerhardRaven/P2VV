@@ -130,7 +130,7 @@ class LP2011_Background_Time( TimePdf ) :
     def __init__(self, time, resolutionModel, **kwargs) :
         Name = kwargs.pop('Name', self.__class__.__name__)
         self._ml_tau = self._parseArg('%s_ml_tau' % Name, kwargs, Title = 'medium lifetime background ', Unit = 'ps', Value = 0.152, MinMax = (0.01,0.5) )
-        self._ll_tau = self._parseArg('%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.06, MinMax = (0.5,2.5) )
+        self._ll_tau = self._parseArg('%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.06, MinMax = (0.2,2.5) )
         self._fll = self._parseArg('%s_fll' % Name, kwargs, Title = 'fraction long lifetime background', Value = 0.2, MinMax = (0., 1.) )
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay

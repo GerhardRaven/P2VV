@@ -5,12 +5,12 @@ from ROOT import RooMsgService
 RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
 RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
 
-## import RootStyle
-## from ROOT import (gROOT,gStyle,TStyle)
-## MyStyle = RootStyle.MyStyle()
-## gROOT.SetStyle(MyStyle.GetName())
-## gROOT.ForceStyle()
-## gStyle.UseCurrentStyle()   
+import RootStyle
+from ROOT import (gROOT,gStyle,TStyle)
+MyStyle = RootStyle.MyStyle()
+gROOT.SetStyle(MyStyle.GetName())
+gROOT.ForceStyle()
+gStyle.UseCurrentStyle()   
 
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')
@@ -170,6 +170,7 @@ eff.Print()
 #Build Angular acceptance corrected PDF
 sig_t_angles_iTag = eff * sig_t_angles_iTag
 
+assert False
 ##############################
 ### Proper time acceptance ###
 ##############################
@@ -189,24 +190,25 @@ from P2VVGeneralUtils import SData, splot
 masspdf = buildPdf((signal,background), Observables = (m,), Name = 'masspdf')
 masspdf.fitTo(data,**fitOpts)
 
-massplot = False
+massplot = True
 
 if massplot:
     from ROOT import kDashed, kRed, kGreen, TCanvas, TLatex
     from P2VVGeneralUtils import plot
     canvas = TCanvas()
     plot( canvas, m, data, masspdf, components = { 'sig_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen )
-                                                 , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
-                                                 }
-        , pdfOpts   = dict( LineWidth = 3 )
-        , plotResidHist = True
-        , dataOpts  = { 'MarkerSize' : 0.9,      'XErrorSize' : 0  }
-        , frameOpts = dict( Object = ( TLatex(0.55,.8,"#splitline{LHCb preliminary}{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}", NDC = True), )
-                          , Bins  = 50
-                          , Title = ""
-                          )
+                                                   , 'bkg_m' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed   ) 
+                                                   }
+          , pdfOpts   = dict( LineWidth = 3 )
+          , plotResidHist = False
+          , dataOpts  = { 'MarkerSize' : 1.5,      'XErrorSize' : 0  }
+          , frameOpts = dict(Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.03 fb^{-1}}}", NDC = True), )
+                             , Bins  = 50
+                             , Title = ""
+                             )
+          )
 
-        )
+assert False
 
 for p in masspdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot_m = SData(Pdf = masspdf, Data = data, Name = 'MassSplot')
