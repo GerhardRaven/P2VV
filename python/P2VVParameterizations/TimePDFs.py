@@ -118,6 +118,54 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         BDecayBasisCoefficients.__init__( self, **args )
 
 
+def JpsiphiBDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, amplitudes, CP, order ) :
+    from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
+    basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes, CP, tag, tagging['dilution'], order )
+    from RooFitWrappers import BDecay
+    return  BDecay(  Name                   = Name
+                   , time                   = time
+                   , dm                     = lifetimeParams['dM']
+                   , tau                    = lifetimeParams['MeanLifetime']
+                   , dGamma                 = lifetimeParams['dGamma']
+                   , resolutionModel        = sigtres['model']
+                   , coshCoef               = basisCoefficients['cosh']
+                   , cosCoef                = basisCoefficients['cos']
+                   , sinhCoef               = basisCoefficients['sinh']
+                   , sinCoef                = basisCoefficients['sin']
+                   , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
+                   , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                              + sigtres.externalConstraints()\
+                                              + tagging.externalConstraints()
+                  )
+
+def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, amplitudes, CP, order ) :
+    from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
+    basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes, CP, order )
+    from RooFitWrappers import BTagDecay
+    return  BTagDecay(  Name                   = Name
+                      , time                   = time
+                      , iTag                   = tag
+                      , dm                     = lifetimeParams['dM']
+                      , tau                    = lifetimeParams['MeanLifetime']
+                      , dGamma                 = lifetimeParams['dGamma']
+                      , resolutionModel        = sigtres['model']
+                      , coshCoef               = basisCoefficients['cosh']
+                      , cosCoef                = basisCoefficients['cos']
+                      , sinhCoef               = basisCoefficients['sinh']
+                      , sinCoef                = basisCoefficients['sin']
+                      , dilution               = tagging['dilution']
+                      , ADilWTag               = tagging['ADilWTag']
+                      , avgCEven               = tagging['avgCEven']
+                      , avgCOdd                = tagging['avgCOdd']
+                      , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
+                      , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                                 + sigtres.externalConstraints()\
+                                                 + tagging.externalConstraints()
+                     )
+
+
+
+
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 class TimePdf( _util_parse_mixin ) :
     def __init__(self, **kwargs ) :
