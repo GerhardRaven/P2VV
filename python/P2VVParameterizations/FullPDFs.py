@@ -203,6 +203,8 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['polarSWave']     = False
         self['AparParam']      = 'cos'                   # 'phase' / 'cos' / 'real' / 'ReIm'
 
+        self['constrainDeltaM'] = True
+
         self['carthLambdaCP'] = False
 
         self['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -298,6 +300,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         amplitudeParam = pdfConfig.pop('amplitudeParam')
         polarSWave     = pdfConfig.pop('polarSWave')
         AparParam      = pdfConfig.pop('AparParam')
+
+        constrainDeltaM = pdfConfig.pop('constrainDeltaM')
 
         carthLambdaCP = pdfConfig.pop('carthLambdaCP')
 
@@ -503,11 +507,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
             if nominalPdf or contEstWTag :
                 self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._sigSWeightData, estWTag = estWTag
-                                                  , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging )
+                                                  , wTagP0Constraint = True if nominalPdf else constrainTagging
+                                                  , wTagP1Constraint = True if nominalPdf else constrainTagging )
             else :
                 self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._sigSWeightData, estWTagName = estWTag.GetName()
                                                   , TagCats = tagCats, NumSigmaTagBins = 1.
-                                                  , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging )
+                                                  , wTagP0Constraint = True if nominalPdf else constrainTagging
+                                                  , wTagP1Constraint = True if nominalPdf else constrainTagging )
 
             tagCatP2VV = self._tagCats['tagCat']
             tagCatP2VV.setIndex(1)
@@ -565,7 +571,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
         dGammaVar = dict( Name = 'dGamma' )
         if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
-        self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = True )
+        self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = True if nominalPdf else constrainDeltaM )
 
         if nominalPdf or eventTimeRes :
             from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
@@ -597,7 +603,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if not nominalPdf and self._iTagZeroTrick :
             from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams(  estWTag = estWTag, p0 = dict( Name = 'wTagP0' ), p1 = dict( Name = 'wTagP1' )
-                                                , p0Constraint = True, p1Constraint = True )
+                                                , p0Constraint = True if nominalPdf else constrainTagging
+                                                , p1Constraint = True if nominalPdf else constrainTagging )
 
             args = dict(  iTag     = tagDecision
                         , dilution = self._taggingParams['dilution']
