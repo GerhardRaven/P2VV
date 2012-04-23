@@ -8,12 +8,12 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = True
+doFit                   = False
 fastFit                 = False
 makeObservablePlots     = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['makePlots']  = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -56,13 +56,14 @@ pdfConfig['bkgAnglePdf']        = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']      = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
+pdfConfig['parameterizeKKMass'] = True  # nominal: False
 
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
-pdfConfig['eventTimeResolution'] = True  # nominal: True
+pdfConfig['eventTimeResolution'] = False  # nominal: True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
@@ -498,6 +499,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     if pdfConfig['makePlots'] :
         anglesCanv.Print(plotsFile)
         pdfBuild['massCanv'].Print(plotsFile)
+        pdfBuild['KKMassCanv'].Print(plotsFile)
         bkgTimeCanv.Print(plotsFile)
         pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
         pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
@@ -508,6 +510,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
 
 elif pdfConfig['makePlots'] :
     pdfBuild['massCanv'].Print(plotsFile + '(')
+    pdfBuild['KKMassCanv'].Print(plotsFile)
     bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)

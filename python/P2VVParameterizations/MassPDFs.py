@@ -2,10 +2,60 @@ from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
 class MassPdf( _util_parse_mixin ) :
     def __init__(self, **kwargs ) :
-        for (k,v) in kwargs.iteritems() :
-            setattr(self,'_'+k,v)
-    def pdf(self) :
-        return self._pdf
+        for ( k, v ) in kwargs.iteritems() : setattr( self, '_' + k, v )
+    def __getitem__( self, kw ) : return getattr( self, '_' + kw )
+    def pdf(self) : return self._pdf
+
+class Binned_MassPdf( MassPdf ) :
+    def __init__( self, Name, Mass, **kwargs ) :
+        self._name = Name
+        self._mass = Mass
+
+        # create binning
+        from array import array
+        binBounds = kwargs.pop( 'BinBoundaries', [ self._mass.getMin(), self._mass.getMax() ] )
+        self._binBounds = array( 'd', binBounds )
+        self._numBins = len(binBounds) - 1
+
+        from ROOT import RooBinning
+        self._bins = RooBinning( self._numBins, self._binBounds, self._name + '_binning' )
+        self._mass.setBinning( self._bins, self._name + '_binning' )
+
+        # determine number of events in each bin
+        self._data = kwargs.pop( 'Data', None )
+        if self._data :
+            assert self._mass._var in self._data.get(0),\
+                    'Binned_MassPdf.__init__(): %s is not and observable in the provided data set' % self._mass.GetName()
+            self._numEvents = self._data.sumEntries()
+            self._numEventsBins = self._numBins * [ 0. ]
+            for obsSet in self._data :
+                bin = self._bins.binNumber( obsSet.getRealValue( self._mass.GetName() ) )
+                self._numEventsBins[bin] += self._data.weight()
+                
+
+        # create bin coefficients
+        from RooFitWrappers import RealVar
+        self._coefs = [ RealVar(  '%s_coef%d' % ( self._name, bin )
+                                , Title    = '%s bin coefficient %d' % ( self._name, bin )
+                                , Value    = self._numEventsBins[bin] / self._numEvents if self._data else 1. / self._numBins
+                                , MinMax   = ( 0., 1. )
+                                , Constant = True if self._data else False
+                               ) if bin != 0 else None for bin in range( self._numBins )
+                      ]
+        del self._coefs[0]
+
+        # create a BinnedPdf
+        from RooFitWrappers import BinnedPdf
+        pdf = BinnedPdf(  Name = self._name
+                        , Observable = self._mass
+                        , Binning = self._bins
+                        , Coefficients = self._coefs
+                        , BinIntegralCoefs = True
+                       )
+
+        # initialize
+        MassPdf.__init__( self, pdf = pdf )
+
 
 class LP2011_Signal_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
