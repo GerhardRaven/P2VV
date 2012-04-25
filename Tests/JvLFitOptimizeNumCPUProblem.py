@@ -101,8 +101,9 @@ pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPs
 pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 #pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
 
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
-                                 else 'effMomentsHelBasis'
+pdfConfig['angEffMomentsFile'] = '/project/bfys/jleerdam/softDevel/Erasmus/P2VV2/release/test/effMomentsTransFullBasis'\
+                                 if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
+                                 else '/project/bfys/jleerdam/softDevel/Erasmus/P2VV2/release/test/effMomentsHelFullBasis'
 #pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
 #pdfConfig['angEffMomentsFile'] = None
 
