@@ -8,12 +8,12 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = False
-fastFit                 = False
+doFit                   = True
+fastFit                 = True
 makeObservablePlots     = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = True
-pdfConfig['SFit']       = False
+pdfConfig['makePlots']  = False
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -56,9 +56,9 @@ pdfConfig['bkgAnglePdf']        = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']      = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
-pdfConfig['parameterizeKKMass'] = True  # nominal: False
+pdfConfig['parameterizeKKMass'] = 'simultaneous'  # nominal: ''
 
-pdfConfig['conditionalTagging'] = True  # nominal: True
+pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
@@ -151,6 +151,8 @@ time       = obsSetP2VV[0]
 angles     = obsSetP2VV[ 1 : 4 ]
 iTag       = obsSetP2VV[4]
 BMass      = pdfBuild['observables']['BMass']
+mumuMass   = pdfBuild['observables']['mumuMass']
+KKMass     = pdfBuild['observables']['KKMass']
 estWTag    = pdfBuild['observables']['estWTag']
 timeRes    = pdfBuild['observables']['timeRes']
 
@@ -228,6 +230,11 @@ if ( readData or generateData ) and doFit :
     if pdfConfig['nominalPdf'] or not constTagCatCoefs :
         pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
+    if pdfConfig['parameterizeKKMass'] == 'functions' :
+        for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
+        if not pdfConfig['SFit'] :
+            for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
+
     if fastFit :
         pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
         for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
@@ -256,33 +263,62 @@ if ( readData or generateData ) and doFit :
         from math import pi
         from ROOT import RooRealVar, RooArgList
         from P2VVParameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
+
+        # physics parameters to determine
         ampPhys = [  RooRealVar( 'A0Mag2_phys',     'A0Mag2_phys',     A02,      0.,      1.      )  # 0
-                   , RooRealVar( 'AperpMag2_phys',  'AperpMag2_phys',  Aperp2,   0.,      1.      )  # 1
-                   , RooRealVar( 'f_S_phys',        'f_S_phys',        f_S,      0.,      1.      )  # 2
-                   , RooRealVar( 'AparPhase_phys',  'AparPhase_phys',  AparPh,  -2. * pi, 2. * pi )  # 3
-                   , RooRealVar( 'AperpPhase_phys', 'AperpPhase_phys', AperpPh, -2. * pi, 2. * pi )  # 4
-                   , RooRealVar( 'ASPhase_phys',    'ASPhase_phys',    ASPh,    -2. * pi, 2. * pi )  # 5
+                   , RooRealVar( 'AparPhase_phys',  'AparPhase_phys',  AparPh,  -2. * pi, 2. * pi )  # 1
+                   , RooRealVar( 'AperpMag2_phys',  'AperpMag2_phys',  Aperp2,   0.,      1.      )  # 2
+                   , RooRealVar( 'AperpPhase_phys', 'AperpPhase_phys', AperpPh, -2. * pi, 2. * pi )  # 3
                   ]
+
+        if pdfConfig['parameterizeKKMass'] :
+            for bin in range( pdfConfig['KKMassBinning'].numBins() ) :
+                ampPhys += [  RooRealVar( 'f_S_phys_%d' % bin,     'f_S_phys_%d' % bin,     f_S,   0.,      1.      )  # 4 + 2 * bin
+                            , RooRealVar( 'ASPhase_phys_%d' % bin, 'ASPhase_phys_%d' % bin, ASPh, -2. * pi, 2. * pi )  # 5 + 2 * bin
+                           ]
+        else :
+            ampPhys += [  RooRealVar( 'f_S_phys',     'f_S_phys',     f_S,   0.,      1.      )  # 4
+                        , RooRealVar( 'ASPhase_phys', 'ASPhase_phys', ASPh, -2. * pi, 2. * pi )  # 5
+                       ]
+
         ampPhysList = RooArgList()
         for amp in ampPhys : ampPhysList.add(amp)
 
+        # names of parameters in likelihood fit
         ampMeasNames = [  'AparMag2'    # 0
                         , 'ReApar'      # 1
                         , 'ImApar'      # 2
                         , 'AperpMag2'   # 3
                         , 'AperpPhase'  # 4
-                        , 'ASOddMag2'   # 5
-                        , 'ASOddPhase'  # 6
                        ]
-        ampMeasFuncs = {  ampMeasNames[0] : '(1.-@0-@1)/@0'
-                        , ampMeasNames[1] : 'sqrt((1.-@0-@1)/@0)*cos(@3)'
-                        , ampMeasNames[2] : 'sqrt((1.-@0-@1)/@0)*sin(@3)'
-                        , ampMeasNames[3] : '@1/@0'
-                        , ampMeasNames[4] : '@4'
-                        , ampMeasNames[5] : '@2/(1.-@2)/@1'
-                        , ampMeasNames[6] : '@5-@4'
+
+        if pdfConfig['parameterizeKKMass'] :
+            for bin in range( pdfConfig['KKMassBinning'].numBins() ) :
+                ampMeasNames += [  'ASOddMag2_%d' % bin   # 5 + 2 * bin
+                                 , 'ASOddPhase_%d' % bin  # 6 + 2 * bin
+                                ]
+        else :
+            ampMeasNames += [  'ASOddMag2'   # 5
+                             , 'ASOddPhase'  # 6
+                            ]
+
+        # fitted parameters in terms of physics parameters
+        ampMeasFuncs = {  ampMeasNames[0] : '(1.-@0-@2)/@0'
+                        , ampMeasNames[1] : 'sqrt((1.-@0-@2)/@0)*cos(@1)'
+                        , ampMeasNames[2] : 'sqrt((1.-@0-@2)/@0)*sin(@1)'
+                        , ampMeasNames[3] : '@2/@0'
+                        , ampMeasNames[4] : '@3'
                        }
 
+        if pdfConfig['parameterizeKKMass'] :
+            for bin in range( pdfConfig['KKMassBinning'].numBins() ) :
+                ampMeasFuncs[ ampMeasNames[ 5 + 2 * bin ] ] = '@4/(1.-@%d)/@2' % ( 4 + 2 * bin )
+                ampMeasFuncs[ ampMeasNames[ 6 + 2 * bin ] ] = '@%d-@3' % ( 5 + 2 * bin )
+        else :
+            ampMeasFuncs[ ampMeasNames[5] ] = '@4/(1.-@4)/@2'
+            ampMeasFuncs[ ampMeasNames[6] ] = '@5-@3'
+
+        # create fitted parameters and functions
         from ROOT import RooFormulaVar
         ampMeasList = RooArgList()
         ampFuncsList = RooArgList()
@@ -297,12 +333,14 @@ if ( readData or generateData ) and doFit :
             ampMeasInds[ampName] = parList.index(ampName)
         ampMeasSet = RooArgSet(ampMeasList)
 
+        # get covariances from likelihood fit
         from ROOT import TMatrixDSym
         ampMeasCovs = TMatrixDSym(len(ampMeasNames))
         for ampIter, ampName in enumerate(ampMeasNames) :
             for ampIter1, ampName1 in enumerate(ampMeasNames) :
                 ampMeasCovs[ampIter][ampIter1] = parCovs[ampMeasInds[ampName]][ampMeasInds[ampName1]]
 
+        # determine values of physics parameters
         from ROOT import RooDataSet, RooMultiVarGaussian
         ampsData = RooDataSet( 'ampsData', 'Measured transversity amplitudes', ampMeasSet )
         ampsGauss = RooMultiVarGaussian( 'ampsGauss', 'Gaussian for measured transversity amplitudes'
