@@ -249,6 +249,34 @@ class Category (RooObject) :
         else:
             return False
 
+class BinningCategory( Category ) :
+    def __init__( self, Name, **kwargs ) :
+        __check_req_kw__( 'Observable', kwargs )
+        __check_req_kw__( 'Binning', kwargs )
+
+        obs = __dref__( kwargs.pop('Observable') )
+        binning = kwargs.pop('Binning')
+        if type(binning) != str : binning = binning.GetName()
+
+        from ROOT import RooBinningCategory
+        binCat = RooBinningCategory( Name, Name, obs, binning )
+
+        if kwargs.pop( 'Fundamental', False ) :
+            __check_req_kw__( 'Data', kwargs )
+            data = kwargs.pop('Data')
+            if type(data) not in [ list, tuple ] : data = [ data ]
+
+            cat = data[0].addColumn(binCat)
+            for dataSet in data[ 1 : ] : dataSet.addColumn(binCat)
+            cat = self._addObject( __dref__(cat) )
+            self._init( Name, 'RooCategory' )
+
+        else :
+            binCat = self._addObject(binCat)
+            self._init( Name, 'RooBinningCategory' )
+
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
+
 class ThresholdCategory( Category ) :
     def __init__(self,Name,**kwargs):
         __check_req_kw__( 'Observable', kwargs )
@@ -838,27 +866,38 @@ class SumPdf(Pdf):
     def _separator(self):
         return '_P_'
 
-class SimultaneousPdf(Pdf):
-    def __init__(self, Name, **kwargs):
-        if 'States' in kwargs:
-            d = { 'Name' : Name
-                  , 'States' : kwargs.pop('States')
-                  , 'Cat' : kwargs.pop('SplitCategory')['Name']
-                  }
-            # construct factory string on the fly...
-            ## pdfs = sorted([(s, pdf) for s, pdf in d['States'].iteritems()], key = lambda (s, pdf): d['Cat'].lookupType(s).getVal())
+class SimultaneousPdf( Pdf ) :
+    def __init__( self, Name, **kwargs ) :
+        args = { 'Name' : Name }
+        pdfOpts = { }
+        if 'States' in kwargs :
+            args['States'] = kwargs.pop('States')
+            args['Cat']    = kwargs.pop('SplitCategory')['Name']
+            ## pdfs = sorted([(s, pdf) for s, pdf in args['States'].iteritems()], key = lambda (s, pdf): args['Cat'].lookupType(s).getVal())
             ## pdfs = [e[1] for e in pdfs]
-            d['States'] = ','.join(['%s = %s' % (s, pdf['Name']) for s, pdf in d['States'].iteritems()])
-            s = "SIMUL::%(Name)s(%(Cat)s,%(States)s)" % d
-        elif 'SplitParameters' in kwargs:
-            splitstring = ','.join(i.GetName() for i in kwargs.pop('SplitParameters'))
-            s = "SIMCLONE::%s(%s,$SplitParam({%s},%s))"%(Name,kwargs.pop('MasterPdf').GetName(),splitstring,kwargs.pop('SplitCategory'))
-        else:
+            args['States'] = ','.join( [ '%s = %s' % ( s, pdf['Name'] ) for s, pdf in args['States'].iteritems() ] )
+            spec = 'SIMUL::%(Name)s(%(Cat)s,%(States)s)' % args
+
+        elif 'SplitParameters' in kwargs :
+            args['Master']    = kwargs.pop('MasterPdf')
+            args['SplitCat']  = kwargs.pop('SplitCategory')
+            args['SplitPars'] = ','.join( par.GetName() for par in kwargs.pop('SplitParameters') )
+            spec = 'SIMCLONE::%(Name)s(%(Master)s,$SplitParam({%(SplitPars)s},%(SplitCat)s))' % args
+
+            cond = args['Master'].ConditionalObservables()
+            if cond : pdfOpts['ConditionalObservables'] = cond
+            extCon = args['Master'].ExternalConstraints()
+            if extCon : pdfOpts['ExternalConstraints' ] = extCon
+
+        else :
             raise KeyError, 'P2VV - ERROR: SimultaneousdPdf: Must specify either SplitParameters or States'
-        self._declare(s)
-        self._init(Name,'RooSimultaneous')
-        Pdf.__init__(self , Name = Name , Type = 'RooSimultaneous')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+        self._declare(spec)
+        self._init( Name, 'RooSimultaneous' )
+        Pdf.__init__( self , Name = Name , Type = 'RooSimultaneous', **pdfOpts )
+
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
+
     def _make_pdf(self) : pass
 
 class RealSumPdf( Pdf ):
@@ -1269,6 +1308,9 @@ class Component(object):
         if 'Yield' in kw : self.setYield( *kw.pop('Yield') )
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
+    def getYield(self):
+        if 'Yield' in Component._d[self.name] : return Component._d[self.name]['Yield']
+        else : return None
     def setYield(self, *args):
         y = None
         if len(args) == 1 and type(args[0]) == RealVar:
