@@ -8,11 +8,11 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = True
-fastFit                 = True
+doFit                   = False
+fastFit                 = False
 makeObservablePlots     = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = False
+pdfConfig['makePlots']  = True
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
@@ -56,7 +56,7 @@ pdfConfig['bkgAnglePdf']        = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']      = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']  = ''
-pdfConfig['parameterizeKKMass'] = 'simultaneous'  # nominal: ''
+pdfConfig['parameterizeKKMass'] = 'simultaneous'  # default: simultaneous / nominal: ''
 
 pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
@@ -77,10 +77,10 @@ pdfConfig['AparParam']      = 'Mag2ReIm' # default: 'Mag2ReIm' | nominal: 'phase
 pdfConfig['constrainDeltaM'] = True  # nominal: True
 
 pdfConfig['carthLambdaCP'] = False  # default/nominal: False
-constLambdaCPSq = True  # default: False / nominal: True
+constLambdaCPSq = False  # default: False / nominal: True
 
 constTagCatCoefs = True  # default: True / nominal: False
-constAvgCEvenOdd = True  # default: False / nominal: True
+constAvgCEvenOdd = False  # default: False / nominal: True
 
 if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
@@ -272,7 +272,9 @@ if ( readData or generateData ) and doFit :
                   ]
 
         if pdfConfig['parameterizeKKMass'] :
-            for bin in range( pdfConfig['KKMassBinning'].numBins() ) :
+            numKKMassBins = pdfBuild['KKMassBinning'].numBins() if pdfConfig['parameterizeKKMass'] == 'functions'\
+                            else pdfBuild['KKMassCat'].numTypes()
+            for bin in range( numKKMassBins ) :
                 ampPhys += [  RooRealVar( 'f_S_phys_%d' % bin,     'f_S_phys_%d' % bin,     f_S,   0.,      1.      )  # 4 + 2 * bin
                             , RooRealVar( 'ASPhase_phys_%d' % bin, 'ASPhase_phys_%d' % bin, ASPh, -2. * pi, 2. * pi )  # 5 + 2 * bin
                            ]
@@ -293,9 +295,9 @@ if ( readData or generateData ) and doFit :
                        ]
 
         if pdfConfig['parameterizeKKMass'] :
-            for bin in range( pdfConfig['KKMassBinning'].numBins() ) :
-                ampMeasNames += [  'ASOddMag2_%d' % bin   # 5 + 2 * bin
-                                 , 'ASOddPhase_%d' % bin  # 6 + 2 * bin
+            for bin in range( numKKMassBins ) :
+                ampMeasNames += [  'ASOddMag2_mdau2_KKMassBinning_bin%d' % bin   # 5 + 2 * bin
+                                 , 'ASOddPhase_mdau2_KKMassBinning_bin%d' % bin  # 6 + 2 * bin
                                 ]
         else :
             ampMeasNames += [  'ASOddMag2'   # 5
@@ -311,9 +313,9 @@ if ( readData or generateData ) and doFit :
                        }
 
         if pdfConfig['parameterizeKKMass'] :
-            for bin in range( pdfConfig['KKMassBinning'].numBins() ) :
-                ampMeasFuncs[ ampMeasNames[ 5 + 2 * bin ] ] = '@4/(1.-@%d)/@2' % ( 4 + 2 * bin )
-                ampMeasFuncs[ ampMeasNames[ 6 + 2 * bin ] ] = '@%d-@3' % ( 5 + 2 * bin )
+            for bin in range( numKKMassBins ) :
+                ampMeasFuncs[ ampMeasNames[ 5 + 2 * bin ] ] = '@{0:d}/(1.-@{0:d})/@2'.format( 4 + 2 * bin )
+                ampMeasFuncs[ ampMeasNames[ 6 + 2 * bin ] ] = '@{0:d}-@3'.format( 5 + 2 * bin )
         else :
             ampMeasFuncs[ ampMeasNames[5] ] = '@4/(1.-@4)/@2'
             ampMeasFuncs[ ampMeasNames[6] ] = '@5-@3'

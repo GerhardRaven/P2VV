@@ -280,7 +280,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')
         numBMassBins      = pdfConfig.pop('numBMassBins')
 
-        if paramKKMass : KKMassBinBounds = [ 1020. - 32., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
+        if paramKKMass : KKMassBinBounds = [ 1020. - 30., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
         else :           KKMassBinBounds = [              1020. - 12., 1020., 1020. + 12.              ]
 
         self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
@@ -336,7 +336,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # variables in PDF (except for tagging category)
         time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
                        , Ranges = dict( Bulk = ( None, 5. ) ), nBins = numTimeBins )
-        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.007, MinMax = (0.007, 0.12)
+        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.10, MinMax = (0.0001, 0.12)
                           , nBins = numTimeResBins )
         timeRes.setBins( numTimeResBins, 'cache' )
 
@@ -1091,9 +1091,45 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: requesting %s PDF for observables [%s]'\
               % ( 'signal' if SFit else 'signal + background', ', '.join( str(obs) for obs in obsSetP2VV ) )
         if SFit :
-            pdf = buildPdf( [ self._signalComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
+            self._fullPdf = buildPdf( [ self._signalComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
         else :
-            pdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
+            self._fullPdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = obsSetP2VV, Name = 'Jpsiphi' )
+
+
+        ###################################################################################################################################
+        ## split PDF for different KK mass bins ##
+        ##########################################
+
+        if paramKKMass == 'simultaneous' :
+            from RooFitWrappers import BinningCategory
+            self._KKMassCat = BinningCategory( 'KKMassCat', Observable = KKMass, Binning = self._KKMassBinning, Fundamental = True
+                                              , Data = [  self._data
+                                                        , self._sigSWeightData
+                                                        , self._bkgSWeightData
+                                                        , self._sigRangeData
+                                                        , self._bkgRangeData
+                                                       ]
+                                             )
+
+            splitParams = [ ]
+            for amp in self._amplitudes.parameters() :
+                if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S' ] ) : splitParams.append(amp)
+            if nominalPdf or condTagging :
+                for par in self._sigTaggingPdf.parameters() :
+                    if not par.isConstant() : splitParams.append(par)
+            if not SFit :
+                splitParams.append( self._signalComps.getYield() )
+                splitParams.append( self._backgroundComps.getYield() )
+                for par in self._bkgTaggingPdf.parameters() :
+                    if not par.isConstant() : splitParams.append(par)
+
+            from RooFitWrappers import SimultaneousPdf
+            self._simulPdf = SimultaneousPdf(  self._fullPdf.GetName() + '_KKMassBins'
+                                             , MasterPdf = self._fullPdf
+                                             , SplitCategory = self._KKMassCat
+                                             , SplitParameters = splitParams
+                                            )
+
 
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
-        PdfBuilder.__init__( self, pdf, observables, { } )
+        PdfBuilder.__init__( self, self._simulPdf if paramKKMass == 'simultaneous' else self._fullPdf, observables, { } )
