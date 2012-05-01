@@ -8,11 +8,11 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = False
+doFit                   = True
 fastFit                 = False
 makeObservablePlots     = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = True
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
@@ -52,18 +52,19 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
-pdfConfig['bkgAnglePdf']        = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']      = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
-pdfConfig['multiplyByTimeEff']  = ''
-pdfConfig['parameterizeKKMass'] = 'simultaneous'  # default: simultaneous / nominal: ''
+pdfConfig['bkgAnglePdf']         = ''  # default/nominal: ''
+pdfConfig['sigTaggingPdf']       = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['bkgTaggingPdf']       = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['multiplyByTimeEff']   = ''
+pdfConfig['parameterizeKKMass']  = 'simultaneous'  # default: simultaneous / nominal: ''
+pdfConfig['ambiguityParameters'] = True
 
 pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
-pdfConfig['eventTimeResolution'] = False  # nominal: True
+pdfConfig['eventTimeResolution'] = True  # nominal: True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
@@ -263,24 +264,31 @@ if ( readData or generateData ) and doFit :
         from math import pi
         from ROOT import RooRealVar, RooArgList
         from P2VVParameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
+        deltaPar  = AparPh  - A0Ph
+        deltaPerp = AperpPh - A0Ph
+        deltaS    = ASPh    - A0Ph
+        if pdfConfig['ambiguityParameters'] :
+            deltaPar  = -deltaPar
+            deltaPerp = pi - deltaPerp
+            deltaS    = -deltaS
 
         # physics parameters to determine
-        ampPhys = [  RooRealVar( 'A0Mag2_phys',     'A0Mag2_phys',     A02,      0.,      1.      )  # 0
-                   , RooRealVar( 'AparPhase_phys',  'AparPhase_phys',  AparPh,  -2. * pi, 2. * pi )  # 1
-                   , RooRealVar( 'AperpMag2_phys',  'AperpMag2_phys',  Aperp2,   0.,      1.      )  # 2
-                   , RooRealVar( 'AperpPhase_phys', 'AperpPhase_phys', AperpPh, -2. * pi, 2. * pi )  # 3
+        ampPhys = [  RooRealVar( 'A0Mag2_phys',     'A0Mag2_phys',     A02,        0.,      1.      )  # 0
+                   , RooRealVar( 'AparPhase_phys',  'AparPhase_phys',  deltaPar,  -2. * pi, 2. * pi )  # 1
+                   , RooRealVar( 'AperpMag2_phys',  'AperpMag2_phys',  Aperp2,     0.,      1.      )  # 2
+                   , RooRealVar( 'AperpPhase_phys', 'AperpPhase_phys', deltaPerp, -2. * pi, 2. * pi )  # 3
                   ]
 
         if pdfConfig['parameterizeKKMass'] :
             numKKMassBins = pdfBuild['KKMassBinning'].numBins() if pdfConfig['parameterizeKKMass'] == 'functions'\
                             else pdfBuild['KKMassCat'].numTypes()
             for bin in range( numKKMassBins ) :
-                ampPhys += [  RooRealVar( 'f_S_phys_%d' % bin,     'f_S_phys_%d' % bin,     f_S,   0.,      1.      )  # 4 + 2 * bin
-                            , RooRealVar( 'ASPhase_phys_%d' % bin, 'ASPhase_phys_%d' % bin, ASPh, -2. * pi, 2. * pi )  # 5 + 2 * bin
+                ampPhys += [  RooRealVar( 'f_S_phys_bin%d' % bin,     'f_S_phys_bin%d' % bin,     f_S,     0.,      1.      )  # 4 + 2*bin
+                            , RooRealVar( 'ASPhase_phys_bin%d' % bin, 'ASPhase_phys_bin%d' % bin, deltaS, -2. * pi, 2. * pi )  # 5 + 2*bin
                            ]
         else :
-            ampPhys += [  RooRealVar( 'f_S_phys',     'f_S_phys',     f_S,   0.,      1.      )  # 4
-                        , RooRealVar( 'ASPhase_phys', 'ASPhase_phys', ASPh, -2. * pi, 2. * pi )  # 5
+            ampPhys += [  RooRealVar( 'f_S_phys',     'f_S_phys',     f_S,     0.,      1.      )  # 4
+                        , RooRealVar( 'ASPhase_phys', 'ASPhase_phys', deltaS, -2. * pi, 2. * pi )  # 5
                        ]
 
         ampPhysList = RooArgList()
@@ -296,8 +304,8 @@ if ( readData or generateData ) and doFit :
 
         if pdfConfig['parameterizeKKMass'] :
             for bin in range( numKKMassBins ) :
-                ampMeasNames += [  'ASOddMag2_mdau2_KKMassBinning_bin%d' % bin   # 5 + 2 * bin
-                                 , 'ASOddPhase_mdau2_KKMassBinning_bin%d' % bin  # 6 + 2 * bin
+                ampMeasNames += [  'ASOddMag2_bin%d' % bin   # 5 + 2 * bin
+                                 , 'ASOddPhase_bin%d' % bin  # 6 + 2 * bin
                                 ]
         else :
             ampMeasNames += [  'ASOddMag2'   # 5

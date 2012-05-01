@@ -179,12 +179,13 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['tagCats'] = [ ]
 
         # PDF options
-        self['transversityAngles'] = False
-        self['bkgAnglePdf']        = 'histPdf'
-        self['sigTaggingPdf']      = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats'
-        self['bkgTaggingPdf']      = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
-        self['multiplyByTimeEff']  = ''                  # 'all' / 'signal'
-        self['parameterizeKKMass'] = ''  # '' / 'functions' / 'simultaneous'
+        self['transversityAngles']  = False
+        self['bkgAnglePdf']         = 'histPdf'
+        self['sigTaggingPdf']       = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats'
+        self['bkgTaggingPdf']       = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
+        self['multiplyByTimeEff']   = ''                  # 'all' / 'signal'
+        self['parameterizeKKMass']  = ''  # '' / 'functions' / 'simultaneous'
+        self['ambiguityParameters'] = False
 
         self['conditionalTagging'] = False
         self['continuousEstWTag']  = False
@@ -279,9 +280,17 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')
         numBMassBins      = pdfConfig.pop('numBMassBins')
+        ambiguityPars     = pdfConfig.pop('ambiguityParameters')
 
-        if paramKKMass : KKMassBinBounds = [ 1020. - 30., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
-        else :           KKMassBinBounds = [              1020. - 12., 1020., 1020. + 12.              ]
+        if paramKKMass :
+            KKMassBinBounds = [ 1020. - 30., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
+            SWaveAmpVals    = (  [ 0.8, 0.2,  0.1,  0.7 ], [ 1.4, 0.3, -0.5, -0.6 ] )
+            if ambiguityPars :
+                from math import pi
+                for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
+
+        else :
+            KKMassBinBounds = [ 1020. - 12., 1020., 1020. + 12. ]
 
         self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
         iTagStates = pdfConfig.pop('iTagStates')
@@ -596,28 +605,32 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         #####################################################################
 
         # transversity amplitudes
-        if paramKKMass == 'functions' : KKMassArgs = dict( KKMass = KKMass, KKMassBinning = self._KKMassBinning )
-        else                          : KKMassArgs = { }
+        commonArgs = dict( AmbiguityParameters = ambiguityPars )
+        if paramKKMass == 'functions' :
+            commonArgs[ 'KKMass' ]        = KKMass
+            commonArgs[ 'KKMassBinning' ] = self._KKMassBinning
+
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
             self._amplitudes = Amplitudes( PolarSWave = True if nominalPdf else polarSWave
                                           , AparParameterization = 'phase' if nominalPdf else AparParam
-                                          , **KKMassArgs )
+                                          , **commonArgs )
 
         elif amplitudeParam == 'bank' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVBank_AmplitudeSet as Amplitudes
             self._amplitudes = Amplitudes( PolarSWave = polarSWave, AparParameterization = AparParam
-                                          , **KKMassArgs )
+                                          , **commonArgs )
 
         else :
             from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
-            self._amplitudes = Amplitudes( **KKMassArgs )
+            self._amplitudes = Amplitudes( **commonArgs )
 
         # B lifetime
         from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
         dGammaVar = dict( Name = 'dGamma' )
         if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
         self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = True if nominalPdf else constrainDeltaM )
+        if ambiguityPars : self._lifetimeParams['dGamma'].setVal( -self._lifetimeParams['dGamma'].getVal() )
 
         if nominalPdf or eventTimeRes :
             from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
@@ -640,6 +653,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             phiCPVar = dict( Name = 'phiCP' )
             if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
             self._lambdaCP = CPParam( phiCP = phiCPVar )
+            if ambiguityPars :
+                from math import pi
+                self._lambdaCP['phiCP'].setVal( pi - self._lambdaCP['phiCP'].getVal() )
 
         # coefficients for time functions
         from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
@@ -1101,16 +1117,22 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##########################################
 
         if paramKKMass == 'simultaneous' :
+            # create split category
             from RooFitWrappers import BinningCategory
-            self._KKMassCat = BinningCategory( 'KKMassCat', Observable = KKMass, Binning = self._KKMassBinning, Fundamental = True
+            self._KKMassCat = BinningCategory( 'KKMassCat'
+                                              , Observable = KKMass
+                                              , Binning = self._KKMassBinning
+                                              , Fundamental = True
                                               , Data = [  self._data
                                                         , self._sigSWeightData
                                                         , self._bkgSWeightData
                                                         , self._sigRangeData
                                                         , self._bkgRangeData
                                                        ]
+                                              , CatTypeName = 'bin'
                                              )
 
+            # specify parameters that are different in simultaneous categories
             splitParams = [ ]
             for amp in self._amplitudes.parameters() :
                 if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S' ] ) : splitParams.append(amp)
@@ -1123,12 +1145,45 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 for par in self._bkgTaggingPdf.parameters() :
                     if not par.isConstant() : splitParams.append(par)
 
+            # build simultaneous PDF
             from RooFitWrappers import SimultaneousPdf
             self._simulPdf = SimultaneousPdf(  self._fullPdf.GetName() + '_KKMassBins'
-                                             , MasterPdf = self._fullPdf
-                                             , SplitCategory = self._KKMassCat
+                                             , MasterPdf       = self._fullPdf
+                                             , SplitCategory   = self._KKMassCat
                                              , SplitParameters = splitParams
                                             )
+
+            # set values for splitted parameters
+            splitCatIter = self._simulPdf.indexCat().typeIterator()
+            splitCatState = splitCatIter.Next()
+            while splitCatState :
+                splitCatPars = self._simulPdf.getPdf( splitCatState.GetName() ).getVariables()
+
+                if amplitudeParam == 'bank' and polarSWave :
+                    ASOddMag2  = splitCatPars.find( 'ASOddMag2_'  + splitCatState.GetName() )
+                    ASOddPhase = splitCatPars.find( 'ASOddPhase_' + splitCatState.GetName() )
+
+                    ASOddMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
+                    ASOddMag2.setMax(5.)
+                    ASOddPhase.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
+
+                if not SFit :
+                    sigYield = splitCatPars.find( 'N_signal_' + splitCatState.GetName() )
+                    bkgYield = splitCatPars.find( 'N_bkg_'    + splitCatState.GetName() )
+
+                    from math import sqrt
+                    nSigEvBin = self._signalKKMass['numEventsBins'][ splitCatState.getVal() ]
+                    nBkgEvBin = self._backgroundKKMass['numEventsBins'][ splitCatState.getVal() ]
+                    sigYield.setVal( nSigEvBin )
+                    sigYield.setError( sqrt(nSigEvBin) )
+                    sigYield.setMin(0.)
+                    sigYield.setMax( nSigEvBin + nBkgEvBin )
+                    bkgYield.setVal( nBkgEvBin )
+                    bkgYield.setError( sqrt(nBkgEvBin) )
+                    bkgYield.setMin(0.)
+                    bkgYield.setMax( nSigEvBin + nBkgEvBin )
+
+                splitCatState = splitCatIter.Next()
 
 
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
