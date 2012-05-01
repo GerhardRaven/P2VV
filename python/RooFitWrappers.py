@@ -259,7 +259,8 @@ class BinningCategory( Category ) :
         if type(binning) != str : binning = binning.GetName()
 
         from ROOT import RooBinningCategory
-        binCat = RooBinningCategory( Name, Name, obs, binning )
+        if 'CatTypeName' in kwargs : binCat = RooBinningCategory( Name, Name, obs, binning, kwargs.pop('CatTypeName') )
+        else                       : binCat = RooBinningCategory( Name, Name, obs, binning                            )
 
         if kwargs.pop( 'Fundamental', False ) :
             __check_req_kw__( 'Data', kwargs )
