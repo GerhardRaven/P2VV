@@ -49,7 +49,7 @@ effdatahist = RooDataHist("effdatahist","effdatahist",RooArgList(ws['t']),effh1)
 ws.put(effdatahist)
 
 ws.factory("HistFunc::eff(t,effdatahist)")
-ws.factory("EffHistProd::accpdf1(pdf,eff)")
+ws.factory("SingleHistEfficiency::accpdf1(pdf,eff)")
 
 accpdf1 = ws['accpdf1']
 

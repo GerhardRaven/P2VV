@@ -24,14 +24,8 @@ public:
    // Constructors, assignment etc
    inline RooEffHistProd()   { };
    virtual ~RooEffHistProd();
-   RooEffHistProd(const char *name, const char *title, RooAbsPdf& pdf, RooAbsReal& efficiency);
-   RooEffHistProd(const RooEffHistProd& other, const char* name=0);
-
-   virtual TObject* clone(const char* newname) const { return new RooEffHistProd(*this,newname); }
-
-   virtual RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype,
-                                        const RooArgSet* auxProto, Bool_t verbose) const;
-
+   RooEffHistProd(const char *name, const char *title, RooAbsPdf& pdf);
+   RooEffHistProd(const RooEffHistProd& other, const char* name = 0);
 
    virtual Bool_t forceAnalyticalInt(const RooAbsArg& /*dep*/) const { 
       // Return kTRUE to force RooRealIntegral to offer all observables for internal integration
@@ -55,31 +49,26 @@ protected:
 
    virtual Double_t evaluate() const;
 
-private:
-  
-   const char* makeFPName(const TString& prefix, const RooArgSet& iset, const RooArgSet *nset,
-                          const TString& postfix) const;
-
    const RooAbsPdf* pdf() const { 
       // Return pointer to pdf in product
       return (RooAbsPdf*) _pdf.absArg() ; 
    }
-   const RooAbsReal* eff() const { 
-      // Return pointer to efficiency function in product
-      return (RooAbsReal*) _eff.absArg() ; 
-   }
-   RooRealVar& x() const { return *static_cast<RooRealVar*>(  _observables.first() ) ; }
 
-   const RooArgSet& observables() const { return static_cast<const RooArgSet&>(_observables); }
+   virtual const RooArgSet* effObservables() const = 0;
+   virtual double effVal() const = 0;
+
+   typedef std::vector<double> BinBoundaries;
+   BinBoundaries _binboundaries;
+
+private:
+
+   const char* makeFPName(const TString& prefix, const RooArgSet& iset, const RooArgSet *nset,
+                          const TString& postfix) const;
 
    // the real stuff...
    RooRealProxy _pdf ;     // Probability Density function
-   RooRealProxy _eff;      // Efficiency function
-   RooSetProxy  _observables ; // Observables in the efficiency histogram
    mutable const RooArgSet* _pdfNormSet;
    mutable const RooArgSet* _fixedNormSet;
-
-   typedef std::vector<double> BinBoundaries ;
 
    class CacheElem : public RooAbsCacheElement {
    public:
@@ -115,9 +104,8 @@ private:
                        const char* rangeName = 0, const bool makeClone = false) const;
 
    mutable RooObjCacheManager _cacheMgr;
-   BinBoundaries _binboundaries;
   
-   ClassDef(RooEffHistProd, 5) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
+   ClassDef(RooEffHistProd, 1) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
 };
 
 #endif

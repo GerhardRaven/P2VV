@@ -18,6 +18,7 @@
 #include "RooDataSetToTree.h"
 #include "RooTransAngle.h"
 #include "RooCruijff.h"
+#include "RooSingleHistEfficiency.h"
 #include "RooMultiEfficiency.h"
 
 #endif // P2VV_H

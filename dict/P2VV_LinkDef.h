@@ -18,7 +18,6 @@
 #pragma link C++ class RooBinnedPdf+;
 #pragma link C++ class RooP2VVAngleBasis+;
 #pragma link C++ class RooThresholdPdf+;
-#pragma link C++ class RooEffHistProd+;
 #pragma link C++ class RooRelBreitWigner+;
 #pragma link C++ class RooTagDecisionWrapper+;
 #pragma link C++ class RooRealCategory+;
@@ -26,6 +25,8 @@
 #pragma link C++ function RooDataSetToTree;
 #pragma link C++ class RooTransAngle+;
 #pragma link C++ class RooCruijff+;
+#pragma link C++ class RooEffHistProd;
+#pragma link C++ class RooSingleHistEfficiency+;
 #pragma link C++ class RooMultiEfficiency+;
 
 #endif

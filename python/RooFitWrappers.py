@@ -985,11 +985,11 @@ class EffProd(Pdf):
         if 'Type' in kwargs:
             d['Type'] = kwargs.pop('Type').__name__
         elif str(type(__dref__(eff))).find('Hist') != -1 or type(eff) == BinnedPdf:
-            d['Type'] = 'RooEffHistProd'
+            d['Type'] = 'RooSingleHistEfficiency'
         else:
             d['Type'] = 'RooEffProd'
-        if d['Type'] not in ['RooEffProd', 'RooEffHistProd']:
-            raise TypeError, "An efficiency can only be of type RooEffProd or RooEffHistProd"
+        if d['Type'] not in ['RooEffProd', 'RooSingleHistEfficiency']:
+            raise TypeError, "An efficiency can only be of type RooEffProd or RooSingleHistEfficiency"
         # construct factory string
         self._declare("%s::%s(%s, %s)" % ( d['Type'], Name, d['Original'].GetName(),
                                            d['Efficiency'].GetName()))
