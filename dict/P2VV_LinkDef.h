@@ -26,5 +26,6 @@
 #pragma link C++ function RooDataSetToTree;
 #pragma link C++ class RooTransAngle+;
 #pragma link C++ class RooCruijff+;
+#pragma link C++ class RooMultiEfficiency+;
 
 #endif

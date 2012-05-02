@@ -221,17 +221,29 @@ class Category (RooObject) :
         # construct factory string on the fly...
         __check_name_syntax__(Name)
         states = kwargs.pop('States', None)
+        data = kwargs.pop('Data', None)
         if   type(states) == list:
             states = ','.join(states)
         elif type(states) == dict:
             states = ','.join(['%s=%d' % i for i in states.iteritems()])
-        if states:
+        if states and not data:
             # Create the category and extract states into storage
-            self._declare("%s[%s]"%(Name,states))
-        else:
+            obj = self._declare("%s[%s]"%(Name,states))
+        elif states and data:
+            index = kwargs.pop('DataIndex')
+            from ROOT import RooCategory
+            obj = RooCategory(Name, Name)
+            for l, i in states.iteritems():
+                obj.defineType(l, i)
+            obj.setIndex(index)
+            obj = data.addColumn(obj)
+            obj = self._addObject(obj)
+        elif not states and not data:
             from ROOT import RooCategory
             obj = RooCategory(Name, Name)
             obj = self._addObject(obj)
+        else:
+            raise RuntimeError('Passing data and not states is illegal')
         self._init(Name,'RooCategory')
         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
@@ -703,7 +715,8 @@ class Pdf(RooObject):
     @wraps(RooAbsPdf.generate)
     def generate(self, whatvars, *args, **kwargs):
         #if not whatvars : whatvars = [ i for i in self._var.getVariables() if i.getAttribute('Observable') ]
-        return self._var.generate(RooArgSet([ __dref__(i) for i in whatvars] if not isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars)), *args,**kwargs)
+        whatvars = RooArgSet([ __dref__(i) for i in whatvars] if not isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars))
+        return self._var.generate(whatvars, *args,**kwargs)
 
     @wraps(RooAbsPdf.plotOn)
     def plotOn( self, frame, **kwargs ) :
@@ -913,7 +926,7 @@ class HistPdf( Pdf ) :
                 nbins[o] = o.getBins()
                 o.setBins(n)
         dhs_name =  Name + '_' + '_'.join( i.GetName() for i in d['Observables'] )
-        rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgSet( i._var for i in d['Observables'] ), d['Data']))
+        rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgList( i._var for i in d['Observables'] ), d['Data']))
 
         # construct factory string on the fly...
         self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name  )  )
@@ -987,6 +1000,44 @@ class EffProd(Pdf):
         exCon = d['Original'].ExternalConstraints()
         if exCon : extraOpts['ExternalConstraints' ] = exCon
         Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+class MultiEfficiency(Pdf):
+    def _make_pdf(self) : pass
+    def __init__(self, **kwargs):
+        # Efficiencies argument should be of the from { eff_func : (category, signal_state) }
+        efficiencies = kwargs.pop('Efficiencies')
+        pdf_name = kwargs.pop('Name')
+        cc = kwargs.pop('ConditionalCategories', False)
+        from ROOT import TList, RooArgList, TObjString
+        eff_funcs = RooArgList()
+        categories = RooArgList()
+        signal_names = TList()
+
+        conditionals = set()
+        constraints = set()
+
+        for eff, (cat, name) in efficiencies.iteritems():
+            eff_funcs.add(__dref__(eff))
+            categories.add(__dref__(cat))
+            signal_name = TObjString(name)
+            signal_names.Add(signal_name)
+
+            if hasattr(eff, 'ExternalConstraints'):
+                constraints |= set(eff.ExternalConstraints())
+            if hasattr(eff, 'ConditionalObservables'):
+                conditionals |= set(eff.ConditionalObservables())
+            if cc: conditionals.add(cat)
+
+        from ROOT import RooMultiEfficiency
+        pdf = RooMultiEfficiency(pdf_name, pdf_name, eff_funcs, categories, signal_names)
+        self._addObject(pdf)
+        self._init(pdf_name, 'RooMultiEfficiency')
+
+        extraOpts = dict()
+        if conditionals : extraOpts['ConditionalObservables'] = conditionals
+        if constraints : extraOpts['ExternalConstraints' ] = constraints
+        Pdf.__init__(self , Name = pdf_name , Type = 'RooMultiEfficiency', **extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class GenericPdf( Pdf ) :

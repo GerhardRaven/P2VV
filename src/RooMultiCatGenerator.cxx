@@ -45,71 +45,71 @@
 #include <assert.h>
 
 ClassImp(RooMultiCatGenerator)
-  ;
+;
 
 //_____________________________________________________________________________
 void RooMultiCatGenerator::registerSampler(RooNumGenFactory& fact)
 {
-  // Register RooIntegrator1D, is parameters and capabilities with RooNumIntFactory
-  fact.storeProtoSampler(new RooMultiCatGenerator,RooArgSet()) ;
+   // Register RooIntegrator1D, is parameters and capabilities with RooNumIntFactory
+   fact.storeProtoSampler(new RooMultiCatGenerator,RooArgSet()) ;
 }
 
 namespace {
-    const char *makeName(const char* name, const RooArgSet& terms ) {
-        static TString pname;
-        pname = name;
-        pname.Append("_");
-        std::auto_ptr<TIterator> i( terms.createIterator() );
-        RooAbsArg *arg;
-        Bool_t first(kTRUE);
-        while((arg=(RooAbsArg*)i->Next())) {
-             if (first) { first=kFALSE;}
-             else pname.Append("_X_");
-             pname.Append(arg->GetName());
-        }
-        return pname.Data();
-    }
+   const char *makeName(const char* name, const RooArgSet& terms ) {
+      static TString pname;
+      pname = name;
+      pname.Append("_");
+      std::auto_ptr<TIterator> i( terms.createIterator() );
+      RooAbsArg *arg;
+      Bool_t first(kTRUE);
+      while((arg=(RooAbsArg*)i->Next())) {
+         if (first) { first=kFALSE;}
+         else pname.Append("_X_");
+         pname.Append(arg->GetName());
+      }
+      return pname.Data();
+   }
 
-    RooSuperCategory makeSuper(const char* name, const RooArgSet& _catVars  ) {
+   RooSuperCategory makeSuper(const char* name, const RooArgSet& _catVars  ) {
       const char *catName =  makeName(name, _catVars );
       return RooSuperCategory(catName,catName,_catVars);
-    }
+   }
 }
 
 //_____________________________________________________________________________
 RooMultiCatGenerator::RooMultiCatGenerator(const RooAbsReal &func, const RooArgSet &genVars, const RooNumGenConfig& config, Bool_t verbose, const RooAbsReal* maxFuncVal) 
-  : RooAbsNumGenerator(func,genVars,verbose,maxFuncVal)
-  , _super( makeSuper( func.GetName(), _catVars ) )
+   : RooAbsNumGenerator(func,genVars,verbose,maxFuncVal)
+   , _super( makeSuper( func.GetName(), _catVars ) )
 {
-  std::auto_ptr<RooAbsReal> marginal( _funcClone->createIntegral( _realVars ) );
-  std::auto_ptr<TIterator> superIter( _super.MakeIterator() );
-  // We first compute the marginalized fractions for the combinations of categories.
-  // Next, we create, for each combination, a dedicated sampler for the real observables,
-  // which is conditional on each of the combination of category values.
-  while ( superIter->Next() ) {
-            _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
-            double n = marginal->getVal(); // fraction of events in this combination 
-            if (!_realGenerators.empty()) n += _realGenerators.back().first;   // cumulative
-            cxcoutD(Generation) << "RooMultiCatGenerator::ctor() creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
-            _realGenerators.push_back(make_pair(n, RooNumGenFactory::instance().createSampler(*_funcClone,_realVars,RooArgSet(),config, true /*verbose*/ ))); 
-  }
-  // Given that above we properly marginalized, the next line should be a no-op.
-  for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) i->first /= _realGenerators.back().first; // normalize
+   std::auto_ptr<RooAbsReal> marginal( _funcClone->createIntegral( _realVars ) );
+   std::auto_ptr<TIterator> superIter( _super.MakeIterator() );
+   // We first compute the marginalized fractions for the combinations of categories.
+   // Next, we create, for each combination, a dedicated sampler for the real observables,
+   // which is conditional on each of the combination of category values.
+   while ( superIter->Next() ) {
+      _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
+      double n = marginal->getVal(); // fraction of events in this combination 
+      if (!_realGenerators.empty()) n += _realGenerators.back().first;   // cumulative
+      cxcoutD(Generation) << "RooMultiCatGenerator::ctor() creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
+      _realGenerators.push_back(make_pair(n, RooNumGenFactory::instance().createSampler(*_funcClone,_realVars,RooArgSet(),config, true /*verbose*/ ))); 
+   }
+   // Given that above we properly marginalized, the next line should be a no-op.
+   for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) i->first /= _realGenerators.back().first; // normalize
 }
 
 //_____________________________________________________________________________
 RooMultiCatGenerator::~RooMultiCatGenerator() 
 {
-  // Destructor
-  for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) delete i->second;
+   // Destructor
+   for (Generators::iterator i=_realGenerators.begin();i!=_realGenerators.end();++i) delete i->second;
 }
 
 //_____________________________________________________________________________
 const RooArgSet *RooMultiCatGenerator::generateEvent(UInt_t remaining, Double_t& resampleRatio) 
 {
-  // are we actually generating anything? (the cache always contains at least our function value)
-  const RooArgSet *event= _cache->get();
-  if(event->getSize() == 1) return event;
+   // are we actually generating anything? (the cache always contains at least our function value)
+   const RooArgSet *event= _cache->get();
+   if(event->getSize() == 1) return event;
 
    Double_t r = RooRandom::uniform();
    std::auto_ptr<TIterator> superIter( _super.MakeIterator() );
@@ -120,13 +120,13 @@ const RooArgSet *RooMultiCatGenerator::generateEvent(UInt_t remaining, Double_t&
 
    // now that've assigned the categories, we can use the 'real' samplers
    // which are conditional on the categories...
-  const RooArgSet* realEvent = gen->second->generateEvent( remaining, resampleRatio);
-  _realVars.assignValueOnly( *realEvent );
+   const RooArgSet* realEvent = gen->second->generateEvent( remaining, resampleRatio);
+   _realVars.assignValueOnly( *realEvent );
 
-  // calculate and store our function value at this new point
-  Double_t val= _funcClone->getVal();
-  _funcValPtr->setVal(val);
+   // calculate and store our function value at this new point
+   Double_t val= _funcClone->getVal();
+   _funcValPtr->setVal(val);
 
-  // Transfer contents to dataset
-  return _cache->get();
+   // Transfer contents to dataset
+   return _cache->get();
 }
