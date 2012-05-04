@@ -8,15 +8,15 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = True
+doFit                   = False
 fastFit                 = False
-makeObservablePlots     = False
+makeObservablePlots     = True
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['makePlots']  = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = True
+pdfConfig['nominalPdf'] = False
 sumW2Error              = False
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
@@ -63,12 +63,13 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.4, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
+pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
-pdfConfig['eventTimeResolution'] = True  # nominal: True
+pdfConfig['eventTimeResolution'] = False  # nominal: True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
@@ -151,32 +152,32 @@ pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
 # get variables
-obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta', 'phi', 'iTag' ] ]
+obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta', 'phi', 'iTagOS' ] ]
 time       = obsSetP2VV[0]
 angles     = obsSetP2VV[ 1 : 4 ]
-iTag       = obsSetP2VV[4]
+iTagOS     = obsSetP2VV[4]
 BMass      = pdfBuild['observables']['BMass']
 mumuMass   = pdfBuild['observables']['mumuMass']
 KKMass     = pdfBuild['observables']['KKMass']
-estWTag    = pdfBuild['observables']['estWTag']
+estWTagOS  = pdfBuild['observables']['estWTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
 
 if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
 
 if not pdfBuild['iTagZeroTrick'] :
-    tagCatP2VV = pdfBuild['observables']['tagCatP2VV']
-    obsSetP2VV.append(tagCatP2VV)
+    tagCatP2VVOS = pdfBuild['observables']['tagCatP2VVOS']
+    obsSetP2VV.append(tagCatP2VVOS)
 
     # tagging parameters
-    numTagCats    = pdfBuild['tagCats']['numTagCats']
-    tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
+    numTagCats    = pdfBuild['tagCatsOS']['numTagCats']
+    tagCat5Min    = pdfBuild['tagCatsOS'].traditionalCatRange(5)[0]
     taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
     tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
 
     # tagging category ranges
-    tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
-    tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
-    tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
+    tagCatP2VVOS.setRange( 'UntaggedRange', 'Untagged'    )
+    tagCatP2VVOS.setRange( 'TaggedRange',   taggedCatsStr )
+    tagCatP2VVOS.setRange( 'TagCat5Range',  tagCat5Str    )
 
 if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
     # unset cache-and-track
@@ -234,7 +235,8 @@ if ( readData or generateData ) and doFit :
 
     if pdfConfig['nominalPdf'] :
         if not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
-        pdfBuild['tagCats'].setConstant('wTagAP.*')
+        pdfBuild['tagCatsOS'].setConstant('wTagAP.*')
+        pdfBuild['tagCatsSS'].setConstant('wTagAP.*')
 
     if pdfConfig['parameterizeKKMass'] == 'functions' :
         for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
@@ -244,7 +246,8 @@ if ( readData or generateData ) and doFit :
     if fastFit :
         pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
         for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
-        pdfBuild['tagCats'].setConstant('.*')
+        pdfBuild['tagCatsOS'].setConstant('.*')
+        pdfBuild['tagCatsSS'].setConstant('.*')
         pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
         pdfBuild['timeResModel'].setConstant('.*')
         pdfBuild['signalBMass'].setConstant('.*')
@@ -402,8 +405,8 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
                 }
 
     projWDataSet = []
-    if   pdfConfig['continuousEstWTag']   : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
-    elif pdfConfig['conditionalTagging']  : projWDataSet += [ tagCatP2VV, iTag ]
+    if   pdfConfig['continuousEstWTag']   : projWDataSet += [ tagCatP2VVOS, estWTagOS, iTagOS ]
+    elif pdfConfig['conditionalTagging']  : projWDataSet += [ tagCatP2VVOS, iTagOS ]
     if   pdfConfig['eventTimeResolution'] : projWDataSet += [ timeRes ]
 
     if projWDataSet :
@@ -531,8 +534,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , timePlotTitles
                    , 2 * ( None, ) + ( 'B/#bar{B} asymmetry', )
                    , ( ( None, None ), ( 50., None ), ( None, None ) )
-                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTag ), )
-                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTag ), )
+                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTagOS ), )
+                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTagOS ), )
                    , ( False, True, False )
                   ) :
         plot(  pad, time, fitData, pdf, yTitle = yTitle, yScale = yScale, logy = logY
@@ -557,18 +560,18 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
              , 6 * [ pdfConfig['numTimeBins'] ]
              , timePlotTitles1
              , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
-             ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()             )                   ), )
-               + ( dict( Cut = '%s == 2'  % ( tagCatP2VV.GetName()             )                   ), )
-               + ( dict( Cut = '%s == %d' % ( tagCatP2VV.GetName(), tagCat5Min )                   ), )
-               + ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()             ), Asymmetry = iTag ), )
-               + ( dict( Cut = '%s == 2'  % ( tagCatP2VV.GetName()             ), Asymmetry = iTag ), )
-               + ( dict( Cut = '%s == %d' % ( tagCatP2VV.GetName(), tagCat5Min ), Asymmetry = iTag ), )
-             ,   ( dict( Slice = ( tagCatP2VV, 'Untagged'              )                   ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat2'               )                   ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat%d' % tagCat5Min )                   ), )
-               + ( dict( Slice = ( tagCatP2VV, 'Untagged'              ), Asymmetry = iTag ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat2'               ), Asymmetry = iTag ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat%d' % tagCat5Min ), Asymmetry = iTag ), )
+             ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VVOS.GetName()             )                     ), )
+               + ( dict( Cut = '%s == 2'  % ( tagCatP2VVOS.GetName()             )                     ), )
+               + ( dict( Cut = '%s == %d' % ( tagCatP2VVOS.GetName(), tagCat5Min )                     ), )
+               + ( dict( Cut = '%s == 0'  % ( tagCatP2VVOS.GetName()             ), Asymmetry = iTagOS ), )
+               + ( dict( Cut = '%s == 2'  % ( tagCatP2VVOS.GetName()             ), Asymmetry = iTagOS ), )
+               + ( dict( Cut = '%s == %d' % ( tagCatP2VVOS.GetName(), tagCat5Min ), Asymmetry = iTagOS ), )
+             ,   ( dict( Slice = ( tagCatP2VVOS, 'Untagged'              )                     ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'TagCat2'               )                     ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'TagCat%d' % tagCat5Min )                     ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'Untagged'              ), Asymmetry = iTagOS ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'TagCat2'               ), Asymmetry = iTagOS ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'TagCat%d' % tagCat5Min ), Asymmetry = iTagOS ), )
              , 3 * ( False, ) + 3 * ( False, )
             ) :
         plot(  pad, time, fitData, pdf, yTitle = yTitle, logy = logY
@@ -595,8 +598,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , anglePlotTitles
                    , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                    , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
-                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTag ), )
-                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTag ), )
+                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTagOS ), )
+                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTagOS ), )
                   ) :
         plot(  pad, obs, fitData, pdf, addPDFs = addPDFs, xTitle = xTitle, yTitle = yTitle
              , frameOpts   = dict( Bins = nBins, Title = plotTitle                                                )
@@ -627,7 +630,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
         bkgTimeCanv.Print(plotsFile)
         pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
         pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-        pdfBuild['estWTagCanv'].Print( plotsFile + ( '' if deltaSCanv else ')' ) )
+        pdfBuild['estWTagCanvOS'].Print(plotsFile)
+        pdfBuild['estWTagCanvSS'].Print( plotsFile + ( '' if deltaSCanv else ')' ) )
 
     else :
         anglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
@@ -638,7 +642,8 @@ elif pdfConfig['makePlots'] :
     bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-    pdfBuild['estWTagCanv'].Print(plotsFile + '' if deltaSCanv else ')')
+    pdfBuild['estWTagCanvOS'].Print(plotsFile)
+    pdfBuild['estWTagCanvSS'].Print(plotsFile + '' if deltaSCanv else ')')
 
 if deltaSCanv :
     deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
@@ -710,7 +715,8 @@ if dllPars :
         for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
 
     if 'sig_ATagBBbar' in ws : ws['sig_ATagBBbar'].setConstant()
-    pdfBuild['tagCats'].setConstant('.*')
+    pdfBuild['tagCatsOS'].setConstant('.*')
+    pdfBuild['tagCatsSS'].setConstant('.*')
     pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
     pdfBuild['timeResModel'].setConstant('.*')
     pdfBuild['signalBMass'].setConstant('.*')

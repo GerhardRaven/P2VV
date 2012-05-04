@@ -189,6 +189,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
         self['SWaveAmplitudeValues'] = (  [ 0.8, 0.2,  0.1,  0.7 ], [ 1.4, 0.3, -0.5, -0.6 ] )
 
+        self['sameSideTagging']    = True
         self['conditionalTagging'] = False
         self['continuousEstWTag']  = False
         self['numEstWTagBins']     = 100
@@ -299,6 +300,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if self._iTagZeroTrick : iTagStatesDecision = iTagStates
         else                   : iTagStatesDecision = { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
+        SSTagging        = pdfConfig.pop('sameSideTagging')
         condTagging      = pdfConfig.pop('conditionalTagging')
         contEstWTag      = pdfConfig.pop('continuousEstWTag')
         numEstWTagBins   = pdfConfig.pop('numEstWTagBins')
@@ -354,10 +356,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         phi    = self._angleFuncs.angles['phi']
 
         if nominalPdf or not self._iTagZeroTrick :
-            iTag = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = iTagStates )
-        estWTag = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability', Observable = True
-                          , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
-        estWTag.setBins( numEstWTagBins, 'cache' )
+            iTagOS = Category( 'iTagOS', Title = 'Initial state flavour tag opposite side', Observable = True, States = iTagStates )
+            iTagSS = Category( 'iTagSS', Title = 'Initial state flavour tag same side',     Observable = True, States = iTagStates )
+        estWTagOS = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability opposite side', Observable = True
+                            , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+        estWTagSS = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
+                            , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+        estWTagOS.setBins( numEstWTagBins, 'cache' )
+        estWTagSS.setBins( numEstWTagBins, 'cache' )
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
@@ -369,8 +375,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         angles = [ cpsi, ctheta, phi ]
         obsSetP2VV = [ time ] + angles
-        if not self._iTagZeroTrick : obsSetP2VV.append(iTag)
-        if not SFit : obsSetP2VV.append(BMass)
+        if not self._iTagZeroTrick :
+            obsSetP2VV.append(iTagOS)
+            #obsSetP2VV.append(iTagSS)
+        if not SFit :
+            obsSetP2VV.append(BMass)
 
         # ntuple variables
         mumuMass = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
@@ -379,31 +388,35 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , nBins =  32 )
         if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
-        tagDecision = Category( 'tagdecision_os', Title = 'Tag decision', Observable = True, States = iTagStatesDecision )
-        tagCat = Category( 'tagcat_os',   Title = 'Tagging Category', Observable = True
-                          , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
-                         )
+        tagDecisionOS = Category( 'tagdecision_os', Title = 'Tag decision opposite side', Observable = True, States = iTagStatesDecision )
+        tagDecisionSS = Category( 'tagdecision_ss', Title = 'Tag decision same side',     Observable = True, States = iTagStatesDecision )
+        tagCatOS = Category( 'tagcat_os',   Title = 'Tagging category opposite side', Observable = True
+                            , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
+                           )
 
         sel   = Category( 'sel',             Title = 'Selection',        Observable = True, States = { 'selected' : +1 } )
         trig  = Category( 'triggerDecision', Title = 'Trigger Decision', Observable = True, States = { 'selected' : +1 } )
 
-        observables = dict(  time        = time
-                           , cpsi        = angles[0]
-                           , ctheta      = angles[1]
-                           , phi         = angles[2]
-                           , iTag        = iTag if nominalPdf or not self._iTagZeroTrick else tagDecision
-                           , tagDecision = tagDecision
-                           , estWTag     = estWTag
-                           , tagCat      = tagCat
-                           , BMass       = BMass
-                           , mumuMass    = mumuMass
-                           , KKMass      = KKMass
-                           , timeRes     = timeRes
-                           , sel         = sel
-                           , trig        = trig
+        observables = dict(  time          = time
+                           , cpsi          = angles[0]
+                           , ctheta        = angles[1]
+                           , phi           = angles[2]
+                           , iTagOS        = iTagOS if nominalPdf or not self._iTagZeroTrick else tagDecisionOS
+                           , iTagSS        = iTagSS if nominalPdf or not self._iTagZeroTrick else tagDecisionSS
+                           , tagDecisionOS = tagDecisionOS
+                           , estWTagOS     = estWTagOS
+                           , estWTagSS     = estWTagSS
+                           , tagCatOS      = tagCatOS
+                           , BMass         = BMass
+                           , mumuMass      = mumuMass
+                           , KKMass        = KKMass
+                           , timeRes       = timeRes
+                           , sel           = sel
+                           , trig          = trig
                           )
 
-        obsSetNTuple = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [ tagDecision, estWTag, tagCat ] + [ sel, trig ]
+        obsSetNTuple = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [ tagDecisionOS, estWTagOS, tagCatOS ]\
+                       + [ tagDecisionSS, estWTagSS ] + [ sel, trig ]
 
 
         ###################################################################################################################################
@@ -554,41 +567,65 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##############################
 
         if nominalPdf or not self._iTagZeroTrick :
-            # build tagging categories
+            # build tagging categories opposite side
             from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
             if nominalPdf or contEstWTag :
-                self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._sigSWeightData, estWTag = estWTag
-                                                  , wTagP0Constraint = True if nominalPdf else constrainTagging
-                                                  , wTagP1Constraint = True if nominalPdf else constrainTagging )
+                self._tagCatsOS = TaggingCategories(  tagCat = 'tagCatP2VVOS', DataSet = self._sigSWeightData, estWTagOS = estWTagOS
+                                                    , wTagP0Constraint = True if nominalPdf else constrainTagging
+                                                    , wTagP1Constraint = True if nominalPdf else constrainTagging )
+                self._tagCatsSS = TaggingCategories(  tagCat = 'tagCatP2VVSS', DataSet = self._sigSWeightData, estWTagSS = estWTagSS
+                                                    , SameSide = True
+                                                    , wTagP0Constraint = True if nominalPdf else constrainTagging
+                                                    , wTagP1Constraint = True if nominalPdf else constrainTagging )
             else :
-                self._tagCats = TaggingCategories(  tagCat = 'tagCatP2VV', DataSet = self._sigSWeightData, estWTagName = estWTag.GetName()
-                                                  , TagCats = tagCats, NumSigmaTagBins = 1.
-                                                  , wTagP0Constraint = True if nominalPdf else constrainTagging
-                                                  , wTagP1Constraint = True if nominalPdf else constrainTagging )
+                self._tagCatsOS = TaggingCategories(  tagCat = 'tagCatP2VVOS', DataSet = self._sigSWeightData
+                                                    , estWTagName = estWTagOS.GetName()
+                                                    , TagCats = tagCats, NumSigmaTagBins = 1.
+                                                    , wTagP0Constraint = True if nominalPdf else constrainTagging
+                                                    , wTagP1Constraint = True if nominalPdf else constrainTagging )
+                self._tagCatsSS = TaggingCategories(  tagCat = 'tagCatP2VVSS', DataSet = self._sigSWeightData
+                                                    , SameSide = True
+                                                    , estWTagName = estWTagSS.GetName()
+                                                    , TagCats = tagCats, NumSigmaTagBins = 1.
+                                                    , wTagP0Constraint = True if nominalPdf else constrainTagging
+                                                    , wTagP1Constraint = True if nominalPdf else constrainTagging )
 
-            tagCatP2VV = self._tagCats['tagCat']
-            tagCatP2VV.setIndex(1)
-            observables[tagCatP2VV.GetName()] = tagCatP2VV
-            obsSetP2VV.append(tagCatP2VV)
+            tagCatP2VVOS = self._tagCatsOS['tagCat']
+            tagCatP2VVOS.setIndex(1)
+            observables[tagCatP2VVOS.GetName()] = tagCatP2VVOS
+            obsSetP2VV.append(tagCatP2VVOS)
+
+            tagCatP2VVSS = self._tagCatsSS['tagCat']
+            tagCatP2VVSS.setIndex(1)
+            observables[tagCatP2VVSS.GetName()] = tagCatP2VVSS
+            #obsSetP2VV.append(tagCatP2VVSS)
 
             if nominalPdf or condTagging :
-                self._tagCats.addConditional(tagCatP2VV)
-                self._tagCats.addConditional(iTag)
+                self._tagCatsOS.addConditional(tagCatP2VVOS)
+                self._tagCatsOS.addConditional(iTagOS)
+                self._tagCatsSS.addConditional(tagCatP2VVSS)
+                self._tagCatsSS.addConditional(iTagSS)
 
-            # add tagging category to data sets
+            # add tagging categories to data sets
             from P2VVGeneralUtils import addTaggingObservables
             for data in [ self._data, self._sigSWeightData, self._bkgSWeightData, self._sigRangeData, self._bkgRangeData ] :
                 if data:
-                    addTaggingObservables( data, iTag.GetName(), tagCatP2VV.GetName(), tagDecision.GetName(), estWTag.GetName()
-                                          , self._tagCats['tagCats'] )
+                    addTaggingObservables( data, iTagOS.GetName(), tagCatP2VVOS.GetName(), tagDecisionOS.GetName(), estWTagOS.GetName()
+                                          , self._tagCatsOS['tagCats'] )
+                    addTaggingObservables( data, iTagSS.GetName(), tagCatP2VVSS.GetName(), tagDecisionSS.GetName(), estWTagSS.GetName()
+                                          , self._tagCatsSS['tagCats'] )
 
-            # print tagging category distribution for signal and background
             if self._sigSWeightData :
+                # print tagging categories distribution for signal and background
                 from RooFitWrappers import ArgSet
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in tagging category for signal:'
-                self._sigSWeightData.table( ArgSet( 'sigTagSet', [ tagCatP2VV, iTag ] ) ).Print('v')
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in tagging category for background:'
-                self._bkgSWeightData.table( ArgSet( 'bkgTagSet', [ tagCatP2VV, iTag ] ) ).Print('v')
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in opposite side tagging category for signal:'
+                self._sigSWeightData.table( ArgSet( 'sigOSTagSet', [ tagCatP2VVOS, iTagOS ] ) ).Print('v')
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in opposite side tagging category for background:'
+                self._bkgSWeightData.table( ArgSet( 'bkgOSTagSet', [ tagCatP2VVOS, iTagOS ] ) ).Print('v')
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for signal:'
+                self._sigSWeightData.table( ArgSet( 'sigSSTagSet', [ tagCatP2VVSS, iTagSS ] ) ).Print('v')
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for background:'
+                self._bkgSWeightData.table( ArgSet( 'bkgSSTagSet', [ tagCatP2VVSS, iTagSS ] ) ).Print('v')
 
 
         ###################################################################################################################################
@@ -664,11 +701,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # tagging parameters
         if not nominalPdf and self._iTagZeroTrick :
             from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
-            self._taggingParams = TaggingParams(  estWTag = estWTag, p0 = dict( Name = 'wTagP0' ), p1 = dict( Name = 'wTagP1' )
+            self._taggingParams = TaggingParams(  estWTag = estWTagOS, p0 = dict( Name = 'wTagP0' ), p1 = dict( Name = 'wTagP1' )
                                                 , p0Constraint = True if nominalPdf else constrainTagging
                                                 , p1Constraint = True if nominalPdf else constrainTagging )
 
-            args = dict(  iTag     = tagDecision
+            args = dict(  iTag     = tagDecisionOS
                         , dilution = self._taggingParams['dilution']
                         , ADilWTag = self._taggingParams['ADilWTag']
                         , avgCEven = self._taggingParams['avgCEven']
@@ -679,10 +716,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: A histogram tagging PDF can only be used when tagging observables are conditional')
 
         else :
-            tagCatsDict = self._tagCats.tagCatsDict()
+            tagCatsDict = self._tagCatsOS.tagCatsDict()
             if not nominalPdf and sigTaggingPdf.startswith('tagUntag') :
                 # assume products of asymmetries are small and B-Bbar asymmetries are equal for all tagged categories
-                if tagCatP2VV.numTypes() > 2 :
+                if tagCatP2VVOS.numTypes() > 2 :
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: tagging in signal PDF:\n'\
                         + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
 
@@ -711,8 +748,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams(**tagCatsDict)
 
-            args = dict(  tagCat      = tagCatP2VV
-                        , iTag        = iTag
+            args = dict(  tagCat      = tagCatP2VVOS
+                        , iTag        = iTagOS
                         , dilutions   = self._taggingParams['dilutions']
                         , ADilWTags   = self._taggingParams['ADilWTags']
                         , avgCEvens   = self._taggingParams['avgCEvens']
@@ -788,14 +825,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating signal tagging PDFs from %s data'\
                           % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
                     from RooFitWrappers import HistPdf
-                    self._sig_tagCat_iTag = HistPdf( Name = 'sig_tagCat_iTag', Observables = [ tagCatP2VV, iTag ], Data = sigTaggingData )
+                    self._sig_tagCat_iTag = HistPdf( Name = 'sig_tagCat_iTag', Observables = [tagCatP2VVOS, iTagOS], Data = sigTaggingData )
                     self._signalComps += self._sig_tagCat_iTag
 
                 else :
                     # use a PDF with variable bin coefficients
-                    if nominalPdf or sigTaggingPdf.startswith('tagUntag') or tagCatP2VV.numTypes() == 2 :
+                    if nominalPdf or sigTaggingPdf.startswith('tagUntag') or tagCatP2VVOS.numTypes() == 2 :
                         # assume B-Bbar asymmetry is equal for all tagged categories
-                        if tagCatP2VV.numTypes() > 2 :
+                        if tagCatP2VVOS.numTypes() > 2 :
                             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: signal tagging PDF:\n'\
                                 + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
                         else :
@@ -816,10 +853,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         from P2VVParameterizations.FlavourTagging import TagCats_BinnedTaggingPdf as TaggingPdf
 
                     # build PDF
-                    self._sigTaggingPdf = TaggingPdf(  'tagCat_iTag', tagCatP2VV, iTag
+                    self._sigTaggingPdf = TaggingPdf(  'tagCat_iTag', tagCatP2VVOS, iTagOS
                                                   , NamePrefix    = 'sig'
                                                   , TagCatCoefs   = sigPdf.tagCatCoefs()
-                                                  , TaggedCatName = 'TagCat' if tagCatP2VV.numTypes() > 2 else 'Tagged'
+                                                  , TaggedCatName = 'TagCat' if tagCatP2VVOS.numTypes() > 2 else 'Tagged'
                                                   , Data          = sigTaggingData
                                                   , RelativeCoefs = False
                                                  )
@@ -829,39 +866,73 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
         ###################################################################################################################################
-        ## build PDF for estimated wrong-tag probability ##
-        ###################################################
+        ## build PDFs for estimated wrong-tag probabilities ##
+        ######################################################
 
         if self._data and self._sigSWeightData and self._bkgSWeightData and makePlots :
-            tempTagCat = tagCat if not nominalPdf and self._iTagZeroTrick else tagCatP2VV
+            tempTagCatOS = tagCatOS if not nominalPdf and self._iTagZeroTrick else tagCatP2VVOS
+            tempTagCatSS = None     if not nominalPdf and self._iTagZeroTrick else tagCatP2VVSS
 
-            # build PDF for estimated wrong-tag probability
+            # build PDFs for estimated wrong-tag probabilities
             from RooFitWrappers import HistPdf
-            self._estWTagData = self._sigSWeightData.reduce( '%s > 0' % tempTagCat.GetName() )
-            self._sig_bkg_estWTag = HistPdf(  Name = 'sig_bkg_estWTag'
-                                            , Observables = [ estWTag ]
-                                            , Binning = { estWTag : numEstWTagBins }
-                                            , Data = self._estWTagData
-                                           )
+            self._estWTagDataOS = self._sigSWeightData.reduce( '%s > 0' % tempTagCatOS.GetName() )
+            if tempTagCatSS :
+                self._estWTagDataSS = self._sigSWeightData.reduce( '%s > 0' % tempTagCatSS.GetName() )
+            else :
+                self._estWTagDataSS = self._sigSWeightData
+
+            self._sig_bkg_estWTagOS = HistPdf(  Name = 'sig_bkg_estWTagOS'
+                                              , Observables = [ estWTagOS ]
+                                              , Binning = { estWTagOS : numEstWTagBins }
+                                              , Data = self._estWTagDataOS
+                                             )
+
+            self._sig_bkg_estWTagSS = HistPdf(  Name = 'sig_bkg_estWTagSS'
+                                              , Observables = [ estWTagSS ]
+                                              , Binning = { estWTagSS : numEstWTagBins }
+                                              , Data = self._estWTagDataSS
+                                             )
 
             # get normalization correction for tagged events
-            untagFrac    = self._data.table(tempTagCat).getFrac('Untagged')
-            untagFracSig = self._sigSWeightData.table(tempTagCat).getFrac('Untagged')
-            untagFracBkg = self._bkgSWeightData.table(tempTagCat).getFrac('Untagged')
+            untagFracOS    = self._data.table(tempTagCatOS).getFrac('Untagged')
+            untagFracSigOS = self._sigSWeightData.table(tempTagCatOS).getFrac('Untagged')
+            untagFracBkgOS = self._bkgSWeightData.table(tempTagCatOS).getFrac('Untagged')
+            if tempTagCatSS :
+                untagFracSS    = self._data.table(tempTagCatSS).getFrac('Untagged')
+                untagFracSigSS = self._sigSWeightData.table(tempTagCatSS).getFrac('Untagged')
+                untagFracBkgSS = self._bkgSWeightData.table(tempTagCatSS).getFrac('Untagged')
+            else :
+                untagFracSS    = 1.
+                untagFracSigSS = 1.
+                untagFracBkgSS = 1.
 
-            # plot estimated wrong-tag probability for signal and for background
-            self._estWTagCanv = TCanvas( 'estWTagCanv', 'Estimated wrong-tag probability' )
+            # plot estimated wrong-tag probabilities for signal and for background
+            self._estWTagCanvOS = TCanvas( 'estWTagCanvOS', 'Estimated wrong-tag probability OS' )
             for ( pad, data, nBins, plotTitle, norm )\
-                  in zip(  self._estWTagCanv.pads( 1, 1 ) if SFit else self._estWTagCanv.pads( 2, 2, lambda pad : pad != 2 )
+                  in zip(  self._estWTagCanvOS.pads( 1, 1 ) if SFit else self._estWTagCanvOS.pads( 2, 2, lambda pad : pad != 2 )
                          , [ self._sigSWeightData if SFit else self._data, self._sigSWeightData, self._bkgSWeightData ]
                          , 3 * [ numEstWTagBins ]
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
-                         , [ 1. - ( untagFracSig if SFit else untagFrac ), 1. - untagFracSig, 1. - untagFracBkg ]
+                         , [ 1. - ( untagFracSigOS if SFit else untagFracOS ), 1. - untagFracSigOS, 1. - untagFracBkgOS ]
                         ) :
-                plot(  pad, estWTag, data, self._sig_bkg_estWTag
-                     , frameOpts  = dict( Bins = nBins, Title = estWTag.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
-                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                              )
-                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2, Normalization = norm                         )
+                plot(  pad, estWTagOS, data, self._sig_bkg_estWTagOS
+                     , frameOpts  = dict( Bins = nBins, Title = estWTagOS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
+                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2, Normalization = norm                           )
+                    )
+
+            self._estWTagCanvSS = TCanvas( 'estWTagCanvSS', 'Estimated wrong-tag probability SS' )
+            for ( pad, data, nBins, plotTitle, norm )\
+                  in zip(  self._estWTagCanvSS.pads( 1, 1 ) if SFit else self._estWTagCanvSS.pads( 2, 2, lambda pad : pad != 2 )
+                         , [ self._sigSWeightData if SFit else self._data, self._sigSWeightData, self._bkgSWeightData ]
+                         , 3 * [ numEstWTagBins ]
+                         , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                         , [ 1. - ( untagFracSigSS if SFit else untagFracSS ), 1. - untagFracSigSS, 1. - untagFracBkgSS ]
+                        ) :
+                plot(  pad, estWTagSS, data, self._sig_bkg_estWTagSS
+                     , frameOpts  = dict( Bins = nBins, Title = estWTagSS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
+                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2, Normalization = norm                           )
                     )
 
 
@@ -1055,15 +1126,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating background tagging PDFs from %s data'\
                           % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
                     from RooFitWrappers import HistPdf
-                    self._bkg_tagCat_iTag = HistPdf( Name = 'bkg_tagCat_iTag', Observables = [ tagCatP2VV, iTag ], Data = bkgTaggingData )
+                    self._bkg_tagCat_iTag = HistPdf( Name = 'bkg_tagCat_iTag', Observables = [tagCatP2VVOS, iTagOS], Data = bkgTaggingData )
                     self._backgroundComps += self._bkg_tagCat_iTag
 
                 else :
                     # use a PDF with variable bin coefficients
-                    if nominalPdf or bkgTaggingPdf.startswith('tagUntag') or tagCatP2VV.numTypes() == 2 :
+                    if nominalPdf or bkgTaggingPdf.startswith('tagUntag') or tagCatP2VVOS.numTypes() == 2 :
                         # couple background tagging category coefficients to signal tagging category coefficients
                         # and assume B-Bbar asymmetry is equal for all tagged categories
-                        if tagCatP2VV.numTypes() > 2 :
+                        if tagCatP2VVOS.numTypes() > 2 :
                             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
                                 + '    * assuming signal tagging category distribution for tagged categories\n'\
                                 + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
@@ -1087,13 +1158,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         from P2VVParameterizations.FlavourTagging import TagCats_BinnedTaggingPdf as TaggingPdf
 
                     # build PDF
-                    self._bkgTaggingPdf = TaggingPdf(  'tagCat_iTag', tagCatP2VV, iTag
-                                                  , NamePrefix    = 'bkg'
-                                                  , TagCatCoefs   = sigPdf.tagCatCoefs()\
-                                                                    if bkgTaggingPdf.endswith('Relative') else None
-                                                  , TaggedCatName = 'TagCat' if tagCatP2VV.numTypes() > 2 else 'Tagged'
-                                                  , Data          = bkgTaggingData
-                                                 )
+                    self._bkgTaggingPdf = TaggingPdf(  'tagCat_iTag', tagCatP2VVOS, iTagOS
+                                                     , NamePrefix    = 'bkg'
+                                                     , TagCatCoefs   = sigPdf.tagCatCoefs()\
+                                                                       if bkgTaggingPdf.endswith('Relative') else None
+                                                     , TaggedCatName = 'TagCat' if tagCatP2VVOS.numTypes() > 2 else 'Tagged'
+                                                     , Data          = bkgTaggingData
+                                                    )
 
                     self._bkg_tagCat_iTag = self._bkgTaggingPdf.pdf()
                     self._backgroundComps += self._bkg_tagCat_iTag
