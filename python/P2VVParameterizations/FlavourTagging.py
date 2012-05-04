@@ -547,9 +547,9 @@ class Linear_TaggingCategories( TaggingCategories ) :
         self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1'
                        , Value = 1.035, Error = 0.024, MinMax = (  0.8, 1.2 ) )
         self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry'
-                       , Value = 0., Constant = True,  MinMax = ( -1.,  1.  ) )
+                       , Value = 0.,  MinMax = ( -1.,  1.  ) )
         self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry'
-                       , Value = 0., Constant = True,  MinMax = ( -1.,  1.  ) )
+                       , Value = 0.,  MinMax = ( -1.,  1.  ) )
 
         # constrain calibration parameters
         constraints = [ ]
