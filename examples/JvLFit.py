@@ -14,7 +14,7 @@ makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = False
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = True
 sumW2Error              = False
@@ -260,7 +260,8 @@ if ( readData or generateData ) and doFit :
     else                 : fitResult = pdf.fitTo( fitData,                          Save = True, **fitOpts )
 
     # reparameterize amplitudes
-    if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave'] and pdfConfig['AparParam'] == 'Mag2ReIm' :
+    if not pdfConfig['nominalPdf'] and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave']\
+            and pdfConfig['AparParam'] == 'Mag2ReIm' :
         from ROOT import RooArgSet
         parList = fitResult.floatParsFinal()
         parSet  = RooArgSet(parList)
