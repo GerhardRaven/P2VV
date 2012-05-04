@@ -19,6 +19,6 @@
 #include "RooTransAngle.h"
 #include "RooCruijff.h"
 #include "RooSingleHistEfficiency.h"
-#include "RooMultiEfficiency.h"
+#include "RooMultiHistEfficiency.h"
 
 #endif // P2VV_H

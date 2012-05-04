@@ -999,16 +999,17 @@ class EffProd(Pdf):
         if cond : extraOpts['ConditionalObservables'] = cond
         exCon = d['Original'].ExternalConstraints()
         if exCon : extraOpts['ExternalConstraints' ] = exCon
-        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__,**extraOpts)
+        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__, **extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-class MultiEfficiency(Pdf):
+class MultiHistEfficiency(Pdf):
     def _make_pdf(self) : pass
     def __init__(self, **kwargs):
         # Efficiencies argument should be of the from { eff_func : (category, signal_state) }
         efficiencies = kwargs.pop('Efficiencies')
         pdf_name = kwargs.pop('Name')
         cc = kwargs.pop('ConditionalCategories', False)
+        original = kwargs.pop('Original')
         from ROOT import TList, RooArgList, TObjString
         eff_funcs = RooArgList()
         categories = RooArgList()
@@ -1029,15 +1030,16 @@ class MultiEfficiency(Pdf):
                 conditionals |= set(eff.ConditionalObservables())
             if cc: conditionals.add(cat)
 
-        from ROOT import RooMultiEfficiency
-        pdf = RooMultiEfficiency(pdf_name, pdf_name, eff_funcs, categories, signal_names)
+        from ROOT import RooMultiHistEfficiency
+        pdf = RooMultiHistEfficiency(pdf_name, pdf_name, __dref__(original),
+                                     eff_funcs, categories, signal_names)
         self._addObject(pdf)
-        self._init(pdf_name, 'RooMultiEfficiency')
+        self._init(pdf_name, 'RooMultiHistEfficiency')
 
         extraOpts = dict()
         if conditionals : extraOpts['ConditionalObservables'] = conditionals
         if constraints : extraOpts['ExternalConstraints' ] = constraints
-        Pdf.__init__(self , Name = pdf_name , Type = 'RooMultiEfficiency', **extraOpts)
+        Pdf.__init__(self , Name = pdf_name , Type = 'RooMultiHistEfficiency', **extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class GenericPdf( Pdf ) :

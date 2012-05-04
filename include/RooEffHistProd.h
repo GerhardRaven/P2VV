@@ -19,6 +19,34 @@
 #include "RooSetProxy.h"
 #include "RooObjCacheManager.h"
 
+#include <exception>
+
+namespace EffHistProd {
+class Exception : public std::exception
+{
+public:
+   Exception(const std::string& message)
+      : m_message(message)
+   {
+
+   }
+
+   virtual ~Exception() throw()
+   {
+      
+   }
+
+   virtual const char* what() const throw()
+   {
+      return m_message.c_str();
+   }
+
+private:
+   const std::string m_message;
+   
+};
+}
+
 class RooEffHistProd: public RooAbsPdf {
 public:
    // Constructors, assignment etc
@@ -49,7 +77,7 @@ protected:
 
    virtual Double_t evaluate() const;
 
-   const RooAbsPdf* pdf() const { 
+   RooAbsPdf* pdf() const { 
       // Return pointer to pdf in product
       return (RooAbsPdf*) _pdf.absArg() ; 
    }

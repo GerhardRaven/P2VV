@@ -38,33 +38,6 @@
 
 ClassImp(RooEffHistProd);
 
-namespace {
-
-class Exception : public exception
-{
-public:
-   Exception(const std::string& message)
-      : m_message(message)
-   {
-
-   }
-
-   virtual ~Exception() throw()
-   {
-      
-   }
-
-   virtual const char* what() const throw()
-   {
-      return m_message.c_str();
-   }
-
-private:
-   const std::string m_message;
-   
-};
-}
-
 namespace EffHistProd {
 //_____________________________________________________________________________
 void cloneRanges(const RooArgSet& observables, const RooArgSet& iset,
@@ -106,7 +79,7 @@ void cloneRanges(const RooArgSet& observables, const RooArgSet& iset,
             states.Remove(TString::kTrailing, ',');
             cat->setRange(newName, states.Data());
          } else {
-            throw Exception("Got type for which a range cannot be cloned");
+            throw EffHistProd::Exception("Got type for which a range cannot be cloned");
          }
       }
    }
@@ -227,8 +200,9 @@ Double_t RooEffHistProd::getValV(const RooArgSet* normSet) const
 {  
    // Return p.d.f. value normalized over given set of observables
    // cout << "RooEffHistProd::getValV " << (normSet ? *normSet : RooArgSet()) << endl;
-   _pdfNormSet = _fixedNormSet ? _fixedNormSet : normSet;
-   return RooAbsPdf::getValV(normSet) ;
+   // FIXME: memory leak!!
+   _pdfNormSet = _fixedNormSet ? _fixedNormSet : pdf()->getObservables(*normSet);
+   return RooAbsPdf::getValV(normSet);
 }
 
 //_____________________________________________________________________________
@@ -236,8 +210,9 @@ Double_t RooEffHistProd::evaluate() const
 {
    // Calculate and return 'raw' unnormalized value of p.d.f
    double pdfVal = pdf()->getVal(_pdfNormSet);
-   // cout << "RooEffHistProd::evaluate " << effVal << " " << pdfVal << " " << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) << endl;
-   return effVal() * pdfVal;
+   double eff = effVal();
+   cout << "RooEffHistProd::evaluate " << eff << " " << pdfVal << " " << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) << endl;
+   return eff * pdfVal;
 }
 
 //_____________________________________________________________________________
@@ -334,25 +309,31 @@ Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& ana
    
    // No special handling required if a normalization set is given
    if (normSet && normSet->getSize() > 0) {
-      _pdfNormSet = normSet;
+      // FIXME: here's another possible memory leak
+      // if(_pdfNormSet) delete _pdfNormSet;
+      _pdfNormSet = pdf()->getObservables(*normSet);
       Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
-      // coutI(Integration) << "RooEffHistProd::getAnalyticalIntegralWN " << allDeps << " " << analDeps << " "
-      //      << (normSet ? *normSet : RooArgSet()) << " " << rangeName << endl;
+      cout << "RooEffHistProd::getAnalyticalIntegralWN " << allDeps << " " << analDeps << " "
+           << (normSet ? *normSet : RooArgSet()) << " " << rangeName << endl;
       return code;
    } else if (_fixedNormSet) {    
       _pdfNormSet = _fixedNormSet;
       Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
-      // coutI(Integration) << "RooEffHistProd::getAnalyticalIntegralWN " << allDeps << " " << analDeps << " "
-      //      << (normSet ? *normSet : RooArgSet()) << " " << rangeName << endl;
+      cout << "RooEffHistProd::getAnalyticalIntegralWN " << allDeps << " " << analDeps << " "
+           << (normSet ? *normSet : RooArgSet()) << " " << rangeName << endl;
       return code;
    } else {
       // No normSet passed
 
       // Declare that we can analytically integrate all requested observables
-      analDeps.add(allDeps);
-
+      std::auto_ptr<RooArgSet> pdfObs(pdf()->getObservables(allDeps));
+      analDeps.add(*pdfObs.get());
       // Construct cache with clone of p.d.f that has fixed normalization set that is passed to input pdf
-      getCache(&allDeps, &allDeps, rangeName, true);
+      cout << "RooEffHistProd::getAnalyticalIntegralWN " << allDeps << " " << *pdfObs.get() 
+           << " " << analDeps << " "
+           << (normSet ? *normSet : RooArgSet()) << " " << rangeName << endl;
+
+      getCache(pdfObs.get(), pdfObs.get(), rangeName, true);
       Int_t code = _cacheMgr.lastIndex();
       return 1 + code;
    }
@@ -363,8 +344,13 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                             const char* rangeName) const 
 {
    if (_forceNumInt) return 0;
-   if (allVars.getSize() == 0) return 0;
-   iset.add(allVars);
+
+   std::auto_ptr<RooArgSet> pdfObs(pdf()->getObservables(allVars));
+   if (pdfObs->getSize() == 0) {
+      return 0;
+   } else {
+      iset.add(*pdfObs.get());
+   }
 
    getCache(_pdfNormSet, &iset, rangeName);
    Int_t code = _cacheMgr.lastIndex();

@@ -27,6 +27,6 @@
 #pragma link C++ class RooCruijff+;
 #pragma link C++ class RooEffHistProd;
 #pragma link C++ class RooSingleHistEfficiency+;
-#pragma link C++ class RooMultiEfficiency+;
+#pragma link C++ class RooMultiHistEfficiency+;
 
 #endif

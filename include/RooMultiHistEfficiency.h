@@ -1,0 +1,59 @@
+#ifndef ROO_MULTIHISTEFFICIENCY
+#define ROO_MULTIHISTEFFICIENCY
+
+#include <RooEffHistProd.h>
+#include <RooListProxy.h>
+#include <TString.h>
+#include <TList.h>
+
+class RooArgList ;
+class TIterator;
+class RooAbsGenContext;
+
+class RooMultiHistEfficiency : public RooEffHistProd {
+public:
+   // Constructors, assignment etc
+   inline RooMultiHistEfficiency() { 
+      // Default constructor
+   }
+   RooMultiHistEfficiency(const char *name, const char *title, RooAbsPdf& pdf, 
+                          const RooArgList& efficiencies, const RooArgList& categories,
+                          const TList& sigCatNames);
+   RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name=0);
+   virtual TObject* clone(const char* newname) const { return new RooMultiHistEfficiency(*this, newname); }
+   virtual ~RooMultiHistEfficiency();
+
+   RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype,
+                                const RooArgSet* auxProto, Bool_t verbose) const;
+   virtual Int_t getGenerator(const RooArgSet& dv, RooArgSet &gv, Bool_t si) const;
+   virtual void initGenerator(Int_t code);
+   virtual void generateEvent(Int_t code);
+
+protected:
+
+   // Function evaluation
+   virtual const RooArgSet* effObservables() const;
+   virtual Double_t effVal() const ;
+
+private:
+
+   RooMultiHistEfficiency* operator=(const RooMultiHistEfficiency& other);
+   bool allFalse() const;
+
+   RooSetProxy  _observables;     // Observables in the efficiency histogram
+   RooListProxy _categories;      // Accept/reject categories
+   RooListProxy _efficiencies;    // Efficiency modeling functions
+   TList _sigCatNames;            // Name of accept state of accept/reject categories
+   mutable Int_t _pdfGenCode;     // Generator code used for the pdf
+   mutable RooArgSet _pdfGenVars; // Variables to generate for the PDF
+   RooSuperCategory* _super;      // SuperCategory for all the combination of underlying categories.
+   
+   typedef std::vector<std::pair<double, TString> > Levels;
+   Levels _levels; // 
+
+   TIterator* _nameIter;        //!
+
+   ClassDef(RooMultiHistEfficiency,1) // Generic PDF defined by string expression and list of variables
+};
+
+#endif

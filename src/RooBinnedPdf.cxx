@@ -729,9 +729,13 @@ std::list<Double_t>* RooBinnedPdf::binBoundaries(RooAbsRealLValue& obs,
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::evaluate() const
 {
-  if (_function.absArg() != 0) return evaluateFunction();
-  else if (_coefLists.GetEntries() == _numCats) return evaluateMultipleCoefs();
-  else return evaluateCoef();
+   if (_function.absArg() != 0) {
+      return evaluateFunction();
+   } else if (_coefLists.GetEntries() == _numCats) {
+      return evaluateMultipleCoefs();
+   } else {
+      return evaluateCoef();
+   }
 }
 
 //_____________________________________________________________________________
@@ -750,9 +754,11 @@ Double_t RooBinnedPdf::evaluateCoef() const
   // loop over base categories
   for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
     // get position of coefficient
-    std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
-    Int_t cPos = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
-        ->getIndex()];
+    const std::map<Int_t, Int_t>& indexMap = _indexPositions[catIter];
+    Int_t index = static_cast<RooAbsCategory*>(_baseCatsList.at(catIter))->getIndex();
+    std::map<Int_t, Int_t>::const_iterator it = indexMap.find(index);
+    assert(it != indexMap.end());
+    Int_t cPos = it->second;
 
     // update position of bin
     binPos += coefPosFac * cPos;
@@ -817,15 +823,19 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
 
   // temporary array of coefficient positions
   Int_t* cPos = new Int_t [_numCats];
+  for (int i = 0; i < _numCats; ++i) cPos[i] = 0;
 
   // loop over base categories
   Bool_t ignoreBin = _ignoreFirstBin;
   Bool_t calcCoefZeros = kFALSE;
   for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
     // get coefficient position
-    std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
-    cPos[catIter] = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
-        ->getIndex()];
+    const std::map<Int_t, Int_t>& indexMap = _indexPositions[catIter];
+    Int_t index = static_cast<RooAbsCategory*>(_baseCatsList.at(catIter))->getIndex();
+    std::map<Int_t, Int_t>::const_iterator it = indexMap.find(index);
+    assert(it != indexMap.end());
+    cPos[catIter] = it->second;
+    
     if (cPos[catIter] != 0) ignoreBin = kFALSE;
     if (_calcCoefZeros[catIter]) calcCoefZeros = kTRUE;
 
@@ -835,9 +845,11 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
       Double_t cVal = ((RooAbsReal*)((RooArgList*)_coefLists
           .UncheckedAt(catIter))
           ->at(cPos[catIter] - (Int_t)_calcCoefZeros[catIter]))->getVal();
-
       // make negative values equal to zero
-      if (cVal <= 0.) return 0.;
+      if (cVal <= 0.) {
+         delete[] cPos;
+         return 0.;
+      }
 
       // multiply by coefficient't value
       value *= cVal;
@@ -850,8 +862,14 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
   }
 
   // return value if we don't have to calculate any bin 0 coefficients
-  if (ignoreBin) return 0.;
-  if (!calcCoefZeros) return value;
+  if (ignoreBin) {
+    delete[] cPos;
+    return 0.;
+  }
+  if (!calcCoefZeros) {
+    delete[] cPos;
+    return value;
+  }
 
   // loop over base categories again
   for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
@@ -875,7 +893,10 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
 
     if (cPos[catIter] == 0) {
       // multiply result with the calculated value of bin 0 coefficient
-      if (coefSum >= 1.) return 0.;
+      if (coefSum >= 1.) {
+        delete[] cPos;
+        return 0.;
+      }
       value *= 1. - coefSum;
 
       // divide by bin width if coefficients are bin integrals
