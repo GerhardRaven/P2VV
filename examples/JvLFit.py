@@ -11,14 +11,16 @@ generateData            = False
 doFit                   = True
 fastFit                 = False
 makeObservablePlots     = False
+makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False
+pdfConfig['nominalPdf'] = True
 sumW2Error              = False
 
-plotsFile     = 'JvLSFit.ps' if pdfConfig['SFit'] else 'JvLCFit.ps'
+plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
+       else 'plots/JvLCFit.ps'
 parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
@@ -52,12 +54,14 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
-pdfConfig['bkgAnglePdf']         = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']       = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']       = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
-pdfConfig['multiplyByTimeEff']   = ''
-pdfConfig['parameterizeKKMass']  = 'simultaneous'  # default: simultaneous / nominal: ''
-pdfConfig['ambiguityParameters'] = True
+pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
+pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['multiplyByTimeEff']    = ''
+pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
+pdfConfig['ambiguityParameters']  = False
+pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.4, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
 pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
@@ -228,8 +232,9 @@ if ( readData or generateData ) and doFit :
         CEvenOdd.setConstant('avgCEven.*')
         if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-    if pdfConfig['nominalPdf'] or not constTagCatCoefs :
-        pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+    if pdfConfig['nominalPdf'] :
+        if not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+        pdfBuild['tagCats'].setConstant('wTagAP.*')
 
     if pdfConfig['parameterizeKKMass'] == 'functions' :
         for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
@@ -323,7 +328,8 @@ if ( readData or generateData ) and doFit :
         if pdfConfig['parameterizeKKMass'] :
             for bin in range( numKKMassBins ) :
                 ampMeasFuncs[ ampMeasNames[ 5 + 2 * bin ] ] = '@{0:d}/(1.-@{0:d})/@2'.format( 4 + 2 * bin )
-                ampMeasFuncs[ ampMeasNames[ 6 + 2 * bin ] ] = '@{0:d}-@3'.format( 5 + 2 * bin )
+                ampMeasFuncs[ ampMeasNames[ 6 + 2 * bin ] ] = '@{0:d}-@3{1:s}'.format( 5 + 2 * bin, '+TMath::TwoPi()'\
+                                                                                       if pdfConfig['ambiguityParameters'] else '' )
         else :
             ampMeasFuncs[ ampMeasNames[5] ] = '@4/(1.-@4)/@2'
             ampMeasFuncs[ ampMeasNames[6] ] = '@5-@3'
@@ -372,16 +378,19 @@ if ( readData or generateData ) and doFit :
 
     print 120 * '=' + '\n'
 
+else :
+    fitResult = None
+
 
 ###########################################################################################################################################
 ## make some plots ##
 #####################
 
-if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or dllPars ) :
+if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots or dllPars ) :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
-    from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
+    from ROOT import TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
 
     # create projection data set for conditional observables
     if pdfConfig['SFit'] :
@@ -422,6 +431,72 @@ if pdfConfig['makePlots'] :
              , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
              , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
             )
+
+if makeKKMassPlots and pdfConfig['parameterizeKKMass'] and fitResult and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave']:
+    # create S-wave phase plots
+    nKKBins = pdfBuild['KKMassBinning'].numBins()
+
+    from array import array
+    KKMassVals    = array( 'd', [ pdfBuild['KKMassBinning'].binCenter(binIter)      for binIter in range(nKKBins) ] )
+    KKMassLowErr  = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) for binIter in range(nKKBins) ] )
+    KKMassHighErr = KKMassLowErr
+
+    from ROOT import TGraphAsymmErrors
+    parList = fitResult.floatParsFinal()
+    deltaS1Vals    = array( 'd', [ parList.find( 'ASOddPhase_bin%d' % binIter ).getVal()   for binIter in range(nKKBins) ] )
+    deltaS1LowErr  = array( 'd', [ parList.find( 'ASOddPhase_bin%d' % binIter ).getError() for binIter in range(nKKBins) ] )
+    deltaS1HighErr = deltaS1LowErr
+    deltaSGraphs   = [ TGraphAsymmErrors( len(KKMassVals), KKMassVals,                  deltaS1Vals,
+                                                           KKMassLowErr, KKMassHighErr, deltaS1LowErr, deltaS1HighErr) ]
+
+    from math import pi
+    deltaS2Vals    = array( 'd', [ pi - parList.find( 'ASOddPhase_bin%d' % binIter ).getVal() for binIter in range(nKKBins) ] )
+    deltaS2LowErr  = deltaS1LowErr
+    deltaS2HighErr = deltaS2LowErr
+    deltaSGraphs  += [ TGraphAsymmErrors( len(KKMassVals), KKMassVals,                  deltaS2Vals,
+                                                           KKMassLowErr, KKMassHighErr, deltaS2LowErr, deltaS2HighErr ) ]
+
+    if pdfConfig['ambiguityParameters'] : deltaSGraphs = [ deltaSGraphs[1], deltaSGraphs[0] ]
+
+    from ROOT import kBlack, kBlue
+    deltaSGraphs[0].SetLineColor(kBlue)
+    deltaSGraphs[1].SetLineColor(kBlack)
+
+    deltaSGraphs[0].SetMarkerColor(kBlue)
+    deltaSGraphs[1].SetMarkerColor(kBlack)
+
+    deltaSGraphs[0].SetLineWidth(2)
+    deltaSGraphs[1].SetLineWidth(2)
+
+    from ROOT import kFullCircle, kFullSquare
+    deltaSGraphs[0].SetMarkerStyle(kFullCircle)
+    deltaSGraphs[1].SetMarkerStyle(kFullSquare)
+
+    deltaSGraphs[0].SetMinimum( min( deltaSGraphs[0].GetYaxis().GetXmin(), deltaSGraphs[1].GetYaxis().GetXmin() ) )
+    deltaSGraphs[0].SetMaximum( max( deltaSGraphs[0].GetYaxis().GetXmax(), deltaSGraphs[1].GetYaxis().GetXmax() ) )
+
+    deltaSGraphs[0].GetXaxis().SetTitle('m_{KK} (MeV)')
+    deltaSGraphs[0].GetYaxis().SetTitle('#delta_{S} - #delta_{#perp}    (rad)')
+
+    deltaSGraphs[0].SetTitle('S-Wave Phases')
+    deltaSGraphs[0].GetYaxis().SetTitleOffset(1.)
+
+    from ROOT import TLegend
+    leg = TLegend( 0.52, 0.41, 0.90, 0.61 )
+    leg.AddEntry( deltaSGraphs[0], 'solution I  (#Delta#Gamma_{s} > 0)', 'LPE' )
+    leg.AddEntry( deltaSGraphs[1], 'solution II (#Delta#Gamma_{s} < 0)', 'LPE' )
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+
+    from ROOT import TCanvas
+    deltaSCanv = TCanvas( 'deltaSCanv', 'S-Wave Phases' )
+    deltaSCanv.SetLeftMargin(0.1)
+    deltaSGraphs[0].Draw('AP')
+    deltaSGraphs[1].Draw('P SAMES')
+    leg.Draw()
+
+else :
+    deltaSCanv = None
 
 if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     # plot lifetime and angles
@@ -551,10 +626,10 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
         bkgTimeCanv.Print(plotsFile)
         pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
         pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-        pdfBuild['estWTagCanv'].Print(plotsFile + ')')
+        pdfBuild['estWTagCanv'].Print( plotsFile + ( '' if deltaSCanv else ')' ) )
 
     else :
-        anglesCanv.Print(plotsFile + ')')
+        anglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
 
 elif pdfConfig['makePlots'] :
     pdfBuild['massCanv'].Print(plotsFile + '(')
@@ -562,7 +637,15 @@ elif pdfConfig['makePlots'] :
     bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-    pdfBuild['estWTagCanv'].Print(plotsFile + ')')
+    pdfBuild['estWTagCanv'].Print(plotsFile + '' if deltaSCanv else ')')
+
+if deltaSCanv :
+    deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
+
+
+###########################################################################################################################################
+## make DLL plots  ##
+#####################
 
 if dllPars :
     # make delta log-likelihood plots

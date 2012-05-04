@@ -179,13 +179,15 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['tagCats'] = [ ]
 
         # PDF options
-        self['transversityAngles']  = False
-        self['bkgAnglePdf']         = 'histPdf'
-        self['sigTaggingPdf']       = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats'
-        self['bkgTaggingPdf']       = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
-        self['multiplyByTimeEff']   = ''                  # 'all' / 'signal'
-        self['parameterizeKKMass']  = ''  # '' / 'functions' / 'simultaneous'
-        self['ambiguityParameters'] = False
+        self['transversityAngles']   = False
+        self['bkgAnglePdf']          = 'histPdf'
+        self['sigTaggingPdf']        = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats'
+        self['bkgTaggingPdf']        = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
+        self['multiplyByTimeEff']    = ''                  # 'all' / 'signal'
+        self['parameterizeKKMass']   = ''  # '' / 'functions' / 'simultaneous'
+        self['ambiguityParameters']  = False
+        self['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
+        self['SWaveAmplitudeValues'] = (  [ 0.8, 0.2,  0.1,  0.7 ], [ 1.4, 0.3, -0.5, -0.6 ] )
 
         self['conditionalTagging'] = False
         self['continuousEstWTag']  = False
@@ -281,16 +283,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')
         numBMassBins      = pdfConfig.pop('numBMassBins')
         ambiguityPars     = pdfConfig.pop('ambiguityParameters')
+        KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
+        SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
 
-        if paramKKMass :
-            KKMassBinBounds = [ 1020. - 30., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
-            SWaveAmpVals    = (  [ 0.8, 0.2,  0.1,  0.7 ], [ 1.4, 0.3, -0.5, -0.6 ] )
-            if ambiguityPars :
-                from math import pi
-                for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
-
-        else :
+        if not paramKKMass :
             KKMassBinBounds = [ 1020. - 12., 1020., 1020. + 12. ]
+        elif ambiguityPars :
+            from math import pi
+            for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
 
         self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
         iTagStates = pdfConfig.pop('iTagStates')
