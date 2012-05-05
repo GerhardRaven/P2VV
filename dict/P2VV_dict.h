@@ -17,5 +17,6 @@
 #include "RooCalibratedDilution.h"
 #include "RooDataSetToTree.h"
 #include "RooTransAngle.h"
+#include "RooCruijff.h"
 
 #endif // P2VV_H

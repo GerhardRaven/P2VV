@@ -11,15 +11,20 @@ class Binned_MassPdf( MassPdf ) :
         self._name = Name
         self._mass = Mass
 
-        # create binning
-        from array import array
-        binBounds = kwargs.pop( 'BinBoundaries', [ self._mass.getMin(), self._mass.getMax() ] )
-        self._binBounds = array( 'd', binBounds )
-        self._numBins = len(binBounds) - 1
+        # get binning
+        self._bins = kwargs.pop( 'Binning', None )
+        if not self._bins :
+            # create binning
+            from array import array
+            binBounds = kwargs.pop( 'BinBoundaries', [ self._mass.getMin(), self._mass.getMax() ] )
+            self._binBounds = array( 'd', binBounds )
+            self._numBins = len(binBounds) - 1
 
-        from ROOT import RooBinning
-        self._bins = RooBinning( self._numBins, self._binBounds, self._name + '_binning' )
-        self._mass.setBinning( self._bins, self._name + '_binning' )
+            from ROOT import RooBinning
+            self._bins = RooBinning( self._numBins, self._binBounds, self._name + '_binning' )
+            self._mass.setBinning( self._bins, self._name + '_binning' )
+
+        self._numBins = self._bins.numBins()
 
         # determine number of events in each bin
         self._data = kwargs.pop( 'Data', None )
@@ -39,7 +44,7 @@ class Binned_MassPdf( MassPdf ) :
                                 , Title    = '%s bin coefficient %d' % ( self._name, bin )
                                 , Value    = self._numEventsBins[bin] / self._numEvents if self._data else 1. / self._numBins
                                 , MinMax   = ( 0., 1. )
-                                , Constant = True if self._data else False
+                                , Constant = False
                                ) if bin != 0 else None for bin in range( self._numBins )
                       ]
         del self._coefs[0]
