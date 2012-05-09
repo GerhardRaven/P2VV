@@ -948,7 +948,7 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
   for (Int_t varIter = 0; varIter < _numCats; ++varIter) {
     // get input variable
     TString catName(baseVars.at(varIter)->GetName());
-    catName += "_cat";
+    catName += TString("_") + GetName() + "_cat";
     RooAbsRealLValue* var
         = dynamic_cast<RooAbsRealLValue*>(baseVars.at(varIter));
 

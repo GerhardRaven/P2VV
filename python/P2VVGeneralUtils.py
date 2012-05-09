@@ -801,6 +801,13 @@ class SData( object ) :
         self._data = dict()
     def usedObservables( self ) :
         return self._observables
+    def components( self ):
+        return [ i.GetName()[2:] for i in self._yields ]
+    def Yield(self, Component ) :
+        yname = 'N_%s'% Component
+        for y in self._yields :
+            if y.GetName() == yname : return y.getVal()
+        raise KeyError('unknown Component %s' % Component )
     def data( self, Component ) :
         if Component not in self._data :
             # check if component in the weight column. If not, raise KeyError

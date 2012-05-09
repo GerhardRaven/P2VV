@@ -533,23 +533,37 @@ class Independent_TaggingCategories( TaggingCategories ) :
 
 class Linear_TaggingCategories( TaggingCategories ) :
     def __init__( self, **kwargs ) :
+        # get type of tagging
+        tagType = 'SS' if kwargs.pop( 'SameSide', False ) else 'OS'
+
         # get tagging category variable (or its name)
-        tagCat = kwargs.pop( 'tagCat', 'tagCat' )
+        tagCat = kwargs.pop( 'tagCat', 'tagCat' + tagType )
 
         # estimated wrong tag variable
         if 'estWTag' in kwargs :
-            self._parseArg( 'estWTag', kwargs, Title = 'Estimated wrong tag probability', Value = 0.25, MinMax = ( 0., 0.5 ) )
+            self._parseArg( 'estWTag', kwargs, Name = 'estWTag' + tagType, Title = 'Estimated wrong tag probability'
+                           , Value = 0.25, MinMax = ( 0., 0.5 ) )
 
         # get linear calibration parameters
-        self._parseArg(  'avgEstWTag', kwargs, Value = 0.391, ObjectType = 'ConstVar' )
-        self._parseArg(  'wTagP0',     kwargs, Title = 'Average wrong tag parameter p_0'
-                       , Value = 0.392, Error = 0.009, MinMax = (  0.,  0.5 ) )
-        self._parseArg(  'wTagP1',     kwargs, Title = 'Average wrong tag parameter p_1'
-                       , Value = 1.035, Error = 0.024, MinMax = (  0.8, 1.2 ) )
-        self._parseArg(  'wTagAP0',    kwargs, Title = 'Wrong tag parameter p_0 asymmetry'
-                       , Value = 0., Constant = True,  MinMax = ( -1.,  1.  ) )
-        self._parseArg(  'wTagAP1',    kwargs, Title = 'Wrong tag parameter p_1 asymmetry'
-                       , Value = 0., Constant = True,  MinMax = ( -1.,  1.  ) )
+        self._parseArg(  'avgEstWTag', kwargs, Name = 'avgEstWTag' + tagType
+                       , Value = 0.391 if tagType == 'OS' else 0.324
+                       , ObjectType = 'ConstVar' )
+        self._parseArg(  'wTagP0',     kwargs, Name = 'wTagP0' + tagType, Title = 'Average wrong tag parameter p_0'
+                       , Value = 0.392 if tagType == 'OS' else 0.350
+                       , Error = 0.009 if tagType == 'OS' else 0.015
+                       , MinMax = (  0.,  0.5 )
+                      )
+        self._parseArg(  'wTagP1', kwargs, Name = 'wTagP1' + tagType, Title = 'Average wrong tag parameter p_1'
+                       , Value = 1.035 if tagType == 'OS' else 0.509
+                       , Error = 0.024 if tagType == 'OS' else 0.155
+                       , MinMax = (  0., 2. )
+                      )
+        self._parseArg(  'wTagAP0', kwargs, Name = 'wTagAP0' + tagType, Title = 'Wrong tag parameter p_0 asymmetry'
+                       , Value = 0., MinMax = ( -1.,  1.  )
+                      )
+        self._parseArg(  'wTagAP1', kwargs, Name = 'wTagAP1' + tagType, Title = 'Wrong tag parameter p_1 asymmetry'
+                       , Value = 0., MinMax = ( -1.,  1.  )
+                      )
 
         # constrain calibration parameters
         constraints = [ ]
@@ -557,10 +571,10 @@ class Linear_TaggingCategories( TaggingCategories ) :
         if wTagP0Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
-            constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
+            constraints.append( Pdf(  Name = self._wTagP0.GetName() + tagType + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP0
-                                                    , ConstVar( Name = 'wTagP0_mean',  Value = self._wTagP0.getVal()   )
-                                                    , ConstVar( Name = 'wTagP0_sigma', Value = self._wTagP0.getError() )
+                                                    , ConstVar( Name = 'wTagP0' + tagType + '_mean',  Value = self._wTagP0.getVal()   )
+                                                    , ConstVar( Name = 'wTagP0' + tagType + '_sigma', Value = self._wTagP0.getError() )
                                                    ]
                                    )
                               )
@@ -571,8 +585,8 @@ class Linear_TaggingCategories( TaggingCategories ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP1
-                                                    , ConstVar( Name = 'wTagP1_mean',  Value = self._wTagP1.getVal()   )
-                                                    , ConstVar( Name = 'wTagP1_sigma', Value = self._wTagP1.getError() )
+                                                    , ConstVar( Name = 'wTagP1' + tagType + '_mean',  Value = self._wTagP1.getVal()   )
+                                                    , ConstVar( Name = 'wTagP1' + tagType + '_sigma', Value = self._wTagP1.getError() )
                                                    ]
                                    )
                               )
@@ -628,19 +642,20 @@ class Linear_TaggingCategories( TaggingCategories ) :
                 estWTag = self._estWTag
             else :
                 from RooFitWrappers import ConstVar
-                estWTag = ConstVar( Name = 'estWTag%d' % ( cat + 1 ), Title = 'Estimated wrong tag probability', Value = catPars[3] )
+                estWTag = ConstVar( Name = 'estWTag%s%d' % ( tagType, cat + 1 ), Title = 'Estimated wrong tag probability ' + tagType
+                                   , Value = catPars[3] )
                 self._estWTags.append(estWTag)
 
-            dilutions.append( CalibratedDilution(  Name       = 'tagDilution%d' % ( cat + 1 )
-                                                 , Title      = 'Tagging dilution %d' % ( cat + 1 )
+            dilutions.append( CalibratedDilution(  Name       = 'tagDilution%s%d' % ( tagType, cat + 1 )
+                                                 , Title      = 'Tagging dilution %s %d' % ( tagType, cat + 1 )
                                                  , EstWTag    = estWTag
                                                  , AvgEstWTag = self._avgEstWTag
                                                  , P0         = self._wTagP0
                                                  , P1         = self._wTagP1
                                                 )
                             )
-            ADilWTags.append( CalibratedDilution(  Name       = 'ADilWTag%d' % ( cat + 1 )
-                                                 , Title      = 'Dilution/wrong tag asymmetry %d' % ( cat + 1 )
+            ADilWTags.append( CalibratedDilution(  Name       = 'ADilWTag%s%d' % ( tagType, cat + 1 )
+                                                 , Title      = 'Dilution/wrong tag asymmetry %s %d' % ( tagType, cat + 1 )
                                                  , EstWTag    = estWTag
                                                  , AvgEstWTag = self._avgEstWTag
                                                  , P0         = self._wTagP0
