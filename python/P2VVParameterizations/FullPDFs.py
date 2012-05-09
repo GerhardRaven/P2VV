@@ -615,6 +615,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     addTaggingObservables( data, iTagSS.GetName(), tagCatP2VVSS.GetName(), tagDecisionSS.GetName(), estWTagSS.GetName()
                                           , self._tagCatsSS['tagCats'] )
 
+            if SSTagging :
+                from P2VVParameterizations.FlavourTagging import Combined_TaggingCategories as CombTaggingCategories
+                self._tagCatsComb = CombTaggingCategories( self._tagCatsOS, self._tagCatsSS )
+
             if self._sigSWeightData :
                 # print tagging categories distribution for signal and background
                 from RooFitWrappers import ArgSet
@@ -746,7 +750,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 tagCatsDict['ANorm'] = -self._lambdaCP['C'].getVal()
 
             from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
-            self._taggingParams = TaggingParams(**tagCatsDict)
+            self._taggingParams = TaggingParams( **tagCatsDict )
 
             args = dict(  tagCat      = tagCatP2VVOS
                         , iTag        = iTagOS
