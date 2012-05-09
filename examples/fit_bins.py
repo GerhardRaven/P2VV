@@ -20,7 +20,7 @@ from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as Time
 res_model = TimeResolution(time = t)
 
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time as TimePDF
-time_pdf = TimePDF(Name = 'pdf', time = t, resolutionModel = res_model.model())
+time_pdf = TimePDF(Name = 'time_pdf', time = t, resolutionModel = res_model.model())
 time_pdf = time_pdf.pdf()
 
 unbiased = RooCategory('unbiased', 'unbiased')
@@ -58,9 +58,10 @@ binned_pdf = BinnedPdf(Name = 'binned_pdf', Observable = t, Binning = 'default',
                        Coefficients = bin_vars)
 prescale = RealVar('prescale', Observable = False, Value = 0.2, MinMax = (0.001, 0.999))
 
-pdf = MultiHistEfficiency(Name = 'efficiency', Original = time_pdf, ConditionalCategories = True,
-                             Efficiencies = {prescale   : (unbiased, 'unbiased'),
-                                             binned_pdf : (biased,   'biased'  )})
+efficiency = MultiHistEfficiency(Name = 'efficiency', ConditionalCategories = True,
+                                 Efficiencies = {prescale   : (unbiased, 'unbiased'),
+                                                 binned_pdf : (biased,   'biased'  )})
+pdf = EffProd('pdf', Original = time_pdf, Efficiency = efficiency)
 pdf.Print('t')
 
 data = pdf.generate([t, biased, unbiased], 10000)

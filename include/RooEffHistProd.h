@@ -47,18 +47,28 @@ private:
 };
 }
 
+class RooAbsReal;
+
 class RooEffHistProd: public RooAbsPdf {
 public:
    // Constructors, assignment etc
    inline RooEffHistProd()   { };
    virtual ~RooEffHistProd();
-   RooEffHistProd(const char *name, const char *title, RooAbsPdf& pdf);
+   RooEffHistProd(const char *name, const char *title, 
+                  RooAbsPdf& pdf, RooAbsReal& efficiency);
    RooEffHistProd(const RooEffHistProd& other, const char* name = 0);
 
    virtual Bool_t forceAnalyticalInt(const RooAbsArg& /*dep*/) const { 
       // Return kTRUE to force RooRealIntegral to offer all observables for internal integration
       return kTRUE ; 
    }
+
+   virtual TObject* clone(const char* name) const {
+      return new RooEffHistProd(*this, name);
+   }
+
+   RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype,
+                                const RooArgSet* auxProto, Bool_t verbose) const;
 
    Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
                                  const RooArgSet* normSet, const char* rangeName) const;
@@ -79,11 +89,13 @@ protected:
 
    RooAbsPdf* pdf() const { 
       // Return pointer to pdf in product
-      return (RooAbsPdf*) _pdf.absArg() ; 
+      return static_cast<RooAbsPdf*>(_pdf.absArg());
    }
 
-   virtual const RooArgSet* effObservables() const = 0;
-   virtual double effVal() const = 0;
+   RooAbsReal* eff() const { 
+      // Return pointer to pdf in product
+      return static_cast<RooAbsReal*>(_eff.absArg());
+   }
 
    typedef std::vector<double> BinBoundaries;
    BinBoundaries _binboundaries;
@@ -94,7 +106,8 @@ private:
                           const TString& postfix) const;
 
    // the real stuff...
-   RooRealProxy _pdf ;     // Probability Density function
+   RooRealProxy _pdf;     // Probability Density function
+   RooRealProxy _eff;     // Probability Density function
    mutable const RooArgSet* _pdfNormSet;
    mutable const RooArgSet* _fixedNormSet;
 
@@ -106,8 +119,8 @@ private:
       virtual ~CacheElem();
 
       virtual RooArgList containedArgs(Action) ;
-      Double_t getVal(Int_t i = 0) { 
-          return _I[i]->getVal(); 
+      Double_t getVal() { 
+          return _I->getVal(); 
       }
       
       bool trivial() const { return _trivial; }
@@ -123,7 +136,7 @@ private:
       // Payload
       RooArgSet _intObs ;
       RooEffHistProd* _clone;
-      std::vector<RooAbsReal*> _I;
+      RooAbsReal* _I;
       bool _trivial;
    };
    

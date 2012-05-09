@@ -985,11 +985,11 @@ class EffProd(Pdf):
         if 'Type' in kwargs:
             d['Type'] = kwargs.pop('Type').__name__
         elif str(type(__dref__(eff))).find('Hist') != -1 or type(eff) == BinnedPdf:
-            d['Type'] = 'RooSingleHistEfficiency'
+            d['Type'] = 'RooEffHistProd'
         else:
             d['Type'] = 'RooEffProd'
-        if d['Type'] not in ['RooEffProd', 'RooSingleHistEfficiency']:
-            raise TypeError, "An efficiency can only be of type RooEffProd or RooSingleHistEfficiency"
+        if d['Type'] not in ['RooEffProd', 'RooEffHistProd']:
+            raise TypeError, "An efficiency can only be of type RooEffProd or RooEffHistProd"
         # construct factory string
         self._declare("%s::%s(%s, %s)" % ( d['Type'], Name, d['Original'].GetName(),
                                            d['Efficiency'].GetName()))
@@ -1009,7 +1009,6 @@ class MultiHistEfficiency(Pdf):
         efficiencies = kwargs.pop('Efficiencies')
         pdf_name = kwargs.pop('Name')
         cc = kwargs.pop('ConditionalCategories', False)
-        original = kwargs.pop('Original')
         from ROOT import TList, RooArgList, TObjString
         eff_funcs = RooArgList()
         categories = RooArgList()
@@ -1031,15 +1030,14 @@ class MultiHistEfficiency(Pdf):
             if cc: conditionals.add(cat)
 
         from ROOT import RooMultiHistEfficiency
-        pdf = RooMultiHistEfficiency(pdf_name, pdf_name, __dref__(original),
-                                     eff_funcs, categories, signal_names)
+        pdf = RooMultiHistEfficiency(pdf_name, pdf_name, eff_funcs, categories, signal_names)
         self._addObject(pdf)
         self._init(pdf_name, 'RooMultiHistEfficiency')
 
         extraOpts = dict()
         if conditionals : extraOpts['ConditionalObservables'] = conditionals
         if constraints : extraOpts['ExternalConstraints' ] = constraints
-        Pdf.__init__(self , Name = pdf_name , Type = 'RooMultiHistEfficiency', **extraOpts)
+        Pdf.__init__(self , Name = name , Type = 'RooMultiHistEfficiency', **extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class GenericPdf( Pdf ) :
