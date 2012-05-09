@@ -35,27 +35,28 @@ deltaSSFit2Graph = TGraphAsymmErrors(len(KKMass), KKMass, deltaSSFit2, KKMassLow
 
 from ROOT import kBlack, kBlue, kFullCircle, kFullSquare
 from operator import methodcaller
-from itertools import product
-for (graph,opt) in product( [ deltaSCFit1Graph, deltaSSFit1Graph ] 
-                          , [ ('SetLineColor', kBlue) ,               ('SetMarkerColor', kBlue)
-                            , ('SetLineWidth', 2) ,                   ('SetMarkerStyle', kFullCircle)
-                            , ('SetMinimum',   deltaSAxisRange[0] ) , ('SetMaximum',     deltaSAxisRange[1] ) ] 
-                          ) :
-    methodcaller( *opt )( graph )
-for (graph,opt) in product( [ deltaSCFit1Graph, deltaSSFit1Graph ]
-                          , [ ('SetTitleOffset', 1 ), ( 'SetTitle', deltaSTitle ) ] 
-                          ) :
-    methodcaller( *opt )( graph.GetYaxis() )
-for (graph,opt) in product( [ deltaSCFit2Graph, deltaSSFit2Graph ]  
-                          , [ ('SetLineColor',kBlack) , ('SetMarkerColor',kBlack)
-                            , ('SetLineWidth',2) ,      ('SetMarkerStyle',kFullSquare) ]
-                          ) :
-    methodcaller( *opt )( graph )
+from itertools import product, chain, imap
+for (obj,opt) in chain( product( [ deltaSCFit1Graph, deltaSSFit1Graph ] 
+                               , [ ('SetLineColor', kBlue) ,               ('SetMarkerColor', kBlue)
+                                 , ('SetLineWidth', 2) ,                   ('SetMarkerStyle', kFullCircle)
+                                 , ('SetMinimum',   deltaSAxisRange[0] ) , ('SetMaximum',     deltaSAxisRange[1] ) ] 
+                               )
+                      , product( [ deltaSCFit2Graph, deltaSSFit2Graph ]  
+                               , [ ('SetLineColor',kBlack) ,               ('SetMarkerColor',kBlack)
+                                 , ('SetLineWidth',2) ,                    ('SetMarkerStyle',kFullSquare) ]
+                               ) 
+                      , product( imap( methodcaller('GetYaxis'), [ deltaSCFit1Graph, deltaSSFit1Graph ] )
+                               , [ ('SetTitleOffset', 1 ), ( 'SetTitle', deltaSTitle ) ] 
+                               )
+                      , product( imap( methodcaller('GetXaxis'), [ deltaSCFit1Graph, deltaSSFit1Graph ] ) 
+                               , [ ('SetTitle',KKMassTitle ) ]
+                               )
+                      ) :
+    methodcaller( *opt )( obj )
+
 
 deltaSCFit1Graph.SetTitle(CFitTitle)
-deltaSCFit1Graph.GetXaxis().SetTitle(KKMassTitle)
 deltaSSFit1Graph.SetTitle(SFitTitle)
-deltaSSFit1Graph.GetXaxis().SetTitle(KKMassTitle)
 
 from ROOT import TLegend
 leg = TLegend( 0.52, 0.43, 0.90, 0.63 )
