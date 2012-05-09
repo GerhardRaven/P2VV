@@ -33,43 +33,29 @@ deltaSSFit2LowErr  = array( 'd', [ 3.94e-01,   1.15e-01,    1.84e-01,    1.69e-0
 deltaSSFit2HighErr = deltaSSFit2LowErr
 deltaSSFit2Graph = TGraphAsymmErrors(len(KKMass), KKMass, deltaSSFit2, KKMassLowErr, KKMassHighErr, deltaSSFit2LowErr, deltaSSFit2HighErr)
 
-from ROOT import kBlack, kBlue
-deltaSCFit1Graph.SetLineColor(kBlue)
-deltaSCFit2Graph.SetLineColor(kBlack)
-deltaSSFit1Graph.SetLineColor(kBlue)
-deltaSSFit2Graph.SetLineColor(kBlack)
-
-deltaSCFit1Graph.SetMarkerColor(kBlue)
-deltaSCFit2Graph.SetMarkerColor(kBlack)
-deltaSSFit1Graph.SetMarkerColor(kBlue)
-deltaSSFit2Graph.SetMarkerColor(kBlack)
-
-deltaSCFit1Graph.SetLineWidth(2)
-deltaSCFit2Graph.SetLineWidth(2)
-deltaSSFit1Graph.SetLineWidth(2)
-deltaSSFit2Graph.SetLineWidth(2)
-
-from ROOT import kFullCircle, kFullSquare
-deltaSCFit1Graph.SetMarkerStyle(kFullCircle)
-deltaSCFit2Graph.SetMarkerStyle(kFullSquare)
-deltaSSFit1Graph.SetMarkerStyle(kFullCircle)
-deltaSSFit2Graph.SetMarkerStyle(kFullSquare)
-
-deltaSCFit1Graph.SetMinimum( deltaSAxisRange[0] )
-deltaSCFit1Graph.SetMaximum( deltaSAxisRange[1] )
-deltaSSFit1Graph.SetMinimum( deltaSAxisRange[0] )
-deltaSSFit1Graph.SetMaximum( deltaSAxisRange[1] )
-
-deltaSCFit1Graph.GetXaxis().SetTitle(KKMassTitle)
-deltaSCFit1Graph.GetYaxis().SetTitle(deltaSTitle)
-deltaSSFit1Graph.GetXaxis().SetTitle(KKMassTitle)
-deltaSSFit1Graph.GetYaxis().SetTitle(deltaSTitle)
-
-deltaSCFit1Graph.GetYaxis().SetTitleOffset(1.)
-deltaSSFit1Graph.GetYaxis().SetTitleOffset(1.)
+from ROOT import kBlack, kBlue, kFullCircle, kFullSquare
+from operator import methodcaller
+from itertools import product
+for (graph,opt) in product( [ deltaSCFit1Graph, deltaSSFit1Graph ] 
+                          , [ ('SetLineColor', kBlue) ,               ('SetMarkerColor', kBlue)
+                            , ('SetLineWidth', 2) ,                   ('SetMarkerStyle', kFullCircle)
+                            , ('SetMinimum',   deltaSAxisRange[0] ) , ('SetMaximum',     deltaSAxisRange[1] ) ] 
+                          ) :
+    methodcaller( *opt )( graph )
+for (graph,opt) in product( [ deltaSCFit1Graph, deltaSSFit1Graph ]
+                          , [ ('SetTitleOffset', 1 ), ( 'SetTitle', deltaSTitle ) ] 
+                          ) :
+    methodcaller( *opt )( graph.GetYaxis() )
+for (graph,opt) in product( [ deltaSCFit2Graph, deltaSSFit2Graph ]  
+                          , [ ('SetLineColor',kBlack) , ('SetMarkerColor',kBlack)
+                            , ('SetLineWidth',2) ,      ('SetMarkerStyle',kFullSquare) ]
+                          ) :
+    methodcaller( *opt )( graph )
 
 deltaSCFit1Graph.SetTitle(CFitTitle)
+deltaSCFit1Graph.GetXaxis().SetTitle(KKMassTitle)
 deltaSSFit1Graph.SetTitle(SFitTitle)
+deltaSSFit1Graph.GetXaxis().SetTitle(KKMassTitle)
 
 from ROOT import TLegend
 leg = TLegend( 0.52, 0.43, 0.90, 0.63 )
