@@ -70,6 +70,11 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
       _categories.add(*cat);
    }
 
+   RooFIter effIter = efficiencies.fwdIterator();
+   while (RooAbsArg* eff = effIter.next()) {
+      _efficiencies.add(*eff);
+   }
+
    std::auto_ptr<TIterator> nameIter(sigCatNames.MakeIterator());
    while (TObject* name = nameIter->Next()) {
       _sigCatNames.Add(name);
