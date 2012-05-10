@@ -59,6 +59,7 @@ binned_pdf = BinnedPdf(Name = 'binned_pdf', Observable = t, Binning = 'default',
 prescale = RealVar('prescale', Observable = False, Value = 0.2, MinMax = (0.001, 0.999))
 
 efficiency = MultiHistEfficiency(Name = 'efficiency', ConditionalCategories = True,
+                                 Observable = t,
                                  Efficiencies = {prescale   : (unbiased, 'unbiased'),
                                                  binned_pdf : (biased,   'biased'  )})
 pdf = EffProd('pdf', Original = time_pdf, Efficiency = efficiency)
@@ -72,17 +73,12 @@ data.table(unbiased).Print('v')
 ##                Optimize = 1)
 ## pdf.fitTo(data, **fitOpts)
 
-canvas = TCanvas('canvas', 'canvas', 1000, 500)
-canvas.Divide(2, 1)
-## canvas.cd(1)
-## frame = t.frame()
-## data.plotOn(frame, Binning = 100, Cut = "biased == 1 && unbiased == 0")
-## pdf.plotOn(frame, Slices = ((biased, '0'), (unbiased, '1')))
-## frame.Draw()
+## canvas = TCanvas('canvas', 'canvas', 1000, 500)
+## canvas.Divide(2, 1)
 
-canvas.cd(2)
-frame = t.frame()
-data.plotOn(frame, Binning = 100)
-pdf.plotOn(frame)
-frame.Draw()
+## canvas.cd(2)
+## frame = t.frame()
+## data.plotOn(frame, Binning = 100)
+## pdf.plotOn(frame)
+## frame.Draw()
 

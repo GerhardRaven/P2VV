@@ -1009,6 +1009,7 @@ class MultiHistEfficiency(Pdf):
         efficiencies = kwargs.pop('Efficiencies')
         pdf_name = kwargs.pop('Name')
         cc = kwargs.pop('ConditionalCategories', False)
+        obs = kwargs.pop('Observable')
         from ROOT import TList, RooArgList, TObjString
         eff_funcs = RooArgList()
         categories = RooArgList()
@@ -1030,7 +1031,8 @@ class MultiHistEfficiency(Pdf):
             if cc: conditionals.add(cat)
 
         from ROOT import RooMultiHistEfficiency
-        pdf = RooMultiHistEfficiency(pdf_name, pdf_name, eff_funcs, categories, signal_names)
+        pdf = RooMultiHistEfficiency(pdf_name, pdf_name, __dref__(obs), eff_funcs,
+                                     categories, signal_names)
         self._addObject(pdf)
         self._init(pdf_name, 'RooMultiHistEfficiency')
 

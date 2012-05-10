@@ -67,13 +67,17 @@ public:
       return new RooEffHistProd(*this, name);
    }
 
-   RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype,
-                                const RooArgSet* auxProto, Bool_t verbose) const;
+   virtual RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype,
+                                        const RooArgSet* auxProto, Bool_t verbose) const;
 
-   Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
+   virtual Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars,
+                              Bool_t staticInitOK) const;
+   virtual void generateEvent(Int_t code);
+
+   virtual Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
                                  const RooArgSet* normSet, const char* rangeName) const;
-   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const;
-   Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
+   virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const;
+   virtual Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
 
    virtual void selectNormalization(const RooArgSet*,Bool_t);
    virtual ExtendMode extendMode() const;
@@ -111,6 +115,9 @@ private:
    mutable const RooArgSet* _pdfNormSet;
    mutable const RooArgSet* _fixedNormSet;
 
+   typedef std::map<std::string, RooArgSet*> argMap_t;
+   mutable argMap_t _pdfObs;
+
    class CacheElem : public RooAbsCacheElement {
    public:
       CacheElem(const RooEffHistProd* parent,const RooArgSet& iset, const RooArgSet* nset,
@@ -143,6 +150,9 @@ private:
    friend class CacheElem;
    CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, 
                        const char* rangeName = 0, const bool makeClone = false) const;
+
+   std::string setName(const RooArgSet* set) const;
+   RooArgSet* normSet(const RooArgSet* input) const;
 
    mutable RooObjCacheManager _cacheMgr;
   

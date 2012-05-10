@@ -56,11 +56,13 @@ ClassImp(RooMultiHistEfficiency);
 
 //_____________________________________________________________________________
 RooMultiHistEfficiency::RooMultiHistEfficiency
-(const char *name, const char *title, const RooArgList& efficiencies,
- const RooArgList& categories, const TList& sigCatNames) :
-   RooAbsPdf(name, title),
+(const char *name, const char *title, RooAbsRealLValue& x,
+ const RooArgList& efficiencies, const RooArgList& categories,
+ const TList& sigCatNames) :
+   RooAbsReal(name, title),
    _categories("categories", "categories", this),
-   _efficiencies("efficiencies", "efficiencies", this)
+   _efficiencies("efficiencies", "efficiencies", this),
+   _binboundaries(0)
 {  
    // Construct an N+1 dimensional efficiency p.d.f from an N-dimensional efficiency
    // function and a category cat with two states (0,1) that indicate if a given
@@ -70,10 +72,26 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
       _categories.add(*cat);
    }
 
+   // For the binnings, we just assume that they are "matched" by the user.
+   unsigned int most = 0;
    RooFIter effIter = efficiencies.fwdIterator();
-   while (RooAbsArg* eff = effIter.next()) {
+   while (RooAbsReal* eff = static_cast<RooAbsReal*>(effIter.next())) {
       _efficiencies.add(*eff);
+      std::auto_ptr<BinBoundaries> bounds(eff->binBoundaries(x, x.getMin(), x.getMax()));
+      if (!bounds.get()) {
+         continue;
+      } else if (bounds->size() > most) {
+         if (_binboundaries) delete _binboundaries;
+         _binboundaries = bounds.release();
+      }
    }
+
+   cout << "bins: ";
+   for(std::list<Double_t>::const_iterator it = _binboundaries->begin();
+       it != _binboundaries->end(); ++it) {
+      cout << " " << *it;
+   }
+   cout << endl;
 
    std::auto_ptr<TIterator> nameIter(sigCatNames.MakeIterator());
    while (TObject* name = nameIter->Next()) {
@@ -84,7 +102,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
 
 //_____________________________________________________________________________
 RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name) : 
-   RooAbsPdf(other, name),
+   RooAbsReal(other, name),
    _categories("categories", this, other._categories),
    _efficiencies("efficiencies", this, other._efficiencies)
 {
@@ -95,6 +113,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& oth
       _sigCatNames.Add(name);
    }
    _nameIter = _sigCatNames.MakeIterator();
+   _binboundaries = new BinBoundaries(*other._binboundaries);
 }
 
 //_____________________________________________________________________________
@@ -102,6 +121,34 @@ RooMultiHistEfficiency::~RooMultiHistEfficiency()
 {
    // Destructor
    if (_nameIter) delete _nameIter;
+   if (_binboundaries) delete _binboundaries;
+}
+
+//_____________________________________________________________________________
+std::list<Double_t>* RooMultiHistEfficiency::binBoundaries
+(RooAbsRealLValue& obs, Double_t min, Double_t max) const
+{
+   assert (min >= _binboundaries->front());
+   assert (max <= _binboundaries->back());
+   std::list<Double_t>* bounds = new std::list<Double_t>;
+   std::list<Double_t>::const_iterator start, end = _binboundaries->end();
+   for(std::list<Double_t>::const_iterator it = _binboundaries->begin();
+       it != end; ++it) {
+      start = it;
+      ++start;
+      if (*it <= min && *start > min) {
+         bounds->push_back(min);
+         break;
+      }
+   }
+   for(; start != end; ++start) {
+      if (*start >= max) {
+         bounds->push_back(max);
+         break;
+      }
+      bounds->push_back(*start);
+   }
+   return bounds;
 }
 
 // //_____________________________________________________________________________
@@ -245,8 +292,6 @@ Double_t RooMultiHistEfficiency::evaluate() const
          // Reject case
          eps = 1 - eff->getVal();
       }
-
-      cout << eff->GetName() << " = " << " val = " << eps << endl;
 
       // Truncate efficiency function in range 0.0-1.0
       if (eps > 1) {
