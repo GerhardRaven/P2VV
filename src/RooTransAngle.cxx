@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <math.h>
 
+#include "Riostream.h"
 #include "RooMsgService.h"
 #include "RooAbsReal.h" 
 #include "RooTransAngle.h" 
