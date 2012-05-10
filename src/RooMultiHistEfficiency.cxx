@@ -193,53 +193,28 @@ std::list<Double_t>* RooMultiHistEfficiency::binBoundaries
 //    _super->setLabel(current);
 // }
 
-// //_____________________________________________________________________________
-// Int_t RooMultiHistEfficiency::getGenerator
-// (const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK) const
-// {
-//    bool all = true;
-//    bool none = true;
-//    RooFIter iter = _categories.fwdIterator();
-//    while (RooAbsArg* cat = iter.next()) {
-//       if (!directVars.find(*cat)) {
-//          all &= false;
-//       } else {
-//          none &= false;
-//       }
-//    }
-//    assert(all ^ none);
-
-//    _pdfGenVars.removeAll();
-//    RooArgSet pdfVars(directVars);
-//    Int_t pdfCode = pdf()->getGenerator(pdfVars, _pdfGenVars, staticInitOK) ;
-//    if (pdfCode != 0) {
-//       generateVars.add(_pdfGenVars);
-//    }
-
-//    iter = generateVars.fwdIterator();
-//    while (RooAbsArg* cat = iter.next()) {
-//       if (_categories.find(*cat)) {
-//          throw EffHistProd::Exception("Cannot generate categories on which the PDF depends.");
-//       }
-//    }
-
-//    // RooArgSet* pdfObs = pdf()->getObservables(_pdfGenVars);
-
-//    if (generateVars.getSize() == 0) {
-//       return 0;
-//       _pdfGenCode = 0;
-//    } else if (none) {
-//       _pdfGenCode = pdfCode;
-//       return 1;
-//    } else {
-//       iter = _categories.fwdIterator();
-//       while (RooAbsArg* cat = iter.next()) {
-//          generateVars.add(*cat);
-//       }
-//       _pdfGenCode = pdfCode;
-//       return 2;
-//    }
-// }
+//_____________________________________________________________________________
+Int_t RooMultiHistEfficiency::getGenerator
+(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /* staticInitOK */) const
+{
+   bool all = true;
+   bool none = true;
+   RooFIter iter = _categories.fwdIterator();
+   while (RooAbsArg* cat = iter.next()) {
+      if (!directVars.find(*cat)) {
+         all &= false;
+      } else {
+         none &= false;
+      }
+   }
+   assert(all ^ none);
+   
+   iter = _categories.fwdIterator();
+   while (RooAbsArg* cat = iter.next()) {
+      generateVars.add(*cat);
+   }
+   return 1;
+}
 
 // //_____________________________________________________________________________
 // void RooMultiHistEfficiency::generateEvent(Int_t code)

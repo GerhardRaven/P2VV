@@ -48,6 +48,7 @@ private:
 }
 
 class RooAbsReal;
+class RooSuperCategory;
 
 class RooEffHistProd: public RooAbsPdf {
 public:
@@ -70,8 +71,8 @@ public:
    virtual RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype,
                                         const RooArgSet* auxProto, Bool_t verbose) const;
 
-   virtual Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars,
-                              Bool_t staticInitOK) const;
+   virtual Int_t getGenerator(const RooArgSet& dv, RooArgSet &gv, Bool_t si) const;
+   virtual void initGenerator(Int_t code);
    virtual void generateEvent(Int_t code);
 
    virtual Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
@@ -109,14 +110,24 @@ private:
    const char* makeFPName(const TString& prefix, const RooArgSet& iset, const RooArgSet *nset,
                           const TString& postfix) const;
 
-   // the real stuff...
+   // Pointers to our underlying components
    RooRealProxy _pdf;     // Probability Density function
    RooRealProxy _eff;     // Probability Density function
-   mutable const RooArgSet* _pdfNormSet;
-   mutable const RooArgSet* _fixedNormSet;
 
+   // Data for event generation
+   mutable const RooArgSet* _effCategories;
+   Int_t _pdfGenCode;
+   RooArgSet _pdfGenVars;
+   RooSuperCategory* _super;
+
+   typedef std::vector<std::pair<double, TString> > Levels;
+   Levels _levels; // 
+
+   // Data for integration
    typedef std::map<std::string, RooArgSet*> argMap_t;
    mutable argMap_t _pdfObs;
+   mutable const RooArgSet* _pdfNormSet;
+   mutable const RooArgSet* _fixedNormSet;
 
    class CacheElem : public RooAbsCacheElement {
    public:

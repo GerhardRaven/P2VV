@@ -32,7 +32,7 @@ public:
 
    // RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype,
    //                              const RooArgSet* auxProto, Bool_t verbose) const;
-   // virtual Int_t getGenerator(const RooArgSet& dv, RooArgSet &gv, Bool_t si) const;
+   virtual Int_t getGenerator(const RooArgSet& dv, RooArgSet &gv, Bool_t si) const;
    // virtual void initGenerator(Int_t code);
    // virtual void generateEvent(Int_t code);
 
