@@ -8,13 +8,13 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = False
+doFit                   = True
 fastFit                 = False
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -63,13 +63,13 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.4, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
-pdfConfig['sameSideTagging']    = True  # nominal: False
+pdfConfig['sameSideTagging']    = False  # nominal: False
 pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
-pdfConfig['eventTimeResolution'] = False  # nominal: True
+pdfConfig['eventTimeResolution'] = True  # nominal: True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
