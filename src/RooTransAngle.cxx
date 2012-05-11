@@ -82,7 +82,7 @@ Double_t RooTransAngle::evaluate() const
   Double_t cthetal = _cthetal;
   if (cthetal < -1. || cthetal > 1.) {
     coutE(Eval) << "RooTransAngle::evaluate(" << GetName()
-        << ") cos(theta_l) value outside range: " << cthetal << endl;
+        << ") cos(theta_l) value outside range: " << cthetal << std::endl;
     cthetal = std::max(-1., std::min(cthetal, +1.));
   }
 
@@ -93,7 +93,7 @@ Double_t RooTransAngle::evaluate() const
   if (1. - ctheta * ctheta < 1.e-14) {
     coutW(Eval) << "RooTransAngle::evaluate(" << GetName()
         << ") transversity angle phi is undefined: sin(theta_tr) = "
-        << sqrt(1. - ctheta * ctheta) << endl;
+        << sqrt(1. - ctheta * ctheta) << std::endl;
     return -999.;
   }
 
