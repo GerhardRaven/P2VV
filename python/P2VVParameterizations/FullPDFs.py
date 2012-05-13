@@ -774,7 +774,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                     for catOS in range( tagCatsDictOS['NumTagCats'] ) :
                         if catOS > 0 :
-                            tagCatsDict[ 'tagCatCoef0_%d'  % catOS ] = tagCatsDictOS[ 'tagcatCoef%d' % catOS ]
+                            tagCatsDict[ 'tagCatCoef0_%d'  % catOS ] = tagCatsDictOS[ 'tagCatCoef%d' % catOS ]
                             tagCatsDict[ 'AvgCEven%d-0'    % catOS ] = avgCEvenOS
                             tagCatsDict[ 'AvgCOdd%d-0'     % catOS ] = avgCOddOS
                             tagCatsDict[ 'tagDilution0_%s' % catOS ] = tagCatsDictOS[ 'tagDilution%d' % catOS ]
@@ -782,7 +782,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                         for catSS in range( 1, tagCatsDictSS['NumTagCats'] ) :
                             if catOS == 0 :
-                                tagCatsDict[ 'tagCatCoef1_%d'  % catSS ] = tagCatsDictSS[ 'tagcatCoef%d' % catSS ]
+                                tagCatsDict[ 'tagCatCoef1_%d'  % catSS ] = tagCatsDictSS[ 'tagCatCoef%d' % catSS ]
                                 tagCatsDict[ 'AvgCEven0-%s'    % catSS ] = avgCEvenSS
                                 tagCatsDict[ 'AvgCOdd0-%s'     % catSS ] = avgCOddSS
                                 tagCatsDict[ 'tagDilution1_%s' % catSS ] = tagCatsDictSS[ 'tagDilution%d' % catSS ]
@@ -824,14 +824,28 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams( **tagCatsDict )
 
-            args = dict(  tagCat      = tagCatP2VVOS
-                        , iTag        = iTagOS
-                        , dilutions   = self._taggingParams['dilutions']
-                        , ADilWTags   = self._taggingParams['ADilWTags']
-                        , avgCEvens   = self._taggingParams['avgCEvens']
-                        , avgCOdds    = self._taggingParams['avgCOdds']
-                        , tagCatCoefs = self._taggingParams['tagCatCoefs']
-                       )
+            if not SSTagging :
+                args = dict(  tagCat      = tagCatP2VVOS
+                            , iTag        = iTagOS
+                            , dilutions   = self._taggingParams['dilutions']
+                            , ADilWTags   = self._taggingParams['ADilWTags']
+                            , avgCEvens   = self._taggingParams['avgCEvens']
+                            , avgCOdds    = self._taggingParams['avgCOdds']
+                            , tagCatCoefs = self._taggingParams['tagCatCoefs']
+                           )
+            else :
+                args = dict(  tagCat0     = tagCatP2VVOS
+                            , tagCat1     = tagCatP2VVSS
+                            , iTag0       = iTagOS
+                            , iTag1       = iTagSS
+                            , dilutions0  = self._taggingParams['dilutions'][0]
+                            , dilutions1  = self._taggingParams['dilutions'][1]
+                            , ADilWTags0  = self._taggingParams['ADilWTags'][0]
+                            , ADilWTags1  = self._taggingParams['ADilWTags'][1]
+                            , avgCEvens   = self._taggingParams['avgCEvens']
+                            , avgCOdds    = self._taggingParams['avgCOdds']
+                            , tagCatCoefs = self._taggingParams['tagCatCoefs']
+                           )
 
         args = dict(  time                   = time
                     , tau                    = self._lifetimeParams['MeanLifetime']

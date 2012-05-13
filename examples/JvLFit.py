@@ -63,7 +63,7 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.4, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
-pdfConfig['sameSideTagging']    = False  # nominal: False
+pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
