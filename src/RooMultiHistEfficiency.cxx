@@ -24,60 +24,71 @@
 #include <RooCategory.h>
 #include <RooSuperCategory.h>
 #include <RooRealVar.h>
+#include <RooAbsReal.h>
 
 #include <RooMultiHistEfficiency.h>
 
 ClassImp(RooMultiHistEfficiency);
 
-// namespace {
-//    const char *makeName(const char* name, const RooArgSet& terms ) {
-//       TString pname;
-//       pname = name;
-//       pname.Append("_");
-//       RooFIter i = terms.fwdIterator();
-//       RooAbsArg *arg;
-//       bool first = true;
-//       while((arg = i.next())) {
-//          if (first) {
-//             first= false;
-//          } else {
-//             pname.Append("_X_");
-//          }
-//          pname.Append(arg->GetName());
-//       }
-//       return pname.Data();
-//    }
+namespace {
+   const char *makeName(const char* name, const RooArgSet& terms ) {
+      TString pname;
+      pname = name;
+      pname.Append("_");
+      RooFIter i = terms.fwdIterator();
+      RooAbsArg *arg;
+      bool first = true;
+      while((arg = i.next())) {
+         if (first) {
+            first= false;
+         } else {
+            pname.Append("_X_");
+         }
+         pname.Append(arg->GetName());
+      }
+      return pname.Data();
+   }
 
-//    RooSuperCategory* makeSuper(const char* name, const RooArgSet& _catVars) {
-//       const char *catName = makeName(name, _catVars );
-//       return new RooSuperCategory(catName, catName, _catVars);
-//    }
-// }
+   RooSuperCategory* makeSuper(const char* name, const RooArgSet& _catVars) {
+      const char *catName = makeName(name, _catVars );
+      return new RooSuperCategory(catName, catName, _catVars);
+   }
+}
 
 //_____________________________________________________________________________
 RooMultiHistEfficiency::RooMultiHistEfficiency
-(const char *name, const char *title, RooAbsRealLValue& x,
- const RooArgList& efficiencies, const RooArgList& categories,
- const TList& sigCatNames) :
-   RooAbsReal(name, title),
-   _categories("categories", "categories", this),
-   _efficiencies("efficiencies", "efficiencies", this),
-   _binboundaries(0)
+(const char *name, const char *title, std::vector<MultiHistEntry> entries) :
+   RooAbsPdf(name, title),
+   _binboundaries(0),
+   _prodGenCode(0),
+   _super("super", "super", this)
 {  
    // Construct an N+1 dimensional efficiency p.d.f from an N-dimensional efficiency
    // function and a category cat with two states (0,1) that indicate if a given
    // event should be counted as rejected or accepted respectively
-   RooFIter catIter = categories.fwdIterator();
-   while (RooAbsArg* cat = catIter.next()) {
-      _categories.add(*cat);
+   
+   RooArgSet observables;
+   RooArgSet categories;
+   for(std::vector<MultiHistEntry>::const_iterator it = entries.begin(),
+          end = entries.end(); it != end; ++it) {
+      if (observables.getSize() == 0) {
+         observables.add(*(it->effProd().observables()));
+         categories.add(it->categories());
+      } else {
+         assert(observables.equals(*(it->effProd().observables())));
+         assert(categories.equals(it->categories()));
+      }
    }
+   
+   // Observable
+   RooAbsRealLValue* x = dynamic_cast<RooAbsRealLValue*>(observables.first());
 
    // For the binnings, we just assume that they are "matched" by the user.
    unsigned int most = 0;
-   RooFIter effIter = efficiencies.fwdIterator();
-   while (RooAbsReal* eff = static_cast<RooAbsReal*>(effIter.next())) {
-      _efficiencies.add(*eff);
-      std::auto_ptr<BinBoundaries> bounds(eff->binBoundaries(x, x.getMin(), x.getMax()));
+   for(std::vector<MultiHistEntry>::const_iterator it = entries.begin(),
+          end = entries.end(); it != end; ++it) {
+      RooAbsReal* eff = it->effProd().efficiency();
+      std::auto_ptr<BinBoundaries> bounds(eff->binBoundaries(*x, x->getMin(), x->getMax()));
       if (!bounds.get()) {
          continue;
       } else if (bounds->size() > most) {
@@ -93,26 +104,37 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
    }
    cout << endl;
 
-   std::auto_ptr<TIterator> nameIter(sigCatNames.MakeIterator());
-   while (TObject* name = nameIter->Next()) {
-      _sigCatNames.Add(name);
+   // Build entries.
+   RooSuperCategory* super = makeSuper(GetName(), categories);
+   _super.setArg(*super);
+
+   typedef std::map<RooAbsCategory*, std::string> categories_t;
+   categories_t signal;
+
+   std::vector<MultiHistEntry*> ownedEntries;
+   for(std::vector<MultiHistEntry>::const_iterator it = entries.begin(),
+          end = entries.end(); it != end; ++it) {
+      MultiHistEntry* entry = new MultiHistEntry(*it);
+      entry->setParent(this);
+      ownedEntries.push_back(entry);
    }
-   _nameIter = _sigCatNames.MakeIterator();
+   TString current = super->getLabel();
+   for(std::vector<MultiHistEntry*>::const_iterator it = ownedEntries.begin(),
+          end = ownedEntries.end(); it != end; ++it) {
+      MultiHistEntry* entry = *it;
+      entry->select();
+      Int_t index = super->getIndex();
+      std::pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
+      assert(r.second);
+   }
 }
 
 //_____________________________________________________________________________
 RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name) : 
-   RooAbsReal(other, name),
-   _categories("categories", this, other._categories),
-   _efficiencies("efficiencies", this, other._efficiencies)
+   RooAbsPdf(other, name)
 {
+   // FIXME: Implement this
    // Copy constructor
-   _sigCatNames.Clear();
-   std::auto_ptr<TIterator> nameIter(other._sigCatNames.MakeIterator());
-   while (TObject* name = nameIter->Next()) {
-      _sigCatNames.Add(name);
-   }
-   _nameIter = _sigCatNames.MakeIterator();
    _binboundaries = new BinBoundaries(*other._binboundaries);
 }
 
@@ -120,7 +142,6 @@ RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& oth
 RooMultiHistEfficiency::~RooMultiHistEfficiency() 
 {
    // Destructor
-   if (_nameIter) delete _nameIter;
    if (_binboundaries) delete _binboundaries;
 }
 
@@ -151,55 +172,31 @@ std::list<Double_t>* RooMultiHistEfficiency::binBoundaries
    return bounds;
 }
 
-// //_____________________________________________________________________________
-// RooAbsGenContext* RooMultiHistEfficiency::genContext
-// (const RooArgSet &vars, const RooDataSet *prototype,
-//  const RooArgSet* auxProto, Bool_t verbose) const
-// {
-//    // use generic context explicitly allowing generation of effciency observable,
-//    // since we deal with it ourselves.
-//    return new RooGenContext(*this, vars, prototype, auxProto, verbose, &_observables) ;
-// }
-
-// //_____________________________________________________________________________
-// void RooMultiHistEfficiency::initGenerator(Int_t code)
-// {
-//    // Forward one-time initialization call to component generation initialization
-//    // methods.
-//    pdf()->initGenerator(_pdfGenCode);
-//    _levels.clear();
-//    _super = makeSuper(GetName(), _categories);
-//    std::auto_ptr<TIterator> superIter(_super->MakeIterator());
-
-//    std::auto_ptr<RooAbsReal> marginal(createIntegral(_pdfGenVars));
-
-//    TString current = _super->getLabel();
-//    while (TObjString* label = static_cast<TObjString*>(superIter->Next())) {
-//       _super->setLabel(label->String());
-//       if (allFalse()) continue;
-
-//       double n = marginal->getVal();
-//       if (!_levels.empty()) n += _levels.back().first; // cumulative
-//       cxcoutD(Generation) << "RooMultiHistEfficiency creating sampler for " << _pdfGenVars
-//                           << " given " << _categories << " = "  << label->String() 
-//                           << " (level = " << n << ")" << endl;
-//       _levels.push_back(make_pair(n, label->String()));
-//    }
-
-//    // Given that above we properly marginalized, the next line should be a no-op.
-//    for (Levels::iterator i = _levels.begin(); i != _levels.end(); ++i) 
-//       i->first /= _levels.back().first; // normalize
-
-//    _super->setLabel(current);
-// }
+//_____________________________________________________________________________
+RooAbsGenContext* RooMultiHistEfficiency::genContext(const RooArgSet &vars, const RooDataSet *prototype,
+                                                     const RooArgSet* auxProto, Bool_t verbose) const
+{
+   // Return specialized generator context for RooEffHistProds that implements generation
+   // in a more efficient way than can be done for generic correlated products
+   const RooArgSet* observables = _entries.begin()->second->effProd().observables();
+   return new RooGenContext(*this, vars, prototype, auxProto, verbose, observables);
+}
 
 //_____________________________________________________________________________
 Int_t RooMultiHistEfficiency::getGenerator
-(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /* staticInitOK */) const
+(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK) const
 {
    bool all = true;
    bool none = true;
-   RooFIter iter = _categories.fwdIterator();
+
+   _prodGenObs.removeAll();
+
+   RooArgSet categories;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      categories.add(it->second->categories());
+   }
+   RooFIter iter = categories.fwdIterator();
    while (RooAbsArg* cat = iter.next()) {
       if (!directVars.find(*cat)) {
          all &= false;
@@ -207,95 +204,283 @@ Int_t RooMultiHistEfficiency::getGenerator
          none &= false;
       }
    }
-   assert(all ^ none);
-   
-   iter = _categories.fwdIterator();
-   while (RooAbsArg* cat = iter.next()) {
-      generateVars.add(*cat);
+   if (!(all ^ none)) {
+      return 0;
    }
-   return 1;
+
+   RooArgSet testVars(directVars);
+   testVars.remove(categories);
+
+   Int_t prodGenCode = 0;
+   RooArgSet genVars;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      const RooEffHistProd& effProd = it->second->effProd();
+      if (genVars.getSize() == 0) {
+         prodGenCode = effProd.getGenerator(testVars, genVars, staticInitOK);
+      } else {
+         RooArgSet prodGenVars;
+         Int_t code = effProd.getGenerator(testVars, prodGenVars, staticInitOK);
+         assert(prodGenVars.equals(genVars) && prodGenCode == code);
+      }
+   }
+
+   generateVars.add(genVars);
+   _prodGenCode = prodGenCode;
+   _prodGenObs.add(testVars);
+   if (none) {
+      return 1;
+   } else {
+      iter = categories.fwdIterator();
+      while (RooAbsArg* cat = iter.next()) {
+         generateVars.add(*cat);
+      }
+      return 2;
+   }
 }
 
-// //_____________________________________________________________________________
-// void RooMultiHistEfficiency::generateEvent(Int_t code)
-// {
-//    // generate values for the variables corresponding to the generation code
-//    assert(code > 0);
+//_____________________________________________________________________________
+void RooMultiHistEfficiency::initGenerator(Int_t code)
+{
+   // Forward one-time initialization call to component generation initialization
+   // methods.
+   for (HistEntries::iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      it->second->effProd().initGenerator(_prodGenCode);
+   }
+   if (code == 1) {
+      return;
+   }
+   _levels.clear();
 
-//    // generate categories
-//    Double_t r = RooRandom::uniform();
-//    Levels::const_iterator it = _levels.begin(), end = _levels.end();      
-//    while (it != end && it->first < r) ++it;
-//    assert(it != end);
-//    _super->setLabel(it->second); // this should assign _catVars...
-
-//    while (true) {
-//       // use the pdf to generate the observables.
-//       pdf()->generateEvent(_pdfGenCode);
-//       double val = effVal();
-//       if (val > 1.) {
-//          coutE(Generation) << ClassName() << "::" << GetName() 
-//               << ":generateEvent: value of efficiency is larger than assumed maximum of 1."  << endl;
-//          continue;
-//       }
-//       if (val > RooRandom::uniform()) break;
-//    }
+   RooArgSet categories;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      categories.add(it->second->categories());
+   }
    
-// }
+   RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super.absArg());
+   std::auto_ptr<TIterator> superIter(super->MakeIterator());
+
+   TString current = super->getLabel();
+   while (TObjString* label = static_cast<TObjString*>(superIter->Next())) {
+      super->setLabel(label->String());
+      Int_t index = super->getIndex();
+      HistEntries::const_iterator it = _entries.find(index);
+      assert(it != _entries.end());
+      double n = it->second->relative();
+      if (!_levels.empty()) n += _levels.back().first; // cumulative
+      cxcoutD(Generation) << "RooMultiHistEfficiency creating sampler for " << _prodGenObs
+                          << " given " << categories
+                          << " = "  << label->String() << " (level = " << n << ")" << endl;
+      _levels.push_back(make_pair(n, label->String()));
+   }
+
+   // Normalise just in case, but it should be a noop.
+   for (Levels::iterator i = _levels.begin(); i != _levels.end(); ++i) 
+      i->first /= _levels.back().first; // normalize
+   super->setLabel(current);
+}
 
 //_____________________________________________________________________________
-Double_t RooMultiHistEfficiency::evaluate() const
+void RooMultiHistEfficiency::generateEvent(Int_t code)
 {
-   // Calculate the raw value of this p.d.f which is the effFunc
-   // value if cat==1 and it is (1-effFunc) if cat==0
-   Double_t val = 0.;
-   bool first = true;
+   Double_t r = RooRandom::uniform();
 
-   RooFIter catIter = _categories.fwdIterator();
-   RooFIter effIter = _efficiencies.fwdIterator();
+   RooSuperCategory& super = dynamic_cast<RooSuperCategory&>(*_super.absArg());
+   std::auto_ptr<TIterator> superIter(super.MakeIterator());
 
-   _nameIter->Reset();
+   // find the right generator, and generate categories at the same time...
+   HistEntries::iterator it = _entries.begin();
+   TObjString* label = 0;
+   while ((label = static_cast<TObjString*>(superIter->Next())) != 0 && it->first < r) ++it;
 
-   while (RooAbsReal* eff = static_cast<RooAbsReal*>(effIter.next())) {
-      RooAbsCategory* cat = static_cast<RooAbsCategory*>(catIter.next());
-      TObjString* name = static_cast<TObjString*>(_nameIter->Next());
-      double eps = 0.;
-      if (0 == strcmp(name->GetString().Data(), cat->getLabel())) {
-         // Accept case
-         eps = eff->getVal();
+   // this assigns the categories.
+   super.setLabel(label->String());
+
+   // now that've assigned the categories, we can use the 'real' samplers
+   // which are conditional on the categories.
+   it->second->effProd().generateEvent(_prodGenCode);
+}
+
+//_____________________________________________________________________________
+Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
+                                                    const char* rangeName) const 
+{
+   RooArgSet intObs;
+
+   int prodCode = 0;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      if (intObs.getSize() == 0) {
+         prodCode = it->second->effProd().getAnalyticalIntegral(allVars, intObs, rangeName);
       } else {
-         // Reject case
-         eps = 1 - eff->getVal();
+         RooArgSet prodIntObs;
+         Int_t code = it->second->effProd().getAnalyticalIntegral(allVars, prodIntObs, rangeName);
+         assert(prodIntObs.equals(intObs));
+         assert(code == prodCode);
       }
+   }
+   if (prodCode == 0) {
+      return 0;
+   } else {
+      _pdfIntCode = prodCode;
+      return 1;
+   }
+}
 
-      // Truncate efficiency function in range 0.0-1.0
-      if (eps > 1) {
-         eps = 1.0;
-      } else if (eps < 0) {
-         eps = 0.0;
-      }
+//_____________________________________________________________________________
+Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rangeName) const 
+{
+   assert(code > 0);
 
-      if (first) {
-         val = eps;
-         first = false;
-      } else {
-         val *= eps;
-      }
+   Double_t val = 0;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      const MultiHistEntry* entry = it->second;
+      val += entry->relative() * entry->effProd().analyticalIntegral(_pdfIntCode, rangeName);
    }
    return val;
 }
 
 //_____________________________________________________________________________
-bool RooMultiHistEfficiency::allFalse() const
+Double_t RooMultiHistEfficiency::evaluate() const
 {
-   RooFIter catIter = _categories.fwdIterator();
-   _nameIter->Reset();
-   while (RooAbsCategory* cat = static_cast<RooAbsCategory*>(catIter.next())) {
-      TObjString* name = static_cast<TObjString*>(_nameIter->Next());
-      if (0 == strcmp(name->GetString().Data(), cat->getLabel())) {
-         // Accept
-         return false;
+   // Calculate the raw value of this p.d.f
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      if (it->second->thisEntry()) {
+         return it->second->effVal();
       }
    }
-   return true;
+   throw std::string("The efficiency for a state is missing");
+   return 0;
+}
+
+//_____________________________________________________________________________
+MultiHistEntry::MultiHistEntry()
+   : m_rawEff(0), m_rawRel(0), m_effProd(0), m_relative(0),
+     m_index(0)
+{
+}
+
+//_____________________________________________________________________________
+MultiHistEntry::MultiHistEntry(const std::map<RooAbsCategory*, std::string>& categories,
+                               RooEffHistProd* effProd, RooAbsReal* relative)
+   : m_rawCats(categories), m_rawEff(effProd), m_rawRel(relative),
+     m_effProd(0), m_relative(0), m_index(0)
+{
+
+}
+
+//_____________________________________________________________________________
+MultiHistEntry::MultiHistEntry(const MultiHistEntry& other)
+   : m_rawCats(other.m_rawCats), m_rawEff(other.m_rawEff), m_rawRel(other.m_rawRel),
+     m_index(other.m_index)
+{
+   if (!other.m_effProd) {
+      m_effProd = 0;
+      m_relative = 0;
+      return;
+   }
+   m_effProd = new RooRealProxy(*other.m_effProd);
+   m_relative = new RooRealProxy(*other.m_relative);
+
+   for (std::map<RooCategoryProxy*, std::string>::const_iterator it = other.m_categories.begin(),
+           end = other.m_categories.end(); it != end; ++it) {
+      m_categories.insert(make_pair(new RooCategoryProxy(*(it->first)), it->second));
+   }
+
+}
+
+//_____________________________________________________________________________
+MultiHistEntry::~MultiHistEntry()
+{
+   for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
+           end = m_categories.end(); it != end; ++it) {
+      if (it->first) delete it->first;
+   }
+   m_categories.clear();
+   if (m_effProd) delete m_effProd;
+   if (m_relative) delete m_relative;
+}
+
+//_____________________________________________________________________________
+bool MultiHistEntry::thisEntry() const
+{
+   bool r = true;
+   for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
+           end = m_categories.end(); it != end; ++it) {
+      const RooAbsCategory* cat = static_cast<const RooAbsCategory*>(it->first->absArg());
+      if (strcmp(cat->getLabel(), it->second.c_str()) != 0) {
+         r = false;
+         break;
+      }
+   }
+   return r;
+}
+
+//_____________________________________________________________________________
+void MultiHistEntry::setParent(RooMultiHistEfficiency* parent)
+{
+   assert(m_effProd == 0);
+   assert(m_relative == 0);
+
+   std::string name;
+   for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
+           end = m_rawCats.end(); it != end; ++it) {
+      name = it->first->GetName(); name += "_proxy";
+      RooCategoryProxy* proxy = new RooCategoryProxy(name.c_str(), name.c_str(), parent,
+                                                     *(it->first));
+      m_categories.insert(make_pair(proxy, it->second));
+   }
+   m_rawCats.clear();
+
+   name = m_rawEff->GetName(); name += "_proxy";
+   m_effProd = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawEff);
+   name = m_rawEff->GetName(); name += "_proxy";
+   m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawRel);
+
+   // m_rawEff = 0;
+   // m_rawRel = 0;
+}
+
+//_____________________________________________________________________________
+RooArgSet MultiHistEntry::categories() const
+{
+   RooArgSet r;
+   if (!m_rawCats.empty()) {
+      for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
+              end = m_rawCats.end(); it != end; ++it) {
+         if (!it->first) continue;
+         r.add(*(it->first));
+      }
+   } else {
+      for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
+              end = m_categories.end(); it != end; ++it) {
+         if (!it->first) continue;
+         r.add(it->first->arg());
+      }
+   }
+
+   return r;
+}
+
+//_____________________________________________________________________________
+void MultiHistEntry::select()
+{
+   if (!m_rawCats.empty()) {
+      for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
+              end = m_rawCats.end(); it != end; ++it) {
+         if (!it->first) continue;
+         RooAbsCategoryLValue* lval = dynamic_cast<RooAbsCategoryLValue*>(it->first);
+         lval->setLabel(it->second.c_str());
+      }
+   } else {
+      for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
+              end = m_categories.end(); it != end; ++it) {
+         RooAbsCategoryLValue* lval = dynamic_cast<RooAbsCategoryLValue*>(it->first->absArg());
+         lval->setLabel(it->second.c_str());
+      }
+   }
 }

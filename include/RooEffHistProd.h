@@ -76,7 +76,7 @@ public:
    virtual void generateEvent(Int_t code);
 
    virtual Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
-                                 const RooArgSet* normSet, const char* rangeName) const;
+                                         const RooArgSet* normSet, const char* rangeName) const;
    virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const;
    virtual Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
 
@@ -88,19 +88,25 @@ public:
    // Function evaluation
    virtual Double_t getValV(const RooArgSet* set = 0) const;
 
-protected:
-
-   virtual Double_t evaluate() const;
-
    RooAbsPdf* pdf() const { 
       // Return pointer to pdf in product
       return static_cast<RooAbsPdf*>(_pdf.absArg());
    }
 
-   RooAbsReal* eff() const { 
+   RooAbsReal* efficiency() const { 
       // Return pointer to pdf in product
       return static_cast<RooAbsReal*>(_eff.absArg());
    }
+
+   const RooArgSet* observables() const { 
+      // Return pointer to pdf in product
+      return static_cast<const RooArgSet*>(&_observables);
+   }
+
+protected:
+
+   virtual Double_t evaluate() const;
+
 
    typedef std::vector<double> BinBoundaries;
    BinBoundaries _binboundaries;
@@ -114,11 +120,13 @@ private:
    RooRealProxy _pdf;     // Probability Density function
    RooRealProxy _eff;     // Probability Density function
 
+   // Observables
+   RooSetProxy _observables;
+
    // Data for event generation
-   mutable const RooArgSet* _effCategories;
-   Int_t _pdfGenCode;
-   RooArgSet _pdfGenVars;
-   RooSuperCategory* _super;
+   mutable RooArgSet _pdfGenVars;
+   mutable Int_t _pdfGenCode;
+   Double_t _maxEff;
 
    typedef std::vector<std::pair<double, TString> > Levels;
    Levels _levels; // 
@@ -164,9 +172,10 @@ private:
 
    std::string setName(const RooArgSet* set) const;
    RooArgSet* normSet(const RooArgSet* input) const;
+   bool allFalse() const;
 
    mutable RooObjCacheManager _cacheMgr;
-  
+   
    ClassDef(RooEffHistProd, 1) // Product operator p.d.f of (PDF x efficiency) implementing optimized generator context
 };
 

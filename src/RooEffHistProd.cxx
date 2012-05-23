@@ -43,31 +43,6 @@
 
 ClassImp(RooEffHistProd);
 
-namespace {
-   const char *makeName(const char* name, const RooArgSet& terms ) {
-      TString pname;
-      pname = name;
-      pname.Append("_");
-      RooFIter i = terms.fwdIterator();
-      RooAbsArg *arg;
-      bool first = true;
-      while((arg = i.next())) {
-         if (first) {
-            first= false;
-         } else {
-            pname.Append("_X_");
-         }
-         pname.Append(arg->GetName());
-      }
-      return pname.Data();
-   }
-
-   RooSuperCategory* makeSuper(const char* name, const RooArgSet& _catVars) {
-      const char *catName = makeName(name, _catVars );
-      return new RooSuperCategory(catName, catName, _catVars);
-   }
-}
-
 namespace EffHistProd {
 //_____________________________________________________________________________
 void cloneRanges(const RooArgSet& observables, const RooArgSet& iset,
@@ -126,7 +101,7 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
    // construct I_i,j = int_xmin,i^xmax,j dx int dy f(x,y)
    // so that later we can do sum_i eps( (x_i+x_i+1)/2 ) * I(x_i,x_i+1)
    RooArgSet x_;
-   const RooArgSet *effObs = parent->eff()->getObservables(iset); // the subset of iset on which _eff depends
+   const RooArgSet *effObs = parent->efficiency()->getObservables(iset); // the subset of iset on which _eff depends
    RooFIter iter = iset.fwdIterator();
    while(RooAbsArg* arg = iter.next()) {
       if (effObs->contains(*arg)) {
@@ -175,7 +150,7 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
          TString suffix = "bin_"; suffix += i;
          TString name = x->GetName(); name += newRange; name += "_"; name += suffix;
          TString binName = x->GetName(); binName += "_"; binName += suffix;
-         RooCustomizer customizer(*parent->eff(), name.Data());
+         RooCustomizer customizer(*parent->efficiency(), name.Data());
          RooRealVar* cv = static_cast<RooRealVar*>(x->clone(name.Data()));
          cv->setConstant(true);
          customizer.replaceArg(*x, *cv);
@@ -214,7 +189,8 @@ RooEffHistProd::RooEffHistProd(const char *name, const char *title,
    : RooAbsPdf(name, title),
      _pdf("pdf", "pre-efficiency pdf", this, inPdf),
      _eff("efficiency", "efficiency", this, eff),
-     _effCategories(0), _pdfGenCode(0), _super(0),
+     _observables("observables", "observables", this),
+     _maxEff(1.),
      _pdfNormSet(0),
      _fixedNormSet(0),
      _cacheMgr(this, 10)
@@ -226,20 +202,19 @@ RooEffHistProd::RooEffHistProd(const char *name, const char *title,
    std::auto_ptr<RooArgSet> effpars(eff.getVariables());
    std::auto_ptr<TIterator> iter(effpars->createIterator());
 
-   RooArgSet observables;
    RooAbsArg *effelem(0);
    while((effelem = (RooAbsArg*)iter->Next())) {
-      if(pdfpars->find(effelem->GetName()))  observables.add(*effelem);
+      if(pdfpars->find(effelem->GetName()))  _observables.add(*effelem);
    }
 
-   if(observables.getSize() == 0) {
+   if(_observables.getSize() == 0) {
       throw std::string("WARNING: RooEffHistProd: PDF and Efficiency function "
                         "factorise. Please use RooProd");
-   } else if(observables.getSize() > 1) {
+   } else if(_observables.getSize() > 1) {
       throw std::string("WARNING: RooEffHistProd not yet implemented for more than 1D efficiency" );
    }
 
-   RooAbsRealLValue* x = static_cast<RooAbsRealLValue*>(observables.first());
+   RooAbsRealLValue* x = static_cast<RooAbsRealLValue*>(_observables.first());
 
    // an interesting hack. need to discuss with wouter. one idea: let
    // every function that is 'binned' (discrete,quantized,..) add a 
@@ -270,7 +245,8 @@ RooEffHistProd::RooEffHistProd(const RooEffHistProd& other, const char* name):
    _binboundaries(other._binboundaries),
    _pdf("pdf", this, other._pdf),
    _eff("eff", this, other._eff),
-   _effCategories(0), _pdfGenCode(0), _super(0),
+   _observables("observables", this, other._observables),
+   _maxEff(other._maxEff),
    _pdfNormSet(0), _fixedNormSet(0),
    _cacheMgr(other._cacheMgr, this)
 {
@@ -312,10 +288,12 @@ Double_t RooEffHistProd::getValV(const RooArgSet* ns) const
 //_____________________________________________________________________________
 Double_t RooEffHistProd::evaluate() const
 {
+   // cout << "RooEffHistProd " << GetName() << "::evaluate " << endl;
    // Calculate and return 'raw' unnormalized value of p.d.f
-   double pdfVal = pdf()->getVal(*_pdfNormSet);
-   double effVal = eff()->getVal();
-   cout << "RooEffHistProd::evaluate " << effVal << " " << pdfVal << " " << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) << endl;
+   // double pdfVal = pdf()->getVal(*_pdfNormSet);
+   double pdfVal(_pdf);
+   double effVal(_eff);
+   // cout << effVal << " " << pdfVal << " " << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) << endl;
    return effVal * pdfVal;
 }
 
@@ -384,7 +362,7 @@ RooAbsGenContext* RooEffHistProd::genContext(const RooArgSet &vars, const RooDat
    // Return specialized generator context for RooEffHistProds that implements generation
    // in a more efficient way than can be done for generic correlated products
    assert(pdf() != 0);
-   assert(eff() != 0);
+   assert(efficiency() != 0);
    return new RooGenContext(*this, vars, prototype, auxProto, verbose, pdfObs.get());
 }
 
@@ -392,109 +370,50 @@ RooAbsGenContext* RooEffHistProd::genContext(const RooArgSet &vars, const RooDat
 Int_t RooEffHistProd::getGenerator
 (const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK) const
 {
-   bool genCategories = false;
-   if (!_effCategories) {
-      _effCategories = new RooArgSet;
-      RooArgSet effVars(directVars);
-      Int_t effCode = eff()->getGenerator(effVars, _effCategories, staticInitOK);
-      if (effCode) genCategories = true;
-   } else if (_effCategories->getSize() != 0) {
-      genCategories = true;
-   }
-
    _pdfGenVars.removeAll();
    RooArgSet pdfVars(directVars);
    Int_t pdfCode = pdf()->getGenerator(pdfVars, _pdfGenVars, staticInitOK) ;
-   if (pdfCode != 0) {
+
+   if (pdfCode != 0 && generateVars.getSize() != 0) {
       generateVars.add(_pdfGenVars);
-   }
-
-   iter = generateVars.fwdIterator();
-   while (RooAbsArg* cat = iter.next()) {
-      if (_categories.find(*cat)) {
-         throw EffHistProd::Exception("Cannot generate categories on which the PDF depends.");
-      }
-   }
-
-   if (generateVars.getSize() == 0) {
-      return 0;
-      _pdfGenCode = 0;
-   } else if (!genCategories) {
       _pdfGenCode = pdfCode;
       return 1;
    } else {
-      iter = _effCategories.fwdIterator();
-      while (RooAbsArg* cat = iter.next()) {
-         generateVars.add(*cat);
-      }
-      _pdfGenCode = pdfCode;
-      return 2;
+      return 0;
    }
 }
 
 //_____________________________________________________________________________
-void RooEffHistProd::initGenerator(Int_t code)
+void RooEffHistProd::initGenerator(Int_t code) 
 {
-   // Forward one-time initialization call to component generation initialization
-   // methods.
-   pdf()->initGenerator(_pdfGenCode);
-   if (code == 1) {
-      return;
+   assert(code != 0);
+
+   // Check if PDF supports maximum finding
+   Int_t maxCode = efficiency()->getMaxVal(_pdfGenVars);
+   if (!maxCode) {
+      _maxEff = 1.;
+   } else {
+      _maxEff = efficiency()->maxVal(code);
    }
-   _levels.clear();
-
-   if (_super) delete _super;
-   _super = makeSuper(GetName(), _effCategories);
-   std::auto_ptr<TIterator> superIter(_super->MakeIterator());
-
-   std::auto_ptr<RooAbsReal> marginal(createIntegral(_pdfGenVars));
-
-   TString current = _super->getLabel();
-   while (TObjString* label = static_cast<TObjString*>(superIter->Next())) {
-      _super->setLabel(label->String());
-      if (allFalse()) continue;
-
-      double n = marginal->getVal();
-      if (!_levels.empty()) n += _levels.back().first; // cumulative
-      cxcoutD(Generation) << "RooEffHistProd creating sampler for " << _pdfGenVars
-                          << " given " << _categories << " = "  << label->String() 
-                          << " (level = " << n << ")" << endl;
-      _levels.push_back(make_pair(n, label->String()));
-   }
-
-   // Given that above we properly marginalized, the next line should be a no-op.
-   for (Levels::iterator i = _levels.begin(); i != _levels.end(); ++i) 
-      i->first /= _levels.back().first; // normalize
-
-   _super->setLabel(current);
 }
 
 //_____________________________________________________________________________
 void RooEffHistProd::generateEvent(Int_t code)
 {
    // generate values for the variables corresponding to the generation code
-   assert(code > 0);
-
-   if (code == 2) {
-      // generate categories
-      Double_t r = RooRandom::uniform();
-      Levels::const_iterator it = _levels.begin(), end = _levels.end();      
-      while (it != end && it->first < r) ++it;
-      assert(it != end);
-      _super->setLabel(it->second); // this should assign _catVars...
-   }
+   assert(code != 0);
 
    while (true) {
       // use the pdf to generate the observables.
       pdf()->generateEvent(_pdfGenCode);
-      double val = eff().getVal();
+      double val = efficiency()->getVal();
       // FIXME: use proper getMaxVal/maxVal
-      if (val > 1.) {
+      if (val > _maxEff && !efficiency()->getMaxVal(_pdfGenVars)) {
          coutE(Generation) << ClassName() << "::" << GetName() 
               << ":generateEvent: value of efficiency is larger than assumed maximum of 1."  << endl;
          continue;
       }
-      if (val > RooRandom::uniform()) break;
+      if (val > RooRandom::uniform() * _maxEff) break;
    }
 }
 
@@ -535,7 +454,6 @@ Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& ana
    
    // No special handling required if a normalization set is given
    if (ns && ns->getSize() > 0) {
-      // FIXME: here's another possible memory leak
       _pdfNormSet = normSet(ns);
       Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
       cout << "RooEffHistProd::getAnalyticalIntegralWN 0 " << allDeps << " " << analDeps << " "

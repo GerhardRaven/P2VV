@@ -19,5 +19,25 @@
 #include "RooTransAngle.h"
 #include "RooCruijff.h"
 #include "RooMultiHistEfficiency.h"
+#include "RooEfficiencyBin.h"
 
+#include <map>
+#include <string>
+#include <vector>
+
+struct Instantiations {
+
+   std::map<RooAbsCategory*, std::string>   _i00;
+   std::map<RooCategoryProxy*, std::string> _i01;
+   std::vector<std::pair<double, TString> > _i02;
+   std::map<Int_t, MultiHistEntry*>         _i03;
+
+   std::pair<RooAbsCategory*, std::string>  _i04;
+
+   std::map<RooRealProxy*, bool> _i05;
+   std::map<RooAbsReal*, bool>   _i06;
+   std::pair<RooAbsReal*, bool>  _i07;
+
+   std::vector<MultiHistEntry> _i08;
+};
 #endif // P2VV_H
