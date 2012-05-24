@@ -105,9 +105,10 @@ public:
    virtual void initGenerator(Int_t code);
    virtual void generateEvent(Int_t code);
 
-   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
+   virtual Bool_t	forceAnalyticalInt(const RooAbsArg& var) const;
+   virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                const char* rangeName) const;
-   Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
+   virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
 
    virtual Double_t evaluate() const;
 
@@ -124,7 +125,7 @@ private:
    // Generation
    mutable RooArgSet _prodGenObs;
    mutable Int_t _prodGenCode;
-   RooCategoryProxy _super;
+   RooSuperCategory* _super;
    typedef std::vector<std::pair<double, TString> > Levels;
    Levels _levels;
 

@@ -46,6 +46,7 @@ namespace {
          }
          pname.Append(arg->GetName());
       }
+      cout << "Super name " << pname.Data() << endl;
       return pname.Data();
    }
 
@@ -61,7 +62,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
    RooAbsPdf(name, title),
    _binboundaries(0),
    _prodGenCode(0),
-   _super("super", "super", this)
+   _super(0)
 {  
    // Construct an N+1 dimensional efficiency p.d.f from an N-dimensional efficiency
    // function and a category cat with two states (0,1) that indicate if a given
@@ -105,8 +106,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
    cout << endl;
 
    // Build entries.
-   RooSuperCategory* super = makeSuper(GetName(), categories);
-   _super.setArg(*super);
+   _super = makeSuper(GetName(), categories);
 
    typedef std::map<RooAbsCategory*, std::string> categories_t;
    categories_t signal;
@@ -118,24 +118,36 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
       entry->setParent(this);
       ownedEntries.push_back(entry);
    }
-   TString current = super->getLabel();
+   TString current = _super->getLabel();
    for(std::vector<MultiHistEntry*>::const_iterator it = ownedEntries.begin(),
           end = ownedEntries.end(); it != end; ++it) {
       MultiHistEntry* entry = *it;
       entry->select();
-      Int_t index = super->getIndex();
+      Int_t index = _super->getIndex();
       std::pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
       assert(r.second);
    }
+   _super->setLabel(current.Data());
 }
 
 //_____________________________________________________________________________
 RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name) : 
-   RooAbsPdf(other, name)
+   RooAbsPdf(other, name),
+   _prodGenObs(other._prodGenObs),
+   _prodGenCode(other._prodGenCode),
+   _levels(other._levels),
+   _pdfIntCode(other._pdfIntCode),
+   _pdfIntObs(other._pdfIntObs)
 {
-   // FIXME: Implement this
    // Copy constructor
    _binboundaries = new BinBoundaries(*other._binboundaries);
+   _super = new RooSuperCategory(*other._super);
+
+   for (HistEntries::const_iterator it = other._entries.begin(), end = other._entries.end();
+        it != end; ++it) {
+      MultiHistEntry* entry = new MultiHistEntry(*(it->second));
+      _entries.insert(make_pair(it->first, entry));
+   }
 }
 
 //_____________________________________________________________________________
@@ -143,6 +155,7 @@ RooMultiHistEfficiency::~RooMultiHistEfficiency()
 {
    // Destructor
    if (_binboundaries) delete _binboundaries;
+   if (_super) delete _super;
 }
 
 //_____________________________________________________________________________
@@ -259,13 +272,12 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
       categories.add(it->second->categories());
    }
    
-   RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super.absArg());
-   std::auto_ptr<TIterator> superIter(super->MakeIterator());
+   std::auto_ptr<TIterator> superIter(_super->MakeIterator());
 
-   TString current = super->getLabel();
+   TString current = _super->getLabel();
    while (TObjString* label = static_cast<TObjString*>(superIter->Next())) {
-      super->setLabel(label->String());
-      Int_t index = super->getIndex();
+      _super->setLabel(label->String());
+      Int_t index = _super->getIndex();
       HistEntries::const_iterator it = _entries.find(index);
       assert(it != _entries.end());
       double n = it->second->relative();
@@ -279,7 +291,7 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
    // Normalise just in case, but it should be a noop.
    for (Levels::iterator i = _levels.begin(); i != _levels.end(); ++i) 
       i->first /= _levels.back().first; // normalize
-   super->setLabel(current);
+   _super->setLabel(current);
 }
 
 //_____________________________________________________________________________
@@ -287,8 +299,7 @@ void RooMultiHistEfficiency::generateEvent(Int_t code)
 {
    Double_t r = RooRandom::uniform();
 
-   RooSuperCategory& super = dynamic_cast<RooSuperCategory&>(*_super.absArg());
-   std::auto_ptr<TIterator> superIter(super.MakeIterator());
+   std::auto_ptr<TIterator> superIter(_super->MakeIterator());
 
    // find the right generator, and generate categories at the same time...
    HistEntries::iterator it = _entries.begin();
@@ -296,7 +307,7 @@ void RooMultiHistEfficiency::generateEvent(Int_t code)
    while ((label = static_cast<TObjString*>(superIter->Next())) != 0 && it->first < r) ++it;
 
    // this assigns the categories.
-   super.setLabel(label->String());
+   _super->setLabel(label->String());
 
    // now that've assigned the categories, we can use the 'real' samplers
    // which are conditional on the categories.
@@ -304,9 +315,20 @@ void RooMultiHistEfficiency::generateEvent(Int_t code)
 }
 
 //_____________________________________________________________________________
+Bool_t	RooMultiHistEfficiency::forceAnalyticalInt(const RooAbsArg& var) const
+{
+   assert(!_entries.empty());
+   
+   const RooArgSet* observables =  _entries.begin()->second->effProd().observables();
+   return observables->contains(var);
+}
+
+//_____________________________________________________________________________
 Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                                     const char* rangeName) const 
 {
+   cout << "RHME::getAnalyticalIntegral " << allVars << endl;
+
    RooArgSet intObs;
 
    int prodCode = 0;
@@ -314,6 +336,7 @@ Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSe
         it != end; ++it) {
       if (intObs.getSize() == 0) {
          prodCode = it->second->effProd().getAnalyticalIntegral(allVars, intObs, rangeName);
+         cout << "EffProd can integrate " << intObs << " out of " << allVars << endl;
       } else {
          RooArgSet prodIntObs;
          Int_t code = it->second->effProd().getAnalyticalIntegral(allVars, prodIntObs, rangeName);
@@ -325,6 +348,7 @@ Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSe
       return 0;
    } else {
       _pdfIntCode = prodCode;
+      iset.add(intObs);
       return 1;
    }
 }

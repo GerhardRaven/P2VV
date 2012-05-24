@@ -280,7 +280,6 @@ Double_t RooEffHistProd::getValV(const RooArgSet* ns) const
 {  
    // Return p.d.f. value normalized over given set of observables
    // cout << "RooEffHistProd::getValV " << (normSet ? *normSet : RooArgSet()) << endl;
-   // FIXME: memory leak!!
    _pdfNormSet = _fixedNormSet ? _fixedNormSet : normSet(ns);
    return RooAbsPdf::getValV(ns);
 }
@@ -291,6 +290,7 @@ Double_t RooEffHistProd::evaluate() const
    // cout << "RooEffHistProd " << GetName() << "::evaluate " << endl;
    // Calculate and return 'raw' unnormalized value of p.d.f
    // double pdfVal = pdf()->getVal(*_pdfNormSet);
+   // TEST THIS
    double pdfVal(_pdf);
    double effVal(_eff);
    // cout << effVal << " " << pdfVal << " " << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) << endl;

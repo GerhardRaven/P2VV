@@ -93,10 +93,8 @@ def build_shapes(binning_name = "efficiency", **kwargs):
         efficiency = RealVar('%s_efficiency' % category.GetName(), Observable = False,
                                 Value = relative_efficiency, MinMax = (0.001, 0.999))
 
-        global counter
         binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = t, Binning = 'efficiency_binning',
                                Coefficients = heights)
-        counter += 1
         eff_prod = EffProd('%s_efficiency' % prefix, Original = pdf, Efficiency = binned_pdf)
 
         # MultiHistEntry
@@ -108,6 +106,7 @@ def build_shapes(binning_name = "efficiency", **kwargs):
         efficiency_entries.push_back(entry)
 
     return RooMultiHistEfficiency("RMHE", "RHME", efficiency_entries)
+
 
 # Binnings
 from array import array
@@ -127,12 +126,12 @@ spec = {"Bins" : {biased : {'state'   : 'biased',
                   },
         "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : 0.2,
                       ((biased, "not_biased"), (unbiased, "unbiased")) : 0.2,
-                      ((biased, "biased"),     (unbiased, "not_unbiased")) : 0.6},
-        "PDF" : time_pdf}
-mhe = build_shapes(**spec)
+                      ((biased, "biased"),     (unbiased, "not_unbiased")) : 0.6}
+        }
+mhe = MultiHistEfficiency(Name = "RMHE", Original = time_pdf, Observable = t, **spec)
 print mhe.getVal()
 
-data = mhe.generate(t, 20000)
+data = mhe.generate([t, biased, unbiased], 20000)
 
 f = t.frame()
 data.plotOn(f)

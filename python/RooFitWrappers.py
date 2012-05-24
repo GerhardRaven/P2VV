@@ -1005,42 +1005,109 @@ class EffProd(Pdf):
 class MultiHistEfficiency(Pdf):
     def _make_pdf(self) : pass
     def __init__(self, **kwargs):
-        # Efficiencies argument should be of the from { eff_func : (category, signal_state) }
-        efficiencies = kwargs.pop('Efficiencies')
+
         pdf_name = kwargs.pop('Name')
+        pdf = kwargs.pop('Original')
+        bins = kwargs.pop('Bins')
+        relative = kwargs.pop('Relative')
+        binning_name = kwargs.pop('Binning', 'efficiency_binning')
+        observable = kwargs.pop('Observable')
         cc = kwargs.pop('ConditionalCategories', False)
-        obs = kwargs.pop('Observable')
-        from ROOT import TList, RooArgList, TObjString
-        eff_funcs = RooArgList()
-        categories = RooArgList()
-        signal_names = TList()
 
-        conditionals = set()
-        constraints = set()
+        conditionals = pdf.ConditionalObservables()
 
-        for eff, (cat, name) in efficiencies.iteritems():
-            eff_funcs.add(__dref__(eff))
-            categories.add(__dref__(cat))
-            signal_name = TObjString(name)
-            signal_names.Add(signal_name)
+        from ROOT import std
+        efficiency_entries = std.vector("MultiHistEntry")()
 
-            if hasattr(eff, 'ExternalConstraints'):
-                constraints |= set(eff.ExternalConstraints())
-            if hasattr(eff, 'ConditionalObservables'):
-                conditionals |= set(eff.ConditionalObservables())
-            if cc: conditionals.add(cat)
+        coefficients = {}
+        base_binning = None
+        for (category, entries) in bins.iteritems():
+            bounds = entries['bounds']
+            heights = entries['heights']
+            state = entries['state']
+            heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
+                               Observable = False, Value = v,
+                               MinMax = (0.001, 1)) for i, v in enumerate(heights)]
+            coefficients[category] = (bounds, heights)
+            if not base_binning or len(bounds) > len(coefficients[base_binning][0]):
+                base_binning = category
+
+        # Set the binning on the observable
+        base_bounds = coefficients[base_binning][0]
+
+        from ROOT import RooBinning
+        obs_binning = RooBinning(len(base_bounds) - 1, base_bounds)
+        observable.setBinning(obs_binning, binning_name)
+
+        from ROOT import MultiHistEntry
+        from ROOT import RooEfficiencyBin
+        for categories, relative_efficiency in relative.iteritems():
+            heights = []
+            bin_vars = [{} for i in range(len(base_bounds) - 1)]
+            prefix = pdf_name + '_' + '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
+            for category, state in categories:
+                if cc: conditionals.add(category)
+                category_bounds = coefficients[category][0]
+                category_heights = coefficients[category][1]
+                for i in range(len(base_bounds) - 1):
+                    val = (base_bounds[i] + base_bounds[i + 1]) / 2
+                    coefficient = self.__find_coefficient(val, category_bounds, category_heights)
+                    bin_vars[i][__dref__(coefficient)] = (state == bins[category]['state'])
+            for i, d in enumerate(bin_vars):
+                cm = self.__make_map(d)
+                name = '%s_%d' % (prefix, i)
+                heights.append(RooEfficiencyBin(name, name, cm))
+
+            # Make realvars for relative efficiencies
+            efficiency = RealVar('%s_efficiency' % category.GetName(), Observable = False,
+                                    Value = relative_efficiency, MinMax = (0.001, 0.999))
+
+            binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = observable,
+                                   Binning = binning_name, Coefficients = heights)
+            eff_prod = EffProd('%s_efficiency' % prefix, Original = pdf, Efficiency = binned_pdf)
+
+            # MultiHistEntry
+            category_map = std.map('RooAbsCategory*', 'string')
+            category_pair = std.pair('RooAbsCategory*', 'string')
+            cm = category_map()
+            for category, state in categories:
+                # cp = category_pair(__dref__(category), state)
+                cm[__dref__(category)] = state
+            entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(binned_pdf))
+            efficiency_entries.push_back(entry)
 
         from ROOT import RooMultiHistEfficiency
-        pdf = RooMultiHistEfficiency(pdf_name, pdf_name, __dref__(obs), eff_funcs,
-                                     categories, signal_names)
-        self._addObject(pdf)
+        mhe = RooMultiHistEfficiency(pdf_name, pdf_name, efficiency_entries)
+
+        self._addObject(mhe)
         self._init(pdf_name, 'RooMultiHistEfficiency')
 
         extraOpts = dict()
         if conditionals : extraOpts['ConditionalObservables'] = conditionals
+
+        constraints = pdf.ExternalConstraints()
         if constraints : extraOpts['ExternalConstraints' ] = constraints
         Pdf.__init__(self , Name = name , Type = 'RooMultiHistEfficiency', **extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def __make_map(self, d):
+        from ROOT import std
+        var_map = std.map('RooAbsReal*', 'bool')
+        var_pair = std.pair('RooAbsReal*', 'bool')
+        m = var_map()
+        for k, v in d.iteritems():
+            p = var_pair(__dref__(k), v)
+            m.insert(p)
+        return m
+    
+    def __find_coefficient(self, val, bounds, coefficients):
+        for i in range(len(bounds) - 1):
+            if val > bounds[i] and val < bounds[i + 1]:
+                break
+        else:
+            raise RuntimeError;
+        return coefficients[i]
+
 
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
