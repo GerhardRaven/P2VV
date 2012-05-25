@@ -237,6 +237,12 @@ RooEffHistProd::RooEffHistProd(const char *name, const char *title,
    }
 #endif
    delete binboundaries;
+
+   // double eps = 1e-4;
+   // for(std::list<Double_t>::const_iterator it = _binboundaries.begin();
+   //     it != _binboundaries.end(); ++it) {
+   //    assert(*it > eps && (1 - *it) > eps);
+   // }
 }
 
 //_____________________________________________________________________________
@@ -293,7 +299,7 @@ Double_t RooEffHistProd::evaluate() const
    // TEST THIS
    double pdfVal(_pdf);
    double effVal(_eff);
-   // cout << effVal << " " << pdfVal << " " << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) << endl;
+   // cout << "RooEffHistProd::evaluate: " << effVal << " " << pdfVal << " "  << endl;
    return effVal * pdfVal;
 }
 
@@ -373,8 +379,7 @@ Int_t RooEffHistProd::getGenerator
    _pdfGenVars.removeAll();
    RooArgSet pdfVars(directVars);
    Int_t pdfCode = pdf()->getGenerator(pdfVars, _pdfGenVars, staticInitOK) ;
-
-   if (pdfCode != 0 && generateVars.getSize() != 0) {
+   if (pdfCode != 0 && _pdfGenVars.getSize() != 0) {
       generateVars.add(_pdfGenVars);
       _pdfGenCode = pdfCode;
       return 1;
@@ -496,7 +501,7 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
       iset.add(*pdfObs.get());
    }
 
-   getCache(_pdfNormSet, &iset, rangeName);
+   getCache((_pdf.nset() ? _pdf.nset() : pdfObs.get()), &iset, rangeName);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;
 }

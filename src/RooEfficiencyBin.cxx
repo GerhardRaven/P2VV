@@ -54,14 +54,17 @@ RooEfficiencyBin::~RooEfficiencyBin()
 //_____________________________________________________________________________
 Double_t RooEfficiencyBin::evaluate() const 
 { 
+   // cout << "RooEfficiencyBin::" << GetName() << "::evaluate:" << endl;
    Double_t val = 1;
    for (std::map<RooRealProxy*, bool>::const_iterator it = _variables.begin(),
            end = _variables.end(); it != end; ++it) {
+      double bin_val = *(it->first);
       if (it->second) {
-         val *= *(it->first);
+         val *= bin_val;
       } else {
-         val *= 1. - *(it->first);
+         val *= (1. - bin_val);
       }
+      // cout << it->first->arg().GetName() << " " << it->second << " " << bin_val << " " << val << endl;
    }
    return val;
 } 

@@ -1013,7 +1013,6 @@ class MultiHistEfficiency(Pdf):
         binning_name = kwargs.pop('Binning', 'efficiency_binning')
         observable = kwargs.pop('Observable')
         cc = kwargs.pop('ConditionalCategories', False)
-
         conditionals = pdf.ConditionalObservables()
 
         from ROOT import std
@@ -1083,11 +1082,13 @@ class MultiHistEfficiency(Pdf):
         self._init(pdf_name, 'RooMultiHistEfficiency')
 
         extraOpts = dict()
-        if conditionals : extraOpts['ConditionalObservables'] = conditionals
+        if conditionals :
+            extraOpts['ConditionalObservables'] = conditionals
 
         constraints = pdf.ExternalConstraints()
         if constraints : extraOpts['ExternalConstraints' ] = constraints
-        Pdf.__init__(self , Name = name , Type = 'RooMultiHistEfficiency', **extraOpts)
+        print extraOpts
+        Pdf.__init__(self , Name = pdf_name , Type = 'RooMultiHistEfficiency', **extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
     def __make_map(self, d):

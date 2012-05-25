@@ -25,7 +25,7 @@ public:
    MultiHistEntry();
    MultiHistEntry(const std::map<RooAbsCategory*, std::string>& categories,
                   RooEffHistProd* effProd, RooAbsReal* relative);
-   MultiHistEntry(const MultiHistEntry& other);
+   MultiHistEntry(const MultiHistEntry& other, RooMultiHistEfficiency* parent);
    virtual ~MultiHistEntry();
 
    const RooEffHistProd& effProd() const {

@@ -351,16 +351,16 @@ RooBinnedPdf::RooBinnedPdf
 //_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf
 (const char* name, const char* title, const RooArgList& baseVars,
-    const TObjArray& binningNames, RooAbsReal& function) :
-  RooAbsPdf(name, title),
-  _numCats(0),
-  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
-  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
-  _coefLists(),
-  _function(TString(name) + "_func", TString(name) + "_func", this, function),
-  _continuousBase(kTRUE),
-  _binIntegralCoefs(kFALSE),
-  _ignoreFirstBin(kFALSE)
+    const TObjArray& binningNames, RooAbsReal& function)
+   : RooAbsPdf(name, title),
+     _numCats(0),
+     _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+     _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+     _coefLists(),
+     _function(TString(name) + "_func", TString(name) + "_func", this, function),
+     _continuousBase(kTRUE),
+     _binIntegralCoefs(kFALSE),
+     _ignoreFirstBin(kFALSE)
 {
   // constructor with a list of variables, the corresponding binnings to be
   // used and a function.
@@ -391,20 +391,19 @@ RooBinnedPdf::RooBinnedPdf
 }
 
 //_____________________________________________________________________________
-RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other,
-    const char* name) :
-  RooAbsPdf(other, name),
-  _numCats(other._numCats),
-  _baseCatsList(TString(name) + "_baseCatsList", this, other._baseCatsList),
-  _baseVarsList(TString(name) + "_baseVarsList", this, other._baseVarsList),
-  _coefLists(_numCats, 0),
-  _function(TString(name) + "_function", this, other._function),
-  _indexPositions(other._indexPositions),
-  _binningNames(other._binningNames),
-  _calcCoefZeros(other._calcCoefZeros),
-  _continuousBase(other._continuousBase),
-  _binIntegralCoefs(other._binIntegralCoefs),
-  _ignoreFirstBin(other._ignoreFirstBin)
+RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other, const char* name)
+   : RooAbsPdf(other, name),
+     _numCats(other._numCats),
+     _baseCatsList(TString(name) + "_baseCatsList", this, other._baseCatsList),
+     _baseVarsList(TString(name) + "_baseVarsList", this, other._baseVarsList),
+     _coefLists(_numCats, 0),
+     _function(TString(name) + "_function", this, other._function),
+     _indexPositions(other._indexPositions),
+     _binningNames(other._binningNames),
+     _calcCoefZeros(other._calcCoefZeros),
+     _continuousBase(other._continuousBase),
+     _binIntegralCoefs(other._binIntegralCoefs),
+     _ignoreFirstBin(other._ignoreFirstBin)
 {
   // copy constructor
 
@@ -610,29 +609,37 @@ Int_t RooBinnedPdf::getMaxVal(const RooArgSet& vars) const
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::maxVal(Int_t code) const 
 {
-   // We only do the case of a 1D function
+   // We only do 1D.
    assert(code==1);
-   assert(_function.absArg() != 0);
+   // assert(_function.absArg() != 0);
    
    Double_t max = -1;
    
-   Bool_t origState = inhibitDirty();
-   setDirtyInhibit(kTRUE);
-   
-   RooAbsRealLValue* lvar = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(0));
-   double original = lvar->getVal();
 
-   const RooAbsBinning* binning = lvar->getBinningPtr(_binningNames[0].Data());
-   for (Int_t i = 0; i < binning->numBins(); ++i) {
-      lvar->setVal(binning->binCenter(i));
-      // Get function value
-      Double_t value = _function.arg().getVal();
-      if (value > max) max = value;
+   if (_function.absArg() != 0) {
+      Bool_t origState = inhibitDirty();
+      setDirtyInhibit(kTRUE);
+      
+      RooAbsRealLValue* lvar = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(0));
+      double original = lvar->getVal();
+      const RooAbsBinning* binning = lvar->getBinningPtr(_binningNames[0].Data());
+      for (Int_t i = 0; i < binning->numBins(); ++i) {
+         lvar->setVal(binning->binCenter(i));
+         // Get function value
+         Double_t value = _function.arg().getVal();
+         if (value > max) max = value;
+      }
+      lvar->setVal(original);
+      setDirtyInhibit(origState);	
+   } else {
+      RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(0);
+      for (Int_t i = 0; i < coefList->getSize(); ++i) {
+         double val = static_cast<const RooAbsReal*>(coefList->at(i))->getVal();
+         if (val > max) {
+            max = val;
+         }
+      }
    }
-   lvar->setVal(original);
-
-   setDirtyInhibit(origState);	
-
    return max * 1.05;
 }
 

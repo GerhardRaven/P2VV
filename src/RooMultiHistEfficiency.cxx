@@ -46,7 +46,6 @@ namespace {
          }
          pname.Append(arg->GetName());
       }
-      cout << "Super name " << pname.Data() << endl;
       return pname.Data();
    }
 
@@ -98,12 +97,13 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
       }
    }
 
-   cout << "bins: ";
+   cout << "RooMultHistEfficiency::ctor(): bins [";
    for(std::list<Double_t>::const_iterator it = _binboundaries->begin();
        it != _binboundaries->end(); ++it) {
-      cout << " " << *it;
+      if (it != _binboundaries->begin()) cout << " ";
+      cout << *it;
    }
-   cout << endl;
+   cout << "]" << endl;
 
    // Build entries.
    _super = makeSuper(GetName(), categories);
@@ -145,7 +145,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& oth
 
    for (HistEntries::const_iterator it = other._entries.begin(), end = other._entries.end();
         it != end; ++it) {
-      MultiHistEntry* entry = new MultiHistEntry(*(it->second));
+      MultiHistEntry* entry = new MultiHistEntry(*(it->second), this);
       _entries.insert(make_pair(it->first, entry));
    }
 }
@@ -191,7 +191,8 @@ RooAbsGenContext* RooMultiHistEfficiency::genContext(const RooArgSet &vars, cons
 {
    // Return specialized generator context for RooEffHistProds that implements generation
    // in a more efficient way than can be done for generic correlated products
-   const RooArgSet* observables = _entries.begin()->second->effProd().observables();
+   const MultiHistEntry* entry = _entries.begin()->second;
+   const RooArgSet* observables = entry->effProd().observables();
    return new RooGenContext(*this, vars, prototype, auxProto, verbose, observables);
 }
 
@@ -272,6 +273,7 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
       categories.add(it->second->categories());
    }
    
+   // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
    std::auto_ptr<TIterator> superIter(_super->MakeIterator());
 
    TString current = _super->getLabel();
@@ -279,7 +281,10 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
       _super->setLabel(label->String());
       Int_t index = _super->getIndex();
       HistEntries::const_iterator it = _entries.find(index);
-      assert(it != _entries.end());
+      if (it == _entries.end()) {
+         // Skip the combination for which there is no shape (all false).
+         continue;
+      }
       double n = it->second->relative();
       if (!_levels.empty()) n += _levels.back().first; // cumulative
       cxcoutD(Generation) << "RooMultiHistEfficiency creating sampler for " << _prodGenObs
@@ -299,19 +304,25 @@ void RooMultiHistEfficiency::generateEvent(Int_t code)
 {
    Double_t r = RooRandom::uniform();
 
+   // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
    std::auto_ptr<TIterator> superIter(_super->MakeIterator());
 
+   Levels::const_iterator itLevel = _levels.begin();
    // find the right generator, and generate categories at the same time...
-   HistEntries::iterator it = _entries.begin();
-   TObjString* label = 0;
-   while ((label = static_cast<TObjString*>(superIter->Next())) != 0 && it->first < r) ++it;
+   while (itLevel != _levels.end() && itLevel->first < r) {
+      ++itLevel;
+   }
 
    // this assigns the categories.
-   _super->setLabel(label->String());
+   _super->setLabel(itLevel->second);
+
+   Int_t index = _super->getIndex();
+   HistEntries::const_iterator itEntry = _entries.find(index);
+   assert(itEntry != _entries.end());
 
    // now that've assigned the categories, we can use the 'real' samplers
    // which are conditional on the categories.
-   it->second->effProd().generateEvent(_prodGenCode);
+   itEntry->second->effProd().generateEvent(_prodGenCode);
 }
 
 //_____________________________________________________________________________
@@ -374,7 +385,9 @@ Double_t RooMultiHistEfficiency::evaluate() const
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       if (it->second->thisEntry()) {
-         return it->second->effVal();
+         double val = it->second->effVal();
+         // cout << "Entry for " << it->second->effProd().GetName() << " = " << val << endl;
+         return val;
       }
    }
    throw std::string("The efficiency for a state is missing");
@@ -398,7 +411,7 @@ MultiHistEntry::MultiHistEntry(const std::map<RooAbsCategory*, std::string>& cat
 }
 
 //_____________________________________________________________________________
-MultiHistEntry::MultiHistEntry(const MultiHistEntry& other)
+MultiHistEntry::MultiHistEntry(const MultiHistEntry& other, RooMultiHistEfficiency* parent)
    : m_rawCats(other.m_rawCats), m_rawEff(other.m_rawEff), m_rawRel(other.m_rawRel),
      m_index(other.m_index)
 {
@@ -407,12 +420,13 @@ MultiHistEntry::MultiHistEntry(const MultiHistEntry& other)
       m_relative = 0;
       return;
    }
-   m_effProd = new RooRealProxy(*other.m_effProd);
-   m_relative = new RooRealProxy(*other.m_relative);
+   m_effProd = new RooRealProxy(other.m_effProd->GetName(), parent, *other.m_effProd);
+   m_relative = new RooRealProxy(other.m_relative->GetName(), parent, *other.m_relative);
 
    for (std::map<RooCategoryProxy*, std::string>::const_iterator it = other.m_categories.begin(),
            end = other.m_categories.end(); it != end; ++it) {
-      m_categories.insert(make_pair(new RooCategoryProxy(*(it->first)), it->second));
+      m_categories.insert(make_pair(new RooCategoryProxy(it->first->GetName(), parent, *(it->first)),
+                                    it->second));
    }
 
 }
