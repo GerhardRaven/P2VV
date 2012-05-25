@@ -1489,7 +1489,7 @@ Bool_t RooBTagDecay::checkVarDep(const RooAbsArg& var, Bool_t warn,
     }
 
     if (!checks) 
-      coutE(InputArguments) << "RooBTagDecay::checkVarDep(" << GetName()
+      coutW(InputArguments) << "RooBTagDecay::checkVarDep(" << GetName()
           << ") parameters depend on " << var.GetName()
           << ": use \"checkVars = false\" if you insist on using this dependence"
           << endl;

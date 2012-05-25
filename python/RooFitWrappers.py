@@ -1090,30 +1090,80 @@ class BTagDecay( Pdf ) :
         # construct factory string on the fly...
         cstr = lambda arg : arg if type(arg) == str else arg.GetName() if hasattr(arg,'GetName') else str(arg)
         convert = lambda arg : cstr(arg) if type(arg) != list else '{%s}' % ','.join( str(listItem) for listItem in arg )
-        if 'tagCat' in kwargs :
+        if 'tagCat0' in kwargs and 'tagCat1' in kwargs :
+            # two tagging categories
+            for argName in [  'time', 'iTag0', 'iTag1', 'tagCat0', 'tagCat1', 'tau', 'dGamma', 'dm'
+                            , 'dilutions0', 'dilutions1', 'ADilWTags0', 'ADilWTags1'
+                            , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                            , 'resolutionModel', 'decayType', 'checkVars'
+                           ] :
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
+
+            # put tagging category coefficients and average even and odd coefficients in TObjArrays of RooArgLists
+            from ROOT import TObjArray, RooArgList
+            avgCEvens   = TObjArray()
+            avgCOdds    = TObjArray()
+            tagCatCoefs = TObjArray()
+            avgCEvens.SetName(   '%s_avgCEvens'   % argDict['Name'] )
+            avgCOdds.SetName(    '%s_avgCOdds'    % argDict['Name'] )
+            tagCatCoefs.SetName( '%s_tagCatCoefs' % argDict['Name'] )
+            for cat0, ( CEvens, COdds, catCoefs )\
+                    in enumerate( zip( kwargs.pop('avgCEvens'), kwargs.pop('avgCOdds'), kwargs.pop('tagCatCoefs') ) ) :
+                CEvensList   = RooArgList( '%s_avgCEvens%d'   % ( argDict['Name'], cat0 ) )
+                COddsList    = RooArgList( '%s_avgCOdds%d'    % ( argDict['Name'], cat0 ) )
+                catCoefsList = RooArgList( '%s_tagCatCoefs%d' % ( argDict['Name'], cat0 ) )
+                for CEven, COdd in zip( CEvens, COdds ) :
+                    CEvensList.add(   self.ws()[ cstr(CEven)   ] )
+                    COddsList.add(    self.ws()[ cstr(COdd)    ] )
+                for catCoef in catCoefs :
+                    catCoefsList.add( self.ws()[ cstr(catCoef) ] )
+
+                avgCEvens.Add(CEvensList)
+                avgCOdds.Add(COddsList)
+                tagCatCoefs.Add(catCoefsList)
+
+            wsImport = getattr( self.ws(), 'import' )
+            wsImport( avgCEvens,   avgCEvens.GetName()   )
+            wsImport( avgCOdds,    avgCOdds.GetName()    )
+            wsImport( tagCatCoefs, tagCatCoefs.GetName() )
+            argDict['avgCEvens']   = avgCEvens.GetName()
+            argDict['avgCOdds']    = avgCOdds.GetName()
+            argDict['tagCatCoefs'] = tagCatCoefs.GetName()
+
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag0)s, %(iTag1)s, %(tagCat0)s, %(tagCat1)s, %(tau)s, %(dGamma)s, %(dm)s,"\
+                                              " %(dilutions0)s, %(dilutions1)s, %(ADilWTags0)s, %(ADilWTags1)s,"\
+                                              " %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s"\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
+                         )
+
+        elif 'tagCat' in kwargs :
+            # one tagging category
             for argName in [  'time', 'iTag', 'tagCat', 'tau', 'dGamma', 'dm'
                             , 'dilutions', 'ADilWTags', 'avgCEvens', 'avgCOdds', 'tagCatCoefs'
                             , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
                             , 'resolutionModel', 'decayType', 'checkVars'
                            ] :
-                if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
 
-            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s,"\
                                               " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s,"\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s,"\
                                               " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
                          )
+
         else :
+            # no tagging categories
             for argName in [  'time', 'iTag', 'tau', 'dGamma', 'dm'
                             , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
                             , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
                             , 'resolutionModel', 'decayType', 'checkVars'
                            ] :
-                if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
 
-            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s,"\
+                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s,"\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s,"\
                                               " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
                          )
 
