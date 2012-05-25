@@ -273,6 +273,8 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
       categories.add(it->second->categories());
    }
    
+   _super->recursiveRedirectServers(categories);
+
    // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
    std::auto_ptr<TIterator> superIter(_super->MakeIterator());
 
