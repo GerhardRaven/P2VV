@@ -261,6 +261,35 @@ class Category (RooObject) :
         else:
             return False
 
+class BinningCategory( Category ) :
+    def __init__( self, Name, **kwargs ) :
+        __check_req_kw__( 'Observable', kwargs )
+        __check_req_kw__( 'Binning', kwargs )
+
+        obs = __dref__( kwargs.pop('Observable') )
+        binning = kwargs.pop('Binning')
+        if type(binning) != str : binning = binning.GetName()
+
+        from ROOT import RooBinningCategory
+        if 'CatTypeName' in kwargs : binCat = RooBinningCategory( Name, Name, obs, binning, kwargs.pop('CatTypeName') )
+        else                       : binCat = RooBinningCategory( Name, Name, obs, binning                            )
+
+        if kwargs.pop( 'Fundamental', False ) :
+            __check_req_kw__( 'Data', kwargs )
+            data = kwargs.pop('Data')
+            if type(data) not in [ list, tuple ] : data = [ data ]
+
+            cat = data[0].addColumn(binCat)
+            for dataSet in data[ 1 : ] : dataSet.addColumn(binCat)
+            cat = self._addObject( __dref__(cat) )
+            self._init( Name, 'RooCategory' )
+
+        else :
+            binCat = self._addObject(binCat)
+            self._init( Name, 'RooBinningCategory' )
+
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
+
 class ThresholdCategory( Category ) :
     def __init__(self,Name,**kwargs):
         __check_req_kw__( 'Observable', kwargs )
@@ -851,27 +880,38 @@ class SumPdf(Pdf):
     def _separator(self):
         return '_P_'
 
-class SimultaneousPdf(Pdf):
-    def __init__(self, Name, **kwargs):
-        if 'States' in kwargs:
-            d = { 'Name' : Name
-                  , 'States' : kwargs.pop('States')
-                  , 'Cat' : kwargs.pop('SplitCategory')['Name']
-                  }
-            # construct factory string on the fly...
-            ## pdfs = sorted([(s, pdf) for s, pdf in d['States'].iteritems()], key = lambda (s, pdf): d['Cat'].lookupType(s).getVal())
+class SimultaneousPdf( Pdf ) :
+    def __init__( self, Name, **kwargs ) :
+        args = { 'Name' : Name }
+        pdfOpts = { }
+        if 'States' in kwargs :
+            args['States'] = kwargs.pop('States')
+            args['Cat']    = kwargs.pop('SplitCategory')['Name']
+            ## pdfs = sorted([(s, pdf) for s, pdf in args['States'].iteritems()], key = lambda (s, pdf): args['Cat'].lookupType(s).getVal())
             ## pdfs = [e[1] for e in pdfs]
-            d['States'] = ','.join(['%s = %s' % (s, pdf['Name']) for s, pdf in d['States'].iteritems()])
-            s = "SIMUL::%(Name)s(%(Cat)s,%(States)s)" % d
-        elif 'SplitParameters' in kwargs:
-            splitstring = ','.join(i.GetName() for i in kwargs.pop('SplitParameters'))
-            s = "SIMCLONE::%s(%s,$SplitParam({%s},%s))"%(Name,kwargs.pop('MasterPdf').GetName(),splitstring,kwargs.pop('SplitCategory'))
-        else:
+            args['States'] = ','.join( [ '%s = %s' % ( s, pdf['Name'] ) for s, pdf in args['States'].iteritems() ] )
+            spec = 'SIMUL::%(Name)s(%(Cat)s,%(States)s)' % args
+
+        elif 'SplitParameters' in kwargs :
+            args['Master']    = kwargs.pop('MasterPdf')
+            args['SplitCat']  = kwargs.pop('SplitCategory')
+            args['SplitPars'] = ','.join( par.GetName() for par in kwargs.pop('SplitParameters') )
+            spec = 'SIMCLONE::%(Name)s(%(Master)s,$SplitParam({%(SplitPars)s},%(SplitCat)s))' % args
+
+            cond = args['Master'].ConditionalObservables()
+            if cond : pdfOpts['ConditionalObservables'] = cond
+            extCon = args['Master'].ExternalConstraints()
+            if extCon : pdfOpts['ExternalConstraints' ] = extCon
+
+        else :
             raise KeyError, 'P2VV - ERROR: SimultaneousdPdf: Must specify either SplitParameters or States'
-        self._declare(s)
-        self._init(Name,'RooSimultaneous')
-        Pdf.__init__(self , Name = Name , Type = 'RooSimultaneous')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+        self._declare(spec)
+        self._init( Name, 'RooSimultaneous' )
+        Pdf.__init__( self , Name = Name , Type = 'RooSimultaneous', **pdfOpts )
+
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
+
     def _make_pdf(self) : pass
 
 class RealSumPdf( Pdf ):
@@ -1171,30 +1211,80 @@ class BTagDecay( Pdf ) :
         # construct factory string on the fly...
         cstr = lambda arg : arg if type(arg) == str else arg.GetName() if hasattr(arg,'GetName') else str(arg)
         convert = lambda arg : cstr(arg) if type(arg) != list else '{%s}' % ','.join( str(listItem) for listItem in arg )
-        if 'tagCat' in kwargs :
+        if 'tagCat0' in kwargs and 'tagCat1' in kwargs :
+            # two tagging categories
+            for argName in [  'time', 'iTag0', 'iTag1', 'tagCat0', 'tagCat1', 'tau', 'dGamma', 'dm'
+                            , 'dilutions0', 'dilutions1', 'ADilWTags0', 'ADilWTags1'
+                            , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                            , 'resolutionModel', 'decayType', 'checkVars'
+                           ] :
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
+
+            # put tagging category coefficients and average even and odd coefficients in TObjArrays of RooArgLists
+            from ROOT import TObjArray, RooArgList
+            avgCEvens   = TObjArray()
+            avgCOdds    = TObjArray()
+            tagCatCoefs = TObjArray()
+            avgCEvens.SetName(   '%s_avgCEvens'   % argDict['Name'] )
+            avgCOdds.SetName(    '%s_avgCOdds'    % argDict['Name'] )
+            tagCatCoefs.SetName( '%s_tagCatCoefs' % argDict['Name'] )
+            for cat0, ( CEvens, COdds, catCoefs )\
+                    in enumerate( zip( kwargs.pop('avgCEvens'), kwargs.pop('avgCOdds'), kwargs.pop('tagCatCoefs') ) ) :
+                CEvensList   = RooArgList( '%s_avgCEvens%d'   % ( argDict['Name'], cat0 ) )
+                COddsList    = RooArgList( '%s_avgCOdds%d'    % ( argDict['Name'], cat0 ) )
+                catCoefsList = RooArgList( '%s_tagCatCoefs%d' % ( argDict['Name'], cat0 ) )
+                for CEven, COdd in zip( CEvens, COdds ) :
+                    CEvensList.add(   self.ws()[ cstr(CEven)   ] )
+                    COddsList.add(    self.ws()[ cstr(COdd)    ] )
+                for catCoef in catCoefs :
+                    catCoefsList.add( self.ws()[ cstr(catCoef) ] )
+
+                avgCEvens.Add(CEvensList)
+                avgCOdds.Add(COddsList)
+                tagCatCoefs.Add(catCoefsList)
+
+            wsImport = getattr( self.ws(), 'import' )
+            wsImport( avgCEvens,   avgCEvens.GetName()   )
+            wsImport( avgCOdds,    avgCOdds.GetName()    )
+            wsImport( tagCatCoefs, tagCatCoefs.GetName() )
+            argDict['avgCEvens']   = avgCEvens.GetName()
+            argDict['avgCOdds']    = avgCOdds.GetName()
+            argDict['tagCatCoefs'] = tagCatCoefs.GetName()
+
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag0)s, %(iTag1)s, %(tagCat0)s, %(tagCat1)s, %(tau)s, %(dGamma)s, %(dm)s,"\
+                                              " %(dilutions0)s, %(dilutions1)s, %(ADilWTags0)s, %(ADilWTags1)s,"\
+                                              " %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s"\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
+                         )
+
+        elif 'tagCat' in kwargs :
+            # one tagging category
             for argName in [  'time', 'iTag', 'tagCat', 'tau', 'dGamma', 'dm'
                             , 'dilutions', 'ADilWTags', 'avgCEvens', 'avgCOdds', 'tagCatCoefs'
                             , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
                             , 'resolutionModel', 'decayType', 'checkVars'
                            ] :
-                if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
 
-            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s, "\
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tagCat)s, %(tau)s, %(dGamma)s, %(dm)s,"\
                                               " %(dilutions)s, %(ADilWTags)s, %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s,"\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s,"\
                                               " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
                          )
+
         else :
+            # no tagging categories
             for argName in [  'time', 'iTag', 'tau', 'dGamma', 'dm'
                             , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
                             , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
                             , 'resolutionModel', 'decayType', 'checkVars'
                            ] :
-                if argName not in argDict or argName in kwargs : argDict[argName] = convert(kwargs.pop(argName))
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
 
-            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s, "\
-                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s, "\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s,"\
+                                              " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s,"\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s,"\
                                               " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
                          )
 
@@ -1390,6 +1480,9 @@ class Component(object):
         if 'Yield' in kw : self.setYield( *kw.pop('Yield') )
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
+    def getYield(self):
+        if 'Yield' in Component._d[self.name] : return Component._d[self.name]['Yield']
+        else : return None
     def setYield(self, *args):
         y = None
         if len(args) == 1 and type(args[0]) == RealVar:

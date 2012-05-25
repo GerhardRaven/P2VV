@@ -332,7 +332,7 @@ if paramfile :
     fitset = pdf.getParameters(data)
     fitset.readFromFile(paramfile)
 
-fit = True
+fit = False
 if fit or not paramfile:
     cfitresult = pdf.fitTo(data, **fitOpts)
     cfitresult.writepars(fitname+'result',False)

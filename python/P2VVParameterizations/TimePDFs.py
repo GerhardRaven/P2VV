@@ -118,6 +118,54 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         BDecayBasisCoefficients.__init__( self, **args )
 
 
+def JpsiphiBDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, amplitudes, CP, order ) :
+    from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
+    basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes, CP, tag, tagging['dilution'], order )
+    from RooFitWrappers import BDecay
+    return  BDecay(  Name                   = Name
+                   , time                   = time
+                   , dm                     = lifetimeParams['dM']
+                   , tau                    = lifetimeParams['MeanLifetime']
+                   , dGamma                 = lifetimeParams['dGamma']
+                   , resolutionModel        = sigtres['model']
+                   , coshCoef               = basisCoefficients['cosh']
+                   , cosCoef                = basisCoefficients['cos']
+                   , sinhCoef               = basisCoefficients['sinh']
+                   , sinCoef                = basisCoefficients['sin']
+                   , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
+                   , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                              + sigtres.externalConstraints()\
+                                              + tagging.externalConstraints()
+                  )
+
+def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, amplitudes, CP, order ) :
+    from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
+    basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes, CP, order )
+    from RooFitWrappers import BTagDecay
+    return  BTagDecay(  Name                   = Name
+                      , time                   = time
+                      , iTag                   = tag
+                      , dm                     = lifetimeParams['dM']
+                      , tau                    = lifetimeParams['MeanLifetime']
+                      , dGamma                 = lifetimeParams['dGamma']
+                      , resolutionModel        = sigtres['model']
+                      , coshCoef               = basisCoefficients['cosh']
+                      , cosCoef                = basisCoefficients['cos']
+                      , sinhCoef               = basisCoefficients['sinh']
+                      , sinCoef                = basisCoefficients['sin']
+                      , dilution               = tagging['dilution']
+                      , ADilWTag               = tagging['ADilWTag']
+                      , avgCEven               = tagging['avgCEven']
+                      , avgCOdd                = tagging['avgCOdd']
+                      , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
+                      , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                                 + sigtres.externalConstraints()\
+                                                 + tagging.externalConstraints()
+                     )
+
+
+
+
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 class TimePdf( _util_parse_mixin ) :
     def __init__(self, **kwargs ) :
@@ -130,7 +178,7 @@ class LP2011_Background_Time( TimePdf ) :
     def __init__(self, time, resolutionModel, **kwargs) :
         Name = kwargs.pop('Name', self.__class__.__name__)
         self._ml_tau = self._parseArg('%s_ml_tau' % Name, kwargs, Title = 'medium lifetime background ', Unit = 'ps', Value = 0.152, MinMax = (0.01,0.5) )
-        self._ll_tau = self._parseArg('%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.06, MinMax = (0.5,2.5) )
+        self._ll_tau = self._parseArg('%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.06, MinMax = (0.2,2.5) )
         self._fll = self._parseArg('%s_fll' % Name, kwargs, Title = 'fraction long lifetime background', Value = 0.2, MinMax = (0., 1.) )
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay

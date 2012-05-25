@@ -11,14 +11,16 @@ generateData            = False
 doFit                   = True
 fastFit                 = False
 makeObservablePlots     = False
+makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
 
-plotsFile     = 'JvLSFit.ps'  if pdfConfig['SFit'] else 'JvLCFit.ps'
+plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
+       else 'plots/JvLCFit.ps'
 parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
@@ -52,15 +54,20 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
-pdfConfig['bkgAnglePdf']        = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']      = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']      = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
-pdfConfig['multiplyByTimeEff']  = ''
+pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
+pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['multiplyByTimeEff']    = ''
+pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
+pdfConfig['ambiguityParameters']  = False
+pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.4, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
-pdfConfig['conditionalTagging'] = True  # nominal: True
+pdfConfig['sameSideTagging']    = True  # nominal: False
+pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
-pdfConfig['constrainTagging']   = True
+pdfConfig['constrainTagging']   = True  # nominal: True
 
 pdfConfig['eventTimeResolution'] = True  # nominal: True
 pdfConfig['numTimeResBins']      = 100
@@ -73,11 +80,13 @@ pdfConfig['amplitudeParam'] = 'bank' # default: 'bank' | nominal: 'phasesSWaveFr
 pdfConfig['polarSWave']     = True  # default/nominal: True
 pdfConfig['AparParam']      = 'Mag2ReIm' # default: 'Mag2ReIm' | nominal: 'phase'
 
+pdfConfig['constrainDeltaM'] = True  # nominal: True
+
 pdfConfig['carthLambdaCP'] = False  # default/nominal: False
 constLambdaCPSq = False  # default: False / nominal: True
 
 constTagCatCoefs = True  # default: True / nominal: False
-constAvgCEvenOdd = False   # default: False / nominal: True
+constAvgCEvenOdd = False  # default: False / nominal: True
 
 if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
@@ -143,30 +152,32 @@ pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
 # get variables
-obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta', 'phi', 'iTag' ] ]
+obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta', 'phi', 'iTagOS' ] ]
 time       = obsSetP2VV[0]
 angles     = obsSetP2VV[ 1 : 4 ]
-iTag       = obsSetP2VV[4]
+iTagOS     = obsSetP2VV[4]
 BMass      = pdfBuild['observables']['BMass']
-estWTag    = pdfBuild['observables']['estWTag']
+mumuMass   = pdfBuild['observables']['mumuMass']
+KKMass     = pdfBuild['observables']['KKMass']
+estWTagOS  = pdfBuild['observables']['estWTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
 
 if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
 
 if not pdfBuild['iTagZeroTrick'] :
-    tagCatP2VV = pdfBuild['observables']['tagCatP2VV']
-    obsSetP2VV.append(tagCatP2VV)
+    tagCatP2VVOS = pdfBuild['observables']['tagCatP2VVOS']
+    obsSetP2VV.append(tagCatP2VVOS)
 
     # tagging parameters
-    numTagCats    = pdfBuild['tagCats']['numTagCats']
-    tagCat5Min    = pdfBuild['tagCats'].traditionalCatRange(5)[0]
+    numTagCats    = pdfBuild['tagCatsOS']['numTagCats']
+    tagCat5Min    = pdfBuild['tagCatsOS'].traditionalCatRange(5)[0]
     taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
     tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
 
     # tagging category ranges
-    tagCatP2VV.setRange( 'UntaggedRange', 'Untagged'    )
-    tagCatP2VV.setRange( 'TaggedRange',   taggedCatsStr )
-    tagCatP2VV.setRange( 'TagCat5Range',  tagCat5Str    )
+    tagCatP2VVOS.setRange( 'UntaggedRange', 'Untagged'    )
+    tagCatP2VVOS.setRange( 'TaggedRange',   taggedCatsStr )
+    tagCatP2VVOS.setRange( 'TagCat5Range',  tagCat5Str    )
 
 if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
     # unset cache-and-track
@@ -222,13 +233,21 @@ if ( readData or generateData ) and doFit :
         CEvenOdd.setConstant('avgCEven.*')
         if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-    if pdfConfig['nominalPdf'] or not constTagCatCoefs :
-        pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+    if pdfConfig['nominalPdf'] :
+        if not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+        pdfBuild['tagCatsOS'].setConstant('wTagAP.*')
+        pdfBuild['tagCatsSS'].setConstant('wTagAP.*')
+
+    if pdfConfig['parameterizeKKMass'] == 'functions' :
+        for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
+        if not pdfConfig['SFit'] :
+            for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
 
     if fastFit :
         pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
         for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
-        pdfBuild['tagCats'].setConstant('.*')
+        pdfBuild['tagCatsOS'].setConstant('.*')
+        pdfBuild['tagCatsSS'].setConstant('.*')
         pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
         pdfBuild['timeResModel'].setConstant('.*')
         pdfBuild['signalBMass'].setConstant('.*')
@@ -244,7 +263,8 @@ if ( readData or generateData ) and doFit :
     else                 : fitResult = pdf.fitTo( fitData,                          Save = True, **fitOpts )
 
     # reparameterize amplitudes
-    if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave'] and pdfConfig['AparParam'] == 'Mag2ReIm' :
+    if not pdfConfig['nominalPdf'] and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave']\
+            and pdfConfig['AparParam'] == 'Mag2ReIm' :
         from ROOT import RooArgSet
         parList = fitResult.floatParsFinal()
         parSet  = RooArgSet(parList)
@@ -253,33 +273,72 @@ if ( readData or generateData ) and doFit :
         from math import pi
         from ROOT import RooRealVar, RooArgList
         from P2VVParameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
-        ampPhys = [  RooRealVar( 'A0Mag2_phys',     'A0Mag2_phys',     A02,      0.,      1.      )  # 0
-                   , RooRealVar( 'AperpMag2_phys',  'AperpMag2_phys',  Aperp2,   0.,      1.      )  # 1
-                   , RooRealVar( 'f_S_phys',        'f_S_phys',        f_S,      0.,      1.      )  # 2
-                   , RooRealVar( 'AparPhase_phys',  'AparPhase_phys',  AparPh,  -2. * pi, 2. * pi )  # 3
-                   , RooRealVar( 'AperpPhase_phys', 'AperpPhase_phys', AperpPh, -2. * pi, 2. * pi )  # 4
-                   , RooRealVar( 'ASPhase_phys',    'ASPhase_phys',    ASPh,    -2. * pi, 2. * pi )  # 5
+        deltaPar  = AparPh  - A0Ph
+        deltaPerp = AperpPh - A0Ph
+        deltaS    = ASPh    - A0Ph
+        if pdfConfig['ambiguityParameters'] :
+            deltaPar  = -deltaPar
+            deltaPerp = pi - deltaPerp
+            deltaS    = -deltaS
+
+        # physics parameters to determine
+        ampPhys = [  RooRealVar( 'A0Mag2_phys',     'A0Mag2_phys',     A02,        0.,      1.      )  # 0
+                   , RooRealVar( 'AparPhase_phys',  'AparPhase_phys',  deltaPar,  -2. * pi, 2. * pi )  # 1
+                   , RooRealVar( 'AperpMag2_phys',  'AperpMag2_phys',  Aperp2,     0.,      1.      )  # 2
+                   , RooRealVar( 'AperpPhase_phys', 'AperpPhase_phys', deltaPerp, -2. * pi, 2. * pi )  # 3
                   ]
+
+        if pdfConfig['parameterizeKKMass'] :
+            numKKMassBins = pdfBuild['KKMassBinning'].numBins() if pdfConfig['parameterizeKKMass'] == 'functions'\
+                            else pdfBuild['KKMassCat'].numTypes()
+            for bin in range( numKKMassBins ) :
+                ampPhys += [  RooRealVar( 'f_S_phys_bin%d' % bin,     'f_S_phys_bin%d' % bin,     f_S,     0.,      1.      )  # 4 + 2*bin
+                            , RooRealVar( 'ASPhase_phys_bin%d' % bin, 'ASPhase_phys_bin%d' % bin, deltaS, -2. * pi, 2. * pi )  # 5 + 2*bin
+                           ]
+        else :
+            ampPhys += [  RooRealVar( 'f_S_phys',     'f_S_phys',     f_S,     0.,      1.      )  # 4
+                        , RooRealVar( 'ASPhase_phys', 'ASPhase_phys', deltaS, -2. * pi, 2. * pi )  # 5
+                       ]
+
         ampPhysList = RooArgList()
         for amp in ampPhys : ampPhysList.add(amp)
 
+        # names of parameters in likelihood fit
         ampMeasNames = [  'AparMag2'    # 0
                         , 'ReApar'      # 1
                         , 'ImApar'      # 2
                         , 'AperpMag2'   # 3
                         , 'AperpPhase'  # 4
-                        , 'ASOddMag2'   # 5
-                        , 'ASOddPhase'  # 6
                        ]
-        ampMeasFuncs = {  ampMeasNames[0] : '(1.-@0-@1)/@0'
-                        , ampMeasNames[1] : 'sqrt((1.-@0-@1)/@0)*cos(@3)'
-                        , ampMeasNames[2] : 'sqrt((1.-@0-@1)/@0)*sin(@3)'
-                        , ampMeasNames[3] : '@1/@0'
-                        , ampMeasNames[4] : '@4'
-                        , ampMeasNames[5] : '@2/(1.-@2)/@1'
-                        , ampMeasNames[6] : '@5-@4'
+
+        if pdfConfig['parameterizeKKMass'] :
+            for bin in range( numKKMassBins ) :
+                ampMeasNames += [  'ASOddMag2_bin%d' % bin   # 5 + 2 * bin
+                                 , 'ASOddPhase_bin%d' % bin  # 6 + 2 * bin
+                                ]
+        else :
+            ampMeasNames += [  'ASOddMag2'   # 5
+                             , 'ASOddPhase'  # 6
+                            ]
+
+        # fitted parameters in terms of physics parameters
+        ampMeasFuncs = {  ampMeasNames[0] : '(1.-@0-@2)/@0'
+                        , ampMeasNames[1] : 'sqrt((1.-@0-@2)/@0)*cos(@1)'
+                        , ampMeasNames[2] : 'sqrt((1.-@0-@2)/@0)*sin(@1)'
+                        , ampMeasNames[3] : '@2/@0'
+                        , ampMeasNames[4] : '@3'
                        }
 
+        if pdfConfig['parameterizeKKMass'] :
+            for bin in range( numKKMassBins ) :
+                ampMeasFuncs[ ampMeasNames[ 5 + 2 * bin ] ] = '@{0:d}/(1.-@{0:d})/@2'.format( 4 + 2 * bin )
+                ampMeasFuncs[ ampMeasNames[ 6 + 2 * bin ] ] = '@{0:d}-@3{1:s}'.format( 5 + 2 * bin, '+TMath::TwoPi()'\
+                                                                                       if pdfConfig['ambiguityParameters'] else '' )
+        else :
+            ampMeasFuncs[ ampMeasNames[5] ] = '@4/(1.-@4)/@2'
+            ampMeasFuncs[ ampMeasNames[6] ] = '@5-@3'
+
+        # create fitted parameters and functions
         from ROOT import RooFormulaVar
         ampMeasList = RooArgList()
         ampFuncsList = RooArgList()
@@ -294,12 +353,14 @@ if ( readData or generateData ) and doFit :
             ampMeasInds[ampName] = parList.index(ampName)
         ampMeasSet = RooArgSet(ampMeasList)
 
+        # get covariances from likelihood fit
         from ROOT import TMatrixDSym
         ampMeasCovs = TMatrixDSym(len(ampMeasNames))
         for ampIter, ampName in enumerate(ampMeasNames) :
             for ampIter1, ampName1 in enumerate(ampMeasNames) :
                 ampMeasCovs[ampIter][ampIter1] = parCovs[ampMeasInds[ampName]][ampMeasInds[ampName1]]
 
+        # determine values of physics parameters
         from ROOT import RooDataSet, RooMultiVarGaussian
         ampsData = RooDataSet( 'ampsData', 'Measured transversity amplitudes', ampMeasSet )
         ampsGauss = RooMultiVarGaussian( 'ampsGauss', 'Gaussian for measured transversity amplitudes'
@@ -321,16 +382,19 @@ if ( readData or generateData ) and doFit :
 
     print 120 * '=' + '\n'
 
+else :
+    fitResult = None
+
 
 ###########################################################################################################################################
 ## make some plots ##
 #####################
 
-if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or dllPars ) :
+if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots or dllPars ) :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
-    from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
+    from ROOT import TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
 
     # create projection data set for conditional observables
     if pdfConfig['SFit'] :
@@ -341,8 +405,8 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
                 }
 
     projWDataSet = []
-    if   pdfConfig['continuousEstWTag']   : projWDataSet += [ tagCatP2VV, estWTag, iTag ]
-    elif pdfConfig['conditionalTagging']  : projWDataSet += [ tagCatP2VV, iTag ]
+    if   pdfConfig['continuousEstWTag']   : projWDataSet += [ tagCatP2VVOS, estWTagOS, iTagOS ]
+    elif pdfConfig['conditionalTagging']  : projWDataSet += [ tagCatP2VVOS, iTagOS ]
     if   pdfConfig['eventTimeResolution'] : projWDataSet += [ timeRes ]
 
     if projWDataSet :
@@ -371,6 +435,72 @@ if pdfConfig['makePlots'] :
              , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
              , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
             )
+
+if makeKKMassPlots and pdfConfig['parameterizeKKMass'] and fitResult and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave']:
+    # create S-wave phase plots
+    nKKBins = pdfBuild['KKMassBinning'].numBins()
+
+    from array import array
+    KKMassVals    = array( 'd', [ pdfBuild['KKMassBinning'].binCenter(binIter)      for binIter in range(nKKBins) ] )
+    KKMassLowErr  = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) for binIter in range(nKKBins) ] )
+    KKMassHighErr = KKMassLowErr
+
+    from ROOT import TGraphAsymmErrors
+    parList = fitResult.floatParsFinal()
+    deltaS1Vals    = array( 'd', [ parList.find( 'ASOddPhase_bin%d' % binIter ).getVal()   for binIter in range(nKKBins) ] )
+    deltaS1LowErr  = array( 'd', [ parList.find( 'ASOddPhase_bin%d' % binIter ).getError() for binIter in range(nKKBins) ] )
+    deltaS1HighErr = deltaS1LowErr
+    deltaSGraphs   = [ TGraphAsymmErrors( len(KKMassVals), KKMassVals,                  deltaS1Vals,
+                                                           KKMassLowErr, KKMassHighErr, deltaS1LowErr, deltaS1HighErr) ]
+
+    from math import pi
+    deltaS2Vals    = array( 'd', [ pi - parList.find( 'ASOddPhase_bin%d' % binIter ).getVal() for binIter in range(nKKBins) ] )
+    deltaS2LowErr  = deltaS1LowErr
+    deltaS2HighErr = deltaS2LowErr
+    deltaSGraphs  += [ TGraphAsymmErrors( len(KKMassVals), KKMassVals,                  deltaS2Vals,
+                                                           KKMassLowErr, KKMassHighErr, deltaS2LowErr, deltaS2HighErr ) ]
+
+    if pdfConfig['ambiguityParameters'] : deltaSGraphs = [ deltaSGraphs[1], deltaSGraphs[0] ]
+
+    from ROOT import kBlack, kBlue
+    deltaSGraphs[0].SetLineColor(kBlue)
+    deltaSGraphs[1].SetLineColor(kBlack)
+
+    deltaSGraphs[0].SetMarkerColor(kBlue)
+    deltaSGraphs[1].SetMarkerColor(kBlack)
+
+    deltaSGraphs[0].SetLineWidth(2)
+    deltaSGraphs[1].SetLineWidth(2)
+
+    from ROOT import kFullCircle, kFullSquare
+    deltaSGraphs[0].SetMarkerStyle(kFullCircle)
+    deltaSGraphs[1].SetMarkerStyle(kFullSquare)
+
+    deltaSGraphs[0].SetMinimum( min( deltaSGraphs[0].GetYaxis().GetXmin(), deltaSGraphs[1].GetYaxis().GetXmin() ) )
+    deltaSGraphs[0].SetMaximum( max( deltaSGraphs[0].GetYaxis().GetXmax(), deltaSGraphs[1].GetYaxis().GetXmax() ) )
+
+    deltaSGraphs[0].GetXaxis().SetTitle('m_{KK} (MeV)')
+    deltaSGraphs[0].GetYaxis().SetTitle('#delta_{S} - #delta_{#perp}    (rad)')
+
+    deltaSGraphs[0].SetTitle('S-Wave Phases')
+    deltaSGraphs[0].GetYaxis().SetTitleOffset(1.)
+
+    from ROOT import TLegend
+    leg = TLegend( 0.52, 0.41, 0.90, 0.61 )
+    leg.AddEntry( deltaSGraphs[0], 'solution I  (#Delta#Gamma_{s} > 0)', 'LPE' )
+    leg.AddEntry( deltaSGraphs[1], 'solution II (#Delta#Gamma_{s} < 0)', 'LPE' )
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+
+    from ROOT import TCanvas
+    deltaSCanv = TCanvas( 'deltaSCanv', 'S-Wave Phases' )
+    deltaSCanv.SetLeftMargin(0.1)
+    deltaSGraphs[0].Draw('AP')
+    deltaSGraphs[1].Draw('P SAMES')
+    leg.Draw()
+
+else :
+    deltaSCanv = None
 
 if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     # plot lifetime and angles
@@ -404,8 +534,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , timePlotTitles
                    , 2 * ( None, ) + ( 'B/#bar{B} asymmetry', )
                    , ( ( None, None ), ( 50., None ), ( None, None ) )
-                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTag ), )
-                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTag ), )
+                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTagOS ), )
+                   , 2 * ( dict(), ) + ( dict( Asymmetry = iTagOS ), )
                    , ( False, True, False )
                   ) :
         plot(  pad, time, fitData, pdf, yTitle = yTitle, yScale = yScale, logy = logY
@@ -430,18 +560,18 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
              , 6 * [ pdfConfig['numTimeBins'] ]
              , timePlotTitles1
              , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
-             ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()             )                   ), )
-               + ( dict( Cut = '%s == 2'  % ( tagCatP2VV.GetName()             )                   ), )
-               + ( dict( Cut = '%s == %d' % ( tagCatP2VV.GetName(), tagCat5Min )                   ), )
-               + ( dict( Cut = '%s == 0'  % ( tagCatP2VV.GetName()             ), Asymmetry = iTag ), )
-               + ( dict( Cut = '%s == 2'  % ( tagCatP2VV.GetName()             ), Asymmetry = iTag ), )
-               + ( dict( Cut = '%s == %d' % ( tagCatP2VV.GetName(), tagCat5Min ), Asymmetry = iTag ), )
-             ,   ( dict( Slice = ( tagCatP2VV, 'Untagged'              )                   ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat2'               )                   ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat%d' % tagCat5Min )                   ), )
-               + ( dict( Slice = ( tagCatP2VV, 'Untagged'              ), Asymmetry = iTag ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat2'               ), Asymmetry = iTag ), )
-               + ( dict( Slice = ( tagCatP2VV, 'TagCat%d' % tagCat5Min ), Asymmetry = iTag ), )
+             ,   ( dict( Cut = '%s == 0'  % ( tagCatP2VVOS.GetName()             )                     ), )
+               + ( dict( Cut = '%s == 2'  % ( tagCatP2VVOS.GetName()             )                     ), )
+               + ( dict( Cut = '%s == %d' % ( tagCatP2VVOS.GetName(), tagCat5Min )                     ), )
+               + ( dict( Cut = '%s == 0'  % ( tagCatP2VVOS.GetName()             ), Asymmetry = iTagOS ), )
+               + ( dict( Cut = '%s == 2'  % ( tagCatP2VVOS.GetName()             ), Asymmetry = iTagOS ), )
+               + ( dict( Cut = '%s == %d' % ( tagCatP2VVOS.GetName(), tagCat5Min ), Asymmetry = iTagOS ), )
+             ,   ( dict( Slice = ( tagCatP2VVOS, 'Untagged'              )                     ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'TagCat2'               )                     ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'TagCat%d' % tagCat5Min )                     ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'Untagged'              ), Asymmetry = iTagOS ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'TagCat2'               ), Asymmetry = iTagOS ), )
+               + ( dict( Slice = ( tagCatP2VVOS, 'TagCat%d' % tagCat5Min ), Asymmetry = iTagOS ), )
              , 3 * ( False, ) + 3 * ( False, )
             ) :
         plot(  pad, time, fitData, pdf, yTitle = yTitle, logy = logY
@@ -468,8 +598,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                    , anglePlotTitles
                    , 2 * ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                    , 3 * ( None, ) + 3 * ( 'B/#bar{B} asymmetry', )
-                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTag ), )
-                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTag ), )
+                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTagOS ), )
+                   , 3 * ( dict( ), ) + 3 * ( dict( Asymmetry = iTagOS ), )
                   ) :
         plot(  pad, obs, fitData, pdf, addPDFs = addPDFs, xTitle = xTitle, yTitle = yTitle
              , frameOpts   = dict( Bins = nBins, Title = plotTitle                                                )
@@ -496,60 +626,79 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     if pdfConfig['makePlots'] :
         anglesCanv.Print(plotsFile)
         pdfBuild['massCanv'].Print(plotsFile)
+        pdfBuild['KKMassCanv'].Print(plotsFile)
         bkgTimeCanv.Print(plotsFile)
         pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
         pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-        pdfBuild['estWTagCanv'].Print(plotsFile + ')')
+        pdfBuild['estWTagCanvOS'].Print(plotsFile)
+        pdfBuild['estWTagCanvSS'].Print( plotsFile + ( '' if deltaSCanv else ')' ) )
 
     else :
-        anglesCanv.Print(plotsFile + ')')
+        anglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
 
 elif pdfConfig['makePlots'] :
     pdfBuild['massCanv'].Print(plotsFile + '(')
+    pdfBuild['KKMassCanv'].Print(plotsFile)
     bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-    pdfBuild['estWTagCanv'].Print(plotsFile + ')')
+    pdfBuild['estWTagCanvOS'].Print(plotsFile)
+    pdfBuild['estWTagCanvSS'].Print(plotsFile + '' if deltaSCanv else ')')
+
+if deltaSCanv :
+    deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
+
+
+###########################################################################################################################################
+## make DLL plots  ##
+#####################
 
 if dllPars :
     # make delta log-likelihood plots
     if pdfConfig['amplitudeParam'] == 'phasesSWaveFrac' :
-        MparMin =  0.21
-        MparMax =  0.25
-        RparMin = -0.480
-        RparMax = -0.455
-        IparMin = -0.15
-        IparMax = +0.15
-    elif pdfConfig['AparParam'] == 'Mag2ReIm' :
-        MparMin =  0.40
-        MparMax =  0.48
-        RparMin = -0.69
-        RparMax = -0.61
-        IparMin = -0.50
-        IparMax = +0.50
+        MparMin  =  0.21
+        MparMax  =  0.25
+        RparMin  = -0.480
+        RparMax  = -0.455
+        IparMin  = -0.15
+        IparMax  = +0.15
+        MperpMin =  0.23
+        MperpMax =  0.27
     else :
         MparMin =  0.40
         MparMax =  0.48
         RparMin = -0.69
         RparMax = -0.61
-        IparMin = -0.25
-        IparMax = +0.25
+        if pdfConfig['AparParam'] == 'Mag2ReIm' :
+            IparMin = -1.
+            IparMax = +0.65
+        else :
+            IparMin = -0.25
+            IparMax = +0.25
+        MperpMin =  0.44
+        MperpMax =  0.52
 
     wsPars =\
-        {  'phiCP'        : ( '#DeltaNLL #phi_{s}',                    '#phi_{s}',                    -0.15,    0.15,   1, 0.001, 0.1  )
-         , 'AparMag2'     : ( '#DeltaNLL |A_{#parallel}|^{2}',         '|A_{#parallel}|^{2}',         MparMin, MparMax, 1, 0.001, 0.05 )
-         , 'ReApar'       : ( '#DeltaNLL Re(A_{#parallel})',           'Re(A_{#parallel})',           RparMin, RparMax, 1, 0.001, 0.05 )
-         , 'ImApar'       : ( '#DeltaNLL Im(A_{#parallel})',           'Im(A_{#parallel})',           IparMin, IparMax, 1, 0.001, 0.05 )
-         , 'cosAparPhase' : ( '#DeltaNLL cos(#delta_{#parallel})',     'cos(#delta_{#parallel})',     -1.,     -0.92,   1, 0.001, 0.05 )
-         , 'AparPhase'    : ( '#DeltaNLL #delta_{#parallel}',          '#delta_{#parallel}',           2.78,    3.50,   1, 0.001, 0.05 )
-         , 'sqrtfS_Re'    : ( '#DeltaNLL #sqrt{f_{S}}^{R}',            '#sqrt{f_{S}}^{R}',            -0.22,   -0.10,   1, 0.001, 0.05 )
-         , 'sqrtfS_Im'    : ( '#DeltaNLL #sqrt{f_{S}}^{I}',            '#sqrt{f_{S}}^{I}',            -0.060,   0.085,  1, 0.001, 0.05 )
-         , 'ReASOdd'      : ( '#DeltaNLL Re(A_{S} / A_{#perp})',       'Re(A_{S} / A_{#perp})',        0.20,    0.44,   1, 0.001, 0.05 )
-         , 'ImASOdd'      : ( '#DeltaNLL Im(A_{S} / A_{#perp})',       'Im(A_{S} / A_{#perp})',       -0.06,    0.04,   1, 0.001, 0.05 )
-         , 'f_S'          : ( '#DeltaNLL f_{S}',                       'f_{S}',                        0.00,    0.05,   1, 0.001, 0.05 )
-         , 'ASPhase'      : ( '#DeltaNLL #delta_{S}',                  '#delta_{S}',                   2.7,     3.3,    1, 0.001, 0.05 )
-         , 'ASOddMag2'    : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',   'A_{S}^{2} / A_{#perp}^{2}',    0.0,     0.2,    1, 0.001, 0.05 )
-         , 'ASOddPhase'   : ( '#DeltaNLL #delta_{S} - #delta_{#perp}', '#delta_{S} - #delta_{#perp}', -0.2,     0.2,    1, 0.001, 0.05 )
+        {  'phiCP'         : ( '#DeltaNLL #phi_{s}',                    '#phi_{s}',                    -0.22,     0.22,    1, 0.001, 0.05 )
+         , 'lambdaCPSq'    : ( '#DeltaNLL |#lambda|^{2}',               '|#lambda|^{2}',                0.8,      1.0,     1, 0.001, 0.01 )
+         , 'avgCOddSum'    : ( '#DeltaNLL C_{Os}^{avg}',                'C_{Os}^{avg}',                -0.035,    0.100,   1, 0.001, 0.01 )
+         , 'avgCOddTagged' : ( '#DeltaNLL C_{Ot}^{avg}',                'C_{Ot}^{avg}',                -0.100,    0.155,   1, 0.001, 0.01 )
+         , 'A0Mag2'        : ( '#DeltaNLL |A_{0}|^{2}',                 '|A_{0}|^{2}',                  0.51,     0.54,    1, 0.001, 0.01 )
+         , 'AparMag2'      : ( '#DeltaNLL |A_{#parallel}|^{2}',         '|A_{#parallel}|^{2}',         MparMin,  MparMax,  1, 0.001, 0.01 )
+         , 'ReApar'        : ( '#DeltaNLL Re(A_{#parallel})',           'Re(A_{#parallel})',           RparMin,  RparMax,  1, 0.001, 0.01 )
+         , 'ImApar'        : ( '#DeltaNLL Im(A_{#parallel})',           'Im(A_{#parallel})',           IparMin,  IparMax,  1, 0.001, 0.01 )
+         , 'cosAparPhase'  : ( '#DeltaNLL cos(#delta_{#parallel})',     'cos(#delta_{#parallel})',     -1.,      -0.92,    1, 0.001, 0.01 )
+         , 'AparPhase'     : ( '#DeltaNLL #delta_{#parallel}',          '#delta_{#parallel}',           2.8,      3.7,     1, 0.001, 0.01 )
+         , 'AperpMag2'     : ( '#DeltaNLL |A_{#perp}|^{2}',             '|A_{#perp}|^{2}',             MperpMin, MperpMax, 1, 0.001, 0.01 )
+         , 'AperpPhase'    : ( '#DeltaNLL #delta_{#perp}',              '#delta_{#perp}',               2.3,      3.7,     1, 0.001, 0.01 )
+         , 'sqrtfS_Re'     : ( '#DeltaNLL #sqrt{f_{S}}^{R}',            '#sqrt{f_{S}}^{R}',            -0.22,    -0.10,    1, 0.001, 0.01 )
+         , 'sqrtfS_Im'     : ( '#DeltaNLL #sqrt{f_{S}}^{I}',            '#sqrt{f_{S}}^{I}',            -0.060,    0.085,   1, 0.001, 0.01 )
+         , 'ReASOdd'       : ( '#DeltaNLL Re(A_{S} / A_{#perp})',       'Re(A_{S} / A_{#perp})',        0.20,     0.44,    1, 0.001, 0.01 )
+         , 'ImASOdd'       : ( '#DeltaNLL Im(A_{S} / A_{#perp})',       'Im(A_{S} / A_{#perp})',       -0.06,     0.04,    1, 0.001, 0.01 )
+         , 'f_S'           : ( '#DeltaNLL f_{S}',                       'f_{S}',                        0.00,     0.045,   1, 0.001, 0.01 )
+         , 'ASPhase'       : ( '#DeltaNLL #delta_{S}',                  '#delta_{S}',                   2.3,      3.7,     1, 0.001, 0.01 )
+         , 'ASOddMag2'     : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',   'A_{S}^{2} / A_{#perp}^{2}',    0.0,      0.18,    1, 0.001, 0.01 )
+         , 'ASOddPhase'    : ( '#DeltaNLL #delta_{S} - #delta_{#perp}', '#delta_{S} - #delta_{#perp}', -0.22,     0.18,    1, 0.001, 0.01 )
         }
 
     # check DNLL parameters
@@ -560,10 +709,14 @@ if dllPars :
         if par[0] == 'phiCP' : phiCPPar = True
 
     # float/fix values of some parameters
-    if not phiCPPar :
+    if constLambdaCPSq :
         pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    if constAvgCEvenOdd :
         for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
-    pdfBuild['tagCats'].setConstant('.*')
+
+    if 'sig_ATagBBbar' in ws : ws['sig_ATagBBbar'].setConstant()
+    pdfBuild['tagCatsOS'].setConstant('.*')
+    pdfBuild['tagCatsSS'].setConstant('.*')
     pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
     pdfBuild['timeResModel'].setConstant('.*')
     pdfBuild['signalBMass'].setConstant('.*')
@@ -607,7 +760,7 @@ if dllPars :
             pll.plotOn( parFrame, RooFit.LineColor(kRed), RooFit.Precision( wsPars[par][6] ) )
 
         parFrame.SetMinimum(0.)
-        if par == 'ImApar' : parFrame.SetMaximum(3.)
+        if parFrame.GetMaximum() > 3. : parFrame.SetMaximum(3.)
         parFrame.GetXaxis().SetTitle( wsPars[par][1] )
         parFrame.GetYaxis().SetTitle('#DeltaNLL')
 
