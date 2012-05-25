@@ -972,8 +972,6 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
     return -1;
   }
 
-  static int counter = 0;
-
   // loop over base variables
   for (Int_t varIter = 0; varIter < _numCats; ++varIter) {
     // get input variable
