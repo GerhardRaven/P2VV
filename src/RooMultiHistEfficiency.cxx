@@ -126,6 +126,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
       Int_t index = _super->getIndex();
       std::pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
       assert(r.second);
+      _intVals.insert(make_pair(index, 0.));
    }
    _super->setLabel(current.Data());
 }
@@ -133,6 +134,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
 //_____________________________________________________________________________
 RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name) : 
    RooAbsPdf(other, name),
+   _intVals(other._intVals),
    _prodGenObs(other._prodGenObs),
    _prodGenCode(other._prodGenCode),
    _levels(other._levels),
@@ -340,8 +342,6 @@ Bool_t	RooMultiHistEfficiency::forceAnalyticalInt(const RooAbsArg& var) const
 Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                                     const char* rangeName) const 
 {
-   cout << "RHME::getAnalyticalIntegral " << allVars << endl;
-
    RooArgSet intObs;
 
    int prodCode = 0;
@@ -372,11 +372,24 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
    assert(code > 0);
 
    Double_t val = 0;
+   bool print = false;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       const MultiHistEntry* entry = it->second;
-      val += entry->relative() * entry->effProd().analyticalIntegral(_pdfIntCode, rangeName);
+      double effProd = entry->effProd().analyticalIntegral(_pdfIntCode, rangeName);
+      double rel = entry->relative();
+      val += rel * effProd;
+      if (_intVals[it->first] != effProd) {
+         if (!print) {
+            print = true;
+            cout << endl;
+         }
+         cout << "RMHE::analyticalIntegral: " << rel << " " << effProd << endl;
+         _intVals[it->first] = effProd;
+      }
    }
+
+   if (print) cout << endl;
    return val;
 }
 

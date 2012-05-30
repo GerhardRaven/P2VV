@@ -482,7 +482,7 @@ Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& ana
            << analDeps << " " << (ns ? *ns : RooArgSet()) << " " 
            << (rangeName ? rangeName : "<none>") << endl;
 
-      getCache(pdfObs.get(), pdfObs.get(), rangeName, true);
+      getCache(_pdfObs.get(), _pdfObs.get(), rangeName, true);
       Int_t code = _cacheMgr.lastIndex();
       return 1 + code;
    }

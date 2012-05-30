@@ -45,16 +45,16 @@ spec = {"Bins" : {biased : {'state'   : 'biased',
                               'bounds' : unbiased_bins,
                               'heights' : unbiased_heights}
                   },
-        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : 0.2,
-                      ((biased, "not_biased"), (unbiased, "unbiased")) : 0.2,
-                      ((biased, "biased"),     (unbiased, "not_unbiased")) : 0.6}
+        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.2, 'MinMax' : (0.1, 0.45)},
+                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.2, 'MinMax' : (0.1, 0.45)},
+                      ((biased, "biased"),     (unbiased, "not_unbiased")) : None}
         }
 mhe = MultiHistEfficiency(Name = "RMHE", Original = time_pdf, Observable = t, ConditionalCategories = True, **spec)
 print mhe.getVal()
 
 data = mhe.generate([t, biased, unbiased], 20000)
 
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Minimizer = 'Minuit2', Optimize = 2)
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Minimizer = 'Minuit2', Optimize = 2)
 mhe.fitTo(data, **fitOpts)
 
 f = t.frame()

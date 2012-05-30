@@ -1066,7 +1066,7 @@ class MultiHistEfficiency(Pdf):
             state = entries['state']
             heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
                                Observable = False, Value = v,
-                               MinMax = (0.001, 1)) for i, v in enumerate(heights)]
+                               MinMax = (0.01, 0.99)) for i, v in enumerate(heights)]
             coefficients[category] = (bounds, heights)
             if not base_binning or len(bounds) > len(coefficients[base_binning][0]):
                 base_binning = category
@@ -1080,10 +1080,33 @@ class MultiHistEfficiency(Pdf):
 
         from ROOT import MultiHistEntry
         from ROOT import RooEfficiencyBin
+
+        # Build relative efficiencies
+        relative_efficiencies = {}
+        remaining = None
+
+        for categories, re in relative.iteritems():
+            state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
+
+            # Make realvars for relative efficiencies
+            if re != None:
+                efficiency = RealVar('%s_efficiency' % state_name, Observable = False,
+                                     Value = re['Value'], MinMax = re['MinMax'])
+                relative_efficiencies[state_name] = efficiency
+            elif remaining == None:
+                remaining = state_name
+            else:
+                raise RuntimeError("More than one relative efficiency is None")
+        # FIXME: perhaps this should be a dedicated class too
+        form = '-'.join(['1'] + [e.GetName() for e in relative_efficiencies.itervalues()])
+        relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, relative_efficiencies.values())
+
         for categories, relative_efficiency in relative.iteritems():
+            # Make EfficiencyBins for the bin values
             heights = []
             bin_vars = [{} for i in range(len(base_bounds) - 1)]
-            prefix = pdf_name + '_' + '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
+            state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
+            prefix = pdf_name + '_' + state_name
             for category, state in categories:
                 if cc: conditionals.add(category)
                 category_bounds = coefficients[category][0]
@@ -1095,14 +1118,12 @@ class MultiHistEfficiency(Pdf):
             for i, d in enumerate(bin_vars):
                 cm = self.__make_map(d)
                 name = '%s_%d' % (prefix, i)
-                heights.append(RooEfficiencyBin(name, name, cm))
+                heights.append(RooEfficiencyBin(name, name, cm)) 
 
-            # Make realvars for relative efficiencies
-            efficiency = RealVar('%s_efficiency' % category.GetName(), Observable = False,
-                                    Value = relative_efficiency, MinMax = (0.001, 0.999))
-
+            # BinnedPdf for the shape
             binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = observable,
                                    Binning = binning_name, Coefficients = heights)
+            # EffProd to combine shape with PDF
             eff_prod = EffProd('%s_efficiency' % prefix, Original = pdf, Efficiency = binned_pdf)
 
             # MultiHistEntry
@@ -1112,7 +1133,8 @@ class MultiHistEfficiency(Pdf):
             for category, state in categories:
                 # cp = category_pair(__dref__(category), state)
                 cm[__dref__(category)] = state
-            entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(binned_pdf))
+            efficiency = relative_efficiencies[state_name]
+            entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(efficiency))
             efficiency_entries.push_back(entry)
 
         from ROOT import RooMultiHistEfficiency

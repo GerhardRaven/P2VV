@@ -121,6 +121,9 @@ private:
    BinBoundaries* _binboundaries;
    typedef std::map<Int_t, MultiHistEntry*> HistEntries;
    HistEntries _entries;
+
+   typedef std::map<Int_t, double> IntVals;
+   mutable IntVals _intVals;
       
    // Generation
    mutable RooArgSet _prodGenObs;
