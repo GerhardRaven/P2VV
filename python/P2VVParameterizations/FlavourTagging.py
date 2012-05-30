@@ -327,7 +327,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                 if hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
                     ATagEffVal = kwargs.pop( 'ATagEff0_%d' % index0, 0. )
                     if isinstance( ATagEffVal, RooObject ) : ATagEffVal = ATagEffVal.getVal()
-                    self._ATagEffVals[0][index0].append( ATagEffVal )
+                    self._ATagEffVals[0].append( ATagEffVal )
 
             self._singleTagCatCoefs[0].insert( 0, FormulaVar(  'tagCatCoef0_0'
                                                              , '1-@' + '-@'.join( str(i) for i in range( numTagCats[0] - 1 ) )
@@ -341,6 +341,9 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                     tagCatProd0 -= tagCatCoefVal * ATagEffVal
                 self._ATagEffVals[0].insert( 0, tagCatProd0 / self._singleTagCatCoefs[0][0] )
 
+        else :
+            self._ATagEffVals[0].append(0)
+
         if numTagCats[1] > 1 :
             for index1 in range( 1, numTagCats[1] ) :
                 self._parseArg(  'tagCatCoef%s%d' % ( namePF, index1 ), kwargs, ContainerList = self._singleTagCatCoefs[1]
@@ -352,7 +355,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                 if hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
                     ATagEffVal = kwargs.pop( 'ATagEff%s%d' % ( namePF, index1 ), 0. )
                     if isinstance( ATagEffVal, RooObject ) : ATagEffVal = ATagEffVal.getVal()
-                    self._ATagEffVals[1][index1].append( ATagEffVal )
+                    self._ATagEffVals[1].append( ATagEffVal )
 
             if numTagCats[0] > 0 :
                 self._singleTagCatCoefs[1].insert( 0, FormulaVar(  'tagCatCoef%s0' % namePF
@@ -372,6 +375,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                 self._ATagEffVals[1].insert( 0, None )
 
         else :
+            self._ATagEffVals[1].append(0)
             self._singleTagCatCoefs[1][0] = ConstVar( Name = 'tagCatCoef%s0' % namePF, Value = 1. )
 
         # loop over tagging categories
@@ -438,7 +442,8 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                             # values for the asymmetries are specified
                             avgCEven = 1. + self._AProdVal * self._ANormVal \
                                           + self._AProdVal * self._ATagEffVals[0][index0] + self._ANormVal * self._ATagEffVals[0][index0] \
-                                          + self._AProdVal * self._ATagEffVals[1][index1] + self._ANormVal * self._ATagEffVals[1][index1]
+                                          + self._AProdVal * self._ATagEffVals[1][index1] + self._ANormVal * self._ATagEffVals[1][index1] \
+                                          + self._AProdVal * self._ANormVal * self._ATagEffVals[0][index0] * self._ATagEffVals[1][index1]
                             avgCOdd  = self._AProdVal + self._ANormVal + self._ATagEffVals[0][index0] + self._ATagEffVals[1][index1] \
                                        + self._AProdVal * self._ANormVal * self._ATagEffVals[0][index0] \
                                        + self._AProdVal * self._ANormVal * self._ATagEffVals[1][index1]

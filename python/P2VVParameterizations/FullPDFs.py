@@ -570,10 +570,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # build tagging categories opposite side
             from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
             if nominalPdf or contEstWTag :
-                self._tagCatsOS = TaggingCategories(  tagCat = 'tagCatP2VVOS', DataSet = self._sigSWeightData, estWTagOS = estWTagOS
+                self._tagCatsOS = TaggingCategories(  tagCat = 'tagCatP2VVOS', DataSet = self._sigSWeightData, estWTag = estWTagOS
                                                     , wTagP0Constraint = True if nominalPdf else constrainTagging
                                                     , wTagP1Constraint = True if nominalPdf else constrainTagging )
-                self._tagCatsSS = TaggingCategories(  tagCat = 'tagCatP2VVSS', DataSet = self._sigSWeightData, estWTagSS = estWTagSS
+                self._tagCatsSS = TaggingCategories(  tagCat = 'tagCatP2VVSS', DataSet = self._sigSWeightData, estWTag = estWTagSS
                                                     , SameSide = True
                                                     , wTagP0Constraint = True if nominalPdf else constrainTagging
                                                     , wTagP1Constraint = True if nominalPdf else constrainTagging )
