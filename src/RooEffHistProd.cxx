@@ -148,10 +148,11 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
             EffHistProd::cloneRanges(x_, iset, nset, rangeName, newRange);
          }
          TString suffix = "bin_"; suffix += i;
-         TString name = x->GetName(); name += newRange; name += "_"; name += suffix;
+         TString name = x->GetName(); name += ""; name += suffix; name += "_customizer";
          TString binName = x->GetName(); binName += "_"; binName += suffix;
          RooCustomizer customizer(*parent->efficiency(), name.Data());
-         RooRealVar* cv = static_cast<RooRealVar*>(x->clone(name.Data()));
+         RooRealVar* cv = static_cast<RooRealVar*>(x->clone(binName.Data()));
+         cv->setVal((thisxmin + thisxmax) / 2.);
          cv->setConstant(true);
          customizer.replaceArg(*x, *cv);
          RooAbsReal* I = parent->pdf()->createIntegral
@@ -482,7 +483,7 @@ Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& ana
            << analDeps << " " << (ns ? *ns : RooArgSet()) << " " 
            << (rangeName ? rangeName : "<none>") << endl;
 
-      getCache(_pdfObs.get(), _pdfObs.get(), rangeName, true);
+      getCache(pdfObs.get(), pdfObs.get(), rangeName, true);
       Int_t code = _cacheMgr.lastIndex();
       return 1 + code;
    }
