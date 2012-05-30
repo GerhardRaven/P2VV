@@ -14,9 +14,9 @@ makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = False
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False
+pdfConfig['nominalPdf'] = True
 sumW2Error              = False
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
@@ -63,8 +63,8 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.4, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
-pdfConfig['sameSideTagging']    = True  # nominal: False
-pdfConfig['conditionalTagging'] = False  # nominal: True
+pdfConfig['sameSideTagging']    = False  # nominal: False
+pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
@@ -83,10 +83,11 @@ pdfConfig['AparParam']      = 'Mag2ReIm' # default: 'Mag2ReIm' | nominal: 'phase
 pdfConfig['constrainDeltaM'] = True  # nominal: True
 
 pdfConfig['carthLambdaCP'] = False  # default/nominal: False
-constLambdaCPSq = False  # default: False / nominal: True
+constLambdaCPSq = True  # default: False / nominal: True
 
-constTagCatCoefs = True  # default: True / nominal: False
-constAvgCEvenOdd = False  # default: False / nominal: True
+constTagCatCoefs = False  # default: True / nominal: False
+constAvgCEvenOdd = True  # default: False / nominal: True
+constWTagAsyms   = True  # default/nominal: True
 
 if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
@@ -233,8 +234,9 @@ if ( readData or generateData ) and doFit :
         CEvenOdd.setConstant('avgCEven.*')
         if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-    if pdfConfig['nominalPdf'] :
-        if not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+    if pdfConfig['nominalPdf'] and not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+
+    if pdfConfig['nominalPdf'] or constWTagAsyms :
         pdfBuild['tagCatsOS'].setConstant('wTagAP.*')
         pdfBuild['tagCatsSS'].setConstant('wTagAP.*')
 
