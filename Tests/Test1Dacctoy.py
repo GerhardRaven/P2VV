@@ -15,6 +15,9 @@ from ModelBuilders import *
 
 ws = RooWorkspace("ws")
 
+RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
+RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
+
 #########################################
 ### Define variables and simple PDF's ###
 #########################################

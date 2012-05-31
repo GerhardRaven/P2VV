@@ -49,6 +49,7 @@ private:
 
 class RooAbsReal;
 class RooSuperCategory;
+class RooCustomizer;
 
 class RooEffHistProd: public RooAbsPdf {
 public:
@@ -146,7 +147,7 @@ private:
 
       virtual RooArgList containedArgs(Action) ;
       Double_t getVal() { 
-          return _I->getVal(); 
+          return _I->getVal();
       }
       
       bool trivial() const { return _trivial; }
@@ -164,6 +165,7 @@ private:
       RooEffHistProd* _clone;
       RooAbsReal* _I;
       bool _trivial;
+      std::vector<RooCustomizer*> _customizers;
    };
    
    friend class CacheElem;

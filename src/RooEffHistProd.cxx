@@ -36,6 +36,7 @@
 #include <RooConstVar.h>
 #include <RooAddition.h>
 #include <RooSuperCategory.h>
+#include <RooBinnedPdf.h>
 
 #include <memory>
 #include <algorithm>
@@ -148,18 +149,19 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
             EffHistProd::cloneRanges(x_, iset, nset, rangeName, newRange);
          }
          TString suffix = "bin_"; suffix += i;
-         TString name = x->GetName(); name += ""; name += suffix; name += "_customizer";
+         TString name = x->GetName(); name += "_"; name += suffix; name += "_customizer";
          TString binName = x->GetName(); binName += "_"; binName += suffix;
-         RooCustomizer customizer(*parent->efficiency(), name.Data());
+         RooCustomizer* customizer = new RooCustomizer(*parent->efficiency(), name.Data());
          RooRealVar* cv = static_cast<RooRealVar*>(x->clone(binName.Data()));
          cv->setVal((thisxmin + thisxmax) / 2.);
          cv->setConstant(true);
-         customizer.replaceArg(*x, *cv);
+         customizer->replaceArg(*x, *cv);
          RooAbsReal* I = parent->pdf()->createIntegral
             (iset, nset, parent->getIntegratorConfig(), newRange);
-         RooAbsArg* built = customizer.build(kTRUE);
+         RooAbsArg* built = customizer->build(kTRUE);
          effList.add(*built);
          intList.add(*I);
+         _customizers.push_back(customizer);
       }
       _I = new RooAddition("integral", "integral", effList, intList, kTRUE);
    } else {
@@ -182,6 +184,10 @@ RooEffHistProd::CacheElem::~CacheElem()
 {
    if (_I) delete _I;
    if (_clone) delete _clone;
+   for (std::vector<RooCustomizer*>::const_iterator it = _customizers.begin(),
+           end = _customizers.end(); it != end; ++it) {
+      delete *it;
+   }
 }
 
 //_____________________________________________________________________________
@@ -299,8 +305,10 @@ Double_t RooEffHistProd::evaluate() const
    // double pdfVal = pdf()->getVal(*_pdfNormSet);
    // TEST THIS
    double pdfVal(_pdf);
-   double effVal(_eff);
-   // cout << "RooEffHistProd::evaluate: " << effVal << " " << pdfVal << " "  << endl;
+
+   // This has to be the _unnormalised_ value!!
+   double effVal = efficiency()->getVal();
+   cout << "RooEffHistProd::evaluate: " << effVal << " " << pdfVal << " "  << endl;
    return effVal * pdfVal;
 }
 
@@ -424,25 +432,36 @@ void RooEffHistProd::generateEvent(Int_t code)
 }
 
 //_____________________________________________________________________________
-RooEffHistProd::CacheElem *RooEffHistProd::getCache(const RooArgSet* nset,
+RooEffHistProd::CacheElem* RooEffHistProd::getCache(const RooArgSet* nset,
                                                     const RooArgSet* iset,
                                                     const char* rangeName,
                                                     const bool makeClone) const 
 {
+   cout << "RooEffHistProd::" << GetName() << "::getCache " << *nset << " " << *iset << " "
+        << (rangeName ? rangeName : "<none>") << " " << makeClone << endl;
+      
+   cout << "RooEffHistProd::" << GetName() << " " << this << " cache size "
+        << _cacheMgr.cacheSize() << endl;
+
    Int_t sterileIndex(-1);
    CacheElem* cache = (CacheElem*) _cacheMgr.getObj(nset, iset, &sterileIndex,
                                                     RooNameReg::ptr(rangeName));
-   if (cache) return cache;
+   if (cache) {
+      cout << GetName() << " found cache " << cache << endl;
+      return cache;
+   }
 
+   string clone_name = GetName(); clone_name += "_clone";
    const RooEffHistProd* parent = makeClone ? static_cast<const RooEffHistProd*>
-      (clone(Form("%s_clone", GetName()))) : this;
+      (clone(clone_name.c_str())) : this;
    
    cache = new CacheElem(parent, *iset, nset, rangeName);
+   cout << GetName() << " new cache " << cache << endl;
    _cacheMgr.setObj(nset, iset, cache, RooNameReg::ptr(rangeName));
 
    if (makeClone) {
       cache->setClone(const_cast<RooEffHistProd*>(parent));
-      cache->clone()->_fixedNormSet = normSet(&cache->intObs());
+      cache->clone()->_fixedNormSet = &cache->intObs();
    }
    return getCache(nset, iset, rangeName, makeClone);
 }
@@ -461,24 +480,24 @@ Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& ana
    // No special handling required if a normalization set is given
    if (ns && ns->getSize() > 0) {
       _pdfNormSet = normSet(ns);
-      Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
       cout << "RooEffHistProd::getAnalyticalIntegralWN 0 " << allDeps << " " << analDeps << " "
            << (ns ? *ns : RooArgSet()) << " " << (rangeName ? rangeName : "<none>")  << endl;
+      Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
       return code;
    } else if (_fixedNormSet) {    
       _pdfNormSet = _fixedNormSet;
-      Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
       cout << "RooEffHistProd::getAnalyticalIntegralWN 1 " << allDeps << " " << analDeps << " "
            << (ns ? *ns : RooArgSet()) << " " << (rangeName ? rangeName : "<none>") << endl;
+      Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
       return code;
    } else {
       // No normSet passed
-
       // Declare that we can analytically integrate all requested observables
       std::auto_ptr<RooArgSet> pdfObs(pdf()->getObservables(allDeps));
       analDeps.add(*pdfObs.get());
-      // Construct cache with clone of p.d.f that has fixed normalization set that is passed to input pdf
 
+      // Construct cache with clone of p.d.f that has fixed normalization set that is 
+      // passed to input pdf.
       cout << "RooEffHistProd::getAnalyticalIntegralWN 2 " << allDeps << " " 
            << analDeps << " " << (ns ? *ns : RooArgSet()) << " " 
            << (rangeName ? rangeName : "<none>") << endl;
@@ -502,7 +521,7 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
       iset.add(*pdfObs.get());
    }
 
-   getCache((_pdf.nset() ? _pdf.nset() : pdfObs.get()), &iset, rangeName);
+   getCache(_pdfNormSet, &iset, rangeName);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;
 }

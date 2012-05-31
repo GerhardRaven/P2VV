@@ -1010,8 +1010,7 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
     _binningNames.push_back(bins);
 
     // create category
-    RooBinningCategory* cat = new RooBinningCategory(catName, catName, *var,
-        bins);
+    RooBinningCategory* cat = new RooBinningCategory(catName, catName, *var, bins);
     _baseCatsList.addOwned(*cat);
   }
 
