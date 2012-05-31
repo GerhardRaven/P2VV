@@ -339,6 +339,17 @@ Bool_t	RooMultiHistEfficiency::forceAnalyticalInt(const RooAbsArg& var) const
 }
 
 //_____________________________________________________________________________
+Int_t RooMultiHistEfficiency::getAnalyticalIntegralWN
+(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* normSet, const char* rangeName) const 
+{  
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      it->second->effProd().getAnalyticalIntegralWN(allVars, analVars, normSet, rangeName);
+   }
+   return getAnalyticalIntegral(allVars, analVars, rangeName);
+}
+
+//_____________________________________________________________________________
 Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                                     const char* rangeName) const 
 {
@@ -379,18 +390,29 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
       double effProd = entry->effProd().analyticalIntegral(_pdfIntCode, rangeName);
       double rel = entry->relative();
       val += rel * effProd;
-      if (_intVals[it->first] != effProd) {
-         if (!print) {
-            print = true;
-            cout << endl;
-         }
-         cout << "RMHE::analyticalIntegral: " << rel << " " << effProd << endl;
-         _intVals[it->first] = effProd;
-      }
-   }
 
-   if (print) cout << endl;
+      // if (_intVals[it->first] != effProd) {
+      //    if (!print) {
+      //       print = true;
+      //       cout << endl;
+      //    }
+      //    cout << "RMHE::analyticalIntegral: " << rel << " " << effProd << endl;
+      //    _intVals[it->first] = effProd;
+      // }
+   }
    return val;
+}
+
+//_____________________________________________________________________________
+Double_t RooMultiHistEfficiency::getValV(const RooArgSet* ns) const 
+{  
+   // Return p.d.f. value normalized over given set of observables
+   // cout << "RooMultiHistEfficiency::getValV " << (ns ? *ns : RooArgSet()) << endl;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      it->second->effProd().setNormSet(ns);
+   }
+   return RooAbsPdf::getValV(ns);
 }
 
 //_____________________________________________________________________________

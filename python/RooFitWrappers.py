@@ -1137,6 +1137,7 @@ class MultiHistEfficiency(Pdf):
             entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(efficiency))
             efficiency_entries.push_back(entry)
 
+        print efficiency_entries
         from ROOT import RooMultiHistEfficiency
         mhe = RooMultiHistEfficiency(pdf_name, pdf_name, efficiency_entries)
 

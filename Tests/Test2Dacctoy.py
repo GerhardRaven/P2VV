@@ -46,10 +46,10 @@ ws.put(effdatahist)
 ws.factory("HistPdf::effpdf(t,effdatahist)")
 
 #Case1
-ws.factory("SingleHistEfficiency::goodaccpdf(pdf,effpdf)")
+ws.factory("RooEffHistProd::goodaccpdf(pdf,effpdf)")
 
 #Case2
-ws.factory("SingleHistEfficiency::taccpdf(t_pdf,effpdf)")
+ws.factory("RooEffHistProd::taccpdf(t_pdf,effpdf)")
 ws.factory("PROD::badaccpdf(taccpdf,m_pdf)")
 
 ##############################

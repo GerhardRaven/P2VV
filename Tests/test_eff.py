@@ -15,20 +15,12 @@ from ModelBuilders import *
 
 ws = RooWorkspace("ws")
 
-RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
-RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
-
 #########################################
 ### Define variables and simple PDF's ###
 #########################################
 ws.factory("t[0,10]")
 
-#ws.factory("TruthModel::tres(t)")
-ws.factory("GaussModel::tres(t,tres_m[0],tres_s[0.0005])")
-
-ws.factory("Decay::pdf(t,tau[2,0.01,4.0],tres,SingleSided)")
-#ws.factory("Gaussian::pdf(t,tmean[5.,1.0,3.],tsigma[1.,0.,2.])")
-#ws.factory("Uniform::pdf(t)")
+ws.factory("Uniform::pdf(t)")
 
 ws.defineSet("observables","t")
 
@@ -42,12 +34,10 @@ data = pdf.generate(ws.set('observables'),10000)
 ##############################################
 ### Define acceptance function a la Wouter ###
 ##############################################
-nbins = 10
+nbins = 2
 effh1 = TH1F("effh1","effh1",nbins,ws['t'].getMin(),ws['t'].getMax()) 
-for i in range(1,6):
-    effh1.SetBinContent(i,0.1*i)
-for i in range(6,nbins+1):
-    effh1.SetBinContent(i,1) 
+effh1.SetBinContent(1, 0.5)
+effh1.SetBinContent(2, 1) 
 effdatahist = RooDataHist("effdatahist","effdatahist",RooArgList(ws['t']),effh1) 
 ws.put(effdatahist)
 

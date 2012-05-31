@@ -106,9 +106,15 @@ public:
    virtual void generateEvent(Int_t code);
 
    virtual Bool_t	forceAnalyticalInt(const RooAbsArg& var) const;
+   virtual Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
+                                 const RooArgSet* normSet, const char* rangeName) const;
    virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                const char* rangeName) const;
    virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
+   
+   virtual Double_t getValV(const RooArgSet* ns) const;
+   
+protected:
 
    virtual Double_t evaluate() const;
 
