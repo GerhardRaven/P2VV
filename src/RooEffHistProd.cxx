@@ -308,7 +308,7 @@ Double_t RooEffHistProd::evaluate() const
 
    // This has to be the _unnormalised_ value!!
    double effVal = efficiency()->getVal();
-   cout << "RooEffHistProd::evaluate: " << effVal << " " << pdfVal << " "  << endl;
+   // cout << "RooEffHistProd::evaluate: " << effVal << " " << pdfVal << " "  << endl;
    return effVal * pdfVal;
 }
 
@@ -437,17 +437,17 @@ RooEffHistProd::CacheElem* RooEffHistProd::getCache(const RooArgSet* nset,
                                                     const char* rangeName,
                                                     const bool makeClone) const 
 {
-   cout << "RooEffHistProd::" << GetName() << "::getCache " << *nset << " " << *iset << " "
-        << (rangeName ? rangeName : "<none>") << " " << makeClone << endl;
+   // cout << "RooEffHistProd::" << GetName() << "::getCache " << *nset << " " << *iset << " "
+   //      << (rangeName ? rangeName : "<none>") << " " << makeClone << endl;
       
-   cout << "RooEffHistProd::" << GetName() << " " << this << " cache size "
-        << _cacheMgr.cacheSize() << endl;
+   // cout << "RooEffHistProd::" << GetName() << " " << this << " cache size "
+   //      << _cacheMgr.cacheSize() << endl;
 
    Int_t sterileIndex(-1);
    CacheElem* cache = (CacheElem*) _cacheMgr.getObj(nset, iset, &sterileIndex,
                                                     RooNameReg::ptr(rangeName));
    if (cache) {
-      cout << GetName() << " found cache " << cache << endl;
+      // cout << GetName() << " found cache " << cache << endl;
       return cache;
    }
 
