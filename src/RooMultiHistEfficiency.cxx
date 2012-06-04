@@ -57,38 +57,46 @@ namespace {
 }
 
 //_____________________________________________________________________________
-RooMultiHistEfficiency::CacheElem::CacheElem(const AddEntries& entries, 
+RooMultiHistEfficiency::CacheElem::CacheElem(const HistEntries& entries, 
                                              const RooArgSet& iset,
                                              const char* rangeName)
-   : _I(0)
 {
-   RooArgList effList;
-   RooArgList intList;
-
-   for(AddEntries::const_iterator it = entries.begin(), end = entries.end();
+   for(HistEntries::const_iterator it = entries.begin(), end = entries.end();
        it != end; ++it) {
-      RooAbsReal* eff = it->first;
-      RooEffHistProd* shape = it->second;
-      RooAbsReal* I = shape->createIntegral(iset, rangeName);
-      RooAbsReal* clone = static_cast<RooAbsReal*>(eff->clone(eff->GetName()));
-      effList.add(*clone);
-      intList.add(*I);
+      Int_t index = it->first;
+      const MultiHistEntry* entry = it->second;
+      RooAbsReal* I = entry->effProd()->createIntegral(iset, rangeName);
+      _I.insert(make_pair(index, I));
    }
-   _I = new RooAddition("integral", "integral", effList, intList, kTRUE);
+}
+
+//_____________________________________________________________________________
+Double_t RooMultiHistEfficiency::CacheElem::getVal(const Int_t index) const
+{
+   Integrals::const_iterator it = _I.find(index);
+   assert(it != _I.end());
+   return it->second->getVal();
 }
 
 //_____________________________________________________________________________
 RooArgList RooMultiHistEfficiency::CacheElem::containedArgs(Action) 
 {
    // Return list of all RooAbsArgs in cache element
-   RooArgList l(*_I);
+   RooArgList l;
+   for (Integrals::const_iterator it = _I.begin(), end = _I.end(); it != end;
+        ++it) {
+      l.add(*(it->second));
+   }
    return l;
 }
 
 //_____________________________________________________________________________
 RooMultiHistEfficiency::CacheElem::~CacheElem() 
 {
-   if (_I) delete _I;
+   for (Integrals::const_iterator it = _I.begin(), end = _I.end(); it != end;
+        ++it) {
+      delete it->second;
+   }
 }
 
 //_____________________________________________________________________________
@@ -392,12 +400,7 @@ Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSe
    }
 
    // we don't, so we make it right here....
-   AddEntries entries;
-   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
-        it != end; ++it) {
-      entries.push_back(make_pair(it->second->relative(), it->second->effProd()));
-   }
-   cache = new CacheElem(entries, iset, rangeName);
+   cache = new CacheElem(_entries, iset, rangeName);
    
    Int_t code = _cacheMgr.setObj(&iset, &iset, cache, RooNameReg::ptr(rangeName));
    return 1 + code;
@@ -422,7 +425,18 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
    assert(cache != 0);
 
    // loop over cache, and sum...
-   return cache->getVal();
+   
+   // Calculate the raw value of this p.d.f
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      if (it->second->thisEntry()) {
+         double val = cache->getVal(it->first);
+         // cout << "Entry for " << it->second->effProd().GetName() << " = " << val << endl;
+         return val;
+      }
+   }
+   throw std::string("The efficiency for a state is missing");
+   return 0;
 }
 
 // //_____________________________________________________________________________
