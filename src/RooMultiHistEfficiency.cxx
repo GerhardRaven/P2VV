@@ -25,6 +25,7 @@
 #include <RooSuperCategory.h>
 #include <RooRealVar.h>
 #include <RooAbsReal.h>
+#include <RooAddition.h>
 
 #include <RooMultiHistEfficiency.h>
 
@@ -56,12 +57,48 @@ namespace {
 }
 
 //_____________________________________________________________________________
+RooMultiHistEfficiency::CacheElem::CacheElem(const AddEntries& entries, 
+                                             const RooArgSet& iset,
+                                             const char* rangeName)
+   : _I(0)
+{
+   RooArgList effList;
+   RooArgList intList;
+
+   for(AddEntries::const_iterator it = entries.begin(), end = entries.end();
+       it != end; ++it) {
+      RooAbsReal* eff = it->first;
+      RooEffHistProd* shape = it->second;
+      RooAbsReal* I = shape->createIntegral(iset, rangeName);
+      RooAbsReal* clone = static_cast<RooAbsReal*>(eff->clone(eff->GetName()));
+      effList.add(*clone);
+      intList.add(*I);
+   }
+   _I = new RooAddition("integral", "integral", effList, intList, kTRUE);
+}
+
+//_____________________________________________________________________________
+RooArgList RooMultiHistEfficiency::CacheElem::containedArgs(Action) 
+{
+   // Return list of all RooAbsArgs in cache element
+   RooArgList l(*_I);
+   return l;
+}
+
+//_____________________________________________________________________________
+RooMultiHistEfficiency::CacheElem::~CacheElem() 
+{
+   if (_I) delete _I;
+}
+
+//_____________________________________________________________________________
 RooMultiHistEfficiency::RooMultiHistEfficiency
 (const char *name, const char *title, std::vector<MultiHistEntry> entries) :
    RooAbsPdf(name, title),
    _binboundaries(0),
    _prodGenCode(0),
-   _super(0)
+   _super(0),
+   _cacheMgr(this, 10)
 {  
    // Construct an N+1 dimensional efficiency p.d.f from an N-dimensional efficiency
    // function and a category cat with two states (0,1) that indicate if a given
@@ -72,10 +109,10 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
    for(std::vector<MultiHistEntry>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
       if (observables.getSize() == 0) {
-         observables.add(*(it->effProd().observables()));
+         observables.add(*(it->effProd()->observables()));
          categories.add(it->categories());
       } else {
-         assert(observables.equals(*(it->effProd().observables())));
+         assert(observables.equals(*(it->effProd()->observables())));
          assert(categories.equals(it->categories()));
       }
    }
@@ -87,7 +124,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
    unsigned int most = 0;
    for(std::vector<MultiHistEntry>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
-      RooAbsReal* eff = it->effProd().efficiency();
+      RooAbsReal* eff = it->effProd()->efficiency();
       std::auto_ptr<BinBoundaries> bounds(eff->binBoundaries(*x, x->getMin(), x->getMax()));
       if (!bounds.get()) {
          continue;
@@ -119,6 +156,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
       ownedEntries.push_back(entry);
    }
    TString current = _super->getLabel();
+
    for(std::vector<MultiHistEntry*>::const_iterator it = ownedEntries.begin(),
           end = ownedEntries.end(); it != end; ++it) {
       MultiHistEntry* entry = *it;
@@ -132,14 +170,13 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
 }
 
 //_____________________________________________________________________________
-RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name) : 
+RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name) :
    RooAbsPdf(other, name),
    _intVals(other._intVals),
    _prodGenObs(other._prodGenObs),
    _prodGenCode(other._prodGenCode),
    _levels(other._levels),
-   _pdfIntCode(other._pdfIntCode),
-   _pdfIntObs(other._pdfIntObs)
+   _cacheMgr(other._cacheMgr,this)
 {
    // Copy constructor
    _binboundaries = new BinBoundaries(*other._binboundaries);
@@ -194,7 +231,7 @@ RooAbsGenContext* RooMultiHistEfficiency::genContext(const RooArgSet &vars, cons
    // Return specialized generator context for RooEffHistProds that implements generation
    // in a more efficient way than can be done for generic correlated products
    const MultiHistEntry* entry = _entries.begin()->second;
-   const RooArgSet* observables = entry->effProd().observables();
+   const RooArgSet* observables = entry->effProd()->observables();
    return new RooGenContext(*this, vars, prototype, auxProto, verbose, observables);
 }
 
@@ -231,12 +268,12 @@ Int_t RooMultiHistEfficiency::getGenerator
    RooArgSet genVars;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      const RooEffHistProd& effProd = it->second->effProd();
+      const RooEffHistProd* effProd = it->second->effProd();
       if (genVars.getSize() == 0) {
-         prodGenCode = effProd.getGenerator(testVars, genVars, staticInitOK);
+         prodGenCode = effProd->getGenerator(testVars, genVars, staticInitOK);
       } else {
          RooArgSet prodGenVars;
-         Int_t code = effProd.getGenerator(testVars, prodGenVars, staticInitOK);
+         Int_t code = effProd->getGenerator(testVars, prodGenVars, staticInitOK);
          assert(prodGenVars.equals(genVars) && prodGenCode == code);
       }
    }
@@ -262,7 +299,7 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
    // methods.
    for (HistEntries::iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      it->second->effProd().initGenerator(_prodGenCode);
+      it->second->effProd()->initGenerator(_prodGenCode);
    }
    if (code == 1) {
       return;
@@ -289,7 +326,7 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
          // Skip the combination for which there is no shape (all false).
          continue;
       }
-      double n = it->second->relative();
+      double n = it->second->relative()->getVal();
       if (!_levels.empty()) n += _levels.back().first; // cumulative
       cxcoutD(Generation) << "RooMultiHistEfficiency creating sampler for " << _prodGenObs
                           << " given " << categories
@@ -326,7 +363,7 @@ void RooMultiHistEfficiency::generateEvent(Int_t code)
 
    // now that've assigned the categories, we can use the 'real' samplers
    // which are conditional on the categories.
-   itEntry->second->effProd().generateEvent(_prodGenCode);
+   itEntry->second->effProd()->generateEvent(_prodGenCode);
 }
 
 //_____________________________________________________________________________
@@ -334,86 +371,71 @@ Bool_t	RooMultiHistEfficiency::forceAnalyticalInt(const RooAbsArg& var) const
 {
    assert(!_entries.empty());
    
-   const RooArgSet* observables =  _entries.begin()->second->effProd().observables();
+   const RooArgSet* observables =  _entries.begin()->second->effProd()->observables();
    return observables->contains(var);
-}
-
-//_____________________________________________________________________________
-Int_t RooMultiHistEfficiency::getAnalyticalIntegralWN
-(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* normSet, const char* rangeName) const 
-{  
-   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
-        it != end; ++it) {
-      it->second->effProd().getAnalyticalIntegralWN(allVars, analVars, normSet, rangeName);
-   }
-   return getAnalyticalIntegral(allVars, analVars, rangeName);
 }
 
 //_____________________________________________________________________________
 Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                                     const char* rangeName) const 
 {
-   RooArgSet intObs;
+   // we always do things ourselves -- actually, always delegate further down the line ;-)
+   iset.add(allVars);
 
-   int prodCode = 0;
+   // check if we already have integrals for this combination of factors
+   Int_t sterileIndex(-1);
+   CacheElem* cache = (CacheElem*) _cacheMgr.getObj(&iset, &iset, &sterileIndex,
+                                                    RooNameReg::ptr(rangeName));
+   if (cache!=0) {
+      Int_t code = _cacheMgr.lastIndex();
+      return code + 1;
+   }
+
+   // we don't, so we make it right here....
+   AddEntries entries;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      if (intObs.getSize() == 0) {
-         prodCode = it->second->effProd().getAnalyticalIntegral(allVars, intObs, rangeName);
-         cout << "EffProd can integrate " << intObs << " out of " << allVars << endl;
-      } else {
-         RooArgSet prodIntObs;
-         Int_t code = it->second->effProd().getAnalyticalIntegral(allVars, prodIntObs, rangeName);
-         assert(prodIntObs.equals(intObs));
-         assert(code == prodCode);
-      }
+      entries.push_back(make_pair(it->second->relative(), it->second->effProd()));
    }
-   if (prodCode == 0) {
-      return 0;
-   } else {
-      _pdfIntCode = prodCode;
-      iset.add(intObs);
-      return 1;
-   }
+   cache = new CacheElem(entries, iset, rangeName);
+   
+   Int_t code = _cacheMgr.setObj(&iset, &iset, cache, RooNameReg::ptr(rangeName));
+   return 1 + code;
 }
 
 //_____________________________________________________________________________
 Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rangeName) const 
 {
    assert(code > 0);
-
-   Double_t val = 0;
-   bool print = false;
-   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
-        it != end; ++it) {
-      const MultiHistEntry* entry = it->second;
-      double effProd = entry->effProd().analyticalIntegral(_pdfIntCode, rangeName);
-      double rel = entry->relative();
-      val += rel * effProd;
-
-      if (_intVals[it->first] != effProd) {
-         if (!print) {
-            print = true;
-            cout << endl;
-         }
-         cout << "RMHE::analyticalIntegral: " << rel << " " << effProd << endl;
-         _intVals[it->first] = effProd;
-      }
+  // Calculate integral internally from appropriate integral cache
+  // note: rangeName implicit encoded in code: see _cacheMgr.setObj in getPartIntList...
+   CacheElem *cache = static_cast<CacheElem*>(_cacheMgr.getObjByIndex(code - 1));
+   if (cache==0) {
+      // cache got sterilized, trigger repopulation of this slot, then try again...
+      std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
+      std::auto_ptr<RooArgSet> iset(_cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
+      RooArgSet dummy;
+      Int_t code2 = getAnalyticalIntegral(*iset, dummy, rangeName);
+      assert(code == code2); // must have revived the right (sterilized) slot...
+      return analyticalIntegral(code2, rangeName);
    }
-   return val;
+   assert(cache != 0);
+
+   // loop over cache, and sum...
+   return cache->getVal();
 }
 
-//_____________________________________________________________________________
-Double_t RooMultiHistEfficiency::getValV(const RooArgSet* ns) const 
-{  
-   // Return p.d.f. value normalized over given set of observables
-   // cout << "RooMultiHistEfficiency::getValV " << (ns ? *ns : RooArgSet()) << endl;
-   // for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
-   //      it != end; ++it) {
-   //    it->second->effProd().setNormSet(ns);
-   // }
-   return RooAbsPdf::getValV(ns);
-}
+// //_____________________________________________________________________________
+// Double_t RooMultiHistEfficiency::getValV(const RooArgSet* ns) const 
+// {  
+//    // Return p.d.f. value normalized over given set of observables
+//    // cout << "RooMultiHistEfficiency::getValV " << (ns ? *ns : RooArgSet()) << endl;
+//    // for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+//    //      it != end; ++it) {
+//    //    it->second->effProd()->setNormSet(ns);
+//    // }
+//    return RooAbsPdf::getValV(ns);
+// }
 
 //_____________________________________________________________________________
 Double_t RooMultiHistEfficiency::evaluate() const

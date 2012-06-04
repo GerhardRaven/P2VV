@@ -18,6 +18,7 @@ class RooArgList ;
 class RooEffHistProd;
 class RooAbsCategory;
 class RooMultiHistEfficiency;
+class RooAddition;
 
 class MultiHistEntry {
 public:
@@ -28,17 +29,16 @@ public:
    MultiHistEntry(const MultiHistEntry& other, RooMultiHistEfficiency* parent);
    virtual ~MultiHistEntry();
 
-   const RooEffHistProd& effProd() const {
+   const RooEffHistProd* effProd() const {
       return const_cast<MultiHistEntry*>(this)->effProd();
       // }
    }
 
-   RooEffHistProd& effProd() {
+   RooEffHistProd* effProd() {
       if (m_effProd) {
-         RooEffHistProd* eff = dynamic_cast<RooEffHistProd*>(m_effProd->absArg());
-         return *eff;
+         return dynamic_cast<RooEffHistProd*>(m_effProd->absArg());
       } else {
-         return *m_rawEff;
+         return m_rawEff;
       }
    }
    
@@ -46,8 +46,12 @@ public:
       return m_effProd ? m_effProd->arg().getVal() : m_rawEff->getVal();
    }
 
-   double relative() const {
-      return m_relative ? *m_relative : m_rawRel->getVal();
+   RooAbsReal* relative() {
+      return m_relative ? dynamic_cast<RooAbsReal*>(m_relative->absArg()) : m_rawRel;
+   }
+
+   const RooAbsReal* relative() const{
+      return const_cast<MultiHistEntry*>(this)->relative();      
    }
 
    void setParent(RooMultiHistEfficiency* parent);
@@ -106,13 +110,13 @@ public:
    virtual void generateEvent(Int_t code);
 
    virtual Bool_t	forceAnalyticalInt(const RooAbsArg& var) const;
-   virtual Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
-                                 const RooArgSet* normSet, const char* rangeName) const;
+   // virtual Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
+   //                               const RooArgSet* normSet, const char* rangeName) const;
    virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                const char* rangeName) const;
    virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
    
-   virtual Double_t getValV(const RooArgSet* ns) const;
+   // virtual Double_t getValV(const RooArgSet* ns) const;
    
 protected:
 
@@ -139,8 +143,25 @@ private:
    Levels _levels;
 
    // Integration
-   mutable Int_t _pdfIntCode;
-   mutable RooArgSet _pdfIntObs;
+   typedef vector<pair<RooAbsReal*, RooEffHistProd*> > AddEntries;
+
+   class CacheElem : public RooAbsCacheElement {
+   public:
+      CacheElem(const AddEntries& entries, const RooArgSet& iset, const char* rangeName);
+      virtual ~CacheElem();
+
+      Double_t getVal() const 
+      {
+         return _I->getVal();
+      }
+
+      virtual RooArgList containedArgs(Action);
+
+   private:
+      // Payload
+      RooAbsReal* _I;
+   };
+   mutable RooObjCacheManager _cacheMgr ; // The cache manager
 
    ClassDef(RooMultiHistEfficiency,1) // Generic PDF defined by string expression and list of variables
 };
