@@ -43,7 +43,7 @@ public:
    }
    
    Double_t effVal() {
-      return m_effProd ? *m_effProd : m_rawEff->getVal();
+      return m_effProd ? m_effProd->arg().getVal() : m_rawEff->getVal();
    }
 
    double relative() const {

@@ -49,6 +49,7 @@ private:
 
 class RooAbsReal;
 class RooSuperCategory;
+class RooCustomizer;
 
 class RooEffHistProd: public RooAbsPdf {
 public:
@@ -83,8 +84,6 @@ public:
    virtual void selectNormalization(const RooArgSet*,Bool_t);
    virtual ExtendMode extendMode() const;
 
-   virtual void setNormSet(const RooArgSet* ns);
-
    virtual Double_t expectedEvents(const RooArgSet* nset) const;
 
    // Function evaluation
@@ -114,12 +113,6 @@ protected:
    BinBoundaries _binboundaries;
 
 private:
-
-   const RooAbsReal* eff() const { 
-      // Return pointer to efficiency function in product
-      return (RooAbsReal*) _eff.absArg() ; 
-   }
-   RooRealVar& x() const { return *static_cast<RooRealVar*>(  _observables.first() ) ; }
 
    const char* makeFPName(const TString& prefix, const RooArgSet& iset, const RooArgSet *nset,
                           const TString& postfix) const;
@@ -153,8 +146,8 @@ private:
       virtual ~CacheElem();
 
       virtual RooArgList containedArgs(Action) ;
-      Double_t getVal(Int_t i = 0) { 
-          return _I[i]->getVal(); 
+      Double_t getVal() { 
+          return _I->getVal();
       }
       
       bool trivial() const { return _trivial; }
@@ -170,10 +163,11 @@ private:
       // Payload
       RooArgSet _intObs ;
       RooEffHistProd* _clone;
-      std::vector<RooAbsReal*> _I;
+      RooAbsReal* _I;
       bool _trivial;
+      std::vector<RooCustomizer*> _customizers;
    };
-
+   
    friend class CacheElem;
    CacheElem *getCache(const RooArgSet* nset, const RooArgSet* iset, 
                        const char* rangeName = 0, const bool makeClone = false) const;

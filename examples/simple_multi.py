@@ -46,7 +46,6 @@ spec = {"Bins" : {biased : {'state'   : 'biased',
         }
 mhe = MultiHistEfficiency(Name = "RMHE", Original = original, Observable = t,
                           ConditionalCategories = True, **spec)
-
 data = mhe.generate([t, biased, unbiased], 10000)
 
 ## fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Minimizer = 'Minuit2', Optimize = 2)

@@ -391,14 +391,14 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
       double rel = entry->relative();
       val += rel * effProd;
 
-      // if (_intVals[it->first] != effProd) {
-      //    if (!print) {
-      //       print = true;
-      //       cout << endl;
-      //    }
-      //    cout << "RMHE::analyticalIntegral: " << rel << " " << effProd << endl;
-      //    _intVals[it->first] = effProd;
-      // }
+      if (_intVals[it->first] != effProd) {
+         if (!print) {
+            print = true;
+            cout << endl;
+         }
+         cout << "RMHE::analyticalIntegral: " << rel << " " << effProd << endl;
+         _intVals[it->first] = effProd;
+      }
    }
    return val;
 }
@@ -408,10 +408,10 @@ Double_t RooMultiHistEfficiency::getValV(const RooArgSet* ns) const
 {  
    // Return p.d.f. value normalized over given set of observables
    // cout << "RooMultiHistEfficiency::getValV " << (ns ? *ns : RooArgSet()) << endl;
-   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
-        it != end; ++it) {
-      it->second->effProd().setNormSet(ns);
-   }
+   // for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+   //      it != end; ++it) {
+   //    it->second->effProd().setNormSet(ns);
+   // }
    return RooAbsPdf::getValV(ns);
 }
 
