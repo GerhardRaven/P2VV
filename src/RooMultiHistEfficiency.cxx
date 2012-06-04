@@ -431,7 +431,7 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
         it != end; ++it) {
       if (it->second->thisEntry()) {
          double val = cache->getVal(it->first);
-         // cout << "Entry for " << it->second->effProd().GetName() << " = " << val << endl;
+         // cout << "Integral of " << it->second->effProd()->GetName() << " = " << val << endl;
          return val;
       }
    }
@@ -458,8 +458,8 @@ Double_t RooMultiHistEfficiency::evaluate() const
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       if (it->second->thisEntry()) {
-         double val = it->second->effVal();
-         // cout << "Entry for " << it->second->effProd().GetName() << " = " << val << endl;
+         double val = it->second->effVal() * it->second->relative()->getVal();
+         // cout << "Value of " << it->second->effProd()->GetName() << " = " << val << endl;
          return val;
       }
    }
