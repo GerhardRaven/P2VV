@@ -9,7 +9,7 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.2, 14))
+t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.5, 14))
 m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550))
 
 # Categories
@@ -43,7 +43,8 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 
 # Time resolution model
 from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
-tres = LP2011_TimeResolution(time = t)['model']
+tres = LP2011_TimeResolution(time = t, timeResSF =  dict(Value = 1.0, MinMax = ( 0.5, 5. ),
+                             Constant = True))['model']
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, tres, 'SingleSided'])
@@ -52,13 +53,40 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, tres, 'S
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
 
-# Apply acceptance
+# Create signal component
+signal = Component('signal', (sig_m.pdf(), sig_t), Yield = (30000,100,100000))
+
+# Create combinatorical background component
+bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
+
+bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
+
+from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres
+                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
+                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
+                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
+background = Component('background', (bkg_m.pdf(), bkg_t.pdf()), Yield = (50000,100,300000) )
+
+## Build PDF
+mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name='mass_pdf')
+mass_pdf.Print("t")
+
+# Read input data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120118.root'
 data = readData(input_file, tree_name, cuts = '(sel == 1)',
                 NTuple = True, observables = observables)
+
+## Fit options
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 2, Minimizer = 'Minuit2')
+
+# make sweighted dataset. TODO: use mumu mass as well...
+from P2VVGeneralUtils import SData, splot
+
+mass_pdf.fitTo(data, **fitOpts)
 
 # Build the acceptance using the histogram as starting values
 input_file = '/stuff/PhD/p2vv/data/efficiencies.root'
@@ -95,65 +123,78 @@ spec = {"Bins" : {biased : {'state'   : 'biased',
 mhe = MultiHistEfficiency(Name = "RMHE", Original = sig_t, Observable = t,
                           ConditionalCategories = True, **spec)
 
+# Get the SuperCategory from the MultiHistEfficiency and add it to the data.
 entries = mhe.getEntries()
 superCat = mhe.getSuper()
-data.addColumn(superCat)
 
+mapping = {'only_unbiased' : ["{not_biased;unbiased}"],
+           'only_biased'   : ["{biased;not_unbiased}"],
+           'both'          : ["{biased;unbiased}"   ]}
+split_cat = MappedCategory('split_cat', superCat, mapping, Data = data)
+
+# Plot mass pdf
+from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
+from ROOT import TCanvas
+canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
+obs = [m,]
+for (p,o) in zip(canvas.pads(len(obs)), obs):
+    from P2VVGeneralUtils import plot
+    pdfOpts  = dict()
+    plot(p, o, pdf = mass_pdf, data = data
+         , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+         , plotResidHist = True
+         , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed ),
+                          ## 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
+                          'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                          }
+         )
+
+# Do the sWeights
+for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
+signal_sdata = splot.data('signal')
+## psi_sdata = splot.data('psi_background')
+bkg_sdata = splot.data('background')
+
+# Build the simultaneous PDF for time.
 states = {}
+mapping = dict([(v[0], k) for k, v in mapping.iteritems()])
 for entry in entries:
     label = superCat.lookupType(entry.first).GetName()
+    label = mapping[label]
     states[label] = entry.second.effProd()
 
-sig_t = SimultaneousPdf(Name = 'signal_time', States = states, SplitCategory = superCat)
-
-# Create signal component
-signal = Component('signal', (sig_m.pdf(), sig_t), Yield = (30000,100,100000))
-
-# Create combinatorical background component
-bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
-
-bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
-
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
-bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres
-                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
-                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
-                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
-background = Component('background', (bkg_m.pdf(), bkg_t.pdf()), Yield = (50000,100,300000) )
-
-
-pdf = buildPdf(Components = (signal, background), Observables = (m, t), Name='pdf')
-pdf.Print("t")
-
-## from Helpers import Mapping
-## mapping = Mapping({m : 'm', t : 'tau'}, data)
+pdf = SimultaneousPdf(Name = 'signal_time', States = states, SplitCategory = split_cat)
 
 ## Fit
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-pdf.fitTo(data, NumCPU = 4 , Timer = 1, Minimizer = 'Minuit2', Verbose = True, Optimize = 1)
+## pdf.fitTo(signal_sdata, NumCPU = 4 , Timer = 1, Minimizer = 'Minuit2', Verbose = True, Optimize = 1)
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
-from ROOT import TCanvas
+from ROOT import TCanvas, RooBinning
 canvas = {}
 print 'plotting'
 for cat in split_cat:
     idx, label = cat.getVal(), cat.GetName()
     if label == 'NotMapped':
         continue
-    name = split_cat.GetName() + '_' + label
+    name = superCat.GetName() + '_' + label
     canv = canvas[name] = TCanvas(name, name, 1000, 500)
     obs =  [o for o in pdf.Observables() if hasattr(o,'frame')]
     for (p,o) in zip(canv.pads(len(obs)), obs):
-        dataOpts = dict(Cut = '{0} == {0}::{1}'.format(split_cat['Name'], label) )
-        pdfOpts  = dict(Slice = (split_cat, label), ProjWData = (RooArgSet(split_cat), data))
+        dataOpts = dict(Cut = '{0} == {0}::{1}'.format(split_cat.GetName(), label) )
+        pdfOpts  = dict(Slice = (split_cat, label), ProjWData = (RooArgSet(superCat), signal_sdata))
         from P2VVGeneralUtils import plot
-        plot( p, o, data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
+        plot( p, o, signal_sdata, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
                                             , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)
                                               }
-              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, **dataOpts )
+              , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack,
+                                 Binning = RooBinning(len(biased_bins) - 1, biased_bins),
+                                 **dataOpts )
               , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
-              , logy = ( o == t )
+              , logy = False
               )
