@@ -117,7 +117,17 @@ public:
    virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
    
    // virtual Double_t getValV(const RooArgSet* ns) const;
+
+   const std::map<Int_t, MultiHistEntry*>& getEntries() const
+   {
+      return _entries;
+   }
    
+   const RooSuperCategory* getSuper() const
+   {
+      return _super;
+   }
+
 protected:
 
    virtual Double_t evaluate() const;

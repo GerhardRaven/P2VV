@@ -885,13 +885,12 @@ class SimultaneousPdf( Pdf ) :
         args = { 'Name' : Name }
         pdfOpts = { }
         if 'States' in kwargs :
-            args['States'] = kwargs.pop('States')
-            args['Cat']    = kwargs.pop('SplitCategory')['Name']
             ## pdfs = sorted([(s, pdf) for s, pdf in args['States'].iteritems()], key = lambda (s, pdf): args['Cat'].lookupType(s).getVal())
             ## pdfs = [e[1] for e in pdfs]
-            args['States'] = ','.join( [ '%s = %s' % ( s, pdf['Name'] ) for s, pdf in args['States'].iteritems() ] )
-            spec = 'SIMUL::%(Name)s(%(Cat)s,%(States)s)' % args
-
+            simul = RooSimultaneous(Name, Name, __dref__(kwargs.pop('SplitCategory')))
+            for s, pdf in kwargs.pop('States').iteritems():
+                simul.addPdf(pdf, s)
+            self._addObject(simul)
         elif 'SplitParameters' in kwargs :
             args['Master']    = kwargs.pop('MasterPdf')
             args['SplitCat']  = kwargs.pop('SplitCategory')
@@ -902,11 +901,11 @@ class SimultaneousPdf( Pdf ) :
             if cond : pdfOpts['ConditionalObservables'] = cond
             extCon = args['Master'].ExternalConstraints()
             if extCon : pdfOpts['ExternalConstraints' ] = extCon
+            self._declare(spec)
 
         else :
             raise KeyError, 'P2VV - ERROR: SimultaneousdPdf: Must specify either SplitParameters or States'
 
-        self._declare(spec)
         self._init( Name, 'RooSimultaneous' )
         Pdf.__init__( self , Name = Name , Type = 'RooSimultaneous', **pdfOpts )
 
@@ -1066,7 +1065,9 @@ class MultiHistEfficiency(Pdf):
             state = entries['state']
             heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
                                Observable = False, Value = v,
-                               MinMax = (0.01, 0.99)) for i, v in enumerate(heights)]
+                               MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
+            if len(heights) == 1:
+                heights[0].setConstant(True)
             coefficients[category] = (bounds, heights)
             if not base_binning or len(bounds) > len(coefficients[base_binning][0]):
                 base_binning = category
@@ -1091,7 +1092,7 @@ class MultiHistEfficiency(Pdf):
             # Make realvars for relative efficiencies
             if re != None:
                 efficiency = RealVar('%s_efficiency' % state_name, Observable = False,
-                                     Value = re['Value'], MinMax = re['MinMax'])
+                                     **re)
                 relative_efficiencies[state_name] = efficiency
             elif remaining == None:
                 remaining = state_name
@@ -1137,7 +1138,6 @@ class MultiHistEfficiency(Pdf):
             entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(efficiency))
             efficiency_entries.push_back(entry)
 
-        print efficiency_entries
         from ROOT import RooMultiHistEfficiency
         mhe = RooMultiHistEfficiency(pdf_name, pdf_name, efficiency_entries)
 
@@ -1624,7 +1624,8 @@ def buildSimultaneousPdf(Components, Observables, Spec, Name) :
     if not Observables : raise RuntimeError('no Observables??')
     if not Spec : raise RuntimeError('no Spec??')
 
-    if len(Components)==1 : return args['PDFs'][0] # TODO: how to change the name?
+    if len(Components)==1 :
+        raise RuntimeError("Not implemented")
 
     obs = [o if type(o)==str else o.GetName() for o in Observables]
     if len(Spec) != 1:

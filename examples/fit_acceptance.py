@@ -13,8 +13,8 @@ t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(
 m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550))
 
 # Categories
-biased = Category('triggerDecision', States = {'Biased' : 1, 'NotBiased' : 0})
-unbiased = Category('triggerDecisionUnbiased', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
+biased = Category('triggerDecision', States = {'biased' : 1, 'not_biased' : 0})
+unbiased = Category('triggerDecisionUnbiased', States = {'unbiased' : 1, 'not_unbiased' : 0})
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
 observables = [t, m, biased, unbiased, selected]
@@ -22,7 +22,7 @@ observables = [t, m, biased, unbiased, selected]
 # Build acceptance
 a   = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2))
 c   = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, -1))
-pre = RealVar('eff_pre', Title = 'effective prescale', Value = 0.85, MinMax = (0.5, 0.99), Constant = True)
+pre = RealVar('eff_pre', Title = 'effective prescale', Value = 0.85, MinMax = (0.5, 0.999), Constant = True)
 ub_eff = FormulaVar('pre', '@0', [pre, t])
 b_eff  = FormulaVar('det', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
 
@@ -47,22 +47,64 @@ tres = LP2011_TimeResolution(time = t)['model']
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, tres, 'SingleSided'])
-# Detached
-biased_acceptance   = BinnedPdf(Name = 'biased_acceptance', Observables = [t], Function = biased_eff,
-                                Binning = binning, ConditionalObservables = ( t,))
-biased_pdf          = biased_acceptance * sig_t
-# Prescaled
-unbiased_acceptance = BinnedPdf(Name = 'unbiased_acceptance', Observables = [t], Function = unbiased_eff,
-                                Binning = binning, ConditionalObservables = ( t,))
-unbiased_pdf        = unbiased_acceptance * sig_t
-# Both
-both_acceptance     = BinnedPdf(Name = 'both_acceptance', Observables = [t], Function = both_eff,
-                                Binning = binning, ConditionalObservables = ( t,))
-both_pdf            = both_acceptance * sig_t
 
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
+
+# Apply acceptance
+from P2VVGeneralUtils import readData
+tree_name = 'DecayTree'
+## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120118.root'
+data = readData(input_file, tree_name, cuts = '(sel == 1)',
+                NTuple = True, observables = observables)
+
+# Build the acceptance using the histogram as starting values
+input_file = '/stuff/PhD/p2vv/data/efficiencies.root'
+histogram = 'signal_efficiency_histo_20bins'
+
+from ROOT import TFile
+acceptance_file = TFile.Open(input_file)
+if not acceptance_file:
+    raise ValueError, "Cannot open histogram file %s" % input_file
+histogram = acceptance_file.Get(histogram)
+if not histogram:
+    raise ValueError, 'Cannot get acceptance historgram %s from file' % histogram
+xaxis = histogram.GetXaxis()
+
+from array import array
+biased_bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, histogram.GetNbinsX() + 2)))
+biased_heights = [histogram.GetBinContent(i) for i in range(1, histogram.GetNbinsX() + 1)]
+
+unbiased_bins = array('d', [0, 10])
+unbiased_heights = [0.2]
+
+# Spec to build efficiency shapes
+spec = {"Bins" : {biased : {'state'   : 'biased',
+                            'bounds'  : biased_bins,
+                            'heights' : biased_heights},
+                  unbiased : {'state' : 'unbiased',
+                              'bounds' : unbiased_bins,
+                              'heights' : unbiased_heights}
+                  },
+        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.2, 'MinMax' : (0.1, 0.45)},
+                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.3, 'MinMax' : (0.1, 0.45)},
+                      ((biased, "biased"),     (unbiased, "not_unbiased")) : None}
+        }
+mhe = MultiHistEfficiency(Name = "RMHE", Original = sig_t, Observable = t,
+                          ConditionalCategories = True, **spec)
+
+entries = mhe.getEntries()
+superCat = mhe.getSuper()
+data.addColumn(superCat)
+
+states = {}
+for entry in entries:
+    label = superCat.lookupType(entry.first).GetName()
+    states[label] = entry.second.effProd()
+
+sig_t = SimultaneousPdf(Name = 'signal_time', States = states, SplitCategory = superCat)
 
 # Create signal component
 signal = Component('signal', (sig_m.pdf(), sig_t), Yield = (30000,100,100000))
@@ -79,55 +121,8 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres
                        , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
 background = Component('background', (bkg_m.pdf(), bkg_t.pdf()), Yield = (50000,100,300000) )
 
-# Apply acceptance
-from P2VVGeneralUtils import readData
-tree_name = 'DecayTree'
-## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120118.root'
-read_data = False
-if read_data:
-    data = readData(input_file, tree_name, cuts = '(sel == 1)',
-                    NTuple = True, observables = observables)
-    combination = SuperCategory('combination',[biased, unbiased], Data = data)
-    split_cat = MappedCategory('split_cat', combination, {'OnlyUnbiased' : ["{NotBiased;Unbiased}"],
-                                                          'OnlyBiased'   : ["{Biased;NotUnbiased}"],
-                                                          'Both'         : ["{Biased;Unbiased}"   ]},
-                               Data = data)
-else:
-    time_pdfs = {'OnlyUnbiased' : (unbiased_pdf, (500, 100, 5000), (1000, 100,  5000)),
-                 'OnlyBiased'   : (biased_pdf, (10000, 1000, 50000), (10000, 500,  50000)),
-                 'Both'         : (both_pdf, (10000, 1000, 50000), (10000, 500,  50000))}
-    pdfs = {}
-    datasets = {}
-    for label, (time_pdf, sig_yld, bkg_yld) in time_pdfs.iteritems():
-        signal = Component('signal_%s' % label, (sig_m.pdf(), time_pdf), Yield = sig_yld)
-        bkg = Component('background_%s' % label, (bkg_m.pdf(), bkg_t.pdf()), Yield = bkg_yld)
-        pdfs[label] = buildPdf(Components = (signal, bkg), Observables = (m, t), Name = 'pdf_%s' % label)
-        datasets[label] = pdfs[label].generate((m, t), sig_yld[0] + bkg_yld[0])
-    split_cat = Category('split_cat', States = dict([(label, i) for i, label in enumerate(time_pdfs.iterkeys())]))
-    data = RooDataSet("combined", "combined", RooArgSet(m, t), RooFit.Index(split_cat._target_()),
-                      Imports = datasets.items())
 
-data.table(split_cat).Print('v')
-    
-## Build PDF
-spec = {((t,), split_cat)   : {'OnlyBiased'   : {signal          : {'PDF'   : [biased_pdf],
-                                                                    'Yield' : (10000, 1000, 50000)},
-                                                 background : {'Yield' : (10000, 500,  50000)}
-                                                 },
-                               'OnlyUnbiased' : {signal          : {'PDF'   : [unbiased_pdf],
-                                                                    'Yield' : (500, 100, 5000)},
-                                                 background : {'Yield' : (1000, 100, 5000)}
-                                                 },
-                               'Both'         : {signal          : {'PDF'   : [both_pdf],
-                                                                    'Yield' : (10000, 1000, 50000)},
-                                                 background : {'Yield' : (10000, 500,  50000)}
-                                                 }
-                               }
-        }
-
-pdf = buildSimultaneousPdf(Components = (signal, background), Observables = (m, t), Spec = spec,
-                           Name='pdf')
+pdf = buildPdf(Components = (signal, background), Observables = (m, t), Name='pdf')
 pdf.Print("t")
 
 ## from Helpers import Mapping
@@ -137,7 +132,7 @@ pdf.Print("t")
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-pdf.fitTo(data, NumCPU = 4 , Timer = 1, Minimizer = 'Minuit2')
+pdf.fitTo(data, NumCPU = 4 , Timer = 1, Minimizer = 'Minuit2', Verbose = True, Optimize = 1)
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack

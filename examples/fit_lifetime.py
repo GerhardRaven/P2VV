@@ -145,8 +145,8 @@ for (p,o) in zip(canvas.pads(len(obs)), obs):
          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
          , logy = ( o == t )
-         , components = { 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                          , 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                          , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+         , components = { 'psi_*'   : dict( LineColor = kGreen, LineStyle = kDashed )
+                          , 'bkg_*' : dict( LineColor = kRed,   LineStyle = kDashed )
+                          , 'sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
                           }
          )

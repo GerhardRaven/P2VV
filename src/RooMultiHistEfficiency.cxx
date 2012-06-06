@@ -32,7 +32,7 @@
 ClassImp(RooMultiHistEfficiency);
 
 namespace {
-   const char *makeName(const char* name, const RooArgSet& terms ) {
+   TString makeName(const char* name, const RooArgSet& terms ) {
       TString pname;
       pname = name;
       pname.Append("_");
@@ -47,12 +47,12 @@ namespace {
          }
          pname.Append(arg->GetName());
       }
-      return pname.Data();
+      return pname;
    }
 
    RooSuperCategory* makeSuper(const char* name, const RooArgSet& _catVars) {
-      const char *catName = makeName(name, _catVars );
-      return new RooSuperCategory(catName, catName, _catVars);
+      TString catName = makeName(name, _catVars );
+      return new RooSuperCategory(catName.Data(), catName, _catVars);
    }
 }
 
@@ -424,19 +424,17 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
    }
    assert(cache != 0);
 
-   // loop over cache, and sum...
-   
-   // Calculate the raw value of this p.d.f
+   double sum = 0;
+   double entry = 0;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       if (it->second->thisEntry()) {
-         double val = cache->getVal(it->first);
-         // cout << "Integral of " << it->second->effProd()->GetName() << " = " << val << endl;
-         return val;
+         entry = cache->getVal(it->first);
       }
+      sum += it->second->relative()->getVal() * cache->getVal(it->first);
+      // sum += cache->getVal(it->first) ;
    }
-   throw std::string("The efficiency for a state is missing");
-   return 0;
+   return entry / sum;
 }
 
 // //_____________________________________________________________________________
@@ -458,7 +456,7 @@ Double_t RooMultiHistEfficiency::evaluate() const
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       if (it->second->thisEntry()) {
-         double val = it->second->effVal() * it->second->relative()->getVal();
+         double val = it->second->effVal();
          // cout << "Value of " << it->second->effProd()->GetName() << " = " << val << endl;
          return val;
       }
