@@ -8,7 +8,7 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = True
+doFit                   = False
 fastFit                 = False
 makeObservablePlots     = False
 makeKKMassPlots         = False
@@ -16,7 +16,7 @@ plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = True
+pdfConfig['nominalPdf'] = False
 sumW2Error              = False
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
@@ -61,9 +61,9 @@ pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.4, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
+pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.8, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
-pdfConfig['sameSideTagging']    = False  # nominal: False
+pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
@@ -681,27 +681,33 @@ if dllPars :
         MperpMax =  0.52
 
     wsPars =\
-        {  'phiCP'         : ( '#DeltaNLL #phi_{s}',                    '#phi_{s}',                    -0.22,     0.22,    1, 0.001, 0.05 )
-         , 'lambdaCPSq'    : ( '#DeltaNLL |#lambda|^{2}',               '|#lambda|^{2}',                0.8,      1.0,     1, 0.001, 0.01 )
-         , 'avgCOddSum'    : ( '#DeltaNLL C_{Os}^{avg}',                'C_{Os}^{avg}',                -0.035,    0.100,   1, 0.001, 0.01 )
-         , 'avgCOddTagged' : ( '#DeltaNLL C_{Ot}^{avg}',                'C_{Ot}^{avg}',                -0.100,    0.155,   1, 0.001, 0.01 )
-         , 'A0Mag2'        : ( '#DeltaNLL |A_{0}|^{2}',                 '|A_{0}|^{2}',                  0.51,     0.54,    1, 0.001, 0.01 )
-         , 'AparMag2'      : ( '#DeltaNLL |A_{#parallel}|^{2}',         '|A_{#parallel}|^{2}',         MparMin,  MparMax,  1, 0.001, 0.01 )
-         , 'ReApar'        : ( '#DeltaNLL Re(A_{#parallel})',           'Re(A_{#parallel})',           RparMin,  RparMax,  1, 0.001, 0.01 )
-         , 'ImApar'        : ( '#DeltaNLL Im(A_{#parallel})',           'Im(A_{#parallel})',           IparMin,  IparMax,  1, 0.001, 0.01 )
-         , 'cosAparPhase'  : ( '#DeltaNLL cos(#delta_{#parallel})',     'cos(#delta_{#parallel})',     -1.,      -0.92,    1, 0.001, 0.01 )
-         , 'AparPhase'     : ( '#DeltaNLL #delta_{#parallel}',          '#delta_{#parallel}',           2.8,      3.7,     1, 0.001, 0.01 )
-         , 'AperpMag2'     : ( '#DeltaNLL |A_{#perp}|^{2}',             '|A_{#perp}|^{2}',             MperpMin, MperpMax, 1, 0.001, 0.01 )
-         , 'AperpPhase'    : ( '#DeltaNLL #delta_{#perp}',              '#delta_{#perp}',               2.3,      3.7,     1, 0.001, 0.01 )
-         , 'sqrtfS_Re'     : ( '#DeltaNLL #sqrt{f_{S}}^{R}',            '#sqrt{f_{S}}^{R}',            -0.22,    -0.10,    1, 0.001, 0.01 )
-         , 'sqrtfS_Im'     : ( '#DeltaNLL #sqrt{f_{S}}^{I}',            '#sqrt{f_{S}}^{I}',            -0.060,    0.085,   1, 0.001, 0.01 )
-         , 'ReASOdd'       : ( '#DeltaNLL Re(A_{S} / A_{#perp})',       'Re(A_{S} / A_{#perp})',        0.20,     0.44,    1, 0.001, 0.01 )
-         , 'ImASOdd'       : ( '#DeltaNLL Im(A_{S} / A_{#perp})',       'Im(A_{S} / A_{#perp})',       -0.06,     0.04,    1, 0.001, 0.01 )
-         , 'f_S'           : ( '#DeltaNLL f_{S}',                       'f_{S}',                        0.00,     0.045,   1, 0.001, 0.01 )
-         , 'ASPhase'       : ( '#DeltaNLL #delta_{S}',                  '#delta_{S}',                   2.3,      3.7,     1, 0.001, 0.01 )
-         , 'ASOddMag2'     : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',   'A_{S}^{2} / A_{#perp}^{2}',    0.0,      0.18,    1, 0.001, 0.01 )
-         , 'ASOddPhase'    : ( '#DeltaNLL #delta_{S} - #delta_{#perp}', '#delta_{S} - #delta_{#perp}', -0.22,     0.18,    1, 0.001, 0.01 )
-        }
+    {  'phiCP'           : ( '#DeltaNLL #phi_{s}',                     '#phi_{s}',                     -0.22,     0.22,    1, 0.001, 0.05 )
+     , 'lambdaCPSq'      : ( '#DeltaNLL |#lambda|^{2}',                '|#lambda|^{2}',                 0.8,      1.0,     1, 0.001, 0.01 )
+     , 'avgCOddSum'      : ( '#DeltaNLL C_{Os}^{avg}',                 'C_{Os}^{avg}',                 -0.035,    0.100,   1, 0.001, 0.01 )
+     , 'avgCOddTagged'   : ( '#DeltaNLL C_{Ot}^{avg}',                 'C_{Ot}^{avg}',                 -0.100,    0.155,   1, 0.001, 0.01 )
+     , 'A0Mag2'          : ( '#DeltaNLL |A_{0}|^{2}',                  '|A_{0}|^{2}',                   0.51,     0.54,    1, 0.001, 0.01 )
+     , 'AparMag2'        : ( '#DeltaNLL |A_{#parallel}|^{2}',          '|A_{#parallel}|^{2}',          MparMin,  MparMax,  1, 0.001, 0.01 )
+     , 'ReApar'          : ( '#DeltaNLL Re(A_{#parallel})',            'Re(A_{#parallel})',            RparMin,  RparMax,  1, 0.001, 0.01 )
+     , 'ImApar'          : ( '#DeltaNLL Im(A_{#parallel})',            'Im(A_{#parallel})',            IparMin,  IparMax,  1, 0.001, 0.01 )
+     , 'cosAparPhase'    : ( '#DeltaNLL cos(#delta_{#parallel})',      'cos(#delta_{#parallel})',      -1.,      -0.92,    1, 0.001, 0.01 )
+     , 'AparPhase'       : ( '#DeltaNLL #delta_{#parallel}',           '#delta_{#parallel}',            2.8,      3.7,     1, 0.001, 0.01 )
+     , 'AperpMag2'       : ( '#DeltaNLL |A_{#perp}|^{2}',              '|A_{#perp}|^{2}',              MperpMin, MperpMax, 1, 0.001, 0.01 )
+     , 'AperpPhase'      : ( '#DeltaNLL #delta_{#perp}',               '#delta_{#perp}',                2.3,      3.7,     1, 0.001, 0.01 )
+     , 'sqrtfS_Re'       : ( '#DeltaNLL #sqrt{f_{S}}^{R}',             '#sqrt{f_{S}}^{R}',             -0.22,    -0.10,    1, 0.001, 0.01 )
+     , 'sqrtfS_Im'       : ( '#DeltaNLL #sqrt{f_{S}}^{I}',             '#sqrt{f_{S}}^{I}',             -0.060,    0.085,   1, 0.001, 0.01 )
+     , 'ReASOdd'         : ( '#DeltaNLL Re(A_{S} / A_{#perp})',        'Re(A_{S} / A_{#perp})',         0.20,     0.44,    1, 0.001, 0.01 )
+     , 'ImASOdd'         : ( '#DeltaNLL Im(A_{S} / A_{#perp})',        'Im(A_{S} / A_{#perp})',        -0.06,     0.04,    1, 0.001, 0.01 )
+     , 'f_S'             : ( '#DeltaNLL f_{S}',                        'f_{S}',                         0.00,     0.045,   1, 0.001, 0.01 )
+     , 'ASPhase'         : ( '#DeltaNLL #delta_{S}',                   '#delta_{S}',                    2.3,      3.7,     1, 0.001, 0.01 )
+     , 'ASOddMag2'       : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',    'A_{S}^{2} / A_{#perp}^{2}',     0.0,      0.18,    1, 0.001, 0.01 )
+     , 'ASOddPhase'      : ( '#DeltaNLL #delta_{S} - #delta_{#perp}',  '#delta_{S} - #delta_{#perp}',  -0.22,     0.18,    1, 0.001, 0.01 )
+     , 'ASOddPhase_bin0' : ( '#DeltaNLL #delta_{S0} - #delta_{#perp}', '#delta_{S0} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
+     , 'ASOddPhase_bin1' : ( '#DeltaNLL #delta_{S1} - #delta_{#perp}', '#delta_{S1} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
+     , 'ASOddPhase_bin2' : ( '#DeltaNLL #delta_{S2} - #delta_{#perp}', '#delta_{S2} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
+     , 'ASOddPhase_bin3' : ( '#DeltaNLL #delta_{S3} - #delta_{#perp}', '#delta_{S3} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
+     , 'ASOddPhase_bin4' : ( '#DeltaNLL #delta_{S4} - #delta_{#perp}', '#delta_{S4} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
+     , 'ASOddPhase_bin5' : ( '#DeltaNLL #delta_{S5} - #delta_{#perp}', '#delta_{S5} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
+    }
 
     # check DNLL parameters
     phiCPPar = False
@@ -717,6 +723,8 @@ if dllPars :
         for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
 
     if 'sig_ATagBBbar' in ws : ws['sig_ATagBBbar'].setConstant()
+    for bin in range(5) :
+        if 'sig_ATagBBbar_bin%d' % bin in ws : ws[ 'sig_ATagBBbar_bin%d' % bin ].setConstant()
     pdfBuild['tagCatsOS'].setConstant('.*')
     pdfBuild['tagCatsSS'].setConstant('.*')
     pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
@@ -762,7 +770,7 @@ if dllPars :
             pll.plotOn( parFrame, RooFit.LineColor(kRed), RooFit.Precision( wsPars[par][6] ) )
 
         parFrame.SetMinimum(0.)
-        if parFrame.GetMaximum() > 3. : parFrame.SetMaximum(3.)
+        if parFrame.GetMaximum() > 15. : parFrame.SetMaximum(15.)
         parFrame.GetXaxis().SetTitle( wsPars[par][1] )
         parFrame.GetYaxis().SetTitle('#DeltaNLL')
 

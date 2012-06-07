@@ -915,14 +915,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating signal tagging PDFs from %s data'\
                           % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
                     from RooFitWrappers import HistPdf
-                    self._sig_tagCat_iTag = HistPdf( Name = 'sig_tagCat_iTag', Observables = [tagCatP2VVOS, iTagOS], Data = sigTaggingData )
+                    if not SSTagging :
+                        self._sig_tagCat_iTag = HistPdf(  Name = 'sig_tagCat_iTag'
+                                                        , Observables = [ tagCatP2VVOS, iTagOS ]
+                                                        , Data = sigTaggingData
+                                                       )
+                    else :
+                        self._sig_tagCat_iTag = HistPdf(  Name = 'sig_tagCat_iTag'
+                                                        , Observables = [ tagCatP2VVOS, tagCatP2VVSS, iTagOS, iTagSS ]
+                                                        , Data = sigTaggingData
+                                                       )
                     self._signalComps += self._sig_tagCat_iTag
 
                 else :
                     # use a PDF with variable bin coefficients
-                    if nominalPdf or sigTaggingPdf.startswith('tagUntag') or tagCatP2VVOS.numTypes() == 2 :
+                    if nominalPdf or sigTaggingPdf.startswith('tagUntag')\
+                            or ( tagCatP2VVOS.numTypes() == 2 and ( not SSTagging or tagCatP2VVSS.numTypes() == 2 ) ) :
                         # assume B-Bbar asymmetry is equal for all tagged categories
-                        if tagCatP2VVOS.numTypes() > 2 :
+                        if tagCatP2VVOS.numTypes() > 2 or (SSTagging and tagCatP2VVSS.numTypes() > 2 ) :
                             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: signal tagging PDF:\n'\
                                 + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
                         else :
