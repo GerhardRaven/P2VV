@@ -1099,8 +1099,19 @@ class BTagDecay( Pdf ) :
                            ] :
                 if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
 
+            # put dilutions in RooArgLists
+            from ROOT import RooArgList
+            dilutions0 = RooArgList( '%s_dilutions0' % argDict['Name'] )
+            dilutions1 = RooArgList( '%s_dilutions1' % argDict['Name'] )
+            ADilWTags0 = RooArgList( '%s_ADilWTags0' % argDict['Name'] )
+            ADilWTags1 = RooArgList( '%s_ADilWTags1' % argDict['Name'] )
+            for par in argDict['dilutions0'][ 1 : -1 ].split(',') : dilutions0.add( self.ws()[par] )
+            for par in argDict['dilutions1'][ 1 : -1 ].split(',') : dilutions1.add( self.ws()[par] )
+            for par in argDict['ADilWTags0'][ 1 : -1 ].split(',') : ADilWTags0.add( self.ws()[par] )
+            for par in argDict['ADilWTags1'][ 1 : -1 ].split(',') : ADilWTags1.add( self.ws()[par] )
+
             # put tagging category coefficients and average even and odd coefficients in TObjArrays of RooArgLists
-            from ROOT import TObjArray, RooArgList
+            from ROOT import TObjArray
             avgCEvens   = TObjArray()
             avgCOdds    = TObjArray()
             tagCatCoefs = TObjArray()
@@ -1122,20 +1133,19 @@ class BTagDecay( Pdf ) :
                 avgCOdds.Add(COddsList)
                 tagCatCoefs.Add(catCoefsList)
 
-            wsImport = getattr( self.ws(), 'import' )
-            wsImport( avgCEvens,   avgCEvens.GetName()   )
-            wsImport( avgCOdds,    avgCOdds.GetName()    )
-            wsImport( tagCatCoefs, tagCatCoefs.GetName() )
-            argDict['avgCEvens']   = avgCEvens.GetName()
-            argDict['avgCOdds']    = avgCOdds.GetName()
-            argDict['tagCatCoefs'] = tagCatCoefs.GetName()
-
-            self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag0)s, %(iTag1)s, %(tagCat0)s, %(tagCat1)s, %(tau)s, %(dGamma)s, %(dm)s,"\
-                                              " %(dilutions0)s, %(dilutions1)s, %(ADilWTags0)s, %(ADilWTags1)s,"\
-                                              " %(avgCEvens)s, %(avgCOdds)s, %(tagCatCoefs)s"\
-                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
-                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
-                         )
+            from ROOT import RooBTagDecay
+            self._addObject( RooBTagDecay(  argDict['Name'], argDict['Name'], self.ws()[ argDict['time'] ]
+                                          , self.ws()[ argDict['iTag0'] ], self.ws()[ argDict['iTag1'] ]
+                                          , self.ws()[ argDict['tagCat0'] ], self.ws()[ argDict['tagCat1'] ]
+                                          , self.ws()[ argDict['tau'] ], self.ws()[ argDict['dGamma'] ], self.ws()[ argDict['dm'] ]
+                                          , dilutions0, dilutions1, ADilWTags0, ADilWTags1, avgCEvens, avgCOdds, tagCatCoefs
+                                          , self.ws()[ argDict['coshCoef'] ], self.ws()[ argDict['sinhCoef'] ]
+                                          , self.ws()[ argDict['cosCoef'] ], self.ws()[ argDict['sinCoef'] ]
+                                          , self.ws()[ argDict['resolutionModel'] ]
+                                          , 1 if argDict['decayType'] == 'DoubleSided' else 2 if argDict['decayType'] == 'Flipped' else 0
+                                          , int( argDict['checkVars'] )
+                                         )
+                           )
 
         elif 'tagCat' in kwargs :
             # one tagging category
