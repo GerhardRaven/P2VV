@@ -32,8 +32,8 @@ class LambdaCarth_CPParam( CPParam ) :
         from RooFitWrappers import FormulaVar
         from math import cos, sin
 
-        self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(phiCP), MinMax = ( -2., 2. ) )
-        self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(phiCP), MinMax = ( -2., 2. ) )
+        self._parseArg('ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = cos(-phiCP), MinMax = ( -2., 2. ) )
+        self._parseArg('ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = sin(-phiCP), MinMax = ( -2., 2. ) )
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
                              , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
