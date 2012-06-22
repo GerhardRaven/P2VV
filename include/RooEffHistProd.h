@@ -76,8 +76,8 @@ public:
    virtual void initGenerator(Int_t code);
    virtual void generateEvent(Int_t code);
 
-   virtual Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
-                                         const RooArgSet* normSet, const char* rangeName) const;
+   // virtual Int_t getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
+   //                                       const RooArgSet* normSet, const char* rangeName) const;
    virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const;
    virtual Double_t analyticalIntegral(Int_t code,const char* rangeName=0) const ;
 
@@ -147,7 +147,7 @@ private:
 
       virtual RooArgList containedArgs(Action) ;
       Double_t getVal() { 
-          return _I->getVal();
+          return _I->getVal(_intObs);
       }
       
       bool trivial() const { return _trivial; }

@@ -77,16 +77,43 @@ from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120118.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1)',
-                NTuple = True, observables = observables)
 
+xdata = None
+real_data = False
+if real_data:
+    data = readData(input_file, tree_name, cuts = '(sel == 1)',
+                    NTuple = True, observables = observables)
+    mass_pdf.fitTo(data, **fitOpts)
+    # Plot mass pdf
+    from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
+    from ROOT import TCanvas
+    canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
+    obs = [m,]
+    for (p,o) in zip(canvas.pads(len(obs)), obs):
+        from P2VVGeneralUtils import plot
+        pdfOpts  = dict()
+        plot(p, o, pdf = mass_pdf, data = data
+             , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+             , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+             , plotResidHist = True
+             , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed ),
+                              ## 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
+                              'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                              }
+             )
+    # Do the sWeights
+    for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+    splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
+    data = splot.data('signal')
+    ## psi_sdata = splot.data('psi_background')
+    bkg_sdata = splot.data('background')
+else:
+    data = mhe.generate([t, biased, unbiased], 20000)
 ## Fit options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 2, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
 from P2VVGeneralUtils import SData, splot
-
-mass_pdf.fitTo(data, **fitOpts)
 
 # Build the acceptance using the histogram as starting values
 input_file = '/stuff/PhD/p2vv/data/efficiencies.root'
@@ -132,30 +159,7 @@ mapping = {'only_unbiased' : ["{not_biased;unbiased}"],
            'both'          : ["{biased;unbiased}"   ]}
 split_cat = MappedCategory('split_cat', superCat, mapping, Data = data)
 
-# Plot mass pdf
-from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
-from ROOT import TCanvas
-canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
-obs = [m,]
-for (p,o) in zip(canvas.pads(len(obs)), obs):
-    from P2VVGeneralUtils import plot
-    pdfOpts  = dict()
-    plot(p, o, pdf = mass_pdf, data = data
-         , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-         , plotResidHist = True
-         , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed ),
-                          ## 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
-                          'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
-                          }
-         )
 
-# Do the sWeights
-for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
-signal_sdata = splot.data('signal')
-## psi_sdata = splot.data('psi_background')
-bkg_sdata = splot.data('background')
 
 # Build the simultaneous PDF for time.
 states = {}

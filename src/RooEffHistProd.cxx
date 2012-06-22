@@ -156,8 +156,8 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
          cv->setVal((thisxmin + thisxmax) / 2.);
          cv->setConstant(true);
          customizer->replaceArg(*x, *cv);
-         RooAbsReal* I = parent->pdf()->createIntegral
-            (iset, nset, parent->getIntegratorConfig(), newRange);
+         // FIXME: Use the nset here once we get need the special case!
+         RooAbsReal* I = parent->pdf()->createIntegral(iset, newRange);
          RooAbsArg* built = customizer->build(kTRUE);
          effList.add(*built);
          intList.add(*I);
@@ -165,7 +165,8 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
       }
       _I = new RooAddition("integral", "integral", effList, intList, kTRUE);
    } else {
-      _I = parent->pdf()->createIntegral(iset, nset, parent->getIntegratorConfig(), rangeName);
+         // FIXME: Use the nset here once we get need the special case!
+      _I = parent->pdf()->createIntegral(iset, rangeName);
    }
 }
 
@@ -300,13 +301,18 @@ Double_t RooEffHistProd::getValV(const RooArgSet* ns) const
 //_____________________________________________________________________________
 Double_t RooEffHistProd::evaluate() const
 {
-   // cout << "RooEffHistProd " << GetName() << "::evaluate " << endl;
+   // cout << "RooEffHistProd " << GetName() << "::evaluate norm = " 
+   //      << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) <<endl;
    // Calculate and return 'raw' unnormalized value of p.d.f
    // double pdfVal = pdf()->getVal(*_pdfNormSet);
    // TEST THIS
-   double pdfVal(_pdf);
+   // double pdfVal(_pdf);
 
-   // This has to be the _unnormalised_ value!!
+   // These have to be the _unnormalised_ values!!
+   // FIXME: This needs to be fixed for the special case where the pdf shape depends on the 
+   // normalisation set.
+   double pdfVal = pdf()->getVal();
+
    double effVal = efficiency()->getVal();
    // cout << "RooEffHistProd::evaluate: " << effVal << " " << pdfVal << " "  << endl;
    return effVal * pdfVal;
@@ -466,47 +472,47 @@ RooEffHistProd::CacheElem* RooEffHistProd::getCache(const RooArgSet* nset,
    return getCache(nset, iset, rangeName, makeClone);
 }
 
-//_____________________________________________________________________________
-Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
-                                              const RooArgSet* ns, const char* rangeName) const
-{
-   // Variant of getAnalyticalIntegral that is also passed the normalization set
-   // that should be applied to the integrand of which the integral is request.
-   // For certain operator p.d.f it is useful to overload this function rather
-   // than analyticalIntegralWN() as the additional normalization information
-   // may be useful in determining a more efficient decomposition of the
-   // requested integral
+// //_____________________________________________________________________________
+// Int_t RooEffHistProd::getAnalyticalIntegralWN(RooArgSet& allDeps, RooArgSet& analDeps, 
+//                                               const RooArgSet* ns, const char* rangeName) const
+// {
+//    // Variant of getAnalyticalIntegral that is also passed the normalization set
+//    // that should be applied to the integrand of which the integral is request.
+//    // For certain operator p.d.f it is useful to overload this function rather
+//    // than analyticalIntegralWN() as the additional normalization information
+//    // may be useful in determining a more efficient decomposition of the
+//    // requested integral
    
-   // No special handling required if a normalization set is given
-   if (ns && ns->getSize() > 0) {
-      _pdfNormSet = normSet(ns);
-      cout << "RooEffHistProd::getAnalyticalIntegralWN 0 " << allDeps << " " << analDeps << " "
-           << (ns ? *ns : RooArgSet()) << " " << (rangeName ? rangeName : "<none>")  << endl;
-      Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
-      return code;
-   } else if (_fixedNormSet) {    
-      _pdfNormSet = _fixedNormSet;
-      cout << "RooEffHistProd::getAnalyticalIntegralWN 1 " << allDeps << " " << analDeps << " "
-           << (ns ? *ns : RooArgSet()) << " " << (rangeName ? rangeName : "<none>") << endl;
-      Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
-      return code;
-   } else {
-      // No normSet passed
-      // Declare that we can analytically integrate all requested observables
-      std::auto_ptr<RooArgSet> pdfObs(pdf()->getObservables(allDeps));
-      analDeps.add(*pdfObs.get());
+//    // No special handling required if a normalization set is given
+//    if (ns && ns->getSize() > 0) {
+//       _pdfNormSet = normSet(ns);
+//       cout << "RooEffHistProd::getAnalyticalIntegralWN 0 " << allDeps << " " << analDeps << " "
+//            << (ns ? *ns : RooArgSet()) << " " << (rangeName ? rangeName : "<none>")  << endl;
+//       Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
+//       return code;
+//    } else if (_fixedNormSet) {    
+//       _pdfNormSet = _fixedNormSet;
+//       cout << "RooEffHistProd::getAnalyticalIntegralWN 1 " << allDeps << " " << analDeps << " "
+//            << (ns ? *ns : RooArgSet()) << " " << (rangeName ? rangeName : "<none>") << endl;
+//       Int_t code = _forceNumInt ? 0 : getAnalyticalIntegral(allDeps, analDeps, rangeName);
+//       return code;
+//    } else {
+//       // No normSet passed
+//       // Declare that we can analytically integrate all requested observables
+//       std::auto_ptr<RooArgSet> pdfObs(pdf()->getObservables(allDeps));
+//       analDeps.add(*pdfObs.get());
 
-      // Construct cache with clone of p.d.f that has fixed normalization set that is 
-      // passed to input pdf.
-      cout << "RooEffHistProd::getAnalyticalIntegralWN 2 " << allDeps << " " 
-           << analDeps << " " << (ns ? *ns : RooArgSet()) << " " 
-           << (rangeName ? rangeName : "<none>") << endl;
+//       // Construct cache with clone of p.d.f that has fixed normalization set that is 
+//       // passed to input pdf.
+//       cout << "RooEffHistProd::getAnalyticalIntegralWN 2 " << allDeps << " " 
+//            << analDeps << " " << (ns ? *ns : RooArgSet()) << " " 
+//            << (rangeName ? rangeName : "<none>") << endl;
 
-      getCache(pdfObs.get(), pdfObs.get(), rangeName, true);
-      Int_t code = _cacheMgr.lastIndex();
-      return 1 + code;
-   }
-}
+//       getCache(pdfObs.get(), pdfObs.get(), rangeName, true);
+//       Int_t code = _cacheMgr.lastIndex();
+//       return 1 + code;
+//    }
+// }
 
 //_____________________________________________________________________________
 Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
@@ -514,14 +520,18 @@ Int_t RooEffHistProd::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
 {
    if (_forceNumInt) return 0;
 
-   std::auto_ptr<RooArgSet> pdfObs(pdf()->getObservables(allVars));
-   if (pdfObs->getSize() == 0) {
-      return 0;
-   } else {
-      iset.add(*pdfObs.get());
-   }
+   // std::auto_ptr<RooArgSet> pdfObs(pdf()->getObservables(allVars));
+   // if (pdfObs->getSize() == 0) {
+   //    return 0;
+   // } else {
+   //    iset.add(*pdfObs.get());
+   // }
+   
+   // We delegate further down by claiming to be able to do all of the variables
+   iset.add(allVars);
 
-   getCache((_pdf.nset() ? _pdf.nset() : _pdfNormSet), &iset, rangeName);
+   // getCache((_pdf.nset() ? _pdf.nset() : _pdfNormSet), &iset, rangeName);
+   getCache(&iset, &iset, rangeName);
    Int_t code = _cacheMgr.lastIndex();
    return 1 + code;
 }
@@ -537,7 +547,8 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
       std::auto_ptr<RooArgSet> nset( _cacheMgr.nameSet1ByIndex(code - 1)->select(*vars));
       std::auto_ptr<RooArgSet> iset( _cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
       // const RooArgSet* normSet = _pdfNormSet ? _pdfNormSet : vars.get();
-      cache = getCache(nset.get(), iset.get(), rangeName, (_pdfNormSet == 0));
+      // cache = getCache(nset.get(), iset.get(), rangeName, (_pdfNormSet == 0));
+      cache = getCache(nset.get(), iset.get(), rangeName, false);
    }
    return cache->getVal();
 }

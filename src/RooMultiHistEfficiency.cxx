@@ -15,6 +15,7 @@
 
 #include <memory>
 #include <algorithm>
+#include <sstream>
 
 #include <RooFit.h>
 #include <RooRandom.h>
@@ -25,7 +26,7 @@
 #include <RooSuperCategory.h>
 #include <RooRealVar.h>
 #include <RooAbsReal.h>
-#include <RooAddition.h>
+#include <RooConstVar.h>
 
 #include <RooMultiHistEfficiency.h>
 
@@ -60,13 +61,32 @@ namespace {
 RooMultiHistEfficiency::CacheElem::CacheElem(const HistEntries& entries, 
                                              const RooArgSet& iset,
                                              const char* rangeName)
+   : _iset(iset)
 {
+   bool cats = false;
+   RooArgSet categories = entries.begin()->second->categories();
+   RooArgSet observables(iset);
+   RooAbsArg* cat = categories.first();
+   if (iset.contains(*cat)) {
+      // Integral over only categories
+      cats = true;
+      observables.remove(categories);
+   }
+
    for(HistEntries::const_iterator it = entries.begin(), end = entries.end();
        it != end; ++it) {
       Int_t index = it->first;
       const MultiHistEntry* entry = it->second;
-      RooAbsReal* I = entry->effProd()->createIntegral(iset, rangeName);
-      _I.insert(make_pair(index, I));
+      if (cats && iset.getSize() == categories.getSize()) {
+         stringstream s;
+         string name;
+         s << "integral_" << index;
+         s >> name;
+         _I.insert(make_pair(index, new RooConstVar(name.c_str(), name.c_str(), 1.)));
+      } else {
+         RooAbsReal* I = entry->effProd()->createIntegral(observables, rangeName);
+         _I.insert(make_pair(index, I));
+      }
    }
 }
 
@@ -75,7 +95,9 @@ Double_t RooMultiHistEfficiency::CacheElem::getVal(const Int_t index) const
 {
    Integrals::const_iterator it = _I.find(index);
    assert(it != _I.end());
-   return it->second->getVal();
+   double val = it->second->getVal(_iset);
+   // cout << "CacheElem::getVal " << it->second->GetName() << " = " << val << endl;
+   return val;
 }
 
 //_____________________________________________________________________________
@@ -87,6 +109,7 @@ RooArgList RooMultiHistEfficiency::CacheElem::containedArgs(Action)
         ++it) {
       l.add(*(it->second));
    }
+   l.add(_iset);
    return l;
 }
 
@@ -319,7 +342,6 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
         it != end; ++it) {
       categories.add(it->second->categories());
    }
-   
    _super->recursiveRedirectServers(categories);
 
    // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
@@ -379,16 +401,42 @@ Bool_t	RooMultiHistEfficiency::forceAnalyticalInt(const RooAbsArg& var) const
 {
    assert(!_entries.empty());
    
-   const RooArgSet* observables =  _entries.begin()->second->effProd()->observables();
-   return observables->contains(var);
+   const MultiHistEntry* entry = _entries.begin()->second;
+   const RooArgSet* observables = entry->effProd()->observables();
+   // RooArgSet categories = entry->categories();
+   return observables->contains(var); // || categories.contains(var);
 }
 
 //_____________________________________________________________________________
 Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& iset,
                                                     const char* rangeName) const 
 {
+   RooArgSet categories;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      categories.add(it->second->categories());
+   }
+
+   bool all = true;
+   bool none = true;
+   RooFIter iter = categories.fwdIterator();
+   while (RooAbsArg* cat = iter.next()) {
+      if (!allVars.find(*cat)) {
+         all &= false;
+      } else {
+         none &= false;
+      }
+   }
+   if (!(all ^ none)) {
+      return 0;
+   }
+
    // we always do things ourselves -- actually, always delegate further down the line ;-)
    iset.add(allVars);
+   // The underlying pdf does not depend on the categories
+   // iset.remove(categories);
+
+   bool vars = (!all && iset.getSize() != 0) || (all && iset.getSize() > categories.getSize());
 
    // check if we already have integrals for this combination of factors
    Int_t sterileIndex(-1);
@@ -396,14 +444,26 @@ Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSe
                                                     RooNameReg::ptr(rangeName));
    if (cache!=0) {
       Int_t code = _cacheMgr.lastIndex();
-      return code + 1;
+      code = (code + 1) << 1;
+      code |= vars;
+      code = code << 1;
+      code |= all;
+      return code;
    }
 
    // we don't, so we make it right here....
+   RooArgSet pdfVars(iset);
+   pdfVars.remove(categories);
    cache = new CacheElem(_entries, iset, rangeName);
    
    Int_t code = _cacheMgr.setObj(&iset, &iset, cache, RooNameReg::ptr(rangeName));
-   return 1 + code;
+   // cout << "getAnalyticalIntegral cache code = " << code << endl;
+   code = (code + 1) << 1;
+   code |= vars;
+   code = code << 1;
+   code |= all;
+   // cout << "getAnalyticalIntegral return code = " << code << endl;
+   return code;
 }
 
 //_____________________________________________________________________________
@@ -412,29 +472,40 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
    assert(code > 0);
   // Calculate integral internally from appropriate integral cache
   // note: rangeName implicit encoded in code: see _cacheMgr.setObj in getPartIntList...
-   CacheElem *cache = static_cast<CacheElem*>(_cacheMgr.getObjByIndex(code - 1));
+   bool cats = code & 0x1;
+   bool vars = code & 0x2;
+   Int_t cacheCode = (code >> 2);
+
+   // cout << "analyticalIntegral code = " << code << " cachecode = " << cacheCode << endl;
+ 
+   CacheElem *cache = static_cast<CacheElem*>(_cacheMgr.getObjByIndex(cacheCode - 1));
+   
    if (cache==0) {
       // cache got sterilized, trigger repopulation of this slot, then try again...
-      std::auto_ptr<RooArgSet> vars(getParameters(RooArgSet()));
-      std::auto_ptr<RooArgSet> iset(_cacheMgr.nameSet2ByIndex(code - 1)->select(*vars));
+      std::auto_ptr<RooArgSet> params(getParameters(RooArgSet()));
+      std::auto_ptr<RooArgSet> iset(_cacheMgr.nameSet2ByIndex(cacheCode - 1)->select(*params));
       RooArgSet dummy;
       Int_t code2 = getAnalyticalIntegral(*iset, dummy, rangeName);
-      assert(code == code2); // must have revived the right (sterilized) slot...
+      // must have revived the right (sterilized) slot...
+      // cout << "code = " << code << " code2 = " << code2 << endl;
+      assert(code == code2);
       return analyticalIntegral(code2, rangeName);
    }
    assert(cache != 0);
 
    double sum = 0;
-   double entry = 0;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      if (it->second->thisEntry()) {
-         entry = cache->getVal(it->first);
+      if (!cats && vars && it->second->thisEntry()) {
+         double entry = it->second->relative()->getVal() * cache->getVal(it->first);
+         // cout << "AnalyticalIntegral: entry = " << entry << endl;
+         return entry;
+      } else if (cats) {
+         sum += it->second->relative()->getVal() * cache->getVal(it->first);
       }
-      sum += it->second->relative()->getVal() * cache->getVal(it->first);
-      // sum += cache->getVal(it->first) ;
    }
-   return entry / sum;
+   // cout << "AnalyticalIntegral: sum = " << sum << endl;
+   return sum;
 }
 
 // //_____________________________________________________________________________
@@ -452,17 +523,42 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
 //_____________________________________________________________________________
 Double_t RooMultiHistEfficiency::evaluate() const
 {
+   bool onlyCats = false;
+   bool onlyVars = false;
+   unsigned int code = 0;
+
    // Calculate the raw value of this p.d.f
+   RooArgSet categories(_entries.begin()->second->categories());
+   RooAbsArg* cat = categories.first();
+   if (_normSet && _normSet->getSize() == categories.getSize() && 
+       _normSet->contains(*cat)) {
+      onlyCats = true;
+      code = 1;
+   } else if (_normSet && !_normSet->contains(*cat)) {
+      onlyVars = true;
+      code = 2;
+   } else {
+      // included _normSet == 0
+      code = 3;
+   }
+
+   double val = 0;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       if (it->second->thisEntry()) {
-         double val = it->second->effVal();
-         // cout << "Value of " << it->second->effProd()->GetName() << " = " << val << endl;
-         return val;
+         if (onlyCats) {
+            val = it->second->relative()->getVal();
+         } else if (onlyVars) {
+            val = it->second->relative()->getVal() * it->second->effProd()->getVal();
+         } else {
+            val = it->second->relative()->getVal() * it->second->effProd()->getVal();
+         }
+         // cout << "RooMultiHistEfficiency::evaluate " 
+         //      << it->second->effProd()->GetName() << " case = " << code << " " 
+         //      << " norm " << (_normSet ? *_normSet : RooArgSet()) << " = " << val << endl;
       }
    }
-   throw std::string("The efficiency for a state is missing");
-   return 0;
+   return val;
 }
 
 //_____________________________________________________________________________

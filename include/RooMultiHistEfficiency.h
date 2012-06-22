@@ -42,10 +42,6 @@ public:
       }
    }
    
-   Double_t effVal() {
-      return m_effProd ? m_effProd->arg().getVal() : m_rawEff->getVal();
-   }
-
    RooAbsReal* relative() {
       return m_relative ? dynamic_cast<RooAbsReal*>(m_relative->absArg()) : m_rawRel;
    }
@@ -168,6 +164,7 @@ private:
       // Payload
       typedef std::map<Int_t, RooAbsReal*> Integrals;
       Integrals _I;
+      RooArgSet _iset;
    };
    mutable RooObjCacheManager _cacheMgr ; // The cache manager
 
