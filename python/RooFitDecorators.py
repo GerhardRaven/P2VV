@@ -253,6 +253,15 @@ from ROOT import RooRealVar
 RooRealVar.format          = __wrap_kw_subs( RooRealVar.format )
 from ROOT import RooAbsCollection
 RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
+from ROOT import RooMCStudy
+RooMCStudy.plotPull = __wrap_kw_subs( RooMCStudy.plotPull)
+RooMCStudy.plotError = __wrap_kw_subs( RooMCStudy.plotError)
+RooMCStudy.plotNLL = __wrap_kw_subs( RooMCStudy.plotNLL)
+RooMCStudy.plotParam = __wrap_kw_subs( RooMCStudy.plotParam)
+RooMCStudy.plotParamOn = __wrap_kw_subs( RooMCStudy.plotParamOn)
+from ROOT import RooDataSet
+RooDataSet.plotOnXY = __wrap_kw_subs( RooDataSet.plotOnXY )
+
 #from ROOT import RooSimCloneTool
 #RooSimCloneTool.build = __wrap_kw_subs(RooSimCloneTool.build )
 #from ROOT import RooDataHist

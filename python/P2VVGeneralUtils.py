@@ -799,10 +799,12 @@ class SData( object ) :
         self._splot = RooStats.SPlot(Name+"_splotdata",Name+"_splotdata",Data,Pdf._var, RooArgList( p._var for p in self._yields ) )
         self._sdata = self._splot.GetSDataSet()
         self._data = dict()
+        self._pdf = Pdf
     def usedObservables( self ) :
         return self._observables
     def components( self ):
         return [ i.GetName()[2:] for i in self._yields ]
+    def Pdf(self) : return self._pdf
     def Yield(self, Component ) :
         yname = 'N_%s'% Component
         for y in self._yields :
