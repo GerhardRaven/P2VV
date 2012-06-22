@@ -113,6 +113,7 @@ class JpsiVCarthesian_AmplitudeSet( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
         ambiguityPars = kwargs.pop( 'AmbiguityParameters', False )
 
+        from math import sqrt, cos, sin
         ReApar  = sqrt( Apar2  / A02 ) * cos(AparPh  - A0Ph)
         ImApar  = sqrt( Apar2  / A02 ) * sin(AparPh  - A0Ph)
         ReAperp = sqrt( Aperp2 / A02 ) * cos(AperpPh - A0Ph)
@@ -125,7 +126,6 @@ class JpsiVCarthesian_AmplitudeSet( AmplitudeSet ) :
             ReAperp = -ReAperp
             ImAS    = -ImAS
 
-        from math import sqrt, cos, sin
         self._parseArg( 'ReA0',    kwargs, Title = 'Re(A_0)',    Value = 1.,      Constant = True      )
         self._parseArg( 'ImA0',    kwargs, Title = 'Im(A_0)',    Value = 0.,      Constant = True      )
         self._parseArg( 'ReApar',  kwargs, Title = 'Re(A_par)',  Value = ReApar,  MinMax = ( -1., 1. ) )
@@ -139,6 +139,8 @@ class JpsiVCarthesian_AmplitudeSet( AmplitudeSet ) :
             self._createBinnedAmp( 'ReAS', 'Re(A_S)', ReAS, ( -1., 1. ), self._KKMass, self._KKMassBinning )
             self._createBinnedAmp( 'ImAS', 'Im(A_S)', ImAS, ( -1., 1. ), self._KKMass, self._KKMassBinning )
         else :
+            self._KKMass = None
+            self._KKMassBinning = None
             self._parseArg( 'ReAS', kwargs, Title = 'Re(A_S)', Value = ReAS, MinMax = ( -1., 1. ) )
             self._parseArg( 'ImAS', kwargs, Title = 'Im(A_S)', Value = ImAS, MinMax = ( -1., 1. ) )
 
@@ -184,6 +186,8 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
             self._createBinnedAmp( 'ASMag2',  '|A_S|^2', AS2,    ( 0.,       1.      ), self._KKMass, self._KKMassBinning )
             self._createBinnedAmp( 'ASPhase', 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMass, self._KKMassBinning )
         else :
+            self._KKMass = None
+            self._KKMassBinning = None
             self._parseArg( 'ASMag2',  kwargs, Title = '|A_S|^2', Value = AS2,    MinMax = ( 0.,       1.      ) )
             self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
 
@@ -199,20 +203,20 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
 class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
         ambiguityPars = kwargs.pop( 'AmbiguityParameters', False )
+        polarSWave = kwargs.pop( 'PolarSWave', 'deltaPerp' )
+        AparParam  = kwargs.pop( 'AparParameterization', 'phase' )
 
         from math import pi
         deltaPar  = AparPh  - A0Ph
         deltaPerp = AperpPh - A0Ph
-        deltaS    = ASPh    - A0Ph
+        deltaS    = ASPh    - ( AperpPh if polarSWave == 'deltaPerp' else A0Ph )
         if ambiguityPars :
             deltaPar  = -deltaPar
             deltaPerp = pi - deltaPerp
-            deltaS    = -deltaS
+            deltaS    = ( pi - deltaS ) if polarSWave == 'deltaPerp' else -deltaS
 
         from math import sqrt, sin, cos
         from RooFitWrappers import FormulaVar
-        polarSWave = kwargs.pop( 'PolarSWave', True )
-        AparParam  = kwargs.pop( 'AparParameterization', 'phase' )
 
         # A_0
         self._parseArg( 'A0Mag2',  kwargs, Title = '|A0|^2',  Value = A02, MinMax = ( 0., 1. ) )
@@ -258,14 +262,43 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
 
         if polarSWave :
             if self._KKMass and self._KKMassBinning :
-                self._createBinnedAmp( 'f_S',     'S wave fraction', f_S,    (  0.,    1.    ), self._KKMass, self._KKMassBinning )
-                self._createBinnedAmp( 'ASPhase', 'delta_S',         deltaS, ( -2.*pi, 2.*pi ), self._KKMass, self._KKMassBinning )
-            else :
-                self._parseArg( 'f_S',     kwargs, Title = 'S wave fraction', Value = f_S,    MinMax = (  0.,      1.      ) )
-                self._parseArg( 'ASPhase', kwargs, Title = 'delta_S',         Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
+                self._createBinnedAmp( 'f_S', 'S wave fraction', f_S, ( 0., 1. ), self._KKMass, self._KKMassBinning )
+                if polarSWave == 'deltaPerp' :
+                    self._createBinnedAmp( 'ASOddPhase', 'delta_S - delta_perp', deltaS, ( -2. * pi, 2. * pi )
+                                          , self._KKMass, self._KKMassBinning )
+                else :
+                    self._createBinnedAmp( 'ASPhase', 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMass, self._KKMassBinning )
 
-            self._ASMag2 = FormulaVar( 'ASMag2', '@0 / (1. - @0)', [ self._f_S ], Title = '|A_S|^2' )
-            ASAmp = Polar2_Amplitude( 'AS', self._ASMag2, self._ASPhase, -1 )
+            else :
+                self._parseArg( 'f_S', kwargs, Title = 'S wave fraction', Value = f_S, MinMax = ( 0., 1. ) )
+                if polarSWave == 'deltaPerp' :
+                    self._parseArg( 'ASOddPhase', kwargs, Title = 'delta_S - delta_perp', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
+                else :
+                    self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
+
+            if polarSWave == 'deltaPerp' :
+                self._ReAS = FormulaVar(  'ReAS'
+                                        , 'sqrt(@0 / (1. - @0)) * cos(@1+@2)'
+                                        , [ self._f_S, self._ASOddPhase, self._AperpPhase ]
+                                        , Title = 'Re(A_S)'
+                                       )
+                self._ImAS = FormulaVar(  'ImAS'
+                                        , 'sqrt(@0 / (1. - @0)) * sin(@1+@2)'
+                                        , [ self._f_S, self._ASOddPhase, self._AperpPhase ]
+                                        , Title = 'Im(A_S)'
+                                       )
+
+            else :
+                self._ReAS = FormulaVar(  'ReAS'
+                                        , 'sqrt(@0 / (1. - @0)) * cos(@1)'
+                                        , [ self._f_S, self._ASPhase ]
+                                        , Title = 'Re(A_S)'
+                                       )
+                self._ImAS = FormulaVar(  'ImAS'
+                                        , 'sqrt(@0 / (1. - @0)) * sin(@1)'
+                                        , [ self._f_S, self._ASPhase ]
+                                        , Title = 'Im(A_S)'
+                                       )
 
         else :
             if self._KKMass and self._KKMassBinning :
@@ -282,7 +315,7 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
             self._ReAS = FormulaVar( 'ReAS', '@0 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im ], Title = 'Re(A_S)' )
             self._ImAS = FormulaVar( 'ImAS', '@1 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im ], Title = 'Im(A_S)' )
 
-            ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1 )
+        ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1, None, self._ASPhase if hasattr( self, '_ASPhase' ) else None )
 
         self._check_extraneous_kw( kwargs )
         AmplitudeSet.__init__( self, A0Amp, AparAmp, AperpAmp, ASAmp, Conditionals = [ self._KKMass ] if self._KKMass else [ ] )
@@ -291,6 +324,8 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
 class JpsiVBank_AmplitudeSet( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
         ambiguityPars = kwargs.pop( 'AmbiguityParameters', False )
+        polarSWave = kwargs.pop( 'PolarSWave',           'deltaPerp' )
+        AparParam  = kwargs.pop( 'AparParameterization', 'phase'     )
 
         from math import pi
         deltaPar  = AparPh  - A0Ph
@@ -303,8 +338,6 @@ class JpsiVBank_AmplitudeSet( AmplitudeSet ) :
 
         from math import sqrt, sin, cos
         from RooFitWrappers import FormulaVar
-        polarSWave = kwargs.pop( 'PolarSWave',           True    )
-        AparParam  = kwargs.pop( 'AparParameterization', 'phase' )
 
         # A_0
         self._parseArg( 'ReA0', kwargs, Title = 'Re(A_0)', Value = 1., Constant = True )
