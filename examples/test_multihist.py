@@ -48,8 +48,8 @@ spec = {"Bins" : {biased : {'state'   : 'biased',
                               'bounds' : unbiased_bins,
                               'heights' : unbiased_heights}
                   },
-        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.2, 'MinMax' : (0.1, 0.45), "Constant" : True},
-                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.3, 'MinMax' : (0.1, 0.45), "Constant" : True},
+        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.2, 'MinMax' : (0.1, 0.45)},
+                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.3, 'MinMax' : (0.1, 0.45)},
                       ((biased, "biased"),     (unbiased, "not_unbiased")) : None}
         }
 mhe = MultiHistEfficiency(Name = "RMHE", Original = time_pdf, Observable = t, ConditionalCategories = False, **spec)
