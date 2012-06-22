@@ -103,8 +103,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
         self._parseArg( 'estWTag',    kwargs, Title = 'Estimated wrong-tag probability',         Value = 0.25,  MinMax = ( 0.,  0.5 ) )
         self._parseArg( 'p0',         kwargs, Title = 'p0  tagging parameter',                   Value = 0.392, MinMax = ( 0.,  0.5 ) )
-        self._parseArg( 'p1',         kwargs, Title = 'p1  tagging parameter',                   Value = 1.035, MinMax = ( 0.8, 1.2 ) )
-        self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong-tag probability', Value = 0.391, MinMax = ( 0.,  0.5 )
+        self._parseArg( 'p1',         kwargs, Title = 'p1  tagging parameter',                   Value = 1.000, MinMax = ( 0.8, 1.2 ) )
+        self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong-tag probability', Value = 0.392, MinMax = ( 0.,  0.5 )
                        , Constant = True
                       )
 
@@ -115,7 +115,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
             constraints.append( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p0
                                                     , ConstVar( Name = 'p0_mean',  Value = 0.392 )
-                                                    , ConstVar( Name = 'p0_sigma', Value = 0.009 )
+                                                    , ConstVar( Name = 'p0_sigma', Value = 0.008 )
                                                    ]
                                    )
                               )
@@ -126,8 +126,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p1
-                                                    , ConstVar( Name = 'p1_mean',  Value = 1.035 )
-                                                    , ConstVar( Name = 'p1_sigma', Value = 0.024 )
+                                                    , ConstVar( Name = 'p1_mean',  Value = 1.000 )
+                                                    , ConstVar( Name = 'p1_sigma', Value = 0.023 )
                                                    ]
                                    )
                               )
@@ -487,8 +487,8 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
 ## Tagging categories classes ##
 ################################
 
-def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., avgEstWTag = 0.39, P0    = 0.392, P1    = 1.04
-                                                                                                , P0Err = 0.009, P1Err = 0.02
+def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., avgEstWTag = 0.39, P0    = 0.392, P1    = 1.00
+                                                                                                , P0Err = 0.008, P1Err = 0.02
                                                                                                 , AP0   = 0.,    AP1   = 0.
                            ) :
     assert data, 'getTagCatParamsFromData(): no data set found'
@@ -717,16 +717,16 @@ class Linear_TaggingCategories( TaggingCategories ) :
 
         # get linear calibration parameters
         self._parseArg(  'avgEstWTag', kwargs, Name = 'avgEstWTag' + tagType
-                       , Value = 0.391 if tagType == 'OS' else 0.324
+                       , Value = 0.392 if tagType == 'OS' else 0.350
                        , ObjectType = 'ConstVar' )
         self._parseArg(  'wTagP0',     kwargs, Name = 'wTagP0' + tagType, Title = 'Average wrong-tag parameter p_0'
                        , Value = 0.392 if tagType == 'OS' else 0.350
-                       , Error = 0.009 if tagType == 'OS' else 0.015
+                       , Error = 0.008 if tagType == 'OS' else 0.072
                        , MinMax = (  0.,  0.5 )
                       )
         self._parseArg(  'wTagP1', kwargs, Name = 'wTagP1' + tagType, Title = 'Average wrong-tag parameter p_1'
-                       , Value = 1.035 if tagType == 'OS' else 0.509
-                       , Error = 0.024 if tagType == 'OS' else 0.155
+                       , Value = 1.000 if tagType == 'OS' else 1.00
+                       , Error = 0.023 if tagType == 'OS' else 0.16
                        , MinMax = (  0., 2. )
                       )
         self._parseArg(  'wTagAP0', kwargs, Name = 'wTagAP0' + tagType, Title = 'Wrong tag parameter p_0 asymmetry'
@@ -742,7 +742,7 @@ class Linear_TaggingCategories( TaggingCategories ) :
         if wTagP0Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
-            constraints.append( Pdf(  Name = self._wTagP0.GetName() + tagType + '_constraint', Type = Gaussian
+            constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP0
                                                     , ConstVar( Name = 'wTagP0' + tagType + '_mean',  Value = self._wTagP0.getVal()   )
                                                     , ConstVar( Name = 'wTagP0' + tagType + '_sigma', Value = self._wTagP0.getError() )
