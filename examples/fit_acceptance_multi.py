@@ -9,29 +9,15 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.5, 14))
+t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
 m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550))
 
 # Categories
-biased = Category('triggerDecision', States = {'biased' : 1, 'not_biased' : 0})
-unbiased = Category('triggerDecisionUnbiased', States = {'unbiased' : 1, 'not_unbiased' : 0})
+biased = Category('triggerDecision', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
+unbiased = Category('triggerDecisionUnbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
 observables = [t, m, biased, unbiased, selected]
-
-# Build acceptance
-a   = RealVar('a', Title = 'a', Value = 1.45, MinMax = (1, 2))
-c   = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, -1))
-pre = RealVar('eff_pre', Title = 'effective prescale', Value = 0.85, MinMax = (0.5, 0.999), Constant = True)
-ub_eff = FormulaVar('pre', '@0', [pre, t])
-b_eff  = FormulaVar('det', "(@0 > 0.) ? (1 / (1 + (@1 * @0) ** (@2))) : 0.0001", [t, a, c])
-
-biased_eff   = FormulaVar('biased_eff',   "@0 * (1 - @1)", [b_eff, ub_eff])
-unbiased_eff = FormulaVar('unbiased_eff', "@0 * (1 - @1)", [ub_eff, b_eff])
-both_eff     = FormulaVar('both_eff',     "@0 * @1",       [ub_eff, b_eff])
-
-from P2VVBinningBuilders import build1DVerticalBinning
-binning, eff_func = build1DVerticalBinning('time_binning', b_eff, t, 0.05, 1.)
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -42,9 +28,11 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
-tres = LP2011_TimeResolution(time = t, timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-                             Constant = True))['model']
+## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
+## tres = LP2011_TimeResolution(time = t, timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+##                              Constant = True))['model']
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+tres = TimeResolution(time = t).model()
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, tres, 'SingleSided'])
@@ -89,8 +77,8 @@ from array import array
 biased_bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, histogram.GetNbinsX() + 2)))
 biased_heights = [histogram.GetBinContent(i) for i in range(1, histogram.GetNbinsX() + 1)]
 
-unbiased_bins = array('d', [0, 10])
-unbiased_heights = [0.2]
+unbiased_bins = array('d', [0.3, 14])
+unbiased_heights = [0.5]
 
 # Spec to build efficiency shapes
 spec = {"Bins" : {biased : {'state'   : 'biased',
@@ -100,8 +88,8 @@ spec = {"Bins" : {biased : {'state'   : 'biased',
                               'bounds' : unbiased_bins,
                               'heights' : unbiased_heights}
                   },
-        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.2, 'MinMax' : (0.1, 0.45)},
-                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.3, 'MinMax' : (0.1, 0.45)},
+        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.48, 'MinMax' : (0.3, 0.6), "Constant" : True},
+                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.50, 'MinMax' : (0.3, 0.6), "Constant" : True},
                       ((biased, "biased"),     (unbiased, "not_unbiased")) : None}
         }
 pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t, Observable = t,
@@ -112,10 +100,13 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120118.root'
 
+## Fit options
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
+
 xdata = None
-real_data = False
+real_data = True
 if real_data:
-    data = readData(input_file, tree_name, cuts = '(sel == 1)',
+    data = readData(input_file, tree_name, cuts = '(sel == 1 && (triggerDecision == 1 || triggerDecisionUnbiased == 1))',
                     NTuple = True, observables = observables)
     mass_pdf.fitTo(data, **fitOpts)
     # Plot mass pdf
@@ -136,6 +127,9 @@ if real_data:
                               }
              )
     # Do the sWeights
+    # make sweighted dataset. TODO: use mumu mass as well...
+    from P2VVGeneralUtils import SData, splot
+
     for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
     splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
     data = splot.data('signal')
@@ -143,17 +137,10 @@ if real_data:
     bkg_sdata = splot.data('background')
 else:
     data = pdf.generate([t, biased, unbiased], 25000)
-## Fit options
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
 # Get the SuperCategory from the MultiHistEfficiency and add it to the data.
 entries = pdf.getEntries()
 super_cat = pdf.getSuper()
-
-mapping = {'only_unbiased' : ["{not_biased;unbiased}"],
-           'only_biased'   : ["{biased;not_unbiased}"],
-           'both'          : ["{biased;unbiased}"   ]}
-split_cat = MappedCategory('split_cat', super_cat, mapping, Data = data)
 
 ## Fit
 print 'fitting data'
@@ -166,15 +153,21 @@ from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas, RooBinning
 canvas = {}
 print 'plotting'
-for cat in split_cat:
-    idx, label = cat.getVal(), cat.GetName()
-    if label == 'NotMapped':
-        continue
-    name = super_cat.GetName() + '_' + label
-    canv = canvas[name] = TCanvas(name, name, 1000, 500)
+
+plots = [{biased : "biased", unbiased : "unbiased"},
+         {biased : "not_biased", unbiased : "unbiased"},
+         {biased : "biased", unbiased : "not_unbiased"}]
+
+for states in plots:
+    name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states.iteritems()])
+    canv = canvas[name] = TCanvas(name, name, 500, 500)
+    title = name.replace('triggerDecisionUnbiased', 'unbiased')
+    title = title.replace('triggerDecision', 'biased')
+    canv.SetTitle(title)
     obs =  [o for o in pdf.Observables() if hasattr(o,'frame')]
     for (p,o) in zip(canv.pads(len(obs)), obs):
-        cat_data = data.reduce('{0} == {0}::{1}'.format(split_cat.GetName(), label))
+        cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states.iteritems()])
+        cat_data = data.reduce(cuts)
         pdfOpts = dict(ProjWData = (RooArgSet(biased, unbiased), cat_data))
         from P2VVGeneralUtils import plot
         plot( p, o, cat_data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
@@ -183,5 +176,5 @@ for cat in split_cat:
               , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack,
                                  Binning = RooBinning(len(biased_bins) - 1, biased_bins))
               , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
-              , logy = False
+              , logy = True
               )

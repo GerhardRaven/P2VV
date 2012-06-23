@@ -18,7 +18,7 @@ RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration)
 
 obj  = RooObject( workspace = 'workspace')
 
-t = RealVar('time', Title = 'decay time', Unit = 'ps',  Observable = True, MinMax = (0, 5))
+t = RealVar('time', Title = 'decay time', Unit = 'ps',  Observable = True, MinMax = (0, 10))
 
 from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 res_model = TimeResolution(time = t)
@@ -34,10 +34,10 @@ biased = Category('biased', States = {'biased' : 1, 'not_biased' : 0}, Observabl
 
 # Binnings
 from array import array
-biased_bins = array('d', [0, 1, 3, 5])
-biased_heights = [0.1, 0.5, 0.9]
+biased_bins = array('d', [0, 1, 2, 3.5, 5, 7.5, 10])
+biased_heights = [0.1, 0.2, 0.3, 0.4, 0.5, 0.9]
 
-unbiased_bins = array('d', [0, 5])
+unbiased_bins = array('d', [0, 10])
 unbiased_heights = [0.5]
 
 # Spec to build efficiency shapes
@@ -48,17 +48,17 @@ spec = {"Bins" : {biased : {'state'   : 'biased',
                               'bounds' : unbiased_bins,
                               'heights' : unbiased_heights}
                   },
-        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.2, 'MinMax' : (0.1, 0.45)},
-                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.3, 'MinMax' : (0.1, 0.45)},
+        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.2, 'MinMax' : (0.1, 0.45), "Constant" : True},
+                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.3, 'MinMax' : (0.1, 0.45), "Constant" : True},
                       ((biased, "biased"),     (unbiased, "not_unbiased")) : None}
         }
-mhe = MultiHistEfficiency(Name = "RMHE", Original = time_pdf, Observable = t, ConditionalCategories = False, **spec)
+mhe = MultiHistEfficiency(Name = "RMHE", Original = time_pdf, Observable = t, ConditionalCategories = True, **spec)
 
 data = mhe.generate([t, biased, unbiased], 20000)
 entries = mhe.getEntries()
 
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Minimizer = 'Minuit2', Optimize = 0)
-mhe.fitTo(data, **fitOpts)
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Minimizer = 'Minuit2', Optimize = 1)
+result = mhe.fitTo(data, **fitOpts)
 
 print mhe.getVal()
 

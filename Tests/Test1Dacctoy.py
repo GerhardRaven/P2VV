@@ -52,7 +52,7 @@ binning = RooBinning(len(bins) - 1, bins)
 t.setBinning(binning, 'acceptance_binning')
 
 binned_pdf = BinnedPdf(Name = 'acceptance_shape', Observable = t,
-                       Binning = binning.GetName(), Coefficients = heights)
+                       Binning = 'acceptance_binning', Coefficients = heights)
 pdf = binned_pdf * time_pdf
 
 ##############################

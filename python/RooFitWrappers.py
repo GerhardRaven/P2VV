@@ -1066,6 +1066,7 @@ class MultiHistEfficiency(Pdf):
             heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
                                Observable = False, Value = v,
                                MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
+            # Fix the first bin.
             if len(heights) == 1:
                 heights[0].setConstant(True)
             coefficients[category] = (bounds, heights)
@@ -1146,7 +1147,7 @@ class MultiHistEfficiency(Pdf):
 
         extraOpts = dict()
         if conditionals :
-            extraOpts['ConditionalObservables'] = conditionals
+            self['ConditionalObservables'] = conditionals
 
         constraints = pdf.ExternalConstraints()
         if constraints : extraOpts['ExternalConstraints' ] = constraints
