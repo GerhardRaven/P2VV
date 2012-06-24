@@ -1,24 +1,3 @@
-import itertools
-def valid_combinations(states):
-    all_states = []
-    for level in states:
-        all_states.extend(level.keys())
-    labels = [[(state, label.GetName()) for label in state] for state in all_states]
-    all_combinations = list(itertools.product(*labels))
-    valid = []
-    def good(combination):
-        s = set(combination)
-        for level in states:
-            level_good = False
-            for entry in level.iteritems():
-                if entry in s:
-                    level_good = True
-                    break
-            if not level_good:
-                return level_good
-        return True
-    return filter(good, all_combinations)
-
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
 
@@ -34,15 +13,11 @@ t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(
 m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550))
 
 # Categories
-hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
-hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
-hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-trigger_states = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased]
-
+biased = Category('triggerDecision', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
+unbiased = Category('triggerDecisionUnbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, selected]
+observables = [t, m, biased, unbiased, selected]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -100,58 +75,40 @@ xaxis = histogram.GetXaxis()
 
 from array import array
 biased_bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, histogram.GetNbinsX() + 2)))
+biased_heights = [histogram.GetBinContent(i) for i in range(1, histogram.GetNbinsX() + 1)]
+
 unbiased_bins = array('d', [0.3, 14])
-
-hlt2_biased_heights = [histogram.GetBinContent(i) for i in range(1, histogram.GetNbinsX() + 1)]
-hlt2_unbiased_heights = [0.5]
-
-hlt1_biased_heights = [0.75 for i in range(1, histogram.GetNbinsX() + 1)]
-hlt1_unbiased_heights = [0.5]
-
-
-valid = valid_combinations([{hlt1_biased : 'biased', hlt1_unbiased : 'unbiased'}, {hlt2_biased : 'biased', hlt2_unbiased : 'unbiased'}])
+unbiased_heights = [0.5]
 
 # Spec to build efficiency shapes
-spec = {"Bins" : {hlt1_biased : {'state'   : 'biased',
-                                 'bounds'  : biased_bins,
-                                 'heights' : hlt1_biased_heights},
-                  hlt1_unbiased : {'state' : 'unbiased',
-                                   'bounds' : unbiased_bins,
-                                   'heights' : hlt1_unbiased_heights},
-                  hlt2_biased : {'state'   : 'biased',
-                                 'bounds'  : biased_bins,
-                                 'heights' : hlt2_biased_heights},
-                  hlt2_unbiased : {'state' : 'unbiased',
-                                   'bounds' : unbiased_bins,
-                                   'heights' : hlt2_unbiased_heights}
-                  }
+spec = {"Bins" : {biased : {'state'   : 'biased',
+                            'bounds'  : biased_bins,
+                            'heights' : biased_heights},
+                  unbiased : {'state' : 'unbiased',
+                              'bounds' : unbiased_bins,
+                              'heights' : unbiased_heights}
+                  },
+        "Relative" : {((biased, "biased"),     (unbiased, "unbiased")) : {'Value' : 0.48, 'MinMax' : (0.3, 0.6), "Constant" : True},
+                      ((biased, "not_biased"), (unbiased, "unbiased")) : {'Value' : 0.50, 'MinMax' : (0.3, 0.6), "Constant" : True},
+                      ((biased, "biased"),     (unbiased, "not_unbiased")) : None}
         }
+pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t, Observable = t,
+                          ConditionalCategories = True, **spec)
+pdf.Print('v')
 # Read input data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120118.root'
 
 ## Fit options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
-data = None
+xdata = None
 real_data = True
 if real_data:
-    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+    data = readData(input_file, tree_name, cuts = '(sel == 1 && (triggerDecision == 1 || triggerDecisionUnbiased == 1))',
                     NTuple = True, observables = observables)
-    total = data.sumEntries()
-
-    rel_spec = {}
-    for comb in valid:
-        cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
-        rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
-
-    spec['Relative'] = rel_spec
-    pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t, Observable = t,
-                              ConditionalCategories = True, **spec)
-    pdf.Print('v')
-
     mass_pdf.fitTo(data, **fitOpts)
     # Plot mass pdf
     from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
@@ -180,14 +137,7 @@ if real_data:
     ## psi_sdata = splot.data('psi_background')
     bkg_sdata = splot.data('background')
 else:
-    rel_spec = {}
-    for comb in valid:
-        cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
-        rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
-    pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t, Observable = t,
-                              ConditionalCategories = True, **spec)
-    pdf.Print('v')        
-    data = pdf.generate([t, hlt1_biased, hlt1_unbiased, hlt2_unbiased, hlt2_biased], 25000)
+    data = pdf.generate([t, biased, unbiased], 25000)
 
 # Get the SuperCategory from the MultiHistEfficiency and add it to the data.
 entries = pdf.getEntries()
@@ -197,7 +147,7 @@ super_cat = pdf.getSuper()
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-## result = pdf.fitTo(data, **fitOpts)
+result = pdf.fitTo(data, **fitOpts)
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
@@ -205,15 +155,21 @@ from ROOT import TCanvas, RooBinning
 canvas = {}
 print 'plotting'
 
-for states in spec['Relative'].keys():
-    name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
+plots = [{biased : "biased", unbiased : "unbiased"},
+         {biased : "not_biased", unbiased : "unbiased"},
+         {biased : "biased", unbiased : "not_unbiased"}]
+
+for states in plots:
+    name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states.iteritems()])
     canv = canvas[name] = TCanvas(name, name, 500, 500)
-    canv.SetTitle(name)
+    title = name.replace('triggerDecisionUnbiased', 'unbiased')
+    title = title.replace('triggerDecision', 'biased')
+    canv.SetTitle(title)
     obs =  [o for o in pdf.Observables() if hasattr(o,'frame')]
     for (p,o) in zip(canv.pads(len(obs)), obs):
-        cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
+        cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states.iteritems()])
         cat_data = data.reduce(cuts)
-        pdfOpts = dict(ProjWData = (RooArgSet(*trigger_states), cat_data))
+        pdfOpts = dict(ProjWData = (RooArgSet(biased, unbiased), cat_data))
         from P2VVGeneralUtils import plot
         plot( p, o, cat_data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
                                             , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)
