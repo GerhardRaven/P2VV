@@ -25,7 +25,8 @@ parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120620_MagDownMagUp.root'
 else :
     pdfConfig['nTupleName'] = None
     pdfConfig['nTupleFile'] = None
@@ -60,10 +61,10 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRela
 pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
-pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
+pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.8, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
-pdfConfig['sameSideTagging']    = True  # nominal: False
+pdfConfig['sameSideTagging']    = False  # nominal: False
 pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
@@ -76,14 +77,14 @@ pdfConfig['numEvents'] = 32000
 pdfConfig['signalFraction'] = 0.67
 pdfConfig['massRangeBackground'] = False
 
-pdfConfig['amplitudeParam'] = 'bank' # default: 'bank' | nominal: 'phasesSWaveFrac'
-pdfConfig['polarSWave']     = True  # default/nominal: True
-pdfConfig['AparParam']      = 'Mag2ReIm' # default: 'Mag2ReIm' | nominal: 'phase'
+pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'phasesSWaveFrac'
+pdfConfig['ASParam']        = 'deltaPerp'  # default/nominal: 'deltaPerp'
+pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 
 pdfConfig['constrainDeltaM'] = True  # nominal: True
 
 pdfConfig['carthLambdaCP'] = False  # default/nominal: False
-constLambdaCPSq = True  # default: False / nominal: True
+constLambdaCPSq = False  # default/nominal: False
 
 constTagCatCoefs = True  # default: True / nominal: False
 constAvgCEvenOdd = True  # default: False / nominal: True
@@ -265,7 +266,7 @@ if ( readData or generateData ) and doFit :
     else                 : fitResult = pdf.fitTo( fitData,                          Save = True, **fitOpts )
 
     # reparameterize amplitudes
-    if not pdfConfig['nominalPdf'] and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave']\
+    if not pdfConfig['nominalPdf'] and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' \
             and pdfConfig['AparParam'] == 'Mag2ReIm' :
         from ROOT import RooArgSet
         parList = fitResult.floatParsFinal()
@@ -438,7 +439,8 @@ if pdfConfig['makePlots'] :
              , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
             )
 
-if makeKKMassPlots and pdfConfig['parameterizeKKMass'] and fitResult and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['polarSWave']:
+if makeKKMassPlots and pdfConfig['parameterizeKKMass'] and fitResult and pdfConfig['amplitudeParam'] == 'bank'\
+        and pdfConfig['ASParam'] != 'ReIm' :
     # create S-wave phase plots
     nKKBins = pdfBuild['KKMassBinning'].numBins()
 
@@ -782,3 +784,121 @@ if dllPars :
             elif canvIter == 0 : namePF = '('
             else : namePF = ')'
             canv.Print( canvFileName + namePF )
+
+sums = {
+    'numEv'    : 0.
+  , 'numOS'    : 0., 'numOSExcl'    : 0.
+  , 'numSS'    : 0., 'numSSExcl'    : 0.
+  , 'numComb'  : 0., 'numCombExcl'  : 0.
+  , 'etaOS'    : 0., 'etaOSExcl'    : 0.
+  , 'etaSS'    : 0., 'etaSSExcl'    : 0.
+  , 'etaComb'  : 0., 'etaCombExcl'  : 0.
+  , 'wOS'      : 0., 'wOSExcl'      : 0.
+  , 'wSS'      : 0., 'wSSExcl'      : 0.
+  , 'wComb'    : 0., 'wCombExcl'    : 0.
+  , 'dilOS'    : 0., 'dilOSExcl'    : 0.
+  , 'dilSS'    : 0., 'dilSSExcl'    : 0.
+  , 'dilComb'  : 0., 'dilCombExcl'  : 0.
+  , 'dil2OS'   : 0., 'dil2OSExcl'   : 0.
+  , 'dil2SS'   : 0., 'dil2SSExcl'   : 0.
+  , 'dil2Comb' : 0., 'dil2CombExcl' : 0.
+}
+
+for varSet in fitData :
+  weight = fitData.weight()
+  sums['numEv'] += weight
+
+  if varSet.getCatIndex('tagdecision_os') != 0 :
+    etaOS  = varSet.getRealValue('tagomega_os')
+    wTagOS = 0.392 + 1.000 * ( etaOS - 0.392 )
+    dilOS  = 1. - 2. * wTagOS
+
+    sums['numOS']  += weight
+    sums['etaOS']  += weight * etaOS
+    sums['wOS']    += weight * wTagOS
+    sums['dilOS']  += weight * dilOS
+    sums['dil2OS'] += weight * dilOS**2
+
+    if varSet.getCatIndex('tagdecision_ss') == 0 :
+      sums['numOSExcl']  += weight
+      sums['etaOSExcl']  += weight * etaOS
+      sums['wOSExcl']    += weight * wTagOS
+      sums['dilOSExcl']  += weight * dilOS
+      sums['dil2OSExcl'] += weight * dilOS**2
+
+      sums['numComb']  += weight
+      sums['etaComb']  += weight * etaOS
+      sums['wComb']    += weight * wTagOS
+      sums['dilComb']  += weight * dilOS
+      sums['dil2Comb'] += weight * dilOS**2
+
+  if varSet.getCatIndex('tagdecision_ss') != 0 :
+    etaSS  = varSet.getRealValue('tagomega_ss')
+    wTagSS = 0.350 + 1.00 * ( etaSS - 0.350 )
+    dilSS  = 1. - 2. * wTagSS
+
+    sums['numSS']  += weight
+    sums['etaSS']  += weight * etaSS
+    sums['wSS']    += weight * wTagSS
+    sums['dilSS']  += weight * dilSS
+    sums['dil2SS'] += weight * dilSS**2
+
+    if varSet.getCatIndex('tagdecision_os') == 0 :
+      sums['numSSExcl']  += weight
+      sums['etaSSExcl']  += weight * etaSS
+      sums['wSSExcl']    += weight * wTagSS
+      sums['dilSSExcl']  += weight * dilSS
+      sums['dil2SSExcl'] += weight * dilSS**2
+
+      sums['numComb']  += weight
+      sums['etaComb']  += weight * etaSS
+      sums['wComb']    += weight * wTagSS
+      sums['dilComb']  += weight * dilSS
+      sums['dil2Comb'] += weight * dilSS**2
+
+  if varSet.getCatIndex('tagdecision_os') != 0 and varSet.getCatIndex('tagdecision_ss') != 0 :
+    dilSign = +1. if varSet.getCatIndex('tagdecision_os') == varSet.getCatIndex('tagdecision_ss') else -1.
+    dilComb = ( dilOS + dilSign * dilSS ) / ( 1. + dilSign * dilOS * dilSS )
+    wTagComb = ( 1. - dilComb ) / 2.
+
+    sums['numComb']  += weight
+    sums['etaComb']  += weight * wTagComb
+    sums['wComb']    += weight * wTagComb
+    sums['dilComb']  += weight * dilComb
+    sums['dil2Comb'] += weight * dilComb**2
+
+    sums['numCombExcl']  += weight
+    sums['etaCombExcl']  += weight * wTagComb
+    sums['wCombExcl']    += weight * wTagComb
+    sums['dilCombExcl']  += weight * dilComb
+    sums['dil2CombExcl'] += weight * dilComb**2
+
+print
+print 'number of events:       %.4f' % sums['numEv']
+print 'number of OS events:    %.4f (%.4f)'   % ( sums['numOS'],   sums['numOSExcl']   )
+print 'number of SS events:    %.4f (%.4f)'   % ( sums['numSS'],   sums['numSSExcl']   )
+print 'number of Comb. events: %.4f (%.4f)\n' % ( sums['numComb'], sums['numCombExcl'] )
+
+print 'OS    eff.: %.4f (%.4f)'   % ( sums['numOS']   / sums['numEv'], sums['numOSExcl']   / sums['numEv'] )
+print 'SS    eff.: %.4f (%.4f)'   % ( sums['numSS']   / sums['numEv'], sums['numSSExcl']   / sums['numEv'] )
+print 'Comb. eff.: %.4f (%.4f)\n' % ( sums['numComb'] / sums['numEv'], sums['numCombExcl'] / sums['numEv'] )
+
+print 'OS    <eta>: %.4f (%.4f)'   % ( sums['etaOS']   / sums['numOS'],   sums['etaOSExcl']   / sums['numOSExcl']   )
+print 'SS    <eta>: %.4f (%.4f)'   % ( sums['etaSS']   / sums['numSS'],   sums['etaSSExcl']   / sums['numSSExcl']   )
+print 'Comb. <eta>: %.4f (%.4f)\n' % ( sums['etaComb'] / sums['numComb'], sums['etaCombExcl'] / sums['numCombExcl'] )
+
+print 'OS    <w>: %.4f (%.4f)'   % ( sums['wOS']   / sums['numOS'],   sums['wOSExcl']   / sums['numOSExcl']   )
+print 'SS    <w>: %.4f (%.4f)'   % ( sums['wSS']   / sums['numSS'],   sums['wSSExcl']   / sums['numSSExcl']   )
+print 'Comb. <w>: %.4f (%.4f)\n' % ( sums['wComb'] / sums['numComb'], sums['wCombExcl'] / sums['numCombExcl'] )
+
+print 'OS    <dil>: %.4f (%.4f)'   % ( sums['dilOS']   / sums['numOS'],   sums['dilOSExcl']   / sums['numOSExcl']   )
+print 'SS    <dil>: %.4f (%.4f)'   % ( sums['dilSS']   / sums['numSS'],   sums['dilSSExcl']   / sums['numSSExcl']   )
+print 'Comb. <dil>: %.4f (%.4f)\n' % ( sums['dilComb'] / sums['numComb'], sums['dilCombExcl'] / sums['numCombExcl'] )
+
+print 'OS    <dil2>: %.4f (%.4f)'   % ( sums['dil2OS']   / sums['numOS'],   sums['dil2OSExcl']   / sums['numOSExcl']   )
+print 'SS    <dil2>: %.4f (%.4f)'   % ( sums['dil2SS']   / sums['numSS'],   sums['dil2SSExcl']   / sums['numSSExcl']   )
+print 'Comb. <dil2>: %.4f (%.4f)\n' % ( sums['dil2Comb'] / sums['numComb'], sums['dil2CombExcl'] / sums['numCombExcl'] )
+
+print 'OS    <eff * dil2>: %.4f%% (%.4f%%)'   % ( sums['dil2OS']   / sums['numEv'] * 100., sums['dil2OSExcl']   / sums['numEv'] * 100. )
+print 'SS    <eff * dil2>: %.4f%% (%.4f%%)'   % ( sums['dil2SS']   / sums['numEv'] * 100., sums['dil2SSExcl']   / sums['numEv'] * 100. )
+print 'Comb. <eff * dil2>: %.4f%% (%.4f%%)\n' % ( sums['dil2Comb'] / sums['numEv'] * 100., sums['dil2CombExcl'] / sums['numEv'] * 100. )

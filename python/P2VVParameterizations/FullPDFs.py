@@ -205,7 +205,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['massRangeBackground'] = False
 
         self['amplitudeParam'] = 'phasesSWaveFrac'       # 'phasesSWaveFrac' / 'ReIm' / 'bank'
-        self['polarSWave']     = 'deltaPerp'             # '' / 'delta0' / 'deltaPerp'
+        self['ASParam']        = 'deltaPerp'             # 'delta0' / 'deltaPerp' / 'ReIm'
         self['AparParam']      = 'cos'                   # 'phase' / 'cos' / 'real' / 'ReIm'
 
         self['constrainDeltaM'] = True
@@ -314,7 +314,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         massRangeBackground = pdfConfig.pop('massRangeBackground')
 
         amplitudeParam = pdfConfig.pop('amplitudeParam')
-        polarSWave     = pdfConfig.pop('polarSWave')
+        ASParam        = pdfConfig.pop('ASParam')
         AparParam      = pdfConfig.pop('AparParam')
 
         constrainDeltaM = pdfConfig.pop('constrainDeltaM')
@@ -667,13 +667,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
-            self._amplitudes = Amplitudes( PolarSWave = 'deltaPerp' if nominalPdf else polarSWave
+            self._amplitudes = Amplitudes( ASParameterization = 'deltaPerp' if nominalPdf else ASParam
                                           , AparParameterization = 'phase' if nominalPdf else AparParam
                                           , **commonArgs )
 
         elif amplitudeParam == 'bank' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVBank_AmplitudeSet as Amplitudes
-            self._amplitudes = Amplitudes( PolarSWave = polarSWave, AparParameterization = AparParam
+            self._amplitudes = Amplitudes( ASParameterization = ASParam, AparParameterization = AparParam
                                           , **commonArgs )
 
         else :
@@ -1345,7 +1345,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             while splitCatState :
                 splitCatPars = self._simulPdf.getPdf( splitCatState.GetName() ).getVariables()
 
-                if amplitudeParam == 'bank' and polarSWave :
+                if amplitudeParam == 'bank' and ASParam != 'ReIm' :
                     ASOddMag2  = splitCatPars.find( 'ASOddMag2_'  + splitCatState.GetName() )
                     ASOddPhase = splitCatPars.find( 'ASOddPhase_' + splitCatState.GetName() )
 
