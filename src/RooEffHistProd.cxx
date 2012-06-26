@@ -37,6 +37,7 @@
 #include <RooAddition.h>
 #include <RooSuperCategory.h>
 #include <RooBinnedPdf.h>
+#include <RooGenContext.h>
 
 #include <memory>
 #include <algorithm>

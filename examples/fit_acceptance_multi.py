@@ -21,6 +21,7 @@ def valid_combinations(states):
 
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
+from ROOT import RooCBShape as CrystalBall
 
 from ROOT import RooMsgService
 
@@ -32,6 +33,7 @@ w = obj.ws()
 from math import pi
 t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
 m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550))
+mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
 
 # Categories
@@ -39,11 +41,11 @@ hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0},
 hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-trigger_states = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased]
+project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
 
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, selected]
+observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, selected]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -54,9 +56,10 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
-tres = LP2011_TimeResolution(time = t, timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-                             Constant = False))
+from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+                                                    Constant = False))
 ## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 ## tres = TimeResolution(time = t).model()
 
@@ -68,27 +71,46 @@ sig_t = Single_Exponent_Time(Name = 'sig_t', time = t, resolutionModel = tres.mo
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
 
-# Create signal component
-signal = Component('signal', (sig_m.pdf(), sig_t.pdf()), Yield = (30000,100,100000))
+# J/psi mass pdf
+mpsi_mean  = RealVar('mpsi_mean',   Unit = 'MeV', Value = 3097, MinMax = (3070, 3110))
+mpsi_sigma = RealVar('mpsi_sigma',  Unit = 'MeV', Value = 10, MinMax = (5, 20))
+mpsi_alpha = RealVar('mpsi_alpha',  Unit = '', Value = 1.8, MinMax = (0.5, 3), Constant = True)
+mpsi_n = RealVar('mpsi_n',  Unit = '', Value = 2, MinMax = (0.1, 4), Constant = True)
+psi_m  = Pdf(Name = 'psi_m', Type = CrystalBall, Parameters = [mpsi, mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
+
+# J/psi background
+psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.0000001))
+bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c])
+
+# Create psi background component
+from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model()
+                         , psi_t_fll = dict( Name = 'psi_t_fll',    Value = 0.2 )
+                         , psi_t_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
+                         , psi_t_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
+                         , ExternalConstraints = tres.model().ExternalConstraints())
 
 # Create combinatorical background component
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
 
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres.model()
                        , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
                        , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
                        , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
-background = Component('background', (bkg_m.pdf(), bkg_t.pdf()), Yield = (50000,100,300000) )
+
+# Create components
+signal = Component('signal', (sig_m.pdf(), psi_m, sig_t.pdf()), Yield = (30000,100,100000))
+psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t.pdf()), Yield= (100000,500,200000) )
+background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield = (100000,100,300000) )
 
 ## Build mass PDF
-mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name='mass_pdf')
+mass_pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi), Name='mass_pdf')
 mass_pdf.Print("t")
 
 # Build the acceptance using the histogram as starting values
-input_file = '/stuff/PhD/p2vv/data/start_values.root'
+input_file = '/home/raaij/data/start_values.root'
 hlt1_histogram = 'hlt1_shape'
 hlt2_histogram = 'hlt2_shape'
 
@@ -136,10 +158,10 @@ spec = {"Bins" : {hlt1_biased : {'state'   : 'biased',
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
+input_file = '/home/raaij/data/Bs2JpsiPhi_2011_biased_unbiased.root'
 
 ## Fit options
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
+fitOpts = dict(NumCPU = 12, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
 data = None
 real_data = True
@@ -162,8 +184,8 @@ if real_data:
     # Plot mass pdf
     from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
     from ROOT import TCanvas
-    canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
-    obs = [m,]
+    canvas = TCanvas('mass_canvas', 'mass_canvas', 1000, 500)
+    obs = [m, mpsi]
     for (p,o) in zip(canvas.pads(len(obs)), obs):
         from P2VVGeneralUtils import plot
         pdfOpts  = dict()
@@ -172,7 +194,7 @@ if real_data:
              , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
              , plotResidHist = True
              , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed ),
-                              ## 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
+                              'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
                               'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                               }
              )
@@ -213,16 +235,15 @@ print 'plotting'
 
 # Plot the lifetime shapes
 canv = TCanvas('canvas', 'canvas', 900, 900)
+obs = [t]
 for states, (p, o) in zip(spec['Relative'].keys(), (i for i in product(canv.pads(3, 3), obs))):
     name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
-    obs = [o for o in pdf.Observables() if hasattr(o, 'frame')]
-    
     cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
     cat_data = data.reduce(cuts)
-    pdfOpts = dict(ProjWData = (RooArgSet(*trigger_states), cat_data))
+    pdfOpts = dict(ProjWData = (RooArgSet(*project_vars), cat_data))
     from P2VVGeneralUtils import plot
     plot( p, o, cat_data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
-                                              , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)
+                                              ## , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)
                                               }
           , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack,
                              Binning = RooBinning(len(biased_bins) - 1, biased_bins))
