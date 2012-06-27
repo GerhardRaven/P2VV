@@ -8,7 +8,7 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = False
+doFit                   = True
 fastFit                 = False
 makeObservablePlots     = False
 makeKKMassPlots         = False
@@ -65,12 +65,12 @@ pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30.,
 pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.8, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 
 pdfConfig['sameSideTagging']    = False  # nominal: False
-pdfConfig['conditionalTagging'] = False  # nominal: True
-pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
+pdfConfig['conditionalTagging'] = True  # nominal: True
+pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
-pdfConfig['eventTimeResolution'] = False  # nominal: True
+pdfConfig['eventTimeResolution'] = True  # nominal: True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
@@ -84,7 +84,7 @@ pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 pdfConfig['constrainDeltaM'] = True  # nominal: True
 
 pdfConfig['carthLambdaCP'] = False  # default/nominal: False
-constLambdaCPSq = False  # default/nominal: False
+constLambdaCPSq = True  # default/nominal: False
 
 constTagCatCoefs = True  # default: True / nominal: False
 constAvgCEvenOdd = True  # default: False / nominal: True
@@ -238,8 +238,8 @@ if ( readData or generateData ) and doFit :
     if pdfConfig['nominalPdf'] and not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
     if pdfConfig['nominalPdf'] or constWTagAsyms :
-        pdfBuild['tagCatsOS'].setConstant('wTagAP.*')
-        pdfBuild['tagCatsSS'].setConstant('wTagAP.*')
+        pdfBuild['tagCatsOS'].setConstant('wTagDelP1')
+        pdfBuild['tagCatsSS'].setConstant('wTagDelP1')
 
     if pdfConfig['parameterizeKKMass'] == 'functions' :
         for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
