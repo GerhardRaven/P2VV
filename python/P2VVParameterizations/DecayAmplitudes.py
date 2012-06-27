@@ -318,6 +318,7 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                 else :
                     self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
 
+            self._ASMag2 = FormulaVar( 'ASMag2', '@0 / (1. - @0)', [ self._f_S ], Title = 'Re(A_S)' )
             if ASParam == 'deltaPerp' :
                 self._ReAS = FormulaVar( 'ReAS', '@3 * sqrt(@0 / (1. - @0)) * cos(@1+@2)'
                                         , [ self._f_S, self._ASOddPhase, self._AperpPhase, self._C_SP ], Title = 'Re(A_S)' )
@@ -342,12 +343,15 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                 self._parseArg( 'sqrtfS_Im', kwargs, Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(deltaS)
                                , MinMax = ( -1., 1. ) )
 
+            self._ASMag2 = FormulaVar( 'ASMag2', '@0 / (1. - @0*@0 - @1*@1)', [ self._f_S ], Title = 'Re(A_S)' )
             self._ReAS = FormulaVar( 'ReAS', '@2 * @0 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im, self._C_SP ]
                                     , Title = 'Re(A_S)' )
             self._ImAS = FormulaVar( 'ImAS', '@2 * @1 / sqrt(1. - @0*@0 - @1*@1)', [ self._sqrtfS_Re, self._sqrtfS_Im, self._C_SP ]
                                     , Title = 'Im(A_S)' )
 
-        ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1, None, self._ASPhase if hasattr( self, '_ASPhase' ) else None )
+        ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1
+                                     , self._ASMag2 if hasattr( self, '_ASMag2' ) else None
+                                     , self._ASPhase if hasattr( self, '_ASPhase' ) else None )
 
         self._check_extraneous_kw( kwargs )
         AmplitudeSet.__init__( self, A0Amp, AparAmp, AperpAmp, ASAmp, Conditionals = [ self._KKMass ] if self._KKMass else [ ] )
