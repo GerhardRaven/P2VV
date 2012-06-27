@@ -61,8 +61,10 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRela
 pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
-pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.8, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
+pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. + 30. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.8, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
+pdfConfig['SWaveAmplitudeValues'] = (  [ -0.12, -0.25, -0.16, -0.07, -0.18, -0.37 ], [ -0.31, -0.15, -0.10, 0.01, 0.16, 0.10 ] )
+pdfConfig['CSPValues']            = [ 0.3263 ] # [ 0.4976 ] # [ 0.3263 ] # [ 0.9663, 0.9562, 0.9255, 0.9255, 0.9562, 0.9663 ]
 
 pdfConfig['sameSideTagging']    = False  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -84,11 +86,12 @@ pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 pdfConfig['constrainDeltaM'] = True  # nominal: True
 
 pdfConfig['carthLambdaCP'] = False  # default/nominal: False
-constLambdaCPSq = True  # default/nominal: False
+constLambdaCPSq = False  # default/nominal: False
 
 constTagCatCoefs = True  # default: True / nominal: False
 constAvgCEvenOdd = True  # default: False / nominal: True
 constWTagAsyms   = True  # default/nominal: True
+constCSP         = True  # default/nominal: True
 
 if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
@@ -245,6 +248,8 @@ if ( readData or generateData ) and doFit :
         for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
         if not pdfConfig['SFit'] :
             for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
+
+    pdfBuild['amplitudes'].setConstant('C_SP')
 
     if fastFit :
         pdfBuild['lambdaCP'].setConstant('lambdaCPSq')

@@ -186,8 +186,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['multiplyByTimeEff']    = ''                  # 'all' / 'signal'
         self['parameterizeKKMass']   = ''  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
-        self['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
-        self['SWaveAmplitudeValues'] = (  [ 0.8, 0.2,  0.1,  0.7 ], [ 1.4, 0.3, -0.5, -0.6 ] )
+        self['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ]
+        self['SWaveAmplitudeValues'] = (  [ 0.026 ], [ 0. ] )
+        self['CSPValues']            = [ 0.4976 ]
 
         self['sameSideTagging']    = True
         self['conditionalTagging'] = False
@@ -286,12 +287,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ambiguityPars     = pdfConfig.pop('ambiguityParameters')
         KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
         SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
-
-        if not paramKKMass :
-            if not KKMassBinBounds : KKMassBinBounds = [ 1020. - 12., 1020., 1020. + 12. ]
-        elif ambiguityPars :
-            from math import pi
-            for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
+        CSPValues         = pdfConfig.pop('CSPValues')
 
         self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
         iTagStates = pdfConfig.pop('iTagStates')
@@ -316,6 +312,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         amplitudeParam = pdfConfig.pop('amplitudeParam')
         ASParam        = pdfConfig.pop('ASParam')
         AparParam      = pdfConfig.pop('AparParam')
+
+        if not paramKKMass :
+            if not KKMassBinBounds : KKMassBinBounds = [ 1020. - 12., 1020., 1020. + 12. ]
+        elif ambiguityPars :
+            if amplitudeParam == 'bank' and ASParam != 'ReIm' :
+                from math import pi
+                for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
+            elif amplitudeParam == 'phases' and ASParam in [ 'Mag2ReIm', 'ReIm' ] :
+                for ImIter, Im in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][ImIter] = -Im
 
         constrainDeltaM = pdfConfig.pop('constrainDeltaM')
 
@@ -664,6 +669,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if paramKKMass == 'functions' :
             commonArgs[ 'KKMass' ]        = KKMass
             commonArgs[ 'KKMassBinning' ] = self._KKMassBinning
+        if not nominalPdf and ASParam != 'Mag2ReIm' :
+            commonArgs[ 'C_SP' ] = CSPValues[0]
 
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
@@ -681,8 +688,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                           , **commonArgs )
 
         else :
-            from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
-            self._amplitudes = Amplitudes( **commonArgs )
+            raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no valid amplitude parameterization specified')
 
         # B lifetime
         from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
@@ -1356,6 +1362,17 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     ASOddMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
                     ASOddMag2.setMax(5.)
                     ASOddPhase.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
+
+                elif amplitudeParam == 'phases' and ASParam in [ 'ReIm', 'Mag2ReIm' ] :
+                    if ASParam == 'Mag2ReIm' :
+                        ASMag2 = splitCatPars.find( 'ASMag2_' + splitCatState.GetName() )
+                    ReAS = splitCatPars.find( 'ReAS_' + splitCatState.GetName() )
+                    ImAS = splitCatPars.find( 'ImAS_' + splitCatState.GetName() )
+
+                    if ASParam == 'Mag2ReIm' :
+                        ASMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ]**2 + SWaveAmpVals[1][ splitCatState.getVal() ]**2 )
+                    ReAS.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
+                    ImAS.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
 
                 if not SFit :
                     sigYield = splitCatPars.find( 'N_signal_' + splitCatState.GetName() )
