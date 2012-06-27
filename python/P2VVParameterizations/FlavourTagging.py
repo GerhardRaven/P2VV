@@ -763,8 +763,8 @@ class Linear_TaggingCategories( TaggingCategories ) :
                       )
 
         from RooFitWrappers import FormulaVar
-        self._wTagAP0 = FormulaVar( '_wTagAP0' + tagType, '@0/@1', [ self._wTagDelP0, self._wTagP0 ] )
-        self._wTagAP1 = FormulaVar( '_wTagAP1' + tagType, '@0/@1', [ self._wTagDelP1, self._wTagP1 ] )
+        self._wTagAP0 = FormulaVar( '_wTagAP0' + tagType, '@0/2./@1', [ self._wTagDelP0, self._wTagP0 ] )
+        self._wTagAP1 = FormulaVar( '_wTagAP1' + tagType, '@0/2./@1', [ self._wTagDelP1, self._wTagP1 ] )
 
         # constrain calibration parameters
         constraints = [ ]
