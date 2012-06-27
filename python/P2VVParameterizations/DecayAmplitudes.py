@@ -155,17 +155,19 @@ class JpsiVCarthesian_AmplitudeSet( AmplitudeSet ) :
 
 class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
     def __init__( self, **kwargs ) :
-        ambiguityPars = kwargs.pop( 'AmbiguityParameters', False )
+        ambiguityPars = kwargs.pop( 'AmbiguityParameters', False       )
+        ASParam       = kwargs.pop( 'ASParameterization',  'deltaPerp' )
 
         from math import pi
         deltaPar  = AparPh  - A0Ph
         deltaPerp = AperpPh - A0Ph
-        deltaS    = ASPh    - A0Ph
+        deltaS    = ASPh    - ( AperpPh if ASParam == 'deltaPerp' else A0Ph )
         if ambiguityPars :
             deltaPar  = -deltaPar
             deltaPerp = pi - deltaPerp
-            deltaS    = -deltaS
+            deltaS    = ( pi - deltaS ) if ASParam == 'deltaPerp' else -deltaS
 
+        # A_0, A_par, A_perp
         from RooFitWrappers import FormulaVar
         self._parseArg( 'A0Mag2',    kwargs, Title = '|A0|^2',     Value = A02,    MinMax = ( 0., 1. ) )
         self._parseArg( 'AperpMag2', kwargs, Title = '|A_perp|^2', Value = Aperp2, MinMax = ( 0., 1. ) )
@@ -180,22 +182,62 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
         self._parseArg( 'AparPhase',  kwargs, Title = 'delta_par',  Value = deltaPar,  MinMax = ( -2. * pi, 2. * pi ) )
         self._parseArg( 'AperpPhase', kwargs, Title = 'delta_perp', Value = deltaPerp, MinMax = ( -2. * pi, 2. * pi ) )
 
+        # A_S
         if 'KKMass' in kwargs and 'KKMassBinning' in kwargs :
             self._KKMass = kwargs.pop('KKMass')
             self._KKMassBinning = kwargs.pop('KKMassBinning')
-            self._createBinnedAmp( 'ASMag2',  '|A_S|^2', AS2,    ( 0.,       1.      ), self._KKMass, self._KKMassBinning )
-            self._createBinnedAmp( 'ASPhase', 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMass, self._KKMassBinning )
         else :
             self._KKMass = None
             self._KKMassBinning = None
-            self._parseArg( 'ASMag2',  kwargs, Title = '|A_S|^2', Value = AS2,    MinMax = ( 0.,       1.      ) )
-            self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
+
+        if ASParam not in [ 'ReIm', 'Mag2ReIm' ] :
+            if self._KKMass and self._KKMassBinning :
+                self._createBinnedAmp( 'ASMag2', '|A_S|^2', AS2, ( 0.,  1. ), self._KKMass, self._KKMassBinning )
+                if ASParam == 'deltaPerp' :
+                    self._createBinnedAmp( 'ASOddPhase', 'delta_S - delta_perp', deltaS, ( -2. * pi, 2. * pi )
+                                          , self._KKMass, self._KKMassBinning )
+                else :
+                    self._createBinnedAmp( 'ASPhase', 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMass, self._KKMassBinning )
+
+            else :
+                self._parseArg( 'ASMag2', kwargs, Title = '|A_S|^2', Value = AS2, MinMax = ( 0., 1. ) )
+                if ASParam == 'deltaPerp' :
+                    self._parseArg( 'ASOddPhase', kwargs, Title = 'delta_S - delta_perp', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
+                else :
+                    self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
+
+            if ASParam == 'deltaPerp' :
+                self._ReAS = FormulaVar( 'ReAS', 'sqrt(@0) * cos(@1+@2)', [ self._ASMag2, self._ASOddPhase, self._AperpPhase ]
+                                        , Title = 'Re(A_S)' )
+                self._ImAS = FormulaVar( 'ImAS', 'sqrt(@0) * sin(@1+@2)', [ self._ASMag2, self._ASOddPhase, self._AperpPhase ]
+                                        , Title = 'Im(A_S)' )
+
+            else :
+                self._ReAS = FormulaVar( 'ReAS', 'sqrt(@0) * cos(@1)', [ self._ASMag2, self._ASPhase ], Title = 'Re(A_S)' )
+                self._ImAS = FormulaVar( 'ImAS', 'sqrt(@0) * sin(@1)', [ self._ASMag2, self._ASPhase ], Title = 'Im(A_S)' )
+
+        else :
+            from math import sqrt, cos, sin
+            if self._KKMass and self._KKMassBinning :
+                if ASParam == 'Mag2ReIm' :
+                    self._createBinnedAmp( 'ASMag2', '|A_S|^2', AS2, ( 0.,  1. ), self._KKMass, self._KKMassBinning )
+                self._createBinnedAmp( 'ReAS', 'Re(A_S)', sqrt(AS2) * cos(deltaS), ( -1., 1. ), self._KKMass, self._KKMassBinning )
+                self._createBinnedAmp( 'ImAS', 'Im(A_S)', sqrt(AS2) * sin(deltaS), ( -1., 1. ), self._KKMass, self._KKMassBinning )
+            else :
+                if ASParam == 'Mag2ReIm' :
+                    self._parseArg( 'ASMag2', kwargs, Title = '|A_S|^2', Value = AS2, MinMax = ( 0., 1. ) )
+                self._parseArg( 'ReAS', kwargs, Title = 'Re(A_S)', Value = sqrt(AS2) * cos(deltaS), MinMax = ( -1., 1. ) )
+                self._parseArg( 'ImAS', kwargs, Title = 'Im(A_S)', Value = sqrt(AS2) * sin(deltaS), MinMax = ( -1., 1. ) )
+
+        ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1
+                                     , self._ASMag2 if hasattr( self, '_ASMag2' ) else None
+                                     , self._ASPhase if hasattr( self, '_ASPhase' ) else None )
 
         self._check_extraneous_kw( kwargs ) 
         AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Phase,    +1 )
                                    , Polar2_Amplitude( 'Apar',  self._AparMag2,  self._AparPhase,  +1 )
                                    , Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPhase, -1 )
-                                   , Polar2_Amplitude( 'AS',    self._ASMag2,    self._ASPhase,    -1 )
+                                   , ASAmp
                                    , Conditionals = [ self._KKMass ] if self._KKMass else [ ]
                              )
 
@@ -277,28 +319,14 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                     self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
 
             if ASParam == 'deltaPerp' :
-                self._ReAS = FormulaVar(  'ReAS'
-                                        , 'sqrt(@0 / (1. - @0)) * cos(@1+@2)'
-                                        , [ self._f_S, self._ASOddPhase, self._AperpPhase ]
-                                        , Title = 'Re(A_S)'
-                                       )
-                self._ImAS = FormulaVar(  'ImAS'
-                                        , 'sqrt(@0 / (1. - @0)) * sin(@1+@2)'
-                                        , [ self._f_S, self._ASOddPhase, self._AperpPhase ]
-                                        , Title = 'Im(A_S)'
-                                       )
+                self._ReAS = FormulaVar( 'ReAS', 'sqrt(@0 / (1. - @0)) * cos(@1+@2)', [ self._f_S, self._ASOddPhase, self._AperpPhase ]
+                                        , Title = 'Re(A_S)' )
+                self._ImAS = FormulaVar( 'ImAS', 'sqrt(@0 / (1. - @0)) * sin(@1+@2)', [ self._f_S, self._ASOddPhase, self._AperpPhase ]
+                                        , Title = 'Im(A_S)' )
 
             else :
-                self._ReAS = FormulaVar(  'ReAS'
-                                        , 'sqrt(@0 / (1. - @0)) * cos(@1)'
-                                        , [ self._f_S, self._ASPhase ]
-                                        , Title = 'Re(A_S)'
-                                       )
-                self._ImAS = FormulaVar(  'ImAS'
-                                        , 'sqrt(@0 / (1. - @0)) * sin(@1)'
-                                        , [ self._f_S, self._ASPhase ]
-                                        , Title = 'Im(A_S)'
-                                       )
+                self._ReAS = FormulaVar( 'ReAS', 'sqrt(@0 / (1. - @0)) * cos(@1)', [ self._f_S, self._ASPhase ], Title = 'Re(A_S)' )
+                self._ImAS = FormulaVar( 'ImAS', 'sqrt(@0 / (1. - @0)) * sin(@1)', [ self._f_S, self._ASPhase ], Title = 'Im(A_S)' )
 
         else :
             if self._KKMass and self._KKMassBinning :
@@ -402,16 +430,10 @@ class JpsiVBank_AmplitudeSet( AmplitudeSet ) :
                 self._parseArg( 'ASOddPhase', kwargs, Title = 'delta_S - delta_perp', Value = deltaS
                                , MinMax = ( -2. * pi, 2. * pi ) )
 
-            self._ReAS = FormulaVar(  'ReAS'
-                                    , 'sqrt(@0*@2) * cos(@1+@3)'
-                                    , [ self._AperpMag2, self._AperpPhase, self._ASOddMag2, self._ASOddPhase ]
-                                    , Title = 'Re(A_S)'
-                                   )
-            self._ImAS = FormulaVar(  'ImAS'
-                                    , 'sqrt(@0*@2) * sin(@1+@3)'
-                                    , [ self._AperpMag2, self._AperpPhase, self._ASOddMag2, self._ASOddPhase ]
-                                    , Title = 'Im(A_S)'
-                                   )
+            self._ReAS = FormulaVar( 'ReAS', 'sqrt(@0*@2) * cos(@1+@3)'
+                                    , [ self._AperpMag2, self._AperpPhase, self._ASOddMag2, self._ASOddPhase ], Title = 'Re(A_S)' )
+            self._ImAS = FormulaVar( 'ImAS', 'sqrt(@0*@2) * sin(@1+@3)'
+                                    , [ self._AperpMag2, self._AperpPhase, self._ASOddMag2, self._ASOddPhase ], Title = 'Im(A_S)' )
 
         else :
             if self._KKMass and self._KKMassBinning :
@@ -425,16 +447,10 @@ class JpsiVBank_AmplitudeSet( AmplitudeSet ) :
                 self._parseArg( 'ImASOdd', kwargs, Title = 'Im(A_S / A_perp)', Value = sqrt(AS2 / Aperp2) * sin(deltaS)
                                , MinMax = ( -1., 1. ) )
 
-            self._ReAS = FormulaVar(  'ReAS'
-                                    , 'sqrt(@0) * (cos(@1)*@2 - sin(@1)*@3)'
-                                    , [ self._AperpMag2, self._AperpPhase, self._ReASOdd, self._ImASOdd ]
-                                    , Title = 'Re(A_S)'
-                                   )
-            self._ImAS = FormulaVar(  'ImAS'
-                                    , 'sqrt(@0) * (cos(@1)*@3 + sin(@1)*@2)'
-                                    , [ self._AperpMag2, self._AperpPhase, self._ReASOdd, self._ImASOdd ]
-                                    , Title = 'Im(A_S)'
-                                   )
+            self._ReAS = FormulaVar( 'ReAS', 'sqrt(@0) * (cos(@1)*@2 - sin(@1)*@3)'
+                                    , [ self._AperpMag2, self._AperpPhase, self._ReASOdd, self._ImASOdd ], Title = 'Re(A_S)' )
+            self._ImAS = FormulaVar( 'ImAS', 'sqrt(@0) * (cos(@1)*@3 + sin(@1)*@2)'
+                                    , [ self._AperpMag2, self._AperpPhase, self._ReASOdd, self._ImASOdd ], Title = 'Im(A_S)' )
 
         ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1 )
 

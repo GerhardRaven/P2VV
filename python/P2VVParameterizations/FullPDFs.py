@@ -204,9 +204,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['signalFraction'] = 0.67
         self['massRangeBackground'] = False
 
-        self['amplitudeParam'] = 'phasesSWaveFrac'       # 'phasesSWaveFrac' / 'ReIm' / 'bank'
-        self['ASParam']        = 'deltaPerp'             # 'delta0' / 'deltaPerp' / 'ReIm'
-        self['AparParam']      = 'cos'                   # 'phase' / 'cos' / 'real' / 'ReIm'
+        self['amplitudeParam'] = 'phasesSWaveFrac'       # 'phases' / 'phasesSWaveFrac' / 'ReIm' / 'bank'
+        self['ASParam']        = 'deltaPerp'             # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm'
+        self['AparParam']      = 'cos'                   # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
 
         self['constrainDeltaM'] = True
 
@@ -670,6 +670,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._amplitudes = Amplitudes( ASParameterization = 'deltaPerp' if nominalPdf else ASParam
                                           , AparParameterization = 'phase' if nominalPdf else AparParam
                                           , **commonArgs )
+
+        elif amplitudeParam == 'phases' :
+            from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet as Amplitudes
+            self._amplitudes = Amplitudes( ASParameterization = 'deltaPerp' if nominalPdf else ASParam, **commonArgs )
 
         elif amplitudeParam == 'bank' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVBank_AmplitudeSet as Amplitudes
