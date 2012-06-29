@@ -162,11 +162,11 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
         from math import pi
         deltaPar  = AparPh  - A0Ph
         deltaPerp = AperpPh - A0Ph
-        deltaS    = ASPh    - ( AperpPh if ASParam == 'deltaPerp' else A0Ph )
+        deltaS    = ASPh    - ( AperpPh if ASParam in [ 'deltaPerp', 'Mag2ReImPerp' ] else A0Ph )
         if ambiguityPars :
             deltaPar  = -deltaPar
             deltaPerp = pi - deltaPerp
-            deltaS    = ( pi - deltaS ) if ASParam == 'deltaPerp' else -deltaS
+            deltaS    = ( pi - deltaS ) if ASParam in [ 'deltaPerp', 'Mag2ReImPerp' ] else -deltaS
 
         # A_0, A_par, A_perp
         from RooFitWrappers import FormulaVar
@@ -184,7 +184,8 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
         self._parseArg( 'AperpPhase', kwargs, Title = 'delta_perp', Value = deltaPerp, MinMax = ( -2. * pi, 2. * pi ) )
 
         # A_S
-        if ASParam != 'Mag2ReIm' : self._parseArg( 'C_SP', kwargs, Title = 'S-P wave couping factor', Value = C_SP, MinMax = ( 0., 2. ) )
+        if not ASParam.startswith('Mag2ReIm') :
+            self._parseArg( 'C_SP', kwargs, Title = 'S-P wave couping factor', Value = C_SP, MinMax = ( 0., 2. ) )
         if 'KKMass' in kwargs and 'KKMassBinning' in kwargs :
             self._KKMass = kwargs.pop('KKMass')
             self._KKMassBinning = kwargs.pop('KKMassBinning')
@@ -197,23 +198,35 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
             if ASParam == 'deltaPerp' :
                 self._createBinnedAmp( 'ASOddPhase', 'delta_S - delta_perp', deltaS, ( -2. * pi, 2. * pi )
                                       , self._KKMass, self._KKMassBinning )
-            elif ASParam != 'Mag2ReIm' :
-                self._createBinnedAmp( 'ASPhase', 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMass, self._KKMassBinning )
-            else :
+            elif ASParam == 'Mag2ReIm' :
                 from math import sqrt, cos, sin
                 self._createBinnedAmp( 'ReAS', 'Re(A_S)', sqrt(AS2) * cos(deltaS), ( -1., 1. ), self._KKMass, self._KKMassBinning )
                 self._createBinnedAmp( 'ImAS', 'Im(A_S)', sqrt(AS2) * sin(deltaS), ( -1., 1. ), self._KKMass, self._KKMassBinning )
+            elif ASParam == 'Mag2ReImPerp' :
+                from math import sqrt, cos, sin
+                self._createBinnedAmp( 'ReASPerp', 'Re(A_S*e^(-i*delta_perp))', sqrt(AS2) * cos(deltaS), ( -1., 1. )
+                                      , self._KKMass, self._KKMassBinning )
+                self._createBinnedAmp( 'ImASPerp', 'Im(A_S*e^(-i*delta_perp))', sqrt(AS2) * sin(deltaS), ( -1., 1. )
+                                      , self._KKMass, self._KKMassBinning )
+            else  :
+                self._createBinnedAmp( 'ASPhase', 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMass, self._KKMassBinning )
 
         else :
             self._parseArg( 'ASMag2', kwargs, Title = '|A_S|^2', Value = AS2, MinMax = ( 0., 1. ) )
             if ASParam == 'deltaPerp' :
                 self._parseArg( 'ASOddPhase', kwargs, Title = 'delta_S - delta_perp', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
-            elif ASParam != 'Mag2ReIm' :
-                self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
-            else :
+            elif ASParam == 'Mag2ReIm' :
                 from math import sqrt, cos, sin
                 self._parseArg( 'ReAS', kwargs, Title = 'Re(A_S)', Value = sqrt(AS2) * cos(deltaS), MinMax = ( -1., 1. ) )
                 self._parseArg( 'ImAS', kwargs, Title = 'Im(A_S)', Value = sqrt(AS2) * sin(deltaS), MinMax = ( -1., 1. ) )
+            elif ASParam == 'Mag2ReImPerp' :
+                from math import sqrt, cos, sin
+                self._parseArg( 'ReASPerp', kwargs, Title = 'Re(A_S*e^(-i*delta_perp))', Value = sqrt(AS2) * cos(deltaS)
+                               , MinMax = ( -1., 1. ) )
+                self._parseArg( 'ImASPerp', kwargs, Title = 'Im(A_S*e^(-i*delta_perp))', Value = sqrt(AS2) * sin(deltaS)
+                               , MinMax = ( -1., 1. ) )
+            else :
+                self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
 
 
         if ASParam == 'deltaPerp' :
@@ -221,6 +234,12 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
                                     , [ self._ASMag2, self._ASOddPhase, self._AperpPhase, self._C_SP ], Title = 'Re(A_S)' )
             self._ImAS = FormulaVar( 'ImAS', '@3 * sqrt(@0) * sin(@1+@2)'
                                     , [ self._ASMag2, self._ASOddPhase, self._AperpPhase, self._C_SP ], Title = 'Im(A_S)' )
+
+        elif ASParam == 'Mag2ReImPerp' :
+            self._ReAS = FormulaVar( 'ReAS', '@0 * cos(@2) - @1 * sin(@2)', [ self._ReASPerp, self._ImASPerp, self._AperpPhase ]
+                                    , Title = 'Re(A_S)' )
+            self._ImAS = FormulaVar( 'ImAS', '@0 * sin(@2) + @1 * cos(@2)', [ self._ImASPerp, self._ImASPerp, self._AperpPhase ]
+                                    , Title = 'Im(A_S)' )
 
         elif ASParam != 'Mag2ReIm' :
             self._ReAS = FormulaVar( 'ReAS', '@2 * sqrt(@0) * cos(@1)', [ self._ASMag2, self._ASPhase, self._C_SP ]

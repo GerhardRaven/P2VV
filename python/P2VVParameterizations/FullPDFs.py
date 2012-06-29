@@ -206,7 +206,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['massRangeBackground'] = False
 
         self['amplitudeParam'] = 'phasesSWaveFrac'       # 'phases' / 'phasesSWaveFrac' / 'ReIm' / 'bank'
-        self['ASParam']        = 'deltaPerp'             # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm'
+        self['ASParam']        = 'deltaPerp'             # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm' / 'Mag2ReImPerp'
         self['AparParam']      = 'cos'                   # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
 
         self['constrainDeltaM'] = True
@@ -669,7 +669,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if paramKKMass == 'functions' :
             commonArgs[ 'KKMass' ]        = KKMass
             commonArgs[ 'KKMassBinning' ] = self._KKMassBinning
-        if not nominalPdf and ASParam != 'Mag2ReIm' :
+        if not nominalPdf and not ASParam.startswith('Mag2ReIm') :
             commonArgs[ 'C_SP' ] = CSPValues[0]
 
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
