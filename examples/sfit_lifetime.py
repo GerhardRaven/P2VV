@@ -116,14 +116,6 @@ signal = Component('signal', (sig_m.pdf(), psi_m), Yield = (21000,10000,30000))
 mass_pdf = buildPdf(Components = (signal, background), Observables = (m, ), Name='pdf')
 mass_pdf.Print("t")
 
-## from Helpers import Mapping
-## mapping = Mapping({m : 'm', t : 'tau'}, data)
-
-from ROOT import RooMsgService
-## RooMsgService.instance().addStream(RooFit.DEBUG)
-## RooMsgService.instance().getStream(1).removeTopic(RooFit.Caching)
-## RooMsgService.instance().getStream(1).removeTopic(RooFit.Eval)
-
 ## Fit options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
                Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
