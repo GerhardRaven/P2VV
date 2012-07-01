@@ -211,7 +211,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         self['constrainDeltaM'] = True
 
-        self['carthLambdaCP'] = False
+        self['lambdaCPParam'] = 'lambSqPhi'
 
         self['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                               , ( 'trcostheta', 'cos(#theta_{tr})' )
@@ -324,7 +324,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         constrainDeltaM = pdfConfig.pop('constrainDeltaM')
 
-        carthLambdaCP = pdfConfig.pop('carthLambdaCP')
+        lambdaCPParam = pdfConfig.pop('lambdaCPParam')
 
         if makePlots :
             # import plotting tools
@@ -705,7 +705,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
 
         # CP violation parameters
-        if carthLambdaCP : 
+        if lambdaCPParam == 'ReIm' : 
             from P2VVParameterizations.CPVParams import LambdaCarth_CPParam as CPParam
             ReLambdaCPVar = dict( Name = 'ReLambdaCP' )
             ImLambdaCPVar = dict( Name = 'ImLambdaCP' )
@@ -714,7 +714,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._lambdaCP = CPParam( ReLambdaCP = ReLambdaCPVar, ImLambdaCP = ImLambdaCPVar )
 
         else :
-            from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
+            if lambdaCPParam == 'lambPhi' :
+                from P2VVParameterizations.CPVParams import LambdaArg_CPParam as CPParam
+            else :
+                from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
+
             phiCPVar = dict( Name = 'phiCP' )
             if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
             self._lambdaCP = CPParam( phiCP = phiCPVar )

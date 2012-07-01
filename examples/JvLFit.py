@@ -25,8 +25,7 @@ parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
-    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120620_MagDownMagUp.root'
+    pdfConfig['nTupleFile'] = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120620_MagDownMagUp.root'
 else :
     pdfConfig['nTupleName'] = None
     pdfConfig['nTupleFile'] = None
@@ -85,13 +84,13 @@ pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 
 pdfConfig['constrainDeltaM'] = True  # nominal: True
 
-pdfConfig['carthLambdaCP'] = False  # default/nominal: False
-constLambdaCPSq = False  # default/nominal: False
+pdfConfig['lambdaCPParam'] = 'lambSqPhi'  # default/nominal: 'lambSqPhi'
+constLambdaCP = False  # default/nominal: False
 
 constTagCatCoefs = True  # default: True / nominal: False
 constAvgCEvenOdd = True  # default: False / nominal: True
 constWTagAsyms   = True  # default/nominal: True
-constCSP         = False  # default/nominal: True
+constCSP         = True  # default/nominal: True
 
 if not readData :
     pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
@@ -233,7 +232,9 @@ else :
 
 if ( readData or generateData ) and doFit :
     # float/fix values of some parameters
-    if pdfConfig['nominalPdf'] or ( not pdfConfig['carthLambdaCP'] and constLambdaCPSq ) : pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    if constLambdaCP :
+        pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
+            else pdfBuild['lambdaCP'].setConstant('lambdaCP')
     for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
         CEvenOdd.setConstant('avgCEven.*')
         if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
@@ -725,8 +726,9 @@ if dllPars :
         if par[0] == 'phiCP' : phiCPPar = True
 
     # float/fix values of some parameters
-    if constLambdaCPSq :
-        pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    if constLambdaCP :
+        pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
+            else pdfBuild['lambdaCP'].setConstant('lambdaCP')
     if constAvgCEvenOdd :
         for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
 
