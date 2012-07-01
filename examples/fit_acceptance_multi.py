@@ -1,28 +1,9 @@
+import os
 from itertools import product
-def valid_combinations(states):
-    all_states = []
-    for level in states:
-        all_states.extend(level.keys())
-    labels = [[(state, label.GetName()) for label in state] for state in all_states]
-    all_combinations = list(product(*labels))
-    valid = []
-    def good(combination):
-        s = set(combination)
-        for level in states:
-            level_good = False
-            for entry in level.iteritems():
-                if entry in s:
-                    level_good = True
-                    break
-            if not level_good:
-                return level_good
-        return True
-    return filter(good, all_combinations)
-
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
-
+from P2VVParameterizations.GeneralUtils import valid_combinations
 from ROOT import RooMsgService
 
 # RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
@@ -109,8 +90,9 @@ background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield
 mass_pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi), Name='mass_pdf')
 mass_pdf.Print("t")
 
+base_location = '/stuff/PhD/p2vv'
 # Build the acceptance using the histogram as starting values
-input_file = '/home/raaij/data/start_values.root'
+input_file = os.path.join(base_location, 'data/start_values.root')
 hlt1_histogram = 'hlt1_shape'
 hlt2_histogram = 'hlt2_shape'
 
@@ -140,7 +122,7 @@ hlt2_unbiased_heights = [0.5]
 valid = valid_combinations([{hlt1_biased : 'biased', hlt1_unbiased : 'unbiased'}, {hlt2_biased : 'biased', hlt2_unbiased : 'unbiased'}])
 
 # Spec to build efficiency shapes
-spec = {"Bins" : {hlt1_biased : {'state'   : 'biased',
+spec = {'Bins' : {hlt1_biased : {'state'   : 'biased',
                                  'bounds'  : biased_bins,
                                  'heights' : hlt1_biased_heights},
                   hlt1_unbiased : {'state' : 'unbiased',
@@ -158,10 +140,10 @@ spec = {"Bins" : {hlt1_biased : {'state'   : 'biased',
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
-input_file = '/home/raaij/data/Bs2JpsiPhi_2011_biased_unbiased.root'
+input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_2011_biased_unbiased.root')
 
 ## Fit options
-fitOpts = dict(NumCPU = 12, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
 data = None
 real_data = True
@@ -177,7 +159,7 @@ if real_data:
 
     spec['Relative'] = rel_spec
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, **spec)
+                              ConditionalCategories = True, Build = True, **spec)
     pdf.Print('v')
 
     mass_pdf.fitTo(data, **fitOpts)
@@ -213,7 +195,7 @@ else:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
         rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, **spec)
+                              ConditionalCategories = True, Build = True, **spec)
     pdf.Print('v')        
     data = pdf.generate([t, hlt1_biased, hlt1_unbiased, hlt2_unbiased, hlt2_biased], 25000)
 
@@ -225,7 +207,7 @@ super_cat = pdf.getSuper()
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-result = pdf.fitTo(data, **fitOpts)
+## result = pdf.fitTo(data, **fitOpts)
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
@@ -240,7 +222,7 @@ for states, (p, o) in zip(spec['Relative'].keys(), (i for i in product(canv.pads
     name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
     cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
     cat_data = data.reduce(cuts)
-    pdfOpts = dict(ProjWData = (RooArgSet(*project_vars), cat_data))
+    pdfOpts = dict(ProjWData = (RooArgSet(*project_vars), cat_data, True))
     from P2VVGeneralUtils import plot
     plot( p, o, cat_data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
                                               ## , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)

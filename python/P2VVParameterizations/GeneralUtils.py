@@ -96,4 +96,34 @@ class _util_conditionalObs_mixin( object ) :
 #    # TODO: wrap RooSimultaneous in a RooObject...
 #    return RooSimultaneous( name, name, pl, tag )
 
+from itertools import product
+def valid_combinations(states):
+    all_states = []
+    for level in states:
+        all_states.extend(level.keys())
+    labels = [[(state, label.GetName()) for label in state] for state in all_states]
+    all_combinations = list(product(*labels))
+    valid = []
+    def good(combination):
+        s = set(combination)
+        for level in states:
+            level_good = False
+            for entry in level.iteritems():
+                if entry in s:
+                    level_good = True
+                    break
+            if not level_good:
+                return level_good
+        return True
+    return filter(good, all_combinations)
 
+def exclusive_combinations(states):
+    all_states = [e[0] for e in states]
+    labels = [[(state, label.GetName()) for label in state] for state in all_states]
+    all_combinations = list(product(*labels))
+    valid = []
+    def good(combination):
+        s = set(combination)
+        r = set(states)
+        return len(s & r) == 1
+    return filter(good, all_combinations)

@@ -186,7 +186,7 @@ class RooObject(object) :
 
 
 class ArgSet(RooObject) :
-    def _addObject(self,o) : 
+    def _addObject(self,o) :
         if o.GetName() not in self.ws()._objects :
             self.ws()._objects[o.GetName()] = o
     def _factory(self,spec):
@@ -205,7 +205,7 @@ class ArgSet(RooObject) :
         self._init(name,'RooArgSet')
 
 
-    
+
 
 class Category (RooObject) :
     _getters = {'Index'      : lambda s : s.getIndex()
@@ -426,7 +426,7 @@ class ConstVar (RooObject) :
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class P2VVAngleBasis (RooObject) :
-    # TODO: replace use of RooP2VVAngleBasis with an explicit product with 
+    # TODO: replace use of RooP2VVAngleBasis with an explicit product with
     #       some attribute set so we can recognize it by attribute instead
     #       of by type...
     # TODO: move 'c' out of this class (and into an explicit product),
@@ -713,12 +713,12 @@ class Pdf(RooObject):
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'
             print 'INFO: adding ConditionalObservables: %s' % [ i.GetName() for i in  condObs ]
-            kwargs['ConditionalObservables'] = condObs 
+            kwargs['ConditionalObservables'] = condObs
         extConst = self.ExternalConstraints()
-        if extConst : 
+        if extConst :
             assert 'ExternalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
             print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
-            kwargs['ExternalConstraints'] = extConst 
+            kwargs['ExternalConstraints'] = extConst
         for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
         print kwargs
@@ -730,12 +730,12 @@ class Pdf(RooObject):
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'
             print 'INFO: adding ConditionalObservables: %s' % [ i.GetName() for i in  condObs ]
-            kwargs['ConditionalObservables'] = condObs 
+            kwargs['ConditionalObservables'] = condObs
         extConst = self.ExternalConstraints()
-        if extConst : 
+        if extConst :
             assert 'ExternalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
             print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
-            kwargs['ExternalConstraints'] = extConst 
+            kwargs['ExternalConstraints'] = extConst
         for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
         print kwargs
@@ -759,12 +759,13 @@ class Pdf(RooObject):
 
     def __rmul__(self, eff):
         from itertools import imap
-        if not any( imap( lambda _type : isinstance( eff, _type )
-                       , [ FormulaVar, HistFunc, BinnedPdf ]
-                       ) ) :
-            raise RuntimeError, 'trying to multiply a %s with %s; this is not supported!' % (type(self), type(eff))
-        name = eff.GetName() + '_X_' + self.GetName()
-        return EffProd(name, Original = self, Efficiency = eff)
+        if any(imap(lambda _type : isinstance(eff, _type),
+                    [FormulaVar, HistFunc, BinnedPdf])):
+            name = eff.GetName() + '_X_' + self.GetName()
+            return EffProd(name, Original = self, Efficiency = eff)
+        elif isinstance(eff, dict):
+            name = eff.pop('Name') + '_X_' + self.GetName()
+            return MultiHistEfficiency(Name = name, Original = self, **eff)
 
 class ProdPdf(Pdf):
     def __init__(self, Name, PDFs, **kwargs):
@@ -837,7 +838,7 @@ class SumPdf(Pdf):
                 print 'WARNING: inconsistent conditional observables: %s vs %s' % ( co, kwargs['ConditionalObservables'] )
         elif co :
             kwargs['ConditionalObservables'] = list(co)
-            
+
         ec = set([ i for pdf in pdfs for i in pdf.ExternalConstraints() ])
         if 'ExternalConstraints' in kwargs:
             if ec != set(kwargs['ExternalConstraints']):
@@ -1045,46 +1046,46 @@ class MultiHistEfficiency(Pdf):
     def _make_pdf(self) : pass
     def __init__(self, **kwargs):
 
-        pdf_name = kwargs.pop('Name')
-        pdf = kwargs.pop('Original')
-        bins = kwargs.pop('Bins')
+        self.__pdf_name = kwargs.pop('Name')
+        self.__original = kwargs.pop('Original')
+        self.__bins = kwargs.pop('Bins')
         relative = kwargs.pop('Relative')
-        binning_name = kwargs.pop('Binning', 'efficiency_binning')
-        observable = kwargs.pop('Observable')
-        cc = kwargs.pop('ConditionalCategories', False)
-        conditionals = pdf.ConditionalObservables()
+        self.__binning_name = kwargs.pop('Binning', 'efficiency_binning')
+        self.__observable = kwargs.pop('Observable')
+        self.__cc = kwargs.pop('ConditionalCategories', False)
+        self.__conditionals = self.__original.ConditionalObservables()
+        build = kwargs.pop('Build')
+        builder = None
+        if build:
+            builder = self.__build_shapes
+        else:
+            builder = self.__exclusive_shapes
 
-        from ROOT import std
-        efficiency_entries = std.vector("MultiHistEntry")()
-
-        coefficients = {}
+        self.__coefficients = {}
         base_binning = None
-        for (category, entries) in bins.iteritems():
+        for (category, entries) in self.__bins.iteritems():
             bounds = entries['bounds']
             heights = entries['heights']
             state = entries['state']
             heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
                                Observable = False, Value = v,
                                MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
-            # Fix the first bin.
+            # Fix the bin if there is only one.
             if len(heights) == 1:
                 heights[0].setConstant(True)
-            coefficients[category] = (bounds, heights)
-            if not base_binning or len(bounds) > len(coefficients[base_binning][0]):
+            self.__coefficients[category] = (bounds, heights)
+            if not base_binning or len(bounds) > len(self.__coefficients[base_binning][0]):
                 base_binning = category
 
         # Set the binning on the observable
-        base_bounds = coefficients[base_binning][0]
+        self.__base_bounds = self.__coefficients[base_binning][0]
 
         from ROOT import RooBinning
-        obs_binning = RooBinning(len(base_bounds) - 1, base_bounds)
-        observable.setBinning(obs_binning, binning_name)
-
-        from ROOT import MultiHistEntry
-        from ROOT import RooEfficiencyBin
+        obs_binning = RooBinning(len(self.__base_bounds) - 1, self.__base_bounds)
+        self.__observable.setBinning(obs_binning, self.__binning_name)
 
         # Build relative efficiencies
-        relative_efficiencies = {}
+        self.__relative_efficiencies = {}
         remaining = None
 
         for categories, re in relative.iteritems():
@@ -1094,39 +1095,58 @@ class MultiHistEfficiency(Pdf):
             if re != None:
                 efficiency = RealVar('%s_efficiency' % state_name, Observable = False,
                                      **re)
-                relative_efficiencies[state_name] = efficiency
+                self.__relative_efficiencies[state_name] = efficiency
             elif remaining == None:
                 remaining = state_name
             else:
                 raise RuntimeError("More than one relative efficiency is None")
         # FIXME: perhaps this should be a dedicated class too
-        form = '-'.join(['1'] + [e.GetName() for e in relative_efficiencies.itervalues()])
-        relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, relative_efficiencies.values())
+        form = '-'.join(['1'] + [e.GetName() for e in self.__relative_efficiencies.itervalues()])
+        self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
+
+        efficiency_entries = builder(relative)
+
+        from ROOT import RooMultiHistEfficiency
+        mhe = RooMultiHistEfficiency(self.__pdf_name, self.__pdf_name, efficiency_entries)
+
+        self._addObject(mhe)
+        self._init(self.__pdf_name, 'RooMultiHistEfficiency')
+
+        extraOpts = dict()
+        if self.__conditionals :
+            self['ConditionalObservables'] = self.__conditionals
+
+        constraints = self.__original.ExternalConstraints()
+        if constraints : extraOpts['ExternalConstraints' ] = constraints
+        print extraOpts
+        Pdf.__init__(self , Name = self.__pdf_name , Type = 'RooMultiHistEfficiency', **extraOpts)
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def __exclusive_shapes(self, relative):
+        from ROOT import std
+        from ROOT import MultiHistEntry
+        efficiency_entries = std.vector("MultiHistEntry")()
 
         for categories, relative_efficiency in relative.iteritems():
-            # Make EfficiencyBins for the bin values
-            heights = []
-            bin_vars = [{} for i in range(len(base_bounds) - 1)]
+            heights = None
             state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
-            prefix = pdf_name + '_' + state_name
+            prefix = self.__pdf_name + '_' + state_name
             for category, state in categories:
-                if cc: conditionals.add(category)
-                category_bounds = coefficients[category][0]
-                category_heights = coefficients[category][1]
-                for i in range(len(base_bounds) - 1):
-                    val = (base_bounds[i] + base_bounds[i + 1]) / 2
-                    coefficient = self.__find_coefficient(val, category_bounds, category_heights)
-                    bin_vars[i][__dref__(coefficient)] = (state == bins[category]['state'])
-            for i, d in enumerate(bin_vars):
-                cm = self.__make_map(d)
-                name = '%s_%d' % (prefix, i)
-                heights.append(RooEfficiencyBin(name, name, cm)) 
+                if state == self.__bins[category]['state']:
+                    heights = self.__coefficients[category][1]
+                    break
+                else:
+                    continue
+            if not heights:
+                raise KeyError('Could not find heights for %s' % categories)
+            for h in heights:
+                h.setConstant(True)
 
             # BinnedPdf for the shape
-            binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = observable,
-                                   Binning = binning_name, Coefficients = heights)
+            binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = self.__observable,
+                                   Binning = self.__binning_name, Coefficients = heights)
             # EffProd to combine shape with PDF
-            eff_prod = EffProd('%s_efficiency' % prefix, Original = pdf, Efficiency = binned_pdf)
+            eff_prod = EffProd('%s_efficiency' % prefix, Original = self.__original, Efficiency = binned_pdf)
 
             # MultiHistEntry
             category_map = std.map('RooAbsCategory*', 'string')
@@ -1135,25 +1155,53 @@ class MultiHistEfficiency(Pdf):
             for category, state in categories:
                 # cp = category_pair(__dref__(category), state)
                 cm[__dref__(category)] = state
-            efficiency = relative_efficiencies[state_name]
+            efficiency = self.__relative_efficiencies[state_name]
             entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(efficiency))
             efficiency_entries.push_back(entry)
+        return efficiency_entries
 
-        from ROOT import RooMultiHistEfficiency
-        mhe = RooMultiHistEfficiency(pdf_name, pdf_name, efficiency_entries)
+    def __build_shapes(self, relative):
+        from ROOT import std
+        from ROOT import RooEfficiencyBin
+        from ROOT import MultiHistEntry
+        efficiency_entries = std.vector("MultiHistEntry")()
 
-        self._addObject(mhe)
-        self._init(pdf_name, 'RooMultiHistEfficiency')
+        for categories, relative_efficiency in relative.iteritems():
+            # Make EfficiencyBins for the bin values
+            heights = []
+            bin_vars = [{} for i in range(len(self.__base_bounds) - 1)]
+            state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
+            prefix = self.__pdf_name + '_' + state_name
+            for category, state in categories:
+                if self.__cc: self.__conditionals.add(category)
+                category_bounds = self.__coefficients[category][0]
+                category_heights = self.__coefficients[category][1]
+                for i in range(len(self.__base_bounds) - 1):
+                    val = (self.__base_bounds[i] + self.__base_bounds[i + 1]) / 2
+                    coefficient = self.__find_coefficient(val, category_bounds, category_heights)
+                    bin_vars[i][__dref__(coefficient)] = (state == self.__bins[category]['state'])
+            for i, d in enumerate(bin_vars):
+                cm = self.__make_map(d)
+                name = '%s_%d' % (prefix, i)
+                heights.append(RooEfficiencyBin(name, name, cm))
 
-        extraOpts = dict()
-        if conditionals :
-            self['ConditionalObservables'] = conditionals
+            # BinnedPdf for the shape
+            binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = self.__observable,
+                                   Binning = self.__binning_name, Coefficients = heights)
+            # EffProd to combine shape with PDF
+            eff_prod = EffProd('%s_efficiency' % prefix, Original = self.__original, Efficiency = binned_pdf)
 
-        constraints = pdf.ExternalConstraints()
-        if constraints : extraOpts['ExternalConstraints' ] = constraints
-        print extraOpts
-        Pdf.__init__(self , Name = pdf_name , Type = 'RooMultiHistEfficiency', **extraOpts)
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+            # MultiHistEntry
+            category_map = std.map('RooAbsCategory*', 'string')
+            category_pair = std.pair('RooAbsCategory*', 'string')
+            cm = category_map()
+            for category, state in categories:
+                # cp = category_pair(__dref__(category), state)
+                cm[__dref__(category)] = state
+            efficiency = self.__relative_efficiencies[state_name]
+            entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(efficiency))
+            efficiency_entries.push_back(entry)
+        return efficiency_entries
 
     def __make_map(self, d):
         from ROOT import std
@@ -1164,7 +1212,7 @@ class MultiHistEfficiency(Pdf):
             p = var_pair(__dref__(k), v)
             m.insert(p)
         return m
-    
+
     def __find_coefficient(self, val, bounds, coefficients):
         for i in range(len(bounds) - 1):
             if val > bounds[i] and val < bounds[i + 1]:
@@ -1222,7 +1270,7 @@ class BDecay( Pdf ) :
                                           " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s, "\
                                           " %(dm)s, %(resolutionModel)s, %(decayType)s  )" % d )
         self._init(Name,'RooBDecay')
-        for (k,v) in kwargs.iteritems() : 
+        for (k,v) in kwargs.iteritems() :
             self.__setitem__(k,v)
 
 
