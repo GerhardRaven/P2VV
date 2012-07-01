@@ -1,4 +1,12 @@
 import os
+import sys
+if sys.argv[1] not in ['MC', 'real_data', 'generate']:
+    print 'usage: fit_acceptance_multi.py [real_data|MC|generate]'
+    sys.exit(-1)
+
+real_data = sys.argv[1] == 'real_data'
+MC = sys.argv[1] == 'MC'
+
 from itertools import product
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
@@ -14,6 +22,7 @@ w = obj.ws()
 from math import pi
 t = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
 m = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550))
+nPV = RealVar('nPV', Title = 'nPV', Observable = True, MinMax = (0, 15))
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
 
@@ -26,7 +35,7 @@ project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
 
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, selected]
+observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, selected, nPV]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -37,12 +46,12 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-                                                    Constant = False))
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## tres = TimeResolution(time = t).model()
+## from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+## tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+##                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+##                                                     Constant = False))
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+tres = TimeResolution(time = t)
 
 # Signal time pdf
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time
@@ -118,8 +127,8 @@ hlt1_unbiased_heights = [0.5]
 hlt2_biased_heights = [hlt2_histogram.GetBinContent(i) for i in range(1, hlt2_histogram.GetNbinsX() + 1)]
 hlt2_unbiased_heights = [0.5]
 
-
-valid = valid_combinations([{hlt1_biased : 'biased', hlt1_unbiased : 'unbiased'}, {hlt2_biased : 'biased', hlt2_unbiased : 'unbiased'}])
+valid_definition = [{hlt1_biased : 'biased', hlt1_unbiased : 'unbiased'}, {hlt2_biased : 'biased', hlt2_unbiased : 'unbiased'}]
+valid = valid_combinations(valid_definition)
 
 # Spec to build efficiency shapes
 spec = {'Bins' : {hlt1_biased : {'state'   : 'biased',
@@ -140,14 +149,13 @@ spec = {'Bins' : {hlt1_biased : {'state'   : 'biased',
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
-input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_2011_biased_unbiased.root')
 
 ## Fit options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
 data = None
-real_data = True
 if real_data:
+    input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_2011_biased_unbiased.root')
     data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                     NTuple = True, observables = observables)
     total = data.sumEntries()
@@ -189,6 +197,21 @@ if real_data:
     data = splot.data('signal')
     ## psi_sdata = splot.data('psi_background')
     bkg_sdata = splot.data('background')
+elif MC:
+    input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_MC11_biased_unbiased.root')
+    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+                    NTuple = True, observables = observables)
+    total = data.sumEntries()
+
+    rel_spec = {}
+    for comb in valid:
+        cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
+        rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
+
+    spec['Relative'] = rel_spec
+    pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
+                              ConditionalCategories = True, **spec)
+    pdf.Print('v')    
 else:
     rel_spec = {}
     for comb in valid:
@@ -216,10 +239,21 @@ canvas = {}
 print 'plotting'
 
 # Plot the lifetime shapes
-canv = TCanvas('canvas', 'canvas', 900, 900)
+canv = TCanvas('canvas', 'canvas', 900, 1050)
 obs = [t]
+states_signal = set([(state, label) for d in valid_definition for state, label in d.iteritems()])
 for states, (p, o) in zip(spec['Relative'].keys(), (i for i in product(canv.pads(3, 3), obs))):
     name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
+    title = []
+    for level in valid_definition:
+        l = level.keys()[0].GetName()[ : 4]
+        level_states = set(level.iteritems())
+        s = [c for c in states if c in level_states and c in states_signal]
+        if len(s) == 1:
+            title.append('%s_only_%s' % (l, s[0][1]))
+        elif len(s) == 2:
+            title.append('%s_both' % l)
+    title = '_X_'.join(title)
     cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
     cat_data = data.reduce(cuts)
     pdfOpts = dict(ProjWData = (RooArgSet(*project_vars), cat_data, True))
@@ -227,10 +261,35 @@ for states, (p, o) in zip(spec['Relative'].keys(), (i for i in product(canv.pads
     plot( p, o, cat_data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
                                               ## , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)
                                               }
+          , plotResidHist = True
           , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack,
                              Binning = RooBinning(len(biased_bins) - 1, biased_bins))
-          , pdfOpts  = dict( LineWidth = 2, **pdfOpts )
+          , frameOpts = {'Title' : title}
+          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
           , logy = False
           )
-
+    p.SetLogx(1)
+    p.Update()
+    
 # plot the efficiency shapes
+hlt1_heights = []
+for i in range(1, 10):
+    hlt1_heights.append(obj.ws().var('hlt1_biased_biased_bin_%03d' % i))
+
+hlt2_heights = []
+for i in range(1, 10):
+    hlt2_heights.append(obj.ws().var('hlt2_biased_biased_bin_%03d' % i))
+
+hlt1_shape = BinnedPdf('hlt1_shape', Observable = t, Binning = 'efficiency_binning', Coefficients = hlt1_heights)
+hlt2_shape = BinnedPdf('hlt2_shape', Observable = t, Binning = 'efficiency_binning', Coefficients = hlt2_heights)
+
+eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 600, 300)
+eff_canvas.Divide(2, 1)
+eff_canvas.cd(1)
+f = t.frame()
+hlt1_shape.plotOn(f)
+f.Draw()
+f = t.frame()
+hlt2_shape.plotOn(f)
+eff_canvas.cd(2)
+f.Draw()

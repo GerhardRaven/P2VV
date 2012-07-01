@@ -159,7 +159,7 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
          customizer->replaceArg(*x, *cv);
          // FIXME: Use the nset here once we get need the special case!
          RooAbsReal* I = parent->pdf()->createIntegral(iset, newRange);
-         RooAbsArg* built = customizer->build(kTRUE);
+         RooAbsArg* built = customizer->build(kFALSE);
          effList.add(*built);
          intList.add(*I);
          _customizers.push_back(customizer);

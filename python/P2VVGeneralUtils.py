@@ -158,7 +158,7 @@ _P2VVPlotStash = []
 # plotting function
 def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', xTitleOffset = None
            , yTitleOffset = None, yScale = ( None, None ), frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ]
-           , plotResidHist = False, logy = False, normalize = True, symmetrize = True, usebar = True
+           , plotResidHist = False, logy = False, logx = False, normalize = True, symmetrize = True, usebar = True
         ) :
     """makes a P2VV plot
 
@@ -313,6 +313,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         obsPad = TPad( obsName, obsName, 0, 0.2, 1, 1 )
         _P2VVPlotStash.append(obsPad)
         if logy: obsPad.SetLogy(1)
+        if logx: obsPad.SetLogx(1)
         obsPad.SetNumber(1)
         obsPad.SetLeftMargin(0.12)
         obsPad.Draw()
@@ -325,6 +326,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         canv.cd()
         residName = obs.GetName() + '_resid1'
         residPad = TPad( residName, residName, 0, 0, 1, 0.2 )
+        if logx: residPad.SetLogx(1)
         _P2VVPlotStash.append(residPad)
         residPad.SetNumber(2)
         residPad.SetLeftMargin(0.12)
@@ -338,6 +340,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         # draw observable frame
         canv.cd()
         if logy: canv.SetLogy(1)
+        if logx: canv.SetLogx(1)
         if 'Title' in frameOpts and not frameOpts['Title']:
             obsFrame.SetTitle("")
         obsFrame.Draw()
