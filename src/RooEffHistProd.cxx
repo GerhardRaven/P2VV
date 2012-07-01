@@ -120,7 +120,7 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
    // i.e. if we have  eps(x)f(x,y)  and we get (x,y) as allVars, 
    // construct I_i,j = int_xmin,i^xmax,j dx int dy f(x,y)
    // so that later we can do sum_i eps( (x_i+x_i+1)/2 ) * I(x_i,x_i+1)
-   RooArgSet *x_ = parent->eff()->getObservables(&iset); // the subset of iset on which _eff depends
+   RooArgSet *x_ = parent->efficiency()->getObservables(&iset); // the subset of iset on which _eff depends
 
    _intObs.addClone(*nset);
 
@@ -154,7 +154,7 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
          newRange = parent->makeFPName(parent->GetName(), iset, nset, range);
          parent->x().setRange(newRange, thisxmin, thisxmax);
          if (0 != rangeName) {
-            cloneRanges(parent->observables(), iset, nset, rangeName, newRange);
+            cloneRanges(*parent->observables(), iset, nset, rangeName, newRange);
          }
          _I[i] = parent->pdf()->createIntegral(iset, nset, parent->getIntegratorConfig(), newRange);
       }
@@ -271,7 +271,7 @@ Double_t RooEffHistProd::getValV(const RooArgSet* normSet) const
 Double_t RooEffHistProd::evaluate() const
 {
    // Calculate and return 'raw' unnormalized value of p.d.f
-   double effVal = eff()->getVal();
+   double effVal = efficiency()->getVal();
    double pdfVal = pdf()->getVal(_pdfNormSet);
    // cout << "RooEffHistProd::evaluate " << effVal << " " << pdfVal << " " << (_pdfNormSet ? *_pdfNormSet : RooArgSet()) << endl;
    return effVal * pdfVal;
@@ -284,8 +284,8 @@ RooAbsGenContext* RooEffHistProd::genContext(const RooArgSet &vars, const RooDat
    // Return specialized generator context for RooEffHistProds that implements generation
    // in a more efficient way than can be done for generic correlated products
    assert(pdf() != 0);
-   assert(eff() != 0);
-   return new RooEffGenContext(*this, *pdf(), *eff(), vars, prototype, auxProto, verbose);
+   assert(efficiency() != 0);
+   return new RooEffGenContext(*this, *pdf(), *efficiency(), vars, prototype, auxProto, verbose);
 }
 
 //_____________________________________________________________________________
@@ -442,7 +442,7 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
    assert(_binboundaries.back() - xmax > -1e-10);
 
    if (cache->trivial()) {// no integral over efficiency dependant...
-      return eff()->getVal() * cache->getVal();
+      return efficiency()->getVal() * cache->getVal();
    }
 
    double xorig = x().getVal();
@@ -460,15 +460,15 @@ Double_t RooEffHistProd::analyticalIntegral(Int_t code, const char* rangeName) c
 
       setDirtyInhibit(kTRUE);
       x().setVal(0.5 * (thisxmin + thisxmax)); // get the efficiency for this bin
-      double eps = eff()->getVal();
+      double eps = efficiency()->getVal();
       x().setVal(xorig);  // and restore the original value ASAP...
-      eff()->getVal() ; // restore original state
+      efficiency()->getVal() ; // restore original state
       setDirtyInhibit(origState) ;	
 
       // Passing the bin index is not very nice, but I prefer not having to loop twice.
       sum += eps * cache->getVal(i);
    }
-   eff()->getVal() ; // restore original state
+   efficiency()->getVal() ; // restore original state
    setDirtyInhibit(origState) ;	
    return  sum;
 }

@@ -51,6 +51,14 @@ public:
    // Function evaluation
    virtual Double_t getValV(const RooArgSet* set = 0) const;
 
+
+   RooAbsReal* efficiency() const { 
+      // Return pointer to efficiency function in product
+      return (RooAbsReal*) _eff.absArg() ; 
+   }
+
+   const RooArgSet* observables() const { return static_cast<const RooArgSet*>(&_observables); }
+
 protected:
 
    virtual Double_t evaluate() const;
@@ -64,13 +72,7 @@ private:
       // Return pointer to pdf in product
       return (RooAbsPdf*) _pdf.absArg() ; 
    }
-   const RooAbsReal* eff() const { 
-      // Return pointer to efficiency function in product
-      return (RooAbsReal*) _eff.absArg() ; 
-   }
    RooRealVar& x() const { return *static_cast<RooRealVar*>(  _observables.first() ) ; }
-
-   const RooArgSet& observables() const { return static_cast<const RooArgSet&>(_observables); }
 
    // the real stuff...
    RooRealProxy _pdf ;     // Probability Density function

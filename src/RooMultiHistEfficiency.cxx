@@ -525,7 +525,6 @@ Double_t RooMultiHistEfficiency::evaluate() const
 {
    bool onlyCats = false;
    bool onlyVars = false;
-   unsigned int code = 0;
 
    // Calculate the raw value of this p.d.f
    RooArgSet categories(_entries.begin()->second->categories());
@@ -533,13 +532,8 @@ Double_t RooMultiHistEfficiency::evaluate() const
    if (_normSet && _normSet->getSize() == categories.getSize() && 
        _normSet->contains(*cat)) {
       onlyCats = true;
-      code = 1;
    } else if (_normSet && !_normSet->contains(*cat)) {
       onlyVars = true;
-      code = 2;
-   } else {
-      // included _normSet == 0
-      code = 3;
    }
 
    double val = 0;
