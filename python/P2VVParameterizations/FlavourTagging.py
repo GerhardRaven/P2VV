@@ -19,9 +19,9 @@ P1OSErr     =  0.023
 
 avgEtaSSVal =  0.350
 P0SSVal     =  0.350
-P0SSErr     =  0.072
-DelP0SSVal  = -0.015
-DelP0SSErr  =  0.007
+P0SSErr     =  0.017
+DelP0SSVal  =  0.019
+DelP0SSErr  =  0.005
 P1SSVal     =  1.00
 P1SSErr     =  0.16
 
@@ -182,11 +182,11 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin, _util_condi
         if kw == 'tagCatCoefs' :
             return self._tagCatCoefs[0] if self._numTagCats[0] == 0 else self._tagCatCoefs
         if kw == 'dilution' :
-            return self._dilutions[0][0] if self._numTagCats[0] == 0 and self._numTagCats[1] == 1 else raiseError(kw)
+            return self._dilutions[1][0] if self._numTagCats[0] == 0 and self._numTagCats[1] == 1 else raiseError(kw)
         if kw == 'dilutions' :
             return self._dilutions[1] if self._numTagCats[0] == 0 else self._dilutions
         if kw == 'ADilWTag' :
-            return self._ADilWTags[0][0] if self._numTagCats[0] == 0 and self._numTagCats[1] == 1 else raiseError(kw)
+            return self._ADilWTags[1][0] if self._numTagCats[0] == 0 and self._numTagCats[1] == 1 else raiseError(kw)
         if kw == 'ADilWTags' :
             return self._ADilWTags[1] if self._numTagCats[0] == 0 else self._ADilWTags
         if kw == 'CEvenOdd' :
