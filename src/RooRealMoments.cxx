@@ -18,6 +18,8 @@
 #include "TMath.h"
 #include "RooArgSet.h"
 
+using namespace std;
+
 //_____________________________________________________________________________
 
 RooAbsRealMoment::RooAbsRealMoment(RooAbsReal& basisFunc, Double_t norm,
