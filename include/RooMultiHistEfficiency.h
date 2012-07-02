@@ -149,7 +149,7 @@ private:
    Levels _levels;
 
    // Integration
-   typedef vector<pair<RooAbsReal*, RooEffHistProd*> > AddEntries;
+   typedef std::vector<std::pair<RooAbsReal*, RooEffHistProd*> > AddEntries;
 
    class CacheElem : public RooAbsCacheElement {
    public:
