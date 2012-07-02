@@ -46,12 +46,12 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-## tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-##                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-##                                                     Constant = False))
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-tres = TimeResolution(time = t)
+from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+                                                    Constant = False))
+## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+## tres = TimeResolution(time = t)
 
 # Signal time pdf
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time
@@ -127,7 +127,7 @@ hlt1_unbiased_heights = [0.5]
 hlt2_biased_heights = [hlt2_histogram.GetBinContent(i) for i in range(1, hlt2_histogram.GetNbinsX() + 1)]
 hlt2_unbiased_heights = [0.5]
 
-valid_definition = [{hlt1_biased : 'biased', hlt1_unbiased : 'unbiased'}, {hlt2_biased : 'biased', hlt2_unbiased : 'unbiased'}]
+valid_definition = [[(hlt1_biased, 'biased'), (hlt1_unbiased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
 valid = valid_combinations(valid_definition)
 
 # Spec to build efficiency shapes
@@ -257,35 +257,51 @@ from ROOT import TCanvas, RooBinning
 canvas = {}
 print 'plotting'
 
-# Plot the lifetime shapes
-canv = TCanvas('canvas', 'canvas', 900, 1050)
-obs = [t]
-states_signal = set([(state, label) for d in valid_definition for state, label in d.iteritems()])
-for states, (p, o) in zip(spec['Relative'].keys(), (i for i in product(canv.pads(3, 3), obs))):
-    name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
+states_signal = set([(state, label) for d in valid_definition for state, label in d])
+def sort_combination(combination):
+    valid_def = valid_definition[:]
+    valid_def.reverse()
+    level_left = 0
+    n = 0
+    c = set(combination)
+    for level in valid_def:
+        for j, state in enumerate(level):
+            n |= int(state in c) << (level_left + j)
+        level_left += len(level)
+    return n - 1
+
+def make_title(combination):
     title = []
     for level in valid_definition:
-        l = level.keys()[0].GetName()[ : 4]
-        level_states = set(level.iteritems())
-        s = [c for c in states if c in level_states and c in states_signal]
+        l = level[0][0].GetName()[ : 4]
+        level_states = set(level)
+        s = [c for c in combination if c in level_states and c in states_signal]
         if len(s) == 1:
             title.append('%s_only_%s' % (l, s[0][1]))
         elif len(s) == 2:
             title.append('%s_both' % l)
-    title = '_X_'.join(title)
+    return '_X_'.join(title)
+    
+# Plot the lifetime shapes
+canv = TCanvas('canvas', 'canvas', 900, 1050)
+obs = [t]
+for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination),
+                          (i for i in product(canv.pads(3, 3), obs))):
+    name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
+    title = make_title(states)
     cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
     cat_data = data.reduce(cuts)
-    pdfOpts = dict(ProjWData = (RooArgSet(*project_vars), cat_data, True))
+    project_set = RooArgSet(*project_vars)
+    pdfOpts = dict(ProjWData = (project_set, cat_data))
     from P2VVGeneralUtils import plot
-    plot( p, o, cat_data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
-                                              ## , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)
-                                              }
+    binning = RooBinning(len(biased_bins) - 1, biased_bins)
+    plot( p, o, cat_data, pdf, components = {'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)}
           , plotResidHist = True
-          , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack,
-                             Binning = RooBinning(len(biased_bins) - 1, biased_bins))
+          , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, Binning = binning)
           , frameOpts = {'Title' : title}
           , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
           , logy = False
+          , logx = True
           )
     p.SetLogx(1)
     p.Update()

@@ -100,7 +100,7 @@ from itertools import product
 def valid_combinations(states):
     all_states = []
     for level in states:
-        all_states.extend(level.keys())
+        all_states.extend([e[0] for e in level])
     labels = [[(state, label.GetName()) for label in state] for state in all_states]
     all_combinations = list(product(*labels))
     valid = []
@@ -108,7 +108,7 @@ def valid_combinations(states):
         s = set(combination)
         for level in states:
             level_good = False
-            for entry in level.iteritems():
+            for entry in level:
                 if entry in s:
                     level_good = True
                     break
