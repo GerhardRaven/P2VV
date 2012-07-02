@@ -1054,7 +1054,7 @@ class MultiHistEfficiency(Pdf):
         self.__observable = kwargs.pop('Observable')
         self.__cc = kwargs.pop('ConditionalCategories', False)
         self.__conditionals = self.__original.ConditionalObservables()
-        build = kwargs.pop('Build')
+        build = kwargs.pop('Build', True)
         builder = None
         if build:
             builder = self.__build_shapes

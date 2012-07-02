@@ -198,28 +198,9 @@ if real_data:
     ## psi_sdata = splot.data('psi_background')
     bkg_sdata = splot.data('background')
 elif MC:
-    input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_MC11a_biased_unbiased.root')
+    input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_MC11_biased_unbiased.root')
     data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                     NTuple = True, observables = observables)
-
-    import random
-    # generate some efficiency as a function of t
-    # make a NEW dataset with hit-miss on the efficienty, add 1/eff as weight 
-    new_data = RooDataSet("new_data", "new_data", data.get())
-    for i, obs in enumerate(data):
-        b2 = obs.find('hlt2_biased')
-        ub2 = obs.find('hlt2_unbiased')
-        if b2.getIndex() == 0:
-            pass
-        elif random.random() < 0.5:
-            ub2.setIndex(0)
-        new_data.add(obs)
-        if i >= 50000:
-            break
-
-    new_data.table(RooArgSet(hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased)).Print('v')
-    del data
-    data = new_data
     total = data.sumEntries()
 
     rel_spec = {}
@@ -249,7 +230,7 @@ super_cat = pdf.getSuper()
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-result = pdf.fitTo(data, **fitOpts)
+## result = pdf.fitTo(data, **fitOpts)
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
