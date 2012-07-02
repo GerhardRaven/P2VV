@@ -55,6 +55,12 @@ namespace {
       TString catName = makeName(name, _catVars );
       return new RooSuperCategory(catName.Data(), catName, _catVars);
    }
+
+   using std::stringstream;
+   using std::make_pair;
+   using std::string;
+   using std::cout;
+   using std::endl;
 }
 
 //_____________________________________________________________________________

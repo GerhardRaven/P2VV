@@ -93,6 +93,12 @@ void cloneRanges(const RooArgSet& observables, const RooArgSet& iset,
 }
 }
 
+namespace {
+   using std::string;
+   using std::cout;
+   using std::endl;
+}
+
 //_____________________________________________________________________________
 RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgSet& iset,
                                      const RooArgSet* nset, const char *rangeName)

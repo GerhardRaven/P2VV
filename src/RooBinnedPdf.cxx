@@ -50,6 +50,14 @@
 
 #include <memory>
 
+namespace {
+   using std::map;
+   using std::cout;
+   using std::endl;
+   using std::list;
+   using std::vector;
+}
+
 ClassImp(RooBinnedPdf);
 
 //_____________________________________________________________________________
@@ -645,7 +653,7 @@ Double_t RooBinnedPdf::maxVal(Int_t code) const
 
 //_____________________________________________________________________________
 list<Double_t>* RooBinnedPdf::plotSamplingHint(RooAbsRealLValue& obs,
-    Double_t xlo, Double_t xhi) const
+                                               Double_t xlo, Double_t xhi) const
 {
    // Return sampling hint for making curves of (projections) of this function
    // as the recursive division strategy of RooCurve cannot deal efficiently
