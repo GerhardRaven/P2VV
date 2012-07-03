@@ -778,7 +778,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 # provide the same asymmetry for all tagged categories
                 from math import sqrt
-                #asymVal = -self._lambdaCP['C'].getVal()
+                asymVal = 0. #asymVal = -self._lambdaCP['C'].getVal()
                 asymErr = ( 10. / sqrt( self._sigSWeightData.sumEntries() ) ) if self._sigSWeightData else 0.1
                 avgCEvenSum = RealVar( 'avgCEvenSum'    , Title = 'Sum of CP average even coefficients'
                                                         , Value = 1., MinMax = (  0., 2. ) )
