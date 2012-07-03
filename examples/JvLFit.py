@@ -8,13 +8,13 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = True
+doFit                   = False
 fastFit                 = False
-makeObservablePlots     = False
+makeObservablePlots     = True
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['makePlots']  = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -55,8 +55,8 @@ markSize  = 0.4
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
 pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['sigTaggingPdf']        = 'tagCats'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['bkgTaggingPdf']        = 'tagCatsRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
@@ -66,12 +66,12 @@ pdfConfig['SWaveAmplitudeValues'] = (  [ -0.12, -0.25, -0.16, -0.07, -0.18, -0.3
 pdfConfig['CSPValues']            = [ 0.4976 ] # [ 0.4976 ] # [ 0.3263 ] # [ 0.9663, 0.9562, 0.9255, 0.9255, 0.9562, 0.9663 ]
 
 pdfConfig['sameSideTagging']    = False  # nominal: False
-pdfConfig['conditionalTagging'] = True  # nominal: True
-pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
+pdfConfig['conditionalTagging'] = False  # nominal: True
+pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
-pdfConfig['eventTimeResolution'] = True  # nominal: True
+pdfConfig['eventTimeResolution'] = False  # nominal: True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
@@ -637,6 +637,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     if pdfConfig['makePlots'] :
         anglesCanv.Print(plotsFile)
         pdfBuild['massCanv'].Print(plotsFile)
+        pdfBuild['mumuMassCanv'].Print(plotsFile)
         pdfBuild['KKMassCanv'].Print(plotsFile)
         bkgTimeCanv.Print(plotsFile)
         pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
@@ -649,6 +650,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
 
 elif pdfConfig['makePlots'] :
     pdfBuild['massCanv'].Print(plotsFile + '(')
+    pdfBuild['mumuMassCanv'].Print(plotsFile)
     pdfBuild['KKMassCanv'].Print(plotsFile)
     bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
