@@ -390,7 +390,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # ntuple variables
         mumuMass = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
-                           , nBins =  32 )
+                           , nBins =  51 )
         KKMass = RealVar( 'mdau2', Title = 'M(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
                          , nBins =  32 )
         if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
@@ -557,7 +557,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , [ self._sigSWeightData, self._bkgSWeightData ]
                          , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                         ) :
-                plot(  pad, KKMass, data, None
+                plot(  pad, mumuMass, data, None
                      , frameOpts  = dict( Title = mumuMass.GetTitle() + plotTitle )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue   )
                      , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2    )
