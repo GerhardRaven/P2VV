@@ -352,7 +352,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # variables in PDF (except for tagging category)
         time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
                        , Ranges = dict( Bulk = ( None, 5. ) ), nBins = numTimeBins )
-        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.10, MinMax = (0.0001, 0.12)
+        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.10, MinMax = (0.0001, 0.12) # > 0.0075
                           , nBins = numTimeResBins )
         timeRes.setBins( numTimeResBins, 'cache' )
 
@@ -547,6 +547,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
         ###################################################################################################################################
+        ## plot mumu mass ##
+        ####################
+
+        if makePlots :
+            self._mumuMassCanv = TCanvas( 'mumuMassCanv', 'mumu Mass' )
+            for ( pad, data, plotTitle )\
+                  in zip(  self._mumuMassCanv.pads( 2, 2 )
+                         , [ self._sigSWeightData, self._bkgSWeightData ]
+                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                        ) :
+                plot(  pad, KKMass, data, None
+                     , frameOpts  = dict( Title = mumuMass.GetTitle() + plotTitle )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue   )
+                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2    )
+                    )
+
+
+        ###################################################################################################################################
         ## build KK mass PDFs ##
         ########################
 
@@ -618,7 +636,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             tagCatP2VVSS = self._tagCatsSS['tagCat']
             tagCatP2VVSS.setIndex(1)
             observables[tagCatP2VVSS.GetName()] = tagCatP2VVSS
-            #obsSetP2VV.append(tagCatP2VVSS)
+            if SSTagging : obsSetP2VV.append(tagCatP2VVSS)
 
             if nominalPdf or condTagging :
                 self._tagCatsOS.addConditional(tagCatP2VVOS)
@@ -750,7 +768,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :
             # get tagging category parameters dictionary/dictionaries
             tagCatsDictOS = self._tagCatsOS.tagCatsDict()
-            if SSTagging: tagCatsDictSS = self._tagCatsSS.tagCatsDict()
+            if SSTagging : tagCatsDictSS = self._tagCatsSS.tagCatsDict()
 
             if not nominalPdf and sigTaggingPdf.startswith('tagUntag') :
                 # assume products of asymmetries are small and B-Bbar asymmetries are equal for all tagged categories
@@ -760,7 +778,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 # provide the same asymmetry for all tagged categories
                 from math import sqrt
-                asymVal = -self._lambdaCP['C'].getVal()
+                #asymVal = -self._lambdaCP['C'].getVal()
                 asymErr = ( 10. / sqrt( self._sigSWeightData.sumEntries() ) ) if self._sigSWeightData else 0.1
                 avgCEvenSum = RealVar( 'avgCEvenSum'    , Title = 'Sum of CP average even coefficients'
                                                         , Value = 1., MinMax = (  0., 2. ) )
@@ -848,7 +866,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 # add production asymmetry and normalization asymmetry to tagging categories dictionary
                 tagCatsDict['AProd'] = 0.
-                tagCatsDict['ANorm'] = -self._lambdaCP['C'].getVal()
+                tagCatsDict['ANorm'] = 0. #-self._lambdaCP['C'].getVal()
 
             from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams( **tagCatsDict )
