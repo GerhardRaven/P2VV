@@ -99,11 +99,15 @@ background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield
 mass_pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi), Name='mass_pdf')
 mass_pdf.Print("t")
 
-base_location = '/stuff/PhD/p2vv'
+base_location = '/home/raaij'
 # Build the acceptance using the histogram as starting values
 input_file = os.path.join(base_location, 'data/start_values.root')
 hlt1_histogram = 'hlt1_shape'
 hlt2_histogram = 'hlt2_shape'
+
+if MC:
+    ## hlt1_histogram += '_MC'
+    hlt2_histogram += '_MC'
 
 from ROOT import TFile
 acceptance_file = TFile.Open(input_file)
@@ -127,31 +131,40 @@ hlt1_unbiased_heights = [0.5]
 hlt2_biased_heights = [hlt2_histogram.GetBinContent(i) for i in range(1, hlt2_histogram.GetNbinsX() + 1)]
 hlt2_unbiased_heights = [0.5]
 
-valid_definition = [[(hlt1_biased, 'biased'), (hlt1_unbiased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
+## valid_definition = [[(hlt1_biased, 'biased'), (hlt1_unbiased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
+valid_definition = [[(hlt1_biased, 'biased'), (hlt1_biased, 'not_biased')]]
 valid = valid_combinations(valid_definition)
 
 # Spec to build efficiency shapes
-spec = {'Bins' : {hlt1_biased : {'state'   : 'biased',
-                                 'bounds'  : biased_bins,
-                                 'heights' : hlt1_biased_heights},
-                  hlt1_unbiased : {'state' : 'unbiased',
-                                   'bounds' : unbiased_bins,
-                                   'heights' : hlt1_unbiased_heights},
-                  hlt2_biased : {'state'   : 'biased',
-                                 'bounds'  : biased_bins,
-                                 'heights' : hlt2_biased_heights},
-                  hlt2_unbiased : {'state' : 'unbiased',
-                                   'bounds' : unbiased_bins,
-                                   'heights' : hlt2_unbiased_heights}
+## spec = {'Bins' : {hlt1_biased : {'state'   : 'biased',
+##                                  'bounds'  : biased_bins,
+##                                  'heights' : hlt1_biased_heights},
+##                   hlt1_unbiased : {'state' : 'unbiased',
+##                                    'bounds' : unbiased_bins,
+##                                    'heights' : hlt1_unbiased_heights},
+##                   hlt2_biased : {'state'   : 'biased',
+##                                  'bounds'  : biased_bins,
+##                                  'heights' : hlt2_biased_heights},
+##                   hlt2_unbiased : {'state' : 'unbiased',
+##                                    'bounds' : unbiased_bins,
+##                                    'heights' : hlt2_unbiased_heights}
+##                   }
+##         }
+
+spec = {'Bins' : {hlt1_biased   : {'biased'   :  hlt1_biased_heights,
+                                   'bounds'   :  biased_bins},
+                  hlt1_unbiased : {'unbiased' :  hlt1_unbiased_heights,
+                                   'bounds'   :  unbiased_bins}
                   }
         }
+        
 # Read input data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
 ## Fit options
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
+fitOpts = dict(NumCPU = 12, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
 data = None
 if real_data:
@@ -199,7 +212,7 @@ if real_data:
     bkg_sdata = splot.data('background')
 elif MC:
     input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_MC11a_biased_unbiased.root')
-    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_unbiased == 1',
                     NTuple = True, observables = observables)
 
     import random
@@ -308,11 +321,11 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
     
 # plot the efficiency shapes
 hlt1_heights = []
-for i in range(1, 10):
+for i in range(1, 11):
     hlt1_heights.append(obj.ws().var('hlt1_biased_biased_bin_%03d' % i))
 
 hlt2_heights = []
-for i in range(1, 10):
+for i in range(1, 11):
     hlt2_heights.append(obj.ws().var('hlt2_biased_biased_bin_%03d' % i))
 
 hlt1_shape = BinnedPdf('hlt1_shape', Observable = t, Binning = 'efficiency_binning', Coefficients = hlt1_heights)
