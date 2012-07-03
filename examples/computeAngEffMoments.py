@@ -10,13 +10,13 @@ multPdfEff  = True
 makePlots   = True
 transAngles = False
 tResModel   = ''
-trigger     = ''
+trigger     = 'Unbiased'
 
 momentsFile = 'effMoments' + ( 'Trans' if transAngles else 'Hel' )
 plotsFile   = 'effMoments' + ( 'Trans' if transAngles else 'Hel' ) + '.ps'
 
 dataSetName = 'DecayTree'
-dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20120606.root'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20120606.root'
 
 # transversity amplitudes
 A0Mag2Val    = 0.60
@@ -73,10 +73,10 @@ angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.
 # ntuple variables
 BMass    = RealVar( 'mass',   Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = ( 5200., 5550. ), Value = 5368. )
 mumuMass = RealVar( 'mdau1',  Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )    )
-KKMass   = RealVar( 'mdau2',  Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = ( 1020. - 30., 1020. + 30. )    )
+KKMass   = RealVar( 'mdau2',  Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = ( 1020. - 12., 1020. + 12. )    )
 timeRes  = RealVar( 'sigmat', Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = ( 0.0, 0.12 )                   )
 
-tagDecision = Category( 'tagdecision', Title = 'Tag decision', Observable = True, States = { 'Untagged' : 0 } )#{ 'Untagged' : 0, 'B' : +1, 'Bbar' : -1 } )
+tagDecision = Category( 'tagdecision', Title = 'Tag decision', Observable = True, States = { 'Untagged' : 0, 'B' : +1, 'Bbar' : -1 } )
 
 sel    = Category( 'sel',                       Title = 'Selection',            Observable = True, States = { 'selected' : +1 } )
 trigUB = Category( 'triggerDecisionUnbiased',   Title = 'Trigger Unbiased',     Observable = True, States = { 'selected' : +1 } )

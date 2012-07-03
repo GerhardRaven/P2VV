@@ -25,7 +25,7 @@ parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120620_MagDownMagUp.root'
+    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120620_MagDownMagUp.root'
 else :
     pdfConfig['nTupleName'] = None
     pdfConfig['nTupleFile'] = None
@@ -55,8 +55,8 @@ markSize  = 0.4
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
 pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']        = 'tagCats'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']        = 'tagCatsRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
