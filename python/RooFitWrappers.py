@@ -966,7 +966,7 @@ class HistPdf( Pdf ) :
                 nbins[o] = o.getBins()
                 o.setBins(n)
         dhs_name =  Name + '_' + '_'.join( i.GetName() for i in d['Observables'] )
-        rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgList( i._var for i in d['Observables'] ), d['Data']))
+        rdh = self.ws().put(RooDataHist( dhs_name, dhs_name,RooArgSet( i._var for i in d['Observables'] ), d['Data']))
 
         # construct factory string on the fly...
         self._declare("HistPdf::%s( { %s }, %s )" % (Name, ','.join( i.GetName() for i in d['Observables'] ), dhs_name  )  )
