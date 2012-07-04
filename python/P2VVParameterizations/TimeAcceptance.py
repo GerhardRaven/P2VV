@@ -1,5 +1,5 @@
-
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin
+from P2VVParameterizations.GeneralUtils import valid_combinations, exclusive_combinations
 
 class TimeAcceptance ( _util_parse_mixin, _util_extConstraints_mixin ) :
     def __init__( self, **kwargs ) : 
@@ -43,4 +43,46 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         if not self._hist:
             raise ValueError, 'Cannot get acceptance historgram %s from file' % histogram
         TimeAcceptance.__init__( self, Acceptance = HistFunc(self._hist.GetName(), Histogram = self._hist, Observables = [self._time]))
+        acceptance_file.Close()
+
+class Paper2012_TimeAcceptance(TimeAcceptance):
+    def __init__(self, **kwargs ) :
+        from ROOT import TFile
+        from RooFitWrappers import HistFunc
+        self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
+                       Value = 0., MinMax = (0.2, 14))
+        input_file = kwargs.pop('Input', 'acceptance.root')
+        histograms = kwargs.pop('Histograms')
+        acceptance_file = TFile.Open(input_file)
+        acceptance_name = kwargs.pop('Name', 'Paper2012_Acceptance')
+
+        data = kwargs.pop('Data')
+        cuts = ' || '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in histograms.iterkeys()])
+        data = data.reduce(cuts)
+        total = data.sumEntries()
+
+        exclusive = exclusive_combinations(histograms.keys())
+        rel_spec = {}
+        ## We assume that the categories have been constructed to be mutually exclusive.
+        for comb in exclusive:
+            cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
+            rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
+
+        if not acceptance_file:
+            raise ValueError, "Cannot open histogram file %s" % input_file
+        self._hists = {}
+        for cat, name in histograms.iteritems():
+            h = acceptance_file.Get(name)
+            if not h:
+                raise ValueError, 'Cannot get acceptance historgram %s from file %s' % (histogram, input_file)
+            self._hists[cat] = h
+
+        bin_spec = {}
+        from array import array
+        for (cat, label), hist in self._hists.iteritems():
+            xaxis = hist.GetXaxis()
+            bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, hist.GetNbinsX() + 2)))
+            heights = [hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)]
+            bin_spec[cat] = dict(state = label, bounds = bins, heights = heights)
+        TimeAcceptance.__init__( self, Acceptance = dict(Bins = bin_spec, Relative = rel_spec, Build = False, Observable = self._time, ConditionalCategories = True, Name = acceptance_name))
         acceptance_file.Close()

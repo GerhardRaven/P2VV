@@ -15,6 +15,7 @@ p2vv_dict.*
 *.txt
 #*
 .build/*
+build/*
 !build/Makefile
 *.tar.bz2
 *.callgrind
