@@ -114,16 +114,13 @@ if not readData :
                             , ( 'TagCat18', 18, 0.124,    0.111, 0.102, 0., 0.0005, 0. )
                            ]
 
-pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
-#pdfConfig['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_20bins'
+pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
+pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
 
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransFullBasis' if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles']\
-                                 else 'effMomentsHelFullBasis'
-#pdfConfig['angEffMomentsFile'] = 'effmoments_tcut_0.3_Feb.txt'
-#pdfConfig['angEffMomentsFile'] = None
+pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasisUBB30' if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles']\
+                                 else 'effMomentsHelBasisUBB30'
 
-if pdfConfig['nominalPdf'] or pdfConfig['transversityAngles'] :
+if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
                                , ( 'trphi',      '#phi_{tr}'        )
@@ -210,7 +207,7 @@ if generateData :
     fitData = pdf.generate( obsSetP2VV, nEvents )
 
     # additional observables
-    if not pdfConfig['transversityAngles'] :
+    if pdfConfig['nominalPdf'] or not pdfConfig['transversityAngles'] :
         from P2VVGeneralUtils import addTransversityAngles
         addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
                                       , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
@@ -242,7 +239,9 @@ if ( readData or generateData ) and doFit :
     if pdfConfig['nominalPdf'] and not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
     if pdfConfig['nominalPdf'] or constWTagAsyms :
+        pdfBuild['tagCatsOS'].setConstant('wTagDelP0')
         pdfBuild['tagCatsOS'].setConstant('wTagDelP1')
+        pdfBuild['tagCatsSS'].setConstant('wTagDelP0')
         pdfBuild['tagCatsSS'].setConstant('wTagDelP1')
 
     if pdfConfig['parameterizeKKMass'] == 'functions' :
