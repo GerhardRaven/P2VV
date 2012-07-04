@@ -584,8 +584,7 @@ class RealMomentsBuilder ( dict ) :
         try :
             momFile = open( filePath, 'w' )
         except :
-            print 'P2VV - ERROR: RealMomentsBuilder.writeMoments: unable to open file \"%s\"' % filePath
-            return
+            raise IOError( 'P2VV - ERROR: RealMomentsBuilder.writeMoments: unable to open file \"%s\"' % filePath )
 
         # get maximum length of basis function name
         maxLenName = 13
@@ -628,7 +627,7 @@ class RealMomentsBuilder ( dict ) :
         momFile.write(cont)
         momFile.close()
 
-        print 'P2VV - INFO: MomentsBuilder.writeMoments: %d efficiency moment%s written to file \"%s\"'\
+        print 'P2VV - INFO: RealMomentsBuilder.writeMoments: %d efficiency moment%s written to file \"%s\"'\
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def read( self, filePath = 'moments', **kwargs ) :
@@ -641,8 +640,7 @@ class RealMomentsBuilder ( dict ) :
         try :
           momFile = open(filePath, 'r')
         except :
-          print 'P2VV - ERROR: MomentsBuilder.readMoments: unable to open file \"%s\"' % filePath
-          return
+          raise IOError( 'P2VV - ERROR: RealMomentsBuilder.readMoments: unable to open file \"%s\"' % filePath )
 
         # get minimum significance
         minSignif = kwargs.pop('MinSignificance',float('-inf'))
@@ -681,7 +679,7 @@ class RealMomentsBuilder ( dict ) :
 
         momFile.close()
 
-        print 'P2VV - INFO: MomentsBuilder.readMoments: %d efficiency moment%s read from file \"%s\"'\
+        print 'P2VV - INFO: RealMomentsBuilder.readMoments: %d efficiency moment%s read from file \"%s\"'\
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def buildPDFTerms( self, **kwargs ) :
