@@ -342,7 +342,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ws = RooObject().ws()
 
         # angular functions
-        if nominalPdf or transAngles :
+        if not nominalPdf and transAngles :
             from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
             self._angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
         else :
@@ -926,7 +926,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             moments = RealMomentsBuilder()
 #            angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
 #                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 1, 1, 0 ), ( 1, 2, 0 ) ] if not ( nominalPdf or transAngles ) \
+            angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 1, 1, 0 ), ( 1, 2, 0 ) ] if nominalPdf or not transAngles \
                           else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 1, 1, 1 ), ( 1, 2, 0 ), ( 1, 2, 2 ) ]
             moments.appendPYList( self._angleFuncs.angles, angMomInds )
             moments.read(angEffMomentsFile)
@@ -1125,7 +1125,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # define angular bins
                 from math import pi
                 from array import array
-                if nominalPdf or transAngles :
+                if not nominalPdf and transAngles :
                     nBins = [ 5, 7, 9 ]
                     cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
                     cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
