@@ -75,7 +75,7 @@ public:
 
   virtual std::list<Double_t>* binBoundaries
   (RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const;
-  list<Double_t>* plotSamplingHint
+  std::list<Double_t>* plotSamplingHint
   (RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const;
 
   RooArgList* baseVariables();

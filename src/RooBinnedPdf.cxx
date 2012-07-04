@@ -50,6 +50,8 @@
 
 #include <memory>
 
+using namespace std;
+
 ClassImp(RooBinnedPdf);
 
 //_____________________________________________________________________________

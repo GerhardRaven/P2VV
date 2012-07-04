@@ -248,8 +248,8 @@ class JpsiVPolar_AmplitudeSet( AmplitudeSet ) :
                                         , Title = 'Im(A_S)' )
 
         ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1
-                                     , self._ASMag2 if hasattr( self, '_ASMag2' ) else None
-                                     , self._ASPhase if hasattr( self, '_ASPhase' ) else None )
+                                     , getattr( self, '_ASMag2', None ) 
+                                     , getattr( self, '_ASPhase', None )  )
 
         self._check_extraneous_kw( kwargs ) 
         AmplitudeSet.__init__( self, Polar2_Amplitude( 'A0',    self._A0Mag2,    self._A0Phase,    +1 )
@@ -369,8 +369,8 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                                     , Title = 'Im(A_S)' )
 
         ASAmp = Carthesian_Amplitude( 'AS', self._ReAS, self._ImAS, -1
-                                     , self._ASMag2 if hasattr( self, '_ASMag2' ) else None
-                                     , self._ASPhase if hasattr( self, '_ASPhase' ) else None )
+                                     , getattr( self, '_ASMag2', None ) 
+                                     , getattr( self, '_ASPhase', None ) )
 
         self._check_extraneous_kw( kwargs )
         AmplitudeSet.__init__( self, A0Amp, AparAmp, AperpAmp, ASAmp, Conditionals = [ self._KKMass ] if self._KKMass else [ ] )
