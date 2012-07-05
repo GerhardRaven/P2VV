@@ -733,7 +733,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         else :
             if lambdaCPParam == 'lambPhi' :
-                from P2VVParameterizations.CPVParams import LambdaArg_CPParam as CPParam
+                from P2VVParameterizations.CPVParams import LambdaAbsArg_CPParam as CPParam
             else :
                 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
 
