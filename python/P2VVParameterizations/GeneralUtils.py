@@ -10,6 +10,11 @@ class _util_parse_mixin( object ) :
     def parameters( self ) :
         return self._params
 
+    def parameter( self, name ) :
+        for par in self._params :
+            if par.GetName() == name : return par
+        return None
+
     def _parseArg( self, arg, kwargs, ContainerList = None, ObjectType = 'RealVar', SingleArgKey = 'Value', **d ) :
         def _create( arg,kwargs, **d ) :
             import RooFitWrappers
