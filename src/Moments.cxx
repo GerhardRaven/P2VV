@@ -4,10 +4,7 @@
 #include "RooArgSet.h"
 #include "RooAbsData.h"
 
-namespace {
-   using std::cout;
-   using std::endl;
-}
+using namespace std;
 
 IMoment::IMoment(RooAbsReal& basis, double norm, const std::string& name) :
   _basis(basis), _m0(0.), _m1(0.), _n0(0.), _n1(0.), _n2(0.),

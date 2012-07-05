@@ -9,13 +9,14 @@ readMoments = False
 multPdfEff  = True
 makePlots   = True
 transAngles = False
+tResModel   = 'Gauss'
+trigger     = ''
 
 momentsFile = 'effMoments' + ( 'Trans' if transAngles else 'Hel' )
 plotsFile   = 'effMoments' + ( 'Trans' if transAngles else 'Hel' ) + '.ps'
 
 dataSetName = 'DecayTree'
-#dataSetFile = '/data/bfys/dveijk/MC/2012/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120109.root'
-dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_MC11a_ntupleB_for_fitting_20120209.root'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20120606.root'
 
 # transversity amplitudes
 A0Mag2Val    = 0.60
@@ -33,6 +34,7 @@ phiCPVal      = -0.04
 GammaVal  = 0.679
 dGammaVal = 0.060
 dMVal     = 17.8
+tResSigma = 0.045
 
 # plot options
 if transAngles : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
@@ -52,7 +54,7 @@ from RooFitWrappers import *
 from P2VVLoad import RooFitOutput
 
 # workspace
-ws = RooObject(workspace = 'ws')
+ws = RooObject(workspace = 'ws').ws()
 
 # angular functions
 if transAngles :
@@ -63,33 +65,55 @@ else :
     angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 # variables in PDF
-time     = RealVar(  'time',     Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14.    ) )
-trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ns', Observable = True, Value = 0.,  MinMax = ( 0.,   0.020 ) )
+time     = RealVar(  'time',     Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. ) )
+trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ns', Observable = True, Value = 0.,  MinMax = ( 0.,  20. ) )
 iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
 angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
 # ntuple variables
-BMass   = RealVar( 'mass',   Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = ( 5200., 5550. ), Value = 5368. )
-mpsi    = RealVar( 'mdau1',  Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )    )
-mphi    = RealVar( 'mdau2',  Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = ( 1020. - 12., 1020. + 12. )    )
-timeRes = RealVar( 'sigmat', Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = ( 0.0, 0.12 )                   )
+BMass    = RealVar( 'mass',   Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = ( 5200., 5550. ), Value = 5368. )
+mumuMass = RealVar( 'mdau1',  Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )    )
+KKMass   = RealVar( 'mdau2',  Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = ( 1020. - 30., 1020. + 30. )    )
+timeRes  = RealVar( 'sigmat', Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = ( 0.0, 0.12 )                   )
 
-sel    = Category( 'sel',             Title = 'Selection',           Observable = True, States = { 'selected' : +1 } )
-trig   = Category( 'triggerDecision', Title = 'Trigger Decision',    Observable = True, States = { 'selected' : +1 } )
-bkgcat = Category( 'bkgcat',          Title = 'Background category', Observable = True, States = { 'cat0': 0, 'cat10': 10 } )
+tagDecision = Category( 'tagdecision', Title = 'Tag decision', Observable = True, States = { 'Untagged' : 0, 'B' : +1, 'Bbar' : -1 } )
 
-obsSetNTuple = [ time, trueTime ] + angles +  [ BMass, mpsi, mphi, timeRes ] + [ sel, trig, bkgcat ]
+sel    = Category( 'sel',                       Title = 'Selection',            Observable = True, States = { 'selected' : +1 } )
+trigUB = Category( 'triggerDecisionUnbiased',   Title = 'Trigger Unbiased',     Observable = True, States = { 'selected' : +1 } )
+trigB  = Category( 'triggerDecisionBiasedExcl', Title = 'Trigger Excl. Biased', Observable = True, States = { 'selected' : +1 } )
+bkgcat = Category( 'bkgcat',                    Title = 'Background category',  Observable = True, States = { 'cat0': 0, 'cat50': 50 } )
+
+muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
+muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
+KPlusTrackChi2  = RealVar( 'Kplus_track_chi2ndof',   Title = 'K+ track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
+KMinTrackChi2   = RealVar( 'Kminus_track_chi2ndof',  Title = 'K- track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
+
+obsSetUB = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [tagDecision] \
+           + [ sel, trigUB, bkgcat, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
+obsSetB  = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [tagDecision] \
+           + [ sel, trigB, bkgcat, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
+if tResModel not in [ 'Gauss', '3Gauss' ] :
+    obsSetUB.append(trueTime)
+    obsSetB.append(trueTime)
 
 # read ntuple
 from P2VVGeneralUtils import readData
-data = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetNTuple )
+dataUB = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetUB, Rename = 'DecayTreeUB' )
+dataB  = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetB,  Rename = 'DecayTreeB'  )
 
-# add true lifetime to data set
-trueTimeP2VV = RealVar(  'trueTimeP2VV', Title = 'True decay time', Unit = 'ps', Observable = True
-                       , Formula = ( '1000. * @0', [ trueTime ], data )
-                      )
+if trigger == 'ExclBiased' :
+    data = dataB
+elif trigger == 'Unbiased' :
+    data = dataUB
+else :
+    dataSetVars = dataUB.get()
+    dataSetVars.remove(dataSetVars.find('triggerDecisionUnbiased'))
 
-obsSetP2VV = [ trueTimeP2VV ] + angles
+    from ROOT import RooDataSet, RooFit
+    data = RooDataSet( 'DecayTreeUBB', 'Decay Tree UB+B', dataSetVars, RooFit.Import(dataUB) )
+    data.append(dataB)
+
+obsSetP2VV = [ time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime ] + angles
 
 
 ###########################################################################################################################################
@@ -110,8 +134,18 @@ amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhV
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
 lifetimeParams = LifetimeParams( Gamma = GammaVal, dGamma = dGammaVal, dM = dMVal )
 
-from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
-timeResModel = TimeResolution( time = trueTimeP2VV )
+tResArgs = { }
+if tResModel == 'Gauss' :
+    from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+    tResArgs['time']         = time
+    tResArgs['timeResSigma'] = tResSigma
+elif tResModel == '3Gauss' :
+    from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
+    tResArgs['time'] = time
+else :
+    from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
+    tResArgs['time'] = trueTime
+timeResModel = TimeResolution( **tResArgs )
 
 # CP violation parameters
 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
@@ -126,7 +160,7 @@ from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as 
 timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp' ] ) 
 
 # build signal PDF
-args = dict(  time                   = trueTimeP2VV
+args = dict(  time                   = time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime
             , iTag                   = iTag
             , tau                    = lifetimeParams['MeanLifetime']
             , dGamma                 = lifetimeParams['dGamma']
@@ -149,8 +183,14 @@ pdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
 ## compute angular efficiency moments and multiply PDF with efficiency function ##
 ##################################################################################
 
-# print variables and parameters
-print 'Variables in PDF:'
+# print PDF, data, variables and parameters
+print '\nData set:'
+data.Print()
+print '\nPDF:'
+pdf.Print()
+print '\nLifetime resolution model:'
+timeResModel['model'].Print()
+print '\nVariables in PDF:'
 for var in pdf.getObservables(data) : var.Print()
 print '\nParameters in PDF:'
 for par in pdf.getParameters(data) : par.Print()

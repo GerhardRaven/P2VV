@@ -186,8 +186,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['multiplyByTimeEff']    = ''                  # 'all' / 'signal'
         self['parameterizeKKMass']   = ''  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
-        self['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020., 1020. + 12., 1020. + 30. ]
-        self['SWaveAmplitudeValues'] = (  [ 0.8, 0.2,  0.1,  0.7 ], [ 1.4, 0.3, -0.5, -0.6 ] )
+        self['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ]
+        self['SWaveAmplitudeValues'] = (  [ 0.026 ], [ 0. ] )
+        self['CSPValues']            = [ 0.4976 ]
 
         self['sameSideTagging']    = True
         self['conditionalTagging'] = False
@@ -204,13 +205,13 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['signalFraction'] = 0.67
         self['massRangeBackground'] = False
 
-        self['amplitudeParam'] = 'phasesSWaveFrac'       # 'phasesSWaveFrac' / 'ReIm' / 'bank'
-        self['polarSWave']     = False
-        self['AparParam']      = 'cos'                   # 'phase' / 'cos' / 'real' / 'ReIm'
+        self['amplitudeParam'] = 'phasesSWaveFrac'       # 'phases' / 'phasesSWaveFrac' / 'ReIm' / 'bank'
+        self['ASParam']        = 'deltaPerp'             # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm' / 'Mag2ReImPerp'
+        self['AparParam']      = 'cos'                   # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
 
         self['constrainDeltaM'] = True
 
-        self['carthLambdaCP'] = False
+        self['lambdaCPParam'] = 'lambSqPhi'
 
         self['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                               , ( 'trcostheta', 'cos(#theta_{tr})' )
@@ -286,12 +287,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ambiguityPars     = pdfConfig.pop('ambiguityParameters')
         KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
         SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
-
-        if not paramKKMass :
-            KKMassBinBounds = [ 1020. - 12., 1020., 1020. + 12. ]
-        elif ambiguityPars :
-            from math import pi
-            for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
+        CSPValues         = pdfConfig.pop('CSPValues')
 
         self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
         iTagStates = pdfConfig.pop('iTagStates')
@@ -314,12 +310,21 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         massRangeBackground = pdfConfig.pop('massRangeBackground')
 
         amplitudeParam = pdfConfig.pop('amplitudeParam')
-        polarSWave     = pdfConfig.pop('polarSWave')
+        ASParam        = pdfConfig.pop('ASParam')
         AparParam      = pdfConfig.pop('AparParam')
+
+        if not paramKKMass :
+            if not KKMassBinBounds : KKMassBinBounds = [ 1020. - 12., 1020., 1020. + 12. ]
+        elif ambiguityPars :
+            if amplitudeParam == 'bank' and ASParam != 'ReIm' :
+                from math import pi
+                for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
+            elif amplitudeParam == 'phases' and ASParam in [ 'Mag2ReIm', 'ReIm' ] :
+                for ImIter, Im in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][ImIter] = -Im
 
         constrainDeltaM = pdfConfig.pop('constrainDeltaM')
 
-        carthLambdaCP = pdfConfig.pop('carthLambdaCP')
+        lambdaCPParam = pdfConfig.pop('lambdaCPParam')
 
         if makePlots :
             # import plotting tools
@@ -337,7 +342,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ws = RooObject().ws()
 
         # angular functions
-        if nominalPdf or transAngles :
+        if not nominalPdf and transAngles :
             from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
             self._angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
         else :
@@ -347,7 +352,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # variables in PDF (except for tagging category)
         time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
                        , Ranges = dict( Bulk = ( None, 5. ) ), nBins = numTimeBins )
-        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.10, MinMax = (0.0001, 0.12)
+        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.10, MinMax = (0.0001, 0.12) # > 0.0075
                           , nBins = numTimeResBins )
         timeRes.setBins( numTimeResBins, 'cache' )
 
@@ -358,10 +363,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if nominalPdf or not self._iTagZeroTrick :
             iTagOS = Category( 'iTagOS', Title = 'Initial state flavour tag opposite side', Observable = True, States = iTagStates )
             iTagSS = Category( 'iTagSS', Title = 'Initial state flavour tag same side',     Observable = True, States = iTagStates )
-        estWTagOS = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability opposite side', Observable = True
-                            , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
-        estWTagSS = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
-                            , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+        estWTagComb = RealVar( 'tagomega',    Title = 'Estimated wrong tag probability OS/SS combination', Observable = True
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+        estWTagOS   = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability opposite side', Observable = True
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+        estWTagSS   = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
         estWTagOS.setBins( numEstWTagBins, 'cache' )
         estWTagSS.setBins( numEstWTagBins, 'cache' )
 
@@ -383,40 +390,53 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # ntuple variables
         mumuMass = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
-                           , nBins =  32 )
+                           , nBins =  51 )
         KKMass = RealVar( 'mdau2', Title = 'M(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
                          , nBins =  32 )
         if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
-        tagDecisionOS = Category( 'tagdecision_os', Title = 'Tag decision opposite side', Observable = True, States = iTagStatesDecision )
-        tagDecisionSS = Category( 'tagdecision_ss', Title = 'Tag decision same side',     Observable = True, States = iTagStatesDecision )
+        tagDecisionComb = Category( 'tagdecision',    Title = 'Tag decision OS/SS combination', Observable = True, States = iTagStatesDecision )
+        tagDecisionOS   = Category( 'tagdecision_os', Title = 'Tag decision opposite side',     Observable = True, States = iTagStatesDecision )
+        tagDecisionSS   = Category( 'tagdecision_ss', Title = 'Tag decision same side',         Observable = True, States = iTagStatesDecision )
         tagCatOS = Category( 'tagcat_os',   Title = 'Tagging category opposite side', Observable = True
                             , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                            )
 
-        sel   = Category( 'sel',             Title = 'Selection',        Observable = True, States = { 'selected' : +1 } )
-        trig  = Category( 'triggerDecision', Title = 'Trigger Decision', Observable = True, States = { 'selected' : +1 } )
+        sel   = Category( 'sel',                     Title = 'Selection',                 Observable = True, States = { 'selected' : +1 } )
+        trig  = Category( 'triggerDecisionUnbiased', Title = 'Trigger Decision Unbiased', Observable = True, States = { 'selected' : +1 } )
 
-        observables = dict(  time          = time
-                           , cpsi          = angles[0]
-                           , ctheta        = angles[1]
-                           , phi           = angles[2]
-                           , iTagOS        = iTagOS if nominalPdf or not self._iTagZeroTrick else tagDecisionOS
-                           , iTagSS        = iTagSS if nominalPdf or not self._iTagZeroTrick else tagDecisionSS
-                           , tagDecisionOS = tagDecisionOS
-                           , estWTagOS     = estWTagOS
-                           , estWTagSS     = estWTagSS
-                           , tagCatOS      = tagCatOS
-                           , BMass         = BMass
-                           , mumuMass      = mumuMass
-                           , KKMass        = KKMass
-                           , timeRes       = timeRes
-                           , sel           = sel
-                           , trig          = trig
+        muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
+        muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
+        KPlusTrackChi2  = RealVar( 'Kplus_track_chi2ndof',   Title = 'K+ track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
+        KMinTrackChi2   = RealVar( 'Kminus_track_chi2ndof',  Title = 'K- track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
+
+        observables = dict(  time            = time
+                           , cpsi            = angles[0]
+                           , ctheta          = angles[1]
+                           , phi             = angles[2]
+                           , iTagOS          = iTagOS if nominalPdf or not self._iTagZeroTrick else tagDecisionOS
+                           , iTagSS          = iTagSS if nominalPdf or not self._iTagZeroTrick else tagDecisionSS
+                           , tagDecisionComb = tagDecisionComb
+                           , tagDecisionOS   = tagDecisionOS
+                           , estWTagComb     = estWTagComb
+                           , estWTagOS       = estWTagOS
+                           , estWTagSS       = estWTagSS
+                           , tagCatOS        = tagCatOS
+                           , BMass           = BMass
+                           , mumuMass        = mumuMass
+                           , KKMass          = KKMass
+                           , timeRes         = timeRes
+                           , sel             = sel
+                           , trig            = trig
+                           , muPlusTrackChi2 = muPlusTrackChi2
+                           , muMinTrackChi2  = muMinTrackChi2
+                           , KPlusTrackChi2  = KPlusTrackChi2
+                           , KMinTrackChi2   = KMinTrackChi2
                           )
 
-        obsSetNTuple = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [ tagDecisionOS, estWTagOS, tagCatOS ]\
-                       + [ tagDecisionSS, estWTagSS ] + [ sel, trig ]
+        obsSetNTuple = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [ tagDecisionComb, estWTagComb ]\
+                       + [ tagDecisionOS, estWTagOS, tagCatOS ] + [ tagDecisionSS, estWTagSS ]\
+                       + [ sel, trig, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
 
 
         ###################################################################################################################################
@@ -527,6 +547,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
         ###################################################################################################################################
+        ## plot mumu mass ##
+        ####################
+
+        if makePlots :
+            self._mumuMassCanv = TCanvas( 'mumuMassCanv', 'mumu Mass' )
+            for ( pad, data, plotTitle )\
+                  in zip(  self._mumuMassCanv.pads( 2, 2 )
+                         , [ self._sigSWeightData, self._bkgSWeightData ]
+                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                        ) :
+                plot(  pad, mumuMass, data, None
+                     , frameOpts  = dict( Title = mumuMass.GetTitle() + plotTitle )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue   )
+                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2    )
+                    )
+
+
+        ###################################################################################################################################
         ## build KK mass PDFs ##
         ########################
 
@@ -556,9 +594,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                              , [ self._signalKKMass.pdf(), self._backgroundKKMass.pdf() ]
                              , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                             ) :
-                    plot(  pad, KKMass, data, pdf
+                    plot(  pad, KKMass, data, None #pdf, logy = True
                          , frameOpts  = dict( Title = KKMass.GetTitle() + plotTitle )
-                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4   )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue   )
                          , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2    )
                         )
 
@@ -570,10 +608,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # build tagging categories opposite side
             from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
             if nominalPdf or contEstWTag :
-                self._tagCatsOS = TaggingCategories(  tagCat = 'tagCatP2VVOS', DataSet = self._sigSWeightData, estWTagOS = estWTagOS
+                self._tagCatsOS = TaggingCategories(  tagCat = 'tagCatP2VVOS', DataSet = self._sigSWeightData, estWTag = estWTagOS
                                                     , wTagP0Constraint = True if nominalPdf else constrainTagging
                                                     , wTagP1Constraint = True if nominalPdf else constrainTagging )
-                self._tagCatsSS = TaggingCategories(  tagCat = 'tagCatP2VVSS', DataSet = self._sigSWeightData, estWTagSS = estWTagSS
+                self._tagCatsSS = TaggingCategories(  tagCat = 'tagCatP2VVSS', DataSet = self._sigSWeightData, estWTag = estWTagSS
                                                     , SameSide = True
                                                     , wTagP0Constraint = True if nominalPdf else constrainTagging
                                                     , wTagP1Constraint = True if nominalPdf else constrainTagging )
@@ -598,7 +636,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             tagCatP2VVSS = self._tagCatsSS['tagCat']
             tagCatP2VVSS.setIndex(1)
             observables[tagCatP2VVSS.GetName()] = tagCatP2VVSS
-            #obsSetP2VV.append(tagCatP2VVSS)
+            if SSTagging : obsSetP2VV.append(tagCatP2VVSS)
 
             if nominalPdf or condTagging :
                 self._tagCatsOS.addConditional(tagCatP2VVOS)
@@ -649,21 +687,26 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if paramKKMass == 'functions' :
             commonArgs[ 'KKMass' ]        = KKMass
             commonArgs[ 'KKMassBinning' ] = self._KKMassBinning
+        if not nominalPdf and not ASParam.startswith('Mag2ReIm') :
+            commonArgs[ 'C_SP' ] = CSPValues[0]
 
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
-            self._amplitudes = Amplitudes( PolarSWave = True if nominalPdf else polarSWave
+            self._amplitudes = Amplitudes( ASParameterization = 'deltaPerp' if nominalPdf else ASParam
                                           , AparParameterization = 'phase' if nominalPdf else AparParam
                                           , **commonArgs )
 
+        elif amplitudeParam == 'phases' :
+            from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet as Amplitudes
+            self._amplitudes = Amplitudes( ASParameterization = 'deltaPerp' if nominalPdf else ASParam, **commonArgs )
+
         elif amplitudeParam == 'bank' :
             from P2VVParameterizations.DecayAmplitudes import JpsiVBank_AmplitudeSet as Amplitudes
-            self._amplitudes = Amplitudes( PolarSWave = polarSWave, AparParameterization = AparParam
+            self._amplitudes = Amplitudes( ASParameterization = ASParam, AparParameterization = AparParam
                                           , **commonArgs )
 
         else :
-            from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
-            self._amplitudes = Amplitudes( **commonArgs )
+            raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no valid amplitude parameterization specified')
 
         # B lifetime
         from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
@@ -680,7 +723,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
 
         # CP violation parameters
-        if carthLambdaCP : 
+        if lambdaCPParam == 'ReIm' : 
             from P2VVParameterizations.CPVParams import LambdaCarth_CPParam as CPParam
             ReLambdaCPVar = dict( Name = 'ReLambdaCP' )
             ImLambdaCPVar = dict( Name = 'ImLambdaCP' )
@@ -689,7 +732,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._lambdaCP = CPParam( ReLambdaCP = ReLambdaCPVar, ImLambdaCP = ImLambdaCPVar )
 
         else :
-            from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
+            if lambdaCPParam == 'lambPhi' :
+                from P2VVParameterizations.CPVParams import LambdaAbsArg_CPParam as CPParam
+            else :
+                from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
+
             phiCPVar = dict( Name = 'phiCP' )
             if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
             self._lambdaCP = CPParam( phiCP = phiCPVar )
@@ -721,7 +768,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :
             # get tagging category parameters dictionary/dictionaries
             tagCatsDictOS = self._tagCatsOS.tagCatsDict()
-            if SSTagging: tagCatsDictSS = self._tagCatsSS.tagCatsDict()
+            if SSTagging : tagCatsDictSS = self._tagCatsSS.tagCatsDict()
 
             if not nominalPdf and sigTaggingPdf.startswith('tagUntag') :
                 # assume products of asymmetries are small and B-Bbar asymmetries are equal for all tagged categories
@@ -731,7 +778,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 # provide the same asymmetry for all tagged categories
                 from math import sqrt
-                asymVal = -self._lambdaCP['C'].getVal()
+                asymVal = 0. #asymVal = -self._lambdaCP['C'].getVal()
                 asymErr = ( 10. / sqrt( self._sigSWeightData.sumEntries() ) ) if self._sigSWeightData else 0.1
                 avgCEvenSum = RealVar( 'avgCEvenSum'    , Title = 'Sum of CP average even coefficients'
                                                         , Value = 1., MinMax = (  0., 2. ) )
@@ -819,7 +866,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 # add production asymmetry and normalization asymmetry to tagging categories dictionary
                 tagCatsDict['AProd'] = 0.
-                tagCatsDict['ANorm'] = -self._lambdaCP['C'].getVal()
+                tagCatsDict['ANorm'] = 0. #-self._lambdaCP['C'].getVal()
 
             from P2VVParameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams( **tagCatsDict )
@@ -879,8 +926,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             moments = RealMomentsBuilder()
 #            angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
 #                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not ( nominalPdf or transAngles ) \
-                          else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+            angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 1, 1, 0 ), ( 1, 2, 0 ) ] if nominalPdf or not transAngles \
+                          else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 1, 1, 1 ), ( 1, 2, 0 ), ( 1, 2, 2 ) ]
             moments.appendPYList( self._angleFuncs.angles, angMomInds )
             moments.read(angEffMomentsFile)
             moments.Print()
@@ -915,14 +962,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating signal tagging PDFs from %s data'\
                           % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
                     from RooFitWrappers import HistPdf
-                    self._sig_tagCat_iTag = HistPdf( Name = 'sig_tagCat_iTag', Observables = [tagCatP2VVOS, iTagOS], Data = sigTaggingData )
+                    if not SSTagging :
+                        self._sig_tagCat_iTag = HistPdf(  Name = 'sig_tagCat_iTag'
+                                                        , Observables = [ tagCatP2VVOS, iTagOS ]
+                                                        , Data = sigTaggingData
+                                                       )
+                    else :
+                        self._sig_tagCat_iTag = HistPdf(  Name = 'sig_tagCat_iTag'
+                                                        , Observables = [ tagCatP2VVOS, tagCatP2VVSS, iTagOS, iTagSS ]
+                                                        , Data = sigTaggingData
+                                                       )
                     self._signalComps += self._sig_tagCat_iTag
 
                 else :
                     # use a PDF with variable bin coefficients
-                    if nominalPdf or sigTaggingPdf.startswith('tagUntag') or tagCatP2VVOS.numTypes() == 2 :
+                    if nominalPdf or sigTaggingPdf.startswith('tagUntag')\
+                            or ( tagCatP2VVOS.numTypes() == 2 and ( not SSTagging or tagCatP2VVSS.numTypes() == 2 ) ) :
                         # assume B-Bbar asymmetry is equal for all tagged categories
-                        if tagCatP2VVOS.numTypes() > 2 :
+                        if tagCatP2VVOS.numTypes() > 2 or (SSTagging and tagCatP2VVSS.numTypes() > 2 ) :
                             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: signal tagging PDF:\n'\
                                 + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
                         else :
@@ -1068,7 +1125,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # define angular bins
                 from math import pi
                 from array import array
-                if nominalPdf or transAngles :
+                if not nominalPdf and transAngles :
                     nBins = [ 5, 7, 9 ]
                     cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
                     cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
@@ -1320,13 +1377,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             while splitCatState :
                 splitCatPars = self._simulPdf.getPdf( splitCatState.GetName() ).getVariables()
 
-                if amplitudeParam == 'bank' and polarSWave :
+                if amplitudeParam == 'bank' and ASParam != 'ReIm' :
                     ASOddMag2  = splitCatPars.find( 'ASOddMag2_'  + splitCatState.GetName() )
                     ASOddPhase = splitCatPars.find( 'ASOddPhase_' + splitCatState.GetName() )
 
                     ASOddMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
                     ASOddMag2.setMax(5.)
                     ASOddPhase.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
+
+                elif amplitudeParam == 'phases' and ASParam in [ 'ReIm', 'Mag2ReIm' ] :
+                    if ASParam == 'Mag2ReIm' :
+                        ASMag2 = splitCatPars.find( 'ASMag2_' + splitCatState.GetName() )
+                    ReAS = splitCatPars.find( 'ReAS_' + splitCatState.GetName() )
+                    ImAS = splitCatPars.find( 'ImAS_' + splitCatState.GetName() )
+
+                    if ASParam == 'Mag2ReIm' :
+                        ASMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ]**2 + SWaveAmpVals[1][ splitCatState.getVal() ]**2 )
+                    ReAS.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
+                    ImAS.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
 
                 if not SFit :
                     sigYield = splitCatPars.find( 'N_signal_' + splitCatState.GetName() )

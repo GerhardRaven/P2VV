@@ -9,6 +9,133 @@
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin
 
+avgEtaOSVal =  0.392
+P0OSVal     =  0.392
+P0OSErr     =  0.008
+DelP0OSVal  =  0.011
+DelP0OSErr  =  0.0034
+P1OSVal     =  1.000
+P1OSErr     =  0.023
+
+avgEtaSSVal =  0.350
+P0SSVal     =  0.350
+P0SSErr     =  0.017
+DelP0SSVal  = -0.019
+DelP0SSErr  =  0.005
+P1SSVal     =  1.00
+P1SSErr     =  0.16
+
+
+###########################################################################################################################################
+## Tagging tools ##
+###################
+
+def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., avgEstWTag = avgEtaOSVal, P0    = P0OSVal, P1    = P1OSVal
+                                                                                                       , P0Err = P0OSErr, P1Err = P1OSErr
+                                                                                                       , AP0   = 0.,    AP1   = 0.
+                           ) :
+    assert data, 'getTagCatParamsFromData(): no data set found'
+    assert estWTagName and data.get(0).find(estWTagName), 'getTagCatParamsFromData(): estimated wrong-tag probability not found in data'
+
+    from RooFitWrappers import RooObject
+    if isinstance( avgEstWTag, RooObject ) : avgEstWTag = avgEstWTag.getVal()
+    if isinstance( P0,         RooObject ) : P0         = P0.getVal()
+    if isinstance( P1,         RooObject ) : P1         = P1.getVal()
+    if isinstance( AP0,        RooObject ) : AP0        = AP0.getVal()
+    if isinstance( AP1,        RooObject ) : AP1        = AP1.getVal()
+
+    tagCatsCalc = tagCats[ : ]
+
+    etaMin = 0.
+    if not tagCatsCalc :
+        # get minimum estimated wrong-tag probability
+        etaMin = 0.5
+        for varSet in data : etaMin = min( etaMin, varSet.getRealValue(estWTagName) )
+
+        # determine binning in estimated wrong-tag probability from data
+        bin = 0
+        binUpperEdges = [ 0.499999 ]
+        while True :
+            bin += 1
+
+            # get high bin edge
+            highEdge = binUpperEdges[ bin - 1 ]
+
+            # calculate low bin edge
+            if highEdge >= avgEstWTag : lowEdge = highEdge - 2. * ( P0Err + P1Err * (highEdge - avgEstWTag) ) / ( P1 / numSigmas + P1Err )
+            else                      : lowEdge = highEdge - 2. * ( P0Err - P1Err * (highEdge - avgEstWTag) ) / ( P1 / numSigmas - P1Err )
+
+            # set low bin edge
+            binUpperEdges.append(lowEdge)
+
+            # check if this is the last bin
+            if lowEdge < etaMin : break
+
+        # scale bin widths to match range of estimated wrong-tag probability
+        if binUpperEdges[-2] - etaMin < etaMin - binUpperEdges[-1] : del binUpperEdges[-1]
+        binScale = ( binUpperEdges[0] - etaMin ) / ( binUpperEdges[0] - binUpperEdges[-1] )
+        tagCatsCalc = [ ( 'Untagged', 0, 0.500001 ) ]
+        for bin in range( 1, len(binUpperEdges) ) :
+            binUpperEdges[bin] = binUpperEdges[0] - ( binUpperEdges[0] - binUpperEdges[bin] ) * binScale
+            tagCatsCalc.append( ( 'TagCat%d' % bin, bin, binUpperEdges[ bin - 1 ] ) )
+
+    # determine tagging category parameters
+    numTagCats = len(tagCatsCalc)
+    numEvTot   = data.sumEntries()
+    numEvCats  = [0]  * numTagCats
+    sumEtaCats = [0.] * numTagCats
+    for varSet in data :
+        # get estimated wrong-tag probability for this event
+        eta = varSet.getRealValue(estWTagName)
+
+        # determine tagging category
+        cat = -1
+        for catIter in range(numTagCats) :
+          if eta >= tagCatsCalc[catIter][2] : break
+          cat += 1
+
+        if cat < 0 : raise RuntimeError('getTagCatParamsFromData(): estimated wrong-tag probability out of range')
+
+        # update number of events and sum of estimated wrong-tag probabilities
+        numEvCats[cat]  += data.weight()
+        sumEtaCats[cat] += eta * data.weight()
+
+    # check number of events
+    numEvTotCount = 0.
+    for numEv in numEvCats : numEvTotCount += numEv
+    assert abs( numEvTotCount - numEvTot ) < 1.e-10 * abs( numEvTotCount + numEvTot ),\
+           'getTagCatParamsFromData(): counted number of events is not equal to number of events in data set'
+
+    # update tagging category parameters
+    for cat in range(numTagCats) :
+        avgEtaCat = sumEtaCats[cat] / numEvCats[cat]
+        tagCatsCalc[cat] = tagCatsCalc[cat][ : 3 ]\
+                           + (  avgEtaCat
+                              , P0 + P1 * ( avgEtaCat - avgEstWTag ), 0.
+                              , numEvCats[cat] / numEvTot, 0.
+                              , numEvCats[cat]
+                             )
+
+    # print tagging category binning to screen
+    print 'P2VV - INFO: getTagCatParamsFromData(): tagging category binning:'
+    print '    <eta> = %.3f   P0 = %.3f +- %.3f   P1 = %.3f +- %.3f    P0 asym. = %.3f    P1 asym. = %.3f'\
+          % ( avgEstWTag, P0, P0Err, P1, P1Err, AP0, AP1 )
+    print '    minimum eta = %.3f    average eta = %.3f' % ( etaMin, data.mean( data.get(0).find(estWTagName) ) )
+    for bin, cat in enumerate(tagCatsCalc) :
+        deltaEta = ( ( cat[2] - tagCatsCalc[bin + 1][2] ) / 2. ) if bin < len(tagCatsCalc) - 1 else ( ( cat[2] - etaMin ) / 2. )
+        if cat[2] >= avgEstWTag : binRangeSig = P1 * deltaEta / ( P0Err + P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
+        else                    : binRangeSig = P1 * deltaEta / ( P0Err - P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
+        print '    {0:<10s}  :  {1:.3f} -- {2:.3f} ({3:.2f} sigma)  :  <eta> = {4:.3f}  <w> = {5:.3f}  efficiency = {6:.4f} ({7:.0f} events)'\
+              .format(  cat[0], cat[2], tagCatsCalc[bin + 1][2] if bin < len(tagCatsCalc) - 1 else etaMin
+                      , binRangeSig, cat[3], cat[4], cat[6], cat[8]
+                     )
+
+    return tagCatsCalc
+
+
+class getTaggingPerformance( ) :
+    pass
+
 
 ###########################################################################################################################################
 ## Tagging parameters classes ##
@@ -55,11 +182,11 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin, _util_condi
         if kw == 'tagCatCoefs' :
             return self._tagCatCoefs[0] if self._numTagCats[0] == 0 else self._tagCatCoefs
         if kw == 'dilution' :
-            return self._dilutions[0][0] if self._numTagCats[0] == 0 and self._numTagCats[1] == 1 else raiseError(kw)
+            return self._dilutions[1][0] if self._numTagCats[0] == 0 and self._numTagCats[1] == 1 else raiseError(kw)
         if kw == 'dilutions' :
             return self._dilutions[1] if self._numTagCats[0] == 0 else self._dilutions
         if kw == 'ADilWTag' :
-            return self._ADilWTags[0][0] if self._numTagCats[0] == 0 and self._numTagCats[1] == 1 else raiseError(kw)
+            return self._ADilWTags[1][0] if self._numTagCats[0] == 0 and self._numTagCats[1] == 1 else raiseError(kw)
         if kw == 'ADilWTags' :
             return self._ADilWTags[1] if self._numTagCats[0] == 0 else self._ADilWTags
         if kw == 'CEvenOdd' :
@@ -101,10 +228,10 @@ class WTag_TaggingParams( TaggingParams ) :
 
 class LinearEstWTag_TaggingParams( TaggingParams ) :
     def __init__( self, **kwargs ) :
-        self._parseArg( 'estWTag',    kwargs, Title = 'Estimated wrong-tag probability',         Value = 0.25,  MinMax = ( 0.,  0.5 ) )
-        self._parseArg( 'p0',         kwargs, Title = 'p0  tagging parameter',                   Value = 0.392, MinMax = ( 0.,  0.5 ) )
-        self._parseArg( 'p1',         kwargs, Title = 'p1  tagging parameter',                   Value = 1.035, MinMax = ( 0.8, 1.2 ) )
-        self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong-tag probability', Value = 0.391, MinMax = ( 0.,  0.5 )
+        self._parseArg( 'estWTag',    kwargs, Title = 'Estimated wrong-tag probability',         Value = avgEtaOSVal, MinMax = ( 0.,  0.5 ) )
+        self._parseArg( 'p0',         kwargs, Title = 'p0  tagging parameter',                   Value = P0OSVal,     MinMax = ( 0.,  0.5 ) )
+        self._parseArg( 'p1',         kwargs, Title = 'p1  tagging parameter',                   Value = P1OSVal,     MinMax = ( 0.8, 1.2 ) )
+        self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong-tag probability', Value = avgEtaOSVal, MinMax = ( 0.,  0.5 )
                        , Constant = True
                       )
 
@@ -114,8 +241,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p0
-                                                    , ConstVar( Name = 'p0_mean',  Value = 0.392 )
-                                                    , ConstVar( Name = 'p0_sigma', Value = 0.009 )
+                                                    , ConstVar( Name = 'p0_mean',  Value = P0OSVal )
+                                                    , ConstVar( Name = 'p0_sigma', Value = P0OSErr )
                                                    ]
                                    )
                               )
@@ -126,8 +253,8 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p1
-                                                    , ConstVar( Name = 'p1_mean',  Value = 1.035 )
-                                                    , ConstVar( Name = 'p1_sigma', Value = 0.024 )
+                                                    , ConstVar( Name = 'p1_mean',  Value = P1OSVal )
+                                                    , ConstVar( Name = 'p1_sigma', Value = P1OSErr )
                                                    ]
                                    )
                               )
@@ -327,7 +454,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                 if hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
                     ATagEffVal = kwargs.pop( 'ATagEff0_%d' % index0, 0. )
                     if isinstance( ATagEffVal, RooObject ) : ATagEffVal = ATagEffVal.getVal()
-                    self._ATagEffVals[0][index0].append( ATagEffVal )
+                    self._ATagEffVals[0].append( ATagEffVal )
 
             self._singleTagCatCoefs[0].insert( 0, FormulaVar(  'tagCatCoef0_0'
                                                              , '1-@' + '-@'.join( str(i) for i in range( numTagCats[0] - 1 ) )
@@ -341,6 +468,9 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                     tagCatProd0 -= tagCatCoefVal * ATagEffVal
                 self._ATagEffVals[0].insert( 0, tagCatProd0 / self._singleTagCatCoefs[0][0] )
 
+        else :
+            self._ATagEffVals[0].append(0)
+
         if numTagCats[1] > 1 :
             for index1 in range( 1, numTagCats[1] ) :
                 self._parseArg(  'tagCatCoef%s%d' % ( namePF, index1 ), kwargs, ContainerList = self._singleTagCatCoefs[1]
@@ -352,7 +482,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                 if hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
                     ATagEffVal = kwargs.pop( 'ATagEff%s%d' % ( namePF, index1 ), 0. )
                     if isinstance( ATagEffVal, RooObject ) : ATagEffVal = ATagEffVal.getVal()
-                    self._ATagEffVals[1][index1].append( ATagEffVal )
+                    self._ATagEffVals[1].append( ATagEffVal )
 
             if numTagCats[0] > 0 :
                 self._singleTagCatCoefs[1].insert( 0, FormulaVar(  'tagCatCoef%s0' % namePF
@@ -372,6 +502,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                 self._ATagEffVals[1].insert( 0, None )
 
         else :
+            self._ATagEffVals[1].append(0)
             self._singleTagCatCoefs[1][0] = ConstVar( Name = 'tagCatCoef%s0' % namePF, Value = 1. )
 
         # loop over tagging categories
@@ -438,7 +569,8 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                             # values for the asymmetries are specified
                             avgCEven = 1. + self._AProdVal * self._ANormVal \
                                           + self._AProdVal * self._ATagEffVals[0][index0] + self._ANormVal * self._ATagEffVals[0][index0] \
-                                          + self._AProdVal * self._ATagEffVals[1][index1] + self._ANormVal * self._ATagEffVals[1][index1]
+                                          + self._AProdVal * self._ATagEffVals[1][index1] + self._ANormVal * self._ATagEffVals[1][index1] \
+                                          + self._AProdVal * self._ANormVal * self._ATagEffVals[0][index0] * self._ATagEffVals[1][index1]
                             avgCOdd  = self._AProdVal + self._ANormVal + self._ATagEffVals[0][index0] + self._ATagEffVals[1][index1] \
                                        + self._AProdVal * self._ANormVal * self._ATagEffVals[0][index0] \
                                        + self._AProdVal * self._ANormVal * self._ATagEffVals[1][index1]
@@ -481,109 +613,6 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
 ###########################################################################################################################################
 ## Tagging categories classes ##
 ################################
-
-def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., avgEstWTag = 0.39, P0    = 0.392, P1    = 1.04
-                                                                                                , P0Err = 0.009, P1Err = 0.02
-                                                                                                , AP0   = 0.,    AP1   = 0.
-                           ) :
-    assert data, 'getTagCatParamsFromData(): no data set found'
-    assert estWTagName and data.get(0).find(estWTagName), 'getTagCatParamsFromData(): estimated wrong-tag probability not found in data'
-
-    from RooFitWrappers import RooObject
-    if isinstance( avgEstWTag, RooObject ) : avgEstWTag = avgEstWTag.getVal()
-    if isinstance( P0,         RooObject ) : P0         = P0.getVal()
-    if isinstance( P1,         RooObject ) : P1         = P1.getVal()
-    if isinstance( AP0,        RooObject ) : AP0        = AP0.getVal()
-    if isinstance( AP1,        RooObject ) : AP1        = AP1.getVal()
-
-    tagCatsCalc = tagCats[ : ]
-
-    etaMin = 0.
-    if not tagCatsCalc :
-        # get minimum estimated wrong-tag probability
-        etaMin = 0.5
-        for varSet in data : etaMin = min( etaMin, varSet.getRealValue(estWTagName) )
-
-        # determine binning in estimated wrong-tag probability from data
-        bin = 0
-        binUpperEdges = [ 0.499999 ]
-        while True :
-            bin += 1
-
-            # get high bin edge
-            highEdge = binUpperEdges[ bin - 1 ]
-
-            # calculate low bin edge
-            if highEdge >= avgEstWTag : lowEdge = highEdge - 2. * ( P0Err + P1Err * (highEdge - avgEstWTag) ) / ( P1 / numSigmas + P1Err )
-            else                      : lowEdge = highEdge - 2. * ( P0Err - P1Err * (highEdge - avgEstWTag) ) / ( P1 / numSigmas - P1Err )
-
-            # set low bin edge
-            binUpperEdges.append(lowEdge)
-
-            # check if this is the last bin
-            if lowEdge < etaMin : break
-
-        # scale bin widths to match range of estimated wrong-tag probability
-        if binUpperEdges[-2] - etaMin < etaMin - binUpperEdges[-1] : del binUpperEdges[-1]
-        binScale = ( binUpperEdges[0] - etaMin ) / ( binUpperEdges[0] - binUpperEdges[-1] )
-        tagCatsCalc = [ ( 'Untagged', 0, 0.500001 ) ]
-        for bin in range( 1, len(binUpperEdges) ) :
-            binUpperEdges[bin] = binUpperEdges[0] - ( binUpperEdges[0] - binUpperEdges[bin] ) * binScale
-            tagCatsCalc.append( ( 'TagCat%d' % bin, bin, binUpperEdges[ bin - 1 ] ) )
-
-    # determine tagging category parameters
-    numTagCats = len(tagCatsCalc)
-    numEvTot   = data.sumEntries()
-    numEvCats  = [0]  * numTagCats
-    sumEtaCats = [0.] * numTagCats
-    for varSet in data :
-        # get estimated wrong-tag probability for this event
-        eta = varSet.getRealValue(estWTagName)
-
-        # determine tagging category
-        cat = -1
-        for catIter in range(numTagCats) :
-          if eta >= tagCatsCalc[catIter][2] : break
-          cat += 1
-
-        if cat < 0 : raise RuntimeError('getTagCatParamsFromData(): estimated wrong-tag probability out of range')
-
-        # update number of events and sum of estimated wrong-tag probabilities
-        numEvCats[cat]  += data.weight()
-        sumEtaCats[cat] += eta * data.weight()
-
-    # check number of events
-    numEvTotCount = 0.
-    for numEv in numEvCats : numEvTotCount += numEv
-    assert abs( numEvTotCount - numEvTot ) < 1.e-10 * abs( numEvTotCount + numEvTot ),\
-           'getTagCatParamsFromData(): counted number of events is not equal to number of events in data set'
-
-    # update tagging category parameters
-    for cat in range(numTagCats) :
-        avgEtaCat = sumEtaCats[cat] / numEvCats[cat]
-        tagCatsCalc[cat] = tagCatsCalc[cat][ : 3 ]\
-                           + (  avgEtaCat
-                              , P0 + P1 * ( avgEtaCat - avgEstWTag ), 0.
-                              , numEvCats[cat] / numEvTot, 0.
-                              , numEvCats[cat]
-                             )
-
-    # print tagging category binning to screen
-    print 'P2VV - INFO: getTagCatParamsFromData(): tagging category binning:'
-    print '    <eta> = %.3f   P0 = %.3f +- %.3f   P1 = %.3f +- %.3f    P0 asym. = %.3f    P1 asym. = %.3f'\
-          % ( avgEstWTag, P0, P0Err, P1, P1Err, AP0, AP1 )
-    print '    minimum eta = %.3f    average eta = %.3f' % ( etaMin, data.mean( data.get(0).find(estWTagName) ) )
-    for bin, cat in enumerate(tagCatsCalc) :
-        deltaEta = ( ( cat[2] - tagCatsCalc[bin + 1][2] ) / 2. ) if bin < len(tagCatsCalc) - 1 else ( ( cat[2] - etaMin ) / 2. )
-        if cat[2] >= avgEstWTag : binRangeSig = P1 * deltaEta / ( P0Err + P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
-        else                    : binRangeSig = P1 * deltaEta / ( P0Err - P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
-        print '    {0:<10s}  :  {1:.3f} -- {2:.3f} ({3:.2f} sigma)  :  <eta> = {4:.3f}  <w> = {5:.3f}  efficiency = {6:.4f} ({7:.0f} events)'\
-              .format(  cat[0], cat[2], tagCatsCalc[bin + 1][2] if bin < len(tagCatsCalc) - 1 else etaMin
-                      , binRangeSig, cat[3], cat[4], cat[6], cat[8]
-                     )
-
-    return tagCatsCalc
-
 
 class TaggingCategories( _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin ) :
     def __init__( self, **kwargs ) :
@@ -712,24 +741,30 @@ class Linear_TaggingCategories( TaggingCategories ) :
 
         # get linear calibration parameters
         self._parseArg(  'avgEstWTag', kwargs, Name = 'avgEstWTag' + tagType
-                       , Value = 0.391 if tagType == 'OS' else 0.324
+                       , Value = avgEtaOSVal if tagType == 'OS' else avgEtaSSVal
                        , ObjectType = 'ConstVar' )
         self._parseArg(  'wTagP0',     kwargs, Name = 'wTagP0' + tagType, Title = 'Average wrong-tag parameter p_0'
-                       , Value = 0.392 if tagType == 'OS' else 0.350
-                       , Error = 0.009 if tagType == 'OS' else 0.015
+                       , Value = P0OSVal if tagType == 'OS' else P0SSVal
+                       , Error = P0OSErr if tagType == 'OS' else P0SSErr
                        , MinMax = (  0.,  0.5 )
                       )
         self._parseArg(  'wTagP1', kwargs, Name = 'wTagP1' + tagType, Title = 'Average wrong-tag parameter p_1'
-                       , Value = 1.035 if tagType == 'OS' else 0.509
-                       , Error = 0.024 if tagType == 'OS' else 0.155
+                       , Value = P1OSVal if tagType == 'OS' else P1SSVal
+                       , Error = P1OSErr if tagType == 'OS' else P1SSErr
                        , MinMax = (  0., 2. )
                       )
-        self._parseArg(  'wTagAP0', kwargs, Name = 'wTagAP0' + tagType, Title = 'Wrong tag parameter p_0 asymmetry'
+        self._parseArg(  'wTagDelP0', kwargs, Name = 'wTagDelP0' + tagType, Title = 'Wrong tag parameter p_0 difference'
+                       , Value = DelP0OSVal if tagType == 'OS' else DelP0SSVal
+                       , Error = DelP0OSErr if tagType == 'OS' else DelP0SSErr
+                       , MinMax = ( -0.5,  0.5  )
+                      )
+        self._parseArg(  'wTagDelP1', kwargs, Name = 'wTagDelP1' + tagType, Title = 'Wrong tag parameter p_1 difference'
                        , Value = 0., MinMax = ( -1.,  1.  )
                       )
-        self._parseArg(  'wTagAP1', kwargs, Name = 'wTagAP1' + tagType, Title = 'Wrong tag parameter p_1 asymmetry'
-                       , Value = 0., MinMax = ( -1.,  1.  )
-                      )
+
+        from RooFitWrappers import FormulaVar
+        self._wTagAP0 = FormulaVar( '_wTagAP0' + tagType, '@0/2./@1', [ self._wTagDelP0, self._wTagP0 ] )
+        self._wTagAP1 = FormulaVar( '_wTagAP1' + tagType, '@0/2./@1', [ self._wTagDelP1, self._wTagP1 ] )
 
         # constrain calibration parameters
         constraints = [ ]
@@ -737,10 +772,17 @@ class Linear_TaggingCategories( TaggingCategories ) :
         if wTagP0Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
-            constraints.append( Pdf(  Name = self._wTagP0.GetName() + tagType + '_constraint', Type = Gaussian
+            constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP0
                                                     , ConstVar( Name = 'wTagP0' + tagType + '_mean',  Value = self._wTagP0.getVal()   )
                                                     , ConstVar( Name = 'wTagP0' + tagType + '_sigma', Value = self._wTagP0.getError() )
+                                                   ]
+                                   )
+                              )
+            constraints.append( Pdf(  Name = self._wTagDelP0.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._wTagDelP0
+                                                    , ConstVar( Name = 'wTagDelP0'+tagType + '_mean',  Value = self._wTagDelP0.getVal()   )
+                                                    , ConstVar( Name = 'wTagDelP0'+tagType + '_sigma', Value = self._wTagDelP0.getError() )
                                                    ]
                                    )
                               )

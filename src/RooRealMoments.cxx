@@ -18,10 +18,7 @@
 #include "TMath.h"
 #include "RooArgSet.h"
 
-namespace {
-   using std::cout;
-   using std::endl;
-}
+using namespace std;
 
 //_____________________________________________________________________________
 

@@ -50,13 +50,7 @@
 
 #include <memory>
 
-namespace {
-   using std::map;
-   using std::cout;
-   using std::endl;
-   using std::list;
-   using std::vector;
-}
+using namespace std;
 
 ClassImp(RooBinnedPdf);
 
