@@ -9,7 +9,7 @@ readMoments = False
 multPdfEff  = True
 makePlots   = True
 transAngles = False
-tResModel   = ''
+tResModel   = 'Gauss'
 trigger     = ''
 
 momentsFile = 'effMoments' + ( 'Trans' if transAngles else 'Hel' )
@@ -81,17 +81,20 @@ tagDecision = Category( 'tagdecision', Title = 'Tag decision', Observable = True
 sel    = Category( 'sel',                       Title = 'Selection',            Observable = True, States = { 'selected' : +1 } )
 trigUB = Category( 'triggerDecisionUnbiased',   Title = 'Trigger Unbiased',     Observable = True, States = { 'selected' : +1 } )
 trigB  = Category( 'triggerDecisionBiasedExcl', Title = 'Trigger Excl. Biased', Observable = True, States = { 'selected' : +1 } )
-bkgcat = Category( 'bkgcat',                    Title = 'Background category',  Observable = True, States = { 'cat0': 0, 'cat10': 10 } )
+bkgcat = Category( 'bkgcat',                    Title = 'Background category',  Observable = True, States = { 'cat0': 0, 'cat50': 50 } )
 
 muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
 muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
 KPlusTrackChi2  = RealVar( 'Kplus_track_chi2ndof',   Title = 'K+ track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
 KMinTrackChi2   = RealVar( 'Kminus_track_chi2ndof',  Title = 'K- track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
 
-obsSetUB = [ time, trueTime ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [tagDecision] \
+obsSetUB = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [tagDecision] \
            + [ sel, trigUB, bkgcat, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
-obsSetB  = [ time, trueTime ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [tagDecision] \
+obsSetB  = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [tagDecision] \
            + [ sel, trigB, bkgcat, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
+if tResModel not in [ 'Gauss', '3Gauss' ] :
+    obsSetUB.append(trueTime)
+    obsSetB.append(trueTime)
 
 # read ntuple
 from P2VVGeneralUtils import readData
