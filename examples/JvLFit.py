@@ -8,13 +8,13 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = False
+doFit                   = True
 fastFit                 = False
-makeObservablePlots     = True
+makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = True
-pdfConfig['SFit']       = False
+pdfConfig['makePlots']  = False
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -66,12 +66,12 @@ pdfConfig['SWaveAmplitudeValues'] = (  [ -0.12, -0.25, -0.16, -0.07, -0.18, -0.3
 pdfConfig['CSPValues']            = [ 0.4976 ] # [ 0.4976 ] # [ 0.3263 ] # [ 0.9663, 0.9562, 0.9255, 0.9255, 0.9562, 0.9663 ]
 
 pdfConfig['sameSideTagging']    = False  # nominal: False
-pdfConfig['conditionalTagging'] = False  # nominal: True
+pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
-pdfConfig['eventTimeResolution'] = False  # nominal: True
+pdfConfig['eventTimeResolution'] = True  # nominal: True
 pdfConfig['numTimeResBins']      = 100
 
 pdfConfig['numEvents'] = 32000
@@ -239,6 +239,10 @@ if ( readData or generateData ) and doFit :
     if pdfConfig['nominalPdf'] and not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
     if pdfConfig['nominalPdf'] or constWTagAsyms :
+        pdfBuild['tagCatsOS'].parameter('wTagDelP0OS').setVal(0.)
+        pdfBuild['tagCatsOS'].parameter('wTagDelP1OS').setVal(0.)
+        pdfBuild['tagCatsSS'].parameter('wTagDelP0SS').setVal(0.)
+        pdfBuild['tagCatsSS'].parameter('wTagDelP1SS').setVal(0.)
         pdfBuild['tagCatsOS'].setConstant('wTagDelP0')
         pdfBuild['tagCatsOS'].setConstant('wTagDelP1')
         pdfBuild['tagCatsSS'].setConstant('wTagDelP0')
@@ -692,7 +696,8 @@ if dllPars :
 
     wsPars =\
     {  'phiCP'           : ( '#DeltaNLL #phi_{s}',                     '#phi_{s}',                     -0.22,     0.22,    1, 0.001, 0.05 )
-     , 'lambdaCPSq'      : ( '#DeltaNLL |#lambda|^{2}',                '|#lambda|^{2}',                 0.8,      1.0,     1, 0.001, 0.01 )
+     , 'lambdaCP'        : ( '#DeltaNLL |#lambda|',                    '|#lambda|',                     0.85,     1.0,     1, 0.001, 0.01 )
+     , 'lambdaCPSq'      : ( '#DeltaNLL |#lambda|^{2}',                '|#lambda|^{2}',                 0.7,      1.0,     1, 0.001, 0.01 )
      , 'avgCOddSum'      : ( '#DeltaNLL C_{Os}^{avg}',                 'C_{Os}^{avg}',                 -0.035,    0.100,   1, 0.001, 0.01 )
      , 'avgCOddTagged'   : ( '#DeltaNLL C_{Ot}^{avg}',                 'C_{Ot}^{avg}',                 -0.100,    0.155,   1, 0.001, 0.01 )
      , 'A0Mag2'          : ( '#DeltaNLL |A_{0}|^{2}',                  '|A_{0}|^{2}',                   0.51,     0.54,    1, 0.001, 0.01 )
@@ -738,7 +743,7 @@ if dllPars :
         if 'sig_ATagBBbar_bin%d' % bin in ws : ws[ 'sig_ATagBBbar_bin%d' % bin ].setConstant()
     pdfBuild['tagCatsOS'].setConstant('.*')
     pdfBuild['tagCatsSS'].setConstant('.*')
-    pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
+    #pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
     pdfBuild['timeResModel'].setConstant('.*')
     pdfBuild['signalBMass'].setConstant('.*')
     if not pdfConfig['SFit'] :
