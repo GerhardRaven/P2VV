@@ -101,6 +101,7 @@ def valid_combinations(states):
     all_states = []
     for level in states:
         all_states.extend([e[0] for e in level])
+    all_states = list(set(all_states))
     labels = [[(state, label.GetName()) for label in state] for state in all_states]
     all_combinations = list(product(*labels))
     valid = []

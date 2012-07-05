@@ -24,9 +24,11 @@ for i in [ st ] : i.setBins( 20 , 'cache' )
 # Categories
 excl_biased = Category('triggerDecisionBiasedExcl', States = {'Biased' : 1, 'NotBiased' : 0})
 unbiased = Category('triggerDecisionUnbiased', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
+hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, mpsi, st, excl_biased, unbiased, selected]
+observables = [t, m, mpsi, st, excl_biased, unbiased, selected, hlt1_unbiased, hlt2_unbiased]
 project_vars = [st, excl_biased, unbiased]
 
 # now build the actual signal PDF...
@@ -39,16 +41,16 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 # Time resolution model
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as SignalTimeResolution
 sig_tres = SignalTimeResolution(Name = 'sig_tres', time = t, timeResSFConstraint = True, sigmat = st,
-                                timeResSF = dict( Name = 'timeResSF', Value = 1.45, MinMax = (0.1,5.), Constant = False)
+                                timeResSF = dict( Name = 'timeResSF', Value = 1.46, MinMax = (0.1,5.), Constant = False)
                                 )
 # from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as BackgroundTimeResolution
 # bkg_tres = BackgroundTimeResolution(Name = 'bkg_tres', time = t, timeResSFConstraint = True)
 
 # Use a very simple effective time resolution
-timeResMu = ConstVar(Name = 'timeResMu', Title = 'Decay time resolution mean',  Value = 0.)
-timeResSigma = RealVar(Name = 'timeResSigma', Title = 'Decay time resolution width', Value = 0.05, MinMax = (0.001, 0.1), Constant = True)
-from ROOT import RooGaussModel as GaussModel
-tresGauss = ResolutionModel( Name = 'timeResGaussModel' , Type = GaussModel, Parameters  = [t, timeResMu, timeResSigma])
+## timeResMu = ConstVar(Name = 'timeResMu', Title = 'Decay time resolution mean',  Value = 0.)
+## timeResSigma = RealVar(Name = 'timeResSigma', Title = 'Decay time resolution width', Value = 0.05, MinMax = (0.001, 0.1), Constant = True)
+## from ROOT import RooGaussModel as GaussModel
+## tresGauss = ResolutionModel( Name = 'timeResGaussModel' , Type = GaussModel, Parameters  = [t, timeResMu, timeResSigma])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -97,8 +99,8 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && (triggerDecisionUnbiased == 1 || triggerDecisionBiasedExcl == 1))',
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_MC11a_biased_unbiased.root'
+data = readData(input_file, tree_name, cuts = '(sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1)',
                 NTuple = False, observables = observables)
 
 # Time acceptance
@@ -107,7 +109,7 @@ sig_acceptance = Paper2012_TimeAcceptance(time = t, Input = '/stuff/PhD/p2vv/dat
                                           Histograms = {(excl_biased, 'Biased')   : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins',
                                                         (unbiased,    'Unbiased') : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'},
                                           Data = data)
-sig_t = sig_acceptance * sig_t
+## sig_t = sig_acceptance * sig_t
 
 # Create signal component
 signal = Component('signal', (sig_m.pdf(), psi_m), Yield = (21000,10000,30000))
