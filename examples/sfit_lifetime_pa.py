@@ -100,7 +100,9 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1)',
+## data = readData(input_file, tree_name, cuts = '(sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1)',
+##                 NTuple = False, observables = observables)
+data = readData(input_file, tree_name, cuts = '(sel == 1 && (triggerDecisionBiasedExcl == 1 || triggerDecisionUnbiased == 1))',
                 NTuple = False, observables = observables)
 
 # Time acceptance

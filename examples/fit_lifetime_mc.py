@@ -60,10 +60,10 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_MC11a_biased_unbiased.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && (triggerDecisionBiasedExcl == 1 || triggerDecisionUnbiased == 1))',
-                NTuple = False, observables = observables)
-## data = readData(input_file, tree_name, cuts = '(sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1)',
+## data = readData(input_file, tree_name, cuts = '(sel == 1 && (triggerDecisionBiasedExcl == 1 || triggerDecisionUnbiased == 1))',
 ##                 NTuple = False, observables = observables)
+data = readData(input_file, tree_name, cuts = '(sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1)',
+                NTuple = False, observables = observables)
 
 original = data.numEntries()
 f = 5e4 / original
@@ -89,7 +89,7 @@ sig_acceptance = Paper2012_TimeAcceptance(time = t, Input = '/stuff/PhD/p2vv/dat
                                           Histograms = {(excl_biased, 'Biased')   : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins',
                                                         (excl_biased, 'Unbiased') : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'},
                                           Data = data)
-sig_t = sig_acceptance * sig_t
+## sig_t = sig_acceptance * sig_t
 
 ## Fit options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
@@ -123,5 +123,6 @@ plot(p, t, pdf = sig_t, data = data
      , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
      , plotResidHist = True
      , logy = False
+     , logx = True
      )
     
