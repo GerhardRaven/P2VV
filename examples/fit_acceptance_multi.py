@@ -12,9 +12,10 @@ from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
 from P2VVParameterizations.GeneralUtils import valid_combinations
-from ROOT import RooMsgService
 
-# RooMsgService.instance().addStream(RooFit.INFO,RooFit.Topic(RooFit.Optimization))
+## from ROOT import RooMsgService
+## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
+## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
 
 obj = RooObject( workspace = 'w')
 w = obj.ws()
@@ -49,15 +50,14 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-## tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-##                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-##                                                     Constant = False))
+from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+                                                    Constant = True))
 ## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
-
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-tres = TimeResolution(time = t)
+## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+## tres = TimeResolution(time = t)
 
 # Signal time pdf
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time
@@ -142,22 +142,6 @@ hlt2_unbiased_heights = [0.5]
 ## valid_definition = [[(hlt1_biased, 'biased'), (hlt1_unbiased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
 valid_definition = [[(hlt1_excl_biased, 'excl_biased'), (hlt1_excl_biased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
 valid = valid_combinations(valid_definition)
-
-# Spec to build efficiency shapes
-## spec = {'Bins' : {hlt1_biased : {'state'   : 'biased',
-##                                  'bounds'  : biased_bins,
-##                                  'heights' : hlt1_biased_heights},
-##                   hlt1_unbiased : {'state' : 'unbiased',
-##                                    'bounds' : unbiased_bins,
-##                                    'heights' : hlt1_unbiased_heights},
-##                   hlt2_biased : {'state'   : 'biased',
-##                                  'bounds'  : biased_bins,
-##                                  'heights' : hlt2_biased_heights},
-##                   hlt2_unbiased : {'state' : 'unbiased',
-##                                    'bounds' : unbiased_bins,
-##                                    'heights' : hlt2_unbiased_heights}
-##                   }
-##         }
 
 spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                                        'heights' : hlt1_biased_heights,
@@ -260,7 +244,8 @@ elif MC:
 
     spec['Relative'] = rel_spec
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, **spec)
+                              ConditionalCategories = True, UseSingleBinConstraint = True,
+                              **spec)
     pdf.Print('v')    
 else:
     rel_spec = {}

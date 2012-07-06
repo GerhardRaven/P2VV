@@ -7,16 +7,24 @@
 #ifndef ROOAVERAGE
 #define ROOAVERAGE
 
+#include <memory>
+#include <vector>
+
 #include "RooAbsReal.h"
-#include "RooSetProxy.h"
-#include "RooCategoryProxy.h"
 #include "RooAbsReal.h"
-#include "RooAbsCategory.h"
+#include "RooRealProxy.h"
+#include "RooListProxy.h"
+
+#include "RooEffHistProd.h"
+
+class RooEffHistProd;
 
 class RooAverage : public RooAbsReal {
 public:
    RooAverage() {} ; 
-   RooAverage(const char *name, const char *title, const RooArgSet& vars);
+   RooAverage(const char *name, const char *title, 
+              const RooArgList& heights, RooEffHistProd& effProd,
+              RooRealVar& observable);
    RooAverage(const RooAverage& other, const char* name=0) ;
 
    virtual TObject* clone(const char* newname) const
@@ -24,7 +32,7 @@ public:
       return new RooAverage(*this,newname);
    }
 
-   inline virtual ~RooAverage() { }
+   virtual ~RooAverage();
    
 protected:
    
@@ -32,8 +40,12 @@ protected:
    
 private:
 
-   RooSetProxy _vars;
-      
+   RooRealProxy _observable;
+   RooRealProxy _shape;
+   mutable RooRealProxy* _integral;
+   
+   RooListProxy _values;
+
    ClassDef(RooAverage,1) // Your description goes here...
 };
 

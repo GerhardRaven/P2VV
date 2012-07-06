@@ -705,7 +705,11 @@ class Pdf(RooObject):
         return self._externalConstraints
     def setExternalConstraints(self, constraints ) :
         self._externalConstraints = constraints
-
+    def GlobalObservables(self):
+        if not hasattr(self,'_globalObservables') : return set()
+        return set( i for i in self.Observables() if i.GetName() in self._globalObservables )
+    def setGlobalObservables(self, observables ) :
+        self._globalObservables = observables
 
     @wraps(RooAbsPdf.createNLL)
     def createNLL( self, data, **kwargs ) :
@@ -736,7 +740,12 @@ class Pdf(RooObject):
             assert 'ExternalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
             print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
             kwargs['ExternalConstraints'] = extConst
-        for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
+        globalObs = self.GlobalObservables()
+        if globalObs:
+            assert 'GlobalObservables' not in kwargs or extConst== kwargs['GlobalObservables'] , 'Inconsistent Global Observables'
+            print 'INFO: adding GlobalObservables: %s' % [ i.GetName() for i in globalObs ]
+            kwargs['GlobalObservables'] = globalObs
+        for d in set(('ConditionalObservables','ExternalConstraints', 'GlobalObservables')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
         print kwargs
         return self._var.fitTo( data, **kwargs )
@@ -1058,17 +1067,21 @@ class MultiHistEfficiency(Pdf):
         self.__bins = kwargs.pop('Bins')
         self.__fit_bins = kwargs.pop('FitBins', True)
         relative = kwargs.pop('Relative')
-        self.__binning_name = kwargs.pop('Binning', 'efficiency_binning')
         self.__observable = kwargs.pop('Observable')
         self.__cc = kwargs.pop('ConditionalCategories', False)
         self.__conditionals = self.__original.ConditionalObservables()
+        self.__fit_bins = kwargs.pop('FitAcceptance', True)
+        self.__use_bin_constraint = self.__fit_bins and kwargs.pop('UseSingleBinConstraint', True)
 
+        self.__shapes = {}
         self.__coefficients = {}
         self.__base_bounds = None
         self.__constraint_vars = {}
 
         from copy import copy
         from ROOT import RooAverage
+        from ROOT import RooBinning        
+        from ROOT import RooArgList
         
         for (category, entries) in self.__bins.iteritems():
             states = set([s.GetName() for s in category])
@@ -1078,28 +1091,51 @@ class MultiHistEfficiency(Pdf):
                 heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
                                    Observable = False, Value = v,
                                    MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
+
+                # Add a binning for this category and state
+                bounds = state_info['bins']
+                binning_name = '_'.join([category.GetName(), state, 'binning'])
+                shape_binning = RooBinning(len(bounds) - 1, bounds)
+                shape_binning.SetName(binning_name)
+                self.__observable.setBinning(shape_binning, binning_name)
+
+                # Create an EffProd for constraint
+                shape_name = '_'.join([category.GetName(), state, 'shape'])
+                shape = BinnedPdf(shape_name, Observable = self.__observable,
+                                  Binning = binning_name, Coefficients = heights)
+                effProd = shape * self.__original
+                self.__shapes[(shape, effProd)] = self.__observable
+
                 # Fix the bin if there is only one.
-                if len(heights) == 1:
+                if not self.__fit_bins:
+                    for h in heights:
+                        h.setConstant(True)
+                elif len(heights) == 1 or self.__use_bin_constraint:
                     heights[0].setConstant(True)
                 else:
-                    heights_set = RooArgSet()
+                    heights_list = RooArgList()
                     for h in heights:
-                        heights_set.add(__dref__(h))
+                        heights_list.add(__dref__(h))
                     av_name = "%s_%s_average" % (category, state)
-                    av = RooAverage(av_name, av_name, heights_set)
-                    self._addObject(av)
+                    av = RooAverage(av_name, av_name, heights_list, __dref__(effProd),
+                                    __dref__(self.__observable))
+                    av = self._addObject(av)
+                    wav = av.getVal(RooArgSet(self.__observable))
+                    s = state_info['average'][0] / wav
+                    print "Scaling heights for %s by: %f" % (shape_name, s)
+                    for h in heights:
+                        v = h.getVal()
+                        h.setVal(s * v)
                     self.__constraint_vars[(category, state)] = av
-                bounds = state_info['bins']
                 if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
                     self.__base_bounds = bounds
+                    self.__base_binning = shape_binning
                 coef_info[state] = copy(state_info)
                 coef_info[state].update({'heights' : heights})
             self.__coefficients[category] = coef_info
 
         # Set the binning on the observable
-        from ROOT import RooBinning
-        obs_binning = RooBinning(len(self.__base_bounds) - 1, self.__base_bounds)
-        self.__observable.setBinning(obs_binning, self.__binning_name)
+        self.__observable.setBinning(self.__base_binning, self.__base_binning.GetName())
 
         # Build relative efficiencies
         self.__relative_efficiencies = {}
@@ -1134,13 +1170,24 @@ class MultiHistEfficiency(Pdf):
         if self.__conditionals :
             self['ConditionalObservables'] = self.__conditionals
 
-        constraints = self.__original.ExternalConstraints()
+        if self.__fit_bins and not self.__use_bin_constraint:
+            self.__add_constraints()
+
+        constraints = list(set(self.__original.ExternalConstraints() + self.ExternalConstraints()))
         if constraints : extraOpts['ExternalConstraints' ] = constraints
         print extraOpts
         Pdf.__init__(self , Name = self.__pdf_name , Type = 'RooMultiHistEfficiency', **extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-        ## self.__add_constraints()
+
+    def binning(self):
+        return self.__base_binning
+
+    def bounds(self):
+        return self.__base_bounds
+
+    def shapes(self):
+        return [s[0] for s in self.__shapes.iterkeys()]
 
     def __build_shapes(self, relative):
         from ROOT import std
@@ -1162,12 +1209,9 @@ class MultiHistEfficiency(Pdf):
                 if len(states) == 1:
                     category_heights = category_info[states[0]]['heights']
                     category_bounds  = category_info[states[0]]['bins']
-                    category_heights[-1].setConstant(True)
                 elif len(states) > 1:
                     category_heights = category_info[state]['heights']
                     category_bounds  = category_info[state]['bins']
-                    ## Fix the last bin to get rid of an extra degree of freedom.
-                    category_heights[-1].setConstant(True)
                 else:
                     raise ValueError("Number of states must not be 0")
                 for i in range(len(self.__base_bounds) - 1):
@@ -1181,7 +1225,7 @@ class MultiHistEfficiency(Pdf):
 
             # BinnedPdf for the shape
             binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = self.__observable,
-                                   Binning = self.__binning_name, Coefficients = heights)
+                                   Binning = self.__base_binning.GetName(), Coefficients = heights)
             # EffProd to combine shape with PDF
             eff_prod = EffProd('%s_efficiency' % prefix, Original = self.__original, Efficiency = binned_pdf)
 
@@ -1210,6 +1254,12 @@ class MultiHistEfficiency(Pdf):
                     )
             constraints.append(c)
         self.setExternalConstraints(constraints)
+        externals = self.__original.ExternalConstraints()
+        global_obs = set()
+        for pdf in externals:
+            for o in pdf.Observables():
+                global_obs.add(o)
+        self.setGlobalObservables(global_obs)
         
     def __make_map(self, d):
         from ROOT import std

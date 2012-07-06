@@ -5,45 +5,74 @@
  *****************************************************************************/ 
 
 // Your description goes here... 
+#include <vector>
+#include <iostream>
+#include <cmath> 
+
+#include "TMath.h" 
 
 #include "Riostream.h" 
-
 #include "RooAverage.h" 
 #include "RooAbsReal.h" 
-#include "RooAbsCategory.h" 
-#include <math.h> 
-#include "TMath.h" 
 
 ClassImp(RooAverage) 
 
+using std::vector;
+
+//_____________________________________________________________________________
 RooAverage::RooAverage(const char *name, const char *title, 
-                       const RooArgSet& vars)
+                       const RooArgList& heights, RooEffHistProd& effProd,
+                       RooRealVar& observable)
    : RooAbsReal(name,title),
-   _vars("average_vars", "average_vars", this)
+     _observable("average_observable", "average_observable", this, observable),
+     _shape("average_shape", "average_shape", this, effProd),
+     _integral(0),
+     _values("average_values", "average_values", this)
 { 
-   RooFIter it = vars.fwdIterator();
-   RooAbsArg* var = 0;
-   while ((var = it.next())) {
-      _vars.add(*var);
+   for (int i = 0; i < heights.getSize(); ++i) {
+      _values.add(*(heights.at(i)));
    }
 } 
 
+//_____________________________________________________________________________
 RooAverage::RooAverage(const RooAverage& other, const char* name)
    : RooAbsReal(other,name), 
-   _vars("average_vars", this, other._vars)
-{ 
+     _observable("average_observable", this, other._observable),
+     _shape("average_shape", this, other._shape),
+     _values("average_values", this, other._values)
+{
+   if (other._integral) {
+      _integral = new RooRealProxy("average_integral", this, *other._integral);
+   } else {
+      _integral = 0;
+   }
 } 
 
+//_____________________________________________________________________________
+RooAverage::~RooAverage()
+{
+   if (_integral) delete _integral;
+}
+
+//_____________________________________________________________________________
 Double_t RooAverage::evaluate() const 
 { 
-   RooFIter it = _vars.fwdIterator();
-   RooAbsReal* var = 0;
    double av = 0;
-   while ((var = static_cast<RooAbsReal*>(it.next()))) {
-      av += var->getVal();
+   RooArgSet iset(_observable.arg());
+   const RooEffHistProd& effProd = dynamic_cast<const RooEffHistProd&>(_shape.arg());
+   for (int i = 0; i < _values.getSize(); ++i) {
+      const RooAbsReal* v = static_cast<const RooAbsReal*>(_values.at(i));
+      assert(v);
+      double w = effProd.getIntegralBin(i, &iset);
+      av += w * v->getVal();
    }
-   return av / _vars.getSize();
+
+   if (!_integral) {
+      RooArgSet iset(_observable.arg());
+      RooAbsReal* I = effProd.createIntegral(iset);
+      _integral = new RooRealProxy("average_integral", "average_integral",
+                                   const_cast<RooAverage*>(this), *I);
+   }
+   double integral = static_cast<const RooAbsReal&>(_integral->arg()).getVal();
+   return av / integral;
 } 
-
-
-

@@ -86,5 +86,5 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
             d = dict(bins = bins, heights = heights)
             bin_spec[cat][label] = d
         ## FIXME: make sure all the bins are set constant if needed
-        TimeAcceptance.__init__( self, Acceptance = dict(Bins = bin_spec, Relative = rel_spec, Observable = self._time, ConditionalCategories = True, Name = acceptance_name))
+        TimeAcceptance.__init__( self, Acceptance = dict(Bins = bin_spec, Relative = rel_spec, Observable = self._time, ConditionalCategories = True, Name = acceptance_name, FitAcceptance = False))
         acceptance_file.Close()
