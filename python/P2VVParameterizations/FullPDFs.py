@@ -926,8 +926,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             moments = RealMomentsBuilder()
 #            angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
 #                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 1, 1, 0 ), ( 1, 2, 0 ) ] if nominalPdf or not transAngles \
-                          else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 1, 1, 1 ), ( 1, 2, 0 ), ( 1, 2, 2 ) ]
+            angMomInds = [( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 2, 2, 0 ), ( 1, 1, 0 ), ( 1, 2, 0 )] if nominalPdf or not transAngles \
+                          else [  ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 2, 0 ), ( 2, 2, 2 )\
+                                , ( 1, 1, 1 ), ( 1, 2, 0 ), ( 1, 2, 2 ) ]
             moments.appendPYList( self._angleFuncs.angles, angMomInds )
             moments.read(angEffMomentsFile)
             moments.Print()
