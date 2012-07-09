@@ -28,7 +28,7 @@ fitOpts = dict(  Timer=1
                 )
 
 tmincut = 0.3
-timeacceptance = True
+timeacceptance = False
 fit = False
 
 # define observables
@@ -231,7 +231,7 @@ splot_m = SData(Pdf = masspdf, Data = data, Name = 'splot_m')
 sigdata = splot_m.data('sig_m_comp')
 bkgdata = splot_m.data('bkg_m_comp')
 
-massplot = True
+massplot = False
 
 if massplot:
     canvas_m = TCanvas('massplot','massplot',972,600)
@@ -259,8 +259,11 @@ if massplot:
 ########################
 ### Build omega PDFs ###
 ########################
-sig_omegaospdf = HistPdf( Name = 'sig_omegaospdf', Observables = (eta_os,), Data = sigdata )
-bkg_omegaospdf = HistPdf( Name = 'bkg_omegaospdf', Observables = (eta_os,), Data = bkgdata )
+#sig_omegaospdf = HistPdf( Name = 'sig_omegaospdf', Observables = (eta_os,), Data = sigdata)
+#bkg_omegaospdf = HistPdf( Name = 'bkg_omegaospdf', Observables = (eta_os,), Data = bkgdata)
+
+sig_omegaospdf = HistPdf( Name = 'sig_omegaospdf', Observables = (eta_os, iTag_os), Data = sigdata, ConditionalObservables = (iTag_os,))
+bkg_omegaospdf = HistPdf( Name = 'bkg_omegaospdf', Observables = (eta_os, iTag_os), Data = bkgdata, ConditionalObservables = (iTag_os,))
 
 #from RooFitWrappers import UniformPdf
 #sig_omegaospdf =  UniformPdf('sig_omegaospdf', Arguments = ( eta_os, ) )
@@ -331,9 +334,9 @@ def search(fname,path) :
 import os
 
 if timeacceptance:
-    fitname = 'cfit_acc'
+    fitname = 'cfit_acc_difftagging'
 else:
-    fitname = 'cfit_noacc'
+    fitname = 'cfit_noacc_difftagging'
 
 paramfile = search(fitname+'params.txt',os.pathsep.join(['.','FitScripts']) )
 if paramfile :
@@ -386,6 +389,7 @@ def checkambiguity():
     lltwo = pdf._var.createNLL(data)
     print 'Value of ll in ambiguity is %f'%(lltwo.getVal())
 
+assert False
 ########
 # PLOT #
 ########
