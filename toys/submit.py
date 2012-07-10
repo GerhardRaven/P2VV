@@ -16,11 +16,9 @@ snapshot_file = open(os.path.join(location, 'snapshot.tar.bz2'), 'w')
 cmd = ['bzip2']
 op = subprocess.Popen(cmd, stdin = subprocess.PIPE, stdout = snapshot_file)
 
-cmd = ['git', 'archive', '--format=tar', 'HEAD']
+cmd = ['git', 'archive', '--format=tar', 'average_constraint:HEAD']
 # Run the lines script to get the available Hlt lines
 r = subprocess.call(cmd, stdout = op.stdin)
-
-dy = '0.05'
 
 # Read the git output and put it into the bz2 file
 
@@ -39,7 +37,7 @@ j.application.exe = 'python'
 
 # Create the right environment
 env = {}
-root_location = '/project/bfys/jleerdam/local/root/5.30.05'
+root_location = '/project/bfys/raaij/sw/root-5.34.00'
 env_vars = {'PATH' : 'bin',
             'PYTHONPATH' : 'lib',
             'LD_LIBRARY_PATH' : 'lib',
@@ -62,7 +60,7 @@ j.application.env = env
 
 # Add the inputsandbox
 j.inputsandbox = ['/project/bfys/raaij/p2vv/code/python/ToyMCUtils.py',
-                  '/project/bfys/raaij/p2vv/code/toys/toyMC_BinnedPdf.py',
+                  '/project/bfys/raaij/p2vv/code/toys/fit_acceptance_toy.py',
                   '/project/bfys/raaij/p2vv/code/lib/libP2VV.so',
                   os.path.join(location, 'snapshot.tar.bz2')]
 
@@ -76,13 +74,13 @@ j.merger = CustomMerger(
     )
 
 # Add the splitter
-args = ['toyMC_EffHistProdSig.py', '--ncpu=1', '-n',
-        '24', '-s', 'snapshot.tar.bz2', dy]
+args = ['fit_acceptance_toy.py', '--ncpu=1', '-n',
+        '20', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
-    values = [args for i in range(40)]
+    values = [args for i in range(50)]
     )
-j.name = 'BinnedPdf_toy_vbins_%s' % dy.replace('.', '_')
+j.name = 'acceptance_toys'
 
 # backend
 j.backend = PBS(queue = 'stbcq')
