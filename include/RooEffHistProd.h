@@ -104,7 +104,7 @@ public:
       return static_cast<const RooArgSet*>(&_observables);
    }
 
-   Double_t getIntegralBin(int bin, const RooArgSet* iset, const char* rangeName = 0) const;
+   const RooArgList& getIntegralBins(const RooArgSet* iset, const char* rangeName = 0) const;
 
 protected:
 

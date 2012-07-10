@@ -23,8 +23,7 @@ class RooAverage : public RooAbsReal {
 public:
    RooAverage() {} ; 
    RooAverage(const char *name, const char *title, 
-              const RooArgList& heights, RooEffHistProd& effProd,
-              RooRealVar& observable);
+              RooEffHistProd& effProd, RooRealVar& observable);
    RooAverage(const RooAverage& other, const char* name=0) ;
 
    virtual TObject* clone(const char* newname) const

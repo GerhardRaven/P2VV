@@ -34,7 +34,10 @@ hlt1_excl_biased = Category('hlt1_excl_biased', States = {'excl_biased' : 1, 'un
 hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 ## project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
-project_vars = [hlt1_biased, hlt1_excl_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased]
+categories = [hlt1_biased, hlt1_unbiased, hlt1_excl_biased, hlt2_biased, hlt2_unbiased]
+categories = dict([(c.GetName(), c) for c in categories])
+
+project_vars = [hlt1_excl_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
 
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
@@ -102,7 +105,7 @@ psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t.pdf()), 
 background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield = (100000,100,300000) )
 
 ## Build mass PDF
-mass_pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi), Name='mass_pdf')
+mass_pdf = buildPdf(Components = (signal, background), Observables = (m, ), Name='mass_pdf')
 mass_pdf.Print("t")
 
 ## base_location = '/home/raaij'
@@ -145,13 +148,13 @@ valid = valid_combinations(valid_definition)
 
 spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                                        'heights' : hlt1_biased_heights,
-                                                       'average' : (8.285e-01, 1.633e-02)},
+                                                       'average' : (7.285e-01, 1.633e-02)},
                                       'unbiased'    : {'bins'    : unbiased_bins,
                                                        'heights' : hlt1_unbiased_heights}
                                       },
                   hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
                                                        'heights' : hlt2_biased_heights,
-                                                       'average' : (8.330e-01, 1.402e-02)}
+                                                       'average' : (7.330e-01, 1.402e-02)}
                                       },
                   hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
                                                        'heights' : hlt2_unbiased_heights}
@@ -181,7 +184,8 @@ if real_data:
 
     spec['Relative'] = rel_spec
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, **spec)
+                              ConditionalCategories = True, UseSingleBinConstraint = False,
+                              **spec)
     pdf.Print('v')
 
     mass_pdf.fitTo(data, **fitOpts)
@@ -244,22 +248,25 @@ elif MC:
 
     spec['Relative'] = rel_spec
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, UseSingleBinConstraint = True,
+                              ConditionalCategories = True, UseSingleBinConstraint = False,
                               **spec)
-    pdf.Print('v')    
+    pdf.Print('v')
 else:
-    rel_spec = {}
+    rel_spec = {(('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.078,
+                (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'not_biased'), ('hlt2_unbiased', 'unbiased')) : 0.027,
+                (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'unbiased')) : 0.383,
+                (('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'not_biased'), ('hlt2_unbiased', 'unbiased')) : 0.01,
+                (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.433,
+                (('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'unbiased')) : None}
+    spec['Relative'] = dict([(tuple((categories[c], l) for c, l in k), {'Constant' : True, 'Value' : v} if v else None) for k, v in rel_spec.iteritems()])
     for comb in valid:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
         rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, Build = True, **spec)
+                              ConditionalCategories = True, UseSingleBinConstraint = False,
+                              **spec)
     pdf.Print('v')        
-    data = pdf.generate([t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased], 25000)
-
-# Get the SuperCategory from the MultiHistEfficiency and add it to the data.
-entries = pdf.getEntries()
-super_cat = pdf.getSuper()
+    data = pdf.generate([t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased], 30000)
 
 ## Fit
 print 'fitting data'
@@ -323,17 +330,6 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
     p.Update()
     
 # plot the efficiency shapes
-hlt1_heights = []
-for i in range(1, 11):
-    hlt1_heights.append(obj.ws().var('hlt1_excl_biased_excl_biased_bin_%03d' % i))
-
-hlt2_heights = []
-for i in range(1, 11):
-    hlt2_heights.append(obj.ws().var('hlt2_biased_biased_bin_%03d' % i))
-
-hlt1_shape = BinnedPdf('hlt1_shape', Observable = t, Binning = 'efficiency_binning', Coefficients = hlt1_heights)
-hlt2_shape = BinnedPdf('hlt2_shape', Observable = t, Binning = 'efficiency_binning', Coefficients = hlt2_heights)
-
 def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     from operator import itemgetter
     i = shape.createIntegral(RooArgSet(o))
@@ -352,7 +348,23 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     shape.plotOn(frame, **pdfOpts)
     frame.Draw()
 
+shapes = pdf.shapes()
 eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
 from ROOT import kYellow, kOrange
-for p, shape in zip(eff_canvas.pads(2, 1), [hlt1_shape, hlt2_shape]):
+for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
     plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
+
+output = {'hlt1_shape' : 'hlt1_excl_biased_excl_biased_bin_%03d',
+          'hlt2_shape' : 'hlt2_biased_biased_bin_%03d'}
+output_file = TFile.Open('efficiencies.root', 'recreate')
+from ROOT import TH1D
+for name, pat in output.iteritems():
+    n = len(biased_bins)
+    heights = [obj.ws().var(pat % i) for i in range(1, n)]
+    v = [(h.getVal(), h.getError()) for h in heights]
+    hist = TH1D(name, name, n - 1, biased_bins)
+    for i in range(1, n):
+        hist.SetBinContent(i, v[i - 1][0])
+        hist.SetBinError(i, v[i - 1][1])
+    output_file.WriteTObject(hist)
+output_file.Close()

@@ -56,19 +56,21 @@ class Toy(object):
         return (self._options, self._args)
 
     def run(self, **kwargs):
+        from ROOT import RooArgSet
+
         __check_req_kw__('Observables', kwargs)
         __check_req_kw__('Pdf', kwargs)
         pdf = kwargs.pop('Pdf')
         genPdf = kwargs.pop('GenPdf', pdf)
         observables = kwargs.pop('Observables')
-        pdf_params = pdf.getParameters(observables)
+        obs_set = RooArgSet(*list(o for o in observables))
+        pdf_params = pdf.getParameters(obs_set)
         ## for param in pdf_params:
         ##     if param.GetName() not in ['Gamma', 'dGamma']:
         ##         param.setConstant()
         self._gen_params = pdf_params.snapshot(True)
 
         # Make another ArgSet to put the fit results in
-        from ROOT import RooArgSet
         result_params = RooArgSet(pdf_params, "result_params")
 
         # Some extra numbers of interest
@@ -97,10 +99,9 @@ class Toy(object):
             # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
             pdf_params.assignValueOnly(self._gen_params) 
             data = pdf.generate(observables, self._options.nevents)
-            from ROOTDecorators import  ROOTversion as Rv
             fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, Save = True,
-                                   Optimize = True if Rv[1]<32 else False,
-                                   Minos = False, Minimizer = 'Minuit2')
+                                   Optimize = 1, Verbose = True, Minos = False,
+                                   Minimizer = 'Minuit2')
             if fit_result.status() != 0:
                 print 'Fit result status = %s' % fit_result.status()
                 continue

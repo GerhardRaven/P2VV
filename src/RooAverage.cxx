@@ -21,25 +21,20 @@ using std::vector;
 
 //_____________________________________________________________________________
 RooAverage::RooAverage(const char *name, const char *title, 
-                       const RooArgList& heights, RooEffHistProd& effProd,
-                       RooRealVar& observable)
+                       RooEffHistProd& effProd, RooRealVar& observable)
    : RooAbsReal(name,title),
      _observable("average_observable", "average_observable", this, observable),
      _shape("average_shape", "average_shape", this, effProd),
-     _integral(0),
-     _values("average_values", "average_values", this)
+     _integral(0)
 { 
-   for (int i = 0; i < heights.getSize(); ++i) {
-      _values.add(*(heights.at(i)));
-   }
+   observable.setConstant(true);
 } 
 
 //_____________________________________________________________________________
 RooAverage::RooAverage(const RooAverage& other, const char* name)
    : RooAbsReal(other,name), 
      _observable("average_observable", this, other._observable),
-     _shape("average_shape", this, other._shape),
-     _values("average_values", this, other._values)
+     _shape("average_shape", this, other._shape)
 {
    if (other._integral) {
       _integral = new RooRealProxy("average_integral", this, *other._integral);
@@ -60,18 +55,22 @@ Double_t RooAverage::evaluate() const
    double av = 0;
    RooArgSet iset(_observable.arg());
    const RooEffHistProd& effProd = dynamic_cast<const RooEffHistProd&>(_shape.arg());
-   for (int i = 0; i < _values.getSize(); ++i) {
-      const RooAbsReal* v = static_cast<const RooAbsReal*>(_values.at(i));
-      assert(v);
-      double w = effProd.getIntegralBin(i, &iset);
-      av += w * v->getVal();
+
+   const RooArgList& bins = effProd.getIntegralBins(&iset);
+
+   for (int i = 0; i < bins.getSize(); ++i) {
+      const RooAbsReal* entry = dynamic_cast<const RooAbsReal*>(bins.at(i));
+      assert(entry);
+      av += entry->getVal();
    }
 
    if (!_integral) {
       RooArgSet iset(_observable.arg());
-      RooAbsReal* I = effProd.createIntegral(iset);
+      RooAbsReal* I = effProd.pdf()->createIntegral(iset);
+      TString name = effProd.GetName(); name += "_average_"; name += I->GetName();
+      I->SetName(name.Data());
       _integral = new RooRealProxy("average_integral", "average_integral",
-                                   const_cast<RooAverage*>(this), *I);
+                                   const_cast<RooAverage*>(this), *I, false, true);
    }
    double integral = static_cast<const RooAbsReal&>(_integral->arg()).getVal();
    return av / integral;
