@@ -20,7 +20,7 @@
 #include "RooCruijff.h"
 #include "RooMultiHistEfficiency.h"
 #include "RooEfficiencyBin.h"
-#include "RooAverage.h"
+#include "RooAvEffConstraint.h"
 
 #include <map>
 #include <string>
@@ -37,12 +37,14 @@ struct Instantiations {
    std::pair<RooAbsCategory*, std::string>  _i05;
 
    std::map<RooRealProxy*, bool> _i06;
-   std::map<RooAbsReal*, bool>   _i07;
-   std::pair<RooAbsReal*, bool>  _i08;
-
-   std::vector<MultiHistEntry> _i09;
+   std::pair<RooRealProxy*,bool> _i07;
+   std::map<RooAbsReal*, bool>   _i08;
+   std::pair<RooAbsReal*, bool>  _i09;
+   std::vector<MultiHistEntry> _i10;
 
    std::map<int, MultiHistEntry*>::iterator _i11;
 
+   std::pair<Double_t, TString> _i12;
+   std::pair<RooCategoryProxy*, std::string> _i13;
 };
 #endif // P2VV_H

@@ -12,29 +12,35 @@
 #include "TMath.h" 
 
 #include "Riostream.h" 
-#include "RooAverage.h" 
-#include "RooAbsReal.h" 
+#include "RooAvEffConstraint.h" 
+#include "RooAbsPdf.h" 
 
-ClassImp(RooAverage) 
+ClassImp(RooAvEffConstraint) 
 
 using std::vector;
 
 //_____________________________________________________________________________
-RooAverage::RooAverage(const char *name, const char *title, 
-                       RooEffHistProd& effProd, RooRealVar& observable)
-   : RooAbsReal(name,title),
+RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title, 
+                                       RooRealVar& observable, RooEffHistProd& effProd,
+                                       RooRealVar& mean, RooRealVar& sigma)
+   : RooAbsPdf(name,title),
      _observable("average_observable", "average_observable", this, observable),
      _shape("average_shape", "average_shape", this, effProd),
+     _mean("average_mean", "average_mean", this, mean),
+     _sigma("average_sigma", "average_sigma", this, sigma),
      _integral(0)
 { 
    observable.setConstant(true);
 } 
 
 //_____________________________________________________________________________
-RooAverage::RooAverage(const RooAverage& other, const char* name)
-   : RooAbsReal(other,name), 
+RooAvEffConstraint::RooAvEffConstraint(const RooAvEffConstraint& other, const char* name)
+   : RooAbsPdf(other,name), 
      _observable("average_observable", this, other._observable),
-     _shape("average_shape", this, other._shape)
+     _shape("average_shape", this, other._shape),
+     _mean("average_mean", this, other._mean),
+     _sigma("average_sigma", this, other._sigma)
+
 {
    if (other._integral) {
       _integral = new RooRealProxy("average_integral", this, *other._integral);
@@ -44,13 +50,35 @@ RooAverage::RooAverage(const RooAverage& other, const char* name)
 } 
 
 //_____________________________________________________________________________
-RooAverage::~RooAverage()
+RooAvEffConstraint::~RooAvEffConstraint()
 {
    if (_integral) delete _integral;
 }
 
 //_____________________________________________________________________________
-Double_t RooAverage::evaluate() const 
+Bool_t RooAvEffConstraint::forceAnalyticalInt(const RooAbsArg& /*dep*/) const
+{
+   // Return kTRUE to force RooRealIntegral to offer all observables for internal integration
+   return true;
+}
+
+//_____________________________________________________________________________
+Int_t RooAvEffConstraint::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars,
+                                                const char* /*rangeName*/) const 
+{
+   analVars.add(allVars);
+   return 1;
+}
+
+//_____________________________________________________________________________
+Double_t RooAvEffConstraint::analyticalIntegral(Int_t code, const char* rangeName) const 
+{
+   assert(code == 1);
+   return 1.;
+}
+
+//_____________________________________________________________________________
+Double_t RooAvEffConstraint::evaluate() const 
 { 
    double av = 0;
    RooArgSet iset(_observable.arg());
@@ -70,8 +98,12 @@ Double_t RooAverage::evaluate() const
       TString name = effProd.GetName(); name += "_average_"; name += I->GetName();
       I->SetName(name.Data());
       _integral = new RooRealProxy("average_integral", "average_integral",
-                                   const_cast<RooAverage*>(this), *I, false, true);
+                                   const_cast<RooAvEffConstraint*>(this), *I, false, true);
    }
    double integral = static_cast<const RooAbsReal&>(_integral->arg()).getVal();
-   return av / integral;
+   av /= integral;
+
+   Double_t arg = av - _mean;
+   Double_t sig = _sigma;
+   return exp(-0.5 * arg * arg / (sig * sig));
 } 

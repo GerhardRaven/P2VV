@@ -1072,16 +1072,16 @@ class MultiHistEfficiency(Pdf):
         self.__conditionals = self.__original.ConditionalObservables()
         self.__fit_bins = kwargs.pop('FitAcceptance', True)
         self.__use_bin_constraint = self.__fit_bins and kwargs.pop('UseSingleBinConstraint', True)
-
+        self.__heights = {}
         self.__shapes = {}
         self.__coefficients = {}
         self.__base_bounds = None
-        self.__constraint_vars = {}
+        self.__constraints = []
 
         from copy import copy
-        from ROOT import RooAverage
         from ROOT import RooBinning        
         from ROOT import RooArgList
+        from ROOT import RooAvEffConstraint
 
         obs_set = RooArgSet()
         for o in self.__original.Observables().intersection(self.__original.ConditionalObservables()):
@@ -1096,7 +1096,7 @@ class MultiHistEfficiency(Pdf):
                 heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
                                    Observable = False, Value = v,
                                    MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
-
+                self.__heights[(category, state)] = heights
                 # Add a binning for this category and state
                 bounds = state_info['bins']
                 binning_name = '_'.join([category.GetName(), state, 'binning'])
@@ -1132,16 +1132,12 @@ class MultiHistEfficiency(Pdf):
                     for h in heights:
                         heights_list.add(__dref__(h))
                     av_name = "%s_%s_average" % (category, state)
-                    av = RooAverage(av_name, av_name, __dref__(effProd),
-                                    __dref__(self.__observable))
-                    av = self._addObject(av)
-                    wav = av.getVal(RooArgSet(self.__observable))
-                    s = state_info['average'][0] / wav
-                    print "Scaling heights for %s by: %f" % (shape_name, s)
-                    for h in heights:
-                        v = h.getVal()
-                        h.setVal(s * v)
-                    self.__constraint_vars[(category, state)] = av
+                    value, error = state_info['average']
+                    mean  = RealVar(Name = av_name + '_constraint_mean', Value = value, Constant = True)
+                    sigma = RealVar(Name = av_name + '_constraint_sigma', Value = error, Constant = True)
+                    constraint = Pdf(Name = av_name + '_constraint', Type = RooAvEffConstraint,
+                                     Parameters = [self.__observable, effProd, mean, sigma])
+                    self.__constraints.append(constraint)
                 if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
                     self.__base_bounds = bounds
                     self.__base_binning = shape_binning
@@ -1204,6 +1200,9 @@ class MultiHistEfficiency(Pdf):
     def shapes(self):
         return [s[0] for s in self.__shapes.iterkeys()]
 
+    def heights(self):
+        return self.__heights
+
     def __build_shapes(self, relative):
         from ROOT import std
         from ROOT import MultiHistEntry
@@ -1257,25 +1256,7 @@ class MultiHistEfficiency(Pdf):
         return efficiency_entries
 
     def __add_constraints(self):
-        from ROOT import RooGaussian as Gaussian
-
-        constraints = []
-        for (category, state), var in self.__constraint_vars.iteritems():
-            value, error = self.__bins[category][state]['average']
-            mean = ConstVar(Name = var.GetName() + '_constraint_mean', Value = value)
-            c = Pdf(Name = var.GetName() + '_constraint', Type = Gaussian,
-                    Parameters = [var, mean, ConstVar(Name = var.GetName() + '_constraint_sigma',
-                                                      Value = error)])
-            c.setIntegral(1)
-            constraints.append(c)
-        self.setExternalConstraints(constraints)
-        externals = self.__original.ExternalConstraints()
-        global_obs = set()
-        for pdf in externals:
-            for o in pdf.Observables():
-                global_obs.add(o)
-        global_obs.add(self.__observable)
-        ## self.setGlobalObservables(global_obs)
+        self.setExternalConstraints(self.__constraints)
         
     def __make_map(self, d):
         from ROOT import std

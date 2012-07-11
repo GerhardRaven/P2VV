@@ -140,13 +140,13 @@ valid = valid_combinations(valid_definition)
 
 bin_spec = {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                                  'heights' : hlt1_biased_heights,
-                                                 'average' : (7.285e-01, 1.633e-02)},
+                                                 'average' : (6.285e-01, 1.633e-02)},
                                 'unbiased'    : {'bins'    : unbiased_bins,
                                                  'heights' : hlt1_unbiased_heights}
                                 },
             hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
                                                  'heights' : hlt2_biased_heights,
-                                                 'average' : (7.330e-01, 1.402e-02)}
+                                                 'average' : (6.330e-01, 1.65e-02)}
                                 },
             hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
                                                  'heights' : hlt2_unbiased_heights}
@@ -159,8 +159,6 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
 ## Fit options
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
-
 rel_spec = {(('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.078,
             (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'not_biased'), ('hlt2_unbiased', 'unbiased')) : 0.027,
             (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'unbiased')) : 0.383,

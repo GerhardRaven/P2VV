@@ -148,13 +148,13 @@ valid = valid_combinations(valid_definition)
 
 spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                                        'heights' : hlt1_biased_heights,
-                                                       'average' : (7.285e-01, 1.633e-02)},
+                                                       'average' : (6.285e-01, 1.633e-02)},
                                       'unbiased'    : {'bins'    : unbiased_bins,
                                                        'heights' : hlt1_unbiased_heights}
                                       },
                   hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
                                                        'heights' : hlt2_biased_heights,
-                                                       'average' : (7.330e-01, 1.402e-02)}
+                                                       'average' : (6.330e-01, 1.65e-02)}
                                       },
                   hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
                                                        'heights' : hlt2_unbiased_heights}
