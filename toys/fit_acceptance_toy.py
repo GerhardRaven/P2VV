@@ -53,59 +53,18 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-                                                    Constant = True))
+## from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+## tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+##                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+##                                                     Constant = True))
 ## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## tres = TimeResolution(time = t)
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+tres = TimeResolution(time = t)
 
 # Signal time pdf
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time
 sig_t = Single_Exponent_Time(Name = 'sig_t', time = t, resolutionModel = tres.model())
-
-# B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
-sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
-
-# J/psi mass pdf
-mpsi_mean  = RealVar('mpsi_mean',   Unit = 'MeV', Value = 3097, MinMax = (3070, 3110))
-mpsi_sigma = RealVar('mpsi_sigma',  Unit = 'MeV', Value = 10, MinMax = (5, 20))
-mpsi_alpha = RealVar('mpsi_alpha',  Unit = '', Value = 1.8, MinMax = (0.5, 3), Constant = True)
-mpsi_n = RealVar('mpsi_n',  Unit = '', Value = 2, MinMax = (0.1, 4), Constant = True)
-psi_m  = Pdf(Name = 'psi_m', Type = CrystalBall, Parameters = [mpsi, mpsi_mean, mpsi_sigma, mpsi_alpha, mpsi_n])
-
-# J/psi background
-psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.0000001))
-bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c])
-
-# Create psi background component
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
-psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model()
-                         , psi_t_fll = dict( Name = 'psi_t_fll',    Value = 0.2 )
-                         , psi_t_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
-                         , psi_t_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
-                         , ExternalConstraints = tres.model().ExternalConstraints())
-
-# Create combinatorical background component
-bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
-
-bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
-
-bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres.model()
-                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
-                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
-                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
-
-# Create components
-signal = Component('signal', (sig_m.pdf(), psi_m, sig_t.pdf()), Yield = (30000,100,100000))
-psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t.pdf()), Yield= (100000,500,200000) )
-background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield = (100000,100,300000) )
-
-## base_location = '/home/raaij'
-base_location = '/stuff/PhD/p2vv'
 
 # Build the acceptance using the histogram as starting values
 input_file = 'start_values.root'

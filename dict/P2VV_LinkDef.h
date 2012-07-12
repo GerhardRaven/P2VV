@@ -42,5 +42,7 @@
 #pragma link C++ class std::map<RooAbsReal*, bool>;
 #pragma link C++ class std::pair<RooAbsReal*, bool>;
 #pragma link C++ class std::vector<MultiHistEntry>;
-
+#pragma link C++ class std::pair<RooRealProxy*, bool>;
+#pragma link C++ class std::pair<double, TString>;
+#pragma link C++ class std::pair<RooCategoryProxy*, std::string>;
 #endif

@@ -1,10 +1,10 @@
 import os
 import sys
-if sys.argv[1] not in ['MC', 'real_data', 'generate']:
+if sys.argv[1] not in ['MC', 'data', 'generate']:
     print 'usage: fit_acceptance_multi.py [real_data|MC|generate]'
     sys.exit(-1)
 
-real_data = sys.argv[1] == 'real_data'
+real_data = sys.argv[1] == 'data'
 MC = sys.argv[1] == 'MC'
 
 from itertools import product
@@ -33,16 +33,19 @@ hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiase
 hlt1_excl_biased = Category('hlt1_excl_biased', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
 hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt2_excl_biased = Category('hlt2_excl_biased', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
+
 ## project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
-categories = [hlt1_biased, hlt1_unbiased, hlt1_excl_biased, hlt2_biased, hlt2_unbiased]
+categories = [hlt1_biased, hlt1_unbiased, hlt1_excl_biased,
+              hlt2_biased, hlt2_unbiased, hlt2_excl_biased]
 categories = dict([(c.GetName(), c) for c in categories])
 
-project_vars = [hlt1_excl_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
+project_vars = [hlt1_excl_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, hlt2_excl_biased, st]
 
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
 observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt1_excl_biased,
-               hlt2_biased, hlt2_unbiased, selected, nPV]
+               hlt2_biased, hlt2_unbiased, hlt2_excl_biased, selected, nPV]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -143,7 +146,9 @@ hlt2_biased_heights = [hlt2_histogram.GetBinContent(i) for i in range(1, hlt2_hi
 hlt2_unbiased_heights = [0.5]
 
 ## valid_definition = [[(hlt1_biased, 'biased'), (hlt1_unbiased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
+## valid_definition = [[(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
 valid_definition = [[(hlt1_excl_biased, 'excl_biased'), (hlt1_excl_biased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
+## valid_definition = [[(hlt1_excl_biased, 'excl_biased'), (hlt1_excl_biased, 'unbiased')], [(hlt2_excl_biased, 'excl_biased'), (hlt2_excl_biased, 'unbiased')]]
 valid = valid_combinations(valid_definition)
 
 spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
@@ -161,7 +166,32 @@ spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                       }
                   }
         }
-        
+
+## spec = {'Bins' : {hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
+##                                                        'heights' : hlt2_biased_heights,
+##                                                        'average' : (6.330e-01, 1.65e-02)}
+##                                       },
+##                   hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
+##                                                        'heights' : hlt2_unbiased_heights}
+##                                       }
+##                   }
+##         }
+
+## spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
+##                                                        'heights' : hlt1_biased_heights,
+##                                                        'average' : (6.285e-01, 1.633e-02)},
+##                                       'unbiased'    : {'bins'    : unbiased_bins,
+##                                                        'heights' : hlt1_unbiased_heights}
+##                                       },
+##                   hlt2_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
+##                                                        'heights' : hlt2_biased_heights,
+##                                                        'average' : (6.330e-01, 1.65e-02)},
+##                                       'unbiased'    : {'bins'    : unbiased_bins,
+##                                                        'heights' : hlt2_unbiased_heights}
+##                                       }
+##                   }
+##         }
+
 # Read input data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
@@ -173,7 +203,9 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1,
 data = None
 if real_data:
     input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_2011_biased_unbiased.root')
-    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+    ## data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+    ##                 NTuple = True, observables = observables)
+    data = readData(input_file, tree_name, cuts = 'sel == 1 && hlt1_unbiased == 1 && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                     NTuple = True, observables = observables)
     total = data.sumEntries()
 
@@ -217,9 +249,8 @@ if real_data:
     bkg_sdata = splot.data('background')
 elif MC:
     input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_MC11a_biased_unbiased.root')
-    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_unbiased == 1',
+    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                     NTuple = True, observables = observables)
-
     import random
     # generate some efficiency as a function of t
     # make a NEW dataset with hit-miss on the efficienty, add 1/eff as weight 
@@ -227,15 +258,17 @@ elif MC:
     for i, obs in enumerate(data):
         b2 = obs.find('hlt2_biased')
         ub2 = obs.find('hlt2_unbiased')
+        eb2 = obs.find('hlt2_excl_biased')
         if b2.getIndex() == 0:
             pass
         elif random.random() < 0.5:
             ub2.setIndex(0)
+            eb2.setIndex(1)
         new_data.add(obs)
         if i >= 50000:
             break
 
-    new_data.table(RooArgSet(hlt1_excl_biased, hlt2_biased, hlt2_unbiased)).Print('v')
+    new_data.table(RooArgSet(hlt1_excl_biased, hlt2_excl_biased)).Print('v')
     del data
     data = new_data
     total = data.sumEntries()
@@ -243,8 +276,8 @@ elif MC:
     rel_spec = {}
     for comb in valid:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
-        ## rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
-        rel_spec[comb] = {'Value' : 0.5, "Constant" : True}
+        rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
+        ## rel_spec[comb] = {'Value' : 0.5, "Constant" : True}
 
     spec['Relative'] = rel_spec
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
@@ -306,16 +339,16 @@ def make_title(combination):
     return '_X_'.join(title)
     
 # Plot the lifetime shapes
-canv = TCanvas('canvas', 'canvas', 900, 700)
+canv = TCanvas('canvas', 'canvas', 900, 350)
 obs = [t]
 for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination),
-                          (i for i in product(canv.pads(3, 2), obs))):
+                          (i for i in product(canv.pads(3, 1), obs))):
     name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
     title = make_title(states)
     cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
     cat_data = data.reduce(cuts)
     project_set = RooArgSet(*project_vars)
-    pdfOpts = dict(ProjWData = (project_set, cat_data))
+    pdfOpts = dict(ProjWData = (project_set, cat_data, True))
     from P2VVGeneralUtils import plot
     binning = RooBinning(len(biased_bins) - 1, biased_bins)
     plot( p, o, cat_data, pdf, components = {'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)}
@@ -355,7 +388,7 @@ for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
     plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
 
 output = {'hlt1_shape' : 'hlt1_excl_biased_excl_biased_bin_%03d',
-          'hlt2_shape' : 'hlt2_biased_biased_bin_%03d'}
+          'hlt2_shape' : 'hlt2_excl_biased_excl_biased_bin_%03d'}
 output_file = TFile.Open('efficiencies.root', 'recreate')
 from ROOT import TH1D
 for name, pat in output.iteritems():
