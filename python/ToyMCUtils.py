@@ -20,6 +20,9 @@ class Toy(object):
         self._parser.add_option("-s", "--snapshot", dest = "snapshot", default = '',
                                 action = 'store', help = 'Extract a snapshot to current directory.')
 
+        self.__fit_opts = dict(Save = True, Optimize = 1, Verbose = True, Minos = False,
+                               Minimizer = 'Minuit2')
+
     def parser(self):
         return self._parser
 
@@ -99,9 +102,7 @@ class Toy(object):
             # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
             pdf_params.assignValueOnly(self._gen_params) 
             data = pdf.generate(observables, self._options.nevents)
-            fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, Save = True,
-                                   Optimize = 1, Verbose = True, Minos = False,
-                                   Minimizer = 'Minuit2')
+            fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, **self.__fit_opts)
             if fit_result.status() != 0:
                 print 'Fit result status = %s' % fit_result.status()
                 continue
@@ -126,3 +127,5 @@ class Toy(object):
         output_file.WriteTObject(self._gen_params, 'gen_params')
         output_file.Close()
         
+    def set_fit_opts(self, **opts):
+        self.__fit_opts.update(opts)

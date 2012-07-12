@@ -133,6 +133,7 @@ pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
 gen_observables = [t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased]
 
 ## run the toy
+toy.set_fit_opts(**dict(Verbose = False))
 toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = pdf)
 
 toy.write_output()
