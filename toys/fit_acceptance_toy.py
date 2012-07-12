@@ -12,10 +12,6 @@ from P2VVLoad import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
 from P2VVParameterizations.GeneralUtils import valid_combinations
 
-## from ROOT import RooMsgService
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
-
 obj = RooObject( workspace = 'w')
 w = obj.ws()
 
@@ -112,11 +108,6 @@ bin_spec = {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                 }
             }
         
-# Read input data
-from P2VVGeneralUtils import readData
-tree_name = 'DecayTree'
-## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
-
 ## Fit options
 rel_spec = {(('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.078,
             (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'not_biased'), ('hlt2_unbiased', 'unbiased')) : 0.027,
