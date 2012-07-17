@@ -405,12 +405,8 @@ void RooMultiHistEfficiency::generateEvent(Int_t code)
 //_____________________________________________________________________________
 Bool_t	RooMultiHistEfficiency::forceAnalyticalInt(const RooAbsArg& var) const
 {
-   assert(!_entries.empty());
-   
-   const MultiHistEntry* entry = _entries.begin()->second;
-   const RooArgSet* observables = entry->effProd()->observables();
-   // RooArgSet categories = entry->categories();
-   return observables->contains(var); // || categories.contains(var);
+   // We forward everything anyway so always return true.
+   return true;
 }
 
 //_____________________________________________________________________________

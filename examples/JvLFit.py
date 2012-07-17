@@ -1,7 +1,6 @@
 ###########################################################################################################################################
 ## set script parameters ##
 ###########################
-
 from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
@@ -119,7 +118,7 @@ pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPs
 pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
 
 pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasisBaseline' if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles']\
-                                 else 'effMomentsHelBasisBaseline'
+                                 else '/stuff/PhD/p2vv/data/effMomentsHelBasisBaseline'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
