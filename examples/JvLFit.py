@@ -25,7 +25,7 @@ parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120620_MagDownMagUp.root'
+    pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
 else :
     pdfConfig['nTupleName'] = None
     pdfConfig['nTupleFile'] = None
@@ -37,12 +37,13 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU              = 1
+fitOpts = dict(  NumCPU              = 4
                , Optimize            = 1
                , Timer               = 1
+               , Verbose             = True
 #               , Minos               = True
 #               , Hesse               = False
-#               , Minimizer           = 'Minuit2'
+               , Minimizer           = 'Minuit2'
               )
 pdfConfig['fitOptions'] = fitOpts
 
@@ -57,7 +58,7 @@ pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
-pdfConfig['multiplyByTimeEff']    = ''
+pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
