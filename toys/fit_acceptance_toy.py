@@ -101,7 +101,7 @@ bin_spec = {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                 },
             hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
                                                  'heights' : hlt2_biased_heights,
-                                                 'average' : (6.330e-01, 1.65e-02)}
+                                                 'average' : (6.329e-01, 1.3e-02)}
                                 },
             hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
                                                  'heights' : hlt2_unbiased_heights}
@@ -124,7 +124,7 @@ pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
 gen_observables = [t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased]
 
 ## run the toy
-toy.set_fit_opts(**dict(Verbose = False))
-toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = pdf)
+## toy.set_fit_opts(**dict(Verbose = False))
+## toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = pdf)
 
-toy.write_output()
+## toy.write_output()

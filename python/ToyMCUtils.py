@@ -67,7 +67,11 @@ class Toy(object):
         genPdf = kwargs.pop('GenPdf', pdf)
         observables = kwargs.pop('Observables')
         obs_set = RooArgSet(*list(o for o in observables))
-        pdf_params = pdf.getParameters(obs_set)
+        params = pdf.getParameters(obs_set)
+        pdf_params = RooArgSet()
+        for p in params:
+            if p.isConstant(): continue
+            pdf_params.add(p)
         ## for param in pdf_params:
         ##     if param.GetName() not in ['Gamma', 'dGamma']:
         ##         param.setConstant()

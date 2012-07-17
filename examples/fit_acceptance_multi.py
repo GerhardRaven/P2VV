@@ -40,7 +40,7 @@ categories = [hlt1_biased, hlt1_unbiased, hlt1_excl_biased,
               hlt2_biased, hlt2_unbiased, hlt2_excl_biased]
 categories = dict([(c.GetName(), c) for c in categories])
 
-project_vars = [hlt1_excl_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, hlt2_excl_biased, st]
+project_vars = [hlt1_excl_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
 
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
@@ -56,14 +56,14 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-                                                    Constant = True))
+## from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+## tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+##                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+##                                                     Constant = True))
 ## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## tres = TimeResolution(time = t)
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+tres = TimeResolution(time = t)
 
 # Signal time pdf
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time
@@ -159,7 +159,7 @@ spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                       },
                   hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
                                                        'heights' : hlt2_biased_heights,
-                                                       'average' : (6.330e-01, 1.65e-02)}
+                                                       'average' : (6.3290e-01, 1.65e-02)}
                                       },
                   hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
                                                        'heights' : hlt2_unbiased_heights}
@@ -198,15 +198,16 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
 ## Fit options
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1,
+               Strategy = 2, Minimizer = 'Minuit2')
 
 data = None
 if real_data:
     input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_2011_biased_unbiased.root')
-    ## data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
-    ##                 NTuple = True, observables = observables)
-    data = readData(input_file, tree_name, cuts = 'sel == 1 && hlt1_unbiased == 1 && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                     NTuple = True, observables = observables)
+    ## data = readData(input_file, tree_name, cuts = 'sel == 1 && hlt1_unbiased == 1 && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+    ##                 NTuple = True, observables = observables)
     total = data.sumEntries()
 
     rel_spec = {}
@@ -268,7 +269,7 @@ elif MC:
         if i >= 50000:
             break
 
-    new_data.table(RooArgSet(hlt1_excl_biased, hlt2_excl_biased)).Print('v')
+    new_data.table(RooArgSet(hlt1_excl_biased, hlt2_unbiased, hlt2_biased)).Print('v')
     del data
     data = new_data
     total = data.sumEntries()
@@ -339,10 +340,10 @@ def make_title(combination):
     return '_X_'.join(title)
     
 # Plot the lifetime shapes
-canv = TCanvas('canvas', 'canvas', 900, 350)
+canv = TCanvas('canvas', 'canvas', 900, 700)
 obs = [t]
 for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination),
-                          (i for i in product(canv.pads(3, 1), obs))):
+                          (i for i in product(canv.pads(3, 2), obs))):
     name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
     title = make_title(states)
     cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
@@ -388,7 +389,7 @@ for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
     plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
 
 output = {'hlt1_shape' : 'hlt1_excl_biased_excl_biased_bin_%03d',
-          'hlt2_shape' : 'hlt2_excl_biased_excl_biased_bin_%03d'}
+          'hlt2_shape' : 'hlt2_biased_biased_bin_%03d'}
 output_file = TFile.Open('efficiencies.root', 'recreate')
 from ROOT import TH1D
 for name, pat in output.iteritems():
