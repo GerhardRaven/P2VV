@@ -102,11 +102,11 @@ psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t.pdf()), 
 background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield = (100000,100,300000) )
 
 ## Build mass PDF
-mass_pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi), Name='mass_pdf')
+mass_pdf = buildPdf(Components = (signal, background), Observables = (m, ), Name='mass_pdf')
 mass_pdf.Print("t")
 
-## base_location = '/home/raaij'
-base_location = '/stuff/PhD/p2vv'
+base_location = '/home/raaij'
+## base_location = '/stuff/PhD/p2vv'
 
 # Build the acceptance using the histogram as starting values
 input_file = os.path.join(base_location, 'data/start_values.root')
@@ -188,8 +188,8 @@ if real_data:
     # Plot mass pdf
     from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
     from ROOT import TCanvas
-    canvas = TCanvas('mass_canvas', 'mass_canvas', 1000, 500)
-    obs = [m, mpsi]
+    canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
+    obs = [m]
     for (p,o) in zip(canvas.pads(len(obs)), obs):
         from P2VVGeneralUtils import plot
         pdfOpts  = dict()
@@ -198,7 +198,7 @@ if real_data:
              , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
              , plotResidHist = True
              , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed ),
-                              'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
+                              ## 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
                               'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                               }
              )
@@ -213,7 +213,7 @@ if real_data:
     bkg_sdata = splot.data('background')
 elif MC:
     input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_MC11a_biased_unbiased.root')
-    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_unbiased == 1',
+    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                     NTuple = True, observables = observables)
 
     import random
@@ -244,7 +244,7 @@ elif MC:
 
     spec['Relative'] = rel_spec
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, UseSingleBinConstraint = True,
+                              ConditionalCategories = True, UseSingleBinConstraint = False,
                               **spec)
     pdf.Print('v')    
 else:
@@ -253,7 +253,7 @@ else:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
         rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, Build = True, **spec)
+                              ConditionalCategories = True, **spec)
     pdf.Print('v')        
     data = pdf.generate([t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased], 25000)
 
@@ -319,8 +319,6 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
           , logy = False
           , logx = True
           )
-    p.SetLogx(1)
-    p.Update()
     
 # plot the efficiency shapes
 hlt1_heights = []
@@ -356,3 +354,20 @@ eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
 from ROOT import kYellow, kOrange
 for p, shape in zip(eff_canvas.pads(2, 1), [hlt1_shape, hlt2_shape]):
     plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
+
+
+all_canvas = TCanvas('all_canvas', 'all_canvas', 500, 550)
+title = "everything"
+project_set = RooArgSet(*project_vars)
+pdfOpts = dict(ProjWData = (project_set, data))
+from P2VVGeneralUtils import plot
+binning = RooBinning(len(biased_bins) - 1, biased_bins)
+p = all_canvas.cd(1)
+plot( p, o, data, pdf, components = {'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)}
+      , plotResidHist = True
+      , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = binning)
+      , frameOpts = {'Title' : title}
+      , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+      , logy = False
+      , logx = True
+      )
