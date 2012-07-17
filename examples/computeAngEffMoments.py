@@ -9,7 +9,7 @@ readMoments = False
 multPdfEff  = True
 makePlots   = True
 transAngles = False
-tResModel   = 'Gauss'
+tResModel   = ''
 trigger     = ''
 
 momentsFile = 'effMoments' + ( 'Trans' if transAngles else 'Hel' )
@@ -66,7 +66,7 @@ else :
 
 # variables in PDF
 time     = RealVar(  'time',     Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. ) )
-trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ns', Observable = True, Value = 0.,  MinMax = ( 0.,  20. ) )
+trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ps', Observable = True, Value = 0.,  MinMax = ( 0.,  20. ) )
 iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
 angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 

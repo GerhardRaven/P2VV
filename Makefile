@@ -17,7 +17,14 @@ PYTHONVERSION := $(shell $(PYTHON) --version 2>&1 | grep -o "2\.[567]")
 CXXFLAGS := $(COMMONFLAGS) $(shell $(ROOTCONFIG) --cflags) -I$(INCDIR) -I.
 LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 
-CFLAGS   := $(COMMONFLAGS) $(shell $(PKGCONFIG) --cflags python-$(PYTHONVERSION))
+HAVE_PYTHON := $(shell if `$(PKGCONFIG) --exists python-$(PYTHONVERSION)`; then echo "yes"; else echo "no"; fi)
+ifeq ($(HAVE_PYTHON), yes)
+PYTHON_CFLAGS := $(shell $(PKGCONFIG) --cflags python-$(PYTHONVERSION))
+else
+PYTHON_CFLAGS = ""
+endif
+
+CFLAGS   := $(COMMONFLAGS) $(PYTHON_CFLAGS)
 PROF_LDFLAGS := -lpython$(PYTHONVERSION) -lprofiler
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)

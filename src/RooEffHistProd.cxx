@@ -306,20 +306,13 @@ Double_t RooEffHistProd::getValV(const RooArgSet* ns) const
 }
 
 //_____________________________________________________________________________
-Double_t RooEffHistProd::getIntegralBin(int bin, const RooArgSet* iset,
-                                        const char* rangeName) const
+const RooArgList& RooEffHistProd::getIntegralBins(const RooArgSet* iset,
+                                                  const char* rangeName) const
 {
    const CacheElem* cache = getCache(iset, iset, rangeName);
    const RooAddition* addition = dynamic_cast<const RooAddition*>(cache->integral());
-   if(!addition) {
-      return cache->integral()->getVal();
-   } else {
-      const RooArgList& list = addition->list();
-      assert(bin < list.getSize());
-      const RooAbsReal* entry = dynamic_cast<const RooAbsReal*>(list.at(bin));
-      assert(entry != 0);
-      return entry->getVal();
-   }
+   assert(addition);
+   return addition->list();
 }
 
 //_____________________________________________________________________________
