@@ -450,17 +450,10 @@ RooEffHistProd::CacheElem* RooEffHistProd::getCache(const RooArgSet* nset,
                                                     const char* rangeName,
                                                     const bool makeClone) const 
 {
-   // cout << "RooEffHistProd::" << GetName() << "::getCache " << *nset << " " << *iset << " "
-   //      << (rangeName ? rangeName : "<none>") << " " << makeClone << endl;
-      
-   // cout << "RooEffHistProd::" << GetName() << " " << this << " cache size "
-   //      << _cacheMgr.cacheSize() << endl;
-
    Int_t sterileIndex(-1);
    CacheElem* cache = (CacheElem*) _cacheMgr.getObj(nset, iset, &sterileIndex,
                                                     RooNameReg::ptr(rangeName));
    if (cache) {
-      // cout << GetName() << " found cache " << cache << endl;
       return cache;
    }
 
@@ -469,7 +462,6 @@ RooEffHistProd::CacheElem* RooEffHistProd::getCache(const RooArgSet* nset,
       (clone(clone_name.c_str())) : this;
    
    cache = new CacheElem(parent, *iset, nset, rangeName);
-   cout << GetName() << " new cache " << cache << endl;
    _cacheMgr.setObj(nset, iset, cache, RooNameReg::ptr(rangeName));
 
    if (makeClone) {

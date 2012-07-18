@@ -751,7 +751,11 @@ class Pdf(RooObject):
     def plotOn( self, frame, **kwargs ) :
         if 'Slice' in kwargs :
             sl = kwargs.pop('Slice')
-            kwargs['Slice'] = ( __dref__(sl[0]), sl[1] )
+            sld = __dref__(sl[0])
+            if isinstance(sld, RooArgSet):
+                kwargs['Slice'] = sld
+            else:
+                kwargs['Slice'] = ( sld, sl[1] )
         if 'Slices' in kwargs :
             sls = kwargs.pop('Slices')
             kwargs['Slices'] = [ ( __dref__(sl[0]), sl[1] ) for sl in sls ]
@@ -1046,40 +1050,53 @@ class MultiHistEfficiency(Pdf):
     def _make_pdf(self) : pass
     def __init__(self, **kwargs):
 
+        ## jpsiphi_1TrackMuon,1TrackAllL0: 8.285e-01 +- 1.633e-02
+        ## jpsiphi_bdi2                  : 8.330e-01 +- 1.402e-02
+
         self.__pdf_name = kwargs.pop('Name')
         self.__original = kwargs.pop('Original')
         self.__bins = kwargs.pop('Bins')
+        self.__fit_bins = kwargs.pop('FitBins', True)
         relative = kwargs.pop('Relative')
         self.__binning_name = kwargs.pop('Binning', 'efficiency_binning')
         self.__observable = kwargs.pop('Observable')
         self.__cc = kwargs.pop('ConditionalCategories', False)
         self.__conditionals = self.__original.ConditionalObservables()
-        build = kwargs.pop('Build', True)
-        builder = None
-        if build:
-            builder = self.__build_shapes
-        else:
-            builder = self.__exclusive_shapes
 
         self.__coefficients = {}
-        base_binning = None
+        self.__base_bounds = None
+        self.__constraint_vars = {}
+
+        from copy import copy
+        from ROOT import RooAverage
+        
         for (category, entries) in self.__bins.iteritems():
-            bounds = entries['bounds']
-            heights = entries['heights']
-            state = entries['state']
-            heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
-                               Observable = False, Value = v,
-                               MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
-            # Fix the bin if there is only one.
-            if len(heights) == 1:
-                heights[0].setConstant(True)
-            self.__coefficients[category] = (bounds, heights)
-            if not base_binning or len(bounds) > len(self.__coefficients[base_binning][0]):
-                base_binning = category
+            states = set([s.GetName() for s in category])
+            coef_info = {}
+            for state, state_info in [(s, entries[s]) for s in states if s in entries]:
+                heights = state_info['heights']
+                heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
+                                   Observable = False, Value = v,
+                                   MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
+                # Fix the bin if there is only one.
+                if len(heights) == 1:
+                    heights[0].setConstant(True)
+                else:
+                    heights_set = RooArgSet()
+                    for h in heights:
+                        heights_set.add(__dref__(h))
+                    av_name = "%s_%s_average" % (category, state)
+                    av = RooAverage(av_name, av_name, heights_set)
+                    self._addObject(av)
+                    self.__constraint_vars[(category, state)] = av
+                bounds = state_info['bins']
+                if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
+                    self.__base_bounds = bounds
+                coef_info[state] = copy(state_info)
+                coef_info[state].update({'heights' : heights})
+            self.__coefficients[category] = coef_info
 
         # Set the binning on the observable
-        self.__base_bounds = self.__coefficients[base_binning][0]
-
         from ROOT import RooBinning
         obs_binning = RooBinning(len(self.__base_bounds) - 1, self.__base_bounds)
         self.__observable.setBinning(obs_binning, self.__binning_name)
@@ -1104,7 +1121,8 @@ class MultiHistEfficiency(Pdf):
         form = '-'.join(['1'] + [e.GetName() for e in self.__relative_efficiencies.itervalues()])
         self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
 
-        efficiency_entries = builder(relative)
+        from ROOT import std
+        efficiency_entries = self.__build_shapes(relative)
 
         from ROOT import RooMultiHistEfficiency
         mhe = RooMultiHistEfficiency(self.__pdf_name, self.__pdf_name, efficiency_entries)
@@ -1122,48 +1140,13 @@ class MultiHistEfficiency(Pdf):
         Pdf.__init__(self , Name = self.__pdf_name , Type = 'RooMultiHistEfficiency', **extraOpts)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-    def __exclusive_shapes(self, relative):
-        from ROOT import std
-        from ROOT import MultiHistEntry
-        efficiency_entries = std.vector("MultiHistEntry")()
-
-        for categories, relative_efficiency in relative.iteritems():
-            heights = None
-            state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
-            prefix = self.__pdf_name + '_' + state_name
-            for category, state in categories:
-                if state == self.__bins[category]['state']:
-                    heights = self.__coefficients[category][1]
-                    break
-                else:
-                    continue
-            if not heights:
-                raise KeyError('Could not find heights for %s' % categories)
-            for h in heights:
-                h.setConstant(True)
-
-            # BinnedPdf for the shape
-            binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = self.__observable,
-                                   Binning = self.__binning_name, Coefficients = heights)
-            # EffProd to combine shape with PDF
-            eff_prod = EffProd('%s_efficiency' % prefix, Original = self.__original, Efficiency = binned_pdf)
-
-            # MultiHistEntry
-            category_map = std.map('RooAbsCategory*', 'string')
-            category_pair = std.pair('RooAbsCategory*', 'string')
-            cm = category_map()
-            for category, state in categories:
-                # cp = category_pair(__dref__(category), state)
-                cm[__dref__(category)] = state
-            efficiency = self.__relative_efficiencies[state_name]
-            entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(efficiency))
-            efficiency_entries.push_back(entry)
-        return efficiency_entries
+        ## self.__add_constraints()
 
     def __build_shapes(self, relative):
         from ROOT import std
-        from ROOT import RooEfficiencyBin
         from ROOT import MultiHistEntry
+        from ROOT import RooEfficiencyBin
+
         efficiency_entries = std.vector("MultiHistEntry")()
 
         for categories, relative_efficiency in relative.iteritems():
@@ -1174,12 +1157,23 @@ class MultiHistEfficiency(Pdf):
             prefix = self.__pdf_name + '_' + state_name
             for category, state in categories:
                 if self.__cc: self.__conditionals.add(category)
-                category_bounds = self.__coefficients[category][0]
-                category_heights = self.__coefficients[category][1]
+                category_info = self.__coefficients[category]
+                states = [s.GetName() for s in category if s.GetName() in category_info]
+                if len(states) == 1:
+                    category_heights = category_info[states[0]]['heights']
+                    category_bounds  = category_info[states[0]]['bins']
+                    category_heights[-1].setConstant(True)
+                elif len(states) > 1:
+                    category_heights = category_info[state]['heights']
+                    category_bounds  = category_info[state]['bins']
+                    ## Fix the last bin to get rid of an extra degree of freedom.
+                    category_heights[-1].setConstant(True)
+                else:
+                    raise ValueError("Number of states must not be 0")
                 for i in range(len(self.__base_bounds) - 1):
                     val = (self.__base_bounds[i] + self.__base_bounds[i + 1]) / 2
                     coefficient = self.__find_coefficient(val, category_bounds, category_heights)
-                    bin_vars[i][__dref__(coefficient)] = (state == self.__bins[category]['state'])
+                    bin_vars[i][__dref__(coefficient)] = state in category_info
             for i, d in enumerate(bin_vars):
                 cm = self.__make_map(d)
                 name = '%s_%d' % (prefix, i)
@@ -1203,6 +1197,20 @@ class MultiHistEfficiency(Pdf):
             efficiency_entries.push_back(entry)
         return efficiency_entries
 
+    def __add_constraints(self):
+        from ROOT import RooGaussian as Gaussian
+
+        constraints = []
+        for (category, state), var in self.__constraint_vars.iteritems():
+            value, error = self.__bins[category][state]['average']
+            c = Pdf(Name = var.GetName() + '_constraint', Type = Gaussian
+                    , Parameters = [var,
+                                    ConstVar(Name = var.GetName() + '_constraint_mean', Value = value),
+                                    ConstVar(Name = var.GetName() + '_constraint_sigma', Value = error)]
+                    )
+            constraints.append(c)
+        self.setExternalConstraints(constraints)
+        
     def __make_map(self, d):
         from ROOT import std
         var_map = std.map('RooAbsReal*', 'bool')

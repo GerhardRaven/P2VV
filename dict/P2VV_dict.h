@@ -20,6 +20,7 @@
 #include "RooCruijff.h"
 #include "RooMultiHistEfficiency.h"
 #include "RooEfficiencyBin.h"
+#include "RooAverage.h"
 
 #include <map>
 #include <string>

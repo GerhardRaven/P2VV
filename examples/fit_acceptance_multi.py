@@ -29,13 +29,16 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 # Categories
 hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt1_excl_biased = Category('hlt1_excl_biased', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
 hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
+## project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
+project_vars = [hlt1_biased, hlt1_excl_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased]
 
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, selected, nPV]
+observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt1_excl_biased,
+               hlt2_biased, hlt2_unbiased, selected, nPV]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -46,12 +49,15 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-                                                    Constant = False))
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## tres = TimeResolution(time = t)
+## from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+## tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+##                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+##                                                     Constant = False))
+## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
+## tres = LP2011_TimeResolution(time = t)
+
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+tres = TimeResolution(time = t)
 
 # Signal time pdf
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time
@@ -99,15 +105,17 @@ background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield
 mass_pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi), Name='mass_pdf')
 mass_pdf.Print("t")
 
-base_location = '/home/raaij'
+## base_location = '/home/raaij'
+base_location = '/stuff/PhD/p2vv'
+
 # Build the acceptance using the histogram as starting values
 input_file = os.path.join(base_location, 'data/start_values.root')
 hlt1_histogram = 'hlt1_shape'
 hlt2_histogram = 'hlt2_shape'
 
-if MC:
+## if MC:
     ## hlt1_histogram += '_MC'
-    hlt2_histogram += '_MC'
+    ## hlt2_histogram += '_MC'
 
 from ROOT import TFile
 acceptance_file = TFile.Open(input_file)
@@ -132,7 +140,7 @@ hlt2_biased_heights = [hlt2_histogram.GetBinContent(i) for i in range(1, hlt2_hi
 hlt2_unbiased_heights = [0.5]
 
 ## valid_definition = [[(hlt1_biased, 'biased'), (hlt1_unbiased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
-valid_definition = [[(hlt1_biased, 'biased'), (hlt1_biased, 'not_biased')]]
+valid_definition = [[(hlt1_excl_biased, 'excl_biased'), (hlt1_excl_biased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
 valid = valid_combinations(valid_definition)
 
 # Spec to build efficiency shapes
@@ -151,10 +159,19 @@ valid = valid_combinations(valid_definition)
 ##                   }
 ##         }
 
-spec = {'Bins' : {hlt1_biased   : {'biased'   :  hlt1_biased_heights,
-                                   'bounds'   :  biased_bins},
-                  hlt1_unbiased : {'unbiased' :  hlt1_unbiased_heights,
-                                   'bounds'   :  unbiased_bins}
+spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
+                                                       'heights' : hlt1_biased_heights,
+                                                       'average' : (8.285e-01, 1.633e-02)},
+                                      'unbiased'    : {'bins'    : unbiased_bins,
+                                                       'heights' : hlt1_unbiased_heights}
+                                      },
+                  hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
+                                                       'heights' : hlt2_biased_heights,
+                                                       'average' : (8.330e-01, 1.402e-02)}
+                                      },
+                  hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
+                                                       'heights' : hlt2_unbiased_heights}
+                                      }
                   }
         }
         
@@ -164,7 +181,7 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
 ## Fit options
-fitOpts = dict(NumCPU = 12, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
 data = None
 if real_data:
@@ -180,7 +197,7 @@ if real_data:
 
     spec['Relative'] = rel_spec
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, Build = True, **spec)
+                              ConditionalCategories = True, **spec)
     pdf.Print('v')
 
     mass_pdf.fitTo(data, **fitOpts)
@@ -230,7 +247,7 @@ elif MC:
         if i >= 50000:
             break
 
-    new_data.table(RooArgSet(hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased)).Print('v')
+    new_data.table(RooArgSet(hlt1_excl_biased, hlt2_biased, hlt2_unbiased)).Print('v')
     del data
     data = new_data
     total = data.sumEntries()
@@ -238,7 +255,8 @@ elif MC:
     rel_spec = {}
     for comb in valid:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
-        rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
+        ## rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
+        rel_spec[comb] = {'Value' : 0.5, "Constant" : True}
 
     spec['Relative'] = rel_spec
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
@@ -252,7 +270,7 @@ else:
     pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
                               ConditionalCategories = True, Build = True, **spec)
     pdf.Print('v')        
-    data = pdf.generate([t, hlt1_biased, hlt1_unbiased, hlt2_unbiased, hlt2_biased], 25000)
+    data = pdf.generate([t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased], 25000)
 
 # Get the SuperCategory from the MultiHistEfficiency and add it to the data.
 entries = pdf.getEntries()
@@ -296,10 +314,10 @@ def make_title(combination):
     return '_X_'.join(title)
     
 # Plot the lifetime shapes
-canv = TCanvas('canvas', 'canvas', 900, 1050)
+canv = TCanvas('canvas', 'canvas', 900, 700)
 obs = [t]
 for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination),
-                          (i for i in product(canv.pads(3, 3), obs))):
+                          (i for i in product(canv.pads(3, 2), obs))):
     name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
     title = make_title(states)
     cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
@@ -310,7 +328,7 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
     binning = RooBinning(len(biased_bins) - 1, biased_bins)
     plot( p, o, cat_data, pdf, components = {'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)}
           , plotResidHist = True
-          , dataOpts = dict( MarkerSize = 0.8, MarkerColor = kBlack, Binning = binning)
+          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = binning)
           , frameOpts = {'Title' : title}
           , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
           , logy = False
@@ -322,7 +340,7 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
 # plot the efficiency shapes
 hlt1_heights = []
 for i in range(1, 11):
-    hlt1_heights.append(obj.ws().var('hlt1_biased_biased_bin_%03d' % i))
+    hlt1_heights.append(obj.ws().var('hlt1_excl_biased_excl_biased_bin_%03d' % i))
 
 hlt2_heights = []
 for i in range(1, 11):
@@ -331,13 +349,25 @@ for i in range(1, 11):
 hlt1_shape = BinnedPdf('hlt1_shape', Observable = t, Binning = 'efficiency_binning', Coefficients = hlt1_heights)
 hlt2_shape = BinnedPdf('hlt2_shape', Observable = t, Binning = 'efficiency_binning', Coefficients = hlt2_heights)
 
-eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 600, 300)
-eff_canvas.Divide(2, 1)
-eff_canvas.cd(1)
-f = t.frame()
-hlt1_shape.plotOn(f)
-f.Draw()
-f = t.frame()
-hlt2_shape.plotOn(f)
-eff_canvas.cd(2)
-f.Draw()
+def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
+    from operator import itemgetter
+    i = shape.createIntegral(RooArgSet(o))
+    n = i.getVal()
+    p.cd()
+    frame = o.frame()
+    if errorOpts:
+        r = errorOpts.pop('result')
+        errorPlots = dict([(x, c) for x, c in errorOpts.iteritems() if type(x) == int])
+        for x in errorPlots.keys():
+            errorOpts.pop(x)
+        entries = sorted(errorPlots.iteritems(), key = itemgetter(0))
+        entries.reverse()
+        for x, colour in entries:
+            shape.plotOn(frame, VisualizeError = (r, x), FillColor = colour, **errorOpts)
+    shape.plotOn(frame, **pdfOpts)
+    frame.Draw()
+
+eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
+from ROOT import kYellow, kOrange
+for p, shape in zip(eff_canvas.pads(2, 1), [hlt1_shape, hlt2_shape]):
+    plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})

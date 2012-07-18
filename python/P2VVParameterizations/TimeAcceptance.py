@@ -76,13 +76,15 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
             if not h:
                 raise ValueError, 'Cannot get acceptance historgram %s from file %s' % (histogram, input_file)
             self._hists[cat] = h
-
-        bin_spec = {}
+        from collections import defaultdict
+        bin_spec = defaultdict(dict)
         from array import array
         for (cat, label), hist in self._hists.iteritems():
             xaxis = hist.GetXaxis()
             bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, hist.GetNbinsX() + 2)))
             heights = [hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)]
-            bin_spec[cat] = dict(state = label, bounds = bins, heights = heights)
-        TimeAcceptance.__init__( self, Acceptance = dict(Bins = bin_spec, Relative = rel_spec, Build = False, Observable = self._time, ConditionalCategories = True, Name = acceptance_name))
+            d = dict(bins = bins, heights = heights)
+            bin_spec[cat][label] = d
+        ## FIXME: make sure all the bins are set constant if needed
+        TimeAcceptance.__init__( self, Acceptance = dict(Bins = bin_spec, Relative = rel_spec, Observable = self._time, ConditionalCategories = True, Name = acceptance_name))
         acceptance_file.Close()
