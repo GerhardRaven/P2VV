@@ -14,7 +14,7 @@ makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -66,9 +66,9 @@ pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30.,
 pdfConfig['SWaveAmplitudeValues'] = (  [ -0.12, -0.25, -0.16, -0.07, -0.18, -0.37 ], [ -0.31, -0.15, -0.10, 0.01, 0.16, 0.10 ] )
 pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.4976 ] # [ 0.3263 ] # [ 0.9663, 0.9562, 0.9255, 0.9255, 0.9562, 0.9663 ]
 
-pdfConfig['sameSideTagging']    = False  # nominal: False
+pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
-pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
+pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
@@ -237,7 +237,7 @@ if ( readData or generateData ) and doFit :
                 CEvenOdd.setConstant('avgCEven.*')
                 if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-    if pdfConfig['nominalPdf'] and not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+    if pdfConfig['nominalPdf'] or not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
     if pdfConfig['nominalPdf'] or constWTagAsyms :
         pdfBuild['tagCatsOS'].parameter('wTagDelP0OS').setVal(0.)
@@ -437,6 +437,7 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
 
 if pdfConfig['makePlots'] :
     # plot background time
+    print 'JvLFit: plotting background lifetime distribution'
     bkgTimeCanv = TCanvas( 'bkgTimeCanv', 'Background Lifetime' )
     for ( pad, data, plotTitle, logY )\
           in zip(  bkgTimeCanv.pads( 2, 2 )
@@ -523,6 +524,7 @@ else :
 
 if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     # plot lifetime and angles
+    print 'JvLFit: plotting lifetime and angular distributions'
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
     for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
             in zip(  timeAnglesCanv.pads( 2, 2 )
@@ -547,6 +549,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                                                                    )
                             ] )
     timeCanv = TCanvas( 'timeCanv', 'Lifetime' )
+    print 'JvLFit: plotting lifetime distribution'
     for ( pad, nBins, plotTitle, yTitle, yScale, dataCuts, pdfCuts, logY )\
             in zip(  timeCanv.pads( 2, 2 )
                    , 3 * [ pdfConfig['numTimeBins'] ]
@@ -565,6 +568,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
             )
 
     # plot lifetime (tagged/untagged)
+    print 'JvLFit: plotting lifetime distributions tagged/untagged'
     timePlotTitles1 = tuple( [ time.GetTitle() + title for title in (  ' - untagged'
                                                                      , ' - tagging category 2'
                                                                      , ' - tagging category %d' % tagCat5Min
@@ -601,6 +605,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
             )
 
     # plot angles
+    print 'JvLFit: plotting angular distributions'
     if plotAnglesNoEff and pdfConfig['SFit'] and pdfConfig['multiplyByTimeEff'] not in [ 'all', 'signal' ]\
             and ( pdfConfig['nominalPdf'] or not pdfConfig['conditionalTagging'] ) :
         addPDFs = [ ws['sig_t_angles_tagCat_iTag'] ]
@@ -630,6 +635,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
 
     if not pdfConfig['SFit'] :
         # plot signal mass
+        print 'JvLFit: plotting mumuKK mass distribution'
         pad = pdfBuild['massCanv'].cd(2)
         plot(  pad, BMass, fitData, pdf
              , frameOpts  = dict( Range = 'Signal', Bins = pdfConfig['numBMassBins'][0], Title = BMass.GetTitle() + ' full fit - signal' )
