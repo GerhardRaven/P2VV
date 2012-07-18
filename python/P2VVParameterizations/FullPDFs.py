@@ -919,6 +919,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         from RooFitWrappers import BTagDecay
         if nominalPdf or condTagging : sigPdf = BTagDecay( 'sig_t_angles',             **args )
         else :                         sigPdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+        self._BTagDecay = sigPdf
 
         if angEffMomentsFile :
             # multiply signal PDF with angular efficiency
@@ -939,6 +940,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             moments.Print()
             sigPdf = moments * sigPdf
 
+        self._BTagDecayAngEff = sigPdf
 
         if multiplyByTimeEff in [ 'all', 'signal' ] :
             # multiply signal PDF with time acceptance
@@ -1145,8 +1147,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     nBins = [ 5, 40, 5 ]
                     cpsBinBounds = array( 'd', [ -1.,                      -0.6,      -0.2,      0.2,      0.6,                   1. ] )
                     #cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
-                    cthBinBounds = array( 'd', [ -1. + 2. / 16. * float(i) for i in range(17) ] )
                     phiBinBounds = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
+
+                    #cpsBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
+                    #cthBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
+                    cthBinBounds = array( 'd', [ -1. + 2. / 16. * float(i) for i in range(17) ] )
+                    #phiBinBounds = array( 'd', [ -pi, -0.5 * pi, 0., 0.5 * pi, pi ] )
 
                 cpsNumBins = len(cpsBinBounds) - 1
                 cthNumBins = len(cthBinBounds) - 1

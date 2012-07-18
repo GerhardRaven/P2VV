@@ -92,8 +92,8 @@ constTagCatCoefs = True  # default: True / nominal: False
 constAvgCEvenOdd = True  # default: False / nominal: True
 constWTagAsyms   = True  # default/nominal: True
 constCSP         = True  # default/nominal: True
-constAmplitudes  = True
-constLambdaCP    = 'lambPhi'  # default/nominal: ''
+constAmplitudes  = False
+constLambdaCP    = ''  # default/nominal: ''
 
 A0Mag2Val     =  0.521
 APerpMag2Val  =  0.251
@@ -302,6 +302,34 @@ if fastFit :
         pdfBuild['backgroundBMass'].setConstant('.*')
         pdfBuild['backgroundTime'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
+
+#ws['dM'].setConstant()
+#ws['timeResSF'].setConstant()
+#ws['wTagP0OS'].setConstant()
+#ws['wTagP1OS'].setConstant()
+#ws['wTagP0SS'].setConstant()
+#ws['wTagP1SS'].setConstant()
+#
+#ws['N_signal'].setConstant()
+#ws['N_bkg'].setConstant()
+#
+#ws['bkg_ABBbarOSTag'].setConstant()
+#ws['bkg_ABBbarSSTag'].setConstant()
+#ws['bkg_ABBbarSameTag'].setConstant()
+#ws['bkg_ABBbarOppTag'].setConstant()
+#ws['bkg_AOSTag'].setConstant()
+#ws['bkg_ASSTag'].setConstant()
+#ws['bkg_ATags'].setConstant()
+#
+#ws['bkg_t_fml'].setConstant()
+#ws['bkg_t_ll_tau'].setConstant()
+#ws['bkg_t_ml_tau'].setConstant()
+#
+#ws['m_bkg_exp'].setConstant()
+#ws['m_sig_frac'].setConstant()
+#ws['m_sig_mean'].setConstant()
+#ws['m_sig_sigma_1'].setConstant()
+#ws['m_sig_sigma_sf'].setConstant()
 
 if ( readData or generateData ) and doFit :
     # fit data
