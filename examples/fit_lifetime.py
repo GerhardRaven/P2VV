@@ -21,12 +21,16 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 # add 20 bins for caching the normalization integral
 for i in [ st ] : i.setBins( 20 , 'cache' )
 
-# Categories
-excl_biased = Category('triggerDecisionBiasedExcl', States = {'Biased' : 1, 'NotBiased' : 0})
-unbiased = Category('triggerDecisionUnbiased', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
+# Categories needed for selecting events
+hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
+hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, mpsi, st, excl_biased, unbiased, selected]
+# Category needed for fitting
+excl_biased = Category('triggerDecisionBiasedExcl', States = {'ExclBiased' : 1, 'Unbiased' : 0})
+
+observables = [t, m, mpsi, st, excl_biased, selected]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -90,7 +94,7 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && (triggerDecisionUnbiased == 1 || triggerDecisionBiasedExcl == 1))',
+data = readData(input_file, tree_name, cuts = '(sel == 1 && (hlt1_unbiased == 1 || hlt1_biased == 1) && hlt2_biased == 1)',
                 NTuple = False, observables = observables)
 signal_data = data.reduce(CutRange = 'signal')
 bkg_data    = data.reduce(CutRange = 'leftsideband' )
@@ -99,9 +103,11 @@ bkg_data.append(data.reduce(CutRange = 'rightsideband'))
 # Time acceptance
 from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance
 sig_acceptance = Paper2012_TimeAcceptance(time = t, Input = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root',
-                                          Histograms = {(excl_biased, 'Biased')   : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins',
-                                                        (unbiased,    'Unbiased') : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'},
-                                          Data = data)
+                                          Histograms = {excl_biased : { 'ExclBiased' : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'},
+                                                                        'Unbiased'   : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'}
+                                                                        }
+                                                        },
+                                          Data = data, Fit = False)
 sig_t = sig_acceptance * sig_t
 
 # Create signal component

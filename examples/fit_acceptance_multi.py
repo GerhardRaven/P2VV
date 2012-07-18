@@ -159,7 +159,7 @@ spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                       },
                   hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
                                                        'heights' : hlt2_biased_heights,
-                                                       'average' : (6.3290e-01, 1.65e-02)}
+                                                       'average' : (6.33e-01, 1.65e-02)}
                                       },
                   hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
                                                        'heights' : hlt2_unbiased_heights}

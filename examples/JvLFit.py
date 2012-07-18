@@ -5,18 +5,19 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-readData                = True
-generateData            = False
-doFit                   = True
-fastFit                 = False
-makeObservablePlots     = False
-makeKKMassPlots         = False
-plotAnglesNoEff         = False
-pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
-pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False
-sumW2Error              = False
+readData                   = True
+generateData               = False
+doFit                      = True
+fastFit                    = False
+makeObservablePlots        = False
+makeKKMassPlots            = False
+plotAnglesNoEff            = False
+pdfConfig['makePlots']     = False
+pdfConfig['SFit']          = True
+pdfConfig['blind']         = False
+pdfConfig['nominalPdf']    = False
+pdfConfig['fitAcceptance'] = False
+sumW2Error                 = False
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
@@ -114,8 +115,10 @@ if not readData :
                             , ( 'TagCat18', 18, 0.124,    0.111, 0.102, 0., 0.0005, 0. )
                            ]
 
-pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
-pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
+if pdfConfig['fitAcceptance']:
+    pdfConfig['timeEffHistFile'] = '/stuff/PhD/p2vv/data/start_values.root'
+else:
+    pdfConfig['timeEffHistFile'] = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 
 pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasisBaseline' if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles']\
                                  else '/stuff/PhD/p2vv/data/effMomentsHelBasisBaseline'

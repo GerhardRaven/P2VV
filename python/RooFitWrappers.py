@@ -1071,7 +1071,7 @@ class MultiHistEfficiency(Pdf):
         self.__cc = kwargs.pop('ConditionalCategories', False)
         self.__conditionals = self.__original.ConditionalObservables()
         self.__fit_bins = kwargs.pop('FitAcceptance', True)
-        self.__use_bin_constraint = self.__fit_bins and kwargs.pop('UseSingleBinConstraint', True)
+        self.__use_bin_constraint = kwargs.pop('UseSingleBinConstraint', True) and self.__fit_bins
         self.__heights = {}
         self.__shapes = {}
         self.__coefficients = {}

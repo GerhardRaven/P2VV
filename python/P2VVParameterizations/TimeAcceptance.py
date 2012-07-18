@@ -54,50 +54,7 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         input_file = kwargs.pop('Input', 'acceptance.root')
         histograms = kwargs.pop('Histograms')
         acceptance_file = TFile.Open(input_file)
-        acceptance_name = kwargs.pop('Name', 'Paper2012_Acceptance')
-
-        data = kwargs.pop('Data')
-        cuts = ' || '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in histograms.iterkeys()])
-        data = data.reduce(cuts)
-        total = data.sumEntries()
-
-        exclusive = exclusive_combinations(histograms.keys())
-        rel_spec = {}
-        ## We assume that the categories have been constructed to be mutually exclusive.
-        for comb in exclusive:
-            cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
-            rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
-
-        if not acceptance_file:
-            raise ValueError, "Cannot open histogram file %s" % input_file
-        self._hists = {}
-        for cat, name in histograms.iteritems():
-            h = acceptance_file.Get(name)
-            if not h:
-                raise ValueError, 'Cannot get acceptance historgram %s from file %s' % (histogram, input_file)
-            self._hists[cat] = h
-        from collections import defaultdict
-        bin_spec = defaultdict(dict)
-        from array import array
-        for (cat, label), hist in self._hists.iteritems():
-            xaxis = hist.GetXaxis()
-            bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, hist.GetNbinsX() + 2)))
-            heights = [hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)]
-            d = dict(bins = bins, heights = heights)
-            bin_spec[cat][label] = d
-        ## FIXME: make sure all the bins are set constant if needed
-        TimeAcceptance.__init__( self, Acceptance = dict(Bins = bin_spec, Relative = rel_spec, Observable = self._time, ConditionalCategories = True, Name = acceptance_name, FitAcceptance = False))
-        acceptance_file.Close()
-
-class Paper2012_FitTimeAcceptance(TimeAcceptance):
-    def __init__(self, **kwargs ) :
-        from ROOT import TFile
-        from RooFitWrappers import HistFunc
-        self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
-                       Value = 0., MinMax = (0.2, 14))
-        input_file = kwargs.pop('Input', 'acceptance.root')
-        histograms = kwargs.pop('Histograms')
-        acceptance_file = TFile.Open(input_file)
+        fit = kwargs.pop('Fit')
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
 
@@ -121,7 +78,6 @@ class Paper2012_FitTimeAcceptance(TimeAcceptance):
             cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
             rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
 
-
         from array import array
         bin_spec = defaultdict(dict)
 
@@ -142,11 +98,12 @@ class Paper2012_FitTimeAcceptance(TimeAcceptance):
                 if 'average' in info:
                     d['average'] = info['average']
                 bin_spec[cat][label] = d
-
+        acceptance_file.Close()
+        
         ## FIXME: make sure all the bins are set constant if needed
         TimeAcceptance.__init__( self, Acceptance = dict(Bins = bin_spec, Relative = rel_spec,
                                                          Observable = self._time,
                                                          ConditionalCategories = True,
                                                          Name = acceptance_name,
+                                                         FitAcceptance = fit,
                                                          UseSingleBinConstraint = False))
-        acceptance_file.Close()

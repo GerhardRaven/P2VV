@@ -167,8 +167,8 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['nTupleName'] = 'DecayTree'
         self['nTupleFile'] = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 
+        self['fitAcceptance'] = False
         self['timeEffHistFile'] = 'BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-        self['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 
         self['angEffMomentsFile'] = 'effMoments'
 
@@ -449,9 +449,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ###############
 
         if nTupleFile :
+            if pdfConfig['fitAcceptance']:
+                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)'
+            else:
+                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'                
             from P2VVGeneralUtils import readData
             self._data = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
-                                  , Rename = 'JpsiphiData' )
+                                  , Rename = 'JpsiphiData', cuts = cut )
 
         else :
             self._data = None
@@ -679,22 +683,28 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##############################
 
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
-            hists = {hlt1_excl_biased : {'excl_biased' : {'histogram' : 'hlt1_shape',
-                                                          'average'   : (6.285e-01, 1.633e-02) },
-                                         'unbiased'    : {'bins'      : time.getRange(),
-                                                          'heights'   : [0.5]}
-                                         },
-                     hlt2_biased      : {'biased'      : {'histogram' : 'hlt2_shape',
-                                                          'average'   : (6.3290e-01, 1.65e-02)}
-                                         },
-                     hlt2_unbiased    : {'unbiased'    : {'bins'      : time.getRange(),
-                                                          'heights'   : [0.5]}
-                                         }
-                     }
-            from P2VVParameterizations.TimeAcceptance import Paper2012_FitTimeAcceptance as TimeAcceptance
-            timeAcceptance = TimeAcceptance(time = time, Input = '/stuff/PhD/p2vv/data/start_values.root',
-                                            Histograms = hists,
-                                            Data = self._data)
+            histogram_file = pdfConfig['timeEffHistFile']
+            if pdfConfig['fitAcceptance']:
+                hists = {hlt1_excl_biased : {'excl_biased' : {'histogram' : 'hlt1_shape',
+                                                              'average'   : (6.285e-01, 1.633e-02) },
+                                             'unbiased'    : {'bins'      : time.getRange(),
+                                                              'heights'   : [0.5]}
+                                             },
+                         hlt2_biased      : {'biased'      : {'histogram' : 'hlt2_shape',
+                                                              'average'   : (6.3290e-01, 1.65e-02)}
+                                             },
+                         hlt2_unbiased    : {'unbiased'    : {'bins'      : time.getRange(),
+                                                              'heights'   : [0.5]}
+                                             }
+                         }
+            else:
+                hists = {hlt1_excl_biased : {'excl_biased' : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_20bins'},
+                                             'unbiased'    : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_20bins'}
+                                             }
+                         }
+            from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+            timeAcceptance = TimeAcceptance(time = time, Input = histogram_file, Histograms = hists,
+                                            Data = self._data, Fit = pdfConfig['fitAcceptance'])
 
         ###################################################################################################################################
         ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
