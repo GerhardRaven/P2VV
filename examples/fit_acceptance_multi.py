@@ -111,8 +111,8 @@ background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield
 mass_pdf = buildPdf(Components = (signal, background), Observables = (m, ), Name='mass_pdf')
 mass_pdf.Print("t")
 
-## base_location = '/home/raaij'
-base_location = '/stuff/PhD/p2vv'
+base_location = '/home/raaij'
+## base_location = '/stuff/PhD/p2vv'
 
 # Build the acceptance using the histogram as starting values
 input_file = os.path.join(base_location, 'data/start_values.root')
@@ -225,8 +225,8 @@ if real_data:
     # Plot mass pdf
     from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
     from ROOT import TCanvas
-    canvas = TCanvas('mass_canvas', 'mass_canvas', 1000, 500)
-    obs = [m, mpsi]
+    canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
+    obs = [m]
     for (p,o) in zip(canvas.pads(len(obs)), obs):
         from P2VVGeneralUtils import plot
         pdfOpts  = dict()
@@ -235,7 +235,7 @@ if real_data:
              , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
              , plotResidHist = True
              , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed ),
-                              'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
+                              ## 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
                               'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                               }
              )
@@ -360,8 +360,6 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
           , logy = False
           , logx = True
           )
-    p.SetLogx(1)
-    p.Update()
     
 # plot the efficiency shapes
 def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
