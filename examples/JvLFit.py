@@ -37,12 +37,13 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU              = 1
-               , Optimize            = 1
-               , Timer               = 1
-#               , Minos               = True
-#               , Hesse               = False
-#               , Minimizer           = 'Minuit2'
+fitOpts = dict(  NumCPU     = 1
+               , Optimize   = 1
+               , Timer      = 1
+#               , Minos      = True
+#               , Hesse      = False
+#               , Minimizer  = 'Minuit2'
+#               , Verbose    = 1
               )
 pdfConfig['fitOptions'] = fitOpts
 
@@ -55,7 +56,7 @@ markSize  = 0.4
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
 pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['sigTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
@@ -84,41 +85,34 @@ pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 
 pdfConfig['constrainDeltaM'] = True  # nominal: True
 
-pdfConfig['lambdaCPParam'] = 'lambSqPhi'  # default/nominal: 'lambSqPhi'
+pdfConfig['lambdaCPParam'] = 'lambPhi'  # default/nominal: 'lambSqPhi'
 constLambdaCP = False  # default/nominal: False
 
+manualTagCatBins = False
 constTagCatCoefs = True  # default: True / nominal: False
 constAvgCEvenOdd = True  # default: False / nominal: True
 constWTagAsyms   = True  # default/nominal: True
 constCSP         = True  # default/nominal: True
 
-if not readData :
-    pdfConfig['tagCats'] = [  ( 'Untagged',  0, 0.500001, 0.500, 0.505, 0., 0.6683, 0. )
-                            , ( 'TagCat1',   1, 0.499999, 0.484, 0.489, 0., 0.0107, 0. )
-                            , ( 'TagCat2',   2, 0.478,    0.467, 0.470, 0., 0.0472, 0. )
-                            , ( 'TagCat3',   3, 0.457,    0.447, 0.449, 0., 0.0494, 0. )
-                            , ( 'TagCat4',   4, 0.437,    0.427, 0.429, 0., 0.0425, 0. )
-                            , ( 'TagCat5',   5, 0.417,    0.408, 0.410, 0., 0.0359, 0. )
-                            , ( 'TagCat6',   6, 0.399,    0.390, 0.391, 0., 0.0325, 0. )
-                            , ( 'TagCat7',   7, 0.381,    0.372, 0.373, 0., 0.0224, 0. )
-                            , ( 'TagCat8',   8, 0.363,    0.354, 0.354, 0., 0.0195, 0. )
-                            , ( 'TagCat9',   9, 0.344,    0.334, 0.333, 0., 0.0143, 0. )
-                            , ( 'TagCat10', 10, 0.324,    0.313, 0.311, 0., 0.0122, 0. )
-                            , ( 'TagCat11', 11, 0.303,    0.291, 0.289, 0., 0.0127, 0. )
-                            , ( 'TagCat12', 12, 0.280,    0.270, 0.266, 0., 0.0100, 0. )
-                            , ( 'TagCat13', 13, 0.257,    0.246, 0.242, 0., 0.0086, 0. )
-                            , ( 'TagCat14', 14, 0.233,    0.222, 0.217, 0., 0.0060, 0. )
-                            , ( 'TagCat15', 15, 0.208,    0.195, 0.189, 0., 0.0029, 0. )
-                            , ( 'TagCat16', 16, 0.181,    0.167, 0.160, 0., 0.0027, 0. )
-                            , ( 'TagCat17', 17, 0.153,    0.141, 0.133, 0., 0.0019, 0. )
-                            , ( 'TagCat18', 18, 0.124,    0.111, 0.102, 0., 0.0005, 0. )
-                           ]
+if not readData or manualTagCatBins :
+    pdfConfig['tagCatsOS'] = [  ( 'Untagged',  0, 0.500001 )
+                              , ( 'TagCat1',   1, 0.499999 )
+                              , ( 'TagCat2',   2, 0.40     )
+                              , ( 'TagCat3',   3, 0.25     )
+                             ]
+    pdfConfig['tagCatsSS'] = [  ( 'Untagged',  0, 0.500001 )
+                              , ( 'TagCat1',   1, 0.499999 )
+                              , ( 'TagCat2',   2, 0.30     )
+                             ]
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
+#pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'
 
-pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasisBaseline' if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles']\
-                                 else 'effMomentsHelBasisBaseline'
+#pdfConfig['angEffMomentsFile'] = ''
+pdfConfig['angEffMomentsFile'] = 'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
+                                 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
+                                 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -157,6 +151,7 @@ obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta
 time       = obsSetP2VV[0]
 angles     = obsSetP2VV[ 1 : 4 ]
 iTagOS     = obsSetP2VV[4]
+iTagSS     = pdfBuild['observables']['iTagSS']
 BMass      = pdfBuild['observables']['BMass']
 mumuMass   = pdfBuild['observables']['mumuMass']
 KKMass     = pdfBuild['observables']['KKMass']
@@ -167,6 +162,7 @@ if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
 
 if not pdfBuild['iTagZeroTrick'] :
     tagCatP2VVOS = pdfBuild['observables']['tagCatP2VVOS']
+    tagCatP2VVSS = pdfBuild['observables']['tagCatP2VVSS']
     obsSetP2VV.append(tagCatP2VVOS)
 
     # tagging parameters
@@ -232,9 +228,14 @@ if ( readData or generateData ) and doFit :
     if constLambdaCP :
         pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
             else pdfBuild['lambdaCP'].setConstant('lambdaCP')
-    for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] :
-        CEvenOdd.setConstant('avgCEven.*')
-        if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
+    for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
+        if not pdfConfig['sameSideTagging'] :
+            CEvenOdds.setConstant('avgCEven.*')
+            if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdds.setConstant( 'avgCOdd.*', True )
+        else :
+            for CEvenOdd in CEvenOdds :
+                CEvenOdd.setConstant('avgCEven.*')
+                if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
     if pdfConfig['nominalPdf'] and not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
@@ -257,7 +258,11 @@ if ( readData or generateData ) and doFit :
 
     if fastFit :
         pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
-        for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
+        for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
+            if not pdfConfig['sameSideTagging'] :
+                CEvenOdds.setConstant('avgCEven.*|avgCOdd.*')
+            else :
+                for CEvenOdd in CEvenOdds : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
         pdfBuild['tagCatsOS'].setConstant('.*')
         pdfBuild['tagCatsSS'].setConstant('.*')
         pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
@@ -799,6 +804,9 @@ if dllPars :
             else : namePF = ')'
             canv.Print( canvFileName + namePF )
 
+
+tagData = pdfBuild['sigSWeightData']
+
 sums = {
     'numEv'    : 0.
   , 'numOS'    : 0., 'numOSExcl'    : 0.
@@ -818,8 +826,8 @@ sums = {
   , 'dil2Comb' : 0., 'dil2CombExcl' : 0.
 }
 
-for varSet in fitData :
-  weight = fitData.weight()
+for varSet in tagData :
+  weight = tagData.weight()
   sums['numEv'] += weight
 
   if varSet.getCatIndex('tagdecision_os') != 0 :
@@ -916,3 +924,34 @@ print 'Comb. <dil2>: %.4f (%.4f)\n' % ( sums['dil2Comb'] / sums['numComb'], sums
 print 'OS    <eff * dil2>: %.4f%% (%.4f%%)'   % ( sums['dil2OS']   / sums['numEv'] * 100., sums['dil2OSExcl']   / sums['numEv'] * 100. )
 print 'SS    <eff * dil2>: %.4f%% (%.4f%%)'   % ( sums['dil2SS']   / sums['numEv'] * 100., sums['dil2SSExcl']   / sums['numEv'] * 100. )
 print 'Comb. <eff * dil2>: %.4f%% (%.4f%%)\n' % ( sums['dil2Comb'] / sums['numEv'] * 100., sums['dil2CombExcl'] / sums['numEv'] * 100. )
+
+nEv = 0.
+nBB = 0.
+nBbarBbar = 0.
+nBbarB = 0.
+nBBbar = 0.
+avD_OS = 0.
+avD_SS = 0.
+avDD = 0.
+for argSet in tagData :
+    if argSet.getCatIndex('tagdecision_os') == 0 or argSet.getCatIndex('tagdecision_ss') == 0 : continue
+
+    nEv += tagData.weight()
+    if argSet.getCatIndex('tagdecision_os') == +1 and argSet.getCatIndex('tagdecision_ss') == +1 : nBB += tagData.weight()
+    if argSet.getCatIndex('tagdecision_os') == -1 and argSet.getCatIndex('tagdecision_ss') == -1 : nBbarBbar += tagData.weight()
+    if argSet.getCatIndex('tagdecision_os') == -1 and argSet.getCatIndex('tagdecision_ss') == +1 : nBbarB += tagData.weight()
+    if argSet.getCatIndex('tagdecision_os') == +1 and argSet.getCatIndex('tagdecision_ss') == -1 : nBBbar += tagData.weight()
+
+    D_OS = 1. - 2. * argSet.getRealValue('tagomega_os')
+    D_SS = 1. - 2. * argSet.getRealValue('tagomega_ss')
+
+    avD_OS += D_OS * tagData.weight()
+    avD_SS += D_SS * tagData.weight()
+    avDD   += D_OS * D_SS * tagData.weight()
+
+avD_OS /= nEv
+avD_SS /= nEv
+avDD   /= nEv
+
+Atags = ( nBB + nBbarBbar - nBbarB - nBBbar ) / nEv
+print avDD, avD_OS * avD_SS, Atags
