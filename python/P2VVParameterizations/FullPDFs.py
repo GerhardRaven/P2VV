@@ -692,7 +692,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                          }
                      }
             from P2VVParameterizations.TimeAcceptance import Paper2012_FitTimeAcceptance as TimeAcceptance
-            timeAcceptance = TimeAcceptance(time = time, Input = '/stuff/PhD/p2vv/data/start_values.root',
+            timeAcceptance = TimeAcceptance(time = time, Input = '/home/raaij/data/start_values.root',
                                             Histograms = hists,
                                             Data = self._data)
 

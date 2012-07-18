@@ -8,16 +8,19 @@
 #include <vector>
 #include <iostream>
 #include <cmath> 
+#include <memory>
 
 #include "TMath.h" 
 
 #include "Riostream.h" 
 #include "RooAvEffConstraint.h" 
 #include "RooAbsPdf.h" 
+#include "RooAbsArg.h"
 
 ClassImp(RooAvEffConstraint) 
 
 using std::vector;
+using std::auto_ptr;
 
 //_____________________________________________________________________________
 RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title, 
@@ -30,7 +33,16 @@ RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title,
      _sigma("average_sigma", "average_sigma", this, sigma),
      _integral(0)
 { 
-   observable.setConstant(true);
+   auto_ptr<RooArgSet> vars(effProd.getVariables());
+   RooFIter it = vars->fwdIterator();
+   RooAbsArg* arg = 0;
+   while ((arg = it.next())) {
+      if (arg->getAttribute("Observable")) {
+         RooAbsRealLValue* l = dynamic_cast<RooAbsRealLValue*>(arg);
+         if (l) l->setConstant(true);
+      }
+   }
+   // observable.setConstant(true);
 } 
 
 //_____________________________________________________________________________

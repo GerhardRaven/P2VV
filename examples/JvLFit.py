@@ -24,7 +24,7 @@ parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
+    pdfConfig['nTupleFile'] = '/home/raaij/data/Bs2JpsiPhi_2011_biased_unbiased.root'
 else :
     pdfConfig['nTupleName'] = None
     pdfConfig['nTupleFile'] = None
@@ -36,7 +36,7 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU              = 4
+fitOpts = dict(  NumCPU              = 12
                , Optimize            = 1
                , Timer               = 1
                , Verbose             = True
@@ -118,7 +118,7 @@ pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPs
 pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
 
 pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasisBaseline' if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles']\
-                                 else '/stuff/PhD/p2vv/data/effMomentsHelBasisBaseline'
+                                 else '/home/raaij/data/effMomentsHelBasisBaseline'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
