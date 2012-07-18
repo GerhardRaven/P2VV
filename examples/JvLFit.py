@@ -14,7 +14,7 @@ makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = False
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False
 sumW2Error              = False
@@ -86,13 +86,24 @@ pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 pdfConfig['constrainDeltaM'] = True  # nominal: True
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'  # default/nominal: 'lambSqPhi'
-constLambdaCP = False  # default/nominal: False
 
 manualTagCatBins = False
 constTagCatCoefs = True  # default: True / nominal: False
 constAvgCEvenOdd = True  # default: False / nominal: True
 constWTagAsyms   = True  # default/nominal: True
 constCSP         = True  # default/nominal: True
+constAmplitudes  = True
+constLambdaCP    = 'lambPhi'  # default/nominal: ''
+
+A0Mag2Val     =  0.521
+APerpMag2Val  =  0.251
+f_SVal        =  0.027
+AparPhaseVal  =  3.34
+AperpPhaseVal =  3.00
+ASOddPhaseVal = -0.01
+
+lambCPSqVal = 0.8874
+phiCPVal    = 0.023
 
 if not readData or manualTagCatBins :
     pdfConfig['tagCatsOS'] = [  ( 'Untagged',  0, 0.500001 )
@@ -223,56 +234,76 @@ else :
 ## fit data ##
 ##############
 
-if ( readData or generateData ) and doFit :
-    # float/fix values of some parameters
-    if constLambdaCP :
-        pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
-            else pdfBuild['lambdaCP'].setConstant('lambdaCP')
+# float/fix values of some parameters
+if 'lamb' in constLambdaCP.lower() :
+    from math import sqrt
+    pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
+        else pdfBuild['lambdaCP'].setConstant('lambdaCP')
+    pdfBuild['lambdaCP'].parameter('lambdaCPSq').setVal(lambCPSqVal) if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
+        else pdfBuild['lambdaCP'].parameter('lambdaCP').setVal( sqrt(lambCPSqVal) )
+if 'phi' in constLambdaCP.lower() :
+    pdfBuild['lambdaCP'].setConstant('phiCP')
+    pdfBuild['lambdaCP'].parameter('phiCP').setVal(phiCPVal)
+for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
+    if not pdfConfig['sameSideTagging'] :
+        CEvenOdds.setConstant('avgCEven.*')
+        if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdds.setConstant( 'avgCOdd.*', True )
+    else :
+        for CEvenOdd in CEvenOdds :
+            CEvenOdd.setConstant('avgCEven.*')
+            if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
+
+if pdfConfig['nominalPdf'] or not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+
+if pdfConfig['nominalPdf'] or constWTagAsyms :
+    pdfBuild['tagCatsOS'].parameter('wTagDelP0OS').setVal(0.)
+    pdfBuild['tagCatsOS'].parameter('wTagDelP1OS').setVal(0.)
+    pdfBuild['tagCatsSS'].parameter('wTagDelP0SS').setVal(0.)
+    pdfBuild['tagCatsSS'].parameter('wTagDelP1SS').setVal(0.)
+    pdfBuild['tagCatsOS'].setConstant('wTagDelP0')
+    pdfBuild['tagCatsOS'].setConstant('wTagDelP1')
+    pdfBuild['tagCatsSS'].setConstant('wTagDelP0')
+    pdfBuild['tagCatsSS'].setConstant('wTagDelP1')
+
+if pdfConfig['parameterizeKKMass'] == 'functions' :
+    for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
+    if not pdfConfig['SFit'] :
+        for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
+
+if pdfConfig['nominalPdf'] or constCSP : pdfBuild['amplitudes'].setConstant('C_SP')
+
+if constAmplitudes :
+    pdfBuild['amplitudes'].setConstant('A0Mag2')
+    pdfBuild['amplitudes'].setConstant('AperpMag2')
+    pdfBuild['amplitudes'].setConstant('f_S')
+    pdfBuild['amplitudes'].setConstant('AparPhase')
+    pdfBuild['amplitudes'].setConstant('AperpPhase')
+    pdfBuild['amplitudes'].setConstant('ASOddPhase')
+    pdfBuild['amplitudes'].parameter('A0Mag2').setVal(A0Mag2Val)
+    pdfBuild['amplitudes'].parameter('AperpMag2').setVal(APerpMag2Val)
+    pdfBuild['amplitudes'].parameter('f_S').setVal(f_SVal)
+    pdfBuild['amplitudes'].parameter('AparPhase').setVal(AparPhaseVal)
+    pdfBuild['amplitudes'].parameter('AperpPhase').setVal(AperpPhaseVal)
+    pdfBuild['amplitudes'].parameter('ASOddPhase').setVal(ASOddPhaseVal)
+
+if fastFit :
+    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
     for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
         if not pdfConfig['sameSideTagging'] :
-            CEvenOdds.setConstant('avgCEven.*')
-            if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdds.setConstant( 'avgCOdd.*', True )
+            CEvenOdds.setConstant('avgCEven.*|avgCOdd.*')
         else :
-            for CEvenOdd in CEvenOdds :
-                CEvenOdd.setConstant('avgCEven.*')
-                if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
+            for CEvenOdd in CEvenOdds : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
+    pdfBuild['tagCatsOS'].setConstant('.*')
+    pdfBuild['tagCatsSS'].setConstant('.*')
+    pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
+    pdfBuild['timeResModel'].setConstant('.*')
+    pdfBuild['signalBMass'].setConstant('.*')
+    if not pdfConfig['SFit'] :
+        pdfBuild['backgroundBMass'].setConstant('.*')
+        pdfBuild['backgroundTime'].setConstant('.*')
+    pdfBuild['amplitudes'].setConstant('C_SP')
 
-    if pdfConfig['nominalPdf'] or not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
-
-    if pdfConfig['nominalPdf'] or constWTagAsyms :
-        pdfBuild['tagCatsOS'].parameter('wTagDelP0OS').setVal(0.)
-        pdfBuild['tagCatsOS'].parameter('wTagDelP1OS').setVal(0.)
-        pdfBuild['tagCatsSS'].parameter('wTagDelP0SS').setVal(0.)
-        pdfBuild['tagCatsSS'].parameter('wTagDelP1SS').setVal(0.)
-        pdfBuild['tagCatsOS'].setConstant('wTagDelP0')
-        pdfBuild['tagCatsOS'].setConstant('wTagDelP1')
-        pdfBuild['tagCatsSS'].setConstant('wTagDelP0')
-        pdfBuild['tagCatsSS'].setConstant('wTagDelP1')
-
-    if pdfConfig['parameterizeKKMass'] == 'functions' :
-        for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
-        if not pdfConfig['SFit'] :
-            for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
-
-    if pdfConfig['nominalPdf'] or constCSP : pdfBuild['amplitudes'].setConstant('C_SP')
-
-    if fastFit :
-        pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
-        for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
-            if not pdfConfig['sameSideTagging'] :
-                CEvenOdds.setConstant('avgCEven.*|avgCOdd.*')
-            else :
-                for CEvenOdd in CEvenOdds : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
-        pdfBuild['tagCatsOS'].setConstant('.*')
-        pdfBuild['tagCatsSS'].setConstant('.*')
-        pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
-        pdfBuild['timeResModel'].setConstant('.*')
-        pdfBuild['signalBMass'].setConstant('.*')
-        if not pdfConfig['SFit'] :
-            pdfBuild['backgroundBMass'].setConstant('.*')
-            pdfBuild['backgroundTime'].setConstant('.*')
-        pdfBuild['amplitudes'].setConstant('C_SP')
-
+if ( readData or generateData ) and doFit :
     # fit data
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
