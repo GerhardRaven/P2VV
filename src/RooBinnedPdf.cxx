@@ -64,6 +64,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),  
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kFALSE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(kFALSE)
 {
@@ -99,6 +100,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kFALSE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(kFALSE)
 {
@@ -155,6 +157,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kFALSE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(ignoreFirstBin)
 {
@@ -210,6 +213,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kTRUE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(kFALSE)
 {
@@ -255,6 +259,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kTRUE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(kFALSE)
 {
@@ -294,6 +299,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kTRUE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(ignoreFirstBin)
 {
@@ -331,6 +337,7 @@ RooBinnedPdf::RooBinnedPdf
   _coefLists(),
   _function(TString(name) + "_func", TString(name) + "_func", this, function),
   _continuousBase(kTRUE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(kFALSE),
   _ignoreFirstBin(kFALSE)
 {
@@ -361,6 +368,7 @@ RooBinnedPdf::RooBinnedPdf
      _coefLists(),
      _function(TString(name) + "_func", TString(name) + "_func", this, function),
      _continuousBase(kTRUE),
+     _forceUnitIntegral(kFALSE),
      _binIntegralCoefs(kFALSE),
      _ignoreFirstBin(kFALSE)
 {
@@ -404,6 +412,7 @@ RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other, const char* name)
      _binningNames(other._binningNames),
      _calcCoefZeros(other._calcCoefZeros),
      _continuousBase(other._continuousBase),
+     _forceUnitIntegral(other._forceUnitIntegral),
      _binIntegralCoefs(other._binIntegralCoefs),
      _ignoreFirstBin(other._ignoreFirstBin)
 {
@@ -468,8 +477,8 @@ Int_t RooBinnedPdf::getAnalyticalIntegral(RooArgSet& allVars,
 
   // check if we have to integrate over all variables, calculate the
   // coefficient of bin 0 and coefficients are bin integrals
-  if (_calcCoefZeros[0] && (!_continuousBase || _binIntegralCoefs)
-      && varsCode == (1 << _numCats) - 1)
+  if ((_forceUnitIntegral || (_calcCoefZeros[0] && (!_continuousBase
+      || _binIntegralCoefs))) && varsCode == (1 << _numCats) - 1)
     return 1;
 
   // return integration code
@@ -481,7 +490,7 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
     const char* /*rangeName*/) const
 {
   // integral over all variables equals 1 if the coefficient of bin 0 is
-  // calculated and coefficients are bin integrals
+  // calculated and coefficients are bin integrals (or if integral=1 is forced)
   if (code == 1) return 1.;
 
   // determine the code that specifies integration variables
