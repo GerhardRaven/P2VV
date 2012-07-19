@@ -167,6 +167,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['nTupleName'] = 'DecayTree'
         self['nTupleFile'] = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 
+        self['trigger']         = 'HLT1TimeUnbiased'
         self['timeEffHistFile'] = 'BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
         self['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
 
@@ -184,8 +185,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['bkgAnglePdf']          = 'histPdf'
         self['sigTaggingPdf']        = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['bkgTaggingPdf']        = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
-        self['multiplyByTimeEff']    = ''                  # 'all' / 'signal'
-        self['parameterizeKKMass']   = ''  # '' / 'functions' / 'simultaneous'
+        self['multiplyByTimeEff']    = ''                  # '' / 'all' / 'signal'
+        self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basisSig3' / 'basisSig6'
+        self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
         self['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ]
         self['SWaveAmplitudeValues'] = (  [ 0.026 ], [ 0. ] )
@@ -198,7 +200,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['constrainTagging']   = True
 
         self['iTagZeroTrick'] = False
-        self['iTagStates'] = { }                         # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
+        self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
         self['eventTimeResolution'] = True
         self['numTimeResBins']      = 100
@@ -206,9 +208,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['signalFraction'] = 0.67
         self['massRangeBackground'] = False
 
-        self['amplitudeParam'] = 'phasesSWaveFrac'       # 'phases' / 'phasesSWaveFrac' / 'ReIm' / 'bank'
-        self['ASParam']        = 'deltaPerp'             # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm' / 'Mag2ReImPerp'
-        self['AparParam']      = 'cos'                   # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
+        self['amplitudeParam'] = 'phasesSWaveFrac'  # 'phases' / 'phasesSWaveFrac' / 'ReIm' / 'bank'
+        self['ASParam']        = 'deltaPerp'        # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm' / 'Mag2ReImPerp'
+        self['AparParam']      = 'cos'              # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
 
         self['constrainDeltaM'] = True
 
@@ -264,6 +266,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         nTupleName = pdfConfig.pop('nTupleName')
         nTupleFile = pdfConfig.pop('nTupleFile')
 
+        trigger         = pdfConfig.pop('trigger')
         timeEffHistFile = pdfConfig.pop('timeEffHistFile')
         timeEffHistName = pdfConfig.pop('timeEffHistName')
 
@@ -284,6 +287,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         sigTaggingPdf     = pdfConfig.pop('sigTaggingPdf')
         bkgTaggingPdf     = pdfConfig.pop('bkgTaggingPdf')
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')
+        multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')
         numBMassBins      = pdfConfig.pop('numBMassBins')
         ambiguityPars     = pdfConfig.pop('ambiguityParameters')
@@ -404,9 +408,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                            )
 
-        sel   = Category( 'sel',                       Title = 'Selection',         Observable = True, States = { 'selected' : +1 } )
-        trig  = Category( 'triggerDecisionUnbiased',   Title = 'Unbiased HLT1',     Observable = True, States = { 'selected' : +1 } )
-        #trig  = Category( 'triggerDecisionBiasedExcl', Title = 'Excl. Biased HLT1', Observable = True, States = { 'selected' : +1 } )
+        sel = Category( 'sel', Title = 'Selection', Observable = True, States = { 'selected' : +1 } )
+        if trigger == 'HLT1TimeUnbiased' :
+            trig  = Category( 'triggerDecisionUnbiased',   Title = 'Unbiased HLT1',     Observable = True, States = { 'selected' : +1 } )
+        elif trigger == 'HLT1ExclTimeBiased' :
+            trig  = Category( 'triggerDecisionBiasedExcl', Title = 'Excl. Biased HLT1', Observable = True, States = { 'selected' : +1 } )
+        else :
+            raise RuntimeError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid trigger configuration: %s' % trigger )
 
         muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
         muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
@@ -921,20 +929,28 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :                         sigPdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
         self._BTagDecay = sigPdf
 
-        if angEffMomentsFile :
+        if multiplyByAngEff :
             # multiply signal PDF with angular efficiency
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"'\
                   % angEffMomentsFile
 
             from P2VVGeneralUtils import RealMomentsBuilder
             moments = RealMomentsBuilder()
-            angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-#            angMomInds = [( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 2, 2, 0 ), ( 1, 1, 0 ), ( 1, 2, 0 )] if nominalPdf or not transAngles \
-#                          else [  ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 2, 0 ), ( 2, 2, 2 )\
-#                                , ( 1, 1, 1 ), ( 1, 2, 0 ), ( 1, 2, 2 ) ]
-#            angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if nominalPdf or not transAngles \
-#                          else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+            if multiplyByAngEff == 'basis012' :
+                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            elif multiplyByAngEff == 'basisSig3' :
+                angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if nominalPdf or not transAngles\
+                              else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+            elif multiplyByAngEff == 'basisSig6' :
+                angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 2, 2, 0 ), ( 1, 1, 0 ), ( 1, 2, 0 ) ]\
+                             if nominalPdf or not transAngles else\
+                             [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 2, 0 ), ( 2, 2, 2 )\
+                              , ( 1, 1, 1 ), ( 1, 2, 0 ), ( 1, 2, 2 ) ]
+            else :
+                raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration: %s'\
+                                   % multiplyByAngEff)
+
             moments.appendPYList( self._angleFuncs.angles, angMomInds )
             moments.read(angEffMomentsFile)
             moments.Print()
