@@ -1339,7 +1339,7 @@ class TagUntag_BinnedTaggingPdf( BinnedTaggingPdf ) :
             self._parseArg(  'AUntag', kwargs
                            , Name  = self._namePF + 'AUntag'
                            , Title = 'Untagged asymmetry in tagging category coefficients'
-                           , Value = AUntVal, Error = AUntErr, MinMax = ( -1., 1. ), Constant = True
+                           , Value = AUntVal, Error = AUntErr, MinMax = ( -1., 1. )
                           )
 
             if self._tagCats[0] :

@@ -16,7 +16,7 @@ plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False
+pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 sumW2Error              = False
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
@@ -60,8 +60,9 @@ pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = ''
-pdfConfig['multiplyByAngEff']     = ''  # default: 'basis012'
+pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
@@ -69,7 +70,7 @@ pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30.,
 pdfConfig['SWaveAmplitudeValues'] = (  [ -0.12, -0.25, -0.16, -0.07, -0.18, -0.37 ], [ -0.31, -0.15, -0.10, 0.01, 0.16, 0.10 ] )
 pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.4976 ] # [ 0.3263 ] # [ 0.9663, 0.9562, 0.9255, 0.9255, 0.9562, 0.9663 ]
 
-pdfConfig['sameSideTagging']    = False  # nominal: False
+pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
@@ -315,6 +316,9 @@ if fastFit :
 #ws['N_signal'].setConstant()
 #ws['N_bkg'].setConstant()
 #
+#ws['sig_ABBbarTag'].setConstant()
+#ws['bkg_ABBbarTag'].setConstant()
+#ws['bkg_AUntag'].setConstant()
 #ws['bkg_ABBbarOSTag'].setConstant()
 #ws['bkg_ABBbarSSTag'].setConstant()
 #ws['bkg_ABBbarSameTag'].setConstant()

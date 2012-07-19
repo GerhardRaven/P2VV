@@ -160,7 +160,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['makePlots']  = True
         self['SFit']       = False
         self['blind']      = False
-        self['nominalPdf'] = True
+        self['nominalPdf'] = True    # nominal PDF option does not work at the moment
 
         self['numEvents'] = 30000
 
@@ -185,6 +185,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['bkgAnglePdf']          = 'histPdf'
         self['sigTaggingPdf']        = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['bkgTaggingPdf']        = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
+        self['multiplyByTagPdf']     = True
         self['multiplyByTimeEff']    = ''                  # '' / 'all' / 'signal'
         self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basisSig3' / 'basisSig6'
         self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
@@ -286,6 +287,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         bkgAnglePdf       = pdfConfig.pop('bkgAnglePdf')
         sigTaggingPdf     = pdfConfig.pop('sigTaggingPdf')
         bkgTaggingPdf     = pdfConfig.pop('bkgTaggingPdf')
+        multiplyByTagPdf  = pdfConfig.pop('multiplyByTagPdf')
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')
         multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')
@@ -388,9 +390,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         angles = [ cpsi, ctheta, phi ]
         obsSetP2VV = [ time ] + angles
-        #if not self._iTagZeroTrick :
-            #obsSetP2VV.append(iTagOS)
-            #if SSTagging : obsSetP2VV.append(iTagSS)
+        if not self._iTagZeroTrick and ( nominalPdf or multiplyByTagPdf or not condTagging ) :
+            obsSetP2VV.append(iTagOS)
+            if SSTagging : obsSetP2VV.append(iTagSS)
         if not SFit :
             obsSetP2VV.append(BMass)
 
@@ -642,12 +644,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             tagCatP2VVOS = self._tagCatsOS['tagCat']
             tagCatP2VVOS.setIndex(1)
             observables[tagCatP2VVOS.GetName()] = tagCatP2VVOS
-            #obsSetP2VV.append(tagCatP2VVOS)
 
             tagCatP2VVSS = self._tagCatsSS['tagCat']
             tagCatP2VVSS.setIndex(1)
             observables[tagCatP2VVSS.GetName()] = tagCatP2VVSS
-            #if SSTagging : obsSetP2VV.append(tagCatP2VVSS)
+
+            if not self._iTagZeroTrick and ( nominalPdf or multiplyByTagPdf or not condTagging ) :
+                obsSetP2VV.append(tagCatP2VVOS)
+                if SSTagging : obsSetP2VV.append(tagCatP2VVSS)
 
             if nominalPdf or condTagging :
                 self._tagCatsOS.addConditional(tagCatP2VVOS)
@@ -973,7 +977,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## build signal tagging PDF ##
         ##############################
 
-        if nominalPdf or condTagging :
+        if ( nominalPdf and not SFit ) or ( condTagging and multiplyByTagPdf ) :
             if not nominalPdf and self._iTagZeroTrick :
                 # no implementation for signal tagging PDF with tag = { B, Bbar, Untagged } (yet)
                 pass
@@ -1294,7 +1298,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## build background tagging PDF ##
         ##################################
 
-        if not SFit :
+        if not SFit and ( nominalPdf or multiplyByTagPdf or not condTagging ) :
             if not nominalPdf and self._iTagZeroTrick :
                 # no implementation for background tagging PDF with tag = { B, Bbar, Untagged } (yet)
                 pass
@@ -1388,7 +1392,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             splitParams = [ ]
             for amp in self._amplitudes.parameters() :
                 if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S' ] ) : splitParams.append(amp)
-            if nominalPdf or condTagging :
+            if nominalPdf or multiplyByTagPdf :
                 for par in self._sigTaggingPdf.parameters() :
                     if not par.isConstant() : splitParams.append(par)
             if not SFit :
