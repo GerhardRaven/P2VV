@@ -20,7 +20,7 @@ DVal      = 2. * ReLambVal / ( 1. + lambSqVal )
 SVal      = 2. * ImLambVal / ( 1. + lambSqVal )
 
 phiErr    = 0.1
-lambSqErr = 0.05
+lambSqErr = 0.08
 lambErr   = lambSqErr / 2.
 ReLambErr = lambSqErr / 2.
 ImLambErr = phiErr

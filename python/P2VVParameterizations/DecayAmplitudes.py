@@ -10,19 +10,34 @@
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_conditionalObs_mixin
 
 # amplitude values
-A02     = 0.522
-Aperp2  = 0.249
-Apar2   = 1. - A02 - Aperp2
+from math import sqrt
+A02    = 0.52
+Aperp2 = 0.25
+Apar2  = 1. - A02 - Aperp2
 
 A0Ph    = 0.
-AperpPh = 2.77
-AparPh  = 3.32
+AperpPh = 3.0
+AparPh  = 3.3
 
-f_S     = 0.016
-AS2     = f_S / ( 1. - f_S )
-ASPh    = 2.74
+f_S  = 0.03
+AS2  = f_S / ( 1. - f_S )
+ASPh = AperpPh
+
+A02Err     = 0.007
+Aperp2Err  = 0.01
+AperpPhErr = 0.3
+AparPhErr  = 0.2
+
+f_SErr     = 0.01
+AS2Err     = 0.01
+ASPhErr    = 0.2
+ASOddPhErr = 0.2
 
 C_SP    = 1.
+C_SPErr = 0.5
+
+from ROOT import RooNumber
+RooInf = RooNumber.infinity()
 
 class Amplitude :
     def __init__( self, name, Re, Im, Mag2, Phase, CP ) :
@@ -267,9 +282,12 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
         AparParam     = kwargs.pop( 'AparParameterization', 'phase'     )
 
         from math import pi
-        deltaPar  = AparPh  - A0Ph
-        deltaPerp = AperpPh - A0Ph
-        deltaS    = ASPh    - ( AperpPh if ASParam == 'deltaPerp' else A0Ph )
+        deltaPar   = AparPh - A0Ph
+        delParErr  = AparPhErr
+        deltaPerp  = AperpPh - A0Ph
+        delPerpErr = AperpPhErr
+        deltaS     = ASPh - ( AperpPh if ASParam == 'deltaPerp' else A0Ph )
+        delSErr    = ASOddPhErr if ASParam == 'deltaPerp' else ASPhErr
         if ambiguityPars :
             deltaPar  = -deltaPar
             deltaPerp = pi - deltaPerp
@@ -279,13 +297,13 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
         from RooFitWrappers import FormulaVar
 
         # A_0
-        self._parseArg( 'A0Mag2',  kwargs, Title = '|A0|^2',  Value = A02, MinMax = ( 0., 1. ) )
-        self._parseArg( 'A0Phase', kwargs, Title = 'delta_0', Value = 0.,  Constant = True     )
+        self._parseArg( 'A0Mag2',  kwargs, Title = '|A0|^2',  Value = A02, Error = A02Err, MinMax = ( -RooInf, RooInf ) )
+        self._parseArg( 'A0Phase', kwargs, Title = 'delta_0', Value = 0.,  Constant = True )
         A0Amp = Polar2_Amplitude( 'A0', self._A0Mag2, self._A0Phase, +1 )
 
         # A_perp
-        self._parseArg( 'AperpMag2',  kwargs, Title = '|A_perp|^2', Value = Aperp2,    MinMax = ( 0., 1. )            )
-        self._parseArg( 'AperpPhase', kwargs, Title = 'delta_perp', Value = deltaPerp, MinMax = ( -2. * pi, 2. * pi ) )
+        self._parseArg( 'AperpMag2',  kwargs, Title = '|A_perp|^2', Value = Aperp2,    Error = Aperp2Err,  MinMax = ( -RooInf, RooInf ) )
+        self._parseArg( 'AperpPhase', kwargs, Title = 'delta_perp', Value = deltaPerp, Error = delPerpErr, MinMax = ( -RooInf, RooInf ) )
         AperpAmp = Polar2_Amplitude( 'Aperp', self._AperpMag2, self._AperpPhase, -1 )
 
         # A_par
@@ -309,11 +327,11 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
 
         else :
             # delta_par
-            self._parseArg( 'AparPhase',  kwargs, Title = 'delta_par', Value = deltaPar, MinMax = ( -2. * pi, 2. * pi ) )
+            self._parseArg( 'AparPhase', kwargs, Title = 'delta_par', Value = deltaPar, Error = delParErr, MinMax = ( -RooInf, RooInf ) )
             AparAmp = Polar2_Amplitude( 'Apar', self._AparMag2, self._AparPhase, +1 )
 
         # A_S
-        self._parseArg( 'C_SP', kwargs, Title = 'S-P wave couping factor', Value = C_SP, MinMax = ( 0., 2. ) )
+        self._parseArg( 'C_SP', kwargs, Title = 'S-P wave couping factor', Value = C_SP, Error = C_SPErr, MinMax = ( -RooInf, RooInf ) )
         if 'KKMass' in kwargs and 'KKMassBinning' in kwargs :
             self._KKMass = kwargs.pop('KKMass')
             self._KKMassBinning = kwargs.pop('KKMassBinning')
@@ -331,11 +349,12 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                     self._createBinnedAmp( 'ASPhase', 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMass, self._KKMassBinning )
 
             else :
-                self._parseArg( 'f_S', kwargs, Title = 'S wave fraction', Value = f_S, MinMax = ( 0., 1. ) )
+                self._parseArg( 'f_S', kwargs, Title = 'S wave fraction', Value = f_S, Error = f_SErr, MinMax = ( -RooInf, RooInf ) )
                 if ASParam == 'deltaPerp' :
-                    self._parseArg( 'ASOddPhase', kwargs, Title = 'delta_S - delta_perp', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
+                    self._parseArg( 'ASOddPhase', kwargs, Title = 'delta_S - delta_perp', Value = deltaS, Error = delSErr
+                                   , MinMax = ( -RooInf, RooInf ) )
                 else :
-                    self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, MinMax = ( -2. * pi, 2. * pi ) )
+                    self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, Error = delSErr, MinMax = ( -RooInf, RooInf ) )
 
             self._ASMag2 = FormulaVar( 'ASMag2', '@0 / (1. - @0)', [ self._f_S ], Title = 'Re(A_S)' )
             if ASParam == 'deltaPerp' :

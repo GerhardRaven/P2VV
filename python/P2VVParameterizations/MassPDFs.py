@@ -1,5 +1,8 @@
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
+from ROOT import RooNumber
+RooInf = RooNumber.infinity()
+
 class MassPdf( _util_parse_mixin ) :
     def __init__(self, **kwargs ) :
         for ( k, v ) in kwargs.iteritems() : setattr( self, '_' + k, v )
@@ -64,10 +67,14 @@ class Binned_MassPdf( MassPdf ) :
 
 class LP2011_Signal_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
-        self._parseArg( 'm_sig_mean',     kwargs, Title = 'B Mass', Value = 5368., MinMax = ( 5360., 5372. ), Unit = 'MeV/c^2' )
-        self._parseArg( 'm_sig_sigma_1',  kwargs, Title = 'B Mass resolution 1', Value = 6.3, MinMax = (3., 20.), Unit = 'MeV/c^2' )
-        self._parseArg( 'm_sig_sigma_sf', kwargs, Title = 'B Mass resolution 2:1 scale factor', Value = 2.258, MinMax = ( 1., 5. ) )
-        self._parseArg( 'm_sig_frac',     kwargs, Title = 'B mass fraction 2nd Gaussian', Value = 0.803, MinMax = ( 0., 2. ) )
+        self._parseArg( 'm_sig_mean',     kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
+                       , Value = 5368., Error = 0.05, MinMax = ( -RooInf, RooInf ) )
+        self._parseArg( 'm_sig_sigma_1',  kwargs, Title = 'B Mass resolution 1', Unit = 'MeV/c^2'
+                       , Value = 6.3,   Error = 0.1,  MinMax = ( -RooInf, RooInf ) )
+        self._parseArg( 'm_sig_sigma_sf', kwargs, Title = 'B Mass resolution 2:1 scale factor'
+                       , Value = 2.3,   Error = 0.1,  MinMax = ( -RooInf, RooInf ) )
+        self._parseArg( 'm_sig_frac',     kwargs, Title = 'B mass fraction first Gaussian'
+                       , Value = 0.8,   Error = 0.03, MinMax = ( -RooInf, RooInf ) )
 
         from ROOT import RooGaussian as Gaussian
         from RooFitWrappers import Pdf, FormulaVar, SumPdf
@@ -86,7 +93,9 @@ class LP2011_Signal_Mass ( MassPdf ) :
 
 class LP2011_Background_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
-        self._parseArg('m_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'MeV/c^2', Value = -0.0016, MinMax = (-0.01,-0.0001) )
+        self._parseArg( 'm_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'c^2/MeV', Value = -0.002, Error = 0.0001
+                       , MinMax = ( -RooInf, RooInf) )
+
         from ROOT import RooExponential as Exponential
         from RooFitWrappers import Pdf
         MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name','LP2011_Background_Mass')

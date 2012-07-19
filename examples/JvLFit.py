@@ -34,7 +34,7 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
-pdfConfig['trigger'] = 'HLT1ExclTimeBiased' # 'HLT1TimeUnbiased'
+pdfConfig['trigger'] = 'HLT1TimeUnbiased' # 'HLT1TimeUnbiased' / 'HLT1ExclTimeBiased'
 
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
@@ -69,7 +69,7 @@ pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30.,
 pdfConfig['SWaveAmplitudeValues'] = (  [ -0.12, -0.25, -0.16, -0.07, -0.18, -0.37 ], [ -0.31, -0.15, -0.10, 0.01, 0.16, 0.10 ] )
 pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.4976 ] # [ 0.3263 ] # [ 0.9663, 0.9562, 0.9255, 0.9255, 0.9562, 0.9663 ]
 
-pdfConfig['sameSideTagging']    = True  # nominal: False
+pdfConfig['sameSideTagging']    = False  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
@@ -120,10 +120,8 @@ if not readData or manualTagCatBins :
                              ]
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
-if pdfConfig['trigger'] == 'HLT1ExclTimeBiased' :
-    pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'
-else :
-    pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
+pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins' if pdfConfig['trigger'] == 'HLT1ExclTimeBiased'\
+                               else 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
 
 pdfConfig['angEffMomentsFile'] = 'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                  if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
