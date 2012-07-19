@@ -31,19 +31,40 @@ class LP2011_TimeAcceptance ( TimeAcceptance ) :
 class Moriond2012_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
         from ROOT import TFile
-        from RooFitWrappers import HistFunc
+        from array import array
+        from RooFitWrappers import BinnedPdf
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
                        Value = 0., MinMax = (0.2, 14))
         input_file = kwargs.pop('Input', 'acceptance.root')
         histogram = kwargs.pop('Histogram', 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
+        binning_name = kwargs.pop('BinningName', 'efficiency_binning')
+        name = kwargs.pop('Name', 'Moriond2012_Acceptance')
+
         acceptance_file = TFile.Open(input_file)
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
         self._hist = acceptance_file.Get(histogram)
         if not self._hist:
             raise ValueError, 'Cannot get acceptance historgram %s from file' % histogram
-        TimeAcceptance.__init__( self, Acceptance = HistFunc(self._hist.GetName(), Histogram = self._hist, Observables = [self._time]))
+        xaxis = self._hist.GetXaxis()
+        bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, self._hist.GetNbinsX() + 2)))
+        heights = [self._hist.GetBinContent(i) for i in range(1, self._hist.GetNbinsX() + 1)]
+
         acceptance_file.Close()
+
+        from RooFitWrappers import RealVar
+        heights = [RealVar('%s_bin_%03d' % (name, i + 1), Observable = False, Value = v,
+                           Constant = True) for i, v in enumerate(heights)]
+        # Add a binning for this category and state
+        from ROOT import RooBinning
+        self._binning = RooBinning(len(bins) - 1, bins)
+        self._binning.SetName(binning_name)
+        self._time.setBinning(self._binning, binning_name)
+
+        from RooFitWrappers import BinnedPdf
+        self._shape = BinnedPdf(name, Observable = self._time,
+                                Binning = binning_name, Coefficients = heights)
+        TimeAcceptance.__init__(self, Acceptance = self._shape)
 
 class Paper2012_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :

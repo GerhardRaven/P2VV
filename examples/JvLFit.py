@@ -16,7 +16,7 @@ pdfConfig['makePlots']     = False
 pdfConfig['SFit']          = True
 pdfConfig['blind']         = False
 pdfConfig['nominalPdf']    = False
-pdfConfig['fitAcceptance'] = False
+pdfConfig['timeAcceptanceType'] = 'Moriond'
 sumW2Error                 = False
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
@@ -115,10 +115,10 @@ if not readData :
                             , ( 'TagCat18', 18, 0.124,    0.111, 0.102, 0., 0.0005, 0. )
                            ]
 
-if pdfConfig['fitAcceptance']:
-    pdfConfig['timeEffHistFile'] = '/stuff/PhD/p2vv/data/start_values.root'
+if pdfConfig['timeAcceptanceType'] == 'Fit':
+    pdfConfig['timeEffHistFile'] = '/home/raaij/data/start_values.root'
 else:
-    pdfConfig['timeEffHistFile'] = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
+    pdfConfig['timeEffHistFile'] = '/home/raaij/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 
 pdfConfig['angEffMomentsFile'] = 'effMomentsTransBasisBaseline' if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles']\
                                  else '/home/raaij/data/effMomentsHelBasisBaseline'
