@@ -374,7 +374,7 @@ def _RooFitResultParamsLatex(self,name,toys):
         string += '\\hline\n'
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
-            string += '%s & '%i.GetName()
+            string += '%s & '% i.GetName().replace('_', '\_')
             string += '%s $\pm$ %s & '%(round(i.getVal(),4),round(i.getError(),4))
             string += '%s & '%round(j.getVal(),4)
             string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),4))
@@ -386,7 +386,7 @@ def _RooFitResultParamsLatex(self,name,toys):
         string += '\\hline\n'
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
-            string += '%s & '%i.GetName()
+            string += '%s & '% i.GetName().replace('_', '\_')
             string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),4),round(i.getError(),4))
 
     string += '\\hline\n'

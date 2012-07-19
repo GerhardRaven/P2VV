@@ -403,7 +403,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                            )
 
-        sel   = Category( 'selected', Title = 'Selection', Observable = True, States = { 'selected' : +1 } )
+        sel   = Category( 'sel', Title = 'Selection', Observable = True, States = { 'selected' : 1, 'not_selected' : 0 } )
         hlt1_excl_biased = Category('hlt1_excl_biased', States = {'excl_biased' : 1, 'unbiased'     : 0}, Observable = True)
         hlt1_biased      = Category('hlt1_biased',      States = {'biased'      : 1, 'not_biased'   : 0}, Observable = True)
         hlt1_unbiased    = Category('hlt1_unbiased',    States = {'unbiased'    : 1, 'not_unbiased' : 0}, Observable = True)
@@ -455,11 +455,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if nTupleFile :
             if multiplyByTimeEff and timeAcceptanceType == 'Fit':
-                cut = 'selected == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)'
+                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)'
             elif multiplyByTimeEff and timeAcceptanceType == 'Paper':
-                cut = 'selected == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'
+                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'
             else: ## timeAcceptanceType == 'Moriond'
-                cut = 'selected == 1 && hlt1_unbiased == 1 && hlt2_biased == 1'
+                cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_biased == 1'
             from P2VVGeneralUtils import readData
             self._data = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
                                   , Rename = 'JpsiphiData', cuts = cut )
