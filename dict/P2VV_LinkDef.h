@@ -29,7 +29,7 @@
 #pragma link C++ class RooMultiHistEfficiency+;
 #pragma link C++ class MultiHistEntry+;
 #pragma link C++ class RooEfficiencyBin+;
-#pragma link C++ class RooAverage+;
+#pragma link C++ class RooAvEffConstraint+;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;
@@ -42,5 +42,7 @@
 #pragma link C++ class std::map<RooAbsReal*, bool>;
 #pragma link C++ class std::pair<RooAbsReal*, bool>;
 #pragma link C++ class std::vector<MultiHistEntry>;
-
+#pragma link C++ class std::pair<RooRealProxy*, bool>;
+#pragma link C++ class std::pair<double, TString>;
+#pragma link C++ class std::pair<RooCategoryProxy*, std::string>;
 #endif

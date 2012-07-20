@@ -306,6 +306,16 @@ Double_t RooEffHistProd::getValV(const RooArgSet* ns) const
 }
 
 //_____________________________________________________________________________
+const RooArgList& RooEffHistProd::getIntegralBins(const RooArgSet* iset,
+                                                  const char* rangeName) const
+{
+   const CacheElem* cache = getCache(iset, iset, rangeName);
+   const RooAddition* addition = dynamic_cast<const RooAddition*>(cache->integral());
+   assert(addition);
+   return addition->list();
+}
+
+//_____________________________________________________________________________
 Double_t RooEffHistProd::evaluate() const
 {
    // cout << "RooEffHistProd " << GetName() << "::evaluate norm = " 

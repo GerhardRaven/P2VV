@@ -167,10 +167,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['nTupleName'] = 'DecayTree'
         self['nTupleFile'] = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 
-        self['trigger']         = 'HLT1TimeUnbiased'
-        self['timeEffHistFile'] = 'BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-        self['timeEffHistName'] = 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins'
-
+        self['timeEffHistFile']   = 'BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
         self['angEffMomentsFile'] = 'effMoments'
 
         # fit options
@@ -187,6 +184,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['bkgTaggingPdf']        = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['multiplyByTagPdf']     = True
         self['multiplyByTimeEff']    = ''                  # '' / 'all' / 'signal'
+        self['timeEffType']          = 'Moriond'           # 'Moriond' / 'Fit' / 'Paper'
         self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basisSig3' / 'basisSig6'
         self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
@@ -267,10 +265,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         nTupleName = pdfConfig.pop('nTupleName')
         nTupleFile = pdfConfig.pop('nTupleFile')
 
-        trigger         = pdfConfig.pop('trigger')
-        timeEffHistFile = pdfConfig.pop('timeEffHistFile')
-        timeEffHistName = pdfConfig.pop('timeEffHistName')
-
+        timeEffHistFile = pdfConfig.pop( 'timeEffHistFile' )
+        
         fitOpts = pdfConfig.pop('fitOptions')
 
         angleNames   = pdfConfig.pop('angleNames')
@@ -283,19 +279,21 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         tagCatsSS  = pdfConfig.pop('tagCatsSS')
 
         # PDF options
-        transAngles       = pdfConfig.pop('transversityAngles')
-        bkgAnglePdf       = pdfConfig.pop('bkgAnglePdf')
-        sigTaggingPdf     = pdfConfig.pop('sigTaggingPdf')
-        bkgTaggingPdf     = pdfConfig.pop('bkgTaggingPdf')
-        multiplyByTagPdf  = pdfConfig.pop('multiplyByTagPdf')
-        multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')
-        multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')
-        paramKKMass       = pdfConfig.pop('parameterizeKKMass')
-        numBMassBins      = pdfConfig.pop('numBMassBins')
-        ambiguityPars     = pdfConfig.pop('ambiguityParameters')
-        KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
-        SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
-        CSPValues         = pdfConfig.pop('CSPValues')
+        transAngles        = pdfConfig.pop('transversityAngles')
+        bkgAnglePdf        = pdfConfig.pop('bkgAnglePdf')
+        sigTaggingPdf      = pdfConfig.pop('sigTaggingPdf')
+        bkgTaggingPdf      = pdfConfig.pop('bkgTaggingPdf')
+        multiplyByTagPdf   = pdfConfig.pop('multiplyByTagPdf')
+        multiplyByTimeEff  = pdfConfig.pop('multiplyByTimeEff' )
+        timeEffType        = pdfConfig.pop('timeEffType')
+        assert( timeEffType in [ 'Moriond', 'Fit', 'Paper' ] )
+        multiplyByAngEff   = pdfConfig.pop('multiplyByAngEff')
+        paramKKMass        = pdfConfig.pop('parameterizeKKMass')
+        numBMassBins       = pdfConfig.pop('numBMassBins')
+        ambiguityPars      = pdfConfig.pop('ambiguityParameters')
+        KKMassBinBounds    = pdfConfig.pop('KKMassBinBounds')
+        SWaveAmpVals       = pdfConfig.pop('SWaveAmplitudeValues')
+        CSPValues          = pdfConfig.pop('CSPValues')
 
         self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
         iTagStates = pdfConfig.pop('iTagStates')
@@ -410,46 +408,50 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                            )
 
-        sel = Category( 'sel', Title = 'Selection', Observable = True, States = { 'selected' : +1 } )
-        if trigger == 'HLT1TimeUnbiased' :
-            trig  = Category( 'triggerDecisionUnbiased',   Title = 'Unbiased HLT1',     Observable = True, States = { 'selected' : +1 } )
-        elif trigger == 'HLT1ExclTimeBiased' :
-            trig  = Category( 'triggerDecisionBiasedExcl', Title = 'Excl. Biased HLT1', Observable = True, States = { 'selected' : +1 } )
-        else :
-            raise RuntimeError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid trigger configuration: %s' % trigger )
+        sel   = Category( 'sel', Title = 'Selection', Observable = True, States = { 'selected' : 1, 'not_selected' : 0 } )
+        hlt1_excl_biased = Category('hlt1_excl_biased', States = {'excl_biased' : 1, 'unbiased'     : 0}, Observable = True)
+        hlt1_biased      = Category('hlt1_biased',      States = {'biased'      : 1, 'not_biased'   : 0}, Observable = True)
+        hlt1_unbiased    = Category('hlt1_unbiased',    States = {'unbiased'    : 1, 'not_unbiased' : 0}, Observable = True)
+        hlt2_biased      = Category('hlt2_biased',      States = {'biased'      : 1, 'not_biased'   : 0}, Observable = True)
+        hlt2_unbiased    = Category('hlt2_unbiased',    States = {'unbiased'    : 1, 'not_unbiased' : 0}, Observable = True)
 
         muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
         muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
         KPlusTrackChi2  = RealVar( 'Kplus_track_chi2ndof',   Title = 'K+ track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
         KMinTrackChi2   = RealVar( 'Kminus_track_chi2ndof',  Title = 'K- track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
 
-        observables = dict(  time            = time
-                           , cpsi            = angles[0]
-                           , ctheta          = angles[1]
-                           , phi             = angles[2]
-                           , iTagOS          = iTagOS if nominalPdf or not self._iTagZeroTrick else tagDecisionOS
-                           , iTagSS          = iTagSS if nominalPdf or not self._iTagZeroTrick else tagDecisionSS
-                           , tagDecisionComb = tagDecisionComb
-                           , tagDecisionOS   = tagDecisionOS
-                           , estWTagComb     = estWTagComb
-                           , estWTagOS       = estWTagOS
-                           , estWTagSS       = estWTagSS
-                           , tagCatOS        = tagCatOS
-                           , BMass           = BMass
-                           , mumuMass        = mumuMass
-                           , KKMass          = KKMass
-                           , timeRes         = timeRes
-                           , sel             = sel
-                           , trig            = trig
-                           , muPlusTrackChi2 = muPlusTrackChi2
-                           , muMinTrackChi2  = muMinTrackChi2
-                           , KPlusTrackChi2  = KPlusTrackChi2
-                           , KMinTrackChi2   = KMinTrackChi2
+        observables = dict(  time             = time
+                           , cpsi             = angles[0]
+                           , ctheta           = angles[1]
+                           , phi              = angles[2]
+                           , iTagOS           = iTagOS if nominalPdf or not self._iTagZeroTrick else tagDecisionOS
+                           , iTagSS           = iTagSS if nominalPdf or not self._iTagZeroTrick else tagDecisionSS
+                           , tagDecisionComb  = tagDecisionComb
+                           , tagDecisionOS    = tagDecisionOS
+                           , estWTagComb      = estWTagComb
+                           , estWTagOS        = estWTagOS
+                           , estWTagSS        = estWTagSS
+                           , tagCatOS         = tagCatOS
+                           , BMass            = BMass
+                           , mumuMass         = mumuMass
+                           , KKMass           = KKMass
+                           , timeRes          = timeRes
+                           , sel              = sel
+                           , hlt1_excl_biased = hlt1_excl_biased
+                           , hlt1_biased      = hlt1_biased
+                           , hlt1_unbiased    = hlt1_unbiased
+                           , hlt2_biased      = hlt2_biased
+                           , hlt2_unbiased    = hlt2_unbiased
+                           , muPlusTrackChi2  = muPlusTrackChi2
+                           , muMinTrackChi2   = muMinTrackChi2
+                           , KPlusTrackChi2   = KPlusTrackChi2
+                           , KMinTrackChi2    = KMinTrackChi2
                           )
 
         obsSetNTuple = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [ tagDecisionComb, estWTagComb ]\
                        + [ tagDecisionOS, estWTagOS, tagCatOS ] + [ tagDecisionSS, estWTagSS ]\
-                       + [ sel, trig, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
+                       + [ sel, hlt1_excl_biased, hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased ]\
+                       + [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
 
 
         ###################################################################################################################################
@@ -457,9 +459,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ###############
 
         if nTupleFile :
+            if multiplyByTimeEff and timeEffType == 'Fit':
+                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)'
+            elif multiplyByTimeEff and timeEffType == 'Paper':
+                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'
+            else: ## timeEffType == 'Moriond'
+                cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_biased == 1'
             from P2VVGeneralUtils import readData
             self._data = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
-                                  , Rename = 'JpsiphiData' )
+                                  , Rename = 'JpsiphiData', cuts = cut )
 
         else :
             self._data = None
@@ -689,9 +697,35 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##############################
 
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
-            from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
-            timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histogram = timeEffHistName )
-
+            if timeEffType == 'Fit':
+                hists = {hlt1_excl_biased : {'excl_biased' : {'histogram' : 'hlt1_shape',
+                                                              'average'   : (6.285e-01, 1.633e-02) },
+                                             'unbiased'    : {'bins'      : time.getRange(),
+                                                              'heights'   : [0.5]}
+                                             },
+                         hlt2_biased      : {'biased'      : {'histogram' : 'hlt2_shape',
+                                                              'average'   : (6.3290e-01, 1.65e-02)}
+                                             },
+                         hlt2_unbiased    : {'unbiased'    : {'bins'      : time.getRange(),
+                                                              'heights'   : [0.5]}
+                                             }
+                         }
+                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+                timeAcceptance = TimeAcceptance(time = time, Input = timeEffHistFile, Histograms = hists,
+                                                Data = self._data, Fit = True)
+            elif timeEffType == 'Paper':
+                hists = {hlt1_excl_biased : {'excl_biased' : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_20bins'},
+                                             'unbiased'    : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_20bins'}
+                                             }
+                         }
+                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+                timeAcceptance = TimeAcceptance(time = time, Input = timeEffHistFile, Histograms = hists,
+                                                Data = self._data, Fit = False)
+            elif timeEffType == 'Moriond':
+                from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
+                timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histogram = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_20bins')
+            else:
+                raise ValueError('Uknown time efficiency type: %s' % timeEffType)
 
         ###################################################################################################################################
         ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##

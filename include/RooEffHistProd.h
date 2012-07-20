@@ -104,6 +104,8 @@ public:
       return static_cast<const RooArgSet*>(&_observables);
    }
 
+   const RooArgList& getIntegralBins(const RooArgSet* iset, const char* rangeName = 0) const;
+
 protected:
 
    virtual Double_t evaluate() const;
@@ -157,6 +159,8 @@ private:
       RooEffHistProd* clone() { return _clone; }
 
       RooArgSet& intObs() { return _intObs; }
+
+      const RooAbsReal* integral() const { return _I; }
 
    private:
       friend class RooEffHistProd;
