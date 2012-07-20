@@ -201,8 +201,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-        self['eventTimeResolution'] = True
-        self['numTimeResBins']      = 100
+        self['eventTimeResolution']   = True
+        self['numTimeResBins']        = 100
+        self['constrainTimeResScale'] = True
 
         self['signalFraction'] = 0.67
         self['massRangeBackground'] = False
@@ -308,8 +309,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         constrainTagging = pdfConfig.pop('constrainTagging')
         condTagging = True if contEstWTag else condTagging
 
-        eventTimeRes = pdfConfig.pop('eventTimeResolution')
-        numTimeResBins = pdfConfig.pop('numTimeResBins')
+        eventTimeRes    = pdfConfig.pop('eventTimeResolution')
+        numTimeResBins  = pdfConfig.pop('numTimeResBins')
+        constrTResScale = pdfConfig.pop('constrainTimeResScale')
 
         sigFrac = pdfConfig.pop('signalFraction')
         massRangeBackground = pdfConfig.pop('massRangeBackground')
@@ -764,10 +766,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if nominalPdf or eventTimeRes :
             from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution( time = time, sigmat = timeRes, timeResSFConstraint = True )
+            self._timeResModel = TimeResolution( time = time, sigmat = timeRes
+                                                , timeResSFConstraint = True if nominalPdf else constrTResScale )
         else :
             from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution( time = time, timeResSFConstraint = True )
+            self._timeResModel = TimeResolution( time = time
+                                                , timeResSFConstraint = True if nominalPdf else constrTResScale )
 
         # CP violation parameters
         if lambdaCPParam == 'ReIm' : 

@@ -1,6 +1,7 @@
 ###########################################################################################################################################
 ## set script parameters ##
 ###########################
+
 from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
@@ -38,7 +39,7 @@ dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, Tr
 # fit options
 fitOpts = dict(  NumCPU    = 1
                , Optimize  = 1
-               , Timer     = 1
+               , Timer     = True
 #               , Verbose   = True
 #               , Minos     = True
 #               , Hesse     = False
@@ -55,7 +56,7 @@ markSize  = 0.4
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
 pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
-pdfConfig['sigTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntag' | nominal: 'tagCats'
+pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = ''
@@ -74,8 +75,9 @@ pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = True  # nominal: True
 
-pdfConfig['eventTimeResolution'] = True  # nominal: True
-pdfConfig['numTimeResBins']      = 100
+pdfConfig['eventTimeResolution']   = True  # nominal: True
+pdfConfig['numTimeResBins']        = 100
+pdfConfig['constrainTimeResScale'] = True  # nominal: True
 
 pdfConfig['numEvents'] = 32000
 pdfConfig['signalFraction'] = 0.67
