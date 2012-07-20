@@ -5,18 +5,18 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-readData                        = True
-generateData                    = False
-doFit                           = True
-fastFit                         = False
-makeObservablePlots             = False
-makeKKMassPlots                 = False
-plotAnglesNoEff                 = False
-pdfConfig['makePlots']          = False
-pdfConfig['SFit']               = True
-pdfConfig['blind']              = False
-pdfConfig['nominalPdf']         = False  # nominal PDF option does not work at the moment
-sumW2Error                      = False
+readData                = True
+generateData            = False
+doFit                   = True
+fastFit                 = False
+makeObservablePlots     = False
+makeKKMassPlots         = False
+plotAnglesNoEff         = False
+pdfConfig['makePlots']  = False
+pdfConfig['SFit']       = True
+pdfConfig['blind']      = False
+pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
+sumW2Error              = False
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
@@ -36,13 +36,13 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU              = 1
-               , Optimize            = 1
-               , Timer               = 1
-#               , Verbose             = True
-#               , Minos               = True
-#               , Hesse               = False
-#               , Minimizer           = 'Minuit2'
+fitOpts = dict(  NumCPU    = 1
+               , Optimize  = 1
+               , Timer     = 1
+#               , Verbose   = True
+#               , Minos     = True
+#               , Hesse     = False
+#               , Minimizer = 'Minuit2'
               )
 pdfConfig['fitOptions'] = fitOpts
 
@@ -118,9 +118,9 @@ if not readData or manualTagCatBins :
                               , ( 'TagCat2',   2, 0.30     )
                              ]
 
-pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'\
+pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
                                if pdfConfig['timeEffType'] == 'Fit' else\
-                               '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'
+                               '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 pdfConfig['angEffMomentsFile'] = 'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                  if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
                                  'hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
