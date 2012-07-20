@@ -34,8 +34,6 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
-pdfConfig['trigger'] = 'HLT1TimeUnbiased' # 'HLT1TimeUnbiased' / 'HLT1ExclTimeBiased'
-
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
@@ -121,8 +119,6 @@ if not readData or manualTagCatBins :
                              ]
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
-pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins' if pdfConfig['trigger'] == 'HLT1ExclTimeBiased'\
-                               else 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
 
 pdfConfig['angEffMomentsFile'] = 'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                  if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
