@@ -16,7 +16,7 @@ plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False
+pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 sumW2Error              = False
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
@@ -34,7 +34,7 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
-pdfConfig['trigger'] = 'HLT1ExclTimeBiased' # 'HLT1TimeUnbiased'
+pdfConfig['trigger'] = 'HLT1TimeUnbiased' # 'HLT1TimeUnbiased' / 'HLT1ExclTimeBiased'
 
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
@@ -60,8 +60,9 @@ pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = ''
-pdfConfig['multiplyByAngEff']     = ''  # default: 'basis012'
+pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
@@ -120,10 +121,8 @@ if not readData or manualTagCatBins :
                              ]
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
-if pdfConfig['trigger'] == 'HLT1ExclTimeBiased' :
-    pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'
-else :
-    pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
+pdfConfig['timeEffHistName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins' if pdfConfig['trigger'] == 'HLT1ExclTimeBiased'\
+                               else 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
 
 pdfConfig['angEffMomentsFile'] = 'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                  if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
@@ -317,6 +316,9 @@ if fastFit :
 #ws['N_signal'].setConstant()
 #ws['N_bkg'].setConstant()
 #
+#ws['sig_ABBbarTag'].setConstant()
+#ws['bkg_ABBbarTag'].setConstant()
+#ws['bkg_AUntag'].setConstant()
 #ws['bkg_ABBbarOSTag'].setConstant()
 #ws['bkg_ABBbarSSTag'].setConstant()
 #ws['bkg_ABBbarSameTag'].setConstant()

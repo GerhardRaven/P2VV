@@ -9,13 +9,15 @@
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin
 
-GammaVal  = 0.667
-DGammaVal = 0.12
-DMVal     = 17.63
-
+GammaVal  = 0.67
 GammaErr  = 0.005
+DGammaVal = 0.11
 DGammaErr = 0.02
-DMErr     = 0.11
+DMVal     = 17.6
+DMErr     = 0.1
+
+DMConstrVal = 17.63
+DMConstrErr = 0.11
 
 from ROOT import RooNumber
 RooInf = RooNumber.infinity()
@@ -43,8 +45,8 @@ class Gamma_LifetimeParams( LifetimeParams ) :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._dM.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._dM
-                                                    , ConstVar( Name = 'dM_mean',  Value = self._dM.getVal()   )
-                                                    , ConstVar( Name = 'dM_sigma', Value = self._dM.getError() )
+                                                    , ConstVar( Name = 'dM_mean',  Value = DMConstrVal )
+                                                    , ConstVar( Name = 'dM_sigma', Value = DMConstrErr )
                                                    ]
                                    )
                               )
