@@ -787,19 +787,39 @@ class ProdPdf(Pdf):
         obs = set()
         ec = set()
         for pdf in PDFs:
-            for o in pdf.Observables():
-                if o not in pdf.ConditionalObservables(): obs.add(o)
-            for c in pdf.ConditionalObservables(): conds.add(c)
-            for c in pdf.ExternalConstraints(): ec.add(c)
+            obs   |=  pdf.Observables() - pdf.ConditionalObservables()
+            conds |=  pdf.ConditionalObservables()
+            ec    |=  set( pdf.ExternalConstraints() )
         #print "Conditional Observables %s: %s" % (Name, [o['Name'] for o in conds])
         #print "Free Observables %s: %s" % (Name, [o['Name'] for o in obs])
 
-        d = { 'PDFs' : frozenset(PDFs)
-              , 'Name' : Name + '_' + self._separator().join([i.GetName() for i in PDFs])
-              , 'ConditionalObservables' : list(conds - obs)
-              , 'ExternalConstraints' : list(ec)
-              }
+        d = {  'PDFs'                   : frozenset(PDFs)
+             , 'Name'                   : Name + '_' + self._separator().join( [ i.GetName() for i in PDFs ] )
+             , 'ConditionalObservables' : list( conds - obs )
+             , 'ExternalConstraints'    : list(ec)
+            }
         Pdf.__init__(self, Type = 'RooProdPdf', **d)
+
+        ##### FIXME/BUG/WORKAROUND #####
+        # in RooVectorDataStore::cacheArgs, leafs are cached with a (forced) normalization
+        # set corresponding to the normalization set of the top level PDF, unless the leaf
+        # has the NOCacheAndTrack attribute set.
+        # So here we walk through the leafs of our PDF, and add NOCacheAndTrack for all those
+        # PDFs which are dependent on a conditional observable which appears in the toplevel...
+        print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
+        # create RooArgSet of conditional observables
+        cset = RooArgSet()
+        for c in conds : cset.add( __dref__(c) )
+        for pdf in PDFs :
+            print 'PDF = %s' % pdf.GetName()
+            for c in pdf.getComponents() :
+                if c.getAttribute('NOCacheAndTrack') : continue
+                depset = c.getObservables( cset )
+                if depset.getSize() > 0 :
+                    print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
+                    c.setAttribute('NOCacheAndTrack')
+        print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
+
 
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
