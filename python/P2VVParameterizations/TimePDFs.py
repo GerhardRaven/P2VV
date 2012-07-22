@@ -6,6 +6,9 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
+from ROOT import RooNumber
+RooInf = RooNumber.infinity()
+
 class BDecayBasisCoefficients :
     def __init__(self, **kwargs ) :
         for i in ['sin','cos','sinh','cosh' ] : setattr(self,i,kwargs.pop(i))
@@ -177,9 +180,13 @@ class TimePdf( _util_parse_mixin ) :
 class LP2011_Background_Time( TimePdf ) :
     def __init__(self, time, resolutionModel, **kwargs) :
         Name = kwargs.pop('Name', self.__class__.__name__)
-        self._ml_tau = self._parseArg('%s_ml_tau' % Name, kwargs, Title = 'medium lifetime background ', Unit = 'ps', Value = 0.152, MinMax = (0.01,0.5) )
-        self._ll_tau = self._parseArg('%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.06, MinMax = (0.2,2.5) )
-        self._fml = self._parseArg('%s_fml' % Name, kwargs, Title = 'fraction medium lifetime background', Value = 0.8, MinMax = (0., 2.) )
+        self._ml_tau = self._parseArg( '%s_ml_tau' % Name, kwargs, Title = 'medium lifetime background ', Unit = 'ps'
+                                      , Value = 0.152, Error = 0.003, MinMax = ( -RooInf, RooInf ) )
+        self._ll_tau = self._parseArg( '%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ',   Unit = 'ps'
+                                      , Value = 1.06,  Error = 0.04,  MinMax = ( -RooInf, RooInf ) )
+        self._fml = self._parseArg(    '%s_fml' % Name,    kwargs, Title = 'fraction medium lifetime background'
+                                      , Value = 0.79,  Error = 0.01,  MinMax = ( -RooInf, RooInf ) )
+
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay
         ml = Pdf( Name = Name + '_ml'
@@ -202,7 +209,8 @@ class LP2011_Background_Time( TimePdf ) :
 
 class Single_Exponent_Time( TimePdf ) :
     def __init__(self,time,resolutionModel,**kwargs) :
-        self._parseArg('t_sig_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 1.5, MinMax = (0.5,2.5) )
+        self._parseArg('t_sig_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 1.5, Error = 0.05, MinMax = ( -RooInf, RooInf ) )
+
         from RooFitWrappers import Pdf
         from ROOT import RooDecay as Decay
         TimePdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name',self.__class__.__name__)
