@@ -2,6 +2,8 @@ from ROOT import (RooArgSet, RooArgList, RooDataSet,
                   RooWorkspace, RooFitResult, RooFit,
                   RooDataHist, RooLinkedList, RooCmdArg)
 from ROOT import gStyle,gROOT
+
+# this should move elsewhere...
 import ROOTDecorators
 gStyle.SetPalette(1)
 gROOT.SetStyle("Plain")
@@ -48,10 +50,10 @@ def __wrap_kw_subs( fun ) :
         try:
             return fun(self, *args, **kwargs)
         except TypeError:
-            fun_args        =  [ a for a in args if not isinstance(a, RooCmdArg) ]
+            fun_args = [ a for a in args if not isinstance(a, RooCmdArg) ]
+            otr_args = [ a for a in args if     isinstance(a, RooCmdArg) ]
             l = RooLinkedList()
-            for a in args:
-                if isinstance(a, RooCmdArg): l.Add(a)
+            for a in otr_args: l += a
             return fun(self, *tuple(fun_args + [l]), **kwargs)
     return _fun
 
@@ -63,9 +65,8 @@ def __convert_init_kw_to_setter( cl ) :
         calls = tuple()
         for i in kwargs.keys() :
             for m in ['Set','set','Add','add'] :
-                if hasattr(self,m+i ) :
-                    margs = kwargs.pop(i)
-                    calls += (methodcaller( m+i, margs ),)
+                if hasattr(self, m+i) :
+                    calls += (methodcaller( m+i, kwargs.pop(i) ),)
                     break
         init(self,*args,**kwargs)
         for c in calls : c(self)
@@ -118,7 +119,7 @@ def __createRooIterator( create_iterator ) :
         i = create_iterator(self)
         while True :
             obj = i.Next()
-            if not obj : raise StopIteration
+            if not obj : break
             yield obj
     return __iter
 
@@ -132,6 +133,9 @@ from operator import methodcaller
 from ROOT import RooAbsCategory
 RooAbsCategory.__iter__ = __createRooIterator( methodcaller('typeIterator') )
 
+from ROOT import RooLinkedList
+RooLinkedList.__iadd__ = lambda s,x : s if s.Add(x)    else s  # else None??
+RooLinkedList.__isub__ = lambda s,x : s if s.Remove(x) else s  # else None??
 # RooAbsCollection/RooArgSet/RooArgList functions
 from ROOT import RooAbsCollection
 RooAbsCollection.__iter__ = __createRooIterator( methodcaller('createIterator') )
@@ -277,8 +281,9 @@ def __convert_kw_to_setter( fun, ret ) :
     def _fun(self,*args,**kwargs) :
         calls = tuple()
         for i in kwargs.keys() :
+            if hasattr(RooFit,i) : continue # leave kw instance as is...
             for m in ['Set','set','Add','add'] :
-                if hasattr(ret,m+i ) and not hasattr(RooFit,i): 
+                if hasattr(ret, m+i) : 
                     calls += (methodcaller( m+i, *kwargs.pop(i) ),)
                     break
         o = fun(self,*args,**kwargs)

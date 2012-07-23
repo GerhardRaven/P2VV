@@ -40,7 +40,7 @@ ClassImp(RooEffHistProd);
 
 namespace {
 
-class Exception : public exception
+class Exception : public std::exception
 {
 public:
    Exception(const std::string& message)
