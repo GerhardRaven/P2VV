@@ -185,7 +185,7 @@ class LP2011_Background_Time( TimePdf ) :
         self._ll_tau = self._parseArg( '%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ',   Unit = 'ps'
                                       , Value = 1.06,  Error = 0.04,  MinMax = ( -RooInf, RooInf ) )
         self._fml = self._parseArg(    '%s_fml' % Name,    kwargs, Title = 'fraction medium lifetime background'
-                                      , Value = 0.79,  Error = 0.01,  MinMax = ( -RooInf, RooInf ) )
+                                      , Value = 0.79,  Error = 0.01,  MinMax = ( 0.01, 0.99 ) )
 
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay
