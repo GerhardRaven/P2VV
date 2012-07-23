@@ -321,9 +321,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         AparParam      = pdfConfig.pop('AparParam')
 
         if not paramKKMass :
-            if not KKMassBinBounds : KKMassBinBounds = [ 1020. - 12., 1020., 1020. + 12. ]
+            if not KKMassBinBounds : KKMassBinBounds = [ 1020. - 12., 1020. + 12. ]
         elif ambiguityPars :
-            if amplitudeParam == 'bank' and ASParam != 'ReIm' :
+            if nominalPdf or ( amplitudeParam == 'phasesSWaveFrac' and ASParam == 'deltaPerp' )\
+                    or ( amplitudeParam == 'bank' and ASParam != 'ReIm' ) :
                 from math import pi
                 for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
             elif amplitudeParam == 'phases' and ASParam in [ 'Mag2ReIm', 'ReIm' ] :
@@ -1451,12 +1452,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             while splitCatState :
                 splitCatPars = self._simulPdf.getPdf( splitCatState.GetName() ).getVariables()
 
-                if amplitudeParam == 'bank' and ASParam != 'ReIm' :
-                    ASOddMag2  = splitCatPars.find( 'ASOddMag2_'  + splitCatState.GetName() )
+                if nominalPdf or ( amplitudeParam == 'bank' and ASParam != 'ReIm' )\
+                        or ( amplitudeParam == 'phasesSWaveFrac' and ASParam == 'deltaPerp' ) :
+                    if amplitudeParam == 'phasesSWaveFrac' :
+                        f_S  = splitCatPars.find( 'f_S_'  + splitCatState.GetName() )
+                    else :
+                        ASOddMag2  = splitCatPars.find( 'ASOddMag2_'  + splitCatState.GetName() )
                     ASOddPhase = splitCatPars.find( 'ASOddPhase_' + splitCatState.GetName() )
 
-                    ASOddMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
-                    ASOddMag2.setMax(5.)
+                    if amplitudeParam == 'phasesSWaveFrac' :
+                        f_S.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
+                    else :
+                        ASOddMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
+                        ASOddMag2.setMax(5.)
                     ASOddPhase.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
 
                 elif amplitudeParam == 'phases' and ASParam in [ 'ReIm', 'Mag2ReIm' ] :
