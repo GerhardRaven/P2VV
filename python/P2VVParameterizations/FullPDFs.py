@@ -171,7 +171,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['angEffMomentsFile'] = 'effMoments'
 
         # fit options
-        self['fitOptions'] = dict( NumCPU = 1, Timer = 1, Save = True )
+        self['fitOptions'] = dict( NumCPU = 1, Optimize = 1, Timer = True, Save = True )
 
         # PDF parameters
         self['tagCatsOS'] = [ ]
@@ -182,7 +182,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['bkgAnglePdf']          = 'histPdf'
         self['sigTaggingPdf']        = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['bkgTaggingPdf']        = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
-        self['multiplyByTagPdf']     = True
+        self['multiplyByTagPdf']     = False
         self['multiplyByTimeEff']    = ''                  # '' / 'all' / 'signal'
         self['timeEffType']          = 'Moriond'           # 'Moriond' / 'Fit' / 'Paper'
         self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basisSig3' / 'basisSig6'
