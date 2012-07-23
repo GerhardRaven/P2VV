@@ -1328,7 +1328,7 @@ void RooBTagDecay::generateEvent(Int_t code)
     // exit generation loop if we don't generate tagging variables
     if (code < 2) break;
 
-    Int_t catGen[2] = {0., 0.};
+    Int_t catGen[2] = {0, 0};
     Double_t avgCEven = 0., avgCOdd = 0.;
     if (_tagCat0Type > 1 || _tagCat1Type > 1) {
       // generate value for the tagging category

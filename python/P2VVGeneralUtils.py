@@ -85,6 +85,70 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
     f.Close()
 
 
+def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
+    """correct sWeights in dataSet for background dilution
+    """
+
+    # check if background weight variable exists in data set
+    bkgWeight = dataSet.get().find(bkgWeightName)
+    assert bkgWeight, 'P2VV - ERROR: correctSWeights: unknown background weight: "%s"' % bkgWeightName
+
+    if splitCatName :
+        # get category that splits data sample
+        splitCat = dataSet.get().find(splitCatName)
+        assert splitCat, 'P2VV - ERROR: correctSWeights: unknown spit category: "%s"' % splitCat
+
+        # initialize sums for the weights and the weights squared per category
+        sumWeights   = [ 0. ] * ( splitCat.numTypes() + 1 )
+        sumSqWeights = [ 0. ] * ( splitCat.numTypes() + 1 )
+        indexDict = { }
+        posDict   = { }
+        for iter, catType in enumerate( splitCat ) :
+            posDict[ catType.getVal() ] = iter
+            indexDict[ iter ] = catType.getVal()
+
+    else :
+        # initialize sums for the weights and the weights squared
+        sumWeights   = [ 0. ]
+        sumSqWeights = [ 0. ]
+
+    # loop over events and get sums of weights and weights squared
+    for varSet in dataSet :
+        weight = dataSet.weight()
+        sumWeights[0]   += dataSet.weight()
+        sumSqWeights[0] += dataSet.weight()**2
+        if splitCatName :
+            sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += dataSet.weight()
+            sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += dataSet.weight()**2
+
+    # add corrected weights to data set
+    from ROOT import RooCorrectedSWeight
+    if splitCatName :
+        from ROOT import std
+        alphaVec = std.vector('Double_t')()
+        print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f):'\
+              % ( sumWeights[0] / sumSqWeights[0] )
+        for iter, ( sumW, sumSqW ) in enumerate( zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ) :
+            alphaVec.push_back( sumW / sumSqW )
+            print '    %d: %.4f' % ( indexDict[iter], sumW / sumSqW )
+
+        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, splitCat, alphaVec, True )
+
+    else :
+        print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f'\
+              % ( sumWeights[0] / sumSqWeights[0] )
+        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, sumWeights[0] / sumSqWeights[0], True )
+
+    from ROOT import RooDataSet
+    dataSet.addColumn(weightVar)
+    dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet, dataSet.get()
+                         , '', 'weightVar' )
+
+    # import data set into current workspace
+    from RooFitWrappers import RooObject
+    return RooObject().ws().put( dataSet, **kwargs )
+
+
 def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estimWTagName, tagCatBins ) :
     """add tagging observables to data set
     """

@@ -78,14 +78,14 @@ elif l % nrows == 0:
     ncolumns = l / nrows
 else:
     ncolumns = l / nrows + 1
-hsize = 300 * ncolumns
+hsize = min(1500, 300 * ncolumns)
 vsize = 300 * nrows
 if hsize > 1500:
-    hsize = int(1500 / ncolumns)
-    vsize = hsize
-elif vsize > 900:
-    vsize = 900 / nrows
-    hsize = vsize
+    hsize = 1500
+    vsize = int(float(hsize) / float(ncolumns) * nrows)
+if vsize > 900:
+    vsize = 900
+    hsize = int(float(vsize) / float(nrows) * ncolumns)
 canvas = TCanvas('canvas', 'canvas', hsize, vsize)
 canvas.Divide(ncolumns, nrows)
 

@@ -9,7 +9,7 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.3, 14))
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(0.5, 14))
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
@@ -22,7 +22,7 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 for i in [ st ] : i.setBins( 20 , 'cache' )
 
 # Categories
-excl_biased = Category('triggerDecisionBiasedExcl', States = {'Biased' : 1, 'NotBiased' : 0})
+excl_biased = Category('triggerDecisionBiasedExcl', States = {'Biased' : 1, 'Unbiased' : 0})
 unbiased = Category('triggerDecisionUnbiased', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
 hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
@@ -42,7 +42,7 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as SignalTimeResolution
 sig_tres = SignalTimeResolution(Name = 'sig_tres', time = t, timeResSFConstraint = True, sigmat = st,
                                 timeResSF = dict( Name = 'timeResSF', Value = 1.46, MinMax = (0.1,5.),
-                                                  Constant = False)
+                                                  Constant = True)
                                 )
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -60,6 +60,8 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_MC11a_biased_unbiased.root'
+## data = readData(input_file, tree_name, cuts = '(sel == 1 && (triggerDecisionBiasedExcl == 1 || triggerDecisionUnbiased == 1))',
+##                 NTuple = False, observables = observables)
 data = readData(input_file, tree_name, cuts = '(sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1)',
                 NTuple = False, observables = observables)
 
@@ -69,12 +71,25 @@ f = 5e4 / original
 import random
 new_data = RooDataSet("new_data", "new_data", data.get())
 for i, obs in enumerate(data):
+    ## b2 = obs.find('hlt2_biased')
+    ## ub2 = obs.find('hlt2_unbiased')
+    ## if b2.getIndex() == 0:
+    ##     pass
+    ## elif random.random() < 0.3:
+    ##     ub2.setIndex(0)
     if random.random() < f:
         new_data.add(obs)
 
 del data
 data = new_data
+data.table(RooArgSet(excl_biased, unbiased)).Print('v')
 
+from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance
+sig_acceptance = Paper2012_TimeAcceptance(time = t, Input = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root',
+                                          Histograms = {(excl_biased, 'Biased')   : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins',
+                                                        (excl_biased, 'Unbiased') : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'},
+                                          Data = data)
+## sig_t = sig_acceptance * sig_t
 
 ## Fit options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
@@ -108,5 +123,6 @@ plot(p, t, pdf = sig_t, data = data
      , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
      , plotResidHist = True
      , logy = False
+     , logx = True
      )
     
