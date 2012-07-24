@@ -124,9 +124,9 @@ if not readData or manualTagCatBins :
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
                                if pdfConfig['timeEffType'] == 'Fit' else\
                                '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
-pdfConfig['angEffMomentsFile'] = 'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
+pdfConfig['angEffMomentsFile'] = '/project/bfys/jleerdam/softDevel/Erasmus/P2VV2/release/test/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                  if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
-                                 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
+                                 '/project/bfys/jleerdam/softDevel/Erasmus/P2VV2/release/test/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
