@@ -171,7 +171,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['angEffMomentsFile'] = 'effMoments'
 
         # fit options
-        self['fitOptions'] = dict( NumCPU = 1, Timer = 1, Save = True )
+        self['fitOptions'] = dict( NumCPU = 1, Optimize = 1, Timer = True, Save = True )
 
         # PDF parameters
         self['tagCatsOS'] = [ ]
@@ -182,14 +182,14 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['bkgAnglePdf']          = 'histPdf'
         self['sigTaggingPdf']        = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['bkgTaggingPdf']        = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
-        self['multiplyByTagPdf']     = True
+        self['multiplyByTagPdf']     = False
         self['multiplyByTimeEff']    = ''                  # '' / 'all' / 'signal'
         self['timeEffType']          = 'Moriond'           # 'Moriond' / 'Fit' / 'Paper'
         self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basisSig3' / 'basisSig6'
         self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
         self['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ]
-        self['SWaveAmplitudeValues'] = (  [ 0.026 ], [ 0. ] )
+        self['SWaveAmplitudeValues'] = (  [ ], [ ] )
         self['CSPValues']            = [ 0.4976 ]
 
         self['sameSideTagging']    = True
@@ -737,7 +737,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if paramKKMass == 'functions' :
             commonArgs[ 'KKMass' ]        = KKMass
             commonArgs[ 'KKMassBinning' ] = self._KKMassBinning
-        if not nominalPdf and not ASParam.startswith('Mag2ReIm') :
+        if nominalPdf or not ASParam.startswith('Mag2ReIm') :
             commonArgs[ 'C_SP' ] = CSPValues[0]
 
         if nominalPdf or amplitudeParam == 'phasesSWaveFrac' :
@@ -1409,6 +1409,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## split PDF for different KK mass bins ##
         ##########################################
 
+        # check number of KK mass bin parameters
+        if paramKKMass == 'simultaneous' :
+            assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == len(CSPValues) == len(KKMassBinBounds) - 1,\
+                   'P2VV - ERROR: wrong number of KK mass bin parameters specified'
+        else :
+            assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == 0 and len(CSPValues) == 1,\
+                   'P2VV - ERROR: only one S-P-wave coupling factor and no S-wave amplitude values should be specified'
+
+        if ASParam != 'Mag2ReIm' :
+            print 'P2VV - INFO: using S-P-wave coupling factors:',
+            for iter, fac in enumerate(CSPValues) : print '%d: %.4f%s' % ( iter, fac, '' if iter == len(CSPValues) - 1 else ',' ),
+            print
+
         if paramKKMass == 'simultaneous' :
             # create split category
             from RooFitWrappers import BinningCategory
@@ -1428,7 +1441,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # specify parameters that are different in simultaneous categories
             splitParams = [ ]
             for amp in self._amplitudes.parameters() :
-                if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S' ] ) : splitParams.append(amp)
+                if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S', 'C_SP' ] ) : splitParams.append(amp)
             if nominalPdf or multiplyByTagPdf :
                 for par in self._sigTaggingPdf.parameters() :
                     if not par.isConstant() : splitParams.append(par)
@@ -1452,8 +1465,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             while splitCatState :
                 splitCatPars = self._simulPdf.getPdf( splitCatState.GetName() ).getVariables()
 
+                if ASParam != 'Mag2ReIm' :
+                    # S-P-wave coupling factors
+                    C_SP = splitCatPars.find( 'C_SP_' + splitCatState.GetName() )
+                    C_SP.setVal( CSPValues[ splitCatState.getVal() ] )
+                    C_SP.setConstant(True)
+
                 if nominalPdf or ( amplitudeParam == 'bank' and ASParam != 'ReIm' )\
                         or ( amplitudeParam == 'phasesSWaveFrac' and ASParam == 'deltaPerp' ) :
+                    # amplitude parameterization with delta_S-delta_perp
                     if amplitudeParam == 'phasesSWaveFrac' :
                         f_S  = splitCatPars.find( 'f_S_'  + splitCatState.GetName() )
                     else :
@@ -1468,6 +1488,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     ASOddPhase.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
 
                 elif amplitudeParam == 'phases' and ASParam in [ 'ReIm', 'Mag2ReIm' ] :
+                    # amplitude parameterization with Re(A_S) and Im(A_S)
                     if ASParam == 'Mag2ReIm' :
                         ASMag2 = splitCatPars.find( 'ASMag2_' + splitCatState.GetName() )
                     ReAS = splitCatPars.find( 'ReAS_' + splitCatState.GetName() )
