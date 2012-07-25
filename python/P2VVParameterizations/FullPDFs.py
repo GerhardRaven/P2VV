@@ -717,6 +717,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               , 'unbiased'    : { 'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'    }
                                              }
                         }
+#                hists = { hlt1_excl_biased : {  'excl_biased' : { 'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_5bins_unit' }
+#                                              , 'unbiased'    : { 'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_5bins_unit' }
+#                                             }
+#                        }
                 from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
                 timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists, Data = self._data, Fit = False )
 
@@ -724,6 +728,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
                 timeAcceptance = TimeAcceptance(  time = time, Input = timeEffHistFile
                                                 , Histogram = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins')
+#                                                , Histogram = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins_unit')
+#                                                , Histogram = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_5bins_unit')
 
             else:
                 raise ValueError( 'Uknown time efficiency type: %s' % timeEffType )

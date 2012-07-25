@@ -9,7 +9,6 @@ pdfConfig = PdfConfig()
 readData                = True
 generateData            = False
 doFit                   = True
-fastFit                 = False
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
@@ -61,14 +60,14 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRela
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['timeEffType']          = 'Moriond'
-pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
+pdfConfig['multiplyByAngEff']     = ''  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
-pdfConfig['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ 0.16, 0.08, 0.02, 0.02, 0.05,  0.14 ], [ 1.5, 0.8, 0.3, -0.4, -0.5, -0.6 ] )
+#pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ 0.16, 0.08, 0.02, 0.02, 0.05,  0.14 ], [ 1.5, 0.8, 0.3, -0.4, -0.5, -0.6 ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.8, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ -0.12, -0.25, -0.16, -0.07, -0.18, -0.37 ], [ -0.31, -0.15, -0.10, 0.01, 0.16, 0.10 ] )
-pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.4976 ] # [ 0.3263 ] # [ 0.9663, 0.9562, 0.9255, 0.9255, 0.9562, 0.9663 ]
+pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.4976 ] # [ 0.3263 ] # [ 0.9663, 0.9562, 0.9255, 0.9255, 0.9562, 0.9663 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -92,6 +91,7 @@ pdfConfig['constrainDeltaM'] = True  # nominal: True
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'  # default/nominal: 'lambSqPhi'
 
+fastFit          = False
 manualTagCatBins = False
 constTagCatCoefs = True  # default: True / nominal: False
 constAvgCEvenOdd = True  # default: False / nominal: True
@@ -124,9 +124,10 @@ if not readData or manualTagCatBins :
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
                                if pdfConfig['timeEffType'] == 'Fit' else\
                                '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
-pdfConfig['angEffMomentsFile'] = 'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
+#                               '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504_unitAcceptance.root'
+pdfConfig['angEffMomentsFile'] = '/project/bfys/jleerdam/softDevel/Erasmus/P2VV2/release/test/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                  if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
-                                 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
+                                 '/project/bfys/jleerdam/softDevel/Erasmus/P2VV2/release/test/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -286,7 +287,7 @@ if pdfConfig['parameterizeKKMass'] == 'functions' :
 
 if pdfConfig['nominalPdf'] or constCSP : pdfBuild['amplitudes'].setConstant('C_SP')
 
-if constAmplitudes :
+if fastFit or constAmplitudes :
     pdfBuild['amplitudes'].setConstant('A0Mag2')
     pdfBuild['amplitudes'].setConstant('AperpMag2')
     pdfBuild['amplitudes'].setConstant('f_S')
@@ -301,7 +302,9 @@ if constAmplitudes :
     pdfBuild['amplitudes'].parameter('ASOddPhase').setVal(ASOddPhaseVal)
 
 if fastFit :
-    pdfBuild['lambdaCP'].setConstant('lambdaCPSq')
+    pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
+        else pdfBuild['lambdaCP'].setConstant('lambdaCP')
+    pdfBuild['lambdaCP'].setConstant('phiCP')
     for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
         if not pdfConfig['sameSideTagging'] :
             CEvenOdds.setConstant('avgCEven.*|avgCOdd.*')
@@ -309,44 +312,14 @@ if fastFit :
             for CEvenOdd in CEvenOdds : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
     pdfBuild['tagCatsOS'].setConstant('.*')
     pdfBuild['tagCatsSS'].setConstant('.*')
-    pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
+    pdfBuild['lifetimeParams'].setConstant('dM')
     pdfBuild['timeResModel'].setConstant('.*')
     pdfBuild['signalBMass'].setConstant('.*')
     if not pdfConfig['SFit'] :
         pdfBuild['backgroundBMass'].setConstant('.*')
         pdfBuild['backgroundTime'].setConstant('.*')
+        if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
-
-#ws['dM'].setConstant()
-#ws['timeResSF'].setConstant()
-#ws['wTagP0OS'].setConstant()
-#ws['wTagP1OS'].setConstant()
-#ws['wTagP0SS'].setConstant()
-#ws['wTagP1SS'].setConstant()
-#
-#ws['N_signal'].setConstant()
-#ws['N_bkg'].setConstant()
-#
-#ws['sig_ABBbarTag'].setConstant()
-#ws['bkg_ABBbarTag'].setConstant()
-#ws['bkg_AUntag'].setConstant()
-#ws['bkg_ABBbarOSTag'].setConstant()
-#ws['bkg_ABBbarSSTag'].setConstant()
-#ws['bkg_ABBbarSameTag'].setConstant()
-#ws['bkg_ABBbarOppTag'].setConstant()
-#ws['bkg_AOSTag'].setConstant()
-#ws['bkg_ASSTag'].setConstant()
-#ws['bkg_ATags'].setConstant()
-#
-#ws['bkg_t_fml'].setConstant()
-#ws['bkg_t_ll_tau'].setConstant()
-#ws['bkg_t_ml_tau'].setConstant()
-#
-#ws['m_bkg_exp'].setConstant()
-#ws['m_sig_frac'].setConstant()
-#ws['m_sig_mean'].setConstant()
-#ws['m_sig_sigma_1'].setConstant()
-#ws['m_sig_sigma_sf'].setConstant()
 
 if ( readData or generateData ) and doFit :
     # fit data
@@ -473,6 +446,7 @@ if ( readData or generateData ) and doFit :
     fitData.Print()
     fitResult.Print()
     fitResult.covarianceMatrix().Print()
+    fitResult.correlationMatrix().Print()
 
     print 120 * '=' + '\n'
 
