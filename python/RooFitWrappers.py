@@ -68,7 +68,21 @@ class RooObject(object) :
         if not hasattr(ws, '_spec') :      ws._spec        = {} # factory string -> object
 
     def _rooobject(self,Name) :
-        if type(Name)!=str : Name = Name.GetName()
+        # get name string
+        if type(Name) != str : Name = Name.GetName()
+
+        if Name not in self.ws()._rooobjects :
+            # object is not in work space dictionary of RooObjects
+            if Name in self.ws() :
+                # try to create a RooObject wrapper if the requested object exists in work space
+                import ROOT
+                if   isinstance( self.ws()[Name], ROOT.RooRealVar  ) : return RealVar(Name)
+                elif isinstance( self.ws()[Name], ROOT.RooCategory ) : return Category(Name)
+            else :
+                # object does not exist
+                raise KeyError, 'P2VV - ERROR: RooObject._rooobject(): object does not exist (%s)' % Name
+
+        # return object
         return self.ws()._rooobjects[Name]
 
     # WARNING: the object 'o' given to _addObject should NEVER be used again
@@ -124,7 +138,13 @@ class RooObject(object) :
             name = self.ws()._mappings[name]
 
         # Get the right object from our own cache, KeyError is raised correctly.
-        x = self.ws()._objects[name]
+        if name in self.ws()._objects :
+            x = self.ws()._objects[name]
+        elif name in self.ws() :
+            x = self._addObject( self.ws()[name] )
+        else :
+            raise KeyError, 'P2VV - ERROR: RooObject._init(): object not found in work space (%s)' % name
+
         if not x.InheritsFrom(type_) :
             raise KeyError('%s is %s, not %s' % (name, x.ClassName(), type_))
         self._var = x
@@ -208,45 +228,54 @@ class ArgSet(RooObject) :
 
 
 class Category (RooObject) :
-    _getters = {'Index'      : lambda s : s.getIndex()
-               ,'Label'      : lambda s : s.getLabel()
-               ,'States'     : lambda s : s.states()
+    _getters = {  'Index'    : lambda s   : s.getIndex()
+                , 'Label'    : lambda s   : s.getLabel()
+                , 'States'   : lambda s   : s.states()
                }
-    _setters = {'Index'      : lambda s,v : s.setIndex(v)
-               ,'Label'      : lambda s,v : s.setLabel(v)
-               ,'Constant'   : lambda s,v : s.setConstant(v)
+    _setters = { 'Index'     : lambda s,v : s.setIndex(v)
+                , 'Label'    : lambda s,v : s.setLabel(v)
+                , 'Constant' : lambda s,v : s.setConstant(v)
                }
 
-    def __init__(self, Name, **kwargs):
-        # construct factory string on the fly...
+    def __init__( self, Name, **kwargs ) :
         __check_name_syntax__(Name)
-        states = kwargs.pop('States', None)
-        data = kwargs.pop('Data', None)
-        if   type(states) == list:
-            states = ','.join(states)
-        elif type(states) == dict:
-            states = ','.join(['%s=%d' % i for i in states.iteritems()])
-        if states and not data:
-            # Create the category and extract states into storage
-            obj = self._declare("%s[%s]"%(Name,states))
-        elif states and data:
-            index = kwargs.pop('DataIndex')
-            from ROOT import RooCategory
-            obj = RooCategory(Name, Name)
-            for l, i in states.iteritems():
-                obj.defineType(l, i)
-            obj.setIndex(index)
-            obj = data.addColumn(obj)
-            obj = self._addObject(obj)
-        elif not states and not data:
-            from ROOT import RooCategory
-            obj = RooCategory(Name, Name)
-            obj = self._addObject(obj)
-        else:
-            raise RuntimeError('Passing data and not states is illegal')
-        self._init(Name,'RooCategory')
-        self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+        if Name not in self.ws() :
+            states = kwargs.pop( 'States', None )
+            data   = kwargs.pop( 'Data', None )
+            if   type(states) == list : states = ','.join(states)
+            elif type(states) == dict : states = ','.join( [ '%s=%d' % i for i in states.iteritems() ] )
+
+            if states and not data :
+                # Create the category and extract states into storage
+                obj = self._declare('%s[%s]' % ( Name, states ) )
+
+            elif states and data :
+                index = kwargs.pop('DataIndex')
+                from ROOT import RooCategory
+                obj = RooCategory( Name, Name )
+                for l, i in states.iteritems() : obj.defineType( l, i )
+                obj.setIndex(index)
+                obj = data.addColumn(obj)
+                obj = self._addObject(obj)
+
+            elif not states and not data:
+                from ROOT import RooCategory
+                obj = RooCategory( Name, Name )
+                obj = self._addObject(obj)
+
+            else:
+                raise RuntimeError('Passing data and not states is illegal')
+
+            self._init( Name,'RooCategory' )
+            self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+        else :
+            self._init( Name, 'RooCategory' )
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                assert v == self[k], '\'%s\' is not the same for %s' % ( k, Name )
 
     def states(self):
         return self._states
