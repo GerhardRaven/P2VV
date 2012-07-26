@@ -856,15 +856,46 @@ class RealMomentsBuilder ( dict ) :
 
 
 class SData( object ) :
-    def __init__(self, Pdf, Data, Name) :
-        from ROOT import RooStats,RooArgList
-        self._Name = Name
-        self._yields = [ p for p in Pdf.Parameters() if p.getAttribute('Yield')  ]
-        self._observables = Pdf.Observables() 
-        self._splot = RooStats.SPlot(Name+"_splotdata",Name+"_splotdata",Data,Pdf._var, RooArgList( p._var for p in self._yields ) )
-        self._sdata = self._splot.GetSDataSet()
+    def __init__( self, **kwargs ) :
+        # get input arguments
+        def getKwArg( keyword, member, kwargs ) :
+            if keyword in kwargs : setattr( self, '_' + member, kwargs.pop(keyword) )
+            else : raise KeyError, 'P2VV - ERROR: SData.__init__(): key %s not found in input arguments' % keyword
+        getKwArg( 'Name', 'name',      kwargs )
+        getKwArg( 'Data', 'inputData', kwargs )
+        getKwArg( 'Pdf',  'pdf',       kwargs )
+
+        # initialize dictionary for weighted data sets per specie
         self._data = dict()
-        self._pdf = Pdf
+
+        # get yields and observables
+        self._yields = [ par for par in self._pdf.Parameters() if par.getAttribute('Yield') ]
+        self._observables = self._pdf.Observables()
+
+        # calculate sWeights
+        from ROOT import RooStats, RooArgList, RooSimultaneous
+        if isinstance( self._pdf._var, RooSimultaneous ) and kwargs.pop( 'Simultaneous', False ) :
+            pass
+            #splitCat     = self._pdf.indexCat()
+            #splitCatIter = splitCat.typeIterator()
+            #splitData    = self._inputData.split(splitCat)
+            #sPlots       = [ ]
+            #SDataSets    = [ ]
+            #splitCatIter.Next()
+            #for dataIter, data in enumerate(splitData) :
+            #    sPlot = RooStats.SPlot( self._name + '_sData_' + , self._name + '_splotdata', self._inputData, self._pdf._var
+            #                           , RooArgList( par._var for par in self._yields ) )
+            #    sData = sPlot.GetSDataSet()
+            #    splitCatIter.Next()
+
+        else :
+            self._splot = RooStats.SPlot( self._name + '_splotdata', self._name + '_splotdata', self._inputData, self._pdf._var
+                                         , RooArgList( par._var for par in self._yields ) )
+            self._sdata = self._splot.GetSDataSet()
+
+        # check keyword arguments
+        if kwargs : raise KeyError( 'got unknown keywords %s for %s' % ( kwargs, type(self) ) )
+
     def usedObservables( self ) :
         return self._observables
     def components( self ):

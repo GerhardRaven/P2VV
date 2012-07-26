@@ -188,6 +188,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basisSig3' / 'basisSig6'
         self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
+        self['SWeightsType']         = ''                  # '' / 'simultaneous' / 'simultaneousFreeBkg'
         self['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ]
         self['SWaveAmplitudeValues'] = (  [ ], [ ] )
         self['CSPValues']            = [ 0.4976 ]
@@ -289,6 +290,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')
         numBMassBins      = pdfConfig.pop('numBMassBins')
         ambiguityPars     = pdfConfig.pop('ambiguityParameters')
+        SWeightsType      = pdfConfig.pop('SWeightsType')
         KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
         SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
         CSPValues         = pdfConfig.pop('CSPValues')
@@ -476,6 +478,25 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :
             self._data = None
 
+        if paramKKMass or makePlots :
+            # create KK mass binning
+            from array import array
+            KKMassBinsArray = array( 'd', KKMassBinBounds )
+
+            from ROOT import RooBinning
+            self._KKMassBinning = RooBinning( len(KKMassBinBounds) - 1, KKMassBinsArray, 'KKMassBinning' )
+            KKMass.setBinning( self._KKMassBinning, 'KKMassBinning' )
+
+            # add KK mass split category to data
+            from RooFitWrappers import BinningCategory
+            self._KKMassCat = BinningCategory( 'KKMassCat'
+                                              , Observable = KKMass
+                                              , Binning = self._KKMassBinning
+                                              , Fundamental = True
+                                              , Data = [ self._data ]
+                                              , CatTypeName = 'bin'
+                                             )
+
 
         ###################################################################################################################################
         ## initialize PDF component objects ##
@@ -515,6 +536,56 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._backgroundComps += self._backgroundBMass.pdf()
             self._massPdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
 
+        if self._data :
+            # determine mass parameters with a fit
+            print 120 * '='
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting mass PDF'
+            self._massPdf.fitTo( self._data, **fitOpts )
+
+            if SWeightsType.startswith('simultaneous') and paramKKMass :
+                # get mass parameters that are split between KK mass bins
+                splitParams = [ par for par in self._massPdf.Parameters() if par.getAttribute('Yield') ]
+                if SWeightsType.endswith( 'FreeBkg'.lower() ) :
+                    splitParams += [ par for par in self._backgroundBMass.parameters() if not par.isConstant() ]
+
+                # build simultaneous mass PDF for KK mass bins
+                from RooFitWrappers import SimultaneousPdf
+                self._sWeightMassPdf = SimultaneousPdf(  self._massPdf.GetName() + '_KKMassBins'
+                                                       , MasterPdf       = self._massPdf
+                                                       , SplitCategory   = self._KKMassCat
+                                                       , SplitParameters = splitParams
+                                                      )
+
+                # set yields for categories
+                splitCatIter = self._sWeightMassPdf.indexCat().typeIterator()
+                splitCatState = splitCatIter.Next()
+                splitCatPars = self._sWeightMassPdf.getVariables()
+                while splitCatState :
+                    sigYield = splitCatPars.find( 'N_sigMass_' + splitCatState.GetName() )
+                    bkgYield = splitCatPars.find( 'N_bkgMass_' + splitCatState.GetName() )
+
+                    from math import sqrt
+                    nEv    = self._data.sumEntries()
+                    nEvBin = self._data.sumEntries( '!(KKMassCat-%d)' % splitCatState.getVal() )
+                    sigYield.setVal( sigYield.getVal() * nEvBin / nEv )
+                    sigYield.setError( sqrt( sigYield.getVal() ) )
+                    sigYield.setMin(0.)
+                    sigYield.setMax(nEvBin)
+                    bkgYield.setVal( bkgYield.getVal() * nEvBin / nEv )
+                    bkgYield.setError( sqrt( bkgYield.getVal() ) )
+                    bkgYield.setMin(0.)
+                    bkgYield.setMax(nEvBin)
+
+                    splitCatState = splitCatIter.Next()
+
+                # determine mass parameters in each KK mass bin with a fit
+                print 120 * '='
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting mass PDF in KK mass bins'
+                self._sWeightMassPdf.fitTo( self._data, **fitOpts )
+
+            else :
+                self._sWeightMassPdf = self._massPdf
+
 
         ###################################################################################################################################
         ## compute S-weights and create signal and background data sets ##
@@ -526,17 +597,33 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             # compute S-weights
             from P2VVGeneralUtils import SData, splot
-            self._massPdf.fitTo( self._data, **fitOpts )
-            #for par in self._massPdf.Parameters() : par.setConstant( not par.getAttribute('Yield') )
-            self._SWeightData = SData( Pdf = self._massPdf, Data = self._data, Name = 'massSData' )
+            self._SWeightData = SData( Pdf = self._sWeightMassPdf, Data = self._data, Name = 'massSData' )
 
             # create signal and background data sets with S-weights
             self._sigSWeightData = self._SWeightData.data( 'sigMass' if SFit else 'signal' )
             self._bkgSWeightData = self._SWeightData.data( 'bkgMass' if SFit else 'bkg'    )
 
+            # print signal/background info to screen
             self._sigSWeightData.Print()
             self._bkgSWeightData.Print()
-            print 120 * '=' + '\n'
+            from math import sqrt
+            nEv    = self._data.sumEntries()
+            nSigEv = self._sigSWeightData.sumEntries()
+            nBkgEv = self._bkgSWeightData.sumEntries()
+            signif = nSigEv / sqrt(nEv)
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: number of events:'
+            print '          | total | signal   | backgr.  | signif.'
+            print '    ------|-------|----------|----------|--------'
+            print '    total | %5d | %8.2f | %8.2f | %7.3f' % ( int(nEv), nSigEv, nBkgEv, signif )
+            print '    ------|-------|----------|----------|--------'
+            if paramKKMass :
+                for iter in range( len(KKMassBinBounds) - 1 ) :
+                    cut    = '!(KKMassCat-%d)' % iter
+                    nEv    = self._data.sumEntries(cut)
+                    nSigEv = self._sigSWeightData.sumEntries(cut)
+                    nBkgEv = self._bkgSWeightData.sumEntries(cut)
+                    signif = nSigEv / sqrt(nEv)
+                    print '    %5s | %5d | %8.2f | %8.2f | %7.3f' % ( iter, int(nEv), nSigEv, nBkgEv, signif )
 
             # create signal and background data sets with side band ranges
             self._sigRangeData = self._data.reduce( CutRange = 'Signal'       )
@@ -572,64 +659,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
         ###################################################################################################################################
-        ## plot mumu mass ##
-        ####################
-
-        if makePlots :
-            self._mumuMassCanv = TCanvas( 'mumuMassCanv', 'mumu Mass' )
-            for ( pad, data, plotTitle )\
-                  in zip(  self._mumuMassCanv.pads( 2, 2 )
-                         , [ self._sigSWeightData, self._bkgSWeightData ]
-                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
-                        ) :
-                plot(  pad, mumuMass, data, None
-                     , frameOpts  = dict( Title = mumuMass.GetTitle() + plotTitle )
-                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue   )
-                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2    )
-                    )
-
-
-        ###################################################################################################################################
-        ## build KK mass PDFs ##
-        ########################
-
-        if paramKKMass or makePlots :
-            # create binning
-            from array import array
-            KKMassBinsArray = array( 'd', KKMassBinBounds )
-            KKMassNBins = len(KKMassBinBounds) - 1
-
-            from ROOT import RooBinning
-            self._KKMassBinning = RooBinning( KKMassNBins, KKMassBinsArray, 'KKMassBinning' )
-            KKMass.setBinning( self._KKMassBinning, 'KKMassBinning' )
-
-            # build the signal and background KK mass PDFs
-            from P2VVParameterizations.MassPDFs import Binned_MassPdf
-            self._signalKKMass =     Binned_MassPdf( 'sig_mKK', KKMass, Binning = self._KKMassBinning, Data = self._sigSWeightData )
-            self._backgroundKKMass = Binned_MassPdf( 'bkg_mKK', KKMass, Binning = self._KKMassBinning, Data = self._bkgSWeightData )
-            if paramKKMass == 'functions' :
-                self._signalComps += self._signalKKMass.pdf()
-                if not SFit: self._backgroundComps += self._backgroundKKMass.pdf()
-
-            if makePlots :
-                self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
-                for ( pad, data, pdf, plotTitle )\
-                      in zip(  self._KKMassCanv.pads( 2, 2 )
-                             , [ self._sigSWeightData, self._bkgSWeightData ]
-                             , [ self._signalKKMass.pdf(), self._backgroundKKMass.pdf() ]
-                             , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
-                            ) :
-                    plot(  pad, KKMass, data, None #pdf, logy = True
-                         , frameOpts  = dict( Title = KKMass.GetTitle() + plotTitle )
-                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue   )
-                         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2    )
-                        )
-
-        ###################################################################################################################################
         ## build tagging categories ##
         ##############################
 
         if nominalPdf or not self._iTagZeroTrick :
+            print 120 * '='
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building tagging categories'
+
             # build tagging categories opposite side
             from P2VVParameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
             if not nominalPdf and contEstWTag :
@@ -734,9 +770,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             else:
                 raise ValueError( 'Uknown time efficiency type: %s' % timeEffType )
 
+
         ###################################################################################################################################
         ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
         #####################################################################
+
+        print 120 * '='
+        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building PDFs'
 
         # transversity amplitudes
         commonArgs = dict( AmbiguityParameters = ambiguityPars )
@@ -1014,6 +1054,52 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self._signalComps += sigPdfTimeAcc
         if nominalPdf or condTagging : self._sig_t_angles = sigPdfTimeAcc
         else :                         self._sig_t_angles_tagCat_iTag = sigPdfTimeAcc
+
+
+        ###################################################################################################################################
+        ## plot mumu mass ##
+        ####################
+
+        if makePlots :
+            self._mumuMassCanv = TCanvas( 'mumuMassCanv', 'mumu Mass' )
+            for ( pad, data, plotTitle )\
+                  in zip(  self._mumuMassCanv.pads( 2, 2 )
+                         , [ self._sigSWeightData, self._bkgSWeightData ]
+                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                        ) :
+                plot(  pad, mumuMass, data, None
+                     , frameOpts  = dict( Title = mumuMass.GetTitle() + plotTitle )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue   )
+                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2    )
+                    )
+
+
+        ###################################################################################################################################
+        ## build KK mass PDFs ##
+        ########################
+
+        if paramKKMass or makePlots :
+            # build the signal and background KK mass PDFs
+            from P2VVParameterizations.MassPDFs import Binned_MassPdf
+            self._signalKKMass =     Binned_MassPdf( 'sig_mKK', KKMass, Binning = self._KKMassBinning, Data = self._sigSWeightData )
+            self._backgroundKKMass = Binned_MassPdf( 'bkg_mKK', KKMass, Binning = self._KKMassBinning, Data = self._bkgSWeightData )
+            if paramKKMass == 'functions' :
+                self._signalComps += self._signalKKMass.pdf()
+                if not SFit: self._backgroundComps += self._backgroundKKMass.pdf()
+
+            if makePlots :
+                self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
+                for ( pad, data, pdf, plotTitle )\
+                      in zip(  self._KKMassCanv.pads( 2, 2 )
+                             , [ self._sigSWeightData, self._bkgSWeightData ]
+                             , [ self._signalKKMass.pdf(), self._backgroundKKMass.pdf() ]
+                             , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                            ) :
+                    plot(  pad, KKMass, data, None #pdf, logy = True
+                         , frameOpts  = dict( Title = KKMass.GetTitle() + plotTitle )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue   )
+                         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2    )
+                        )
 
 
         ###################################################################################################################################
@@ -1429,21 +1515,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print
 
         if paramKKMass == 'simultaneous' :
-            # create split category
-            from RooFitWrappers import BinningCategory
-            self._KKMassCat = BinningCategory( 'KKMassCat'
-                                              , Observable = KKMass
-                                              , Binning = self._KKMassBinning
-                                              , Fundamental = True
-                                              , Data = [  self._data
-                                                        , self._sigSWeightData
-                                                        , self._bkgSWeightData
-                                                        , self._sigRangeData
-                                                        , self._bkgRangeData
-                                                       ]
-                                              , CatTypeName = 'bin'
-                                             )
-
             # specify parameters that are different in simultaneous categories
             splitParams = [ ]
             for amp in self._amplitudes.parameters() :
@@ -1526,3 +1597,4 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
         PdfBuilder.__init__( self, self._simulPdf if paramKKMass == 'simultaneous' else self._fullPdf, observables, { } )
+        print 120 * '='
