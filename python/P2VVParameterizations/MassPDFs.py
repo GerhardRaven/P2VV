@@ -74,7 +74,7 @@ class LP2011_Signal_Mass ( MassPdf ) :
         self._parseArg( 'm_sig_sigma_sf', kwargs, Title = 'B Mass resolution 2:1 scale factor'
                        , Value = 2.3,   Error = 0.1,  MinMax = ( -RooInf, RooInf ) )
         self._parseArg( 'm_sig_frac',     kwargs, Title = 'B mass fraction first Gaussian'
-                       , Value = 0.8,   Error = 0.03, MinMax = ( 0.01, 0.99 ) )
+                       , Value = 0.8,   Error = 0.03, MinMax = ( -RooInf, RooInf ) )
 
         from ROOT import RooGaussian as Gaussian
         from RooFitWrappers import Pdf, FormulaVar, SumPdf
