@@ -839,13 +839,35 @@ RooArgSet* RooBTagDecay::coefVars(Int_t basisIndex) const
   return coefVars;
 }
 
+const char *RooBTagDecay::pruneRangeName(const char* rangeName, const RooArgSet& vars) const
+{
+    if (rangeName == 0 || strlen(rangeName)==0) return rangeName;
+    TIterator* i = vars.createIterator();
+    RooAbsArg* x = 0;
+    while ((x = (RooAbsArg*)i->Next()) != 0) {
+        if (!x->hasRange(rangeName)) continue; // OK to drop
+        const RooAbsRealLValue *rar = dynamic_cast<const RooAbsRealLValue*>(x);
+        if (rar && rar->getMin(rangeName)==rar->getMin() && rar->getMax(rangeName)==rar->getMax()) continue; // OK to drop!
+        //const RooAbsCategory *rac = dynamic_cast<const RooAbsCategory*>(x);
+        // if (rac &&  ) continue;
+        cout << "RooBTagDecay: cannot check range content for " << x->GetName() << " yet.... " << endl;
+
+        return rangeName; // neither real, nor category... just give up...
+
+    }
+    delete i;
+    return 0;
+}
+
 //_____________________________________________________________________________
 Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
-    RooArgSet& analVars, const char* rangeName) const 
+    RooArgSet& analVars, const char* rName) const 
 {
   // copy variables that can be integrated over analytically from allVars to
   // analVars for the specified basis function's coefficient and return
   // integration code
+
+  cout << "RooBTagDecay("<<GetName()<<")::getCoefAnalyticalIntegral("<<coef<<","<<allVars<<","<<(rName?rName:"<none>")<<")"<< endl;
 
   // integrate numerically if variables are unchecked
   if (!_checkVars || !checkVarDep(_time.arg())
@@ -875,6 +897,15 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   Bool_t intFTag   = kFALSE;
   RooArgSet intVars(allVars);
 
+  // can we drop the rangeName???
+  const char *rangeName = pruneRangeName( rName, allVars );
+  if ( rangeName == 0 && rName != 0 )  { 
+    cout << "RooBTagDecay("<<GetName()<<")::getCoefAnalyticalIntegral -- dropping rangeName " << rName << endl;
+    intCode += 16;
+  }
+
+    
+
   // integrate over tagging categories?
   if ((_tagCat0Type > 1 && !intVars.remove(_tagCat0.arg(), kTRUE, kTRUE))
       || (_tagCat1Type > 1 && !intVars.remove(_tagCat1.arg(), kTRUE, kTRUE)))
@@ -889,25 +920,10 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
 
   // get integration code
   if (intVars.getSize() > 0) {
-    if (coef == _coshBasis) {
-      intCode = 16 * _coshCoef.arg().getAnalyticalIntegral(intVars, analVars,
-          rangeName);
-    } else if (coef == _sinhBasis) {
-      if (_tags > 1)
-        return 0;
-      else
-        intCode = 16 * _sinhCoef.arg().getAnalyticalIntegral(intVars, analVars,
-            rangeName);
-    } else if (coef == _cosBasis) {
-      intCode = 16 * _cosCoef.arg().getAnalyticalIntegral(intVars, analVars,
-          rangeName);
-    } else if (coef == _sinBasis) {
-      if (_tags > 1)
-        return 0;
-      else
-        intCode = 16 * _sinCoef.arg().getAnalyticalIntegral(intVars, analVars,
-            rangeName);
-    }
+    bool odd = ( coef == _sinhBasis || coef == _sinBasis );
+    if (odd && _tags > 1 ) return 0;
+    
+    intCode += 32 * coefArg(coef).getAnalyticalIntegral(intVars, analVars, rangeName);
   }
 
   // return the integration code if there are no explicit tags
@@ -917,7 +933,7 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   TIterator* analVarIter = analVars.createIterator();
   RooAbsArg* analVar = 0;
   while ((analVar = (RooAbsArg*)analVarIter->Next()) != 0) {
-    if (!checkVarDep(*analVar, kFALSE, kTRUE)) return 0;
+    if (!checkVarDep(*analVar, kFALSE, kTRUE)) return 0; // memory leak -- analVarIter not deleted if true...
   }
   delete analVarIter;
 
@@ -961,36 +977,18 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
 {
   // return analytical integral for basis function's coefficient
 
+  // drop rangeName?
+  if (code&16) rangeName = 0;
+
   // get integration code for coefficient
-  Int_t  coefCode  = code >> 4;
+  Int_t  coefCode  = code >> 5;
 
   // get coefficient's integral
   Double_t coefInt = 0.;
-  if (coef == _coshBasis) {
-    if (coefCode != 0)
-      coefInt = _coshCoef.arg().analyticalIntegral(coefCode, rangeName);
-    else
-      coefInt = _coshCoef.arg().getVal();
-  } else if (coef == _sinhBasis) {
-    if (_tags > 1)
-      return 0.;
-    else if (coefCode != 0)
-      coefInt = _sinhCoef.arg().analyticalIntegral(coefCode, rangeName);
-    else
-      coefInt = _sinhCoef.arg().getVal();
-  } else if (coef == _cosBasis) {
-    if (coefCode != 0)
-      coefInt = _cosCoef.arg().analyticalIntegral(coefCode, rangeName);
-    else
-      coefInt = _cosCoef.arg().getVal();
-  } else if (coef == _sinBasis) {
-    if (_tags > 1)
-      return 0.;
-    else if (coefCode != 0)
-      coefInt = _sinCoef.arg().analyticalIntegral(coefCode, rangeName);
-    else
-      coefInt = _sinCoef.arg().getVal();
-  }
+  // determine if basis function is even or odd
+  Bool_t odd = coef == _cosBasis || coef == _sinBasis;
+  if (odd && _tags>1) return 0;
+  coefInt = (coefCode!=0?coefArg(coef).analyticalIntegral(coefCode, rangeName):coefArg(coef).getVal());
 
   // return the integral if we don't have to evaluate explicit tags
   if (_tags < 1 || coefInt == 0.) return coefInt;
@@ -1001,8 +999,6 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
   Bool_t intITag1  = (Bool_t)(code & 2);
   Bool_t intFTag   = (Bool_t)(code & 1);
 
-  // determine if basis function is even or odd
-  Bool_t odd = coef == _cosBasis || coef == _sinBasis;
 
   // get values of initial state flavour tags
   Int_t iT0Val = _tagCat0Type > 0 && _iTag0Val > 1 ? _iTag0 : _iTag0Val;
@@ -1328,7 +1324,7 @@ void RooBTagDecay::generateEvent(Int_t code)
     // exit generation loop if we don't generate tagging variables
     if (code < 2) break;
 
-    Int_t catGen[2] = {0., 0.};
+    Int_t catGen[2] = {0, 0};
     Double_t avgCEven = 0., avgCOdd = 0.;
     if (_tagCat0Type > 1 || _tagCat1Type > 1) {
       // generate value for the tagging category
