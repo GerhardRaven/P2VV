@@ -192,6 +192,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ]
         self['SWaveAmplitudeValues'] = (  [ ], [ ] )
         self['CSPValues']            = [ 0.4976 ]
+        self['lifetimeRange']        = ( 0.3, 14 )
 
         self['sameSideTagging']    = True
         self['conditionalTagging'] = False
@@ -294,8 +295,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
         SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
         CSPValues         = pdfConfig.pop('CSPValues')
+        lifetimeRange     = pdfConfig.pop('lifetimeRange')
 
-        assert( timeEffType in [ 'Moriond', 'Fit', 'Paper' ] )
+        assert lifetimeRange[0] > -5. and lifetimeRange[1] < 50. and lifetimeRange[1] > lifetimeRange[0]
+        assert timeEffType in [ 'Moriond', 'Fit', 'Paper' ]
 
         self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
         iTagStates = pdfConfig.pop('iTagStates')
@@ -360,7 +363,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
         # variables in PDF (except for tagging category)
-        time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. )
+        time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = lifetimeRange
                        , Ranges = dict( Bulk = ( None, 5. ) ), nBins = numTimeBins )
         timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.10, MinMax = (0.0001, 0.12) # > 0.0075
                           , nBins = numTimeResBins )
