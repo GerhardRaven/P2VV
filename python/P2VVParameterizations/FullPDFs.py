@@ -167,8 +167,10 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['nTupleName'] = 'DecayTree'
         self['nTupleFile'] = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 
-        self['timeEffHistFile']   = 'BuBdBdJPsiKsBsLambdab0Hlt2DiMuonDetachedJPsiAcceptance_sPlot_20110120.root'
-        self['angEffMomentsFile'] = 'effMoments'
+        self['timeEffHistFile']      = 'BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
+        self['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
+        self['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'
+        self['angEffMomentsFile']    = 'effMoments'
 
         # fit options
         self['fitOptions'] = dict( NumCPU = 1, Optimize = 1, Timer = True, Save = True )
@@ -192,7 +194,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ]
         self['SWaveAmplitudeValues'] = (  [ ], [ ] )
         self['CSPValues']            = [ 0.4976 ]
-        self['lifetimeRange']        = ( 0.3, 14 )
+        self['lifetimeRange']        = ( 0.3, 14. )
 
         self['sameSideTagging']    = True
         self['conditionalTagging'] = False
@@ -263,10 +265,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         numEvents = pdfConfig.pop('numEvents')
 
-        nTupleName        = pdfConfig.pop('nTupleName')
-        nTupleFile        = pdfConfig.pop('nTupleFile')
-        angEffMomentsFile = pdfConfig.pop('angEffMomentsFile')
-        timeEffHistFile   = pdfConfig.pop('timeEffHistFile')
+        nTupleName           = pdfConfig.pop('nTupleName')
+        nTupleFile           = pdfConfig.pop('nTupleFile')
+        angEffMomentsFile    = pdfConfig.pop('angEffMomentsFile')
+        timeEffHistFile      = pdfConfig.pop('timeEffHistFile')
+        timeEffHistUBName    = pdfConfig.pop('timeEffHistUBName')
+        timeEffHistExclBName = pdfConfig.pop('timeEffHistExclBName')
 
         fitOpts = pdfConfig.pop('fitOptions')
 
@@ -752,8 +756,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists, Data = self._data, Fit = True )
 
             elif timeEffType == 'Paper':
-                hists = { hlt1_excl_biased : {  'excl_biased' : { 'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins' }
-                                              , 'unbiased'    : { 'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'    }
+                hists = { hlt1_excl_biased : {  'excl_biased' : { 'histogram' : timeEffHistExclBName }
+                                              , 'unbiased'    : { 'histogram' : timeEffHistUBName    }
                                              }
                         }
 #                hists = { hlt1_excl_biased : {  'excl_biased' : { 'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_5bins_unit' }
@@ -765,10 +769,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             elif timeEffType == 'Moriond':
                 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
-                timeAcceptance = TimeAcceptance(  time = time, Input = timeEffHistFile
-                                                , Histogram = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins')
-#                                                , Histogram = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins_unit')
-#                                                , Histogram = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_5bins_unit')
+                timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histogram = timeEffHistUBName )
 
             else:
                 raise ValueError( 'Uknown time efficiency type: %s' % timeEffType )
