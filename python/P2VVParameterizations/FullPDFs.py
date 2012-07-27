@@ -568,8 +568,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 splitCatState = splitCatIter.Next()
                 splitCatPars = self._sWeightMassPdf.getVariables()
                 while splitCatState :
-                    sigYield = splitCatPars.find( 'N_sigMass_' + splitCatState.GetName() )
-                    bkgYield = splitCatPars.find( 'N_bkgMass_' + splitCatState.GetName() )
+                    sigYield = splitCatPars.find( ( 'N_sigMass_' if SFit else 'N_signal_' ) + splitCatState.GetName() )
+                    bkgYield = splitCatPars.find( ( 'N_bkgMass_' if SFit else 'N_bkg_'    ) + splitCatState.GetName() )
 
                     from math import sqrt
                     nEv    = self._data.sumEntries()
@@ -585,10 +585,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                     splitCatState = splitCatIter.Next()
 
+                if SWeightsType.endswith( 'Fixed' ) :
+                    # fix mass shape parameters for fit
+                    fixedMassPars = [ par for par in self._sWeightMassPdf.Parameters()\
+                                      if not ( par.getAttribute('Yield') or par.isConstant() ) ]
+                    for par in fixedMassPars : par.setConstant(True)
+
                 # determine mass parameters in each KK mass bin with a fit
                 print 120 * '='
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting mass PDF in KK mass bins'
                 self._sWeightMassPdf.fitTo( self._data, **fitOpts )
+
+                if SWeightsType.endswith( 'Fixed' ) :
+                    # free parameters that were fixed for mass fit
+                    for par in fixedMassPars : par.setConstant(False)
 
             else :
                 self._sWeightMassPdf = self._massPdf
@@ -1529,8 +1539,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if not SFit :
                 splitParams.append( self._signalComps.getYield() )
                 splitParams.append( self._backgroundComps.getYield() )
-                for par in self._bkgTaggingPdf.parameters() :
-                    if not par.isConstant() : splitParams.append(par)
+                if hasattr( self, '_bkgTaggingPdf' ) :
+                    for par in self._bkgTaggingPdf.parameters() :
+                        if not par.isConstant() : splitParams.append(par)
 
             # build simultaneous PDF
             from RooFitWrappers import SimultaneousPdf
