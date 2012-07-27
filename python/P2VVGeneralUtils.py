@@ -141,8 +141,8 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
 
     from ROOT import RooDataSet
     dataSet.addColumn(weightVar)
-    dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet, dataSet.get()
-                         , '', 'weightVar' )
+    dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet.get()
+                         , Import = dataSet, WeightVar = 'weightVar' )
 
     # import data set into current workspace
     from RooFitWrappers import RooObject
@@ -874,50 +874,98 @@ class SData( object ) :
 
         # calculate sWeights
         from ROOT import RooStats, RooArgList, RooSimultaneous
-        if isinstance( self._pdf._var, RooSimultaneous ) and kwargs.pop( 'Simultaneous', False ) :
-            pass
-            #splitCat     = self._pdf.indexCat()
-            #splitCatIter = splitCat.typeIterator()
-            #splitData    = self._inputData.split(splitCat)
-            #sPlots       = [ ]
-            #SDataSets    = [ ]
-            #splitCatIter.Next()
-            #for dataIter, data in enumerate(splitData) :
-            #    sPlot = RooStats.SPlot( self._name + '_sData_' + , self._name + '_splotdata', self._inputData, self._pdf._var
-            #                           , RooArgList( par._var for par in self._yields ) )
-            #    sData = sPlot.GetSDataSet()
-            #    splitCatIter.Next()
+        if isinstance( self._pdf._var, RooSimultaneous ) and kwargs.pop( 'Simultaneous', True ) :
+            # split data set in categories of the simultaneous PDF
+            splitCat        = self._pdf.indexCat()
+            splitCatIter    = splitCat.typeIterator()
+            splitData       = self._inputData.split(splitCat)
+            self._sPlots    = [ ]
+            self._sDataSets = [ ]
+            splitCatState   = splitCatIter.Next()
+            from ROOT import RooFormulaVar
+            while splitCatState :
+                # calculate sWeights per category
+                cat = splitCatState.GetName()
+                splitCat.setLabel(cat)
+
+                origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if cat in par.GetName() ]
+                self._sPlots.append(  RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat
+                                                     , splitData.FindObject(cat), self._pdf.getPdf(cat)
+                                                     , RooArgList( par._var for par in self._yields if cat in par.GetName() ) )
+                                   )
+                self._sDataSets.append( self._sPlots[-1].GetSDataSet() )
+
+                print 'P2VV - INFO: SData.__init__(): yields category %s:' % cat
+                print '    original:',
+                for vals in origYieldVals : print '%s = %.2f +/- %.2f  ' % vals,
+                print '\n    new:     ',
+                for par in self._yields :
+                    if cat in par.GetName() : print '%s = %.2f +/- %.2f  ' % ( par.GetName(), par.getVal(), par.getError() ),
+                print
+
+                # remove category name from sWeight and PDF value column names (it must be possible to simplify this...)
+                weightVars = [ (  RooFormulaVar( par.GetName().strip( '_' + cat ) + '_sw', '', '@0'
+                                                , RooArgList( self._sDataSets[-1].get().find( par.GetName() + '_sw' ) ) )
+                                , RooFormulaVar( 'L_' + par.GetName().strip( '_' + cat ), '', '@0'
+                                                , RooArgList( self._sDataSets[-1].get().find( 'L_' + par.GetName() ) ) )
+                               ) for par in self._yields if cat in par.GetName()
+                             ]
+                self._sDataSets[-1].addColumn(splitCat)
+                for weight, pdfVal in weightVars :
+                    self._sDataSets[-1].addColumn(weight)
+                    self._sDataSets[-1].addColumn(pdfVal)
+
+                sDataVars = self._sDataSets[-1].get()
+                for par in self._yields :
+                    if cat in par.GetName() :
+                        sDataVars.remove( sDataVars.find( par.GetName() + '_sw' ) )
+                        sDataVars.remove( sDataVars.find( 'L_' + par.GetName()  ) )
+                self._sDataSets[-1].reduce(sDataVars)
+
+                splitCatState = splitCatIter.Next()
+
+            # merge data sets from categories
+            from ROOT import RooDataSet
+            self._sData = RooDataSet( self._name + '_splotdata', self._name + '_splotdata', self._sDataSets[0].get() )
+            for data in self._sDataSets: self._sData.append(data)
 
         else :
-            self._splot = RooStats.SPlot( self._name + '_splotdata', self._name + '_splotdata', self._inputData, self._pdf._var
+            # calculate sWeights with full data set
+            if isinstance( self._pdf._var, RooSimultaneous ) :
+                print 'P2VV - WARNING: SData.__init__(): computing sWeights with a simultaneous PDF'
+            self._sPlot = RooStats.SPlot( self._name + '_splotdata', self._name + '_splotdata', self._inputData, self._pdf._var
                                          , RooArgList( par._var for par in self._yields ) )
-            self._sdata = self._splot.GetSDataSet()
+            self._sData = self._sPlot.GetSDataSet()
 
         # check keyword arguments
-        if kwargs : raise KeyError( 'got unknown keywords %s for %s' % ( kwargs, type(self) ) )
+        if kwargs : raise KeyError, 'P2VV - ERROR: SData.__init__(): got unknown keywords %s for %s' % ( kwargs, type(self) )
 
-    def usedObservables( self ) :
-        return self._observables
-    def components( self ):
-        return [ i.GetName()[2:] for i in self._yields ]
-    def Pdf(self) : return self._pdf
-    def Yield(self, Component ) :
-        yname = 'N_%s'% Component
+    def usedObservables( self ) : return self._observables
+    def components( self )      : return [ y.GetName()[2:] for y in self._yields ]
+    def Pdf( self )             : return self._pdf
+
+    def Yield( self, Component ) :
+        yName = 'N_%s' % Component
         for y in self._yields :
-            if y.GetName() == yname : return y.getVal()
-        raise KeyError('unknown Component %s' % Component )
+            if y.GetName() == yName : return y.getVal()
+
+        raise KeyError, 'P2VV - ERROR: SData.__init__(): unknown component %s' % Component
+
     def data( self, Component ) :
         if Component not in self._data :
-            # check if component in the weight column. If not, raise KeyError
-            yname = 'N_%s'% Component
-            if yname not in [ i.GetName() for i in self._yields ] :
-                raise KeyError('unknown Component %s' % Component )
-            wname = '%s_sw'% yname
-            if wname not in [ i.GetName() for i in self._sdata.get() ] :
-                raise KeyError('no weight in dataset for Component %s' % Component )
-            dname = '%s_weighted_%s' % ( self._sdata.GetName(), Component )
+            # check if component exists
+            yName = 'N_%s' % Component
+            if not any( yName in y.GetName() for y in self._yields ) :
+                raise KeyError, 'P2VV - ERROR: SData.__init__(): unknown component: %s' % Component
+            wName = '%s_sw' % yName
+            if wName not in [ w.GetName() for w in self._sData.get() ] :
+                raise KeyError, 'no weight in dataset for component %s' % Component
+
+            # create weighted data set
+            dName = '%s_weighted_%s' % ( self._sData.GetName(), Component )
             from ROOT import RooDataSet
-            self._data[Component] = RooDataSet( dname, dname, self._sdata.get(),Import = self._sdata, WeightVar = wname)
+            self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = wName )
+
         return self._data[Component]
 
 

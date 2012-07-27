@@ -549,10 +549,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting mass PDF'
             self._massPdf.fitTo( self._data, **fitOpts )
 
-            if SWeightsType.startswith('simultaneous') and paramKKMass :
+            if SWeightsType.startswith('simultaneous') and paramKKMass == 'simultaneous' :
                 # get mass parameters that are split between KK mass bins
                 splitParams = [ par for par in self._massPdf.Parameters() if par.getAttribute('Yield') ]
-                if SWeightsType.endswith( 'FreeBkg'.lower() ) :
+                if SWeightsType.endswith( 'FreeBkg' ) :
                     splitParams += [ par for par in self._backgroundBMass.parameters() if not par.isConstant() ]
 
                 # build simultaneous mass PDF for KK mass bins
