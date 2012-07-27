@@ -850,7 +850,9 @@ const char *RooBTagDecay::pruneRangeName(const char* rangeName, const RooArgSet&
         if (rar && rar->getMin(rangeName)==rar->getMin() && rar->getMax(rangeName)==rar->getMax()) continue; // OK to drop!
         //const RooAbsCategory *rac = dynamic_cast<const RooAbsCategory*>(x);
         // if (rac &&  ) continue;
-        cout << "RooBTagDecay: cannot check range content for " << x->GetName() << " yet.... " << endl;
+        cxcoutD(Integration) << "RooBTagDecay::pruneRangeName(" << GetName()
+            << ") cannot check range content for " << x->GetName()
+            << " yet.... " << endl;
 
         return rangeName; // neither real, nor category... just give up...
 
@@ -867,7 +869,9 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   // analVars for the specified basis function's coefficient and return
   // integration code
 
-  cout << "RooBTagDecay("<<GetName()<<")::getCoefAnalyticalIntegral("<<coef<<","<<allVars<<","<<(rName?rName:"<none>")<<")"<< endl;
+  cxcoutD(Integration) << "RooBTagDecay::getCoefAnalyticalIntegral("
+      << GetName() << ") (" << coef << ", " << allVars << ", "
+      << (rName ? rName: "<none>") << ")" << endl;
 
   // integrate numerically if variables are unchecked
   if (!_checkVars || !checkVarDep(_time.arg())
@@ -900,7 +904,8 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   // can we drop the rangeName???
   const char *rangeName = pruneRangeName( rName, allVars );
   if ( rangeName == 0 && rName != 0 )  { 
-    cout << "RooBTagDecay("<<GetName()<<")::getCoefAnalyticalIntegral -- dropping rangeName " << rName << endl;
+    cxcoutD(Integration) << "RooBTagDecay::getCoefAnalyticalIntegral("
+        << GetName() << ") dropping rangeName \"" << rName << "\"" << endl;
     intCode += 16;
   }
 
