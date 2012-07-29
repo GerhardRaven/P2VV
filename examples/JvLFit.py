@@ -16,7 +16,7 @@ pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
-corrSFitErr             = ''     # '' / 'matrix' / 'sumWeight'
+corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
@@ -60,15 +60,14 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRela
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['timeEffType']          = 'Moriond'
-pdfConfig['multiplyByAngEff']     = ''  # default: 'basis012'
-pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
+pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
+pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
-pdfConfig['SWeightsType']         = ''
-#pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
-#pdfConfig['SWaveAmplitudeValues'] = (  [ 0.16, 0.08, 0.02, 0.02, 0.05,  0.14 ], [ 1.5, 0.8, 0.3, -0.4, -0.5, -0.6 ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ 0.8, 0.4, 0.1, 0.1, 0.2,  0.6 ], [ 1.8, 0.6, 0.2, -0.4, -0.6, -0.6 ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ -0.12, -0.25, -0.16, -0.07, -0.18, -0.37 ], [ -0.31, -0.15, -0.10, 0.01, 0.16, 0.10 ] )
-pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
+pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.18, 0.07 ), ( 0.07, 0.03 ), ( 0.01, 0.02 ), ( 0.02, 0.01 ), ( 0.05, 0.03 ), ( 0.15, 0.04 ) ]
+                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.4  ), ( -0.5, 0.2  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 
 pdfConfig['sameSideTagging']    = True  # nominal: False
@@ -324,6 +323,10 @@ if fastFit :
         pdfBuild['backgroundTime'].setConstant('.*')
         if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
+
+print 120 * '='
+print 'JvLFit: parameters in PDF:'
+pdf.getParameters(fitData).Print('v')
 
 if ( readData or generateData ) and doFit :
     # fit data

@@ -335,9 +335,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if nominalPdf or ( amplitudeParam == 'phasesSWaveFrac' and ASParam == 'deltaPerp' )\
                     or ( amplitudeParam == 'bank' and ASParam != 'ReIm' ) :
                 from math import pi
-                for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = pi - phase
+                for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = ( pi - phase[0], phase[1] )
             elif amplitudeParam == 'phases' and ASParam in [ 'Mag2ReIm', 'ReIm' ] :
-                for ImIter, Im in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][ImIter] = -Im
+                for ImIter, Im in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][ImIter] = ( -Im[0], Im[1] )
 
         constrainDeltaM = pdfConfig.pop('constrainDeltaM')
 
@@ -770,10 +770,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               , 'unbiased'    : { 'histogram' : timeEffHistUBName    }
                                              }
                         }
-#                hists = { hlt1_excl_biased : {  'excl_biased' : { 'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_5bins_unit' }
-#                                              , 'unbiased'    : { 'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_5bins_unit' }
-#                                             }
-#                        }
+
                 from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
                 timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists, Data = self._data, Fit = False )
 
@@ -1573,11 +1570,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     ASOddPhase = splitCatPars.find( 'ASOddPhase_' + splitCatState.GetName() )
 
                     if amplitudeParam == 'phasesSWaveFrac' :
-                        f_S.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
+                        f_S.setVal(   SWaveAmpVals[0][ splitCatState.getVal() ][0] )
+                        f_S.setError( SWaveAmpVals[0][ splitCatState.getVal() ][1] )
                     else :
-                        ASOddMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
-                        ASOddMag2.setMax(5.)
-                    ASOddPhase.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
+                        ASOddMag2.setVal(   SWaveAmpVals[0][ splitCatState.getVal() ][0] )
+                        ASOddMag2.setError( SWaveAmpVals[0][ splitCatState.getVal() ][1] )
+                        if ASOddMag2.getMax() < 5. : ASOddMag2.setMax(5.)
+                    ASOddPhase.setVal(   SWaveAmpVals[1][ splitCatState.getVal() ][0] )
+                    ASOddPhase.setError( SWaveAmpVals[1][ splitCatState.getVal() ][1] )
 
                 elif amplitudeParam == 'phases' and ASParam in [ 'ReIm', 'Mag2ReIm' ] :
                     # amplitude parameterization with Re(A_S) and Im(A_S)
@@ -1587,9 +1587,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     ImAS = splitCatPars.find( 'ImAS_' + splitCatState.GetName() )
 
                     if ASParam == 'Mag2ReIm' :
-                        ASMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ]**2 + SWaveAmpVals[1][ splitCatState.getVal() ]**2 )
-                    ReAS.setVal( SWaveAmpVals[0][ splitCatState.getVal() ] )
-                    ImAS.setVal( SWaveAmpVals[1][ splitCatState.getVal() ] )
+                        ASMag2.setVal( SWaveAmpVals[0][ splitCatState.getVal() ][0]**2 + SWaveAmpVals[1][ splitCatState.getVal() ][0]**2 )
+                    ReAS.setVal(   SWaveAmpVals[0][ splitCatState.getVal() ][0] )
+                    ReAS.setError( SWaveAmpVals[0][ splitCatState.getVal() ][1] )
+                    ImAS.setVal(   SWaveAmpVals[1][ splitCatState.getVal() ][0] )
+                    ImAS.setError( SWaveAmpVals[1][ splitCatState.getVal() ][1] )
 
                 if not SFit :
                     sigYield = splitCatPars.find( 'N_signal_' + splitCatState.GetName() )
