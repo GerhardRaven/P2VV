@@ -8,17 +8,17 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = True
+doFit                   = False
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['SFit']       = False
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
 
-plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
+plotsFile = 'plots/JvLSFitTemp.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
 parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
@@ -58,17 +58,17 @@ pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
-pdfConfig['multiplyByTimeEff']    = ''
+pdfConfig['multiplyByTimeEff']    = 'all'
 pdfConfig['timeEffType']          = 'Moriond'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
-pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: ''
+pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ] #[ 1020. - 30., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1020. + 30. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.18, 0.07 ), ( 0.07, 0.03 ), ( 0.01, 0.02 ), ( 0.02, 0.01 ), ( 0.05, 0.03 ), ( 0.15, 0.04 ) ]
-                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.4  ), ( -0.5, 0.2  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
+pdfConfig['SWeightsType']         = ''
+#pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.18, 0.07 ), ( 0.07, 0.03 ), ( 0.01, 0.02 ), ( 0.02, 0.01 ), ( 0.05, 0.03 ), ( 0.15, 0.04 ) ]
+#                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.4  ), ( -0.5, 0.2  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
+pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -247,6 +247,9 @@ else :
     sigData = pdfBuild['sigSWeightData']
     bkgData = pdfBuild['bkgSWeightData']
 
+# get parameters in PDF
+pdfPars = pdf.getParameters(fitData)
+
 
 ###########################################################################################################################################
 ## fit data ##
@@ -324,9 +327,16 @@ if fastFit :
         if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
 
+# set amplitude ranges
+pdfBuild['amplitudes'].parameter('A0Mag2').setRange( ( 0., 1. ) )
+pdfBuild['amplitudes'].parameter('AperpMag2').setRange( ( 0., 1. ) )
+for par in pdfPars :
+    if 'f_S' in par.GetName() : par.setRange( 0., 1. )
+
+# print parameters
 print 120 * '='
 print 'JvLFit: parameters in PDF:'
-pdf.getParameters(fitData).Print('v')
+pdfPars.Print('v')
 
 if ( readData or generateData ) and doFit :
     # fit data
@@ -691,7 +701,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
              , components  = comps
             )
 
-    if not pdfConfig['SFit'] :
+    if not pdfConfig['SFit'] and pdfConfig['SWeightsType'].startswith('simultaneous')\
+            and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
         # plot signal mass
         print 'JvLFit: plotting mumuKK mass distribution'
         pad = pdfBuild['massCanv'].cd(2)
@@ -708,7 +719,12 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     timeCanv1.Print(plotsFile)
     if pdfConfig['makePlots'] :
         anglesCanv.Print(plotsFile)
-        pdfBuild['massCanv'].Print(plotsFile)
+        if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
+            pdfBuild['massCanvSig'].Print(plotsFile)
+            pdfBuild['massCanvLeft'].Print(plotsFile)
+            pdfBuild['massCanvRight'].Print(plotsFile)
+        else :
+            pdfBuild['massCanv'].Print(plotsFile)
         pdfBuild['mumuMassCanv'].Print(plotsFile)
         pdfBuild['KKMassCanv'].Print(plotsFile)
         bkgTimeCanv.Print(plotsFile)
@@ -721,7 +737,12 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
         anglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
 
 elif pdfConfig['makePlots'] :
-    pdfBuild['massCanv'].Print(plotsFile + '(')
+    if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
+        pdfBuild['massCanvSig'].Print(plotsFile + '(')
+        pdfBuild['massCanvLeft'].Print(plotsFile)
+        pdfBuild['massCanvRight'].Print(plotsFile)
+    else :
+        pdfBuild['massCanv'].Print(plotsFile + '(')
     pdfBuild['mumuMassCanv'].Print(plotsFile)
     pdfBuild['KKMassCanv'].Print(plotsFile)
     bkgTimeCanv.Print(plotsFile)

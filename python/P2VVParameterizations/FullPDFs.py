@@ -409,7 +409,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         mumuMass = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
                            , nBins =  51 )
         KKMass = RealVar( 'mdau2', Title = 'M(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
-                         , nBins =  32 )
+                         , nBins =  125 )
         if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
         tagDecisionComb = Category( 'tagdecision',    Title = 'Tag decision OS/SS combination', Observable = True, States = iTagStatesDecision )
@@ -647,8 +647,75 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._bkgRangeData = self._data.reduce( CutRange = 'LeftSideBand' )
             self._bkgRangeData.append( self._data.reduce( CutRange = 'RightSideBand' ) )
 
-            if makePlots :
-                # plot mass distributions
+            if makePlots and SWeightsType.startswith('simultaneous') and paramKKMass == 'simultaneous' :
+                # get simultaneous PDFs
+                splitCat      = self._sWeightMassPdf.indexCat()
+                splitCatIter  = splitCat.typeIterator()
+                splitCatState = splitCatIter.Next()
+                bins = [ ]
+                pdfs = [ ]
+                while splitCatState :
+                    bins.append( ( splitCatState.getVal(), splitCatState.GetName() ) )
+                    pdfs.append( self._sWeightMassPdf.getPdf( splitCatState.GetName() ) )
+                    splitCatState = splitCatIter.Next()
+
+                # plot mumuKK mass distributions in KK mass bins
+                self._massCanvSig = TCanvas( 'massCanvSig', 'B mass signal range' )
+                for ( pad, pdf, plotTitle, dataCuts, norm )\
+                        in zip(  self._massCanvSig.pads( 3, 3 )
+                               , pdfs
+                               , [ BMass.GetTitle() + ' KK mass bin %d - signal' % bin[0] for bin in bins ]
+                               , [ dict( Cut = '%s==%d' % ( splitCat.GetName(), bin[0] ) ) for bin in bins ]
+                               , [ self._data.sumEntries( '!(%s-%d)' % ( splitCat.GetName(), bin[0] ) )\
+                                   / self._data.sumEntries( '%s+1' % splitCat.GetName() ) for bin in bins ]
+                              ) :
+                    plot(  pad, BMass, self._data, pdf, logy = True, yScale = ( 1., None )
+                         , frameOpts  = dict( Range = 'Signal', Bins = numBMassBins[0], Title = plotTitle )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
+                         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2, Normalization = norm      )
+                         , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
+                                         , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+                                        }
+                        )
+
+                self._massCanvLeft = TCanvas( 'massCanvLeft', 'B mass left side band' )
+                for ( pad, pdf, plotTitle, dataCuts, norm )\
+                        in zip(  self._massCanvLeft.pads( 3, 3 )
+                               , pdfs
+                               , [ BMass.GetTitle() + ' KK mass bin %d - left side band' % bin[0] for bin in bins ]
+                               , [ dict( Cut = '%s==%d' % ( splitCat.GetName(), bin[0] ) ) for bin in bins ]
+                               , [ self._data.sumEntries( '!(%s-%d)' % ( splitCat.GetName(), bin[0] ) )\
+                                   / self._data.sumEntries( '%s+1' % splitCat.GetName() ) for bin in bins ]
+                              ) :
+                    plot(  pad, BMass, self._data, pdf, logy = True, yScale = ( 1., None )
+                         , frameOpts  = dict( Range = 'LeftSideBand', Bins = numBMassBins[0], Title = plotTitle )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
+                         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2, Normalization = norm      )
+                         , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
+                                         , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+                                        }
+                        )
+
+                self._massCanvRight = TCanvas( 'massCanvRight', 'B mass right side band' )
+                for ( pad, pdf, plotTitle, dataCuts, norm )\
+                        in zip(  self._massCanvRight.pads( 3, 3 )
+                               , pdfs
+                               , [ BMass.GetTitle() + ' KK mass bin %d - right side band' % bin[0] for bin in bins ]
+                               , [ dict( Cut = '%s==%d' % ( splitCat.GetName(), bin[0] ) ) for bin in bins ]
+                               , [ self._data.sumEntries( '!(%s-%d)' % ( splitCat.GetName(), bin[0] ) )\
+                                   / self._data.sumEntries( '%s+1' % splitCat.GetName() ) for bin in bins ]
+                              ) :
+                    plot(  pad, BMass, self._data, pdf, logy = True, yScale = ( 1., None )
+                         , frameOpts  = dict( Range = 'RightSideBand', Bins = numBMassBins[0], Title = plotTitle )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
+                         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2, Normalization = norm      )
+                         , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
+                                         , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+                                        }
+                        )
+
+            elif makePlots :
+                # plot mumuKK mass distributions
                 self._massCanv = TCanvas( 'massCanv', 'B mass' )
                 for ( pad, frameRange, nBins, plotTitle )\
                       in zip(  self._massCanv.pads( 2, 2, lambda pad : pad != 2 )
@@ -659,7 +726,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 , BMass.GetTitle() + ' mass fit - right side band'
                                ]
                             ) :
-                    plot(  pad, BMass, self._data, self._massPdf
+                    plot(  pad, BMass, self._data, self._sWeightMassPdf, logy = True, yScale = ( 1., None )
                          , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle )
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                   )
                          , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2                    )
@@ -1262,12 +1329,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if not SFit or makePlots :
             from P2VVParameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
-            self._backgroundTime = BackgroundTime( Name = 'bkg_t', time = time, resolutionModel = self._timeResModel['model'] )
+            self._backgroundTime = BackgroundTime(  Name = 'bkg_t', time = time, resolutionModel = self._timeResModel['model']
+                                                  , Efficiency = timeAcceptance if multiplyByTimeEff in [ 'all', 'background' ] else None
+                                                 )
             self._bkg_t = self._backgroundTime.pdf()
-
-            if multiplyByTimeEff in [ 'all', 'background' ] :
-                # multiply background time PDF with time acceptance
-                self._bkg_t = timeAcceptance * self._bkg_t
 
             if not SFit : self._backgroundComps += self._bkg_t
 
