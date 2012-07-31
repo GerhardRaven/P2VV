@@ -171,11 +171,13 @@ def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 class TimePdf( _util_parse_mixin ) :
-    def __init__(self, **kwargs ) :
-        for (k,v) in kwargs.iteritems() :
-            setattr(self,'_'+k,v)
-    def pdf(self) :
-        return self._pdf
+    def __init__( self, **kwargs ) :
+        self._pdf = kwargs.pop('pdf')
+        self._efficiency = kwargs.pop( 'Efficiency', None )
+        if self._efficiency : self._pdf = self._efficiency * self._pdf
+        for (k,v) in kwargs.iteritems() : setattr( self, '_' + k, v )
+
+    def pdf(self) : return self._pdf
 
 class LP2011_Background_Time( TimePdf ) :
     def __init__(self, time, resolutionModel, **kwargs) :
@@ -201,11 +203,19 @@ class LP2011_Background_Time( TimePdf ) :
                   , ConditionalObservables = resolutionModel.ConditionalObservables()
                   , ExternalConstraints = resolutionModel.ExternalConstraints()
                   )
+
+        efficiency = kwargs.pop( 'Efficiency', None )
+        if efficiency :
+            ml = efficiency * ml
+            ll = efficiency * ll
+
+        self._check_extraneous_kw( kwargs )
         TimePdf.__init__(self, pdf = SumPdf( Name = Name
                                              , PDFs = (  ml, ll)
                                              , Yields = { ml.GetName() : self._fml }
                                              )
                          )
+        self._efficiency = efficiency
 
 class Single_Exponent_Time( TimePdf ) :
     def __init__(self,time,resolutionModel,**kwargs) :
