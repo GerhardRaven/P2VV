@@ -36,7 +36,7 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 1
+fitOpts = dict(  NumCPU    = 8
                , Optimize  = 1
                , Timer     = True
 #               , Verbose   = True
@@ -58,7 +58,7 @@ pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
-pdfConfig['multiplyByTimeEff']    = 'signal'
+pdfConfig['multiplyByTimeEff']    = 'background'
 pdfConfig['timeEffType']          = 'Moriond'
 pdfConfig['multiplyByAngEff']     = ''  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''

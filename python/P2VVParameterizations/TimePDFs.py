@@ -191,30 +191,30 @@ class LP2011_Background_Time( TimePdf ) :
 
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay
-        ml = Pdf( Name = Name + '_ml'
-                  , Type = Decay
-                  , Parameters = (time, self._ml_tau, resolutionModel, 'SingleSided')
-                  , ConditionalObservables = resolutionModel.ConditionalObservables()
-                  , ExternalConstraints = resolutionModel.ExternalConstraints()
-                  )
-        ll = Pdf( Name = Name + '_ll'
-                  , Type = Decay
-                  , Parameters = (time, self._ll_tau, resolutionModel, 'SingleSided')
-                  , ConditionalObservables = resolutionModel.ConditionalObservables()
-                  , ExternalConstraints = resolutionModel.ExternalConstraints()
-                  )
+        self._mlPdf = Pdf(  Name = Name + '_ml'
+                          , Type = Decay
+                          , Parameters = (time, self._ml_tau, resolutionModel, 'SingleSided')
+                          , ConditionalObservables = resolutionModel.ConditionalObservables()
+                          , ExternalConstraints = resolutionModel.ExternalConstraints()
+                         )
+        self._llPdf = Pdf(  Name = Name + '_ll'
+                          , Type = Decay
+                          , Parameters = (time, self._ll_tau, resolutionModel, 'SingleSided')
+                          , ConditionalObservables = resolutionModel.ConditionalObservables()
+                          , ExternalConstraints = resolutionModel.ExternalConstraints()
+                         )
 
         efficiency = kwargs.pop( 'Efficiency', None )
         if efficiency :
-            ml = efficiency * ml
-            ll = efficiency * ll
+            self._mlPdf = efficiency * self._mlPdf
+            self._llPdf = efficiency * self._llPdf
 
         self._check_extraneous_kw( kwargs )
-        TimePdf.__init__(self, pdf = SumPdf( Name = Name
-                                             , PDFs = (  ml, ll)
-                                             , Yields = { ml.GetName() : self._fml }
-                                             )
-                         )
+        TimePdf.__init__( self, pdf = SumPdf(  Name = Name
+                                             , PDFs = ( self._mlPdf, self._llPdf)
+                                             , Yields = { self._mlPdf.GetName() : self._fml }
+                                            )
+                        )
         self._efficiency = efficiency
 
 class Single_Exponent_Time( TimePdf ) :

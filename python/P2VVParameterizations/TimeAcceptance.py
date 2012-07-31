@@ -3,14 +3,16 @@ from P2VVParameterizations.GeneralUtils import valid_combinations, exclusive_com
 
 class TimeAcceptance ( _util_parse_mixin, _util_extConstraints_mixin ) :
     def __init__( self, **kwargs ) : 
-        if 'Acceptance' in kwargs:
-            self._acceptance = kwargs.pop( 'Acceptance' )
-        else:
-            raise KeyError('TimeAcceptance: please specify an acceptance')
+        if 'Acceptance' in kwargs: self._acceptance = kwargs.pop( 'Acceptance' )
+        else: raise KeyError('P2VV - ERROR: TimeAcceptance.__init__(): TimeAcceptance: please specify an acceptance')
+        #self._acceptance.setAttribute('NOCacheAndTrack') # FIXME/BUG Workaround for acceptance normalization in cFit...
+        #print 'P2VV - WARNING: TimeAcceptance.__init__(): set "NOCacheAndTrack" for %s' % self._acceptance.GetName()
+
         from RooFitWrappers import BinnedPdf
-        if type(self._acceptance)==BinnedPdf :
+        if type(self._acceptance) == BinnedPdf :
             self._acceptance.setForceUnitIntegral(True)  # note: constant optimization WILL evaluate RooBinnedPdf as a PDF, and thus normalize it...
-            print 'switched setForceUnitIntegral to true for %s' % self._acceptance.GetName()
+            print 'P2VV - WARNING: TimeAcceptance.__init__(): switched setForceUnitIntegral to true for %s' % self._acceptance.GetName()
+
         _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw(kwargs)
 
