@@ -7,6 +7,10 @@ class TimeAcceptance ( _util_parse_mixin, _util_extConstraints_mixin ) :
             self._acceptance = kwargs.pop( 'Acceptance' )
         else:
             raise KeyError('TimeAcceptance: please specify an acceptance')
+        from RooFitWrappers import BinnedPdf
+        if type(self._acceptance)==BinnedPdf :
+            self._acceptance.setForceUnitIntegral(True)  # note: constant optimization WILL evaluate RooBinnedPdf as a PDF, and thus normalize it...
+            print 'switched setForceUnitIntegral to true for %s' % self._acceptance.GetName()
         _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw(kwargs)
 
