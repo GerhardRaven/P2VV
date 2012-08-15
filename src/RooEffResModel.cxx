@@ -78,12 +78,20 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       Double_t thisxmin = std::max(*lo, xmin);
       Double_t thisxmax = std::min(*hi, xmax);
 
-      TString range = TString::Format("R%d_", i);
+      TString range = TString::Format("R%d_%s", i,x.GetName());
+
       // Add original rangeName if there is one
-      if (rangeName) range.Replace(3, 8, RooNameReg::str(rangeName));
+      if (rangeName) { 
+            range.Append( "_" );
+            range.Append( RooNameReg::str(rangeName) );
+      }
+
+      RooNameSet ns(iset);
+      range.Append("_I_");
+      range.Append(ns._nameList);
 
       // Create a new name for the range
-      // newRange = parent->makeFPName(parent->GetName(), iset, nset, range);
+      // newRange = parent->makeFPName(parent->GetName(), iset, range);
       x.setRange(range, thisxmin, thisxmax);
       
       intList.add(*model.createIntegral(iset, range));
@@ -99,13 +107,15 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       _customizers.push_back(customizer);
    }
    // TODO: create unique name
-   _I = new RooAddition("integral", "integral", effList, intList, kTRUE);
+   TString iName( parent.GetName() );
+   iName += "_integral";
+   _I = new RooAddition(iName, iName, effList, intList, kTRUE);
 }
 
 //_____________________________________________________________________________
 RooEffResModel::RooEffResModel(const char *name, const char *title, RooResolutionModel& model, RooAbsReal& eff) 
   : RooResolutionModel(name,title,model.convVar())
-  , _model("!model","Original resolution model",this,model,kFALSE,kFALSE)
+  , _model("!model","Original resolution model",this,model)
   , _eff("!efficiency","efficiency of convvar", this,eff)
   , _cacheMgr(this, 10)
 {  
