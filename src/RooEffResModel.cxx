@@ -98,10 +98,9 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       // check if already exists and matches..
       if (!x.hasRange(range)) {
         x.setRange(range, thisxmin, thisxmax);
-      } else {
-        assert( x.getMin(range)==thisxmin);
-        assert( x.getMax(range)==thisxmax);
       }
+      assert( x.getMin(range)==thisxmin);
+      assert( x.getMax(range)==thisxmax);
       
       intList.add(*model.createIntegral(iset, range));
 
@@ -144,17 +143,67 @@ RooEffResModel::~RooEffResModel()
   // Destructor
 }
 
+RooEffResModel* 
+RooEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
+{
+  // Instantiate a clone of this resolution model representing a convolution with given
+  // basis function. The owners object name is incorporated in the clones name
+  // to avoid multiple convolution objects with the same name in complex PDF structures.
+  // 
+  // Note: The 'inBasis' formula expression must be a RooFormulaVar that encodes the formula
+  // in the title of the object and this expression must be an exact match against the
+  // implemented basis function strings (see derived class implementation of method basisCode()
+  // for those strings
+
+  // Check that primary variable of basis functions is our convolution variable  
+  if (inBasis->getParameter(0) != x.absArg()) {
+    coutE(InputArguments) << "RooEffResModel::convolution(" << GetName() << "," << this
+              << ") convolution parameter of basis function and PDF don't match" << endl
+              << "basis->findServer(0) = " << inBasis->findServer(0) << endl
+              << "x.absArg()           = " << x.absArg() << endl ;
+    return 0 ;
+  }
+
+  if (basisCode(inBasis->GetTitle())==0) {
+    coutE(InputArguments) << "RooEffResModel::convolution(" << GetName() << "," << this
+              << ") basis function '" << inBasis->GetTitle() << "' is not supported." << endl ;
+    return 0 ;
+  }
+
+  TString newName(GetName()) ;
+  newName.Append("_conv_") ;
+  newName.Append(inBasis->GetName()) ;
+  newName.Append("_[") ;
+  newName.Append(owner->GetName()) ;
+  newName.Append("]") ;
+
+  RooResolutionModel *conv = model().convolution(inBasis,owner);
+
+  TString newTitle(conv->GetTitle()) ;
+  newTitle.Append(" convoluted with basis function ") ;
+  newTitle.Append(inBasis->GetName()) ;
+  conv->SetTitle(newTitle.Data()) ;
+
+  RooEffResModel *effConv = new RooEffResModel(newName,newTitle,*conv,eff());
+  effConv->addOwnedComponents(*conv);
+  effConv->changeBasis(inBasis) ;
+  return effConv ;
+}
+
 //_____________________________________________________________________________
 Int_t RooEffResModel::basisCode(const char* name) const 
 { 
    return model().basisCode(name);
 } 
 
+
 //_____________________________________________________________________________
 Double_t RooEffResModel::evaluate() const 
 {  
     Double_t mod  = model().getVal();
-    Double_t eps  = eff().getVal();
+    // TODO: replace this by the discretized version, i.e. replace convVar by customized middle of bin...
+    //       this in order to isure valuate & analyticalIntegral are consistent (in case eff is not discretized!!!)
+    Double_t eps  = eff().getVal(); 
     return eps*mod;
 }
 

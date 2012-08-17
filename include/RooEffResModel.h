@@ -23,7 +23,7 @@ public:
   inline RooEffResModel()  { }
   RooEffResModel(const char *name, const char *title, RooResolutionModel& , RooAbsReal& );
   RooEffResModel(const RooEffResModel& other, const char* name=0);
-  virtual TObject* clone(const char* newname) const { return new RooEffResModel(*this,newname) ; }
+  virtual RooEffResModel* clone(const char* newname) const { return new RooEffResModel(*this,newname) ; }
   virtual ~RooEffResModel();
   
   virtual Int_t basisCode(const char* name) const ;
@@ -53,6 +53,8 @@ protected:
    };
 
   virtual Double_t evaluate() const ;
+  virtual RooEffResModel* convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const;
+
 
   // Pointers to our underlying components
   RooRealProxy _model;     // RooResolutionModel
