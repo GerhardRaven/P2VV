@@ -78,7 +78,8 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       Double_t thisxmin = std::max(*lo, xmin);
       Double_t thisxmax = std::min(*hi, xmax);
 
-      TString range = TString::Format("R%d_%s_%s", i,x.GetName(),parent.GetName());
+      // add eff name, as it specifies the boundaries...
+      TString range = TString::Format("R%d_%s_%s", i,x.GetName(),eff.GetName());
 
       // Add original rangeName if there is one
       if (rangeName) { 
@@ -91,8 +92,14 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       range.Append(ns._nameList);
 
       // Create a new name for the range
-      // newRange = parent->makeFPName(parent->GetName(), iset, range);
-      x.setRange(range, thisxmin, thisxmax);
+      // check if already exists and matches..
+      if (!x.hasRange(range)) {
+        x.setRange(range, thisxmin, thisxmax);
+      } else {
+        assert( x.getMin(range)==thisxmin);
+        assert( x.getMax(range)==thisxmax);
+        cout << "re-using existing range " << range << endl;
+      }
       
       intList.add(*model.createIntegral(iset, range));
 
