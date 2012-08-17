@@ -34,17 +34,13 @@ RooEffResModel::CacheElem::~CacheElem()
 {
    delete _I;
    for (std::vector<RooCustomizer*>::const_iterator it = _customizers.begin(),
-           end = _customizers.end(); it != end; ++it) {
-      delete *it;
-   }
+           end = _customizers.end(); it != end; ++it) delete *it;
 }
 
 RooArgList RooEffResModel::CacheElem::containedArgs(Action) 
 {
    // Return list of all RooAbsArgs in cache element
-   RooArgList l;
-   l.add(*_I);
-   return l;
+   return RooArgList(*_I);
 }
 
 RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArgSet& iset, const TNamed* rangeName )
@@ -77,6 +73,8 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       Double_t thisxmin = std::max(*lo, xmin);
       Double_t thisxmax = std::min(*hi, xmax);
 
+      // move range name generation (with the exception of the R%d prefix)
+      // out of the loop...
       // add eff name, as it specifies the boundaries...
       TString trange = TString::Format("R%d_%s_%s", i,x.GetName(),eff.GetName());
 
@@ -86,8 +84,8 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
             trange.Append( RooNameReg::str(rangeName) );
       }
 
-      RooNameSet ns(iset);
       trange.Append("_I_");
+      RooNameSet ns(iset);
       trange.Append(ns._nameList);
 
 
@@ -110,8 +108,9 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       cv->setVal((thisxmin + thisxmax) / 2.);
       cv->setConstant(true);
       customizer->replaceArg(x, *cv);
-      // leak cv??
-      effList.add( *customizer->build(kFALSE) );
+      RooAbsArg *ceff = customizer->build(kFALSE);
+      ceff->addOwnedComponents(*cv);
+      effList.add( *ceff );
       _customizers.push_back(customizer);
    }
    TString iName = TString::Format("%s_I_%s", parent.GetName(),x.GetName());
