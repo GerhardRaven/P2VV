@@ -1648,6 +1648,21 @@ class AddModel(ResolutionModel) :
         self._init(name,'RooAddModel')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
+class EffResModel(ResolutionModel) :
+    def __init__(self,**kwargs) :
+        #TODO: forward conditionalObservables and ExternalConstraints from dependents...
+        # construct factory string on the fly...
+        eff = kwargs.pop('Efficiency')
+        res = kwargs.pop('ResolutionModel')
+        name = kwargs.pop('Name', '%s_x_%s' % ( eff.GetName() , res.GetName() ) )
+        __check_name_syntax__(name)
+        self._declare('EffResModel::%s(%s,%s)'%(name,res.GetName(),eff.GetName()))
+        self._init(name,'RooEffResModel')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        self.setConditionalObservables( self.ConditionalObservables() | eff.ConditionalObservables() | res.ConditionalObservables() )
+        self.setExternalConstraints( list( set(self.ExternalConstraints()) | set(eff.ExternalConstraints()) | set(res.ExternalConstraints()) ) )
+
+
 
 class Component(object):
     _d = {}
