@@ -33,7 +33,6 @@ ClassImp(RooEffResModel)
 RooEffResModel::CacheElem::~CacheElem()
 {
    delete _I;
-   delete _clone;
    for (std::vector<RooCustomizer*>::const_iterator it = _customizers.begin(),
            end = _customizers.end(); it != end; ++it) {
       delete *it;
@@ -43,13 +42,13 @@ RooEffResModel::CacheElem::~CacheElem()
 RooArgList RooEffResModel::CacheElem::containedArgs(Action) 
 {
    // Return list of all RooAbsArgs in cache element
-   RooArgList l(_intObs);
+   RooArgList l;
    l.add(*_I);
-   l.add(*_clone);
    return l;
 }
 
 RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArgSet& iset, const TNamed* rangeName )
+    : _I(0)
 {
    RooRealVar& x = parent.convVar(); // binboundaries not const...
    const RooAbsReal& eff = parent.eff();
@@ -79,17 +78,21 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       Double_t thisxmax = std::min(*hi, xmax);
 
       // add eff name, as it specifies the boundaries...
-      TString range = TString::Format("R%d_%s_%s", i,x.GetName(),eff.GetName());
+      TString trange = TString::Format("R%d_%s_%s", i,x.GetName(),eff.GetName());
 
       // Add original rangeName if there is one
       if (rangeName) { 
-            range.Append( "_" );
-            range.Append( RooNameReg::str(rangeName) );
+            trange.Append( "_" );
+            trange.Append( RooNameReg::str(rangeName) );
       }
 
       RooNameSet ns(iset);
-      range.Append("_I_");
-      range.Append(ns._nameList);
+      trange.Append("_I_");
+      trange.Append(ns._nameList);
+
+
+      const char *range = RooNameReg::str( RooNameReg::ptr( trange.Data() ) );
+
 
       // Create a new name for the range
       // check if already exists and matches..
@@ -98,13 +101,12 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       } else {
         assert( x.getMin(range)==thisxmin);
         assert( x.getMax(range)==thisxmax);
-        cout << "re-using existing range " << range << endl;
       }
       
       intList.add(*model.createIntegral(iset, range));
 
       // create RooAbsReal for (average) efficiency in this range
-      RooCustomizer* customizer = new RooCustomizer(eff, (range+"_customizer").Data());
+      RooCustomizer* customizer = new RooCustomizer(eff, (trange+"_customizer").Data());
       RooRealVar* cv = static_cast<RooRealVar*>(x.clone( TString(x.GetName()) + "_" + range) );
       cv->setVal((thisxmin + thisxmax) / 2.);
       cv->setConstant(true);
@@ -113,9 +115,7 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       effList.add( *customizer->build(kFALSE) );
       _customizers.push_back(customizer);
    }
-   // TODO: create unique name
-   TString iName( parent.GetName() );
-   iName += "_integral";
+   TString iName = TString::Format("%s_I_%s", parent.GetName(),x.GetName());
    _I = new RooAddition(iName, iName, effList, intList, kTRUE);
 }
 

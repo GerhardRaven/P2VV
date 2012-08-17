@@ -41,18 +41,13 @@ protected:
       virtual ~CacheElem();
 
       virtual RooArgList containedArgs(Action) ;
-      Double_t getVal() { return _I->getVal(_intObs); }
-      void setClone(RooEffResModel* clone) { _clone = clone; }
-      RooEffResModel* clone() { return _clone; }
-      RooArgSet& intObs() { return _intObs; }
+      Double_t getVal() { return _I->getVal(); }
 
       const RooAbsReal* integral() const { return _I; }
 
    private:
       friend class RooEffResModel;
       // Payload
-      RooArgSet _intObs ;
-      RooEffResModel* _clone;
       RooAbsReal* _I;
       std::vector<RooCustomizer*> _customizers;
    };
