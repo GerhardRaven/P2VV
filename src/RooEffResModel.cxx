@@ -78,7 +78,7 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
       Double_t thisxmin = std::max(*lo, xmin);
       Double_t thisxmax = std::min(*hi, xmax);
 
-      TString range = TString::Format("R%d_%s", i,x.GetName());
+      TString range = TString::Format("R%d_%s_%s", i,x.GetName(),parent.GetName());
 
       // Add original rangeName if there is one
       if (rangeName) { 
