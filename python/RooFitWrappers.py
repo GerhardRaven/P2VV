@@ -837,10 +837,8 @@ class ProdPdf(Pdf):
         # PDFs which are dependent on a conditional observable which appears in the toplevel...
         print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
         # create RooArgSet of conditional observables
-        cset = RooArgSet()
-        for c in conds : cset.add( __dref__(c) )
+        cset = RooArgSet(__dref__(c) for c in conds )
         for pdf in PDFs :
-            print 'PDF = %s' % pdf.GetName()
             for c in pdf.getComponents() :
                 if c.getAttribute('NOCacheAndTrack') : continue
                 depset = c.getObservables( cset )
@@ -1130,7 +1128,6 @@ class MultiHistEfficiency(Pdf):
         from copy import copy
         from ROOT import RooBinning        
         from ROOT import RooArgList
-        from ROOT import RooAvEffConstraint
 
         obs_set = RooArgSet()
         for o in self.__original.Observables().intersection(self.__original.ConditionalObservables()):
@@ -1177,13 +1174,12 @@ class MultiHistEfficiency(Pdf):
 
                     self.__shapes[(shape, effProd)] = self.__observable
 
-                    heights_list = RooArgList()
-                    for h in heights:
-                        heights_list.add(__dref__(h))
+                    heights_list = RooArgList(__dref__(h) for h in heights)
                     av_name = "%s_%s_average" % (category, state)
                     value, error = state_info['average']
                     mean  = RealVar(Name = av_name + '_constraint_mean', Value = value, Constant = True)
                     sigma = RealVar(Name = av_name + '_constraint_sigma', Value = error, Constant = True)
+                    from ROOT import RooAvEffConstraint
                     constraint = Pdf(Name = av_name + '_constraint', Type = RooAvEffConstraint,
                                      Parameters = [self.__observable, effProd, mean, sigma])
                     self.__constraints.append(constraint)
@@ -1501,9 +1497,8 @@ class BinnedPdf( Pdf ) :
 
             # build list of base categories
             from ROOT import RooArgList
-            varList = RooArgList()
             categories = kwargs.pop('Categories')
-            for var in categories : varList.add(__dref__(var))
+            varList = RooArgList(__dref__(var)) for var in categories)
 
             if hasattr( kwargs['Coefficients'][0], '__iter__' ) :
                 # coefficients for different variables factorize
@@ -1514,9 +1509,7 @@ class BinnedPdf( Pdf ) :
                 from ROOT import TObjArray, RooArgList
                 coefLists = TObjArray()
                 for coefficients in kwargs.pop('Coefficients') :
-                    coefList = RooArgList()
-                    for coef in coefficients : coefList.add(__dref__(coef))
-                    coefLists.Add(coefList)
+                    coefLists.Add(RooArgList( __dref__(coef) for coef in coefficients ))
 
                 from ROOT import RooBinnedPdf
                 self._addObject( RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefLists
@@ -1526,8 +1519,7 @@ class BinnedPdf( Pdf ) :
 
                 # build coefficients list
                 from ROOT import RooArgList
-                coefList = RooArgList()
-                for coef in kwargs.pop('Coefficients') : coefList.add(__dref__(coef))
+                coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') ) 
 
                 from ROOT import RooBinnedPdf
                 self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name'], varList, coefList ) )
@@ -1551,8 +1543,7 @@ class BinnedPdf( Pdf ) :
 
                 # build coefficients list
                 from ROOT import RooArgList
-                coefList = RooArgList()
-                for coef in kwargs.pop('Coefficients') : coefList.add(__dref__(coef))
+                coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
 
                 from ROOT import RooBinnedPdf
                 self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
@@ -1565,9 +1556,8 @@ class BinnedPdf( Pdf ) :
 
             # build list of base variables
             from ROOT import RooArgList
-            varList = RooArgList()
             observables = kwargs.pop('Observables')
-            for var in observables : varList.add(__dref__(var))
+            varList = RooArgList(__dref__(var) for var in observables )
 
             # build list of binning names
             assert len(kwargs['Binnings']) == len(observables),\
@@ -1596,9 +1586,7 @@ class BinnedPdf( Pdf ) :
                     from ROOT import TObjArray, RooArgList
                     coefLists = TObjArray()
                     for coefficients in kwargs.pop('Coefficients') :
-                        coefList = RooArgList()
-                        for coef in coefficients : coefList.add(__dref__(coef))
-                        coefLists.Add(coefList)
+                        coefLists.Add(RooArgList(__dref__(coef) for coef in coefficients))
 
                     from ROOT import RooBinnedPdf
                     self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
@@ -1611,8 +1599,7 @@ class BinnedPdf( Pdf ) :
 
                     # build coefficients list
                     from ROOT import RooArgList
-                    coefList = RooArgList()
-                    for coef in kwargs.pop('Coefficients') : coefList.add(__dref__(coef))
+                    coefList = RooArgList(__dref__(coef) for coef in kwargs.pop('Coefficients') )
 
                     from ROOT import RooBinnedPdf
                     self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
