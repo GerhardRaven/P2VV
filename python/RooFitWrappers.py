@@ -1498,7 +1498,7 @@ class BinnedPdf( Pdf ) :
             # build list of base categories
             from ROOT import RooArgList
             categories = kwargs.pop('Categories')
-            varList = RooArgList(__dref__(var)) for var in categories)
+            varList = RooArgList(__dref__(var) for var in categories)
 
             if hasattr( kwargs['Coefficients'][0], '__iter__' ) :
                 # coefficients for different variables factorize
