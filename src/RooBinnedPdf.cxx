@@ -769,23 +769,30 @@ Double_t RooBinnedPdf::evaluateCoef() const
   Int_t binPos     = 0;
   Int_t coefPosFac = 1;
 
+  assert(_numCats==_baseCatsList.getSize());
   // loop over base categories
-  for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+  RooFIter catIter = _baseCatsList.fwdIterator();
+  RooFIter baseIter = _baseVarsList.fwdIterator();
+  int icatIter = -1;
+  RooAbsCategory* icat(0);
+  while((icat=(RooAbsCategory*)catIter.next())) {
+    ++icatIter;
     // get position of coefficient
-    const std::map<Int_t, Int_t>& indexMap = _indexPositions[catIter];
-    Int_t index = static_cast<RooAbsCategory*>(_baseCatsList.at(catIter))->getIndex();
+    const std::map<Int_t, Int_t>& indexMap = _indexPositions[icatIter];
+    Int_t index = icat->getIndex();
     std::map<Int_t, Int_t>::const_iterator it = indexMap.find(index);
     assert(it != indexMap.end());
     Int_t cPos = it->second;
 
     // update position of bin
     binPos += coefPosFac * cPos;
-    coefPosFac *= ((RooAbsCategory*)_baseCatsList.at(catIter))->numTypes();
+    coefPosFac *= icat->numTypes();
 
     // divide by bin widths if coefficients are bin integrals
-    if (_continuousBase && _binIntegralCoefs)
-      value /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
-          ->getBinning(_binningNames[catIter]).binWidth(cPos);
+    if (_continuousBase && _binIntegralCoefs) {
+      RooAbsRealLValue* baseVar = (RooAbsRealLValue*)baseIter.next();
+      value /= baseVar->getBinning(_binningNames[icatIter]).binWidth(cPos);
+    }
   }
 
   RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(0);
@@ -809,10 +816,11 @@ Double_t RooBinnedPdf::evaluateCoef() const
 
   // loop over coefficients and calculate sum
   Double_t coefSum = 0.;
-  for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
+  RooFIter coefIter = coefList->fwdIterator();
+  RooAbsReal *arg(0);
+  while ((arg=(RooAbsReal*)coefIter.next())) {
     // get coefficient's value
-    Double_t cVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
-
+    Double_t cVal = arg->getVal();
     // make negative values equal to zero, add positive values to sum
     if (cVal > 0) coefSum += cVal;
   }
@@ -1024,6 +1032,7 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
     RooBinningCategory* cat = new RooBinningCategory(catName, catName, *var, bins);
     _baseCatsList.addOwned(*cat);
   }
+  assert(_baseVarsList.getSize()==_numCats);
 
   return _baseCatsList.getSize();
 }
