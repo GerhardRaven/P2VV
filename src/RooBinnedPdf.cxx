@@ -909,10 +909,11 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
     // loop over specified coefficients (#category types - 1)
     Double_t coefSum = 0.;
     RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(catIter);
-    for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
+    RooFIter coefIter = coefList->fwdIterator();
+    RooAbsReal *arg(0);
+    while ((arg=(RooAbsReal*)coefIter.next())) {
       // get coefficient's value
-      Double_t cVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
-
+      Double_t cVal = arg->getVal();
       // make negative values equal to zero, add positive values to sum
       if (cVal > 0) coefSum += cVal;
     }
