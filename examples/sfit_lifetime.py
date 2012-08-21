@@ -26,9 +26,10 @@ excl_biased = Category('triggerDecisionBiasedExcl', States = {'ExclBiased' : 1, 
 hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
+hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, mpsi, st, excl_biased, hlt1_biased, selected, hlt1_unbiased, hlt2_biased]
+observables = [t, m, mpsi, st, excl_biased, hlt1_biased, selected, hlt1_unbiased, hlt2_biased, hlt2_unbiased]
 project_vars = [st, excl_biased]
 
 # now build the actual signal PDF...
@@ -100,7 +101,7 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && (hlt1_unbiased == 1 || hlt1_biased == 1) && hlt2_biased == 1)',
+data = readData(input_file, tree_name, cuts = '(sel == 1 && (hlt1_unbiased == 1 || hlt1_biased == 1) && (hlt2_unbiased == 1 || hlt2_biased == 1))',
                 NTuple = False, observables = observables)
 
 # Time acceptance
@@ -132,8 +133,8 @@ mass_pdf.fitTo(data, **fitOpts)
 # Plot mass pdf
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
-canvas = TCanvas('mass_canvas', 'mass_canvas', 1000, 500)
-obs = [m, mpsi]
+canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
+obs = [m]
 for (p,o) in zip(canvas.pads(len(obs)), obs):
     from P2VVGeneralUtils import plot
     pdfOpts  = dict()
@@ -146,6 +147,7 @@ for (p,o) in zip(canvas.pads(len(obs)), obs):
                           , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                           }
          )
+assert(False)
 
 for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')

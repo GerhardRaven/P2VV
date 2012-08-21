@@ -28,6 +28,8 @@ if not root_file:
     print 'Error: could not open input file: %s' % input_filename
     sys.exit(-2)
 
+values = {}
+
 data = root_file.Get('result_data')
 result_params = data.get()
 pull_vars = []
@@ -45,6 +47,7 @@ while gp:
 
     # Make pull var
     name = gp.GetName() + '_pull'
+
     _pull = RooFormulaVar(name, name, '(@0 - %f) / @1' % gp.getVal(), RooArgList(rp, error))
     pull = data.addColumn(_pull)
     pull_vars.append(pull)
@@ -69,7 +72,7 @@ from ROOT import TCanvas
 hsize = 300
 vsize = 300
 from math import sqrt
-l = len(plot_vars)
+l = len(plot_vars) - 1
 nrows = int(sqrt(l))
 ncolumns = 1
 if nrows == 1:
@@ -95,6 +98,9 @@ def make_gaus(pv):
     name = pv.GetName()
     mean = RooRealVar('mean', '#mu', 0., -5, 5)
     sigma = RooRealVar('sigma', '#sigma', 1., 0.1, 3)
+
+    values[pv.GetName()] = (mean, sigma)
+
     pull_pdf = RooGaussian(name + '_gaus', name + '_gaus', pv, mean, sigma)
     SetOwnership(mean, False)
     SetOwnership(sigma, False)
@@ -115,5 +121,7 @@ for i, pv in enumerate(plot_vars):
         pull_pdf.plotOn(frame)
         pull_pdf.paramOn(frame)
     frames[pv.GetName()] = frame
+    if pv.GetName().find('sig_tau') != -1:
+        continue
     frame.Draw()
 canvas.Update()
