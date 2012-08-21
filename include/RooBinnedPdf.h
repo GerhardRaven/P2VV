@@ -83,6 +83,12 @@ public:
 
   Bool_t continuousBase() {return _continuousBase;}
 
+  Bool_t forceUnitIntegral() {return _forceUnitIntegral;}
+  void   setForceUnitIntegral(Bool_t force = kTRUE)
+  {
+    _forceUnitIntegral = force;
+  }
+
   Bool_t binIntegralCoefs() {return _binIntegralCoefs;}
   void   setBinIntegralCoefs(Bool_t integralCoefs = kTRUE)
   {
@@ -133,6 +139,7 @@ private:
   std::vector<Bool_t>                   _calcCoefZeros;
 
   Bool_t _continuousBase;
+  Bool_t _forceUnitIntegral;
   Bool_t _binIntegralCoefs;
   Bool_t _ignoreFirstBin;
 

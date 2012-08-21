@@ -12,7 +12,10 @@ p2vv_dict.*
 *.eps
 *.pdf
 *.tex
+*.toc
+*.out
 *.txt
+.*.swp
 #*
 .build/*
 build/*

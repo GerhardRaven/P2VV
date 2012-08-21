@@ -21,6 +21,8 @@
 #include "RooMultiHistEfficiency.h"
 #include "RooEfficiencyBin.h"
 #include "RooAvEffConstraint.h"
+#include "RooCorrectedSWeight.h"
+#include "RooEffResModel.h"
 
 #include <map>
 #include <string>

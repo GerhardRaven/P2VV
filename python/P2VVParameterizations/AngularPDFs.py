@@ -173,7 +173,7 @@ class Uniform_Angles( _util_parse_mixin ) :
         return self._pdf        
     def __init__( self, angles, **kwargs ) :
         from RooFitWrappers import UniformPdf
-        self._pdf =  UniformPdf('Uniform_AnglesPdf', Arguments = ( angles['phi'],angles['ctheta'],angles['cpsi'] ) )
+        self._pdf =  UniformPdf(Name = kwargs.pop('Name','Uniform_AnglesPdf'), Arguments = ( angles['phi'],angles['ctheta'],angles['cpsi'] ) )
         for (k,v) in kwargs.iteritems() :
             setattr(self,'_'+k,v)
 

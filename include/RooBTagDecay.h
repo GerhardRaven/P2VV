@@ -21,6 +21,7 @@
 #include "RooRealProxy.h"
 #include "RooCategoryProxy.h"
 #include "RooListProxy.h"
+#include "RooRealVar.h"
 
 class RooCategory;
 class RooRealVar;
@@ -114,6 +115,7 @@ public:
   Double_t tagCatCoef(Int_t& cat0, Int_t&cat1) const;
   RooArgSet* coefVars(Int_t coefIdx) const;
 
+  const char *pruneRangeName(const char* rangeName, const RooArgSet& vars) const;
   Int_t getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
       RooArgSet& analVars, const char* rangeName = 0) const;
   Double_t coefAnalyticalIntegral(Int_t coef, Int_t code,
@@ -174,6 +176,7 @@ protected:
   RooRealProxy _cosCoef;
   RooRealProxy _sinCoef;
 
+
   RooListProxy _createdVars;
 
   mutable std::map<Int_t, Int_t> _tagCat0Positions; //!
@@ -185,6 +188,16 @@ protected:
   Int_t _sinhBasis;
   Int_t _cosBasis;
   Int_t _sinBasis;
+
+  const RooAbsReal& coefArg(Int_t coef) const {
+    if (coef == _coshBasis)  return _coshCoef.arg();
+    if (coef == _sinhBasis)  return _sinhCoef.arg();
+    if (coef == _cosBasis )  return  _cosCoef.arg();
+    if (coef == _sinBasis )  return  _sinCoef.arg();
+    throw std::string("Unknown coefficient");
+    static RooRealVar dummy; // never reached...
+    return dummy;
+  }
 
   DecayType    _decayType;
   Int_t        _tagCat0Type;

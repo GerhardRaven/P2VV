@@ -30,6 +30,8 @@
 #pragma link C++ class MultiHistEntry+;
 #pragma link C++ class RooEfficiencyBin+;
 #pragma link C++ class RooAvEffConstraint+;
+#pragma link C++ class RooCorrectedSWeight+;
+#pragma link C++ class RooEffResModel+;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;

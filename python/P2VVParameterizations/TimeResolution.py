@@ -8,6 +8,8 @@
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin
 
+from ROOT import RooNumber
+RooInf = RooNumber.infinity()
 
 class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin ):
     def __init__( self, **kwargs ) : 
@@ -64,9 +66,10 @@ class LP2011_TimeResolution ( TimeResolution ) :
         namePF = kwargs.pop( 'ResolutionNamePrefix', '' )
 
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
+        from ROOT import RooNumber
         self._parseArg('time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ))
         self._timeResMu = self._parseArg('%stimeResMu' % namePF, kwargs, Value = -0.0027)
-        self._timeResSF = self._parseArg('%stimeResSF' % namePF, kwargs, Value = 1.0, MinMax = ( 0.5, 5. ))
+        self._timeResSF = self._parseArg('%stimeResSF' % namePF, kwargs, Value = 1.0, Error = 0.04, MinMax = ( -RooInf, RooInf ) )
 
         sigmas = [ ( 3, 0.513  ), ( 2, 0.0853 ), ( 1, 0.0434 ) ]
         fracs  = [ ( 3, 0.0017 ), ( 2, 0.165 ) ]
@@ -79,12 +82,15 @@ class LP2011_TimeResolution ( TimeResolution ) :
             from RooFitWrappers import Pdf
             constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._timeResSF
-                                                    , ConstVar( Name = '%stres_SF_constraint_mean' % namePF,  Value = 1.00 )
-                                                    , ConstVar( Name = '%stres_SF_constraint_sigma' % namePF, Value = 0.04 )
+                                                    , ConstVar(  Name = '%stres_SF_constraint_mean' % namePF
+                                                               , Value = self._timeResSF.getVal()
+                                                              )
+                                                    , ConstVar(  Name = '%stres_SF_constraint_sigma' % namePF
+                                                               , Value = self._timeResSF.getError()
+                                                              )
                                                    ]
                                    )
                              )
-            self._timeResSF['Error'] = 0.04
 
         self._check_extraneous_kw( kwargs )
         Name = kwargs.pop('Name', 'timeResModelLP2011')
@@ -106,11 +112,12 @@ class LP2011_TimeResolution ( TimeResolution ) :
 class Moriond2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
+        from ROOT import RooNumber
         self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._parseArg( 'timeResMU', kwargs, Value = 0.0, MinMax = ( -0.5,0.5), Constant = True )
+        self._parseArg( 'timeResMU', kwargs, Value = 0.0, Constant = True )
         self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
         self._parseArg( 'timeResMuSF', kwargs, Value = 1, Constant = True)
-        self._parseArg( 'timeResSF', kwargs, Value = 1.45, MinMax = ( 1., 2. ))
+        self._parseArg( 'timeResSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( -RooInf, RooInf ) )
 
         constraints = []
         if kwargs.pop( 'timeResSFConstraint', None ) :
@@ -118,12 +125,11 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
             from RooFitWrappers import Pdf
             constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._timeResSF
-                                                    , ConstVar( Name = 'tres_SF_constraint_mean',  Value = 1.45 )
-                                                    , ConstVar( Name = 'tres_SF_constraint_sigma', Value = 0.06 )
+                                                    , ConstVar( Name = 'tres_SF_constraint_mean',  Value = self._timeResSF.getVal()   )
+                                                    , ConstVar( Name = 'tres_SF_constraint_sigma', Value = self._timeResSF.getError() )
                                                    ]
                                    )
                              )
-            self._timeResSF['Error'] = 0.06
 
         Name =  kwargs.pop('Name', 'timeResModelMoriond2012')
         cache = kwargs.pop('Cache', True)

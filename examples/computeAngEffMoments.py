@@ -12,8 +12,8 @@ transAngles = False
 tResModel   = ''
 trigger     = ''
 
-momentsFile = 'effMoments' + ( 'Trans' if transAngles else 'Hel' )
-plotsFile   = 'effMoments' + ( 'Trans' if transAngles else 'Hel' ) + '.ps'
+momentsFile = '%s_UB_UT_trueTime_BkgCat050_KK30' + ( 'trans' if transAngles else 'hel' )
+plotsFile   = '%s_UB_UT_trueTime_BkgCat050_KK30' + ( 'trans' if transAngles else 'hel' ) + '.ps'
 
 dataSetName = 'DecayTree'
 dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20120606.root'
@@ -215,15 +215,15 @@ basisMoments.appendPYList( angleFuncs.angles, indices, PDF = pdf, NormSet = norm
 
 if readMoments :
     # read moments from file
-    physMoments.read(  momentsFile + 'Phys'  )
-    basisMoments.read( momentsFile + 'Basis' )
+    physMoments.read(  momentsFile + '_Phys'  )
+    basisMoments.read( momentsFile + '_Basis' )
 else :
     # compute moments from data set
     physMoments.compute(data)
     basisMoments.compute(data)
 
-    physMoments.write(  momentsFile + 'Phys'  )
-    basisMoments.write( momentsFile + 'Basis' )
+    physMoments.write(  momentsFile + '_Phys'  )
+    basisMoments.write( momentsFile + '_Basis' )
 
 # print moments to screen
 physMoments.Print(  Scale = 1. / 16. / sqrt(pi)                       )
@@ -241,7 +241,7 @@ if multPdfEff :
   basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles \
                                                  else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
                                  )
-  basisMomentsSignif.read(momentsFile + 'Basis')
+  basisMomentsSignif.read(momentsFile + '_Basis')
   basisMomentsSignif.Print( Scale = 1. / 2. / sqrt(pi) )
 
   effSignifPdf = basisMomentsSignif.multiplyPDFWithEff( pdf, Name = 'sig_t_angles_tagCat_iTag_x_EffSignif', EffName = 'effSignif' )

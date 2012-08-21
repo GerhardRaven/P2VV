@@ -144,7 +144,7 @@ RooEffHistProd::CacheElem::CacheElem(const RooEffHistProd* parent, const RooArgS
          Double_t thisxmin = std::max(low,  xmin);
          Double_t thisxmax = std::min(high, xmax);
 
-         TString range = TString::Format("_I_Range_%d", i);
+         TString range = TString::Format("R_%d", i);
          // Add original rangeName if there is one
          if (0 != newRange) range.Replace(3, 8, newRange);
       
@@ -337,11 +337,13 @@ Double_t RooEffHistProd::evaluate() const
 
 //_____________________________________________________________________________
 const char* RooEffHistProd::makeFPName(const TString& prefix,const RooArgSet& iset, 
-                                       const RooArgSet* nset, const TString& postfix) const
+                                       const RooArgSet* nset, const TString& binName) const
 {
    static TString pname;
-   pname = prefix;
-   if (prefix.Sizeof()) pname.Append("_");
+   pname = binName;
+   if (pname.Sizeof()) pname.Append("_");
+   pname.Append( prefix );
+   if (pname.Sizeof()) pname.Append("_");
    std::auto_ptr<TIterator> i(iset.createIterator());
    RooAbsArg *arg;
    Bool_t first(kTRUE);
@@ -367,7 +369,6 @@ const char* RooEffHistProd::makeFPName(const TString& prefix,const RooArgSet& is
          pname.Append(arg->GetName());
       }
    }
-   pname.Append(postfix);
    return RooNameReg::str(RooNameReg::ptr(pname.Data()));
 }
 

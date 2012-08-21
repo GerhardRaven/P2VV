@@ -68,7 +68,6 @@ public:
 
 private:
 
-   MultiHistEntry& operator=(const MultiHistEntry& other);
 
    std::map<RooAbsCategory*, std::string> m_rawCats;
    RooEffHistProd* m_rawEff; //!
