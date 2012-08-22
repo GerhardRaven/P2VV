@@ -23,6 +23,8 @@
 #include "RooAvEffConstraint.h"
 #include "RooCorrectedSWeight.h"
 #include "RooEffResModel.h"
+#include "RooMultiEffResModel.h"
+#include "MultiHistEntry.h"
 
 #include <map>
 #include <string>
@@ -33,8 +35,13 @@ struct Instantiations {
    std::map<RooAbsCategory*, std::string>   _i00;
    std::map<RooCategoryProxy*, std::string> _i01;
    std::vector<std::pair<double, TString> > _i02;
-   std::map<Int_t, MultiHistEntry*>         _i03;
-   std::pair<Int_t, MultiHistEntry*>        _i04;
+
+
+   std::map<Int_t, MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency>*>         _i03;
+   std::pair<Int_t, MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency>*>        _i04;
+
+   std::map<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>         _i031;
+   std::pair<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>        _i041;
 
    std::pair<RooAbsCategory*, std::string>  _i05;
 
@@ -42,11 +49,17 @@ struct Instantiations {
    std::pair<RooRealProxy*,bool> _i07;
    std::map<RooAbsReal*, bool>   _i08;
    std::pair<RooAbsReal*, bool>  _i09;
-   std::vector<MultiHistEntry> _i10;
 
-   std::map<int, MultiHistEntry*>::iterator _i11;
+   std::pair<Double_t, TString> _i10;
+   std::pair<RooCategoryProxy*, std::string> _i11;
 
-   std::pair<Double_t, TString> _i12;
-   std::pair<RooCategoryProxy*, std::string> _i13;
+   MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency> _i12;
+   std::vector<MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency> > _i13;
+   std::map<int, MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency>*>::iterator _i14;
+
+   MultiHistEntry<RooEffResModel, RooMultiEffResModel> _i15;
+   std::vector<MultiHistEntry<RooEffResModel, RooMultiEffResModel> > _i16;
+   std::map<int, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>::iterator _i17;
+
 };
 #endif // P2VV_H

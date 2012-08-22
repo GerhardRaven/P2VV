@@ -806,7 +806,7 @@ class Pdf(RooObject):
             name = eff.GetName() + '_X_' + self.GetName()
             return EffProd(name, Original = self, Efficiency = eff)
         elif isinstance(eff, dict):
-            name = eff.pop('Name') + '_X_' + self.GetName()
+            name = eff.get('Name') + '_X_' + self.GetName()
             return MultiHistEfficiency(Name = name, Original = self, **eff)
 
 class ProdPdf(Pdf):
@@ -1253,7 +1253,8 @@ class MultiHistEfficiency(Pdf):
         from ROOT import MultiHistEntry
         from ROOT import RooEfficiencyBin
 
-        efficiency_entries = std.vector("MultiHistEntry")()
+        MultiHistEntry = MultiHistEntry('RooEffHistProd', 'RooMultiHistEfficiency')
+        efficiency_entries = std.vector(MultiHistEntry)()
 
         for categories, relative_efficiency in relative.iteritems():
             # Make EfficiencyBins for the bin values

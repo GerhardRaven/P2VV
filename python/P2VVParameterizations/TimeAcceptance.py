@@ -15,6 +15,7 @@ class TimeAcceptance ( _util_parse_mixin, _util_extConstraints_mixin ) :
 
         _util_extConstraints_mixin.__init__( self, kwargs )
         self._check_extraneous_kw(kwargs)
+        print self.acceptance()
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
     def acceptance( self ) : return self._acceptance
@@ -75,7 +76,6 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
 class Paper2012_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
         from ROOT import TFile
-        from RooFitWrappers import HistFunc
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
                        Value = 0., MinMax = (0.2, 14))
         input_file = kwargs.pop('Input', 'acceptance.root')

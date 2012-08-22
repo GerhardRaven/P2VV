@@ -82,7 +82,7 @@ RooMultiHistEfficiency::CacheElem::CacheElem(const HistEntries& entries,
    for(HistEntries::const_iterator it = entries.begin(), end = entries.end();
        it != end; ++it) {
       Int_t index = it->first;
-      const MultiHistEntry* entry = it->second;
+      const HistEntry* entry = it->second;
       if (cats && iset.getSize() == categories.getSize()) {
          stringstream s;
          string name;
@@ -90,7 +90,7 @@ RooMultiHistEfficiency::CacheElem::CacheElem(const HistEntries& entries,
          s >> name;
          _I.insert(make_pair(index, new RooConstVar(name.c_str(), name.c_str(), 1.)));
       } else {
-         RooAbsReal* I = entry->effProd()->createIntegral(observables, rangeName);
+         RooAbsReal* I = entry->efficiency()->createIntegral(observables, rangeName);
          _I.insert(make_pair(index, I));
       }
    }
@@ -130,27 +130,24 @@ RooMultiHistEfficiency::CacheElem::~CacheElem()
 
 //_____________________________________________________________________________
 RooMultiHistEfficiency::RooMultiHistEfficiency
-(const char *name, const char *title, std::vector<MultiHistEntry> entries) :
-   RooAbsPdf(name, title),
-   _binboundaries(0),
-   _prodGenCode(0),
-   _super(0),
-   _cacheMgr(this, 10)
-{  
-   // Construct an N+1 dimensional efficiency p.d.f from an N-dimensional efficiency
-   // function and a category cat with two states (0,1) that indicate if a given
-   // event should be counted as rejected or accepted respectively
-   
+(const char *name, const char *title, std::vector<HistEntry*> entries)
+   : RooAbsPdf(name, title),
+     _binboundaries(0),
+     _prodGenCode(0),
+     _super(0),
+     _cacheMgr(this, 10)
+{
    RooArgSet observables;
    RooArgSet categories;
-   for(std::vector<MultiHistEntry>::const_iterator it = entries.begin(),
+   for(std::vector<HistEntry*>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
+      HistEntry* entry = *it;
       if (observables.getSize() == 0) {
-         observables.add(*(it->effProd()->observables()));
-         categories.add(it->categories());
+         observables.add(*(entry->efficiency()->observables()));
+         categories.add(entry->categories());
       } else {
-         assert(observables.equals(*(it->effProd()->observables())));
-         assert(categories.equals(it->categories()));
+         assert(observables.equals(*(entry->efficiency()->observables())));
+         assert(categories.equals(entry->categories()));
       }
    }
    
@@ -159,9 +156,9 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
 
    // For the binnings, we just assume that they are "matched" by the user.
    unsigned int most = 0;
-   for(std::vector<MultiHistEntry>::const_iterator it = entries.begin(),
+   for(std::vector<HistEntry*>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
-      RooAbsReal* eff = it->effProd()->efficiency();
+      RooAbsReal* eff = (*it)->efficiency()->efficiency();
       std::auto_ptr<BinBoundaries> bounds(eff->binBoundaries(*x, x->getMin(), x->getMax()));
       if (!bounds.get()) {
          continue;
@@ -185,18 +182,18 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
    typedef std::map<RooAbsCategory*, std::string> categories_t;
    categories_t signal;
 
-   std::vector<MultiHistEntry*> ownedEntries;
-   for(std::vector<MultiHistEntry>::const_iterator it = entries.begin(),
+   std::vector<HistEntry*> ownedEntries;
+   for(std::vector<HistEntry*>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
-      MultiHistEntry* entry = new MultiHistEntry(*it);
+      HistEntry* entry = new HistEntry(**it);
       entry->setParent(this);
       ownedEntries.push_back(entry);
    }
    TString current = _super->getLabel();
 
-   for(std::vector<MultiHistEntry*>::const_iterator it = ownedEntries.begin(),
+   for(std::vector<HistEntry*>::const_iterator it = ownedEntries.begin(),
           end = ownedEntries.end(); it != end; ++it) {
-      MultiHistEntry* entry = *it;
+      HistEntry* entry = *it;
       entry->select();
       Int_t index = _super->getIndex();
       std::pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
@@ -207,13 +204,13 @@ RooMultiHistEfficiency::RooMultiHistEfficiency
 }
 
 //_____________________________________________________________________________
-RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name) :
-   RooAbsPdf(other, name),
-   _intVals(other._intVals),
-   _prodGenObs(other._prodGenObs),
-   _prodGenCode(other._prodGenCode),
-   _levels(other._levels),
-   _cacheMgr(other._cacheMgr,this)
+RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name)
+   : RooAbsPdf(other, name),
+     _intVals(other._intVals),
+     _prodGenObs(other._prodGenObs),
+     _prodGenCode(other._prodGenCode),
+     _levels(other._levels),
+     _cacheMgr(other._cacheMgr,this)
 {
    // Copy constructor
    _binboundaries = new BinBoundaries(*other._binboundaries);
@@ -221,7 +218,7 @@ RooMultiHistEfficiency::RooMultiHistEfficiency(const RooMultiHistEfficiency& oth
 
    for (HistEntries::const_iterator it = other._entries.begin(), end = other._entries.end();
         it != end; ++it) {
-      MultiHistEntry* entry = new MultiHistEntry(*(it->second), this);
+      HistEntry* entry = new HistEntry(*(it->second), this);
       _entries.insert(make_pair(it->first, entry));
    }
 }
@@ -267,8 +264,8 @@ RooAbsGenContext* RooMultiHistEfficiency::genContext(const RooArgSet &vars, cons
 {
    // Return specialized generator context for RooEffHistProds that implements generation
    // in a more efficient way than can be done for generic correlated products
-   const MultiHistEntry* entry = _entries.begin()->second;
-   const RooArgSet* observables = entry->effProd()->observables();
+   const HistEntry* entry = _entries.begin()->second;
+   const RooArgSet* observables = entry->efficiency()->observables();
    return new RooGenContext(*this, vars, prototype, auxProto, verbose, observables);
 }
 
@@ -305,12 +302,12 @@ Int_t RooMultiHistEfficiency::getGenerator
    RooArgSet genVars;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      const RooEffHistProd* effProd = it->second->effProd();
+      const RooEffHistProd* efficiency = it->second->efficiency();
       if (genVars.getSize() == 0) {
-         prodGenCode = effProd->getGenerator(testVars, genVars, staticInitOK);
+         prodGenCode = efficiency->getGenerator(testVars, genVars, staticInitOK);
       } else {
          RooArgSet prodGenVars;
-         Int_t code = effProd->getGenerator(testVars, prodGenVars, staticInitOK);
+         Int_t code = efficiency->getGenerator(testVars, prodGenVars, staticInitOK);
          assert(prodGenVars.equals(genVars) && prodGenCode == code);
       }
    }
@@ -336,7 +333,7 @@ void RooMultiHistEfficiency::initGenerator(Int_t code)
    // methods.
    for (HistEntries::iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      it->second->effProd()->initGenerator(_prodGenCode);
+      it->second->efficiency()->initGenerator(_prodGenCode);
    }
    if (code == 1) {
       return;
@@ -399,7 +396,7 @@ void RooMultiHistEfficiency::generateEvent(Int_t code)
 
    // now that've assigned the categories, we can use the 'real' samplers
    // which are conditional on the categories.
-   itEntry->second->effProd()->generateEvent(_prodGenCode);
+   itEntry->second->efficiency()->generateEvent(_prodGenCode);
 }
 
 //_____________________________________________________________________________
@@ -472,8 +469,8 @@ Int_t RooMultiHistEfficiency::getAnalyticalIntegral(RooArgSet& allVars, RooArgSe
 Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rangeName) const 
 {
    assert(code > 0);
-  // Calculate integral internally from appropriate integral cache
-  // note: rangeName implicit encoded in code: see _cacheMgr.setObj in getPartIntList...
+   // Calculate integral internally from appropriate integral cache
+   // note: rangeName implicit encoded in code: see _cacheMgr.setObj in getPartIntList...
    bool cats = code & 0x1;
    bool vars = code & 0x2;
    Int_t cacheCode = (code >> 2);
@@ -517,7 +514,7 @@ Double_t RooMultiHistEfficiency::analyticalIntegral(Int_t code, const char* rang
 //    // cout << "RooMultiHistEfficiency::getValV " << (ns ? *ns : RooArgSet()) << endl;
 //    // for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
 //    //      it != end; ++it) {
-//    //    it->second->effProd()->setNormSet(ns);
+//    //    it->second->efficiency()->setNormSet(ns);
 //    // }
 //    return RooAbsPdf::getValV(ns);
 // }
@@ -545,143 +542,14 @@ Double_t RooMultiHistEfficiency::evaluate() const
          if (onlyCats) {
             val = it->second->relative()->getVal();
          } else if (onlyVars) {
-            val = it->second->relative()->getVal() * it->second->effProd()->getVal();
+            val = it->second->relative()->getVal() * it->second->efficiency()->getVal();
          } else {
-            val = it->second->relative()->getVal() * it->second->effProd()->getVal();
+            val = it->second->relative()->getVal() * it->second->efficiency()->getVal();
          }
          // cout << "RooMultiHistEfficiency::evaluate " 
-         //      << it->second->effProd()->GetName() << " case = " << code << " " 
+         //      << it->second->efficiency()->GetName() << " case = " << code << " " 
          //      << " norm " << (_normSet ? *_normSet : RooArgSet()) << " = " << val << endl;
       }
    }
    return val;
-}
-
-//_____________________________________________________________________________
-MultiHistEntry::MultiHistEntry()
-   : m_rawEff(0), m_rawRel(0), m_effProd(0), m_relative(0),
-     m_index(0)
-{
-}
-
-//_____________________________________________________________________________
-MultiHistEntry::MultiHistEntry(const std::map<RooAbsCategory*, std::string>& categories,
-                               RooEffHistProd* effProd, RooAbsReal* relative)
-   : m_rawCats(categories), m_rawEff(effProd), m_rawRel(relative),
-     m_effProd(0), m_relative(0), m_index(0)
-{
-
-}
-
-//_____________________________________________________________________________
-MultiHistEntry::MultiHistEntry(const MultiHistEntry& other, RooMultiHistEfficiency* parent)
-   : m_rawCats(other.m_rawCats), m_rawEff(other.m_rawEff), m_rawRel(other.m_rawRel),
-     m_index(other.m_index)
-{
-   if (!other.m_effProd) {
-      m_effProd = 0;
-      m_relative = 0;
-      return;
-   }
-   m_effProd = new RooRealProxy(other.m_effProd->GetName(), parent, *other.m_effProd);
-   m_relative = new RooRealProxy(other.m_relative->GetName(), parent, *other.m_relative);
-
-   for (std::map<RooCategoryProxy*, std::string>::const_iterator it = other.m_categories.begin(),
-           end = other.m_categories.end(); it != end; ++it) {
-      m_categories.insert(make_pair(new RooCategoryProxy(it->first->GetName(), parent, *(it->first)),
-                                    it->second));
-   }
-
-}
-
-//_____________________________________________________________________________
-MultiHistEntry::~MultiHistEntry()
-{
-   for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
-           end = m_categories.end(); it != end; ++it) {
-      if (it->first) delete it->first;
-   }
-   m_categories.clear();
-   if (m_effProd) delete m_effProd;
-   if (m_relative) delete m_relative;
-}
-
-//_____________________________________________________________________________
-bool MultiHistEntry::thisEntry() const
-{
-   bool r = true;
-   for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
-           end = m_categories.end(); it != end; ++it) {
-      const RooAbsCategory* cat = static_cast<const RooAbsCategory*>(it->first->absArg());
-      if (strcmp(cat->getLabel(), it->second.c_str()) != 0) {
-         r = false;
-         break;
-      }
-   }
-   return r;
-}
-
-//_____________________________________________________________________________
-void MultiHistEntry::setParent(RooMultiHistEfficiency* parent)
-{
-   assert(m_effProd == 0);
-   assert(m_relative == 0);
-
-   std::string name;
-   for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
-           end = m_rawCats.end(); it != end; ++it) {
-      name = it->first->GetName(); name += "_proxy";
-      RooCategoryProxy* proxy = new RooCategoryProxy(name.c_str(), name.c_str(), parent,
-                                                     *(it->first));
-      m_categories.insert(make_pair(proxy, it->second));
-   }
-   m_rawCats.clear();
-
-   name = m_rawEff->GetName(); name += "_proxy";
-   m_effProd = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawEff);
-   name = m_rawEff->GetName(); name += "_proxy";
-   m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawRel);
-
-   // m_rawEff = 0;
-   // m_rawRel = 0;
-}
-
-//_____________________________________________________________________________
-RooArgSet MultiHistEntry::categories() const
-{
-   RooArgSet r;
-   if (!m_rawCats.empty()) {
-      for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
-              end = m_rawCats.end(); it != end; ++it) {
-         if (!it->first) continue;
-         r.add(*(it->first));
-      }
-   } else {
-      for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
-              end = m_categories.end(); it != end; ++it) {
-         if (!it->first) continue;
-         r.add(it->first->arg());
-      }
-   }
-
-   return r;
-}
-
-//_____________________________________________________________________________
-void MultiHistEntry::select()
-{
-   if (!m_rawCats.empty()) {
-      for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
-              end = m_rawCats.end(); it != end; ++it) {
-         if (!it->first) continue;
-         RooAbsCategoryLValue* lval = dynamic_cast<RooAbsCategoryLValue*>(it->first);
-         lval->setLabel(it->second.c_str());
-      }
-   } else {
-      for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
-              end = m_categories.end(); it != end; ++it) {
-         RooAbsCategoryLValue* lval = dynamic_cast<RooAbsCategoryLValue*>(it->first->absArg());
-         lval->setLabel(it->second.c_str());
-      }
-   }
 }

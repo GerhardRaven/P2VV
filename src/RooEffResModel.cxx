@@ -18,18 +18,20 @@
 // END_HTML
 //
 
+#include <memory>
+
 #include "RooFit.h"
 #include "Riostream.h"
 #include "RooEffResModel.h"
 #include "RooRealConstant.h"
 #include "RooCustomizer.h"
 #include "RooAddition.h"
-
 using namespace std;
 
 ClassImp(RooEffResModel) 
 ;
 
+//_____________________________________________________________________________
 RooEffResModel::CacheElem::~CacheElem()
 {
    delete _I;
@@ -37,14 +39,17 @@ RooEffResModel::CacheElem::~CacheElem()
            end = _customizers.end(); it != end; ++it) delete *it;
 }
 
+//_____________________________________________________________________________
 RooArgList RooEffResModel::CacheElem::containedArgs(Action) 
 {
    // Return list of all RooAbsArgs in cache element
    return RooArgList(*_I);
 }
 
-RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArgSet& iset, const TNamed* rangeName )
-    : _I(0)
+//_____________________________________________________________________________
+RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgSet& iset,
+                                     const TNamed* rangeName)
+   : _I(0)
 {
    RooRealVar& x = parent.convVar(); // binboundaries not const...
    const RooAbsReal& eff = parent.eff();
@@ -119,17 +124,20 @@ RooEffResModel::CacheElem::CacheElem( const RooEffResModel& parent, const RooArg
 
 //_____________________________________________________________________________
 RooEffResModel::RooEffResModel(const char *name, const char *title, RooResolutionModel& model, RooAbsReal& eff) 
-  : RooResolutionModel(name,title,model.convVar())
-  , _model("!model","Original resolution model",this,model)
-  , _eff("!efficiency","efficiency of convvar", this,eff)
-  , _cacheMgr(this, 10)
+   : RooResolutionModel(name,title,model.convVar())
+   , _observables("observables", "observables", this)
+   , _model("!model","Original resolution model",this,model)
+   , _eff("!efficiency","efficiency of convvar", this,eff)
+   , _cacheMgr(this, 10)
 {  
-  // assert that efficiency is a function of convVar, and there are no overlaps...
+   // assert that efficiency is a function of convVar, and there are no overlaps...
+   _observables.add(model.convVar());
 }
 
 //_____________________________________________________________________________
 RooEffResModel::RooEffResModel(const RooEffResModel& other, const char* name) 
   : RooResolutionModel(other,name)
+  , _observables("observables", this, other._observables)
   , _model("!model",this,other._model)
   , _eff("!efficiency",this,other._eff)
   , _cacheMgr(other._cacheMgr,this)
@@ -142,6 +150,7 @@ RooEffResModel::~RooEffResModel()
   // Destructor
 }
 
+//_____________________________________________________________________________
 RooEffResModel* 
 RooEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
 {
@@ -201,9 +210,9 @@ Double_t RooEffResModel::evaluate() const
 {  
     Double_t mod  = model().getVal();
     // TODO: replace this by the discretized version, i.e. replace convVar by customized middle of bin...
-    //       this in order to isure valuate & analyticalIntegral are consistent (in case eff is not discretized!!!)
+    //       this in order to ensure evaluate & analyticalIntegral are consistent (in case eff is not discretized!!!)
     Double_t eps  = eff().getVal(); 
-    return eps*mod;
+    return eps * mod;
 }
 
 
@@ -219,7 +228,7 @@ Int_t RooEffResModel::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analV
 {
     if (_forceNumInt) return 0;
     analVars.add(allVars);
-    getCache(&analVars,RooNameReg::ptr(rangeName));
+    getCache(&analVars, RooNameReg::ptr(rangeName));
     return 1 + _cacheMgr.lastIndex();
 }
 

@@ -12,6 +12,7 @@
 #include <TList.h>
 
 #include <RooEffHistProd.h>
+#include <MultiHistEntry.h>
 
 class RooAbsGenContext;
 class RooArgList ;
@@ -20,74 +21,17 @@ class RooAbsCategory;
 class RooMultiHistEfficiency;
 class RooAddition;
 
-class MultiHistEntry {
-public:
-
-   MultiHistEntry();
-   MultiHistEntry(const std::map<RooAbsCategory*, std::string>& categories,
-                  RooEffHistProd* effProd, RooAbsReal* relative);
-   MultiHistEntry(const MultiHistEntry& other, RooMultiHistEfficiency* parent);
-   virtual ~MultiHistEntry();
-
-   const RooEffHistProd* effProd() const {
-      return const_cast<MultiHistEntry*>(this)->effProd();
-      // }
-   }
-
-   RooEffHistProd* effProd() {
-      if (m_effProd) {
-         return dynamic_cast<RooEffHistProd*>(m_effProd->absArg());
-      } else {
-         return m_rawEff;
-      }
-   }
-   
-   RooAbsReal* relative() {
-      return m_relative ? dynamic_cast<RooAbsReal*>(m_relative->absArg()) : m_rawRel;
-   }
-
-   const RooAbsReal* relative() const{
-      return const_cast<MultiHistEntry*>(this)->relative();      
-   }
-
-   void setParent(RooMultiHistEfficiency* parent);
-
-   RooArgSet categories() const;
-
-   bool thisEntry() const;
-
-   void setIndex(const Int_t index) {
-      m_index = index;
-   }
-   
-   Int_t index() const {
-      return m_index;
-   }
-
-   void select();
-
-private:
-
-
-   std::map<RooAbsCategory*, std::string> m_rawCats;
-   RooEffHistProd* m_rawEff; //!
-   RooAbsReal* m_rawRel; //!
-
-   std::map<RooCategoryProxy*, std::string> m_categories;
-   RooRealProxy* m_effProd;
-   RooRealProxy* m_relative;
-   Int_t m_index;
-
-};
-
 class RooMultiHistEfficiency : public RooAbsPdf {
 public:
+
+   typedef MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency> HistEntry;
+
    // Constructors, assignment etc
    inline RooMultiHistEfficiency() { 
       // Default constructor
    }
    RooMultiHistEfficiency(const char *name, const char *title,
-                          std::vector<MultiHistEntry> entries);
+                          std::vector<RooMultiHistEfficiency::HistEntry*> entries);
    RooMultiHistEfficiency(const RooMultiHistEfficiency& other, const char* name = 0);
 
    virtual TObject* clone(const char* newname) const
@@ -113,7 +57,7 @@ public:
    
    // virtual Double_t getValV(const RooArgSet* ns) const;
 
-   const std::map<Int_t, MultiHistEntry*>& getEntries() const
+   const std::map<Int_t, RooMultiHistEfficiency::HistEntry*>& getEntries() const
    {
       return _entries;
    }
@@ -134,7 +78,7 @@ private:
    // Evaluation
    typedef std::list<double> BinBoundaries;
    BinBoundaries* _binboundaries;
-   typedef std::map<Int_t, MultiHistEntry*> HistEntries;
+   typedef std::map<Int_t, RooMultiHistEfficiency::HistEntry*> HistEntries;
    HistEntries _entries;
 
    typedef std::map<Int_t, double> IntVals;

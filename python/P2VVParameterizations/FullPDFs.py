@@ -420,9 +420,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            )
 
         selection        = Category( 'sel',                       Observable = True, States = { 'selected'    : 1, 'not_selected' : 0 } )
-        hlt1_excl_biased = Category( 'triggerDecisionBiasedExcl', Observable = True, States = { 'excl_biased' : 1, 'unbiased'     : 0 } )
+        hlt1_excl_biased = Category( 'hlt1_excl_biased',          Observable = True, States = { 'excl_biased' : 1, 'unbiased'     : 0 } )
         hlt1_biased      = Category( 'hlt1_biased',               Observable = True, States = { 'biased'      : 1, 'not_biased'   : 0 } )
-        hlt1_unbiased    = Category( 'triggerDecisionUnbiased',   Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
+        hlt1_unbiased    = Category( 'hlt1_unbiased',             Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
         hlt2_biased      = Category( 'hlt2_biased',               Observable = True, States = { 'biased'      : 1, 'not_biased'   : 0 } )
         hlt2_unbiased    = Category( 'hlt2_unbiased',             Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
 
@@ -471,13 +471,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if nTupleFile :
             if multiplyByTimeEff and timeEffType == 'Fit':
-                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)'
+                cut = '(sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1))'
             elif multiplyByTimeEff and timeEffType == 'Paper':
-                #cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'
-                cut = 'sel == 1 && (triggerDecisionBiasedExcl == 1 || triggerDecisionUnbiased == 1)'
+                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'
             else: ## timeEffType == 'Moriond'
-                #cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_biased == 1'
-                cut = 'sel == 1 && triggerDecisionUnbiased == 1'
+                cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_biased == 1'
             from P2VVGeneralUtils import readData
             self._data = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
                                   , Rename = 'JpsiphiData', cuts = cut )
