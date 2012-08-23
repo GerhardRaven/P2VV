@@ -111,7 +111,7 @@ class RooObject(object) :
         #       For now, we deal with this by raising an exception when the factory call encounters
         #       a conflict.
         if spec not in self.ws()._spec :
-            #print "Spec: %s" % spec
+            # print "Spec: %s" % spec
             x = self._factory(spec)
             if not x: raise NameError("workspace factory failed to return an object for factory string '%s' "%spec)
             if hasattr(x,'setStringAttribute') : x.setStringAttribute('RooFitWrappers.RooObject::spec',spec)
@@ -714,23 +714,21 @@ class Pdf(RooObject):
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
                 if k in [ 'Parameters']: v = frozenset(v)
-                if v != self._get(k) : print k,v,self._get(k)
+                if v != self._get(k) : print k, v, self._get(k)
                 assert v == self._get(k)
 
     def _separator(self):
         return '_'
 
     def ConditionalObservables(self) :
-        if not hasattr(self,'_conditionals') : return set()
+        if not hasattr(self, '_conditionals'): return set()
         return set( i for i in self.Observables() if i.GetName() in self._conditionals )
     def setConditionalObservables(self, obs ) :
         # TODO: check if we have a conditional request for something which isn't one of
         #       our observables and provide a warning...
         self._conditionals = set( o if type(o)==str else o.GetName() for o in obs )
-    def addConditionalObservables(self, obs ) :
-        for o in obs if hasattr( obs, '__iter__' ) else [obs] : self._conditionals.add(o)
     def ExternalConstraints(self) :
-        if not hasattr(self,'_externalConstraints') : return list()
+        if not hasattr(self, '_externalConstraints'): return list()
         return self._externalConstraints
     def setExternalConstraints(self, constraints ) :
         self._externalConstraints = constraints
@@ -798,16 +796,6 @@ class Pdf(RooObject):
             sls = kwargs.pop('Slices')
             kwargs['Slices'] = [ ( __dref__(sl[0]), sl[1] ) for sl in sls ]
         return self._var.plotOn( frame, **kwargs )
-
-    def __rmul__(self, eff):
-        from itertools import imap
-        if any(imap(lambda _type : isinstance(eff, _type),
-                    [FormulaVar, HistFunc, BinnedPdf])):
-            name = eff.GetName() + '_X_' + self.GetName()
-            return EffProd(name, Original = self, Efficiency = eff)
-        elif isinstance(eff, dict):
-            name = eff.get('Name') + '_X_' + self.GetName()
-            return MultiHistEfficiency(Name = name, Original = self, **eff)
 
 class ProdPdf(Pdf):
     def __init__(self, Name, PDFs, **kwargs):
@@ -1074,35 +1062,7 @@ class HistFunc(RooObject):
         self._init(Name, 'RooHistFunc')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-class EffProd(Pdf):
-    def _make_pdf(self) : pass
-    def __init__(self, Name, **kwargs):
-        d = { 'Name' : Name
-            , 'Original' : kwargs.pop('Original')
-            , 'Efficiency' : kwargs.pop('Efficiency')
-            }
-        eff = d['Efficiency']
-        if 'Type' in kwargs:
-            d['Type'] = kwargs.pop('Type').__name__
-        elif str(type(__dref__(eff))).find('Hist') != -1 or type(eff) == BinnedPdf:
-            d['Type'] = 'RooEffHistProd'
-        else:
-            d['Type'] = 'RooEffProd'
-        if d['Type'] not in ['RooEffProd', 'RooEffHistProd']:
-            raise TypeError, "An efficiency can only be of type RooEffProd or RooEffHistProd"
-        # construct factory string
-        self._declare("%s::%s(%s, %s)" % ( d['Type'], Name, d['Original'].GetName(),
-                                           d['Efficiency'].GetName()))
-        self._init(Name, d['Type'])
-        extraOpts = dict()
-        cond =  d['Original'].ConditionalObservables()
-        if cond : extraOpts['ConditionalObservables'] = cond
-        exCon = d['Original'].ExternalConstraints()
-        if exCon : extraOpts['ExternalConstraints' ] = exCon
-        Pdf.__init__(self , Name = Name , Type = type(__dref__(d['Original'])).__name__, **extraOpts)
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-
-class MultiHistEfficiency(Pdf):
+class MultiHistEfficiencyModel(Pdf):
     def _make_pdf(self) : pass
     def __init__(self, **kwargs):
 
@@ -1111,16 +1071,19 @@ class MultiHistEfficiency(Pdf):
 
         self.__pdf_name = kwargs.pop('Name')
         self.__original = kwargs.pop('Original')
+        self.__resolution_model = kwargs.pop('ResolutionModel')
         self.__bins = kwargs.pop('Bins')
         self.__fit_bins = kwargs.pop('FitBins', True)
         relative = kwargs.pop('Relative')
         self.__observable = kwargs.pop('Observable')
         self.__cc = kwargs.pop('ConditionalCategories', False)
-        self.__conditionals = self.__original.ConditionalObservables()
+        self.__conditionals = self.__original.ConditionalObservables() | \
+                              set(kwargs.pop('ConditionalObservables', [])) | \
+                              self.__resolution_model.ConditionalObservables()
         self.__fit_bins = kwargs.pop('FitAcceptance', True)
         self.__use_bin_constraint = kwargs.pop('UseSingleBinConstraint', True) and self.__fit_bins
         self.__heights = {}
-        self.__shapes = {}
+        self.__shapes = []
         self.__coefficients = {}
         self.__base_bounds = None
         self.__constraints = []
@@ -1164,15 +1127,18 @@ class MultiHistEfficiency(Pdf):
                     shape_name = '_'.join([category.GetName(), state, 'shape'])
                     shape = BinnedPdf(shape_name, Observable = self.__observable,
                                       Binning = binning_name, Coefficients = heights)
-                    effProd = shape * self.__original
+                    shape.setForceUnitIntegral(True)
+
+                    eff_model = EffResModel(Efficiency = shape,
+                                            ResolutionModel = self.__resolution_model)
 
                     # Set all observables constant for the shape to work around a
                     # RooFit limitation
-                    observables = effProd.getObservables(obs_set)
+                    observables = eff_model.getObservables(obs_set)
                     for o in observables:
                         o.setConstant(True)
 
-                    self.__shapes[(shape, effProd)] = self.__observable
+                    self.__shapes.append(shape)
 
                     heights_list = RooArgList(__dref__(h) for h in heights)
                     av_name = "%s_%s_average" % (category, state)
@@ -1181,7 +1147,7 @@ class MultiHistEfficiency(Pdf):
                     sigma = RealVar(Name = av_name + '_constraint_sigma', Value = error, Constant = True)
                     from ROOT import RooAvEffConstraint
                     constraint = Pdf(Name = av_name + '_constraint', Type = RooAvEffConstraint,
-                                     Parameters = [self.__observable, effProd, mean, sigma])
+                                     Parameters = [self.__original, eff_model, mean, sigma])
                     self.__constraints.append(constraint)
                 if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
                     self.__base_bounds = bounds
@@ -1216,25 +1182,24 @@ class MultiHistEfficiency(Pdf):
         from ROOT import std
         efficiency_entries = self.__build_shapes(relative)
 
-        from ROOT import RooMultiHistEfficiency
-        mhe = RooMultiHistEfficiency(self.__pdf_name, self.__pdf_name, efficiency_entries)
-
-        self._addObject(mhe)
-        self._init(self.__pdf_name, 'RooMultiHistEfficiency')
+        from ROOT import RooMultiEffResModel
+        mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
+        mhe = self._addObject(mhe)
 
         extraOpts = dict()
-        if self.__conditionals :
-            self['ConditionalObservables'] = self.__conditionals
+        if self.__conditionals:
+            extraOpts['ConditionalObservables'] = self.__conditionals
 
         if self.__fit_bins and not self.__use_bin_constraint:
             self.__add_constraints()
 
-        constraints = list(set(self.__original.ExternalConstraints() + self.ExternalConstraints()))
+        constraints = list(set(kwargs.pop('ExternalConstraints', [])) | \
+                           set(self.__original.ExternalConstraints()) | \
+                           set(self.__resolution_model.ExternalConstraints()) | \
+                           set(self.ExternalConstraints()))
         if constraints : extraOpts['ExternalConstraints' ] = constraints
-        print extraOpts
-        Pdf.__init__(self , Name = self.__pdf_name , Type = 'RooMultiHistEfficiency', **extraOpts)
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-
+        self._init(self.__pdf_name, 'RooMultiEffResModel')
+        Pdf.__init__(self, Name = self.__pdf_name , Type = 'RooMultiEffResModel', **extraOpts)
 
     def binning(self):
         return self.__base_binning
@@ -1243,7 +1208,7 @@ class MultiHistEfficiency(Pdf):
         return self.__base_bounds
 
     def shapes(self):
-        return [s[0] for s in self.__shapes.iterkeys()]
+        return self.__shapes
 
     def heights(self):
         return self.__heights
@@ -1253,8 +1218,8 @@ class MultiHistEfficiency(Pdf):
         from ROOT import MultiHistEntry
         from ROOT import RooEfficiencyBin
 
-        MultiHistEntry = MultiHistEntry('RooEffHistProd', 'RooMultiHistEfficiency')
-        efficiency_entries = std.vector(MultiHistEntry)()
+        MultiHistEntry = MultiHistEntry('RooEffResModel', 'RooMultiEffResModel')
+        efficiency_entries = std.vector('MultiHistEntry<RooEffResModel, RooMultiEffResModel>*')()
 
         for categories, relative_efficiency in relative.iteritems():
             # Make EfficiencyBins for the bin values
@@ -1286,8 +1251,12 @@ class MultiHistEfficiency(Pdf):
             # BinnedPdf for the shape
             binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = self.__observable,
                                    Binning = self.__base_binning.GetName(), Coefficients = heights)
-            # EffProd to combine shape with PDF
-            eff_prod = EffProd('%s_efficiency' % prefix, Original = self.__original, Efficiency = binned_pdf)
+            # note: constant optimization WILL evaluate RooBinnedPdf as a PDF, and thus normalize it...
+            binned_pdf.setForceUnitIntegral(True)
+
+            # EffResModel to combine shape with PDF
+            eff_model = EffResModel(Name = '%s_efficiency' % prefix,
+                                    ResolutionModel = self.__resolution_model, Efficiency = binned_pdf)
 
             # MultiHistEntry
             category_map = std.map('RooAbsCategory*', 'string')
@@ -1297,7 +1266,7 @@ class MultiHistEfficiency(Pdf):
                 # cp = category_pair(__dref__(category), state)
                 cm[__dref__(category)] = state
             efficiency = self.__relative_efficiencies[state_name]
-            entry = MultiHistEntry(cm, __dref__(eff_prod), __dref__(efficiency))
+            entry = MultiHistEntry(cm, __dref__(eff_model), __dref__(efficiency))
             efficiency_entries.push_back(entry)
         return efficiency_entries
 
@@ -1640,17 +1609,20 @@ class EffResModel(ResolutionModel) :
     def __init__(self,**kwargs) :
         #TODO: forward conditionalObservables and ExternalConstraints from dependents...
         # construct factory string on the fly...
-        eff = kwargs.pop('Efficiency')
-        res = kwargs.pop('ResolutionModel')
-        name = kwargs.pop('Name', '%s_x_%s' % ( eff.GetName() , res.GetName() ) )
+        self.__eff = kwargs.pop('Efficiency')
+        self.__res = kwargs.pop('ResolutionModel')
+        name = kwargs.pop('Name', '%s_x_%s' % ( self.__eff.GetName() , self.__res.GetName() ) )
         __check_name_syntax__(name)
-        self._declare('EffResModel::%s(%s,%s)'%(name,res.GetName(),eff.GetName()))
-        self._init(name,'RooEffResModel')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
-        self.setConditionalObservables( self.ConditionalObservables() | eff.ConditionalObservables() | res.ConditionalObservables() )
-        self.setExternalConstraints( list( set(self.ExternalConstraints()) | set(eff.ExternalConstraints()) | set(res.ExternalConstraints()) ) )
 
+        conditionals = self.__eff.ConditionalObservables() | self.__res.ConditionalObservables()
+        externals = list(set(self.__eff.ExternalConstraints()) | set(self.__res.ExternalConstraints()))
+        ResolutionModel.__init__(self, Name = name, Type = 'RooEffResModel',
+                                 Parameters = [self.__res, self.__eff],
+                                 ConditionalObservables = conditionals,
+                                 ExternalConstraints = externals)
 
+        def efficiency(self):
+            return self.__eff
 
 class Component(object):
     _d = {}

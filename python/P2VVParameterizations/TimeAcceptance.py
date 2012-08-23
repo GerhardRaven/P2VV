@@ -1,39 +1,29 @@
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin
 from P2VVParameterizations.GeneralUtils import valid_combinations, exclusive_combinations
+from P2VVParameterizations.TimeResolution import TimeResolution
 
-class TimeAcceptance ( _util_parse_mixin, _util_extConstraints_mixin ) :
+## Since all time acceptances are implemented in the resolution model, we inherit from there
+class TimeAcceptance ( TimeResolution ) :
     def __init__( self, **kwargs ) : 
         if 'Acceptance' in kwargs: self._acceptance = kwargs.pop( 'Acceptance' )
         else: raise KeyError('P2VV - ERROR: TimeAcceptance.__init__(): TimeAcceptance: please specify an acceptance')
-        #self._acceptance.setAttribute('NOCacheAndTrack') # FIXME/BUG Workaround for acceptance normalization in cFit...
-        #print 'P2VV - WARNING: TimeAcceptance.__init__(): set "NOCacheAndTrack" for %s' % self._acceptance.GetName()
+        # Workaround for acceptance normalization in cFit...
+        # print 'P2VV - WARNING: TimeAcceptance.__init__(): set "NOCacheAndTrack" for %s' % self._acceptance.GetName()
 
-        from RooFitWrappers import BinnedPdf
-        if type(self._acceptance) == BinnedPdf :
-            self._acceptance.setForceUnitIntegral(True)  # note: constant optimization WILL evaluate RooBinnedPdf as a PDF, and thus normalize it...
+        from RooFitWrappers import BinnedPdf, EffResModel
+        if type(self._acceptance) == EffResModel and type(self._acceptance.efficiency()) == BinnedPdf:
+            # note: constant optimization WILL evaluate RooBinnedPdf as a PDF,
+            # and thus normalize it...
+            self._acceptance.efficiency().setForceUnitIntegral(True)
             print 'P2VV - WARNING: TimeAcceptance.__init__(): switched setForceUnitIntegral to true for %s' % self._acceptance.GetName()
-
-        _util_extConstraints_mixin.__init__( self, kwargs )
-        self._check_extraneous_kw(kwargs)
         print self.acceptance()
+        
+        TimeResolution.__init__(self, Model = self._acceptance,
+                                Conditionals = self._acceptance.ConditionalObservables(),
+                                Constraints = self._acceptance.ExternalConstraints())
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
     def acceptance( self ) : return self._acceptance
-    def __mul__(self,rhs) : return self.acceptance() * rhs
-
-
-class LP2011_TimeAcceptance ( TimeAcceptance ) :
-    def __init__(self, **kwargs ) :
-        from RooFitWrappers import ConstVar, FormulaVar, BinnedPdf
-        self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._a = ConstVar(Name = 'eff_a', Value =  1.45 )
-        self._c = ConstVar(Name = 'eff_c', Value = -2.37 )
-        self._eff = FormulaVar('eff_shape', "(@0 > 0.) ? (1.0 / (1.0 + (@1 * @0) ** (@2))) : 0.0", [self._time, self._a, self._c])
-
-        from P2VVBinningBuilders import build1DVerticalBinning
-        self._binning, self._eff_func = build1DVerticalBinning('time_binning', self._eff, self._time, 0.05, 1.)
-
-        TimeAcceptance.__init__( self, Acceptance = BinnedPdf(Name = 'time_acceptance', Observable = self._time, Function = self._eff, Binning = self._binning))
 
 class Moriond2012_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
@@ -41,12 +31,13 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         from array import array
         from RooFitWrappers import BinnedPdf
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
-                       Value = 0., MinMax = (0.2, 14))
+                       MinMax = (0.3, 14))
         input_file = kwargs.pop('Input', 'acceptance.root')
         histogram = kwargs.pop('Histogram', 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
         binning_name = kwargs.pop('BinningName', 'efficiency_binning')
         name = kwargs.pop('Name', 'Moriond2012_Acceptance')
-
+        model = kwargs.pop('ResolutionModel')
+        
         acceptance_file = TFile.Open(input_file)
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
@@ -69,19 +60,26 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         self._time.setBinning(self._binning, binning_name)
 
         from RooFitWrappers import BinnedPdf
-        self._shape = BinnedPdf(name, Observable = self._time,
+        self._shape = BinnedPdf(name + '_shape', Observable = self._time,
                                 Binning = binning_name, Coefficients = heights)
-        TimeAcceptance.__init__(self, Acceptance = self._shape)
+        from RooFitWrappers import EffResModel
+        TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name, Efficiency = self._shape,
+                                                               ResolutionModel = model['model'],
+                                                               ConditionalObservables = model.conditionalObservables(),
+                                                               ExternalConstraints = model.externalConstraints()))
 
 class Paper2012_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
         from ROOT import TFile
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
-                       Value = 0., MinMax = (0.2, 14))
+                       MinMax = (0.3, 14))
         input_file = kwargs.pop('Input', 'acceptance.root')
         histograms = kwargs.pop('Histograms')
+        original = kwargs.pop('Original')
         acceptance_file = TFile.Open(input_file)
         fit = kwargs.pop('Fit')
+        model = kwargs.pop('ResolutionModel')
+
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
 
@@ -99,7 +97,7 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         data = data.reduce(cuts)
         total = data.sumEntries()
 
-        valid = valid_combinations(levels.itervalues())
+        valid = valid_combinations(levels.values())
         rel_spec = {}
         for comb in valid:
             cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
@@ -126,11 +124,13 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
                     d['average'] = info['average']
                 bin_spec[cat][label] = d
         acceptance_file.Close()
-        
+
+        from RooFitWrappers import MultiHistEfficiencyModel
         ## FIXME: make sure all the bins are set constant if needed
-        TimeAcceptance.__init__( self, Acceptance = dict(Bins = bin_spec, Relative = rel_spec,
-                                                         Observable = self._time,
-                                                         ConditionalCategories = True,
-                                                         Name = acceptance_name,
-                                                         FitAcceptance = fit,
-                                                         UseSingleBinConstraint = False))
+        mhe = MultiHistEfficiencyModel(Bins = bin_spec, Relative = rel_spec, Observable = self._time,
+                                       ConditionalCategories = True, Name = acceptance_name,
+                                       FitAcceptance = fit, UseSingleBinConstraint = False,
+                                       ResolutionModel = model['model'], Original = original,
+                                       ConditionalObservables = model.conditionalObservables(),
+                                       ExternalConstraints = model.externalConstraints())
+        TimeAcceptance.__init__(self, Acceptance = mhe)

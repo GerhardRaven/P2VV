@@ -26,6 +26,8 @@
 #include "RooRealConstant.h"
 #include "RooCustomizer.h"
 #include "RooAddition.h"
+#include "RooStringVar.h"
+
 using namespace std;
 
 ClassImp(RooEffResModel) 
@@ -63,54 +65,24 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
       return;
    }
 
-   Double_t xmin = x.getMin(RooNameReg::str(rangeName));
-   Double_t xmax = x.getMax(RooNameReg::str(rangeName));
-
    RooArgList effList;
    RooArgList intList;
 
-   std::list<Double_t>* bounds = eff.binBoundaries(x, x.getMin(), x.getMax());
-   std::list<Double_t>::const_iterator lo, hi = bounds->begin();
-   for (unsigned int i=0; i + 1 < bounds->size();++i ) {
-      lo = hi++;
-      if (*hi < xmin) continue; // not there yet...
-      if (*lo > xmax) break;    // past the requested interval...
-      Double_t thisxmin = std::max(*lo, xmin);
-      Double_t thisxmax = std::min(*hi, xmax);
+   const RooArgList& ranges = parent.getIntegralRanges(iset, RooNameReg::str(rangeName));
+   RooFIter it = ranges.fwdIterator();
+   while (RooStringVar* rangeVar = static_cast<RooStringVar*>(it.next())) {
+      const char* range = rangeVar->getVal();
+      assert(x.hasRange(range));
 
-      // move range name generation (with the exception of the R%d prefix)
-      // out of the loop...
-      // add eff name, as it specifies the boundaries...
-      TString trange = TString::Format("R%d_%s_%s", i,x.GetName(),eff.GetName());
-
-      // Add original rangeName if there is one
-      if (rangeName) { 
-            trange.Append( "_" );
-            trange.Append( RooNameReg::str(rangeName) );
-      }
-
-      trange.Append("_I_");
-      RooNameSet ns(iset);
-      trange.Append(ns._nameList);
-
-
-      const char *range = RooNameReg::str( RooNameReg::ptr( trange.Data() ) );
-
-
-      // Create a new name for the range
-      // check if already exists and matches..
-      if (!x.hasRange(range)) {
-        x.setRange(range, thisxmin, thisxmax);
-      }
-      assert( x.getMin(range)==thisxmin);
-      assert( x.getMax(range)==thisxmax);
+      Double_t xmin = x.getMin(range);
+      Double_t xmax = x.getMax(range);
       
       intList.add(*model.createIntegral(iset, range));
 
       // create RooAbsReal for (average) efficiency in this range
-      RooCustomizer* customizer = new RooCustomizer(eff, (trange+"_customizer").Data());
-      RooRealVar* cv = static_cast<RooRealVar*>(x.clone( TString(x.GetName()) + "_" + range) );
-      cv->setVal((thisxmin + thisxmax) / 2.);
+      RooCustomizer* customizer = new RooCustomizer(eff, (TString(range) + "_customizer").Data());
+      RooRealVar* cv = static_cast<RooRealVar*>(x.clone(TString(x.GetName()) + "_" + range) );
+      cv->setVal((xmin + xmax) / 2.);
       cv->setConstant(true);
       customizer->replaceArg(x, *cv);
       RooAbsArg *ceff = customizer->build(kFALSE);
@@ -142,12 +114,22 @@ RooEffResModel::RooEffResModel(const RooEffResModel& other, const char* name)
   , _eff("!efficiency",this,other._eff)
   , _cacheMgr(other._cacheMgr,this)
 {
+   // Destructor
+   for (RangeMap::const_iterator it = other._ranges.begin(), end = other._ranges.end();
+        it != end; ++it) {
+      RooArgList* ranges = new RooArgList(*it->second);
+      _ranges.insert(make_pair(it->first, ranges));
+   }
 }
 
 //_____________________________________________________________________________
 RooEffResModel::~RooEffResModel()
 {
-  // Destructor
+   // Destructor
+   for (RangeMap::const_iterator it = _ranges.begin(), end = _ranges.end();
+        it != end; ++it) {
+      delete it->second;
+   }
 }
 
 //_____________________________________________________________________________
@@ -250,6 +232,57 @@ Double_t RooEffResModel::analyticalIntegral(Int_t code, const char* rangeName) c
 Int_t RooEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
 {
   return 0 ; // For now... problem is that RooGenConv assumes it can just add resolution & physics for conv var...
+}
+
+//_____________________________________________________________________________
+const RooArgList& RooEffResModel::getIntegralRanges(const RooArgSet& iset,
+                                                    const char* rangeName) const
+{
+   rangeName = rangeName ? rangeName : "default";
+   RangeMap::const_iterator it = _ranges.find(rangeName);
+   if (it != _ranges.end()) return *it->second;
+
+   RooRealVar& x = static_cast<RooRealVar&>(convVar());
+   Double_t xmin = x.getMin(rangeName);
+   Double_t xmax = x.getMax(rangeName);
+
+   RooArgList* ranges = new RooArgList;
+   std::list<Double_t>* bounds = efficiency()->binBoundaries(x, x.getMin(), x.getMax());
+   std::list<Double_t>::const_iterator lo, hi = bounds->begin();
+   for (unsigned int i = 0; i + 1 < bounds->size();++i) {
+      lo = hi++;
+      if (*hi < xmin) continue; // not there yet...
+      if (*lo > xmax) break;    // past the requested interval...
+      Double_t thisxmin = std::max(*lo, xmin);
+      Double_t thisxmax = std::min(*hi, xmax);
+
+      // add eff name, as it specifies the boundaries...
+      TString trange = TString::Format("R%d_%s_%s", i, x.GetName(), efficiency()->GetName());
+
+      // Add original rangeName if there is one
+      if (rangeName) {
+         trange.Append("_");
+         trange.Append(rangeName);
+      }
+
+      trange.Append("_I_");
+      RooNameSet ns(iset);
+      trange.Append(ns._nameList);
+      const char* range = trange.Data();
+
+      // Create a new name for the range
+      // check if already exists and matches..
+      if (!x.hasRange(range)) {
+         x.setRange(range, thisxmin, thisxmax);
+      }
+      assert(x.getMin(range)==thisxmin);
+      assert(x.getMax(range)==thisxmax);
+      RooStringVar* stringVar = new RooStringVar(trange.Data(), trange.Data(), trange.Data()); 
+      ranges->addOwned(*stringVar);
+   }
+   pair<RangeMap::iterator, bool> r = _ranges.insert(make_pair(string(rangeName), ranges));
+   assert(r.second);
+   return *r.first->second;
 }
 
 //_____________________________________________________________________________

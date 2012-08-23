@@ -15,15 +15,16 @@
 #include "RooRealProxy.h"
 #include "RooListProxy.h"
 
-#include "RooEffHistProd.h"
+#include "RooEffResModel.h"
 
-class RooEffHistProd;
+class RooEffResModel;
+class RooCustomizer;
 
 class RooAvEffConstraint : public RooAbsPdf {
 public:
-   RooAvEffConstraint() {} ; 
+
    RooAvEffConstraint(const char *name, const char *title, 
-                      RooRealVar& observable, RooEffHistProd& effProd,
+                      RooAbsPdf& pdf, RooEffResModel& model,
                       RooRealVar& mean, RooRealVar& sigma);
    RooAvEffConstraint(const RooAvEffConstraint& other, const char* name=0) ;
 
@@ -44,13 +45,15 @@ protected:
    Double_t evaluate() const;
    
 private:
-
-   RooRealProxy _observable;
-   RooRealProxy _shape;
+   
    RooRealProxy _mean;
    RooRealProxy _sigma;
    mutable RooRealProxy* _integral;
+   RooListProxy _integrals;
+   RooListProxy _efficiencies;
    
+   std::vector<RooCustomizer*> _customizers;
+
    ClassDef(RooAvEffConstraint, 1) // Your description goes here...
 };
 

@@ -13,9 +13,12 @@
 #include "TMath.h" 
 
 #include "Riostream.h" 
-#include "RooAvEffConstraint.h" 
 #include "RooAbsPdf.h" 
 #include "RooAbsArg.h"
+#include "RooCustomizer.h"
+#include "RooStringVar.h"
+
+#include "RooAvEffConstraint.h" 
 
 ClassImp(RooAvEffConstraint) 
 
@@ -24,16 +27,16 @@ using std::auto_ptr;
 
 //_____________________________________________________________________________
 RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title, 
-                                       RooRealVar& observable, RooEffHistProd& effProd,
+                                       RooAbsPdf& pdf, RooEffResModel& model,
                                        RooRealVar& mean, RooRealVar& sigma)
    : RooAbsPdf(name,title),
-     _observable("average_observable", "average_observable", this, observable),
-     _shape("average_shape", "average_shape", this, effProd),
-     _mean("average_mean", "average_mean", this, mean),
-     _sigma("average_sigma", "average_sigma", this, sigma),
-     _integral(0)
+     _mean("!average_mean", "average_mean proxy", this, mean),
+     _sigma("!average_sigma", "average_sigma proxy", this, sigma),
+     _integral(0),
+     _integrals("!integrals", 0, this),
+     _efficiencies("!efficiencies", 0, this)
 { 
-   auto_ptr<RooArgSet> vars(effProd.getVariables());
+   auto_ptr<RooArgSet> vars(pdf.getVariables());
    RooFIter it = vars->fwdIterator();
    RooAbsArg* arg = 0;
    while ((arg = it.next())) {
@@ -43,19 +46,51 @@ RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title,
       }
    }
    // observable.setConstant(true);
+
+   RooArgSet iset(model.convVar());
+   RooAbsReal* I = pdf.createIntegral(iset);
+   TString intName = TString(model.efficiency()->GetName()) + "_average_" + I->GetName();
+   I->SetName(intName.Data());
+   _integral = new RooRealProxy("!average_integral", "average_integral",
+                                const_cast<RooAvEffConstraint*>(this), *I, false, true);
+
+   RooRealVar& x = model.convVar(); // binboundaries not const...
+
+   const RooArgList& ranges = model.getIntegralRanges(iset);
+   it = ranges.fwdIterator();
+   while (const RooStringVar* rangeName = static_cast<const RooStringVar*>(it.next())) {
+      const char* range = rangeName->getVal();
+      I = pdf.createIntegral(iset, range);
+      _integrals.addOwned(*I);
+
+      Double_t xmin = x.getMin(range);
+      Double_t xmax = x.getMax(range);
+
+      RooCustomizer* customizer = new RooCustomizer(*model.efficiency(),
+                                                    (TString(range) + "_customizer").Data());
+      RooRealVar* cv = static_cast<RooRealVar*>(x.clone(TString(x.GetName()) + "_" + range) );
+      cv->setVal((xmin + xmax) / 2.);
+      cv->setConstant(true);
+      customizer->replaceArg(x, *cv);
+      RooAbsArg *ceff = customizer->build(kFALSE);
+      ceff->addOwnedComponents(*cv);
+      _efficiencies.addOwned(*ceff);
+      _customizers.push_back(customizer);
+   }
+   
 } 
 
 //_____________________________________________________________________________
 RooAvEffConstraint::RooAvEffConstraint(const RooAvEffConstraint& other, const char* name)
    : RooAbsPdf(other,name), 
-     _observable("average_observable", this, other._observable),
-     _shape("average_shape", this, other._shape),
-     _mean("average_mean", this, other._mean),
-     _sigma("average_sigma", this, other._sigma)
+     _mean("!average_mean", this, other._mean),
+     _sigma("!average_sigma", this, other._sigma),
+     _integrals("!integrals", this, other._integrals),
+     _efficiencies("!efficiencies", this, other._efficiencies)
 
 {
    if (other._integral) {
-      _integral = new RooRealProxy("average_integral", this, *other._integral);
+      _integral = new RooRealProxy("!average_integral", this, *other._integral);
    } else {
       _integral = 0;
    }
@@ -65,6 +100,10 @@ RooAvEffConstraint::RooAvEffConstraint(const RooAvEffConstraint& other, const ch
 RooAvEffConstraint::~RooAvEffConstraint()
 {
    if (_integral) delete _integral;
+   for (std::vector<RooCustomizer*>::const_iterator it = _customizers.begin(),
+           end = _customizers.end(); it != end; ++it) {
+      delete *it;
+   }
 }
 
 //_____________________________________________________________________________
@@ -93,25 +132,14 @@ Double_t RooAvEffConstraint::analyticalIntegral(Int_t code, const char* rangeNam
 Double_t RooAvEffConstraint::evaluate() const 
 { 
    double av = 0;
-   RooArgSet iset(_observable.arg());
-   const RooEffHistProd& effProd = dynamic_cast<const RooEffHistProd&>(_shape.arg());
 
-   const RooArgList& bins = effProd.getIntegralBins(&iset);
-
-   for (int i = 0; i < bins.getSize(); ++i) {
-      const RooAbsReal* entry = dynamic_cast<const RooAbsReal*>(bins.at(i));
+   for (int i = 0; i < _integrals.getSize(); ++i) {
+      const RooAbsReal* entry = dynamic_cast<const RooAbsReal*>(_integrals.at(i));
       assert(entry);
-      av += entry->getVal();
+      const RooAbsReal* efficiency = dynamic_cast<const RooAbsReal*>(_efficiencies.at(i));
+      av += efficiency->getVal() * entry->getVal();
    }
 
-   if (!_integral) {
-      RooArgSet iset(_observable.arg());
-      RooAbsReal* I = effProd.pdf()->createIntegral(iset);
-      TString name = effProd.GetName(); name += "_average_"; name += I->GetName();
-      I->SetName(name.Data());
-      _integral = new RooRealProxy("average_integral", "average_integral",
-                                   const_cast<RooAvEffConstraint*>(this), *I, false, true);
-   }
    double integral = static_cast<const RooAbsReal&>(_integral->arg()).getVal();
    av /= integral;
 

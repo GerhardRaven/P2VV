@@ -168,7 +168,7 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       }
    }
 
-   cout << "RooMultHistEfficiency::ctor(): bins [";
+   cout << "RooMultiEffResModel::ctor(): bins [";
    for(list<Double_t>::const_iterator it = _binboundaries->begin();
        it != _binboundaries->end(); ++it) {
       if (it != _binboundaries->begin()) cout << " ";
@@ -178,9 +178,6 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
 
    // Build entries.
    _super = makeSuper(GetName(), categories);
-
-   typedef map<RooAbsCategory*, string> categories_t;
-   categories_t signal;
 
    vector<HistEntry*> ownedEntries;
    for(vector<HistEntry*>::const_iterator it = entries.begin(),
@@ -198,7 +195,6 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       Int_t index = _super->getIndex();
       pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
       assert(r.second);
-      _intVals.insert(make_pair(index, 0.));
    }
    _super->setLabel(current.Data());
 }
@@ -206,7 +202,6 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
 //_____________________________________________________________________________
 RooMultiEffResModel::RooMultiEffResModel(const RooMultiEffResModel& other, const char* name) 
    : RooResolutionModel(other,name),
-     _intVals(other._intVals),
      _prodGenObs(other._prodGenObs),
      _prodGenCode(other._prodGenCode),
      _levels(other._levels),
@@ -333,7 +328,7 @@ Double_t RooMultiEffResModel::evaluate() const
          } else {
             val = it->second->relative()->getVal() * it->second->efficiency()->getVal();
          }
-         // cout << "RooMultiHistEfficiency::evaluate " 
+         // cout << "RooMultiEffResModel::evaluate " 
          //      << it->second->efficiency()->GetName() << " case = " << code << " " 
          //      << " norm " << (_normSet ? *_normSet : RooArgSet()) << " = " << val << endl;
       }

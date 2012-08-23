@@ -813,40 +813,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for background:'
                 self._bkgSWeightData.table( ArgSet( 'bkgSSTagSet', [ tagCatP2VVSS, iTagSS ] ) ).Print('v')
 
-
-        ###################################################################################################################################
-        ## time acceptance function ##
-        ##############################
-
-        if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
-            if timeEffType == 'Fit':
-                hists = {  hlt1_excl_biased : {  'excl_biased' : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
-                                               , 'unbiased'    : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
-                                              }
-                         , hlt2_biased      : { 'biased'       : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
-                         , hlt2_unbiased    : { 'unbiased'     : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
-                        }
-
-                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-                timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists, Data = self._data, Fit = True )
-
-            elif timeEffType == 'Paper':
-                hists = { hlt1_excl_biased : {  'excl_biased' : { 'histogram' : timeEffHistExclBName }
-                                              , 'unbiased'    : { 'histogram' : timeEffHistUBName    }
-                                             }
-                        }
-
-                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-                timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists, Data = self._data, Fit = False )
-
-            elif timeEffType == 'Moriond':
-                from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
-                timeAcceptance = TimeAcceptance( time = time, Input = timeEffHistFile, Histogram = timeEffHistUBName )
-
-            else:
-                raise ValueError( 'Uknown time efficiency type: %s' % timeEffType )
-
-
         ###################################################################################################################################
         ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
         #####################################################################
@@ -1092,6 +1058,54 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :                         sigPdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
         self._BTagDecay = sigPdf
 
+        ###################################################################################################################################
+        ## time acceptance function ##
+        ##############################
+
+        if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
+            self._timeResModelOriginal = self._timeResModel
+            if timeEffType == 'Fit':
+                hists = {  hlt1_excl_biased : {  'excl_biased' : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
+                                               , 'unbiased'    : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
+                                              }
+                         , hlt2_biased      : { 'biased'       : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
+                         , hlt2_unbiased    : { 'unbiased'     : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
+                        }
+
+                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+                self._timeResModel = TimeAcceptance(time = time, Input = timeEffHistFile, Histograms = hists,
+                                                    Data = self._data, Fit = True, Original = sigPdf,
+                                                    ResolutionModel = self._timeResModel)
+            elif timeEffType == 'Paper':
+                hists = { hlt1_excl_biased : {  'excl_biased' : { 'histogram' : timeEffHistExclBName }
+                                              , 'unbiased'    : { 'histogram' : timeEffHistUBName    }
+                                             }
+                        }
+
+                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+                self._timeResModel = TimeAcceptance(time = time, Input = timeEffHistFile, Histograms = hists,
+                                                    Data = self._data, Fit = False, Original = sigPdf,
+                                                    ResolutionModel = self._timeResModel)
+            elif timeEffType == 'Moriond':
+                from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
+                self._timeResModel = TimeAcceptance(time = time, Input = timeEffHistFile, Histogram = timeEffHistUBName,
+                                                    ResolutionModel = self._timeResModel)
+
+            else:
+                raise ValueError( 'Uknown time efficiency type: %s' % timeEffType )
+
+        if multiplyByTimeEff in [ 'all', 'signal' ] :
+            # multiply signal PDF with time acceptance
+            args['resolutionModel'] = self._timeResModel['model']
+            args['ConditionalObservables'] = list(set(args['ConditionalObservables'] + self._timeResModel.conditionalObservables()))
+            args['ExternalConstraints'] = list(set(args['ExternalConstraints'] + self._timeResModel.externalConstraints()))
+            sigPdfTimeAcc = BTagDecay( 'sig_t_angles_time_acceptance', **args )
+        else :
+            sigPdfTimeAcc = sigPdf
+            
+        ###################################################################################################################################
+        ## Angular acceptance       ##
+        ##############################        
         if multiplyByAngEff :
             # multiply signal PDF with angular efficiency
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"'\
@@ -1117,20 +1131,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             moments.appendPYList( self._angleFuncs.angles, angMomInds )
             moments.read(angEffMomentsFile)
             moments.Print()
-            sigPdf = moments * sigPdf
+            sigPdfTimeAcc = moments * sigPdfTimeAcc
 
-        self._BTagDecayAngEff = sigPdf
+        self._BTagDecayAngEff = sigPdfTimeAcc
 
-        if multiplyByTimeEff in [ 'all', 'signal' ] :
-            # multiply signal PDF with time acceptance
-            sigPdfTimeAcc = timeAcceptance * sigPdf
-        else :
-            sigPdfTimeAcc = sigPdf
-
+        ## Add pdf to signal component
         self._signalComps += sigPdfTimeAcc
         if nominalPdf or condTagging : self._sig_t_angles = sigPdfTimeAcc
         else :                         self._sig_t_angles_tagCat_iTag = sigPdfTimeAcc
-
 
         ###################################################################################################################################
         ## plot mumu mass ##

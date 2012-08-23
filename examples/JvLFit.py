@@ -59,7 +59,6 @@ pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal:
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'Moriond'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
@@ -122,7 +121,7 @@ if not readData or manualTagCatBins :
                               , ( 'TagCat2',   2, 0.30     )
                              ]
 
-pdfConfig['timeEffType']          = 'Fit'
+pdfConfig['timeEffType']          = 'Paper'
 pdfConfig['timeEffHistFile']      = '/stuff/PhD/p2vv/data/start_values.root'\
                                     if pdfConfig['timeEffType'] == 'Fit' else\
                                     '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'

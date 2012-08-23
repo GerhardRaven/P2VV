@@ -56,14 +56,14 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-## tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-##                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-##                                                     Constant = True))
+from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
+                                                    Constant = True))
 ## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-tres = TimeResolution(time = t)
+## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+## tres = TimeResolution(time = t)
 
 # Signal time pdf
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time
@@ -84,35 +84,20 @@ psi_m  = Pdf(Name = 'psi_m', Type = CrystalBall, Parameters = [mpsi, mpsi_mean, 
 psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.0000001))
 bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c])
 
-# Create psi background component
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
-psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model()
-                         , psi_t_fll = dict( Name = 'psi_t_fll',    Value = 0.2 )
-                         , psi_t_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
-                         , psi_t_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
-                         , ExternalConstraints = tres.model().ExternalConstraints())
-
 # Create combinatorical background component
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
-bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
-
-bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres.model()
-                       , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
-                       , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
-                       , t_bkg_ml_tau = dict( Name = 't_bkg_ml_tau', Value = 0.21, MinMax = (0.01,0.5) ) )
-
 # Create components
-signal = Component('signal', (sig_m.pdf(), psi_m, sig_t.pdf()), Yield = (30000,100,100000))
-psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t.pdf()), Yield= (100000,500,200000) )
-background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t.pdf()), Yield = (100000,100,300000) )
+signal_mass = Component('signal', (sig_m.pdf(), psi_m), Yield = (30000,100,100000))
+psi_background_mass = Component('psi_background', (bkg_m.pdf(), psi_m), Yield= (100000,500,200000) )
+background_mass = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (100000,100,300000) )
 
 ## Build mass PDF
-mass_pdf = buildPdf(Components = (signal, background), Observables = (m, ), Name='mass_pdf')
+mass_pdf = buildPdf(Components = (signal_mass, background_mass), Observables = (m, ), Name='mass_pdf')
 mass_pdf.Print("t")
 
-base_location = '/home/raaij'
-## base_location = '/stuff/PhD/p2vv'
+## base_location = '/home/raaij'
+base_location = '/stuff/PhD/p2vv'
 
 # Build the acceptance using the histogram as starting values
 input_file = os.path.join(base_location, 'data/start_values.root')
@@ -216,9 +201,12 @@ if real_data:
         rel_spec[comb] = {'Value' : data.sumEntries(cuts) / total, "Constant" : True}
 
     spec['Relative'] = rel_spec
-    pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, UseSingleBinConstraint = False,
-                              **spec)
+    res_model = MultiHistEfficiencyModel(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
+                                         ConditionalCategories = True, UseSingleBinConstraint = False,
+                                         ResolutionModel = tres.model(), **spec)
+    print "MAKING PDF"
+    pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = res_model)
+    pdf = pdf.pdf()
     pdf.Print('v')
 
     mass_pdf.fitTo(data, **fitOpts)
@@ -306,7 +294,7 @@ else:
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-result = pdf.fitTo(data, **fitOpts)
+## result = pdf.fitTo(data, **fitOpts)
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
@@ -380,7 +368,7 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     shape.plotOn(frame, **pdfOpts)
     frame.Draw()
 
-shapes = pdf.shapes()
+shapes = res_model.shapes()
 eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
 from ROOT import kYellow, kOrange
 for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):

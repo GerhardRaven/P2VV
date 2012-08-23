@@ -49,6 +49,8 @@ public:
       return (RooResolutionModel&)_model.arg();
    }
 
+   const RooArgList& getIntegralRanges(const RooArgSet& iset, const char* rangeName = 0) const;
+
 protected:
    friend class RooMultiEffResModel;
 
@@ -81,6 +83,9 @@ protected:
 
    CacheElem *getCache(const RooArgSet* iset, const TNamed* rangeName = 0 ) const;
    mutable RooObjCacheManager _cacheMgr;
+
+   typedef std::map<std::string, RooArgList*> RangeMap;
+   mutable RangeMap _ranges;
 
    ClassDef(RooEffResModel,1) // EffResian Resolution Model
 };

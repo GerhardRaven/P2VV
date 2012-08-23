@@ -3,6 +3,8 @@
 #define MULTIHISTENTRY_H 1
 
 // Include files
+#include <iostream>
+
 #include <RooCategoryProxy.h>
 
 /** @class MultiHistEntry MultiHistEntry.h
@@ -16,35 +18,77 @@ class MultiHistEntry {
 public:
 
    MultiHistEntry()
-   : m_rawEff(0), m_rawRel(0), m_efficiency(0), m_relative(0),
+      : m_rawEff(0), m_rawRel(0), m_efficiency(0), m_relative(0),
         m_index(0)
    {
    }
 
    MultiHistEntry(const std::map<RooAbsCategory*, std::string>& categories,
                   EFFICIENCY* efficiency, RooAbsReal* relative)
-   : m_rawCats(categories), m_rawEff(efficiency), m_rawRel(relative),
+      : m_rawCats(categories), m_rawEff(efficiency), m_rawRel(relative),
         m_efficiency(0), m_relative(0), m_index(0)
    {
+   }
+
+   MultiHistEntry(const MultiHistEntry& other)
+      : m_rawCats(other.m_rawCats), m_rawEff(other.m_rawEff), m_rawRel(other.m_rawRel),
+        m_index(other.m_index)
+   {
+      for (std::map<RooCategoryProxy*, std::string>::const_iterator it = other.m_categories.begin(),
+              end = other.m_categories.end(); it != end; ++it) {
+         RooCategoryProxy* proxy = new RooCategoryProxy(*it->first);
+         m_categories.insert(make_pair(proxy, it->second));
+      }
+      
+      if (other.m_efficiency) {
+         m_efficiency = new RooRealProxy(*other.m_efficiency);
+      } else {
+         m_efficiency = 0;
+      }
+      if (other.m_relative) {
+         m_relative = new RooRealProxy(*other.m_relative);
+      } else {
+         m_relative = 0;
+      }
    }
 
    MultiHistEntry(const MultiHistEntry& other, PARENT* parent)
       : m_rawCats(other.m_rawCats), m_rawEff(other.m_rawEff), m_rawRel(other.m_rawRel),
         m_index(other.m_index)
    {
-      if (!other.m_efficiency) {
-         m_efficiency = 0;
-         m_relative = 0;
-         return;
+      std::string name;
+      if (other.m_efficiency) {
+         m_efficiency = new RooRealProxy(other.m_efficiency->GetName(), parent, *other.m_efficiency);
+      } else {
+         name = m_rawEff->GetName(); name += "_proxy";
+         m_efficiency = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawEff);
       }
-      m_efficiency = new RooRealProxy(other.m_efficiency->GetName(), parent, *other.m_efficiency);
-      m_relative = new RooRealProxy(other.m_relative->GetName(), parent, *other.m_relative);
+      m_rawEff = 0;
+         
+      if (other.m_relative) {
+         m_relative = new RooRealProxy(other.m_relative->GetName(), parent, *other.m_relative);
+      } else {
+         name = m_rawEff->GetName(); name += "_proxy";
+         m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawRel);
+      }
+      m_rawRel = 0;
       
-      for (std::map<RooCategoryProxy*, std::string>::const_iterator it = other.m_categories.begin(),
-              end = other.m_categories.end(); it != end; ++it) {
-         m_categories.insert(make_pair(new RooCategoryProxy(it->first->GetName(), parent, *(it->first)),
-                                       it->second));
+      if (!other.m_categories.empty()) {
+         for (std::map<RooCategoryProxy*, std::string>::const_iterator it = other.m_categories.begin(),
+                 end = other.m_categories.end(); it != end; ++it) {
+            RooCategoryProxy* proxy = new RooCategoryProxy(it->first->GetName(), parent, *(it->first));
+            m_categories.insert(make_pair(proxy, it->second));
+         }
+      } else {
+         for (std::map<RooAbsCategory*, std::string>::const_iterator it = other.m_rawCats.begin(),
+                 end = other.m_rawCats.end(); it != end; ++it) {
+            name = it->first->GetName(); name += "_proxy";
+            RooCategoryProxy* proxy = new RooCategoryProxy(name.c_str(), name.c_str(), parent,
+                                                           *(it->first));
+            m_categories.insert(make_pair(proxy, it->second));
+         }
       }
+      m_rawCats.clear();
    }
 
    virtual ~MultiHistEntry()
@@ -98,26 +142,45 @@ public:
 
    void setParent(PARENT* parent)
    {
-      assert(m_efficiency == 0);
-      assert(m_relative == 0);
-      
       std::string name;
-      for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
-              end = m_rawCats.end(); it != end; ++it) {
-         name = it->first->GetName(); name += "_proxy";
-         RooCategoryProxy* proxy = new RooCategoryProxy(name.c_str(), name.c_str(), parent,
-                                                        *(it->first));
-         m_categories.insert(make_pair(proxy, it->second));
+      if (m_efficiency) {
+         RooRealProxy* temp = new RooRealProxy(m_efficiency->GetName(), parent, *m_efficiency);
+         delete m_efficiency;
+         m_efficiency = temp;
+      } else {
+         name = m_rawEff->GetName(); name += "_proxy";
+         m_efficiency = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawEff);
       }
-      m_rawCats.clear();
+
+      if (m_relative) {
+         RooRealProxy* temp = new RooRealProxy(m_relative->GetName(), parent, *m_relative);
+         delete m_relative;
+         m_relative = temp;
+      } else {
+         name = m_rawEff->GetName(); name += "_proxy";
+         m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawRel);
+      }
+      m_rawRel = 0;
       
-      name = m_rawEff->GetName(); name += "_proxy";
-      m_efficiency = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawEff);
-      name = m_rawEff->GetName(); name += "_proxy";
-      m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawRel);
-      
-      // m_rawEff = 0;
-      // m_rawRel = 0;
+      if (!m_categories.empty()) {
+         std::map<RooCategoryProxy*, std::string> temp;
+         for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
+                 end = m_categories.end(); it != end; ++it) {
+            RooCategoryProxy* proxy = new RooCategoryProxy(it->first->GetName(), parent, *(it->first));
+            delete it->first;
+            temp.insert(make_pair(proxy, it->second));
+         }
+         m_categories = temp;
+      } else {
+         for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
+                 end = m_rawCats.end(); it != end; ++it) {
+            name = it->first->GetName(); name += "_proxy";
+            RooCategoryProxy* proxy = new RooCategoryProxy(name.c_str(), name.c_str(), parent,
+                                                           *(it->first));
+            m_categories.insert(make_pair(proxy, it->second));
+         }
+      }
+      m_rawCats.clear();      
    }
 
    RooArgSet categories() const
@@ -177,6 +240,42 @@ public:
             lval->setLabel(it->second.c_str());
          }
       }
+   }
+
+   void print()
+   {
+      for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
+              end = m_rawCats.end(); it != end; ++it) {
+         if (!it->first) continue;
+         it->first->Print();
+         std::cout << it->second << std::endl;
+      }
+      if (m_rawEff) {
+         m_rawEff->Print();
+      } else {
+         std::cout << "m_rawEff == 0" << std::endl;
+      }
+      if (m_rawRel) {
+         m_rawRel->Print();
+      } else {
+         std::cout << "m_rawRel == 0" << std::endl;
+      }
+      for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
+              end = m_categories.end(); it != end; ++it) {
+         if (!it->first) continue;
+         it->first->Print();
+         std::cout << it->second << std::endl;
+      }
+      if (m_efficiency) {
+         m_efficiency->Print();
+      } else {
+         std::cout << "m_efficiency == 0" << std::endl;
+      }
+      if (m_relative) {
+         m_relative->Print();
+      } else {
+         std::cout << "m_relative == 0" << std::endl;
+      }      
    }
 
 private:

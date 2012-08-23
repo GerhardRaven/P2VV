@@ -10,7 +10,6 @@
 #include "RooBinnedPdf.h"
 #include "RooP2VVAngleBasis.h"
 #include "RooThresholdPdf.h"
-#include "RooEffHistProd.h"
 #include "RooRelBreitWigner.h"
 #include "RooTagDecisionWrapper.h"
 #include "RooRealCategory.h"
@@ -18,7 +17,6 @@
 #include "RooDataSetToTree.h"
 #include "RooTransAngle.h"
 #include "RooCruijff.h"
-#include "RooMultiHistEfficiency.h"
 #include "RooEfficiencyBin.h"
 #include "RooAvEffConstraint.h"
 #include "RooCorrectedSWeight.h"
@@ -36,10 +34,6 @@ struct Instantiations {
    std::map<RooCategoryProxy*, std::string> _i01;
    std::vector<std::pair<double, TString> > _i02;
 
-
-   std::map<Int_t, MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency>*>         _i03;
-   std::pair<Int_t, MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency>*>        _i04;
-
    std::map<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>         _i031;
    std::pair<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>        _i041;
 
@@ -52,10 +46,6 @@ struct Instantiations {
 
    std::pair<Double_t, TString> _i10;
    std::pair<RooCategoryProxy*, std::string> _i11;
-
-   MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency> _i12;
-   std::vector<MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency> > _i13;
-   std::map<int, MultiHistEntry<RooEffHistProd, RooMultiHistEfficiency>*>::iterator _i14;
 
    MultiHistEntry<RooEffResModel, RooMultiEffResModel> _i15;
    std::vector<MultiHistEntry<RooEffResModel, RooMultiEffResModel> > _i16;

@@ -1881,7 +1881,8 @@ void RooBTagDecay::initTaggingCats(const TObjArray& tagCatCoefs,
         }
       }
 
-      RooFormulaVar* tagCatCoef0 = new RooFormulaVar("tagCatCoef0",
+      TString name = TString(GetName()) + "_tagCatCoef0";
+      RooFormulaVar* tagCatCoef0 = new RooFormulaVar(name.Data(),
           "Tagging category coefficient category 0", formString, catCoefList);
       _createdVars.addOwned(*tagCatCoef0);
 
@@ -1932,9 +1933,12 @@ void RooBTagDecay::initTaggingCats(const TObjArray& tagCatCoefs,
       formString += "))/@";
       formString += _tagCatCoefs.GetEntries()
           * ((RooArgList*)_tagCatCoefs.At(0))->getSize();
-      RooFormulaVar* avgCEven0 = new RooFormulaVar("avgCEven0",
+
+      TString name = TString(GetName()) + "_avgCEven0";
+      RooFormulaVar* avgCEven0 = new RooFormulaVar(name.Data(),
           "Average even coefficient category 0", formString, avgCEvenList);
-      RooFormulaVar* avgCOdd0 = new RooFormulaVar("avgCOdd0",
+      name = TString(GetName()) + "_avgCOdd0";
+      RooFormulaVar* avgCOdd0 = new RooFormulaVar(name.Data(),
           "Average odd coefficient category 0", formString, avgCOddList);
       _createdVars.addOwned(*avgCEven0);
       _createdVars.addOwned(*avgCOdd0);
