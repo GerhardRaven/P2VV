@@ -37,7 +37,7 @@ dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, Tr
 
 # fit options
 fitOpts = dict(  NumCPU    = 1
-               , Optimize  = 1
+               , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True
 #               , Minos     = True

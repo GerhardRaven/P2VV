@@ -846,21 +846,26 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
   Double_t value = 1.;
 
   // temporary array of coefficient positions
-  Int_t* cPos = new Int_t [_numCats];
-  for (int i = 0; i < _numCats; ++i) cPos[i] = 0;
+  std::vector<Int_t> cPos(_numCats,0);
 
   // loop over base categories
   Bool_t ignoreBin = _ignoreFirstBin;
   Bool_t calcCoefZeros = kFALSE;
-  for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+
+  Int_t catIter = -1;
+  RooFIter baseCatsIter = _baseCatsList.fwdIterator();
+  RooFIter baseVarsIter = _baseVarsList.fwdIterator();
+  RooAbsCategory *baseCats(0);
+  while ( (baseCats=(RooAbsCategory*)baseCatsIter.next()) ) {
+    ++catIter;
     // get coefficient position
     const std::map<Int_t, Int_t>& indexMap = _indexPositions[catIter];
-    Int_t index = static_cast<RooAbsCategory*>(_baseCatsList.at(catIter))->getIndex();
+    Int_t index = baseCats->getIndex();
     std::map<Int_t, Int_t>::const_iterator it = indexMap.find(index);
     assert(it != indexMap.end());
     cPos[catIter] = it->second;
     
-    if (cPos[catIter] != 0) ignoreBin = kFALSE;
+    if (cPos[catIter] != 0)      ignoreBin     = kFALSE;
     if (_calcCoefZeros[catIter]) calcCoefZeros = kTRUE;
 
     // multiply temporary result with value of coefficient
@@ -870,30 +875,22 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
           .UncheckedAt(catIter))
           ->at(cPos[catIter] - (Int_t)_calcCoefZeros[catIter]))->getVal();
       // make negative values equal to zero
-      if (cVal <= 0.) {
-         delete[] cPos;
-         return 0.;
-      }
+      if (cVal <= 0.) return 0.;
 
       // multiply by coefficient't value
       value *= cVal;
 
       // divide by bin width if coefficients are bin integrals
-      if (_continuousBase && _binIntegralCoefs)
-        value /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
-            ->getBinning(_binningNames[catIter]).binWidth(cPos[catIter]);
+      if (_continuousBase && _binIntegralCoefs) {
+        RooAbsRealLValue *baseVars = (RooAbsRealLValue*)baseVarsIter.next();
+        value /= baseVars->getBinning(_binningNames[catIter]).binWidth(cPos[catIter]);
+      }
     }
   }
 
   // return value if we don't have to calculate any bin 0 coefficients
-  if (ignoreBin) {
-    delete[] cPos;
-    return 0.;
-  }
-  if (!calcCoefZeros) {
-    delete[] cPos;
-    return value;
-  }
+  if (ignoreBin) return 0.;
+  if (!calcCoefZeros) return value;
 
   // loop over base categories again
   for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
@@ -919,7 +916,6 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
     if (cPos[catIter] == 0) {
       // multiply result with the calculated value of bin 0 coefficient
       if (coefSum >= 1.) {
-        delete[] cPos;
         return 0.;
       }
       value *= 1. - coefSum;
@@ -935,7 +931,6 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
     }
   }
 
-  delete[] cPos;
 
   return value;
 }
