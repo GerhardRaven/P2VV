@@ -8,7 +8,7 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 generateData            = False
-doFit                   = False
+doFit                   = True
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
@@ -59,7 +59,7 @@ pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal:
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'Paper'
+pdfConfig['timeEffType']          = 'Moriond'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
