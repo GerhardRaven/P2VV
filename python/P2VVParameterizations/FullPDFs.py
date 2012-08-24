@@ -420,9 +420,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            )
 
         selection        = Category( 'sel',                       Observable = True, States = { 'selected'    : 1, 'not_selected' : 0 } )
-        hlt1_excl_biased = Category( 'hlt1_excl_biased',          Observable = True, States = { 'excl_biased' : 1, 'unbiased'     : 0 } )
+        #hlt1_excl_biased = Category( 'hlt1_excl_biased',          Observable = True, States = { 'excl_biased' : 1, 'unbiased'     : 0 } )
+        hlt1_excl_biased = Category( 'triggerDecisionBiasedExcl', Observable = True, States = { 'excl_biased' : 1, 'unbiased'     : 0 } )
         hlt1_biased      = Category( 'hlt1_biased',               Observable = True, States = { 'biased'      : 1, 'not_biased'   : 0 } )
-        hlt1_unbiased    = Category( 'hlt1_unbiased',             Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
+        #hlt1_unbiased    = Category( 'hlt1_unbiased',             Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
+        hlt1_unbiased    = Category( 'triggerDecisionUnbiased',   Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
         hlt2_biased      = Category( 'hlt2_biased',               Observable = True, States = { 'biased'      : 1, 'not_biased'   : 0 } )
         hlt2_unbiased    = Category( 'hlt2_unbiased',             Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
 
@@ -471,11 +473,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if nTupleFile :
             if multiplyByTimeEff and timeEffType == 'Fit':
-                cut = '(sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1))'
+                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)'
             elif multiplyByTimeEff and timeEffType == 'Paper':
-                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'
+                #cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'
+                cut = 'sel == 1 && (triggerDecisionBiasedExcl == 1 || triggerDecisionUnbiased == 1)'
             else: ## timeEffType == 'Moriond'
-                cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_biased == 1'
+                #cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_biased == 1'
+                cut = 'sel == 1 && triggerDecisionUnbiased == 1'
             from P2VVGeneralUtils import readData
             self._data = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
                                   , Rename = 'JpsiphiData', cuts = cut )
@@ -813,6 +817,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for background:'
                 self._bkgSWeightData.table( ArgSet( 'bkgSSTagSet', [ tagCatP2VVSS, iTagSS ] ) ).Print('v')
 
+
         ###################################################################################################################################
         ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
         #####################################################################
@@ -1058,9 +1063,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :                         sigPdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
         self._BTagDecay = sigPdf
 
+
         ###################################################################################################################################
-        ## time acceptance function ##
-        ##############################
+        ## time acceptance ##
+        #####################
 
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
             self._timeResModelOriginal = self._timeResModel
@@ -1102,10 +1108,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             sigPdfTimeAcc = BTagDecay( 'sig_t_angles_time_acceptance', **args )
         else :
             sigPdfTimeAcc = sigPdf
-            
+
+
         ###################################################################################################################################
-        ## Angular acceptance       ##
-        ##############################        
+        ## angular acceptance ##
+        ########################
+
         if multiplyByAngEff :
             # multiply signal PDF with angular efficiency
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"'\
@@ -1135,10 +1143,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         self._BTagDecayAngEff = sigPdfTimeAcc
 
-        ## Add pdf to signal component
+        # add PDF to signal components
         self._signalComps += sigPdfTimeAcc
         if nominalPdf or condTagging : self._sig_t_angles = sigPdfTimeAcc
         else :                         self._sig_t_angles_tagCat_iTag = sigPdfTimeAcc
+
 
         ###################################################################################################################################
         ## plot mumu mass ##
