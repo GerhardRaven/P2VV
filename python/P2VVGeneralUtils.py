@@ -31,14 +31,15 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
 
     if NTuple :
       from ROOT import RooDataSet, TChain
-      assert observables != None, "P2VV - ERROR: readData: set of observables is required for reading an NTuple"
+      assert observables != None, 'P2VV - ERROR: readData: set of observables is required for reading an NTuple'
 
       # create data set from NTuple file(s)
-      print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
+      print 'P2VV - INFO: readData: reading NTuple(s) "%s" from file(s) "%s"' % ( dataSetName, filePath )
       chain = TChain(dataSetName)
       status = chain.Add( filePath, -1 )
-      if status == 0 : raise RuntimeError('Could not locate tree %s in file %s' % ( dataSetName, filePath ) )
+      if status == 0 : raise RuntimeError('P2VV - ERROR: could not locate tree "%s" in file "%s"' % ( dataSetName, filePath ) )
 
+      print 'P2VV - INFO: readData: applying cuts: %s' % cuts
       data = RooDataSet( dataSetName, dataSetName
                        , [ obs._var for obs in observables ]
                        , Import = chain
@@ -47,11 +48,12 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
       from ROOT import TFile
 
       # get data set from file
-      print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
+      print 'P2VV - INFO: readData: reading RooDataset "%s" from file "%s"' % ( dataSetName, filePath )
       file = TFile.Open( filePath, 'READ' )
-      assert file, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
+      assert file, 'P2VV - ERROR: readData: file "%s" could not be opened' % filePath
 
       if observables :
+          print 'P2VV - INFO: readData: applying cuts: %s' % cuts
           from ROOT import RooDataSet
           data = RooDataSet( dataSetName, dataSetName
                            , [ obs._var for obs in observables ]
