@@ -66,16 +66,14 @@ RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title,
       Double_t xmin = x.getMin(range);
       Double_t xmax = x.getMax(range);
 
-      RooCustomizer* customizer = new RooCustomizer(*model.efficiency(),
-                                                    (TString(range) + "_customizer").Data());
+      RooCustomizer customizer(*model.efficiency(), (TString(range) + "_customizer").Data());
       RooRealVar* cv = static_cast<RooRealVar*>(x.clone(TString(x.GetName()) + "_" + range) );
       cv->setVal((xmin + xmax) / 2.);
       cv->setConstant(true);
-      customizer->replaceArg(x, *cv);
-      RooAbsArg *ceff = customizer->build(kFALSE);
+      customizer.replaceArg(x, *cv);
+      RooAbsArg *ceff = customizer.build(kFALSE);
       ceff->addOwnedComponents(*cv);
       _efficiencies.addOwned(*ceff);
-      _customizers.push_back(customizer);
    }
    
 } 
@@ -100,10 +98,6 @@ RooAvEffConstraint::RooAvEffConstraint(const RooAvEffConstraint& other, const ch
 RooAvEffConstraint::~RooAvEffConstraint()
 {
    if (_integral) delete _integral;
-   for (std::vector<RooCustomizer*>::const_iterator it = _customizers.begin(),
-           end = _customizers.end(); it != end; ++it) {
-      delete *it;
-   }
 }
 
 //_____________________________________________________________________________
