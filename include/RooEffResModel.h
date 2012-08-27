@@ -68,7 +68,6 @@ protected:
       friend class RooEffResModel;
       // Payload
       RooAbsReal* _I;
-      std::vector<RooCustomizer*> _customizers;
    };
 
    virtual Double_t evaluate() const ;

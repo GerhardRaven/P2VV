@@ -37,8 +37,6 @@ ClassImp(RooEffResModel)
 RooEffResModel::CacheElem::~CacheElem()
 {
    delete _I;
-   for (std::vector<RooCustomizer*>::const_iterator it = _customizers.begin(),
-           end = _customizers.end(); it != end; ++it) delete *it;
 }
 
 //_____________________________________________________________________________
@@ -80,15 +78,14 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
       intList.add(*model.createIntegral(iset, range));
 
       // create RooAbsReal for (average) efficiency in this range
-      RooCustomizer* customizer = new RooCustomizer(eff, (TString(range) + "_customizer").Data());
+      RooCustomizer customizer(eff, (TString(range) + "_customizer").Data());
       RooRealVar* cv = static_cast<RooRealVar*>(x.clone(TString(x.GetName()) + "_" + range) );
       cv->setVal((xmin + xmax) / 2.);
       cv->setConstant(true);
-      customizer->replaceArg(x, *cv);
-      RooAbsArg *ceff = customizer->build(kFALSE);
+      customizer.replaceArg(x, *cv);
+      RooAbsArg *ceff = customizer.build(kFALSE);
       ceff->addOwnedComponents(*cv);
       effList.add( *ceff );
-      _customizers.push_back(customizer);
    }
    TString iName = TString::Format("%s_I_%s", parent.GetName(),x.GetName());
    _I = new RooAddition(iName, iName, effList, intList, kTRUE);
@@ -247,7 +244,7 @@ const RooArgList& RooEffResModel::getIntegralRanges(const RooArgSet& iset,
    Double_t xmax = x.getMax(rangeName);
 
    RooArgList* ranges = new RooArgList;
-   std::list<Double_t>* bounds = efficiency()->binBoundaries(x, x.getMin(), x.getMax());
+   std::auto_ptr<std::list<Double_t> > bounds(efficiency()->binBoundaries(x, x.getMin(), x.getMax()));
    std::list<Double_t>::const_iterator lo, hi = bounds->begin();
    for (unsigned int i = 0; i + 1 < bounds->size();++i) {
       lo = hi++;
