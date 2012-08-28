@@ -38,8 +38,8 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 1
-               , Optimize  = 1
+fitOpts = dict(  NumCPU    = 4
+               , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True
 #               , Minos     = True
@@ -56,7 +56,7 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
-pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
+pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
@@ -84,7 +84,7 @@ pdfConfig['constrainTimeResScale'] = True  # nominal: True
 
 pdfConfig['numEvents'] = 32000
 pdfConfig['signalFraction'] = 0.67
-pdfConfig['massRangeBackground'] = False
+pdfConfig['massRangeBackground'] = True
 
 pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'phasesSWaveFrac'
 pdfConfig['ASParam']        = 'deltaPerp'  # default/nominal: 'deltaPerp'
