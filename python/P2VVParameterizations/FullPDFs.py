@@ -392,9 +392,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
-                        ,  Ranges = dict(  LeftSideBand  = ( None,  5330. )
-                                         , Signal        = ( 5330., 5410. )
-                                         , RightSideBand = ( 5410., None  )
+                        ,  Ranges = dict(  LeftSideBand  = ( 5205., 5325. )
+                                         , Signal        = ( 5325., 5400. )
+                                         , RightSideBand = ( 5400., 5520. )
                                         )
                        )
 
@@ -560,7 +560,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # determine mass parameters with a fit
             print 120 * '='
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting mass PDF'
+
+            widthSFRange  = self._signalBMass.parameter('m_sig_sigma_sf').getRange()
+            massFracRange = self._signalBMass.parameter('m_sig_frac').getRange()
+            self._signalBMass.parameter('m_sig_sigma_sf').setRange( ( 0.01, 10. ) )
+            self._signalBMass.parameter('m_sig_frac').setRange( ( 0.01, 0.99 ) )
+
             self._massPdf.fitTo( self._data, **fitOpts )
+
+            self._signalBMass.parameter('m_sig_sigma_sf').setRange(widthSFRange)
+            self._signalBMass.parameter('m_sig_frac').setRange(massFracRange)
 
             if SWeightsType.startswith('simultaneous') and paramKKMass == 'simultaneous' :
                 # get mass parameters that are split between KK mass bins
@@ -1390,7 +1399,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             else :
                 # create a binned PDF for background angular shape
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a binned angular PDF for background'
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a %s angular PDF for background'\
+                      % ( 'hybrid' if bkgAnglePdf == 'hybrid' else 'binned' )
 
                 # define angular bins
                 from math import pi
@@ -1400,16 +1410,22 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
                     cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
                     phiBinBounds = array( 'd', [ -pi ] + [ pi * ( -1. + 2. / 9. * float(i) ) for i in range( 1, 9 ) ] + [ pi ] )
+                elif not nominalPdf and bkgAnglePdf == 'hybrid' :
+                    nBins = [ 10, 40, 5 ]
+                    cpsBinBounds = array( 'd', [ -1.,                                        1.  ] )
+                    cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, 0.85, 0.90, 0.95, 1.  ] )
+                    phiBinBounds = array( 'd', [ -pi,                                        pi  ] )
                 else :
-                    nBins = [ 5, 40, 5 ]
-                    cpsBinBounds = array( 'd', [ -1.,                      -0.6,      -0.2,      0.2,      0.6,                   1. ] )
-                    #cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6,      -0.2,      0.2,      0.6, 0.85, 0.90, 0.95, 1. ] )
-                    phiBinBounds = array( 'd', [ -pi,                      -0.6 * pi, -0.2 * pi, 0.2 * pi, 0.6 * pi,              pi ] )
+                    nBins = [ 10, 24, 5 ]
+                    #cpsBinBounds = array( 'd', [ -1. + 2. / 10. * float(i) for i in range(11) ] )
+                    #cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6, -0.2, 0.2, 0.6, 0.85, 0.90, 0.95, 1. ] )
+                    #phiBinBounds = array( 'd', [ -pi + 2. * pi / 5. * float(i) for i in range(6) ] )
 
-                    #cpsBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
-                    #cthBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
-                    cthBinBounds = array( 'd', [ -1. + 2. / 16. * float(i) for i in range(17) ] )
-                    #phiBinBounds = array( 'd', [ -pi, -0.5 * pi, 0., 0.5 * pi, pi ] )
+                    cpsBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
+                    #cpsBinBounds = array( 'd', [ -1. + 2. / 10. * float(i) for i in range(11) ] )
+                    cthBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
+                    #cthBinBounds = array( 'd', [ -1. + 2. / 24. * float(i) for i in range(25) ] )
+                    phiBinBounds = array( 'd', [ -pi, -0.5 * pi, 0., 0.5 * pi, pi ] )
 
                 cpsNumBins = len(cpsBinBounds) - 1
                 cthNumBins = len(cthBinBounds) - 1
@@ -1428,7 +1444,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               , Title    = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
                                               , Value    = 1. / cpsNumBins / cthNumBins / phiNumBins
                                               , MinMax   = ( 0., 1. )
-                                              , Constant = True
+                                              , Constant = False if bkgAnglePdf == 'hybrid' else True
                                              )\
                                       if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
                                       for bin2 in range( phiNumBins ) for bin1 in range( cthNumBins ) for bin0 in range( cpsNumBins )

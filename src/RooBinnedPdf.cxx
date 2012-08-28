@@ -515,6 +515,10 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
           std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
           Int_t cPos = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
               ->getIndex()];
+//std::cout << "RooBinnedPdf::analyticalIntegral: coefIter = " << coefIter
+//                                           << "  catIter = " << catIter
+//                                           << "  cPos = " << cPos
+//                                           << "binPos = " << binPos[catIter] << std::endl;
           if (cPos != binPos[catIter])
             // don't use coefficient's value
             addCoef = kFALSE;
@@ -543,6 +547,7 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
       // get coefficient's value
       Double_t cVal = coef->getVal();
 
+//std::cout << "RooBinnedPdf::analyticalIntegral: cVal = " << cVal << "  binVolumeFac = " << binVolumeFac << "  addCoef = " << addCoef << std::endl;
       // add value to sum
       if (_calcCoefZeros[0] && cVal > 0.) coefSum += cVal;
 
@@ -552,6 +557,7 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
 
     delete[] binPos;
 
+//std::cout << "RooBinnedPdf::analyticalIntegral: coefSum = " << coefSum << "  integral = " << integral << std::endl;
     if (_calcCoefZeros[0]) {
       // return integral if bin 0 coefficient equals zero
       if (coefSum >= 1.) return integral /= coefSum;
@@ -566,7 +572,10 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
               ->getIndex()];
           if (cPos != 0)
             // don't use coefficient's value
+//{std::cout << "RooBinnedPdf::analyticalIntegral: don't use bin 0 value: return = "
+//           << integral << std::endl;
             return integral;
+//}
         }
 
         if (_continuousBase) {
@@ -582,6 +591,8 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
         }
       }
 
+//std::cout << "RooBinnedPdf::analyticalIntegral: use bin 0 value: return = "
+//          << integral << " + (1 - " << coefSum << ") * " << binVolumeFac << std::endl;
       // add bin 0 value to integral and return integral
       return integral + (1. - coefSum) * binVolumeFac;
     }
