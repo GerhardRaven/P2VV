@@ -191,7 +191,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basisSig3' / 'basisSig6'
         self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
-        self['SWeightsType']         = ''                  # '' / 'simultaneous' / 'simultaneousFreeBkg'
+        self['SWeightsType']         = ''                  # '' / 'simultaneous' / 'simultaneousFixed' / 'simultaneousFreeBkg'
         self['KKMassBinBounds']      = [ 1020. - 12., 1020. + 12. ]
         self['SWaveAmplitudeValues'] = (  [ ], [ ] )
         self['CSPValues']            = [ 0.4976 ]
