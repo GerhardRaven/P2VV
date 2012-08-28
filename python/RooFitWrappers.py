@@ -1547,7 +1547,7 @@ class BinnedPdf( Pdf ) :
 
             else:
                 # independent bin coefficients are specified
-                if hasattr( kwargs['Coefficients'][0], '__iter__' ) :
+                if kwargs['Coefficients'] and hasattr( kwargs['Coefficients'][0], '__iter__' ) :
                     # coefficients for different variables factorize
 
                     # build coefficients lists

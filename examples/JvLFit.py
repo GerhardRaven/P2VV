@@ -751,7 +751,7 @@ elif pdfConfig['makePlots'] :
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
     pdfBuild['estWTagCanvOS'].Print(plotsFile)
-    pdfBuild['estWTagCanvSS'].Print(plotsFile + '' if deltaSCanv else ')')
+    pdfBuild['estWTagCanvSS'].Print(plotsFile + ( '' if deltaSCanv else ')' ) )
 
 if deltaSCanv :
     deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )

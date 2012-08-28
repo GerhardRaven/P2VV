@@ -1410,22 +1410,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
                     cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
                     phiBinBounds = array( 'd', [ -pi ] + [ pi * ( -1. + 2. / 9. * float(i) ) for i in range( 1, 9 ) ] + [ pi ] )
+
                 elif not nominalPdf and bkgAnglePdf == 'hybrid' :
                     nBins = [ 10, 40, 5 ]
                     cpsBinBounds = array( 'd', [ -1.,                                        1.  ] )
                     cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, 0.85, 0.90, 0.95, 1.  ] )
                     phiBinBounds = array( 'd', [ -pi,                                        pi  ] )
+
                 else :
                     nBins = [ 10, 24, 5 ]
-                    #cpsBinBounds = array( 'd', [ -1. + 2. / 10. * float(i) for i in range(11) ] )
+                    cpsBinBounds = array( 'd', [ -1. + 2. / 10.     * float(i) for i in range(11) ] )
+                    cthBinBounds = array( 'd', [ -1. + 2. / 24.     * float(i) for i in range(25) ] )
                     #cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6, -0.2, 0.2, 0.6, 0.85, 0.90, 0.95, 1. ] )
-                    #phiBinBounds = array( 'd', [ -pi + 2. * pi / 5. * float(i) for i in range(6) ] )
+                    phiBinBounds = array( 'd', [ -pi + 2. * pi / 5. * float(i) for i in range(6)  ] )
 
-                    cpsBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
-                    #cpsBinBounds = array( 'd', [ -1. + 2. / 10. * float(i) for i in range(11) ] )
-                    cthBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
-                    #cthBinBounds = array( 'd', [ -1. + 2. / 24. * float(i) for i in range(25) ] )
-                    phiBinBounds = array( 'd', [ -pi, -0.5 * pi, 0., 0.5 * pi, pi ] )
+                    #cpsBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
+                    #cthBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
+                    #phiBinBounds = array( 'd', [ -pi, -0.5 * pi, 0., 0.5 * pi, pi ] )
 
                 cpsNumBins = len(cpsBinBounds) - 1
                 cthNumBins = len(cthBinBounds) - 1
