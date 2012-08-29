@@ -1453,10 +1453,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                       if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
                                       for bin2 in range( phiNumBins ) for bin1 in range( cthNumBins ) for bin0 in range( cpsNumBins )
                                     ]
-                self._bkgAngCoefs[0] = FormulaVar(  'bkg_angBin_0_0_0'
-                                                  , '1.-@' + '-@'.join( str(iter) for iter in range( len(self._bkgAngCoefs) - 1 ) )
-                                                  , self._bkgAngCoefs[ 1 : ]
-                                                 )
+
+                from RooFitWrappers import ComplementCoef
+                self._bkgAngCoefs[0] = ComplementCoef(  Name         = 'bkg_angBin_0_0_0'
+                                                      , Coefficients = self._bkgAngCoefs[ 1 : ]
+                                                     )
 
                 # create a BinnedPdf
                 from RooFitWrappers import BinnedPdf

@@ -41,6 +41,7 @@
 #pragma link C++ class std::pair<RooRealProxy*, bool>;
 #pragma link C++ class std::pair<double, TString>;
 #pragma link C++ class std::pair<RooCategoryProxy*, std::string>;
+#pragma link C++ class RooComplementCoef+;
 
 #pragma link C++ class std::map<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>;
 #pragma link C++ class std::pair<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>;

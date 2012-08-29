@@ -544,6 +544,22 @@ class CalibratedDilution( RooObject ) :
         self._init( Name, 'RooCalibratedDilution' )
         for k, v in kwargs.iteritems() : self.__setitem__( k, v )
 
+class ComplementCoef( RooObject ) :
+    def __init__( self, **kwargs ) :
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'Coefficients', kwargs )
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+
+        # build a RooComplementCoef (no workspace declaration, since factory string has limited length!!!)
+        from ROOT import RooArgList, RooComplementCoef
+        coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
+        self._addObject( RooComplementCoef( name, name, coefList ) )
+
+        # initialize
+        self._init( name, 'RooComplementCoef' )
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
+
 class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...
