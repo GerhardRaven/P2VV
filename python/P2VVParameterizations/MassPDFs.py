@@ -94,7 +94,7 @@ class LP2011_Signal_Mass ( MassPdf ) :
 class LP2011_Background_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
         self._parseArg( 'm_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'c^2/MeV', Value = -0.002, Error = 0.0001
-                       , MinMax = ( -RooInf, RooInf ) )
+                       , MinMax = ( -0.05, 0. ) )
 
         from ROOT import RooExponential as Exponential
         from RooFitWrappers import Pdf
