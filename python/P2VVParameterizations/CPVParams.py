@@ -41,9 +41,9 @@ class CDS_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
         from math import cos, sin
 
-        self._parseArg('C', kwargs,  Title = 'CPV param. C', Value = CVal, Error = CErr, MinMax = ( -RooInf, +RooInf ) )
-        self._parseArg('D', kwargs,  Title = 'CPV param. D', Value = DVal, Error = DErr, MinMax = ( -RooInf, +RooInf ) )
-        self._parseArg('S', kwargs,  Title = 'CPV param. S', Value = SVal, Error = SErr, MinMax = ( -RooInf, +RooInf ) )
+        self._parseArg('C', kwargs,  Title = 'CPV param. C', Value = CVal, Error = CErr, MinMax = ( -1., 1. ) )
+        self._parseArg('D', kwargs,  Title = 'CPV param. D', Value = DVal, Error = DErr, MinMax = ( -2., 2. ) )
+        self._parseArg('S', kwargs,  Title = 'CPV param. S', Value = SVal, Error = SErr, MinMax = ( -2., 2. ) )
         self._check_extraneous_kw( kwargs )
 
 class LambdaCarth_CPParam( CPParam ) :
@@ -68,7 +68,7 @@ class LambdaAbsArg_CPParam( CPParam ) :
         from RooFitWrappers import FormulaVar
         from math import pi
 
-        self._parseArg( 'lambdaCP', kwargs,  Title = 'CPV param. |lambda|', Value = lambVal, Error = lambErr, MinMax = (-RooInf, +RooInf) )
+        self._parseArg( 'lambdaCP', kwargs,  Title = 'CPV param. |lambda|', Value = lambVal, Error = lambErr, MinMax = ( 0.,      5.   ) )
         self._parseArg( 'phiCP',    kwargs,  Title = 'CPV param. phi',      Value = phiVal,  Error = phiErr,  MinMax = (-RooInf, +RooInf) )
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0) / (1. + @0*@0)',       [ self._lambdaCP              ] )
@@ -84,7 +84,7 @@ class LambdaSqArg_CPParam( CPParam ) :
         from math import pi
 
         self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. |lambda|^2', Value = lambSqVal, Error = lambSqErr
-                       , MinMax = ( -RooInf, +RooInf ) )
+                       , MinMax = ( 0., 25. ) )
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',        Value = phiVal,    Error = phiErr
                        , MinMax = ( -RooInf, +RooInf ) )
 

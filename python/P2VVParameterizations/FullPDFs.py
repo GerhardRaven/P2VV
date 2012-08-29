@@ -1447,7 +1447,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               , Title    = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
                                               , Value    = 1. / cpsNumBins / cthNumBins / phiNumBins
                                               , MinMax   = ( 0., 1. )
-                                              , Constant = False if bkgAnglePdf == 'hybrid' and bin1 != baselineBin else True
+                                              , Constant = False if not nominalPdf and bkgAnglePdf == 'hybrid' and bin1 != baselineBin\
+                                                           else True
                                              )\
                                       if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
                                       for bin2 in range( phiNumBins ) for bin1 in range( cthNumBins ) for bin0 in range( cpsNumBins )
