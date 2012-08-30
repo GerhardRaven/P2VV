@@ -23,11 +23,14 @@
 
 #include "RooFit.h"
 #include "Riostream.h"
-#include "RooMultiEffResModel.h"
 #include "RooRealConstant.h"
 #include "RooCustomizer.h"
 #include "RooAddition.h"
 #include "RooSuperCategory.h"
+#include "RooRandom.h"
+
+#include "RooMultiEffResModel.h"
+#include "RooEffConvGenContext.h"
 
 namespace {
    TString makeName(const char* name, const RooArgSet& terms ) {
@@ -131,7 +134,7 @@ Double_t RooMultiEffResModel::CacheElem::getVal(const Int_t index) const
 //_____________________________________________________________________________
 RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
                                          std::vector<HistEntry*> entries)
-   : RooResolutionModel(name,title, (*entries.begin())->efficiency()->convVar()),
+   : RooAbsEffResModel(name,title, (*entries.begin())->efficiency()->convVar()),
      _binboundaries(0),
      _prodGenCode(0),
      _super(0),
@@ -201,7 +204,7 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
 
 //_____________________________________________________________________________
 RooMultiEffResModel::RooMultiEffResModel(const RooMultiEffResModel& other, const char* name) 
-   : RooResolutionModel(other,name),
+   : RooAbsEffResModel(other,name),
      _prodGenObs(other._prodGenObs),
      _prodGenCode(other._prodGenCode),
      _levels(other._levels),
@@ -239,8 +242,6 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    // implemented basis function strings (see derived class implementation of method basisCode()
    // for those strings
 
-   //IMPLEMENT!!!
-
    // Check that primary variable of basis functions is our convolution variable  
    if (inBasis->getParameter(0) != x.absArg()) {
       coutE(InputArguments) << "RooMultiEffResModel::convolution(" << GetName() << "," << this
@@ -275,11 +276,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    newName.Append(owner->GetName()) ;
    newName.Append("]") ;
 
-   TString newTitle(GetTitle()) ;
-   newTitle.Append(" convoluted with basis function ") ;
-   newTitle.Append(inBasis->GetName()) ;
-
-   RooMultiEffResModel *effConv = new RooMultiEffResModel(newName, newTitle, entries);
+   RooMultiEffResModel *effConv = new RooMultiEffResModel(newName, GetTitle(), entries);
    for (vector<RooResolutionModel*>::iterator it = models.begin(), end = models.end();
         it != end; ++it) {
       effConv->addOwnedComponents(**it);
@@ -447,7 +444,158 @@ Double_t RooMultiEffResModel::analyticalIntegral(Int_t code, const char* rangeNa
 }
 
 //_____________________________________________________________________________
-Int_t RooMultiEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
+RooAbsGenContext* RooMultiEffResModel::modelGenContext
+(const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars, const RooDataSet *prototype,
+ const RooArgSet* auxProto, Bool_t verbose) const
 {
-   return 0 ; // For now... problem is that RooGenConv assumes it can just add resolution & physics for conv var...
+   return new RooEffConvGenContext(convPdf, vars, prototype, auxProto, verbose);
+}
+
+//_____________________________________________________________________________
+Int_t RooMultiEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars,
+                                        Bool_t staticInitOK) const
+{
+   bool all = true;
+   bool none = true;
+
+   _prodGenObs.removeAll();
+
+   RooArgSet categories;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      categories.add(it->second->categories());
+   }
+   RooFIter iter = categories.fwdIterator();
+   while (RooAbsArg* cat = iter.next()) {
+      if (!directVars.find(*cat)) {
+         all &= false;
+      } else {
+         none &= false;
+      }
+   }
+   if (!(all ^ none)) {
+      return 0;
+   }
+
+   RooArgSet testVars(directVars);
+   testVars.remove(categories);
+
+   Int_t prodGenCode = 0;
+   RooArgSet genVars;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      const RooEffResModel* resModel = it->second->efficiency();
+      if (genVars.getSize() == 0) {
+         prodGenCode = resModel->getGenerator(testVars, genVars, staticInitOK);
+      } else {
+         RooArgSet prodGenVars;
+         Int_t code = resModel->getGenerator(testVars, prodGenVars, staticInitOK);
+         assert(prodGenVars.equals(genVars) && prodGenCode == code);
+      }
+   }
+
+   generateVars.add(genVars);
+   _prodGenCode = prodGenCode;
+   _prodGenObs.add(testVars);
+   if (none) {
+      return 1;
+   } else {
+      iter = categories.fwdIterator();
+      while (RooAbsArg* cat = iter.next()) {
+         generateVars.add(*cat);
+      }
+      return 2;
+   }
+}
+
+//_____________________________________________________________________________
+void RooMultiEffResModel::initGenerator(Int_t code)
+{
+   // Forward one-time initialization call to component generation initialization
+   // methods.
+   for (HistEntries::iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      it->second->efficiency()->initGenerator(_prodGenCode);
+   }
+   if (code == 1) {
+      return;
+   }
+   _levels.clear();
+
+   RooArgSet categories;
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      categories.add(it->second->categories());
+   }
+   _super->recursiveRedirectServers(categories);
+
+   // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
+   std::auto_ptr<TIterator> superIter(_super->MakeIterator());
+
+   TString current = _super->getLabel();
+   while (TObjString* label = static_cast<TObjString*>(superIter->Next())) {
+      _super->setLabel(label->String());
+      Int_t index = _super->getIndex();
+      HistEntries::const_iterator it = _entries.find(index);
+      if (it == _entries.end()) {
+         // Skip the combination for which there is no shape (all false).
+         continue;
+      }
+      double n = it->second->relative()->getVal();
+      if (!_levels.empty()) n += _levels.back().first; // cumulative
+      cxcoutD(Generation) << "RooMultiHistEfficiency creating sampler for " << _prodGenObs
+                          << " given " << categories
+                          << " = "  << label->String() << " (level = " << n << ")" << endl;
+      _levels.push_back(make_pair(n, label->String()));
+   }
+
+   // Normalise just in case, but it should be a noop.
+   for (Levels::iterator i = _levels.begin(); i != _levels.end(); ++i) 
+      i->first /= _levels.back().first; // normalize
+   _super->setLabel(current);
+}
+
+//_____________________________________________________________________________
+void RooMultiEffResModel::generateEvent(Int_t code)
+{
+   Double_t r = RooRandom::uniform();
+
+   // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
+   std::auto_ptr<TIterator> superIter(_super->MakeIterator());
+
+   Levels::const_iterator itLevel = _levels.begin();
+   // find the right generator, and generate categories at the same time...
+   while (itLevel != _levels.end() && itLevel->first < r) {
+      ++itLevel;
+   }
+
+   // this assigns the categories.
+   _super->setLabel(itLevel->second);
+
+   Int_t index = _super->getIndex();
+   HistEntries::const_iterator itEntry = _entries.find(index);
+   assert(itEntry != _entries.end());
+
+   // now that've assigned the categories, we can use the 'real' samplers
+   // which are conditional on the categories.
+   itEntry->second->efficiency()->generateEvent(_prodGenCode);
+}
+
+//_____________________________________________________________________________
+RooAbsReal* RooMultiEffResModel::efficiency() const {
+   Int_t index = _super->getIndex();
+   HistEntries::const_iterator it = _entries.find(index);
+   assert(it != _entries.end());
+   return it->second->efficiency();
+}
+
+//_____________________________________________________________________________
+std::vector<RooAbsReal*> RooMultiEffResModel::efficiencies() const { 
+   std::vector<RooAbsReal*> effs;
+      // Return pointer to pdf in product
+   for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
+        it != end; ++it) {
+      effs.push_back(it->second->efficiency());
+   }
+   return effs;
 }

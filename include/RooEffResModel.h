@@ -11,13 +11,15 @@
 #ifndef ROO_EFF_RES_MODEL
 #define ROO_EFF_RES_MODEL
 
-#include "RooResolutionModel.h"
 #include "RooRealProxy.h"
 #include "RooObjCacheManager.h"
 #include "RooSetProxy.h"
+#include "RooAbsEffResModel.h"
 
 class RooCustomizer;
-class RooEffResModel : public RooResolutionModel {
+class RooResoluitionModel;
+
+class RooEffResModel : public RooAbsEffResModel {
 public:
 
    // Constructors, assignment etc
@@ -32,27 +34,43 @@ public:
    virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const ;
    virtual Bool_t forceAnalyticalInt(const RooAbsArg& /*dep*/) const;
 
-   Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK=kTRUE) const;
-   //void generateEvent(Int_t code);
+   virtual Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK=kTRUE) const;
+   virtual void initGenerator(Int_t code);
+   virtual void generateEvent(Int_t code);
 
-   RooAbsReal* efficiency() const { 
+   virtual RooAbsGenContext* modelGenContext(const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars,
+                                             const RooDataSet *prototype=0, const RooArgSet* auxProto=0,
+                                             Bool_t verbose= kFALSE) const;
+   
+   virtual RooAbsReal* efficiency() const { 
       // Return pointer to pdf in product
       return static_cast<RooAbsReal*>(_eff.absArg());
    }
+
+   virtual std::vector<RooAbsReal*> efficiencies() const { 
+      // Return pointer to pdf in product
+      return std::vector<RooAbsReal*>(1, efficiency());
+   }   
+
+   virtual RooResolutionModel& model() const {
+      return dynamic_cast<RooResolutionModel&>(*_model.absArg());
+   }
+
+   const RooArgList& getIntegralRanges(const RooArgSet& iset, const char* rangeName = 0) const;
 
    const RooArgSet* observables() const { 
       // Return pointer to pdf in product
       return static_cast<const RooArgSet*>(&_observables);
    }
 
-   RooResolutionModel& model() const {
-      return (RooResolutionModel&)_model.arg();
-   }
-
-   const RooArgList& getIntegralRanges(const RooArgSet& iset, const char* rangeName = 0) const;
-
 protected:
+
    friend class RooMultiEffResModel;
+
+   virtual Double_t evaluate() const ;
+   virtual RooEffResModel* convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const;
+
+private:
 
    class CacheElem : public RooAbsCacheElement {
    public:
@@ -70,21 +88,17 @@ protected:
       RooAbsReal* _I;
    };
 
-   virtual Double_t evaluate() const ;
-   virtual RooEffResModel* convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const;
+   CacheElem *getCache(const RooArgSet* iset, const TNamed* rangeName = 0 ) const;
 
    // Pointers to our underlying components
    RooSetProxy _observables;
    RooRealProxy _model;     // RooResolutionModel
    RooRealProxy _eff;       // RooAbsReal 
 
-   RooAbsReal& eff() const { return (RooAbsReal&)*_eff.absArg(); }
-
-   CacheElem *getCache(const RooArgSet* iset, const TNamed* rangeName = 0 ) const;
-   mutable RooObjCacheManager _cacheMgr;
-
    typedef std::map<std::string, RooArgList*> RangeMap;
    mutable RangeMap _ranges;
+
+   mutable RooObjCacheManager _cacheMgr;
 
    ClassDef(RooEffResModel,1) // EffResian Resolution Model
 };

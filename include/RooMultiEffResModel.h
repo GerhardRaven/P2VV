@@ -14,13 +14,14 @@
 #include <RooResolutionModel.h>
 #include <RooRealProxy.h>
 #include <RooObjCacheManager.h>
-#include <MultiHistEntry.h>
 
+#include <MultiHistEntry.h>
 #include <RooEffResModel.h>
+#include <RooAbsEffResModel.h>
 
 class RooSuperCategory;
 
-class RooMultiEffResModel : public RooResolutionModel {
+class RooMultiEffResModel : public RooAbsEffResModel {
 public:
 
    typedef MultiHistEntry<RooEffResModel, RooMultiEffResModel> HistEntry;
@@ -39,8 +40,27 @@ public:
    virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
    virtual Bool_t forceAnalyticalInt(const RooAbsArg& /*dep*/) const;
 
-   Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK=kTRUE) const;
-   //void generateEvent(Int_t code);
+   virtual RooAbsGenContext* modelGenContext
+   (const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars, const RooDataSet *prototype,
+    const RooArgSet* auxProto, Bool_t verbose) const;
+
+   virtual Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars,
+                              Bool_t staticInitOK=kTRUE) const;
+   virtual void initGenerator(Int_t code);
+   virtual void generateEvent(Int_t code);
+
+   virtual RooAbsReal* efficiency() const;
+   virtual std::vector<RooAbsReal*> efficiencies() const;
+
+   const std::map<Int_t, RooMultiEffResModel::HistEntry*>& getEntries() const
+   {
+      return _entries;
+   }
+   
+   const RooSuperCategory* getSuper() const
+   {
+      return _super;
+   }
 
 protected:
 
