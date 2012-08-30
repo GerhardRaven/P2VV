@@ -85,6 +85,70 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
     f.Close()
 
 
+def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
+    """correct sWeights in dataSet for background dilution
+    """
+
+    # check if background weight variable exists in data set
+    bkgWeight = dataSet.get().find(bkgWeightName)
+    assert bkgWeight, 'P2VV - ERROR: correctSWeights: unknown background weight: "%s"' % bkgWeightName
+
+    if splitCatName :
+        # get category that splits data sample
+        splitCat = dataSet.get().find(splitCatName)
+        assert splitCat, 'P2VV - ERROR: correctSWeights: unknown spit category: "%s"' % splitCat
+
+        # initialize sums for the weights and the weights squared per category
+        sumWeights   = [ 0. ] * ( splitCat.numTypes() + 1 )
+        sumSqWeights = [ 0. ] * ( splitCat.numTypes() + 1 )
+        indexDict = { }
+        posDict   = { }
+        for iter, catType in enumerate( splitCat ) :
+            posDict[ catType.getVal() ] = iter
+            indexDict[ iter ] = catType.getVal()
+
+    else :
+        # initialize sums for the weights and the weights squared
+        sumWeights   = [ 0. ]
+        sumSqWeights = [ 0. ]
+
+    # loop over events and get sums of weights and weights squared
+    for varSet in dataSet :
+        weight = dataSet.weight()
+        sumWeights[0]   += dataSet.weight()
+        sumSqWeights[0] += dataSet.weight()**2
+        if splitCatName :
+            sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += dataSet.weight()
+            sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += dataSet.weight()**2
+
+    # add corrected weights to data set
+    from ROOT import RooCorrectedSWeight
+    if splitCatName :
+        from ROOT import std
+        alphaVec = std.vector('Double_t')()
+        print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f):'\
+              % ( sumWeights[0] / sumSqWeights[0] )
+        for iter, ( sumW, sumSqW ) in enumerate( zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ) :
+            alphaVec.push_back( sumW / sumSqW )
+            print '    %d: %.4f' % ( indexDict[iter], sumW / sumSqW )
+
+        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, splitCat, alphaVec, True )
+
+    else :
+        print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f'\
+              % ( sumWeights[0] / sumSqWeights[0] )
+        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, sumWeights[0] / sumSqWeights[0], True )
+
+    from ROOT import RooDataSet
+    dataSet.addColumn(weightVar)
+    dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet.get()
+                         , Import = dataSet, WeightVar = 'weightVar' )
+
+    # import data set into current workspace
+    from RooFitWrappers import RooObject
+    return RooObject().ws().put( dataSet, **kwargs )
+
+
 def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estimWTagName, tagCatBins ) :
     """add tagging observables to data set
     """
@@ -125,6 +189,28 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
                 % ( obsSet.getCatIndex(tagDecisionName), obsSet.getCatIndex(tagCatName) )
 
 
+def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKName, cthetalName, phiName ) :
+    """add transversity angles to data set
+    """
+
+    # get observables from data set
+    obsSet  = dataSet.get(0)
+    cthetaK = obsSet.find(cthetaKName)
+    cthetal = obsSet.find(cthetalName)
+    phi     = obsSet.find(phiName)
+
+    # create transversity angle functions
+    from ROOT import RooTransAngle
+    cpsi     = RooTransAngle( cpsiName,     'Cosine of kaon polarization angle',  cthetaK             )
+    cthetaTr = RooTransAngle( cthetaTrName, 'Cosine of transversity polar angle', cthetal, phi, False )
+    phiTr    = RooTransAngle( phiTrName,    'Transversity azimuthal angle',       cthetal, phi, True  )
+
+    # create new columns in data set
+    dataSet.addColumn(cpsi)
+    dataSet.addColumn(cthetaTr)
+    dataSet.addColumn(phiTr)
+
+
 ###########################################################################################################################################
 ## Plots                                                                                                                                 ##
 ###########################################################################################################################################
@@ -134,11 +220,10 @@ global _P2VVPlotStash
 _P2VVPlotStash = []
 
 # plotting function
-def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', yTitleOffset = 1, xTitleOffset = 1
-           , yScale = ( None, None )
-           ,frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ], plotResidHist = False, logy = False
-           , normalize = True, symmetrize = True, usebar = True
-           ) :
+def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', xTitleOffset = None
+           , yTitleOffset = None, yScale = ( None, None ), frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ]
+           , plotResidHist = False, logy = False, logx = False, normalize = True, symmetrize = True, usebar = True
+        ) :
     """makes a P2VV plot
 
     example usage:
@@ -292,6 +377,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         obsPad = TPad( obsName, obsName, 0, 0.2, 1, 1 )
         _P2VVPlotStash.append(obsPad)
         if logy: obsPad.SetLogy(1)
+        if logx: obsPad.SetLogx(1)
         obsPad.SetNumber(1)
         obsPad.SetLeftMargin(0.12)
         obsPad.Draw()
@@ -304,6 +390,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         canv.cd()
         residName = obs.GetName() + '_resid1'
         residPad = TPad( residName, residName, 0, 0, 1, 0.2 )
+        if logx: residPad.SetLogx(1)
         _P2VVPlotStash.append(residPad)
         residPad.SetNumber(2)
         residPad.SetLeftMargin(0.12)
@@ -317,6 +404,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         # draw observable frame
         canv.cd()
         if logy: canv.SetLogy(1)
+        if logx: canv.SetLogx(1)
         if 'Title' in frameOpts and not frameOpts['Title']:
             obsFrame.SetTitle("")
         obsFrame.Draw()
@@ -560,8 +648,7 @@ class RealMomentsBuilder ( dict ) :
         try :
             momFile = open( filePath, 'w' )
         except :
-            print 'P2VV - ERROR: RealMomentsBuilder.writeMoments: unable to open file \"%s\"' % filePath
-            return
+            raise IOError( 'P2VV - ERROR: RealMomentsBuilder.writeMoments: unable to open file \"%s\"' % filePath )
 
         # get maximum length of basis function name
         maxLenName = 13
@@ -598,13 +685,13 @@ class RealMomentsBuilder ( dict ) :
             else :
                 cont += '\n'
 
-        cont += '# ' + '-' * (49 + maxLenName) + '\n\n'
+        cont += '# ' + '-' * (49 + maxLenName) + '\n'
 
         # write content to file
         momFile.write(cont)
         momFile.close()
 
-        print 'P2VV - INFO: MomentsBuilder.writeMoments: %d efficiency moment%s written to file \"%s\"'\
+        print 'P2VV - INFO: RealMomentsBuilder.writeMoments: %d efficiency moment%s written to file \"%s\"'\
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def read( self, filePath = 'moments', **kwargs ) :
@@ -617,8 +704,7 @@ class RealMomentsBuilder ( dict ) :
         try :
           momFile = open(filePath, 'r')
         except :
-          print 'P2VV - ERROR: MomentsBuilder.readMoments: unable to open file \"%s\"' % filePath
-          return
+          raise IOError( 'P2VV - ERROR: RealMomentsBuilder.readMoments: unable to open file \"%s\"' % filePath )
 
         # get minimum significance
         minSignif = kwargs.pop('MinSignificance',float('-inf'))
@@ -657,7 +743,7 @@ class RealMomentsBuilder ( dict ) :
 
         momFile.close()
 
-        print 'P2VV - INFO: MomentsBuilder.readMoments: %d efficiency moment%s read from file \"%s\"'\
+        print 'P2VV - INFO: RealMomentsBuilder.readMoments: %d efficiency moment%s read from file \"%s\"'\
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def buildPDFTerms( self, **kwargs ) :
@@ -770,28 +856,116 @@ class RealMomentsBuilder ( dict ) :
 
 
 class SData( object ) :
-    def __init__(self, Pdf, Data, Name) :
-        from ROOT import RooStats,RooArgList
-        self._Name = Name
-        self._yields = [ p for p in Pdf.Parameters() if p.getAttribute('Yield')  ]
-        self._observables = Pdf.Observables() 
-        self._splot = RooStats.SPlot(Name+"_splotdata",Name+"_splotdata",Data,Pdf._var, RooArgList( p._var for p in self._yields ) )
-        self._sdata = self._splot.GetSDataSet()
+    def __init__( self, **kwargs ) :
+        # get input arguments
+        def getKwArg( keyword, member, kwargs ) :
+            if keyword in kwargs : setattr( self, '_' + member, kwargs.pop(keyword) )
+            else : raise KeyError, 'P2VV - ERROR: SData.__init__(): key %s not found in input arguments' % keyword
+        getKwArg( 'Name', 'name',      kwargs )
+        getKwArg( 'Data', 'inputData', kwargs )
+        getKwArg( 'Pdf',  'pdf',       kwargs )
+
+        # initialize dictionary for weighted data sets per specie
         self._data = dict()
-    def usedObservables( self ) :
-        return self._observables
+
+        # get yields and observables
+        self._yields = [ par for par in self._pdf.Parameters() if par.getAttribute('Yield') ]
+        self._observables = self._pdf.Observables()
+
+        # calculate sWeights
+        from ROOT import RooStats, RooArgList, RooSimultaneous
+        if isinstance( self._pdf._var, RooSimultaneous ) and kwargs.pop( 'Simultaneous', True ) :
+            # split data set in categories of the simultaneous PDF
+            splitCat        = self._pdf.indexCat()
+            splitCatIter    = splitCat.typeIterator()
+            splitData       = self._inputData.split(splitCat)
+            self._sPlots    = [ ]
+            self._sDataSets = [ ]
+            splitCatState   = splitCatIter.Next()
+            from ROOT import RooFormulaVar
+            while splitCatState :
+                # calculate sWeights per category
+                cat = splitCatState.GetName()
+                splitCat.setLabel(cat)
+
+                origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if cat in par.GetName() ]
+                self._sPlots.append(  RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat
+                                                     , splitData.FindObject(cat), self._pdf.getPdf(cat)
+                                                     , RooArgList( par._var for par in self._yields if cat in par.GetName() ) )
+                                   )
+                self._sDataSets.append( self._sPlots[-1].GetSDataSet() )
+
+                print 'P2VV - INFO: SData.__init__(): yields category %s:' % cat
+                print '    original:',
+                for vals in origYieldVals : print '%s = %.2f +/- %.2f  ' % vals,
+                print '\n    new:     ',
+                for par in self._yields :
+                    if cat in par.GetName() : print '%s = %.2f +/- %.2f  ' % ( par.GetName(), par.getVal(), par.getError() ),
+                print
+
+                # remove category name from sWeight and PDF value column names (it must be possible to simplify this...)
+                weightVars = [ (  RooFormulaVar( par.GetName().strip( '_' + cat ) + '_sw', '', '@0'
+                                                , RooArgList( self._sDataSets[-1].get().find( par.GetName() + '_sw' ) ) )
+                                , RooFormulaVar( 'L_' + par.GetName().strip( '_' + cat ), '', '@0'
+                                                , RooArgList( self._sDataSets[-1].get().find( 'L_' + par.GetName() ) ) )
+                               ) for par in self._yields if cat in par.GetName()
+                             ]
+                self._sDataSets[-1].addColumn(splitCat)
+                for weight, pdfVal in weightVars :
+                    self._sDataSets[-1].addColumn(weight)
+                    self._sDataSets[-1].addColumn(pdfVal)
+
+                sDataVars = self._sDataSets[-1].get()
+                for par in self._yields :
+                    if cat in par.GetName() :
+                        sDataVars.remove( sDataVars.find( par.GetName() + '_sw' ) )
+                        sDataVars.remove( sDataVars.find( 'L_' + par.GetName()  ) )
+                self._sDataSets[-1].reduce(sDataVars)
+
+                splitCatState = splitCatIter.Next()
+
+            # merge data sets from categories
+            from ROOT import RooDataSet
+            self._sData = RooDataSet( self._name + '_splotdata', self._name + '_splotdata', self._sDataSets[0].get() )
+            for data in self._sDataSets: self._sData.append(data)
+
+        else :
+            # calculate sWeights with full data set
+            if isinstance( self._pdf._var, RooSimultaneous ) :
+                print 'P2VV - WARNING: SData.__init__(): computing sWeights with a simultaneous PDF'
+            self._sPlot = RooStats.SPlot( self._name + '_splotdata', self._name + '_splotdata', self._inputData, self._pdf._var
+                                         , RooArgList( par._var for par in self._yields ) )
+            self._sData = self._sPlot.GetSDataSet()
+
+        # check keyword arguments
+        if kwargs : raise KeyError, 'P2VV - ERROR: SData.__init__(): got unknown keywords %s for %s' % ( kwargs, type(self) )
+
+    def usedObservables( self ) : return self._observables
+    def components( self )      : return [ y.GetName()[2:] for y in self._yields ]
+    def Pdf( self )             : return self._pdf
+
+    def Yield( self, Component ) :
+        yName = 'N_%s' % Component
+        for y in self._yields :
+            if y.GetName() == yName : return y.getVal()
+
+        raise KeyError, 'P2VV - ERROR: SData.__init__(): unknown component %s' % Component
+
     def data( self, Component ) :
         if Component not in self._data :
-            # check if component in the weight column. If not, raise KeyError
-            yname = 'N_%s'% Component
-            if yname not in [ i.GetName() for i in self._yields ] :
-                raise KeyError('unknown Component %s' % Component )
-            wname = '%s_sw'% yname
-            if wname not in [ i.GetName() for i in self._sdata.get() ] :
-                raise KeyError('no weight in dataset for Component %s' % Component )
-            dname = '%s_weighted_%s' % ( self._sdata.GetName(), Component )
+            # check if component exists
+            yName = 'N_%s' % Component
+            if not any( yName in y.GetName() for y in self._yields ) :
+                raise KeyError, 'P2VV - ERROR: SData.__init__(): unknown component: %s' % Component
+            wName = '%s_sw' % yName
+            if wName not in [ w.GetName() for w in self._sData.get() ] :
+                raise KeyError, 'no weight in dataset for component %s' % Component
+
+            # create weighted data set
+            dName = '%s_weighted_%s' % ( self._sData.GetName(), Component )
             from ROOT import RooDataSet
-            self._data[Component] = RooDataSet( dname, dname, self._sdata.get(),Import = self._sdata, WeightVar = wname)
+            self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = wName )
+
         return self._data[Component]
 
 
@@ -810,4 +984,16 @@ def createSData( **kwargs ) :
     sdata =  SData(Pdf = pdf, Data = Data, Name = Name + '_sdata')
     for p,c in c_state.iteritems() : p.setConstant(c)
     return sdata
+
+def createProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max,NumCPU=8,Extend=True):
+    print '**************************************************'
+    print 'making profile for %s and %s'%(param1.GetName(),param2.GetName())
+    print '**************************************************'
+
+    nll = pdf.createNLL(data,RooFit.NumCPU(NumCPU),RooFit.Extended(Extend))
+    profile = nll.createProfile(RooArgSet( param1,param2))
+    return profile.createHistogram(name,         param1, RooFit.Binning(npoints,param1_min,param1_max)
+                                  , RooFit.YVar( param2, RooFit.Binning(npoints,param2_min,param2_max))
+                                  , RooFit.Scaling(False)
+                                  )
 

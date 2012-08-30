@@ -59,14 +59,14 @@ taggingParams = WTag_TaggingParams( wTag = eta ) # FormulaVar('wTag','@2 + @3*(@
 
 # now build the actual signal PDF...
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, deltaGamma = 0.05, deltaM = dict( Value = 17.8, MinMax = (16,19), Constant = True) )
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, dGamma = 0.05, dM = dict( Value = 17.8, MinMax = (16,19), Constant = True) )
 
 from P2VVParameterizations.TimeResolution import Truth_TimeResolution
 args = { 'time'      : t
        , 'iTag'      : iTag
-       , 'dm'        : lifetimeParams['deltaM'] 
+       , 'dm'        : lifetimeParams['dM']
        , 'tau'       : lifetimeParams['MeanLifetime']
-       , 'dGamma'    : lifetimeParams['deltaGamma'] 
+       , 'dGamma'    : lifetimeParams['dGamma']
        , 'resolutionModel' : Truth_TimeResolution(time = t)['model']
        , 'coshCoef'  : basisCoefficients['cosh']
        , 'cosCoef'   : basisCoefficients['cos']
@@ -100,11 +100,11 @@ signal = Component('signal', (LP2011_Signal_Mass(mass = mass).pdf(), sig_pdf), Y
 
 from P2VVParameterizations.MassPDFs import LP2011_Background_Mass
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time
-from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
+from P2VVParameterizations.FlavourTagging import Trivial_TagPdf
 from P2VVParameterizations.AngularPDFs import Uniform_Angles
 bkg  = Component('bkg',(  LP2011_Background_Mass( mass = mass ).pdf()
                        ,  LP2011_Background_Time( time = t , resolutionModel = tres.model()).pdf()
-                       ,  Trivial_Background_Tag( tagdecision = iTag, bkg_tag_delta = 0.3 ).pdf()
+                       ,  Trivial_TagPdf( tagdecision = iTag, ATagEff = 0.3, NamePF = 'bkg' ).pdf()
                        ,  Uniform_Angles( angles = angles.angles ).pdf()
                        ), Yield = (4000,1000,15000) )
 

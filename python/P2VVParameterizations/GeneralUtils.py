@@ -10,6 +10,11 @@ class _util_parse_mixin( object ) :
     def parameters( self ) :
         return self._params
 
+    def parameter( self, name ) :
+        for par in self._params :
+            if par.GetName() == name : return par
+        return None
+
     def _parseArg( self, arg, kwargs, ContainerList = None, ObjectType = 'RealVar', SingleArgKey = 'Value', **d ) :
         def _create( arg,kwargs, **d ) :
             import RooFitWrappers
@@ -96,4 +101,35 @@ class _util_conditionalObs_mixin( object ) :
 #    # TODO: wrap RooSimultaneous in a RooObject...
 #    return RooSimultaneous( name, name, pl, tag )
 
+from itertools import product
+def valid_combinations(states):
+    all_states = []
+    for level in states:
+        all_states.extend([e[0] for e in level])
+    all_states = list(set(all_states))
+    labels = [[(state, label.GetName()) for label in state] for state in all_states]
+    all_combinations = list(product(*labels))
+    valid = []
+    def good(combination):
+        s = set(combination)
+        for level in states:
+            level_good = False
+            for entry in level:
+                if entry in s:
+                    level_good = True
+                    break
+            if not level_good:
+                return level_good
+        return True
+    return filter(good, all_combinations)
 
+def exclusive_combinations(states):
+    all_states = [e[0] for e in states]
+    labels = [[(state, label.GetName()) for label in state] for state in all_states]
+    all_combinations = list(product(*labels))
+    valid = []
+    def good(combination):
+        s = set(combination)
+        r = set(states)
+        return len(s & r) == 1
+    return filter(good, all_combinations)

@@ -21,12 +21,16 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 # add 20 bins for caching the normalization integral
 for i in [ st ] : i.setBins( 20 , 'cache' )
 
-# Categories
-biased = Category('triggerDecision', States = {'Biased' : 1, 'NotBiased' : 0})
-unbiased = Category('triggerDecisionUnbiased', States = {'Unbiased' : 1, 'NotUnbiased' : 0})
+# Categories needed for selecting events
+hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
+hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, mpsi, st, biased, unbiased, selected]
+# Category needed for fitting
+excl_biased = Category('triggerDecisionBiasedExcl', States = {'ExclBiased' : 1, 'Unbiased' : 0})
+
+observables = [t, m, mpsi, st, excl_biased, selected]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -47,11 +51,6 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres
             ConditionalObservables = sig_tres.model().ConditionalObservables(),
             ExternalConstraints = sig_tres.model().ExternalConstraints())
 
-# Time acceptance
-from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance
-sig_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies.root', Histogram = 'signal_efficiency_histo_20bins')
-sig_t = sig_acceptance * sig_t
-
 # B mass pdf
 from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
@@ -67,9 +66,6 @@ psi_m  = Pdf(Name = 'psi_m', Type = CrystalBall, Parameters = [mpsi, mpsi_mean, 
 psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.0004, MinMax = (-0.1, -0.0000001))
 bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c])
 
-# Create signal component
-signal = Component('signal', (sig_m.pdf(), psi_m, sig_t), Yield = (21000,10000,30000))
-
 # Create combinatorical background component
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
@@ -79,8 +75,6 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
                          , bkg_t_ll_tau = dict( Name = 'bkg_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                          , bkg_t_ml_tau = dict( Name = 'bkg_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          , ExternalConstraints = sig_tres.model().ExternalConstraints())
-bkg_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies.root', Histogram = 'background_efficiency_histo_20bins')
-bkg_t = bkg_acceptance * bkg_t.pdf()
 
 # Create psi background component
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
@@ -88,11 +82,10 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.mo
                          , psi_t_ll_tau = dict( Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
                          , psi_t_ml_tau = dict( Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.01,0.5) )
                          , ExternalConstraints = sig_tres.model().ExternalConstraints())
-psi_acceptance = Moriond2012_TimeAcceptance( time = t, Input = '/stuff/PhD/p2vv/data/efficiencies.root', Histogram = 'psi_background_efficiency_histo_20bins')
-psi_t = psi_acceptance * psi_t.pdf()
+psi_t = psi_t.pdf()
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m, psi_t), Yield= (10000,500,50000) )
 
-## bkg_t = bkg_t.pdf()
+bkg_t = bkg_t.pdf()
 background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t), Yield = (20000,2000,50000) )
 
 # Apply acceptance
@@ -100,12 +93,25 @@ from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecision == 1)',
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_biased_unbiased.root'
+data = readData(input_file, tree_name, cuts = '(sel == 1 && (hlt1_unbiased == 1 || hlt1_biased == 1) && hlt2_biased == 1)',
                 NTuple = False, observables = observables)
 signal_data = data.reduce(CutRange = 'signal')
 bkg_data    = data.reduce(CutRange = 'leftsideband' )
 bkg_data.append(data.reduce(CutRange = 'rightsideband'))
+
+# Time acceptance
+from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance
+sig_acceptance = Paper2012_TimeAcceptance(time = t, Input = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root',
+                                          Histograms = {excl_biased : { 'ExclBiased' : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'},
+                                                                        'Unbiased'   : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'}
+                                                                        }
+                                                        },
+                                          Data = data, Fit = False)
+sig_t = sig_acceptance * sig_t
+
+# Create signal component
+signal = Component('signal', (sig_m.pdf(), psi_m, sig_t), Yield = (21000,10000,30000))
 
 ## Build PDF
 pdf = buildPdf(Components = (signal, psi_background, background), Observables = (m, mpsi,t), Name='pdf')
@@ -145,8 +151,8 @@ for (p,o) in zip(canvas.pads(len(obs)), obs):
          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
          , logy = ( o == t )
-         , components = { 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                          , 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                          , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+         , components = { 'psi_*'   : dict( LineColor = kGreen, LineStyle = kDashed )
+                          , 'bkg_*' : dict( LineColor = kRed,   LineStyle = kDashed )
+                          , 'sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
                           }
          )

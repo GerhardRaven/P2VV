@@ -1,4 +1,6 @@
 \documentclass[a4paper,9pt,twosided]{article}
+\usepackage{rotating}
+\usepackage{amsmath}
 
 \setlength{\oddsidemargin}{0in}
 \setlength{\evensidemargin}{0in}
@@ -157,9 +159,10 @@ PDF for 'true' $B$ and $\overline{B}$ as:
    P_{\overline{B}} &\equiv&\frac{ {\cal E} - {\cal O}}{N_-}
 \end{eqnarray}
 where ${\cal E}$ and ${\cal O}$ are the (propertime and angular dependent) CP-even resp. CP-odd parts of the PDF.
+and their ratio ${\cal A} \equiv {\cal E / O }$.
 Taking the sum over these, we find:
 \begin{equation}
-   P_{B} + P_{\overline{B}} =  \frac{ {\cal E} + \nu{\cal O} }{N} 
+   P_{B} + P_{\overline{B}} =  \frac{ {\cal E} + \nu{\cal O} }{N}  = \frac{\cal E} {N} \left( 1 + \nu \frac{ \cal O }{\cal E} \right) = \frac{\cal E}{N} \left(1 + \nu {\cal A}\right)
    \label{eq:sumbbbar}
 \end{equation}
 where we have defined
@@ -169,9 +172,15 @@ where we have defined
 \end{eqnarray}
 and requiring the total sum of PDFs (\ref{eq:sumbbbar}) to be properly normalized implies
 \begin{equation}
-   N = I_{\cal E} + \nu I_{\cal O}
+   N = I_{\cal E} + \nu I_{\cal O} 
+     = I_{\cal E} \left( 1 + \nu \frac{ I_{\cal O}}{I_{\cal E}}   \right)
 \end{equation}
 where $I_x$ is the integral of $x$ over the propertime and angles.
+Note that taking the difference, we find for the asymmetry:
+\begin{equation}
+  \frac{P_{B} - P_{\overline{B}}}{P_{B} + P_{\overline{B}}} =  \frac{ {\cal A} + \nu}{1+\nu{\cal A}}
+   \label{eq:difbbbar}
+\end{equation}
 
 
 Next we introduce the probability of tagging an (initial,"true") $B$ meson  and
@@ -180,7 +189,16 @@ respectively $\overline{t}_i$ -- at this point we still do not distinguish betwe
 we marginalize over the tagdecision.  This yields the following PDF for events in category $i$:
 \begin{eqnarray}
      P_i & \equiv & t_i P_B + \overline{t}_i P_{\overline B}  \nonumber
-\\       &      = & \frac{\epsilon_i}{N} \left[ (1+\nu\delta_i ){\cal E}+(\delta_i + \nu){\cal O} \right] \label{eq:tagsummed}
+\\       &      = & \frac{\epsilon_i}{N} \left[ (1+\nu\delta_i ){\cal E}+(\delta_i + \nu){\cal O} \right] 
+%\\       &      = & \epsilon_i\frac{\cal E}{N}(1+\nu\delta_i ) \left[1 +\frac{\delta_i + \nu}{1+\nu\delta_i }{\cal A} \right] 
+%\\       &      = & \epsilon_i\frac{\cal E}{2N}\left[ (1+\delta_i)(1+{\cal A})(1+\nu) + (1-\delta_i)(1-{\cal A})(1-\nu) \right]
+%\\       &      = & \epsilon_i\frac{\cal E}{2N}(1+\nu\delta_i + \delta_i { \cal A} + \nu {\cal A} )
+\\  P_i  &      = & \epsilon_i \left[ (1+\delta_i ) P_B + (1-\delta_i) P_{\overline{B}} \right]
+\\       &      = & \epsilon_i \left[ 1+ \delta_i \frac{ P_B -  P_{\overline{B}}}{ P_B +  P_{\overline{B}}} \right]\left[ P_B + P_{\overline{B}}  \right]
+%\\       &      = & \epsilon_i \left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right] \left[ P_B + P_{\overline{B}} \right] \label{eq:tagsummed}
+\\       &      = & \epsilon_i\left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right] \frac{\cal E}{N}( 1 + \nu {\cal A} ) 
+\\       &      = & \epsilon_i \frac{ (1+\delta_i\nu )}{N} \left[1+{\cal A}\frac{\nu+\delta_i}{1+\delta_i\nu} \right] {\cal E}
+\\       & \approx& \epsilon_i \frac{ 1 }{N} \left[1+{\cal A}(\nu+\delta_i) \right] {\cal E}
 \end{eqnarray}
 where we have defined
 \begin{eqnarray}
@@ -192,6 +210,11 @@ and for the remainder, i.e. the untagged events, which we denote with an index $
      P_0 & \equiv & \left(1-\sum_i t_i\right) P_B + \left(1-\sum_i \overline{t}_i\right) P_{\overline B}  \nonumber
 \\   & = & \frac{1}{N} \left[ \left( 1-\sum_i\epsilon_i\left(1+\nu\delta_i\right) \right) {\cal E} 
                             + \left( \nu - \sum_i \epsilon_i(\delta_i+\nu)   \right) {\cal O} \right] \label{eq:untagged}
+\\   P_0 & \equiv & \left( 1 - \sum_i \frac{P_i }{P_{B} + P_{\overline B}} \right)( P_{B} + P_{\overline B}) 
+\\       & = & \left( 1  - \sum_i \epsilon_i\left[1 +\delta_i \frac{{\cal A}+ \nu}{1+\nu{\cal A} } \right]\right) \frac{\cal E}{N}( 1 + \nu {\cal A} ) 
+%\\ &=& \frac{\cal E}{N} \left(1+\nu{\cal A} - \sum_i \epsilon_i\left[ (1+\delta_i \nu) \left(1+\frac{\nu+\delta_i}{1+\delta_i\nu} {\cal A}\right)\right] \right) 
+\\ &=& \frac{\cal E}{N} \left(1- \sum_i \epsilon_i\left(1+\delta_i \nu \right)+ \left(\nu -\sum_i \epsilon_i (\nu+\delta_i) \right){\cal A} \right) 
+\\ &=& \frac{1- \sum_i \epsilon_i\left(1+\delta_i \nu \right)}{N} \left(1 + \frac{ \nu -\sum_i \epsilon_i (\nu+\delta_i) }{ 1-\sum_i \epsilon_i\left( 1+\delta_i \nu \right) } {\cal A} \right){\cal E} 
 \end{eqnarray}
 Note that at this point, by construction, we have that
 \begin{equation}
@@ -228,9 +251,15 @@ the definition of the tagged PDF becomes\footnote{when summed together, it is ob
 Once more we replace the new parameters $w_i$ and $\overline{w}_i$ by a CP-even and a CP-odd combination, by introducing
 the following parameterization:
 \begin{eqnarray}
-&w_i            = \frac{1}{2}\left[1-{\cal D}_i\left(1-{\Delta}_i\right) \right]; &  {\cal D}_i =1-w_i - \overline{w}_i \\
-&\overline{w}_i = \frac{1}{2}\left[1-{\cal D}_i\left(1+{\Delta}_i\right) \right]; &  {\Delta}_i = \frac{ w_i - \overline{w}_i}{1-w_i-\overline{w}_i}\\
+&w_i            = \frac{1}{2}\left[1-{\cal D}_i\left(1+{\Delta}_i\right) \right]; &  {\cal D}_i =1-w_i - \overline{w}_i \\
+&\overline{w}_i = \frac{1}{2}\left[1-{\cal D}_i\left(1-{\Delta}_i\right) \right]; &  {\Delta}_i =  \frac{\overline{w}_i - w_i }{1-w_i-\overline{w}_i}\\
 \end{eqnarray}
+and thus
+\begin{eqnarray}
+   &1-w_i            = \frac{1}{2}\left[1+{\cal D}_i\left(1+{\Delta}_i\right) \right]; &
+\\ &1-\overline{w}_i = \frac{1}{2}\left[1+{\cal D}_i\left(1-{\Delta}_i\right) \right]; &
+\end{eqnarray}
+
 Note that under $(w\rightarrow 1-w_i, \overline{w}_i\rightarrow 1-\overline{w}_i)$ we have $({\cal D}_i \rightarrow -{\cal D}_i,{\Delta}_i\rightarrow{\Delta}_i)$,
 and that the quantities $\nu,\delta_i,{\Delta}_i$ are CP odd, whereas $N,\epsilon_i,{\cal D}_i$ are CP even, so the PDFs
 for $B$ tags and $\overline{B}$ tags are related by the substitution $({\cal E},{\cal O};N,\nu;\epsilon_i,\delta_i;{\cal D}_i,\Delta_i )\rightarrow({\cal E},-{\cal O};N,-\nu;\epsilon_i,-\delta_i;{\cal D}_i,-\Delta_i )$.
@@ -238,23 +267,51 @@ for $B$ tags and $\overline{B}$ tags are related by the substitution $({\cal E},
 
 After some tedious algebra, the PDFs for tagged events can be written as:
 \begin{eqnarray}
+  P_i(q_T\in (-1,+1))  &= \frac{\epsilon_i{\cal E}}{2N}\biggl[& (1+\nu\delta_i)+ (\delta_i+\nu){\cal A}   \nonumber
+\\           &&+ q_T {\cal D}_i \left[ \left( (\delta_i+\nu) + {\Delta}_i (1+\nu\delta_i)\right) 
+                                     + \left[ (1+\nu\delta_i) + {\Delta}_i (\delta_i +\nu) \right] {\cal A}  \right] \biggr] \nonumber
+ \\                    &= \frac{\epsilon_i{\cal E}}{2}\frac{1+\nu\delta_i}{N}\biggl[&   1 + \frac{\delta_i+\nu}{1+\nu\delta_i}{\cal A}    \nonumber
+               +  q_T {\cal D}_i \frac{\left[ 1 + {\Delta}_i \frac{\delta_i +\nu}{(1+\nu\delta_i}  \right] {\cal A}+ \left( \frac{\delta_i+\nu}{1+\nu\delta_i } + {\Delta}_i \right)  }{1} \biggr] \nonumber
+ \\                    &= \frac{\epsilon_i{\cal E}}{2}\frac{1+\nu\delta_i}{N}\biggl[&   1 + \frac{\delta_i+\nu}{1+\nu\delta_i}{\cal A}    \nonumber
+               +  q_T {\cal D}_i \left[ 1 + {\Delta}_i \frac{\delta_i +\nu}{(1+\nu\delta_i}  \right] \left( \frac{{\cal A}+ \left( \frac{\delta_i+\nu}{1+\nu\delta_i } + {\Delta}_i \right)  }{\left[ 1 + {\Delta}_i \frac{\delta_i +\nu}{(1+\nu\delta_i}  \right] }\right) \biggr] \nonumber
+\end{eqnarray}
+\begin{eqnarray}
   P_i(q_T\in (-1,+1))  &= \frac{\epsilon_i}{2N}\biggl[& C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O}   \nonumber
-\\           &&+ q_T {\cal D}_i \left[ \left( C_{{\cal O},i} - {\Delta}_i C_{{\cal E},i} \right) {\cal E} 
-                                     + \left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right) {\cal O}  \right] \biggr] \nonumber
+\\           &&+ q_T {\cal D}_i \left[ \left( C_{{\cal O},i} + {\Delta}_i C_{{\cal E},i} \right) {\cal E} 
+                                     + \left( C_{{\cal E},i} + {\Delta}_i C_{{\cal O},i} \right) {\cal O}  \right] \biggr] \nonumber
 % \\ &=& \frac{\epsilon_i}{N} \left[ C_{{\cal E},i}{\cal E} + C_{{\cal O},i}{\cal O} \right] \frac{ 1 + q_T A_{CP}(i)}{2}
-\\ &\equiv& P_i \times \left( \frac{ 1}{2} + \frac{1}{2} q_T A_{CP}(i) \right)
+\\ &\equiv& P_i \times \left( \frac{ 1}{2} + \frac{1}{2} q_T A_{\mathrm{obs}}(i) \right)
 \label{eq:substrule_e}
 \end{eqnarray}
-where the $CP$ asymmetry is given by:
-\begin{equation}
-  A_{CP}(i) =  {\cal D}_i \frac{\left(C_{{\cal O},i}-{\Delta}_i C_{{\cal E},i}\right) {\cal E}+\left( C_{{\cal E},i} - {\Delta}_i C_{{\cal O},i} \right){\cal O}}
+where the observed $CP$ asymmetry is given by:
+\begin{eqnarray}
+  A_{\mathrm{obs}}(i) &=&  {\cal D}_i \frac{\left(C_{{\cal O},i}+{\Delta}_i C_{{\cal E},i}\right) {\cal E}+\left( C_{{\cal E},i} + {\Delta}_i C_{{\cal O},i} \right){\cal O}}
                                { C_{{\cal E},i}{\cal E}+ C_{{\cal O},i}{\cal O} }
-\end{equation}
-In the limit where $\nu=\delta_i={\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal O},i}=0, \Delta_i = 0$, this reduces to the expected
+\\  &=& {\cal D}_i \left[ \Delta_i + \frac{C_{{\cal E},i}{\cal A}+C_{{\cal O},i} }{ C_{{\cal E},i} + C_{{\cal O},i}{\cal A} }\right]
+\\A_{\mathrm{obs}}(i) &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\frac{\nu+{\cal A}}{1+\nu{\cal A}}}{1+\delta\frac{\nu+{\cal A}}{1+\nu{\cal A}}}\right] 
+%\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{\delta+\nu+{\cal A}+\delta\nu{\cal A}}{1+\nu{\cal A}+\delta\nu+\delta{\cal A}} \right]
+%\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{{\cal A}(1+\delta\nu)+\delta+\nu}{1+\delta\nu+{\cal A}(\delta+\nu)} \right] 
+%\\          &=&    {\cal D}_i \left[ \Delta_i + \frac{{\cal A}+\frac{\delta+\nu}{1+\delta\nu}}{1+{\cal A}\frac{\delta+\nu}{1+\delta\nu}} \right] \label{eq:ACPintermsofA}
+\\          &=&    {\cal D}_i \frac{ {\cal A}+\Delta_i +\delta_i + \nu + \delta_i\nu\Delta_i + {\cal A}\delta_i\Delta_i + {\cal A}\nu\Delta_i + {\cal A} \delta_i\nu }{1 +\delta_i\nu + {\cal A}\delta_i + {\cal A}\nu}
+\\          &=&    {\cal D}_i \frac{ {\cal A}\left(1 + \delta_i \nu +\delta_i\Delta_i + \nu\Delta_i \right)  +\delta_i + \nu+\Delta_i + \delta_i\nu\Delta_i  }{1 +\delta_i\nu + {\cal A}( \delta_i +\nu)}
+\\       &\approx& {\cal D}_i \left[ {\cal A} + \Delta_i + \delta + \nu \right]
+\end{eqnarray}
+In the limit where $\nu=\delta_i+{\Delta}=0$, i.e. $C_{{\cal E},i} =1, C_{{\cal O},i}=0, \Delta_i = 0$, this reduces to the expected
 \begin{eqnarray}
    P_0 &=&\frac{1}{N} \left[ 1-\sum_i \epsilon_i \right]{\cal E} \\
-   P_i(q_T\in(-1,1)) &=& \frac{\epsilon_i}{N}\left[  {\cal E} +q_T {\cal D}_i {\cal O}\right]  \label{eq:substrule_s}\\
-   A_{CP}(i) &=&  {\cal D}_i\frac{\cal O }{\cal E}
+   P_i(q_T\in(-1,1)) &=& \frac{\epsilon_i{\cal E}}{2N}\left[ 1  +q_T {\cal D}_i {\cal A}\right]  \label{eq:substrule_s}\\
+   A_{\mathrm{obs}}(i) &=&   {\cal D}_i {\cal A}
+\end{eqnarray}
+In addition, solving eq. \ref{eq:ACPintermsofA} for $\cal A$, it is clear that the effect on ${\cal A}$ comes in the form of a (first order) bias on the central value and (second order) on the dilution (i.e. as a scalefactor in the value of ${\cal A}$):
+\begin{eqnarray}
+    {\cal A} &=& %\frac{ (A_{\mathrm{obs}}/{\cal D}-\Delta)(1+\delta\nu)- (\delta+\nu) }{1+\delta\nu - ( A_{\mathrm{obs}}/{\cal D}-\Delta ) (\delta+\nu) }
+% \\     &=& 
+%     \frac{ {A_{\mathrm{obs}}(1+\delta\nu)}-{\cal D}\left[ \Delta(1+\delta\nu)  + \delta+\nu \right] }{{\cal D}\left[1+\delta\nu+\Delta(\delta+\nu)\right] -  A_{\mathrm{obs}}(\delta+\nu)   }
+%    {\cal A} = \frac{A_{\mathrm{obs}}-{\cal D}\left(\nu+\delta+\Delta-\delta^2\nu+\delta\nu^2\right)}{{\cal D}(1+\delta^2+\nu^2+2\delta\nu+{\cal A}(\nu+\delta))}
+%\\ &=& 
+\frac{A_{\mathrm{obs}}-{\cal D}(\Delta+\frac{\delta+\nu }{1+\delta\nu})}{ {\cal D}\left[   1+\Delta\frac{\delta+\nu}{1+\delta\nu}\right]-A_{\mathrm{obs}}\frac{\delta+\nu}{1+\delta\nu} } 
+%\\ &\approx& \frac{A_{\mathrm{obs}}-{\cal D}(\Delta+\delta+\nu )}{ {\cal D}\left[   1+\Delta\delta+\Delta\nu\right]-A_{\mathrm{obs}}(\delta+\nu) } 
+\\ &\approx& \frac{ \dfrac{A_{\mathrm{obs}}}{\cal D}-(\Delta+\delta+\nu )}{   1+\Delta\delta+\Delta\nu- \dfrac{A_{\mathrm{obs}}}{\cal D}(\delta+\nu) } 
 \end{eqnarray}
 
 As $\nu$ and $\delta_i$ always appear as sum, i.e. as $C_{{\cal O},i}$ (if we neglect the quadratic terms $\nu\delta_i$), and thus $\nu$ will be fully anticorrelated to the ($\epsilon_i$ weighted) average of $\delta_i$,
@@ -272,13 +329,13 @@ straightforward substitution rule, which one can read off by comparing Equations
 the initially CP-even terms (i.e. the $\cosh(\Delta\Gamma t/2)$ and $\sinh(\Delta\Gamma t/2)$ terms) obtain an additional
 factor 
 \begin{equation}
-   {\cal E} \rightarrow {\cal E} \left[ C_{{\cal E},i} + q_T {\cal D}_i \left( C_{{\cal O},i}-{\Delta}_i C_{{\cal E},i}) ]\right) \right]
+   {\cal E} \rightarrow {\cal E} \left[ C_{{\cal E},i} + q_T {\cal D}_i \left( C_{{\cal O},i}+{\Delta}_i C_{{\cal E},i}) ]\right) \right]
 \end{equation}
 \item
 the initially CP-odd terms (i.e. the $\cos(\Delta m t) $ and $\sin(\Delta m t)$ terms) obtain, { \em instead of the
 usual factor} $q_T{\cal D}_i$, the factor
 \begin{equation}
-   {\cal O} \rightarrow {\cal O} \left[ C_{{\cal O},i} +  q_T {\cal D}_i  \left( C_{{\cal E},i} - {\Delta}_iC_{{\cal O},i} \right) \right]
+   {\cal O} \rightarrow {\cal O} \left[ C_{{\cal O},i} +  q_T {\cal D}_i  \left( C_{{\cal E},i} + {\Delta}_iC_{{\cal O},i} \right) \right]
 \end{equation}
 \end{enumerate}
 Again, in the limit that $\delta_i=\nu={\Delta}_i=0$, i.e. $(C_{{\cal E},i},C_{{\cal O},i},\Delta_i) = (1,0,0)$ this results in the well-known expected behaviour.
@@ -378,11 +435,11 @@ One can obtain the angular function of a pure S-wave component by calculating a 
 \begin{equation}
 \frac{3}{16\pi}|{\bf S}(t) \wedge \hat{n}|^2\quad,
 \end{equation}
-where (WHY????)
+where
 \begin{equation}
-{\bf S}(t) = ({\cal A}_{S}(t),0,0)
+{\bf S}(t) = ({\cal A}_{S}(t),0,0) \quad ,
 \end{equation}
-This yields
+since the S-wave configuration has only vector meson in the decay, and thus must be necessarily longitudinally polarized (see e.g. Rosner, Phys Rev D42, 3732). This yields
 \begin{equation}
 \frac{3}{16\pi}|{\bf S}(t) \wedge \hat{n}|^{2}=|{\cal A}_{S}(t)|^2 (1-\sin^2\theta\cos^2\phi)
 \end{equation}
@@ -399,40 +456,71 @@ These interference terms are found to be
 \end{eqnarray}
 
 The pure P-wave, pure S-wave and P-S interference angular functions are summarized in table \ref{tab:canonicalpdf}.
-\begin{table}[htb]
+\begin{sidewaystable}[htb]
+
   \begin{center}
     \renewcommand{\arraystretch}{1.5}
-    \begin{tabular}{|c|c|c|}
+    \begin{tabular}{|c|c|c|c|c|c|}
     %\begin{tabular}{|b{2cm}|b{3cm}|b{4cm}|b{3cm}|}
       \hline
-      amplitudes & constant & angular function \\
+      amplitudes & constant & \multicolumn{2}{|c|}{transversity angular function }  &\multicolumn{2}{|c|}{ helicity angular function}\\
       \hline
       \hline
       $|{\cal{A}}_{0}(t)|^2$ & $\frac{9}{16 \pi}$
-        &  $\cos^2\psi \left(1 - \sin^2\theta \cos^2\phi\right)$  \\
+        &  $\cos^2\psitr \left(1 - \sin^2\theta_\mathrm{tr} \cos^2\phi_\mathrm{tr}\right)$  
+        &  $\cos^2\psitr \left(1 - x_\mathrm{tr}^2 \right) $ 
+        &  $\cos^2\thetaK \left(1 - z_\mathrm{hel}^2 \right) $ 
+        &  $\cos^2\thetaK \left(1 - \cos^2\theta_\ell \right) $ \\
       $|{\cal{A}}_{\parallel}(t)|^2$ & $\frac{9}{16 \pi}$
-        &  $\frac{1}{2}\sin^2\psi \left(1 - \sin^2\theta \sin^2\phi\right)$  \\
+        &  $\frac{1}{2}\sin^2\psitr \left(1 - \sin^2\theta_\mathrm{tr} \sin^2\phi_\mathrm{tr}\right)$  
+        &  $\frac{1}{2}\sin^2\psitr \left(1 - y_\mathrm{tr}^2 \right)$
+        &  $\frac{1}{2}\sin^2\thetaK \left(1 - x_\mathrm{hel}^2 \right)$
+        &  $\frac{1}{2}\sin^2\thetaK \left(1 - \sin^2\thetaL\cos^2\phiL \right)$\\
       $|{\cal{A}}_{\perp}(t)|^2$ & $\frac{9}{16 \pi}$
-        &  $\frac{1}{2}\sin^2\psi \sin^2\theta$  \\
-      $\Im({\cal{A}}_{\parallel}^{*}(t)\,{\cal{A}}_{\perp}(t))$ & $\frac{9}{16 \pi}$
-        &  $-\frac{1}{2}\sin^2\psi \sin2\theta \sin\phi$  \\
+        &  $\frac{1}{2}\sin^2\psitr \sin^2\theta_\mathrm{tr}$  
+        &  $\frac{1}{2}\sin^2\psitr \left(1- z_\mathrm{tr}^2\right)$  
+        &  $\frac{1}{2}\sin^2\thetaK\left(1- y_\mathrm{hel}^2\right)$  
+        &  $\frac{1}{2}\sin^2\thetaK\left(1-\sin^2\thetaL\sin^2\phiL\right)$  \\
       $\Re({\cal{A}}_{0}^{*}(t)\,{\cal{A}}_{\parallel}(t))$ & $\frac{9}{16 \pi}$
-        &   $\frac{1}{4}\sqrt{2}$ $\sin2\psi \sin^2\theta \sin2\phi$  \\
+        &   $\frac{1}{4}\sqrt{2}$ $\sin2\psitr \sin^2\theta_\mathrm{tr} \sin2\phi_\mathrm{tr}$  
+        &   $\frac{1}{2}\sqrt{2}$ $\sin2\psitr\; x_\mathrm{tr}y_\mathrm{tr}$ 
+        &   $\frac{1}{2}\sqrt{2}$ $\sin2\thetaK\; x_\mathrm{hel}z_\mathrm{hel}$ 
+        &   $\frac{1}{4}\sqrt{2}$ $\sin2\thetaK\sin2\thetaL\cos\phiL$ \\
       $\Im({\cal{A}}_{0}^{*}(t)\,{\cal{A}}_{\perp}(t))$ & $\frac{9}{16 \pi}$
-        &  $\frac{1}{4}\sqrt{2}$ $\sin2\psi \sin2\theta \cos\phi$  \\
+        &  $\frac{1}{4}\sqrt{2}$ $\sin2\psitr \sin2\theta_\mathrm{tr} \cos\phi_\mathrm{tr}$  
+        &  $\frac{1}{2}\sqrt{2}$ $\sin2\psitr\; x_\mathrm{tr}z_\mathrm{tr}$  
+        &  $-\frac{1}{2}\sqrt{2}$ $\sin2\thetaK\; y_\mathrm{hel}z_\mathrm{hel}$  
+        &  $-\frac{1}{4}\sqrt{2}$ $\sin2\thetaK\sin2\thetaL\sin\phiL$\\
+      $\Im({\cal{A}}_{\parallel}^{*}(t)\,{\cal{A}}_{\perp}(t))$ & $\frac{9}{16 \pi}$
+        &  $-\frac{1}{2}\sin^2\psitr \sin2\theta_\mathrm{tr} \sin\phi_\mathrm{tr}$  
+        &  $-\sin^2\psitr \;y_\mathrm{tr}z_\mathrm{tr}$
+        &  $+\sin^2\thetaK \;x_\mathrm{hel}y_\mathrm{hel}$
+        &  $+\frac{1}{2}\sin^2\thetaK \sin^2\thetaL\sin2\phiL$\\
       $|{\cal{A}}_S(t)|^2$ & $\frac{9}{16 \pi}$                     
-      & $\frac{1}{3} (1-\sin^2\theta\cos^2\phi)$  \\
-      $\Re({\cal{A}}_S^*(t){\cal{A}}_\parallel(t))$ & $\frac{9}{16 \pi} $
-      &  $\frac{1}{6}\sqrt{6}\sin\psi\sin^2\theta\sin 2\phi$ \\
-      $\Im({\cal{A}}_S^*(t){\cal{A}}_\perp(t))$ & $\frac{9}{16 \pi}$ 
-      &  $\frac{1}{6}\sqrt{6}\sin\psi\sin2\theta\cos\phi$ \\
+        & $\frac{1}{3} (1-\sin^2\theta_\mathrm{tr}\cos^2\phi_\mathrm{tr})$  
+        & $\frac{1}{3} (1-x_\mathrm{tr}^2)$  
+        & $\frac{1}{3} (1-z_\mathrm{hel}^2)$  
+        & $\frac{1}{3} (1-\cos^2\thetaL)$  \\
       $ \Re({\cal{A}}_S^*(t){\cal{A}}_0(t)) $ & $\frac{9}{16 \pi} $
-      & $\frac{2}{3}\sqrt{3}\cos\psi(1-\sin^2\theta\cos^2\phi)$ \\
+        & $\frac{2}{3}\sqrt{3}\cos\psitr(1-\sin^2\theta_\mathrm{tr}\cos^2\phi_\mathrm{tr})$ 
+        & $\frac{2}{3}\sqrt{3}\cos\psitr(1-x_\mathrm{tr}^2)$ 
+        & $\frac{2}{3}\sqrt{3}\cos\thetaK(1-z_\mathrm{hel}^2)$ 
+        & $\frac{2}{3}\sqrt{3}\cos\thetaK(1-\cos^2\thetaL)$ \\
+      $\Re({\cal{A}}_S^*(t){\cal{A}}_\parallel(t))$ & $\frac{9}{16 \pi} $
+        &  $\frac{1}{6}\sqrt{6}\sin\psitr\sin^2\theta_\mathrm{tr}\sin 2\phi_\mathrm{tr}$ 
+        &  $\frac{1}{3}\sqrt{6}\sin\psitr\; x_\mathrm{tr}y_\mathrm{tr}$ 
+        &  $\frac{1}{3}\sqrt{6}\sin\thetaK\; x_\mathrm{hel}z_\mathrm{hel}$ 
+        &  $\frac{1}{6}\sqrt{6}\sin\thetaK\sin2\thetaL\cos\phiL$ \\
+      $\Im({\cal{A}}_S^*(t){\cal{A}}_\perp(t))$ & $\frac{9}{16 \pi}$ 
+        &  $\frac{1}{6}\sqrt{6}\sin\psitr\sin2\theta_\mathrm{tr}\cos\phi_\mathrm{tr}$ 
+        &  $\frac{1}{3}\sqrt{6}\sin\psitr\; x_\mathrm{tr} z_\mathrm{tr}$ 
+        & -$\frac{1}{3}\sqrt{6}\sin\thetaK\; y_\mathrm{hel} z_\mathrm{hel}$ 
+        & -$\frac{1}{3}\sqrt{6}\sin\thetaK\sin2\thetaL\sin\phiL$ \\
        \hline
     \end{tabular}
   \end{center}
   \caption{The pure P-wave, pure S-wave and P-S interference angular functions.}\label{tab:canonicalpdf}
-\end{table}
+\end{sidewaystable}
 
 \subsection{Reparameterization}
 We want to rewrite the PDF in terms of associated Legendre polynomials $P_{i}(\cos\psi)$ and spherical harmonics $Y_{lm}(\cos\theta,\phi)$. First we will give some identities involving these functions:
@@ -498,13 +586,13 @@ This can be summarized in tabular form as
                                         &  4 P_2^0Y_{00}  & 2 \sqrt{\frac{1}{5}} P_2^0 Y_{20} & -2 \sqrt{\frac{3}{5}} P_2^0 Y_{22} \\
 |{\cal A}_\parallel(t)|^2               &    P_2^2Y_{00} &  \frac{1}{2}\sqrt{\frac{1}{5}} P_2^2 Y_{20} & \frac{1}{2}\sqrt{\frac{3}{5}} P_2^2Y_{22} & && \\
 |{\cal A}_\perp(t)|^2                   &  P_2^2 Y_{00} & -\sqrt{\frac{1}{5}} P_2^2 Y_{20} &                                 &&& \\
-\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &  \sqrt{\frac{3}{5}} P_2^2 Y_{2,-1} &&&&&\\
 \Re({\cal A}_0^*(t){\cal A}_\parallel(t))     & -\sqrt{\frac{6}{5}} P_2^1 Y_{2,-2} &&&&&\\
 \Im({\cal A}_0^*(t){\cal A}_\perp(t))         &  \sqrt{\frac{6}{5}} P_2^1 Y_{2,1} &&&&&\\
+\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &  \sqrt{\frac{3}{5}} P_2^2 Y_{2,-1} &&&&&\\
 |{\cal A}_{s}(t)|^2                   &  2 P_0^0 Y_{00} & \sqrt{\frac{1}{5}} P_0^0 Y_{20} & -\sqrt{\frac{3}{5}} P_0^0 Y_{22}                                &&& \\
+\Re({\cal A}_{s}^*(t){\cal A}_0(t))   &  4 \sqrt{3} P_1^0 Y_{00} & 2 \sqrt{\frac{3}{5}} P_1^0 Y_{20} & - 6 \sqrt{\frac{1}{5}} P_1^0 Y_{22}                       &&& \\
 \Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))   &  -3\sqrt{\frac{2}{5}} P_1^1 Y_{2,-2} &&&&& \\
 \Im({\cal A}_{s}^*(t){\cal A}_\perp(t))     &  3\sqrt{\frac{2}{5}} P_1^1 Y_{2,1} &&&&& \\
-\Re({\cal A}_{s}^*(t){\cal A}_0(t))   &  4 \sqrt{3} P_1^0 Y_{00} & 2 \sqrt{\frac{3}{5}} P_1^0 Y_{20} & - 6 \sqrt{\frac{1}{5}} P_1^0 Y_{22}                       &&& \\
  \hline
 \end{array}
 \end{equation}
@@ -517,21 +605,21 @@ Rewriting this in terms of helicity angles instead of transversity angles one ob
 |{\cal A}_0(t)|^2                       & 2P_0^0Y_{00} & -\sqrt{\frac{4}{5}}P_0^0Y_{20} & 4P_2^0Y_{00} & -\sqrt{\frac{16}{5}} P_2^0Y_{20}  \\
 |{\cal A}_\parallel(t)|^2               & P_2^2Y_{00} &\sqrt{\frac{1}{20}} P_2^2Y_{20} &-\sqrt{\frac{3}{20}}P_2^2Y_{22} & \\
 |{\cal A}_\perp(t)|^2                   & P_2^2Y_{00} & \sqrt{\frac{1}{20}} P_2^2Y_{20} &\sqrt{\frac{3}{20}}P_2^2Y_{22} & \\
-\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) & \sqrt{\frac{3}{5}}P_2^2Y_{2,-2}&&&\\
 \Re({\cal A}_0^*(t){\cal A}_\parallel(t))     & \sqrt{\frac{6}{5}}P_2^1Y_{21}&&&\\
 \Im({\cal A}_0^*(t){\cal A}_\perp(t))         & -\sqrt{\frac{6}{5}}P_2^1Y_{2,-1}&&&\\
+\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) & \sqrt{\frac{3}{5}}P_2^2Y_{2,-2}&&&\\
 |{\cal A}_{s}(t)|^2                   &  2 P_0^0 Y_{00} & -2 \sqrt{\frac{1}{5}} P_0^0 Y_{20} && \\
+\Re({\cal A}_{s}^*(t){\cal A}_0(t))   &  4 \sqrt{3} P_1^0 Y_{00} & -4 \sqrt{\frac{3}{5}} P_1^0 Y_{20} && \\
 \Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))   &  3\sqrt{\frac{2}{5}} P_1^1 Y_{2,1} &&& \\
 \Im({\cal A}_{s}^*(t){\cal A}_\perp(t))     &  -3\sqrt{\frac{2}{5}} P_1^1 Y_{2,-1} &&& \\
-\Re({\cal A}_{s}^*(t){\cal A}_0(t))   &  4 \sqrt{3} P_1^0 Y_{00} & -4 \sqrt{\frac{3}{5}} P_1^0 Y_{20} && \\
  \hline
 \end{array}
 \end{equation}
 
-The correctly normalized PDF is $\frac{9}{16 \pi}|{ \bf A}(t) \wedge \hat{n}|^2$, as was calculated before. Since we coded up the functions as shown in table \ref{tab:pdfinpy}, the correct normalization for the PDF in our code and thus for the terms in table \ref{tab:pdfinpy} is 
-\begin{equation}
-\frac{9}{16 \pi}\frac{\sqrt{4 \pi}}{9} = \frac{1}{8 \sqrt{\pi}}
-\end{equation}
+%The correctly normalized PDF is $\frac{9}{16 \pi}|{ \bf A}(t) \wedge \hat{n}|^2$, as was calculated before. Since we coded up the functions as shown in table \ref{tab:pdfinpy}, the correct normalization for the PDF in our code and thus for the terms in table \ref{tab:pdfinpy} is 
+%\begin{equation}
+%\frac{9}{16 \pi}\frac{\sqrt{4 \pi}}{9} = \frac{1}{8 \sqrt{\pi}} \quad .
+%\end{equation}
 
 \pagebreak
 
@@ -593,7 +681,7 @@ P_2^1(x) &=& -3x(1-x^2)^{1/2} = -3x(1-...  x^2 + ... x^4  + ...x^6 + ...) \\
 P_1^1(x) &=& -1(1-x^2)^{1/2} = ...P_0 + ...P_2 + ...P_4 + ...\\
 \end{eqnarray}
 
-In particular, an online integrator can explicitly calculate the integrals $\int_{-1}^{1}P_2^1P_i^0\mathrm{d}x$ where  $i = 1,3,5,...$ to find the coefficients in the $\Re({\cal A}_0^*{\cal A}_\parallel)$ and $\Im({\cal A}_\perp^* {\cal A}_0 )$ terms. The same goes for the integrals $\int_{-1}^{1}P_1^1P_i^0\mathrm{d}x$ where $i=0,2,4,...$ for the terms $\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))$ and $\Im({\cal A}_{s}^*(t){\cal A}_\perp(t))$.
+In particular, one can explicitly calculate the integrals $\int_{-1}^{1}P_2^1P_i^0\mathrm{d}x$ where  $i = 1,3,5,...$, to find the coefficients in the $\Re({\cal A}_0^*{\cal A}_\parallel)$ and $\Im({\cal A}_\perp^* {\cal A}_0 )$ terms. The same goes for the integrals $\int_{-1}^{1}P_1^1P_i^0\mathrm{d}x$ where $i=0,2,4,...$ for the terms $\Re({\cal A}_{s}^*(t){\cal A}_\parallel(t))$ and $\Im({\cal A}_{s}^*(t){\cal A}_\perp(t))$.
 
 At this point, we recognize the equivalence of the following combinations of Fourier coefficients of the efficiency, and the 'efficiency normalization moments', where we have taken into account the factor $\frac{1}{8\sqrt{\pi}}$ which represents the overall normalization. 
 

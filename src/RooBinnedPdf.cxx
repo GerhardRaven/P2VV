@@ -50,6 +50,8 @@
 
 #include <memory>
 
+using namespace std;
+
 ClassImp(RooBinnedPdf);
 
 //_____________________________________________________________________________
@@ -62,6 +64,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),  
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kFALSE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(kFALSE)
 {
@@ -97,6 +100,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kFALSE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(kFALSE)
 {
@@ -115,9 +119,9 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   // "baseCats".
 
   // loop over input categories
-  TIterator* catIter = baseCats.createIterator();
+  RooFIter catIter = baseCats.fwdIterator();
   RooAbsArg* cat = 0;
-  while ((cat = (RooAbsArg*)catIter->Next()) != 0) {
+  while ((cat = (RooAbsArg*)catIter.next()) != 0) {
     // check if this is a category
     if (dynamic_cast<RooAbsCategory*>(cat) == 0) {
       coutF(InputArguments) << "RooBinnedPdf::RooBinnedPdf("
@@ -131,8 +135,6 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     ++_numCats;
     _baseCatsList.add(*cat);
   }
-
-  delete catIter;
 
   // initialize coefficients
   if (_numCats > 0) {
@@ -153,6 +155,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kFALSE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(kTRUE),
   _ignoreFirstBin(ignoreFirstBin)
 {
@@ -174,9 +177,9 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   // the binnings.
 
   // loop over input categories
-  TIterator* catIter = baseCats.createIterator();
+  RooFIter catIter = baseCats.fwdIterator();
   RooAbsArg* cat = 0;
-  while ((cat = (RooAbsArg*)catIter->Next()) != 0) {
+  while ((cat = (RooAbsArg*)catIter.next()) != 0) {
     // check if this is a category
     if (dynamic_cast<RooAbsCategory*>(cat) == 0) {
       coutF(InputArguments) << "RooBinnedPdf::RooBinnedPdf("
@@ -190,8 +193,6 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     ++_numCats;
     _baseCatsList.add(*cat);
   }
-
-  delete catIter;
 
   // initialize coefficients
   if (_numCats > 0) initCoefs(coefLists);
@@ -208,6 +209,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kTRUE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(kFALSE)
 {
@@ -253,6 +255,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kTRUE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(kFALSE)
 {
@@ -292,6 +295,7 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   _coefLists(1, 0),
   _function(TString(name) + "_func", TString(name) + "_func", this),
   _continuousBase(kTRUE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(binIntegralCoefs),
   _ignoreFirstBin(ignoreFirstBin)
 {
@@ -329,6 +333,7 @@ RooBinnedPdf::RooBinnedPdf
   _coefLists(),
   _function(TString(name) + "_func", TString(name) + "_func", this, function),
   _continuousBase(kTRUE),
+  _forceUnitIntegral(kFALSE),
   _binIntegralCoefs(kFALSE),
   _ignoreFirstBin(kFALSE)
 {
@@ -351,16 +356,17 @@ RooBinnedPdf::RooBinnedPdf
 //_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf
 (const char* name, const char* title, const RooArgList& baseVars,
-    const TObjArray& binningNames, RooAbsReal& function) :
-  RooAbsPdf(name, title),
-  _numCats(0),
-  _baseCatsList(TString(name) + "_baseCatsList", 0, this),
-  _baseVarsList(TString(name) + "_baseVarsList", 0, this),
-  _coefLists(),
-  _function(TString(name) + "_func", TString(name) + "_func", this, function),
-  _continuousBase(kTRUE),
-  _binIntegralCoefs(kFALSE),
-  _ignoreFirstBin(kFALSE)
+    const TObjArray& binningNames, RooAbsReal& function)
+   : RooAbsPdf(name, title),
+     _numCats(0),
+     _baseCatsList(TString(name) + "_baseCatsList", 0, this),
+     _baseVarsList(TString(name) + "_baseVarsList", 0, this),
+     _coefLists(),
+     _function(TString(name) + "_func", TString(name) + "_func", this, function),
+     _continuousBase(kTRUE),
+     _forceUnitIntegral(kFALSE),
+     _binIntegralCoefs(kFALSE),
+     _ignoreFirstBin(kFALSE)
 {
   // constructor with a list of variables, the corresponding binnings to be
   // used and a function.
@@ -376,35 +382,35 @@ RooBinnedPdf::RooBinnedPdf
   assert(baseVars.getSize() == binningNames.GetEntries());
 
   std::auto_ptr<const RooArgSet> comps(function.getVariables());
-  std::auto_ptr<TIterator> it(baseVars.createIterator());
+  RooFIter it = baseVars.fwdIterator();
   RooAbsArg* arg = 0;
-  while ((arg = static_cast<RooAbsArg*>(it->Next()))) {
+  while ((arg = static_cast<RooAbsArg*>(it.next()))) {
     assert(comps->contains(*arg));
   }
 
   _baseVarsList.add(baseVars);
-  it.reset(binningNames.MakeIterator());
+  std::auto_ptr<TIterator> i(binningNames.MakeIterator());
   TObjString* s = 0;
-  while ((s = static_cast<TObjString*>(it->Next()))) {
+  while ((s = static_cast<TObjString*>(i->Next()))) {
     _binningNames.push_back(s->GetString());
   }
 }
 
 //_____________________________________________________________________________
-RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other,
-    const char* name) :
-  RooAbsPdf(other, name),
-  _numCats(other._numCats),
-  _baseCatsList(TString(name) + "_baseCatsList", this, other._baseCatsList),
-  _baseVarsList(TString(name) + "_baseVarsList", this, other._baseVarsList),
-  _coefLists(_numCats, 0),
-  _function(TString(name) + "_function", this, other._function),
-  _indexPositions(other._indexPositions),
-  _binningNames(other._binningNames),
-  _calcCoefZeros(other._calcCoefZeros),
-  _continuousBase(other._continuousBase),
-  _binIntegralCoefs(other._binIntegralCoefs),
-  _ignoreFirstBin(other._ignoreFirstBin)
+RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other, const char* name)
+   : RooAbsPdf(other, name),
+     _numCats(other._numCats),
+     _baseCatsList(TString(name) + "_baseCatsList", this, other._baseCatsList),
+     _baseVarsList(TString(name) + "_baseVarsList", this, other._baseVarsList),
+     _coefLists(_numCats, 0),
+     _function(TString(name) + "_function", this, other._function),
+     _indexPositions(other._indexPositions),
+     _binningNames(other._binningNames),
+     _calcCoefZeros(other._calcCoefZeros),
+     _continuousBase(other._continuousBase),
+     _forceUnitIntegral(other._forceUnitIntegral),
+     _binIntegralCoefs(other._binIntegralCoefs),
+     _ignoreFirstBin(other._ignoreFirstBin)
 {
   // copy constructor
 
@@ -467,8 +473,8 @@ Int_t RooBinnedPdf::getAnalyticalIntegral(RooArgSet& allVars,
 
   // check if we have to integrate over all variables, calculate the
   // coefficient of bin 0 and coefficients are bin integrals
-  if (_calcCoefZeros[0] && (!_continuousBase || _binIntegralCoefs)
-      && varsCode == (1 << _numCats) - 1)
+  if ((_forceUnitIntegral || (_calcCoefZeros[0] && (!_continuousBase
+      || _binIntegralCoefs))) && varsCode == (1 << _numCats) - 1)
     return 1;
 
   // return integration code
@@ -480,7 +486,7 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
     const char* /*rangeName*/) const
 {
   // integral over all variables equals 1 if the coefficient of bin 0 is
-  // calculated and coefficients are bin integrals
+  // calculated and coefficients are bin integrals (or if integral=1 is forced)
   if (code == 1) return 1.;
 
   // determine the code that specifies integration variables
@@ -497,7 +503,9 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
     Double_t integral = 0.;
     Double_t coefSum  = 0.;
     RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(0);
-    for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
+    RooFIter coefIter = coefList->fwdIterator();
+    RooAbsReal *coef(0);
+    while ((coef=(RooAbsReal*)coefIter.next())) {
       // check if we have to add this bin's coefficient to the integral
       Bool_t addCoef = kTRUE;
       Double_t binVolumeFac = 1.;
@@ -533,7 +541,7 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
       }
 
       // get coefficient's value
-      Double_t cVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
+      Double_t cVal = coef->getVal();
 
       // add value to sum
       if (_calcCoefZeros[0] && cVal > 0.) coefSum += cVal;
@@ -610,35 +618,43 @@ Int_t RooBinnedPdf::getMaxVal(const RooArgSet& vars) const
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::maxVal(Int_t code) const 
 {
-   // We only do the case of a 1D function
+   // We only do 1D.
    assert(code==1);
-   assert(_function.absArg() != 0);
+   // assert(_function.absArg() != 0);
    
    Double_t max = -1;
    
-   Bool_t origState = inhibitDirty();
-   setDirtyInhibit(kTRUE);
-   
-   RooAbsRealLValue* lvar = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(0));
-   double original = lvar->getVal();
 
-   const RooAbsBinning* binning = lvar->getBinningPtr(_binningNames[0].Data());
-   for (Int_t i = 0; i < binning->numBins(); ++i) {
-      lvar->setVal(binning->binCenter(i));
-      // Get function value
-      Double_t value = _function.arg().getVal();
-      if (value > max) max = value;
+   if (_function.absArg() != 0) {
+      Bool_t origState = inhibitDirty();
+      setDirtyInhibit(kTRUE);
+      
+      RooAbsRealLValue* lvar = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(0));
+      double original = lvar->getVal();
+      const RooAbsBinning* binning = lvar->getBinningPtr(_binningNames[0].Data());
+      for (Int_t i = 0; i < binning->numBins(); ++i) {
+         lvar->setVal(binning->binCenter(i));
+         // Get function value
+         Double_t value = _function.arg().getVal();
+         if (value > max) max = value;
+      }
+      lvar->setVal(original);
+      setDirtyInhibit(origState);	
+   } else {
+      RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(0);
+      for (Int_t i = 0; i < coefList->getSize(); ++i) {
+         double val = static_cast<const RooAbsReal*>(coefList->at(i))->getVal();
+         if (val > max) {
+            max = val;
+         }
+      }
    }
-   lvar->setVal(original);
-
-   setDirtyInhibit(origState);	
-
    return max * 1.05;
 }
 
 //_____________________________________________________________________________
 list<Double_t>* RooBinnedPdf::plotSamplingHint(RooAbsRealLValue& obs,
-    Double_t xlo, Double_t xhi) const
+                                               Double_t xlo, Double_t xhi) const
 {
    // Return sampling hint for making curves of (projections) of this function
    // as the recursive division strategy of RooCurve cannot deal efficiently
@@ -729,9 +745,13 @@ std::list<Double_t>* RooBinnedPdf::binBoundaries(RooAbsRealLValue& obs,
 //_____________________________________________________________________________
 Double_t RooBinnedPdf::evaluate() const
 {
-  if (_function.absArg() != 0) return evaluateFunction();
-  else if (_coefLists.GetEntries() == _numCats) return evaluateMultipleCoefs();
-  else return evaluateCoef();
+   if (_function.absArg() != 0) {
+      return evaluateFunction();
+   } else if (_coefLists.GetEntries() == _numCats) {
+      return evaluateMultipleCoefs();
+   } else {
+      return evaluateCoef();
+   }
 }
 
 //_____________________________________________________________________________
@@ -747,21 +767,30 @@ Double_t RooBinnedPdf::evaluateCoef() const
   Int_t binPos     = 0;
   Int_t coefPosFac = 1;
 
+  assert(_numCats==_baseCatsList.getSize());
   // loop over base categories
-  for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
+  RooFIter catIter = _baseCatsList.fwdIterator();
+  RooFIter baseIter = _baseVarsList.fwdIterator();
+  int icatIter = -1;
+  RooAbsCategory* icat(0);
+  while((icat=(RooAbsCategory*)catIter.next())) {
+    ++icatIter;
     // get position of coefficient
-    std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
-    Int_t cPos = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
-        ->getIndex()];
+    const std::map<Int_t, Int_t>& indexMap = _indexPositions[icatIter];
+    Int_t index = icat->getIndex();
+    std::map<Int_t, Int_t>::const_iterator it = indexMap.find(index);
+    assert(it != indexMap.end());
+    Int_t cPos = it->second;
 
     // update position of bin
     binPos += coefPosFac * cPos;
-    coefPosFac *= ((RooAbsCategory*)_baseCatsList.at(catIter))->numTypes();
+    coefPosFac *= icat->numTypes();
 
     // divide by bin widths if coefficients are bin integrals
-    if (_continuousBase && _binIntegralCoefs)
-      value /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
-          ->getBinning(_binningNames[catIter]).binWidth(cPos);
+    if (_continuousBase && _binIntegralCoefs) {
+      RooAbsRealLValue* baseVar = (RooAbsRealLValue*)baseIter.next();
+      value /= baseVar->getBinning(_binningNames[icatIter]).binWidth(cPos);
+    }
   }
 
   RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(0);
@@ -785,10 +814,11 @@ Double_t RooBinnedPdf::evaluateCoef() const
 
   // loop over coefficients and calculate sum
   Double_t coefSum = 0.;
-  for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
+  RooFIter coefIter = coefList->fwdIterator();
+  RooAbsReal *arg(0);
+  while ((arg=(RooAbsReal*)coefIter.next())) {
     // get coefficient's value
-    Double_t cVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
-
+    Double_t cVal = arg->getVal();
     // make negative values equal to zero, add positive values to sum
     if (cVal > 0) coefSum += cVal;
   }
@@ -817,15 +847,19 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
 
   // temporary array of coefficient positions
   Int_t* cPos = new Int_t [_numCats];
+  for (int i = 0; i < _numCats; ++i) cPos[i] = 0;
 
   // loop over base categories
   Bool_t ignoreBin = _ignoreFirstBin;
   Bool_t calcCoefZeros = kFALSE;
   for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
     // get coefficient position
-    std::map<Int_t, Int_t> indexMap = _indexPositions[catIter];
-    cPos[catIter] = indexMap[((RooAbsCategory*)_baseCatsList.at(catIter))
-        ->getIndex()];
+    const std::map<Int_t, Int_t>& indexMap = _indexPositions[catIter];
+    Int_t index = static_cast<RooAbsCategory*>(_baseCatsList.at(catIter))->getIndex();
+    std::map<Int_t, Int_t>::const_iterator it = indexMap.find(index);
+    assert(it != indexMap.end());
+    cPos[catIter] = it->second;
+    
     if (cPos[catIter] != 0) ignoreBin = kFALSE;
     if (_calcCoefZeros[catIter]) calcCoefZeros = kTRUE;
 
@@ -835,9 +869,11 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
       Double_t cVal = ((RooAbsReal*)((RooArgList*)_coefLists
           .UncheckedAt(catIter))
           ->at(cPos[catIter] - (Int_t)_calcCoefZeros[catIter]))->getVal();
-
       // make negative values equal to zero
-      if (cVal <= 0.) return 0.;
+      if (cVal <= 0.) {
+         delete[] cPos;
+         return 0.;
+      }
 
       // multiply by coefficient't value
       value *= cVal;
@@ -850,8 +886,14 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
   }
 
   // return value if we don't have to calculate any bin 0 coefficients
-  if (ignoreBin) return 0.;
-  if (!calcCoefZeros) return value;
+  if (ignoreBin) {
+    delete[] cPos;
+    return 0.;
+  }
+  if (!calcCoefZeros) {
+    delete[] cPos;
+    return value;
+  }
 
   // loop over base categories again
   for (Int_t catIter = 0; catIter < _numCats; ++catIter) {
@@ -865,17 +907,21 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
     // loop over specified coefficients (#category types - 1)
     Double_t coefSum = 0.;
     RooArgList* coefList = (RooArgList*)_coefLists.UncheckedAt(catIter);
-    for (Int_t coefIter = 0; coefIter < coefList->getSize(); ++coefIter) {
+    RooFIter coefIter = coefList->fwdIterator();
+    RooAbsReal *arg(0);
+    while ((arg=(RooAbsReal*)coefIter.next())) {
       // get coefficient's value
-      Double_t cVal = ((RooAbsReal*)coefList->at(coefIter))->getVal();
-
+      Double_t cVal = arg->getVal();
       // make negative values equal to zero, add positive values to sum
       if (cVal > 0) coefSum += cVal;
     }
 
     if (cPos[catIter] == 0) {
       // multiply result with the calculated value of bin 0 coefficient
-      if (coefSum >= 1.) return 0.;
+      if (coefSum >= 1.) {
+        delete[] cPos;
+        return 0.;
+      }
       value *= 1. - coefSum;
 
       // divide by bin width if coefficients are bin integrals
@@ -948,7 +994,7 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
   for (Int_t varIter = 0; varIter < _numCats; ++varIter) {
     // get input variable
     TString catName(baseVars.at(varIter)->GetName());
-    catName += "_cat";
+    catName += TString("_") + GetName() + "_cat";
     RooAbsRealLValue* var
         = dynamic_cast<RooAbsRealLValue*>(baseVars.at(varIter));
 
@@ -982,10 +1028,10 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
     _binningNames.push_back(bins);
 
     // create category
-    RooBinningCategory* cat = new RooBinningCategory(catName, catName, *var,
-        bins);
+    RooBinningCategory* cat = new RooBinningCategory(catName, catName, *var, bins);
     _baseCatsList.addOwned(*cat);
   }
+  assert(_baseVarsList.getSize()==_numCats);
 
   return _baseCatsList.getSize();
 }
@@ -1017,9 +1063,9 @@ Int_t RooBinnedPdf::initCoefs(const TObjArray& coefLists, Bool_t factorize)
     _coefLists.Add(cListProxy);
 
     // add coefficients to list proxy
-    TIterator* coefIter = cList->createIterator();
+    RooFIter coefIter = cList->fwdIterator();
     RooAbsReal* coef = 0;
-    while ((coef = dynamic_cast<RooAbsReal*>(coefIter->Next())) != 0) {
+    while ((coef = dynamic_cast<RooAbsReal*>(coefIter.next())) != 0) {
       // check if coefficient does not depend on our variables
       if ((_continuousBase && coef->dependsOn(_baseVarsList))
           || (!_continuousBase && coef->dependsOn(_baseCatsList))) {
@@ -1033,14 +1079,12 @@ Int_t RooBinnedPdf::initCoefs(const TObjArray& coefLists, Bool_t factorize)
       cListProxy->add(*coef);
     }
 
-    delete coefIter;
-
     // loop over base categories
-    TIterator* catIter = _baseCatsList.createIterator();
+    RooFIter catIter = _baseCatsList.fwdIterator();
     RooAbsCategory* cat = 0;
     Int_t catPos = -1;
     Int_t numBins = 1;
-    while ((cat = (RooAbsCategory*)catIter->Next()) != 0) {
+    while ((cat = (RooAbsCategory*)catIter.next()) != 0) {
       // update category position
       ++catPos;
 
@@ -1082,8 +1126,6 @@ Int_t RooBinnedPdf::initCoefs(const TObjArray& coefLists, Bool_t factorize)
         indexPosMap[catIndices.at(indexPos)] = indexPos;
       _indexPositions.push_back(indexPosMap);
     }
-
-    delete catIter;
 
     if (!factorize) {
       // check/set number of coefficients

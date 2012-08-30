@@ -18,11 +18,36 @@
 #pragma link C++ class RooBinnedPdf+;
 #pragma link C++ class RooP2VVAngleBasis+;
 #pragma link C++ class RooThresholdPdf+;
-#pragma link C++ class RooEffHistProd+;
 #pragma link C++ class RooRelBreitWigner+;
 #pragma link C++ class RooTagDecisionWrapper+;
 #pragma link C++ class RooRealCategory+;
 #pragma link C++ class RooCalibratedDilution+;
 #pragma link C++ function RooDataSetToTree;
+#pragma link C++ class RooTransAngle+;
+#pragma link C++ class RooCruijff+;
+#pragma link C++ class RooEfficiencyBin+;
+#pragma link C++ class RooAvEffConstraint+;
+#pragma link C++ class RooCorrectedSWeight+;
+#pragma link C++ class RooAbsEffResModel;
+#pragma link C++ class RooEffResModel+;
+#pragma link C++ class MultiHistEntry<RooEffResModel, RooMultiEffResModel>+;
+#pragma link C++ class RooMultiEffResModel+;
+#pragma link C++ class RooEffConvGenContext+;
+
+#pragma link C++ class std::map<RooAbsCategory*, std::string>;
+#pragma link C++ class std::map<RooCategoryProxy*, std::string>;
+#pragma link C++ class std::vector<std::pair<double, TString> >;
+#pragma link C++ class std::pair<RooAbsCategory*, std::string>;
+#pragma link C++ class std::map<RooRealProxy*, bool>;
+#pragma link C++ class std::map<RooAbsReal*, bool>;
+#pragma link C++ class std::pair<RooAbsReal*, bool>;
+#pragma link C++ class std::pair<RooRealProxy*, bool>;
+#pragma link C++ class std::pair<double, TString>;
+#pragma link C++ class std::pair<RooCategoryProxy*, std::string>;
+
+#pragma link C++ class std::map<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>;
+#pragma link C++ class std::pair<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>;
+#pragma link C++ class std::map<int, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>::iterator;
+#pragma link C++ class std::vector<MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>;
 
 #endif

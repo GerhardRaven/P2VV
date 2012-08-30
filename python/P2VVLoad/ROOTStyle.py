@@ -20,7 +20,7 @@ plotStyle.SetTitleSize(0.048, 'XY')
 plotStyle.SetLabelSize(0.045, 'XY')
 
 plotStyle.SetTitleOffset(1.2, 'X')
-plotStyle.SetTitleOffset(1.4, 'Y')
+plotStyle.SetTitleOffset(1.6, 'Y')
 plotStyle.SetLabelOffset(0.011, 'XY')
 
 gROOT.SetStyle('Plain')

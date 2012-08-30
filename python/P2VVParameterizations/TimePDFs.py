@@ -6,6 +6,9 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
+from ROOT import RooNumber
+RooInf = RooNumber.infinity()
+
 class BDecayBasisCoefficients :
     def __init__(self, **kwargs ) :
         for i in ['sin','cos','sinh','cosh' ] : setattr(self,i,kwargs.pop(i))
@@ -17,6 +20,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__( self, angFuncs, Amplitudes, CP, order ) :
         def combine( name, afun, A, CPparams, i, j ) :
             from RooFitWrappers import ConstVar, FormulaVar, Product
+            zero  = ConstVar( Name = 'zero',  Value =  0 )
             plus  = ConstVar( Name = 'plus',  Value =  1 )
             minus = ConstVar( Name = 'minus', Value = -1 )
             one   = plus
@@ -37,7 +41,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
                    }
             (c_re,c_im) = coef[name](A[i],A[j],CPparams)
             (f_re,f_im) = afun[(i,j)]
-            (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) )
+            (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) ) if i != j else ( A[i].Mag2, zero )
             # NOTE: thes sign are just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c),
             #       i.e. there is a minus in case there are 2 imaginary contributions
             prod = lambda name, args : [ Product(name, args) ] if all(args) else []
@@ -117,45 +121,111 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         BDecayBasisCoefficients.__init__( self, **args )
 
 
+def JpsiphiBDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, amplitudes, CP, order ) :
+    from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
+    basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes, CP, tag, tagging['dilution'], order )
+    from RooFitWrappers import BDecay
+    return  BDecay(  Name                   = Name
+                   , time                   = time
+                   , dm                     = lifetimeParams['dM']
+                   , tau                    = lifetimeParams['MeanLifetime']
+                   , dGamma                 = lifetimeParams['dGamma']
+                   , resolutionModel        = sigtres['model']
+                   , coshCoef               = basisCoefficients['cosh']
+                   , cosCoef                = basisCoefficients['cos']
+                   , sinhCoef               = basisCoefficients['sinh']
+                   , sinCoef                = basisCoefficients['sin']
+                   , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
+                   , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                              + sigtres.externalConstraints()\
+                                              + tagging.externalConstraints()
+                  )
+
+def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, amplitudes, CP, order ) :
+    from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
+    basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes, CP, order )
+    from RooFitWrappers import BTagDecay
+    return  BTagDecay(  Name                   = Name
+                      , time                   = time
+                      , iTag                   = tag
+                      , dm                     = lifetimeParams['dM']
+                      , tau                    = lifetimeParams['MeanLifetime']
+                      , dGamma                 = lifetimeParams['dGamma']
+                      , resolutionModel        = sigtres['model']
+                      , coshCoef               = basisCoefficients['cosh']
+                      , cosCoef                = basisCoefficients['cos']
+                      , sinhCoef               = basisCoefficients['sinh']
+                      , sinCoef                = basisCoefficients['sin']
+                      , dilution               = tagging['dilution']
+                      , ADilWTag               = tagging['ADilWTag']
+                      , avgCEven               = tagging['avgCEven']
+                      , avgCOdd                = tagging['avgCOdd']
+                      , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
+                      , ExternalConstraints    = lifetimeParams.externalConstraints()\
+                                                 + sigtres.externalConstraints()\
+                                                 + tagging.externalConstraints()
+                     )
+
+
+
+
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 class TimePdf( _util_parse_mixin ) :
-    def __init__(self, **kwargs ) :
-        for (k,v) in kwargs.iteritems() :
-            setattr(self,'_'+k,v)
-    def pdf(self) :
-        return self._pdf
+    def __init__( self, **kwargs ) :
+        self._pdf = kwargs.pop('pdf')
+        self._efficiency = kwargs.pop( 'Efficiency', None )
+        if self._efficiency : self._pdf = self._efficiency * self._pdf
+        for (k,v) in kwargs.iteritems() : setattr( self, '_' + k, v )
+
+    def pdf(self) : return self._pdf
 
 class LP2011_Background_Time( TimePdf ) :
     def __init__(self, time, resolutionModel, **kwargs) :
         Name = kwargs.pop('Name', self.__class__.__name__)
-        self._ml_tau = self._parseArg('%s_ml_tau' % Name, kwargs, Title = 'medium lifetime background ', Unit = 'ps', Value = 0.152, MinMax = (0.01,0.5) )
-        self._ll_tau = self._parseArg('%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ', Unit = 'ps', Value = 1.06, MinMax = (0.5,2.5) )
-        self._fll = self._parseArg('%s_fll' % Name, kwargs, Title = 'fraction long lifetime background', Value = 0.2, MinMax = (0., 1.) )
+        self._ml_tau = self._parseArg( '%s_ml_tau' % Name, kwargs, Title = 'medium lifetime background ', Unit = 'ps'
+                                      , Value = 0.152, Error = 0.003, MinMax = ( -RooInf, RooInf ) )
+        self._ll_tau = self._parseArg( '%s_ll_tau' % Name, kwargs, Title = 'long lifetime background ',   Unit = 'ps'
+                                      , Value = 1.06,  Error = 0.04,  MinMax = ( -RooInf, RooInf ) )
+        self._fml = self._parseArg(    '%s_fml' % Name,    kwargs, Title = 'fraction medium lifetime background'
+                                      , Value = 0.79,  Error = 0.01,  MinMax = ( -RooInf, RooInf ) )
+
         from RooFitWrappers import  SumPdf,Pdf
         from ROOT import RooDecay as Decay
-        ml = Pdf( Name = Name + '_ml'
-                  , Type = Decay
-                  , Parameters = (time, self._ml_tau, resolutionModel, 'SingleSided')
-                  , ConditionalObservables = resolutionModel.ConditionalObservables()
-                  , ExternalConstraints = resolutionModel.ExternalConstraints()
-                  )
-        ll = Pdf( Name = Name + '_ll'
-                  , Type = Decay
-                  , Parameters = (time, self._ll_tau, resolutionModel, 'SingleSided')
-                  , ConditionalObservables = resolutionModel.ConditionalObservables()
-                  , ExternalConstraints = resolutionModel.ExternalConstraints()
-                  )
-        TimePdf.__init__(self, pdf = SumPdf( Name = Name
-                                             , PDFs = (  ll, ml)
-                                             , Yields = { ll.GetName() : self._fll }
-                                             )
+        self._mlPdf = Pdf(  Name = Name + '_ml'
+                          , Type = Decay
+                          , Parameters = (time, self._ml_tau, resolutionModel, 'SingleSided')
+                          , ConditionalObservables = resolutionModel.ConditionalObservables()
+                          , ExternalConstraints = resolutionModel.ExternalConstraints()
                          )
+        self._llPdf = Pdf(  Name = Name + '_ll'
+                          , Type = Decay
+                          , Parameters = (time, self._ll_tau, resolutionModel, 'SingleSided')
+                          , ConditionalObservables = resolutionModel.ConditionalObservables()
+                          , ExternalConstraints = resolutionModel.ExternalConstraints()
+                         )
+
+        efficiency = kwargs.pop( 'Efficiency', None )
+        if efficiency :
+            self._mlPdf = efficiency * self._mlPdf
+            self._llPdf = efficiency * self._llPdf
+
+        self._check_extraneous_kw( kwargs )
+        TimePdf.__init__( self, pdf = SumPdf(  Name = Name
+                                             , PDFs = ( self._mlPdf, self._llPdf)
+                                             , Yields = { self._mlPdf.GetName() : self._fml }
+                                            )
+                        )
+        self._efficiency = efficiency
 
 class Single_Exponent_Time( TimePdf ) :
     def __init__(self,time,resolutionModel,**kwargs) :
-        self._parseArg('t_sig_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 1.5, MinMax = (0.5,2.5) )
+        self._parseArg('t_sig_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 1.5, Error = 0.05, MinMax = ( -RooInf, RooInf ) )
+
         from RooFitWrappers import Pdf
         from ROOT import RooDecay as Decay
         TimePdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name',self.__class__.__name__)
-                                        , Type =Decay
-                                        , Parameters = (time, self._t_sig_tau,resolutionModel,'SingleSided')) )
+                                          , Type =Decay
+                                          , Parameters = (time, self._t_sig_tau,resolutionModel,'SingleSided')
+                                          , ConditionalObservables = resolutionModel.ConditionalObservables()
+                                          , ExternalConstraints = resolutionModel.ExternalConstraints())
+                         )

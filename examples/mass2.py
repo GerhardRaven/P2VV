@@ -68,7 +68,7 @@ tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can 
 tres.setConstant('.*')
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
-lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65, deltaGamma = 0.10, deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) )
+lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65, dGamma = 0.10, dM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) )
 
 from P2VVParameterizations.FlavourTagging import Dilution_TaggingParams
 taggingParams = Dilution_TaggingParams( dilution = ConstVar(Name = 'zero',Value = 0 ) )
@@ -97,9 +97,9 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes
 from RooFitWrappers import BDecay
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , time      = t
-                     , dm        = lifetimeParams['deltaM'] 
+                     , dm        = lifetimeParams['dM']
                      , tau       = lifetimeParams['MeanLifetime']
-                     , dGamma    = lifetimeParams['deltaGamma'] 
+                     , dGamma    = lifetimeParams['dGamma']
                      , resolutionModel = tres.model()
                      , coshCoef  = basisCoefficients['cosh']
                      , cosCoef   = basisCoefficients['cos']
@@ -114,10 +114,10 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model(
 cmb_t = Background_Time( Name = 'cmb_t', time = t, resolutionModel = tres.model(), t_bkg_fll = dict( Name = 't_cmb_fll', Value = 0.61), t_bkg_ll_tau = dict( Name = 't_cmb_ll_tau', Value = 1.5, MinMax = (0.5,2.5)), t_bkg_ml_tau = dict( Name = 't_cmb_ml_tau', Value = 0.43) )
 
 # itag distribution (background only)
-from P2VVParameterizations.FlavourTagging import Trivial_Background_Tag
-psi_tag = Trivial_Background_Tag( Name = 'psi_tag', tagdecision = iTag, bkg_tag_eps = dict( Name = 'tag_psi_eff', Value = 0.35 ), bkg_tag_delta = dict( Name = 'tag_psi_delta', Value = 0 ) )
-cmb_tag = Trivial_Background_Tag( Name = 'cmb_tag', tagdecision = iTag, bkg_tag_eps = dict( Name = 'tag_cmb_eff', Value = 0.35 ), bkg_tag_delta = dict( Name = 'tag_cmb_delta', Value = 0 ) )
-sig_tag = Trivial_Background_Tag( Name = 'sig_tag', tagdecision = iTag, bkg_tag_eps = dict( Name = 'tag_sig_eff', Value = 0.35 ), bkg_tag_delta = dict( Name = 'tag_sig_delta', Value = 0 ) )
+from P2VVParameterizations.FlavourTagging import Trivial_TagPdf
+psi_tag = Trivial_TagPdf( Name = 'psi_tag', tagdecision = iTag, tagEff = dict( Name = 'tag_psi_eff', Value = 0.35 ), ATagEff = dict( Name = 'tag_psi_delta', Value = 0 ) )
+cmb_tag = Trivial_TagPdf( Name = 'cmb_tag', tagdecision = iTag, tagEff = dict( Name = 'tag_cmb_eff', Value = 0.35 ), ATagEff = dict( Name = 'tag_cmb_delta', Value = 0 ) )
+sig_tag = Trivial_TagPdf( Name = 'sig_tag', tagdecision = iTag, tagEff = dict( Name = 'tag_sig_eff', Value = 0.35 ), ATagEff = dict( Name = 'tag_sig_delta', Value = 0 ) )
 
 # Create components
 (ntot,nsig,fpsi) = (data.numEntries(), 23000, 0.7)

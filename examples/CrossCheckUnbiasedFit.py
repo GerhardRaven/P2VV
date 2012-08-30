@@ -107,9 +107,9 @@ tres.setConstant('.*')
 
 from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.681
-                                       , deltaGamma = 0.060
-#                                       , deltaGamma = 0.0
-                                       , deltaM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True) 
+                                       , dGamma = 0.060
+#                                       , dGamma = 0.0
+                                       , dM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True)
                                        )
 
 # define tagging parameter 
@@ -153,9 +153,9 @@ basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
 from RooFitWrappers import BDecay
 MC_sig_t_angles = BDecay( Name      = 'MC_sig_t_angles'
                        , time      = t
-                       , dm        = lifetimeParams['deltaM'] 
+                       , dm        = lifetimeParams['dM']
                        , tau       = lifetimeParams['MeanLifetime']
-                       , dGamma    = lifetimeParams['deltaGamma'] 
+                       , dGamma    = lifetimeParams['dGamma']
                        , resolutionModel = tres.model()
                        , coshCoef  = basisCoefficients['cosh']
                        , cosCoef   = basisCoefficients['cos']
@@ -167,9 +167,9 @@ MC_sig_t_angles = BDecay( Name      = 'MC_sig_t_angles'
 
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                        , time      = t
-                       , dm        = lifetimeParams['deltaM'] 
+                       , dm        = lifetimeParams['dM']
                        , tau       = lifetimeParams['MeanLifetime']
-                       , dGamma    = lifetimeParams['deltaGamma'] 
+                       , dGamma    = lifetimeParams['dGamma']
                        , resolutionModel = tresdata.model()
                        , coshCoef  = basisCoefficients['cosh']
                        , cosCoef   = basisCoefficients['cos']
