@@ -183,7 +183,7 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
 ## Fit options
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1,
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 1,
                Strategy = 2, Minimizer = 'Minuit2')
 
 data = None
@@ -204,7 +204,6 @@ if real_data:
     res_model = MultiHistEfficiencyModel(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
                                          ConditionalCategories = True, UseSingleBinConstraint = False,
                                          ResolutionModel = tres.model(), **spec)
-    print "MAKING PDF"
     pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = res_model)
     pdf = pdf.pdf()
     pdf.Print('v')
@@ -269,9 +268,12 @@ elif MC:
         ## rel_spec[comb] = {'Value' : 0.5, "Constant" : True}
 
     spec['Relative'] = rel_spec
-    pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, UseSingleBinConstraint = False,
-                              **spec)
+    res_model = MultiHistEfficiencyModel(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
+                                         ConditionalCategories = True, UseSingleBinConstraint = False,
+                                         ResolutionModel = tres.model(), **spec)
+    pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = res_model)
+    pdf = pdf.pdf()
+    
     pdf.Print('v')
 else:
     rel_spec = {(('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.078,
@@ -284,18 +286,25 @@ else:
     for comb in valid:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
         rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
-    pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
-                              ConditionalCategories = True, UseSingleBinConstraint = False,
-                              **spec)
+
+    from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+    tres = TimeResolution(time = t)
+
+    res_model = MultiHistEfficiencyModel(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
+                                         ConditionalCategories = True, UseSingleBinConstraint = False,
+                                         ResolutionModel = tres.model(), **spec)
+    pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = res_model)
+    pdf = pdf.pdf()
+
     pdf.Print('v')        
     data = pdf.generate([t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased], 30000)
 
 ## Fit
 print 'fitting data'
-## from profiler import profiler_start, profiler_stop
-## profiler_start("acceptance.log")
-## result = pdf.fitTo(data, **fitOpts)
-## profiler_stop()
+from profiler import profiler_start, profiler_stop
+profiler_start("acceptance.log")
+result = pdf.fitTo(data, **fitOpts)
+profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas, RooBinning

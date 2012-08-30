@@ -13,7 +13,7 @@ class Toy(object):
                                 type = 'string', help = "set output filename")
         self._parser.add_option("-n", "--ntoys", dest = "ntoys", default = 100,
                                 type = 'int', help = 'number of toys to run')
-        self._parser.add_option("--ncpu", dest = "ncpu", default = 4,
+        self._parser.add_option("--ncpu", dest = "ncpu", default = 1,
                                 type = 'int', help = 'number of CPUs to use')
         self._parser.add_option("-e", "--nevents", dest = "nevents", default = 10000,
                                 type = 'int', help = 'number of events to generate')
