@@ -37,6 +37,13 @@ class CPParam ( _util_parse_mixin ):
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
 
+    def CPVInDecay(self) : return False
+
+    def C(self) : return self._C
+    def D(self) : return self._D
+    def S(self) : return self._S
+    def R( self, CPVDecInd, amp0Ind, amp1Ind ) : return None
+
 class CDS_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
         from math import cos, sin

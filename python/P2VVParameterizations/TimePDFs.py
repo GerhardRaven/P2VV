@@ -14,51 +14,103 @@ class BDecayBasisCoefficients :
         return getattr(self,kw)
 
 class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
-    def __init__( self, angFuncs, Amplitudes, CP, order ) :
-        def combine( name, afun, A, CPparams, i, j ) :
-            from RooFitWrappers import ConstVar, FormulaVar, Product
-            zero  = ConstVar( Name = 'zero',  Value =  0 )
-            plus  = ConstVar( Name = 'plus',  Value =  1 )
+    def __init__( self, AngFuncs, Amplitudes, CPParams, Order ) :
+        def combine( tCoefType, angFuncs, amplitudes, CPParams, iIndex, jIndex ) :
+            from RooFitWrappers import ConstVar, FormulaVar, Product, Addition
+            one   = ConstVar( Name = 'one',   Value =  1 )
             minus = ConstVar( Name = 'minus', Value = -1 )
-            one   = plus
-            # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
-            # TODO: replace by Addition & Product... why? (only parameters)
-            Re        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
-            Im        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
-            # define functions which return the coefficients that define the time-dependence...
-            _minus_if = lambda b, x : [ minus, x ] if b else [ x ]
-            coef = { 'cosh' : lambda ai,aj,CP : ( one  if ai.CP == aj.CP else CP['C']  # make a trivial product just to get the labels right???
-                                                , None )
-                   , 'cos'  : lambda ai,aj,CP : ( CP['C'] if ai.CP == aj.CP else one 
-                                                , None )
-                   , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP > 0    , CP['D'] ))
-                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP < aj.CP, CP['S'] )) )
-                   , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > 0    , CP['S'] ))
-                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > aj.CP, CP['D'] )) )
-                   }
-            (c_re,c_im) = coef[name](A[i],A[j],CPparams)
-            (f_re,f_im) = afun[(i,j)]
-            (a_re,a_im) = ( Re(A[i],A[j]),Im(A[i],A[j]) ) if i != j else ( A[i].Mag2, zero )
-            # NOTE: thes sign are just the obvious Re(a b c)  = Re(a)Re(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c) - Im(a)Im(b)Re(c),
-            #       i.e. there is a minus in case there are 2 imaginary contributions
-            prod = lambda name, args : [ Product(name, args) ] if all(args) else []
-            s  = prod('ReReRe_%s_%s_%s'%(name,A[i],A[j]), [        a_re , c_re, f_re ] ) \
-               + prod('ImImRe_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_im , c_im, f_re ] ) \
-               + prod('ImReIm_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_im , c_re, f_im ] ) \
-               + prod('ReImIm_%s_%s_%s'%(name,A[i],A[j]), [ minus, a_re , c_im, f_im ] )
-            assert len(s) == 1 # for now, coefficients are either real, or imaginary, but not both... (not true in general, but I'm lazy today ;-)
-            return s[0]
 
-        args = dict()
-        from RooFitWrappers import Addition
+            # define functions which return Re(Ai* Aj), Im( Ai* Aj)
+            # TODO: replace by Addition & Product
+            Re = lambda Ai, Aj : FormulaVar( 'Re_amps_%s_%s' % ( Ai, Aj ), '@0*@2+@1*@3', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+            Im = lambda Ai, Aj : FormulaVar( 'Im_amps_%s_%s' % ( Ai, Aj ), '@0*@3-@1*@2', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+
+            # define functions which return the coefficients of the time dependence
+            def CPVDec( termInd, iInd, jInd, amps, CPPar ) :
+                # get parameters for CP violation in decay
+                assert termInd in ( 'plus', 'min', 'Re', 'Im' )
+                RFac = CPPar.R( termInd, iInd, jInd )
+                if RFac : return RFac
+
+                # only CP violation in mixing (or lambdas for all polarizations identical):
+                # R^+  =     ( 1 + eta_i * eta_j ) / 2
+                # R^-  =     ( 1 - eta_i * eta_j ) / 2
+                # R^Re =     ( eta_i + eta_j )     / 2
+                # R^Im = i * ( eta_i - eta_j )     / 2
+                if termInd == 'plus' : return ( None if amps[iInd].CP != amps[jInd].CP else one,                                 None )
+                if termInd == 'min'  : return ( None if amps[iInd].CP == amps[jInd].CP else one,                                 None )
+                if termInd == 'Re'   : return ( None if amps[iInd].CP != amps[jInd].CP else one if amps[iInd].CP > 0 else minus, None )
+                if termInd == 'Im'   : return ( None, None if amps[iInd].CP == amps[jInd].CP else one if amps[iInd].CP > 0 else minus )
+
+            def tCoefTerm( name, dec, mix, sign ) :
+                # build one of the two terms within the time function coefficient:
+                # + R^+ * 1,  + R^- * C,  + R^- * 1,  + R^+ * C,  - R^Re * D,  + R^Im * S,  - R^Im * D,  - R^Re * S
+                if not dec or not mix : return None
+
+                if dec == minus : sign = -sign
+                if mix == minus : sign = -sign
+                sign = minus if sign < 0 else None
+                if dec in [ one, minus ] : dec = None
+                if mix in [ one, minus ] : mix = None
+
+                facs = [ fac for fac in ( sign, dec, mix ) if fac ]
+                return Product( name, facs ) if len(facs) > 1 else facs[0] if len(facs) == 1 else one
+
+            def tCoef( tCType, iInd, jInd, amps, CPPar ) :
+                # build the coefficient of the time function:
+                # cosh: + R^+  * 1 + R^-  * C
+                # cos:  + R^-  * 1 + R^+  * C
+                # sinh: - R^Re * D + R^Im * S
+                # sin:  - R^Im * D - R^Re * S
+                assert tCType in ( 'cosh', 'sinh', 'cos', 'sin' )
+
+                CPVDecInds = [ 'plus', 'min' ] if tCType in ( 'cosh', 'cos' ) else [ 'Re', 'Im' ]
+                if tCType in ( 'cos', 'sin' ) : CPVDecInds = [ CPVDecInds[1], CPVDecInds[0] ]
+                CPVDecs = [ CPVDec( CPVDecInd, iInd, jInd, amps, CPPar ) for CPVDecInd in CPVDecInds ]
+
+                CPVMixs = [ one, CPPar.C() ] if tCType in ( 'cosh', 'cos' ) else [ CPPar.D(), CPPar.S() ]
+                signs = [ +1, +1 ] if tCType in ( 'cosh', 'cos' ) else [ -1, +1 ] if tCType == 'sinh' else [ -1, -1 ]
+
+                name = '%s_%s_%s' % ( iInd , jInd, tCType )
+                terms = [ (  tCoefTerm( 'Re_%s%d_%s_%s' % ( tCType, ind, iInd, jInd ), dec[0], mix, sign )
+                           , tCoefTerm( 'Im_%s%d_%s_%s' % ( tCType, ind, iInd, jInd ), dec[1], mix, sign )
+                          ) for ind, ( dec, mix, sign ) in enumerate( zip( CPVDecs, CPVMixs, signs ) )
+                        ]
+                assert any( comp for term in terms for comp in term )
+
+                add = lambda name, args : [ Addition( name, args ) ] if len(args) > 1 else args[0] if len(args) == 1 else None
+                return (  add( 'Re_%s_%s_%s' % ( tCType, iInd, jInd ), [ term[0] for term in terms if term[0] ] )
+                        , add( 'Im_%s_%s_%s' % ( tCType, iInd, jInd ), [ term[1] for term in terms if term[1] ] )
+                       )
+
+            # create complex amplitude, time and angular factors
+            ( reAmps, imAmps ) = ( Re( amplitudes[iIndex], amplitudes[jIndex] ), Im( amplitudes[iIndex], amplitudes[jIndex] ) )\
+                             if iIndex != jIndex else ( amplitudes[iIndex].Mag2, None )
+            ( reTime, imTime ) = tCoef( tCoefType, iIndex, jIndex, amplitudes, CPParams )
+            ( reAng, imAng ) = angFuncs[ ( iIndex, jIndex ) ]
+
+            # (real part of) product of amplitude, time and angular (complex) factors:
+            # Re(abc) = Re(ab)Re(c) - Im(ab)Im(c) = Re(a)Re(b)Re(c) - Im(a)Im(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c)
+            # (there is a minus in case there are 2 imaginary contributions)
+            prod = lambda name, args : [ Product( name, args ) ] if all(args) else [ ]
+            return prod( 'ReReRe_%s_%s_%s' % ( tCoefType, amplitudes[iIndex], amplitudes[jIndex] ), [        reAmps , reTime, reAng ] ) \
+                 + prod( 'ImImRe_%s_%s_%s' % ( tCoefType, amplitudes[iIndex], amplitudes[jIndex] ), [ minus, imAmps , imTime, reAng ] ) \
+                 + prod( 'ReImIm_%s_%s_%s' % ( tCoefType, amplitudes[iIndex], amplitudes[jIndex] ), [ minus, reAmps , imTime, imAng ] ) \
+                 + prod( 'ImReIm_%s_%s_%s' % ( tCoefType, amplitudes[iIndex], amplitudes[jIndex] ), [ minus, imAmps , reTime, imAng ] )
+
         try : # this requires python 2.7 or later...
             from itertools import combinations_with_replacement as cwr
         except:
             from compatibility import cwr
 
-        for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :
-            # NOTE: 'Amplitudes'  must be traversed 'in order' : A0, Apar, Aperp, AS -- so we cannot use Amplitudes.keys() out of the box...
-            args[ name ] = Addition( 'a_%s'% name, [ combine(name,angFuncs,Amplitudes,CP,i,j) for (i,j) in cwr( order, 2 ) ] )
+        args = dict()
+        from RooFitWrappers import Addition
+        for tCoefType in [ 'cosh', 'sinh', 'cos', 'sin' ] :
+            # NOTE: 'Amplitudes' must be traversed 'in order' : A0, Apar, Aperp, AS, so we cannot use Amplitudes.keys() out of the box
+            args[ tCoefType ] = Addition( '%sCoef' % tCoefType
+                                         , [ term for ( i, j ) in cwr( Order, 2 )\
+                                                  for term in combine( tCoefType, AngFuncs, Amplitudes, CPParams, i, j ) ]
+                                        )
 
         BDecayBasisCoefficients.__init__( self, **args )
 
