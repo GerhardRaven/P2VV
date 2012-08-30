@@ -29,8 +29,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
             def CPVDec( termInd, iInd, jInd, amps, CPPar ) :
                 # get parameters for CP violation in decay
                 assert termInd in ( 'plus', 'min', 'Re', 'Im' )
-                RFac = CPPar.R( termInd, iInd, jInd )
-                if RFac : return RFac
+                if CPPar.CPVInDecay() : return CPPar.R( termInd, iInd, jInd )
 
                 # only CP violation in mixing (or lambdas for all polarizations identical):
                 # R^+  =     ( 1 + eta_i * eta_j ) / 2
@@ -78,7 +77,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
                         ]
                 assert any( comp for term in terms for comp in term )
 
-                add = lambda name, args : [ Addition( name, args ) ] if len(args) > 1 else args[0] if len(args) == 1 else None
+                add = lambda name, args : Addition( name, args ) if len(args) > 1 else args[0] if len(args) == 1 else None
                 return (  add( 'Re_%s_%s_%s' % ( tCType, iInd, jInd ), [ term[0] for term in terms if term[0] ] )
                         , add( 'Im_%s_%s_%s' % ( tCType, iInd, jInd ), [ term[1] for term in terms if term[1] ] )
                        )

@@ -896,6 +896,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if blind: ImLambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsPlutoMoriond2012', 0.1 )
             self._lambdaCP = CPParam( ReLambdaCP = ReLambdaCPVar, ImLambdaCP = ImLambdaCPVar )
 
+        elif lambdaCPParam == 'lambPhi_CPVDecay' :
+            from P2VVParameterizations.CPVParams import LambdaAbsArg_CPVDecay_CPParam as CPParam
+            phiCPVar = dict( Name = 'phiCP_m' )
+            if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+            self._lambdaCP = CPParam( phiCP_m = phiCPVar, AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes )
+            if ambiguityPars :
+                from math import pi
+                self._lambdaCP['phiCP_m'].setVal( pi - self._lambdaCP['phiCP_m'].getVal() )
+
         else :
             if lambdaCPParam == 'lambPhi' :
                 from P2VVParameterizations.CPVParams import LambdaAbsArg_CPParam as CPParam
