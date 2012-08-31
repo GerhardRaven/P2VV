@@ -1103,6 +1103,8 @@ class MultiHistEfficiencyModel(Pdf):
         self.__coefficients = {}
         self.__base_bounds = None
         self.__constraints = []
+        self.__binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
+        if not self.__binHeightMinMax : self.__binHeightMinMax = (0.01, 0.999)
 
         from copy import copy
         from ROOT import RooBinning        
@@ -1120,7 +1122,7 @@ class MultiHistEfficiencyModel(Pdf):
                 heights = state_info['heights']
                 heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
                                    Observable = False, Value = v,
-                                   MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
+                                   MinMax = self.__binHeightMinMax) for i, v in enumerate(heights)]
                 self.__heights[(category, state)] = heights
                 # Add a binning for this category and state
                 bounds = state_info['bins']

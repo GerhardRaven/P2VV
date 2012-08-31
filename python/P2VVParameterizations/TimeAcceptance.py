@@ -81,6 +81,7 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         acceptance_file = TFile.Open(input_file)
         fit = kwargs.pop('Fit')
         model = kwargs.pop('ResolutionModel')
+        binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
 
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
@@ -136,5 +137,6 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
                                        FitAcceptance = fit, UseSingleBinConstraint = False,
                                        ResolutionModel = model['model'], Original = original,
                                        ConditionalObservables = model.conditionalObservables(),
-                                       ExternalConstraints = model.externalConstraints())
+                                       ExternalConstraints = model.externalConstraints(),
+                                       BinHeightMinMax = binHeightMinMax)
         TimeAcceptance.__init__(self, Acceptance = mhe)

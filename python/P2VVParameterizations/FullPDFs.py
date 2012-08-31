@@ -344,6 +344,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         lambdaCPParam = pdfConfig.pop('lambdaCPParam')
 
+        from ROOT import RooNumber
+        RooInf = RooNumber.infinity()
+
         if makePlots :
             # import plotting tools
             from P2VVLoad import ROOTStyle
@@ -1121,7 +1124,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
                                                     , Data = self._data, Fit = False, Original = sigPdf
-                                                    , ResolutionModel = self._timeResModel )
+                                                    , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf ) )
 
             elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] :
                 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
