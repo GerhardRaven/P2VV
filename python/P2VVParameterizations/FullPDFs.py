@@ -422,10 +422,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         #hlt1UnbiasedName   = 'hlt1_unbiased'
         #hlt1ExclBiasedName = 'hlt1_excl_biased'
-        hlt1UnbiasedName   = 'triggerDecisionUnbiased'
-        hlt1ExclBiasedName = 'triggerDecisionBiasedExcl'
-        #hlt1UnbiasedName   = 'trigger_Hlt1DiMuon_Hlt2DiMuonDetached'
-        #hlt1ExclBiasedName = 'trigger_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+        #hlt1UnbiasedName   = 'triggerDecisionUnbiased'
+        #hlt1ExclBiasedName = 'triggerDecisionBiasedExcl'
+        hlt1UnbiasedName   = 'trigger_Hlt1DiMuon_Hlt2DiMuonDetached'
+        hlt1ExclBiasedName = 'trigger_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 
         sel              = Category( 'sel',              Observable = True, States = { 'selected'    : 1, 'not_selected' : 0 } )
         hlt1_excl_biased = Category( hlt1ExclBiasedName, Observable = True, States = { 'excl_biased' : 1, 'unbiased'     : 0 } )
@@ -1137,10 +1137,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if multiplyByTimeEff in [ 'all', 'signal' ] :
             # multiply signal PDF with time acceptance
+            print 'P2VV - INFO:  Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with lifetime efficiency function'
             args['resolutionModel'] = self._timeResModel['model']
-            args['ConditionalObservables'] = list(set(args['ConditionalObservables'] + self._timeResModel.conditionalObservables()))
-            args['ExternalConstraints'] = list(set(args['ExternalConstraints'] + self._timeResModel.externalConstraints()))
-            sigPdfTimeAcc = BTagDecay( 'sig_t_angles_time_acceptance', **args )
+            args['ConditionalObservables'] = list( set( args['ConditionalObservables'] + self._timeResModel.conditionalObservables() ) )
+            args['ExternalConstraints'] = list( set( args['ExternalConstraints'] + self._timeResModel.externalConstraints() ) )
+            sigPdfTimeAcc = BTagDecay( 'sig_t_angles_timeEff', **args )
         else :
             sigPdfTimeAcc = sigPdf
 
