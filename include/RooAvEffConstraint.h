@@ -52,8 +52,6 @@ private:
    RooListProxy _integrals;
    RooListProxy _efficiencies;
    
-   std::vector<RooCustomizer*> _customizers;
-
    ClassDef(RooAvEffConstraint, 1) // Your description goes here...
 };
 

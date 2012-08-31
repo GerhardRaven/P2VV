@@ -27,6 +27,8 @@
 #include "RooCustomizer.h"
 #include "RooAddition.h"
 #include "RooStringVar.h"
+#include "RooAbsAnaConvPdf.h"
+#include "RooEffConvGenContext.h"
 
 using namespace std;
 
@@ -37,8 +39,6 @@ ClassImp(RooEffResModel)
 RooEffResModel::CacheElem::~CacheElem()
 {
    delete _I;
-   for (std::vector<RooCustomizer*>::const_iterator it = _customizers.begin(),
-           end = _customizers.end(); it != end; ++it) delete *it;
 }
 
 //_____________________________________________________________________________
@@ -54,7 +54,7 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
    : _I(0)
 {
    RooRealVar& x = parent.convVar(); // binboundaries not const...
-   const RooAbsReal& eff = parent.eff();
+   const RooAbsReal& eff = *parent.efficiency();
    const RooAbsReal& model = parent.model();
    // the subset of iset on which the efficiency depends
    std::auto_ptr<const RooArgSet> effInt( eff.getObservables(iset) ); 
@@ -80,15 +80,14 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
       intList.add(*model.createIntegral(iset, range));
 
       // create RooAbsReal for (average) efficiency in this range
-      RooCustomizer* customizer = new RooCustomizer(eff, (TString(range) + "_customizer").Data());
+      RooCustomizer customizer(eff, (TString(range) + "_customizer").Data());
       RooRealVar* cv = static_cast<RooRealVar*>(x.clone(TString(x.GetName()) + "_" + range) );
       cv->setVal((xmin + xmax) / 2.);
       cv->setConstant(true);
-      customizer->replaceArg(x, *cv);
-      RooAbsArg *ceff = customizer->build(kFALSE);
+      customizer.replaceArg(x, *cv);
+      RooAbsArg *ceff = customizer.build(kFALSE);
       ceff->addOwnedComponents(*cv);
       effList.add( *ceff );
-      _customizers.push_back(customizer);
    }
    TString iName = TString::Format("%s_I_%s", parent.GetName(),x.GetName());
    _I = new RooAddition(iName, iName, effList, intList, kTRUE);
@@ -96,7 +95,7 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
 
 //_____________________________________________________________________________
 RooEffResModel::RooEffResModel(const char *name, const char *title, RooResolutionModel& model, RooAbsReal& eff) 
-   : RooResolutionModel(name,title,model.convVar())
+   : RooAbsEffResModel(name,title,model.convVar())
    , _observables("observables", "observables", this)
    , _model("!model","Original resolution model",this,model)
    , _eff("!efficiency","efficiency of convvar", this,eff)
@@ -108,7 +107,7 @@ RooEffResModel::RooEffResModel(const char *name, const char *title, RooResolutio
 
 //_____________________________________________________________________________
 RooEffResModel::RooEffResModel(const RooEffResModel& other, const char* name) 
-  : RooResolutionModel(other,name)
+  : RooAbsEffResModel(other,name)
   , _observables("observables", this, other._observables)
   , _model("!model",this,other._model)
   , _eff("!efficiency",this,other._eff)
@@ -174,7 +173,8 @@ RooEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
   newTitle.Append(inBasis->GetName()) ;
   conv->SetTitle(newTitle.Data()) ;
 
-  RooEffResModel *effConv = new RooEffResModel(newName,newTitle,*conv,eff());
+  RooAbsReal* eff = efficiency();
+  RooEffResModel *effConv = new RooEffResModel(newName,newTitle, *conv, *eff);
   effConv->addOwnedComponents(*conv);
   effConv->changeBasis(inBasis) ;
   return effConv ;
@@ -186,17 +186,15 @@ Int_t RooEffResModel::basisCode(const char* name) const
    return model().basisCode(name);
 } 
 
-
 //_____________________________________________________________________________
 Double_t RooEffResModel::evaluate() const 
 {  
-    Double_t mod  = model().getVal();
+    Double_t mod = model().getVal();
     // TODO: replace this by the discretized version, i.e. replace convVar by customized middle of bin...
     //       this in order to ensure evaluate & analyticalIntegral are consistent (in case eff is not discretized!!!)
-    Double_t eps  = eff().getVal(); 
+    Double_t eps = efficiency()->getVal(); 
     return eps * mod;
 }
-
 
 //_____________________________________________________________________________
 Bool_t RooEffResModel::forceAnalyticalInt(const RooAbsArg& /*dep*/) const
@@ -229,9 +227,31 @@ Double_t RooEffResModel::analyticalIntegral(Int_t code, const char* rangeName) c
 }
 
 //_____________________________________________________________________________
-Int_t RooEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
+RooAbsGenContext* RooEffResModel::modelGenContext
+(const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars, const RooDataSet *prototype,
+ const RooArgSet* auxProto, Bool_t verbose) const
 {
-  return 0 ; // For now... problem is that RooGenConv assumes it can just add resolution & physics for conv var...
+   return new RooEffConvGenContext(convPdf, vars, prototype, auxProto, verbose);
+}
+
+//_____________________________________________________________________________
+Int_t RooEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars,
+                                   Bool_t staticInitOK) const
+{
+   return model().getGenerator(directVars, generateVars, staticInitOK);
+}
+
+//_____________________________________________________________________________
+void RooEffResModel::initGenerator(Int_t code)
+{
+   model().initGenerator(code);
+}
+
+//_____________________________________________________________________________
+void RooEffResModel::generateEvent(Int_t code)
+{
+   // The hit-miss on the efficiency is done at the level of the GenContext.
+   model().generateEvent(code);
 }
 
 //_____________________________________________________________________________
@@ -247,7 +267,7 @@ const RooArgList& RooEffResModel::getIntegralRanges(const RooArgSet& iset,
    Double_t xmax = x.getMax(rangeName);
 
    RooArgList* ranges = new RooArgList;
-   std::list<Double_t>* bounds = efficiency()->binBoundaries(x, x.getMin(), x.getMax());
+   std::auto_ptr<std::list<Double_t> > bounds(efficiency()->binBoundaries(x, x.getMin(), x.getMax()));
    std::list<Double_t>::const_iterator lo, hi = bounds->begin();
    for (unsigned int i = 0; i + 1 < bounds->size();++i) {
       lo = hi++;

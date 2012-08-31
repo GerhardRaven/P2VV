@@ -20,10 +20,12 @@
 #include "RooEfficiencyBin.h"
 #include "RooAvEffConstraint.h"
 #include "RooCorrectedSWeight.h"
+#include "RooAbsEffResModel.h"
 #include "RooEffResModel.h"
 #include "RooMultiEffResModel.h"
 #include "MultiHistEntry.h"
 #include "RooComplementCoef.h"
+#include "RooEffConvGenContext.h"
 
 #include <map>
 #include <string>
