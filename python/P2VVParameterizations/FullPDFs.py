@@ -430,12 +430,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         hlt1UnbiasedName   = 'trigger_Hlt1DiMuon_Hlt2DiMuonDetached'
         hlt1ExclBiasedName = 'trigger_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 
-        sel              = Category( 'sel',              Observable = True, States = { 'selected'    : 1, 'not_selected' : 0 } )
-        hlt1_excl_biased = Category( hlt1ExclBiasedName, Observable = True, States = { 'excl_biased' : 1, 'unbiased'     : 0 } )
-        hlt1_biased      = Category( 'hlt1_biased',      Observable = True, States = { 'biased'      : 1, 'not_biased'   : 0 } )
-        hlt1_unbiased    = Category( hlt1UnbiasedName,   Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
-        hlt2_biased      = Category( 'hlt2_biased',      Observable = True, States = { 'biased'      : 1, 'not_biased'   : 0 } )
-        hlt2_unbiased    = Category( 'hlt2_unbiased',    Observable = True, States = { 'unbiased'    : 1, 'not_unbiased' : 0 } )
+        sel       = Category( 'sel',              Observable = True, States = { 'selected'   : 1, 'notSelected  ' : 0 } )
+        hlt1ExclB = Category( hlt1ExclBiasedName, Observable = True, States = { 'exclBiased' : 1, 'notExclBiased' : 0 } )
+        hlt1B     = Category( 'hlt1B',            Observable = True, States = { 'biased'     : 1, 'notBiased'     : 0 } )
+        hlt1UB    = Category( hlt1UnbiasedName,   Observable = True, States = { 'unbiased'   : 1, 'notUnbiased'   : 0 } )
+        hlt2B     = Category( 'hlt2B',            Observable = True, States = { 'biased'     : 1, 'notBiased'     : 0 } )
+        hlt2UB    = Category( 'hlt2UB',           Observable = True, States = { 'unbiased'   : 1, 'notUnbiased'   : 0 } )
 
         muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
         muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
@@ -459,11 +459,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , KKMass           = KKMass
                            , timeRes          = timeRes
                            , sel              = sel
-                           , hlt1_excl_biased = hlt1_excl_biased
-                           , hlt1_biased      = hlt1_biased
-                           , hlt1_unbiased    = hlt1_unbiased
-                           , hlt2_biased      = hlt2_biased
-                           , hlt2_unbiased    = hlt2_unbiased
+                           , hlt1ExclB        = hlt1ExclB
+                           , hlt1B            = hlt1B
+                           , hlt1UB           = hlt1UB
+                           , hlt2B            = hlt2B
+                           , hlt2UB           = hlt2UB
                            , muPlusTrackChi2  = muPlusTrackChi2
                            , muMinTrackChi2   = muMinTrackChi2
                            , KPlusTrackChi2   = KPlusTrackChi2
@@ -472,7 +472,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         obsSetNTuple = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [ tagDecisionComb, estWTagComb ]\
                        + [ tagDecisionOS, estWTagOS, tagCatOS ] + [ tagDecisionSS, estWTagSS ]\
-                       + [ sel, hlt1_excl_biased, hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased ]\
+                       + [ sel, hlt1ExclB, hlt1B, hlt1UB, hlt2B, hlt2UB ]\
                        + [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
 
 
@@ -563,30 +563,26 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # determine mass parameters with a fit
             print 120 * '='
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting mass PDF'
-
-            widthSFRange  = self._signalBMass.parameter('m_sig_sigma_sf').getRange()
-            massFracRange = self._signalBMass.parameter('m_sig_frac').getRange()
-            self._signalBMass.parameter('m_sig_sigma_sf').setRange( ( 0.01, 10. ) )
-            self._signalBMass.parameter('m_sig_frac').setRange( ( 0.01, 0.99 ) )
-
             self._massPdf.fitTo( self._data, **fitOpts )
 
-            self._signalBMass.parameter('m_sig_sigma_sf').setRange(widthSFRange)
-            self._signalBMass.parameter('m_sig_frac').setRange(massFracRange)
+            if SWeightsType.startswith('simultaneous') and ( selection == 'paper2012' or paramKKMass == 'simultaneous' ) :
+                # categories for splitting the PDF
+                splitCats = [ [ hlt1ExclB, self._KKMassCat ] ] if selection == 'paper2012' else [ [ self._KKMassCat ] ]
 
-            if SWeightsType.startswith('simultaneous') and paramKKMass == 'simultaneous' :
-                # get mass parameters that are split between KK mass bins
-                splitParams = [ par for par in self._massPdf.Parameters() if par.getAttribute('Yield') ]
+                # get mass parameters that are split
+                splitParams = [ [ par for par in self._massPdf.Parameters() if par.getAttribute('Yield') ] ]
                 if SWeightsType.endswith( 'FreeBkg' ) :
-                    splitParams += [ par for par in self._backgroundBMass.parameters() if not par.isConstant() ]
+                    splitCats.append( [ self._KKMassCat ] )
+                    splitParams.append( [ par for par in self._backgroundBMass.parameters() if not par.isConstant() ] )
 
-                # build simultaneous mass PDF for KK mass bins
+                # build simultaneous mass PDF
                 from RooFitWrappers import SimultaneousPdf
-                self._sWeightMassPdf = SimultaneousPdf(  self._massPdf.GetName() + '_KKMassBins'
+                self._sWeightMassPdf = SimultaneousPdf(  self._massPdf.GetName() + '_simul'
                                                        , MasterPdf       = self._massPdf
-                                                       , SplitCategory   = self._KKMassCat
+                                                       , SplitCategories = splitCats
                                                        , SplitParameters = splitParams
                                                       )
+                self._data.addColumn( self._sWeightMassPdf.indexCat() )
 
                 # set yields for categories
                 splitCatIter = self._sWeightMassPdf.indexCat().typeIterator()
@@ -598,7 +594,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                     from math import sqrt
                     nEv    = self._data.sumEntries()
-                    nEvBin = self._data.sumEntries( '!(KKMassCat-%d)' % splitCatState.getVal() )
+                    nEvBin = self._data.sumEntries( '!(%s-%d)' % ( self._sWeightMassPdf.indexCat().GetName(), splitCatState.getVal() ) )
                     sigYield.setVal( sigYield.getVal() * nEvBin / nEv )
                     sigYield.setError( sqrt( sigYield.getVal() ) )
                     sigYield.setMin(0.)
@@ -1103,11 +1099,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
             self._timeResModelOriginal = self._timeResModel
             if timeEffType == 'fit' :
-                hists = {  hlt1_excl_biased : {  'excl_biased' : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
-                                               , 'unbiased'    : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
-                                              }
-                         , hlt2_biased      : { 'biased'       : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
-                         , hlt2_unbiased    : { 'unbiased'     : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
+                hists = {  hlt1ExclB : {  'exclBiased' : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
+                                        , 'unbiased'   : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
+                                       }
+                         , hlt2B     : { 'biased'       : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
+                         , hlt2UB    : { 'unbiased'     : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
                         }
 
                 from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
@@ -1116,9 +1112,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     , ResolutionModel = self._timeResModel )
 
             elif timeEffType == 'paper2012' :
-                hists = { hlt1_excl_biased : {  'excl_biased' : { 'histogram' : timeEffHistExclBName }
-                                              , 'unbiased'    : { 'histogram' : timeEffHistUBName    }
-                                             }
+                hists = { hlt1ExclB : {  'exclBiased' : { 'histogram' : timeEffHistExclBName }
+                                       , 'unbiased'   : { 'histogram' : timeEffHistUBName    }
+                                      }
                         }
 
                 from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
@@ -1550,7 +1546,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               , PDFs   = [ self._bkg_angBins, self._bkg_angFuncs ]
                                               , Yields = { self._bkg_angBins.GetName() : self._bkgAngBinsFrac }
                                              )
-                    if bkgAngleData : self._bkg_angles.fitTo( bkgAngleData, **fitOpts )
+                    if bkgAngleData : self._bkg_angles.fitTo( bkgAngleData, SumW2Error = False, **fitOpts )
 
             if not SFit : self._backgroundComps += self._bkg_angles
 

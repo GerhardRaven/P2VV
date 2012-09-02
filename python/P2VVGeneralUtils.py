@@ -905,14 +905,24 @@ class SData( object ) :
                     if cat in par.GetName() : print '%s = %.2f +/- %.2f  ' % ( par.GetName(), par.getVal(), par.getError() ),
                 print
 
+                # add column for splitting category/categories (was removed when data set was split)
+                from ROOT import RooSuperCategory
+                if not self._sDataSets[-1].get().find( splitCat.GetName() ) : self._sDataSets[-1].addColumn(splitCat)
+                if isinstance( splitCat, RooSuperCategory ) :
+                    for fundCat in splitCat.inputCatList() :
+                        if not self._sDataSets[-1].get().find( fundCat.GetName() ) : self._sDataSets[-1].addColumn(fundCat)
+
                 # remove category name from sWeight and PDF value column names (it must be possible to simplify this...)
-                weightVars = [ (  RooFormulaVar( par.GetName().strip( '_' + cat ) + '_sw', '', '@0'
+                # WORKAROUND: in some cases "par.GetName().strip( '_' + cat )" goes wrong:
+                # use "par.GetName()[ : par.GetName().find(cat) - 1 ]"
+                # (case: 'N_bkgMass_notExclBiased'.strip('_notExclBiased') --> 'N_bkgM' ?!!!!!!)
+                weightVars = [ (  RooFormulaVar( par.GetName()[ : par.GetName().find(cat) - 1 ] + '_sw', '', '@0'
                                                 , RooArgList( self._sDataSets[-1].get().find( par.GetName() + '_sw' ) ) )
-                                , RooFormulaVar( 'L_' + par.GetName().strip( '_' + cat ), '', '@0'
+                                , RooFormulaVar( 'L_' + par.GetName()[ : par.GetName().find(cat) - 1 ], '', '@0'
                                                 , RooArgList( self._sDataSets[-1].get().find( 'L_' + par.GetName() ) ) )
                                ) for par in self._yields if cat in par.GetName()
                              ]
-                self._sDataSets[-1].addColumn(splitCat)
+
                 for weight, pdfVal in weightVars :
                     self._sDataSets[-1].addColumn(weight)
                     self._sDataSets[-1].addColumn(pdfVal)

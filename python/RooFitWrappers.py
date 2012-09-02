@@ -957,10 +957,14 @@ class SimultaneousPdf( Pdf ) :
                 simul.addPdf(pdf, s)
             self._addObject(simul)
         elif 'SplitParameters' in kwargs :
-            args['Master']    = kwargs.pop('MasterPdf')
-            args['SplitCat']  = kwargs.pop('SplitCategory')
-            args['SplitPars'] = ','.join( par.GetName() for par in kwargs.pop('SplitParameters') )
-            spec = 'SIMCLONE::%(Name)s(%(Master)s,$SplitParam({%(SplitPars)s},%(SplitCat)s))' % args
+            args['Master']     = kwargs.pop('MasterPdf')
+            args['SplitCats']  = [ kwargs.pop('SplitCategory').GetName() ] if 'SplitCategory' in kwargs\
+                                 else [ ','.join( cat.GetName() for cat in cats ) for cats in kwargs.pop('SplitCategories') ]
+            args['SplitPars']  = [ ','.join( par.GetName() for par in kwargs.pop('SplitParameters') ) ]\
+                                 if len( args['SplitCats'] ) == 1 and not hasattr( kwargs['SplitParameters'][0], '__iter__' )\
+                                 else [ ','.join( par.GetName() for par in pars ) for pars in kwargs.pop('SplitParameters') ]
+            args['SplitSpecs'] = ','.join( '$SplitParam({%s},{%s})' % parsCats for parsCats in zip(args['SplitPars'], args['SplitCats']) )
+            spec = 'SIMCLONE::%(Name)s(%(Master)s,%(SplitSpecs)s)' % args
 
             cond = args['Master'].ConditionalObservables()
             if cond : pdfOpts['ConditionalObservables'] = cond
