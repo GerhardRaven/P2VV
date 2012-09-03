@@ -888,7 +888,6 @@ class SData( object ) :
             while splitCatState :
                 # calculate sWeights per category
                 cat = splitCatState.GetName()
-                splitCat.setLabel(cat)
 
                 origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if cat in par.GetName() ]
                 self._sPlots.append(  RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat
@@ -906,15 +905,18 @@ class SData( object ) :
                 print
 
                 # add column for splitting category/categories (was removed when data set was split)
+                # FIXME: How can we do this more generally? These are special cases and it might go wrong here...
                 from ROOT import RooSuperCategory
-                if not self._sDataSets[-1].get().find( splitCat.GetName() ) : self._sDataSets[-1].addColumn(splitCat)
+                splitCat.setLabel(cat)
                 if isinstance( splitCat, RooSuperCategory ) :
                     for fundCat in splitCat.inputCatList() :
                         if not self._sDataSets[-1].get().find( fundCat.GetName() ) : self._sDataSets[-1].addColumn(fundCat)
+                elif splitCat.isFundamental() and not self._sDataSets[-1].get().find( splitCat.GetName() ) :
+                    self._sDataSets[-1].addColumn(splitCat)
 
                 # remove category name from sWeight and PDF value column names (it must be possible to simplify this...)
-                # WORKAROUND: in some cases "par.GetName().strip( '_' + cat )" goes wrong:
-                # use "par.GetName()[ : par.GetName().find(cat) - 1 ]"
+                # FIXME: in some cases "par.GetName().strip( '_' + cat )" goes wrong:
+                # use "par.GetName()[ : par.GetName().find(cat) - 1 ]" instead
                 # (case: 'N_bkgMass_notExclBiased'.strip('_notExclBiased') --> 'N_bkgM' ?!!!!!!)
                 weightVars = [ (  RooFormulaVar( par.GetName()[ : par.GetName().find(cat) - 1 ] + '_sw', '', '@0'
                                                 , RooArgList( self._sDataSets[-1].get().find( par.GetName() + '_sw' ) ) )
