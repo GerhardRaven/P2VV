@@ -423,19 +423,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
                            )
 
-        #hlt1UnbiasedName   = 'hlt1_unbiased'
-        #hlt1ExclBiasedName = 'hlt1_excl_biased'
-        #hlt1UnbiasedName   = 'triggerDecisionUnbiased'
-        #hlt1ExclBiasedName = 'triggerDecisionBiasedExcl'
-        hlt1UnbiasedName   = 'trigger_Hlt1DiMuon_Hlt2DiMuonDetached'
-        hlt1ExclBiasedName = 'trigger_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+        hlt1ExclBName = 'hlt1_excl_biased_dec'
+        #hlt1ExclBName = 'hlt1_excl_biased'
+        #hlt1ExclBName = 'triggerDecisionBiasedExcl'
+        #hlt1ExclBName = 'trigger_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+        hlt1BName     = 'hlt1_biased'
+        hlt1UBName    = 'hlt1_unbiased_dec'
+        #hlt1UBName    = 'hlt1_unbiased'
+        #hlt1UBName    = 'triggerDecisionUnbiased'
+        #hlt1UBName    = 'trigger_Hlt1DiMuon_Hlt2DiMuonDetached'
+        hlt2BName     = 'hlt2_biased'
+        hlt2UBName    = 'hlt2_unbiased'
 
-        sel       = Category( 'sel',              Observable = True, States = { 'selected'   : 1, 'notSelected  ' : 0 } )
-        hlt1ExclB = Category( hlt1ExclBiasedName, Observable = True, States = { 'exclBiased' : 1, 'notExclBiased' : 0 } )
-        hlt1B     = Category( 'hlt1B',            Observable = True, States = { 'biased'     : 1, 'notBiased'     : 0 } )
-        hlt1UB    = Category( hlt1UnbiasedName,   Observable = True, States = { 'unbiased'   : 1, 'notUnbiased'   : 0 } )
-        hlt2B     = Category( 'hlt2B',            Observable = True, States = { 'biased'     : 1, 'notBiased'     : 0 } )
-        hlt2UB    = Category( 'hlt2UB',           Observable = True, States = { 'unbiased'   : 1, 'notUnbiased'   : 0 } )
+        sel       = Category( 'sel',         Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
+        hlt1ExclB = Category( hlt1ExclBName, Observable = True, States = { 'exclB' : 1, 'notExclB' : 0 } )
+        hlt1B     = Category( hlt1BName,     Observable = True, States = { 'B'     : 1, 'notB'     : 0 } )
+        hlt1UB    = Category( hlt1UBName,    Observable = True, States = { 'UB'    : 1, 'notUB'    : 0 } )
+        hlt2B     = Category( hlt2BName,     Observable = True, States = { 'B'     : 1, 'notB'     : 0 } )
+        hlt2UB    = Category( hlt2UBName,    Observable = True, States = { 'UB'    : 1, 'notUB'    : 0 } )
 
         muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
         muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
@@ -482,15 +487,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if nTupleFile :
             if selection == 'HLT1Unbiased' :
-                #cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_biased == 1'
-                cut = 'sel == 1 && %s == 1' % hlt1UnbiasedName
+                cut = '%s==1 && %s==1 && %s==1' % ( sel, hlt1UB, hlt2B )
             elif selection == 'HLT1ExclBiased' :
-                cut = 'sel == 1 && %s == 1' % hlt1ExclBiasedName
+                cut = '%s==1 && %s==1 && %s==1' % ( sel, hlt1ExclB, hlt2B )
             elif selection == 'paper2012' :
-                #cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && hlt2_biased == 1'
-                cut = 'sel == 1 && (%s == 1 || %s == 1)' % ( hlt1UnbiasedName, hlt1ExclBiasedName )
+                cut = '%s==1 && (%s==1 || %s==1) && %s==1' % ( sel, hlt1B, hlt1UB, hlt2B )
             elif selection == 'timeEffFit' :
-                cut = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)'
+                cut = '%s==1 && (%s==1 || %s==1) && (%s==1 || %s==1)' % ( sel, hlt1B, hlt1UB, hlt2B, hlt2UB )
             else :
                 raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown selection: "%s"' % selection )
 
@@ -1099,11 +1102,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
             self._timeResModelOriginal = self._timeResModel
             if timeEffType == 'fit' :
-                hists = {  hlt1ExclB : {  'exclBiased' : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
-                                        , 'unbiased'   : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
+                hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
+                                        , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
                                        }
-                         , hlt2B     : { 'biased'       : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
-                         , hlt2UB    : { 'unbiased'     : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
+                         , hlt2B     : { 'B'         : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
+                         , hlt2UB    : { 'UB'        : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
                         }
 
                 from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
@@ -1112,8 +1115,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     , ResolutionModel = self._timeResModel )
 
             elif timeEffType == 'paper2012' :
-                hists = { hlt1ExclB : {  'exclBiased' : { 'histogram' : timeEffHistExclBName }
-                                       , 'unbiased'   : { 'histogram' : timeEffHistUBName    }
+                hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
+                                       , 'notExclB' : { 'histogram' : timeEffHistUBName    }
                                       }
                         }
 
