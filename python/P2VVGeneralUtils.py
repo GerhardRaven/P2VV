@@ -31,14 +31,15 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
 
     if NTuple :
       from ROOT import RooDataSet, TChain
-      assert observables != None, "P2VV - ERROR: readData: set of observables is required for reading an NTuple"
+      assert observables != None, 'P2VV - ERROR: readData: set of observables is required for reading an NTuple'
 
       # create data set from NTuple file(s)
-      print "P2VV - INFO: readData: reading NTuple(s) '%s' from file(s) '%s'" % ( dataSetName, filePath )
+      print 'P2VV - INFO: readData: reading NTuple(s) "%s" from file(s) "%s"' % ( dataSetName, filePath )
       chain = TChain(dataSetName)
       status = chain.Add( filePath, -1 )
-      if status == 0 : raise RuntimeError('Could not locate tree %s in file %s' % ( dataSetName, filePath ) )
+      if status == 0 : raise RuntimeError('P2VV - ERROR: could not locate tree "%s" in file "%s"' % ( dataSetName, filePath ) )
 
+      print 'P2VV - INFO: readData: applying cuts: %s' % cuts
       data = RooDataSet( dataSetName, dataSetName
                        , [ obs._var for obs in observables ]
                        , Import = chain
@@ -47,11 +48,12 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
       from ROOT import TFile
 
       # get data set from file
-      print "P2VV - INFO: readData: reading RooDataset '%s' from file '%s'" % ( dataSetName, filePath )
+      print 'P2VV - INFO: readData: reading RooDataset "%s" from file "%s"' % ( dataSetName, filePath )
       file = TFile.Open( filePath, 'READ' )
-      assert file, "P2VV - ERROR: readData: file '%s' could not be opened" % filePath
+      assert file, 'P2VV - ERROR: readData: file "%s" could not be opened' % filePath
 
       if observables :
+          print 'P2VV - INFO: readData: applying cuts: %s' % cuts
           from ROOT import RooDataSet
           data = RooDataSet( dataSetName, dataSetName
                            , [ obs._var for obs in observables ]
@@ -886,7 +888,6 @@ class SData( object ) :
             while splitCatState :
                 # calculate sWeights per category
                 cat = splitCatState.GetName()
-                splitCat.setLabel(cat)
 
                 origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if cat in par.GetName() ]
                 self._sPlots.append(  RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat
@@ -903,14 +904,27 @@ class SData( object ) :
                     if cat in par.GetName() : print '%s = %.2f +/- %.2f  ' % ( par.GetName(), par.getVal(), par.getError() ),
                 print
 
+                # add column for splitting category/categories (was removed when data set was split)
+                # FIXME: How can we do this more generally? These are special cases and it might go wrong here...
+                from ROOT import RooSuperCategory
+                splitCat.setLabel(cat)
+                if isinstance( splitCat, RooSuperCategory ) :
+                    for fundCat in splitCat.inputCatList() :
+                        if not self._sDataSets[-1].get().find( fundCat.GetName() ) : self._sDataSets[-1].addColumn(fundCat)
+                elif splitCat.isFundamental() and not self._sDataSets[-1].get().find( splitCat.GetName() ) :
+                    self._sDataSets[-1].addColumn(splitCat)
+
                 # remove category name from sWeight and PDF value column names (it must be possible to simplify this...)
-                weightVars = [ (  RooFormulaVar( par.GetName().strip( '_' + cat ) + '_sw', '', '@0'
+                # FIXME: in some cases "par.GetName().strip( '_' + cat )" goes wrong:
+                # use "par.GetName()[ : par.GetName().find(cat) - 1 ]" instead
+                # (case: 'N_bkgMass_notExclBiased'.strip('_notExclBiased') --> 'N_bkgM' ?!!!!!!)
+                weightVars = [ (  RooFormulaVar( par.GetName()[ : par.GetName().find(cat) - 1 ] + '_sw', '', '@0'
                                                 , RooArgList( self._sDataSets[-1].get().find( par.GetName() + '_sw' ) ) )
-                                , RooFormulaVar( 'L_' + par.GetName().strip( '_' + cat ), '', '@0'
+                                , RooFormulaVar( 'L_' + par.GetName()[ : par.GetName().find(cat) - 1 ], '', '@0'
                                                 , RooArgList( self._sDataSets[-1].get().find( 'L_' + par.GetName() ) ) )
                                ) for par in self._yields if cat in par.GetName()
                              ]
-                self._sDataSets[-1].addColumn(splitCat)
+
                 for weight, pdfVal in weightVars :
                     self._sDataSets[-1].addColumn(weight)
                     self._sDataSets[-1].addColumn(pdfVal)

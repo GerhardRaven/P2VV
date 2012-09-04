@@ -18,6 +18,7 @@
 
 class RooCustomizer;
 class RooResoluitionModel;
+class RooAbsAnaConvPdf;
 
 class RooEffResModel : public RooAbsEffResModel {
 public:
