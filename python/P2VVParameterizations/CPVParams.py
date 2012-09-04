@@ -34,16 +34,41 @@ RooInf = RooNumber.infinity()
 class CPParam ( _util_parse_mixin ):
     def __init__( self, **kwargs ) :
         for coef in 'CDS' : setattr( self, '_' + coef, kwargs.pop(coef) )
+        self._ampNames = kwargs.pop( 'AmplitudeNames', None )
+
+        if self._ampNames :
+            for coefDict in [ 'RPlusDict', 'RMinDict', 'RReDict', 'RImDict' ] : setattr( self, '_' + coefDict, kwargs.pop(coefDict) )
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
+
+    def CPVInDecay(self) : return True if self._ampNames else False
+    def AmplitudeNames(self) : return self._ampNames
+
+    def C(self) : return self._C
+    def D(self) : return self._D
+    def S(self) : return self._S
+    def R( self, CPVDecInd, amp0Ind, amp1Ind ) :
+        if not self.CPVInDecay() : return None
+
+        assert CPVDecInd in ( 'plus', 'min', 'Re', 'Im' )\
+            , 'P2VV - ERROR: CPParam.R(): valid CP violation in decay parameter indices are "plus", "min", "Re" or "Im" (got "%s")'\
+              % CPVDecInd
+        assert amp0Ind in self._ampNames and amp1Ind in self._ampNames\
+            , 'P2VV - ERROR: CPParam.R(): valid amplitude indices are "%s" (got "%s" and "%s")'\
+              % ( '", "'.join( amp for amp in self._ampNames ), amp0Ind, amp1Ind )
+
+        return self._RPlusDict[ ( amp0Ind, amp1Ind ) ] if CPVDecInd == 'plus'\
+          else self._RMinDict[  ( amp0Ind, amp1Ind ) ] if CPVDecInd == 'min'\
+          else self._RReDict[   ( amp0Ind, amp1Ind ) ] if CPVDecInd == 'Re'\
+          else self._RImDict[   ( amp0Ind, amp1Ind ) ]
 
 class CDS_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
         from math import cos, sin
 
-        self._parseArg('C', kwargs,  Title = 'CPV param. C', Value = CVal, Error = CErr, MinMax = ( -RooInf, +RooInf ) )
-        self._parseArg('D', kwargs,  Title = 'CPV param. D', Value = DVal, Error = DErr, MinMax = ( -RooInf, +RooInf ) )
-        self._parseArg('S', kwargs,  Title = 'CPV param. S', Value = SVal, Error = SErr, MinMax = ( -RooInf, +RooInf ) )
+        self._parseArg('C', kwargs,  Title = 'CPV param. C', Value = CVal, Error = CErr, MinMax = ( -1., 1. ) )
+        self._parseArg('D', kwargs,  Title = 'CPV param. D', Value = DVal, Error = DErr, MinMax = ( -2., 2. ) )
+        self._parseArg('S', kwargs,  Title = 'CPV param. S', Value = SVal, Error = SErr, MinMax = ( -2., 2. ) )
         self._check_extraneous_kw( kwargs )
 
 class LambdaCarth_CPParam( CPParam ) :
@@ -68,7 +93,7 @@ class LambdaAbsArg_CPParam( CPParam ) :
         from RooFitWrappers import FormulaVar
         from math import pi
 
-        self._parseArg( 'lambdaCP', kwargs,  Title = 'CPV param. |lambda|', Value = lambVal, Error = lambErr, MinMax = (-RooInf, +RooInf) )
+        self._parseArg( 'lambdaCP', kwargs,  Title = 'CPV param. |lambda|', Value = lambVal, Error = lambErr, MinMax = ( 0.,      5.   ) )
         self._parseArg( 'phiCP',    kwargs,  Title = 'CPV param. phi',      Value = phiVal,  Error = phiErr,  MinMax = (-RooInf, +RooInf) )
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0) / (1. + @0*@0)',       [ self._lambdaCP              ] )
@@ -84,7 +109,7 @@ class LambdaSqArg_CPParam( CPParam ) :
         from math import pi
 
         self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. |lambda|^2', Value = lambSqVal, Error = lambSqErr
-                       , MinMax = ( -RooInf, +RooInf ) )
+                       , MinMax = ( 0., 25. ) )
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',        Value = phiVal,    Error = phiErr
                        , MinMax = ( -RooInf, +RooInf ) )
 
@@ -103,5 +128,101 @@ class LambdaArg_CPParam( CPParam ) :
         CPParam.__init__(self, C = ConstVar( Name = 'C', Value = 0. )
                              , D = FormulaVar('D', 'cos(-@0) ', [ self._phiCP ] )
                              , S = FormulaVar('S', 'sin(-@0) ', [ self._phiCP ] )
+                        )
+        self._check_extraneous_kw( kwargs )
+
+
+class LambdaAbsArg_CPVDecay_CPParam( CPParam ) :
+    def __init__( self, **kwargs ) :
+        ampNames = kwargs.pop('AmplitudeNames')
+        amps = kwargs.pop('Amplitudes')
+
+        self._parseArg( 'rhoCP_m', kwargs, Title = 'CPV in mixing param. |rho_m|',       Value = lambVal, Error = lambErr
+                       , MinMax = (  0.,      5.     ) )
+        self._parseArg( 'phiCP_m', kwargs, Title = 'CPV in mixing param. phi_m + phi_0', Value = phiVal,  Error = phiErr
+                       , MinMax = ( -RooInf, +RooInf ) )
+
+        for ind, amp in enumerate(ampNames) :
+            self._parseArg( 'rhoCP_%s' % amp, kwargs, Title = 'CPV in decay param. |rho_%s|' % amp, Value = 1., Error = lambErr
+                           , MinMax = ( 0., 5. ) )
+            if ind == 0 :
+                self._parseArg( 'phiCP_%s' % amp, kwargs, Title = 'CPV in decay param. phi_%s - phi_0' % amp, Value = 0.
+                               , ObjectType = 'ConstVar' )
+            else :
+                self._parseArg( 'phiCP_%s' % amp, kwargs, Title = 'CPV in decay param. phi_%s - phi_0' % amp, Value = 0., Error = phiErr
+                               , MinMax = ( -RooInf, +RooInf ) )
+
+        RPlusDict = { }
+        RMinDict  = { }
+        RReDict   = { }
+        RImDict   = { }
+        try :   from itertools import combinations_with_replacement as cwr  # this requires python 2.7 or later
+        except: from compatibility import cwr
+        from RooFitWrappers import FormulaVar
+        for ampComb in cwr( ampNames, 2 ) :
+            eta0 = amps[ ampComb[0] ].CP
+            eta1 = amps[ ampComb[1] ].CP
+
+            RPlusDict[ampComb] = tuple( [ FormulaVar(  '%sRPlus_%s_%s' % ( comp, ampComb[0], ampComb[1] )
+                                                     , '(%s@0*@1*%s(@2-@3)) / 2.'\
+                                                       % ( '1. + ' if comp == 'Re' and eta0 == eta1\
+                                                           else '1. - ' if comp == 'Re' and eta0 != eta1\
+                                                           else '' if eta0 == eta1 else '-'
+                                                          , func
+                                                         )
+                                                     , [  getattr( self, '_rhoCP_%s' % ampComb[0] )
+                                                        , getattr( self, '_rhoCP_%s' % ampComb[1] )
+                                                        , getattr( self, '_phiCP_%s' % ampComb[0] )
+                                                        , getattr( self, '_phiCP_%s' % ampComb[1] )
+                                                       ]
+                                                    ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
+                                      ] )
+            RMinDict[ampComb]  = tuple( [ FormulaVar(  '%sRMin_%s_%s' % ( comp, ampComb[0], ampComb[1] )
+                                                     , '(%s@0*@1*%s(@2-@3)) / 2.'\
+                                                       % ( '1. - ' if comp == 'Re' and eta0 == eta1\
+                                                           else '1. + ' if comp == 'Re' and eta0 != eta1\
+                                                           else '-' if eta0 == eta1 else ''
+                                                          , func
+                                                         )
+                                                     , [  getattr( self, '_rhoCP_%s' % ampComb[0] )
+                                                        , getattr( self, '_rhoCP_%s' % ampComb[1] )
+                                                        , getattr( self, '_phiCP_%s' % ampComb[0] )
+                                                        , getattr( self, '_phiCP_%s' % ampComb[1] )
+                                                       ]
+                                                    ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
+                                      ] )
+            RReDict[ampComb]   = tuple( [ FormulaVar(  '%sRRe_%s_%s' % ( comp, ampComb[0], ampComb[1] )
+                                                     , '(%s@0*%s(@2) %s @1*%s(-@3)) / 2.'\
+                                                       % ( '' if eta0 > 0 else '-', func, '+' if eta1 > 0 else '-', func )
+                                                     , [  getattr( self, '_rhoCP_%s' % ampComb[0] )
+                                                        , getattr( self, '_rhoCP_%s' % ampComb[1] )
+                                                        , getattr( self, '_phiCP_%s' % ampComb[0] )
+                                                        , getattr( self, '_phiCP_%s' % ampComb[1] )
+                                                       ]
+                                                    ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
+                                      ] )
+            RImDict[ampComb]   = tuple( [ FormulaVar(  '%sRIm_%s_%s' % ( comp, ampComb[0], ampComb[1] )
+                                                     , '(%s@0*%s(@2) %s @1*%s(-@3)) / 2.'\
+                                                       % (  '-' if ( eta0 > 0 and comp == 'Re' ) or ( eta0 < 0 and comp == 'Im' ) else ''
+                                                          , func
+                                                          , '+' if ( eta1 > 0 and comp == 'Re' ) or ( eta1 < 0 and comp == 'Im' ) else '-'
+                                                          , func
+                                                         )
+                                                     , [  getattr( self, '_rhoCP_%s' % ampComb[0] )
+                                                        , getattr( self, '_rhoCP_%s' % ampComb[1] )
+                                                        , getattr( self, '_phiCP_%s' % ampComb[0] )
+                                                        , getattr( self, '_phiCP_%s' % ampComb[1] )
+                                                       ]
+                                                    ) for ( comp, func ) in [ ( 'Re', 'sin' ), ( 'Im', 'cos' ) ]
+                                      ] )
+
+        CPParam.__init__( self, AmplitudeNames = ampNames
+                         , C = FormulaVar( 'C', '(1. - @0*@0) / (1. + @0*@0)',       [ self._rhoCP_m                ] )
+                         , D = FormulaVar( 'D', '2. * @0 * cos(-@1) / (1. + @0*@0)', [ self._rhoCP_m, self._phiCP_m ] )
+                         , S = FormulaVar( 'S', '2. * @0 * sin(-@1) / (1. + @0*@0)', [ self._rhoCP_m, self._phiCP_m ] )
+                         , RPlusDict = RPlusDict
+                         , RMinDict  = RMinDict
+                         , RReDict   = RReDict
+                         , RImDict   = RImDict
                         )
         self._check_extraneous_kw( kwargs )

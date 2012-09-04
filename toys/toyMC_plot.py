@@ -69,10 +69,8 @@ for pv in pull_vars:
         print "Not plotting %s" % pv.GetName()
     
 from ROOT import TCanvas
-hsize = 300
-vsize = 300
 from math import sqrt
-l = len(plot_vars) - 1
+l = len(plot_vars)
 nrows = int(sqrt(l))
 ncolumns = 1
 if nrows == 1:
@@ -121,7 +119,6 @@ for i, pv in enumerate(plot_vars):
         pull_pdf.plotOn(frame)
         pull_pdf.paramOn(frame)
     frames[pv.GetName()] = frame
-    if pv.GetName().find('sig_tau') != -1:
-        continue
     frame.Draw()
 canvas.Update()
+ 

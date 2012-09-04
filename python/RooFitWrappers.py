@@ -544,6 +544,22 @@ class CalibratedDilution( RooObject ) :
         self._init( Name, 'RooCalibratedDilution' )
         for k, v in kwargs.iteritems() : self.__setitem__( k, v )
 
+class ComplementCoef( RooObject ) :
+    def __init__( self, **kwargs ) :
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'Coefficients', kwargs )
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+
+        # build a RooComplementCoef (no workspace declaration, since factory string has limited length!!!)
+        from ROOT import RooArgList, RooComplementCoef
+        coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
+        self._addObject( RooComplementCoef( name, name, coefList ) )
+
+        # initialize
+        self._init( name, 'RooComplementCoef' )
+        for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
+
 class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...
@@ -941,10 +957,14 @@ class SimultaneousPdf( Pdf ) :
                 simul.addPdf(pdf, s)
             self._addObject(simul)
         elif 'SplitParameters' in kwargs :
-            args['Master']    = kwargs.pop('MasterPdf')
-            args['SplitCat']  = kwargs.pop('SplitCategory')
-            args['SplitPars'] = ','.join( par.GetName() for par in kwargs.pop('SplitParameters') )
-            spec = 'SIMCLONE::%(Name)s(%(Master)s,$SplitParam({%(SplitPars)s},%(SplitCat)s))' % args
+            args['Master']     = kwargs.pop('MasterPdf')
+            args['SplitCats']  = [ kwargs.pop('SplitCategory').GetName() ] if 'SplitCategory' in kwargs\
+                                 else [ ','.join( cat.GetName() for cat in cats ) for cats in kwargs.pop('SplitCategories') ]
+            args['SplitPars']  = [ ','.join( par.GetName() for par in kwargs.pop('SplitParameters') ) ]\
+                                 if len( args['SplitCats'] ) == 1 and not hasattr( kwargs['SplitParameters'][0], '__iter__' )\
+                                 else [ ','.join( par.GetName() for par in pars ) for pars in kwargs.pop('SplitParameters') ]
+            args['SplitSpecs'] = ','.join( '$SplitParam({%s},{%s})' % parsCats for parsCats in zip(args['SplitPars'], args['SplitCats']) )
+            spec = 'SIMCLONE::%(Name)s(%(Master)s,%(SplitSpecs)s)' % args
 
             cond = args['Master'].ConditionalObservables()
             if cond : pdfOpts['ConditionalObservables'] = cond
@@ -1087,6 +1107,8 @@ class MultiHistEfficiencyModel(Pdf):
         self.__coefficients = {}
         self.__base_bounds = None
         self.__constraints = []
+        self.__binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
+        if not self.__binHeightMinMax : self.__binHeightMinMax = (0.01, 0.999)
 
         from copy import copy
         from ROOT import RooBinning        
@@ -1104,7 +1126,7 @@ class MultiHistEfficiencyModel(Pdf):
                 heights = state_info['heights']
                 heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
                                    Observable = False, Value = v,
-                                   MinMax = (0.01, 0.999)) for i, v in enumerate(heights)]
+                                   MinMax = self.__binHeightMinMax) for i, v in enumerate(heights)]
                 self.__heights[(category, state)] = heights
                 # Add a binning for this category and state
                 bounds = state_info['bins']
@@ -1547,7 +1569,7 @@ class BinnedPdf( Pdf ) :
 
             else:
                 # independent bin coefficients are specified
-                if hasattr( kwargs['Coefficients'][0], '__iter__' ) :
+                if kwargs['Coefficients'] and hasattr( kwargs['Coefficients'][0], '__iter__' ) :
                     # coefficients for different variables factorize
 
                     # build coefficients lists

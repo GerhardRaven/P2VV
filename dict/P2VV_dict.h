@@ -24,6 +24,7 @@
 #include "RooEffResModel.h"
 #include "RooMultiEffResModel.h"
 #include "MultiHistEntry.h"
+#include "RooComplementCoef.h"
 #include "RooEffConvGenContext.h"
 
 #include <map>
