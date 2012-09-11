@@ -38,8 +38,8 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 4
-               , Optimize  = 2
+fitOpts = dict(  NumCPU    = 1
+               , Optimize  = 1
                , Timer     = True
 #               , Verbose   = True
 #               , Minos     = True
@@ -60,7 +60,7 @@ pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
-pdfConfig['multiplyByTimeEff']    = 'signal'
+pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['timeEffType']          = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
@@ -68,29 +68,31 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = ''
 pdfConfig['KKMassBinBounds']      = [ 1008., 1032. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
-#pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.18, 0.07 ), ( 0.07, 0.03 ), ( 0.01, 0.02 ), ( 0.02, 0.01 ), ( 0.05, 0.03 ), ( 0.15, 0.04 ) ]
-#                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.4  ), ( -0.5, 0.2  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
-pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.27, 0.09), (0.079, 0.032), (0.016, 0.015), (0.011, 0.010), (0.057, 0.029), (0.17, 0.05) ]
+#                                     , [ (1.4,  0.5 ), (0.8,   0.3  ), (0.3,   0.3  ), (-0.5,  0.3  ), (-0.5, 0.2   ), (-0.7, 0.2 ) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.3, 0.1 ), ( 0.07, 0.03 ), ( 0.01, 0.01 ), ( 0.01, 0.01 ), ( 0.06, 0.03 ), ( 0.2, 0.04 ) ]
+#                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.3  ), ( -0.5, 0.3  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
+pdfConfig['CSPValues']            = [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
-pdfConfig['constrainTagging']   = True  # nominal: True
+pdfConfig['constrainTagging']   = 'constraint'  # nominal: True
 
 pdfConfig['eventTimeResolution']   = True  # nominal: True
 pdfConfig['numTimeResBins']        = 100
-pdfConfig['constrainTimeResScale'] = True  # nominal: True
+pdfConfig['constrainTimeResScale'] = 'constraint'  # nominal: True
 
 pdfConfig['numEvents'] = 32000
 pdfConfig['signalFraction'] = 0.67
-pdfConfig['massRangeBackground'] = False
+pdfConfig['massRangeBackground'] = True
 
 pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'phasesSWaveFrac'
 pdfConfig['ASParam']        = 'deltaPerp'  # default/nominal: 'deltaPerp'
 pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 
-pdfConfig['constrainDeltaM'] = True  # nominal: True
+pdfConfig['constrainDeltaM'] = 'constraint'  # nominal: True
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'  # default/nominal: 'lambPhi'
 
@@ -332,9 +334,21 @@ if fastFit :
         if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
 
+#pdfBuild['lambdaCP'].setConstant('rhoCP_m')
 #pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
 #pdfBuild['lambdaCP'].setConstant('phiCP_A.*')
-#pdfBuild['amplitudes'].setConstant('ASOddPhase')
+
+#ws['f_S'].setVal(0.026)
+#ws['ASOddPhase'].setVal(0.03)
+#ws['f_S'].setConstant()
+#ws['ASOddPhase'].setConstant()
+
+#ws['f_S_bin0'].setConstant()
+#ws['f_S_bin1'].setConstant()
+#ws['f_S_bin2'].setConstant()
+#ws['f_S_bin3'].setConstant()
+#ws['f_S_bin4'].setConstant()
+#ws['f_S_bin5'].setConstant()
 
 # set amplitude ranges
 pdfBuild['amplitudes'].parameter('A0Mag2').setRange( ( 0., 1. ) )
@@ -902,27 +916,35 @@ if dllPars :
 tagData = pdfBuild['sigSWeightData']
 
 sums = {
-    'numEv'    : 0.
-  , 'numOS'    : 0., 'numOSExcl'    : 0.
-  , 'numSS'    : 0., 'numSSExcl'    : 0.
-  , 'numComb'  : 0., 'numCombExcl'  : 0.
-  , 'etaOS'    : 0., 'etaOSExcl'    : 0.
-  , 'etaSS'    : 0., 'etaSSExcl'    : 0.
-  , 'etaComb'  : 0., 'etaCombExcl'  : 0.
-  , 'wOS'      : 0., 'wOSExcl'      : 0.
-  , 'wSS'      : 0., 'wSSExcl'      : 0.
-  , 'wComb'    : 0., 'wCombExcl'    : 0.
-  , 'dilOS'    : 0., 'dilOSExcl'    : 0.
-  , 'dilSS'    : 0., 'dilSSExcl'    : 0.
-  , 'dilComb'  : 0., 'dilCombExcl'  : 0.
-  , 'dil2OS'   : 0., 'dil2OSExcl'   : 0.
-  , 'dil2SS'   : 0., 'dil2SSExcl'   : 0.
-  , 'dil2Comb' : 0., 'dil2CombExcl' : 0.
+    'numEv'       : 0.
+  , 'numOS'       : 0., 'numOSExcl'       : 0.
+  , 'numSS'       : 0., 'numSSExcl'       : 0.
+  , 'numComb'     : 0., 'numCombExcl'     : 0.
+  , 'etaOS'       : 0., 'etaOSExcl'       : 0.
+  , 'etaSS'       : 0., 'etaSSExcl'       : 0.
+  , 'etaComb'     : 0., 'etaCombExcl'     : 0.
+  , 'wOS'         : 0., 'wOSExcl'         : 0.
+  , 'wSS'         : 0., 'wSSExcl'         : 0.
+  , 'wComb'       : 0., 'wCombExcl'       : 0.
+  , 'dilOS'       : 0., 'dilOSExcl'       : 0.
+  , 'dilSS'       : 0., 'dilSSExcl'       : 0.
+  , 'dilComb'     : 0., 'dilCombExcl'     : 0.
+  , 'dil2OS'      : 0., 'dil2OSExcl'      : 0.
+  , 'dil2SS'      : 0., 'dil2SSExcl'      : 0.
+  , 'dil2Comb'    : 0., 'dil2CombExcl'    : 0.
+  , 'dilRes2Comb' : 0., 'dilRes2CombExcl' : 0.
+  , 'dilTot2Comb' : 0., 'dilTot2CombExcl' : 0.
+  , 'dilRes2All'  : 0.
 }
 
+from math import exp
 for varSet in tagData :
   weight = tagData.weight()
   sums['numEv'] += weight
+
+  sigmat = 1.45 * varSet.getRealValue('sigmat')
+  dilRes = exp( - 17.6**2 * sigmat**2 / 2. )
+  sums['dilRes2All'] += weight * dilRes**2
 
   if varSet.getCatIndex('tagdecision_os') != 0 :
     etaOS  = varSet.getRealValue('tagomega_os')
@@ -942,11 +964,13 @@ for varSet in tagData :
       sums['dilOSExcl']  += weight * dilOS
       sums['dil2OSExcl'] += weight * dilOS**2
 
-      sums['numComb']  += weight
-      sums['etaComb']  += weight * etaOS
-      sums['wComb']    += weight * wTagOS
-      sums['dilComb']  += weight * dilOS
-      sums['dil2Comb'] += weight * dilOS**2
+      sums['numComb']     += weight
+      sums['etaComb']     += weight * etaOS
+      sums['wComb']       += weight * wTagOS
+      sums['dilComb']     += weight * dilOS
+      sums['dil2Comb']    += weight * dilOS**2
+      sums['dilRes2Comb'] += weight * dilRes**2
+      sums['dilTot2Comb'] += weight * ( dilRes * dilOS )**2
 
   if varSet.getCatIndex('tagdecision_ss') != 0 :
     etaSS  = varSet.getRealValue('tagomega_ss')
@@ -966,28 +990,34 @@ for varSet in tagData :
       sums['dilSSExcl']  += weight * dilSS
       sums['dil2SSExcl'] += weight * dilSS**2
 
-      sums['numComb']  += weight
-      sums['etaComb']  += weight * etaSS
-      sums['wComb']    += weight * wTagSS
-      sums['dilComb']  += weight * dilSS
-      sums['dil2Comb'] += weight * dilSS**2
+      sums['numComb']     += weight
+      sums['etaComb']     += weight * etaSS
+      sums['wComb']       += weight * wTagSS
+      sums['dilComb']     += weight * dilSS
+      sums['dil2Comb']    += weight * dilSS**2
+      sums['dilRes2Comb'] += weight * dilRes**2
+      sums['dilTot2Comb'] += weight * ( dilRes * dilSS )**2
 
   if varSet.getCatIndex('tagdecision_os') != 0 and varSet.getCatIndex('tagdecision_ss') != 0 :
     dilSign = +1. if varSet.getCatIndex('tagdecision_os') == varSet.getCatIndex('tagdecision_ss') else -1.
     dilComb = ( dilOS + dilSign * dilSS ) / ( 1. + dilSign * dilOS * dilSS )
     wTagComb = ( 1. - dilComb ) / 2.
 
-    sums['numComb']  += weight
-    sums['etaComb']  += weight * wTagComb
-    sums['wComb']    += weight * wTagComb
-    sums['dilComb']  += weight * dilComb
-    sums['dil2Comb'] += weight * dilComb**2
+    sums['numComb']     += weight
+    sums['etaComb']     += weight * wTagComb
+    sums['wComb']       += weight * wTagComb
+    sums['dilComb']     += weight * dilComb
+    sums['dil2Comb']    += weight * dilComb**2
+    sums['dilRes2Comb'] += weight * dilRes**2
+    sums['dilTot2Comb'] += weight * ( dilRes * dilComb )**2
 
-    sums['numCombExcl']  += weight
-    sums['etaCombExcl']  += weight * wTagComb
-    sums['wCombExcl']    += weight * wTagComb
-    sums['dilCombExcl']  += weight * dilComb
-    sums['dil2CombExcl'] += weight * dilComb**2
+    sums['numCombExcl']     += weight
+    sums['etaCombExcl']     += weight * wTagComb
+    sums['wCombExcl']       += weight * wTagComb
+    sums['dilCombExcl']     += weight * dilComb
+    sums['dil2CombExcl']    += weight * dilComb**2
+    sums['dilRes2CombExcl'] += weight * dilRes**2
+    sums['dilTot2CombExcl'] += weight * ( dilRes * dilComb )**2
 
 print
 print 'number of events:       %.4f' % sums['numEv']
@@ -1011,13 +1041,23 @@ print 'OS    <dil>: %.4f (%.4f)'   % ( sums['dilOS']   / sums['numOS'],   sums['
 print 'SS    <dil>: %.4f (%.4f)'   % ( sums['dilSS']   / sums['numSS'],   sums['dilSSExcl']   / sums['numSSExcl']   )
 print 'Comb. <dil>: %.4f (%.4f)\n' % ( sums['dilComb'] / sums['numComb'], sums['dilCombExcl'] / sums['numCombExcl'] )
 
-print 'OS    <dil2>: %.4f (%.4f)'   % ( sums['dil2OS']   / sums['numOS'],   sums['dil2OSExcl']   / sums['numOSExcl']   )
-print 'SS    <dil2>: %.4f (%.4f)'   % ( sums['dil2SS']   / sums['numSS'],   sums['dil2SSExcl']   / sums['numSSExcl']   )
-print 'Comb. <dil2>: %.4f (%.4f)\n' % ( sums['dil2Comb'] / sums['numComb'], sums['dil2CombExcl'] / sums['numCombExcl'] )
+print 'OS    <dil2>:    %.4f (%.4f)'   % ( sums['dil2OS']   / sums['numOS'],   sums['dil2OSExcl']   / sums['numOSExcl']   )
+print 'SS    <dil2>:    %.4f (%.4f)'   % ( sums['dil2SS']   / sums['numSS'],   sums['dil2SSExcl']   / sums['numSSExcl']   )
+print 'Comb. <dil2>:    %.4f (%.4f)'   % ( sums['dil2Comb'] / sums['numComb'], sums['dil2CombExcl'] / sums['numCombExcl'] )
+print 'Comb. <dilRes2>: %.4f (%.4f)'   % ( sums['dilRes2Comb'] / sums['numComb'], sums['dilRes2CombExcl'] / sums['numCombExcl'] )
+print 'Comb. <dilTot2>: %.4f (%.4f)'   % ( sums['dilTot2Comb'] / sums['numComb'], sums['dilTot2CombExcl'] / sums['numCombExcl'] )
+print 'All   <dilRes2>: %.4f\n'        % ( sums['dilRes2All'] / sums['numEv'] )
 
-print 'OS    <eff * dil2>: %.4f%% (%.4f%%)'   % ( sums['dil2OS']   / sums['numEv'] * 100., sums['dil2OSExcl']   / sums['numEv'] * 100. )
-print 'SS    <eff * dil2>: %.4f%% (%.4f%%)'   % ( sums['dil2SS']   / sums['numEv'] * 100., sums['dil2SSExcl']   / sums['numEv'] * 100. )
-print 'Comb. <eff * dil2>: %.4f%% (%.4f%%)\n' % ( sums['dil2Comb'] / sums['numEv'] * 100., sums['dil2CombExcl'] / sums['numEv'] * 100. )
+print 'OS    <eff * dil2>:    %.4f%% (%.4f%%)'   % ( sums['dil2OS']   / sums['numEv'] * 100., sums['dil2OSExcl']   / sums['numEv'] * 100. )
+print 'SS    <eff * dil2>:    %.4f%% (%.4f%%)'   % ( sums['dil2SS']   / sums['numEv'] * 100., sums['dil2SSExcl']   / sums['numEv'] * 100. )
+print 'Comb. <eff * dil2>:    %.4f%% (%.4f%%)'   % ( sums['dil2Comb'] / sums['numEv'] * 100., sums['dil2CombExcl'] / sums['numEv'] * 100. )
+print 'Comb. <eff * dilRes2>: %.4f%% (%.4f%%)'   % (  sums['dilRes2Comb'] / sums['numEv'] * 100.
+                                                    , sums['dilRes2CombExcl'] / sums['numEv'] * 100.
+                                                   )
+print 'Comb. <eff * dilTot2>: %.4f%% (%.4f%%)'   % (  sums['dilTot2Comb'] / sums['numEv'] * 100.
+                                                    , sums['dilTot2CombExcl'] / sums['numEv'] * 100.
+                                                   )
+print 'All   <eff * dilRes2>: %.4f\n'            % ( sums['dilRes2All'] / sums['numEv'] )
 
 nEv = 0.
 nBB = 0.

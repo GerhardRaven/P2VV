@@ -74,7 +74,10 @@ class LP2011_TimeResolution ( TimeResolution ) :
         self._timeResFracs  = [ ConstVar( Name = 'timeResFrac%s'  % num, Value = val ) for num, val in fracs  ]
 
         constraints = []
-        if kwargs.pop( 'timeResSFConstraint', None ) :
+        timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
+        if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' :
+            self._timeResSF.setConstant(True)
+        elif timeResSFConstr :
             from ROOT import RooGaussian as Gaussian
             from RooFitWrappers import Pdf
             constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
@@ -117,7 +120,10 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         self._parseArg( 'timeResSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
 
         constraints = []
-        if kwargs.pop( 'timeResSFConstraint', None ) :
+        timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
+        if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' :
+            self._timeResSF.setConstant(True)
+        elif timeResSFConstr :
             from ROOT import RooGaussian as Gaussian
             from RooFitWrappers import Pdf
             constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
