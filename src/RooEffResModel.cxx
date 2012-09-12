@@ -177,6 +177,16 @@ RooEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
   RooEffResModel *effConv = new RooEffResModel(newName,newTitle, *conv, *eff);
   effConv->addOwnedComponents(*conv);
   effConv->changeBasis(inBasis) ;
+
+  const char* cacheParamsStr = getStringAttribute("CACHEPARAMINT") ;
+  if (cacheParamsStr && strlen(cacheParamsStr)) {
+    cout << "prior has CACHEPARAMINT : " << cacheParamsStr << endl;
+    cout << "bound version has CACHEPARAMINT : " << effConv->getStringAttribute("CACHEPARAMINT")  << endl;
+    effConv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
+    cout << "2nd time: bound version has CACHEPARAMINT : " << effConv->getStringAttribute("CACHEPARAMINT")  << endl;
+    cout << endl << endl << endl;;
+  }
+
   return effConv ;
 }
 
