@@ -256,8 +256,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ########################
 
         from math import sqrt, pi
-        from ROOT import RooNumber
-        RooInf = RooNumber.infinity()
 
         # copy configuration arguments
         pdfConfig = kwargs.copy()
@@ -347,20 +345,44 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         lambdaCPParam = pdfConfig.pop('lambdaCPParam')
 
+
+        ###################################################################################################################################
+        ## imports and function definitions ##
+        ######################################
+
+        # ROOT infinity
+        from ROOT import RooNumber
+        RooInf = RooNumber.infinity()
+
+        # RooObject wrappers
+        from RooFitWrappers import RooObject, ConstVar, RealVar, Category, FormulaVar
+        ws = RooObject().ws()
+
         if makePlots :
             # import plotting tools
             from P2VVLoad import ROOTStyle
             from P2VVGeneralUtils import plot
             from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
 
+        # define function for finding a splitted parameter in a simultaneous PDF
+        def getSplitPar( parName, stateName, parSet ) :
+            from itertools import permutations
+            stateName = stateName[ 1 : -1 ].split(';') if stateName.startswith('{') and stateName.endswith('}') else [ stateName ]
+            if len(stateName) > 1 :
+                fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
+                             for perm in permutations( stateName, len(stateName) ) ]
+            else :
+                fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
+
+            name = lambda par : par if type(par) == str else par.GetName()
+            for par in parSet :
+                if name(par) in fullNames : return par
+            return None
+
 
         ###################################################################################################################################
         ## create variables (except for tagging category) ##
         ####################################################
-
-        # RooObject wrappers
-        from RooFitWrappers import RooObject, ConstVar, RealVar, Category, FormulaVar
-        ws = RooObject().ws()
 
         # angular functions
         if not nominalPdf and transAngles :
@@ -592,20 +614,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     self._dataSets['data'].addColumn( self._sWeightMassPdf.indexCat() )
 
                 # set yields for categories
-                def getSplitPar( parName, stateName, parSet ) :
-                    from itertools import permutations
-                    stateName = stateName[ 1 : -1 ].split(';') if stateName.startswith('{') and stateName.endswith('}') else [ stateName ]
-                    if len(stateName) > 1 :
-                        fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
-                                     for perm in permutations( stateName, len(stateName) ) ]
-                    else :
-                        fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
-
-                    name = lambda par : par if type(par) == str else par.GetName()
-                    for par in parSet :
-                        if name(par) in fullNames : return par
-                    return None
-
                 splitCatIter = self._sWeightMassPdf.indexCat().typeIterator()
                 splitCatState = splitCatIter.Next()
                 splitCatPars = self._sWeightMassPdf.getVariables()
@@ -1706,7 +1714,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
         ###################################################################################################################################
-        ## split PDF for different KK mass bins ##
+        ## split PDF for different data samples ##
         ##########################################
 
         # check number of KK mass bin parameters

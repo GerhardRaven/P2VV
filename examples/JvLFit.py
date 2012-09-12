@@ -38,8 +38,8 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 1
-               , Optimize  = 1
+fitOpts = dict(  NumCPU    = 2
+               , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True
 #               , Minos     = True
@@ -56,33 +56,33 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
-pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
+pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = ''
 pdfConfig['timeEffType']          = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
-pdfConfig['parameterizeKKMass']   = ''  # default/nominal: ''
+pdfConfig['parameterizeKKMass']   = ''  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = ''
 pdfConfig['KKMassBinBounds']      = [ 1008., 1032. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.27, 0.09), (0.079, 0.032), (0.016, 0.015), (0.011, 0.010), (0.057, 0.029), (0.17, 0.05) ]
 #                                     , [ (1.4,  0.5 ), (0.8,   0.3  ), (0.3,   0.3  ), (-0.5,  0.3  ), (-0.5, 0.2   ), (-0.7, 0.2 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.3, 0.1 ), ( 0.07, 0.03 ), ( 0.01, 0.01 ), ( 0.01, 0.01 ), ( 0.06, 0.03 ), ( 0.2, 0.04 ) ]
-#                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.3  ), ( -0.5, 0.3  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
-pdfConfig['CSPValues']            = [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.18, 0.07 ), ( 0.07, 0.03 ), ( 0.01, 0.02 ), ( 0.02, 0.01 ), ( 0.05, 0.03 ), ( 0.15, 0.04 ) ]
+#                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.4  ), ( -0.5, 0.2  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
+pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
-pdfConfig['constrainTagging']   = 'constraint'  # nominal: True
+pdfConfig['constrainTagging']   = 'constraint'  # nominal: 'constraint'
 
 pdfConfig['eventTimeResolution']   = True  # nominal: True
 pdfConfig['numTimeResBins']        = 100
-pdfConfig['constrainTimeResScale'] = 'constraint'  # nominal: True
+pdfConfig['constrainTimeResScale'] = 'constraint'  # nominal: 'constraint'
 
 pdfConfig['numEvents'] = 32000
 pdfConfig['signalFraction'] = 0.67
@@ -92,7 +92,7 @@ pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'ph
 pdfConfig['ASParam']        = 'deltaPerp'  # default/nominal: 'deltaPerp'
 pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 
-pdfConfig['constrainDeltaM'] = 'constraint'  # nominal: True
+pdfConfig['constrainDeltaM'] = 'constraint'  # nominal: 'constraint'
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'  # default/nominal: 'lambPhi'
 
@@ -349,6 +349,8 @@ if fastFit :
 #ws['f_S_bin3'].setConstant()
 #ws['f_S_bin4'].setConstant()
 #ws['f_S_bin5'].setConstant()
+
+#ws['timeResSF'].setVal(1.4476)
 
 # set amplitude ranges
 pdfBuild['amplitudes'].parameter('A0Mag2').setRange( ( 0., 1. ) )
