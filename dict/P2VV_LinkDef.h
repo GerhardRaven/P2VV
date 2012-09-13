@@ -28,9 +28,13 @@
 #pragma link C++ class RooEfficiencyBin+;
 #pragma link C++ class RooAvEffConstraint+;
 #pragma link C++ class RooCorrectedSWeight+;
+#pragma link C++ class RooAbsEffResModel;
 #pragma link C++ class RooEffResModel+;
-#pragma link C++ class RooMultiEffResModel+;
 #pragma link C++ class MultiHistEntry<RooEffResModel, RooMultiEffResModel>+;
+#pragma link C++ class RooMultiEffResModel+;
+#pragma link C++ class RooComplementCoef+;
+#pragma link C++ class RooEffConvGenContext+;
+
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;
 #pragma link C++ class std::vector<std::pair<double, TString> >;

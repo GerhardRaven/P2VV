@@ -60,7 +60,7 @@ pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal:
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'Moriond'
+pdfConfig['timeEffType']          = 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: ''
 pdfConfig['ambiguityParameters']  = False
@@ -122,7 +122,7 @@ if not readData or manualTagCatBins :
                              ]
 
 pdfConfig['timeEffHistFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
-                               if pdfConfig['timeEffType'] == 'Fit' else\
+                               if pdfConfig['timeEffType'] == 'fit' else\
                                '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 pdfConfig['angEffMomentsFile'] = '/project/bfys/jleerdam/softDevel/Erasmus/P2VV2/release/test/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                  if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\

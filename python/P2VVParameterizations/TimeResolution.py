@@ -8,9 +8,6 @@
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin
 
-from ROOT import RooNumber
-RooInf = RooNumber.infinity()
-
 class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin ):
     def __init__( self, **kwargs ) : 
         if 'Model' in kwargs : self._model = kwargs.pop( 'Model' )
@@ -69,7 +66,7 @@ class LP2011_TimeResolution ( TimeResolution ) :
         from ROOT import RooNumber
         self._parseArg('time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ))
         self._timeResMu = self._parseArg('%stimeResMu' % namePF, kwargs, Value = -0.0027)
-        self._timeResSF = self._parseArg('%stimeResSF' % namePF, kwargs, Value = 1.0, Error = 0.04, MinMax = ( -RooInf, RooInf ) )
+        self._timeResSF = self._parseArg('%stimeResSF' % namePF, kwargs, Value = 1.0, Error = 0.04, MinMax = ( 0.1, 5. ) )
 
         sigmas = [ ( 3, 0.513  ), ( 2, 0.0853 ), ( 1, 0.0434 ) ]
         fracs  = [ ( 3, 0.0017 ), ( 2, 0.165 ) ]
@@ -77,7 +74,10 @@ class LP2011_TimeResolution ( TimeResolution ) :
         self._timeResFracs  = [ ConstVar( Name = 'timeResFrac%s'  % num, Value = val ) for num, val in fracs  ]
 
         constraints = []
-        if kwargs.pop( 'timeResSFConstraint', None ) :
+        timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
+        if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' :
+            self._timeResSF.setConstant(True)
+        elif timeResSFConstr :
             from ROOT import RooGaussian as Gaussian
             from RooFitWrappers import Pdf
             constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
@@ -117,10 +117,13 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         self._parseArg( 'timeResMU', kwargs, Value = 0.0, Constant = True )
         self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
         self._parseArg( 'timeResMuSF', kwargs, Value = 1, Constant = True)
-        self._parseArg( 'timeResSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( -RooInf, RooInf ) )
+        self._parseArg( 'timeResSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
 
         constraints = []
-        if kwargs.pop( 'timeResSFConstraint', None ) :
+        timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
+        if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' :
+            self._timeResSF.setConstant(True)
+        elif timeResSFConstr :
             from ROOT import RooGaussian as Gaussian
             from RooFitWrappers import Pdf
             constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian

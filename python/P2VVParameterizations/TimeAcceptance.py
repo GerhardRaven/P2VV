@@ -37,18 +37,20 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         binning_name = kwargs.pop('BinningName', 'efficiency_binning')
         name = kwargs.pop('Name', 'Moriond2012_Acceptance')
         model = kwargs.pop('ResolutionModel')
-        
+
         acceptance_file = TFile.Open(input_file)
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
         self._hist = acceptance_file.Get(histogram)
         if not self._hist:
-            raise ValueError, 'Cannot get acceptance historgram %s from file' % histogram
+            raise ValueError, 'Cannot get acceptance histogram %s from file' % histogram
         xaxis = self._hist.GetXaxis()
         bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, self._hist.GetNbinsX() + 2)))
         heights = [self._hist.GetBinContent(i) for i in range(1, self._hist.GetNbinsX() + 1)]
 
         acceptance_file.Close()
+        print 'P2VV - INFO: Moriond2012_TimeAcceptance.__init__(): using time efficiency histogram "%s" from file "%s"'\
+              % ( histogram, input_file )
 
         from RooFitWrappers import RealVar
         heights = [RealVar('%s_bin_%03d' % (name, i + 1), Observable = False, Value = v,
@@ -79,9 +81,11 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         acceptance_file = TFile.Open(input_file)
         fit = kwargs.pop('Fit')
         model = kwargs.pop('ResolutionModel')
+        binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
 
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
+        print 'P2VV - INFO: Paper2012_TimeAcceptance.__init__(): using time efficiency histograms file "%s"' % input_file
 
         acceptance_name = kwargs.pop('Name', 'Paper2012_FitAcceptance')
 
@@ -116,6 +120,7 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
                     xaxis = hist.GetXaxis()
                     bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, hist.GetNbinsX() + 2)))
                     heights = [hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)]
+                    print 'P2VV - INFO: Paper2012_TimeAcceptance.__init__(): using time efficiency histogram "%s"' % histogram
                 else:
                     bins = array('d', (b for b in info['bins']))
                     heights = array('d', (h for h in info['heights']))
@@ -132,5 +137,6 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
                                        FitAcceptance = fit, UseSingleBinConstraint = False,
                                        ResolutionModel = model['model'], Original = original,
                                        ConditionalObservables = model.conditionalObservables(),
-                                       ExternalConstraints = model.externalConstraints())
+                                       ExternalConstraints = model.externalConstraints(),
+                                       BinHeightMinMax = binHeightMinMax)
         TimeAcceptance.__init__(self, Acceptance = mhe)

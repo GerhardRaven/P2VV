@@ -185,7 +185,7 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin, _util_condi
             if self._numTagCats[0] == 0 : self._tagCatCoefs = [ self._tagCatCoefs ]
 
         # cache integrals as a function of observables
-        for dils in self._dilutions :
+        for dils in self._dilutions + self._ADilWTags :
             for dil in dils :
                 dil.setAttribute('CacheAndTrack')
                 from ROOT import RooAbsReal, RooArgSet
@@ -256,11 +256,14 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         self._parseArg( 'estWTag',    kwargs, Title = 'Estimated wrong-tag probability',         Value = avgEtaOSVal, MinMax = (0., 0.5) )
         self._parseArg( 'avgEstWTag', kwargs, Title = 'Average estimated wrong-tag probability', Value = avgEtaOSVal, MinMax = (0., 0.5)
                        , Constant = True )
-        self._parseArg( 'p0', kwargs, Title = 'p0  tagging parameter', Value = P0OSVal, Error = P0OSErr, MinMax = ( -RooInf, RooInf ) )
-        self._parseArg( 'p1', kwargs, Title = 'p1  tagging parameter', Value = P1OSVal, Error = P1OSErr, MinMax = ( -RooInf, RooInf ) )
+        self._parseArg( 'p0', kwargs, Title = 'p0  tagging parameter', Value = P0OSVal, Error = P0OSErr, MinMax = ( 0.,  1. ) )
+        self._parseArg( 'p1', kwargs, Title = 'p1  tagging parameter', Value = P1OSVal, Error = P1OSErr, MinMax = ( 0.5, 2. ) )
 
         constraints = [ ]
-        if kwargs.pop( 'p0Constraint', None ) :
+        p0Constr = kwargs.pop( 'p0Constraint', None )
+        if type(p0Constr) == str and p0Constr == 'fixed' :
+            self._p0.setConstant(True)
+        elif p0Constr :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
@@ -271,7 +274,10 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
                                    )
                               )
 
-        if kwargs.pop( 'p1Constraint', None ) :
+        p1Constr = kwargs.pop( 'p1Constraint', None )
+        if type(p1Constr) == str and p1Constr == 'fixed' :
+            self._p1.setConstant(True)
+        elif p1Constr :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
@@ -784,22 +790,22 @@ class Linear_TaggingCategories( TaggingCategories ) :
         self._parseArg(  'wTagP0',     kwargs, Name = 'wTagP0' + tagType, Title = 'Average wrong-tag parameter p_0'
                        , Value = P0OSVal if tagType == 'OS' else P0SSVal
                        , Error = P0OSErr if tagType == 'OS' else P0SSErr
-                       , MinMax = ( -RooInf, RooInf )
+                       , MinMax = ( 0., 1. )
                       )
         self._parseArg(  'wTagP1', kwargs, Name = 'wTagP1' + tagType, Title = 'Average wrong-tag parameter p_1'
                        , Value = P1OSVal if tagType == 'OS' else P1SSVal
                        , Error = P1OSErr if tagType == 'OS' else P1SSErr
-                       , MinMax = ( -RooInf, RooInf )
+                       , MinMax = ( 0.5, 2. )
                       )
         self._parseArg(  'wTagDelP0', kwargs, Name = 'wTagDelP0' + tagType, Title = 'Wrong tag parameter p_0 difference'
                        , Value = DelP0OSVal if tagType == 'OS' else DelP0SSVal
                        , Error = DelP0OSErr if tagType == 'OS' else DelP0SSErr
-                       , MinMax = ( -RooInf, RooInf )
+                       , MinMax = ( -0.5, 0.5 )
                       )
         self._parseArg(  'wTagDelP1', kwargs, Name = 'wTagDelP1' + tagType, Title = 'Wrong tag parameter p_1 difference'
                        , Value = DelP1OSVal if tagType == 'OS' else DelP1SSVal
                        , Error = DelP1OSErr if tagType == 'OS' else DelP1SSErr
-                       , MinMax = ( -RooInf, RooInf )
+                       , MinMax = ( -0.5, 0.5 )
                       )
 
         from RooFitWrappers import FormulaVar
@@ -809,7 +815,10 @@ class Linear_TaggingCategories( TaggingCategories ) :
         # constrain calibration parameters
         constraints = [ ]
         wTagP0Constraint = kwargs.pop( 'wTagP0Constraint', None )
-        if wTagP0Constraint :
+        if type(wTagP0Constraint) == str and wTagP0Constraint == 'fixed' :
+            self._wTagP0.setConstant(True)
+            self._wTagDelP0.setConstant(True)
+        elif wTagP0Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
@@ -828,7 +837,9 @@ class Linear_TaggingCategories( TaggingCategories ) :
                               )
 
         wTagP1Constraint = kwargs.pop( 'wTagP1Constraint', None )
-        if wTagP1Constraint :
+        if type(wTagP1Constraint) == str and wTagP1Constraint == 'fixed' :
+            self._wTagP1.setConstant(True)
+        elif wTagP1Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._wTagP1.GetName() + '_constraint', Type = Gaussian

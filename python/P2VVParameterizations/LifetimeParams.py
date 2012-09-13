@@ -34,14 +34,16 @@ class Gamma_LifetimeParams( LifetimeParams ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import FormulaVar, ConstVar, Pdf
 
-        self._parseArg( 'Gamma', kwargs, Title = 'Gamma', Unit = 'ps^{-1}', Value = GammaVal, Error = GammaErr
-                       , MinMax = ( -RooInf, +RooInf ) )
+        self._parseArg( 'Gamma', kwargs, Title = 'Gamma', Unit = 'ps^{-1}', Value = GammaVal, Error = GammaErr, MinMax = ( 0.1, 10. ) )
         self._parseArg( 'dGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = DGammaVal, Error = DGammaErr
                        , MinMax = ( -RooInf, +RooInf ) )
         self._parseArg( 'dM', kwargs, Title = 'delta m', Unit = 'ps^{-1}', Value = DMVal, Error = DMErr, MinMax = ( -RooInf, +RooInf ) )
         
         constraints = [  ]
-        if kwargs.pop( 'dMConstraint', None ) :
+        dMConstr = kwargs.pop( 'dMConstraint', None )
+        if type(dMConstr) == str and dMConstr == 'fixed' :
+            self._dM.setConstant(True)
+        elif dMConstr :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._dM.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._dM
@@ -64,7 +66,7 @@ class Tau_LifetimeParams( LifetimeParams ) :
         from RooFitWrappers import FormulaVar
 
         self._parseArg( 'MeanLifetime', kwargs, Title = 'MeanLifetime', Unit = 'ps', Value = 1. / GammaVal, Error = GammaErr / GammaVal**2
-                       , MinMax = ( -RooInf, RooInf ) )
+                       , MinMax = ( 0.1, 10. ) )
         self._parseArg( 'dGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = DGammaVal, Error = DGammaErr
                        , MinMax = ( -RooInf, RooInf ) )
         self._parseArg( 'dM', kwargs, Title = 'delta m', Unit = 'ps^{-1}', Value = DMVal, Error = DMErr, MinMax = ( -RooInf, RooInf ) )
