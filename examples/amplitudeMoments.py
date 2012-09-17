@@ -7,14 +7,14 @@ from math import pi, sin, cos, sqrt
 # job parameters
 nEvents = 50000
 
-generateData    = True
-physicsPDF      = False
+generateData    = False
+physicsPDF      = True
 
 fitDataOriginal = True
-fitDataMoments  = True
-fitDataCoefs    = True
+fitDataMoments  = False
+fitDataCoefs    = False
 computeMoments  = True
-makePlots       = True
+makePlots       = False
 
 # data parameters
 dataSetName = 'JpsiKstarData'
@@ -28,13 +28,13 @@ momentsFile = 'JpsiKstarMoments'
 if physicsPDF :
     # values of transversity amplitudes
     ampsToUse = [ 'A0', 'Apar', 'Aperp' ]#, 'AS' ]
-    A0Mag2Val    =  0.45
+    A0Mag2Val    =  0.45 # 0.556
     A0PhVal      =  0.
-    AparMag2Val  =  0.35
-    AparPhVal    =  pi
-    AperpMag2Val =  0.2
-    AperpPhVal   =  0.5 * pi
-    ASMag2Val    =  0.4
+    AparMag2Val  =  0.35 # 0.211
+    AparPhVal    =  pi # -2.93
+    AperpMag2Val =  0.2 # 0.233
+    AperpPhVal   =  pi # 2.91
+    ASMag2Val    =  0.
     ASPhVal      =  0.
 
 else :
@@ -182,12 +182,12 @@ momPDF1 = momPDFTerms1.buildSumPdf('angMomentsPDF1')
 momPDF2 = momPDFTerms2.buildSumPdf('angMomentsPDF2')
 momPDF  = momPDFTerms.buildSumPdf('angMomentsPDF')
 
-for event in range( data.numEntries() ) :
-    varSet = data.get(event)
-    angles[0].setVal( varSet.getRealValue('cthetaK') )
-    angles[1].setVal( varSet.getRealValue('cthetal') )
-    angles[2].setVal( varSet.getRealValue('phi') )
-    if momPDF.getVal() < 0. : print angles[0].getVal(), angles[1].getVal(), angles[2].getVal(), momPDF.getVal()
+#for event in range( data.numEntries() ) :
+#    varSet = data.get(event)
+#    angles[0].setVal( varSet.getRealValue('cthetaK') )
+#    angles[1].setVal( varSet.getRealValue('cthetal') )
+#    angles[2].setVal( varSet.getRealValue('phi') )
+#    if momPDF.getVal() < 0. : print angles[0].getVal(), angles[1].getVal(), angles[2].getVal(), momPDF.getVal()
 
 if fitDataMoments :
     ## make some parameters constant
@@ -196,6 +196,66 @@ if fitDataMoments :
 
     # fit data
     momPDF.fitTo( data, NumCPU = 2, Timer = 1 )
+
+
+###########################################################################################################################################
+## transform moments into angular observables ##
+################################################
+
+# measured values
+coefNames = [ 'p2vvab_%d0%d%d' % inds for inds in [ ( 0, 2, 0), ( 2, 0, 0 ), ( 2, 2, 0 ) ] ]
+coefNum = [ moments[cName].coefficient() for cName in coefNames ]
+covNum  = [ [ 0. for cIt1 in range( len(coefNames) ) ] for cIt0 in range( len(coefNames) ) ]
+for cIt, cName in enumerate(coefNames) : covNum[cIt][cIt] = moments[cName].variance()
+
+# scale measured values so that C_000 = 4 * ( |A_0|^2 + |A_par|^2 + |A_perp|^2 ) = 4
+for valIt in range( len(coefNum) ) :
+    coefNum[valIt] *= 4. * scale
+    for valItCov in range( len(coefNum) ) :
+        covNum[valIt][valItCov] *= ( 4. * scale )**2
+
+# transformation matrix values
+#coef0Num = [ 0., 0., 0. ]
+#RNum = [  [ 4. / sqrt(5.), 8. / sqrt(5.)  ]
+#        , [ -8.,          -16.            ]
+#        , [ 8. / sqrt(5.), -8. / sqrt(5.) ]
+#       ]
+
+coef0Num = [ 2. / sqrt(5), -4., -2. / sqrt(5.) ]
+RNum = [  [ 6. / sqrt(5.) ]
+        , [ -12.          ]
+        , [ 6. / sqrt(5.) ]
+       ]
+
+# matrices
+from ROOT import TMatrixD, TMatrixDSym, TVectorD
+RMat    = TMatrixD( len(RNum), len(RNum[0]) )
+RTrMat  = TMatrixD( len(RNum[0]), len(RNum) )
+coefMat = TMatrixD( len(RNum), 1 )
+covMat  = TMatrixDSym( len(RNum) )
+
+for rowIt in range( len(RNum) ):
+    for colIt in range( len(RNum[0]) ) : RMat[rowIt][colIt]    = RNum[rowIt][colIt]
+    for colIt in range( len(RNum[0]) ) : RTrMat[colIt][rowIt]  = RNum[rowIt][colIt]
+    for colIt in range(1)              : coefMat[rowIt][colIt] = coefNum[rowIt] - coef0Num[rowIt]
+    for colIt in range( len(RNum) )    : covMat[rowIt][colIt]  = covNum[rowIt][colIt]
+ 
+covInvMat = TMatrixD(covMat).Invert()
+
+AMat = RTrMat * covInvMat * RMat
+AInvMat = TMatrixD(AMat).Invert()
+BMat = RTrMat * covInvMat
+IMat = AInvMat * BMat * coefMat
+
+delMat = coefMat - RMat * IMat
+delTrMat = TMatrixD( 1, delMat.GetNrows() )
+delTrMat.Transpose(delMat)
+ChiSqMat = delTrMat * covInvMat * delMat
+
+print 'amplitudeMoments: angular observables from moments (Chi^2 / #dof = %.2f):' % ( ChiSqMat[0][0] / float( IMat.GetNrows() ) )
+for rowIt in range( IMat.GetNrows() ) :
+  print '  %d: %.4f +/- %.4f' % ( rowIt, IMat[rowIt][0], sqrt( AInvMat[rowIt][rowIt] ) )
+AInvMat.Print()
 
 
 ###########################################################################################################################################
