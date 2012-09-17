@@ -23,28 +23,37 @@ def numCPU( Max = sys.maxint ) :
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
 
-def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = None, **kwargs ) :
+def readData( filePath, dataSetName, NTuple = False, observables = None, **kwargs ) :
     """reads data from file (RooDataSet or TTree(s))
     """
     from ROOT import RooFit
     if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
+    cuts = kwargs.pop( 'cuts', '' )
 
     if NTuple :
       from ROOT import RooDataSet, TChain
-      assert observables != None, 'P2VV - ERROR: readData: set of observables is required for reading an NTuple'
+      assert observables != None, 'P2VV - ERROR: readData: set of observables is required for reading an n-tuple'
 
       # create data set from NTuple file(s)
       print 'P2VV - INFO: readData: reading NTuple(s) "%s" from file(s) "%s"' % ( dataSetName, filePath )
       chain = TChain(dataSetName)
       status = chain.Add( filePath, -1 )
-      if status == 0 : raise RuntimeError('P2VV - ERROR: could not locate tree "%s" in file "%s"' % ( dataSetName, filePath ) )
+      if status == 0 : raise RuntimeError( 'P2VV - ERROR: could not locate tree "%s" in file "%s"' % ( dataSetName, filePath ) )
 
-      print 'P2VV - INFO: readData: applying cuts: %s' % cuts
+      if 'ntupleCuts' in kwargs :
+          ntupleCuts = kwargs.pop( 'ntupleCuts', '' )
+          print 'P2VV - INFO: readData: applying cuts on n-tuple: %s' % ntupleCuts
+          ntuple = chain.CopyTree(ntupleCuts)
+      else :
+          ntuple = chain
+
+      if cuts : print 'P2VV - INFO: readData: applying cuts on data set: %s' % cuts
       data = RooDataSet( dataSetName, dataSetName
                        , [ obs._var for obs in observables ]
-                       , Import = chain
+                       , Import = ntuple
                        , Cut = noNAN + ' && ' + cuts if cuts else noNAN )
-      chain.IsA().Destructor(chain)
+      ntuple.IsA().Destructor(ntuple)
+      if chain : chain.IsA().Destructor(chain)
 
     else :
       from ROOT import TFile
@@ -55,7 +64,7 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
       assert file, 'P2VV - ERROR: readData: file "%s" could not be opened' % filePath
 
       if observables :
-          print 'P2VV - INFO: readData: applying cuts: %s' % cuts
+          if cuts : print 'P2VV - INFO: readData: applying cuts: %s' % cuts
           from ROOT import RooDataSet
           data = RooDataSet( dataSetName, dataSetName
                            , [ obs._var for obs in observables ]
