@@ -560,6 +560,22 @@ class ComplementCoef( RooObject ) :
         self._init( name, 'RooComplementCoef' )
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
 
+class EfficiencyBin(RooObject):
+    def __init__( self, **kwargs ) :
+        __check_req_kw__('Name', kwargs)
+        __check_req_kw__('Bins', kwargs)
+        Name = kwargs.pop('Name')
+        __check_name_syntax__(Name)
+        Bins = kwargs.pop('Bins')        
+
+        from ROOT import RooEfficiencyBin
+        b = RooEfficiencyBin(Name, Name)
+        for v, f in Bins.iteritems():
+            b.addEntry(__dref__(v), f)
+        b = self._addObject(b)
+        self._init( Name, 'RooEfficiencyBin' )
+        for k, v in kwargs.iteritems() : self.__setitem__( k, v )
+    
 class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...
@@ -1238,7 +1254,6 @@ class MultiHistEfficiencyModel(Pdf):
     def __build_shapes(self, relative):
         from ROOT import std
         from ROOT import MultiHistEntry
-        from ROOT import RooEfficiencyBin
 
         MultiHistEntry = MultiHistEntry('RooEffResModel', 'RooMultiEffResModel')
         efficiency_entries = std.vector('MultiHistEntry<RooEffResModel, RooMultiEffResModel>*')()
@@ -1266,9 +1281,8 @@ class MultiHistEfficiencyModel(Pdf):
                     coefficient = self.__find_coefficient(val, category_bounds, category_heights)
                     bin_vars[i][__dref__(coefficient)] = state in category_info
             for i, d in enumerate(bin_vars):
-                cm = self.__make_map(d)
                 name = '%s_%d' % (prefix, i)
-                heights.append(RooEfficiencyBin(name, name, cm))
+                heights.append(EfficiencyBin(Name = name, Bins = d))
 
             # BinnedPdf for the shape
             binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = self.__observable,
@@ -1295,16 +1309,6 @@ class MultiHistEfficiencyModel(Pdf):
     def __add_constraints(self):
         self.setExternalConstraints(self.__constraints)
         
-    def __make_map(self, d):
-        from ROOT import std
-        var_map = std.map('RooAbsReal*', 'bool')
-        var_pair = std.pair('RooAbsReal*', 'bool')
-        m = var_map()
-        for k, v in d.iteritems():
-            p = var_pair(__dref__(k), v)
-            m.insert(p)
-        return m
-
     def __find_coefficient(self, val, bounds, coefficients):
         for i in range(len(bounds) - 1):
             if val > bounds[i] and val < bounds[i + 1]:

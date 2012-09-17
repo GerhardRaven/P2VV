@@ -171,14 +171,6 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       }
    }
 
-   cout << "RooMultiEffResModel::ctor(): bins [";
-   for(list<Double_t>::const_iterator it = _binboundaries->begin();
-       it != _binboundaries->end(); ++it) {
-      if (it != _binboundaries->begin()) cout << " ";
-      cout << *it;
-   }
-   cout << "]" << endl;
-
    // Build entries.
    _super = makeSuper(GetName(), categories);
 

@@ -19,6 +19,7 @@ class RooEfficiencyBin : public RooAbsReal {
 public:
    
    RooEfficiencyBin() {} ; 
+   RooEfficiencyBin(const char *name, const char *title);
    RooEfficiencyBin(const char *name, const char *title,
                     const std::map<RooAbsReal*, bool>& variables);
    RooEfficiencyBin(const RooEfficiencyBin& other, const char* name = 0);
@@ -26,6 +27,9 @@ public:
    {
       return new RooEfficiencyBin(*this, newname);
    }
+
+   virtual void addEntry(RooAbsReal*, bool);
+
    virtual ~RooEfficiencyBin();
 
 protected:

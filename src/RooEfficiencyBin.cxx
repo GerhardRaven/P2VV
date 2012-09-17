@@ -23,12 +23,15 @@ RooEfficiencyBin::RooEfficiencyBin(const char *name, const char *title,
 {
    for (std::map<RooAbsReal*, bool>::const_iterator it = variables.begin(),
            end = variables.end(); it != end; ++it) {
-      std::string name = it->first->GetName();
-      name += "_proxy";
-      RooRealProxy* proxy = new RooRealProxy(name.c_str(), name.c_str(), this, *(it->first));
-      _variables.insert(make_pair(proxy, it->second));
+      addEntry(it->first, it->second);
    }
 } 
+
+//_____________________________________________________________________________
+RooEfficiencyBin::RooEfficiencyBin(const char *name, const char *title)
+   : RooAbsReal(name, title)
+{
+}
 
 //_____________________________________________________________________________
 RooEfficiencyBin::RooEfficiencyBin(const RooEfficiencyBin& other, const char* name)
@@ -49,6 +52,15 @@ RooEfficiencyBin::~RooEfficiencyBin()
      delete it->first;
   }
   _variables.clear();
+}
+
+//_____________________________________________________________________________
+void RooEfficiencyBin::addEntry(RooAbsReal* var, const bool flag)
+{
+   std::string name = var->GetName();
+   name += "_proxy";
+   RooRealProxy* proxy = new RooRealProxy(name.c_str(), name.c_str(), this, *var);
+   _variables.insert(make_pair(proxy, flag));
 }
 
 //_____________________________________________________________________________
