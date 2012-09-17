@@ -923,7 +923,8 @@ class SData( object ) :
                 # FIXME: How can we do this more generally? These are special cases and it might go wrong here...
                 from ROOT import RooSuperCategory
                 splitCat.setLabel(cat)
-                if isinstance( splitCat, RooSuperCategory ) :
+                __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
+                if isinstance( __dref(splitCat), RooSuperCategory ) :
                     for fundCat in splitCat.inputCatList() :
                         if not self._sDataSets[-1].get().find( fundCat.GetName() ) : self._sDataSets[-1].addColumn(fundCat)
                 elif splitCat.isFundamental() and not self._sDataSets[-1].get().find( splitCat.GetName() ) :
