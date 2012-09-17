@@ -44,6 +44,8 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
                        , [ obs._var for obs in observables ]
                        , Import = chain
                        , Cut = noNAN + ' && ' + cuts if cuts else noNAN )
+      chain.IsA().Destructor(chain)
+
     else :
       from ROOT import TFile
 
@@ -69,7 +71,9 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
 
     # import data set into current workspace
     from RooFitWrappers import RooObject
-    return RooObject().ws().put(data,**kwargs)
+    wsData = RooObject().ws().put( data, **kwargs )
+    data.IsA().Destructor(data)
+    return wsData
 
 
 def writeData( filePath, dataSetName, data, NTuple = False ) :
@@ -884,14 +888,16 @@ class SData( object ) :
             self._sPlots    = [ ]
             self._sDataSets = [ ]
             splitCatState   = splitCatIter.Next()
+            sDataVars       = None
             from ROOT import RooFormulaVar
             while splitCatState :
                 # calculate sWeights per category
                 cat = splitCatState.GetName()
+                data = splitData.FindObject(cat)
 
                 origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if cat in par.GetName() ]
                 self._sPlots.append(  RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat
-                                                     , splitData.FindObject(cat), self._pdf.getPdf(cat)
+                                                     , data, self._pdf.getPdf(cat)
                                                      , RooArgList( par._var for par in self._yields if cat in par.GetName() ) )
                                    )
                 self._sDataSets.append( self._sPlots[-1].GetSDataSet() )
@@ -914,7 +920,7 @@ class SData( object ) :
                 elif splitCat.isFundamental() and not self._sDataSets[-1].get().find( splitCat.GetName() ) :
                     self._sDataSets[-1].addColumn(splitCat)
 
-                # remove category name from sWeight and PDF value column names (it must be possible to simplify this...)
+                # add general sWeight and PDF value columns (it must be possible to simplify this...)
                 # FIXME: in some cases "par.GetName().strip( '_' + cat )" goes wrong:
                 # use "par.GetName()[ : par.GetName().find(cat) - 1 ]" instead
                 # (case: 'N_bkgMass_notExclBiased'.strip('_notExclBiased') --> 'N_bkgM' ?!!!!!!)
@@ -929,19 +935,20 @@ class SData( object ) :
                     self._sDataSets[-1].addColumn(weight)
                     self._sDataSets[-1].addColumn(pdfVal)
 
-                sDataVars = self._sDataSets[-1].get()
-                for par in self._yields :
-                    if cat in par.GetName() :
-                        sDataVars.remove( sDataVars.find( par.GetName() + '_sw' ) )
-                        sDataVars.remove( sDataVars.find( 'L_' + par.GetName()  ) )
-                self._sDataSets[-1].reduce(sDataVars)
+                if not sDataVars :
+                    # get set of variables in data
+                    sDataVars = self._sDataSets[-1].get()
+                    for par in self._yields :
+                        if cat in par.GetName() :
+                            sDataVars.remove( sDataVars.find( par.GetName() + '_sw' ) )
+                            sDataVars.remove( sDataVars.find( 'L_' + par.GetName()  ) )
 
                 splitCatState = splitCatIter.Next()
 
             # merge data sets from categories
             from ROOT import RooDataSet
-            self._sData = RooDataSet( self._name + '_splotdata', self._name + '_splotdata', self._sDataSets[0].get() )
-            for data in self._sDataSets: self._sData.append(data)
+            self._sData = RooDataSet( self._name + '_splotdata', self._name + '_splotdata', sDataVars )
+            for data in self._sDataSets : self._sData.append(data)
 
         else :
             # calculate sWeights with full data set

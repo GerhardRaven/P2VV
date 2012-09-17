@@ -350,6 +350,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## imports and function definitions ##
         ######################################
 
+        # python garbage collector
+        import gc
+
         # ROOT infinity
         from ROOT import RooNumber
         RooInf = RooNumber.infinity()
@@ -589,7 +592,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # determine mass parameters with a fit
             print 120 * '='
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with mass PDF'
-            self._massPdf.fitTo( self._dataSets['data'], **fitOpts )
+            self._massPdf.fitTo( self._dataSets['data'], Save = False, **fitOpts )
 
             if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or paramKKMass == 'simultaneous' ) :
                 # categories for splitting the PDF
@@ -644,7 +647,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # determine mass parameters in each sub-sample with a fit
                 print 120 * '='
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with simultaneous mass PDF'
-                self._sWeightMassPdf.fitTo( self._dataSets['data'], **fitOpts )
+                self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = False, **fitOpts )
 
                 if SWeightsType.endswith( 'Fixed' ) :
                     # free parameters that were fixed for mass fit
@@ -1574,7 +1577,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               , PDFs   = [ self._bkg_angBins, self._bkg_angFuncs ]
                                               , Yields = { self._bkg_angBins.GetName() : self._bkgAngBinsFrac }
                                              )
-                    if bkgAngleData : self._bkg_angles.fitTo( bkgAngleData, SumW2Error = False, **fitOpts )
+                    if bkgAngleData : self._bkg_angles.fitTo( bkgAngleData, SumW2Error = False, Save = False, **fitOpts )
 
             if not SFit : self._backgroundComps += self._bkg_angles
 
@@ -1716,6 +1719,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ###################################################################################################################################
         ## split PDF for different data samples ##
         ##########################################
+
+        # first garbage collect
+        gc.collect()
 
         # check number of KK mass bin parameters
         if paramKKMass == 'simultaneous' :
@@ -1864,6 +1870,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
         PdfBuilder.__init__( self, self._simulPdf if paramKKMass == 'simultaneous' else self._fullPdf, observables, { } )
         print 120 * '='
+
+        # garbage collect
+        gc.collect()
 
     def __getitem__( self, kw ) :
         return self._dataSets[kw] if kw in [ 'data', 'sigSWeightData', 'bkgSWeightData', 'sigRangeData', 'bkgRangeData' ]\
