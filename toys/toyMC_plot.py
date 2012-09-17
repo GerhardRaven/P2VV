@@ -69,26 +69,11 @@ for pv in pull_vars:
         print "Not plotting %s" % pv.GetName()
     
 from ROOT import TCanvas
-from math import sqrt
-l = len(plot_vars)
-nrows = int(sqrt(l))
-ncolumns = 1
-if nrows == 1:
-    ncolumns = l
-elif l % nrows == 0:
-    ncolumns = l / nrows
-else:
-    ncolumns = l / nrows + 1
-hsize = min(1500, 300 * ncolumns)
-vsize = 300 * nrows
-if hsize > 1500:
-    hsize = 1500
-    vsize = int(float(hsize) / float(ncolumns) * nrows)
-if vsize > 900:
-    vsize = 900
-    hsize = int(float(vsize) / float(nrows) * ncolumns)
-canvas = TCanvas('canvas', 'canvas', hsize, vsize)
-canvas.Divide(ncolumns, nrows)
+from math import ceil
+n_canvas = int(ceil(float(len(plot_vars)) / 9.))
+canvases = {'pulls' : [TCanvas('canvas_%i' % i, 'canvas_%i' % i, 900, 900) for i in range(n_canvas)]}
+for c in canvases['pulls']:
+    c.Divide(3, 3)
 
 from ROOT import (RooRealVar, RooGaussian,
                   SetOwnership, RooFit)
@@ -108,17 +93,54 @@ def make_gaus(pv):
 from ROOT import gStyle
 gStyle.SetOptTitle(0)
 
+def chunks(l, n):
+    """ Yield successive n-sized chunks from l.
+    """
+    for i in range(0, len(l), n):
+        yield l[i:i+n]
+
 frames = {}
-for i, pv in enumerate(plot_vars):
-    canvas.cd(i + 1)
-    pull_pdf = make_gaus(pv)
-    r = pull_pdf.fitTo(data, RooFit.Minimizer('Minuit2'), RooFit.Save(True))
-    frame = pv.frame(RooFit.Range(-5, 5))
-    data.plotOn(frame)
-    if r.status() == 0:
-        pull_pdf.plotOn(frame)
-        pull_pdf.paramOn(frame)
-    frames[pv.GetName()] = frame
-    frame.Draw()
-canvas.Update()
+for canvas, pvs in zip(canvases['pulls'], chunks(plot_vars, 9)):
+    for i, pv in enumerate(pvs):
+        canvas.cd(i + 1)
+        pull_pdf = make_gaus(pv)
+        r = pull_pdf.fitTo(data, RooFit.Minimizer('Minuit2'), RooFit.Save(True))
+        frame = pv.frame(RooFit.Range(-5, 5))
+        data.plotOn(frame)
+        if r.status() == 0:
+            pull_pdf.plotOn(frame)
+            pull_pdf.paramOn(frame)
+        frames[pv.GetName()] = frame
+        frame.Draw()
+    canvas.Update()
  
+from collections import defaultdict
+means = defaultdict(dict)
+sigmas = defaultdict(dict)
+
+for k, (m, s) in values.iteritems():
+    if k.find('hlt') == -1:
+        continue
+    means[k[:4]][k[-12:-5]] = m
+    sigmas[k[:4]][k[-12:-5]] = s
+
+from array import array
+from operator import itemgetter
+from ROOT import TGraphErrors
+
+__graphs = []
+for name, cont in {'means' : means, 'sigmas' : sigmas}.iteritems():
+    canvas = TCanvas('canvas_%s' % name, 'canvas_%s' % name, 600, 300)
+    canvas.Divide(2, 1)
+    canvases[name] = canvas
+    for i, (l, bins) in enumerate(cont.iteritems()):
+        y = array('d', [v.getVal() for k, v in sorted(bins.iteritems(), key = itemgetter(0))])
+        ey = array('d', [v.getError() for k, v in sorted(bins.iteritems(), key = itemgetter(0))])
+        x = array('d', [j for j in range(len(y))])
+        ex = array('d', [0. for j in range(len(x))])
+        graph = TGraphErrors(len(x), x, y, ex, ey)
+        graph.SetName('%s_%s' % (l, name))
+        graph.SetTitle('%s_%s' % (l, name))
+        canvas.cd(i + 1)
+        graph.Draw("AP")
+        __graphs.append(graph)
