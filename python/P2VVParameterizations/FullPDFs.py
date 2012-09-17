@@ -683,8 +683,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # print signal/background info to screen
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
                          , self._dataSets['data'].get().find( hlt2B.GetName() )
-                         , self._dataSets['data'].get().find( self._KKMassCat.GetName() )
                         ]
+            if hasattr( self, '_KKMassCat' ) :
+                splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
             splitCats = [ cat for cat in splitCats if cat ]
             self._dataSets['sigSWeightData'].Print()
             self._dataSets['bkgSWeightData'].Print()
