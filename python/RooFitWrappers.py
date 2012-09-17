@@ -841,17 +841,17 @@ class ProdPdf(Pdf):
         # has the NOCacheAndTrack attribute set.
         # So here we walk through the leafs of our PDF, and add NOCacheAndTrack for all those
         # PDFs which are dependent on a conditional observable which appears in the toplevel...
-        print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
-        # create RooArgSet of conditional observables
-        cset = RooArgSet(__dref__(c) for c in conds )
-        for pdf in PDFs :
-            for c in pdf.getComponents() :
-                if c.getAttribute('NOCacheAndTrack') : continue
-                depset = c.getObservables( cset )
-                if depset.getSize() > 0 :
-                    print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
-                    c.setAttribute('NOCacheAndTrack')
-        print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
+        ## print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
+        ## # create RooArgSet of conditional observables
+        ## cset = RooArgSet(__dref__(c) for c in conds )
+        ## for pdf in PDFs :
+        ##     for c in pdf.getComponents() :
+        ##         if c.getAttribute('NOCacheAndTrack') : continue
+        ##         depset = c.getObservables( cset )
+        ##         if depset.getSize() > 0 :
+        ##             print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
+        ##             c.setAttribute('NOCacheAndTrack')
+        ## print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
 
 
     def _make_pdf(self):

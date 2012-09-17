@@ -7,7 +7,7 @@ pdfConfig = PdfConfig()
 
 # job parameters
 readData                = True
-pdfConfig['selection']  = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['selection']  = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
 doFit                   = True
 makeObservablePlots     = False
@@ -25,8 +25,7 @@ parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120620_MagDownMagUp.root'
-    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120821_MagDownMagUp.root'
+    pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120821_MagDownMagUp.root'
 else :
     pdfConfig['nTupleName'] = None
     pdfConfig['nTupleFile'] = None
@@ -41,10 +40,10 @@ dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, Tr
 fitOpts = dict(  NumCPU    = 2
                , Optimize  = 2
                , Timer     = True
-#               , Verbose   = True
+               , Verbose   = True
 #               , Minos     = True
 #               , Hesse     = False
-#               , Minimizer = 'Minuit2'
+               , Minimizer = 'Minuit2'
               )
 pdfConfig['fitOptions'] = fitOpts
 
@@ -60,8 +59,8 @@ pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
-pdfConfig['multiplyByTimeEff']    = ''
-pdfConfig['timeEffType']          = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['multiplyByTimeEff']    = 'signal'
+pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
@@ -126,18 +125,18 @@ if not readData or manualTagCatBins :
                               , ( 'TagCat2',   2, 0.30     )
                              ]
 
-pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
+pdfConfig['timeEffHistFile']      = '/stuff/PhD/p2vv/data/start_values_20bins.root'\
                                     if pdfConfig['timeEffType'] == 'fit' else\
-                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
+                                    '/stuff/PhD/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504_unitAcceptance.root'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 #pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'
-pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
+pdfConfig['angEffMomentsFile']    = '/stuff/PdD/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
-                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
+                                    '/stuff/PhD/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
