@@ -201,14 +201,14 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['conditionalTagging'] = False
         self['continuousEstWTag']  = False
         self['numEstWTagBins']     = 100
-        self['constrainTagging']   = 'constrain'
+        self['constrainTagging']   = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
         self['eventTimeResolution']   = True
         self['numTimeResBins']        = 100
-        self['constrainTimeResScale'] = 'constrain'
+        self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['signalFraction'] = 0.67
         self['massRangeBackground'] = False
@@ -217,7 +217,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['ASParam']        = 'deltaPerp'        # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm' / 'Mag2ReImPerp'
         self['AparParam']      = 'cos'              # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
 
-        self['constrainDeltaM'] = 'constrain'
+        self['constrainDeltaM'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['lambdaCPParam'] = 'lambSqPhi'         # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay'
 

@@ -263,6 +263,9 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         p0Constr = kwargs.pop( 'p0Constraint', None )
         if type(p0Constr) == str and p0Constr == 'fixed' :
             self._p0.setConstant(True)
+            self._p0.setVal(P0OSConstrVal)
+            self._p0.setError(P0OSConstrErr)
+
         elif p0Constr :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
@@ -277,6 +280,9 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         p1Constr = kwargs.pop( 'p1Constraint', None )
         if type(p1Constr) == str and p1Constr == 'fixed' :
             self._p1.setConstant(True)
+            self._p1.setVal(P1OSConstrVal)
+            self._p1.setError(P1OSConstrErr)
+
         elif p1Constr :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
@@ -817,7 +823,12 @@ class Linear_TaggingCategories( TaggingCategories ) :
         wTagP0Constraint = kwargs.pop( 'wTagP0Constraint', None )
         if type(wTagP0Constraint) == str and wTagP0Constraint == 'fixed' :
             self._wTagP0.setConstant(True)
+            self._wTagP0.setVal(self._calVals['P0'])
+            self._wTagP0.setError(self._calVals['P0Err'])
             self._wTagDelP0.setConstant(True)
+            self._wTagDelP0.setVal(self._calVals['DelP0'])
+            self._wTagDelP0.setError(self._calVals['DelP0Err'])
+
         elif wTagP0Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
@@ -839,6 +850,9 @@ class Linear_TaggingCategories( TaggingCategories ) :
         wTagP1Constraint = kwargs.pop( 'wTagP1Constraint', None )
         if type(wTagP1Constraint) == str and wTagP1Constraint == 'fixed' :
             self._wTagP1.setConstant(True)
+            self._wTagP1.setVal(self._calVals['P1'])
+            self._wTagP1.setError(self._calVals['P1Err'])
+
         elif wTagP1Constraint :
             from RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
