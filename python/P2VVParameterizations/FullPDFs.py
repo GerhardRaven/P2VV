@@ -439,7 +439,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , nBins =  51 )
         KKMass = RealVar( 'mdau2', Title = 'M(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
                          , nBins =  125 )
-        if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
+        #if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
         tagDecisionComb = Category( 'tagdecision',    Title = 'Tag decision OS/SS combination', Observable = True, States = iTagStatesDecision )
         tagDecisionOS   = Category( 'tagdecision_os', Title = 'Tag decision opposite side',     Observable = True, States = iTagStatesDecision )
@@ -1296,9 +1296,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                 , Data = self._dataSets['sigSWeightData'] )
             self._backgroundKKMass = Binned_MassPdf( 'bkg_mKK', KKMass, Binning = self._KKMassBinning
                                                     , Data = self._dataSets['bkgSWeightData'] )
-            if paramKKMass == 'functions' :
-                self._signalComps += self._signalKKMass.pdf()
-                if not SFit: self._backgroundComps += self._backgroundKKMass.pdf()
+            #if paramKKMass == 'functions' :
+            #    self._signalComps += self._signalKKMass.pdf()
+            #    if not SFit: self._backgroundComps += self._backgroundKKMass.pdf()
 
             if makePlots :
                 self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
@@ -1776,7 +1776,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         gc.collect()
 
         # check number of KK mass bin parameters
-        if paramKKMass == 'simultaneous' :
+        if paramKKMass in [ 'simultaneous', 'functions' ] :
             assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == len(CSPValues) == len(KKMassBinBounds) - 1,\
                    'P2VV - ERROR: wrong number of KK mass bin parameters specified'
         else :
