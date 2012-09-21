@@ -29,8 +29,8 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 
 # Categories
 hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
-hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-hlt1_excl_biased = Category('hlt1_excl_biased', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
+hlt1_unbiased = Category('hlt1_unbiased_dec', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt1_excl_biased = Category('hlt1_excl_biased_dec', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
 hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 hlt2_excl_biased = Category('hlt2_excl_biased', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
@@ -100,9 +100,13 @@ mass_pdf.Print("t")
 base_location = '/stuff/PhD/p2vv'
 
 # Build the acceptance using the histogram as starting values
-input_file = os.path.join(base_location, 'data/start_values.root')
-hlt1_histogram = 'hlt1_shape'
-hlt2_histogram = 'hlt2_shape'
+## input_file = os.path.join(base_location, 'data/start_values.root')
+## hlt1_histogram = 'hlt1_shape'
+## hlt2_histogram = 'hlt2_shape'
+
+input_file = os.path.join(base_location, 'data/Bs_HltPropertimeAcceptance_Data-20120816.root')
+##hlt1_histogram = 'hlt1_shape'
+hlt2_histogram = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_20bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 
 ## if MC:
     ## hlt1_histogram += '_MC'
@@ -112,22 +116,32 @@ from ROOT import TFile
 acceptance_file = TFile.Open(input_file)
 if not acceptance_file:
     raise ValueError, "Cannot open histogram file %s" % input_file
-hlt1_histogram = acceptance_file.Get(hlt1_histogram)
-if not hlt1_histogram:
-    raise ValueError, 'Cannot get acceptance historgram %s from file' % hlt1_histogram
-xaxis = hlt1_histogram.GetXaxis()
 hlt2_histogram = acceptance_file.Get(hlt2_histogram)
 if not hlt2_histogram:
-    raise ValueError, 'Cannot get acceptance historgram %s from file' % hlt1_histogram
+    raise ValueError, 'Cannot get acceptance historgram %s from file' % hlt2_histogram
+xaxis = hlt2_histogram.GetXaxis()
+
+## hlt1_histogram = acceptance_file.Get(hlt1_histogram)
+## if not hlt1_histogram:
+##     raise ValueError, 'Cannot get acceptance historgram %s from file' % hlt1_histogram
+
 
 from array import array
-biased_bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, hlt1_histogram.GetNbinsX() + 2)))
+biased_bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, hlt2_histogram.GetNbinsX() + 2)))
 unbiased_bins = array('d', [0.3, 14])
 
-hlt1_biased_heights = [hlt1_histogram.GetBinContent(i) for i in range(1, hlt1_histogram.GetNbinsX() + 1)]
+## hlt1_biased_heights = [hlt1_histogram.GetBinContent(i) for i in range(1, hlt1_histogram.GetNbinsX() + 1)]
+hlt1_biased_average = (6.285e-01, 1.633e-02)
+hlt1_biased_heights = [hlt1_biased_average[0] for i in range(1, hlt2_histogram.GetNbinsX() + 1)]
+
 hlt1_unbiased_heights = [0.5]
 
+hlt2_biased_average = (6.33e-01, 1.65e-02)
 hlt2_biased_heights = [hlt2_histogram.GetBinContent(i) for i in range(1, hlt2_histogram.GetNbinsX() + 1)]
+av = sum(hlt2_biased_heights) / float(len(hlt2_biased_heights))
+scale = av / hlt2_biased_average[0]
+hlt2_biased_heights = [h / scale for h in hlt2_biased_heights]
+
 hlt2_unbiased_heights = [0.5]
 
 ## valid_definition = [[(hlt1_biased, 'biased'), (hlt1_unbiased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
@@ -138,13 +152,13 @@ valid = valid_combinations(valid_definition)
 
 spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
                                                        'heights' : hlt1_biased_heights,
-                                                       'average' : (6.285e-01, 1.633e-02)},
+                                                       'average' : hlt1_biased_average},
                                       'unbiased'    : {'bins'    : unbiased_bins,
                                                        'heights' : hlt1_unbiased_heights}
                                       },
                   hlt2_biased      : {'biased'      : {'bins'    : biased_bins,
                                                        'heights' : hlt2_biased_heights,
-                                                       'average' : (6.33e-01, 1.65e-02)}
+                                                       'average' : hlt2_biased_average}
                                       },
                   hlt2_unbiased    : {'unbiased'    : {'bins'    : unbiased_bins,
                                                        'heights' : hlt2_unbiased_heights}
@@ -183,13 +197,14 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
 ## Fit options
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Verbose = True, Optimize = 1,
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1,
                Strategy = 2, Minimizer = 'Minuit2')
 
 data = None
 if real_data:
-    input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_2011_biased_unbiased.root')
-    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+    ## input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_2011_biased_unbiased.root')
+    input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_ntupleB_for_fitting_20120821_MagDownMagUp.root')
+    data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                     NTuple = True, observables = observables)
     ## data = readData(input_file, tree_name, cuts = 'sel == 1 && hlt1_unbiased == 1 && (hlt2_biased == 1 || hlt2_unbiased == 1)',
     ##                 NTuple = True, observables = observables)
@@ -359,6 +374,7 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
           )
     
 # plot the efficiency shapes
+__frames = []
 def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     from operator import itemgetter
     i = shape.createIntegral(RooArgSet(o))
@@ -376,14 +392,15 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
             shape.plotOn(frame, VisualizeError = (r, x), FillColor = colour, **errorOpts)
     shape.plotOn(frame, **pdfOpts)
     frame.Draw()
-
+    __frames.append(frame)
+    
 shapes = res_model.shapes()
 eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
 from ROOT import kYellow, kOrange
 for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
     plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
 
-output = {'hlt1_shape' : 'hlt1_excl_biased_excl_biased_bin_%03d',
+output = {'hlt1_shape' : 'hlt1_excl_biased_dec_excl_biased_bin_%03d',
           'hlt2_shape' : 'hlt2_biased_biased_bin_%03d'}
 output_file = TFile.Open('efficiencies.root', 'recreate')
 from ROOT import TH1D

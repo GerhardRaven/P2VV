@@ -130,7 +130,7 @@ Double_t RooCalibratedDilution::evaluate() const
     // without calibration parameters
     if (_AP1.absArg() != 0) {
       // return dilution scaled wrong-tag asymmetry
-      return 2. * _estWTag * _AP1 / (1. - 2. * _estWTag);
+      return _AP1 == 0. ? 0. : 2. * _estWTag * _AP1 / (1. - 2. * _estWTag);
     }
 
     // return dilution
@@ -141,7 +141,8 @@ Double_t RooCalibratedDilution::evaluate() const
   Double_t twoP1Eta = 2. * _P1 * (_estWTag - _avgEstWTag);
   if (_AP1.absArg() != 0) {
     // return dilution scaled wrong-tag asymmetry
-    return (2. * _P0 * _AP0 + twoP1Eta * _AP1) / (1. - 2. * _P0 - twoP1Eta);
+    return _AP0 == 0. && _AP1 == 0. ? 0.
+        : (2. * _P0 * _AP0 + twoP1Eta * _AP1) / (1. - 2. * _P0 - twoP1Eta);
   }
 
   // return dilution

@@ -407,8 +407,9 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         canv.cd()
         if logy: canv.SetLogy(1)
         if logx: canv.SetLogx(1)
-        if 'Title' in frameOpts and not frameOpts['Title']:
-            obsFrame.SetTitle("")
+        title = frameOpts.get("Title", "")
+        if title:
+            obsFrame.SetTitle(title)
         obsFrame.Draw()
 
     canv.Update()

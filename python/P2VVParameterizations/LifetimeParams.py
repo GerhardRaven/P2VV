@@ -40,7 +40,10 @@ class Gamma_LifetimeParams( LifetimeParams ) :
         self._parseArg( 'dM', kwargs, Title = 'delta m', Unit = 'ps^{-1}', Value = DMVal, Error = DMErr, MinMax = ( -RooInf, +RooInf ) )
         
         constraints = [  ]
-        if kwargs.pop( 'dMConstraint', None ) :
+        dMConstr = kwargs.pop( 'dMConstraint', None )
+        if type(dMConstr) == str and dMConstr == 'fixed' :
+            self._dM.setConstant(True)
+        elif dMConstr :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._dM.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._dM
