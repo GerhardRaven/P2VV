@@ -54,7 +54,8 @@ j.application.env = env
 j.inputsandbox = ['/project/bfys/raaij/p2vv/code/python/ToyMCUtils.py',
                   '/project/bfys/raaij/p2vv/code/toys/fit_acceptance_toy.py',
                   '/project/bfys/raaij/p2vv/code/lib/libP2VV.so',
-                  os.path.join(location, 'snapshot.tar.bz2')]
+                  '/project/bfys/raaij/p2vv/code/toys/start_values_20bins.root',
+                  '/project/bfys/raaij/p2vv/code/snapshot.tar.bz2']
 
 # Add the outputsandbox
 j.outputsandbox = ['*.root']
@@ -67,10 +68,10 @@ j.merger = CustomMerger(
 
 # Add the splitter
 args = ['fit_acceptance_toy.py', '--ncpu=1', '-n',
-        '20', '-s', 'snapshot.tar.bz2']
+        '50', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
-    values = [args for i in range(50)]
+    values = [args for i in range(100)]
     )
 j.name = 'acceptance_toys'
 
