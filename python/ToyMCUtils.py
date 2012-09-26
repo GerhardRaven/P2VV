@@ -24,7 +24,6 @@ class Toy(object):
 
         self.__fit_opts = dict(Save = True, Optimize = 1, Verbose = True, Minos = False,
                                Minimizer = 'Minuit2')
-        self.__proto_data = None
 
     def parser(self):
         return self._parser

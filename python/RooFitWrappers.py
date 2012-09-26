@@ -1623,13 +1623,42 @@ class ResolutionModel(Pdf):
         Pdf.__init__(self,**kwargs)
 
 class AddModel(ResolutionModel) :
-    def __init__(self,name,models,fractions,**kwargs) :
+    def __init__(self, name, **kwargs) :
         #TODO: forward conditionalObservables and ExternalConstraints from dependents...
         # construct factory string on the fly...
         __check_name_syntax__(name)
-        self._declare("AddModel::%s({%s},{%s})"%(name,','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) )
-        self._init(name,'RooAddModel')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+        models = kwargs.pop('Models')
+        conditionals = set()
+        externals = set()
+        for model in models:
+            conditionals |= model.ConditionalObservables()
+            externals |= set(model.ExternalConstraints())
+        ResolutionModel.__init__(self, Name = name, Type = 'RooAddModel',
+                                 Models = models, Fractions = kwargs.pop('Fractions'),
+                                 ConditionalObservables = conditionals,
+                                 ExternalConstraints = list(externals))
+
+    def _make_pdf(self):
+        if self._dict['Name'] not in self.ws():
+            self._declare(self._makeRecipe())
+            self._init(self._dict['Name'], 'RooAddModel')
+
+            # Change self._dict into attributes. Cannot be done before since the
+            # underlying object does only exists at this point.
+            for k, v in self._dict.iteritems():
+                attr = '_' + k.lower()
+                setattr(self._target_(), attr, v)
+        else:
+            self._init(self._dict['Name'], 'RooAddModel')
+            # Make sure we are the same as last time
+            for k, v in self._dict.iteritems():
+                assert v == self._get(k)
+
+    def _makeRecipe(self):
+        models = self._dict['Models']
+        fractions = self._dict['Fractions']
+        return "AddModel::%s({%s},{%s})"%(self._dict['Name'],','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) 
 
 class EffResModel(ResolutionModel) :
     def __init__(self,**kwargs) :

@@ -249,7 +249,24 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     _P2VVPlotStash.append(obsFrame)
 
     # plot data
-    if data : data.plotOn( obsFrame, Name = 'data', **dataOpts )
+    if data :
+        rooPlot = data.plotOn( obsFrame, Name = 'data', **dataOpts )
+        # Set negative bins to 0 if logy is requested
+        minimum = 0.
+        if logy:
+            hist = rooPlot.getHist()
+            from ROOT import Double
+            x = Double(0.)
+            y = Double(0.)
+            for i in range(hist.GetN()):
+                r = hist.GetPoint(i, x, y)
+                if y > 0 and y < minimum:
+                    minimum = y
+                if y < 0.:
+                    hist.SetPoint(i, float(x), 0.)
+                    minimum = 0.
+            hist.SetMinimum(minimum + 0.1)
+            rooPlot.SetMinimum(minimum + 0.1)
 
     # plot PDF
     if pdf :

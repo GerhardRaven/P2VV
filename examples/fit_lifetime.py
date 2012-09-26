@@ -22,15 +22,10 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 for i in [ st ] : i.setBins( 20 , 'cache' )
 
 # Categories needed for selecting events
-hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
-hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
+unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-# Category needed for fitting
-excl_biased = Category('triggerDecisionBiasedExcl', States = {'ExclBiased' : 1, 'Unbiased' : 0})
-
-observables = [t, m, mpsi, st, excl_biased, selected]
+observables = [t, m, mpsi, st, unbiased, selected]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -41,10 +36,8 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as SignalTimeResolution
-sig_tres = SignalTimeResolution(Name = 'sig_tres', time = t, timeResSFConstraint = True, sigmat = st,
-                                timeResSF = dict( Name = 'timeResSF', Value = 1.45, MinMax = (0.1,5.),
-                                                  Constant = False))
+from P2VVParameterizations.TimeResolution import DG_TimeResolution as TimeResolution
+sig_tres = TimeResolution(Name = 'sig_tres', time = t, sigmat = st)
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],

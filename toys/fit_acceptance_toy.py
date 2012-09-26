@@ -138,6 +138,8 @@ if options.protodata:
             break
     else:
         raise RunTimeError
+    if not proto_data:
+        raise RunTimeError
 
 ## run the toy
 toy.set_fit_opts(**dict(Verbose = False))
