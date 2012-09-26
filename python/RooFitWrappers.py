@@ -88,7 +88,10 @@ class RooObject(object) :
     # WARNING: the object 'o' given to _addObject should NEVER be used again
     # instead, use the item returned by _addObject
     def _addObject(self, o):
-        if o.GetName() not in self.ws(): self.ws().put(o)
+        if o.GetName() not in self.ws(): 
+            # print 'P2VV: WARNING: importing %s into workspace.... ' % o.GetName() 
+            # assert o.GetName() != 'sig_t_angles'
+            self.ws().put(o)
         o = self.ws()[o.GetName()]
         if o.GetName() not in self.ws()._objects:
             self.ws()._objects[o.GetName()] = o
@@ -341,15 +344,13 @@ class SuperCategory( Category ) :
     def __init__(self,Name,cats,**kwargs):
         __check_name_syntax__(Name)
         data = kwargs.pop('Data', None)
-        t = 'RooSuperCategory'
         if data:
-            from ROOT import RooSuperCategory
-            obj = RooSuperCategory(Name, Name, RooArgSet(*cats))
-            obj = data.addColumn(__dref__(obj))
-            obj = self._addObject(obj)
+            dummy = self._declare('SuperCategory::%s_sc({%s})'%(Name,','.join( c.GetName() for c in cats )))
+            self._declare( "dataobs::%s(%s,%s)"%(Name,data.GetName(),dummy.GetName()))
             t = 'RooCategory'
         else:
-            self._declare("SuperCategory::%s({%s})"%(Name,','.join( [ c.GetName() for c in cats ] ) ) )
+            self._declare("SuperCategory::%s({%s})"%(Name,','.join( c.GetName() for c in cats ) ) )
+            t = 'RooSuperCategory'
         self._init(Name, t)
         self._target_()._states = dict( ( s.GetName(), s.getVal()) for s in self._target_() )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
@@ -554,7 +555,9 @@ class ComplementCoef( RooObject ) :
         # build a RooComplementCoef (no workspace declaration, since factory string has limited length!!!)
         from ROOT import RooArgList, RooComplementCoef
         coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
-        self._addObject( RooComplementCoef( name, name, coefList ) )
+        complCoef = RooComplementCoef( name, name, coefList )
+        self._addObject(complCoef)
+        complCoef.IsA().Destructor(complCoef)
 
         # initialize
         self._init( name, 'RooComplementCoef' )
@@ -855,17 +858,17 @@ class ProdPdf(Pdf):
         # has the NOCacheAndTrack attribute set.
         # So here we walk through the leafs of our PDF, and add NOCacheAndTrack for all those
         # PDFs which are dependent on a conditional observable which appears in the toplevel...
-        ## print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
-        ## # create RooArgSet of conditional observables
-        ## cset = RooArgSet(__dref__(c) for c in conds )
-        ## for pdf in PDFs :
-        ##     for c in pdf.getComponents() :
-        ##         if c.getAttribute('NOCacheAndTrack') : continue
-        ##         depset = c.getObservables( cset )
-        ##         if depset.getSize() > 0 :
-        ##             print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
-        ##             c.setAttribute('NOCacheAndTrack')
-        ## print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
+        print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
+        # create RooArgSet of conditional observables
+        cset = RooArgSet(__dref__(c) for c in conds )
+        for pdf in PDFs :
+            for c in pdf.getComponents() :
+                if c.getAttribute('NOCacheAndTrack') : continue
+                depset = c.getObservables( cset )
+                if depset.getSize() > 0 :
+                    print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
+                    c.setAttribute('NOCacheAndTrack')
+        print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
 
 
     def _make_pdf(self):
@@ -972,6 +975,7 @@ class SimultaneousPdf( Pdf ) :
             for s, pdf in kwargs.pop('States').iteritems():
                 simul.addPdf(pdf, s)
             self._addObject(simul)
+            simul.IsA().Destructor(simul)
         elif 'SplitParameters' in kwargs :
             args['Master']     = kwargs.pop('MasterPdf')
             args['SplitCats']  = [ kwargs.pop('SplitCategory').GetName() ] if 'SplitCategory' in kwargs\
@@ -1217,12 +1221,12 @@ class MultiHistEfficiencyModel(Pdf):
         form = '-'.join(['1'] + [e.GetName() for e in self.__relative_efficiencies.itervalues()])
         self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
 
-        from ROOT import std
         efficiency_entries = self.__build_shapes(relative)
 
         from ROOT import RooMultiEffResModel
         mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
-        mhe = self._addObject(mhe)
+        self._addObject(mhe)
+        mhe.IsA().Destructor(mhe)
 
         extraOpts = dict()
         if self.__conditionals:
@@ -1376,7 +1380,6 @@ class BTagDecay( Pdf ) :
         from P2VVLoad import P2VVLibrary
         argDict = { 'Name' : Name, 'checkVars' : '1', 'decayType' : 'SingleSided' }
 
-        # construct factory string on the fly...
         cstr = lambda arg : arg if type(arg) == str else arg.GetName() if hasattr(arg,'GetName') else str(arg)
         convert = lambda arg : cstr(arg) if type(arg) != list else '{%s}' % ','.join( str(listItem) for listItem in arg )
         if 'tagCat0' in kwargs and 'tagCat1' in kwargs :
@@ -1388,53 +1391,31 @@ class BTagDecay( Pdf ) :
                            ] :
                 if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
 
-            # put dilutions in RooArgLists
-            from ROOT import RooArgList
-            dilutions0 = RooArgList( '%s_dilutions0' % argDict['Name'] )
-            dilutions1 = RooArgList( '%s_dilutions1' % argDict['Name'] )
-            ADilWTags0 = RooArgList( '%s_ADilWTags0' % argDict['Name'] )
-            ADilWTags1 = RooArgList( '%s_ADilWTags1' % argDict['Name'] )
-            for par in argDict['dilutions0'][ 1 : -1 ].split(',') : dilutions0.add( self.ws()[par] )
-            for par in argDict['dilutions1'][ 1 : -1 ].split(',') : dilutions1.add( self.ws()[par] )
-            for par in argDict['ADilWTags0'][ 1 : -1 ].split(',') : ADilWTags0.add( self.ws()[par] )
-            for par in argDict['ADilWTags1'][ 1 : -1 ].split(',') : ADilWTags1.add( self.ws()[par] )
-
             # put tagging category coefficients and average even and odd coefficients in TObjArrays of RooArgLists
-            from ROOT import TObjArray
-            avgCEvens   = TObjArray()
-            avgCOdds    = TObjArray()
-            tagCatCoefs = TObjArray()
-            avgCEvens.SetName(   '%s_avgCEvens'   % argDict['Name'] )
-            avgCOdds.SetName(    '%s_avgCOdds'    % argDict['Name'] )
-            tagCatCoefs.SetName( '%s_tagCatCoefs' % argDict['Name'] )
-            for cat0, ( CEvens, COdds, catCoefs )\
-                    in enumerate( zip( kwargs.pop('avgCEvens'), kwargs.pop('avgCOdds'), kwargs.pop('tagCatCoefs') ) ) :
-                CEvensList   = RooArgList( '%s_avgCEvens%d'   % ( argDict['Name'], cat0 ) )
-                COddsList    = RooArgList( '%s_avgCOdds%d'    % ( argDict['Name'], cat0 ) )
-                catCoefsList = RooArgList( '%s_tagCatCoefs%d' % ( argDict['Name'], cat0 ) )
-                for CEven, COdd in zip( CEvens, COdds ) :
-                    CEvensList.add(   self.ws()[ cstr(CEven)   ] )
-                    COddsList.add(    self.ws()[ cstr(COdd)    ] )
-                for catCoef in catCoefs :
-                    catCoefsList.add( self.ws()[ cstr(catCoef) ] )
-
-                avgCEvens.Add(CEvensList)
-                avgCOdds.Add(COddsList)
-                tagCatCoefs.Add(catCoefsList)
+            _a  = lambda x : self.ws()[ argDict[ x ] ]
+            _l2 = lambda x : self.ws().factory().asLIST(  x  )
+            _l  = lambda x : _l2( argDict[x] ) 
+            def _oa( x ) : 
+                from ROOT import TObjArray
+                z = TObjArray()
+                for i in kwargs.pop(x) : z.Add( _l2( convert( i ) ) )
+                return z
 
             from ROOT import RooBTagDecay
-            self._addObject( RooBTagDecay(  argDict['Name'], argDict['Name'], self.ws()[ argDict['time'] ]
-                                          , self.ws()[ argDict['iTag0'] ], self.ws()[ argDict['iTag1'] ]
-                                          , self.ws()[ argDict['tagCat0'] ], self.ws()[ argDict['tagCat1'] ]
-                                          , self.ws()[ argDict['tau'] ], self.ws()[ argDict['dGamma'] ], self.ws()[ argDict['dm'] ]
-                                          , dilutions0, dilutions1, ADilWTags0, ADilWTags1, avgCEvens, avgCOdds, tagCatCoefs
-                                          , self.ws()[ argDict['coshCoef'] ], self.ws()[ argDict['sinhCoef'] ]
-                                          , self.ws()[ argDict['cosCoef'] ], self.ws()[ argDict['sinCoef'] ]
-                                          , self.ws()[ argDict['resolutionModel'] ]
-                                          , 1 if argDict['decayType'] == 'DoubleSided' else 2 if argDict['decayType'] == 'Flipped' else 0
-                                          , int( argDict['checkVars'] )
-                                         )
-                           )
+            decay = RooBTagDecay(  argDict['Name'], argDict['Name'], _a('time')
+                                 , _a('iTag0'), _a('iTag1')
+                                 , _a('tagCat0'), _a('tagCat1')
+                                 , _a('tau'), _a('dGamma'), _a('dm')
+                                 , _l('dilutions0'), _l('dilutions1'), _l('ADilWTags0'), _l('ADilWTags1')
+                                 , _oa( 'avgCEvens' ),  _oa( 'avgCOdds' ), _oa( 'tagCatCoefs' )
+                                 , _a('coshCoef'), _a('sinhCoef')
+                                 , _a('cosCoef'), _a('sinCoef')
+                                 , _a('resolutionModel')
+                                 , 1 if argDict['decayType'] == 'DoubleSided' else 2 if argDict['decayType'] == 'Flipped' else 0
+                                 , int( argDict['checkVars'] )
+                                )
+            self._addObject(decay)
+            decay.IsA().Destructor(decay)
 
         elif 'tagCat' in kwargs :
             # one tagging category
@@ -1487,6 +1468,7 @@ class BinnedPdf( Pdf ) :
             argDict['cat']   = str(kwargs.pop('Category'))
             argDict['coefs'] = '{%s}' % ','.join( str(listItem) for listItem in kwargs.pop('Coefficients') )
             self._declare( "BinnedPdf::%(Name)s(%(cat)s, %(coefs)s)" % argDict )
+            bPdf = None
 
         elif 'Categories' in kwargs :
             # multiple category dependence
@@ -1508,8 +1490,8 @@ class BinnedPdf( Pdf ) :
                     coefLists.Add(RooArgList( __dref__(coef) for coef in coefficients ))
 
                 from ROOT import RooBinnedPdf
-                self._addObject( RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefLists
-                                              , int( kwargs.pop( 'IgnoreFirstBin', 0 ) ) ) )
+                bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefLists, int( kwargs.pop( 'IgnoreFirstBin', 0 ) ) )
+
             else :
                 # coefficients for different variables don't factorize
 
@@ -1518,7 +1500,7 @@ class BinnedPdf( Pdf ) :
                 coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') ) 
 
                 from ROOT import RooBinnedPdf
-                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name'], varList, coefList ) )
+                bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefList )
 
         elif 'Observable' in kwargs :
             # single continuous variable dependence
@@ -1529,10 +1511,7 @@ class BinnedPdf( Pdf ) :
             if 'Function' in kwargs :
                 # bin coefficients are given by a function
                 from ROOT import RooBinnedPdf
-                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                              , __dref__(var), binning, __dref__(kwargs.pop('Function'))
-                                             )
-                               )
+                bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], __dref__(var), binning, __dref__( kwargs.pop('Function') ) )
 
             else:
                 # independent bin coefficients are specified
@@ -1542,10 +1521,8 @@ class BinnedPdf( Pdf ) :
                 coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
 
                 from ROOT import RooBinnedPdf
-                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                              , __dref__(var), binning, coefList, int( kwargs.pop( 'BinIntegralCoefs', 0 ) )
-                                             )
-                               )
+                bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], __dref__(var), binning, coefList
+                                    , int( kwargs.pop( 'BinIntegralCoefs', 0 ) ) )
 
         elif 'Observables' in kwargs :
             # multiple continuous variable dependence
@@ -1566,10 +1543,7 @@ class BinnedPdf( Pdf ) :
             if 'Function' in kwargs:
                 # bin coefficients are given by a function
                 from ROOT import RooBinnedPdf
-                self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                              , varList, binningList, __dref__(kwargs.pop('Function'))
-                                             )
-                               )
+                bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, binningList, __dref__( kwargs.pop('Function') ) )
 
             else:
                 # independent bin coefficients are specified
@@ -1585,11 +1559,9 @@ class BinnedPdf( Pdf ) :
                         coefLists.Add(RooArgList(__dref__(coef) for coef in coefficients))
 
                     from ROOT import RooBinnedPdf
-                    self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                                  , varList, binningList, coefLists
-                                                  , kwargs.pop( 'BinIntegralCoefs', 0 ), int( kwargs.pop( 'IgnoreFirstBin', 0 ) )
-                                                 )
-                                   )
+                    bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, binningList, coefLists
+                                        , kwargs.pop( 'BinIntegralCoefs', 0 ), int( kwargs.pop( 'IgnoreFirstBin', 0 ) ) )
+
                 else :
                     # coefficients for different variables don't factorize
 
@@ -1598,13 +1570,16 @@ class BinnedPdf( Pdf ) :
                     coefList = RooArgList(__dref__(coef) for coef in kwargs.pop('Coefficients') )
 
                     from ROOT import RooBinnedPdf
-                    self._addObject( RooBinnedPdf(  argDict['Name'], argDict['Name']
-                                                  , varList, binningList, coefList, int( kwargs.pop( 'BinIntegralCoefs', 0 ) )
-                                                 )
-                                   )
+                    bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, binningList, coefList
+                                        , int( kwargs.pop( 'BinIntegralCoefs', 0 ) ) )
 
         else :
             raise KeyError('P2VV - ERROR: BinnedPdf: please specify variable(s)')
+
+        if bPdf :
+            # import the BinnedPdf in the workspace
+            self._addObject(bPdf)
+            bPdf.IsA().Destructor(bPdf)
 
         # initialize PDF
         self._init( Name, 'RooBinnedPdf' )
