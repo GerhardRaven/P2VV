@@ -122,7 +122,7 @@ class AmplitudeSet( dict, _util_parse_mixin, _util_conditionalObs_mixin ) :
 
         # put amplitude in parameters
         if not hasattr( self, '_params' ) : self._params = []
-        self._params += [ obj ]
+        self._params += [ amp ]
 
 
 class JpsiVCarthesian_AmplitudeSet( AmplitudeSet ) :
