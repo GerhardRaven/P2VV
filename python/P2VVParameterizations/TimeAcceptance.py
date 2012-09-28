@@ -46,15 +46,15 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             raise ValueError, 'Cannot get acceptance histogram %s from file' % histogram
         xaxis = self._hist.GetXaxis()
         bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, self._hist.GetNbinsX() + 2)))
-        heights = [self._hist.GetBinContent(i) for i in range(1, self._hist.GetNbinsX() + 1)]
+        self._binHeights = [self._hist.GetBinContent(i) for i in range(1, self._hist.GetNbinsX() + 1)]
 
         acceptance_file.Close()
         print 'P2VV - INFO: Moriond2012_TimeAcceptance.__init__(): using time efficiency histogram "%s" from file "%s"'\
               % ( histogram, input_file )
 
         from RooFitWrappers import RealVar
-        heights = [RealVar('%s_bin_%03d' % (name, i + 1), Observable = False, Value = v,
-                           Constant = True) for i, v in enumerate(heights)]
+        self._binHeights = [RealVar('%s_bin_%03d' % (name, i + 1), Observable = False, Value = v,
+                           Constant = True) for i, v in enumerate(self._binHeights)]
         # Add a binning for this category and state
         from ROOT import RooBinning
         self._binning = RooBinning(len(bins) - 1, bins)
@@ -63,7 +63,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
 
         from RooFitWrappers import BinnedPdf
         self._shape = BinnedPdf(name + '_shape', Observable = self._time,
-                                Binning = binning_name, Coefficients = heights)
+                                Binning = binning_name, Coefficients = self._binHeights)
         from RooFitWrappers import EffResModel
         TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name, Efficiency = self._shape,
                                                                ResolutionModel = model['model'],

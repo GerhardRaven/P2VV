@@ -353,7 +353,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # python garbage collector
         import gc
 
-        # ROOT infinity
+        # ROOT imports
+        from ROOT import TFile
+
+        # RooFit infinity
         from ROOT import RooNumber
         RooInf = RooNumber.infinity()
 
@@ -1193,23 +1196,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     , Data = self._dataSets['data'], Fit = True, Original = sigPdf
                                                     , ResolutionModel = self._timeResModel )
 
-            elif timeEffType == 'paper2012' and selection == 'paper2012' :
-                hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
-                                       , 'notExclB' : { 'histogram' : timeEffHistUBName    }
-                                      }
-                        }
+            #elif timeEffType == 'paper2012' and selection == 'paper2012' :
+            #    hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
+            #                           , 'notExclB' : { 'histogram' : timeEffHistUBName    }
+            #                          }
+            #            }
 
-                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-                self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
-                                                    , Data = self._dataSets['data'], Fit = False, Original = sigPdf
-                                                    , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf ) )
+            #    from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+            #    self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
+            #                                        , Data = self._dataSets['data'], Fit = False, Original = sigPdf
+            #                                        , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf ) )
 
-            elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] :
+            elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
                 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance(  time = time
                                                     , Input = timeEffHistFile
-                                                    , Histogram = timeEffHistUBName if timeEffType == 'HLT1Unbiased'\
-                                                                  else timeEffHistExclBName
+                                                    , Histogram = timeEffHistExclBName if timeEffType == 'HLT1ExclBiased'\
+                                                                  else timeEffHistUBName
                                                     , ResolutionModel = self._timeResModel
                                                    )
 
@@ -1803,6 +1806,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if not SFit and selection in ['paper2012', 'timeEffFit'] :
                 splitCats.append( [hlt1ExclB] if selection == 'paper2012' else [hlt1ExclB, hlt2B] if selection == 'timeEffFit' else [] )
                 splitParams.append( [ par for par in self._backgroundTime.parameters() if not par.isConstant() ] )
+            if selection == 'paper2012' :
+                if SFit :
+                    splitCats.append( [hlt1ExclB] )
+                    splitParams.append( [ par for par in self._timeResModel['binHeights'] ] )
+                else :
+                    splitParams[-1] += [ par for par in self._timeResModel['binHeights'] ]
             if paramKKMass == 'simultaneous' :
                 splitCats.append( [ self._KKMassCat ] )
                 splitParams.append( [ ] )
@@ -1849,7 +1858,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                     splitCatState = splitCatIter.Next()
 
-
             if not SFit and selection in ['paper2012', 'timeEffFit'] :
                 # set values for background parameters in different trigger samples
                 splitCatIter = hlt1ExclB.typeIterator()
@@ -1874,6 +1882,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         mlTau.setConstant(True)
 
                     splitCatState = splitCatIter.Next()
+
+            if selection == 'paper2012' :
+                accFile = TFile.Open(timeEffHistFile)
+                accHist = accFile.Get(timeEffHistExclBName)
+                exclBName = hlt1ExclB.lookupType(1).GetName()
+                for binIt in range( accHist.GetNbinsX() ) :
+                    parName = self._timeResModel['binHeights'][binIt]
+                    binHeight = getSplitPar( parName, exclBName, splitCatPars )
+                    binHeight.setVal( accHist.GetBinContent( binIt + 1 ) )
+                accFile.Close()
 
             if paramKKMass == 'simultaneous' :
                 # set values for splitted amplitudes
