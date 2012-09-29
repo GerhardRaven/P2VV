@@ -1101,10 +1101,9 @@ Int_t RooBTagDecay::getGenerator(const RooArgSet& directVars,
 
   // use accept/reject in certain cases
   if (!_checkVars || !checkVarDep(_time.arg())
-      || (_tagCat0Type > 1 && !checkVarDep(_tagCat0.arg()))
-      || (_tagCat1Type > 1 && !checkVarDep(_tagCat0.arg()))
-      || (_tags > 0 && (_iTag0Val < 2 || _iTag1Val < 2
-          || !checkVarDep(_iTag0.arg()) || !checkTag(kTRUE, kFALSE)
+      || (_tagCat0Type > 1 && (!checkVarDep(_tagCat0.arg()) || _iTag0Val < 2
+          || !checkVarDep(_iTag0.arg()) || !checkTag(kTRUE, kFALSE)))
+      || (_tagCat1Type > 1 && (!checkVarDep(_tagCat1.arg()) || _iTag1Val < 2
           || !checkVarDep(_iTag1.arg()) || !checkTag(kTRUE, kTRUE)))
       || (_tags > 1 && (_fTagVal < 2 || !checkVarDep(_fTag.arg())
           || !checkTag(kFALSE, kFALSE))))
