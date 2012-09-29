@@ -49,14 +49,13 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-## tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-##                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-##                                                     Constant = True))
+from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
+                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. )))
 ## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-tres = TimeResolution(time = t)
+## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+## tres = TimeResolution(time = t)
 
 # Signal time pdf
 from P2VVParameterizations.TimePDFs import Single_Exponent_Time
@@ -127,8 +126,23 @@ pdf = pdf.pdf()
 
 gen_observables = [t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased]
 
+## Get proto data
+proto_data = None
+if options.protodata:
+    proto_file = TFile.Open(options.protodata)
+    if not proto_file.IsOpen():
+        raise OSError
+    for key in proto_file.GetListOfKeys():
+        if key.GetClassName() == "RooDataSet":
+            proto_data = key.ReadObj()
+            break
+    else:
+        raise RunTimeError
+    if not proto_data:
+        raise RunTimeError
+
 ## run the toy
 toy.set_fit_opts(**dict(Verbose = False))
-toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = pdf)
+toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = pdf, ProtoData = proto_data)
 
 toy.write_output()

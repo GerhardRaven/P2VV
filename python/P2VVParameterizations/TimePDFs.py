@@ -277,3 +277,16 @@ class Single_Exponent_Time( TimePdf ) :
                                           , ConditionalObservables = resolutionModel.ConditionalObservables()
                                           , ExternalConstraints = resolutionModel.ExternalConstraints())
                          )
+
+class Prompt_Peak( TimePdf ) :
+    def __init__(self, time, resolutionModel, **kwargs) :
+        self._parseArg('prompt_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 0)
+
+        from RooFitWrappers import Pdf
+        from ROOT import RooDecay as Decay
+        TimePdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name',self.__class__.__name__)
+                                          , Type = Decay
+                                          , Parameters = (time, self._prompt_tau, resolutionModel, 'SingleSided')
+                                          , ConditionalObservables = resolutionModel.ConditionalObservables()
+                                          , ExternalConstraints = resolutionModel.ExternalConstraints())
+                         )

@@ -19,6 +19,8 @@ class Toy(object):
                                 type = 'int', help = 'number of events to generate')
         self._parser.add_option("-s", "--snapshot", dest = "snapshot", default = '',
                                 action = 'store', help = 'Extract a snapshot to current directory.')
+        self._parser.add_option("--protodata", dest = "protodata", default = '',
+                                action = 'store', help = 'use protodata')
 
         self.__fit_opts = dict(Save = True, Optimize = 1, Verbose = True, Minos = False,
                                Minimizer = 'Minuit2')
@@ -96,7 +98,7 @@ class Toy(object):
 
         from ROOT import RooRandom
         import struct, os
-
+        
         for i in range(self._options.ntoys):
             # Get a good random seed, set it and store it
             s = struct.unpack('I', os.urandom(4))[0]    
@@ -105,7 +107,10 @@ class Toy(object):
 
             # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
             pdf_params.assignValueOnly(self._gen_params) 
-            data = pdf.generate(observables, self._options.nevents)
+            args = dict(NumEvent = self._options.nevents)
+            if 'ProtoData' in args:
+                args['ProtoData'] = kwargs.pop('ProtoData')
+            data = pdf.generate(observables, **kwargs)
             fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, **self.__fit_opts)
             if fit_result.status() != 0:
                 print 'Fit result status = %s' % fit_result.status()
