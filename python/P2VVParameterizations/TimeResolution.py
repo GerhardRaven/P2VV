@@ -130,7 +130,9 @@ class Double_Gauss_TimeResolution ( TimeResolution ) :
         self._timeResMu = self._parseArg('%stimeResMu' % namePF, kwargs, Value = -0.0027, MinMax = (-2, 2))
         self._timeResMuSF = self._parseArg('%stimeResMuSF' % namePF, kwargs, Value = 1.0, Constant = True)
 
-        sigmasSFs = [(2, 4), (1, 1)]
+        ## sigmasSFs = [(3, 8), (2, 3), (1, 1)]
+        ## fracs     = [(0.1), (2, 0.165)]
+        sigmasSFs = [(2, 3), (1, 1)]
         fracs     = [(2, 0.165)]
         self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 50) ) for num, val in sigmasSFs ]
         self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.001, 1) ) for num, val in fracs  ]
@@ -177,7 +179,6 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
         self._parseArg( 'timeResMU', kwargs, Value = 0.0, Constant = True )
         self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
-        self._parseArg( 'timeResMuSF', kwargs, Value = 1, Constant = True)
         self._parseArg( 'timeResSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
 
         constraints = []
@@ -204,9 +205,8 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                                                            , Type = GaussModel
                                                            , Parameters = [  self._time
                                                                            , self._timeResMU
-                                                                           , self._sigmat
-                                                                           , self._timeResMuSF
                                                                            , self._timeResSF
+                                                                           , self._sigmat
                                                                           ]
                                                            , ConditionalObservables = [ self._sigmat ]
                                                            , ExternalConstraints = constraints

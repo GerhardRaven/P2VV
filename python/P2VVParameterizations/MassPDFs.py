@@ -67,40 +67,44 @@ class Binned_MassPdf( MassPdf ) :
 
 class LP2011_Signal_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
-        self._parseArg( 'm_sig_mean',     kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
+        self._prefix = kwargs.pop("Prefix", "")
+        self._parseArg( '%sm_sig_mean' % self._prefix,     kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
                        , Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
-        self._parseArg( 'm_sig_sigma_1',  kwargs, Title = 'B Mass resolution 1', Unit = 'MeV/c^2'
+        self._parseArg( '%sm_sig_sigma_1' % self._prefix,  kwargs, Title = 'B Mass resolution 1', Unit = 'MeV/c^2'
                        , Value = 6.3,   Error = 0.1,  MinMax = ( 0.1, 20. ) )
-        self._parseArg( 'm_sig_sigma_sf', kwargs, Title = 'B Mass resolution 2:1 scale factor'
+        self._parseArg( '%sm_sig_sigma_sf' % self._prefix, kwargs, Title = 'B Mass resolution 2:1 scale factor'
                        , Value = 2.3,   Error = 0.1,  MinMax = ( 0.1, 5. ) )
-        self._parseArg( 'm_sig_frac',     kwargs, Title = 'B mass fraction first Gaussian'
+        self._parseArg( '%sm_sig_frac' % self._prefix,     kwargs, Title = 'B mass fraction first Gaussian'
                        , Value = 0.8,   Error = 0.03, MinMax = ( 0., 1. ) )
 
         from ROOT import RooGaussian as Gaussian
         from RooFitWrappers import Pdf, FormulaVar, SumPdf
-        g1 = Pdf(  Name ='m_sig_1'
+        g1 = Pdf(  Name ='%sm_sig_1' % self._prefix
                  , Type = Gaussian
-                 , Parameters = (mass, self._m_sig_mean, self._m_sig_sigma_1 )
+                 , Parameters = (mass, getattr(self, '_%sm_sig_mean' % self._prefix),
+                                 getattr(self, '_%sm_sig_sigma_1' % self._prefix))
                 )
-        g2 = Pdf( Name = 'm_sig_2'
+        g2 = Pdf( Name = '%sm_sig_2' % self._prefix
                  , Type = Gaussian
-                 , Parameters = ( mass, self._m_sig_mean
-                                 , FormulaVar( 'm_sig_sigma_2', '@0*@1', ( self._m_sig_sigma_sf, self._m_sig_sigma_1 ) ) )
+                 , Parameters = ( mass, getattr(self, '_%sm_sig_mean' % self._prefix)
+                                 , FormulaVar('_%sm_sig_sigma_2' % self._prefix, '@0*@1', (getattr(self, '_%sm_sig_sigma_sf' % self._prefix),
+                                                                                           getattr(self, '_%sm_sig_sigma_1' % self._prefix))))
                 )
         MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'LP2011_Signal_Mass' ), PDFs = ( g1, g2 )
-                         , Yields = { g1.GetName() : self._m_sig_frac } ) )
+                         , Yields = { g1.GetName() : getattr(self, '_%sm_sig_frac' % self._prefix) } ) )
 
 
 class LP2011_Background_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
-        self._parseArg( 'm_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'c^2/MeV', Value = -0.002, Error = 0.0001
-                       , MinMax = ( -0.05, 0. ) )
+        self._prefix = kwargs.pop("Prefix", "")
+        self._parseArg( '%sm_bkg_exp' % self._prefix, kwargs, Title = 'Mass background slope',
+                        Unit = 'c^2/MeV', Value = -0.002, Error = 0.0001, MinMax = ( -0.05, 0. ) )
 
         from ROOT import RooExponential as Exponential
         from RooFitWrappers import Pdf
         MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name','LP2011_Background_Mass')
                                         , Type = Exponential 
-                                        , Parameters = (mass, self._m_bkg_exp, )) )
+                                        , Parameters = (mass, getattr(self, '_%sm_bkg_exp' % self._prefix))))
 
 
 class Signal_PsiMass ( MassPdf ) :

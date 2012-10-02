@@ -25,3 +25,4 @@ build/*
 .*history
 .gdb*
 log
+*.pars

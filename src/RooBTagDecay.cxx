@@ -75,7 +75,8 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _iTag0Val(2),
   _iTag1Val(2),
   _fTagVal(2),
-  _checkVars(checkVars)
+  _checkVars(checkVars),
+  _maxVal(0)
 {
   // constructor without flavour tags (behaves like RooBDecay)
   if (!checkVarDep(time, kTRUE)) assert(0);
@@ -119,7 +120,8 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _iTag0Val(2),
   _iTag1Val(2),
   _fTagVal(2),
-  _checkVars(checkVars)
+  _checkVars(checkVars),
+  _maxVal(0)
 {
   // constructor with both initial and final state flavour tags
   // (decay into a flavour specific final state)
@@ -186,7 +188,8 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _iTag0Val(2),
   _iTag1Val(2),
   _fTagVal(2),
-  _checkVars(checkVars)
+  _checkVars(checkVars),
+  _maxVal(0)
 {
   // constructor with only an initial state flavour tag
   // (decay into CP self-conjugate state)
@@ -252,7 +255,8 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _iTag0Val(2),
   _iTag1Val(2),
   _fTagVal(2),
-  _checkVars(checkVars)
+  _checkVars(checkVars),
+  _maxVal(0)
 {
   // constructor with both initial and final state flavour tags (decay into
   // a flavour specific final state) and with tagging categories
@@ -322,7 +326,8 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _iTag0Val(2),
   _iTag1Val(2),
   _fTagVal(2),
-  _checkVars(checkVars)
+  _checkVars(checkVars),
+  _maxVal(0)
 {
   // constructor with only an initial state flavour tag
   // (decay into CP self-conjugate state) and with tagging categories
@@ -391,7 +396,8 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _iTag0Val(2),
   _iTag1Val(2),
   _fTagVal(2),
-  _checkVars(checkVars)
+  _checkVars(checkVars),
+  _maxVal(0)
 {
   // constructor with two initial state flavour tags and a final state flavour
   // tag (decay into a flavour specific final state) and with tagging
@@ -454,7 +460,8 @@ RooBTagDecay::RooBTagDecay(const char *name, const char* title,
   _iTag0Val(2),
   _iTag1Val(2),
   _fTagVal(2),
-  _checkVars(checkVars)
+  _checkVars(checkVars),
+  _maxVal(0)
 {
   // constructor with two initial state flavour tags
   // (decay into CP self-conjugate state) and with tagging categories
@@ -516,6 +523,11 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
   _checkVars(other._checkVars)
 {
   // copy constructor
+  if (other._maxVal) {
+    _maxVal = new Double_t(*other._maxVal);
+  } else {
+    _maxVal = 0;
+  }
 
   // make tagging coefficient arrays owners of their lists
   _tagCatCoefs.SetOwner(kTRUE);
@@ -561,6 +573,7 @@ RooBTagDecay::RooBTagDecay(const RooBTagDecay& other, const char* name) :
 RooBTagDecay::~RooBTagDecay()
 {
   // destructor
+  if (_maxVal) delete _maxVal;
 }
 
 //_____________________________________________________________________________
@@ -1090,6 +1103,33 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
   }
 
   return 0.;
+}
+
+//_____________________________________________________________________________
+void RooBTagDecay::setMaxVal(const Double_t val)
+{
+  if (!_maxVal) {
+    _maxVal = new Double_t(val);
+  } else {
+    *_maxVal = val;
+  }
+}
+
+//_____________________________________________________________________________
+Int_t RooBTagDecay::getMaxVal(const RooArgSet& vars) const
+{
+  if (!_maxVal) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+
+//_____________________________________________________________________________
+Double_t RooBTagDecay::maxVal(Int_t code) const
+{
+   assert(code);
+   return *_maxVal;
 }
 
 //_____________________________________________________________________________

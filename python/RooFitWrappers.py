@@ -816,7 +816,16 @@ class Pdf(RooObject):
     def generate(self, whatvars, *args, **kwargs):
         #if not whatvars : whatvars = [ i for i in self._var.getVariables() if i.getAttribute('Observable') ]
         whatvars = RooArgSet([ __dref__(i) for i in whatvars] if not isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars))
-        return self._var.generate(whatvars, *args,**kwargs)
+        conditionals = set(o.GetName() for o in self.ConditionalObservables())
+        pdfVars = self._var.getVariables()
+        for v in pdfVars:
+            if v.GetName() in conditionals:
+                v.setAttribute("GenerateConditional", True)
+        data = self._var.generate(whatvars, *args,**kwargs)
+        for v in pdfVars:
+            if v.GetName() in conditionals:
+                v.setAttribute("GenerateConditional", False)
+        return data
 
     @wraps(RooAbsPdf.plotOn)
     def plotOn( self, frame, **kwargs ) :
@@ -858,17 +867,17 @@ class ProdPdf(Pdf):
         # has the NOCacheAndTrack attribute set.
         # So here we walk through the leafs of our PDF, and add NOCacheAndTrack for all those
         # PDFs which are dependent on a conditional observable which appears in the toplevel...
-        print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
+        ## print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
         # create RooArgSet of conditional observables
-        cset = RooArgSet(__dref__(c) for c in conds )
-        for pdf in PDFs :
-            for c in pdf.getComponents() :
-                if c.getAttribute('NOCacheAndTrack') : continue
-                depset = c.getObservables( cset )
-                if depset.getSize() > 0 :
-                    print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
-                    c.setAttribute('NOCacheAndTrack')
-        print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
+        ## cset = RooArgSet(__dref__(c) for c in conds )
+        ## for pdf in PDFs :
+        ##     for c in pdf.getComponents() :
+        ##         if c.getAttribute('NOCacheAndTrack') : continue
+        ##         depset = c.getObservables( cset )
+        ##         if depset.getSize() > 0 :
+        ##             print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
+        ##             c.setAttribute('NOCacheAndTrack')
+        ## print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
 
 
     def _make_pdf(self):
@@ -1101,6 +1110,28 @@ class HistFunc(RooObject):
         self._declare('RooHistFunc::%s({%s}, %s)' % (Name, ','.join([o.GetName() for o in kwargs.pop('Observables')]), _data.GetName()))
         self._init(Name, 'RooHistFunc')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+class Projection(Pdf):
+    def __init__(self,**kwargs) :
+        name = kwargs.pop('Name')
+        original = kwargs.pop('Original')
+        projectVars = kwargs.pop('ProjectVars')
+
+        # construct factory string on the fly...
+        projection = original.createProjection(RooArgSet(*list(projectVars)))
+        projection.SetName(name)
+        self._addObject(projection)
+        self._init(name, 'RooProjectedPdf')
+        extraOpts = dict()
+        cond =  original.ConditionalObservables()
+        if cond : extraOpts['ConditionalObservables'] = cond
+        exCon = original.ExternalConstraints()
+        if exCon : extraOpts['ExternalConstraints' ] = exCon
+        Pdf.__init__(self , Name = name , Type = 'RooProjectedPdf', **extraOpts)
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def _make_pdf(self):
+        pass
 
 class MultiHistEfficiencyModel(Pdf):
     def _make_pdf(self) : pass

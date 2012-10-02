@@ -78,7 +78,7 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.mo
 ##                              )
 
 psi_t = psi_t.pdf()
-psi_background = Component('psi_background', (psi_m.pdf(), psi_t), Yield= (3125,500,50000) )
+psi_background = Component('psi_background', (psi_m.pdf(), psi_t), Yield= (3125,500,200000) )
 
 
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.model()
@@ -87,12 +87,12 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
                          , bkg_t_ml_tau = dict(Name = 'bkg_t_ml_tau', Value = 0.1,  MinMax = (0.01, 0.5))
                          )
 bkg_t = bkg_t.pdf()
-background = Component('background', (bkg_mpsi.pdf(), bkg_t), Yield = (19620,2000,50000) )
+background = Component('background', (bkg_mpsi.pdf(), bkg_t), Yield = (19620,2000,200000) )
 
 # Prompt component
 from P2VVParameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
-psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (21582, 100, 50000))
+psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (21582, 100, 200000))
                    
 # Wrong PV components
 from P2VVParameterizations.WrongPV import ShapeBuilder
@@ -109,7 +109,7 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && mass > 5348 && mass < 5388)',
+data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)',
                 NTuple = False, observables = observables)
 
 ## Build PDF
@@ -155,6 +155,13 @@ result = time_pdf.fitTo(psi_sdata, SumW2Error = False, **fitOpts)
 ## profiler_stop()
 ## result.Print('v')
 
+from array import array
+from ROOT import RooBinning
+bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+binning = RooBinning(len(bounds) - 1, bounds)
+binning.SetName('var_binning')
+t.setBinning(binning)
+
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
 print 'plotting'
@@ -164,7 +171,7 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
     from P2VVGeneralUtils import plot
     pdfOpts  = dict(ProjWData = (RooArgSet(st), psi_sdata, True))
     plot(p, o, pdf = time_pdf if o != st else None, data = psi_sdata
-         , dataOpts = dict(MarkerSize = 0.8, Binning = 400, MarkerColor = kBlack)
+         , dataOpts = dict(MarkerSize = 0.8, Binning = binning, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
          , logy = True
          , plotResidHist = True
