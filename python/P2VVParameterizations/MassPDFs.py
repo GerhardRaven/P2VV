@@ -67,59 +67,69 @@ class Binned_MassPdf( MassPdf ) :
 
 class LP2011_Signal_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
-        self._parseArg( 'm_sig_mean',     kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
+        self._prefix = kwargs.pop("Prefix", "")
+        self._parseArg( '%sm_sig_mean' % self._prefix,     kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
                        , Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
-        self._parseArg( 'm_sig_sigma_1',  kwargs, Title = 'B Mass resolution 1', Unit = 'MeV/c^2'
+        self._parseArg( '%sm_sig_sigma_1' % self._prefix,  kwargs, Title = 'B Mass resolution 1', Unit = 'MeV/c^2'
                        , Value = 6.3,   Error = 0.1,  MinMax = ( 0.1, 20. ) )
-        self._parseArg( 'm_sig_sigma_sf', kwargs, Title = 'B Mass resolution 2:1 scale factor'
+        self._parseArg( '%sm_sig_sigma_sf' % self._prefix, kwargs, Title = 'B Mass resolution 2:1 scale factor'
                        , Value = 2.3,   Error = 0.1,  MinMax = ( 0.1, 5. ) )
-        self._parseArg( 'm_sig_frac',     kwargs, Title = 'B mass fraction first Gaussian'
+        self._parseArg( '%sm_sig_frac' % self._prefix,     kwargs, Title = 'B mass fraction first Gaussian'
                        , Value = 0.8,   Error = 0.03, MinMax = ( 0., 1. ) )
 
         from ROOT import RooGaussian as Gaussian
         from RooFitWrappers import Pdf, FormulaVar, SumPdf
-        g1 = Pdf(  Name ='m_sig_1'
+        g1 = Pdf(  Name ='%sm_sig_1' % self._prefix
                  , Type = Gaussian
-                 , Parameters = (mass, self._m_sig_mean, self._m_sig_sigma_1 )
+                 , Parameters = (mass, getattr(self, '_%sm_sig_mean' % self._prefix),
+                                 getattr(self, '_%sm_sig_sigma_1' % self._prefix))
                 )
-        g2 = Pdf( Name = 'm_sig_2'
+        g2 = Pdf( Name = '%sm_sig_2' % self._prefix
                  , Type = Gaussian
-                 , Parameters = ( mass, self._m_sig_mean
-                                 , FormulaVar( 'm_sig_sigma_2', '@0*@1', ( self._m_sig_sigma_sf, self._m_sig_sigma_1 ) ) )
+                 , Parameters = ( mass, getattr(self, '_%sm_sig_mean' % self._prefix)
+                                 , FormulaVar('_%sm_sig_sigma_2' % self._prefix, '@0*@1', (getattr(self, '_%sm_sig_sigma_sf' % self._prefix),
+                                                                                           getattr(self, '_%sm_sig_sigma_1' % self._prefix))))
                 )
         MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'LP2011_Signal_Mass' ), PDFs = ( g1, g2 )
-                         , Yields = { g1.GetName() : self._m_sig_frac } ) )
+                         , Yields = { g1.GetName() : getattr(self, '_%sm_sig_frac' % self._prefix) } ) )
 
 
 class LP2011_Background_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
-        self._parseArg( 'm_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'c^2/MeV', Value = -0.002, Error = 0.0001
-                       , MinMax = ( -0.05, 0. ) )
+        self._prefix = kwargs.pop("Prefix", "")
+        self._parseArg( '%sm_bkg_exp' % self._prefix, kwargs, Title = 'Mass background slope',
+                        Unit = 'c^2/MeV', Value = -0.002, Error = 0.0001, MinMax = ( -0.05, 0. ) )
 
         from ROOT import RooExponential as Exponential
         from RooFitWrappers import Pdf
         MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name','LP2011_Background_Mass')
                                         , Type = Exponential 
-                                        , Parameters = (mass, self._m_bkg_exp, )) )
+                                        , Parameters = (mass, getattr(self, '_%sm_bkg_exp' % self._prefix))))
 
 
 class Signal_PsiMass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
         from ROOT import RooCBShape as CrystalBall
         from RooFitWrappers import Pdf
-        self._parseArg( 'mpsi_mean',  kwargs, Title = 'J/psi mass',  Unit = 'MeV', Value = 3097, MinMax = (3090, 3105))
-        self._parseArg( 'mpsi_sigma', kwargs, Title = 'J/psi mass resolution',  Unit = 'MeV', Value = 14, MinMax = (8, 20))
-        self._parseArg( 'mpsi_alpha', kwargs, Title = 'J/psi mass CB alpha', Unit = '', Value = 1.90, MinMax = (1, 3))
-        self._parseArg( 'mpsi_n',     kwargs, Title = 'J/psi mass CB n',  Unit = '', Value = 2, MinMax = (0.1, 5), Constant = True)
-        MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name','Signal_PsiMass')
+        self._prefix = kwargs.pop("Prefix", "")
+
+        self._parseArg( '%smpsi_mean' % self._prefix,  kwargs, Title = 'J/psi mass',  Unit = 'MeV', Value = 3097, MinMax = (3090, 3105))
+        self._parseArg( '%smpsi_sigma' % self._prefix, kwargs, Title = 'J/psi mass resolution',  Unit = 'MeV', Value = 14, MinMax = (8, 20))
+        self._parseArg( '%smpsi_alpha' % self._prefix, kwargs, Title = 'J/psi mass CB alpha', Unit = '', Value = 1.90, MinMax = (1, 3))
+        self._parseArg( '%smpsi_n' % self._prefix,     kwargs, Title = 'J/psi mass CB n',  Unit = '', Value = 2, MinMax = (0.1, 5), Constant = True)
+        MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name','%sSignal_PsiMass' % self._prefix)
                                         , Type = CrystalBall
-                                        , Parameters = [ mass, self._mpsi_mean, self._mpsi_sigma, self._mpsi_alpha, self._mpsi_n]))
+                                        , Parameters = [mass, getattr(self, '_%smpsi_mean' % self._prefix),
+                                                        getattr(self, '_%smpsi_sigma' % self._prefix),
+                                                        getattr(self, '_%smpsi_alpha' % self._prefix),
+                                                        getattr(self, '_%smpsi_n' % self._prefix)]))
 
 class Background_PsiMass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
+        self._prefix = kwargs.pop("Prefix", "")
         from ROOT import RooExponential as Exponential
         from RooFitWrappers import Pdf
-        self._parseArg( 'mpsi_c', kwargs, Title = 'J/psi mass background slope', Unit = '1/MeV', Value = -0.01, MinMax = (-0.1, -0.0001))
-        MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name','Background_PsiMass')
-                                        , Type = Exponential
-                                        , Parameters = [ mass, self._mpsi_c ]) )
+        self._parseArg( '%smpsi_c' % self._prefix, kwargs, Title = 'J/psi mass background slope', Unit = '1/MeV', Value = -0.01, MinMax = (-0.1, -0.0001))
+        MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name', '%sBackground_PsiMass' % self._prefix)
+                                          , Type = Exponential
+                                          , Parameters = [mass, getattr(self, '_%smpsi_c' % self._prefix)]))

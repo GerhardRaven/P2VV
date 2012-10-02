@@ -43,6 +43,9 @@ class Gamma_LifetimeParams( LifetimeParams ) :
         dMConstr = kwargs.pop( 'dMConstraint', None )
         if type(dMConstr) == str and dMConstr == 'fixed' :
             self._dM.setConstant(True)
+            self._dM.setVal(DMConstrVal)
+            self._dM.setError(DMConstrErr)
+
         elif dMConstr :
             from ROOT import RooGaussian as Gaussian
             constraints.append( Pdf(  Name = self._dM.GetName() + '_constraint', Type = Gaussian

@@ -121,6 +121,9 @@ public:
   Double_t coefAnalyticalIntegral(Int_t coef, Int_t code,
       const char* rangeName = 0) const;
 
+  void setMaxVal(const Double_t val);
+  Int_t getMaxVal(const RooArgSet& vars) const;
+  Double_t maxVal(Int_t code) const;
   Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars,
       Bool_t staticInitOK = kTRUE) const;
   void generateEvent(Int_t code);
@@ -206,7 +209,8 @@ protected:
   Int_t        _iTag0Val;
   Int_t        _iTag1Val;
   Int_t        _fTagVal;
-  Bool_t       _checkVars;
+  Bool_t       _checkVars; 
+  Double_t*    _maxVal;
 
 private:
   ClassDef(RooBTagDecay, 1) // PDF of B decay time distribution with flavour tagging

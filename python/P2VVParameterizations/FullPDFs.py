@@ -201,14 +201,14 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['conditionalTagging'] = False
         self['continuousEstWTag']  = False
         self['numEstWTagBins']     = 100
-        self['constrainTagging']   = 'constrain'
+        self['constrainTagging']   = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
         self['eventTimeResolution']   = True
         self['numTimeResBins']        = 100
-        self['constrainTimeResScale'] = 'constrain'
+        self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['signalFraction'] = 0.67
         self['massRangeBackground'] = False
@@ -217,7 +217,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['ASParam']        = 'deltaPerp'        # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm' / 'Mag2ReImPerp'
         self['AparParam']      = 'cos'              # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
 
-        self['constrainDeltaM'] = 'constrain'
+        self['constrainDeltaM'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['lambdaCPParam'] = 'lambSqPhi'         # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay'
 
@@ -350,7 +350,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## imports and function definitions ##
         ######################################
 
-        # ROOT infinity
+        # python garbage collector
+        import gc
+
+        # ROOT imports
+        from ROOT import TFile
+
+        # RooFit infinity
         from ROOT import RooNumber
         RooInf = RooNumber.infinity()
 
@@ -416,7 +422,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         estWTagSS.setBins( numEstWTagBins, 'cache' )
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
-                        , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
+                        , Value = 5368., MinMax = ( 5250., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
                         ,  Ranges = dict(  LeftSideBand  = ( 5205., 5325. )
                                          , Signal        = ( 5325., 5400. )
                                          , RightSideBand = ( 5400., 5520. )
@@ -436,7 +442,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , nBins =  51 )
         KKMass = RealVar( 'mdau2', Title = 'M(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
                          , nBins =  125 )
-        if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
+        #if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
         tagDecisionComb = Category( 'tagdecision',    Title = 'Tag decision OS/SS combination', Observable = True, States = iTagStatesDecision )
         tagDecisionOS   = Category( 'tagdecision_os', Title = 'Tag decision opposite side',     Observable = True, States = iTagStatesDecision )
@@ -497,10 +503,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , KMinTrackChi2    = KMinTrackChi2
                           )
 
-        obsSetNTuple = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [ tagDecisionComb, estWTagComb ]\
-                       + [ tagDecisionOS, estWTagOS, tagCatOS ] + [ tagDecisionSS, estWTagSS ]\
-                       + [ sel, hlt1ExclB, hlt1B, hlt1UB, hlt2B, hlt2UB ]\
-                       + [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
+        obsSetNTuple = [ time ] + angles +  [ BMass, KKMass, timeRes, tagDecisionOS, tagDecisionSS, estWTagOS, estWTagSS ]
+        if makePlots : obsSetNTuple += [ mumuMass ]
+        if selection in [ 'timeEffFit', 'paper2012' ] or timeEffType in [ 'fit', 'paper2012' ] : obsSetNTuple += [ hlt1ExclB ]
+        if selection == 'timeEffFit'                  or timeEffType == 'fit'                  : obsSetNTuple += [ hlt2B, hlt2UB ]
 
 
         ###################################################################################################################################
@@ -509,20 +515,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         self._dataSets = { }
         if nTupleFile :
+            trackChi2Cuts = ' && '.join( '%s < %f' % ( trackChi2, trackChi2.getMax() ) for trackChi2 in\
+                                                      [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ] )
+
             if selection == 'HLT1Unbiased' :
-                cut = '%s==1 && %s==1 && %s==1' % ( sel, hlt1UB, hlt2B )
+                cuts = '%s==1 && %s==1 && %s==1 && %s' % ( sel, hlt1UB, hlt2B, trackChi2Cuts )
             elif selection == 'HLT1ExclBiased' :
-                cut = '%s==1 && %s==1 && %s==1' % ( sel, hlt1ExclB, hlt2B )
+                cuts = '%s==1 && %s==1 && %s==1 && %s' % ( sel, hlt1ExclB, hlt2B, trackChi2Cuts )
             elif selection == 'paper2012' :
-                cut = '%s==1 && (%s==1 || %s==1) && %s==1' % ( sel, hlt1B, hlt1UB, hlt2B )
+                cuts = '%s==1 && (%s==1 || %s==1) && %s==1 && %s' % ( sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
             elif selection == 'timeEffFit' :
-                cut = '%s==1 && (%s==1 || %s==1) && (%s==1 || %s==1)' % ( sel, hlt1B, hlt1UB, hlt2B, hlt2UB )
+                cuts = '%s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s' % ( sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
             else :
                 raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown selection: "%s"' % selection )
 
             from P2VVGeneralUtils import readData
             self._dataSets['data'] = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
-                                              , Rename = 'JpsiphiData', cuts = cut )
+                                              , Rename = 'JpsiphiData', ntupleCuts = cuts )
 
         else :
             self._dataSets['data'] = None
@@ -589,7 +598,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # determine mass parameters with a fit
             print 120 * '='
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with mass PDF'
-            self._massPdf.fitTo( self._dataSets['data'], **fitOpts )
+            self._massPdf.fitTo( self._dataSets['data'], Save = False, **fitOpts )
 
             if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or paramKKMass == 'simultaneous' ) :
                 # categories for splitting the PDF
@@ -610,20 +619,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                        , SplitCategories = splitCats
                                                        , SplitParameters = splitParams
                                                       )
-                if not self._dataSets['data'].get().find( self._sWeightMassPdf.indexCat().GetName() ) :
-                    self._dataSets['data'].addColumn( self._sWeightMassPdf.indexCat() )
 
                 # set yields for categories
-                splitCatIter = self._sWeightMassPdf.indexCat().typeIterator()
+                splitCat     = self._sWeightMassPdf.indexCat()
+                splitCatIter = splitCat.typeIterator()
                 splitCatState = splitCatIter.Next()
                 splitCatPars = self._sWeightMassPdf.getVariables()
                 while splitCatState :
                     sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', splitCatState.GetName(), splitCatPars )
                     bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    splitCatState.GetName(), splitCatPars )
 
+                    if splitCat.isFundamental() :
+                        selStr = '!(%s-%d)' % ( splitCat.GetName(), splitCatState.getVal() )
+                    else :
+                        splitCat.setLabel( splitCatState.GetName() )
+                        selStr = ' && '.join( '!(%s-%d)' % ( cat.GetName(), cat.getIndex() ) for cat in splitCat.inputCatList() )
                     nEv    = self._dataSets['data'].sumEntries()
-                    nEvBin = self._dataSets['data'].sumEntries( '!(%s-%d)'\
-                                                                % ( self._sWeightMassPdf.indexCat().GetName(), splitCatState.getVal() ) )
+                    nEvBin = self._dataSets['data'].sumEntries(selStr)
+
                     sigYield.setVal( sigYield.getVal() * nEvBin / nEv )
                     sigYield.setError( sqrt( sigYield.getVal() ) )
                     sigYield.setMin(0.)
@@ -644,7 +657,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # determine mass parameters in each sub-sample with a fit
                 print 120 * '='
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with simultaneous mass PDF'
-                self._sWeightMassPdf.fitTo( self._dataSets['data'], **fitOpts )
+                self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = False, **fitOpts )
 
                 if SWeightsType.endswith( 'Fixed' ) :
                     # free parameters that were fixed for mass fit
@@ -671,6 +684,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._dataSets['bkgSWeightData'] = self._SWeightData.data( 'bkgMass' if SFit else 'bkg'    )
 
             # print signal/background info to screen
+            splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
+                         , self._dataSets['data'].get().find( hlt2B.GetName() )
+                        ]
+            if hasattr( self, '_KKMassCat' ) :
+                splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
+            splitCats = [ cat for cat in splitCats if cat ]
             self._dataSets['sigSWeightData'].Print()
             self._dataSets['bkgSWeightData'].Print()
             nEv    = self._dataSets['data'].sumEntries()
@@ -678,18 +697,59 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             nBkgEv = self._dataSets['bkgSWeightData'].sumEntries()
             signif = nSigEv / sqrt(nEv)
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: number of events:'
-            print '          | total | signal   | backgr.  | signif.'
-            print '    ------|-------|----------|----------|--------'
-            print '    total | %5d | %8.2f | %8.2f | %7.3f' % ( int(nEv), nSigEv, nBkgEv, signif )
-            print '    ------|-------|----------|----------|--------'
-            if paramKKMass :
-                for iter in range( len(KKMassBinBounds) - 1 ) :
-                    cut    = '!(KKMassCat-%d)' % iter
-                    nEv    = self._dataSets['data'].sumEntries(cut)
-                    nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
-                    nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
-                    signif = nSigEv / sqrt(nEv)
-                    print '    %5s | %5d | %8.2f | %8.2f | %7.3f' % ( iter, int(nEv), nSigEv, nBkgEv, signif )
+            print '                  | total | signal   | backgr.  | signif.'
+            print '    --------------|-------|----------|----------|--------'
+            print '            total | %5d | %8.2f | %8.2f | %7.3f' % ( int(nEv), nSigEv, nBkgEv, signif )
+            print '    --------------|-------|----------|----------|--------'
+
+            if splitCats :
+                iters = { }
+                inds  = { }
+                labs  = { }
+                for cat in splitCats :
+                    iters[cat] = 0
+                    inds[cat]  = [ ]
+                    labs[cat]  = [ ]
+                    catIter = cat.typeIterator()
+                    catState = catIter.Next()
+                    while catState :
+                        inds[cat].append( catState.getVal() )
+                        labs[cat].append( catState.GetName() )
+
+                        cut    = '!(%s-%d)' % ( cat.GetName(), catState.getVal() )
+                        nEv    = self._dataSets['data'].sumEntries(cut)
+                        nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
+                        nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
+                        signif = nSigEv / sqrt(nEv)
+                        print '    %13s | %5d | %8.2f | %8.2f | %7.3f' % ( catState.GetName(), int(nEv), nSigEv, nBkgEv, signif )
+
+                        catState = catIter.Next()
+
+                    print '    --------------|-------|----------|----------|--------'
+
+                if len(splitCats) > 1 :
+                    cont = True
+                    while cont :
+                        cut    = '&&'.join( '!(%s-%d)' % ( cat.GetName(), inds[cat][ iters[cat] ] ) for cat in splitCats )
+                        nEv    = self._dataSets['data'].sumEntries(cut)
+                        nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
+                        nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
+                        signif = nSigEv / sqrt(nEv)
+                        print '    %13s | %5d | %8.2f | %8.2f | %7.3f'\
+                               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), int(nEv), nSigEv, nBkgEv, signif )
+
+                        iters[ splitCats[-1] ] += 1
+                        for catIt in range( len(splitCats) ) :
+                            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                                if catIt == len(splitCats) - 1 :
+                                    cont = False
+                                else :
+                                    iters[ splitCats[ -catIt - 1 ] ] = 0
+                                    iters[ splitCats[ -catIt - 2 ] ] +=1
+                            else :
+                                continue
+
+                    print '    --------------|-------|----------|----------|--------'
 
             # create signal and background data sets with side band ranges
             self._dataSets['sigRangeData'] = self._dataSets['data'].reduce( CutRange = 'Signal'       )
@@ -698,7 +758,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             if makePlots and SWeightsType.startswith('simultaneous') and paramKKMass == 'simultaneous' :
                 # get simultaneous PDFs
-                splitCat      = self._sWeightMassPdf.indexCat()
+                splitCat      = self._KKMassCat
                 splitCatIter  = splitCat.typeIterator()
                 splitCatState = splitCatIter.Next()
                 bins = [ ]
@@ -1123,7 +1183,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
             self._timeResModelOriginal = self._timeResModel
-            if timeEffType == 'fit' :
+            if timeEffType == 'fit' and selection == 'timeEffFit' :
                 hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
                                         , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
                                        }
@@ -1136,28 +1196,29 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     , Data = self._dataSets['data'], Fit = True, Original = sigPdf
                                                     , ResolutionModel = self._timeResModel )
 
-            elif timeEffType == 'paper2012' :
-                hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
-                                       , 'notExclB' : { 'histogram' : timeEffHistUBName    }
-                                      }
-                        }
+            #elif timeEffType == 'paper2012' and selection == 'paper2012' :
+            #    hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
+            #                           , 'notExclB' : { 'histogram' : timeEffHistUBName    }
+            #                          }
+            #            }
 
-                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-                self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
-                                                    , Data = self._dataSets['data'], Fit = False, Original = sigPdf
-                                                    , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf ) )
+            #    from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+            #    self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
+            #                                        , Data = self._dataSets['data'], Fit = False, Original = sigPdf
+            #                                        , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf ) )
 
-            elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] :
+            elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
                 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance(  time = time
                                                     , Input = timeEffHistFile
-                                                    , Histogram = timeEffHistUBName if timeEffType == 'HLT1Unbiased'\
-                                                                  else timeEffHistExclBName
+                                                    , Histogram = timeEffHistExclBName if timeEffType == 'HLT1ExclBiased'\
+                                                                  else timeEffHistUBName
                                                     , ResolutionModel = self._timeResModel
                                                    )
 
             else:
-                raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown time efficiency type: "%s"' % timeEffType )
+                raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown time efficiency type: "%s" (with "%s" selection)'\
+                                 % ( timeEffType, selection ) )
 
         if multiplyByTimeEff in [ 'all', 'signal' ] :
             # multiply signal PDF with time acceptance
@@ -1238,9 +1299,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                 , Data = self._dataSets['sigSWeightData'] )
             self._backgroundKKMass = Binned_MassPdf( 'bkg_mKK', KKMass, Binning = self._KKMassBinning
                                                     , Data = self._dataSets['bkgSWeightData'] )
-            if paramKKMass == 'functions' :
-                self._signalComps += self._signalKKMass.pdf()
-                if not SFit: self._backgroundComps += self._backgroundKKMass.pdf()
+            #if paramKKMass == 'functions' :
+            #    self._signalComps += self._signalKKMass.pdf()
+            #    if not SFit: self._backgroundComps += self._backgroundKKMass.pdf()
 
             if makePlots :
                 self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
@@ -1334,14 +1395,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ######################################################
 
         if self._dataSets['data'] and self._dataSets['sigSWeightData'] and self._dataSets['bkgSWeightData'] and makePlots :
-            tempTagCatOS = tagCatOS if not nominalPdf and self._iTagZeroTrick else tagCatP2VVOS
-            tempTagCatSS = None     if not nominalPdf and self._iTagZeroTrick else tagCatP2VVSS
-
             # build PDFs for estimated wrong-tag probabilities
             from RooFitWrappers import HistPdf
-            self._estWTagDataOS = self._dataSets['sigSWeightData'].reduce( '%s > 0' % tempTagCatOS.GetName() )
-            if tempTagCatSS :
-                self._estWTagDataSS = self._dataSets['sigSWeightData'].reduce( '%s > 0' % tempTagCatSS.GetName() )
+            self._estWTagDataOS = self._dataSets['sigSWeightData'].reduce( '%s > 0' % tagCatP2VVOS.GetName() )
+            if tagCatP2VVSS :
+                self._estWTagDataSS = self._dataSets['sigSWeightData'].reduce( '%s > 0' % tagCatP2VVSS.GetName() )
             else :
                 self._estWTagDataSS = self._dataSets['sigSWeightData']
 
@@ -1358,13 +1416,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                              )
 
             # get normalization correction for tagged events
-            untagFracOS    = self._dataSets['data'].table(tempTagCatOS).getFrac('Untagged')
-            untagFracSigOS = self._dataSets['sigSWeightData'].table(tempTagCatOS).getFrac('Untagged')
-            untagFracBkgOS = self._dataSets['bkgSWeightData'].table(tempTagCatOS).getFrac('Untagged')
-            if tempTagCatSS :
-                untagFracSS    = self._dataSets['data'].table(tempTagCatSS).getFrac('Untagged')
-                untagFracSigSS = self._dataSets['sigSWeightData'].table(tempTagCatSS).getFrac('Untagged')
-                untagFracBkgSS = self._dataSets['bkgSWeightData'].table(tempTagCatSS).getFrac('Untagged')
+            untagFracOS    = self._dataSets['data'].table(tagCatP2VVOS).getFrac('Untagged')
+            untagFracSigOS = self._dataSets['sigSWeightData'].table(tagCatP2VVOS).getFrac('Untagged')
+            untagFracBkgOS = self._dataSets['bkgSWeightData'].table(tagCatP2VVOS).getFrac('Untagged')
+            if tagCatP2VVSS :
+                untagFracSS    = self._dataSets['data'].table(tagCatP2VVSS).getFrac('Untagged')
+                untagFracSigSS = self._dataSets['sigSWeightData'].table(tagCatP2VVSS).getFrac('Untagged')
+                untagFracBkgSS = self._dataSets['bkgSWeightData'].table(tagCatP2VVSS).getFrac('Untagged')
             else :
                 untagFracSS    = 1.
                 untagFracSigSS = 1.
@@ -1574,7 +1632,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               , PDFs   = [ self._bkg_angBins, self._bkg_angFuncs ]
                                               , Yields = { self._bkg_angBins.GetName() : self._bkgAngBinsFrac }
                                              )
-                    if bkgAngleData : self._bkg_angles.fitTo( bkgAngleData, SumW2Error = False, **fitOpts )
+                    if bkgAngleData : self._bkg_angles.fitTo( bkgAngleData, SumW2Error = False, Save = False, **fitOpts )
 
             if not SFit : self._backgroundComps += self._bkg_angles
 
@@ -1717,8 +1775,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## split PDF for different data samples ##
         ##########################################
 
+        # first garbage collect
+        gc.collect()
+
         # check number of KK mass bin parameters
-        if paramKKMass == 'simultaneous' :
+        if paramKKMass in [ 'simultaneous', 'functions' ] :
             assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == len(CSPValues) == len(KKMassBinBounds) - 1,\
                    'P2VV - ERROR: wrong number of KK mass bin parameters specified'
         else :
@@ -1745,6 +1806,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if not SFit and selection in ['paper2012', 'timeEffFit'] :
                 splitCats.append( [hlt1ExclB] if selection == 'paper2012' else [hlt1ExclB, hlt2B] if selection == 'timeEffFit' else [] )
                 splitParams.append( [ par for par in self._backgroundTime.parameters() if not par.isConstant() ] )
+            if selection == 'paper2012' :
+                if SFit :
+                    splitCats.append( [hlt1ExclB] )
+                    splitParams.append( [ par for par in self._timeResModel['binHeights'] ] )
+                else :
+                    splitParams[-1] += [ par for par in self._timeResModel['binHeights'] ]
             if paramKKMass == 'simultaneous' :
                 splitCats.append( [ self._KKMassCat ] )
                 splitParams.append( [ ] )
@@ -1760,8 +1827,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                              , SplitCategories = splitCats
                                              , SplitParameters = splitParams
                                             )
-            if not self._dataSets['data'].get().find( self._simulPdf.indexCat().GetName() ) :
-                for data in self._dataSets.values() : data.addColumn( self._simulPdf.indexCat() )
 
             massPars = self._sWeightMassPdf.getVariables()
             splitCatPars = self._simulPdf.getVariables()
@@ -1774,9 +1839,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    splitCatState.GetName(), splitCatPars )
 
                     if not sigYield in massPars or not bkgYield in massPars :
+                        if splitCat.isFundamental() :
+                            selStr = '!(%s-%d)' % ( splitCat.GetName(), splitCatState.getVal() )
+                        else :
+                            splitCat.setLabel( splitCatState.GetName() )
+                            selStr = ' && '.join( '!(%s-%d)' % ( cat.GetName(), cat.getIndex() ) for cat in splitCat.inputCatList() )
                         nEv    = self._dataSets['data'].sumEntries()
-                        nEvBin = self._dataSets['data'].sumEntries( '!(%s-%d)'\
-                                                                    % ( self._simulPdf.indexCat().GetName(), splitCatState.getVal() ) )
+                        nEvBin = self._dataSets['data'].sumEntries(selStr)
+
                         sigYield.setVal( sigYield.getVal() * nEvBin / nEv )
                         sigYield.setError( sqrt( sigYield.getVal() ) )
                         sigYield.setMin(0.)
@@ -1787,7 +1857,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         bkgYield.setMax(nEvBin)
 
                     splitCatState = splitCatIter.Next()
-
 
             if not SFit and selection in ['paper2012', 'timeEffFit'] :
                 # set values for background parameters in different trigger samples
@@ -1813,6 +1882,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         mlTau.setConstant(True)
 
                     splitCatState = splitCatIter.Next()
+
+            if selection == 'paper2012' :
+                accFile = TFile.Open(timeEffHistFile)
+                accHist = accFile.Get(timeEffHistExclBName)
+                exclBName = hlt1ExclB.lookupType(1).GetName()
+                for binIt in range( accHist.GetNbinsX() ) :
+                    parName = self._timeResModel['binHeights'][binIt]
+                    binHeight = getSplitPar( parName, exclBName, splitCatPars )
+                    binHeight.setVal( accHist.GetBinContent( binIt + 1 ) )
+                accFile.Close()
 
             if paramKKMass == 'simultaneous' :
                 # set values for splitted amplitudes
@@ -1864,6 +1943,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
         PdfBuilder.__init__( self, self._simulPdf if paramKKMass == 'simultaneous' else self._fullPdf, observables, { } )
         print 120 * '='
+
+        # garbage collect
+        gc.collect()
 
     def __getitem__( self, kw ) :
         return self._dataSets[kw] if kw in [ 'data', 'sigSWeightData', 'bkgSWeightData', 'sigRangeData', 'bkgRangeData' ]\

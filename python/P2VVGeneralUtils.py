@@ -23,27 +23,38 @@ def numCPU( Max = sys.maxint ) :
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
 
-def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = None, **kwargs ) :
+def readData( filePath, dataSetName, NTuple = False, observables = None, **kwargs ) :
     """reads data from file (RooDataSet or TTree(s))
     """
     from ROOT import RooFit
     if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
+    cuts = kwargs.pop( 'cuts', '' )
 
     if NTuple :
       from ROOT import RooDataSet, TChain
-      assert observables != None, 'P2VV - ERROR: readData: set of observables is required for reading an NTuple'
+      assert observables != None, 'P2VV - ERROR: readData: set of observables is required for reading an n-tuple'
 
       # create data set from NTuple file(s)
       print 'P2VV - INFO: readData: reading NTuple(s) "%s" from file(s) "%s"' % ( dataSetName, filePath )
       chain = TChain(dataSetName)
       status = chain.Add( filePath, -1 )
-      if status == 0 : raise RuntimeError('P2VV - ERROR: could not locate tree "%s" in file "%s"' % ( dataSetName, filePath ) )
+      if status == 0 : raise RuntimeError( 'P2VV - ERROR: could not locate tree "%s" in file "%s"' % ( dataSetName, filePath ) )
 
-      print 'P2VV - INFO: readData: applying cuts: %s' % cuts
+      if 'ntupleCuts' in kwargs :
+          ntupleCuts = kwargs.pop( 'ntupleCuts', '' )
+          print 'P2VV - INFO: readData: applying cuts on n-tuple: %s' % ntupleCuts
+          ntuple = chain.CopyTree(ntupleCuts)
+      else :
+          ntuple = chain
+
+      if cuts : print 'P2VV - INFO: readData: applying cuts on data set: %s' % cuts
       data = RooDataSet( dataSetName, dataSetName
                        , [ obs._var for obs in observables ]
-                       , Import = chain
+                       , Import = ntuple
                        , Cut = noNAN + ' && ' + cuts if cuts else noNAN )
+      ntuple.IsA().Destructor(ntuple)
+      if chain : chain.IsA().Destructor(chain)
+
     else :
       from ROOT import TFile
 
@@ -53,7 +64,7 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
       assert file, 'P2VV - ERROR: readData: file "%s" could not be opened' % filePath
 
       if observables :
-          print 'P2VV - INFO: readData: applying cuts: %s' % cuts
+          if cuts : print 'P2VV - INFO: readData: applying cuts: %s' % cuts
           from ROOT import RooDataSet
           data = RooDataSet( dataSetName, dataSetName
                            , [ obs._var for obs in observables ]
@@ -69,7 +80,9 @@ def readData( filePath, dataSetName, cuts = '', NTuple = False, observables = No
 
     # import data set into current workspace
     from RooFitWrappers import RooObject
-    return RooObject().ws().put(data,**kwargs)
+    wsData = RooObject().ws().put( data, **kwargs )
+    data.IsA().Destructor(data)
+    return wsData
 
 
 def writeData( filePath, dataSetName, data, NTuple = False ) :
@@ -249,7 +262,24 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     _P2VVPlotStash.append(obsFrame)
 
     # plot data
-    if data : data.plotOn( obsFrame, Name = 'data', **dataOpts )
+    if data :
+        rooPlot = data.plotOn( obsFrame, Name = 'data', **dataOpts )
+        # Set negative bins to 0 if logy is requested
+        minimum = 0.
+        if logy:
+            hist = rooPlot.getHist()
+            from ROOT import Double
+            x = Double(0.)
+            y = Double(0.)
+            for i in range(hist.GetN()):
+                r = hist.GetPoint(i, x, y)
+                if y > 0 and y < minimum:
+                    minimum = y
+                if y < 0.:
+                    hist.SetPoint(i, float(x), 0.)
+                    minimum = 0.
+            hist.SetMinimum(minimum + 0.1)
+            rooPlot.SetMinimum(minimum + 0.1)
 
     # plot PDF
     if pdf :
@@ -885,14 +915,16 @@ class SData( object ) :
             self._sPlots    = [ ]
             self._sDataSets = [ ]
             splitCatState   = splitCatIter.Next()
+            sDataVars       = None
             from ROOT import RooFormulaVar
             while splitCatState :
                 # calculate sWeights per category
                 cat = splitCatState.GetName()
+                data = splitData.FindObject(cat)
 
                 origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if cat in par.GetName() ]
                 self._sPlots.append(  RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat
-                                                     , splitData.FindObject(cat), self._pdf.getPdf(cat)
+                                                     , data, self._pdf.getPdf(cat)
                                                      , RooArgList( par._var for par in self._yields if cat in par.GetName() ) )
                                    )
                 self._sDataSets.append( self._sPlots[-1].GetSDataSet() )
@@ -909,13 +941,14 @@ class SData( object ) :
                 # FIXME: How can we do this more generally? These are special cases and it might go wrong here...
                 from ROOT import RooSuperCategory
                 splitCat.setLabel(cat)
-                if isinstance( splitCat, RooSuperCategory ) :
+                __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
+                if isinstance( __dref(splitCat), RooSuperCategory ) :
                     for fundCat in splitCat.inputCatList() :
                         if not self._sDataSets[-1].get().find( fundCat.GetName() ) : self._sDataSets[-1].addColumn(fundCat)
                 elif splitCat.isFundamental() and not self._sDataSets[-1].get().find( splitCat.GetName() ) :
                     self._sDataSets[-1].addColumn(splitCat)
 
-                # remove category name from sWeight and PDF value column names (it must be possible to simplify this...)
+                # add general sWeight and PDF value columns (it must be possible to simplify this...)
                 # FIXME: in some cases "par.GetName().strip( '_' + cat )" goes wrong:
                 # use "par.GetName()[ : par.GetName().find(cat) - 1 ]" instead
                 # (case: 'N_bkgMass_notExclBiased'.strip('_notExclBiased') --> 'N_bkgM' ?!!!!!!)
@@ -930,19 +963,20 @@ class SData( object ) :
                     self._sDataSets[-1].addColumn(weight)
                     self._sDataSets[-1].addColumn(pdfVal)
 
-                sDataVars = self._sDataSets[-1].get()
-                for par in self._yields :
-                    if cat in par.GetName() :
-                        sDataVars.remove( sDataVars.find( par.GetName() + '_sw' ) )
-                        sDataVars.remove( sDataVars.find( 'L_' + par.GetName()  ) )
-                self._sDataSets[-1].reduce(sDataVars)
+                if not sDataVars :
+                    # get set of variables in data
+                    sDataVars = self._sDataSets[-1].get()
+                    for par in self._yields :
+                        if cat in par.GetName() :
+                            sDataVars.remove( sDataVars.find( par.GetName() + '_sw' ) )
+                            sDataVars.remove( sDataVars.find( 'L_' + par.GetName()  ) )
 
                 splitCatState = splitCatIter.Next()
 
             # merge data sets from categories
             from ROOT import RooDataSet
-            self._sData = RooDataSet( self._name + '_splotdata', self._name + '_splotdata', self._sDataSets[0].get() )
-            for data in self._sDataSets: self._sData.append(data)
+            self._sData = RooDataSet( self._name + '_splotdata', self._name + '_splotdata', sDataVars )
+            for data in self._sDataSets : self._sData.append(data)
 
         else :
             # calculate sWeights with full data set

@@ -31,7 +31,11 @@ def __wrap_kw_subs( fun ) :
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
         args += tuple( RooCmdArg( __disp('Slice',  s) ) for s in kwargs.pop('Slices',  []) )
-        args += tuple( RooCmdArg( __disp('Import', i) ) for i in kwargs.pop('Imports', []) )
+        if 'Imports' in kwargs :
+            assert 'Index' in kwargs, 'RooFit keyword wrapper: "Imports" argument found without "Index"'
+            args += ( RooCmdArg( __disp( 'Index', kwargs.pop('Index') ) ), )  # note order: "Index" before "Import"
+            args += tuple( RooCmdArg( __disp('Import', i) ) for i in kwargs.pop('Imports') )
+
         # TODO: this 'if' block needs to move to RooFitWrappers...
         if 'ArgSet' in kwargs or 'ArgList' in kwargs:
             if 'ArgSet' in kwargs :
