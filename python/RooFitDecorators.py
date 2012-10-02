@@ -127,9 +127,9 @@ def __createRooIterator( create_iterator ) :
             yield obj
     return __iter
 
-def __RooDataSetToTree( self, branchList = '' ) :
+def __RooDataSetToTree( self, branchList = '', RooFitFormat = True ) :
     from ROOT import RooDataSetToTree
-    return RooDataSetToTree( self, branchList )
+    return RooDataSetToTree( self, branchList, RooFitFormat )
 RooDataSet.buildTree = __RooDataSetToTree
 
 # RooAbsCategory functions

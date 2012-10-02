@@ -21,7 +21,7 @@
 #include "RooRealVar.h"
 #include "TTree.h"
 
-TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList)
+TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList, Bool_t RooFitFormat)
 {
   // get branch names
   std::set<TString> branches;
@@ -62,12 +62,17 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList)
       // create RooCategory branch
       char* catLabel = new char[64];
       Int_t* catInd  = new Int_t(0);
-      tree->Branch(name + "_lbl", catLabel, name + "_lbl/C");
-      tree->Branch(name + "_idx", catInd, name + "_idx/I");
+      if (RooFitFormat) {
+        tree->Branch(name + "_lbl", catLabel, name + "_lbl/C");
+        tree->Branch(name + "_idx", catInd, name + "_idx/I");
+        catIndexAdds.push_back(catInd);
+        catLabelAdds.push_back(catLabel);
+      } else {
+        tree->Branch(name, catInd, name + "/I");
+        catIndexAdds.push_back(catInd);
+      }
 
       categories.push_back(category);
-      catLabelAdds.push_back(catLabel);
-      catIndexAdds.push_back(catInd);
     }
   }
 
@@ -82,13 +87,15 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList)
 
     // set RooCategory values
     for (Int_t catIter = 0; catIter < (Int_t)categories.size(); ++catIter) {
-      char* labelAdd = catLabelAdds.at(catIter);
-      TString label(categories.at(catIter)->getLabel());
-      Ssiz_t labelLength = label.Length();
-      if (labelLength > 63) labelLength = 63;
-      for (Ssiz_t charIter = 0; charIter < labelLength; ++charIter)
-        labelAdd[charIter] = label(charIter);
-      labelAdd[labelLength] = 0;
+      if (RooFitFormat) {
+        char* labelAdd = catLabelAdds.at(catIter);
+        TString label(categories.at(catIter)->getLabel());
+        Ssiz_t labelLength = label.Length();
+        if (labelLength > 63) labelLength = 63;
+        for (Ssiz_t charIter = 0; charIter < labelLength; ++charIter)
+          labelAdd[charIter] = label(charIter);
+        labelAdd[labelLength] = 0;
+      }
 
       *catIndexAdds.at(catIter) = categories.at(catIter)->getIndex();
     }
