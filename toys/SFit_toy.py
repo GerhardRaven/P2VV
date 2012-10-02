@@ -225,3 +225,8 @@ signal.setYield(10000, 5000, 50000)
 from RooFitWrappers import buildPdf
 genPdf = buildPdf(Components = [signal_wpv, signal], Observables = angles + [time], Name = 'genPdf')
 
+# run the toy
+toy.set_fit_opts(**dict(Verbose = False))
+toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = genPdf, ProtoData = proto_data)
+
+toy.write_output()
