@@ -165,8 +165,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         self['numEvents'] = 30000
 
-        self['nTupleName'] = 'DecayTree'
-        self['nTupleFile'] = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+        self['nTupleName']     = 'DecayTree'
+        self['nTupleFile']     = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+        self['nominalDataSet'] = False
 
         self['timeEffHistFile']      = 'BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
         self['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
@@ -271,6 +272,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         nTupleName           = pdfConfig.pop('nTupleName')
         nTupleFile           = pdfConfig.pop('nTupleFile')
+        nominalDataSet       = pdfConfig.pop('nominalDataSet')
         angEffMomentsFile    = pdfConfig.pop('angEffMomentsFile')
         timeEffHistFile      = pdfConfig.pop('timeEffHistFile')
         timeEffHistUBName    = pdfConfig.pop('timeEffHistUBName')
@@ -464,6 +466,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         hlt2UBName    = 'hlt2_unbiased'
 
         sel       = Category( 'sel',         Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
+        selA      = Category( 'selA',        Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
+        selB      = Category( 'selB',        Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
         hlt1ExclB = Category( hlt1ExclBName, Observable = True, States = { 'exclB' : 1, 'notExclB' : 0 } )
         hlt1B     = Category( hlt1BName,     Observable = True, States = { 'B'     : 1, 'notB'     : 0 } )
         hlt1UB    = Category( hlt1UBName,    Observable = True, States = { 'UB'    : 1, 'notUB'    : 0 } )
@@ -492,6 +496,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , KKMass           = KKMass
                            , timeRes          = timeRes
                            , sel              = sel
+                           , selA             = selA
+                           , selB             = selB
                            , hlt1ExclB        = hlt1ExclB
                            , hlt1B            = hlt1B
                            , hlt1UB           = hlt1UB
@@ -507,6 +513,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if makePlots : obsSetNTuple += [ mumuMass ]
         if selection in [ 'timeEffFit', 'paper2012' ] or timeEffType in [ 'fit', 'paper2012' ] : obsSetNTuple += [ hlt1ExclB ]
         if selection == 'timeEffFit'                  or timeEffType == 'fit'                  : obsSetNTuple += [ hlt2B, hlt2UB ]
+        if nominalDataSet : obsSetNTuple += [  sel, selA, selB, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2
+                                             , tagDecisionComb, estWTagComb ]
 
 
         ###################################################################################################################################
@@ -675,13 +683,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print 120 * '='
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: computing S-weights'
 
-            # compute S-weights
+            # create sWeigthed data sets
             from P2VVGeneralUtils import SData, splot
-            self._SWeightData = SData( Pdf = self._sWeightMassPdf, Data = self._dataSets['data'], Name = 'massSData' )
-
-            # create signal and background data sets with S-weights
-            self._dataSets['sigSWeightData'] = self._SWeightData.data( 'sigMass' if SFit else 'signal' )
-            self._dataSets['bkgSWeightData'] = self._SWeightData.data( 'bkgMass' if SFit else 'bkg'    )
+            self._SData = SData( Pdf = self._sWeightMassPdf, Data = self._dataSets['data'], Name = 'massSData' )
+            self._dataSets['SWeightData']    = self._SData.data()
+            self._dataSets['sigSWeightData'] = self._SData.data( 'sigMass' if SFit else 'signal' )
+            self._dataSets['bkgSWeightData'] = self._SData.data( 'bkgMass' if SFit else 'bkg'    )
 
             # print signal/background info to screen
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )

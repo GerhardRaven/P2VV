@@ -1000,7 +1000,9 @@ class SData( object ) :
 
         raise KeyError, 'P2VV - ERROR: SData.__init__(): unknown component %s' % Component
 
-    def data( self, Component ) :
+    def data( self, Component = None ) :
+        if not Component : return self._sData
+
         if Component not in self._data :
             # check if component exists
             yName = 'N_%s' % Component
