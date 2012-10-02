@@ -179,7 +179,6 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
         self._parseArg( 'timeResMU', kwargs, Value = 0.0, Constant = True )
         self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
-        self._parseArg( 'timeResMuSF', kwargs, Value = 1, Constant = True)
         self._parseArg( 'timeResSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
 
         constraints = []
@@ -206,9 +205,8 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                                                            , Type = GaussModel
                                                            , Parameters = [  self._time
                                                                            , self._timeResMU
-                                                                           , self._sigmat
-                                                                           , self._timeResMuSF
                                                                            , self._timeResSF
+                                                                           , self._sigmat
                                                                           ]
                                                            , ConditionalObservables = [ self._sigmat ]
                                                            , ExternalConstraints = constraints

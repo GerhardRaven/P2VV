@@ -36,13 +36,13 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-                          bias = dict(Value = -0.17, MinMax = (-1, 1)),
-                          sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
+##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
+##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
-## from P2VVParameterizations.TimeResolution import Double_Gauss_TimeResolution as TimeResolution
-## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st)
+from P2VVParameterizations.TimeResolution import Double_Gauss_TimeResolution as TimeResolution
+sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st)
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],

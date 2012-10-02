@@ -110,7 +110,7 @@ class Toy(object):
             args = dict(NumEvent = self._options.nevents)
             if 'ProtoData' in args:
                 args['ProtoData'] = kwargs.pop('ProtoData')
-            data = pdf.generate(observables, **kwargs)
+            data = genPdf.generate(observables, **kwargs)
             fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, **self.__fit_opts)
             if fit_result.status() != 0:
                 print 'Fit result status = %s' % fit_result.status()
