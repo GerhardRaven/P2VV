@@ -176,10 +176,11 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
         from ROOT import RooNumber
-        self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._parseArg( 'timeResMU', kwargs, Value = 0.0, Constant = True )
-        self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
-        self._parseArg( 'timeResSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
+        self._parseArg( 'time',           kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+        self._parseArg( 'timeResMean',    kwargs, Value = 0., ObjectType = 'ConstVar' )
+        self._parseArg( 'sigmat',         kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
+        self._parseArg( 'timeResMeanSF',  kwargs, Value = 1., ObjectType = 'ConstVar' )
+        self._parseArg( 'timeResSigmaSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
 
         constraints = []
         timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
@@ -188,10 +189,10 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
         elif timeResSFConstr :
             from ROOT import RooGaussian as Gaussian
             from RooFitWrappers import Pdf
-            constraints.append( Pdf(  Name = self._timeResSF.GetName() + '_constraint', Type = Gaussian
-                                    , Parameters = [  self._timeResSF
-                                                    , ConstVar( Name = 'tres_SF_constraint_mean',  Value = self._timeResSF.getVal()   )
-                                                    , ConstVar( Name = 'tres_SF_constraint_sigma', Value = self._timeResSF.getError() )
+            constraints.append( Pdf(  Name = self._timeResSigmaSF.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._timeResSigmaSF
+                                                    , ConstVar( Name = 'tres_SF_constraint_mean',  Value = self._timeResSigmaSF.getVal()  )
+                                                    , ConstVar( Name = 'tres_SF_constraint_sigma', Value = self._timeResSigmaSF.getError())
                                                    ]
                                    )
                              )
@@ -204,9 +205,10 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
                                 , Model =  ResolutionModel(  Name = 'timeResMoriond2012'
                                                            , Type = GaussModel
                                                            , Parameters = [  self._time
-                                                                           , self._timeResMU
-                                                                           , self._timeResSF
+                                                                           , self._timeResMean
                                                                            , self._sigmat
+                                                                           , self._timeResMeanSF
+                                                                           , self._timeResSigmaSF
                                                                           ]
                                                            , ConditionalObservables = [ self._sigmat ]
                                                            , ExternalConstraints = constraints
