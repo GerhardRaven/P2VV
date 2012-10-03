@@ -424,7 +424,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         estWTagSS.setBins( numEstWTagBins, 'cache' )
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
-                        , Value = 5368., MinMax = ( 5250., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
+                        , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
                         ,  Ranges = dict(  LeftSideBand  = ( 5205., 5325. )
                                          , Signal        = ( 5325., 5400. )
                                          , RightSideBand = ( 5400., 5520. )
