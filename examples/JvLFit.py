@@ -7,7 +7,7 @@ pdfConfig = PdfConfig()
 
 # job parameters
 readData                = True
-pdfConfig['selection']  = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
 doFit                   = True
 makeObservablePlots     = False
@@ -18,15 +18,17 @@ pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
+randomParVals           = 12345
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
-parameterFile = 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
+parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120620_MagDownMagUp.root'
     pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20120821_MagDownMagUp.root'
+    pdfConfig['nominalDataSet'] = False
 else :
     pdfConfig['nTupleName'] = None
     pdfConfig['nTupleFile'] = None
@@ -60,39 +62,41 @@ pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
-pdfConfig['multiplyByTimeEff']    = ''
-pdfConfig['timeEffType']          = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['multiplyByTimeEff']    = 'signal'
+pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
-pdfConfig['parameterizeKKMass']   = ''  # default/nominal: 'simultaneous'
+pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
-pdfConfig['SWeightsType']         = ''
-pdfConfig['KKMassBinBounds']      = [ 1008., 1032. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.27, 0.09), (0.079, 0.032), (0.016, 0.015), (0.011, 0.010), (0.057, 0.029), (0.17, 0.05) ]
-#                                     , [ (1.4,  0.5 ), (0.8,   0.3  ), (0.3,   0.3  ), (-0.5,  0.3  ), (-0.5, 0.2   ), (-0.7, 0.2 ) ] )
+pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.27, 0.09), (0.05, 0.02), (0.04, 0.02), (0.17, 0.05) ]
+#                                     , [ (1.4,  0.5 ), (0.5,   0.3  ), (-0.5,  0.3  ), (-0.7, 0.2 ) ] )
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
+                                     , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.18, 0.07 ), ( 0.07, 0.03 ), ( 0.01, 0.02 ), ( 0.02, 0.01 ), ( 0.05, 0.03 ), ( 0.15, 0.04 ) ]
 #                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.4  ), ( -0.5, 0.2  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
-pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
-pdfConfig['numEstWTagBins']     = 100
-pdfConfig['constrainTagging']   = 'constraint'  # nominal: 'constraint'
+pdfConfig['numEstWTagBins']     = 50
+pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['eventTimeResolution']   = True  # nominal: True
 pdfConfig['numTimeResBins']        = 100
-pdfConfig['constrainTimeResScale'] = 'constraint'  # nominal: 'constraint'
+pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['numEvents'] = 32000
-pdfConfig['signalFraction'] = 0.67
+pdfConfig['numEvents'] = 10000
+pdfConfig['signalFraction'] = 0.45
 pdfConfig['massRangeBackground'] = True
 
 pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'phasesSWaveFrac'
 pdfConfig['ASParam']        = 'deltaPerp'  # default/nominal: 'deltaPerp'
 pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 
-pdfConfig['constrainDeltaM'] = 'constraint'  # nominal: 'constraint'
+pdfConfig['constrainDeltaM'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'  # default/nominal: 'lambPhi'
 
@@ -352,11 +356,12 @@ if fastFit :
 
 #ws['timeResSF'].setVal(1.4476)
 
-# set amplitude ranges
-pdfBuild['amplitudes'].parameter('A0Mag2').setRange( ( 0., 1. ) )
-pdfBuild['amplitudes'].parameter('AperpMag2').setRange( ( 0., 1. ) )
-for par in pdfPars :
-    if 'f_S' in par.GetName() : par.setRange( 0., 1. )
+if randomParVals :
+    # give parameters random offsets
+    import random
+    if type(randomParVals) == int : random.seed(randomParVals)
+    for par in pdfPars :
+        if not par.isConstant() : par.setVal( par.getVal() + 0.4 * ( random.random() - 0.5 ) * par.getError() )
 
 # print parameters
 print 120 * '='
