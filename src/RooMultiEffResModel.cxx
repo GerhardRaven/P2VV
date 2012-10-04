@@ -19,7 +19,12 @@
 //
 
 #include <memory>
+using std::auto_ptr;
 #include <sstream>
+#include <iostream>
+using std::endl;
+#include <utility>
+using std::make_pair;
 
 #include "RooFit.h"
 #include "Riostream.h"

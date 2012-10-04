@@ -18,6 +18,7 @@
 #include "RooAbsPdf.h"
 #include "RooAbsData.h"
 #include <string>
+#include <iosfwd>
 
 //_____________________________________________________________________________
 class RooAbsRealMoment
@@ -57,7 +58,7 @@ public:
   virtual void inc(Double_t weight = 1.);
   void reset() {_m0 = _m1 = _n0 = _n1 = _n2 = 0.;}
 
-  virtual ostream& print(ostream& os, Bool_t normalize = kTRUE) const;
+  virtual std::ostream& print(std::ostream& os, Bool_t normalize = kTRUE) const;
   void Print(Bool_t normalize = kTRUE) const {print(std::cout, normalize);}
 
 protected:

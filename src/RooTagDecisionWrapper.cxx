@@ -29,6 +29,9 @@
 #include "RooRandom.h"
 #include "RooTagDecisionWrapper.h"
 
+#include <iostream>
+using std::endl;
+
 ClassImp(RooTagDecisionWrapper);
 
 //_____________________________________________________________________________

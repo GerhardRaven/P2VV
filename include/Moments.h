@@ -12,6 +12,7 @@
 #define MOMENTS_H
 #include "RooAbsPdf.h"
 #include "RooAbsData.h"
+#include <iosfwd>
 #include <string>
 
 class IMoment {
@@ -31,7 +32,7 @@ public:
 
   void reset() {_m0 = _m1 = _n0 = _n1 = _n2 = 0.;}
 
-  virtual ostream& print(ostream& os, bool normalize = true) const;
+  virtual std::ostream& print(std::ostream& os, bool normalize = true) const;
   void Print(bool normalize = true) const {print(std::cout, normalize);}
 
 protected:

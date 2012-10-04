@@ -23,6 +23,8 @@
 //
 
 #include <memory>
+#include <string>
+using std::string;
 
 #include "RooFit.h"
 
