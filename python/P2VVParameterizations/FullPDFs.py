@@ -694,7 +694,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
                          , self._dataSets['data'].get().find( hlt2B.GetName() )
                         ]
-            if hasattr( self, '_KKMassCat' ) :
+            if hasattr( self, '_KKMassCat' ) and self._KKMassCat.numTypes() > 1 :
                 splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
             splitCats = [ cat for cat in splitCats if cat ]
             self._dataSets['sigSWeightData'].Print()
@@ -909,8 +909,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             # add tagging categories to data sets
             from P2VVGeneralUtils import addTaggingObservables
-            for data in self._dataSets.values() :
-                if data:
+            for dataKey, data in self._dataSets.iteritems() :
+                if data and not data.get().find( iTagOS.GetName() ) :
                     addTaggingObservables( data, iTagOS.GetName(), tagCatP2VVOS.GetName(), tagDecisionOS.GetName(), estWTagOS.GetName()
                                           , self._tagCatsOS['tagCats'] )
                     addTaggingObservables( data, iTagSS.GetName(), tagCatP2VVSS.GetName(), tagDecisionSS.GetName(), estWTagSS.GetName()
