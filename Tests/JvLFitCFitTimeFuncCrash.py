@@ -41,7 +41,7 @@ dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, Tr
 fitOpts = dict(  NumCPU    = 4
                , Optimize  = 2
                , Timer     = True
-#               , Verbose   = True
+               , Verbose   = True
 #               , Minos     = True
 #               , Hesse     = False
 #               , Minimizer = 'Minuit2'
@@ -81,7 +81,7 @@ pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = 'constraint'  # nominal: 'constraint'
 
 pdfConfig['eventTimeResolution']   = True  # nominal: True
-pdfConfig['numTimeResBins']        = 100
+pdfConfig['numTimeResBins']        = 20
 pdfConfig['constrainTimeResScale'] = 'constraint'  # nominal: 'constraint'
 
 pdfConfig['numEvents'] = 32000

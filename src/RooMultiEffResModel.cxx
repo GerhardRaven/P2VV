@@ -134,7 +134,7 @@ Double_t RooMultiEffResModel::CacheElem::getVal(const Int_t index) const
 //_____________________________________________________________________________
 RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
                                          std::vector<HistEntry*> entries)
-   : RooAbsEffResModel(name,title, (*entries.begin())->efficiency()->convVar()),
+   : RooAbsEffResModel(name,title, entries.front()->efficiency()->convVar()),
      _binboundaries(0),
      _prodGenCode(0),
      _super(0),
