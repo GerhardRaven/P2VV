@@ -207,7 +207,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-        self['eventTimeResolution']   = True
+        self['timeResType']           = 'event'      # '' / 'event' / 'eventMean'
         self['numTimeResBins']        = 100
         self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
@@ -323,7 +323,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         constrainTagging = pdfConfig.pop('constrainTagging')
         condTagging = True if contEstWTag else condTagging
 
-        eventTimeRes    = pdfConfig.pop('eventTimeResolution')
+        timeResType     = pdfConfig.pop('timeResType')
         numTimeResBins  = pdfConfig.pop('numTimeResBins')
         constrTResScale = pdfConfig.pop('constrainTimeResScale')
 
@@ -972,10 +972,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = 'constrain' if nominalPdf else constrainDeltaM )
         if ambiguityPars : self._lifetimeParams['dGamma'].setVal( -self._lifetimeParams['dGamma'].getVal() )
 
-        if nominalPdf or eventTimeRes :
+        if nominalPdf or timeResType.startswith('event') :
             from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution( time = time, sigmat = timeRes
-                                                , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+            timeResArgs = dict( time = time, sigmat = timeRes, timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+            if 'mean' in timeResType.lower() :
+                timeResArgs['timeResMean']    = RealVar( 'timeResMean', Value = -0.169, Error = 0.005, MinMax = ( -1., 1. ) )
+                #timeResArgs['timeResSigmaSF'] = dict( Value = 1.467, Error = 0.003 )
+            self._timeResModel = TimeResolution( **timeResArgs )
+
         else :
             from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
             self._timeResModel = TimeResolution( time = time

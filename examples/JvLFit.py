@@ -40,7 +40,7 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 2
+fitOpts = dict(  NumCPU    = 1
                , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True
@@ -81,11 +81,11 @@ pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
-pdfConfig['numEstWTagBins']     = 20
+pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['eventTimeResolution']   = True  # nominal: True
-pdfConfig['numTimeResBins']        = 20
+pdfConfig['timeResType']           = 'event'  # 'event' # 'eventMean'
+pdfConfig['numTimeResBins']        = 50
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
