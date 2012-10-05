@@ -18,7 +18,7 @@ pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
-randomParVals           = 12345
+randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
@@ -46,7 +46,7 @@ fitOpts = dict(  NumCPU    = 2
 #               , Verbose   = True
 #               , Minos     = True
 #               , Hesse     = False
-#               , Minimizer = 'Minuit2'
+               , Minimizer = 'Minuit2'
               )
 pdfConfig['fitOptions'] = fitOpts
 
@@ -68,7 +68,7 @@ pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
+pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: simultaneousFreeBkg
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.27, 0.09), (0.05, 0.02), (0.04, 0.02), (0.17, 0.05) ]
 #                                     , [ (1.4,  0.5 ), (0.5,   0.3  ), (-0.5,  0.3  ), (-0.7, 0.2 ) ] )
@@ -81,11 +81,11 @@ pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 pdfConfig['sameSideTagging']    = True  # nominal: False
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
-pdfConfig['numEstWTagBins']     = 50
+pdfConfig['numEstWTagBins']     = 20
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['eventTimeResolution']   = True  # nominal: True
-pdfConfig['numTimeResBins']        = 100
+pdfConfig['numTimeResBins']        = 20
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
@@ -357,11 +357,13 @@ if fastFit :
 #ws['timeResSF'].setVal(1.4476)
 
 if randomParVals :
-    # give parameters random offsets
     import random
-    if type(randomParVals) == int : random.seed(randomParVals)
+    # give parameters random offsets
+    print 'JvLFit: give floating parameters random offsets (scale = %.2f sigma; seed = %s)'\
+          % ( randomParVals[0], str(randomParVals[1]) if randomParVals[1] else 'system time' )
+    random.seed( randomParVals[1] if randomParVals[1] else None )
     for par in pdfPars :
-        if not par.isConstant() : par.setVal( par.getVal() + 0.4 * ( random.random() - 0.5 ) * par.getError() )
+        if not par.isConstant() : par.setVal( par.getVal() + 2. * ( random.random() - 0.5 ) * randomParVals[0] * par.getError() )
 
 # print parameters
 print 120 * '='
