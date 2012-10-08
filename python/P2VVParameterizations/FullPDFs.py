@@ -974,10 +974,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if nominalPdf or timeResType.startswith('event') :
             from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-            timeResArgs = dict( time = time, sigmat = timeRes, timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+            timeResArgs = dict( time = time, timeResSigma = timeRes, timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
             if 'mean' in timeResType.lower() :
-                timeResArgs['timeResMean']    = RealVar( 'timeResMean', Value = -0.169, Error = 0.005, MinMax = ( -1., 1. ) )
-                #timeResArgs['timeResSigmaSF'] = dict( Value = 1.467, Error = 0.003 )
+                timeResArgs['timeResMean'] = RealVar( 'timeResMean', Value = -0.169, Error = 0.005, MinMax = ( -0.3, -0.1 )
+                                                     , Constant = False )
+                timeResArgs['timeResMeanSF'] = timeRes
             self._timeResModel = TimeResolution( **timeResArgs )
 
         else :
