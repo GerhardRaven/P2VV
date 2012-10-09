@@ -986,6 +986,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._timeResModel = TimeResolution( time = time
                                                 , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
 
+        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: decay time resolution model:'
+        self._timeResModel['model'].Print()
+        for par in self._timeResModel.parameters() : par.Print()
+
         # CP violation parameters
         if lambdaCPParam == 'ReIm' : 
             from P2VVParameterizations.CPVParams import LambdaCarth_CPParam as CPParam

@@ -40,7 +40,7 @@ if generateData :
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 1
+fitOpts = dict(  NumCPU    = 2
                , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True
@@ -258,7 +258,8 @@ else :
     sigData = pdfBuild['sigSWeightData']
     bkgData = pdfBuild['bkgSWeightData']
 
-# get parameters in PDF
+# get observables and parameters in PDF
+pdfObs  = pdf.getObservables(fitData)
 pdfPars = pdf.getParameters(fitData)
 
 
@@ -367,6 +368,8 @@ if randomParVals :
 
 # print parameters
 print 120 * '='
+print 'JvLFit: observables in PDF:'
+pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
 
