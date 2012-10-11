@@ -207,7 +207,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-        self['timeResType']           = 'event'      # '' / 'event' / 'eventMean'
+        self['timeResType']           = 'event'      # '' / 'event' / 'eventNoMean' / 'eventConstMean'
         self['numTimeResBins']        = 100
         self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
@@ -973,12 +973,21 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if ambiguityPars : self._lifetimeParams['dGamma'].setVal( -self._lifetimeParams['dGamma'].getVal() )
 
         if nominalPdf or timeResType.startswith('event') :
-            from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-            timeResArgs = dict( time = time, timeResSigma = timeRes, timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
-            if 'mean' in timeResType.lower() :
-                timeResArgs['timeResMean'] = RealVar( 'timeResMean', Value = -0.169, Error = 0.005, MinMax = ( -0.3, -0.1 )
-                                                     , Constant = False )
-                timeResArgs['timeResMeanSF'] = timeRes
+            from P2VVParameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
+            timeResArgs = dict(  time = time
+                               , timeResSigma = timeRes
+                               , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale
+                              )
+            if not nominalPdf and 'nomean' in timeResType.lower() :
+                timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
+                timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+            elif not nominalPdf and 'constmean' in timeResType.lower() :
+                timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
+                timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+                timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
+            else :
+                timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
+
             self._timeResModel = TimeResolution( **timeResArgs )
 
         else :

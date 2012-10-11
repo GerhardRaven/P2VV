@@ -184,41 +184,94 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
 
         constraints = []
         timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
-        if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' :
-            if isinstance( self._timeResMean, RealVar )    : self._timeResMean.setConstant(True)
-            if isinstance( self._timeResSigmaSF, RealVar ) : self._timeResSigmaSF.setConstant(True)
+        if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' and isinstance( self._timeResSigmaSF, RealVar ) :
+            self._timeResSigmaSF.setConstant(True)
 
-        elif timeResSFConstr :
+        elif timeResSFConstr and isinstance( self._timeResSigmaSF, RealVar ) :
             from ROOT import RooGaussian as Gaussian
             from RooFitWrappers import Pdf
-            if isinstance( self._timeResMean, RealVar ) :
-                constraints.append( Pdf(  Name = self._timeResMean.GetName() + '_constraint', Type = Gaussian
-                                        , Parameters = [  self._timeResMean
-                                                        , ConstVar( Name = 'tresMean_constraint_mean'
-                                                                   , Value = self._timeResMean.getVal() )
-                                                        , ConstVar( Name = 'tresMean_constraint_sigma'
-                                                                   , Value = self._timeResMean.getError() )
-                                                       ]
-                                       )
-                                 )
-
-            if isinstance( self._timeResSigmaSF, RealVar ) :
-                constraints.append( Pdf(  Name = self._timeResSigmaSF.GetName() + '_constraint', Type = Gaussian
-                                        , Parameters = [  self._timeResSigmaSF
-                                                        , ConstVar( Name = 'tres_SF_constraint_mean'
-                                                                   ,  Value = self._timeResSigmaSF.getVal() )
-                                                        , ConstVar( Name = 'tres_SF_constraint_sigma'
-                                                                   , Value = self._timeResSigmaSF.getError() )
-                                                       ]
-                                       )
-                                  )
+            constraints.append( Pdf(  Name = self._timeResSigmaSF.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._timeResSigmaSF
+                                                    , ConstVar( Name = 'tres_SF_constraint_mean'
+                                                               ,  Value = self._timeResSigmaSF.getVal() )
+                                                    , ConstVar( Name = 'tres_SF_constraint_sigma'
+                                                               , Value = self._timeResSigmaSF.getError() )
+                                                   ]
+                                   )
+                              )
 
         Name =  kwargs.pop('Name', 'timeResModelMoriond2012')
         cache = kwargs.pop('Cache', True)
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         TimeResolution.__init__(  self
-                                , Model =  ResolutionModel(  Name = 'timeResMoriond2012'
+                                , Model =  ResolutionModel(  Name = Name
+                                                           , Type = GaussModel
+                                                           , Parameters = [  self._time
+                                                                           , self._timeResMean, self._timeResSigma
+                                                                           , self._timeResMeanSF, self._timeResSigmaSF
+                                                                          ]
+                                                           , ConditionalObservables = [ self._timeResSigma ]
+                                                           , ExternalConstraints = constraints
+                                                          )
+                                , Conditional = self._timeResSigma
+                                , Constraints = constraints
+                                , Cache = cache
+                               )
+
+        from ROOT import RooArgSet
+
+class Paper2012_TimeResolution ( TimeResolution ) :
+    def __init__( self, **kwargs ) :
+        from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
+        from ROOT import RooNumber
+        self._parseArg( 'time',           kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+        self._parseArg( 'timeResMean',    kwargs, Value = -0.169, Error = 0.1, MinMax = ( -2., 2. ) )
+        self._parseArg( 'timeResSigma',   kwargs, Title = 'Decay time error', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.2 ) )
+        self._parseArg( 'timeResMeanSF',  kwargs, timeResMeanSF = self._timeResSigma )
+        self._parseArg( 'timeResSigmaSF', kwargs, Value = 1.467, Error = 0.06, MinMax = ( 0.1, 5. ) )
+
+        constraints = []
+        timeResMeanConstr = kwargs.pop( 'timeResMeanConstraint', None )
+        if type(timeResMeanConstr) == str and timeResMeanConstr == 'fixed' and isinstance( self._timeResMean, RealVar ) :
+            self._timeResMean.setConstant(True)
+
+        elif timeResMeanConstr and isinstance( self._timeResMean, RealVar ) :
+            from ROOT import RooGaussian as Gaussian
+            from RooFitWrappers import Pdf
+            constraints.append( Pdf(  Name = self._timeResMean.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._timeResMean
+                                                    , ConstVar( Name = 'tresMean_constraint_mean'
+                                                               , Value = self._timeResMean.getVal() )
+                                                    , ConstVar( Name = 'tresMean_constraint_sigma'
+                                                               , Value = self._timeResMean.getError() )
+                                                   ]
+                                   )
+                             )
+
+        timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
+        if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' and isinstance( self._timeResSigmaSF, RealVar ) :
+            self._timeResSigmaSF.setConstant(True)
+
+        elif timeResSFConstr and isinstance( self._timeResSigmaSF, RealVar ) :
+            from ROOT import RooGaussian as Gaussian
+            from RooFitWrappers import Pdf
+            constraints.append( Pdf(  Name = self._timeResSigmaSF.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._timeResSigmaSF
+                                                    , ConstVar( Name = 'tres_SF_constraint_mean'
+                                                               ,  Value = self._timeResSigmaSF.getVal() )
+                                                    , ConstVar( Name = 'tres_SF_constraint_sigma'
+                                                               , Value = self._timeResSigmaSF.getError() )
+                                                   ]
+                                   )
+                              )
+
+        Name =  kwargs.pop( 'Name', 'timeResModelPaper2012' )
+        cache = kwargs.pop( 'Cache', True )
+        self._check_extraneous_kw( kwargs )
+        from ROOT import RooGaussModel as GaussModel
+        TimeResolution.__init__(  self
+                                , Model =  ResolutionModel(  Name = Name
                                                            , Type = GaussModel
                                                            , Parameters = [  self._time
                                                                            , self._timeResMean, self._timeResSigma
