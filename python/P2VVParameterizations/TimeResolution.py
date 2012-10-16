@@ -226,10 +226,10 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
         from ROOT import RooNumber
         self._parseArg( 'time',           kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._parseArg( 'timeResMean',    kwargs, Value = -0.169, Error = 0.1, MinMax = ( -2., 2. ) )
+        self._parseArg( 'timeResMean',    kwargs, Value = 0., Error = 0.1, MinMax = ( -2., 2. ), Constant = True )
         self._parseArg( 'timeResSigma',   kwargs, Title = 'Decay time error', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.2 ) )
         self._parseArg( 'timeResMeanSF',  kwargs, timeResMeanSF = self._timeResSigma )
-        self._parseArg( 'timeResSigmaSF', kwargs, Value = 1.467, Error = 0.06, MinMax = ( 0.1, 5. ) )
+        self._parseArg( 'timeResSigmaSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
 
         constraints = []
         timeResMeanConstr = kwargs.pop( 'timeResMeanConstraint', None )
