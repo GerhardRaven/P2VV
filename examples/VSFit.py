@@ -9,11 +9,11 @@ pdfConfig = PdfConfig()
 readData                = True
 pdfConfig['selection']  = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
-doFit                   = False
-makeObservablePlots     = True
+doFit                   = True 
+makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = True
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
@@ -765,4 +765,117 @@ elif pdfConfig['makePlots'] :
 
 if deltaSCanv :
     deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
+
+
+#################################__Trial_area, (Try to make a plot of the CP odd CP even components)########################
+
+
+#Default Amplitude Values
+A0Mag2 = ws.var("A0Mag2").getVal()
+A0Phase = ws.var("A0Phase").getVal()
+
+AparPhase = ws.var("AparPhase").getVal()
+
+AperpMag2 = ws.var("AperpMag2").getVal()
+AperpPhase = ws.var("AperpPhase").getVal()
+
+C_SP = ws.var("C_SP").getVal()
+
+ASOddPhase = ws.var("ASOddPhase").getVal()
+f_S = ws.var("f_S").getVal()
+
+
+
+
+#Draw Total Pdf
+from P2VVLoad import ROOTStyle
+from P2VVGeneralUtils import plot
+from ROOT import TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
+
+
+
+assert(False)
+
+# angle theta_k
+C = TCanvas()
+C.Divide(2,2)
+plot(  C.cd(1), angles[0], data = None, pdf = pdf )
+# angle theta_l
+C1 = TCanvas()
+C1.Divide(2,2)
+plot(  C1.cd(1), angles[1], data = None, pdf = pdf )
+# angle phi
+C2 = TCanvas()
+C2.Divide(2,2)
+plot(  C2.cd(1), angles[2], data = None, pdf = pdf )
+
+
+
+
+
+
+# CP-Even component: Aperp=0 and As = 0 (Both magnitude and phase)
+ws.var("AperpMag2").setVal(0)
+ws.var("AperpPhase").setVal(0)
+ws.var("f_S").setVal(0)
+ws.var("ASOddPhase").setVal(0)
+
+#Draw CP_Even component
+#angle teta_k
+plot(  C.cd(2), angles[0], data = None, pdf = pdf, pdfOpts = dict( LineStyle = 9) )
+# angle theta_l
+plot(  C1.cd(2), angles[1], data = None, pdf = pdf, pdfOpts = dict( LineStyle = 9)  )
+# angle phi
+plot(  C2.cd(2), angles[2], data = None, pdf = pdf, pdfOpts = dict( LineStyle = 9)  )
+
+
+
+
+
+
+#Restore default values
+ws.var("AperpMag2").setVal(AperpMag2)
+ws.var("AperpPhase").setVal(AperpPhase)
+ws.var("f_S").setVal(f_S)
+ws.var("ASOddPhase").setVal(ASOddPhase)
+
+
+
+
+
+
+# CP-Odd component: A0 = 0 and Apar = 0 (Both magnitude and phase)
+ws.var("A0Mag2").setVal(0)
+ws.var("A0Phase").setVal(0)
+
+#Apar = 0 && A0 = 0  => Aperp = 1,  since AparMag2 + AperpMag2 + A0mag2 = 1
+ws.var("AperpMag2").setVal(1)
+ws.var("AparPhase").setVal(0)
+
+#Draw CP_Odd component
+#angle theta_k
+plot(  C.cd(3), angles[0], data = None, pdf = pdf, pdfOpts = dict( LineStyle = 3) )
+# angle theta_l
+plot(  C1.cd(3), angles[1], data = None, pdf = pdf, pdfOpts = dict( LineStyle = 3) )
+# angle phi
+plot(  C2.cd(3), angles[2], data = None, pdf = pdf, pdfOpts = dict( LineStyle = 3) )
+
+
+
+
+
+assert(False)
+
+
+
+
+#This is how you superimpose pdfs.
+plot(  C.cd(1), angles[2], data = None, pdf = pdf, addPDFs = [defPdf], addPDFsOpts = [dict( LineStyle = 9)] )
+
+
+
+
+
+###########################################################################################################################
+
 
