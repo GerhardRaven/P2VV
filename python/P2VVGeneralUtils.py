@@ -278,8 +278,8 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
                 if y < 0.:
                     hist.SetPoint(i, float(x), 0.)
                     minimum = 0.
-            hist.SetMinimum(minimum + 0.1)
-            rooPlot.SetMinimum(minimum + 0.1)
+            #hist.SetMinimum(minimum + 0.1)
+            #rooPlot.SetMinimum(minimum + 0.1)
 
     # plot PDF
     if pdf :
