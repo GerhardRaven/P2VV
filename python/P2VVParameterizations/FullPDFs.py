@@ -207,7 +207,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-        self['eventTimeResolution']   = True
+        self['timeResType']           = 'event'      # '' / 'event' / 'eventNoMean' / 'eventConstMean'
         self['numTimeResBins']        = 100
         self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
@@ -323,7 +323,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         constrainTagging = pdfConfig.pop('constrainTagging')
         condTagging = True if contEstWTag else condTagging
 
-        eventTimeRes    = pdfConfig.pop('eventTimeResolution')
+        timeResType     = pdfConfig.pop('timeResType')
         numTimeResBins  = pdfConfig.pop('numTimeResBins')
         constrTResScale = pdfConfig.pop('constrainTimeResScale')
 
@@ -972,14 +972,32 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = 'constrain' if nominalPdf else constrainDeltaM )
         if ambiguityPars : self._lifetimeParams['dGamma'].setVal( -self._lifetimeParams['dGamma'].getVal() )
 
-        if nominalPdf or eventTimeRes :
-            from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution( time = time, sigmat = timeRes
-                                                , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+        if nominalPdf or timeResType.startswith('event') :
+            from P2VVParameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
+            timeResArgs = dict(  time = time
+                               , timeResSigma = timeRes
+                               , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale
+                              )
+            if not nominalPdf and 'nomean' in timeResType.lower() :
+                timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
+                timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+            elif not nominalPdf and 'constmean' in timeResType.lower() :
+                timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
+                timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+                timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
+            else :
+                timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
+
+            self._timeResModel = TimeResolution( **timeResArgs )
+
         else :
             from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
             self._timeResModel = TimeResolution( time = time
                                                 , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+
+        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: decay time resolution model:'
+        self._timeResModel['model'].Print()
+        for par in self._timeResModel.parameters() : par.Print()
 
         # CP violation parameters
         if lambdaCPParam == 'ReIm' : 
