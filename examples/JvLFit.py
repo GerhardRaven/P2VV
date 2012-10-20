@@ -57,7 +57,7 @@ markSize  = 0.4
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
-pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
+pdfConfig['bkgAnglePdf']          = ''  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
@@ -379,6 +379,8 @@ if randomParVals :
 
 # print parameters
 print 120 * '='
+print 'JvLFit: fit data:'
+fitData.Print()
 print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
@@ -506,7 +508,6 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.covarianceMatrix().Print()
 
     print 'JvLFit: parameters:'
-    fitData.Print()
     fitResult.Print()
     fitResult.covarianceMatrix().Print()
     fitResult.correlationMatrix().Print()
