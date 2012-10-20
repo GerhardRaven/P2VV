@@ -110,8 +110,8 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
       RooArgSet* params = _I->getVariables() ;
       RooArgSet* cacheParams = cacheParamNames.select(*params) ;
       if (cacheParams->getSize()>0) {
-          cout << "RooEffResModel("<<parent.GetName()<<")::createIntObj: constructing " << cacheParams->getSize()
-                 << "-dim value cache for sum of integrals over " << iset << " as a function of " << *cacheParams << endl ;
+          //cout << "RooEffResModel("<<parent.GetName()<<")::createIntObj: constructing " << cacheParams->getSize()
+          //       << "-dim value cache for sum of integrals over " << iset << " as a function of " << *cacheParams << endl ;
           string name = Form("%s_CACHE_[%s]",_I->GetName(),cacheParams->contentsString().c_str()) ;
           RooCachedReal* cached = new RooCachedReal(name.c_str(),name.c_str(),*_I,*cacheParams) ;
           cached->setInterpolationOrder(2) ;
