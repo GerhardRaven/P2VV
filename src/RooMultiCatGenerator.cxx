@@ -42,6 +42,10 @@
 #include "RooNumGenConfig.h"
 
 #include <memory>
+#include <utility>
+using std::make_pair;
+#include <iostream>
+using std::endl;
 #include <assert.h>
 
 ClassImp(RooMultiCatGenerator)

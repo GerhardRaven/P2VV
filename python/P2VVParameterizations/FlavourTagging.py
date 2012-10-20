@@ -194,6 +194,10 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin, _util_condi
                     print 'P2VV - INFO: TaggingParams.__init__(): invoking %s.parameterizeIntegral(%s)'\
                           % ( dil.GetName(), [ obs.GetName() for obs in realObs ] )
                     dil.setParameterizeIntegral(realObs)
+                    for o in realObs :
+                        if not o.hasBinning('cache') : 
+                            print 'adding cache binning to %s' % o.GetName()
+                            o.setBins( 20 , 'cache' )
 
         _util_conditionalObs_mixin.__init__( self, kwargs )
         _util_extConstraints_mixin.__init__( self, kwargs )

@@ -21,6 +21,11 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
         if cache and len(realObs) :
             print 'invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
             self._model.setParameterizeIntegral( realObs )
+            for o in realObs :
+                if not o.hasBinning('cache') : 
+                    print 'adding cache binning to %s' % o.GetName()
+                    o.setBins( 20 , 'cache' )
+
 
         _util_conditionalObs_mixin.__init__( self, kwargs )
         _util_extConstraints_mixin.__init__( self, kwargs )

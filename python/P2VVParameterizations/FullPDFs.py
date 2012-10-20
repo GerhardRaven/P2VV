@@ -208,7 +208,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
         self['timeResType']           = 'event'      # '' / 'event' / 'eventNoMean' / 'eventConstMean'
-        self['numTimeResBins']        = 100
+        self['numTimeResBins']        = 20
         self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['signalFraction'] = 0.67

@@ -12,6 +12,8 @@
 #include "RooAbsReal.h" 
 #include "RooAbsCategory.h" 
 #include <math.h> 
+#include <utility> 
+using std::make_pair;
 #include "TMath.h" 
 
 ClassImp(RooEfficiencyBin) 

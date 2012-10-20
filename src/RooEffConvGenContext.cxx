@@ -40,6 +40,8 @@
 #include "RooRandom.h"
 
 #include "RooEffResModel.h"
+#include <iostream>
+using std::endl;
 
 ClassImp(RooEffConvGenContext)
 ;
