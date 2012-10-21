@@ -43,7 +43,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
 
             def tCoefTerm( name, dec, mix, sign ) :
                 # build one of the two terms within the time function coefficient:
-                # + R^+ * 1,  + R^- * C,  + R^- * 1,  + R^+ * C,  - R^Re * D,  + R^Im * S,  - R^Im * D,  - R^Re * S
+                # + R^+ * 1,  + R^- * C,  + R^- * 1,  + R^+ * C,  + R^Re * D,  + R^Im * S,  + R^Im * D,  - R^Re * S
                 if not dec or not mix : return None
 
                 if dec == minus : sign = -sign
@@ -59,8 +59,8 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
                 # build the coefficient of the time function:
                 # cosh: + R^+  * 1 + R^-  * C
                 # cos:  + R^-  * 1 + R^+  * C
-                # sinh: - R^Re * D + R^Im * S
-                # sin:  - R^Im * D - R^Re * S
+                # sinh: + R^Re * D + R^Im * S
+                # sin:  + R^Im * D - R^Re * S
                 assert tCType in ( 'cosh', 'sinh', 'cos', 'sin' )
 
                 CPVDecInds = [ 'plus', 'min' ] if tCType in ( 'cosh', 'cos' ) else [ 'Re', 'Im' ]
@@ -68,7 +68,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
                 CPVDecs = [ CPVDec( CPVDecInd, iInd, jInd, amps, CPPar ) for CPVDecInd in CPVDecInds ]
 
                 CPVMixs = [ one, CPPar.C() ] if tCType in ( 'cosh', 'cos' ) else [ CPPar.D(), CPPar.S() ]
-                signs = [ +1, +1 ] if tCType in ( 'cosh', 'cos' ) else [ -1, +1 ] if tCType == 'sinh' else [ -1, -1 ]
+                signs = [ +1, +1 ] if tCType in ( 'cosh', 'cos', 'sinh' ) else [ +1, -1 ]
 
                 name = '%s_%s_%s' % ( iInd , jInd, tCType )
                 terms = [ (  tCoefTerm( 'Re_%s%d_%s_%s' % ( tCType, ind, iInd, jInd ), dec[0], mix, sign )
@@ -135,10 +135,10 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
                                                 , None )
                    , 'cos'  : lambda ai,aj,CP : ( tag  if ai.CP != aj.CP else Product('Re_%s_%s_cos' %(ai,aj),                              [ tag, CP['C'] ] ) 
                                                 , None )
-                   , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP > 0     ,  [      CP['D'] ] ))
+                   , 'sinh' : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP < 0     ,  [      CP['D'] ] ))
                                                 , None if ai.CP == aj.CP else Product('Im_%s_%s_sinh'%(ai,aj),  _minus_if( ai.CP < aj.CP ,  [      CP['S'] ] )) )
                    , 'sin'  : lambda ai,aj,CP : ( None if ai.CP != aj.CP else Product('Re_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > 0     ,  [ tag, CP['S'] ] ))
-                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP > aj.CP ,  [ tag, CP['D'] ] )) )
+                                                , None if ai.CP == aj.CP else Product('Im_%s_%s_sin' %(ai,aj),  _minus_if( ai.CP < aj.CP ,  [ tag, CP['D'] ] )) )
                    }
             (c_re,c_im) = coef[name](A[i],A[j],CPparams)
             (f_re,f_im) = afun[(i,j)]

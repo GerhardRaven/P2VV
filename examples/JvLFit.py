@@ -20,6 +20,7 @@ pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the momen
 corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
+#plotsFile = 'plots/JvlSFit_SWavePhases.ps'
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
 parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
@@ -84,7 +85,7 @@ pdfConfig['numEstWTagBins']     = 20
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean'  # 'event' # 'eventNoMean'
-pdfConfig['numTimeResBins']        = 40
+pdfConfig['numTimeResBins']        = 50
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
