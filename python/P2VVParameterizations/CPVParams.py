@@ -9,6 +9,13 @@
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
+###########################################################################################################################################
+# follow HFAG conventions:                                                                                                               ##
+# lambda = q/p * A^bar/A = |lambda| * e^(-i*phi_s) = |lambda| * [cos(-phi_s) + i*sin(-phi_s)] = |lambda| * [cos(phi_s) - i*sin(phi_s)]   ##
+# C = (1 - |lambda|^2) / (1 + |lambda|^2)                                                                                                ##
+# D = - Re(lambda) / (1 + |lambda|^2) =  - |lambda| / (1 + |lambda|^2) * cos(-phi_s) =  - |lambda| / (1 + |lambda|^2) * cos(phi_s)       ##
+# S = + Im(lambda) / (1 + |lambda|^2) =  + |lambda| / (1 + |lambda|^2) * sin(-phi_s) =  - |lambda| / (1 + |lambda|^2) * sin(phi_s)       ##
+###########################################################################################################################################
 from math import sqrt, cos, sin
 phiVal    = 0.
 lambSqVal = 1.
@@ -16,8 +23,8 @@ lambVal   = sqrt(lambSqVal)
 ReLambVal = lambVal * cos(-phiVal)
 ImLambVal = lambVal * sin(-phiVal)
 CVal      = ( 1. - lambSqVal ) / ( 1. + lambSqVal )
-DVal      = 2. * ReLambVal / ( 1. + lambSqVal )
-SVal      = 2. * ImLambVal / ( 1. + lambSqVal )
+DVal      = -2. * ReLambVal / ( 1. + lambSqVal )
+SVal      = +2. * ImLambVal / ( 1. + lambSqVal )
 
 phiErr    = 0.1
 lambSqErr = 0.08
@@ -82,7 +89,7 @@ class LambdaCarth_CPParam( CPParam ) :
                        , MinMax = ( -RooInf, +RooInf ) )
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
-                             , D = FormulaVar('D', '2. * @0 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
+                             , D = FormulaVar('D', '-2. * @0 / (1. + @0*@0 + @1*@1)',             [ self._ReLambdaCP, self._ImLambdaCP ] )
                              , S = FormulaVar('S', '2. * @1 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
                         )
         self._check_extraneous_kw( kwargs )
@@ -93,12 +100,12 @@ class LambdaAbsArg_CPParam( CPParam ) :
         from RooFitWrappers import FormulaVar
         from math import pi
 
-        self._parseArg( 'lambdaCP', kwargs,  Title = 'CPV param. |lambda|', Value = lambVal, Error = lambErr, MinMax = ( 0.,      5.   ) )
+        self._parseArg( 'lambdaCP', kwargs,  Title = 'CPV param. |lambda|', Value = lambVal, Error = lambErr, MinMax = ( 0.,      5.    ) )
         self._parseArg( 'phiCP',    kwargs,  Title = 'CPV param. phi',      Value = phiVal,  Error = phiErr,  MinMax = (-RooInf, +RooInf) )
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0) / (1. + @0*@0)',       [ self._lambdaCP              ] )
-                             , D = FormulaVar('D', '2. * @0 * cos(-@1) / (1. + @0*@0)', [ self._lambdaCP, self._phiCP ] )
-                             , S = FormulaVar('S', '2. * @0 * sin(-@1) / (1. + @0*@0)', [ self._lambdaCP, self._phiCP ] )
+                             , D = FormulaVar('D', '-2. * @0 * cos(@1) / (1. + @0*@0)', [ self._lambdaCP, self._phiCP ] )
+                             , S = FormulaVar('S', '-2. * @0 * sin(@1) / (1. + @0*@0)', [ self._lambdaCP, self._phiCP ] )
                         )
         self._check_extraneous_kw( kwargs )
 
@@ -114,8 +121,8 @@ class LambdaSqArg_CPParam( CPParam ) :
                        , MinMax = ( -RooInf, +RooInf ) )
 
         CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',                [ self._lambdaCPSq              ] )
-                             , D = FormulaVar('D', '2. * sqrt(@0) * cos(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
-                             , S = FormulaVar('S', '2. * sqrt(@0) * sin(-@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
+                             , D = FormulaVar('D', '-2. * sqrt(@0) * cos(@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
+                             , S = FormulaVar('S', '-2. * sqrt(@0) * sin(@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
                         )
         self._check_extraneous_kw( kwargs )
 
@@ -126,8 +133,8 @@ class LambdaArg_CPParam( CPParam ) :
 
         self._parseArg( 'phiCP', kwargs, Title = 'CPV param. phi', Value = phiVal, Error = phiErr, MinMax = ( -RooInf, +RooInf ) )
         CPParam.__init__(self, C = ConstVar( Name = 'C', Value = 0. )
-                             , D = FormulaVar('D', 'cos(-@0) ', [ self._phiCP ] )
-                             , S = FormulaVar('S', 'sin(-@0) ', [ self._phiCP ] )
+                             , D = FormulaVar('D', '-cos(@0) ', [ self._phiCP ] )
+                             , S = FormulaVar('S', '-sin(@0) ', [ self._phiCP ] )
                         )
         self._check_extraneous_kw( kwargs )
 
@@ -218,8 +225,8 @@ class LambdaAbsArg_CPVDecay_CPParam( CPParam ) :
 
         CPParam.__init__( self, AmplitudeNames = ampNames
                          , C = FormulaVar( 'C', '(1. - @0*@0) / (1. + @0*@0)',       [ self._rhoCP_m                ] )
-                         , D = FormulaVar( 'D', '2. * @0 * cos(-@1) / (1. + @0*@0)', [ self._rhoCP_m, self._phiCP_m ] )
-                         , S = FormulaVar( 'S', '2. * @0 * sin(-@1) / (1. + @0*@0)', [ self._rhoCP_m, self._phiCP_m ] )
+                         , D = FormulaVar( 'D', '-2. * @0 * cos(@1) / (1. + @0*@0)', [ self._rhoCP_m, self._phiCP_m ] )
+                         , S = FormulaVar( 'S', '-2. * @0 * sin(@1) / (1. + @0*@0)', [ self._rhoCP_m, self._phiCP_m ] )
                          , RPlusDict = RPlusDict
                          , RMinDict  = RMinDict
                          , RReDict   = RReDict

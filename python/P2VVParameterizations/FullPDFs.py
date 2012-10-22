@@ -415,13 +415,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             iTagOS = Category( 'iTagOS', Title = 'Initial state flavour tag opposite side', Observable = True, States = iTagStates )
             iTagSS = Category( 'iTagSS', Title = 'Initial state flavour tag same side',     Observable = True, States = iTagStates )
         estWTagComb = RealVar( 'tagomega',    Title = 'Estimated wrong tag probability OS/SS combination', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
         estWTagOS   = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability opposite side', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
         estWTagSS   = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
-        estWTagOS.setBins( numEstWTagBins, 'cache' )
-        estWTagSS.setBins( numEstWTagBins, 'cache' )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]

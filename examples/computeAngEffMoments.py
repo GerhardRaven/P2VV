@@ -5,18 +5,18 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-readMoments = False
+readMoments = True
 multPdfEff  = True
 makePlots   = True
 transAngles = False
 tResModel   = ''
 trigger     = ''
 
-momentsFile = '%s_UB_UT_trueTime_BkgCat050_KK30' + ( 'trans' if transAngles else 'hel' )
-plotsFile   = '%s_UB_UT_trueTime_BkgCat050_KK30' + ( 'trans' if transAngles else 'hel' ) + '.ps'
+momentsFile = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' )
+plotsFile   = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' ) + '.ps'
 
 dataSetName = 'DecayTree'
-dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20120606.root'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 
 # transversity amplitudes
 A0Mag2Val    = 0.60
@@ -70,50 +70,31 @@ trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ps', Observa
 iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
 angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
-# ntuple variables
-BMass    = RealVar( 'mass',   Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True, MinMax = ( 5200., 5550. ), Value = 5368. )
-mumuMass = RealVar( 'mdau1',  Title = 'M(#mu#mu)',     Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )    )
-KKMass   = RealVar( 'mdau2',  Title = 'M(KK)',         Unit = 'MeV', Observable = True, MinMax = ( 1020. - 30., 1020. + 30. )    )
-timeRes  = RealVar( 'sigmat', Title = '#sigma(t)',     Unit = 'ps',  Observable = True, MinMax = ( 0.0, 0.12 )                   )
-
-tagDecision = Category( 'tagdecision', Title = 'Tag decision', Observable = True, States = { 'Untagged' : 0, 'B' : +1, 'Bbar' : -1 } )
-
-sel    = Category( 'sel',                       Title = 'Selection',            Observable = True, States = { 'selected' : +1 } )
-trigUB = Category( 'triggerDecisionUnbiased',   Title = 'Trigger Unbiased',     Observable = True, States = { 'selected' : +1 } )
-trigB  = Category( 'triggerDecisionBiasedExcl', Title = 'Trigger Excl. Biased', Observable = True, States = { 'selected' : +1 } )
-bkgcat = Category( 'bkgcat',                    Title = 'Background category',  Observable = True, States = { 'cat0': 0, 'cat50': 50 } )
-
-muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
-muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
-KPlusTrackChi2  = RealVar( 'Kplus_track_chi2ndof',   Title = 'K+ track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
-KMinTrackChi2   = RealVar( 'Kminus_track_chi2ndof',  Title = 'K- track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
-
-obsSetUB = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [tagDecision] \
-           + [ sel, trigUB, bkgcat, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
-obsSetB  = [ time ] + angles +  [ BMass, mumuMass, KKMass, timeRes ] + [tagDecision] \
-           + [ sel, trigB, bkgcat, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
-if tResModel not in [ 'Gauss', '3Gauss' ] :
-    obsSetUB.append(trueTime)
-    obsSetB.append(trueTime)
+obsSet = [ time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime ] + angles
 
 # read ntuple
+bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
+trackChiSqCuts = 'muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
+massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150. && mdau2 > 990. && mdau2 < 1050.'
+timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
+tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
+
 from P2VVGeneralUtils import readData
-dataUB = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetUB, Rename = 'DecayTreeUB' )
-dataB  = readData( dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSetB,  Rename = 'DecayTreeB'  )
-
+cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
 if trigger == 'ExclBiased' :
-    data = dataB
+    cuts  = 'sel == 1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
+    data = readData(  dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSet, Rename = 'DecayTreeB'
+                    , ntupleCuts = cuts )
+
 elif trigger == 'Unbiased' :
-    data = dataUB
+    cuts = 'sel == 1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
+    data = readData(  dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSet, Rename = 'DecayTreeUB'
+                    , ntupleCuts = cuts )
+
 else :
-    dataSetVars = dataUB.get()
-    dataSetVars.remove(dataSetVars.find('triggerDecisionUnbiased'))
-
-    from ROOT import RooDataSet, RooFit
-    data = RooDataSet( 'DecayTreeUBB', 'Decay Tree UB+B', dataSetVars, RooFit.Import(dataUB) )
-    data.append(dataB)
-
-obsSetP2VV = [ time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime ] + angles
+    cuts = 'sel == 1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+    data = readData(  dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSet, Rename = 'DecayTreeUBB'
+                    , ntupleCuts = cuts )
 
 
 ###########################################################################################################################################
@@ -227,7 +208,24 @@ else :
 
 # print moments to screen
 physMoments.Print(  Scale = 1. / 16. / sqrt(pi)                       )
+basisMoments.Print( Scale = 1. /  2. / sqrt(pi)                       )
 basisMoments.Print( Scale = 1. /  2. / sqrt(pi), MinSignificance = 5. )
+
+
+###########################################################################################################################################
+## build efficiency function ##
+###############################
+
+effTerms = basisMoments.buildPDFTerms()
+effFunc = effTerms.buildAddition('effFunc')
+
+from ROOT import RooArgSet
+ctkSet = RooArgSet( angles[1], angles[2] )
+ctlSet = RooArgSet( angles[0], angles[2] )
+phiSet = RooArgSet( angles[0], angles[1] )
+effFuncCtk = effFunc.createIntegral( ctkSet, RooArgSet() )
+effFuncCtl = effFunc.createIntegral( ctlSet, RooArgSet() )
+effFuncPhi = effFunc.createIntegral( phiSet, RooArgSet() )
 
 
 ###########################################################################################################################################
@@ -257,13 +255,27 @@ if multPdfEff and makePlots :
     from P2VVGeneralUtils import plot
     from ROOT import TCanvas, kBlue, kRed, kGreen
 
+    # plot efficiency
+    effCanv = TCanvas( 'effCanv', 'Efficiency' )
+    for ( pad, obs, func, norm )\
+            in zip(  effCanv.pads( 2, 2 )
+                   , obsSet[ 1 : 5 ]
+                   , [ effFuncCtk, effFuncCtl, effFuncPhi ]
+                   , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
+                  ) :
+        plot(  pad, obs, None, func, addPDFs = [ effFunc ]
+             , yScale      = ( 0.85, 1.15 )
+             , pdfOpts     = dict( LineColor = kBlue, LineWidth = 2, Normalization = norm )
+             , addPDFsOpts = [ dict( LineColor = kRed,  LineWidth = 2 ) ]
+            )
+
     # plot lifetime and angles
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
     for ( pad, obs, nBins, plotTitle, xTitle, logY )\
             in zip(  timeAnglesCanv.pads( 2, 2 )
-                   , obsSetP2VV[ : 5 ]
+                   , obsSet[ : 5 ]
                    , numBins
-                   , [ var.GetTitle() for var in obsSetP2VV[ : 5 ] ]
+                   , [ var.GetTitle() for var in obsSet[ : 5 ] ]
                    , ( '', ) + angleNames
                    , ( True, False, False, False )
                   ) :
@@ -276,5 +288,6 @@ if multPdfEff and makePlots :
                              ]
             )
 
-    # print canvas to file
-    timeAnglesCanv.Print(plotsFile)
+    # print canvases to file
+    effCanv.Print( plotsFile + '(' )
+    timeAnglesCanv.Print( plotsFile + ')' )

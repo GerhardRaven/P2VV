@@ -7,7 +7,7 @@ pdfConfig = PdfConfig()
 
 # job parameters
 readData                = True
-pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['selection']  = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
 doFit                   = True
 makeObservablePlots     = False
@@ -37,10 +37,8 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
-dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
-
 # fit options
-fitOpts = dict(  NumCPU    = 2
+fitOpts = dict(  NumCPU    = 4
                , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True
@@ -63,7 +61,7 @@ pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal:
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffType']          = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
@@ -349,26 +347,6 @@ if fastFit :
         if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
 
-#pdfBuild['lifetimeParams'].parameter('Gamma').setVal(0.72)
-
-#pdfBuild['lambdaCP'].setConstant('rhoCP_m')
-#pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
-#pdfBuild['lambdaCP'].setConstant('phiCP_A.*')
-
-#ws['f_S'].setVal(0.026)
-#ws['ASOddPhase'].setVal(0.03)
-#ws['f_S'].setConstant()
-#ws['ASOddPhase'].setConstant()
-
-#ws['f_S_bin0'].setConstant()
-#ws['f_S_bin1'].setConstant()
-#ws['f_S_bin2'].setConstant()
-#ws['f_S_bin3'].setConstant()
-#ws['f_S_bin4'].setConstant()
-#ws['f_S_bin5'].setConstant()
-
-#ws['timeResSF'].setVal(1.4476)
-
 if randomParVals :
     import random
     # give parameters random offsets
@@ -523,7 +501,7 @@ else :
 ## make some plots ##
 #####################
 
-if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots or dllPars ) :
+if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots ) :
     # import plotting tools
     from P2VVLoad import ROOTStyle
     from P2VVGeneralUtils import plot
@@ -800,316 +778,3 @@ elif pdfConfig['makePlots'] :
 
 if deltaSCanv :
     deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
-
-
-###########################################################################################################################################
-## make DLL plots  ##
-#####################
-
-if dllPars :
-    # make delta log-likelihood plots
-    if pdfConfig['amplitudeParam'] == 'phasesSWaveFrac' :
-        MparMin  =  0.21
-        MparMax  =  0.25
-        RparMin  = -0.480
-        RparMax  = -0.455
-        IparMin  = -0.15
-        IparMax  = +0.15
-        MperpMin =  0.23
-        MperpMax =  0.27
-    else :
-        MparMin =  0.40
-        MparMax =  0.48
-        RparMin = -0.69
-        RparMax = -0.61
-        if pdfConfig['AparParam'] == 'Mag2ReIm' :
-            IparMin = -1.
-            IparMax = +0.65
-        else :
-            IparMin = -0.25
-            IparMax = +0.25
-        MperpMin =  0.44
-        MperpMax =  0.52
-
-    wsPars =\
-    {  'phiCP'           : ( '#DeltaNLL #phi_{s}',                     '#phi_{s}',                     -0.22,     0.22,    1, 0.001, 0.05 )
-     , 'lambdaCP'        : ( '#DeltaNLL |#lambda|',                    '|#lambda|',                     0.85,     1.0,     1, 0.001, 0.01 )
-     , 'lambdaCPSq'      : ( '#DeltaNLL |#lambda|^{2}',                '|#lambda|^{2}',                 0.7,      1.0,     1, 0.001, 0.01 )
-     , 'avgCOddSum'      : ( '#DeltaNLL C_{Os}^{avg}',                 'C_{Os}^{avg}',                 -0.035,    0.100,   1, 0.001, 0.01 )
-     , 'avgCOddTagged'   : ( '#DeltaNLL C_{Ot}^{avg}',                 'C_{Ot}^{avg}',                 -0.100,    0.155,   1, 0.001, 0.01 )
-     , 'A0Mag2'          : ( '#DeltaNLL |A_{0}|^{2}',                  '|A_{0}|^{2}',                   0.51,     0.54,    1, 0.001, 0.01 )
-     , 'AparMag2'        : ( '#DeltaNLL |A_{#parallel}|^{2}',          '|A_{#parallel}|^{2}',          MparMin,  MparMax,  1, 0.001, 0.01 )
-     , 'ReApar'          : ( '#DeltaNLL Re(A_{#parallel})',            'Re(A_{#parallel})',            RparMin,  RparMax,  1, 0.001, 0.01 )
-     , 'ImApar'          : ( '#DeltaNLL Im(A_{#parallel})',            'Im(A_{#parallel})',            IparMin,  IparMax,  1, 0.001, 0.01 )
-     , 'cosAparPhase'    : ( '#DeltaNLL cos(#delta_{#parallel})',      'cos(#delta_{#parallel})',      -1.,      -0.92,    1, 0.001, 0.01 )
-     , 'AparPhase'       : ( '#DeltaNLL #delta_{#parallel}',           '#delta_{#parallel}',            2.8,      3.7,     1, 0.001, 0.01 )
-     , 'AperpMag2'       : ( '#DeltaNLL |A_{#perp}|^{2}',              '|A_{#perp}|^{2}',              MperpMin, MperpMax, 1, 0.001, 0.01 )
-     , 'AperpPhase'      : ( '#DeltaNLL #delta_{#perp}',               '#delta_{#perp}',                2.3,      3.7,     1, 0.001, 0.01 )
-     , 'sqrtfS_Re'       : ( '#DeltaNLL #sqrt{f_{S}}^{R}',             '#sqrt{f_{S}}^{R}',             -0.22,    -0.10,    1, 0.001, 0.01 )
-     , 'sqrtfS_Im'       : ( '#DeltaNLL #sqrt{f_{S}}^{I}',             '#sqrt{f_{S}}^{I}',             -0.060,    0.085,   1, 0.001, 0.01 )
-     , 'ReASOdd'         : ( '#DeltaNLL Re(A_{S} / A_{#perp})',        'Re(A_{S} / A_{#perp})',         0.20,     0.44,    1, 0.001, 0.01 )
-     , 'ImASOdd'         : ( '#DeltaNLL Im(A_{S} / A_{#perp})',        'Im(A_{S} / A_{#perp})',        -0.06,     0.04,    1, 0.001, 0.01 )
-     , 'f_S'             : ( '#DeltaNLL f_{S}',                        'f_{S}',                         0.00,     0.045,   1, 0.001, 0.01 )
-     , 'ASPhase'         : ( '#DeltaNLL #delta_{S}',                   '#delta_{S}',                    2.3,      3.7,     1, 0.001, 0.01 )
-     , 'ASOddMag2'       : ( '#DeltaNLL A_{S}^{2} / A_{#perp}^{2}',    'A_{S}^{2} / A_{#perp}^{2}',     0.0,      0.18,    1, 0.001, 0.01 )
-     , 'ASOddPhase'      : ( '#DeltaNLL #delta_{S} - #delta_{#perp}',  '#delta_{S} - #delta_{#perp}',  -0.22,     0.18,    1, 0.001, 0.01 )
-     , 'ASOddPhase_bin0' : ( '#DeltaNLL #delta_{S0} - #delta_{#perp}', '#delta_{S0} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
-     , 'ASOddPhase_bin1' : ( '#DeltaNLL #delta_{S1} - #delta_{#perp}', '#delta_{S1} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
-     , 'ASOddPhase_bin2' : ( '#DeltaNLL #delta_{S2} - #delta_{#perp}', '#delta_{S2} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
-     , 'ASOddPhase_bin3' : ( '#DeltaNLL #delta_{S3} - #delta_{#perp}', '#delta_{S3} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
-     , 'ASOddPhase_bin4' : ( '#DeltaNLL #delta_{S4} - #delta_{#perp}', '#delta_{S4} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
-     , 'ASOddPhase_bin5' : ( '#DeltaNLL #delta_{S5} - #delta_{#perp}', '#delta_{S5} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
-    }
-
-    # check DNLL parameters
-    phiCPPar = False
-    for par in dllPars :
-        assert par[0] in wsPars, 'JvLFit - ERROR: unknown DLL parameter: "%s"' % par[0]
-        assert par[0] in ws,     'JvLFit - ERROR: DLL parameter "%s" does not exist in work space' % par[0]
-        if par[0] == 'phiCP' : phiCPPar = True
-
-    # float/fix values of some parameters
-    if constLambdaCP :
-        pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
-            else pdfBuild['lambdaCP'].setConstant('lambdaCP')
-    if constAvgCEvenOdd :
-        for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
-
-    if 'sig_ATagBBbar' in ws : ws['sig_ATagBBbar'].setConstant()
-    for bin in range(5) :
-        if 'sig_ATagBBbar_bin%d' % bin in ws : ws[ 'sig_ATagBBbar_bin%d' % bin ].setConstant()
-    pdfBuild['tagCatsOS'].setConstant('.*')
-    pdfBuild['tagCatsSS'].setConstant('.*')
-    #pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
-    pdfBuild['timeResModel'].setConstant('.*')
-    pdfBuild['signalBMass'].setConstant('.*')
-    if not pdfConfig['SFit'] :
-        pdfBuild['backgroundBMass'].setConstant('.*')
-        pdfBuild['backgroundTime'].setConstant('.*')
-
-    # build NLL
-    from ROOT import RooFit, RooArgSet, RooArgList, RooFormulaVar, TCanvas
-    nll = pdf.createNLL( fitData, **fitOpts )
-
-    print 120 * '='
-    print 'JvLFit: parameters in NLL:'
-    for par in nll.getVariables() : par.Print()
-    print 120 * '='
-
-    # create DNLL/PLL plots
-    dllCanvs = [ ]
-    canvFileName = plotsFile[ : -3 ] + 'DLLs.ps'
-    for parIter, ( par, doDLL, doPLL, doPara ) in enumerate(dllPars) :
-        rooPar = ws[par]
-        parFrame = rooPar.frame(  RooFit.Range( wsPars[par][2], wsPars[par][3] )
-                                , RooFit.Bins( wsPars[par][4] )
-                                , RooFit.Title( wsPars[par][0] )
-                               )
-
-        if doPara and rooPar.getError() > 0. :
-            parabola = RooFormulaVar(  'parabola', 'parabola'
-                                     , '0.5*(@0-{0:.6f})*(@0-{0:.6f})/{1:.6f}/{1:.6f}'.format( rooPar.getVal(), rooPar.getError() )
-                                     , RooArgList(rooPar)
-                                    )
-            parabola.plotOn( parFrame, RooFit.LineColor(RooFit.kBlack), RooFit.Precision(0.001) )
-
-        if doDLL :
-            print 'JvLFit: plotting Delta -log(L) for %s' % par
-            nll.plotOn( parFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue), RooFit.Precision( wsPars[par][5] ) )
-
-        if doPLL :
-            print 'JvLFit: plotting profile Delta -log(L) for %s' % par
-            pll = nll.createProfile( RooArgSet( rooPar ) )
-            pll.plotOn( parFrame, RooFit.LineColor(kRed), RooFit.Precision( wsPars[par][6] ) )
-
-        parFrame.SetMinimum(0.)
-        if parFrame.GetMaximum() > 15. : parFrame.SetMaximum(15.)
-        parFrame.GetXaxis().SetTitle( wsPars[par][1] )
-        parFrame.GetYaxis().SetTitle('#DeltaNLL')
-
-        dllCanvs.append( TCanvas( 'dllCanv%d' % parIter , 'DLL canvas' ) )
-        parFrame.Draw()
-
-        for canvIter, canv in enumerate(dllCanvs) :
-            if len(dllCanvs) == 1 or canvIter not in [ 0, len(dllCanvs) - 1 ] : namePF = ''
-            elif canvIter == 0 : namePF = '('
-            else : namePF = ')'
-            canv.Print( canvFileName + namePF )
-
-
-tagData = pdfBuild['sigSWeightData']
-
-sums = {
-    'numEv'       : 0.
-  , 'numOS'       : 0., 'numOSExcl'       : 0.
-  , 'numSS'       : 0., 'numSSExcl'       : 0.
-  , 'numComb'     : 0., 'numCombExcl'     : 0.
-  , 'etaOS'       : 0., 'etaOSExcl'       : 0.
-  , 'etaSS'       : 0., 'etaSSExcl'       : 0.
-  , 'etaComb'     : 0., 'etaCombExcl'     : 0.
-  , 'wOS'         : 0., 'wOSExcl'         : 0.
-  , 'wSS'         : 0., 'wSSExcl'         : 0.
-  , 'wComb'       : 0., 'wCombExcl'       : 0.
-  , 'dilOS'       : 0., 'dilOSExcl'       : 0.
-  , 'dilSS'       : 0., 'dilSSExcl'       : 0.
-  , 'dilComb'     : 0., 'dilCombExcl'     : 0.
-  , 'dil2OS'      : 0., 'dil2OSExcl'      : 0.
-  , 'dil2SS'      : 0., 'dil2SSExcl'      : 0.
-  , 'dil2Comb'    : 0., 'dil2CombExcl'    : 0.
-  , 'dilRes2Comb' : 0., 'dilRes2CombExcl' : 0.
-  , 'dilTot2Comb' : 0., 'dilTot2CombExcl' : 0.
-  , 'dilRes2All'  : 0.
-}
-
-from math import exp
-for varSet in tagData :
-  weight = tagData.weight()
-  sums['numEv'] += weight
-
-  sigmat = 1.45 * varSet.getRealValue('sigmat')
-  dilRes = exp( - 17.6**2 * sigmat**2 / 2. )
-  sums['dilRes2All'] += weight * dilRes**2
-
-  if varSet.getCatIndex('tagdecision_os') != 0 :
-    etaOS  = varSet.getRealValue('tagomega_os')
-    wTagOS = 0.392 + 1.000 * ( etaOS - 0.392 )
-    dilOS  = 1. - 2. * wTagOS
-
-    sums['numOS']  += weight
-    sums['etaOS']  += weight * etaOS
-    sums['wOS']    += weight * wTagOS
-    sums['dilOS']  += weight * dilOS
-    sums['dil2OS'] += weight * dilOS**2
-
-    if varSet.getCatIndex('tagdecision_ss') == 0 :
-      sums['numOSExcl']  += weight
-      sums['etaOSExcl']  += weight * etaOS
-      sums['wOSExcl']    += weight * wTagOS
-      sums['dilOSExcl']  += weight * dilOS
-      sums['dil2OSExcl'] += weight * dilOS**2
-
-      sums['numComb']     += weight
-      sums['etaComb']     += weight * etaOS
-      sums['wComb']       += weight * wTagOS
-      sums['dilComb']     += weight * dilOS
-      sums['dil2Comb']    += weight * dilOS**2
-      sums['dilRes2Comb'] += weight * dilRes**2
-      sums['dilTot2Comb'] += weight * ( dilRes * dilOS )**2
-
-  if varSet.getCatIndex('tagdecision_ss') != 0 :
-    etaSS  = varSet.getRealValue('tagomega_ss')
-    wTagSS = 0.350 + 1.00 * ( etaSS - 0.350 )
-    dilSS  = 1. - 2. * wTagSS
-
-    sums['numSS']  += weight
-    sums['etaSS']  += weight * etaSS
-    sums['wSS']    += weight * wTagSS
-    sums['dilSS']  += weight * dilSS
-    sums['dil2SS'] += weight * dilSS**2
-
-    if varSet.getCatIndex('tagdecision_os') == 0 :
-      sums['numSSExcl']  += weight
-      sums['etaSSExcl']  += weight * etaSS
-      sums['wSSExcl']    += weight * wTagSS
-      sums['dilSSExcl']  += weight * dilSS
-      sums['dil2SSExcl'] += weight * dilSS**2
-
-      sums['numComb']     += weight
-      sums['etaComb']     += weight * etaSS
-      sums['wComb']       += weight * wTagSS
-      sums['dilComb']     += weight * dilSS
-      sums['dil2Comb']    += weight * dilSS**2
-      sums['dilRes2Comb'] += weight * dilRes**2
-      sums['dilTot2Comb'] += weight * ( dilRes * dilSS )**2
-
-  if varSet.getCatIndex('tagdecision_os') != 0 and varSet.getCatIndex('tagdecision_ss') != 0 :
-    dilSign = +1. if varSet.getCatIndex('tagdecision_os') == varSet.getCatIndex('tagdecision_ss') else -1.
-    dilComb = ( dilOS + dilSign * dilSS ) / ( 1. + dilSign * dilOS * dilSS )
-    wTagComb = ( 1. - dilComb ) / 2.
-
-    sums['numComb']     += weight
-    sums['etaComb']     += weight * wTagComb
-    sums['wComb']       += weight * wTagComb
-    sums['dilComb']     += weight * dilComb
-    sums['dil2Comb']    += weight * dilComb**2
-    sums['dilRes2Comb'] += weight * dilRes**2
-    sums['dilTot2Comb'] += weight * ( dilRes * dilComb )**2
-
-    sums['numCombExcl']     += weight
-    sums['etaCombExcl']     += weight * wTagComb
-    sums['wCombExcl']       += weight * wTagComb
-    sums['dilCombExcl']     += weight * dilComb
-    sums['dil2CombExcl']    += weight * dilComb**2
-    sums['dilRes2CombExcl'] += weight * dilRes**2
-    sums['dilTot2CombExcl'] += weight * ( dilRes * dilComb )**2
-
-print
-print 'number of events:       %.4f' % sums['numEv']
-print 'number of OS events:    %.4f (%.4f)'   % ( sums['numOS'],   sums['numOSExcl']   )
-print 'number of SS events:    %.4f (%.4f)'   % ( sums['numSS'],   sums['numSSExcl']   )
-print 'number of Comb. events: %.4f (%.4f)\n' % ( sums['numComb'], sums['numCombExcl'] )
-
-print 'OS    eff.: %.2f%% (%.2f%%)'   % ( sums['numOS']   / sums['numEv'] * 100., sums['numOSExcl']   / sums['numEv'] * 100. )
-print 'SS    eff.: %.2f%% (%.2f%%)'   % ( sums['numSS']   / sums['numEv'] * 100., sums['numSSExcl']   / sums['numEv'] * 100. )
-print 'Comb. eff.: %.2f%% (%.2f%%)\n' % ( sums['numComb'] / sums['numEv'] * 100., sums['numCombExcl'] / sums['numEv'] * 100. )
-
-print 'OS    <eta>: %.4f (%.4f)'   % ( sums['etaOS']   / sums['numOS'],   sums['etaOSExcl']   / sums['numOSExcl']   )
-print 'SS    <eta>: %.4f (%.4f)'   % ( sums['etaSS']   / sums['numSS'],   sums['etaSSExcl']   / sums['numSSExcl']   )
-print 'Comb. <eta>: %.4f (%.4f)\n' % ( sums['etaComb'] / sums['numComb'], sums['etaCombExcl'] / sums['numCombExcl'] )
-
-print 'OS    <w>: %.4f (%.4f)'   % ( sums['wOS']   / sums['numOS'],   sums['wOSExcl']   / sums['numOSExcl']   )
-print 'SS    <w>: %.4f (%.4f)'   % ( sums['wSS']   / sums['numSS'],   sums['wSSExcl']   / sums['numSSExcl']   )
-print 'Comb. <w>: %.4f (%.4f)\n' % ( sums['wComb'] / sums['numComb'], sums['wCombExcl'] / sums['numCombExcl'] )
-
-print 'OS    <dil>: %.4f (%.4f)'   % ( sums['dilOS']   / sums['numOS'],   sums['dilOSExcl']   / sums['numOSExcl']   )
-print 'SS    <dil>: %.4f (%.4f)'   % ( sums['dilSS']   / sums['numSS'],   sums['dilSSExcl']   / sums['numSSExcl']   )
-print 'Comb. <dil>: %.4f (%.4f)\n' % ( sums['dilComb'] / sums['numComb'], sums['dilCombExcl'] / sums['numCombExcl'] )
-
-print 'OS    <dil2>:    %.4f (%.4f)'   % ( sums['dil2OS']   / sums['numOS'],   sums['dil2OSExcl']   / sums['numOSExcl']   )
-print 'SS    <dil2>:    %.4f (%.4f)'   % ( sums['dil2SS']   / sums['numSS'],   sums['dil2SSExcl']   / sums['numSSExcl']   )
-print 'Comb. <dil2>:    %.4f (%.4f)'   % ( sums['dil2Comb'] / sums['numComb'], sums['dil2CombExcl'] / sums['numCombExcl'] )
-print 'Comb. <dilRes2>: %.4f (%.4f)'   % ( sums['dilRes2Comb'] / sums['numComb'], sums['dilRes2CombExcl'] / sums['numCombExcl'] )
-print 'Comb. <dilTot2>: %.4f (%.4f)'   % ( sums['dilTot2Comb'] / sums['numComb'], sums['dilTot2CombExcl'] / sums['numCombExcl'] )
-print 'All   <dilRes2>: %.4f\n'        % ( sums['dilRes2All'] / sums['numEv'] )
-
-print 'OS    <eff * dil2>:    %.4f%% (%.4f%%)'   % ( sums['dil2OS']   / sums['numEv'] * 100., sums['dil2OSExcl']   / sums['numEv'] * 100. )
-print 'SS    <eff * dil2>:    %.4f%% (%.4f%%)'   % ( sums['dil2SS']   / sums['numEv'] * 100., sums['dil2SSExcl']   / sums['numEv'] * 100. )
-print 'Comb. <eff * dil2>:    %.4f%% (%.4f%%)'   % ( sums['dil2Comb'] / sums['numEv'] * 100., sums['dil2CombExcl'] / sums['numEv'] * 100. )
-print 'Comb. <eff * dilRes2>: %.4f%% (%.4f%%)'   % (  sums['dilRes2Comb'] / sums['numEv'] * 100.
-                                                    , sums['dilRes2CombExcl'] / sums['numEv'] * 100.
-                                                   )
-print 'Comb. <eff * dilTot2>: %.4f%% (%.4f%%)'   % (  sums['dilTot2Comb'] / sums['numEv'] * 100.
-                                                    , sums['dilTot2CombExcl'] / sums['numEv'] * 100.
-                                                   )
-print 'All   <eff * dilRes2>: %.4f\n'            % ( sums['dilRes2All'] / sums['numEv'] )
-
-nEv = 0.
-nBB = 0.
-nBbarBbar = 0.
-nBbarB = 0.
-nBBbar = 0.
-avD_OS = 0.
-avD_SS = 0.
-avDD = 0.
-for argSet in tagData :
-    if argSet.getCatIndex('tagdecision_os') == 0 or argSet.getCatIndex('tagdecision_ss') == 0 : continue
-
-    nEv += tagData.weight()
-    if argSet.getCatIndex('tagdecision_os') == +1 and argSet.getCatIndex('tagdecision_ss') == +1 : nBB += tagData.weight()
-    if argSet.getCatIndex('tagdecision_os') == -1 and argSet.getCatIndex('tagdecision_ss') == -1 : nBbarBbar += tagData.weight()
-    if argSet.getCatIndex('tagdecision_os') == -1 and argSet.getCatIndex('tagdecision_ss') == +1 : nBbarB += tagData.weight()
-    if argSet.getCatIndex('tagdecision_os') == +1 and argSet.getCatIndex('tagdecision_ss') == -1 : nBBbar += tagData.weight()
-
-    D_OS = 1. - 2. * argSet.getRealValue('tagomega_os')
-    D_SS = 1. - 2. * argSet.getRealValue('tagomega_ss')
-
-    avD_OS += D_OS * tagData.weight()
-    avD_SS += D_SS * tagData.weight()
-    avDD   += D_OS * D_SS * tagData.weight()
-
-avD_OS /= nEv
-avD_SS /= nEv
-avDD   /= nEv
-
-Atags = ( nBB + nBbarBbar - nBbarB - nBBbar ) / nEv
-print avDD, avD_OS * avD_SS, Atags

@@ -157,7 +157,7 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
     from ROOT import RooDataSet
     dataSet.addColumn(weightVar)
     dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet.get()
-                         , Import = dataSet, WeightVar = 'weightVar' )
+                         , Import = dataSet, WeightVar = ( 'weightVar', True ) )
 
     # import data set into current workspace
     from RooFitWrappers import RooObject
@@ -1015,7 +1015,7 @@ class SData( object ) :
             # create weighted data set
             dName = '%s_weighted_%s' % ( self._sData.GetName(), Component )
             from ROOT import RooDataSet
-            self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = wName )
+            self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = ( wName, True ) )
 
         return self._data[Component]
 
