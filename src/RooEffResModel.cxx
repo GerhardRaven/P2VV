@@ -69,14 +69,12 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
    RooArgList effList;
    RooArgList intList;
 
-   string cacheParamsStr(model.getStringAttribute("CACHEPARAMINT")) ;
-   bool moveCacheLevel = true;
-   if (moveCacheLevel) {
-        // disable lower-level param caching... we will cache at this level instead
-        const_cast<RooAbsReal&>(model).setStringAttribute("CACHEPARAMINT",0);
-   } else {
-        cacheParamsStr = string();
-   }
+#if 0
+   const char *modcache = model.getStringAttribute("CACHEPARAMINT") ;
+   const char *parcache = parent.getStringAttribute("CACHEPARAMINT") ;
+   if (modcache&&strlen(modcache)) cout << "WARNING: please configure " << model.GetName() << ".parameterizeIntegral such that it is NOT cached -- right now it has " << (modcache?modcache:"<none>") << endl;
+   if (! (parcache&&strlen(parcache))) cout << "WARNING:  please configure " << parent.GetName() << ".parameterizeIntegral such that is is cached -- right now it has " << (parcache?parcache:"<none>") << endl;
+#endif
 
    const RooArgList& ranges = parent.getIntegralRanges(iset, RooNameReg::str(rangeName));
    RooFIter it = ranges.fwdIterator();
@@ -101,27 +99,6 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
    }
    TString iName = TString::Format("%s_I_%s", parent.GetName(),x.GetName());
    _I = new RooAddition(iName, iName, effList, intList, kTRUE);
-
-   if (moveCacheLevel) const_cast<RooAbsReal&>(model).setStringAttribute("CACHEPARAMINT",cacheParamsStr.c_str());
-
-   // make sure we parameterize at this level, not below...
-   if (!cacheParamsStr.empty()) {
-      RooNameSet cacheParamNames ; cacheParamNames.setNameList(cacheParamsStr.c_str()) ;
-      RooArgSet* params = _I->getVariables() ;
-      RooArgSet* cacheParams = cacheParamNames.select(*params) ;
-      if (cacheParams->getSize()>0) {
-          cout << "RooEffResModel("<<parent.GetName()<<")::createIntObj: constructing " << cacheParams->getSize()
-                 << "-dim value cache for sum of integrals over " << iset << " as a function of " << *cacheParams << endl ;
-          string name = Form("%s_CACHE_[%s]",_I->GetName(),cacheParams->contentsString().c_str()) ;
-          RooCachedReal* cached = new RooCachedReal(name.c_str(),name.c_str(),*_I,*cacheParams) ;
-          cached->setInterpolationOrder(2) ;
-          cached->addOwnedComponents(*_I) ;
-          //cached->setCacheSource(kTRUE); // this will make it go WAY faster -- unfortunately, it also goes very, very wrong...
-          if (_I->operMode()==ADirty) cached->setOperMode(ADirty) ;
-          //cached->disableCache(kTRUE) ;
-          _I = cached;
-      }
-   }
 }
 
 //_____________________________________________________________________________
