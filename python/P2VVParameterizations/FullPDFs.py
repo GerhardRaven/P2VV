@@ -975,6 +975,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             timeResArgs = dict(  time = time
                                , timeResSigma = timeRes
                                , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale
+                               , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
                               )
             if not nominalPdf and 'nomean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )

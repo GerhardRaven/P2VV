@@ -254,11 +254,15 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
       return 0 ;
    }
 
+   const char* cacheParamsStr = getStringAttribute("CACHEPARAMINT") ;
+   if (!strlen(cacheParamsStr)) cacheParamsStr=0;
+
    vector<HistEntry*> entries;
    vector<RooResolutionModel*> models;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       RooEffResModel *conv = it->second->efficiency()->convolution(inBasis, owner);
+      if (cacheParamsStr) conv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
       models.push_back(conv);
 
       HistEntry* entry = new HistEntry(*(it->second), const_cast<RooMultiEffResModel*>(this));
