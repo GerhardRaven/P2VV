@@ -5,15 +5,16 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-readMoments = True
+readMoments = False
 multPdfEff  = True
 makePlots   = True
 transAngles = False
 tResModel   = ''
 trigger     = ''
+timeInt     = False
 
-momentsFile = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' )
-plotsFile   = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' ) + '.ps'
+momentsFile = '%s_trueTime_BkgCat050_KK30_timeInt' % ( 'trans' if transAngles else 'hel' )
+plotsFile   = '%s_trueTime_BkgCat050_KK30_timeInt' % ( 'trans' if transAngles else 'hel' ) + '.ps'
 
 dataSetName = 'DecayTree'
 dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
@@ -159,6 +160,13 @@ args = dict(  time                   = time if tResModel in [ 'Gauss', '3Gauss' 
 
 pdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
 
+intSet  = [ ]
+normSet = angleFuncs.angles.values()
+if timeInt :
+    # integrate over time, normalize over time + angles
+    intSet.append( time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime )
+    normSet.append( intSet[-1] )
+
 
 ###########################################################################################################################################
 ## compute angular efficiency moments and multiply PDF with efficiency function ##
@@ -169,7 +177,11 @@ print '\nData set:'
 data.Print()
 print '\nPDF:'
 pdf.Print()
-print '\nLifetime resolution model:'
+print '\nIntegration set for PDF:'
+for var in intSet : print var.GetName(),
+print '\n\nNormalization set for PDF:'
+for var in normSet : print var.GetName(),
+print '\n\nLifetime resolution model:'
 timeResModel['model'].Print()
 print '\nVariables in PDF:'
 for var in pdf.getObservables(data) : var.Print()
@@ -177,11 +189,9 @@ print '\nParameters in PDF:'
 for par in pdf.getParameters(data) : par.Print()
 print
 
-normSet = angleFuncs.angles.values()
-
 # moments builder with angular functions from physics PDF
 from P2VVGeneralUtils import RealMomentsBuilder
-physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( func, 1, pdf, normSet )\
+physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( func, 1, pdf, intSet, normSet )\
                                               for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
                                             )
                                 )
@@ -192,7 +202,8 @@ indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in 
 #indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ -2, 1 ] ]
 
 basisMoments = RealMomentsBuilder()
-basisMoments.appendPYList( angleFuncs.angles, indices, PDF = pdf, NormSet = normSet )
+basisMoments.appendPYList( angleFuncs.angles, indices, PDF = pdf, IntSet = intSet, NormSet = normSet )
+
 
 if readMoments :
     # read moments from file

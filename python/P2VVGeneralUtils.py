@@ -546,24 +546,24 @@ class RealMomentsBuilder ( dict ) :
             if nameExpr and not nameExpr.match(funcName)   : continue
             yield ( funcName, self._coefficients[funcName], self._basisFuncs[funcName] )
 
-    def appendPYList( self, Angles, IndicesList, PDF = None, NormSet = None ) :
+    def appendPYList( self, Angles, IndicesList, PDF = None, IntSet = None, NormSet = None ) :
         # build moments from list of indices
-        if not PDF and not NormSet :
+        if not PDF and not IntSet and not NormSet :
             # build moment
             for inds in IndicesList :
                 self.append(  Angles = Angles, PIndex = inds[0], YIndex0 = inds[1], YIndex1 = inds[2]
                                   , Norm = float( 2 * inds[0] + 1 ) / 2. )
-        elif PDF and NormSet :
-            # TODO: default for NormSet should be all observables in PDF except Angles, but
-            #       we need a dataset to determine this ;-( 
+        elif PDF and IntSet != None and NormSet != None :
+            # TODO: default for IntSet should be an empty set and a set of angles for NormSet,
+            #       but we need a dataset to determine this ;-(
             #       maybe set to 'None' , and then defer to compute???
             #       Problem is, at that point the moments have already been build...
             # build efficiency moment
             for inds in IndicesList :
                 self.append(  Angles = Angles, PIndex = inds[0], YIndex0 = inds[1], YIndex1 = inds[2]
-                                  , Norm = float( 2 * inds[0] + 1 ) / 2., PDF = PDF, NormSet = NormSet )
+                                  , Norm = float( 2 * inds[0] + 1 ) / 2., PDF = PDF, IntSet = IntSet, NormSet = NormSet )
         else :
-            print 'P2VV - ERROR: RealMomentsBuilder.appendList: both a PDF and a normalisation set are required for efficiency moments'
+            print 'P2VV - ERROR: RealMomentsBuilder.appendList: a PDF, an integration set and a normalisation set are required for efficiency moments'
 
     def append( self, **kwargs ) :
         momIndices = None
@@ -583,16 +583,16 @@ class RealMomentsBuilder ( dict ) :
                 momIndices = ( kwargs.pop('PIndex'), kwargs.pop('YIndex0'), kwargs.pop('YIndex1') )
                 func = P2VVAngleBasis( kwargs.pop('Angles'), ( momIndices[0], 0, momIndices[1], momIndices[2] ) , 1. )
 
-            if not 'PDF' in kwargs and not 'NormSet' in kwargs :
+            if not 'PDF' in kwargs and not 'IntSet' in kwargs and not 'NormSet' in kwargs :
                 # build moment
                 from RooFitWrappers import RealMoment
                 moment = RealMoment( func, kwargs.pop('Norm',1.) )
-            elif 'PDF' in kwargs and 'NormSet' in kwargs :
+            elif 'PDF' in kwargs and 'IntSet' in kwargs and 'NormSet' in kwargs :
                 # build efficiency moment
                 from RooFitWrappers import RealEffMoment
-                moment = RealEffMoment( func, kwargs.pop('Norm',1.), kwargs.pop('PDF'), kwargs.pop('NormSet') )
+                moment = RealEffMoment( func, kwargs.pop('Norm',1.), kwargs.pop('PDF'), kwargs.pop('IntSet'), kwargs.pop('NormSet') )
             else :
-                print 'P2VV - ERROR: RealMomentsBuilder.append: both a PDF and a normalisation set are required for an efficiency moment'
+                print 'P2VV - ERROR: RealMomentsBuilder.append: a PDF, an integration set and a normalisation set are required for an efficiency moment'
                 moment = None
 
         else :
