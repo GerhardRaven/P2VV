@@ -17,6 +17,9 @@
 #include "RooComplementCoef.h" 
 #include "Riostream.h"
 
+#include <iostream>
+using std::endl;
+
 ClassImp(RooComplementCoef) 
 
 //_____________________________________________________________________________

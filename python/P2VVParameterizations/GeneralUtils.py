@@ -20,8 +20,8 @@ class _util_parse_mixin( object ) :
             import RooFitWrappers
             from copy import copy
             _d = copy(d) # make sure we do not modify the input!!!
-            if arg in kwargs :
-                a = kwargs.pop(arg)
+            if arg in kwargs or arg in _d :
+                a = kwargs.pop(arg) if arg in kwargs else _d.pop(arg)
                 if isinstance( a, RooFitWrappers.RooObject ) : return a
                 _d.update( a if type(a) == dict else { SingleArgKey : a } )
             if 'Name' not in _d : _d[ 'Name' ] = arg

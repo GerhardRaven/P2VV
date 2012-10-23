@@ -157,7 +157,7 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
     from ROOT import RooDataSet
     dataSet.addColumn(weightVar)
     dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet.get()
-                         , Import = dataSet, WeightVar = 'weightVar' )
+                         , Import = dataSet, WeightVar = ( 'weightVar', True ) )
 
     # import data set into current workspace
     from RooFitWrappers import RooObject
@@ -278,8 +278,8 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
                 if y < 0.:
                     hist.SetPoint(i, float(x), 0.)
                     minimum = 0.
-            hist.SetMinimum(minimum + 0.1)
-            rooPlot.SetMinimum(minimum + 0.1)
+            #hist.SetMinimum(minimum + 0.1)
+            #rooPlot.SetMinimum(minimum + 0.1)
 
     # plot PDF
     if pdf :
@@ -1000,7 +1000,9 @@ class SData( object ) :
 
         raise KeyError, 'P2VV - ERROR: SData.__init__(): unknown component %s' % Component
 
-    def data( self, Component ) :
+    def data( self, Component = None ) :
+        if not Component : return self._sData
+
         if Component not in self._data :
             # check if component exists
             yName = 'N_%s' % Component
@@ -1013,7 +1015,7 @@ class SData( object ) :
             # create weighted data set
             dName = '%s_weighted_%s' % ( self._sData.GetName(), Component )
             from ROOT import RooDataSet
-            self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = wName )
+            self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = ( wName, True ) )
 
         return self._data[Component]
 
