@@ -431,9 +431,21 @@ class FormulaVar (RooObject) :
     def __init__(self, Name, formula, fargs, **kwargs):
         # construct factory string on the fly...
         __check_name_syntax__(Name)
-        spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs))
-        self._declare(spec)
-        self._init(Name, 'RooFormulaVar')
+        data = kwargs.pop('data', None)
+        if not data:
+            spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs))
+            self._declare(spec)
+            self._init(Name, 'RooFormulaVar')
+        else:
+            l = RooArgList()
+            for arg in fargs:
+                l.add(__dref__(arg))
+            from ROOT import RooFormulaVar
+            form = RooFormulaVar(Name, Name, formula, l)
+            form = data.addColumn(form)
+            form = self._addObject(form)
+            self._init(Name, 'RooRealVar')
+            self.setObservable(True)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class RealCategory( RooObject ) :
@@ -1128,6 +1140,24 @@ class Projection(Pdf):
         exCon = original.ExternalConstraints()
         if exCon : extraOpts['ExternalConstraints' ] = exCon
         Pdf.__init__(self , Name = name , Type = 'RooProjectedPdf', **extraOpts)
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def _make_pdf(self):
+        pass
+
+class KeysPdf(Pdf):
+    def __init__(self,**kwargs) :
+        name = kwargs.pop('Name')
+        observable = kwargs.pop('Observable')
+        data = kwargs.pop('Data')
+        rho = kwargs.pop('Rho', 1.)
+
+        from ROOT import RooKeysPdf
+        keysPdf = RooKeysPdf(name, name, __dref__(observable), data, RooKeysPdf.NoMirror, rho)
+
+        keysPdf = self._addObject(keysPdf)
+        self._init(name, 'RooKeysPdf')
+        Pdf.__init__(self , Name = name , Type = 'RooKeysPdf')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
     def _make_pdf(self):
