@@ -503,14 +503,16 @@ class RealMoment( AbsRealMoment ):
         AbsRealMoment.__init__( self, RooRealMoment( __dref__(self._basisFunc), self._norm ) )
 
 class RealEffMoment( AbsRealMoment ):
-    def __init__( self, BasisFunc, Norm, PDF, NormSet ) :
+    def __init__( self, BasisFunc, Norm, PDF, IntSet, NormSet ) :
         # get arguments
         self._basisFunc = BasisFunc
         self._norm      = Norm
         self._pdf       = PDF
+        self._intSet    = IntSet
         self._normSet   = NormSet
 
-        # build a RooFit normalisation set
+        # build RooFit integration and normalisation sets
+        self._rooIntSet  = ArgSet( self._basisFunc.GetName() + '_intSet',  ( var for var in self._intSet  ) )
         self._rooNormSet = ArgSet( self._basisFunc.GetName() + '_normSet', ( var for var in self._normSet ) )
 
         # create efficiency moment
@@ -519,6 +521,7 @@ class RealEffMoment( AbsRealMoment ):
         AbsRealMoment.__init__( self, RooRealEffMoment(  __dref__(self._basisFunc)
                                                        , self._norm
                                                        , __dref__(self._pdf)
+                                                       , __dref__(self._rooIntSet)
                                                        , __dref__(self._rooNormSet)
                                                       )
                               )
