@@ -151,6 +151,7 @@ public:
          name = m_rawEff->GetName(); name += "_proxy";
          m_efficiency = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawEff);
       }
+      m_rawEff = 0;
 
       if (m_relative) {
          RooRealProxy* temp = new RooRealProxy(m_relative->GetName(), parent, *m_relative);
