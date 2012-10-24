@@ -165,8 +165,9 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         self['numEvents'] = 30000
 
-        self['nTupleName'] = 'DecayTree'
-        self['nTupleFile'] = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+        self['nTupleName']     = 'DecayTree'
+        self['nTupleFile']     = 'Bs2JpsiPhi_ntupleB_for_fitting_20120203.root'
+        self['nominalDataSet'] = False
 
         self['timeEffHistFile']      = 'BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
         self['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'
@@ -206,8 +207,8 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-        self['eventTimeResolution']   = True
-        self['numTimeResBins']        = 100
+        self['timeResType']           = 'event'      # '' / 'event' / 'eventNoMean' / 'eventConstMean'
+        self['numTimeResBins']        = 20
         self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['signalFraction'] = 0.67
@@ -271,6 +272,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         nTupleName           = pdfConfig.pop('nTupleName')
         nTupleFile           = pdfConfig.pop('nTupleFile')
+        nominalDataSet       = pdfConfig.pop('nominalDataSet')
         angEffMomentsFile    = pdfConfig.pop('angEffMomentsFile')
         timeEffHistFile      = pdfConfig.pop('timeEffHistFile')
         timeEffHistUBName    = pdfConfig.pop('timeEffHistUBName')
@@ -321,7 +323,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         constrainTagging = pdfConfig.pop('constrainTagging')
         condTagging = True if contEstWTag else condTagging
 
-        eventTimeRes    = pdfConfig.pop('eventTimeResolution')
+        timeResType     = pdfConfig.pop('timeResType')
         numTimeResBins  = pdfConfig.pop('numTimeResBins')
         constrTResScale = pdfConfig.pop('constrainTimeResScale')
 
@@ -413,16 +415,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             iTagOS = Category( 'iTagOS', Title = 'Initial state flavour tag opposite side', Observable = True, States = iTagStates )
             iTagSS = Category( 'iTagSS', Title = 'Initial state flavour tag same side',     Observable = True, States = iTagStates )
         estWTagComb = RealVar( 'tagomega',    Title = 'Estimated wrong tag probability OS/SS combination', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
         estWTagOS   = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability opposite side', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
         estWTagSS   = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
-        estWTagOS.setBins( numEstWTagBins, 'cache' )
-        estWTagSS.setBins( numEstWTagBins, 'cache' )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
-                        , Value = 5368., MinMax = ( 5250., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
+                        , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
                         ,  Ranges = dict(  LeftSideBand  = ( 5205., 5325. )
                                          , Signal        = ( 5325., 5400. )
                                          , RightSideBand = ( 5400., 5520. )
@@ -464,6 +464,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         hlt2UBName    = 'hlt2_unbiased'
 
         sel       = Category( 'sel',         Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
+        selA      = Category( 'selA',        Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
+        selB      = Category( 'selB',        Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
         hlt1ExclB = Category( hlt1ExclBName, Observable = True, States = { 'exclB' : 1, 'notExclB' : 0 } )
         hlt1B     = Category( hlt1BName,     Observable = True, States = { 'B'     : 1, 'notB'     : 0 } )
         hlt1UB    = Category( hlt1UBName,    Observable = True, States = { 'UB'    : 1, 'notUB'    : 0 } )
@@ -492,6 +494,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , KKMass           = KKMass
                            , timeRes          = timeRes
                            , sel              = sel
+                           , selA             = selA
+                           , selB             = selB
                            , hlt1ExclB        = hlt1ExclB
                            , hlt1B            = hlt1B
                            , hlt1UB           = hlt1UB
@@ -507,6 +511,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if makePlots : obsSetNTuple += [ mumuMass ]
         if selection in [ 'timeEffFit', 'paper2012' ] or timeEffType in [ 'fit', 'paper2012' ] : obsSetNTuple += [ hlt1ExclB ]
         if selection == 'timeEffFit'                  or timeEffType == 'fit'                  : obsSetNTuple += [ hlt2B, hlt2UB ]
+        if nominalDataSet : obsSetNTuple += [  sel, selA, selB, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2
+                                             , tagDecisionComb, estWTagComb ]
 
 
         ###################################################################################################################################
@@ -675,19 +681,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print 120 * '='
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: computing S-weights'
 
-            # compute S-weights
+            # create sWeigthed data sets
             from P2VVGeneralUtils import SData, splot
-            self._SWeightData = SData( Pdf = self._sWeightMassPdf, Data = self._dataSets['data'], Name = 'massSData' )
-
-            # create signal and background data sets with S-weights
-            self._dataSets['sigSWeightData'] = self._SWeightData.data( 'sigMass' if SFit else 'signal' )
-            self._dataSets['bkgSWeightData'] = self._SWeightData.data( 'bkgMass' if SFit else 'bkg'    )
+            self._SData = SData( Pdf = self._sWeightMassPdf, Data = self._dataSets['data'], Name = 'massSData' )
+            self._dataSets['SWeightData']    = self._SData.data()
+            self._dataSets['sigSWeightData'] = self._SData.data( 'sigMass' if SFit else 'signal' )
+            self._dataSets['bkgSWeightData'] = self._SData.data( 'bkgMass' if SFit else 'bkg'    )
 
             # print signal/background info to screen
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
                          , self._dataSets['data'].get().find( hlt2B.GetName() )
                         ]
-            if hasattr( self, '_KKMassCat' ) :
+            if hasattr( self, '_KKMassCat' ) and self._KKMassCat.numTypes() > 1 :
                 splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
             splitCats = [ cat for cat in splitCats if cat ]
             self._dataSets['sigSWeightData'].Print()
@@ -902,8 +907,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             # add tagging categories to data sets
             from P2VVGeneralUtils import addTaggingObservables
-            for data in self._dataSets.values() :
-                if data:
+            for dataKey, data in self._dataSets.iteritems() :
+                if data and not data.get().find( iTagOS.GetName() ) :
                     addTaggingObservables( data, iTagOS.GetName(), tagCatP2VVOS.GetName(), tagDecisionOS.GetName(), estWTagOS.GetName()
                                           , self._tagCatsOS['tagCats'] )
                     addTaggingObservables( data, iTagSS.GetName(), tagCatP2VVSS.GetName(), tagDecisionSS.GetName(), estWTagSS.GetName()
@@ -965,14 +970,33 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = 'constrain' if nominalPdf else constrainDeltaM )
         if ambiguityPars : self._lifetimeParams['dGamma'].setVal( -self._lifetimeParams['dGamma'].getVal() )
 
-        if nominalPdf or eventTimeRes :
-            from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution( time = time, sigmat = timeRes
-                                                , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+        if nominalPdf or timeResType.startswith('event') :
+            from P2VVParameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
+            timeResArgs = dict(  time = time
+                               , timeResSigma = timeRes
+                               , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale
+                               , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
+                              )
+            if not nominalPdf and 'nomean' in timeResType.lower() :
+                timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
+                timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+            elif not nominalPdf and 'constmean' in timeResType.lower() :
+                timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
+                timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+                timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
+            else :
+                timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
+
+            self._timeResModel = TimeResolution( **timeResArgs )
+
         else :
             from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
             self._timeResModel = TimeResolution( time = time
                                                 , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+
+        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: decay time resolution model:'
+        self._timeResModel['model'].Print()
+        for par in self._timeResModel.parameters() : par.Print()
 
         # CP violation parameters
         if lambdaCPParam == 'ReIm' : 
@@ -1196,16 +1220,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     , Data = self._dataSets['data'], Fit = True, Original = sigPdf
                                                     , ResolutionModel = self._timeResModel )
 
-            #elif timeEffType == 'paper2012' and selection == 'paper2012' :
-            #    hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
-            #                           , 'notExclB' : { 'histogram' : timeEffHistUBName    }
-            #                          }
-            #            }
+            elif timeEffType == 'paper2012' and selection == 'paper2012' :
+                hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
+                                       , 'notExclB' : { 'histogram' : timeEffHistUBName    }
+                                      }
+                        }
 
-            #    from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-            #    self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
-            #                                        , Data = self._dataSets['data'], Fit = False, Original = sigPdf
-            #                                        , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf ) )
+                from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+                self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
+                                                    , Data = self._dataSets['data'], Fit = False, Original = sigPdf
+                                                    , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf ) )
 
             elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
                 from P2VVParameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
@@ -1806,12 +1830,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if not SFit and selection in ['paper2012', 'timeEffFit'] :
                 splitCats.append( [hlt1ExclB] if selection == 'paper2012' else [hlt1ExclB, hlt2B] if selection == 'timeEffFit' else [] )
                 splitParams.append( [ par for par in self._backgroundTime.parameters() if not par.isConstant() ] )
-            if selection == 'paper2012' :
-                if SFit :
-                    splitCats.append( [hlt1ExclB] )
-                    splitParams.append( [ par for par in self._timeResModel['binHeights'] ] )
-                else :
-                    splitParams[-1] += [ par for par in self._timeResModel['binHeights'] ]
+            #if selection == 'paper2012' :
+            #    if SFit :
+            #        splitCats.append( [hlt1ExclB] )
+            #        splitParams.append( [ par for par in self._timeResModel['binHeights'] ] )
+            #    else :
+            #        splitParams[-1] += [ par for par in self._timeResModel['binHeights'] ]
             if paramKKMass == 'simultaneous' :
                 splitCats.append( [ self._KKMassCat ] )
                 splitParams.append( [ ] )
@@ -1883,15 +1907,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                     splitCatState = splitCatIter.Next()
 
-            if selection == 'paper2012' :
-                accFile = TFile.Open(timeEffHistFile)
-                accHist = accFile.Get(timeEffHistExclBName)
-                exclBName = hlt1ExclB.lookupType(1).GetName()
-                for binIt in range( accHist.GetNbinsX() ) :
-                    parName = self._timeResModel['binHeights'][binIt]
-                    binHeight = getSplitPar( parName, exclBName, splitCatPars )
-                    binHeight.setVal( accHist.GetBinContent( binIt + 1 ) )
-                accFile.Close()
+            #if selection == 'paper2012' :
+            #    accFile = TFile.Open(timeEffHistFile)
+            #    accHist = accFile.Get(timeEffHistExclBName)
+            #    exclBName = hlt1ExclB.lookupType(1).GetName()
+            #    for binIt in range( accHist.GetNbinsX() ) :
+            #        parName = self._timeResModel['binHeights'][binIt]
+            #        binHeight = getSplitPar( parName, exclBName, splitCatPars )
+            #        binHeight.setVal( accHist.GetBinContent( binIt + 1 ) )
+            #    accFile.Close()
 
             if paramKKMass == 'simultaneous' :
                 # set values for splitted amplitudes

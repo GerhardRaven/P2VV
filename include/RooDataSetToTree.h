@@ -13,10 +13,12 @@
 #ifndef ROO_B_DATA_SET_TO_TREE
 #define ROO_B_DATA_SET_TO_TREE
 
+#include "Rtypes.h"
+
 class RooDataSet;
 class TTree;
 
-TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList = 0);
+TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList = 0, Bool_t RooFitFormat = kTRUE);
 
 #endif
 

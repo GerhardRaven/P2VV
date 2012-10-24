@@ -28,7 +28,7 @@ fitOpts = dict(  Timer=1
                 )
 
 tmincut = 0.3
-timeacceptance = False
+timeacceptance = True
 fit = False
 
 # define observables
@@ -103,7 +103,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.679
                                                             #, Blind = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
                                                             )
                                        , dM = dict( Value = 17.58, MinMax = (16.5,18.5), Constant = False)
-                                       , dMConstraint = True
+                                       #, dMConstraint = True
                                       )
 
 # define tagging parameter 
@@ -130,7 +130,6 @@ CP = LambdaArg_CPParam( phiCP      = dict( Name = 'phi_s'
 #                        )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0 and fs = As2/(1+As2)
-
 from P2VVParameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet
 amplitudes = JpsiVPolarSWaveFrac_AmplitudeSet(  A0Mag2 = 0.52, A0Phase = 0
                                               , AperpMag2 = 0.25, AperpPhase = 2.77 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
@@ -251,7 +250,7 @@ if massplot:
           #, plotResidHist = True
           , logy = False
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               #, Bins=70
                               ) 
           )
@@ -259,11 +258,8 @@ if massplot:
 ########################
 ### Build omega PDFs ###
 ########################
-#sig_omegaospdf = HistPdf( Name = 'sig_omegaospdf', Observables = (eta_os,), Data = sigdata)
-#bkg_omegaospdf = HistPdf( Name = 'bkg_omegaospdf', Observables = (eta_os,), Data = bkgdata)
-
-sig_omegaospdf = HistPdf( Name = 'sig_omegaospdf', Observables = (eta_os, iTag_os), Data = sigdata, ConditionalObservables = (iTag_os,))
-bkg_omegaospdf = HistPdf( Name = 'bkg_omegaospdf', Observables = (eta_os, iTag_os), Data = bkgdata, ConditionalObservables = (iTag_os,))
+sig_omegaospdf = HistPdf( Name = 'sig_omegaospdf', Observables = (eta_os,), Data = sigdata )
+bkg_omegaospdf = HistPdf( Name = 'bkg_omegaospdf', Observables = (eta_os,), Data = bkgdata )
 
 #from RooFitWrappers import UniformPdf
 #sig_omegaospdf =  UniformPdf('sig_omegaospdf', Arguments = ( eta_os, ) )
@@ -334,9 +330,9 @@ def search(fname,path) :
 import os
 
 if timeacceptance:
-    fitname = 'cfit_acc_difftagging'
+    fitname = 'cfit_acc_floatdeltams'
 else:
-    fitname = 'cfit_noacc_difftagging'
+    fitname = 'cfit_noacc_floatdeltams'
 
 paramfile = search(fitname+'params.txt',os.pathsep.join(['.','FitScripts']) )
 if paramfile :
@@ -359,6 +355,8 @@ print 'DvEFit: parameters in NLL:'
 for par in pdf.getVariables() : par.Print()
 print 120 * '='
 
+assert False
+
 def correctgamma():
     gamma = obj.ws()['Gamma']
     uncval = (1.)/(gamma.getVal())
@@ -369,7 +367,7 @@ def correctgamma():
     return
 
 #Correct for Gamma!
-correctgamma()
+#correctgamma()
 
 def checkambiguity():
 ##     fitresult = search(fitname+'_result',os.pathsep.join(['.','FitScripts']) )
@@ -389,7 +387,6 @@ def checkambiguity():
     lltwo = pdf._var.createNLL(data)
     print 'Value of ll in ambiguity is %f'%(lltwo.getVal())
 
-assert False
 ########
 # PLOT #
 ########
@@ -426,7 +423,7 @@ if massplot:
           #, plotResidHist = True
           , logy = False
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               #, Bins=70
                               ) 
           )
@@ -459,9 +456,9 @@ if angleplot:
                                  , ProjWData = ( data.reduce(RooArgSet(st,eta_os)), True )
                                  , **pdfOpts )
               , plotResidHist = False
-              , frameOpts = dict(Title = ""
-                                 #,Object = ( TLatex(0.30,.2,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
-                                 , Bins = 25
+              , frameOpts = dict( Object = ( TLatex(0.30,.2,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                                  , Title = ""
+                                  , Bins = 25
                                   )
               , logy = ( o == t )
               )
@@ -495,57 +492,18 @@ if timeplot:
           #, plotResidHist = True
           , logy = True
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               , Bins=137
                               ) 
           )
     canvas_t.SaveAs('canvas_t_%s.eps'%(fitname))
 
-#Asymmetry:
-#asymmetryplot = True
-asymmetryplot = False
-
-if asymmetryplot:
-    canvas_asym = TCanvas('asymmetryplot','asymmetryplot',972,600)
-    canvas_asym.SetFixedAspectRatio(True)
-    dataOpts = dict()
-    pdfOpts = dict()
-    plot( canvas_asym
-          , t
-          , data
-          , pdf
-          , components = {'sig*' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kGreen   )
-                          #,'psi*' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kOrange )
-                          ,'bkg*' : dict( LineStyle = kDashed, LineWidth=3, LineColor = kRed )
-                          }
-          #, yTitleOffset = 1.2
-          , xTitleOffset = 1.1
-          #, yScale = (0.1,10000)
-          , dataOpts = dict( MarkerSize = 0.8
-                             , MarkerColor = kBlack
-                             , Asymmetry = (iTag_os)
-                             ,**dataOpts)
-          , pdfOpts = dict( LineWidth = 3
-                            , ProjWData = ( data.reduce(RooArgSet(st,eta_os)), True )
-                            , Asymmetry = (iTag_os)
-                            , LineColor = kBlue
-                            ,**pdfOpts
-                            )
-          #, plotResidHist = True
-          #, logy = True
-          , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.15,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
-                              , Bins=137
-                              ) 
-          )
-    canvas_asym.SaveAs('canvas_asym_%s.eps'%(fitname))
-
 #####################
 ### Signal Region ###
 #####################
 #Angles:
-anglesplot_sig = True
-#anglesplot_sig = False
+#anglesplot_sig = True
+anglesplot_sig = False
 
 if anglesplot_sig:
     orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
@@ -571,8 +529,8 @@ if anglesplot_sig:
                                  , ProjWData = ( data.reduce(RooArgSet(st,eta_os)), True )
                                  , **pdfOpts )
               , plotResidHist = False
-              , frameOpts = dict( Title = ""
-                                  #,Object = ( TLatex(0.30,.25,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+              , frameOpts = dict( Object = ( TLatex(0.30,.25,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                                  , Title = ""
                                   ,Bins = 25
                                   )
               , logy = ( o == t )
@@ -580,8 +538,8 @@ if anglesplot_sig:
     canvas_angles_sig.SaveAs('canvas_angles_sig_%s.eps'%(fitname))
 
 #Time:
-timeplot_sig = True
-#timeplot_sig = False
+#timeplot_sig = True
+timeplot_sig = False
 
 if timeplot_sig:
     canvas_t_sig = TCanvas('timeplot_sig','timeplot_sig',972,600)
@@ -607,7 +565,7 @@ if timeplot_sig:
           #, plotResidHist = True
           , logy = True
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               , Bins=137
                               ) 
           )
@@ -617,8 +575,8 @@ if timeplot_sig:
 ### Background Region ###
 #########################
 #Angles:
-anglesplot_bkg = True
-#anglesplot_bkg = False
+#anglesplot_bkg = True
+anglesplot_bkg = False
 
 if anglesplot_bkg:
     orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
@@ -644,8 +602,8 @@ if anglesplot_bkg:
                                  , ProjWData = ( data.reduce(RooArgSet(st,eta_os)), True )
                                  , **pdfOpts )
               , plotResidHist = False
-              , frameOpts = dict( Title = ""
-                                  #, Object = ( TLatex(0.30,.25,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+              , frameOpts = dict( Object = ( TLatex(0.30,.25,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                                  , Title = ""
                                   , Bins = 25
                                   )
               , logy = ( o == t )
@@ -653,8 +611,8 @@ if anglesplot_bkg:
     canvas_angles_bkg.SaveAs('canvas_angles_bkg_%s.eps'%(fitname))
 
 #Time:
-timeplot_bkg = True
-#timeplot_bkg = False
+#timeplot_bkg = True
+timeplot_bkg = False
 
 if timeplot_bkg:
     canvas_t_bkg = TCanvas('timeplot_bkg','timeplot_bkg',972,600)
@@ -680,7 +638,7 @@ if timeplot_bkg:
           #, plotResidHist = True
           , logy = True
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               , Bins=137
                               ) 
           )
@@ -695,8 +653,8 @@ else:
     signalcomponent = obj._ws['signal_sig_t_angles_iTag_x_Eff_X_sig_m_X_sig_omegaospdf_X_sig_sigmatpdf_X_os_tag_sig_Trivial_TagPdf']
 
 #Time:
-timeplot_sig_s = True
-#timeplot_sig_s = False
+#timeplot_sig_s = True
+timeplot_sig_s = False
 
 if timeplot_sig_s:
     canvas_t_sig_s = TCanvas('timeplot_sig_s','timeplot_sig_s',972,600)
@@ -722,15 +680,15 @@ if timeplot_sig_s:
           #, plotResidHist = True
           , logy = True
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               , Bins=137
                               ) 
           )
     canvas_t_sig_s.SaveAs('canvas_t_sig_s_%s.eps'%(fitname))
 
 #Angles:
-anglesplot_sig_s = True
-#anglesplot_sig_s = False
+#anglesplot_sig_s = True
+anglesplot_sig_s = False
 
 if anglesplot_sig_s:
     orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
@@ -759,8 +717,8 @@ if anglesplot_sig_s:
                                  , **pdfOpts
                                  )
               , plotResidHist = False
-              , frameOpts = dict( Title = ""
-                                  #, Object = ( TLatex(0.30,.25,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+              , frameOpts = dict( Object = ( TLatex(0.30,.25,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                                  , Title = ""
                                   , Bins = 25
                                   )
               , logy = ( o == t )
@@ -768,8 +726,8 @@ if anglesplot_sig_s:
     canvas_angles_sig_s.SaveAs('canvas_angles_sig_s_%s.eps'%(fitname))
 
 #Eta:
-etaplot_sig_s = True
-#etaplot_sig_s = False
+#etaplot_sig_s = True
+etaplot_sig_s = False
 
 if etaplot_sig_s:
     canvas_eta_sig_s = TCanvas('etaplot_sig_s','etaplot_sig_s',972,600)
@@ -795,7 +753,7 @@ if etaplot_sig_s:
           #, plotResidHist = True
           #, logy = True
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               #, Bins=137
                               ) 
           )
@@ -807,8 +765,8 @@ if etaplot_sig_s:
 bkgcomponent = obj._ws['bkg_bkg_angles_X_bkg_m_X_bkg_omegaospdf_X_bkg_sigmatpdf_X_bkg_t_X_os_tag_bkg_Trivial_TagPdf']
 
 #Time:
-timeplot_bkg_s = True
-#timeplot_bkg_s = False
+#timeplot_bkg_s = True
+timeplot_bkg_s = False
 
 if timeplot_bkg_s:
     canvas_t_bkg_s = TCanvas('timeplot_bkg_s','timeplot_bkg_s',972,600)
@@ -834,15 +792,15 @@ if timeplot_bkg_s:
           #, plotResidHist = True
           , logy = True
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               , Bins=137
                               ) 
           )
     canvas_t_bkg_s.SaveAs('canvas_t_bkg_s_%s.eps'%(fitname))
 
 #Angles:
-anglesplot_bkg_s = True
-#anglesplot_bkg_s = False
+#anglesplot_bkg_s = True
+anglesplot_bkg_s = False
 
 if anglesplot_bkg_s:
     orderdict = dict( (i[1].GetName(), i[0]) for i in enumerate([angles.angles['cpsi'],angles.angles['ctheta'],angles.angles['phi']]) )
@@ -867,8 +825,8 @@ if anglesplot_bkg_s:
                                  , ProjWData = ( bkgdata.reduce(RooArgSet(st,eta_os)), True )
                                  , **pdfOpts )
               , plotResidHist = False
-              , frameOpts = dict( Title = ""
-                                  #, Object = ( TLatex(0.30,.25,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+              , frameOpts = dict( Object = ( TLatex(0.30,.25,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                                  , Title = ""
                                   , Bins = 25
                                   )
               , logy = ( o == t )
@@ -903,7 +861,7 @@ if etaplot_bkg_s:
           #, plotResidHist = True
           #, logy = True
           , frameOpts = dict( Title = ''
-                              #, Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
+                              , Object = ( TLatex(0.55,.8,"#splitline{#font[42]{LHCb preliminary}}{#font[42]{#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}}}", NDC = True), )
                               #, Bins=137
                               ) 
           )

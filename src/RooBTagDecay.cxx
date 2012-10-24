@@ -25,6 +25,8 @@
 
 
 #include <memory>
+#include <iostream>
+using std::endl;
 
 #include "Riostream.h"
 #include "RooFit.h"
@@ -37,6 +39,7 @@
 #include "RooRealVar.h"
 
 #include "TObjArray.h"
+
 
 ClassImp(RooBTagDecay);
 

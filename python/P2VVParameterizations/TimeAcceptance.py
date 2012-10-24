@@ -20,7 +20,8 @@ class TimeAcceptance ( TimeResolution ) :
         
         TimeResolution.__init__(self, Model = self._acceptance,
                                 Conditionals = self._acceptance.ConditionalObservables(),
-                                Constraints = self._acceptance.ExternalConstraints())
+                                Constraints = self._acceptance.ExternalConstraints(),
+                                **kwargs)
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
     def acceptance( self ) : return self._acceptance
