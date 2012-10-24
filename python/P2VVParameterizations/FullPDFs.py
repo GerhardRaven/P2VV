@@ -207,7 +207,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-        self['timeResType']           = 'event'      # '' / 'event' / 'eventNoMean' / 'eventConstMean'
+        self['timeResType']           = 'event'      # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss'
         self['numTimeResBins']        = 20
         self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
@@ -676,6 +676,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     for par in fixedMassPars : par.setConstant(False)
 
             else :
+                splitCatPars = None
                 self._sWeightMassPdf = self._massPdf
 
 
@@ -770,43 +771,44 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     print '    --------------|-------|----------|----------|--------|---------|--------'
                 print
 
-                # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
-                print '                  | total |        signal       |     background      |        S/B        |       S/(S+B)     |   S/sqrt(S+B)   '
-                print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
-                for cat in iters.iterkeys() : iters[cat] = 0
-                cont = True
-                while cont :
-                    stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
-                    sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', '{%s}' % stateName, splitCatPars )
-                    bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    '{%s}' % stateName, splitCatPars )
+                if splitCatPars :
+                    # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
+                    print '                  | total |        signal       |     background      |        S/B        |       S/(S+B)     |   S/sqrt(S+B)   '
+                    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
+                    for cat in iters.iterkeys() : iters[cat] = 0
+                    cont = True
+                    while cont :
+                        stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
+                        sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', '{%s}' % stateName, splitCatPars )
+                        bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    '{%s}' % stateName, splitCatPars )
 
-                    nSigEv = sigYield.getVal()
-                    nBkgEv = bkgYield.getVal()
-                    nEv    = nSigEv + nBkgEv
-                    S_SB   = nSigEv / nEv
-                    S_B    = nSigEv / nBkgEv
-                    signif = nSigEv / sqrt(nEv)
+                        nSigEv = sigYield.getVal()
+                        nBkgEv = bkgYield.getVal()
+                        nEv    = nSigEv + nBkgEv
+                        S_SB   = nSigEv / nEv
+                        S_B    = nSigEv / nBkgEv
+                        signif = nSigEv / sqrt(nEv)
 
-                    nSigErr     = sigYield.getError()
-                    nSigErrCorr = sqrt( nSigErr**2 - nSigEv**2 / nEv )
-                    S_SBErr     = nSigErrCorr / nEv
-                    S_BErr      = S_SBErr / ( 1 - S_SB )**2
-                    signifErr   = S_SBErr * sqrt(nEv)
-                    print '    %13s | %5.0f | %8.2f +/- %6.2f | %8.2f +/- %6.2f | %6.4f +/- %6.4f | %6.4f +/- %6.4f | %6.2f +/- %4.2f'\
-                           % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nSigErrCorr\
-                              , nBkgEv, nSigErrCorr, S_B, S_BErr, S_SB, S_SBErr, signif, signifErr )
+                        nSigErr     = sigYield.getError()
+                        nSigErrCorr = sqrt( nSigErr**2 - nSigEv**2 / nEv )
+                        S_SBErr     = nSigErrCorr / nEv
+                        S_BErr      = S_SBErr / ( 1 - S_SB )**2
+                        signifErr   = S_SBErr * sqrt(nEv)
+                        print '    %13s | %5.0f | %8.2f +/- %6.2f | %8.2f +/- %6.2f | %6.4f +/- %6.4f | %6.4f +/- %6.4f | %6.2f +/- %4.2f'\
+                               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nSigErrCorr\
+                                  , nBkgEv, nSigErrCorr, S_B, S_BErr, S_SB, S_SBErr, signif, signifErr )
 
-                    iters[ splitCats[-1] ] += 1
-                    for catIt in range( len(splitCats) ) :
-                        if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
-                            if catIt == len(splitCats) - 1 :
-                                cont = False
+                        iters[ splitCats[-1] ] += 1
+                        for catIt in range( len(splitCats) ) :
+                            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                                if catIt == len(splitCats) - 1 :
+                                    cont = False
+                                else :
+                                    iters[ splitCats[ -catIt - 1 ] ] = 0
+                                    iters[ splitCats[ -catIt - 2 ] ] +=1
                             else :
-                                iters[ splitCats[ -catIt - 1 ] ] = 0
-                                iters[ splitCats[ -catIt - 2 ] ] +=1
-                        else :
-                            continue
-                print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
+                                continue
+                    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
 
             # create signal and background data sets with side band ranges
             self._dataSets['sigRangeData'] = self._dataSets['data'].reduce( CutRange = 'Signal'       )
@@ -1041,10 +1043,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             self._timeResModel = TimeResolution( **timeResArgs )
 
-        else :
+        elif timeResType == '3Gauss' :
             from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
             self._timeResModel = TimeResolution( time = time
                                                 , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+
+        else :
+            from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+            self._timeResModel = TimeResolution(  time          = time
+                                                , timeResMu     = dict( Value = 0.,   Constant = True )
+                                                , timeResSigma  = dict( Value = 0.45, Constant = True )
+                                                , PerEventError = False
+                                               )
 
         print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: decay time resolution model:'
         self._timeResModel['model'].Print()
