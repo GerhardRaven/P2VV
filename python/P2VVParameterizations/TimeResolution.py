@@ -59,9 +59,9 @@ class Gaussian_TimeResolution ( TimeResolution ) :
             self._parseArg( 'bias',    kwargs, Title = 'Decay time biased',         Value = -0.17,    MinMax = (-1, 1)  )
             self._parseArg( 'sigmaSF', kwargs, Title = 'Decay time scale factor',   Value = 1.46,     MinMax = (0.1, 2.5) )
             if scaleBias :
-                self._parseArg( 'biasSF', kwargs, Title = 'Decay time bias scale factor', Value = 1, Constant = True )
                 params = [ self._time, self._bias, self._sigmat, self._sigmaSF, self._sigmaSF ]
             else :
+                self._parseArg( 'biasSF', kwargs, Title = 'Decay time bias scale factor', Value = 1, Constant = True )
                 params = [ self._time, self._bias, self._sigmat, self._biasSF,  self._sigmaSF ]
             extraArgs['ConditionalObservables'] = [ self._sigmat ]
 
