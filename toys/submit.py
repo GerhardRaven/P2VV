@@ -7,7 +7,7 @@ location = os.path.realpath(os.curdir)
 atexit.register(os.chdir, location)
 
 # change directory to the git repository
-os.chdir('/project/bfys/raaij/p2vv/code')
+os.chdir('/bfys/raaij/p2vv/code')
 
 # Open bz2 file
 cmd = 'git archive --format=tar master | bzip2 > snapshot.tar.bz2'
@@ -29,7 +29,7 @@ j.application.exe = 'python'
 
 # Create the right environment
 env = {}
-root_location = '/project/bfys/raaij/sw/root-5.34.01'
+root_location = '/project/bfys/raaij/sw/root-5.34-patches'
 env_vars = {'PATH' : 'bin',
             'PYTHONPATH' : 'lib',
             'LD_LIBRARY_PATH' : 'lib',
@@ -52,9 +52,9 @@ j.application.env = env
 
 # Add the inputsandbox
 j.inputsandbox = ['/project/bfys/raaij/p2vv/code/python/ToyMCUtils.py',
-                  '/project/bfys/raaij/p2vv/code/toys/fit_acceptance_toy.py',
+                  '/project/bfys/raaij/p2vv/code/toys/SFit_toy.py',
+                  '/project/bfys/raaij/p2vv/code/toys/CFit_unbiased.pars',
                   '/project/bfys/raaij/p2vv/code/lib/libP2VV.so',
-                  '/project/bfys/raaij/p2vv/code/toys/start_values_20bins.root',
                   '/project/bfys/raaij/p2vv/code/snapshot.tar.bz2']
 
 # Add the outputsandbox
@@ -67,13 +67,13 @@ j.merger = CustomMerger(
     )
 
 # Add the splitter
-args = ['fit_acceptance_toy.py', '--ncpu=1', '-n',
-        '50', '-s', 'snapshot.tar.bz2']
+args = ['SFit_toy.py', '--ncpu=1', '-n',
+        '10', '--nevents=20000', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
     values = [args for i in range(100)]
     )
-j.name = 'acceptance_toys'
+j.name = 'SFit_toys'
 
 # backend
 j.backend = PBS(queue = 'stbcq')

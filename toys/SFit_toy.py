@@ -24,7 +24,7 @@ corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
 
 parameterFile = 'CFit_unbiased.pars'
 pdfConfig['nTupleName'] = 'DecayTree'
-pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120821_MagDownMagUp.root'
+pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120821_MagDownMagUp.root'
 
 dataSetName = 'JpsiphiData'
 dataSetFile = 'SFit_generate.root'
@@ -118,12 +118,12 @@ if not readData or manualTagCatBins :
                               , ( 'TagCat2',   2, 0.30     )
                              ]
 
-pdfConfig['timeEffHistFile']      = '/stuff/PhD/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
+pdfConfig['timeEffHistFile']      = '/bfys/raaij/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['angEffMomentsFile']    = '/stuff/PhD/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
+pdfConfig['angEffMomentsFile']    = '/bfys/raaij/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
-                                    '/stuff/PhD/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
+                                    '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -212,12 +212,13 @@ pdf.setMaxVal(0.15)
 # Wrong PV shape
 from P2VVParameterizations.WrongPV import ShapeBuilder
 from RooFitWrappers import Component, Projection
-wpv = ShapeBuilder(time, {'B' : BMass}, KeysPdf = True, Weights = 'B')
+wpv = ShapeBuilder(time, {'B' : BMass}, KeysPdf = True, Weights = 'B',
+                   InputFile = "/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled.root")
 wpv_signal = wpv.shape('B')
 
 # Projection over time of signal PDF
 projection = Projection(Name = 'pdf_angles', Original = pdf, ProjectVars = [time])
-signal_wpv = Component('signal_wpv', (projection, wpv_signal), Yield = (200, 50, 10000))
+signal_wpv = Component('signal_wpv', (projection, wpv_signal), Yield = (100, 50, 10000))
 
 signal = pdfBuild._signalComps
 signal.setYield(10000, 5000, 50000)
@@ -227,6 +228,6 @@ genPdf = buildPdf(Components = [signal_wpv, signal], Observables = angles + [tim
 
 # run the toy
 toy.set_fit_opts(**dict(Verbose = False))
-toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = genPdf, ProtoData = proto_data)
+toy.run(Observables = angles + [time], Pdf = pdf, GenPdf = genPdf, ProtoData = protoData)
 
 toy.write_output()
