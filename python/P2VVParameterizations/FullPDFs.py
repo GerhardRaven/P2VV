@@ -1054,6 +1054,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                 , timeResMu     = dict( Value = 0.,   Constant = True )
                                                 , timeResSigma  = dict( Value = 0.45, Constant = True )
                                                 , PerEventError = False
+                                                , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]
                                                )
 
         print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: decay time resolution model:'

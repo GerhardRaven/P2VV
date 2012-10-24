@@ -142,7 +142,6 @@ pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
 pdfConfig['numAngleBins'] = ( 5, 7, 9 )
 
-
 ###########################################################################################################################################
 ## build PDF ##
 ###############
@@ -166,6 +165,13 @@ mumuMass   = pdfBuild['observables']['mumuMass']
 KKMass     = pdfBuild['observables']['KKMass']
 estWTagOS  = pdfBuild['observables']['estWTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
+
+# Wrong PV shape
+from P2VVParameterizations.WrongPV import ShapeBuilder
+from RooFitWrappers import Component, Projection
+wpv = ShapeBuilder(time, {'B' : BMass}, KeysPdf = True, Weights = 'B',
+                   Draw = True, Time = [time, timeRes])
+wpv_signal = wpv.shape('B')
 
 if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
 
@@ -209,12 +215,6 @@ pdfConfig.setParametersInPdf(pdf)
 # Hack to set maximum value
 pdf.setMaxVal(0.15)
 
-# Wrong PV shape
-from P2VVParameterizations.WrongPV import ShapeBuilder
-from RooFitWrappers import Component, Projection
-wpv = ShapeBuilder(time, {'B' : BMass}, KeysPdf = True, Weights = 'B')
-wpv_signal = wpv.shape('B')
-
 # Projection over time of signal PDF
 projection = Projection(Name = 'pdf_angles', Original = pdf, ProjectVars = [time])
 signal_wpv = Component('signal_wpv', (projection, wpv_signal), Yield = (200, 50, 10000))
@@ -226,7 +226,7 @@ from RooFitWrappers import buildPdf
 genPdf = buildPdf(Components = [signal_wpv, signal], Observables = angles + [time], Name = 'genPdf')
 
 # run the toy
-toy.set_fit_opts(**dict(Verbose = False))
-toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = genPdf, ProtoData = proto_data)
+## toy.set_fit_opts(**dict(Verbose = False))
+## toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = genPdf, ProtoData = proto_data)
 
-toy.write_output()
+## toy.write_output()
