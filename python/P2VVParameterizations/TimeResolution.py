@@ -50,25 +50,26 @@ class Truth_TimeResolution ( TimeResolution ) :
 
 class Gaussian_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
-        from RooFitWrappers import ResolutionModel
-        self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error',  Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
-        self._parseArg( 'bias',      kwargs, Title = 'Decay time biased',          Value = -0.17,    MinMax = (-1, 1)  )
-        self._parseArg( 'sigmaSF',   kwargs, Title = 'Decay time scale factor',    Value = 1.46,     MinMax = (0.1, 2.5) )
-        self._parseArg( 'timeResMu', kwargs, Title = 'Decay time resolution mean', Value = -0.00017, MinMax = (-1, 1)  )
-        self._parseArg( 'timeResSigma', kwargs, Title = 'Decay time resolution width', Value = 0.05,  MinMax = (0.0001, 2.5) )
-
         pee = kwargs.pop('PerEventError', None)
+
+        self._parseArg( 'time',      kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+        extraArgs = {}
+        if pee :
+            self._parseArg( 'sigmat',    kwargs, Title = 'per-event decaytime error',  Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
+            self._parseArg( 'bias',      kwargs, Title = 'Decay time biased',          Value = -0.17,    MinMax = (-1, 1)  )
+            self._parseArg( 'sigmaSF',   kwargs, Title = 'Decay time scale factor',    Value = 1.46,     MinMax = (0.1, 2.5) )
+            params = [ self._time, self._bias, self._sigmaSF, self._sigmat ]
+            extraArgs['ConditionalObservables'] = [ self._sigmat ]
+        else :
+            self._parseArg( 'timeResMu', kwargs, Title = 'Decay time resolution mean', Value = -0.00017, MinMax = (-1, 1)  )
+            self._parseArg( 'timeResSigma', kwargs, Title = 'Decay time resolution width', Value = 0.05,  MinMax = (0.0001, 2.5) )
+            params = [ self._time, self._timeResMu, self._timeResSigma ]
+
         name = kwargs.pop('Name', 'Gaussian_TimeResolution')
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
-        extraArgs = {}
-        if pee:
-            params = [ self._time, self._bias, self._sigmaSF, self._sigmat ]
-            extraArgs['ConditionalObservables'] = [ self._sigmat ]
-        else:
-            params = [ self._time, self._timeResMu, self._timeResSigma ]
-        
+
+        from RooFitWrappers import ResolutionModel
         TimeResolution.__init__( self, Name = name,
                                  Model = ResolutionModel(Name = 'timeResModelGauss'
                                                          , Type = GaussModel
