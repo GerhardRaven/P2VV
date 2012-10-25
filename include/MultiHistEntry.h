@@ -158,7 +158,7 @@ public:
          delete m_relative;
          m_relative = temp;
       } else {
-         name = m_rawEff->GetName(); name += "_proxy";
+         name = m_rawRel->GetName(); name += "_proxy";
          m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawRel);
       }
       m_rawRel = 0;
