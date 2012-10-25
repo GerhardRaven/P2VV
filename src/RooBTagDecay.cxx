@@ -901,6 +901,15 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
       || !checkTag(kFALSE, kFALSE))))
     return 0;
 
+  // check that tagging parameters don't depend on integration variables
+  RooArgSet intVars(allVars);
+  TIterator* varIter = intVars.createIterator();
+  RooAbsArg* var = 0;
+  while ((var = (RooAbsArg*)varIter->Next()) != 0) {
+    if (!checkVarDep(*var, kFALSE, kTRUE)) intVars.remove(*var, kTRUE, kTRUE);
+  }
+  delete varIter;
+
   // check basis index
   if (coef != _coshBasis && coef != _cosBasis && (_tags > 1
       || (coef != _sinhBasis && coef != _sinBasis))) {
@@ -915,17 +924,14 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
   Bool_t intITag0  = kFALSE;
   Bool_t intITag1  = kFALSE;
   Bool_t intFTag   = kFALSE;
-  RooArgSet intVars(allVars);
 
   // can we drop the rangeName???
-  const char *rangeName = pruneRangeName( rName, allVars );
+  const char *rangeName = pruneRangeName( rName, intVars );
   if ( rangeName == 0 && rName != 0 )  { 
     cxcoutD(Integration) << "RooBTagDecay::getCoefAnalyticalIntegral("
         << GetName() << ") dropping rangeName \"" << rName << "\"" << endl;
     intCode += 16;
   }
-
-    
 
   // integrate over tagging categories?
   if ((_tagCat0Type > 1 && !intVars.remove(_tagCat0.arg(), kTRUE, kTRUE))
@@ -944,19 +950,12 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
     bool odd = ( coef == _sinhBasis || coef == _sinBasis );
     if (odd && _tags > 1 ) return 0;
     
-    intCode += 32 * coefArg(coef).getAnalyticalIntegral(intVars, analVars, rangeName);
+    intCode += 32 * coefArg(coef).getAnalyticalIntegral(intVars, analVars,
+        rangeName);
   }
 
   // return the integration code if there are no explicit tags
   if (_tags == 0) return intCode;
-
-  // check that tagging parameters don't depend on integration variables
-  TIterator* analVarIter = analVars.createIterator();
-  RooAbsArg* analVar = 0;
-  while ((analVar = (RooAbsArg*)analVarIter->Next()) != 0) {
-    if (!checkVarDep(*analVar, kFALSE, kTRUE)) return 0; // memory leak -- analVarIter not deleted if true...
-  }
-  delete analVarIter;
 
   if (intTagCat && (rangeName == 0
       || ((_tagCat0Type > 1 ? !_tagCat0.hasRange(rangeName) : kTRUE)
@@ -2231,7 +2230,7 @@ Bool_t RooBTagDecay::checkVarDep(const RooAbsArg& var, Bool_t warn,
       }
     }
 
-    if (!checks) 
+    if (!checks && warn)
       coutW(InputArguments) << "RooBTagDecay::checkVarDep(" << GetName()
           << ") parameters depend on " << var.GetName()
           << ": use \"checkVars = false\" if you insist on using this dependence"
