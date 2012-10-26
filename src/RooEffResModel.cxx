@@ -29,6 +29,7 @@
 #include "RooStringVar.h"
 #include "RooAbsAnaConvPdf.h"
 #include "RooEffConvGenContext.h"
+#include "RooCachedReal.h"
 
 using namespace std;
 
@@ -61,12 +62,19 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
 
    assert(effInt->getSize() < 2); // for now, we only do 1D efficiency histograms...
    if (effInt->getSize()==0) {
-      _I = parent.model().createIntegral(iset,RooNameReg::str(rangeName)); 
+      _I = model.createIntegral(iset,RooNameReg::str(rangeName)); 
       return;
    }
 
    RooArgList effList;
    RooArgList intList;
+
+#if 0
+   const char *modcache = model.getStringAttribute("CACHEPARAMINT") ;
+   const char *parcache = parent.getStringAttribute("CACHEPARAMINT") ;
+   if (modcache&&strlen(modcache)) cout << "WARNING: please configure " << model.GetName() << ".parameterizeIntegral such that it is NOT cached -- right now it has " << (modcache?modcache:"<none>") << endl;
+   if (! (parcache&&strlen(parcache))) cout << "WARNING:  please configure " << parent.GetName() << ".parameterizeIntegral such that is is cached -- right now it has " << (parcache?parcache:"<none>") << endl;
+#endif
 
    const RooArgList& ranges = parent.getIntegralRanges(iset, RooNameReg::str(rangeName));
    RooFIter it = ranges.fwdIterator();

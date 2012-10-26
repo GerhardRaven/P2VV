@@ -183,7 +183,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         # PDF options
         self['transversityAngles']   = False
-        self['bkgAnglePdf']          = 'histPdf'
+        self['bkgAnglePdf']          = 'histPdf'           # '' / 'histPdf' / 'hybrid'
         self['sigTaggingPdf']        = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['bkgTaggingPdf']        = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['multiplyByTagPdf']     = False
@@ -207,8 +207,8 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['iTagZeroTrick'] = False
         self['iTagStates'] = { }        # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
-        self['timeResType']           = 'event'      # '' / 'event' / 'eventNoMean' / 'eventConstMean'
-        self['numTimeResBins']        = 100
+        self['timeResType']           = 'event'      # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss'
+        self['numTimeResBins']        = 20
         self['constrainTimeResScale'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
         self['signalFraction'] = 0.67
@@ -415,13 +415,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             iTagOS = Category( 'iTagOS', Title = 'Initial state flavour tag opposite side', Observable = True, States = iTagStates )
             iTagSS = Category( 'iTagSS', Title = 'Initial state flavour tag same side',     Observable = True, States = iTagStates )
         estWTagComb = RealVar( 'tagomega',    Title = 'Estimated wrong tag probability OS/SS combination', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
         estWTagOS   = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability opposite side', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
         estWTagSS   = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ), nBins = numEstWTagBins )
-        estWTagOS.setBins( numEstWTagBins, 'cache' )
-        estWTagSS.setBins( numEstWTagBins, 'cache' )
+                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
@@ -606,7 +604,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # determine mass parameters with a fit
             print 120 * '='
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with mass PDF'
-            self._massPdf.fitTo( self._dataSets['data'], Save = False, **fitOpts )
+            self._massFitResult = self._massPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
+            self._massFitResult.Print()
+            self._massFitResult.covarianceMatrix().Print()
+            self._massFitResult.correlationMatrix().Print()
 
             if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or paramKKMass == 'simultaneous' ) :
                 # categories for splitting the PDF
@@ -665,13 +666,17 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # determine mass parameters in each sub-sample with a fit
                 print 120 * '='
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with simultaneous mass PDF'
-                self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = False, **fitOpts )
+                self._simMassFitResult = self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
+                self._simMassFitResult.Print()
+                self._simMassFitResult.covarianceMatrix().Print()
+                self._simMassFitResult.correlationMatrix().Print()
 
                 if SWeightsType.endswith( 'Fixed' ) :
                     # free parameters that were fixed for mass fit
                     for par in fixedMassPars : par.setConstant(False)
 
             else :
+                splitCatPars = None
                 self._sWeightMassPdf = self._massPdf
 
 
@@ -702,12 +707,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             nEv    = self._dataSets['data'].sumEntries()
             nSigEv = self._dataSets['sigSWeightData'].sumEntries()
             nBkgEv = self._dataSets['bkgSWeightData'].sumEntries()
+            S_B    = nSigEv / nBkgEv
+            S_SB   = nSigEv / nEv
             signif = nSigEv / sqrt(nEv)
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: number of events:'
-            print '                  | total | signal   | backgr.  | signif.'
-            print '    --------------|-------|----------|----------|--------'
-            print '            total | %5d | %8.2f | %8.2f | %7.3f' % ( int(nEv), nSigEv, nBkgEv, signif )
-            print '    --------------|-------|----------|----------|--------'
+            print '                  | total | signal   | backgr.  | S/B    | S/(S+B) | S/sqrt(S+B)'
+            print '    --------------|-------|----------|----------|--------|---------|------------'
+            print '            total | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f' % ( nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
+            print '    --------------|-------|----------|----------|--------|---------|------------'
 
             if splitCats :
                 iters = { }
@@ -727,12 +734,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         nEv    = self._dataSets['data'].sumEntries(cut)
                         nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
                         nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
+                        S_B    = nSigEv / nBkgEv
+                        S_SB   = nSigEv / nEv
                         signif = nSigEv / sqrt(nEv)
-                        print '    %13s | %5d | %8.2f | %8.2f | %7.3f' % ( catState.GetName(), int(nEv), nSigEv, nBkgEv, signif )
+                        print '    %13s | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f'\
+                              % ( catState.GetName(), nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
 
                         catState = catIter.Next()
 
-                    print '    --------------|-------|----------|----------|--------'
+                    print '    --------------|-------|----------|----------|--------|---------|------------'
 
                 if len(splitCats) > 1 :
                     cont = True
@@ -741,9 +751,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         nEv    = self._dataSets['data'].sumEntries(cut)
                         nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
                         nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
+                        S_B    = nSigEv / nBkgEv
+                        S_SB   = nSigEv / nEv
                         signif = nSigEv / sqrt(nEv)
-                        print '    %13s | %5d | %8.2f | %8.2f | %7.3f'\
-                               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), int(nEv), nSigEv, nBkgEv, signif )
+                        print '    %13s | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f'\
+                               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
 
                         iters[ splitCats[-1] ] += 1
                         for catIt in range( len(splitCats) ) :
@@ -756,7 +768,47 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             else :
                                 continue
 
-                    print '    --------------|-------|----------|----------|--------'
+                    print '    --------------|-------|----------|----------|--------|---------|--------'
+                print
+
+                if splitCatPars :
+                    # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
+                    print '                  | total |        signal       |     background      |        S/B        |       S/(S+B)     |   S/sqrt(S+B)   '
+                    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
+                    for cat in iters.iterkeys() : iters[cat] = 0
+                    cont = True
+                    while cont :
+                        stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
+                        sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', '{%s}' % stateName, splitCatPars )
+                        bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    '{%s}' % stateName, splitCatPars )
+
+                        nSigEv = sigYield.getVal()
+                        nBkgEv = bkgYield.getVal()
+                        nEv    = nSigEv + nBkgEv
+                        S_SB   = nSigEv / nEv
+                        S_B    = nSigEv / nBkgEv
+                        signif = nSigEv / sqrt(nEv)
+
+                        nSigErr     = sigYield.getError()
+                        nSigErrCorr = sqrt( nSigErr**2 - nSigEv**2 / nEv )
+                        S_SBErr     = nSigErrCorr / nEv
+                        S_BErr      = S_SBErr / ( 1 - S_SB )**2
+                        signifErr   = S_SBErr * sqrt(nEv)
+                        print '    %13s | %5.0f | %8.2f +/- %6.2f | %8.2f +/- %6.2f | %6.4f +/- %6.4f | %6.4f +/- %6.4f | %6.2f +/- %4.2f'\
+                               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nSigErrCorr\
+                                  , nBkgEv, nSigErrCorr, S_B, S_BErr, S_SB, S_SBErr, signif, signifErr )
+
+                        iters[ splitCats[-1] ] += 1
+                        for catIt in range( len(splitCats) ) :
+                            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                                if catIt == len(splitCats) - 1 :
+                                    cont = False
+                                else :
+                                    iters[ splitCats[ -catIt - 1 ] ] = 0
+                                    iters[ splitCats[ -catIt - 2 ] ] +=1
+                            else :
+                                continue
+                    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
 
             # create signal and background data sets with side band ranges
             self._dataSets['sigRangeData'] = self._dataSets['data'].reduce( CutRange = 'Signal'       )
@@ -977,6 +1029,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             timeResArgs = dict(  time = time
                                , timeResSigma = timeRes
                                , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale
+                               , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
                               )
             if not nominalPdf and 'nomean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
@@ -990,10 +1043,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             self._timeResModel = TimeResolution( **timeResArgs )
 
-        else :
+        elif timeResType == '3Gauss' :
             from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
             self._timeResModel = TimeResolution( time = time
                                                 , timeResSFConstraint = 'constrain' if nominalPdf else constrTResScale )
+
+        else :
+            from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+            self._timeResModel = TimeResolution(  time          = time
+                                                , timeResMu     = dict( Value = 0.,   Constant = True )
+                                                , timeResSigma  = dict( Value = 0.45, Constant = True )
+                                                , PerEventError = False
+                                                , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]
+                                               )
 
         print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: decay time resolution model:'
         self._timeResModel['model'].Print()

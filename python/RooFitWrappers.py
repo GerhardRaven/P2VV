@@ -431,9 +431,21 @@ class FormulaVar (RooObject) :
     def __init__(self, Name, formula, fargs, **kwargs):
         # construct factory string on the fly...
         __check_name_syntax__(Name)
-        spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs))
-        self._declare(spec)
-        self._init(Name, 'RooFormulaVar')
+        data = kwargs.pop('data', None)
+        if not data:
+            spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs))
+            self._declare(spec)
+            self._init(Name, 'RooFormulaVar')
+        else:
+            l = RooArgList()
+            for arg in fargs:
+                l.add(__dref__(arg))
+            from ROOT import RooFormulaVar
+            form = RooFormulaVar(Name, Name, formula, l)
+            form = data.addColumn(form)
+            form = self._addObject(form)
+            self._init(Name, 'RooRealVar')
+            self.setObservable(True)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class RealCategory( RooObject ) :
@@ -503,14 +515,16 @@ class RealMoment( AbsRealMoment ):
         AbsRealMoment.__init__( self, RooRealMoment( __dref__(self._basisFunc), self._norm ) )
 
 class RealEffMoment( AbsRealMoment ):
-    def __init__( self, BasisFunc, Norm, PDF, NormSet ) :
+    def __init__( self, BasisFunc, Norm, PDF, IntSet, NormSet ) :
         # get arguments
         self._basisFunc = BasisFunc
         self._norm      = Norm
         self._pdf       = PDF
+        self._intSet    = IntSet
         self._normSet   = NormSet
 
-        # build a RooFit normalisation set
+        # build RooFit integration and normalisation sets
+        self._rooIntSet  = ArgSet( self._basisFunc.GetName() + '_intSet',  ( var for var in self._intSet  ) )
         self._rooNormSet = ArgSet( self._basisFunc.GetName() + '_normSet', ( var for var in self._normSet ) )
 
         # create efficiency moment
@@ -519,6 +533,7 @@ class RealEffMoment( AbsRealMoment ):
         AbsRealMoment.__init__( self, RooRealEffMoment(  __dref__(self._basisFunc)
                                                        , self._norm
                                                        , __dref__(self._pdf)
+                                                       , __dref__(self._rooIntSet)
                                                        , __dref__(self._rooNormSet)
                                                       )
                               )
@@ -867,17 +882,17 @@ class ProdPdf(Pdf):
         # has the NOCacheAndTrack attribute set.
         # So here we walk through the leafs of our PDF, and add NOCacheAndTrack for all those
         # PDFs which are dependent on a conditional observable which appears in the toplevel...
-        print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
-        # create RooArgSet of conditional observables
-        cset = RooArgSet(__dref__(c) for c in conds )
-        for pdf in PDFs :
-            for c in pdf.getComponents() :
-                if c.getAttribute('NOCacheAndTrack') : continue
-                depset = c.getObservables( cset )
-                if depset.getSize() > 0 :
-                    print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
-                    c.setAttribute('NOCacheAndTrack')
-        print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
+        #print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
+        ## create RooArgSet of conditional observables
+        #cset = RooArgSet(__dref__(c) for c in conds )
+        #for pdf in PDFs :
+        #    for c in pdf.getComponents() :
+        #        if c.getAttribute('NOCacheAndTrack') : continue
+        #        depset = c.getObservables( cset )
+        #        if depset.getSize() > 0 :
+        #            print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
+        #            c.setAttribute('NOCacheAndTrack')
+        #print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
 
 
     def _make_pdf(self):
@@ -1128,6 +1143,24 @@ class Projection(Pdf):
         exCon = original.ExternalConstraints()
         if exCon : extraOpts['ExternalConstraints' ] = exCon
         Pdf.__init__(self , Name = name , Type = 'RooProjectedPdf', **extraOpts)
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def _make_pdf(self):
+        pass
+
+class KeysPdf(Pdf):
+    def __init__(self,**kwargs) :
+        name = kwargs.pop('Name')
+        observable = kwargs.pop('Observable')
+        data = kwargs.pop('Data')
+        rho = kwargs.pop('Rho', 1.)
+
+        from ROOT import RooKeysPdf
+        keysPdf = RooKeysPdf(name, name, __dref__(observable), data, RooKeysPdf.NoMirror, rho)
+
+        keysPdf = self._addObject(keysPdf)
+        self._init(name, 'RooKeysPdf')
+        Pdf.__init__(self , Name = name , Type = 'RooKeysPdf')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
     def _make_pdf(self):

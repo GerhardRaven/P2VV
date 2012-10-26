@@ -19,7 +19,12 @@
 //
 
 #include <memory>
+using std::auto_ptr;
 #include <sstream>
+#include <iostream>
+using std::endl;
+#include <utility>
+using std::make_pair;
 
 #include "RooFit.h"
 #include "Riostream.h"
@@ -134,7 +139,7 @@ Double_t RooMultiEffResModel::CacheElem::getVal(const Int_t index) const
 //_____________________________________________________________________________
 RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
                                          std::vector<HistEntry*> entries)
-   : RooAbsEffResModel(name,title, (*entries.begin())->efficiency()->convVar()),
+   : RooAbsEffResModel(name,title, entries.front()->efficiency()->convVar()),
      _binboundaries(0),
      _prodGenCode(0),
      _super(0),
@@ -249,11 +254,15 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
       return 0 ;
    }
 
+   const char* cacheParamsStr = getStringAttribute("CACHEPARAMINT") ;
+   if (!strlen(cacheParamsStr)) cacheParamsStr=0;
+
    vector<HistEntry*> entries;
    vector<RooResolutionModel*> models;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       RooEffResModel *conv = it->second->efficiency()->convolution(inBasis, owner);
+      if (cacheParamsStr) conv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
       models.push_back(conv);
 
       HistEntry* entry = new HistEntry(*(it->second), const_cast<RooMultiEffResModel*>(this));

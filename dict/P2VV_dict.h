@@ -15,6 +15,7 @@
 #include "RooRealCategory.h"
 #include "RooCalibratedDilution.h"
 #include "RooDataSetToTree.h"
+#include "Functions.h"
 #include "RooTransAngle.h"
 #include "RooCruijff.h"
 #include "RooEfficiencyBin.h"
