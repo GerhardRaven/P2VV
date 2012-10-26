@@ -1688,33 +1688,6 @@ class CustomizePdf(Pdf):
     def _make_pdf(self): pass
 
 
-        
-##    def __init__(self, **kwargs):
-       ##  __check_req_kw__( 'Original', kwargs )
-##         __check_req_kw__( 'Replacements', kwargs )
-
-##         original = kwargs.pop('Original')
-##         reps = kwargs.pop('Replacements')
-
-##         from ROOT import RooCustomizer
-##         name = original.GetName() + '_'.join(['', 'custom'] + [k.GetName() for k in reps.iterkeys()])
-##         name = original.GetName() + "_const"
-##         customizer = RooCustomizer(__dref__(original), name)
-
-##         for orig, rep in reps.iteritems():
-##             customizer.replaceArg(__dref__(orig), __dref__(rep))
-##         custom = customizer.build()
-
-##         self._addObject(custom)
-##        self._init( custom.GetName(), original.Type() )
-##        Pdf.__init__(self, Name = custom.GetName(),
-##                      Type = original.Type(),
-##                      ConditionalObservables = original.ConditionalObservables(),
-##                      ExternalConstraints = original.ExternalConstraints())
-
-##     def _make_pdf(self): pass
-
-
 
 class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
