@@ -226,6 +226,56 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
     dataSet.addColumn(phiTr)
 
 
+
+
+def getCPprojectionOFpdf(pdf, cpComponent, FitResult = None ):
+    #cpComponent: EVEN, ODD, SWAVE
+
+    #Get the amplitudes
+    parsDict = dict( (par.GetName(),par ) for par in pdf.Parameters()  )
+    originalSet = set([pdf.ws().function("AparMag2"), parsDict['AperpMag2'], parsDict['A0Mag2'], parsDict['f_S']])
+
+    
+#    if (__check_req_kw__( 'FiResuxlt', kwargs ) ):
+
+
+    if (cpComponent == "EVEN"):
+        A0Mag2 = 0.521
+        AperpMag2 = 0
+        AparMag2 = 0.228
+        f_S = 0 
+    if (cpComponent == "ODD"):
+        A0Mag2 = 0
+        AperpMag2 = 0.251
+        AparMag2 = 0
+        f_S = 0.027
+    if (cpComponent == "SWAVE"):
+        A0Mag2 = 0
+        AperpMag2 = 0
+        AparMag2 = 0
+        f_S = 0.027
+
+    
+    from RooFitWrappers import ConstVar
+    repl_AparMag2  = ConstVar(Name = "AparMag2" + cpComponent , Value = AparMag2  )
+    repl_AperpMag2 = ConstVar(Name = "AperpMag2"+ cpComponent , Value = AperpMag2 )
+    repl_A0Mag2    = ConstVar(Name = "A0Mag2"   + cpComponent , Value = A0Mag2    )
+    repl_f_S       = ConstVar(Name = "f_S"      + cpComponent , Value =    f_S    )
+    replacementSet = set([ repl_AparMag2,repl_AperpMag2, repl_A0Mag2, repl_f_S])
+
+
+    from RooFitWrappers import CustomizePdf
+    CPcompPDF = CustomizePdf( pdf, origSet = originalSet, replSet = replacementSet, replString =  cpComponent ) 
+    
+    return CPcompPDF
+
+
+
+
+
+
+
+
 ###########################################################################################################################################
 ## Plots                                                                                                                                 ##
 ###########################################################################################################################################
