@@ -1622,6 +1622,66 @@ class BinnedPdf( Pdf ) :
 
     def _make_pdf(self) : pass
 
+class CustomizePdf(Pdf):
+    def __init__(self, pdf, **kwargs ):
+        __check_req_kw__( 'origSet', kwargs )
+        __check_req_kw__( 'replSet', kwargs )
+          
+        origSet = list( kwargs.pop('origSet'))
+        replSet = list( kwargs.pop('replSet'))
+        #This is a string to be added to all the attributes of the new CustomisedPdf   
+        replString =  kwargs.pop('replString')
+
+        from ROOT import RooCustomizer
+        customizer = RooCustomizer(__dref__(pdf), replString)
+        
+        for item in xrange(len(origSet)):
+            customizer.replaceArg(__dref__(origSet[item]),__dref__(replSet[item]))
+            print "/n/n",item
+            origSet[item].Print()
+            replSet[item].Print()
+            print "/n/n"
+       
+        custom = customizer.build()
+        #custom.SetName(replString)
+   
+        self._addObject(custom)
+        self._init( custom.GetName(), pdf.Type() )
+        Pdf.__init__(self, Name = custom.GetName(),
+                      Type = pdf.Type(),
+                      ConditionalObservables = pdf.ConditionalObservables(),
+                      ExternalConstraints = pdf.ExternalConstraints())
+
+    def _make_pdf(self): pass
+
+
+        
+##    def __init__(self, **kwargs):
+       ##  __check_req_kw__( 'Original', kwargs )
+##         __check_req_kw__( 'Replacements', kwargs )
+
+##         original = kwargs.pop('Original')
+##         reps = kwargs.pop('Replacements')
+
+##         from ROOT import RooCustomizer
+##         name = original.GetName() + '_'.join(['', 'custom'] + [k.GetName() for k in reps.iterkeys()])
+##         name = original.GetName() + "_const"
+##         customizer = RooCustomizer(__dref__(original), name)
+
+##         for orig, rep in reps.iteritems():
+##             customizer.replaceArg(__dref__(orig), __dref__(rep))
+##         custom = customizer.build()
+
+##         self._addObject(custom)
+##        self._init( custom.GetName(), original.Type() )
+##        Pdf.__init__(self, Name = custom.GetName(),
+##                      Type = original.Type(),
+##                      ConditionalObservables = original.ConditionalObservables(),
+##                      ExternalConstraints = original.ExternalConstraints())
+
+##     def _make_pdf(self): pass
+
+
 
 class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
