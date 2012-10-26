@@ -771,213 +771,69 @@ if deltaSCanv :
 
 
 
-#Nominal Amplitude Values
-A0Mag2 = ws.var("A0Mag2").getVal()
-A0Phase = ws.var("A0Phase").getVal()
+## #Nominal Amplitude Values
+## A0Mag2 = ws.var("A0Mag2").getVal()
+## A0Phase = ws.var("A0Phase").getVal()
 
-AperpMag2 = ws.var("AperpMag2").getVal()
-AperpPhase = ws.var("AperpPhase").getVal()
+## AperpMag2 = ws.var("AperpMag2").getVal()
+## AperpPhase = ws.var("AperpPhase").getVal()
 
-AparMag2 = 1 - A0Mag2 - AperpMag2
-AparPhase = ws.var("AparPhase").getVal()
+## AparMag2 = 1 - A0Mag2 - AperpMag2
+## AparPhase = ws.var("AparPhase").getVal()
 
-ASOddPhase = ws.var("ASOddPhase").getVal()
-f_S = ws.var("f_S").getVal()
-
-
+## ASOddPhase = ws.var("ASOddPhase").getVal()
+## f_S = ws.var("f_S").getVal()
 
 
 
-#Create varius sets
+
+
+
+
+
+
+
+
+# Get all observables but the conditional ones
+PYTHONobsSet = pdf.Observables() - pdf.ConditionalObservables()
+
+
+#Make a function to do this using wrappers as well
 from ROOT import RooArgSet
-
 obsSet = RooArgSet()
-for i_obs in pdf.Observables(): obsSet.add(i_obs._target_())
-
-condObsSet = RooArgSet()
-for i_conObs in pdf.ConditionalObservables(): condObsSet.add(i_conObs._target_())
-
-
-#Make observables set and a set to put the observables you want to plot
-obsSet = obsSet - condObsSet
-plotSet = RooArgSet(angles[0], angles[1], angles[2], time)
-#frames = [angles[0].frame(), angles[1].frame(), angles[2].frame(), time.frame()]
-
-
-#Total pdf normilization (this is the integral of the pdf over all the observables)
+for obs in PYTHONobsSet: obsSet.add(obs._target_())
 normTotal = pdf.getNorm(obsSet)
 
 
 
 
 
- 
-
 
 #Construct the CP_Even component of the pdf
-from ROOT import RooCustomizer, RooConstVar, RooFit
+# Add fit result property
+from P2VVGeneralUtils import getCPprojectionOFpdf
 
-repl_AparMag2Even  = RooConstVar("AparMag2_EvenRepl","AparMag2_EvenRepl", AparMag2 )
-repl_AperpMag2Even = RooConstVar("AperpMag2_EvenRepl","AperpMag2_EvenRepl",  0     )
-repl_A0Mag2Even    = RooConstVar("A0Mag2_EvenRepl","A0Mag2_EvenRepl",     A0Mag2   )
-repl_f_SEven       = RooConstVar("f_S_EvenRepl","f_S_EvenRepl",              0     )
-
-customEven = RooCustomizer(pdf._target_(), "_Even")
-customEven.replaceArg(ws.function("AparMag2"),repl_AparMag2Even )
-customEven.replaceArg(ws.var("AperpMag2"),repl_AperpMag2Even )
-customEven.replaceArg(ws.var("A0Mag2"),repl_A0Mag2Even )
-customEven.replaceArg(ws.var("f_S"),repl_f_SEven )
-pdfEven = customEven.build()
-
+pdfEven = getCPprojectionOFpdf(pdf, "EVEN")
 normEven = pdfEven.getNorm(obsSet)
-f_Even = normEven /  normTotal 
-
-
-
-
+f_Even = normEven /  normTotal
 
 #Construct the CP_Odd component of the pdf
-repl_AparMag2Odd  = RooConstVar("AparMag2_Oddrepl","AparMag2_OddRrepl",    0     )
-repl_AperpMag2Odd = RooConstVar("AperpMag2_OddRepl","AperpMag2_OddRepl",AperpMag2)
-repl_A0Mag2Odd    = RooConstVar("A0Mag2_OddRepl","A0Mag2_OddRepl",         0     )
-repl_f_SOdd       = RooConstVar("f_S_OddRepl","f_S_OddRepl",             f_S     )
-
-customOdd = RooCustomizer(pdf._target_(), "_Odd")
-customOdd.replaceArg(ws.function("AparMag2"),  repl_AparMag2Odd )
-customOdd.replaceArg(ws.var("AperpMag2"),repl_AperpMag2Odd )
-customOdd.replaceArg(ws.var("A0Mag2"),     repl_A0Mag2Odd  )
-customOdd.replaceArg(ws.var("f_S"),          repl_f_SOdd   )
-
-pdfOdd = customOdd.build()
-
+pdfOdd = getCPprojectionOFpdf(pdf, "ODD")
 normOdd = pdfOdd.getNorm(obsSet)
-f_Odd = normOdd /  normTotal
+f_Odd = normOdd / normTotal
 
-
-
-
-
-#Construct the S-wave component of the pdf
-repl_AparMag2Swave     = RooConstVar("AparMag2_Swave","AparMag2_Swave",    0   )
-repl_AperpMag2Swave = RooConstVar("AperpMag2_Swave","AperpMag2_Swave",  0   )
-repl_A0Mag2Swave    = RooConstVar("A0Mag2_Swave","A0Mag2_Swave",         0  )
-repl_f_SSwave       = RooConstVar("f_S_Swave","f_S_Swave",             f_S  )
-
-customSwave = RooCustomizer(pdf._target_(), "_Swave")
-customSwave.replaceArg(ws.function("AparMag2"),  repl_AparMag2Swave )
-customSwave.replaceArg(ws.var("AperpMag2"),repl_AperpMag2Swave )
-customSwave.replaceArg(ws.var("A0Mag2"),     repl_A0Mag2Swave  )
-customSwave.replaceArg(ws.var("f_S"),          repl_f_SSwave   )
-
-pdfSwave = customSwave.build()
-
+#Co## nstruct the S-wave component of the pdf
+pdfSwave = getCPprojectionOFpdf(pdf, "SWAVE")
 normSwave = pdfSwave.getNorm(obsSet)
-f_Swave = normSwave /  normTotal
+f_Swave = normSwave / normTotal
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## ## Do the same but using the Wrappers
-
-## #Construct the CP_Even component of the pdf
-## from RooFitWrappers import ConstVar, CustomizePdf
-
-## repl_AparMag2Even  = ConstVar(Name = "AparMag2_EvenRepl",  Value = AparMag2 )
-## repl_AperpMag2Even = ConstVar(Name = "AperpMag2_EvenRepl", Value =    0     )
-## repl_A0Mag2Even    = ConstVar(Name = "A0Mag2_EvenRepl",    Value = A0Mag2   )
-## repl_f_SEven       = ConstVar(Name = "f_S_EvenRepl",       Value =    0     )
-
-## #pdf.Parameters.__getitem__("A0Mag2") and pdf.Parameters().__getattribute__("A0Mag2") DOES NOT WORK ????
-## originalSet = set([ ws.function("AparMag2"), ws.var("AperpMag2"), ws.var("A0Mag2"), ws.var("f_S")] )
-## replacementSetEven = set([repl_AparMag2Even, repl_AperpMag2Even, repl_A0Mag2Even, repl_f_SEven] )
-
-## pdfEven = CustomizePdf( pdf, origSet = originalSet, replSet = replacementSetEven, replString = "_Even" )
-
-## normEven = pdfEven.getNorm(obsSet)
-## f_Even = normEven /  normTotal
-
-
-
-
-## #Construct the CP_Odd component of the pdf
-## repl_AparMag2Odd  = ConstVar(Name = "AparMag2_OddRrepl", Value =    0     )
-## repl_AperpMag2Odd = ConstVar(Name = "AperpMag2_OddRepl", Value = AperpMag2)
-## repl_A0Mag2Odd    = ConstVar(Name = "A0Mag2_OddRepl",    Value =     0    )
-## repl_f_SOdd       = ConstVar(Name = "f_S_OddRepl",       Value =   f_S    )
-
-## replacementSetOdd = set([repl_AparMag2Odd, repl_AperpMag2Odd, repl_A0Mag2Odd, repl_f_SOdd] )
-
-## pdfOdd = CustomizePdf( pdf, origSet = originalSet, replSet = replacementSetOdd, replString = "_Odd" )
-
-## normOdd = pdfOdd.getNorm(obsSet)
-## f_Odd = normOdd / normTotal
-
-
-
-
-## #Construct the S-wave component of the pdf
-## repl_AparMag2Swave  = ConstVar(Name = "AparMag2_SwaveRrepl", Value =    0    )
-## repl_AperpMag2Swave = ConstVar(Name = "AperpMag2_SwaveRepl", Value =    0    )
-## repl_A0Mag2Swave    = ConstVar(Name = "A0Mag2_SwaveRepl",    Value =    0    )
-## repl_f_SSwave       = ConstVar(Name = "f_S_SwaveRepl",       Value =   f_S   )
-
-## replacementSetSwave = set([repl_AparMag2Swave, repl_AperpMag2Swave, repl_A0Mag2Swave, repl_f_SSwave] )
-
-## pdfSwave = CustomizePdf( pdf, origSet = originalSet, replSet = replacementSetSwave, replString = "_Swave" )
-
-## normSwave = pdfSwave.getNorm(obsSet)
-## f_Swave = normSwave / normTotal
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#Print fractions
 print "\n\nCP_Even fraction = ",f_Even
 print "CP_Odd fraction = ",f_Odd
 print "CP_Odd fraction = ",f_Swave
+
 
 
 #Plot
@@ -987,18 +843,14 @@ from P2VVGeneralUtils import plot
 
 c = TCanvas()
 c.Divide(2,2)
-    
-##     xTitle = i_thObs.GetName()
-##     yTitle = " "
-##     plotTitle = "Decay Angle"
 
+plotSet = RooArgSet(angles[0], angles[1], angles[2], time)
 i = 0
 for i_thObs in plotSet:
     plot( c.cd(i+1),i_thObs, data = defData, pdf = pdf,
           addPDFs = [pdfEven,pdfOdd,pdfSwave],
           addPDFsOpts = [dict(LineStyle = 9, Normalization = f_Even),
                          dict(LineStyle = 3, Normalization = f_Odd),
-                         dict(LineStyle = 5, Normalization = f_Swave)] )
-    
+                         dict(LineStyle = 5, Normalization = f_Swave)] )    
     i += 1
 
