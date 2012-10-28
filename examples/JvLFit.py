@@ -7,6 +7,7 @@ pdfConfig = PdfConfig()
 
 # job parameters
 readData                = True
+pdfConfig['dataSample'] = ''   # '' / 'Summer2011'
 pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
 doFit                   = True
@@ -20,7 +21,7 @@ pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the momen
 corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
-#plotsFile = 'plots/JvlSFit_SWavePhases.ps'
+#plotsFile = 'plots/JvLSFit_SWavePhases.ps'
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
 parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
@@ -28,6 +29,7 @@ parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
     pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Pass3-version2_Bs_050711_nocut_Phi_P2VV.root'
     pdfConfig['nominalDataSet'] = False
 else :
     pdfConfig['nTupleName'] = None
@@ -37,6 +39,7 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
+MinosPars = [ 'AparPhase', 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3' ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
@@ -69,23 +72,21 @@ pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultan
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.27, 0.09), (0.05, 0.02), (0.04, 0.02), (0.17, 0.05) ]
-#                                     , [ (1.4,  0.5 ), (0.5,   0.3  ), (-0.5,  0.3  ), (-0.7, 0.2 ) ] )
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
                                      , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.18, 0.07 ), ( 0.07, 0.03 ), ( 0.01, 0.02 ), ( 0.02, 0.01 ), ( 0.05, 0.03 ), ( 0.15, 0.04 ) ]
-#                                     , [ ( 1.4,  0.5  ), ( 0.8,  0.3  ), ( 0.3,  0.4  ), ( -0.5, 0.2  ), ( -0.5, 0.2  ), ( -0.7, 0.2  ) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.20, 0.07), (0.05, 0.02), (0.03, 0.02), (0.15, 0.04) ]
+#                                     , [ (1.4,  0.5 ), (0.5,   0.3), (-0.5, 0.3 ), (-0.7, 0.2 ) ] )
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ]
 
-pdfConfig['sameSideTagging']    = True  # nominal: False
+pdfConfig['sameSideTagging']    = True  # nominal: True
 pdfConfig['conditionalTagging'] = True  # nominal: True
 pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 20
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
-pdfConfig['numTimeResBins']        = 50
+pdfConfig['numTimeResBins']        = 25
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
@@ -119,7 +120,7 @@ AparPhaseVal  =  3.333
 AperpPhaseVal =  2.998
 ASOddPhaseVal =  0.0291
 
-lambCPSqVal = 0.959**2
+lambCPSqVal = 1. # 0.959**2
 phiCPVal    = 0.009
 
 if not readData or manualTagCatBins :
@@ -392,8 +393,18 @@ if ( readData or generateData ) and doFit :
     print 120 * '='
     print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo(fitData, SumW2Error = True if corrSFitErr == 'matrix' else False, Save = True, **fitOpts)
-    else                 : fitResult = pdf.fitTo(fitData,                                                          Save = True, **fitOpts)
+    RooMinPars = [ ]
+    if MinosPars :
+        print 'JvLFit: running Minos for parameters',
+        for parName in MinosPars :
+            RooMinPars.append( pdfPars.find(parName) )
+            print '"%s"' % RooMinPars[-1],
+        print
+
+    if pdfConfig['SFit'] :
+        fitResult = pdf.fitTo(fitData, SumW2Error = True if corrSFitErr == 'matrix' else False, Minos = RooMinPars, Save = True, **fitOpts)
+    else :
+        fitResult = pdf.fitTo(fitData,                                                          Minos = RooMinPars, Save = True, **fitOpts)
 
     # reparameterize amplitudes
     if not pdfConfig['nominalPdf'] and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' \
@@ -510,6 +521,7 @@ if ( readData or generateData ) and doFit :
 
     print 'JvLFit: parameters:'
     fitResult.Print()
+    for par in RooMinPars : par.Print()
     fitResult.covarianceMatrix().Print()
     fitResult.correlationMatrix().Print()
 
@@ -525,9 +537,11 @@ else :
 
 if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots or dllPars ) :
     # import plotting tools
-    from P2VVLoad import ROOTStyle
+    #from P2VVLoad import ROOTStyle
+    from P2VVLoad import LHCbStyle
     from P2VVGeneralUtils import plot
-    from ROOT import TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
+    from ROOT import gStyle, TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
+    gStyle.SetEndErrorSize(4)
 
     # create projection data set for conditional observables
     if pdfConfig['SFit'] :
@@ -575,23 +589,26 @@ if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
     nKKBins = pdfBuild['KKMassBinning'].numBins()
 
     from array import array
-    KKMassVals    = array( 'd', [ pdfBuild['KKMassBinning'].binCenter(binIter)      for binIter in range(nKKBins) ] )
-    KKMassLowErr  = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) for binIter in range(nKKBins) ] )
-    KKMassHighErr = KKMassLowErr
+    KKMass1Vals    = array( 'd', [ pdfBuild['KKMassBinning'].binCenter(binIter)      + 0.35 for binIter in range(nKKBins) ] )
+    KKMass1LowErr  = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) + 0.35 for binIter in range(nKKBins) ] )
+    KKMass1HighErr = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) - 0.35 for binIter in range(nKKBins) ] )
+    KKMass2Vals    = array( 'd', [ pdfBuild['KKMassBinning'].binCenter(binIter)      - 0.35 for binIter in range(nKKBins) ] )
+    KKMass2LowErr  = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) - 0.35 for binIter in range(nKKBins) ] )
+    KKMass2HighErr = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) + 0.35 for binIter in range(nKKBins) ] )
 
     from ROOT import TGraphAsymmErrors
-    deltaS1Vals    = array( 'd', [ pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getVal()   for binIter in range(nKKBins) ] )
-    deltaS1LowErr  = array( 'd', [ pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getError() for binIter in range(nKKBins) ] )
-    deltaS1HighErr = deltaS1LowErr
-    deltaSGraphs   = [ TGraphAsymmErrors( len(KKMassVals), KKMassVals,                  deltaS1Vals,
-                                                           KKMassLowErr, KKMassHighErr, deltaS1LowErr, deltaS1HighErr) ]
+    deltaS1Vals    = array( 'd', [  pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getVal()     for binIter in range(nKKBins) ] )
+    deltaS1LowErr  = array( 'd', [ -pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getErrorLo() for binIter in range(nKKBins) ] )
+    deltaS1HighErr = array( 'd', [  pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getErrorHi() for binIter in range(nKKBins) ] )
+    deltaSGraphs   = [ TGraphAsymmErrors( len(KKMass1Vals), KKMass1Vals,                   deltaS1Vals,
+                                                            KKMass1LowErr, KKMass1HighErr, deltaS1LowErr, deltaS1HighErr) ]
 
     from math import pi
     deltaS2Vals    = array( 'd', [ pi - pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getVal() for binIter in range(nKKBins) ] )
-    deltaS2LowErr  = deltaS1LowErr
-    deltaS2HighErr = deltaS2LowErr
-    deltaSGraphs  += [ TGraphAsymmErrors( len(KKMassVals), KKMassVals,                  deltaS2Vals,
-                                                           KKMassLowErr, KKMassHighErr, deltaS2LowErr, deltaS2HighErr ) ]
+    deltaS2LowErr  = deltaS1HighErr
+    deltaS2HighErr = deltaS1LowErr
+    deltaSGraphs  += [ TGraphAsymmErrors( len(KKMass2Vals), KKMass2Vals,                   deltaS2Vals,
+                                                            KKMass2LowErr, KKMass2HighErr, deltaS2LowErr, deltaS2HighErr ) ]
 
     if pdfConfig['ambiguityParameters'] : deltaSGraphs = [ deltaSGraphs[1], deltaSGraphs[0] ]
 
@@ -602,35 +619,52 @@ if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
     deltaSGraphs[0].SetMarkerColor(kBlue)
     deltaSGraphs[1].SetMarkerColor(kBlack)
 
-    deltaSGraphs[0].SetLineWidth(2)
-    deltaSGraphs[1].SetLineWidth(2)
+    deltaSGraphs[0].SetLineWidth(4)
+    deltaSGraphs[1].SetLineWidth(4)
 
     from ROOT import kFullCircle, kFullSquare
     deltaSGraphs[0].SetMarkerStyle(kFullCircle)
     deltaSGraphs[1].SetMarkerStyle(kFullSquare)
+    deltaSGraphs[0].SetMarkerSize(1.3)
+    deltaSGraphs[1].SetMarkerSize(1.3)
 
-    deltaSGraphs[0].SetMinimum( min( deltaSGraphs[0].GetYaxis().GetXmin(), deltaSGraphs[1].GetYaxis().GetXmin() ) )
-    deltaSGraphs[0].SetMaximum( max( deltaSGraphs[0].GetYaxis().GetXmax(), deltaSGraphs[1].GetYaxis().GetXmax() ) )
+    deltaSGraphs[0].SetMinimum( min( deltaSGraphs[0].GetYaxis().GetXmin(), deltaSGraphs[1].GetYaxis().GetXmin() )       )
+    deltaSGraphs[0].SetMaximum( max( deltaSGraphs[0].GetYaxis().GetXmax(), deltaSGraphs[1].GetYaxis().GetXmax() ) + 0.3 )
 
     deltaSGraphs[0].GetXaxis().SetTitle('m_{KK} (MeV)')
     deltaSGraphs[0].GetYaxis().SetTitle('#delta_{S} - #delta_{#perp}    (rad)')
 
-    deltaSGraphs[0].SetTitle('S-Wave Phases')
-    deltaSGraphs[0].GetYaxis().SetTitleOffset(1.)
+    deltaSGraphs[0].SetTitle('')
+    deltaSGraphs[0].GetXaxis().SetTitleOffset(1.0)
+    deltaSGraphs[0].GetYaxis().SetTitleOffset(0.7)
 
     from ROOT import TLegend
-    leg = TLegend( 0.52, 0.41, 0.90, 0.61 )
+    leg = TLegend( 0.59, 0.45, 0.93, 0.63 )
     leg.AddEntry( deltaSGraphs[0], 'solution I  (#Delta#Gamma_{s} > 0)', 'LPE' )
     leg.AddEntry( deltaSGraphs[1], 'solution II (#Delta#Gamma_{s} < 0)', 'LPE' )
-    leg.SetBorderSize(0)
+    leg.SetBorderSize(1)
     leg.SetFillStyle(0)
+
+    from ROOT import TPaveText
+    LHCbText = TPaveText( 0.13, 0.78, 0.51, 0.95, 'NDC' )
+    LHCbText.AddText(' LHCb')
+    LHCbText.AddText( '#sqrt{s} = 7 TeV, L = 0.37 fb^{-1}' if pdfConfig['dataSample'] == 'Summer2011'\
+                      else '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}' )
+    LHCbText.SetShadowColor(0)
+    LHCbText.SetFillStyle(0)
+    LHCbText.SetBorderSize(0)
+    LHCbText.SetTextAlign(12)
 
     from ROOT import TCanvas
     deltaSCanv = TCanvas( 'deltaSCanv', 'S-Wave Phases' )
-    deltaSCanv.SetLeftMargin(0.1)
+    deltaSCanv.SetLeftMargin(0.12)
+    deltaSCanv.SetRightMargin(0.04)
+    deltaSCanv.SetTopMargin(0.04)
+    deltaSCanv.SetBottomMargin(0.15)
     deltaSGraphs[0].Draw('AP')
     deltaSGraphs[1].Draw('P SAMES')
     leg.Draw()
+    LHCbText.Draw()
 
 else :
     deltaSCanv = None
