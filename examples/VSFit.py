@@ -771,68 +771,25 @@ if deltaSCanv :
 
 
 
-## #Nominal Amplitude Values
-## A0Mag2 = ws.var("A0Mag2").getVal()
-## A0Phase = ws.var("A0Phase").getVal()
-
-## AperpMag2 = ws.var("AperpMag2").getVal()
-## AperpPhase = ws.var("AperpPhase").getVal()
-
-## AparMag2 = 1 - A0Mag2 - AperpMag2
-## AparPhase = ws.var("AparPhase").getVal()
-
-## ASOddPhase = ws.var("ASOddPhase").getVal()
-## f_S = ws.var("f_S").getVal()
-
-
-
-
-
-
-
-
-
-
-
-# Get all observables but the conditional ones
-PYTHONobsSet = pdf.Observables() - pdf.ConditionalObservables()
-
-
-#Make a function to do this using wrappers as well
-from ROOT import RooArgSet
-obsSet = RooArgSet()
-for obs in PYTHONobsSet: obsSet.add(obs._target_())
-normTotal = pdf.getNorm(obsSet)
-
-
-
-
-
+#Get the normalization of the total pdf
+from P2VVGeneralUtils import getCPprojectionOFpdf, getNormOverObservables
+normTotal = getNormOverObservables(pdf)
 
 #Construct the CP_Even component of the pdf
-# Add fit result property
-from P2VVGeneralUtils import getCPprojectionOFpdf
-
 pdfEven = getCPprojectionOFpdf(pdf, "EVEN")
-normEven = pdfEven.getNorm(obsSet)
+normEven = getNormOverObservables(pdfEven)
 f_Even = normEven /  normTotal
 
 #Construct the CP_Odd component of the pdf
 pdfOdd = getCPprojectionOFpdf(pdf, "ODD")
-normOdd = pdfOdd.getNorm(obsSet)
+normOdd = getNormOverObservables(pdfOdd)
 f_Odd = normOdd / normTotal
 
 #Co## nstruct the S-wave component of the pdf
 pdfSwave = getCPprojectionOFpdf(pdf, "SWAVE")
-normSwave = pdfSwave.getNorm(obsSet)
+normSwave = getNormOverObservables(pdfSwave)
 f_Swave = normSwave / normTotal
 
-
-
-#Print fractions
-print "\n\nCP_Even fraction = ",f_Even
-print "CP_Odd fraction = ",f_Odd
-print "CP_Odd fraction = ",f_Swave
 
 
 #Plot
@@ -843,9 +800,8 @@ from P2VVGeneralUtils import plot
 c = TCanvas()
 c.Divide(2,2)
 
-plotSet = RooArgSet(angles[0], angles[1], angles[2], time)
 i = 0
-for i_thObs in plotSet:
+for i_thObs in set([angles[0], angles[1], angles[2], time]):
     plot( c.cd(i+1),i_thObs, data = defData, pdf = pdf,
           addPDFs = [pdfEven,pdfOdd,pdfSwave],
           addPDFsOpts = [dict(LineStyle = 9, Normalization = f_Even),
@@ -853,3 +809,9 @@ for i_thObs in plotSet:
                          dict(LineStyle = 5, Normalization = f_Swave)] )    
     i += 1
 
+
+
+#Print fractions
+print "\n\nCP_Even fraction = ",f_Even
+print "CP_Odd fraction = ",f_Odd
+print "CP_Odd fraction = ",f_Swave

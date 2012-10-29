@@ -228,51 +228,49 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
 
 
 
-def getCPprojectionOFpdf(pdf, cpComponent, FitResult = None ):
+def getCPprojectionOFpdf(pdf, cpComponent):
     #cpComponent: EVEN, ODD, SWAVE
-
     #Get the amplitudes
     parsDict = dict( (par.GetName(),par ) for par in pdf.Parameters()  )
     originalSet = set([pdf.ws().function("AparMag2"), parsDict['AperpMag2'], parsDict['A0Mag2'], parsDict['f_S']])
 
-    
-#    if (__check_req_kw__( 'FiResuxlt', kwargs ) ):
-
-
     if (cpComponent == "EVEN"):
-        A0Mag2 = 0.521
+        A0Mag2 = parsDict['A0Mag2'].getVal()
         AperpMag2 = 0
-        AparMag2 = 0.228
+        AparMag2 = 1 - A0Mag2 - parsDict['AperpMag2'].getVal()
         f_S = 0 
     if (cpComponent == "ODD"):
         A0Mag2 = 0
-        AperpMag2 = 0.251
+        AperpMag2 = parsDict['AperpMag2'].getVal()
         AparMag2 = 0
-        f_S = 0.027
+        f_S = parsDict['f_S'].getVal()
     if (cpComponent == "SWAVE"):
         A0Mag2 = 0
         AperpMag2 = 0
         AparMag2 = 0
-        f_S = 0.027
+        f_S = parsDict['f_S'].getVal()
 
-    
-    from RooFitWrappers import ConstVar
+    #Create replacement ConstVars 
+    from RooFitWrappers import ConstVar, CustomizePdf
     repl_AparMag2  = ConstVar(Name = "AparMag2" + cpComponent , Value = AparMag2  )
     repl_AperpMag2 = ConstVar(Name = "AperpMag2"+ cpComponent , Value = AperpMag2 )
     repl_A0Mag2    = ConstVar(Name = "A0Mag2"   + cpComponent , Value = A0Mag2    )
     repl_f_S       = ConstVar(Name = "f_S"      + cpComponent , Value =    f_S    )
     replacementSet = set([ repl_AparMag2,repl_AperpMag2, repl_A0Mag2, repl_f_S])
 
+    CPcompPDF = CustomizePdf( pdf, origSet = originalSet, replSet = replacementSet, replString =  cpComponent )
 
-    from RooFitWrappers import CustomizePdf
-    CPcompPDF = CustomizePdf( pdf, origSet = originalSet, replSet = replacementSet, replString =  cpComponent ) 
-    
     return CPcompPDF
 
 
+def getNormOverObservables(pdf):
+    #Do not integrate over the conditional observables thsi is done by plotOn
+    observables = pdf.Observables() - pdf.ConditionalObservables()
+    
+    from ROOT import RooArgSet
+    return pdf.getNorm(RooArgSet(obs._target_() for obs in observables))
 
-
-
+ 
 
 
 
