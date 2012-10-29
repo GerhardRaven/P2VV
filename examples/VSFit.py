@@ -835,7 +835,6 @@ print "CP_Odd fraction = ",f_Odd
 print "CP_Odd fraction = ",f_Swave
 
 
-
 #Plot
 from ROOT import TCanvas    
 from P2VVLoad import ROOTStyle
