@@ -1061,8 +1061,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :
             from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
             self._timeResModel = TimeResolution(  time          = time
-                                                , timeResMu     = dict( Value = 0.,   Constant = True )
-                                                , timeResSigma  = dict( Value = 0.45, Constant = True )
+                                                , timeResMu     = dict( Value = 0.,    Constant = True )
+                                                , timeResSigma  = dict( Value = 0.045, Constant = True )
                                                 , PerEventError = False
                                                 , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]
                                                )
