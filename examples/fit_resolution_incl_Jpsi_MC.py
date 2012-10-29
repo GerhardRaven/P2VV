@@ -11,7 +11,7 @@ w = obj.ws()
 from math import pi
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
 t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-10000, 14))
-m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
+m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
                          , 'rightsideband' : ( 5410, None ) 
@@ -25,8 +25,9 @@ for i in [ st ] : i.setBins( 20 , 'cache' )
 # Categories needed for selecting events
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
+clean_tail = Category('sel_cleantail', States = {'selected' : 1, 'not_selected' : 0})
 
-observables = [t, t_true, m, mpsi, st, unbiased, selected]
+observables = [t, t_true, m, mpsi, st, unbiased, selected, clean_tail]
 
 # Read data
 from P2VVGeneralUtils import readData
@@ -46,6 +47,8 @@ t_diff.setMin(-10)
 t_diff.setMax(10)
 observables.append(t_diff)
 
+clean_data = data.reduce('sel_cleantail == sel_cleantail::selected')
+
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential
@@ -55,19 +58,19 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-##                           BiasScaleFactor = False, Cache = False,
-##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
-##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
+                          BiasScaleFactor = False, Cache = False,
+                          bias = dict(Value = -0.17, MinMax = (-1, 1)),
+                          sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
-from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+## from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = False,
 ##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
 ##                           Fractions = [(3, 0.1), (2, 0.2)])
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
-                          ScaleFactors = [(2, 4), (1, 1.)],
-                          Fractions = [(2, 0.2)])
+## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
+##                           ScaleFactors = [(2, 4), (1, 1.)],
+##                           Fractions = [(2, 0.2)])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -202,3 +205,6 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
                           }
          )
     
+from Dilution import dilution
+diff_pdf = wpv.diff_shape('jpsi')
+dilution(t_diff, data, diff_pdf, result, psi_background, psi_wpv)

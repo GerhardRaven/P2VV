@@ -1,8 +1,8 @@
 from array import array
-# Calculate dilution
 
+# Calculate dilution
 __keep = []
-def dilution(t_diff, diff_pdf, result, data, signal, wpv):
+def dilution(t_diff, data, diff_pdf = None, result = None, signal = None, wpv = None):
     from ROOT import RooBinning
     n_bins = 512
     dilution_bounds = array('d', (-5 + i * 5 / float(n_bins) for i in range(n_bins + 1)))
@@ -10,11 +10,6 @@ def dilution(t_diff, diff_pdf, result, data, signal, wpv):
     dilution_binning = RooBinning(len(dilution_bounds) - 1, dilution_bounds)
     dilution_binning.SetName('dilution_binning')
     t_diff.setBinning(dilution_binning)
-
-    # Create a histogram of our WPV component
-    from ROOT import RooFit
-    wpv_histo = diff_pdf.createHistogram('wpv_histo', t_diff._target_(),
-                                         RooFit.Binning(dilution_binning))
     
     from ROOT import TH1D
     data_histo = TH1D('data_histo', 'data_histo', len(dilution_bounds) - 1, dilution_bounds)
@@ -24,6 +19,17 @@ def dilution(t_diff, diff_pdf, result, data, signal, wpv):
         value = time_var.getVal()
         if value > 0.: continue
         r = data_histo.Fill(value)
+
+    if not diff_pdf:
+        # Calculate the dilution using Wouter's macro
+        from ROOT import sigmaFromFT
+        D = sigmaFromFT(data_histo, 17.7)
+        return D
+
+    # Create a histogram of our WPV component
+    from ROOT import RooFit
+    wpv_histo = diff_pdf.createHistogram('wpv_histo', t_diff._target_(),
+                                         RooFit.Binning(dilution_binning))
 
     # Calculate appropriate scale factor. Scale histograms such that the ration
     # of their integrals match the ratio of wpv / signal yields
