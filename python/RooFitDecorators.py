@@ -36,6 +36,15 @@ def __wrap_kw_subs( fun ) :
             args += ( RooCmdArg( __disp( 'Index', kwargs.pop('Index') ) ), )  # note order: "Index" before "Import"
             args += tuple( RooCmdArg( __disp('Import', i) ) for i in kwargs.pop('Imports') )
 
+        if 'Minos' in kwargs and hasattr( kwargs['Minos'], '__iter__' ) :
+            if kwargs['Minos'] :
+                from ROOT import RooArgSet
+                RooPars = RooArgSet()
+                for par in kwargs['Minos'] : RooPars.add( __dref(par) )
+                kwargs['Minos'] = RooPars
+            else :
+                kwargs.pop('Minos')
+
         # TODO: this 'if' block needs to move to RooFitWrappers...
         if 'ArgSet' in kwargs or 'ArgList' in kwargs:
             if 'ArgSet' in kwargs :

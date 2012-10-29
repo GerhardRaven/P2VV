@@ -29,6 +29,16 @@ DelP1SSVal  =  0.00
 DelP1SSErr  =  0.01
 
 # values for tagging calibration parameters from tagging calibration: correspond to specific data sample!
+#avgEtaOSVal      = 0.379
+#P0OSConstrVal    = 0.384
+#P0OSConstrErr    = 0.009
+#DelP0OSConstrVal = 0.
+#DelP0OSConstrErr = 0.003
+#P1OSConstrVal    = 1.037
+#P1OSConstrErr    = 0.08
+#DelP1OSConstrVal = 0.
+#DelP1OSConstrErr = 0.001
+
 avgEtaOSVal      = 0.392
 P0OSConstrVal    = 0.392
 P0OSConstrErr    = 0.008
