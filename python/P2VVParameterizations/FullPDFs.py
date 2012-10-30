@@ -157,6 +157,7 @@ class PdfConfiguration( dict ) :
 class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
     def __init__( self ) :
         # job parameters
+        self['dataSample'] = ''              # '' / 'Summer2011'
         self['selection']  = 'HLT1Unbiased'  # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'timeEffFit'
         self['makePlots']  = True
         self['SFit']       = False
@@ -262,6 +263,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         pdfConfig = kwargs.copy()
 
         # job parameters
+        dataSample = pdfConfig.pop('dataSample')
         selection  = pdfConfig.pop('selection')
         SFit       = pdfConfig.pop('SFit')
         blind      = pdfConfig.pop('blind')
@@ -521,17 +523,25 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         self._dataSets = { }
         if nTupleFile :
+            if dataSample == 'Summer2011' :
+                dataSampleCuts = 'runNumber > 87219 && runNumber < 94386'
+            else :
+                dataSampleCuts = 'runNumber > 0'
             trackChi2Cuts = ' && '.join( '%s < %f' % ( trackChi2, trackChi2.getMax() ) for trackChi2 in\
                                                       [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ] )
 
             if selection == 'HLT1Unbiased' :
-                cuts = '%s==1 && %s==1 && %s==1 && %s' % ( sel, hlt1UB, hlt2B, trackChi2Cuts )
+                cuts = '%s && %s==1 && %s==1 && %s==1 && %s'\
+                       % ( dataSampleCuts, sel, hlt1UB, hlt2B, trackChi2Cuts )
             elif selection == 'HLT1ExclBiased' :
-                cuts = '%s==1 && %s==1 && %s==1 && %s' % ( sel, hlt1ExclB, hlt2B, trackChi2Cuts )
+                cuts = '%s && %s==1 && %s==1 && %s==1 && %s'\
+                       % ( dataSampleCuts, sel, hlt1ExclB, hlt2B, trackChi2Cuts )
             elif selection == 'paper2012' :
-                cuts = '%s==1 && (%s==1 || %s==1) && %s==1 && %s' % ( sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
+                cuts = '%s && %s==1 && (%s==1 || %s==1) && %s==1 && %s'\
+                       % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
             elif selection == 'timeEffFit' :
-                cuts = '%s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s' % ( sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
+                cuts = '%s && %s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s'\
+                       % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
             else :
                 raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown selection: "%s"' % selection )
 
@@ -1051,8 +1061,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :
             from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
             self._timeResModel = TimeResolution(  time          = time
-                                                , timeResMu     = dict( Value = 0.,   Constant = True )
-                                                , timeResSigma  = dict( Value = 0.45, Constant = True )
+                                                , timeResMu     = dict( Value = 0.,    Constant = True )
+                                                , timeResSigma  = dict( Value = 0.045, Constant = True )
                                                 , PerEventError = False
                                                 , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]
                                                )
@@ -1869,6 +1879,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if paramKKMass in [ 'simultaneous', 'functions' ] :
             assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == len(CSPValues) == len(KKMassBinBounds) - 1,\
                    'P2VV - ERROR: wrong number of KK mass bin parameters specified'
+            print 'P2VV - INFO: KK mass bins: %s' % ' - '.join( '%.1f' % binEdge for binEdge in KKMassBinBounds )
         else :
             assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == 0 and len(CSPValues) == 1,\
                    'P2VV - ERROR: only one S-P-wave coupling factor and no S-wave amplitude values should be specified'
