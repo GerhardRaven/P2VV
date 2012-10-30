@@ -4,6 +4,7 @@
  * Authors:                                                                  *
  *   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl           *
  *   WH,  Wouter Hulsbergen,  Nikhef                                         *
+ *   JvL, Jeroen van Leerdam, Nikhef,      j.van.leerdam@nikhef.nl           *
  *                                                                           *
  * Copyright (c) 2011, Nikhef. All rights reserved.                          *
  *                                                                           *
@@ -85,19 +86,23 @@ class RooRealEffMoment : public RooAbsRealMoment
 
 public:
   RooRealEffMoment(RooAbsReal& basisFunc, Double_t norm, const RooAbsPdf& pdf,
-      const RooArgSet& normSet);
+      const RooArgSet& intSet, const RooArgSet& normSet);
+  virtual ~RooRealEffMoment();
 
-  const RooAbsPdf& pdf() { return _pdf; }
+  const RooAbsPdf&  pdf()    {return _pdf;}
+  RooAbsReal*       pdfInt() {return _pdfInt;}
 
-  Double_t evaluate() { return _basisFunc.getVal() / _pdf.getVal(&_normSet); }
+  Double_t evaluate() {return _basisFunc.getVal() / _pdfInt->getVal();}
   virtual RooArgSet* getObservables(const RooArgSet* set)
   {
     return _pdf.getObservables(set);
   }
 
 private:
-  const RooAbsPdf& _pdf;
-  const RooArgSet& _normSet;
+  const RooAbsPdf&  _pdf;
+  RooAbsReal*       _pdfInt;
+  const RooArgSet&  _intSet;
+  const RooArgSet&  _normSet;
 };
 
 typedef std::vector<RooAbsRealMoment*> RooRealMomentsVector;

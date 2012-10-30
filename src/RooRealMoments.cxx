@@ -4,6 +4,7 @@
  * Authors:                                                                  *
  *   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl           *
  *   WH,  Wouter Hulsbergen,  Nikhef                                         *
+ *   JvL, Jeroen van Leerdam, Nikhef,      j.van.leerdam@nikhef.nl           *
  *                                                                           *
  * Copyright (c) 2011, Nikhef. All rights reserved.                          *
  *                                                                           *
@@ -103,9 +104,20 @@ RooRealMoment::RooRealMoment(RooAbsReal& basisFunc, Double_t norm) :
 //_____________________________________________________________________________
 
 RooRealEffMoment::RooRealEffMoment(RooAbsReal& basisFunc, Double_t norm,
-      const RooAbsPdf& pdf, const RooArgSet& normSet) :
+      const RooAbsPdf& pdf, const RooArgSet& intSet, const RooArgSet& normSet) :
     RooAbsRealMoment(basisFunc, norm, std::string(basisFunc.GetName()) + "_"
-        + pdf.GetName()), _pdf(pdf), _normSet(normSet) {}
+        + pdf.GetName()), _pdf(pdf), _pdfInt(0), _intSet(intSet),
+        _normSet(normSet)
+{
+  _pdfInt = _pdf.createIntegral(_intSet, _normSet);
+}
+
+//_____________________________________________________________________________
+
+RooRealEffMoment::~RooRealEffMoment()
+{
+  if (_pdfInt) delete _pdfInt;
+}
 
 //_____________________________________________________________________________
 
