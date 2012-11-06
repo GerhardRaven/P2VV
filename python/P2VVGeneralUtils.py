@@ -690,6 +690,10 @@ class RealMomentsBuilder ( dict ) :
         # get minimum significance
         minSignif = kwargs.pop('MinSignificance',float('-inf'))
 
+        # get scale factors
+        scale  = kwargs.pop( 'Scale',  None )
+        scales = kwargs.pop( 'Scales', ( scale, scale, 1. ) if scale != None else None )
+
         # get name requirements
         import re
         names = kwargs.pop('Names', None)
@@ -699,6 +703,7 @@ class RealMomentsBuilder ( dict ) :
         cont = '# %s: angular moments\n' % fileName\
              + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
              + '# minimum significance = {0:.1f}\n'.format(minSignif)\
+             + '# scales = {0}\n'.format( str(scales) if scales else '(1., 1., 1.)' )\
              + '#\n'\
              + '# ' + '-' * (49 + maxLenName) + '\n'\
              + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<13}\n' % maxLenName )\
@@ -713,8 +718,12 @@ class RealMomentsBuilder ( dict ) :
             cont += ( '  {0:<%s}' % maxLenName ).format(func)
             if func in self._coefficients :
                 coef = self._coefficients[func]
-                cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format(coef[0], coef[1], coef[2])
+                if scales :
+                    cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format( coef[0]*scales[0], coef[1]*scales[1], coef[2]*scales[2] )
+                else :
+                    cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format( coef[0],           coef[1],           coef[2]           )
                 numMoments += 1
+
             else :
                 cont += '\n'
 
