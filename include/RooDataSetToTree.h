@@ -18,7 +18,9 @@
 class RooDataSet;
 class TTree;
 
-TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList = 0, Bool_t RooFitFormat = kTRUE);
+TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name = 0,
+      const char* title = 0, const char* branchList = 0,
+      Bool_t RooFitFormat = kTRUE);
 
 #endif
 
