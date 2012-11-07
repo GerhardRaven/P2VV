@@ -19,7 +19,7 @@ pdfConfig['nTupleName'] = 'DecayTree'
 pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 
 # fit options
-fitOpts = dict(  NumCPU    = 2
+fitOpts = dict(  NumCPU    = 16
                , Optimize  = 2
                , Timer     = True
                , Minimizer = 'Minuit2'
@@ -41,14 +41,14 @@ pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012'         # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'basis012'          # 'basis012'
-#pdfConfig['parameterizeKKMass']   = 'simultaneous'      # 'simultaneous'
+pdfConfig['parameterizeKKMass']   = 'simultaneous'      # 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # 'simultaneousFreeBkg'
-#pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 1008., 1032. ]
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
-#                                     , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
-#pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 1008., 1032. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
+                                    , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 
 pdfConfig['sameSideTagging']    = True
 pdfConfig['conditionalTagging'] = True
@@ -249,6 +249,28 @@ else :
     projWDataBulk = dict()
 
 
+
+#------------------------------- CP Components Ploting -----------------------------------
+#Get CP Even/Odd Pdfs
+from P2VVGeneralUtils import getCPprojectionOFpdf, getNormFracs
+
+#Get Pdfs
+pdfEven  = getCPprojectionOFpdf(pdf, "EVEN")
+pdfOdd   = getCPprojectionOFpdf(pdf, "ODD")
+pdfSwave = getCPprojectionOFpdf(pdf, "SWAVE")
+
+#Get relative normalitaion fractions of pdf components
+fracs = getNormFracs(dict(total = pdf, Even = pdfEven, Odd = pdfOdd, Swave = pdfSwave ))
+
+#Define draw options for the Cp components
+CpCompDrawOpts = [dict(LineStyle = 9, Normalization = fracs['even']),
+                  dict(LineStyle = 3, Normalization = fracs['odd']),
+                  dict(LineStyle = 5, Normalization = fracs['swave'])]
+#------------------------------------------------------ -----------------------------------
+
+
+
+
 # plot lifetime and angles
 print 'plotProjections: plotting lifetime and angular distributions'
 timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
@@ -265,8 +287,47 @@ for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
          , frameOpts  = dict( Bins = nBins, Title = plotTitle                                     )
          , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize                      )
          , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth )
+         , addPDFs = [pdfEven,pdfOdd,pdfSwave]
+         , addPDFsOpts = CpCompDrawOpts
          , components = comps
         )
 
+   # assert(False)
+
 # print canvas to file
 timeAnglesCanv.Print(plotsFile)
+
+
+
+
+assert(False)
+
+
+
+
+
+
+
+#   plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY, frameOpts  = dict( Bins = nBins, Title = plotTitle ) , dataOpts = dict( MarkerStyle = markStyle, MarkerSize = markSize) , pdfOpts = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth ) , components = comps )
+    
+for obs in pdf.Observables():
+    if obs.GetName() == 'hlt1_excl_biased_dec':
+        trgCategory = obs
+
+slices = { 'Slices':[(trgCategory, 'exclB' ),(trgCategory , 'notExclB' )]  }
+PDFopts = projWData
+PDFopts.update(slices)
+
+c1 = TCanvas()
+plot(  c1, angles[1], defData, pdf
+       , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize)
+       , pdfOpts    = PDFopts
+       , components = comps
+        )
+
+
+
+#Temp  plot(  c1, angles[1], defData, pdf ,
+
+#    dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize),
+#    pdfOpts = dict( list( projWData.items() ),
