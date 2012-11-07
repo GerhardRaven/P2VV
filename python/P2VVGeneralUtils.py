@@ -263,14 +263,17 @@ def getCPprojectionOFpdf(pdf, cpComponent):
     return CPcompPDF
 
 
-def getNormOverObservables(pdf):
-    #Do not integrate over the conditional observables thsi is done by plotOn
-    observables = pdf.Observables() - pdf.ConditionalObservables()
-    
-    from ROOT import RooArgSet
-    return pdf.getNorm(RooArgSet(obs._target_() for obs in observables))
 
- 
+def getNormFracs(pdfDict):
+    from ROOT import RooArgSet
+    observables = RooArgSet(obs._target_() for obs in (pdfDict['total'].Observables() - pdfDict['total'].ConditionalObservables()) )
+
+    totalIntegral = pdfDict['total'].getNorm(observables)
+    f_even  = pdfDict['Even'].getNorm(observables) / totalIntegral
+    f_odd   = pdfDict['Odd'].getNorm(observables)  / totalIntegral
+    f_swave = pdfDict['Swave'].getNorm(observables)/ totalIntegral
+
+    return dict(even = f_even, odd = f_odd, swave = f_swave)
 
 
 
@@ -339,12 +342,11 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
                 if 'Slice' in pdfOpts : origSlices += [ pdfOpts.pop('Slice') ]
 
                 # parse 'Slices' argument
-                slicesList = [ [ ] ]
+                slicesList = [ [ ] ]                          
                 for slice in origSlices :
                     tempList = [ ]
                     for slices in slicesList : tempList += [ slices + [( slice[0], catType.strip() )] for catType in slice[1].split(',') ]
-                    slicesList = tempList
-
+                    slicesList = tempList                  
                 for num, slices in enumerate(slicesList) :
                     # plot pdf for all slices
                     if num == 0 and len(slicesList) == 1 :
