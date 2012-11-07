@@ -204,4 +204,4 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
 
 from Dilution import dilution
 diff_pdf = wpv.diff_shape('B')
-dilution(t_diff, data, diff_pdf, result, signal, signal_wpv)
+dilution(t_diff, data, diff_pdf, result, [signal], signal_wpv)

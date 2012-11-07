@@ -38,14 +38,19 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 # Time resolution model
 ## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-##                           BiasScaleFactor = False, Cache = False,
+##                           BiasScaleFactor = False, Cache = True,
 ##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
 ##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
+## from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = False,
+##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
+##                           Fractions = [(3, 0.1), (2, 0.2)])
+
 from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = False,
-                          ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
-                          Fractions = [(3, 0.1), (2, 0.2)])
+sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
+                          ScaleFactors = [(2, 4), (1, 1.3)],
+                          Fractions = [(2, 0.2)])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -157,10 +162,8 @@ splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
 psi_sdata = splot.data('psi_background')
 ## bkg_sdata = splot.data('background')
 
-time_pdf = buildPdf(Components = (psi_prompt, psi_background), Observables = (t,), Name='time_pdf')
+time_pdf = buildPdf(Components = (psi_prompt, psi_background, psi_wpv), Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
-
-assert(False)
 
 ## Fit
 ## print 'fitting data'

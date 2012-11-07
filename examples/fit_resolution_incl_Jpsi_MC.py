@@ -17,7 +17,7 @@ m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax =
                          , 'rightsideband' : ( 5410, None ) 
                          } )
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
-st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
+st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.2))
 
 # add 20 bins for caching the normalization integral
 for i in [ st ] : i.setBins( 20 , 'cache' )
@@ -207,4 +207,4 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
     
 from Dilution import dilution
 diff_pdf = wpv.diff_shape('jpsi')
-dilution(t_diff, data, diff_pdf, result, psi_background, psi_wpv)
+dilution(t_diff, data, diff_pdf, result, [psi_background, psi_prompt], psi_wpv)

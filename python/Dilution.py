@@ -2,7 +2,7 @@ from array import array
 
 # Calculate dilution
 __keep = []
-def dilution(t_diff, data, diff_pdf = None, result = None, signal = None, wpv = None):
+def dilution(t_diff, data, diff_pdf = None, result = None, signal = [], wpv = None):
     from ROOT import RooBinning
     n_bins = 512
     dilution_bounds = array('d', (-5 + i * 5 / float(n_bins) for i in range(n_bins + 1)))
@@ -13,7 +13,7 @@ def dilution(t_diff, data, diff_pdf = None, result = None, signal = None, wpv = 
     
     from ROOT import TH1D
     data_histo = TH1D('data_histo', 'data_histo', len(dilution_bounds) - 1, dilution_bounds)
-    time_var = data.get().find('time_diff')
+    time_var = data.get().find(t_diff.GetName())
     for i in range(data.numEntries()):
         r = data.get(i)
         value = time_var.getVal()
@@ -32,12 +32,14 @@ def dilution(t_diff, data, diff_pdf = None, result = None, signal = None, wpv = 
                                          RooFit.Binning(dilution_binning))
 
     # Calculate appropriate scale factor. Scale histograms such that the ration
-    # of their integrals match the ratio of wpv / signal yields
-    sig_yield = signal.getYield().GetName()
-    n_signal = result.floatParsFinal().find(sig_yield).getVal()
+    # of their integrals match the ratio of wpv / total yields
+    yields = [s.getYield().GetName() for s in signal]
     wpv_yield = wpv.getYield().GetName()
     n_wpv = result.floatParsFinal().find(wpv_yield).getVal()
-    scale = data_histo.Integral(1, 512) * n_wpv / (wpv_histo.Integral(1, 512) * n_signal)
+    total = sum([result.floatParsFinal().find(s).getVal() for s in yields] + [n_wpv])
+    data_int = data_histo.Integral(1, n_bins + 1)
+    wpv_int = wpv_histo.Integral(1, n_bins + 1)
+    scale =  (data_int + wpv_int) * n_wpv / (wpv_int * total)
     wpv_histo.Scale(scale)
 
     # Create the histogram to be transformed
