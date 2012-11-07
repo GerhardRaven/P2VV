@@ -113,46 +113,52 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
         splitCat = dataSet.get().find(splitCatName)
         assert splitCat, 'P2VV - ERROR: correctSWeights: unknown spit category: "%s"' % splitCat
 
-        # initialize sums for the weights and the weights squared per category
-        sumWeights   = [ 0. ] * ( splitCat.numTypes() + 1 )
-        sumSqWeights = [ 0. ] * ( splitCat.numTypes() + 1 )
         indexDict = { }
-        posDict   = { }
-        for iter, catType in enumerate( splitCat ) :
-            posDict[ catType.getVal() ] = iter
-            indexDict[ iter ] = catType.getVal()
+        for iter, catType in enumerate( splitCat ) : indexDict[ iter ] = catType.getVal()
 
-    else :
-        # initialize sums for the weights and the weights squared
-        sumWeights   = [ 0. ]
-        sumSqWeights = [ 0. ]
-
-    # loop over events and get sums of weights and weights squared
-    for varSet in dataSet :
-        weight = dataSet.weight()
-        sumWeights[0]   += dataSet.weight()
-        sumSqWeights[0] += dataSet.weight()**2
+    corrFactors = kwargs.pop( 'CorrectionFactors', [ ] )
+    if not corrFactors :
         if splitCatName :
-            sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += dataSet.weight()
-            sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += dataSet.weight()**2
+            # initialize sums for the weights and the weights squared per category
+            sumWeights   = [ 0. ] * ( splitCat.numTypes() + 1 )
+            sumSqWeights = [ 0. ] * ( splitCat.numTypes() + 1 )
+            posDict = { }
+            for iter, catType in enumerate( splitCat ) : posDict[ catType.getVal() ] = iter
+
+        else :
+            # initialize sums for the weights and the weights squared
+            sumWeights   = [ 0. ]
+            sumSqWeights = [ 0. ]
+
+        # loop over events and get sums of weights and weights squared
+        for varSet in dataSet :
+            weight = dataSet.weight()
+            sumWeights[0]   += dataSet.weight()
+            sumSqWeights[0] += dataSet.weight()**2
+            if splitCatName :
+                sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += dataSet.weight()
+                sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += dataSet.weight()**2
+
+        # get correction factors
+        corrFactors = [ sum / sumSq for sum, sumSq in zip( sumWeights, sumSqWeights ) ]
 
     # add corrected weights to data set
     from ROOT import RooCorrectedSWeight
     if splitCatName :
         from ROOT import std
-        alphaVec = std.vector('Double_t')()
+        corrFactorsVec = std.vector('Double_t')()
         print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f):'\
-              % ( sumWeights[0] / sumSqWeights[0] )
-        for iter, ( sumW, sumSqW ) in enumerate( zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ) :
-            alphaVec.push_back( sumW / sumSqW )
-            print '    %d: %.4f' % ( indexDict[iter], sumW / sumSqW )
+              % corrFactors[0]
+        for iter, fac in enumerate( corrFactors[ 1 : ] ) :
+            corrFactorsVec.push_back(fac)
+            print '    %d: %.4f' % ( indexDict[iter], fac )
 
-        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, splitCat, alphaVec, True )
+        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, splitCat, corrFactorsVec, True )
 
     else :
         print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f'\
-              % ( sumWeights[0] / sumSqWeights[0] )
-        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, sumWeights[0] / sumSqWeights[0], True )
+              % corrFactors[0]
+        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, corrFactors[0], True )
 
     from ROOT import RooDataSet
     dataSet.addColumn(weightVar)
