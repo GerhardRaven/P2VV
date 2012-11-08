@@ -10,20 +10,29 @@ nEvents = 50000
 generateData    = False
 physicsPDF      = True
 
-fitDataOriginal = True
+fitDataOriginal = False
 fitDataMoments  = False
 fitDataCoefs    = False
 computeMoments  = True
 makePlots       = False
+transAngles     = True
 
 # data parameters
-dataSetName = 'JpsiKstarData'
-dataSetFile = 'amplitudeMoments_hel.root'
+#dataSetName = 'JpsiKstarData'
+dataSetName = 'JpsiphiPHSP'
+#dataSetName = 'Jpsiphi13144002'
+#dataSetFile = 'amplitudeMoments_hel.root'
 #dataSetFile = 'amplitudeMoments_trans.root'
+dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Diego/jpsiphiTrans.root'
 plotsFile = 'amplitudeMoments.ps'
 
+if transAngles : angleNames = ( 'cPsi',    'cTheta',    'Phi_b' ) # angleNames = ( 'cpsi_tr', 'ctheta_tr', 'phi_tr' )
+else           : angleNames = ( 'cthetaK', 'cthetal',   'phi'   )
+
 # angular moments
-momentsFile = 'JpsiKstarMoments'
+#momentsFile = 'JpsiKstarMoments'
+momentsFile = 'JpsiphiPHSPMoments'
+#momentsFile = 'Jpsiphi13144002Moments'
 
 if physicsPDF :
     # values of transversity amplitudes
@@ -55,8 +64,8 @@ coefPDFParams = [  ( ( 0, 2,  0 ), ( 0., -0.6, +0.6 ) )
                 ]
 
 # plot options
-angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})', '#phi' )
-#angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{tr})', '#phi_{tr}' )
+if transAngles : angleTitles = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
+else           : angleTitles = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
 numBins    = ( 30, 30, 30 )
 lineWidth  = 2
 markStyle  = 8
@@ -77,10 +86,9 @@ from RooFitWrappers import *
 ws = RooObject(workspace = 'ws')
 
 # angular functions
-from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
-angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
-#from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles
-#angleFuncs = JpsiphiTransversityAngles( cpsi = 'cpsi_tr', ctheta = 'ctheta_tr', phi = 'phi_tr' )
+if transAngles : from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngularFunctions
+else           : from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngularFunctions
+angleFuncs = AngularFunctions( cpsi = angleNames[0], ctheta = angleNames[1], phi = angleNames[2] )
 
 # variables in PDF
 angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] )
@@ -159,7 +167,7 @@ moments.appendPYList( angleFuncs.angles, indices )
 if computeMoments :
     # compute moments from data set
     moments.compute(data)
-    moments.write(momentsFile)
+    moments.write(momentsFile, Scale = scale)
 
 else :
     # read moments from file
@@ -301,7 +309,7 @@ if makePlots :
                                                       , angles
                                                       , numBins
                                                       , tuple( [ angle.GetTitle() for angle in angles ] )
-                                                      , angleNames
+                                                      , angleTitles
                                                      ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle, addPDFs = [ coefPDF, momPDF0, momPDF1, momPDF2, momPDF ]
              , frameOpts   = dict( Bins = nBins, Title = plotTitle )

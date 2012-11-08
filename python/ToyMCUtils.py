@@ -108,7 +108,7 @@ class Toy(object):
             # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
             pdf_params.assignValueOnly(self._gen_params) 
             args = dict(NumEvent = self._options.nevents)
-            if 'ProtoData' in args:
+            if 'ProtoData' in kwargs:
                 args['ProtoData'] = kwargs.pop('ProtoData')
             data = genPdf.generate(observables, **kwargs)
             fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, **self.__fit_opts)

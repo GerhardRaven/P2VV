@@ -113,46 +113,52 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
         splitCat = dataSet.get().find(splitCatName)
         assert splitCat, 'P2VV - ERROR: correctSWeights: unknown spit category: "%s"' % splitCat
 
-        # initialize sums for the weights and the weights squared per category
-        sumWeights   = [ 0. ] * ( splitCat.numTypes() + 1 )
-        sumSqWeights = [ 0. ] * ( splitCat.numTypes() + 1 )
         indexDict = { }
-        posDict   = { }
-        for iter, catType in enumerate( splitCat ) :
-            posDict[ catType.getVal() ] = iter
-            indexDict[ iter ] = catType.getVal()
+        for iter, catType in enumerate( splitCat ) : indexDict[ iter ] = catType.getVal()
 
-    else :
-        # initialize sums for the weights and the weights squared
-        sumWeights   = [ 0. ]
-        sumSqWeights = [ 0. ]
-
-    # loop over events and get sums of weights and weights squared
-    for varSet in dataSet :
-        weight = dataSet.weight()
-        sumWeights[0]   += dataSet.weight()
-        sumSqWeights[0] += dataSet.weight()**2
+    corrFactors = kwargs.pop( 'CorrectionFactors', [ ] )
+    if not corrFactors :
         if splitCatName :
-            sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += dataSet.weight()
-            sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += dataSet.weight()**2
+            # initialize sums for the weights and the weights squared per category
+            sumWeights   = [ 0. ] * ( splitCat.numTypes() + 1 )
+            sumSqWeights = [ 0. ] * ( splitCat.numTypes() + 1 )
+            posDict = { }
+            for iter, catType in enumerate( splitCat ) : posDict[ catType.getVal() ] = iter
+
+        else :
+            # initialize sums for the weights and the weights squared
+            sumWeights   = [ 0. ]
+            sumSqWeights = [ 0. ]
+
+        # loop over events and get sums of weights and weights squared
+        for varSet in dataSet :
+            weight = dataSet.weight()
+            sumWeights[0]   += dataSet.weight()
+            sumSqWeights[0] += dataSet.weight()**2
+            if splitCatName :
+                sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += dataSet.weight()
+                sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += dataSet.weight()**2
+
+        # get correction factors
+        corrFactors = [ sum / sumSq for sum, sumSq in zip( sumWeights, sumSqWeights ) ]
 
     # add corrected weights to data set
     from ROOT import RooCorrectedSWeight
     if splitCatName :
         from ROOT import std
-        alphaVec = std.vector('Double_t')()
+        corrFactorsVec = std.vector('Double_t')()
         print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f):'\
-              % ( sumWeights[0] / sumSqWeights[0] )
-        for iter, ( sumW, sumSqW ) in enumerate( zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ) :
-            alphaVec.push_back( sumW / sumSqW )
-            print '    %d: %.4f' % ( indexDict[iter], sumW / sumSqW )
+              % corrFactors[0]
+        for iter, fac in enumerate( corrFactors[ 1 : ] ) :
+            corrFactorsVec.push_back(fac)
+            print '    %d: %.4f' % ( indexDict[iter], fac )
 
-        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, splitCat, alphaVec, True )
+        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, splitCat, corrFactorsVec, True )
 
     else :
         print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f'\
-              % ( sumWeights[0] / sumSqWeights[0] )
-        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, sumWeights[0] / sumSqWeights[0], True )
+              % corrFactors[0]
+        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, corrFactors[0], True )
 
     from ROOT import RooDataSet
     dataSet.addColumn(weightVar)
@@ -690,6 +696,10 @@ class RealMomentsBuilder ( dict ) :
         # get minimum significance
         minSignif = kwargs.pop('MinSignificance',float('-inf'))
 
+        # get scale factors
+        scale  = kwargs.pop( 'Scale',  None )
+        scales = kwargs.pop( 'Scales', ( scale, scale, 1. ) if scale != None else None )
+
         # get name requirements
         import re
         names = kwargs.pop('Names', None)
@@ -699,6 +709,7 @@ class RealMomentsBuilder ( dict ) :
         cont = '# %s: angular moments\n' % fileName\
              + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
              + '# minimum significance = {0:.1f}\n'.format(minSignif)\
+             + '# scales = {0}\n'.format( str(scales) if scales else '(1., 1., 1.)' )\
              + '#\n'\
              + '# ' + '-' * (49 + maxLenName) + '\n'\
              + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<13}\n' % maxLenName )\
@@ -713,8 +724,12 @@ class RealMomentsBuilder ( dict ) :
             cont += ( '  {0:<%s}' % maxLenName ).format(func)
             if func in self._coefficients :
                 coef = self._coefficients[func]
-                cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format(coef[0], coef[1], coef[2])
+                if scales :
+                    cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format( coef[0]*scales[0], coef[1]*scales[1], coef[2]*scales[2] )
+                else :
+                    cont += '   {0:<+14.8g}   {1:<13.8g}   {2:<13.8g}\n'.format( coef[0],           coef[1],           coef[2]           )
                 numMoments += 1
+
             else :
                 cont += '\n'
 

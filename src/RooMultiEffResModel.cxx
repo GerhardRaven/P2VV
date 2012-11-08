@@ -255,7 +255,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    }
 
    const char* cacheParamsStr = getStringAttribute("CACHEPARAMINT") ;
-   if (!strlen(cacheParamsStr)) cacheParamsStr=0;
+   if (cacheParamsStr && !strlen(cacheParamsStr)) cacheParamsStr=0;
 
    vector<HistEntry*> entries;
    vector<RooResolutionModel*> models;

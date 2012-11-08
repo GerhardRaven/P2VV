@@ -21,7 +21,8 @@
 #include "RooRealVar.h"
 #include "TTree.h"
 
-TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList, Bool_t RooFitFormat)
+TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name,
+      const char* title, const char* branchList, Bool_t RooFitFormat)
 {
   // get branch names
   std::set<TString> branches;
@@ -35,8 +36,14 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* branchList, Bool_
     branchStr = branchStr(sep + 1, branchStr.Length() - sep - 1);
   }
 
+  // get tree name and title
+  TString treeName(name);
+  TString treeTitle(title);
+  if (treeName.Length() < 1) treeName = dataSet.GetName();
+  if (treeTitle.Length() < 1) treeTitle = dataSet.GetTitle();
+
   // build tree
-  TTree* tree = new TTree(dataSet.GetName(), dataSet.GetTitle());
+  TTree* tree = new TTree(treeName, treeTitle);
   std::vector<RooRealVar*>  realVars;
   std::vector<RooCategory*> categories;
   std::vector<Double_t*>    realVarAdds;

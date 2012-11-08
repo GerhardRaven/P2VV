@@ -39,7 +39,7 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
-MinosPars = [ 'AparPhase', 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3' ]
+MinosPars = [ 'AparPhase', 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5' ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
@@ -54,9 +54,13 @@ fitOpts = dict(  NumCPU    = 2
 pdfConfig['fitOptions'] = fitOpts
 
 # plot options
-lineWidth = 2
-markStyle = 8
-markSize  = 0.4
+from ROOT import kBlack, kBlue, kRed, kGreen
+lineWidth     = 3
+lineColor     = kBlue
+markStyle     = 8
+markSize      = 0.6
+markColor     = kBlack
+markLineWidth = 2
 
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
@@ -126,13 +130,19 @@ phiCPVal    = 0.009
 if not readData or manualTagCatBins :
     pdfConfig['tagCatsOS'] = [  ( 'Untagged',  0, 0.500001 )
                               , ( 'TagCat1',   1, 0.499999 )
-                              , ( 'TagCat2',   2, 0.40     )
-                              , ( 'TagCat3',   3, 0.25     )
                              ]
     pdfConfig['tagCatsSS'] = [  ( 'Untagged',  0, 0.500001 )
                               , ( 'TagCat1',   1, 0.499999 )
-                              , ( 'TagCat2',   2, 0.30     )
                              ]
+    #pdfConfig['tagCatsOS'] = [  ( 'Untagged',  0, 0.500001 )
+    #                          , ( 'TagCat1',   1, 0.499999 )
+    #                          , ( 'TagCat2',   2, 0.40     )
+    #                          , ( 'TagCat3',   3, 0.25     )
+    #                         ]
+    #pdfConfig['tagCatsSS'] = [  ( 'Untagged',  0, 0.500001 )
+    #                          , ( 'TagCat1',   1, 0.499999 )
+    #                          , ( 'TagCat2',   2, 0.30     )
+    #                         ]
 
 pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
                                     if pdfConfig['timeEffType'] == 'fit' else\
@@ -145,7 +155,9 @@ pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
-                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
+                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_Basis'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -159,7 +171,7 @@ else :
                               )
 angleNames = pdfConfig['angleNames']
 
-numBins = ( 60, 30, 30, 30 )
+numBins = ( 40, 25, 25, 25 )
 pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
 pdfConfig['numAngleBins'] = ( 5, 7, 9 )
@@ -370,6 +382,15 @@ if fastFit :
 
 #ws['timeResSF'].setVal(1.4476)
 
+#ws['ASOddPhase_bin0'].setMin(-6.)
+#ws['ASOddPhase_bin0'].setMax(6.)
+#ws['ASOddPhase_bin1'].setMin(-6.)
+#ws['ASOddPhase_bin1'].setMax(6.)
+#ws['ASOddPhase_bin2'].setMin(-6.)
+#ws['ASOddPhase_bin2'].setMax(6.)
+#ws['ASOddPhase_bin3'].setMin(-6.)
+#ws['ASOddPhase_bin3'].setMax(6.)
+
 if randomParVals :
     import random
     # give parameters random offsets
@@ -541,7 +562,6 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
     from P2VVLoad import LHCbStyle
     from P2VVGeneralUtils import plot
     from ROOT import gStyle, TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
-    gStyle.SetEndErrorSize(4)
 
     # create projection data set for conditional observables
     if pdfConfig['SFit'] :
@@ -552,15 +572,21 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
                 }
 
     from RooFitWrappers import SimultaneousPdf
-    projWDataSet = [ obs for obs in pdf.ConditionalObservables() ]
+    projWDataSet     = [ obs for obs in pdf.ConditionalObservables() ]
+    projWDataBSet    = [ obs for obs in pdf.ConditionalObservables() if obs.GetName() != iTagOS.GetName() ]
+    projWDataBbarSet = [ obs for obs in pdf.ConditionalObservables() if obs.GetName() != iTagOS.GetName() ]
     if isinstance( pdf, SimultaneousPdf ) : projWDataSet.append( pdf.indexCat() )
     if projWDataSet :
         bulkData = defData.reduce( CutRange = 'Bulk' )
-        projWData     = dict( ProjWData = ( defData.reduce(  ArgSet = projWDataSet ), False ) )
-        projWDataBulk = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataSet ), False ) )
+        projWData         = dict( ProjWData = ( defData.reduce(  ArgSet = projWDataSet     ), False ) )
+        projWDataBulk     = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataSet     ), False ) )
+        projWDataBBulk    = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataBSet    ), False ) )
+        projWDataBbarBulk = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataBbarSet ), False ) )
     else :
-        projWData     = dict()
-        projWDataBulk = dict()
+        projWData         = dict()
+        projWDataBulk     = dict()
+        projWDataBBulk    = dict()
+        projWDataBbarBulk = dict()
 
 if pdfConfig['makePlots'] :
     # plot background time
@@ -586,6 +612,7 @@ if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
         and ( ( pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' )\
               or ( pdfConfig['amplitudeParam'] == 'phasesSWaveFrac' and pdfConfig['ASParam'] == 'deltaPerp' ) ) :
     # create S-wave phase plots
+    gStyle.SetEndErrorSize(4)
     nKKBins = pdfBuild['KKMassBinning'].numBins()
 
     from array import array
@@ -612,7 +639,6 @@ if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
 
     if pdfConfig['ambiguityParameters'] : deltaSGraphs = [ deltaSGraphs[1], deltaSGraphs[0] ]
 
-    from ROOT import kBlack, kBlue
     deltaSGraphs[0].SetLineColor(kBlue)
     deltaSGraphs[1].SetLineColor(kBlack)
 
@@ -670,24 +696,141 @@ else :
     deltaSCanv = None
 
 if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
-    # plot lifetime and angles
-    print 'JvLFit: plotting lifetime and angular distributions'
-    timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
-    for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
-            in zip(  timeAnglesCanv.pads( 2, 2 )
-                   , obsSetP2VV[ : 1 ]
-                   , numBins
-                   , [ var.GetTitle() for var in obsSetP2VV[ : 4 ] ]
-                   , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-                   , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
-                   , ( True, ) + 3 * ( False, )
-                  ) :
-        plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
-             , frameOpts  = dict( Bins = nBins, Title = plotTitle                                     )
-             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize                      )
-             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth )
-             , components = comps
-            )
+    gStyle.SetEndErrorSize(2)
+
+    from ROOT import RooRealVar, RooConstVar, RooCategory, RooArgSet, RooCustomizer
+
+    #AparMag2Cust = RooRealVar( 'AparMag2Cust', 'AparMag2Cust', ws['AparMag2'].getVal(), 0., 1. )
+    #zeroCust = RooConstVar( 'zeroCust', 'zeroCust', 0. )
+    #evenPdfCust = RooCustomizer( pdf._var, 'even' )
+    #oddPdfCust  = RooCustomizer( pdf._var, 'odd'  )
+    #SPdfCust    = RooCustomizer( pdf._var, 'S'    )
+
+    #evenPdfCust.replaceArg( ws['AparMag2'],  AparMag2Cust )
+    #evenPdfCust.replaceArg( ws['AperpMag2'], zeroCust     )
+    #evenPdfCust.replaceArg( ws['f_S'],       zeroCust     )
+    #evenPdf = evenPdfCust.build()
+
+    #oddPdfCust.replaceArg( ws['AparMag2'], zeroCust )
+    #oddPdfCust.replaceArg( ws['A0Mag2'],   zeroCust )
+    #oddPdfCust.replaceArg( ws['f_S'],      zeroCust )
+    #oddPdf = oddPdfCust.build()
+
+    #SPdfCust.replaceArg( ws['AparMag2'],  zeroCust )
+    #SPdfCust.replaceArg( ws['A0Mag2'],    zeroCust )
+    #SPdfCust.replaceArg( ws['AperpMag2'], zeroCust )
+    #SPdf = SPdfCust.build()
+
+    #pdfNormSet = RooArgSet()
+    #for obs in pdf.Observables() : pdfNormSet.add(obs._var)
+
+    #pdfIntSetTagCat = RooArgSet(pdfNormSet)
+    #pdfIntSetTagCat.remove(tagCatP2VVOS._var)
+    #pdfIntTagCat = pdf.createIntegral( pdfIntSetTagCat, pdfNormSet )
+
+    #pdfIntSetTimeTagCat = RooArgSet(pdfNormSet)
+    #pdfIntSetTimeTagCat.remove(time._var)
+    #pdfIntSetTimeTagCat.remove(tagCatP2VVOS._var)
+    #pdfIntTimeTagCat = pdf.createIntegral( pdfIntSetTimeTagCat, pdfNormSet )
+
+    #pdfIntSetTimeTagCatITag = RooArgSet(pdfIntSetTimeTagCat)
+    #pdfIntSetTimeTagCatITag.remove(iTagOS._var)
+    #pdfIntTimeTagCatITag = pdf.createIntegral( pdfIntSetTimeTagCatITag, pdfNormSet )
+
+    #from math import pi
+    #phiVal  = 0.5 * pi
+    #lambVal = 0.9
+    #pdfPars.find('phiCP').setVal(phiVal)
+    #pdfPars.find('lambdaCP').setVal(lambVal)
+    #pdfPars.find('avgCOddSum').setVal( -( 1. - lambVal**2 ) / ( 1. + lambVal**2 ) )
+    #pdfPars.find('avgCOddOSTagged').setVal( -( 1. - lambVal**2 ) / ( 1. + lambVal**2 ) )
+    #if pdfPars.find('avgCOddSSTagged') :
+    #    pdfPars.find('avgCOddSSTagged').setVal( -( 1. - lambVal**2 ) / ( 1. + lambVal**2 ) )
+    #    pdfPars.find('avgCOddTagged').setVal( -( 1. - lambVal**2 ) / ( 1. + lambVal**2 ) )
+    #pdfPars.Print('v')
+
+    #timeBBbarFrame = time.frame( Range = 'Bulk' )
+    #timeBBbarFrame.GetYaxis().SetTitle('Decay time PDF (ps^{-1})')
+
+    #tagCatP2VVOS.setIndex(1)
+    #pdfIntTimeTagCat.plotOn( timeBBbarFrame, LineColor = kBlack, LineWidth = 4 )
+
+    #iTagOS.setIndex(+1)
+    #pdfIntTimeTagCatITag.plotOn( timeBBbarFrame, LineColor = kBlue, LineWidth = 4 )
+
+    #iTagOS.setIndex(-1)
+    #pdfIntTimeTagCatITag.plotOn( timeBBbarFrame, LineColor = kRed, LineWidth = 4 )
+
+    #timeBBbarCanv = TCanvas( 'timeBBbarCanv', 'Decay time' )
+    #timeBBbarFrame.Draw()
+    #timeBBbarCanv.Print(plotsFile)
+
+    # plot lifetime
+    from ROOT import TPaveText
+    LHCbText = TPaveText( 0.45, 0.70, 0.90, 0.90, 'NDC' )
+    LHCbText.AddText('LHCb unofficial')
+    LHCbText.AddText( '#sqrt{s} = 7 TeV, L = 0.37 fb^{-1}' if pdfConfig['dataSample'] == 'Summer2011'\
+                      else '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}' )
+    LHCbText.SetShadowColor(0)
+    LHCbText.SetFillStyle(0)
+    LHCbText.SetBorderSize(0)
+    LHCbText.SetTextAlign(12)
+
+    timeBBbarCanv = TCanvas( 'timeBBbarCanv', 'Lifetime' )
+    plot(  timeBBbarCanv, time, defData, pdf, addPDFs = [ pdf, pdf ], yScale = ( None, None )
+         , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
+         , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
+                              , Cut = '%s > 0' % tagCatP2VVOS )
+         , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = 13, LineWidth = 4, Slice = ( tagCatP2VVOS, 'TagCat1' ) )
+         , addPDFsOpts = [  dict( list( projWDataBulk.items() ), LineColor = kBlue, LineWidth = 4
+                                 , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'B'    ) ] )
+                          , dict( list( projWDataBulk.items() ), LineColor = kRed,  LineWidth = 4
+                                 , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'Bbar' ) ] )
+                         ]
+        )
+    LHCbText.Draw()
+    timeBBbarCanv.Print( plotsFile + '(' )
+
+    timeBCanv = TCanvas( 'timeBCanv', 'Lifetime' )
+    plot(  timeBCanv, time, defData, pdf, yScale = ( None, None )
+         , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
+         , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
+                              , Cut = '%s > 0 && %s == +1' % ( tagCatP2VVOS, iTagOS ) )
+         , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = kBlue, LineWidth = 4
+                              , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'B' ) ] )
+        )
+    LHCbText.Draw()
+    timeBCanv.Print(plotsFile)
+
+    timeBbarCanv = TCanvas( 'timeBbarCanv', 'Lifetime' )
+    plot(  timeBbarCanv, time, defData, pdf, yScale = ( None, None )
+         , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
+         , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
+                              , Cut = '%s > 0 && %s == -1' % ( tagCatP2VVOS, iTagOS ) )
+         , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = kRed, LineWidth = 4
+                              , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'Bbar' ) ] )
+        )
+    LHCbText.Draw()
+    timeBbarCanv.Print( plotsFile + ')' )
+
+    ## plot lifetime and angles
+    #print 'JvLFit: plotting lifetime and angular distributions'
+    #timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
+    #for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
+    #        in zip(  timeAnglesCanv.pads( 2, 2 )
+    #               , obsSetP2VV[ : 1 ]
+    #               , numBins
+    #               , [ var.GetTitle() for var in obsSetP2VV[ : 4 ] ]
+    #               , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+    #               , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
+    #               , ( True, ) + 3 * ( False, )
+    #              ) :
+    #    plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
+    #         , frameOpts  = dict( Bins = nBins, Title = plotTitle                                     )
+    #         , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize                      )
+    #         , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth )
+    #         , components = comps
+    #        )
 
     ## plot lifetime
     #timePlotTitles = tuple( [ time.GetTitle() + title for title in (  ' - linear'
@@ -793,7 +936,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #        )
 
     # print canvas to file
-    timeAnglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
+    #timeAnglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
     #timeAnglesCanv.Print(plotsFile + '(')
     #timeCanv.Print(plotsFile)
     #timeCanv1.Print(plotsFile)
