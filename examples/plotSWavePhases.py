@@ -3,7 +3,7 @@ from P2VVLoad import LHCbStyle
 gStyle.SetEndErrorSize(4)
 
 plotsFilePath   = 'SWavePhases.ps'
-deltaSAxisRange = ( -1.5, 5.0 )
+deltaSAxisRange = ( None, None ) # ( -1.5, 5.0 )
 LHCbText1       = ' LHCb'
 LHCbText2       = '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}'
 

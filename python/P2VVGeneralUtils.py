@@ -452,7 +452,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     return canv
 
 def plotSWavePhases( **kwargs ) :
-    yAxisRange  = kwargs.pop( 'DeltaSAxisRange', ( -3.0, 6.0 )                          )
+    yAxisRange  = kwargs.pop( 'DeltaSAxisRange', ( None, None )                         )
     KKMassLabel = kwargs.pop( 'KKMassLabel',     'm_{KK} (MeV)'                         )
     deltaSLabel = kwargs.pop( 'DeltaSLabel',     '#delta_{S} - #delta_{#perp}    (rad)' )
     plotTitle   = kwargs.pop( 'PlotTitle',       ''                                     )
@@ -470,62 +470,67 @@ def plotSWavePhases( **kwargs ) :
         raise KeyError, 'P2VV - ERROR: plotSWavePhases: unexpected keyword arguments: %s' % kwargs
 
     from array import array
-    KKMassSol1        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35 + massBins[it] for it in range( len(massBins) - 1 ) ] )
-    KKMassSol1LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
-    KKMassSol1HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
+    KKMass1        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35 + massBins[it] for it in range( len(massBins) - 1 ) ] )
+    KKMass1LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
+    KKMass1HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
 
-    KKMassSol2        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35 + massBins[it] for it in range( len(massBins) - 1 ) ] )
-    KKMassSol2LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
-    KKMassSol2HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
+    KKMass2        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35 + massBins[it] for it in range( len(massBins) - 1 ) ] )
+    KKMass2LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
+    KKMass2HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
 
     from ROOT import TGraphAsymmErrors
-    deltaSSol1        = array( 'd', deltaSVals      )
-    deltaSSol1LowErr  = array( 'd', deltaSLowErrs   )
-    deltaSSol1HighErr = array( 'd', deltaSHighErrs )
-    deltaSSol1Graph = TGraphAsymmErrors(  len(KKMassSol1), KKMassSol1, deltaSSol1\
-                                        , KKMassSol1LowErr, KKMassSol1HighErr, deltaSSol1LowErr, deltaSSol1HighErr )
+    deltaS1        = array( 'd', deltaSVals      )
+    deltaS1LowErr  = array( 'd', deltaSLowErrs   )
+    deltaS1HighErr = array( 'd', deltaSHighErrs )
+    deltaS1Graph = TGraphAsymmErrors(  len(KKMass1), KKMass1, deltaS1\
+                                        , KKMass1LowErr, KKMass1HighErr, deltaS1LowErr, deltaS1HighErr )
 
     from math import pi
-    deltaSSol2        = array( 'd', [ pi - val for val in deltaSVals ] )
-    deltaSSol2LowErr  = array( 'd', deltaSHighErrs )
-    deltaSSol2HighErr = array( 'd', deltaSLowErrs  )
-    deltaSSol2Graph = TGraphAsymmErrors( len(KKMassSol2), KKMassSol2, deltaSSol2\
-                                        , KKMassSol2LowErr, KKMassSol2HighErr, deltaSSol2LowErr, deltaSSol2HighErr )
+    deltaS2        = array( 'd', [ pi - val for val in deltaSVals ] )
+    deltaS2LowErr  = array( 'd', deltaSHighErrs )
+    deltaS2HighErr = array( 'd', deltaSLowErrs  )
+    deltaS2Graph = TGraphAsymmErrors( len(KKMass2), KKMass2, deltaS2\
+                                        , KKMass2LowErr, KKMass2HighErr, deltaS2LowErr, deltaS2HighErr )
+
+    delSMin = min( delS - delSErr for delS, delSErr in zip( deltaSVals, deltaSLowErrs  ) )
+    delSMax = max( delS + delSErr for delS, delSErr in zip( deltaSVals, deltaSHighErrs ) )
+    delSMin = min( delSMin, pi - delSMax )
+    delSMax = max( delSMax, pi - delSMin )
 
     from ROOT import kBlack, kBlue
-    deltaSSol1Graph.SetLineColor(kBlue)
-    deltaSSol2Graph.SetLineColor(kBlack)
+    deltaS1Graph.SetLineColor(kBlue)
+    deltaS2Graph.SetLineColor(kBlack)
 
-    deltaSSol1Graph.SetMarkerColor(kBlue)
-    deltaSSol2Graph.SetMarkerColor(kBlack)
+    deltaS1Graph.SetMarkerColor(kBlue)
+    deltaS2Graph.SetMarkerColor(kBlack)
 
-    deltaSSol1Graph.SetLineWidth(4)
-    deltaSSol2Graph.SetLineWidth(4)
+    deltaS1Graph.SetLineWidth(4)
+    deltaS2Graph.SetLineWidth(4)
 
     from ROOT import kFullCircle, kFullSquare
-    deltaSSol1Graph.SetMarkerStyle(kFullCircle)
-    deltaSSol2Graph.SetMarkerStyle(kFullSquare)
-    deltaSSol1Graph.SetMarkerSize(1.3)
-    deltaSSol2Graph.SetMarkerSize(1.3)
+    deltaS1Graph.SetMarkerStyle(kFullCircle)
+    deltaS2Graph.SetMarkerStyle(kFullSquare)
+    deltaS1Graph.SetMarkerSize(1.3)
+    deltaS2Graph.SetMarkerSize(1.3)
 
-    deltaSSol1Graph.SetMinimum( yAxisRange[0] )
-    deltaSSol1Graph.SetMaximum( yAxisRange[1] )
+    deltaS1Graph.SetMinimum( yAxisRange[0] if yAxisRange[0] else delSMin - 0.10 * ( delSMax - delSMin ) )
+    deltaS1Graph.SetMaximum( yAxisRange[1] if yAxisRange[1] else delSMax + 0.15 * ( delSMax - delSMin ) )
 
-    deltaSSol1Graph.GetXaxis().SetTitle(KKMassLabel)
-    deltaSSol1Graph.GetYaxis().SetTitle(deltaSLabel)
+    deltaS1Graph.GetXaxis().SetTitle(KKMassLabel)
+    deltaS1Graph.GetYaxis().SetTitle(deltaSLabel)
 
-    deltaSSol1Graph.GetXaxis().SetTitleOffset(1.0)
-    deltaSSol1Graph.GetYaxis().SetTitleOffset(0.7)
+    deltaS1Graph.GetXaxis().SetTitleOffset(1.0)
+    deltaS1Graph.GetYaxis().SetTitleOffset(0.7)
 
-    deltaSSol1Graph.SetTitle(plotTitle)
+    deltaS1Graph.SetTitle(plotTitle)
 
-    _P2VVPlotStash.append(deltaSSol1Graph)
-    _P2VVPlotStash.append(deltaSSol2Graph)
+    _P2VVPlotStash.append(deltaS1Graph)
+    _P2VVPlotStash.append(deltaS2Graph)
 
     from ROOT import TLegend
     leg = TLegend( 0.59, 0.45, 0.93, 0.63 )
-    leg.AddEntry( deltaSSol1Graph, 'solution I  (#Delta#Gamma_{s} > 0)', 'LPE' )
-    leg.AddEntry( deltaSSol2Graph, 'solution II (#Delta#Gamma_{s} < 0)', 'LPE' )
+    leg.AddEntry( deltaS1Graph, 'solution I  (#Delta#Gamma_{s} > 0)', 'LPE' )
+    leg.AddEntry( deltaS2Graph, 'solution II (#Delta#Gamma_{s} < 0)', 'LPE' )
     leg.SetBorderSize(1)
     leg.SetFillStyle(0)
     _P2VVPlotStash.append(leg)
@@ -546,8 +551,8 @@ def plotSWavePhases( **kwargs ) :
     SWavePhaseCanv.SetRightMargin(0.04)
     SWavePhaseCanv.SetTopMargin(0.04)
     SWavePhaseCanv.SetBottomMargin(0.15)
-    deltaSSol1Graph.Draw('AP')
-    deltaSSol2Graph.Draw('P sames')
+    deltaS1Graph.Draw('AP')
+    deltaS2Graph.Draw('P sames')
     leg.Draw()
     LHCbText.Draw()
 
