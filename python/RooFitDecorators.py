@@ -1,16 +1,8 @@
 from ROOT import (RooArgSet, RooArgList, RooDataSet,
                   RooWorkspace, RooFitResult, RooFit,
                   RooDataHist, RooLinkedList, RooCmdArg)
-from ROOT import gStyle,gROOT
 
-# this should move elsewhere...
 import ROOTDecorators
-gStyle.SetPalette(1)
-gROOT.SetStyle("Plain")
-
-# needed to get RooFit.Name, RooFit.Components.... kRed
-# how to get just the RooFit namespace ?
-#from ROOT import * 
 
 def __wrap_kw_subs( fun ) :
     from ROOT import RooFit, RooAbsCollection, TObject
