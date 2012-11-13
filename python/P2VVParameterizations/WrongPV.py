@@ -143,6 +143,7 @@ class ShapeBuilder(object):
             from P2VVGeneralUtils import plot
             pdfOpts  = dict(ProjWData = (RooArgSet(st), self.__sdatas[c], True))
             plot(p, t, pdf = shape, data = self.__sdatas[c]
+                 , frameOpts = dict(Title = c.GetName())
                  , dataOpts = dict(MarkerSize = 0.8, Binning = 80, MarkerColor = kBlack)
                  , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
                  , logy = False

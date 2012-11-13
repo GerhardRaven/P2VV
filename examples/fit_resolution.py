@@ -110,7 +110,7 @@ psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (21582, 100, 5000
 # Wrong PV components
 from P2VVParameterizations.WrongPV import ShapeBuilder
 wpv = ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi',
-                   Draw = False)
+                   Draw = True, sigmat = st)
 wpv_psi = wpv.shape('jpsi')
 psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (888, 50, 30000))
 
