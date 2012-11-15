@@ -221,7 +221,7 @@ else :
 
 
 # moments builder with angular basis functions
-indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
 #indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ +1, -1 ] ]
 #indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ -2, 1 ] ]
 
@@ -289,7 +289,7 @@ if multPdfEff and normPDF :
 
 if multPdfEff and makePlots and normPDF :
     # import plotting tools
-    from P2VVLoad import ROOTStyle
+    from P2VVLoad import LHCbStyle
     from P2VVGeneralUtils import plot
     from ROOT import TCanvas, kBlue, kRed, kGreen
 

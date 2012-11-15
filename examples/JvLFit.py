@@ -18,7 +18,7 @@ pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
-corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
+corrSFitErr             = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' / 'matrix' / 'sumWeight'
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 #plotsFile = 'plots/JvLSFit_SWavePhases.ps'
@@ -39,7 +39,7 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
-MinosPars = [ 'AparPhase', 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5' ]
+MinosPars = [ ] # [ 'AparPhase', 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5' ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
@@ -76,12 +76,12 @@ pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultan
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
                                      , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.20, 0.07), (0.05, 0.02), (0.03, 0.02), (0.15, 0.04) ]
-#                                     , [ (1.4,  0.5 ), (0.5,   0.3), (-0.5, 0.3 ), (-0.7, 0.2 ) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.06, 0.02), (0.04, 0.02), (0.27, 0.07) ]
+#                                     , [ (2.7,  0.4 ), (0.22,   0.14), (-0.11, 0.17 ), (-0.97, 0.3 ) ] )
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: True
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -171,7 +171,7 @@ else :
                               )
 angleNames = pdfConfig['angleNames']
 
-numBins = ( 40, 25, 25, 25 )
+numBins = ( 50, 20, 20, 20 )
 pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
 pdfConfig['numAngleBins'] = ( 5, 7, 9 )
@@ -181,7 +181,8 @@ pdfConfig['numAngleBins'] = ( 5, 7, 9 )
 ## build PDF ##
 ###############
 
-from P2VVLoad import RooFitOutput
+from ROOT import gStyle
+from P2VVLoad import RooFitOutput, LHCbStyle
 
 # workspace
 from RooFitWrappers import RooObject
@@ -261,10 +262,13 @@ elif pdfConfig['SFit'] :
     defData = pdfBuild['sigSWeightData']
     sigData = pdfBuild['sigSWeightData']
     bkgData = pdfBuild['bkgSWeightData']
-    if corrSFitErr == 'sumWeight' :
+    if corrSFitErr == 'sumWeight'\
+            or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
         from P2VVGeneralUtils import correctSWeights
         fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
-                                  , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else '' )
+                                  , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
+                                  , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
+
     else :
         fitData = pdfBuild['sigSWeightData']
 
@@ -382,6 +386,8 @@ if fastFit :
 
 #ws['timeResSF'].setVal(1.4476)
 
+#ws['ASOddPhase'].setMin(-6.)
+#ws['ASOddPhase'].setMax(6.)
 #ws['ASOddPhase_bin0'].setMin(-6.)
 #ws['ASOddPhase_bin0'].setMax(6.)
 #ws['ASOddPhase_bin1'].setMin(-6.)
@@ -558,10 +564,8 @@ else :
 
 if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots or dllPars ) :
     # import plotting tools
-    #from P2VVLoad import ROOTStyle
-    from P2VVLoad import LHCbStyle
-    from P2VVGeneralUtils import plot
-    from ROOT import gStyle, TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
+    from P2VVGeneralUtils import plot, _P2VVPlotStash
+    from ROOT import TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
 
     # create projection data set for conditional observables
     if pdfConfig['SFit'] :
@@ -612,93 +616,51 @@ if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
         and ( ( pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' )\
               or ( pdfConfig['amplitudeParam'] == 'phasesSWaveFrac' and pdfConfig['ASParam'] == 'deltaPerp' ) ) :
     # create S-wave phase plots
-    gStyle.SetEndErrorSize(4)
     nKKBins = pdfBuild['KKMassBinning'].numBins()
 
-    from array import array
-    KKMass1Vals    = array( 'd', [ pdfBuild['KKMassBinning'].binCenter(binIter)      + 0.35 for binIter in range(nKKBins) ] )
-    KKMass1LowErr  = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) + 0.35 for binIter in range(nKKBins) ] )
-    KKMass1HighErr = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) - 0.35 for binIter in range(nKKBins) ] )
-    KKMass2Vals    = array( 'd', [ pdfBuild['KKMassBinning'].binCenter(binIter)      - 0.35 for binIter in range(nKKBins) ] )
-    KKMass2LowErr  = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) - 0.35 for binIter in range(nKKBins) ] )
-    KKMass2HighErr = array( 'd', [ 0.5 * pdfBuild['KKMassBinning'].binWidth(binIter) + 0.35 for binIter in range(nKKBins) ] )
+    KKMassVals = [ pdfBuild['KKMassBinning'].binLow(binIter) for binIter in range(nKKBins) ]
+    KKMassVals.append( pdfBuild['KKMassBinning'].highBound() )
 
-    from ROOT import TGraphAsymmErrors
-    deltaS1Vals    = array( 'd', [  pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getVal()     for binIter in range(nKKBins) ] )
-    deltaS1LowErr  = array( 'd', [ -pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getErrorLo() for binIter in range(nKKBins) ] )
-    deltaS1HighErr = array( 'd', [  pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getErrorHi() for binIter in range(nKKBins) ] )
-    deltaSGraphs   = [ TGraphAsymmErrors( len(KKMass1Vals), KKMass1Vals,                   deltaS1Vals,
-                                                            KKMass1LowErr, KKMass1HighErr, deltaS1LowErr, deltaS1HighErr) ]
+    deltaSVals     = [  pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getVal()     for binIter in range(nKKBins) ]
+    deltaSLowErrs  = [ -pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getErrorLo() for binIter in range(nKKBins) ]
+    deltaSHighErrs = [  pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getErrorHi() for binIter in range(nKKBins) ]
 
-    from math import pi
-    deltaS2Vals    = array( 'd', [ pi - pdfPars.find( 'ASOddPhase_bin%d' % binIter ).getVal() for binIter in range(nKKBins) ] )
-    deltaS2LowErr  = deltaS1HighErr
-    deltaS2HighErr = deltaS1LowErr
-    deltaSGraphs  += [ TGraphAsymmErrors( len(KKMass2Vals), KKMass2Vals,                   deltaS2Vals,
-                                                            KKMass2LowErr, KKMass2HighErr, deltaS2LowErr, deltaS2HighErr ) ]
+    if pdfConfig['ambiguityParameters'] :
+        from math import pi
+        deltaSVals = [ pi - val for val in deltaSVals ]
+        tempErrs       = deltaSLowErrs
+        deltaSLowErrs  = deltaSHighErrs
+        deltaSHighErrs = tempErrs
 
-    if pdfConfig['ambiguityParameters'] : deltaSGraphs = [ deltaSGraphs[1], deltaSGraphs[0] ]
+    from P2VVGeneralUtils import plotSWavePhases
+    deltaSCanv = plotSWavePhases(  MassBins         = KKMassVals
+                                 , DeltaSValues     = deltaSVals
+                                 , DeltaSLowErrors  = deltaSLowErrs
+                                 , DeltaSHighErrors = deltaSHighErrs
+                                 , LHCbTextLine1    = ' LHCb'
+                                 , LHCbTextLine2    = '#sqrt{s} = 7 TeV, L = 0.37 fb^{-1}' if pdfConfig['dataSample'] == 'Summer2011'\
+                                                      else '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}'
+                                )
 
-    deltaSGraphs[0].SetLineColor(kBlue)
-    deltaSGraphs[1].SetLineColor(kBlack)
+else :
+    deltaSCanv = None
 
-    deltaSGraphs[0].SetMarkerColor(kBlue)
-    deltaSGraphs[1].SetMarkerColor(kBlack)
+if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
+    from ROOT import RooRealVar, RooConstVar, RooCategory, RooArgSet, RooCustomizer, TPaveText
 
-    deltaSGraphs[0].SetLineWidth(4)
-    deltaSGraphs[1].SetLineWidth(4)
-
-    from ROOT import kFullCircle, kFullSquare
-    deltaSGraphs[0].SetMarkerStyle(kFullCircle)
-    deltaSGraphs[1].SetMarkerStyle(kFullSquare)
-    deltaSGraphs[0].SetMarkerSize(1.3)
-    deltaSGraphs[1].SetMarkerSize(1.3)
-
-    deltaSGraphs[0].SetMinimum( min( deltaSGraphs[0].GetYaxis().GetXmin(), deltaSGraphs[1].GetYaxis().GetXmin() )       )
-    deltaSGraphs[0].SetMaximum( max( deltaSGraphs[0].GetYaxis().GetXmax(), deltaSGraphs[1].GetYaxis().GetXmax() ) + 0.3 )
-
-    deltaSGraphs[0].GetXaxis().SetTitle('m_{KK} (MeV)')
-    deltaSGraphs[0].GetYaxis().SetTitle('#delta_{S} - #delta_{#perp}    (rad)')
-
-    deltaSGraphs[0].SetTitle('')
-    deltaSGraphs[0].GetXaxis().SetTitleOffset(1.0)
-    deltaSGraphs[0].GetYaxis().SetTitleOffset(0.7)
-
-    from ROOT import TLegend
-    leg = TLegend( 0.59, 0.45, 0.93, 0.63 )
-    leg.AddEntry( deltaSGraphs[0], 'solution I  (#Delta#Gamma_{s} > 0)', 'LPE' )
-    leg.AddEntry( deltaSGraphs[1], 'solution II (#Delta#Gamma_{s} < 0)', 'LPE' )
-    leg.SetBorderSize(1)
-    leg.SetFillStyle(0)
-
-    from ROOT import TPaveText
-    LHCbText = TPaveText( 0.13, 0.78, 0.51, 0.95, 'NDC' )
-    LHCbText.AddText(' LHCb')
+    LHCbText = TPaveText( 0.45, 0.70, 0.90, 0.90, 'NDC' )
+    LHCbText.AddText('LHCb unofficial')
     LHCbText.AddText( '#sqrt{s} = 7 TeV, L = 0.37 fb^{-1}' if pdfConfig['dataSample'] == 'Summer2011'\
                       else '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}' )
     LHCbText.SetShadowColor(0)
     LHCbText.SetFillStyle(0)
     LHCbText.SetBorderSize(0)
     LHCbText.SetTextAlign(12)
+    _P2VVPlotStash.append(LHCbText)
 
-    from ROOT import TCanvas
-    deltaSCanv = TCanvas( 'deltaSCanv', 'S-Wave Phases' )
-    deltaSCanv.SetLeftMargin(0.12)
-    deltaSCanv.SetRightMargin(0.04)
-    deltaSCanv.SetTopMargin(0.04)
-    deltaSCanv.SetBottomMargin(0.15)
-    deltaSGraphs[0].Draw('AP')
-    deltaSGraphs[1].Draw('P SAMES')
-    leg.Draw()
+    dummyCanv = TCanvas()
     LHCbText.Draw()
-
-else :
-    deltaSCanv = None
-
-if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
-    gStyle.SetEndErrorSize(2)
-
-    from ROOT import RooRealVar, RooConstVar, RooCategory, RooArgSet, RooCustomizer
+    dummyCanv.Update()
 
     #AparMag2Cust = RooRealVar( 'AparMag2Cust', 'AparMag2Cust', ws['AparMag2'].getVal(), 0., 1. )
     #zeroCust = RooConstVar( 'zeroCust', 'zeroCust', 0. )
@@ -765,72 +727,69 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #timeBBbarFrame.Draw()
     #timeBBbarCanv.Print(plotsFile)
 
-    # plot lifetime
-    from ROOT import TPaveText
-    LHCbText = TPaveText( 0.45, 0.70, 0.90, 0.90, 'NDC' )
-    LHCbText.AddText('LHCb unofficial')
-    LHCbText.AddText( '#sqrt{s} = 7 TeV, L = 0.37 fb^{-1}' if pdfConfig['dataSample'] == 'Summer2011'\
-                      else '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}' )
-    LHCbText.SetShadowColor(0)
-    LHCbText.SetFillStyle(0)
-    LHCbText.SetBorderSize(0)
-    LHCbText.SetTextAlign(12)
+    ## plot lifetime
+    #timeBBbarCanv = TCanvas( 'timeBBbarCanv', 'Lifetime' )
+    #plot(  timeBBbarCanv, time, defData, pdf, addPDFs = [ pdf, pdf ], yScale = ( None, None )
+    #     , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
+    #     , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
+    #                          , Cut = '%s > 0' % tagCatP2VVOS )
+    #     , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = 13, LineWidth = 4, Slice = ( tagCatP2VVOS, 'TagCat1' ) )
+    #     , addPDFsOpts = [  dict( list( projWDataBulk.items() ), LineColor = kBlue, LineWidth = 4
+    #                             , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'B'    ) ] )
+    #                      , dict( list( projWDataBulk.items() ), LineColor = kRed,  LineWidth = 4
+    #                             , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'Bbar' ) ] )
+    #                     ]
+    #    )
+    #LHCbText.Draw()
+    #timeBBbarCanv.Print( plotsFile + '(' )
 
-    timeBBbarCanv = TCanvas( 'timeBBbarCanv', 'Lifetime' )
-    plot(  timeBBbarCanv, time, defData, pdf, addPDFs = [ pdf, pdf ], yScale = ( None, None )
-         , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
-         , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
-                              , Cut = '%s > 0' % tagCatP2VVOS )
-         , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = 13, LineWidth = 4, Slice = ( tagCatP2VVOS, 'TagCat1' ) )
-         , addPDFsOpts = [  dict( list( projWDataBulk.items() ), LineColor = kBlue, LineWidth = 4
-                                 , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'B'    ) ] )
-                          , dict( list( projWDataBulk.items() ), LineColor = kRed,  LineWidth = 4
-                                 , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'Bbar' ) ] )
-                         ]
-        )
-    LHCbText.Draw()
-    timeBBbarCanv.Print( plotsFile + '(' )
+    #timeBCanv = TCanvas( 'timeBCanv', 'Lifetime' )
+    #plot(  timeBCanv, time, defData, pdf, yScale = ( None, None )
+    #     , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
+    #     , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
+    #                          , Cut = '%s > 0 && %s == +1' % ( tagCatP2VVOS, iTagOS ) )
+    #     , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = kBlue, LineWidth = 4
+    #                          , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'B' ) ] )
+    #    )
+    #LHCbText.Draw()
+    #timeBCanv.Print(plotsFile)
 
-    timeBCanv = TCanvas( 'timeBCanv', 'Lifetime' )
-    plot(  timeBCanv, time, defData, pdf, yScale = ( None, None )
-         , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
-         , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
-                              , Cut = '%s > 0 && %s == +1' % ( tagCatP2VVOS, iTagOS ) )
-         , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = kBlue, LineWidth = 4
-                              , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'B' ) ] )
-        )
-    LHCbText.Draw()
-    timeBCanv.Print(plotsFile)
+    #timeBbarCanv = TCanvas( 'timeBbarCanv', 'Lifetime' )
+    #plot(  timeBbarCanv, time, defData, pdf, yScale = ( None, None )
+    #     , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
+    #     , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
+    #                          , Cut = '%s > 0 && %s == -1' % ( tagCatP2VVOS, iTagOS ) )
+    #     , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = kRed, LineWidth = 4
+    #                          , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'Bbar' ) ] )
+    #    )
+    #LHCbText.Draw()
+    #timeBbarCanv.Print( plotsFile + ')' )
 
-    timeBbarCanv = TCanvas( 'timeBbarCanv', 'Lifetime' )
-    plot(  timeBbarCanv, time, defData, pdf, yScale = ( None, None )
-         , frameOpts   = dict( Bins = 50, Title = '', Range = 'Bulk'                                                                )
-         , dataOpts    = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, MarkerColor = kBlack, LineColor = kBlack, LineWidth = 3
-                              , Cut = '%s > 0 && %s == -1' % ( tagCatP2VVOS, iTagOS ) )
-         , pdfOpts     = dict( list( projWDataBulk.items() ), LineColor = kRed, LineWidth = 4
-                              , Slices = [ ( tagCatP2VVOS, 'TagCat1' ), ( iTagOS, 'Bbar' ) ] )
-        )
-    LHCbText.Draw()
-    timeBbarCanv.Print( plotsFile + ')' )
-
-    ## plot lifetime and angles
-    #print 'JvLFit: plotting lifetime and angular distributions'
-    #timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
-    #for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
-    #        in zip(  timeAnglesCanv.pads( 2, 2 )
-    #               , obsSetP2VV[ : 1 ]
-    #               , numBins
-    #               , [ var.GetTitle() for var in obsSetP2VV[ : 4 ] ]
-    #               , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-    #               , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
-    #               , ( True, ) + 3 * ( False, )
-    #              ) :
-    #    plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
-    #         , frameOpts  = dict( Bins = nBins, Title = plotTitle                                     )
-    #         , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize                      )
-    #         , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth )
-    #         , components = comps
-    #        )
+    # plot lifetime and angles
+    print 'JvLFit: plotting lifetime and angular distributions'
+    timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
+    for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY, coords )\
+            in zip(  timeAnglesCanv.pads( 2, 2 )
+                   , obsSetP2VV[ : 4 ]
+                   , numBins
+                   , [ var.GetTitle() for var in obsSetP2VV[ : 4 ] ]
+                   , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+                   , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
+                   , ( True, ) + 3 * ( False, )
+                   , [ ( 0.48, 0.73, 0.93, 0.93 ), ( 0.32, 0.73, 0.77, 0.93 ), ( 0.32, 0.50, 0.77, 0.70 ), ( 0.32, 0.50, 0.77, 0.70 ) ]
+                  ) :
+        plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
+             , frameOpts  = dict( Bins = nBins, Title = plotTitle                                     )
+             , dataOpts   = dict( MarkerStyle = markStyle, MarkerSize = markSize                      )
+             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = lineWidth )
+             , components = comps
+            )
+        _P2VVPlotStash.append( LHCbText.Clone() )
+        _P2VVPlotStash[-1].SetX1NDC( coords[0] )
+        _P2VVPlotStash[-1].SetY1NDC( coords[1] )
+        _P2VVPlotStash[-1].SetX2NDC( coords[2] )
+        _P2VVPlotStash[-1].SetY2NDC( coords[3] )
+        _P2VVPlotStash[-1].Draw()
 
     ## plot lifetime
     #timePlotTitles = tuple( [ time.GetTitle() + title for title in (  ' - linear'
@@ -936,28 +895,27 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #        )
 
     # print canvas to file
-    #timeAnglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
-    #timeAnglesCanv.Print(plotsFile + '(')
+    timeAnglesCanv.Print( plotsFile + ( '(' if deltaSCanv or pdfConfig['makePlots'] else '' ) )
     #timeCanv.Print(plotsFile)
     #timeCanv1.Print(plotsFile)
-    #if pdfConfig['makePlots'] :
-    #    anglesCanv.Print(plotsFile)
-    #    if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
-    #        pdfBuild['massCanvSig'].Print(plotsFile)
-    #        pdfBuild['massCanvLeft'].Print(plotsFile)
-    #        pdfBuild['massCanvRight'].Print(plotsFile)
-    #    else :
-    #        pdfBuild['massCanv'].Print(plotsFile)
-    #    pdfBuild['mumuMassCanv'].Print(plotsFile)
-    #    pdfBuild['KKMassCanv'].Print(plotsFile)
-    #    bkgTimeCanv.Print(plotsFile)
-    #    pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
-    #    pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-    #    pdfBuild['estWTagCanvOS'].Print(plotsFile)
-    #    pdfBuild['estWTagCanvSS'].Print( plotsFile + ( '' if deltaSCanv else ')' ) )
+    if pdfConfig['makePlots'] :
+        #anglesCanv.Print(plotsFile)
+        if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
+            pdfBuild['massCanvSig'].Print(plotsFile)
+            pdfBuild['massCanvLeft'].Print(plotsFile)
+            pdfBuild['massCanvRight'].Print(plotsFile)
+        else :
+            pdfBuild['massCanv'].Print(plotsFile)
+        pdfBuild['mumuMassCanv'].Print(plotsFile)
+        pdfBuild['KKMassCanv'].Print(plotsFile)
+        bkgTimeCanv.Print(plotsFile)
+        pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
+        pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
+        pdfBuild['estWTagCanvOS'].Print(plotsFile)
+        pdfBuild['estWTagCanvSS'].Print( plotsFile + ( '' if deltaSCanv else ')' ) )
 
     #else :
-    #    anglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
+        #anglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
 
 elif pdfConfig['makePlots'] :
     if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
@@ -975,6 +933,8 @@ elif pdfConfig['makePlots'] :
     pdfBuild['estWTagCanvSS'].Print(plotsFile + ( '' if deltaSCanv else ')' ) )
 
 if deltaSCanv :
+    gStyle.SetEndErrorSize(4)
+    deltaSCanv.Update()
     deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
 
 

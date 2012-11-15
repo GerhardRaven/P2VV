@@ -296,7 +296,7 @@ if fitDataCoefs :
 
 if makePlots :
     # import ROOT plot style
-    from P2VVLoad import ROOTStyle
+    from P2VVLoad import LHCbStyle
 
     # create canvas
     from ROOT import TCanvas
