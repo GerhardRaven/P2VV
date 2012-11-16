@@ -30,6 +30,9 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
     if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
     cuts = kwargs.pop( 'cuts', '' )
 
+    if observables :
+        print 'P2VV - INFO: readData: reading data for observables [ %s ]' % ', '.join( obs.GetName() for obs in observables )
+
     if NTuple :
       from ROOT import RooDataSet, TChain
       assert observables != None, 'P2VV - ERROR: readData: set of observables is required for reading an n-tuple'
@@ -242,8 +245,8 @@ _P2VVPlotStash = []
 
 # plotting function
 def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None, xTitle = '', yTitle = '', xTitleOffset = None
-           , yTitleOffset = None, yScale = ( None, None ), frameOpts = { }, dataOpts = { }, pdfOpts = { }, addPDFsOpts = [ { } ]
-           , plotResidHist = False, logy = False, logx = False, normalize = True, symmetrize = True, usebar = True
+           , yTitleOffset = None, yScale = ( None, None ), yScaleRel = ( None, None ), frameOpts = { }, dataOpts = { }, pdfOpts = { }
+           , addPDFsOpts = [ { } ], plotResidHist = False, logy = False, logx = False, normalize = True, symmetrize = True, usebar = True
         ) :
     """makes a P2VV plot
 
@@ -347,8 +350,10 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     #nbins = obsFrame.GetNbinsX()
 
     # set y scale
-    if yScale[0] : obsFrame.SetMinimum(yScale[0])
-    if yScale[1] : obsFrame.SetMaximum(yScale[1])
+    if yScale[0]    : obsFrame.SetMinimum(yScale[0])
+    if yScale[1]    : obsFrame.SetMaximum(yScale[1])
+    if yScaleRel[0] : obsFrame.SetMinimum( yScaleRel[0] * obsFrame.GetMinimum() )
+    if yScaleRel[1] : obsFrame.SetMaximum( yScaleRel[1] * obsFrame.GetMaximum() )
 
     # set axis titles
     if xTitle : xAxis.SetTitle(xTitle)
