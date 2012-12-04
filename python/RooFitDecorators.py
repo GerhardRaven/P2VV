@@ -10,19 +10,19 @@ def __wrap_kw_subs( fun ) :
     __tbl  = lambda k : getattr(RooFit, k)
     # TODO: anything relying on _target_ or _var should move to RooFitWrappers...
     __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
-    def __disp(k, v):
-        if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) \
-           or str(type(v)).find('.Category') != -1:
-            return __tbl(k)( __dref(v)  )
-        elif type(v) != type(None):
+    def __disp(k, v) :
+        if type(v) == type(None) :
+            return __tbl(k)()
+        elif any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) or str(type(v)).find('.Category') != -1 :
+            return __tbl(k)( __dref(v) )
+        else :
             return __tbl(k)(*v)
-        else:
-            __tbl(k)()
 
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
         args += tuple( RooCmdArg( __disp('Slice',  s) ) for s in kwargs.pop('Slices',  []) )
+        args += tuple( RooCmdArg( __disp('Cut',    s) ) for s in kwargs.pop('Cuts',    []) )
         if 'Imports' in kwargs :
             assert 'Index' in kwargs, 'RooFit keyword wrapper: "Imports" argument found without "Index"'
             args += ( RooCmdArg( __disp( 'Index', kwargs.pop('Index') ) ), )  # note order: "Index" before "Import"
