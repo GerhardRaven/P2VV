@@ -2,7 +2,7 @@
 ## P2VVGeneralUtils: General P2VV utilities                                                                                              ##
 ##                                                                                                                                       ##
 ## authors:                                                                                                                              ##
-##   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl                                                                       ##
+##   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl                                                                      ##
 ##   JvL, Jeroen van Leerdam, Nikhef,      j.van.leerdam@nikhef.nl                                                                       ##
 ##                                                                                                                                       ##
 ###########################################################################################################################################
@@ -226,54 +226,287 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
     dataSet.addColumn(phiTr)
 
 
-
-
 def getCPprojectionOFpdf(pdf, cpComponent):
-    #cpComponent: EVEN, ODD, SWAVE
-    #Get the amplitudes
+    #Create paramters dictionary and a set for the original paramters.
     parsDict = dict( (par.GetName(),par ) for par in pdf.Parameters()  )
-    originalSet = set([pdf.ws().function("AparMag2"), parsDict['AperpMag2'], parsDict['A0Mag2'], parsDict['f_S']])
+    originalSet = set([pdf.ws().function("AparMag2"), parsDict['AperpMag2'], parsDict['A0Mag2']])
 
+    #Check if KK mass binning feature is active
+    from RooFitWrappers import SimultaneousPdf
+    if isinstance( pdf, SimultaneousPdf ): # if it is, put the individual f_s s in to the original set 
+        f_sSet = set([ parsDict['f_S_bin{0}'.format(bin)] for bin in xrange(pdf.indexCat().numTypes()) ])
+    else: f_sSet = set([parsDict['f_S']])
+
+    #All the parameters to be replaced, are in this set
+    originalSet.update(f_sSet)
+    
+    #Dictinary with the values  of the parameters to be replaced
+    replacementDict = {}
     if (cpComponent == "EVEN"):
-        A0Mag2 = parsDict['A0Mag2'].getVal()
-        AperpMag2 = 0
-        AparMag2 = 1 - A0Mag2 - parsDict['AperpMag2'].getVal()
-        f_S = 0 
+        replacementDict.update(dict(A0Mag2    = parsDict['A0Mag2'].getVal(),
+                                   AperpMag2 =            0               ,
+                                   AparMag2  = 1 - parsDict['A0Mag2'].getVal() - parsDict['AperpMag2'].getVal()
+                                   ))
+        replacementDict.update(dict( (f_S_i.GetName(), 0 ) for f_S_i in f_sSet)  )
+        
     if (cpComponent == "ODD"):
-        A0Mag2 = 0
-        AperpMag2 = parsDict['AperpMag2'].getVal()
-        AparMag2 = 0
-        f_S = parsDict['f_S'].getVal()
+        replacementDict.update(dict(A0Mag2    =                  0             ,
+                                   AperpMag2 = parsDict['AperpMag2'].getVal() ,
+                                   AparMag2  =                  0              
+                                   ))
+        replacementDict.update(dict( (f_S_i.GetName(), 0 ) for f_S_i in f_sSet)  )
+        
     if (cpComponent == "SWAVE"):
-        A0Mag2 = 0
-        AperpMag2 = 0
-        AparMag2 = 0
-        f_S = parsDict['f_S'].getVal()
-
-    #Create replacement ConstVars 
+        replacementDict.update(dict(A0Mag2    = 0 ,
+                                   AperpMag2 = 0 ,
+                                   AparMag2  = 0              
+                                   ))
+        replacementDict.update(dict( (f_S_i.GetName(), f_S_i.getVal() ) for f_S_i in f_sSet)  )
+        
+    #Create and return a clone pdf of the original one, with all the arguements in originalSet replaced by the ones in replacementSet
     from RooFitWrappers import ConstVar, CustomizePdf
-    repl_AparMag2  = ConstVar(Name = "AparMag2" + cpComponent , Value = AparMag2  )
-    repl_AperpMag2 = ConstVar(Name = "AperpMag2"+ cpComponent , Value = AperpMag2 )
-    repl_A0Mag2    = ConstVar(Name = "A0Mag2"   + cpComponent , Value = A0Mag2    )
-    repl_f_S       = ConstVar(Name = "f_S"      + cpComponent , Value =    f_S    )
-    replacementSet = set([ repl_AparMag2,repl_AperpMag2, repl_A0Mag2, repl_f_S])
-
+    replacementSet = set([ConstVar(Name = key  + cpComponent, Value = val) for key, val in replacementDict.iteritems()])
     CPcompPDF = CustomizePdf( pdf, origSet = originalSet, replSet = replacementSet, replString =  cpComponent )
 
     return CPcompPDF
 
 
+def getPdfCompntsInKKmassBins(pdf):
+    print 'P2VV - INFO: Constructing CP-even, CP-odd and Swave Pdfs '
+    #Get CP Componetns of the pdf using 
+    pdfEven  = getCPprojectionOFpdf(pdf, "EVEN")
+    pdfOdd   = getCPprojectionOFpdf(pdf, "ODD")
+    pdfSwave = getCPprojectionOFpdf(pdf, "SWAVE")
+    completePdfs = dict(total = pdf, even = pdfEven, odd = pdfOdd, swave = pdfSwave)
 
-def getNormFracs(pdfDict):
+    #Split the Cp Components further into individual KK mass copmponents
+    nKKBins = pdf.indexCat().numTypes()
+    tPdfs = dict( ('bin{0}'.format(bin), pdf.getPdf('bin{0}'.format(bin))) for bin in xrange(nKKBins) )
+    ePdfs = dict( ('bin{0}'.format(bin), pdfEven.getPdf('bin{0}'.format(bin))) for bin in xrange(nKKBins) )
+    oPdfs = dict( ('bin{0}'.format(bin), pdfOdd.getPdf('bin{0}'.format(bin))) for bin in xrange(nKKBins) )
+    sPdfs = dict( ('bin{0}'.format(bin), pdfSwave.getPdf('bin{0}'.format(bin))) for bin in xrange(nKKBins) )
+
+    pdfsSuperDict = {}
+    for bin in xrange(nKKBins):
+        binComponentsDict = dict(total = tPdfs['bin{0}'.format(bin)],
+                             even  = ePdfs['bin{0}'.format(bin)],
+                             odd   = oPdfs['bin{0}'.format(bin)],
+                             swave = sPdfs['bin{0}'.format(bin)] )
+        pdfsSuperDict.update(  {'bin{0}'.format(bin): binComponentsDict} )
+    pdfsSuperDict.update({'complete' : completePdfs})
+
+    return pdfsSuperDict
+
+
+
+
+
+def getCPnormFracs(pdfDict, KKbinsFlag = False, observables = None, data = None, projVars = 0):
+    #Internal function of the CP comps fractions calculations
     from ROOT import RooArgSet
-    observables = RooArgSet(obs._target_() for obs in (pdfDict['total'].Observables() - pdfDict['total'].ConditionalObservables()) )
+    if not KKbinsFlag:
+        observables = RooArgSet(obs._target_() for obs in (pdfDict['total'].Observables() - pdfDict['total'].ConditionalObservables()) )
+        totalIntegral = pdfDict['total'].getNorm(observables)
+        f_even  = pdfDict['even'].getNorm(observables) / totalIntegral
+        f_odd   = pdfDict['odd'].getNorm(observables)  / totalIntegral
+        f_swave = pdfDict['swave'].getNorm(observables)/ totalIntegral
+    if KKbinsFlag:
+        assert observables, 'P2VVGeneralUtils.py::getCPnormFracs - ERROR: Must provide Observables set'
+        assert data, 'P2VVGeneralUtils.py::getCPnormFracs - ERROR: Must provide data to project out conditional observables'
 
-    totalIntegral = pdfDict['total'].getNorm(observables)
-    f_even  = pdfDict['Even'].getNorm(observables) / totalIntegral
-    f_odd   = pdfDict['Odd'].getNorm(observables)  / totalIntegral
-    f_swave = pdfDict['Swave'].getNorm(observables)/ totalIntegral
+
+
+
+        #_____Naive method (no bining, no projWData)__________________________________________________
+        #TO DO try with create integrall as well
+        totalIntegral = pdfDict['total'].getNorm(observables)
+        f_even  = pdfDict['even'].getNorm(observables) / totalIntegral
+        f_odd   = pdfDict['odd'].getNorm(observables)  / totalIntegral
+        f_swave = pdfDict['swave'].getNorm(observables)/ totalIntegral
+        #_____________________________________________________________________________________________
+
+
+
+
+#Loop over all events solution______________________________________________________
+##         sumTotInt = 0
+##         sumEvenInt = 0
+##         sumOddInt = 0
+##         sumSwaveInt = 0
+
+##         from ROOT import RooCategory
+##         for event in xrange(data.numEntries()):
+##             for var in projVars:
+##                 if isinstance( var, RooCategory):
+##                     val = data.get(event).find(var.GetName()).getIndex()
+##                     var.setIndex(val)
+##                 else:
+##                     val = data.get(event).find(var.GetName()).getVal()
+##                     var.setVal(val)
+##             weight = data.get(event).find('weightVar').getVal()
+##             sumTotInt   += weight * pdfDict['total'].createIntegral(observables).getVal()
+##             sumEvenInt  += weight * pdfDict['even'].createIntegral(observables).getVal()
+##             sumOddInt   += weight * pdfDict['odd'].createIntegral(observables).getVal()
+##             sumSwaveInt += weight * pdfDict['swave'].createIntegral(observables).getVal()
+
+
+##             f_even  = sumEvenInt / sumTotInt
+##             f_odd   = sumOddInt / sumTotInt
+##             f_swave = sumSwaveInt / sumTotInt
+##         print f_even
+##         print f_odd
+##         print f_swave
+        
+#_____________________________________________________
+        
+
+
+
+#_____RooDatWeightedAverage  method (Under Debuging)__________________________________________
+
+##         from ROOT import RooFormulaVar, RooArgSet, RooDataWeightedAverage, RooArgList
+##         totalInt = pdfDict['total'].createIntegral(observables)
+##         evenInt  = pdfDict['even'].createIntegral(observables)
+##         f_evenCond = RooFormulaVar('f_evenCond','f_evenCond', '@0/@1', RooArgList(evenInt,totalInt) )
+##         f_even = RooDataWeightedAverage('f_even','f_even',f_evenCond, data, projVars, nCPU = Ncpu, showProgress = True   )
+#_______________________________________________________________________________________________
+    
+            
 
     return dict(even = f_even, odd = f_odd, swave = f_swave)
+
+
+
+
+def getAllCPnormFracs(pdfDict, data = None, BinData = False ):
+    #Function that calculates the CP comps fractions of all KK mass bins
+    print 'P2VV - INFO: Calculating relative normaliation fractions of the CP components.'
+    tPdf = pdfDict['complete']['total']
+    ePdf = pdfDict['complete']['even']
+    oPdf = pdfDict['complete']['odd']
+    sPdf = pdfDict['complete']['swave']
+
+    from ROOT import RooArgSet
+    obs = RooArgSet(obs._target_() for obs in (tPdf.Observables() - tPdf.ConditionalObservables()) )
+    #obs = RooArgSet(obs._target_() for obs in tPdf.Observables() )
+    #TODO: Replace this with an ArgSet and make more compact, put it as it is in next lines
+    condObs = RooArgSet(obs._target_() for obs in tPdf.ConditionalObservables() )
+
+    KKmassBins = tPdf.indexCat().numTypes()
+    binNames = list('bin{0}'.format(bin) for bin in xrange(KKmassBins) )
+    fracs = dict((binName ,getCPnormFracs(  dict(total = tPdf.getPdf(binName),
+                                                 even  = ePdf.getPdf(binName),
+                                                 odd   = oPdf.getPdf(binName),
+                                                 swave = sPdf.getPdf(binName)
+                                                 ), KKbinsFlag = True, observables = obs
+                                                  , data = data.reduce('KKMassCat==KKMassCat::'+binName)
+                                                  , projVars = condObs
+                                            )
+                  )for binName in binNames
+                 )
+    print 'P2VV - INFO: Finished calculating relative normaliation fractions of the CP components.'
+
+    return fracs
+
+
+
+def getSimulPdfSlicesNormFrac(pdf, data ):
+    tab = data.table(pdf.indexCat())
+    tot = float(data.sumEntries()) if data.isWeighted() \
+                   else float(data.numEntries())
+    nBins = pdf.indexCat().numTypes()
+    bins = ['bin{0}'.format(i) for i in xrange(nBins) ]
+
+    return dict( (bin, tab.get(bin) / tot) for bin in bins )
+
+
+
+
+
+
+
+
+
+
+
+
+
+def getCondObsPlotsInKKbins(pdf, data, canv):
+
+    from ROOT import TCanvas, gPad, TH1F
+    from RooFitWrappers import Category
+    import RooFitDecorators
+    
+    condObs = pdf.ConditionalObservables()
+    nPads = len(condObs)
+    nBins =  pdf.indexCat().numTypes()
+ 
+    #canv = TCanvas('CondObsCanvInKKbins')
+    if (nPads & 1 == 0): canv.Divide(nPads/2, 2)
+    else: canv.Divide((nPads+1)/2, 2)
+    pad = 1
+    #Dictionary with all the histogrms, the form is:  { observable, {'bin_i',hist}  } 
+    Histos = dict( (obs.GetName(), dict( ('bin{0}'.format(bin), TH1F() ) for bin in xrange(nBins)  ) )  for obs in condObs )    
+    
+    t = data.buildTree()
+    entries = t.GetEntries()
+
+    for obs in condObs:
+        canv.cd(pad)        
+        obsName = obs.GetName() 
+        for KKbin in xrange(nBins):
+            binName = 'bin{0}'.format(KKbin)           
+            sImpose = 'same' if not KKbin == 0 else ''
+            if isinstance(obs, Category): #Is CondObs discreate?  (It makes difference in the way Categories are listed in the TTree)
+                if (obsName=='iTagOS' or 'iTagSS'):Histos[obsName][binName].SetBins(3,-1,2)
+                else: Histos[obsName][binName].SetBins(2,0,2)
+                Histos[obsName][binName].SetDefaultSumw2(True)
+                Histos[obsName][binName].SetName(obs.GetName() + 'bin{0}'.format(KKbin))
+                Histos[obsName][binName].SetLineColor(KKbin + 1)
+                Histos[obsName][binName].SetLineWidth(1)
+                Histos[obsName][binName].SetAxisRange(0, 350,'Y')
+                Histos[obsName][binName].SetXTitle(obsName)
+
+                for event in xrange(entries):
+                    t.GetEntry(event)
+                    whichKKbin = t.__getattr__('KKMassCat_idx')
+                    if (whichKKbin == KKbin ):
+                        Histos[obsName][binName].Fill( t.__getattr__(obsName+'_idx'), t.__getattr__('weightVar') )                 
+            else:
+                if (obsName=='sigmat'): Histos[obs.GetName()][binName].SetBins(15,0,0.12)
+                else:                   Histos[obsName][binName].SetBins(15,0.05,0.55)
+                Histos[obsName][binName].SetDefaultSumw2(True)
+                Histos[obsName][binName].SetName(obs.GetName() + 'bin{0}'.format(KKbin))
+                Histos[obsName][binName].SetLineColor(KKbin + 1)
+                Histos[obsName][binName].SetLineWidth(1)
+                Histos[obsName][binName].SetAxisRange(.01, 1e3,'Y')
+                Histos[obsName][binName].SetXTitle(obsName)
+                
+                for event in xrange(entries):
+                    t.GetEntry(event)
+                    whichKKbin = t.__getattr__('KKMassCat_idx')
+                    if (whichKKbin == KKbin ):
+                        Histos[obsName][binName].Fill( t.__getattr__(obsName), t.__getattr__('weightVar') )
+
+
+            int1 = Histos[obsName][binName].GetSumOfWeights()
+            if     KKbin==0 : int0 = Histos[obsName]['bin0'].GetSumOfWeights()
+            if not KKbin==0 : Histos[obsName][binName].Scale(int0 / int1)
+
+            Histos[obsName][binName].Draw(sImpose)
+            
+        if not isinstance(obs, Category): gPad.SetLogy()
+        pad += 1
+        #assert(False)
+    #return  Histos
+    if obsName=='iTagSS': assert(False)
+
+
+    
+    return canv
+    
+
+
 
 
 
@@ -314,7 +547,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
 
     # plot data
     if data :
-        rooPlot = data.plotOn( obsFrame, Name = 'data', **dataOpts )
+        rooPlot = data.plotOn( obsFrame, Name = 'data', **dataOpts )      
         # Set negative bins to 0 if logy is requested
         minimum = 0.
         if logy:
