@@ -43,7 +43,7 @@ ws.pdf('gPDF_blind').plotOn(xFrame_blind)
 print '-------------'
 print 'drawing plots'
 print '-------------'
-from P2VVLoad import ROOTStyle
+from P2VVLoad import LHCbStyle
 canv = TCanvas('canv', '')
 canv.Divide(2, 2)
 

@@ -1,4 +1,4 @@
-from P2VVLoad import P2VVLibrary, ROOTStyle
+from P2VVLoad import P2VVLibrary, LHCbStyle
 from RooFitWrappers import RooObject
 from ROOT import TCanvas
 canv = TCanvas( 'effCanv', 'Angular Efficiency' )

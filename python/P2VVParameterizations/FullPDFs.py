@@ -190,7 +190,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['multiplyByTagPdf']     = False
         self['multiplyByTimeEff']    = ''                  # '' / 'all' / 'signal'
         self['timeEffType']          = 'HLT1Unbiased'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basisSig3' / 'basisSig6'
+        self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basis0123' / 'basisSig3' / 'basisSig6'
         self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
         self['SWeightsType']         = ''                  # '' / 'simultaneous' / 'simultaneousFixed' / 'simultaneousFreeBkg'
@@ -370,7 +370,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if makePlots :
             # import plotting tools
-            from P2VVLoad import ROOTStyle
             from P2VVGeneralUtils import plot
             from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
 
@@ -1061,8 +1060,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :
             from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
             self._timeResModel = TimeResolution(  time          = time
-                                                , timeResMu     = dict( Value = 0.,   Constant = True )
-                                                , timeResSigma  = dict( Value = 0.45, Constant = True )
+                                                , timeResMu     = dict( Value = 0.,    Constant = True )
+                                                , timeResSigma  = dict( Value = 0.045, Constant = True )
                                                 , PerEventError = False
                                                 , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]
                                                )
@@ -1341,6 +1340,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             moments = RealMomentsBuilder()
             if multiplyByAngEff == 'basis012' :
                 angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            elif multiplyByAngEff == 'basis0123' :
+                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4)\
                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
             elif multiplyByAngEff == 'basisSig3' :
                 angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if nominalPdf or not transAngles\

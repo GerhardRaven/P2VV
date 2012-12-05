@@ -255,7 +255,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    }
 
    const char* cacheParamsStr = getStringAttribute("CACHEPARAMINT") ;
-   if (!strlen(cacheParamsStr)) cacheParamsStr=0;
+   if (cacheParamsStr && !strlen(cacheParamsStr)) cacheParamsStr=0;
 
    vector<HistEntry*> entries;
    vector<RooResolutionModel*> models;
@@ -270,12 +270,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
       entries.push_back(entry);
    }
 
-   TString newName(GetName());
-   newName.Append("_conv_") ;
-   newName.Append(inBasis->GetName()) ;
-   newName.Append("_[") ;
-   newName.Append(owner->GetName()) ;
-   newName.Append("]") ;
+   TString newName = TString::Format("%s_conv_%s_[%s]", GetName(),inBasis->GetName(), owner->GetName());
 
    RooMultiEffResModel *effConv = new RooMultiEffResModel(newName, GetTitle(), entries);
    for (vector<RooResolutionModel*>::iterator it = models.begin(), end = models.end();
