@@ -1,5 +1,6 @@
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
+from P2VVLoad import LHCbStyle
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -10,7 +11,7 @@ w = obj.ws()
 
 from math import pi
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
-m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
+m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
                          , 'rightsideband' : ( 5410, None ) 
@@ -38,7 +39,7 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 # Time resolution model
 ## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-##                           BiasScaleFactor = False, Cache = True,
+##                           BiasScaleFactor = False, Cache = False,
 ##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
 ##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
@@ -48,8 +49,8 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 ##                           Fractions = [(3, 0.1), (2, 0.2)])
 
 from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
-                          ScaleFactors = [(2, 4), (1, 1.3)],
+sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = True,
+                          ScaleFactors = [(2, 2.3), (1, 1.2)],
                           Fractions = [(2, 0.2)])
 
 # Signal time pdf
@@ -91,28 +92,28 @@ psi_t = psi_t.pdf()
 
 
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.model()
-                         , bkg_t_fml    = dict(Name = 'bkg_t_fml',    Value = 0.4 )
-                         , bkg_t_ll_tau = dict(Name = 'bkg_t_ll_tau', Value = 1.29, MinMax = (0.01, 2.5))
+                         , bkg_t_fml    = dict(Name = 'bkg_t_fml',    Value = 0.76 )
+                         , bkg_t_ll_tau = dict(Name = 'bkg_t_ll_tau', Value = 1., MinMax = (0.01, 2.5))
                          , bkg_t_ml_tau = dict(Name = 'bkg_t_ml_tau', Value = 0.1,  MinMax = (0.01, 0.5))
                          )
 bkg_t = bkg_t.pdf()
 
 signal = Component('signal', (sig_m, psi_m.pdf(), sig_t), Yield = (200000, 500, 500000))
-psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (3125,100,500000) )
+psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (4000,100,500000) )
 
 background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield = (19620,100,500000) )
 
 # Prompt component
 from P2VVParameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
-psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (21582, 100, 500000))
+psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
                    
 # Wrong PV components
 from P2VVParameterizations.WrongPV import ShapeBuilder
 wpv = ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi',
                    Draw = True, sigmat = st)
 wpv_psi = wpv.shape('jpsi')
-psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (888, 50, 30000))
+psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
 
 ## wpv = ShapeBuilder(t, {'B' : m}, UseKeysPdf = True, Weights = 'B',
 ##                    Draw = True, sigmat = st)
@@ -129,11 +130,11 @@ input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
 ## Signal MC
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 
-
 data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)',
                 NTuple = False, observables = observables)
+##data = data.reduce(EventRange = (0, 200000))
 
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1)
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
 mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
 mass_pdf.fitTo(data, **fitOpts)
 
@@ -201,3 +202,6 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
                           , 'wpv_*'    : dict( LineColor = kGreen,  LineStyle = kDashed )
                           }
          )
+
+import Dilution
+Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background, psi_wpv])

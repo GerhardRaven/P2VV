@@ -1,8 +1,9 @@
 from array import array
+from math import exp
 
 # Calculate dilution
 __keep = []
-def dilution(t_diff, data, result = None, signal = [], subtract = [], raw = False):
+def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract = [], raw = False):
 
     assert(t_diff.getMin() < 0)
 
@@ -25,14 +26,28 @@ def dilution(t_diff, data, result = None, signal = [], subtract = [], raw = Fals
     from ROOT import TH1D
     data_histo = TH1D('data_histo', 'data_histo', len(dilution_bounds) - 1, dilution_bounds)
     time_var = data.get().find(t_diff.GetName())
+    if sigmat:
+        res_var = data.get().find(sigmat.GetName())
+    else:
+        res_var = None
+
+    dms = -17.7 ** 2 / 2
+    
     weighted = data.isWeighted()
     for i in range(data.numEntries()):
         r = data.get(i)
         value = time_var.getVal()
+        ## External weight
         if weighted:
-            r = data_histo.Fill(value, data.weight())
+            w = data.weight()
         else:
-            r = data_histo.Fill(value)
+            w = 1.
+
+        ## Weight using sigmat
+        if res_var:
+            w *= exp(dms * res_var.getVal() ** 2)
+
+        r = data_histo.Fill(value, w)
 
     if raw:
         # Calculate the dilution using Wouter's macro
@@ -93,12 +108,14 @@ def dilution(t_diff, data, result = None, signal = [], subtract = [], raw = Fals
     from ROOT import TCanvas
     ft_canvas = TCanvas('ft_canvas', 'ft_canvas', 1000, 1000)
     ft_canvas.Divide(2, 2)
-    ft_canvas.SetLogy()
-    ft_canvas.cd(1)
+    pad = ft_canvas.cd(1)
+    pad.SetLogy()
     data_histo.Draw()
-    ft_canvas.cd(2)
+    pad = ft_canvas.cd(2)
+    pad.SetLogy()
     subtract_histo.Draw()
-    ft_canvas.cd(3)
+    pad = ft_canvas.cd(3)
+    pad.SetLogy()
     ft_histo.Draw()
 
     __keep.append(ft_canvas)

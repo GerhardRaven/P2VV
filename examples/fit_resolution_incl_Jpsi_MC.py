@@ -1,5 +1,6 @@
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
+from P2VVLoad import LHCbStyle
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -58,19 +59,18 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-##                           BiasScaleFactor = False, Cache = False,
-##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
-##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
+                          BiasScaleFactor = False, Cache = True,
+                          bias = dict(Value = -0.17, MinMax = (-1, 1)),
+                          sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
-from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+## from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = False,
 ##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
 ##                           Fractions = [(3, 0.1), (2, 0.2)])
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
-                          ScaleFactors = [(2, 4), (1, 1.)],
-                          Fractions = [(2, 0.2)])
+## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
+##                           ScaleFactors = [(2, 4), (1, 1.)], Fractions = [(2, 0.2)])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -208,4 +208,5 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
 from Dilution import dilution
 diff_pdf = wpv.diff_shape('jpsi')
 psi_wpv[t_diff] = diff_pdf
-dilution(t_diff, data, result = result, signal = [psi_background, psi_prompt], subtract = [psi_wpv])
+dilution(t_diff, data, sigmat = st, result = result,
+         signal = [psi_background, psi_prompt], subtract = [psi_wpv])

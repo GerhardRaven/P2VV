@@ -1015,7 +1015,11 @@ class SData( object ) :
             # create weighted data set
             dName = '%s_weighted_%s' % ( self._sData.GetName(), Component )
             from ROOT import RooDataSet
-            self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = ( wName, True ) )
+            from ROOTDecorators import ROOTversion
+            if ROOTversion[2] < 2:
+                self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = ( wName ) )
+            else:
+                self._data[Component] = RooDataSet( dName, dName, self._sData.get(), Import = self._sData, WeightVar = ( wName, True ) )
 
         return self._data[Component]
 

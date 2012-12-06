@@ -1,5 +1,6 @@
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
+from P2VVLoad import LHCbStyle
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -12,7 +13,7 @@ w = obj.ws()
 
 from math import pi
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
-m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
+m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
                          , 'rightsideband' : ( 5410, None ) 
@@ -25,7 +26,7 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 for i in [ st ] : i.setBins( 20 , 'cache' )
 
 # Categories needed for selecting events
-unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+unbiased = Category('triggerDecisionUnbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
 
 observables = [t, m, mpsi, st, unbiased, selected]
@@ -40,8 +41,8 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 
 # Time resolution model
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as TimeResolution
-sig_tres = TimeResolution(time = t, sigmat = st, timeResSFConstraint = True, Cache = False,
-                          timeResSF = dict( Name = 'timeResSF', Value = 1.46, MinMax = (0.1,5.), Constant = True))
+sig_tres = TimeResolution(time = t, timeResSigma = st, timeResSFConstraint = True, Cache = True,
+                          timeResSigmaSF = dict( Name = 'timeResSF', Value = 1.46, MinMax = (0.1,5.)))
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -100,19 +101,21 @@ psi_background = Component('psi_background', (bkg_m.pdf(), psi_m.pdf(), psi_t), 
 
 # Wrong PV components
 from P2VVParameterizations.WrongPV import ShapeBuilder
-wpv = ShapeBuilder(t, {'B' : m, 'jpsi' : mpsi}, KeysPdf = True, Weights = 'both',
+wpv = ShapeBuilder(t, {'B' : m, 'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'both',
                    Draw = True, sigmat = st)
 wpv_signal = wpv.shape('B')
 signal_wpv = Component('signal_wpv', (wpv_signal,), Yield = (888, 50, 30000))
+
+assert(False)
 
 # Read data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
-## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120821_MagDownMagUp.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)',
+## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiased == 1)',
                 NTuple = False, observables = observables)
 
 ## Build PDF
