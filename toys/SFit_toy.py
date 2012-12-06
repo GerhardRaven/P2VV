@@ -74,7 +74,6 @@ pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 100
 pdfConfig['constrainTagging']   = 'constraint'  # nominal: 'constraint'
 
-pdfConfig['eventTimeResolution']   = True  # nominal: True
 pdfConfig['numTimeResBins']        = 100
 pdfConfig['constrainTimeResScale'] = 'constraint'  # nominal: 'constraint'
 
@@ -166,11 +165,12 @@ KKMass     = pdfBuild['observables']['KKMass']
 estWTagOS  = pdfBuild['observables']['estWTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
 
+gen_observables = [time] + angles
 # Wrong PV shape
 from P2VVParameterizations.WrongPV import ShapeBuilder
 from RooFitWrappers import Component, Projection
-wpv = ShapeBuilder(time, {'B' : BMass}, KeysPdf = True, Weights = 'B',
-                   Draw = True, Time = [time, timeRes])
+wpv = ShapeBuilder(time, {'B' : BMass}, UseKeysPdf = True, Weights = 'B',
+                   Draw = True, sigmat = timeRes)
 wpv_signal = wpv.shape('B')
 
 if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
@@ -201,12 +201,12 @@ if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
 
 ## Read data to use protodata
 from P2VVGeneralUtils import readData
-protoData = pdfBuild['data']
+proto_data = pdfBuild['data']
 from ROOT import RooArgSet
 conditionals = RooArgSet()
 for c in pdf.ConditionalObservables():
     r = conditionals.add(c._target_())
-protoData = protoData.reduce(conditionals)
+proto_data = proto_data.reduce(conditionals)
 
 # read parameters from file
 pdfConfig.readParametersFromFile( filePath = parameterFile )
@@ -233,8 +233,9 @@ from RooFitWrappers import buildPdf
 genPdf = buildPdf(Components = [signal_wpv, signal], Observables = angles + [time], Name = 'genPdf')
 
 # run the toy
+genPdf.fixAddCoefNormalization(RooArgSet(*gen_observables))
 
 toy.set_fit_opts(**dict(Verbose = False))
-toy.run(Observables = angles + [time], Pdf = pdf, GenPdf = genPdf, ProtoData = protoData)
+toy.run(Observables = gen_observables, Pdf = pdf, GenPdf = genPdf, ProtoData = proto_data)
 
 toy.write_output()

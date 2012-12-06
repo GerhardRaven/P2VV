@@ -1,16 +1,8 @@
 from ROOT import (RooArgSet, RooArgList, RooDataSet,
                   RooWorkspace, RooFitResult, RooFit,
                   RooDataHist, RooLinkedList, RooCmdArg)
-from ROOT import gStyle,gROOT
 
-# this should move elsewhere...
 import ROOTDecorators
-gStyle.SetPalette(1)
-gROOT.SetStyle("Plain")
-
-# needed to get RooFit.Name, RooFit.Components.... kRed
-# how to get just the RooFit namespace ?
-#from ROOT import * 
 
 def __wrap_kw_subs( fun ) :
     from ROOT import RooFit, RooAbsCollection, TObject
@@ -18,23 +10,32 @@ def __wrap_kw_subs( fun ) :
     __tbl  = lambda k : getattr(RooFit, k)
     # TODO: anything relying on _target_ or _var should move to RooFitWrappers...
     __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
-    def __disp(k, v):
-        if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) \
-           or str(type(v)).find('.Category') != -1:
-            return __tbl(k)( __dref(v)  )
-        elif type(v) != type(None):
+    def __disp(k, v) :
+        if type(v) == type(None) :
+            return __tbl(k)()
+        elif any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) or str(type(v)).find('.Category') != -1 :
+            return __tbl(k)( __dref(v) )
+        else :
             return __tbl(k)(*v)
-        else:
-            __tbl(k)()
 
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
         args += tuple( RooCmdArg( __disp('Slice',  s) ) for s in kwargs.pop('Slices',  []) )
+        args += tuple( RooCmdArg( __disp('Cut',    s) ) for s in kwargs.pop('Cuts',    []) )
         if 'Imports' in kwargs :
             assert 'Index' in kwargs, 'RooFit keyword wrapper: "Imports" argument found without "Index"'
             args += ( RooCmdArg( __disp( 'Index', kwargs.pop('Index') ) ), )  # note order: "Index" before "Import"
             args += tuple( RooCmdArg( __disp('Import', i) ) for i in kwargs.pop('Imports') )
+
+        if 'Minos' in kwargs and hasattr( kwargs['Minos'], '__iter__' ) :
+            if kwargs['Minos'] :
+                from ROOT import RooArgSet
+                RooPars = RooArgSet()
+                for par in kwargs['Minos'] : RooPars.add( __dref(par) )
+                kwargs['Minos'] = RooPars
+            else :
+                kwargs.pop('Minos')
 
         # TODO: this 'if' block needs to move to RooFitWrappers...
         if 'ArgSet' in kwargs or 'ArgList' in kwargs:
@@ -127,9 +128,9 @@ def __createRooIterator( create_iterator ) :
             yield obj
     return __iter
 
-def __RooDataSetToTree( self, branchList = '', RooFitFormat = True ) :
+def __RooDataSetToTree( self, Name = '', Title = '', BranchList = '', RooFitFormat = True ) :
     from ROOT import RooDataSetToTree
-    return RooDataSetToTree( self, branchList, RooFitFormat )
+    return RooDataSetToTree( self, Name, Title, BranchList, RooFitFormat )
 RooDataSet.buildTree = __RooDataSetToTree
 
 # RooAbsCategory functions
@@ -375,6 +376,21 @@ def _RooFitResultParamsLatex(self,name,toys):
     string = '\\documentclass{article}\n'
     string += '\\begin{document}\n'
 
+    def __s(n, fmt = '%.3e'):
+        if type(n) == float:
+            n = fmt % n
+        if n.endswith('e+00'):
+            return n[:-4]
+        else:
+            return n
+
+    offset = 0
+    for i in self.floatParsFinal():
+        name = i.GetName().replace('_', '\_')
+        if len(name) > offset:
+            offset = len(name)
+    fmt = '{0:<' + str(offset) + '} & '
+        
     if toys:
         string += '\\begin{tabular}{|c|c|c|c|}\n'
         string += '\\hline\n'
@@ -383,10 +399,10 @@ def _RooFitResultParamsLatex(self,name,toys):
         string += '\\hline\n'
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
-            string += '%s & '% i.GetName().replace('_', '\_')
-            string += '%s $\pm$ %s & '%(round(i.getVal(),4),round(i.getError(),4))
-            string += '%s & '%round(j.getVal(),4)
-            string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),4))
+            string += fmt.format(i.GetName().replace('_', '\_'))
+            string += '%s $\pm$ %s & ' % (__s(i.getVal()),__s(i.getError()))
+            string += '%s & ' % __s(j.getVal())
+            string +=  '%s \\\\ \n' % __s((j.getVal() - i.getVal()) / i.getError())
     else:
         string += '\\begin{tabular}{|c|c|}\n'
         string += '\\hline\n'
@@ -395,8 +411,8 @@ def _RooFitResultParamsLatex(self,name,toys):
         string += '\\hline\n'
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
-            string += '%s & '% i.GetName().replace('_', '\_')
-            string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),4),round(i.getError(),4))
+            string += fmt.format(i.GetName().replace('_', '\_'))
+            string += '%s $\pm$ %s \\\\ \n' % (__s(i.getVal()), __s(i.getError()))
 
     string += '\\hline\n'
     string += '\\end{tabular}\n'
