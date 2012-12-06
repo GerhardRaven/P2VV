@@ -270,12 +270,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
       entries.push_back(entry);
    }
 
-   TString newName(GetName());
-   newName.Append("_conv_") ;
-   newName.Append(inBasis->GetName()) ;
-   newName.Append("_[") ;
-   newName.Append(owner->GetName()) ;
-   newName.Append("]") ;
+   TString newName = TString::Format("%s_conv_%s_[%s]", GetName(),inBasis->GetName(), owner->GetName());
 
    RooMultiEffResModel *effConv = new RooMultiEffResModel(newName, GetTitle(), entries);
    for (vector<RooResolutionModel*>::iterator it = models.begin(), end = models.end();

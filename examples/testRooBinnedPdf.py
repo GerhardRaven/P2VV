@@ -55,7 +55,7 @@ for i in range( cList.getSize() ) : print i, cList.at(i).getVal()
 
 # plot the step function, the PDF and PDF data
 from P2VVLoad import RooFitOutput
-from P2VVLoad import ROOTStyle
+from P2VVLoad import LHCbStyle
 
 from ROOT import TCanvas
 canv = TCanvas()

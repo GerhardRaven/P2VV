@@ -225,7 +225,7 @@ if doFit :
 #####################
 
 # import plotting tools
-from P2VVLoad import ROOTStyle
+from P2VVLoad import LHCbStyle
 from P2VVGeneralUtils import plot
 from ROOT import TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
 
