@@ -69,13 +69,6 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
    RooArgList effList;
    RooArgList intList;
 
-#if 0
-   const char *modcache = model.getStringAttribute("CACHEPARAMINT") ;
-   const char *parcache = parent.getStringAttribute("CACHEPARAMINT") ;
-   if (modcache&&strlen(modcache)) cout << "WARNING: please configure " << model.GetName() << ".parameterizeIntegral such that it is NOT cached -- right now it has " << (modcache?modcache:"<none>") << endl;
-   if (! (parcache&&strlen(parcache))) cout << "WARNING:  please configure " << parent.GetName() << ".parameterizeIntegral such that is is cached -- right now it has " << (parcache?parcache:"<none>") << endl;
-#endif
-
    const RooArgList& ranges = parent.getIntegralRanges(iset, RooNameReg::str(rangeName));
    RooFIter it = ranges.fwdIterator();
    while (RooStringVar* rangeVar = static_cast<RooStringVar*>(it.next())) {
@@ -167,18 +160,11 @@ RooEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
     return 0 ;
   }
 
-  TString newName(GetName()) ;
-  newName.Append("_conv_") ;
-  newName.Append(inBasis->GetName()) ;
-  newName.Append("_[") ;
-  newName.Append(owner->GetName()) ;
-  newName.Append("]") ;
 
   RooResolutionModel *conv = model().convolution(inBasis,owner);
 
-  TString newTitle(conv->GetTitle()) ;
-  newTitle.Append(" convoluted with basis function ") ;
-  newTitle.Append(inBasis->GetName()) ;
+  TString newName  = TString::Format("%s_conv_%s_[%s]", GetName(),inBasis->GetName(), owner->GetName());
+  TString newTitle = TString::Format("%s convoluted with basis function %s",conv->GetTitle(),inBasis->GetName()) ;
   conv->SetTitle(newTitle.Data()) ;
 
   RooAbsReal* eff = efficiency();
@@ -187,14 +173,7 @@ RooEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
   effConv->changeBasis(inBasis) ;
 
   const char* cacheParamsStr = getStringAttribute("CACHEPARAMINT") ;
-  if (cacheParamsStr && strlen(cacheParamsStr)) {
-    //cout << "prior has CACHEPARAMINT : " << cacheParamsStr << endl;
-    //const char* ecCacheParamsStr = effConv->getStringAttribute("CACHEPARAMINT");
-    //if (ecCacheParamsStr && strlen(ecCacheParamsStr)) cout << "bound version has CACHEPARAMINT : " << ecCacheParamsStr << endl;
-    effConv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
-    //cout << "2nd time: bound version has CACHEPARAMINT : " << effConv->getStringAttribute("CACHEPARAMINT")  << endl;
-    //cout << endl << endl << endl;
-  }
+  if (cacheParamsStr && strlen(cacheParamsStr)) effConv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
 
   return effConv ;
 }
