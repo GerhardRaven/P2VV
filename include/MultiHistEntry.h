@@ -6,6 +6,9 @@
 #include <iostream>
 
 #include <RooCategoryProxy.h>
+#include <RooRealProxy.h>
+
+#include <RooMultiEffResModel.h>
 
 /** @class MultiHistEntry MultiHistEntry.h
  *  
@@ -13,7 +16,7 @@
  *  @author Roel Aaij
  *  @date   2012-08-21
  */
-template <class EFFICIENCY, class PARENT> 
+
 class MultiHistEntry {
 public:
 
@@ -24,7 +27,7 @@ public:
    }
 
    MultiHistEntry(const std::map<RooAbsCategory*, std::string>& categories,
-                  EFFICIENCY* efficiency, RooAbsReal* relative)
+                  RooEffResModel* efficiency, RooAbsReal* relative)
       : m_rawCats(categories), m_rawEff(efficiency), m_rawRel(relative),
         m_efficiency(0), m_relative(0), m_index(0)
    {
@@ -52,7 +55,7 @@ public:
       }
    }
 
-   MultiHistEntry(const MultiHistEntry& other, PARENT* parent)
+   MultiHistEntry(const MultiHistEntry& other, RooMultiEffResModel* parent)
       : m_rawCats(other.m_rawCats), m_rawEff(other.m_rawEff), m_rawRel(other.m_rawRel),
         m_index(other.m_index)
    {
@@ -103,20 +106,20 @@ public:
    }
 
 
-   const EFFICIENCY* efficiency() const {
+   const RooEffResModel* efficiency() const {
       return const_cast<MultiHistEntry*>(this)->efficiency();
       // }
    }
 
-   EFFICIENCY* efficiency() {
+   RooEffResModel* efficiency() {
       if (m_efficiency) {
-         return dynamic_cast<EFFICIENCY*>(m_efficiency->absArg());
+         return dynamic_cast<RooEffResModel*>(m_efficiency->absArg());
       } else {
          return m_rawEff;
       }
    }
 
-   void setEfficiency(EFFICIENCY* eff) {
+   void setEfficiency(RooEffResModel* eff) {
       if (m_efficiency) {
          m_efficiency->setArg(*eff);
       } else {
@@ -140,10 +143,10 @@ public:
       return const_cast<MultiHistEntry*>(this)->relative();      
    }
 
-   void setParent(PARENT* parent)
+   void setParent(RooMultiEffResModel* parent)
    {
       std::string name;
-      if (m_efficiency) {
+      if (m_efficiency != 0) {
          RooRealProxy* temp = new RooRealProxy(m_efficiency->GetName(), parent, *m_efficiency);
          delete m_efficiency;
          m_efficiency = temp;
@@ -153,12 +156,12 @@ public:
       }
       m_rawEff = 0;
 
-      if (m_relative) {
+      if (m_relative != 0) {
          RooRealProxy* temp = new RooRealProxy(m_relative->GetName(), parent, *m_relative);
          delete m_relative;
          m_relative = temp;
       } else {
-         name = m_rawEff->GetName(); name += "_proxy";
+         name = m_rawRel->GetName(); name += "_proxy";
          m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawRel);
       }
       m_rawRel = 0;
@@ -283,7 +286,7 @@ private:
 
 
    std::map<RooAbsCategory*, std::string> m_rawCats;
-   EFFICIENCY* m_rawEff; //!
+   RooEffResModel* m_rawEff; //!
    RooAbsReal* m_rawRel; //!
 
    std::map<RooCategoryProxy*, std::string> m_categories;

@@ -15,22 +15,20 @@
 #include <RooRealProxy.h>
 #include <RooObjCacheManager.h>
 
-#include <MultiHistEntry.h>
 #include <RooEffResModel.h>
 #include <RooAbsEffResModel.h>
 
 class RooSuperCategory;
+class MultiHistEntry;
 
 class RooMultiEffResModel : public RooAbsEffResModel {
 public:
-
-   typedef MultiHistEntry<RooEffResModel, RooMultiEffResModel> HistEntry;
 
    // Constructors, assignment etc
    inline RooMultiEffResModel()  { }
 
    RooMultiEffResModel(const char *name, const char *title,
-                       std::vector<RooMultiEffResModel::HistEntry*> entries);
+                       std::vector<MultiHistEntry*> entries);
    RooMultiEffResModel(const RooMultiEffResModel& other, const char* name=0);
    virtual RooMultiEffResModel* clone(const char* newname) const { return new RooMultiEffResModel(*this,newname); }
    virtual ~RooMultiEffResModel();
@@ -52,7 +50,7 @@ public:
    virtual RooAbsReal* efficiency() const;
    virtual std::vector<RooAbsReal*> efficiencies() const;
 
-   const std::map<Int_t, RooMultiEffResModel::HistEntry*>& getEntries() const
+   const std::map<Int_t, MultiHistEntry*>& getEntries() const
    {
       return _entries;
    }
@@ -69,7 +67,7 @@ protected:
 
 private:
 
-   typedef std::map<Int_t, RooMultiEffResModel::HistEntry*> HistEntries;
+   typedef std::map<Int_t, MultiHistEntry*> HistEntries;
 
    // operator=
    RooMultiEffResModel* operator=(const RooMultiEffResModel& other);

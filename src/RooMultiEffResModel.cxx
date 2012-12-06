@@ -34,6 +34,7 @@ using std::make_pair;
 #include "RooSuperCategory.h"
 #include "RooRandom.h"
 
+#include "MultiHistEntry.h"
 #include "RooMultiEffResModel.h"
 #include "RooEffConvGenContext.h"
 
@@ -112,7 +113,7 @@ RooMultiEffResModel::CacheElem::CacheElem(const HistEntries& entries,
    for(HistEntries::const_iterator it = entries.begin(), end = entries.end();
        it != end; ++it) {
       Int_t index = it->first;
-      const HistEntry* entry = it->second;
+      const MultiHistEntry* entry = it->second;
       if (cats && iset.getSize() == categories.getSize()) {
          stringstream s;
          string name;
@@ -138,7 +139,7 @@ Double_t RooMultiEffResModel::CacheElem::getVal(const Int_t index) const
 
 //_____________________________________________________________________________
 RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
-                                         std::vector<HistEntry*> entries)
+                                         std::vector<MultiHistEntry*> entries)
    : RooAbsEffResModel(name,title, entries.front()->efficiency()->convVar()),
      _binboundaries(0),
      _prodGenCode(0),
@@ -147,9 +148,9 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
 {  
    RooArgSet observables;
    RooArgSet categories;
-   for(vector<HistEntry*>::const_iterator it = entries.begin(),
+   for(vector<MultiHistEntry*>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
-      HistEntry* entry = *it;
+      MultiHistEntry* entry = *it;
       if (observables.getSize() == 0) {
          observables.add(*(entry->efficiency()->observables()));
          categories.add(entry->categories());
@@ -164,7 +165,7 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
 
    // For the binnings, we just assume that they are "matched" by the user.
    unsigned int most = 0;
-   for(vector<HistEntry*>::const_iterator it = entries.begin(),
+   for(vector<MultiHistEntry*>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
       RooAbsReal* eff = (*it)->efficiency()->efficiency();
       auto_ptr<BinBoundaries> bounds(eff->binBoundaries(*x, x->getMin(), x->getMax()));
@@ -179,18 +180,19 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
    // Build entries.
    _super = makeSuper(GetName(), categories);
 
-   vector<HistEntry*> ownedEntries;
-   for(vector<HistEntry*>::const_iterator it = entries.begin(),
+   vector<MultiHistEntry*> ownedEntries;
+   for(vector<MultiHistEntry*>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
-      HistEntry* entry = new HistEntry(**it);
+      MultiHistEntry* entry = new MultiHistEntry(**it);
+      entry->print();
       entry->setParent(this);
       ownedEntries.push_back(entry);
    }
    TString current = _super->getLabel();
 
-   for(vector<HistEntry*>::const_iterator it = ownedEntries.begin(),
+   for(vector<MultiHistEntry*>::const_iterator it = ownedEntries.begin(),
           end = ownedEntries.end(); it != end; ++it) {
-      HistEntry* entry = *it;
+      MultiHistEntry* entry = *it;
       entry->select();
       Int_t index = _super->getIndex();
       pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
@@ -213,7 +215,7 @@ RooMultiEffResModel::RooMultiEffResModel(const RooMultiEffResModel& other, const
 
    for (HistEntries::const_iterator it = other._entries.begin(), end = other._entries.end();
         it != end; ++it) {
-      HistEntry* entry = new HistEntry(*(it->second), this);
+      MultiHistEntry* entry = new MultiHistEntry(*(it->second), this);
       _entries.insert(make_pair(it->first, entry));
    }
 }
@@ -257,7 +259,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    const char* cacheParamsStr = getStringAttribute("CACHEPARAMINT") ;
    if (!strlen(cacheParamsStr)) cacheParamsStr=0;
 
-   vector<HistEntry*> entries;
+   vector<MultiHistEntry*> entries;
    vector<RooResolutionModel*> models;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
@@ -265,7 +267,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
       if (cacheParamsStr) conv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
       models.push_back(conv);
 
-      HistEntry* entry = new HistEntry(*(it->second), const_cast<RooMultiEffResModel*>(this));
+      MultiHistEntry* entry = new MultiHistEntry(*(it->second), const_cast<RooMultiEffResModel*>(this));
       entry->setEfficiency(conv);
       entries.push_back(entry);
    }
@@ -284,7 +286,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    }
    effConv->changeBasis(inBasis) ;
 
-   for (vector<HistEntry*>::const_iterator it = entries.begin(),
+   for (vector<MultiHistEntry*>::const_iterator it = entries.begin(),
            end = entries.end(); it != end; ++it) {
       delete *it;
    }
