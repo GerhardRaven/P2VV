@@ -221,7 +221,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         self['constrainDeltaM'] = 'constrain'  # '' / 'constrain' / 'fixed'
 
-        self['lambdaCPParam'] = 'lambSqPhi'         # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay'
+        self['lambdaCPParam'] = 'lambSqPhi'         # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay' / 'lambPhiRel_CPVDecay'
 
         self['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                               , ( 'trcostheta', 'cos(#theta_{tr})' )
@@ -521,32 +521,45 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ###############
 
         self._dataSets = { }
+        ntupleCuts = ''
         if nTupleFile :
-            if dataSample == 'Summer2011' :
+            if dataSample and type(dataSample) == tuple :
+                if dataSample[0] and dataSample[1] : dataSampleCuts = 'runNumber > %d && runNumber < %d' % dataSample
+                elif dataSample[0]                 : dataSampleCuts = 'runNumber > %d' % dataSample[0]
+                elif dataSample[1]                 : dataSampleCuts = 'runNumber < %d' % dataSample[1]
+                else                               : dataSampleCuts = 'runNumber > 0'
+
+                if len(dataSample) > 2 and dataSample[2] : ntupleCuts += dataSample[2] + ' && '
+
+            elif dataSample == 'Summer2011' :
                 dataSampleCuts = 'runNumber > 87219 && runNumber < 94386'
+
+            elif dataSample and type(dataSample) == str :
+                dataSampleCuts = dataSample
+
             else :
                 dataSampleCuts = 'runNumber > 0'
             trackChi2Cuts = ' && '.join( '%s < %f' % ( trackChi2, trackChi2.getMax() ) for trackChi2 in\
                                                       [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ] )
 
             if selection == 'HLT1Unbiased' :
-                cuts = '%s && %s==1 && %s==1 && %s==1 && %s'\
+                ntupleCuts += '%s && %s==1 && %s==1 && %s==1 && %s'\
                        % ( dataSampleCuts, sel, hlt1UB, hlt2B, trackChi2Cuts )
             elif selection == 'HLT1ExclBiased' :
-                cuts = '%s && %s==1 && %s==1 && %s==1 && %s'\
+                ntupleCuts += '%s && %s==1 && %s==1 && %s==1 && %s'\
                        % ( dataSampleCuts, sel, hlt1ExclB, hlt2B, trackChi2Cuts )
             elif selection == 'paper2012' :
-                cuts = '%s && %s==1 && (%s==1 || %s==1) && %s==1 && %s'\
+                ntupleCuts += '%s && %s==1 && (%s==1 || %s==1) && %s==1 && %s'\
                        % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
             elif selection == 'timeEffFit' :
-                cuts = '%s && %s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s'\
+                ntupleCuts += '%s && %s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s'\
                        % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
             else :
                 raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown selection: "%s"' % selection )
 
             from P2VVGeneralUtils import readData
             self._dataSets['data'] = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
-                                              , Rename = 'JpsiphiData', ntupleCuts = cuts )
+                                              , Rename = 'JpsiphiData', ntupleCuts = ntupleCuts )
 
         else :
             self._dataSets['data'] = None
@@ -1079,13 +1092,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if blind: ImLambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsPlutoMoriond2012', 0.1 )
             self._lambdaCP = CPParam( ReLambdaCP = ReLambdaCPVar, ImLambdaCP = ImLambdaCPVar )
 
-        elif lambdaCPParam == 'lambPhi_CPVDecay' :
-            from P2VVParameterizations.CPVParams import LambdaAbsArg_CPVDecay_CPParam as CPParam
+        elif lambdaCPParam == 'lambPhiRel_CPVDecay' :
+            from P2VVParameterizations.CPVParams import LambdaAbsArgRel_CPVDecay_CPParam as CPParam
             phiCPVar = dict( Name = 'phiCP_m' )
             if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
             self._lambdaCP = CPParam( phiCP_m = phiCPVar, AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes )
-            if ambiguityPars :
-                self._lambdaCP['phiCP_m'].setVal( pi - self._lambdaCP['phiCP_m'].getVal() )
+            if ambiguityPars : self._lambdaCP['phiCP_m'].setVal( pi - self._lambdaCP['phiCP_m'].getVal() )
+
+        elif lambdaCPParam == 'lambPhi_CPVDecay' :
+            from P2VVParameterizations.CPVParams import LambdaAbsArg_CPVDecay_CPParam as CPParam
+            self._lambdaCP = CPParam( AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes )
+
+            #rhoCP = RealVar( 'rhoCP', Title = 'CPV in decay param. |rho|', Value = 1., Error = 0.04, MinMax = ( 0.,      5.      ) )
+            #phiCP = RealVar( 'phiCP', Title = 'CPV in decay param. phi',   Value = 0., Error = 0.1,  MinMax = ( -RooInf, +RooInf ) )
+            #self._lambdaCP = CPParam(  AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes
+            #                         , rhoCP_A0 = rhoCP, rhoCP_Apar = rhoCP, rhoCP_Aperp = rhoCP, rhoCP_AS = rhoCP
+            #                         , phiCP_A0 = phiCP, phiCP_Apar = phiCP, phiCP_Aperp = phiCP, phiCP_AS = phiCP
+            #                        )
 
         else :
             if lambdaCPParam == 'lambPhi' :
