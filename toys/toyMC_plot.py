@@ -100,6 +100,7 @@ def chunks(l, n):
         yield l[i:i+n]
 
 frames = {}
+results = {}
 for canvas, pvs in zip(canvases['pulls'], chunks(plot_vars, 9)):
     for i, pv in enumerate(pvs):
         canvas.cd(i + 1)
@@ -111,6 +112,7 @@ for canvas, pvs in zip(canvases['pulls'], chunks(plot_vars, 9)):
             pull_pdf.plotOn(frame)
             pull_pdf.paramOn(frame)
         frames[pv.GetName()] = frame
+        results[pv.GetName()] = r
         frame.Draw()
     canvas.Update()
  

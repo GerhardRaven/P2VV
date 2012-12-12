@@ -376,6 +376,21 @@ def _RooFitResultParamsLatex(self,name,toys):
     string = '\\documentclass{article}\n'
     string += '\\begin{document}\n'
 
+    def __s(n, fmt = '%.3e'):
+        if type(n) == float:
+            n = fmt % n
+        if n.endswith('e+00'):
+            return n[:-4]
+        else:
+            return n
+
+    offset = 0
+    for i in self.floatParsFinal():
+        name = i.GetName().replace('_', '\_')
+        if len(name) > offset:
+            offset = len(name)
+    fmt = '{0:<' + str(offset) + '} & '
+        
     if toys:
         string += '\\begin{tabular}{|c|c|c|c|}\n'
         string += '\\hline\n'
@@ -384,10 +399,10 @@ def _RooFitResultParamsLatex(self,name,toys):
         string += '\\hline\n'
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
-            string += '%s & '% i.GetName().replace('_', '\_')
-            string += '%s $\pm$ %s & '%(round(i.getVal(),4),round(i.getError(),4))
-            string += '%s & '%round(j.getVal(),4)
-            string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),4))
+            string += fmt.format(i.GetName().replace('_', '\_'))
+            string += '%s $\pm$ %s & ' % (__s(i.getVal()),__s(i.getError()))
+            string += '%s & ' % __s(j.getVal())
+            string +=  '%s \\\\ \n' % __s((j.getVal() - i.getVal()) / i.getError())
     else:
         string += '\\begin{tabular}{|c|c|}\n'
         string += '\\hline\n'
@@ -396,8 +411,8 @@ def _RooFitResultParamsLatex(self,name,toys):
         string += '\\hline\n'
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
-            string += '%s & '% i.GetName().replace('_', '\_')
-            string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),4),round(i.getError(),4))
+            string += fmt.format(i.GetName().replace('_', '\_'))
+            string += '%s $\pm$ %s \\\\ \n' % (__s(i.getVal()), __s(i.getError()))
 
     string += '\\hline\n'
     string += '\\end{tabular}\n'

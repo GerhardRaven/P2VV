@@ -7,27 +7,19 @@ location = os.path.realpath(os.curdir)
 atexit.register(os.chdir, location)
 
 # change directory to the git repository
-os.chdir('/stuff/PhD/p2vv/code')
+os.chdir('/bfys/raaij/p2vv/code')
 
 # Open bz2 file
-snapshot_file = open(os.path.join(location, 'snapshot.tar.bz2'), 'w')
+cmd = 'git archive --format=tar master | bzip2 > snapshot.tar.bz2'
+op = subprocess.Popen(cmd, shell = True)
 
-# Create subprocess and 
-cmd = ['bzip2']
-op = subprocess.Popen(cmd, stdin = subprocess.PIPE, stdout = snapshot_file)
-
-cmd = ['git', 'archive', '--format=tar', 'average_constraint:HEAD']
-# Run the lines script to get the available Hlt lines
-r = subprocess.call(cmd, stdout = op.stdin)
-
-# Read the git output and put it into the bz2 file
-
-# Check the result of the git command
-r = op.wait()
+r = op.poll()
+if r == None:
+    r = op.wait()
 
 if r:
     print "Error from git command %d" % r
-    print p.stderr.read()
+    print op.stderr.read()
     sys.exit(r)
 
 # Create the job
@@ -37,7 +29,7 @@ j.application.exe = 'python'
 
 # Create the right environment
 env = {}
-root_location = '/project/bfys/raaij/sw/root-5.34.00'
+root_location = '/project/bfys/raaij/sw/root-5.34-patches'
 env_vars = {'PATH' : 'bin',
             'PYTHONPATH' : 'lib',
             'LD_LIBRARY_PATH' : 'lib',
@@ -60,9 +52,10 @@ j.application.env = env
 
 # Add the inputsandbox
 j.inputsandbox = ['/project/bfys/raaij/p2vv/code/python/ToyMCUtils.py',
-                  '/project/bfys/raaij/p2vv/code/toys/fit_acceptance_toy.py',
+                  '/project/bfys/raaij/p2vv/code/toys/SFit_toy.py',
+                  '/project/bfys/raaij/p2vv/code/toys/CFit_unbiased.pars',
                   '/project/bfys/raaij/p2vv/code/lib/libP2VV.so',
-                  os.path.join(location, 'snapshot.tar.bz2')]
+                  '/project/bfys/raaij/p2vv/code/snapshot.tar.bz2']
 
 # Add the outputsandbox
 j.outputsandbox = ['*.root']
@@ -74,13 +67,13 @@ j.merger = CustomMerger(
     )
 
 # Add the splitter
-args = ['fit_acceptance_toy.py', '--ncpu=1', '-n',
-        '20', '-s', 'snapshot.tar.bz2']
+args = ['SFit_toy.py', '--ncpu=1', '-n',
+        '10', '--nevents=20000', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
-    values = [args for i in range(50)]
+    values = [args for i in range(100)]
     )
-j.name = 'acceptance_toys'
+j.name = 'SFit_toys'
 
 # backend
 j.backend = PBS(queue = 'stbcq')
