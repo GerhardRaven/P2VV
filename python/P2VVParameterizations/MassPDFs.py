@@ -107,6 +107,20 @@ class LP2011_Background_Mass ( MassPdf ) :
                                         , Parameters = (mass, getattr(self, '_%sm_bkg_exp' % self._prefix))))
 
 
+class Linear_Background_Mass ( MassPdf ) :
+    def __init__(self, mass, **kwargs ) :
+        self._prefix = kwargs.pop("Prefix", "")
+        self._parseArg( '%sm_bkg_arg' % self._prefix, kwargs, Title = 'Mass background slope',
+                        Unit = 'c^2/MeV', Value = -1.7e-4, Error = 2.e-6, MinMax = ( -1.8e-4, 0. ) )
+
+        from RooFitWrappers import GenericPdf
+        MassPdf.__init__(self, pdf = GenericPdf(  Name      = kwargs.pop('Name','Linear_Background_Mass')
+                                                , Arguments = [ mass, getattr(self, '_%sm_bkg_arg' % self._prefix) ]
+                                                , Formula   = '1+@1*@0'
+                                               )
+                        )
+
+
 class Signal_PsiMass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
         from ROOT import RooCBShape as CrystalBall
