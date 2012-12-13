@@ -433,12 +433,12 @@ class CPcomponentsPlotingToolkit():
 
 
     #Class interface
-    def getCPcompPdf(self):       return self._CpCompPdfs
-    def getNumKKbins(self):       return self._nKKbins
-    def getCPcompPdfKKbins(self): return self._pdfsSuperDict
-    def getKKbinNames(self):      return self._binNames
-    def getCpCompNames(self):     return self._comps
-    def getCPnormFracs(self):     return self._CPnormFracs
+    def getCPcompPdf(self):        return self._CpCompPdfs
+    def getNumKKbins(self):        return self._nKKbins
+    def getCPcompPdfKKbins(self):  return self._pdfsSuperDict
+    def getKKbinNames(self):       return self._binNames
+    def getCpCompNames(self):      return self._comps
+    def getCPnormFracs(self):      return self._CPnormFracs
     def getKKslicesNormFracs(self):return self._sliceNormFracs
     
     def getPdfOpts(self):
