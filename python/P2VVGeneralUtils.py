@@ -235,211 +235,10 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
     dataSet.addColumn(phiTr)
 
 
-def getCPprojectionOFpdf(pdf, cpComponent):
-    #Create paramters dictionary and a set for the original paramters.
-    parsDict = dict( (par.GetName(),par ) for par in pdf.Parameters()  )
-    originalSet = set([pdf.ws().function("AparMag2"), parsDict['AperpMag2'], parsDict['A0Mag2']])
-
-    #Check if KK mass binning feature is active
-    from RooFitWrappers import SimultaneousPdf
-    if isinstance( pdf, SimultaneousPdf ): # if it is, put the individual f_s s in to the original set 
-        f_sSet = set([ parsDict['f_S_bin{0}'.format(bin)] for bin in xrange(pdf.indexCat().numTypes()) ])
-    else: f_sSet = set([parsDict['f_S']])
-
-    #All the parameters to be replaced, are in this set
-    originalSet.update(f_sSet)
-    
-    #Dictinary with the values  of the parameters to be replaced
-    replacementDict = {}
-    if (cpComponent == "EVEN"):
-        replacementDict.update(dict(A0Mag2    = parsDict['A0Mag2'].getVal(),
-                                   AperpMag2 =            0               ,
-                                   AparMag2  = 1 - parsDict['A0Mag2'].getVal() - parsDict['AperpMag2'].getVal()
-                                   ))
-        replacementDict.update(dict( (f_S_i.GetName(), 0 ) for f_S_i in f_sSet)  )
-        
-    if (cpComponent == "ODD"):
-        replacementDict.update(dict(A0Mag2    =                  0             ,
-                                   AperpMag2 = parsDict['AperpMag2'].getVal() ,
-                                   AparMag2  =                  0              
-                                   ))
-        replacementDict.update(dict( (f_S_i.GetName(), 0 ) for f_S_i in f_sSet)  )
-        
-    if (cpComponent == "SWAVE"):
-        replacementDict.update(dict(A0Mag2    = 0 ,
-                                   AperpMag2 = 0 ,
-                                   AparMag2  = 0              
-                                   ))
-        replacementDict.update(dict( (f_S_i.GetName(), f_S_i.getVal() ) for f_S_i in f_sSet)  )
-        
-    #Create and return a clone pdf of the original one, with all the arguements in originalSet replaced by the ones in replacementSet
-    from RooFitWrappers import ConstVar, CustomizePdf
-    replacementSet = set([ConstVar(Name = key  + cpComponent, Value = val) for key, val in replacementDict.iteritems()])
-    CPcompPDF = CustomizePdf( pdf, origSet = originalSet, replSet = replacementSet, replString =  cpComponent )
-
-    return CPcompPDF
-
-
-def getPdfCompntsInKKmassBins(pdf):
-    print 'P2VV - INFO: Constructing CP-even, CP-odd and Swave Pdfs '
-    #Get CP Componetns of the pdf using 
-    pdfEven  = getCPprojectionOFpdf(pdf, "EVEN")
-    pdfOdd   = getCPprojectionOFpdf(pdf, "ODD")
-    pdfSwave = getCPprojectionOFpdf(pdf, "SWAVE")
-    completePdfs = dict(total = pdf, even = pdfEven, odd = pdfOdd, swave = pdfSwave)
-
-    #Split the Cp Components further into individual KK mass copmponents
-    nKKBins = pdf.indexCat().numTypes()
-    tPdfs = dict( ('bin{0}'.format(bin), pdf.getPdf('bin{0}'.format(bin))) for bin in xrange(nKKBins) )
-    ePdfs = dict( ('bin{0}'.format(bin), pdfEven.getPdf('bin{0}'.format(bin))) for bin in xrange(nKKBins) )
-    oPdfs = dict( ('bin{0}'.format(bin), pdfOdd.getPdf('bin{0}'.format(bin))) for bin in xrange(nKKBins) )
-    sPdfs = dict( ('bin{0}'.format(bin), pdfSwave.getPdf('bin{0}'.format(bin))) for bin in xrange(nKKBins) )
-
-    pdfsSuperDict = {}
-    for bin in xrange(nKKBins):
-        binComponentsDict = dict(total = tPdfs['bin{0}'.format(bin)],
-                             even  = ePdfs['bin{0}'.format(bin)],
-                             odd   = oPdfs['bin{0}'.format(bin)],
-                             swave = sPdfs['bin{0}'.format(bin)] )
-        pdfsSuperDict.update(  {'bin{0}'.format(bin): binComponentsDict} )
-    pdfsSuperDict.update({'complete' : completePdfs})
-
-    return pdfsSuperDict
 
 
 
-
-
-def getCPnormFracs(pdfDict, KKbinsFlag = False, observables = None, data = None, projVars = 0):
-    #Internal function of the CP comps fractions calculations
-    from ROOT import RooArgSet
-    if not KKbinsFlag:
-        observables = RooArgSet(obs._target_() for obs in (pdfDict['total'].Observables() - pdfDict['total'].ConditionalObservables()) )
-        totalIntegral = pdfDict['total'].getNorm(observables)
-        f_even  = pdfDict['even'].getNorm(observables) / totalIntegral
-        f_odd   = pdfDict['odd'].getNorm(observables)  / totalIntegral
-        f_swave = pdfDict['swave'].getNorm(observables)/ totalIntegral
-    if KKbinsFlag:
-        assert observables, 'P2VVGeneralUtils.py::getCPnormFracs - ERROR: Must provide Observables set'
-        assert data, 'P2VVGeneralUtils.py::getCPnormFracs - ERROR: Must provide data to project out conditional observables'
-
-
-
-
-        #_____Naive method (no bining, no projWData)__________________________________________________
-        #TO DO try with create integrall as well
-        totalIntegral = pdfDict['total'].getNorm(observables)
-        f_even  = pdfDict['even'].getNorm(observables) / totalIntegral
-        f_odd   = pdfDict['odd'].getNorm(observables)  / totalIntegral
-        f_swave = pdfDict['swave'].getNorm(observables)/ totalIntegral
-        #_____________________________________________________________________________________________
-
-
-
-
-#Loop over all events solution______________________________________________________
-##         sumTotInt = 0
-##         sumEvenInt = 0
-##         sumOddInt = 0
-##         sumSwaveInt = 0
-
-##         from ROOT import RooCategory
-##         for event in xrange(data.numEntries()):
-##             for var in projVars:
-##                 if isinstance( var, RooCategory):
-##                     val = data.get(event).find(var.GetName()).getIndex()
-##                     var.setIndex(val)
-##                 else:
-##                     val = data.get(event).find(var.GetName()).getVal()
-##                     var.setVal(val)
-##             weight = data.get(event).find('weightVar').getVal()
-##             sumTotInt   += weight * pdfDict['total'].createIntegral(observables).getVal()
-##             sumEvenInt  += weight * pdfDict['even'].createIntegral(observables).getVal()
-##             sumOddInt   += weight * pdfDict['odd'].createIntegral(observables).getVal()
-##             sumSwaveInt += weight * pdfDict['swave'].createIntegral(observables).getVal()
-
-
-##             f_even  = sumEvenInt / sumTotInt
-##             f_odd   = sumOddInt / sumTotInt
-##             f_swave = sumSwaveInt / sumTotInt
-##         print f_even
-##         print f_odd
-##         print f_swave
-        
-#_____________________________________________________
-        
-
-
-
-#_____RooDatWeightedAverage  method (Under Debuging)__________________________________________
-
-##         from ROOT import RooFormulaVar, RooArgSet, RooDataWeightedAverage, RooArgList
-##         totalInt = pdfDict['total'].createIntegral(observables)
-##         evenInt  = pdfDict['even'].createIntegral(observables)
-##         f_evenCond = RooFormulaVar('f_evenCond','f_evenCond', '@0/@1', RooArgList(evenInt,totalInt) )
-##         f_even = RooDataWeightedAverage('f_even','f_even',f_evenCond, data, projVars, nCPU = Ncpu, showProgress = True   )
-#_______________________________________________________________________________________________
-    
-            
-
-    return dict(even = f_even, odd = f_odd, swave = f_swave)
-
-
-
-
-def getAllCPnormFracs(pdfDict, data = None, BinData = False ):
-    #Function that calculates the CP comps fractions of all KK mass bins
-    print 'P2VV - INFO: Calculating relative normaliation fractions of the CP components.'
-    tPdf = pdfDict['complete']['total']
-    ePdf = pdfDict['complete']['even']
-    oPdf = pdfDict['complete']['odd']
-    sPdf = pdfDict['complete']['swave']
-
-    from ROOT import RooArgSet
-    obs = RooArgSet(obs._target_() for obs in (tPdf.Observables() - tPdf.ConditionalObservables()) )
-    #obs = RooArgSet(obs._target_() for obs in tPdf.Observables() )
-    #TODO: Replace this with an ArgSet and make more compact, put it as it is in next lines
-    condObs = RooArgSet(obs._target_() for obs in tPdf.ConditionalObservables() )
-
-    KKmassBins = tPdf.indexCat().numTypes()
-    binNames = list('bin{0}'.format(bin) for bin in xrange(KKmassBins) )
-    fracs = dict((binName ,getCPnormFracs(  dict(total = tPdf.getPdf(binName),
-                                                 even  = ePdf.getPdf(binName),
-                                                 odd   = oPdf.getPdf(binName),
-                                                 swave = sPdf.getPdf(binName)
-                                                 ), KKbinsFlag = True, observables = obs
-                                                  , data = data.reduce('KKMassCat==KKMassCat::'+binName)
-                                                  , projVars = condObs
-                                            )
-                  )for binName in binNames
-                 )
-    print 'P2VV - INFO: Finished calculating relative normaliation fractions of the CP components.'
-
-    return fracs
-
-
-
-def getSimulPdfSlicesNormFrac(pdf, data ):
-    tab = data.table(pdf.indexCat())
-    tot = float(data.sumEntries()) if data.isWeighted() \
-                   else float(data.numEntries())
-    nBins = pdf.indexCat().numTypes()
-    bins = ['bin{0}'.format(i) for i in xrange(nBins) ]
-
-    return dict( (bin, tab.get(bin) / tot) for bin in bins )
-
-
-
-
-
-
-
-
-
-
-
-
-
+ 
 def getCondObsPlotsInKKbins(pdf, data, canv):
 
     from ROOT import TCanvas, gPad, TH1F
@@ -510,11 +309,176 @@ def getCondObsPlotsInKKbins(pdf, data, canv):
     #return  Histos
     if obsName=='iTagSS': assert(False)
 
-
-    
     return canv
     
 
+
+
+class CPcomponentsPlotingToolkit():
+    def __init__(self, pdf, data):
+        #Initializer builds the CP component pdfs 
+        #Create objects
+        self._data = data
+        self._tPdf = pdf
+        self._CpCompPdfs = dict(total = self._tPdf)
+        self._comps = ['even','odd','swave']
+        self._condObservables = self._tPdf.ConditionalObservables()
+        self._observables = self._tPdf.Observables() - self._condObservables
+        self._CPnormFracs = {}
+        self._projectedVars = [o for o in self._condObservables]
+       
+        # Check if KK mass binning feature is active
+        from RooFitWrappers import SimultaneousPdf
+        self._flagKKbin = isinstance( self._tPdf, SimultaneousPdf )
+        if (self._flagKKbin):
+            self._nKKbins = self._tPdf.indexCat().numTypes()
+            self._binNames = [('bin{0}'.format(bin))for bin in xrange(self._nKKbins)]
+            self._pdfsSuperDict = {}
+            self._sliceNormFracs = {}
+
+        self._lineColors = dict(even=4,odd=4,swave=2)
+        self._lineStyles = dict(even=9,odd=3,swave=5)
+        self._lineWidth  = 2
+
+            
+        #Start CP components projection of pdf
+        # Create pdf paramters dictionary and a set for the original paramters.
+        parsDict    = dict( (par.GetName(),par ) for par in  self._tPdf.Parameters()  )
+        originalSet = set([ self._tPdf.ws().function("AparMag2"), parsDict['AperpMag2'], parsDict['A0Mag2']])
+        if self._flagKKbin: # In the case of KK binning there are several f_S fractions 
+            f_sSet = set([ parsDict['f_S_bin{0}'.format(bin)] for bin in xrange(self._nKKbins) ])
+        else: f_sSet = set([parsDict['f_S']])
+        originalSet.update(f_sSet)
+
+        #Construct CP pdf components
+        from RooFitWrappers import ConstVar, CustomizePdf
+        for Comp in self._comps:
+            #Dictionary with the values  of the parameters to be replaced
+            replacementDict = {}
+            if (Comp == "even"):
+                replacementDict.update(dict(A0Mag2    = parsDict['A0Mag2'].getVal(),
+                                            AperpMag2 =            0               ,
+                                            AparMag2  = 1-parsDict['A0Mag2'].getVal()-parsDict['AperpMag2'].getVal()
+                                            ))
+                replacementDict.update(dict( (f_S_i.GetName(), 0 ) for f_S_i in f_sSet)  )
+                
+            if (Comp == "odd"):
+                replacementDict.update(dict(A0Mag2    =                  0             ,
+                                            AperpMag2 = parsDict['AperpMag2'].getVal() ,
+                                            AparMag2  =                  0              
+                                            ))
+                replacementDict.update(dict( (f_S_i.GetName(), 0 ) for f_S_i in f_sSet)  )
+                    
+            if (Comp == "swave"):
+                replacementDict.update(dict(A0Mag2    = 0 ,
+                                            AperpMag2 = 0 ,
+                                            AparMag2  = 0              
+                                            ))
+                replacementDict.update(dict( (f_S_i.GetName(), f_S_i.getVal() ) for f_S_i in f_sSet)  )
+                    
+            replacementSet = set([ConstVar(Name = key  + Comp, Value = val) for key, val in replacementDict.iteritems()])
+            CPcompPDF = CustomizePdf( self._tPdf, origSet = originalSet, replSet = replacementSet, replString =  Comp )
+            
+            if (Comp == "even") : self._CpCompPdfs.update(dict(even  = CPcompPDF )) 
+            if (Comp == "odd")  : self._CpCompPdfs.update(dict(odd   = CPcompPDF )) 
+            if (Comp == "swave"): self._CpCompPdfs.update(dict(swave = CPcompPDF )) 
+
+        if self._flagKKbin:
+            #Split the Cp Components further into individual KK mass copmponents
+            tPdfs = dict( (bin, self._CpCompPdfs['total'].getPdf(bin)) for bin in self._binNames)
+            ePdfs = dict( (bin, self._CpCompPdfs['even' ].getPdf(bin)) for bin in self._binNames)
+            oPdfs = dict( (bin, self._CpCompPdfs['odd'].getPdf(bin)) for bin in self._binNames)
+            sPdfs = dict( (bin, self._CpCompPdfs['swave'].getPdf(bin)) for bin in self._binNames)   
+        self._pdfsSuperDict.update(dict( (bin, dict(total = tPdfs[bin],
+                                                    even  = ePdfs[bin],
+                                                    odd   = oPdfs[bin],
+                                                    swave = sPdfs[bin] ) ) for bin in self._binNames ))
+    #End of the initialazation
+
+
+
+    #Class internal methods 
+    def calculateNormFracs(self, pdfDict):
+        from ROOT import RooArgSet
+        obs = RooArgSet(o._target_() for o in self._observables )
+        totInt = pdfDict['total'].getNorm(obs)
+        fEven  = pdfDict['even' ].getNorm(obs) / totInt
+        fOdd   = pdfDict['odd'  ].getNorm(obs) / totInt
+        fSwave = pdfDict['swave'].getNorm(obs) / totInt
+        return dict(even=fEven, odd=fOdd, swave=fSwave)
+
+    def calculateCPnormFracs(self):
+        print 'P2VV - INFO: Calculating relative normaliation fractions of the CP components.'
+        if not self._flagKKbin:
+             print 'P2VV - INFO: Finished calculating relative normaliation fractions of the CP components.'
+             return calculateNormFracs(self._CpCompPdfs)
+        if self._flagKKbin:
+            self._CPnormFracs = dict( (bin ,self.calculateNormFracs(dict(
+                                 total = self._CpCompPdfs['total'].getPdf(bin),
+                                 even  = self._CpCompPdfs['even'].getPdf(bin),
+                                 odd   = self._CpCompPdfs['odd'].getPdf(bin),
+                                 swave = self._CpCompPdfs['swave'].getPdf(bin)
+                                 )))for bin in self._binNames )
+            print 'P2VV - INFO: Finished calculating relative normaliation fractions of the CP components.'
+            return self._CPnormFracs
+
+    def calculateKKslicesNormFracs(self):
+        table = self._data.table(self._tPdf.indexCat())
+        total = float(self._data.sumEntries()) if   self._data.isWeighted() \
+                                               else float(self_.data.numEntries())
+        self._sliceNormFracs =  dict( (bin,table.get(bin)/total)for bin in self._binNames )
+        return self._sliceNormFracs
+
+
+
+
+    #Class interface
+    def getCPcompPdf(self):       return self._CpCompPdfs
+    def getNumKKbins(self):       return self._nKKbins
+    def getCPcompPdfKKbins(self): return self._pdfsSuperDict
+    def getKKbinNames(self):      return self._binNames
+    def getCpCompNames(self):     return self._comps
+    def getCPnormFracs(self):     return self._CPnormFracs
+    def getKKslicesNormFracs(self):return self._sliceNormFracs
+    
+    def getPdfOpts(self):
+        ##TODO:: Provide a binned dataset to speed up the averaging
+        if self._flagKKbin: projVars = self._projectedVars + [self._tPdf.indexCat()]
+        else              : projVars = self._projectedVars
+        return dict(LineWidth =  self._lineWidth,
+                    ProjWData = (self._data.reduce(ArgSet=projVars) ,False))
+    
+    def getAddPdfs(self):
+        return [self._CpCompPdfs['even' ].getPdf(b)for b in self._binNames] +\
+               [self._CpCompPdfs['odd'  ].getPdf(b)for b in self._binNames] +\
+               [self._CpCompPdfs['swave'].getPdf(b)for b in self._binNames]
+    
+    def getAddPdfOpts(self):
+        if not self._CPnormFracs:   self.calculateCPnormFracs()
+        if not self._sliceNormFracs: self.calculateKKslicesNormFracs()
+        opts = []
+        KKCat = 'KKMassCat==KKMassCat::'
+        for comp in self._comps:
+            for bin in self._binNames:
+                binInd = self._binNames.index(bin) 
+                addPdfOpt_i = dict(ProjWData     = (self._data.reduce(KKCat+bin),False),
+                                   Normalization =  self._CPnormFracs[bin][comp] * self._sliceNormFracs[bin])
+
+                if not binInd==self._nKKbins-1:addPdfOpt_i.update(dict(Invisible = ()                                ))
+                if not binInd==0              :addPdfOpt_i.update(dict(AddTo = ( 'addPDF{0}'.format(binInd-1),1.,1.) ))
+                if     binInd==self._nKKbins  :addPdfOpt_i.update(dict(LineStyle = self._lineColors[comp],
+                                                                       LineColor = self._lineStyles[comp],
+                                                                       LineWidth = self._linewidth                   ))                    
+                opts.append(addPdfOpt_i)
+        return opts
+
+
+
+
+
+    def setLineColors(self,colors): self._lineColors = colors
+    def setLineStyles(self,styles): self._lineStyles = styles
+    def setLineWidth(self, width ): self._lineWidth  = width 
 
 
 
