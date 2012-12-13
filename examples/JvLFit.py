@@ -47,7 +47,7 @@ MinosPars = [ 'AparPhase', 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 2
+fitOpts = dict(  NumCPU    = 6
                , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True
@@ -74,6 +74,7 @@ gStyle.SetLineStyleString( 9, ' 100 20'       )
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
+pdfConfig['bkgMassModel']         = 'linear'  # ''
 pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
@@ -101,8 +102,8 @@ pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
-pdfConfig['numTimeResBins']        = 25
-pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
+pdfConfig['numTimeResBins']        = 50
+pdfConfig['constrainTimeResScale'] = 'fixed'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
 pdfConfig['signalFraction'] = 0.45
@@ -181,6 +182,38 @@ else :
                                , ( 'helphi',       '#phi_{h}'          )
                               )
 angleNames = pdfConfig['angleNames']
+
+parNameDict = dict(  phiCP           = '$\\phi_\\text{s}$'
+                   , lambdaCP        = '$|\\lambda_\\text{s}|$'
+                   , Gamma           = '$\\Gam$'
+                   , dGamma          = '$\\DelGam$'
+                   , dM              = '$\\Delm$'
+                   , A0Mag2          = '$\\magzero^2$'
+                   , AperpMag2       = '$\\magperp^2$'
+                   , f_S             = '$\\FS$'
+                   , f_S_bin0        = '${\\FS}_0$'
+                   , f_S_bin1        = '${\\FS}_1$'
+                   , f_S_bin2        = '${\\FS}_2$'
+                   , f_S_bin3        = '${\\FS}_3$'
+                   , f_S_bin4        = '${\\FS}_4$'
+                   , f_S_bin5        = '${\\FS}_5$'
+                   , AparPhase       = '$\\delpar-\\delzero$'
+                   , AperpPhase      = '$\\delperp-\\delzero$'
+                   , ASOddPhase      = '$\\delS-\\delperp$'
+                   , ASOddPhase_bin0 = '${\\delS}_0-\\delperp$'
+                   , ASOddPhase_bin1 = '${\\delS}_1-\\delperp$'
+                   , ASOddPhase_bin2 = '${\\delS}_2-\\delperp$'
+                   , ASOddPhase_bin3 = '${\\delS}_3-\\delperp$'
+                   , ASOddPhase_bin4 = '${\\delS}_4-\\delperp$'
+                   , ASOddPhase_bin5 = '${\\delS}_5-\\delperp$'
+                   , timeResSigmaSF  = '$\\sigma_t$ s.f.'
+                   , wTagP0OS        = '$p_0$ OS'
+                   , wTagP1OS        = '$p_1$ OS'
+                   , wTagDelP0OS     = '$\\Delta p_0$ OS'
+                   , wTagP0SS        = '$p_0$ SS'
+                   , wTagP1SS        = '$p_1$ SS'
+                   , wTagDelP0SS     = '$\\Delta p_0$ SS'
+                  )
 
 numBins = ( 50, 20, 20, 20 )
 pdfConfig['numTimeBins'] = 30
@@ -571,6 +604,42 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.covarianceMatrix().Print()
 
     print 'JvLFit: parameters:'
+    from math import floor, log10
+    fitPars = fitResult.floatParsFinal()
+    for par in fitPars :
+        if par.hasAsymError() :
+            decim = int( log10( max( -par.getErrorLo(), par.getErrorHi() ) ) )
+            prec = ( 3 - decim ) if decim <= 0 else 0
+            print ( '  {0:<20s} {1:<+10.%df} {2:<+10.%df} {3:<+10.%df}' % ( prec, prec, prec ) )\
+                  .format( par.GetName(), par.getVal(), par.getErrorHi(), par.getErrorLo() )
+
+        else :
+            decim = int( log10( par.getError() ) )
+            prec = ( 3 - decim ) if decim <= 0 else 0
+            print ( '  {0:<20s} {1:<+10.%df} +/- {2:<10.%df}' % ( prec, prec ) ).format( par.GetName(), par.getVal(), par.getError() )
+    print
+
+    print '  \\begin{tabular}{|c|c|}'
+    print '    \\hline'
+    print '    parameter  &  value  \\\\'
+    print '    \\hline'
+    for par in fitPars :
+        name = parNameDict[ par.GetName() ] if par.GetName() in parNameDict else par.GetName()
+        if par.hasAsymError() :
+            decim = int( log10( max( -par.getErrorLo(), par.getErrorHi() ) ) )
+            prec = ( 2 - decim ) if decim <= 0 else 0
+            print ( '    {2:<20s}  &  ${3:<+10.%df}^{0}{4:<+10.%df}{1}_{0}{5:<+10.%df}{1}$  \\\\' % ( prec, prec, prec ) )\
+                  .format( '{', '}', name, par.getVal(), par.getErrorHi(), par.getErrorLo() )
+
+        else :
+            decim = int( log10( par.getError() ) )
+            prec = ( 2 - decim ) if decim <= 0 else 0
+            print ( '    {0:<20s}  &  ${1:<+10.%df} \\pm {2:<10.%df}$         \\\\' % ( prec, prec ) )\
+                  .format( name, par.getVal(), par.getError() )
+    print '    \\hline'
+    print '  \\end{tabular}'
+    print
+
     fitResult.Print()
     for par in RooMinPars : par.Print()
     fitResult.covarianceMatrix().Print()
