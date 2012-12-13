@@ -19,7 +19,7 @@ pdfConfig['nTupleName'] = 'DecayTree'
 pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 
 # fit options
-fitOpts = dict(  NumCPU    = 16
+fitOpts = dict(  NumCPU    = 8
                , Optimize  = 2
                , Timer     = True
                , Minimizer = 'Minuit2'
@@ -245,7 +245,7 @@ CpPlotsKit.setLineStyles(lineStyles)
 
 #Construct a SuperDictionary of the pdf of the f0orm:
   # {'bin_i' : {'total':pdfTotal_i, 'even':pdfEven_i, 'odd':pdfOdd_i, 'swave:pdfSwave_i'}   }
-pdfsDict = CpPlotsKit.getCPcompPdfKKbins()
+#pdfsDict = CpPlotsKit.getCPcompPdfKKbins()
   # also include an entry for the total complete pdf: {'complete', .}
 #pdfs = CpPlotsKit.getCPcompPdf()
 
