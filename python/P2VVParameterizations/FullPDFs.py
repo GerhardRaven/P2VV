@@ -184,6 +184,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         # PDF options
         self['transversityAngles']   = False
+        self['sigMassModel']         = 'doubleGauss'       # '' / 'doubleGauss' / 'box'
         self['bkgMassModel']         = 'exponential'       # '' / 'exponential' / 'linear'
         self['bkgAnglePdf']          = 'histPdf'           # '' / 'histPdf' / 'hybrid'
         self['sigTaggingPdf']        = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
@@ -294,6 +295,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # PDF options
         transAngles       = pdfConfig.pop('transversityAngles')
+        sigMassModel      = pdfConfig.pop('sigMassModel')
         bkgMassModel      = pdfConfig.pop('bkgMassModel')
         bkgAnglePdf       = pdfConfig.pop('bkgAnglePdf')
         sigTaggingPdf     = pdfConfig.pop('sigTaggingPdf')
@@ -426,9 +428,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         BMass = RealVar( 'mass',  Title = 'M(J/#psi#phi)', Unit = 'MeV', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
-                        ,  Ranges = dict(  LeftSideBand  = ( 5200., 5333. )
-                                         , Signal        = ( 5333., 5403. )
-                                         , RightSideBand = ( 5403., 5550. )
+                        ,  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
+                                         , Signal        = ( 5320., 5420. )
+                                         , RightSideBand = ( 5420., 5550. )
                                         )
                        )
 
@@ -625,14 +627,26 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         #######################
 
         # build the signal and background mass PDFs
-        from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
-        if bkgMassModel == 'linear' :
+        sigMassArgs = dict( Name = 'sig_m', mass = BMass )
+        if sigMassModel.startswith('box') :
+            from P2VVParameterizations.MassPDFs import Box_Signal_Mass as SignalBMass
+            if sigMassModel.endswith('Fixed') :
+                boxWidth = 0.5 * ( BMass.getMin('RightSideBand') - BMass.getMax('LeftSideBand') )
+                boxMean  = BMass.getMax('LeftSideBand') + boxWidth
+                sigMassArgs['m_sig_mean']  = dict( Value = boxMean,  Constant = True )
+                sigMassArgs['m_sig_width'] = dict( Value = boxWidth, Constant = True, MinMax = ( 0.1, 2. * boxWidth ) )
+        else :
+            from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
+
+        bkgMassArgs = dict( Name = 'bkg_m', mass = BMass )
+        if bkgMassModel.startswith('linear') :
             from P2VVParameterizations.MassPDFs import Linear_Background_Mass as BackgroundBMass
+            if bkgMassModel.endswith('Constant') : bkgMassArgs['Constant'] = True
         else :
             from P2VVParameterizations.MassPDFs import LP2011_Background_Mass as BackgroundBMass
 
-        self._signalBMass     = SignalBMass(     Name = 'sig_m', mass = BMass )
-        self._backgroundBMass = BackgroundBMass( Name = 'bkg_m', mass = BMass )
+        self._signalBMass     = SignalBMass(     **sigMassArgs )
+        self._backgroundBMass = BackgroundBMass( **bkgMassArgs )
 
         from RooFitWrappers import buildPdf
         if SFit :
@@ -944,21 +958,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             elif makePlots :
                 # plot mumuKK mass distributions
                 self._massCanv = TCanvas( 'massCanv', 'B mass' )
-                for ( pad, frameRange, nBins, plotTitle )\
-                      in zip(  self._massCanv.pads( 2, 2, lambda pad : pad != 2 )
-                             , [ 'Signal', 'LeftSideBand', 'RightSideBand' ]
-                             , numBMassBins
-                             , [  BMass.GetTitle() + ' mass fit - signal'
+                for ( pad, frameRange, nBins, plotTitle, scale )\
+                      in zip(  self._massCanv.pads( 2, 2 )
+                             , [ '', 'Signal', 'LeftSideBand', 'RightSideBand' ]
+                             , [ sum(numBMassBins) ] + numBMassBins
+                             , [  BMass.GetTitle()
+                                , BMass.GetTitle() + ' mass fit - signal'
                                 , BMass.GetTitle() + ' mass fit - left side band'
                                 , BMass.GetTitle() + ' mass fit - right side band'
                                ]
+                             , [ ( 1.e1, 1.e4 ), ( 1.e1, 1.e4 ), ( 3.e2, 3.e3 ), ( 3.e2, 3.e3 ) ]
                             ) :
-                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = True, yScale = ( 1., None )
+                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = True, yScale = scale
                          , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle )
-                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                   )
-                         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2                    )
-                         , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
-                                         , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.5                   )
+                         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3                    )
+                         , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed, LineWidth = 3 )
+                                         , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed, LineWidth = 3 )
                                         }
                         )
 
