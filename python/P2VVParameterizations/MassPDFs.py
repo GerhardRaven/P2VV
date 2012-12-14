@@ -94,6 +94,24 @@ class LP2011_Signal_Mass ( MassPdf ) :
                          , Yields = { g1.GetName() : getattr(self, '_%sm_sig_frac' % self._prefix) } ) )
 
 
+class Box_Signal_Mass ( MassPdf ) :
+    def __init__( self, mass, **kwargs ) :
+        self._prefix = kwargs.pop( 'Prefix', '' )
+        self._parseArg( '%sm_sig_mean' % self._prefix,     kwargs, Title = 'B Mass',     Unit = 'MeV/c^2'
+                       , Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
+        self._parseArg( '%sm_sig_width' % self._prefix,  kwargs, Title = 'B Mass width', Unit = 'MeV/c^2'
+                       , Value = 11.,   Error = 0.1,  MinMax = ( 0.1, 35. ) )
+
+        from ROOT import RooBoxPdf as BoxPdf
+        from RooFitWrappers import Pdf
+        MassPdf.__init__( self, pdf = Pdf(  Name = kwargs.pop( 'Name', 'Box_Signal_Mass' )
+                                          , Type = BoxPdf
+                                          , Parameters = (  mass, getattr( self, '_%sm_sig_mean' % self._prefix )
+                                                          , getattr( self, '_%sm_sig_width' % self._prefix ) )
+                                         )
+                        )
+
+
 class LP2011_Background_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
         self._prefix = kwargs.pop("Prefix", "")
@@ -109,13 +127,17 @@ class LP2011_Background_Mass ( MassPdf ) :
 
 class Linear_Background_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
-        self._prefix = kwargs.pop("Prefix", "")
+        self._prefix = kwargs.pop( 'Prefix', '' )
+        constant = kwargs.pop( 'Constant', False )
         self._parseArg( '%sm_bkg_arg' % self._prefix, kwargs, Title = 'Mass background slope',
                         Unit = 'c^2/MeV', Value = -1.7e-4, Error = 2.e-6, MinMax = ( -1.8e-4, 0. ) )
+        if constant :
+            getattr( self, '_%sm_bkg_arg' % self._prefix ).setVal(0.)
+            getattr( self, '_%sm_bkg_arg' % self._prefix ).setConstant(True)
 
         from RooFitWrappers import GenericPdf
         MassPdf.__init__(self, pdf = GenericPdf(  Name      = kwargs.pop('Name','Linear_Background_Mass')
-                                                , Arguments = [ mass, getattr(self, '_%sm_bkg_arg' % self._prefix) ]
+                                                , Arguments = [ mass, getattr( self, '_%sm_bkg_arg' % self._prefix ) ]
                                                 , Formula   = '1+@1*@0'
                                                )
                         )

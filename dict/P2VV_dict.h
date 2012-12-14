@@ -27,6 +27,7 @@
 #include "MultiHistEntry.h"
 #include "RooComplementCoef.h"
 #include "RooEffConvGenContext.h"
+#include "RooBoxPdf.h"
 
 #include <map>
 #include <string>
