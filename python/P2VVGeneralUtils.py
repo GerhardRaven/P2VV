@@ -326,7 +326,10 @@ class CPcomponentsPlotingToolkit():
         self._observables = self._tPdf.Observables() - self._condObservables
         self._CPnormFracs = {}
         self._projectedVars = [o for o in self._condObservables]
-       
+        self._lineColors = dict(even=4,odd=4,swave=2)
+        self._lineStyles = dict(even=9,odd=3,swave=5)
+        self._lineWidth  = 2
+
         # Check if KK mass binning feature is active
         from RooFitWrappers import SimultaneousPdf
         self._flagKKbin = isinstance( self._tPdf, SimultaneousPdf )
@@ -335,11 +338,6 @@ class CPcomponentsPlotingToolkit():
             self._binNames = [('bin{0}'.format(bin))for bin in xrange(self._nKKbins)]
             self._pdfsSuperDict = {}
             self._sliceNormFracs = {}
-
-        self._lineColors = dict(even=4,odd=4,swave=2)
-        self._lineStyles = dict(even=9,odd=3,swave=5)
-        self._lineWidth  = 2
-
             
         #Start CP components projection of pdf
         # Create pdf paramters dictionary and a set for the original paramters.
@@ -387,17 +385,16 @@ class CPcomponentsPlotingToolkit():
             #Split the Cp Components further into individual KK mass copmponents
             tPdfs = dict( (bin, self._CpCompPdfs['total'].getPdf(bin)) for bin in self._binNames)
             ePdfs = dict( (bin, self._CpCompPdfs['even' ].getPdf(bin)) for bin in self._binNames)
-            oPdfs = dict( (bin, self._CpCompPdfs['odd'].getPdf(bin)) for bin in self._binNames)
+            oPdfs = dict( (bin, self._CpCompPdfs['odd'  ].getPdf(bin)) for bin in self._binNames)
             sPdfs = dict( (bin, self._CpCompPdfs['swave'].getPdf(bin)) for bin in self._binNames)   
         self._pdfsSuperDict.update(dict( (bin, dict(total = tPdfs[bin],
                                                     even  = ePdfs[bin],
                                                     odd   = oPdfs[bin],
                                                     swave = sPdfs[bin] ) ) for bin in self._binNames ))
     #End of the initialazation
+    
 
-
-
-    #Class internal methods 
+    #Internal methods 
     def calculateNormFracs(self, pdfDict):
         from ROOT import RooArgSet
         obs = RooArgSet(o._target_() for o in self._observables )
@@ -430,51 +427,76 @@ class CPcomponentsPlotingToolkit():
         return self._sliceNormFracs
 
 
-
-
-    #Class interface
+    #Interface
     def getCPcompPdf(self):        return self._CpCompPdfs
     def getNumKKbins(self):        return self._nKKbins
     def getCPcompPdfKKbins(self):  return self._pdfsSuperDict
     def getKKbinNames(self):       return self._binNames
     def getCpCompNames(self):      return self._comps
-    def getCPnormFracs(self):      return self._CPnormFracs
-    def getKKslicesNormFracs(self):return self._sliceNormFracs
-    
-    def getPdfOpts(self):
-        ##TODO:: Provide a binned dataset to speed up the averaging
+    def getCPnormFracs(self):
+        if not self._CPnormFracs: self.calculateCPnormFracs() 
+        return self._CPnormFracs
+    def getKKslicesNormFracs(self):
+        if not self._sliceNormFracs: self.calculateKKslicesNormFracs() 
+        return self._sliceNormFracs
+
+    def binDataSet(self, nBins, binSigt=True ):
         if self._flagKKbin: projVars = self._projectedVars + [self._tPdf.indexCat()]
         else              : projVars = self._projectedVars
-        return dict(LineWidth =  self._lineWidth,
-                    ProjWData = (self._data.reduce(ArgSet=projVars) ,False))
-    
+        
+        from RooFitWrappers import Category
+        from ROOT import RooArgSet, RooDataHist
+        binnedVarsList = []
+        #Bin only the continous observables
+        print binnedVarsList
+        for pV in self._projectedVars:
+            if  isinstance(pV,Category):pass
+            elif binSigt: binnedVarsList.append(pV)
+            elif pV.GetName()!='sigmat': binnedVarsList.append(pV)
+        for pV in binnedVarsList: pV.setBins(nBins)
+
+        binnedVars = RooArgSet(self._tPdf.indexCat(), *binnedVarsList)
+        return RooDataHist('RDH', 'RDH', binnedVars, self._data.reduce(RooArgSet(*projVars)))
+            
+    def getPdfOpts(self, BinData = True, bins = 20, whichObs = ' '):
+        if   BinData and whichObs=='time':projDataSet=self.binDataSet(bins, binSigt=False)
+        elif BinData and whichObs!='time':projDataSet=self.binDataSet(bins, binSigt=True )
+        else:
+            if self._flagKKbin: projVars = self._projectedVars + [self._tPdf.indexCat()]
+            else              : projVars = self._projectedVars
+            projDataSet = self._data.reduce(ArgSet=projVars)
+        return dict(LineWidth = self._lineWidth,
+                    ProjWData = (projDataSet, False))     
+            
     def getAddPdfs(self):
         return [self._CpCompPdfs['even' ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['odd'  ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['swave'].getPdf(b)for b in self._binNames]
     
-    def getAddPdfOpts(self):
-        if not self._CPnormFracs:   self.calculateCPnormFracs()
+    def getAddPdfsOpts(self, BinData = True, bins = 20, whichObs = ' '):
+        if not self._CPnormFracs:    self.calculateCPnormFracs()
         if not self._sliceNormFracs: self.calculateKKslicesNormFracs()
+        if     BinData and whichObs=='time': data=self.binDataSet(bins, binSigt=False )
+        elif   BinData and whichObs!='time': data=self.binDataSet(bins, binSigt=True )
+        else:  data = self._data
         opts = []
-        KKCat = 'KKMassCat==KKMassCat::'
         for comp in self._comps:
             for bin in self._binNames:
-                binInd = self._binNames.index(bin) 
-                addPdfOpt_i = dict(ProjWData     = (self._data.reduce(KKCat+bin),False),
-                                   Normalization =  self._CPnormFracs[bin][comp] * self._sliceNormFracs[bin])
-
-                if not binInd==self._nKKbins-1:addPdfOpt_i.update(dict(Invisible = ()                                ))
-                if not binInd==0              :addPdfOpt_i.update(dict(AddTo = ( 'addPDF{0}'.format(binInd-1),1.,1.) ))
-                if     binInd==self._nKKbins  :addPdfOpt_i.update(dict(LineStyle = self._lineColors[comp],
-                                                                       LineColor = self._lineStyles[comp],
-                                                                       LineWidth = self._linewidth                   ))                    
+                binInd = self._binNames.index(bin)
+                addPdfOpt_i = dict( ProjWData     = (data.reduce('KKMassCat==KKMassCat::' + bin),False),
+                                    Normalization =  self._CPnormFracs[bin][comp] * self._sliceNormFracs[bin] )
+                if not binInd==self._nKKbins-1:addPdfOpt_i.update(dict( Invisible = ()                       ))
+                if     binInd==self._nKKbins-1:addPdfOpt_i.update(dict( LineColor = self._lineColors[comp],
+                                                                        LineStyle = self._lineStyles[comp],
+                                                                        LineWidth = self._lineWidth          ))           
+                if not binInd==0: #odd   Components First index = len(self._binNames)
+                                  #swave Components First index = 2 *( len(self._binNames)
+                    if comp=='even' : argAddTo = ( 'addPDF{0}'.format(binInd-1),1.,1.)
+                    if comp=='odd'  : argAddTo = ( 'addPDF{0}'.format(  len(self._binNames) + binInd-1 ,1.,1.) )
+                    if comp=='swave': argAddTo = ( 'addPDF{0}'.format(2*len(self._binNames) + binInd-1 ,1.,1.) )  
+                    addPdfOpt_i.update(dict(AddTo = argAddTo))
                 opts.append(addPdfOpt_i)
         return opts
-
-
-
-
 
     def setLineColors(self,colors): self._lineColors = colors
     def setLineStyles(self,styles): self._lineStyles = styles
