@@ -424,3 +424,62 @@ def _RooFitResultParamsLatex(self,name,toys):
     return
 
 RooFitResult.writepars = _RooFitResultParamsLatex
+
+def _RooFitResultPrint( self, **kwargs ) :
+    from math import ceil, log10
+    fitPars = self.floatParsFinal()
+
+    text   = kwargs.pop( 'text',   False )
+    LaTeX  = kwargs.pop( 'LaTeX',  False )
+    normal = kwargs.pop( 'normal', False )
+    if not text and not LaTeX : normal = True
+
+    printDecim  = kwargs.pop( 'Precision', 2   )
+    parNameDict = kwargs.pop( 'ParNames',  { } )
+
+    print '  fit result:'
+    print '  status: %d' % self.status()
+    print '  NLL = %f  :  EDM = %f' % ( self.minNll(), self.edm() )
+    print
+
+    if text :
+        for par in fitPars :
+            name = parNameDict[ par.GetName() ][0] if par.GetName() in parNameDict else par.GetName()
+            if par.hasAsymError() :
+                prec = printDecim - int( ceil( log10( max( -par.getErrorLo(), par.getErrorHi() ) ) ) )
+                if prec < 0 : prec = 0
+                print ( '  {0:<30s} {1:<+10.%df} {2:<+10.%df} {3:<+10.%df}' % ( prec, prec, prec ) )\
+                      .format( name, par.getVal(), par.getErrorHi(), par.getErrorLo() )
+
+            else :
+                prec = printDecim - int( ceil( log10( par.getError() ) ) )
+                if prec < 0 : prec = 0
+                print ( '  {0:<30s} {1:<+10.%df} +/- {2:<10.%df}' % ( prec, prec ) ).format( name, par.getVal(), par.getError() )
+        print
+
+    if LaTeX :
+        print '  \\begin{tabular}{|c|c|}'
+        print '    \\hline'
+        print '    parameter  &  value  \\\\'
+        print '    \\hline'
+        for par in fitPars :
+            name = parNameDict[ par.GetName() ][1] if par.GetName() in parNameDict else par.GetName()
+            if par.hasAsymError() :
+                prec = printDecim - int( ceil( log10( max( -par.getErrorLo(), par.getErrorHi() ) ) ) )
+                if prec < 0 : prec = 0
+                print ( '    {2:<40s}  &  ${3:<+10.%df}^{0}{4:<+10.%df}{1}_{0}{5:<+10.%df}{1}$  \\\\' % ( prec, prec, prec ) )\
+                      .format( '{', '}', name, par.getVal(), par.getErrorHi(), par.getErrorLo() )
+
+            else :
+                prec = printDecim - int( ceil( log10( par.getError() ) ) )
+                if prec < 0 : prec = 0
+                print ( '    {0:<40s}  &  ${1:<+10.%df} \\pm {2:<10.%df}$             \\\\' % ( prec, prec ) )\
+                      .format( name, par.getVal(), par.getError() )
+        print '    \\hline'
+        print '  \\end{tabular}'
+        print
+
+    if normal :
+        self.Print()
+
+RooFitResult.PrintSpecial = _RooFitResultPrint

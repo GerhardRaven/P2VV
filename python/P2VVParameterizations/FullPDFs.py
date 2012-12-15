@@ -664,7 +664,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print 120 * '='
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with mass PDF'
             self._massFitResult = self._massPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
-            self._massFitResult.Print()
+
+            from P2VVImports import parNames
+            self._massFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
             self._massFitResult.covarianceMatrix().Print()
             self._massFitResult.correlationMatrix().Print()
 
@@ -737,7 +739,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 print 120 * '='
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with simultaneous mass PDF'
                 self._simMassFitResult = self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
-                self._simMassFitResult.Print()
+
+                from P2VVImports import parNames
+                self._simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
                 self._simMassFitResult.covarianceMatrix().Print()
                 self._simMassFitResult.correlationMatrix().Print()
 
