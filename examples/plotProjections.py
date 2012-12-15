@@ -219,7 +219,7 @@ if doFit :
 
     fitResult.Print()
 
-    
+
 ###########################################################################################################################################
 ## make some plots ##
 #####################
@@ -227,8 +227,7 @@ if doFit :
 # import plotting tools
 from P2VVLoad import LHCbStyle
 from P2VVGeneralUtils import plot, CPcomponentsPlotingToolkit
-from ROOT import TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
-from RooFitWrappers import SimultaneousPdf
+from ROOT import TCanvas
 
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
@@ -238,65 +237,23 @@ binNames = CpPlotsKit.getKKbinNames()
 CPcomps = CpPlotsKit.getCpCompNames()
 
 #Choose line style and Color:
-lineStyles = dict(even=9, odd=3, swave=5)
-lineColors = dict(even='',odd='',swave='kRed')
-CpPlotsKit.setLineColors(lineColors)
-CpPlotsKit.setLineStyles(lineStyles)
-
-#Construct a SuperDictionary of the pdf of the f0orm:
-  # {'bin_i' : {'total':pdfTotal_i, 'even':pdfEven_i, 'odd':pdfOdd_i, 'swave:pdfSwave_i'}   }
-#pdfsDict = CpPlotsKit.getCPcompPdfKKbins()
-  # also include an entry for the total complete pdf: {'complete', .}
-#pdfs = CpPlotsKit.getCPcompPdf()
-
-#Get the relative normalitaion fractions of pdf components in a SuperDictionary
-#CPfracs = CpPlotsKit.getCPnormFracs()
-
-#Get the relative normalitaion fractions of Simultaneous Pdf components
-#SliceFracs = CpPlotsKit.getKKslicesNormFracs()
+CpPlotsKit.setLineColors( dict(even=4 ,odd=4 ,swave=2) )
+CpPlotsKit.setLineStyles( dict(even=9, odd=3, swave=5) )
 
 #Get pdf dwaing options (ProjectCondObs and LineStyle)
 CpPlotsKit.setLineWidth(lineWidth)
-PDFopts = CpPlotsKit.getPdfOpts()
+#PDFopts = CpPlotsKit.getPdfOpts(BinData = True )
 
 #Get the additional pdfs ( Simulpdf.getPdf(KKbin) )
-ADDpdfs =  CpPlotsKit.getAddPdfs()
+#ADDpdfs = CpPlotsKit.getAddPdfs()
 
 #Get pdf dwaing options of the additional pdfs
-# (ProjectCondObs, Norms, AddTo, Invisible and LineStyle)
-ADDpdfsOpts = CpPlotsKit.getAddPdfOpts()
+# (ProjectCondObs, Norm, AddTo, Invisible LineColor and LineStyle)
+#ADDpdfsOpts = CpPlotsKit.getAddPdfOpts(BinData = True)
 
-
-#Report: 2 assumptions, Negative normalization integral.
-
-
-
-        
-assert(False)
-
-projDSet = defData.reduce('KKMassCat==KKMassCat::bin0')
-PDFopts.pop('ProjWData')
-PDFopts.update(dict(ProjWData = (projDSet,False)))
-add = [ADDpdfs[0],ADDpdfs[1]]
-addOpts = [ADDpdfsOpts[0],ADDpdfsOpts[1]]
-
-addOpts[0].pop('ProjWData')
-addOpts[1].pop('ProjWData')
-addOpts[1].pop('Invisible')
-
-c =TCanvas()
 #Plot and Save
-#Make a single canvas for all KK mass bins (Using the add six curves feature)
 timeAnglesCanv = TCanvas('timeAnglesCanv')
 OutputFilename = 'plotProjections_sFit.ps' if pdfConfig['SFit'] else 'plotProjections_cFit.ps'
-         
-#Plot background if cFit.
-if pdfConfig['SFit'] : comps = None
-else :
-    comps = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
-             , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )               
-            }
-
 
 #plot aobservables
 for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
@@ -308,52 +265,54 @@ for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
                         , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
                         , ( True, ) + 3 * ( False, )
                        ) :
-             plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
-                  , frameOpts   = dict( Bins = nBins, Title = plotTitle                    )
-                  , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize     )
-                  , pdfOpts     = PDFopts
-                  , addPDFs     = [(pdfsDict['complete']['even'].getPdf(bin))for bin in binNames] +\
-                                  [(pdfsDict['complete']['odd'].getPdf(bin))for bin in binNames]  +\
-                                  [(pdfsDict['complete']['swave'].getPdf(bin))for bin in binNames]
-                  , addPDFsOpts = ADDpdfsOpts
-                  , components  = comps
-                 )
-             
-
-             timeAnglesCanv.Print(OutputFilename)
-
+    print '\n\n\n Ploting Observalbe {0}/{1}: '. format(obsSetP2VV.index(obs),len([time]+angles)),obs.GetName(),'\n\n\n'
+    plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
+           , frameOpts   = dict( Bins = nBins, Title = plotTitle                )
+           , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
+           , pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
+                      else CpPlotsKit.getPdfOpts(BinData=True )
+           , addPDFs     = CpPlotsKit.getAddPdfs()
+           , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
+                      else CpPlotsKit.getAddPdfsOpts(BinData=True )
+           )
+    if obs == time: break
+timeAnglesCanv.Print(OutputFilename)
 
 
+#TODO for Monday:
+# Make plots in all KK mass bins.
+#Fix lifetimedecay time pdf
 
+#Report: under the carpet things
+#2 assumptions,
+#Total curve is not ploted with the add six curves shit
+#Negative normalization integral,
+#binned continuous cont obs, average rest of cond obs, maybe try to bin all
+#Why plot performs minimization???? 
+#No reason to impliment ploting without KK mass binning
+#Residuals
+#Bin all condObs
+#Move 
 
-
-# Start from here tomorroww
-
-plot(  c, angles[0], defData, pdf = bin0, pdfOpts = dict(LineColor = 2, Invisible = ()))
-
-
-
-
-
-
-
-
+#plot(c, time, defData, pdf, pdfOpts = PDFopts)
 
 
 
 assert(False)
 
 
+#Try putting this befor the ploting loop, maybe use lambda function
+PDFopts = CpPlotsKit.getPdfOpts(BinData=False) if obs.GetName()=='time'\
+          else CpPlotsKit.getPdfOpts(BinData=True)
 
 
-plot(c3, angles[0], defData, addPDFs = ADDpdfs, addPDFsOpts = ADDpdfsOpts )      
+
+
+
+
+
+   
 #Plot lifetime and angles in all the KK mass bins
-
-#Draw options for individual KK mass bins ploting 
-## CpCompDrawOptsDict = dict((bin, [dict(list(projWDataDict[bin].items()), Normalization = fracs[bin]['even'] , LineStyle = 9 ) , 
-##                                  dict(list(projWDataDict[bin].items()), Normalization = fracs[bin]['odd']  , LineStyle = 3 ) ,
-##                                  dict(list(projWDataDict[bin].items()), Normalization = fracs[bin]['swave'], LineStyle = 5, LineColor = 2 )]) for bin in binNames)
-
 
 for bin in xrange(binNames):
          print '\n\nplotProjections: plotting lifetime and angular distributions of bin{0}'.format(bin)
@@ -400,15 +359,4 @@ assert(False)
 
 #How to plot slices of data.
 slices = { 'Slices':[(trgCategory, 'exclB' ),(trgCategory , 'notExclB' )]  }
-
-
-
-
-
-
-##Conditional Observables plots in KK mass bins
-## from P2VVGeneralUtils import getCondObsPlotsInKKbins
-## CondObsCanv = TCanvas('CondObsCanvInKKbins')
-## condObsCanvs = getCondObsPlotsInKKbins(pdf, defData, CondObsCanv )
-## assert(False)
 
