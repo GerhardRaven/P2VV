@@ -915,7 +915,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 , BMass.GetTitle() + ' mass fit - right side band'
                                ]
                              , [ True, False, False, False ]
-                             , [ ( 8.e1, 1.e4 ), ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
+                             , [ ( 8.e1, 1.e4 ), ( None, None ), ( None, None ), ( None, None ) ] # ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
                             ) :
                     plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale, plotResidHist = True
                          , normalize = True, symmetrize = True
