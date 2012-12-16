@@ -227,7 +227,7 @@ from ROOT import TCanvas
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
 
 #Get some stuff necessary for looping
-KKbins = CpPlotsKit.getNumKKbins()    #Get list of nummber of KKmass bins 
+KKbins = CpPlotsKit.getNumKKbins()    #Get nummber of KKmass bins 
 binNames = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
 CPcomps = CpPlotsKit.getCpCompNames() #Get list of names of the CP components
 
@@ -251,7 +251,7 @@ for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
                         , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
                         , ( True, ) + 3 * ( False, )
                        ) :
-    print '\n\n\n Ploting Observalbe {0}/{1}: '. format(obsSetP2VV.index(obs)+1,len([time]+angles)),obs.GetName(),'\n\n\n'
+    print '\n\n\n Ploting Observable {0}/{1}: '. format(obsSetP2VV.index(obs)+1,len([time]+angles)),obs.GetName(),'\n\n\n'
     plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
            , frameOpts   = dict( Bins = nBins, Title = plotTitle                )
            , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
