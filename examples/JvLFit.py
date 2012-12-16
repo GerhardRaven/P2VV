@@ -21,7 +21,7 @@ pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the momen
 corrSFitErr             = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' / 'matrix' / 'sumWeight'
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
-#plotsFile = 'plots/JvLSFit_SWavePhases.ps'
+#plotsFile = 'plots/JvLSFit.ps'
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
 parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
@@ -978,18 +978,6 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #         , components  = comps
     #        )
 
-    #if not pdfConfig['SFit'] and pdfConfig['SWeightsType'].startswith('simultaneous')\
-    #        and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
-    #    # plot signal mass
-    #    print 'JvLFit: plotting mumuKK mass distribution'
-    #    pad = pdfBuild['massCanv'].cd(2)
-    #    plot(  pad, BMass, defData, pdf
-    #         , frameOpts  = dict( Range = 'Signal', Bins = pdfConfig['numBMassBins'][0], Title = BMass.GetTitle() + ' full fit - signal' )
-    #         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                                      )
-    #         , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 2                                            )
-    #         , components = comps
-    #        )
-
     ## plot background time
     #print 'JvLFit: plotting background lifetime distribution'
     #bkgTimeCanv = TCanvas( 'bkgTimeCanv', 'Background Lifetime' )
@@ -1020,14 +1008,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #bkgTimeCanv.Print(plotsFile)
 
 if pdfConfig['makePlots'] :
-    if ( pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['selection'] in ['paper2012', 'timeEffFit'] )\
-            or pdfConfig['parameterizeKKMass'] == 'simultaneous' :
-        pdfBuild['massCanv'].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
-        pdfBuild['massCanvSig'].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
-        pdfBuild['massCanvLeft'].Print(plotsFile)
-        pdfBuild['massCanvRight'].Print(plotsFile)
-    else :
-        pdfBuild['massCanv'].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
+    pdfBuild['massCanvs'][0].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
+    for canv in pdfBuild['massCanvs'][ 1 : ] : canv.Print(plotsFile)
     pdfBuild['mumuMassCanv'].Print(plotsFile)
     pdfBuild['KKMassCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)

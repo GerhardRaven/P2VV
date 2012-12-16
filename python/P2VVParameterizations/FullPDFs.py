@@ -230,7 +230,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
                               , ( 'trphi',      '#phi_{tr}'        )
                              )
 
-        self['numBMassBins'] = [ 50, 10, 10 ]
+        self['numBMassBins'] = [ 40, 20, 20 ]
         self['numTimeBins']  = 30
         self['numAngleBins'] = ( 5, 7, 9 )
 
@@ -426,7 +426,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         estWTagSS   = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
                               , Value = 0.25, MinMax = ( 0., 0.50001 ) )
 
-        BMass = RealVar( 'mass',  Title = 'M(J/#psiKK)', Unit = 'MeV', Observable = True
+        BMass = RealVar( 'mass',  Title = 'm(J/#psiKK)', Unit = 'MeV', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
                         ,  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
                                          , Signal        = ( 5320., 5420. )
@@ -443,9 +443,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             obsSetP2VV.append(BMass)
 
         # ntuple variables
-        mumuMass = RealVar( 'mdau1', Title = 'M(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
+        mumuMass = RealVar( 'mdau1', Title = 'm(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
                            , nBins =  51 )
-        KKMass = RealVar( 'mdau2', Title = 'M(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
+        KKMass = RealVar( 'mdau2', Title = 'm(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
                          , nBins =  125 )
         #if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
@@ -900,9 +900,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     projWData = dict()
 
                 # plot mumuKK mass distributions
-                self._massCanv = TCanvas( 'massCanv', 'B mass' )
+                self._massCanvs = [  TCanvas( 'massCanvLog',   'B mass logarithmic scale' )
+                                   , TCanvas( 'massCanvSig',   'B mass signal range'      )
+                                   , TCanvas( 'massCanvLeft',  'B mass left side band'    )
+                                   , TCanvas( 'massCanvRight', 'B mass right side band'   )
+                                  ]
                 for ( pad, frameRange, nBins, plotTitle, logy, scale )\
-                      in zip(  self._massCanv.pads( 2, 2 )
+                      in zip(  self._massCanvs
                              , [ '', 'Signal', 'LeftSideBand', 'RightSideBand' ]
                              , [ sum(numBMassBins) ] + numBMassBins
                              , [  BMass.GetTitle()
@@ -911,11 +915,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 , BMass.GetTitle() + ' mass fit - right side band'
                                ]
                              , [ True, False, False, False ]
-                             , [ ( 1.e1, 2.e4 ), ( None, None ), ( None, None ), ( None, None ) ]
+                             , [ ( 8.e1, 1.e4 ), ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
                             ) :
-                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale
+                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale, plotResidHist = True
+                         , normalize = True, symmetrize = True
                          , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle )
-                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.5                   )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.6, LineWidth = 2 )
                          , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3 )
                          , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed, LineWidth = 3 )
                                          , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed, LineWidth = 3 )
@@ -946,9 +951,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     elif len(bins) <= 6 : nPads = ( 3, 2 )
                     elif len(bins) <= 9 : nPads = ( 3, 3 )
                     else :                nPads = ( 4, 3 )
-                    self._massCanvSig = TCanvas( 'massCanvSig', 'B mass signal range' )
+                    self._massCanvs.append( TCanvas( 'massCanvSigBins', 'B mass signal range bins' ) )
                     for ( pad, pdf, plotTitle, dataCuts, norm )\
-                            in zip(  self._massCanvSig.pads( nPads[0], nPads[1] )
+                            in zip(  self._massCanvs[-1].pads( nPads[0], nPads[1] )
                                    , pdfs
                                    , [ BMass.GetTitle() + ' bin %d - signal' % bin[0][1] for bin in bins ]
                                    , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
@@ -964,9 +969,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                             }
                             )
 
-                    self._massCanvLeft = TCanvas( 'massCanvLeft', 'B mass left side band' )
+                    self._massCanvs.append( TCanvas( 'massCanvLeftBins', 'B mass left side band bins' ) )
                     for ( pad, pdf, plotTitle, dataCuts, norm )\
-                            in zip(  self._massCanvLeft.pads( nPads[0], nPads[1] )
+                            in zip(  self._massCanvs[-1].pads( nPads[0], nPads[1] )
                                    , pdfs
                                    , [ BMass.GetTitle() + ' bin %d - left side band' % bin[0][1] for bin in bins ]
                                    , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
@@ -982,9 +987,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                             }
                             )
 
-                    self._massCanvRight = TCanvas( 'massCanvRight', 'B mass right side band' )
+                    self._massCanvs.append( TCanvas( 'massCanvRightBins', 'B mass right side band bins' ) )
                     for ( pad, pdf, plotTitle, dataCuts, norm )\
-                            in zip(  self._massCanvRight.pads( nPads[0], nPads[1] )
+                            in zip(  self._massCanvs[-1].pads( nPads[0], nPads[1] )
                                    , pdfs
                                    , [ BMass.GetTitle() + ' bin %d - right side band' % bin[0][1] for bin in bins ]
                                    , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
