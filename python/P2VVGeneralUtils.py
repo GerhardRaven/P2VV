@@ -325,7 +325,6 @@ class CPcomponentsPlotingToolkit():
         self._condObservables = self._tPdf.ConditionalObservables()
         self._observables = self._tPdf.Observables() - self._condObservables
         self._CPnormFracs = {}
-        self._projectedVars = [o for o in self._condObservables]
         self._lineColors = dict(even=4,odd=4,swave=2)
         self._lineStyles = dict(even=9,odd=3,swave=5)
         self._lineWidth  = 2
@@ -341,10 +340,10 @@ class CPcomponentsPlotingToolkit():
             
         #Start CP components projection of pdf
         # Create pdf paramters dictionary and a set for the original paramters.
-        parsDict    = dict( (par.GetName(),par ) for par in  self._tPdf.Parameters()  )
+        parsDict    = dict((p.GetName(),p) for p in self._tPdf.Parameters()  )
         originalSet = set([ self._tPdf.ws().function("AparMag2"), parsDict['AperpMag2'], parsDict['A0Mag2']])
         if self._flagKKbin: # In the case of KK binning there are several f_S fractions 
-            f_sSet = set([ parsDict['f_S_bin{0}'.format(bin)] for bin in xrange(self._nKKbins) ])
+            f_sSet = set([ parsDict['f_S_bin{0}'.format(b)] for b in xrange(self._nKKbins) ])
         else: f_sSet = set([parsDict['f_S']])
         originalSet.update(f_sSet)
 
@@ -374,8 +373,8 @@ class CPcomponentsPlotingToolkit():
                                             ))
                 replacementDict.update(dict( (f_S_i.GetName(), f_S_i.getVal() ) for f_S_i in f_sSet)  )
                     
-            replacementSet = set([ConstVar(Name = key  + Comp, Value = val) for key, val in replacementDict.iteritems()])
-            CPcompPDF = CustomizePdf( self._tPdf, origSet = originalSet, replSet = replacementSet, replString =  Comp )
+            replacementSet = set([ConstVar(Name=k + Comp, Value=v) for k,v in replacementDict.iteritems()])
+            CPcompPDF = CustomizePdf( self._tPdf, origSet=originalSet, replSet=replacementSet, replString=Comp)
             
             if (Comp == "even") : self._CpCompPdfs.update(dict(even  = CPcompPDF )) 
             if (Comp == "odd")  : self._CpCompPdfs.update(dict(odd   = CPcompPDF )) 
@@ -441,29 +440,28 @@ class CPcomponentsPlotingToolkit():
         return self._sliceNormFracs
 
     def binDataSet(self, nBins, binSigt=True ):
-        if self._flagKKbin: projVars = self._projectedVars + [self._tPdf.indexCat()]
-        else              : projVars = self._projectedVars
+        if self._flagKKbin: projVars = list(self._condObservables) + [self._tPdf.indexCat()]
+        else              : projVars = list(self._condObservables)
         
         from RooFitWrappers import Category
         from ROOT import RooArgSet, RooDataHist
         binnedVarsList = []
         #Bin only the continous observables
-        print binnedVarsList
-        for pV in self._projectedVars:
+        for pV in list(self._condObservables):
             if  isinstance(pV,Category):pass
             elif binSigt: binnedVarsList.append(pV)
             elif pV.GetName()!='sigmat': binnedVarsList.append(pV)
         for pV in binnedVarsList: pV.setBins(nBins)
 
-        binnedVars = RooArgSet(self._tPdf.indexCat(), *binnedVarsList)
+        binnedVars =  RooArgSet(self._tPdf.indexCat(), *binnedVarsList)
         return RooDataHist('RDH', 'RDH', binnedVars, self._data.reduce(RooArgSet(*projVars)))
             
-    def getPdfOpts(self, BinData = True, bins = 20, whichObs = ' '):
+    def getPdfOpts(self, BinData=True,bins=20, whichObs=' '):
         if   BinData and whichObs=='time':projDataSet=self.binDataSet(bins, binSigt=False)
         elif BinData and whichObs!='time':projDataSet=self.binDataSet(bins, binSigt=True )
         else:
-            if self._flagKKbin: projVars = self._projectedVars + [self._tPdf.indexCat()]
-            else              : projVars = self._projectedVars
+            if self._flagKKbin: projVars = list(self._condObservables) + [self._tPdf.indexCat()]
+            else              : projVars = list(self._condObservables)
             projDataSet = self._data.reduce(ArgSet=projVars)
         return dict(LineWidth = self._lineWidth,
                     ProjWData = (projDataSet, False))     
@@ -473,7 +471,7 @@ class CPcomponentsPlotingToolkit():
                [self._CpCompPdfs['odd'  ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['swave'].getPdf(b)for b in self._binNames]
     
-    def getAddPdfsOpts(self, BinData = True, bins = 20, whichObs = ' '):
+    def getAddPdfsOpts(self, BinData=True,bins=20,whichObs=' '):
         if not self._CPnormFracs:    self.calculateCPnormFracs()
         if not self._sliceNormFracs: self.calculateKKslicesNormFracs()
         if     BinData and whichObs=='time': data=self.binDataSet(bins, binSigt=False )
@@ -491,10 +489,14 @@ class CPcomponentsPlotingToolkit():
                                                                         LineWidth = self._lineWidth          ))           
                 if not binInd==0: #odd   Components First index = len(self._binNames)
                                   #swave Components First index = 2 *( len(self._binNames)
-                    if comp=='even' : argAddTo = ( 'addPDF{0}'.format(binInd-1),1.,1.)
-                    if comp=='odd'  : argAddTo = ( 'addPDF{0}'.format(  len(self._binNames) + binInd-1 ,1.,1.) )
-                    if comp=='swave': argAddTo = ( 'addPDF{0}'.format(2*len(self._binNames) + binInd-1 ,1.,1.) )  
-                    addPdfOpt_i.update(dict(AddTo = argAddTo))
+                                  if comp=='even' : argAddTo = ( 'addPDF{0}'.format(binInd-1),1.,1.)
+                                  if comp=='odd'  : argAddTo = ( 'addPDF{0}'.format(  len(self._binNames) + binInd-1 ,1.,1.) )
+                                  if comp=='swave': argAddTo = ( 'addPDF{0}'.format(2*len(self._binNames) + binInd-1 ,1.,1.) )
+                                  #TODO:: Make this part of assosiating pdfComps with addPDF Name more stable, make a dictinary
+                                  #if comp=='even' : argAddTo = (self.getAddPdfs()[binInd-1].GetName(), 1.,1.)
+                                  #if comp=='odd'  : argAddTo = (self.getAddPdfs()[  len(self._binNames) + binInd-1].GetName() ,1.,1.)
+                                  #if comp=='odd'  : argAddTo = (self.getAddPdfs()[2*len(self._binNames) + binInd-1].GetName() ,1.,1.)
+                                  addPdfOpt_i.update(dict(AddTo = argAddTo))
                 opts.append(addPdfOpt_i)
         return opts
 
