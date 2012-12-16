@@ -236,20 +236,10 @@ KKbins = CpPlotsKit.getNumKKbins()
 binNames = CpPlotsKit.getKKbinNames()
 CPcomps = CpPlotsKit.getCpCompNames()
 
-#Choose line style and Color:
+#Choose line Style and Color and Width
 CpPlotsKit.setLineColors( dict(even=4 ,odd=4 ,swave=2) )
 CpPlotsKit.setLineStyles( dict(even=9, odd=3, swave=5) )
-
-#Get pdf dwaing options (ProjectCondObs and LineStyle)
 CpPlotsKit.setLineWidth(lineWidth)
-#PDFopts = CpPlotsKit.getPdfOpts(BinData = True )
-
-#Get the additional pdfs ( Simulpdf.getPdf(KKbin) )
-#ADDpdfs = CpPlotsKit.getAddPdfs()
-
-#Get pdf dwaing options of the additional pdfs
-# (ProjectCondObs, Norm, AddTo, Invisible LineColor and LineStyle)
-#ADDpdfsOpts = CpPlotsKit.getAddPdfOpts(BinData = True)
 
 #Plot and Save
 timeAnglesCanv = TCanvas('timeAnglesCanv')
@@ -265,7 +255,7 @@ for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
                         , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
                         , ( True, ) + 3 * ( False, )
                        ) :
-    print '\n\n\n Ploting Observalbe {0}/{1}: '. format(obsSetP2VV.index(obs),len([time]+angles)),obs.GetName(),'\n\n\n'
+    print '\n\n\n Ploting Observalbe {0}/{1}: '. format(obsSetP2VV.index(obs)+1,len([time]+angles)),obs.GetName(),'\n\n\n'
     plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
            , frameOpts   = dict( Bins = nBins, Title = plotTitle                )
            , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
@@ -275,13 +265,24 @@ for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
            , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
                       else CpPlotsKit.getAddPdfsOpts(BinData=True )
            )
-    if obs == time: break
 timeAnglesCanv.Print(OutputFilename)
 
 
 #TODO for Monday:
 # Make plots in all KK mass bins.
-#Fix lifetimedecay time pdf
+#Make everyhtion available in vsyropou/master
+#Make normRatio plots in bins of the Conditional observables
+#Residuals
+#Bin all condObs ???
+#Ask for parameter AparMag2 in pdf.Parameter() or elsewere but not in ws()
+#I did not changed the way I choose component add pdf in the getaddpdfOpts() 
+
+
+
+
+
+
+
 
 #Report: under the carpet things
 #2 assumptions,
@@ -289,17 +290,14 @@ timeAnglesCanv.Print(OutputFilename)
 #Negative normalization integral,
 #binned continuous cont obs, average rest of cond obs, maybe try to bin all
 #Why plot performs minimization???? 
-#No reason to impliment ploting without KK mass binning
-#Residuals
-#Bin all condObs
-#Move 
+#No reason to impliment ploting without KK mass binning, Take out the if statments in calculateCPNormFracs()
+#sigmat cannot be prohected out as a binned variable when ploting decay time
 
-#plot(c, time, defData, pdf, pdfOpts = PDFopts)
+
 
 
 
 assert(False)
-
 
 #Try putting this befor the ploting loop, maybe use lambda function
 PDFopts = CpPlotsKit.getPdfOpts(BinData=False) if obs.GetName()=='time'\
