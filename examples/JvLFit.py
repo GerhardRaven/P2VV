@@ -572,9 +572,9 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
-    from P2VVImports import parNames
+    from P2VVImports import parNames, parValues
     print 'JvLFit: parameters:'
-    fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
+    fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
     fitResult.correlationMatrix().Print()
 
