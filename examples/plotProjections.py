@@ -226,6 +226,7 @@ from ROOT import TCanvas
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
 
+#Get some stuff necessary for looping
 KKbins = CpPlotsKit.getNumKKbins()    #Get list of nummber of KKmass bins 
 binNames = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
 CPcomps = CpPlotsKit.getCpCompNames() #Get list of names of the CP components
@@ -235,7 +236,7 @@ markStyle = 8
 markSize  = 0.4
 CpPlotsKit.setLineColors( dict(even=4 ,odd=4 ,swave=2) )
 CpPlotsKit.setLineStyles( dict(even=9, odd=3, swave=5) )
-CpPlotsKit.setLineWidth(lineWidth)
+CpPlotsKit.setLineWidth(2)
 
 #Plot and Save
 timeAnglesCanv = TCanvas('timeAnglesCanv')
