@@ -10,7 +10,7 @@ pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
-doFit                   = False
+doFit                   = True
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 #OutputPath for the plots in line 
@@ -26,14 +26,8 @@ fitOpts = dict(  NumCPU    = 8
               )
 pdfConfig['fitOptions'] = fitOpts
 
-# plot options
-lineWidth = 2
-markStyle = 8
-markSize  = 0.4
-
 # PDF options
 pdfConfig['transversityAngles'] = False
-
 pdfConfig['bkgAnglePdf']          = 'hybrid'            # 'hybrid'
 pdfConfig['sigTaggingPdf']        = 'tagUntag'          # 'tagUntag' # nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # 'tagUntagRelative' # 'tagCatsRelative'
@@ -221,7 +215,7 @@ if doFit :
 
 
 ###########################################################################################################################################
-## make some plots ##
+## make plots ##
 #####################
 
 # import plotting tools
@@ -232,11 +226,13 @@ from ROOT import TCanvas
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
 
-KKbins = CpPlotsKit.getNumKKbins()
-binNames = CpPlotsKit.getKKbinNames()
-CPcomps = CpPlotsKit.getCpCompNames()
+KKbins = CpPlotsKit.getNumKKbins()    #Get list of nummber of KKmass bins 
+binNames = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
+CPcomps = CpPlotsKit.getCpCompNames() #Get list of names of the CP components
 
-#Choose line Style and Color and Width
+#Set plot options      
+markStyle = 8
+markSize  = 0.4
 CpPlotsKit.setLineColors( dict(even=4 ,odd=4 ,swave=2) )
 CpPlotsKit.setLineStyles( dict(even=9, odd=3, swave=5) )
 CpPlotsKit.setLineWidth(lineWidth)
@@ -245,7 +241,6 @@ CpPlotsKit.setLineWidth(lineWidth)
 timeAnglesCanv = TCanvas('timeAnglesCanv')
 OutputFilename = 'plotProjections_sFit.ps' if pdfConfig['SFit'] else 'plotProjections_cFit.ps'
 
-#plot aobservables
 for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
                  in zip(  timeAnglesCanv.pads( 2, 2 )
                         , obsSetP2VV[ : 4]
