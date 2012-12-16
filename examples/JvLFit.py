@@ -14,7 +14,7 @@ doFit                   = True
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = False
+pdfConfig['makePlots']  = True
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
@@ -620,26 +620,6 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
         projWDataBBulk    = dict()
         projWDataBbarBulk = dict()
 
-if pdfConfig['makePlots'] :
-    # plot background time
-    print 'JvLFit: plotting background lifetime distribution'
-    bkgTimeCanv = TCanvas( 'bkgTimeCanv', 'Background Lifetime' )
-    for ( pad, data, plotTitle, logY )\
-          in zip(  bkgTimeCanv.pads( 2, 2 )
-                 , 2 * [ pdfBuild['bkgRangeData'], pdfBuild['bkgSWeightData'] ]
-                 , [  time.GetTitle() + ' - mass side bands - linear'
-                    , time.GetTitle() + ' - mass S-weights - linear'
-                    , time.GetTitle() + ' - mass side bands - logarithmic'
-                    , time.GetTitle() + ' - mass S-weights - logarithmic'
-                   ]
-                 , 2 * [ False ] + 2 * [ True ]
-                ) :
-        plot(  pad, time, data, pdfBuild['bkg_t'], logy = logY
-             , frameOpts  = dict( Title = plotTitle, Range = 'Bulk', Bins = pdfConfig['numTimeBins'] )
-             , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
-             , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
-            )
-
 if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
         and ( ( pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' )\
               or ( pdfConfig['amplitudeParam'] == 'phasesSWaveFrac' and pdfConfig['ASParam'] == 'deltaPerp' ) ) :
@@ -1010,42 +990,46 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #         , components = comps
     #        )
 
+    ## plot background time
+    #print 'JvLFit: plotting background lifetime distribution'
+    #bkgTimeCanv = TCanvas( 'bkgTimeCanv', 'Background Lifetime' )
+    #for ( pad, data, plotTitle, logY )\
+    #      in zip(  bkgTimeCanv.pads( 2, 2 )
+    #             , 2 * [ pdfBuild['bkgRangeData'], pdfBuild['bkgSWeightData'] ]
+    #             , [  time.GetTitle() + ' - mass side bands - linear'
+    #                , time.GetTitle() + ' - mass S-weights - linear'
+    #                , time.GetTitle() + ' - mass side bands - logarithmic'
+    #                , time.GetTitle() + ' - mass S-weights - logarithmic'
+    #               ]
+    #             , 2 * [ False ] + 2 * [ True ]
+    #            ) :
+    #    plot(  pad, time, data, pdfBuild['bkg_t'], logy = logY
+    #         , frameOpts  = dict( Title = plotTitle, Range = 'Bulk', Bins = pdfConfig['numTimeBins'] )
+    #         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
+    #         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3  )
+    #        )
+
     # print canvas to file
     timeCanv.Print( plotsFile + '(' )
     ctkCanv.Print(plotsFile)
     ctlCanv.Print(plotsFile)
     phiCanv.Print( plotsFile + ( ')' if not deltaSCanv and not pdfConfig['makePlots'] else '' ) )
+    #anglesCanv.Print(plotsFile)
     #timeCanv1.Print(plotsFile)
     #timeCanv2.Print(plotsFile)
-    if pdfConfig['makePlots'] :
-        #anglesCanv.Print(plotsFile)
-        if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
-            pdfBuild['massCanvSig'].Print(plotsFile)
-            pdfBuild['massCanvLeft'].Print(plotsFile)
-            pdfBuild['massCanvRight'].Print(plotsFile)
-        else :
-            pdfBuild['massCanv'].Print(plotsFile)
-        pdfBuild['mumuMassCanv'].Print(plotsFile)
-        pdfBuild['KKMassCanv'].Print(plotsFile)
-        bkgTimeCanv.Print(plotsFile)
-        pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
-        pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-        pdfBuild['estWTagCanvOS'].Print(plotsFile)
-        pdfBuild['estWTagCanvSS'].Print( plotsFile + ( '' if deltaSCanv else ')' ) )
+    #bkgTimeCanv.Print(plotsFile)
 
-    #else :
-        #anglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
-
-elif pdfConfig['makePlots'] :
-    if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
-        pdfBuild['massCanvSig'].Print(plotsFile + '(')
+if pdfConfig['makePlots'] :
+    if ( pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['selection'] in ['paper2012', 'timeEffFit'] )\
+            or pdfConfig['parameterizeKKMass'] == 'simultaneous' :
+        pdfBuild['massCanv'].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
+        pdfBuild['massCanvSig'].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
         pdfBuild['massCanvLeft'].Print(plotsFile)
         pdfBuild['massCanvRight'].Print(plotsFile)
     else :
-        pdfBuild['massCanv'].Print(plotsFile + '(')
+        pdfBuild['massCanv'].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
     pdfBuild['mumuMassCanv'].Print(plotsFile)
     pdfBuild['KKMassCanv'].Print(plotsFile)
-    bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
     pdfBuild['estWTagCanvOS'].Print(plotsFile)
@@ -1054,7 +1038,7 @@ elif pdfConfig['makePlots'] :
 if deltaSCanv :
     gStyle.SetEndErrorSize(4)
     deltaSCanv.Update()
-    deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
+    deltaSCanv.Print( plotsFile + ( ')' if ( makeObservablePlots and not pdfBuild['iTagZeroTrick'] ) or pdfConfig['makePlots'] else '' ) )
 
 
 ###########################################################################################################################################

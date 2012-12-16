@@ -65,6 +65,27 @@ class Binned_MassPdf( MassPdf ) :
         MassPdf.__init__( self, pdf = pdf )
 
 
+class Gauss_Signal_Mass ( MassPdf ) :
+    def __init__(self, mass, **kwargs ) :
+        self._prefix = kwargs.pop( 'Prefix', '' )
+        self._parseArg( '%sm_sig_mean' % self._prefix,  kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
+                       , Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
+        self._parseArg( '%sm_sig_sigma' % self._prefix, kwargs, Title = 'B Mass resolution', Unit = 'MeV/c^2'
+                       , Value = 7.2,   Error = 0.04, MinMax = ( 0.1, 20. ) )
+
+        from ROOT import RooGaussian as Gauss
+        from RooFitWrappers import Pdf
+        MassPdf.__init__(  self
+                         , pdf = Pdf(  Name = kwargs.pop( 'Name', 'Gauss_Signal_Mass' )
+                                     , Type = Gauss
+                                     , Parameters = (  mass
+                                                     , getattr( self, '_%sm_sig_mean'  % self._prefix )
+                                                     , getattr( self, '_%sm_sig_sigma' % self._prefix )
+                                                    )
+                                    )
+                        )
+
+
 class LP2011_Signal_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
         self._prefix = kwargs.pop("Prefix", "")
@@ -92,6 +113,83 @@ class LP2011_Signal_Mass ( MassPdf ) :
                 )
         MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'LP2011_Signal_Mass' ), PDFs = ( g1, g2 )
                          , Yields = { g1.GetName() : getattr(self, '_%sm_sig_frac' % self._prefix) } ) )
+
+
+class CB_Signal_Mass ( MassPdf ) :
+    def __init__(self, mass, **kwargs ) :
+        self._prefix = kwargs.pop( 'Prefix', '' )
+        self._parseArg( '%sm_sig_mean' % self._prefix,  kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
+                       , Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
+        self._parseArg( '%sm_sig_sigma' % self._prefix, kwargs, Title = 'B Mass resolution', Unit = 'MeV/c^2'
+                       , Value = 6.3,   Error = 0.1,  MinMax = ( 0.1, 20. ) )
+        self._parseArg( '%sm_sig_alpha' % self._prefix, kwargs, Title = 'B Mass tail parameter'
+                       , Value = 9.,    Error = 15.,  MinMax = ( 0.1, 30. ) )
+        self._parseArg( '%sm_sig_n' % self._prefix,     kwargs, Title = 'B Mass tail order'
+                       , Value = 1.,    ObjectType = 'ConstVar' )
+
+        from ROOT import RooCBShape as CrystalBall
+        from RooFitWrappers import Pdf
+        MassPdf.__init__(  self
+                         , pdf = Pdf(  Name = kwargs.pop( 'Name', 'CB_Signal_Mass' )
+                                     , Type = CrystalBall
+                                     , Parameters = (  mass
+                                                     , getattr( self, '_%sm_sig_mean'  % self._prefix )
+                                                     , getattr( self, '_%sm_sig_sigma' % self._prefix )
+                                                     , getattr( self, '_%sm_sig_alpha' % self._prefix )
+                                                     , getattr( self, '_%sm_sig_n'     % self._prefix )
+                                                    )
+                                    )
+                        )
+
+
+class DoubleCB_Signal_Mass ( MassPdf ) :
+    def __init__(self, mass, **kwargs ) :
+        self._prefix = kwargs.pop( 'Prefix', '' )
+        self._parseArg( '%sm_sig_mean' % self._prefix,     kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
+                       , Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
+        self._parseArg( '%sm_sig_sigma_1' % self._prefix,  kwargs, Title = 'B Mass resolution 1', Unit = 'MeV/c^2'
+                       , Value = 6.3,   Error = 0.1,  MinMax = ( 0.1, 20. ) )
+        self._parseArg( '%sm_sig_sigma_sf' % self._prefix, kwargs, Title = 'B Mass resolution 2:1 scale factor'
+                       , Value = 2.3,   Error = 0.1,  MinMax = ( 0.1, 5. ) )
+        self._parseArg( '%sm_sig_alpha_1' % self._prefix,  kwargs, Title = 'B Mass tail parameter 1'
+                       , Value = 9.,    Error = 15.,  MinMax = ( 0.1, 30. ) )
+        self._parseArg( '%sm_sig_alpha_sf' % self._prefix, kwargs, Title = 'B Mass tail parameter 2:1 scale factor'
+                       , Value = 1.,    ObjectType = 'ConstVar' )
+        self._parseArg( '%sm_sig_n_1' % self._prefix,      kwargs, Title = 'B Mass tail order 1'
+                       , Value = 1.,    ObjectType = 'ConstVar' )
+        self._parseArg( '%sm_sig_n_2' % self._prefix,      kwargs, Title = 'B Mass tail order 2'
+                       , Value = 1.,    ObjectType = 'ConstVar' )
+        self._parseArg( '%sm_sig_frac' % self._prefix,     kwargs, Title = 'B mass fraction first CB'
+                       , Value = 0.8,   Error = 0.03, MinMax = ( 0., 1. ) )
+
+        from ROOT import RooCBShape as CrystalBall
+        from RooFitWrappers import Pdf, FormulaVar, SumPdf
+        CB1 = Pdf(  Name ='%sm_sig_1' % self._prefix
+                  , Type = CrystalBall
+                  , Parameters = (  mass
+                                  , getattr( self, '_%sm_sig_mean' % self._prefix ), getattr( self, '_%sm_sig_sigma_1' % self._prefix )
+                                  , getattr( self, '_%sm_sig_alpha_1' % self._prefix ), getattr( self, '_%sm_sig_n_1' % self._prefix )
+                                 )
+                 )
+        CB2 = Pdf( Name = '%sm_sig_2' % self._prefix
+                  , Type = CrystalBall
+                  , Parameters = (  mass
+                                  , getattr( self, '_%sm_sig_mean' % self._prefix )
+                                  , FormulaVar( '_%sm_sig_sigma_2' % self._prefix, '@0*@1'
+                                               , (  getattr(self, '_%sm_sig_sigma_sf' % self._prefix )
+                                                  , getattr(self, '_%sm_sig_sigma_1'  % self._prefix )
+                                                 )
+                                              )
+                                  , FormulaVar( '_%sm_sig_alpha_2' % self._prefix, '@0*@1'
+                                               , (  getattr(self, '_%sm_sig_alpha_sf' % self._prefix )
+                                                  , getattr(self, '_%sm_sig_alpha_1'  % self._prefix )
+                                                 )
+                                              )
+                                  , getattr( self, '_%sm_sig_n_2' % self._prefix )
+                                 )
+                )
+        MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'DoubleCB_Signal_Mass' ), PDFs = ( CB1, CB2 )
+                         , Yields = { CB1.GetName() : getattr(self, '_%sm_sig_frac' % self._prefix) } ) )
 
 
 class Box_Signal_Mass ( MassPdf ) :
