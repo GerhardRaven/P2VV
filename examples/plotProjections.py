@@ -226,6 +226,7 @@ from ROOT import TCanvas
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
 
+#Get some useful stuff ncessesary for looping
 KKbins = CpPlotsKit.getNumKKbins()    #Get nummber of KKmass bins 
 binNames = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
 CPcomps = CpPlotsKit.getCpCompNames() #Get list of names of the CP components
