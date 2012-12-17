@@ -310,55 +310,6 @@ assert(False)
 
 assert(False)
 
-#Try putting this befor the ploting loop, maybe use lambda function
-PDFopts = CpPlotsKit.getPdfOpts(BinData=False) if obs.GetName()=='time'\
-          else CpPlotsKit.getPdfOpts(BinData=True)
-
-
-
-
-
-
-
-   
-#Plot lifetime and angles in all the KK mass bins
-
-for bin in xrange(binNames):
-         print '\n\nplotProjections: plotting lifetime and angular distributions of bin{0}'.format(bin)
-         timeAnglesCanv = TCanvas( 'timeAnglesCanv_bin{0}'.format(bin), 'Lifetime and Decay Angles bin{0}'.format(bin) )
-
-         #dataslice = defData.reduce('KKMassCat==KKMassCat::bin{0}'.format(bin))
-         #pdf = pdfsDict['bin{0}'.format(bin)]['total']
-         #OutputFilename = 'plotProjections_sFit_bin{0}.ps'.format(bin) if pdfConfig['SFit'] else 'plotProjections_cFit_bin{0}.ps'.format(bin)
-         
-         for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
-                 in zip(  timeAnglesCanv.pads( 2, 2 )
-                        , obsSetP2VV[ : 4 ]
-                        , numBins
-                        , [ var.GetTitle() for var in obsSetP2VV[ : 4 ] ]
-                        , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-                        , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
-                        , ( True, ) + 3 * ( False, )
-                       ) :
-             plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
-                  , frameOpts   = dict( Bins = nBins, Title = plotTitle                    )
-                  , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize     )
-                 #, pdfOpts     = projWDataDict['bin{0}'.format(bin)]                          
-                  , pdfOpts     = dict(LineWidth = lineWidth                               )
-                 #, addPDFs     = [pdfsDict['bin{0}'.format(bin)]['even'] ,
-                 #                 pdfsDict['bin{0}'.format(bin)]['odd']  ,
-                 #                 pdfsDict['bin{0}'.format(bin)]['swave']] 
-                 #, addPDFsOpts = CpCompDrawOptsDict['bin{0}'.format(bin)]
-                  , components  = comps
-                 )
-             # print canvas to file
-             timeAnglesCanv.Print(OutputFilename)
-
-
-assert(False)
-
-
-
 
 
 
