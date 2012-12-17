@@ -470,7 +470,20 @@ class CPcomponentsPlotingToolkit():
         return [self._CpCompPdfs['even' ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['odd'  ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['swave'].getPdf(b)for b in self._binNames]
-    
+
+    def getAddPdfsOptsSixKKbins(self):
+        opts = []
+        for bin in self._binNames:
+            for comp in self._comps:
+                opt = dict(  ProjWData     = (self._data.reduce('KKMassCat==KKMassCat::' + bin),False)
+                           , LineColor     =  self._lineColors[comp]
+                           , LineStyle     =  self._lineStyles[comp]
+                           , LineWidth     =  self._lineWidth
+                           , Normalization =  self._CPnormFracs[bin][comp]
+                             )
+                opts.append(   dict(bin = {comp:opt})   )
+        return opts
+                   
     def getAddPdfsOpts(self, BinData=True,bins=20,whichObs=' '):
         if not self._CPnormFracs:    self.calculateCPnormFracs()
         if not self._sliceNormFracs: self.calculateKKslicesNormFracs()
