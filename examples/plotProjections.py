@@ -83,11 +83,10 @@ if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
                                , ( 'trphi',      '#phi_{tr}'        )
                               )
 else :
-    pdfConfig['angleNames'] = (  ( 'helcosthetaK', 'cos(#theta_{K})' )
-                               , ( 'helcosthetaL', 'cos(#theta_{l})' )
-                               , ( 'helphi',       '#phi'            )
+    pdfConfig['angleNames'] = (  ( 'helcosthetaK', 'cos #theta_{K}' )
+                               , ( 'helcosthetaL', 'cos #theta_{#mu}' )
+                               , ( 'helphi',       '#phi_{h} [rad]'            )
                               )
-angleNames = pdfConfig['angleNames']
 
 numBins = ( 60, 30, 30, 30 )
 pdfConfig['numTimeBins'] = 30
@@ -221,52 +220,68 @@ if doFit :
 # import plotting tools
 from P2VVLoad import LHCbStyle
 from P2VVGeneralUtils import plot, CPcomponentsPlotingToolkit
-from ROOT import TCanvas
+from ROOT import TCanvas, kRed, kGreen, kMagenta
 
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
 
 #Get some useful stuff ncessesary for looping
-KKbins = CpPlotsKit.getNumKKbins()    #Get nummber of KKmass bins 
-binNames = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
-CPcomps = CpPlotsKit.getCpCompNames() #Get list of names of the CP components
+KKbins      = CpPlotsKit.getNumKKbins()  #Get nummber of KKmass bins 
+binNames    = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
+CPcomps     = CpPlotsKit.getCpCompNames()#Get list of names of the CP components
+angleNames  = pdfConfig['angleNames']
+observables = [time] + angles
 
 #Set plot options      
 markStyle = 8
 markSize  = 0.4
-CpPlotsKit.setLineColors( dict(even=4 ,odd=4 ,swave=2) )
-CpPlotsKit.setLineStyles( dict(even=9, odd=3, swave=5) )
-CpPlotsKit.setLineWidth(lineWidth)
+CpPlotsKit.setLineColors( dict(even=kRed, odd=kGreen+3, swave=kMagenta+3) )
+CpPlotsKit.setLineStyles( dict(even=9   , odd=7       , swave=5         ) )
+CpPlotsKit.setLineWidth(3)
+
+#Create a TPaveText from the LHCbStyle file
+LHCbLabel = LHCbStyle.lhcbName
+LHCbLabel.AddText("#bf{LHCb preliminary}")
+LHCbLabel.AddText(" ")
+LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV, #scale[0.5]{#int}L = 1.1 fb^{-1}}")
+
+
+
+pdf = pdf.getPdf('bin0')
 
 #Plot and Save
-timeAnglesCanv = TCanvas('timeAnglesCanv')
-OutputFilename = 'plotProjections_sFit.ps' if pdfConfig['SFit'] else 'plotProjections_cFit.ps'
-
-for ( pad, obs, nBins, plotTitle, xTitle, yScale, logY )\
-                 in zip(  timeAnglesCanv.pads( 2, 2 )
-                        , obsSetP2VV[ : 4]
+for ( pad, obs, nBins, xTitle, yScale, logY )\
+                 in zip( [ TCanvas(o.GetName()) for o in observables ] 
+                        , observables
                         , numBins
-                        , [ var.GetTitle() for var in obsSetP2VV[ : 4 ] ]
-                        , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-                        , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
+                        , ( time.GetTitle()+' [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+                        , ( ( 0.1, 10e4 ), ) + ( ( None, 1400 ), ) + 2 * ( (None,1200),)
                         , ( True, ) + 3 * ( False, )
                        ) :
-    print '\n\n\n Ploting Observable {0}/{1}: '. format(obsSetP2VV.index(obs)+1,len([time]+angles)),obs.GetName(),'\n\n\n'
+    print '\n\n\n Ploting Observable {0}/{1}: '.format(observables.index(obs)+1,len(observables),obs.GetName()),'\n\n\n'
     plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
-           , frameOpts   = dict( Bins = nBins, Title = plotTitle                )
-           , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
-           , pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
-                      else CpPlotsKit.getPdfOpts(BinData=True )
-           , addPDFs     = CpPlotsKit.getAddPdfs()
-           , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
-                      else CpPlotsKit.getAddPdfsOpts(BinData=True )
+           #, frameOpts   = dict( Bins = nBins, Title = plotTitle                )
+           #, dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
+           #, pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
+           #           else CpPlotsKit.getPdfOpts(BinData=True )
+           #, addPDFs     = CpPlotsKit.getAddPdfs()
+           #, addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
+           #           else CpPlotsKit.getAddPdfsOpts(BinData=True )
            )
-timeAnglesCanv.Print(OutputFilename)
+
+    LHCbLabel.Draw()
+    filename = obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] else obs.GetName() + '_cFit.ps'
+    pad.Print(filename)
+
+assert(False)
+
+
+
+
 
 
 #TODO for Monday:
 # Make plots in all KK mass bins.
-#Make everyhtion available in vsyropou/master
 #Make normRatio plots in bins of the Conditional observables
 #Residuals
 #Bin all condObs ???
@@ -354,3 +369,5 @@ assert(False)
 #How to plot slices of data.
 slices = { 'Slices':[(trgCategory, 'exclB' ),(trgCategory , 'notExclB' )]  }
 
+# For TLEgend
+#canvas.FindObject('curveName')
