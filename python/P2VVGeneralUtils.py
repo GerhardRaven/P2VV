@@ -390,6 +390,12 @@ class CPcomponentsPlotingToolkit():
                                                     even  = ePdfs[bin],
                                                     odd   = oPdfs[bin],
                                                     swave = sPdfs[bin] ) ) for bin in self._binNames ))
+        #Sneek these lines that set a unit for the phi, it helps RooFit
+        #  when creating the RooPlot. for some reason the unit of phi was not set up 
+        try: list(self._observables)[[a.GetName() for a in list(self._observables)].index('helphi')].setUnit('rad')
+        except ValueError: print 'helphi observable not in angles lsit, Failed to set, rad, as a unit. '
+
+        
     #End of the initialazation
     
 
