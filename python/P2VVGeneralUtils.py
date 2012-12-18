@@ -462,9 +462,8 @@ class CPcomponentsPlotingToolkit():
         binnedVars =  RooArgSet(self._tPdf.indexCat(), *binnedVarsList)
         return RooDataHist('RDH', 'RDH', binnedVars, self._data.reduce(RooArgSet(*projVars)))
             
-    def getPdfOpts(self, BinData=True,bins=20, whichObs=' '):
-        if   BinData and whichObs=='time':projDataSet=self.binDataSet(bins, binSigt=False)
-        elif BinData and whichObs!='time':projDataSet=self.binDataSet(bins, binSigt=True )
+    def getPdfOpts(self, BinData=True,bins=20):
+        if   BinData: projDataSet=self.binDataSet(bins)
         else:
             if self._flagKKbin: projVars = list(self._condObservables) + [self._tPdf.indexCat()]
             else              : projVars = list(self._condObservables)
@@ -478,16 +477,19 @@ class CPcomponentsPlotingToolkit():
                [self._CpCompPdfs['swave'].getPdf(b)for b in self._binNames]
 
     def getAddPdfsOptsSixKKbins(self):
+        #if not self._CPnormFracs: self.calculateCPnormFracs()
         opts = []
         for bin in self._binNames:
+            ith_binOpts = { }
             for comp in self._comps:
                 opt = dict(  ProjWData     = (self._data.reduce('KKMassCat==KKMassCat::' + bin),False)
                            , LineColor     =  self._lineColors[comp]
                            , LineStyle     =  self._lineStyles[comp]
                            , LineWidth     =  self._lineWidth
-                           , Normalization =  self._CPnormFracs[bin][comp]
+                           #, Normalization =  self._CPnormFracs[bin][comp]
                              )
-                opts.append(   dict(bin = {comp:opt})   )
+                ith_binOpts.update( {comp:opt} ) 
+            opts.append( ith_binOpts  )
         return opts
                    
     def getAddPdfsOpts(self, BinData=True,bins=20,whichObs=' '):
