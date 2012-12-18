@@ -619,12 +619,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 boxMean  = BMass.getMax('LeftSideBand') + boxWidth
                 sigMassArgs['m_sig_mean']  = dict( Value = boxMean,  Constant = True )
                 sigMassArgs['m_sig_width'] = dict( Value = boxWidth, Constant = True, MinMax = ( 0.1, 2. * boxWidth ) )
+
         elif sigMassModel.startswith('Gauss') :
             from P2VVParameterizations.MassPDFs import Gauss_Signal_Mass as SignalBMass
+
+        elif sigMassModel.startswith('DoubleGauss') :
+            from P2VVParameterizations.MassPDFs import DoubleGauss_Signal_Mass as SignalBMass
+            if sigMassModel.endswith('Diag') :
+                sigMassArgs['TransformWidthPars'] = dict(  m_sig_frac    = ( +0.033129, -0.008339, -0.007473 )
+                                                         , m_sig_sigma_1 = ( +0.115025, -0.067412, +0.000953 )
+                                                         , m_sig_sigma_2 = ( +0.756560, +0.010614, +0.000182 )
+                                                        )
+
         elif sigMassModel.startswith('CB') :
             from P2VVParameterizations.MassPDFs import CB_Signal_Mass as SignalBMass
+
         elif sigMassModel.startswith('DoubleCB') :
             from P2VVParameterizations.MassPDFs import DoubleCB_Signal_Mass as SignalBMass
+
         else :
             from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
 
