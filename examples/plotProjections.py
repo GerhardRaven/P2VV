@@ -220,7 +220,7 @@ if doFit :
 # import plotting tools
 from P2VVLoad import LHCbStyle
 from P2VVGeneralUtils import plot, CPcomponentsPlotingToolkit
-from ROOT import TCanvas, kRed, kGreen, kMagenta
+from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlack, kSolid
 
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
@@ -235,8 +235,8 @@ observables = [time] + angles
 #Set plot options      
 markStyle = 8
 markSize  = 0.4
-CpPlotsKit.setLineColors( dict(even=kRed, odd=kGreen+3, swave=kMagenta+3) )
-CpPlotsKit.setLineStyles( dict(even=9   , odd=7       , swave=5         ) )
+CpPlotsKit.setLineColors( dict(total = kBlack, even=kRed, odd=kGreen+3, swave=kMagenta+3) )
+CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
 CpPlotsKit.setLineWidth(3)
 
 #Create a TPaveText from the LHCbStyle file

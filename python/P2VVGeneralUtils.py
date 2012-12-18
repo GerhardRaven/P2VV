@@ -325,8 +325,8 @@ class CPcomponentsPlotingToolkit():
         self._condObservables = self._tPdf.ConditionalObservables()
         self._observables = self._tPdf.Observables() - self._condObservables
         self._CPnormFracs = {}
-        self._lineColors = dict(even=4,odd=4,swave=2)
-        self._lineStyles = dict(even=9,odd=3,swave=5)
+        self._lineColors = dict(total=1,even=4,odd=4,swave=2)
+        self._lineStyles = dict(total=1,even=9,odd=3,swave=5)
         self._lineWidth  = 2
 
         # Check if KK mass binning feature is active
@@ -431,6 +431,24 @@ class CPcomponentsPlotingToolkit():
         self._sliceNormFracs =  dict( (bin,table.get(bin)/total)for bin in self._binNames )
         return self._sliceNormFracs
 
+    def getProJWdata(self,bin,Bins):
+        #Helping internal function to aviod dublicating code,
+        #  Usefull in the case where you make 6x4 observable plots 
+        if bin:
+            projData = self.binDataSet(Bins)
+            from ROOT import RooRealVar
+            projVars = []
+            for pV in projData.get():
+                if isinstance(pV,RooRealVar): projVars.append(pV)        
+        else :
+            projVars = list(self._condObservables)
+            if self._flagKKbin: projVars.append(self._tPdf.indexCat())
+            projData = self._data.reduce(ArgSet=projVars)
+
+        return dict(data=projData, vars=projVars)
+
+
+
 
     #Interface
     def getCPcompPdf(self):        return self._CpCompPdfs
@@ -445,7 +463,7 @@ class CPcomponentsPlotingToolkit():
         if not self._sliceNormFracs: self.calculateKKslicesNormFracs() 
         return self._sliceNormFracs
 
-    def binDataSet(self, nBins, binSigt=True ):
+    def binDataSet(self, nBins):
         if self._flagKKbin: projVars = list(self._condObservables) + [self._tPdf.indexCat()]
         else              : projVars = list(self._condObservables)
         
@@ -454,50 +472,38 @@ class CPcomponentsPlotingToolkit():
         binnedVarsList = []
         #Bin only the continous observables
         for pV in list(self._condObservables):
-            if  isinstance(pV,Category):pass
-            elif binSigt: binnedVarsList.append(pV)
-            elif pV.GetName()!='sigmat': binnedVarsList.append(pV)
+            if    isinstance(pV,Category):pass
+            else: binnedVarsList.append(pV)
         for pV in binnedVarsList: pV.setBins(nBins)
 
         binnedVars =  RooArgSet(self._tPdf.indexCat(), *binnedVarsList)
         return RooDataHist('RDH', 'RDH', binnedVars, self._data.reduce(RooArgSet(*projVars)))
-            
+
     def getPdfOpts(self, BinData=True,bins=20):
         if   BinData: projDataSet=self.binDataSet(bins)
         else:
-            if self._flagKKbin: projVars = list(self._condObservables) + [self._tPdf.indexCat()]
-            else              : projVars = list(self._condObservables)
+            projVars = list(self._condObservables) + [self._tPdf.indexCat()]
             projDataSet = self._data.reduce(ArgSet=projVars)
-        return dict(LineWidth = self._lineWidth,
-                    ProjWData = (projDataSet, False))     
+        return dict( LineWidth = self._lineWidth
+                   , LineColor = self._lineColors['total']
+                   , ProjWData = (projDataSet, False)
+                     )     
             
     def getAddPdfs(self):
         return [self._CpCompPdfs['even' ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['odd'  ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['swave'].getPdf(b)for b in self._binNames]
 
-    def getAddPdfsOptsSixKKbins(self):
-        #if not self._CPnormFracs: self.calculateCPnormFracs()
-        opts = []
-        for bin in self._binNames:
-            ith_binOpts = { }
-            for comp in self._comps:
-                opt = dict(  ProjWData     = (self._data.reduce('KKMassCat==KKMassCat::' + bin),False)
-                           , LineColor     =  self._lineColors[comp]
-                           , LineStyle     =  self._lineStyles[comp]
-                           , LineWidth     =  self._lineWidth
-                           #, Normalization =  self._CPnormFracs[bin][comp]
-                             )
-                ith_binOpts.update( {comp:opt} ) 
-            opts.append( ith_binOpts  )
-        return opts
-                   
-    def getAddPdfsOpts(self, BinData=True,bins=20,whichObs=' '):
+
+    def getAddPdfsOpts(self, BinData=True,bins=20):
         if not self._CPnormFracs:    self.calculateCPnormFracs()
         if not self._sliceNormFracs: self.calculateKKslicesNormFracs()
-        if     BinData and whichObs=='time': data=self.binDataSet(bins, binSigt=False )
-        elif   BinData and whichObs!='time': data=self.binDataSet(bins, binSigt=True )
-        else:  data = self._data
+        if BinData:
+            data     = self.binDataSet(bins)
+            projVars = self.getProJWdata(BinData,bins)['vars']
+        else:
+            data     = self._data
+            projVars = list(self._condObservables)
         opts = []
         for comp in self._comps:
             for bin in self._binNames:
@@ -521,6 +527,45 @@ class CPcomponentsPlotingToolkit():
                 opts.append(addPdfOpt_i)
         return opts
 
+
+    def getPdfOptsSixKKbins(self, BinData=True, bins=20):
+        projecting = self.getProJWdata(BinData,bins)
+        projData   = projecting['data']
+        projVars   = projecting['vars']
+        if not BinData:  projVars.remove( self._tPdf.indexCat() )
+        opts = {}
+        KKCat = 'KKMassCat==KKMassCat::'
+        for b in self._binNames:
+            opts.update( {b : dict(  ProjWData = (projData.reduce(KKCat+b).reduce(ArgSet=projVars), False)
+                                   , LineWidth = self._lineWidth
+                                   , LineStyle = self._lineStyles['total']
+                                   , LineColor = self._lineColors['total'])
+                          }  )
+        return opts
+
+
+
+    def getAddPdfsOptsSixKKbins(self,BinData=True,bins=20):
+        if not self._CPnormFracs:    self.calculateCPnormFracs()
+        projecting = self.getProJWdata(BinData,bins)
+        projData   = projecting['data']
+        projVars   = projecting['vars']
+        if not BinData:  projVars.remove( self._tPdf.indexCat() )
+        opts = []
+        for bin in self._binNames:
+            ith_binOpts = { }
+            for comp in self._comps:
+                opt = dict(  ProjWData     = (projData.reduce('KKMassCat==KKMassCat::'+bin).reduce(ArgSet=projVars),False)
+                           , LineColor     =  self._lineColors[comp]
+                           , LineStyle     =  self._lineStyles[comp]
+                           , LineWidth     =  self._lineWidth
+                           , Normalization =  self._CPnormFracs[bin][comp]
+                             )
+                ith_binOpts.update( {comp:opt} ) 
+            opts.append( ith_binOpts  )
+        return opts
+
+    
     def setLineColors(self,colors): self._lineColors = colors
     def setLineStyles(self,styles): self._lineStyles = styles
     def setLineWidth(self, width ): self._lineWidth  = width 
