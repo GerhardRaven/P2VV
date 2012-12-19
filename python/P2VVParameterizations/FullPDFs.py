@@ -722,30 +722,68 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                 if SWeightsType.endswith( 'Fixed' ) :
                     # fix mass shape parameters for fit
-                    #ws['m_sig_mean'].setVal(5.36822e+03 +0.123)
-                    #ws['m_sig_frac'].setVal(7.5966e-01 - 0.085)
-                    #ws['m_sig_sigma_1'].setVal(6.0797 + 0.45)
-                    #ws['m_sig_sigma_sf'].setVal(2.0652 - 0.24)
-                    #ws['m_bkg_exp_bin0'].setVal(-1.7313e-03 + 0.000169)
-                    #ws['m_bkg_exp_bin1'].setVal(-1.7486e-03 + 0.000169)
-                    #ws['m_bkg_exp_bin2'].setVal(-1.7360e-03 + 0.000169)
-                    #ws['m_bkg_exp_bin3'].setVal(-1.2316e-03 + 0.000169)
-                    #ws['m_bkg_exp_bin4'].setVal(-1.5366e-03 + 0.000169)
-                    #ws['m_bkg_exp_bin5'].setVal(-1.5859e-03 + 0.000169)
-
                     fixedMassPars = [ par for par in self._sWeightMassPdf.Parameters()\
-                                      if not ( par.getAttribute('Yield') or par.isConstant() ) ]
-                    for par in fixedMassPars : par.setConstant(True)
+                                      if not ( par.getAttribute('Yield') or par.isConstant() or 'Category' in par.ClassName() ) ]
+                    #parVals = {  'm_bkg_exp_bin0'  : -2.1814e-03
+                    #           , 'm_bkg_exp_bin1'  : -4.6151e-03
+                    #           , 'm_bkg_exp_bin2'  : -1.4166e-03
+                    #           , 'm_bkg_exp_bin3'  : -2.5203e-03
+                    #           , 'm_bkg_exp_bin4'  : -1.3963e-03
+                    #           , 'm_bkg_exp_bin5'  : -2.0610e-03
+                    #           , 'm_sig_frac'      :  7.4479e-01
+                    #           , 'm_sig_mean'      :  5.36809e+03
+                    #           , 'm_sig_sigma_1'   :  6.1690e+00
+                    #           , 'm_sig_sigma_sf'  :  2.0769e+00
+                    #          }
+                    for par in fixedMassPars :
+                        #par.setVal( parVals[ par.GetName() ] )
+                        par.setConstant(True)
+
+                # hack to do fit with fixed shape parameters first
+                fixedShapeFit = False
+                if fixedShapeFit :
+                    from P2VVImports import parNames, parValues
+                    fixedMassPars = [ par for par in self._sWeightMassPdf.Parameters()\
+                                      if not ( par.getAttribute('Yield') or par.isConstant() or 'Category' in par.ClassName() ) ]
+                    #parValues = {  'm_sig_mean'      : (  5368.236,    5.47e-02, -1.       )
+                    #             , 'm_sig_frac'      : (  8.0283e-01,  2.73e-02, -1.       )
+                    #             , 'm_sig_sigma_1'   : (  6.2728,      1.19e-01, -1.       )
+                    #             , 'm_sig_sigma_sf'  : (  2.2479,      1.24e-01, -1.       )
+                    #             , 'm_bkg_exp'       : ( -1.6249e-03,  9.67e-05, -1.       )
+                    #            }
+
+                    #fixedMassParVals = { }
+                    for par in fixedMassPars :
+                        par.setConstant(True)
+                        #fixedMassParVals[par.GetName()] = ( par.getVal(), par.getError() )
+                        par.setVal( parValues[par.GetName()][0] )
+                        par.setError( parValues[par.GetName()][1] )
+
+                    massNLL = self._sWeightMassPdf.createNLL( self._dataSets['data'] )
+                    self._simMassFitResult = self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
+                    self._simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
+                    massNLLValNom = massNLL.getVal()
+                    for par in fixedMassPars :
+                        par.setConstant(False)
+                        #par.setVal( fixedMassParVals[par.GetName()][0] )
+                        #par.setError( fixedMassParVals[par.GetName()][1] )
 
                 # determine mass parameters in each sub-sample with a fit
                 print 120 * '='
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with simultaneous mass PDF'
                 self._simMassFitResult = self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
 
-                from P2VVImports import parNames
-                self._simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
+                from P2VVImports import parValues
+                self._simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
                 self._simMassFitResult.covarianceMatrix().Print()
                 self._simMassFitResult.correlationMatrix().Print()
+
+                # hack to do fit with fixed shape parameters first
+                if fixedShapeFit :
+                    massNLLValThis = massNLL.getVal()
+                    print '  mass NLL values:'
+                    print '  nominal: %f;  this: %f; 2*DeltaNLL = %f'\
+                          % ( massNLLValNom, massNLLValThis, 2. * ( massNLLValNom - massNLLValThis ) )
 
                 if SWeightsType.endswith( 'Fixed' ) :
                     # free parameters that were fixed for mass fit
