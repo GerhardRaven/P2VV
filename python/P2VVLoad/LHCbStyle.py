@@ -173,7 +173,7 @@ from ROOT import TPaveText
 lhcbName = TPaveText(gStyle.GetPadLeftMargin() + 0.14,
                          0.87 - gStyle.GetPadTopMargin(),
                          gStyle.GetPadLeftMargin() + 0.20,
-                         0.95 - gStyle.GetPadTopMargin(),
+                         0.98 - gStyle.GetPadTopMargin(),
                          "BRNDC")
 #lhcbName.AddText("#bf{LHCb preliminary}")
 #lhcbName.AddText(" ")

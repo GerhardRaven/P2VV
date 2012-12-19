@@ -395,8 +395,8 @@ class CPcomponentsPlotingToolkit():
         try: list(self._observables)[[a.GetName() for a in list(self._observables)].index('helphi')].setUnit('rad')
         except ValueError: print 'helphi observable not in angles lsit, Failed to set, rad, as a unit. '
 
-
     #End of the initialazation
+
     
 
     #Internal methods 
@@ -432,7 +432,7 @@ class CPcomponentsPlotingToolkit():
         return self._sliceNormFracs
 
     def getProJWdata(self,bin,Bins):
-        #Helping internal function to aviod dublicating code,
+        #Helping internal function to aviodavoid dublicating code,
         #  Usefull in the case where you make 6x4 observable plots 
         if bin:
             projData = self.binDataSet(Bins)
@@ -446,22 +446,6 @@ class CPcomponentsPlotingToolkit():
             projData = self._data.reduce(ArgSet=projVars)
 
         return dict(data=projData, vars=projVars)
-
-
-
-
-    #Interface
-    def getCPcompPdf(self):        return self._CpCompPdfs
-    def getNumKKbins(self):        return self._nKKbins
-    def getCPcompPdfKKbins(self):  return self._pdfsSuperDict
-    def getKKbinNames(self):       return self._binNames
-    def getCpCompNames(self):      return self._comps
-    def getCPnormFracs(self):
-        if not self._CPnormFracs: self.calculateCPnormFracs() 
-        return self._CPnormFracs
-    def getKKslicesNormFracs(self):
-        if not self._sliceNormFracs: self.calculateKKslicesNormFracs() 
-        return self._sliceNormFracs
 
     def binDataSet(self, nBins):
         if self._flagKKbin: projVars = list(self._condObservables) + [self._tPdf.indexCat()]
@@ -479,6 +463,22 @@ class CPcomponentsPlotingToolkit():
         binnedVars =  RooArgSet(self._tPdf.indexCat(), *binnedVarsList)
         return RooDataHist('RDH', 'RDH', binnedVars, self._data.reduce(RooArgSet(*projVars)))
 
+
+
+
+    #Interface
+    def getCPcompPdf(self):        return self._CpCompPdfs
+    def getNumKKbins(self):        return self._nKKbins
+    def getCPcompPdfKKbins(self):  return self._pdfsSuperDict
+    def getKKbinNames(self):       return self._binNames
+    def getCpCompNames(self):      return self._comps
+    def getCPnormFracs(self):
+        if not self._CPnormFracs: self.calculateCPnormFracs() 
+        return self._CPnormFracs
+    def getKKslicesNormFracs(self):
+        if not self._sliceNormFracs: self.calculateKKslicesNormFracs() 
+        return self._sliceNormFracs
+
     def getPdfOpts(self, BinData=True,bins=20):
         if   BinData: projDataSet=self.binDataSet(bins)
         else:
@@ -493,7 +493,6 @@ class CPcomponentsPlotingToolkit():
         return [self._CpCompPdfs['even' ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['odd'  ].getPdf(b)for b in self._binNames] +\
                [self._CpCompPdfs['swave'].getPdf(b)for b in self._binNames]
-
 
     def getAddPdfsOpts(self, BinData=True,bins=20):
         if not self._CPnormFracs:    self.calculateCPnormFracs()
@@ -519,14 +518,9 @@ class CPcomponentsPlotingToolkit():
                                   if comp=='even' : argAddTo = ( 'addPDF{0}'.format(binInd-1),1.,1.)
                                   if comp=='odd'  : argAddTo = ( 'addPDF{0}'.format(  len(self._binNames) + binInd-1 ,1.,1.) )
                                   if comp=='swave': argAddTo = ( 'addPDF{0}'.format(2*len(self._binNames) + binInd-1 ,1.,1.) )
-                                  #TODO:: Make this part of assosiating pdfComps with addPDF Name more stable, make a dictinary
-                                  #if comp=='even' : argAddTo = (self.getAddPdfs()[binInd-1].GetName(), 1.,1.)
-                                  #if comp=='odd'  : argAddTo = (self.getAddPdfs()[  len(self._binNames) + binInd-1].GetName() ,1.,1.)
-                                  #if comp=='odd'  : argAddTo = (self.getAddPdfs()[2*len(self._binNames) + binInd-1].GetName() ,1.,1.)
                                   addPdfOpt_i.update(dict(AddTo = argAddTo))
                 opts.append(addPdfOpt_i)
         return opts
-
 
     def getPdfOptsSixKKbins(self, BinData=True, bins=20):
         projecting = self.getProJWdata(BinData,bins)
@@ -542,8 +536,6 @@ class CPcomponentsPlotingToolkit():
                                    , LineColor = self._lineColors['total'])
                           }  )
         return opts
-
-
 
     def getAddPdfsOptsSixKKbins(self,BinData=True,bins=20):
         if not self._CPnormFracs:    self.calculateCPnormFracs()
@@ -564,7 +556,6 @@ class CPcomponentsPlotingToolkit():
                 ith_binOpts.update( {comp:opt} ) 
             opts.append( ith_binOpts  )
         return opts
-
     
     def setLineColors(self,colors): self._lineColors = colors
     def setLineStyles(self,styles): self._lineStyles = styles
@@ -689,6 +680,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     # set y scale
     if yScale[0]    : obsFrame.SetMinimum(yScale[0])
     if yScale[1]    : obsFrame.SetMaximum(yScale[1])
+    if logy and obsFrame.GetMinimum()<=0: obsFrame.SetMinimum(0.1)
     if yScaleRel[0] : obsFrame.SetMinimum( yScaleRel[0] * obsFrame.GetMinimum() )
     if yScaleRel[1] : obsFrame.SetMaximum( yScaleRel[1] * obsFrame.GetMaximum() )
 

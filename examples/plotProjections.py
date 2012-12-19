@@ -10,7 +10,7 @@ pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
-doFit                   = False
+doFit                   = True
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 #OutputPath for the plots in line 
@@ -212,7 +212,7 @@ if doFit :
 
     fitResult.Print()
 
-
+assert(False)
 ###########################################################################################################################################
 ## make plots ##
 #####################
@@ -220,7 +220,7 @@ if doFit :
 # import plotting tools
 from P2VVLoad import LHCbStyle
 from P2VVGeneralUtils import plot, CPcomponentsPlotingToolkit
-from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlack, kSolid
+from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlue, kSolid
 
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
@@ -234,91 +234,53 @@ observables = [time] + angles
 
 #Set plot options      
 markStyle = 8
-markSize  = 0.4
-CpPlotsKit.setLineColors( dict(total = kBlack, even=kRed, odd=kGreen+3, swave=kMagenta+3) )
+markSize  = 0.5
+CpPlotsKit.setLineColors( dict(total = kBlue , even=kRed, odd=kGreen+3, swave=kMagenta+3) )
 CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
-CpPlotsKit.setLineWidth(3)
+CpPlotsKit.setLineWidth(4)
 
 #Create a TPaveText from the LHCbStyle file
 LHCbLabel = LHCbStyle.lhcbName
-LHCbLabel.AddText("#bf{LHCb preliminary}")
+LHCbLabel.AddText("#bf{LHCb}")
 LHCbLabel.AddText(" ")
-LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV, #scale[0.5]{#int}L = 1.1 fb^{-1}}")
+LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV}, #bf{#scale[0.5]{#int}L = 1 fb^{-1}}")
 
-
-
-pdf = pdf.getPdf('bin0')
-
-#Plot and Save
+##Plot and Save
 for ( pad, obs, nBins, xTitle, yScale, logY )\
                  in zip( [ TCanvas(o.GetName()) for o in observables ] 
                         , observables
                         , numBins
                         , ( time.GetTitle()+' [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-                        , ( ( 0.1, 10e4 ), ) + ( ( None, 1400 ), ) + 2 * ( (None,1200),)
+                        , ( ( 0.1, 10e4 ), ) + 3 *( ( None, 1400 ), )
                         , ( True, ) + 3 * ( False, )
                        ) :
     print '\n\n\n Ploting Observable {0}/{1}: '.format(observables.index(obs)+1,len(observables),obs.GetName()),'\n\n\n'
     plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
-           #, frameOpts   = dict( Bins = nBins, Title = plotTitle                )
-           #, dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
-           #, pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
-           #           else CpPlotsKit.getPdfOpts(BinData=True )
-           #, addPDFs     = CpPlotsKit.getAddPdfs()
-           #, addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
-           #           else CpPlotsKit.getAddPdfsOpts(BinData=True )
+           , frameOpts   = dict( Bins = nBins                                   )
+           , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
+           , pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
+                      else CpPlotsKit.getPdfOpts(BinData=True )
+           , addPDFs     = CpPlotsKit.getAddPdfs()
+           , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
+                      else CpPlotsKit.getAddPdfsOpts(BinData=True )
            )
 
     LHCbLabel.Draw()
     filename = obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] else obs.GetName() + '_cFit.ps'
     pad.Print(filename)
 
-assert(False)
 
-
-
-
-
-
-#TODO for Monday:
-# Make plots in all KK mass bins.
-#Make normRatio plots in bins of the Conditional observables
-#Residuals
-#Bin all condObs ???
-#Ask for parameter AparMag2 in pdf.Parameter() or elsewere but not in ws()
-#I did not changed the way I choose component add pdf in the getaddpdfOpts() 
-
-
-
-
-
-
-
-
-#Report: under the carpet things
-#2 assumptions,
-#Total curve is not ploted with the add six curves shit
-#Negative normalization integral,
-
-#Infos
-#binned continuous cont obs, average rest of cond obs, maybe try to bin all
-#No reason to impliment ploting without KK mass binning, Take out the if statments in calculateCPNormFracs()
-#sigmat cannot be prohected out as a binned variable when ploting decay time
-
-#Why plot performs minimization???? 
 
 
 assert(False)
+## # Replacement lines to plot only the angles since the lifetime takes a long time
+## for ( pad, obs, nBins, xTitle, yScale, logY )\
+##         in zip( [ TCanvas(o.GetName()) for o in observables[1:4] ] 
+##                         , observables[1:4]
+##                         , numBins[1:4]
+##                         , (angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+##                         ,(  ( None, 1400 ), ) + 2 * ( (None,1300),)
+##                         ,   3 * ( False, )
+##                        ) :
 
 
-
-
-
-
-
-
-#How to plot slices of data.
-slices = { 'Slices':[(trgCategory, 'exclB' ),(trgCategory , 'notExclB' )]  }
-
-# For TLEgend
-#canvas.FindObject('curveName')

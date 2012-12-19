@@ -10,7 +10,7 @@ pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
-doFit                   = False
+doFit                   = True
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 #OutputPath for the plots in line 
@@ -220,7 +220,7 @@ if doFit :
 # import plotting tools
 from P2VVLoad import LHCbStyle
 from P2VVGeneralUtils import plot, CPcomponentsPlotingToolkit
-from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlack, kSolid
+from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlue, kSolid
 
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
@@ -238,71 +238,52 @@ observables = [time] + angles
 
 #Set plot options      
 markStyle = 8
-markSize  = 0.4
-lineWidth = 3
-CpPlotsKit.setLineColors( dict(total = kBlack, even=kRed, odd=kGreen+3, swave=kMagenta+3) )
+markSize  = 0.5
+lineWidth = 4
+CpPlotsKit.setLineColors( dict(total = kBlue, even=kRed, odd=kGreen+3, swave=kMagenta+3) )
 CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
-CpPlotsKit.setLineWidth(3)
+CpPlotsKit.setLineWidth(lineWidth)
 
 #Create a TPaveText from the LHCbStyle file
 LHCbLabel = LHCbStyle.lhcbName
-LHCbLabel.AddText("#bf{LHCb preliminary}")
+LHCbLabel.AddText("#bf{LHCb}")
 LHCbLabel.AddText(" ")
-LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV, #scale[0.5]{#int}L = 1.1 fb^{-1}}")
+LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV, L = 1 fb^{-1}}")
 
-
-
-
+#Get pdf and AdPdf options in case of bining and No bining the projData 
 PDFoptsBin   = CpPlotsKit.getPdfOptsSixKKbins(BinData=True)
 PDFoptsNOBin =  CpPlotsKit.getPdfOptsSixKKbins(BinData=False)
-
 addPDFotpsBin = CpPlotsKit.getAddPdfsOptsSixKKbins(BinData=True)
 addPDFotpsNOBin = CpPlotsKit.getAddPdfsOptsSixKKbins(BinData=False)
 
-
 #Plot and save  lifetime and angles in all the KK mass bins
 for bin in binNames:
-         print '\n\nP2VV - INFO: Plotting decay time and angular distributions of' + bin
+         print '\n\nP2VV - INFO: Plotting decay time and angular distributions of ' + bin
          dataSlice = defData.reduce('KKMassCat==KKMassCat::' + bin)
          pdfSlice  = pdfsDict[bin]['total']
          binIdx = binNames.index(bin)
-         for ( pad, obs, nBins, xTitle, yScale, logY )\
+         for ( pad, obs, nBins, xTitle, yScaleRel, logY )\
                  in zip(  [ TCanvas(o.GetName()+bin) for o in observables ]
                         , observables
                         , numBins
                         , ( time.GetTitle()+' [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-                        , ( ( 0.1, None ), ) + 3 * ( (None,None),)
+                        #, ( ( 0.1, None ), ) + 3 * ( (None,None),)
+                        , 2 *(( 1., 1.2 ),) + 2 *(( 1. , 1.2 ),) 
                         , ( True, ) + 3 * ( False, )
-                       ) :
-##              if obs==time:
-##                  PDFopts    = CpPlotsKit.getPdfOptsSixKKbins(BinData=False)
-##                  addPDFotps = CpPlotsKit.getAddPdfsOptsSixKKbins(BinData=False)
-##              else:
-##                  PDFopts    = CpPlotsKit.getPdfOptsSixKKbins(BinData=True)
-##                  addPDFotps = CpPlotsKit.getAddPdfsOptsSixKKbins(BinData=True)
-
-             plot(  pad, obs, dataSlice, pdfSlice, xTitle = xTitle, yScale = yScale, logy = logY
-                  , frameOpts   = dict( Bins = nBins                                            )
-                  , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize          )
-                 # , pdfOpts     = PDFopts[bin]
+                       ) :           
+             plot(  pad, obs, dataSlice, pdfSlice, xTitle = xTitle, yScaleRel = yScaleRel, logy = logY
+                  , frameOpts   = dict( Bins = nBins                                                   )
+                  , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize                 )
                   , pdfOpts     = PDFoptsNOBin[bin] if obs==time else PDFoptsBin[bin]
                   , addPDFs     = [ pdfsDict[bin][c] for c in CPcomps ]
-                 # , addPDFsOpts = [addPDFotps[binIdx][c] for c in CPcomps ]
-                  , addPDFsOpts = [addPDFotpsNOBin[binIdx][c] for c in CPcomps ] if obs==time else  [addPDFotpsBin[binIdx][c] for c in CPcomps ]
+                  , addPDFsOpts = [addPDFotpsNOBin[binIdx][c] for c in CPcomps ] if obs==time\
+                            else  [addPDFotpsBin[binIdx][c] for c in CPcomps ]
                    )
-             
              LHCbLabel.Draw()
-         # print canvas to file
+        ## print canvas to file
              fName =  bin + '_' + obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] \
                 else  bin + '_' + obs.GetName() + '_cFit.ps'
              pad.Print(fName)
-
-
-           #  if obs == time: break
-         #if bin =='bin0': break
-
-
-
 
 
 
