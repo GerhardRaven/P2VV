@@ -14,14 +14,14 @@ doFit                   = True
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = False
+pdfConfig['makePlots']  = True
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 corrSFitErr             = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' / 'matrix' / 'sumWeight'
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
-#plotsFile = 'plots/JvLSFit_SWavePhases.ps'
+#plotsFile = 'plots/JvLSFit.ps'
 plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
 parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
@@ -31,6 +31,10 @@ if readData :
     pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDown.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagUp.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_rand0.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_rand1.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_BTags.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_BbarTags.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Pass3-version2_Bs_050711_nocut_Phi_P2VV.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
@@ -43,11 +47,11 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
-MinosPars = [ 'AparPhase', 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5' ]
+MinosPars = [ ] # [ 'AparPhase', 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5' ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 2
+fitOpts = dict(  NumCPU    = 6
                , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True
@@ -74,6 +78,8 @@ gStyle.SetLineStyleString( 9, ' 100 20'       )
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
 
+pdfConfig['sigMassModel']         = 'DoubleGaussDiag' # 'boxFixed'
+pdfConfig['bkgMassModel']         = '' # 'linearConstant'
 pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
 pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
@@ -101,8 +107,8 @@ pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
-pdfConfig['numTimeResBins']        = 25
-pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
+pdfConfig['numTimeResBins']        = 50
+pdfConfig['constrainTimeResScale'] = 'fixed'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
 pdfConfig['signalFraction'] = 0.45
@@ -570,9 +576,9 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
+    from P2VVImports import parNames, parValues
     print 'JvLFit: parameters:'
-    fitResult.Print()
-    for par in RooMinPars : par.Print()
+    fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
     fitResult.correlationMatrix().Print()
 
@@ -617,26 +623,6 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
         projWDataBulk     = dict()
         projWDataBBulk    = dict()
         projWDataBbarBulk = dict()
-
-if pdfConfig['makePlots'] :
-    # plot background time
-    print 'JvLFit: plotting background lifetime distribution'
-    bkgTimeCanv = TCanvas( 'bkgTimeCanv', 'Background Lifetime' )
-    for ( pad, data, plotTitle, logY )\
-          in zip(  bkgTimeCanv.pads( 2, 2 )
-                 , 2 * [ pdfBuild['bkgRangeData'], pdfBuild['bkgSWeightData'] ]
-                 , [  time.GetTitle() + ' - mass side bands - linear'
-                    , time.GetTitle() + ' - mass S-weights - linear'
-                    , time.GetTitle() + ' - mass side bands - logarithmic'
-                    , time.GetTitle() + ' - mass S-weights - logarithmic'
-                   ]
-                 , 2 * [ False ] + 2 * [ True ]
-                ) :
-        plot(  pad, time, data, pdfBuild['bkg_t'], logy = logY
-             , frameOpts  = dict( Title = plotTitle, Range = 'Bulk', Bins = pdfConfig['numTimeBins'] )
-             , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
-             , pdfOpts    = dict( LineColor = kBlue, LineWidth = 2  )
-            )
 
 if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
         and ( ( pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' )\
@@ -996,16 +982,23 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #         , components  = comps
     #        )
 
-    #if not pdfConfig['SFit'] and pdfConfig['SWeightsType'].startswith('simultaneous')\
-    #        and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
-    #    # plot signal mass
-    #    print 'JvLFit: plotting mumuKK mass distribution'
-    #    pad = pdfBuild['massCanv'].cd(2)
-    #    plot(  pad, BMass, defData, pdf
-    #         , frameOpts  = dict( Range = 'Signal', Bins = pdfConfig['numBMassBins'][0], Title = BMass.GetTitle() + ' full fit - signal' )
-    #         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                                      )
-    #         , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 2                                            )
-    #         , components = comps
+    ## plot background time
+    #print 'JvLFit: plotting background lifetime distribution'
+    #bkgTimeCanv = TCanvas( 'bkgTimeCanv', 'Background Lifetime' )
+    #for ( pad, data, plotTitle, logY )\
+    #      in zip(  bkgTimeCanv.pads( 2, 2 )
+    #             , 2 * [ pdfBuild['bkgRangeData'], pdfBuild['bkgSWeightData'] ]
+    #             , [  time.GetTitle() + ' - mass side bands - linear'
+    #                , time.GetTitle() + ' - mass S-weights - linear'
+    #                , time.GetTitle() + ' - mass side bands - logarithmic'
+    #                , time.GetTitle() + ' - mass S-weights - logarithmic'
+    #               ]
+    #             , 2 * [ False ] + 2 * [ True ]
+    #            ) :
+    #    plot(  pad, time, data, pdfBuild['bkg_t'], logy = logY
+    #         , frameOpts  = dict( Title = plotTitle, Range = 'Bulk', Bins = pdfConfig['numTimeBins'] )
+    #         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
+    #         , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3  )
     #        )
 
     # print canvas to file
@@ -1013,37 +1006,16 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     ctkCanv.Print(plotsFile)
     ctlCanv.Print(plotsFile)
     phiCanv.Print( plotsFile + ( ')' if not deltaSCanv and not pdfConfig['makePlots'] else '' ) )
+    #anglesCanv.Print(plotsFile)
     #timeCanv1.Print(plotsFile)
     #timeCanv2.Print(plotsFile)
-    if pdfConfig['makePlots'] :
-        #anglesCanv.Print(plotsFile)
-        if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
-            pdfBuild['massCanvSig'].Print(plotsFile)
-            pdfBuild['massCanvLeft'].Print(plotsFile)
-            pdfBuild['massCanvRight'].Print(plotsFile)
-        else :
-            pdfBuild['massCanv'].Print(plotsFile)
-        pdfBuild['mumuMassCanv'].Print(plotsFile)
-        pdfBuild['KKMassCanv'].Print(plotsFile)
-        bkgTimeCanv.Print(plotsFile)
-        pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
-        pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
-        pdfBuild['estWTagCanvOS'].Print(plotsFile)
-        pdfBuild['estWTagCanvSS'].Print( plotsFile + ( '' if deltaSCanv else ')' ) )
+    #bkgTimeCanv.Print(plotsFile)
 
-    #else :
-        #anglesCanv.Print( plotsFile + ( '' if deltaSCanv else ')' ) )
-
-elif pdfConfig['makePlots'] :
-    if pdfConfig['SWeightsType'].startswith('simultaneous') and pdfConfig['parameterizeKKMass'] == 'simultaneous' :
-        pdfBuild['massCanvSig'].Print(plotsFile + '(')
-        pdfBuild['massCanvLeft'].Print(plotsFile)
-        pdfBuild['massCanvRight'].Print(plotsFile)
-    else :
-        pdfBuild['massCanv'].Print(plotsFile + '(')
+if pdfConfig['makePlots'] :
+    pdfBuild['massCanvs'][0].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
+    for canv in pdfBuild['massCanvs'][ 1 : ] : canv.Print(plotsFile)
     pdfBuild['mumuMassCanv'].Print(plotsFile)
     pdfBuild['KKMassCanv'].Print(plotsFile)
-    bkgTimeCanv.Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSideBandCanv'].Print(plotsFile)
     pdfBuild['estWTagCanvOS'].Print(plotsFile)
@@ -1052,7 +1024,7 @@ elif pdfConfig['makePlots'] :
 if deltaSCanv :
     gStyle.SetEndErrorSize(4)
     deltaSCanv.Update()
-    deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
+    deltaSCanv.Print( plotsFile + ( ')' if ( makeObservablePlots and not pdfBuild['iTagZeroTrick'] ) or pdfConfig['makePlots'] else '' ) )
 
 
 ###########################################################################################################################################

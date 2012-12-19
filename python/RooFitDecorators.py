@@ -424,3 +424,106 @@ def _RooFitResultParamsLatex(self,name,toys):
     return
 
 RooFitResult.writepars = _RooFitResultParamsLatex
+
+def _RooFitResultPrint( self, **kwargs ) :
+    from math import ceil, log10
+    fitPars = self.floatParsFinal()
+
+    text   = kwargs.pop( 'text',   False )
+    LaTeX  = kwargs.pop( 'LaTeX',  False )
+    normal = kwargs.pop( 'normal', False )
+    if not text and not LaTeX : normal = True
+
+    printDecim  = kwargs.pop( 'Precision', 2   )
+    parNameDict = kwargs.pop( 'ParNames',  { } )
+    parValsDict = kwargs.pop( 'ParValues', { } )
+
+    print '  fit result:'
+    print '  status: %d' % self.status()
+    print '  NLL = %f  :  EDM = %f' % ( self.minNll(), self.edm() )
+    print
+
+    def getTextVals(par) :
+        names = (  parNameDict[ par.GetName() ][0] if par.GetName() in parNameDict else par.GetName()
+                 , parNameDict[ par.GetName() ][1] if par.GetName() in parNameDict else par.GetName()
+                )
+        if par.hasAsymError() : prec = printDecim - int( ceil( log10( max( -par.getErrorLo(), par.getErrorHi() ) ) ) )
+        else                  : prec = printDecim - int( ceil( log10( par.getError()                             ) ) )
+        if prec < 0 : prec = 0
+
+        thisVal = (  ( '{0:<+10.%df}' % prec ).format( par.getVal() )
+                   , ( '{0:<+10.%df}' % prec ).format( par.getErrorLo() )\
+                     if par.hasAsymError() else ( '{0:<10.%df}' % prec ).format( par.getError() )
+                   , ( '{0:<+10.%df}' % prec ).format( par.getErrorHi() ) if par.hasAsymError() else ''
+                  )
+
+        if parValsDict and par.GetName() in parValsDict :
+            nomPar = parValsDict[ par.GetName() ]
+            if nomPar[1] < 0. : prec = printDecim - int( ceil( log10( max( -nomPar[1], nomPar[2] ) ) ) )
+            else              : prec = printDecim - int( ceil( log10( nomPar[1]                    ) ) )
+            if prec < 0 : prec = 0
+
+            nomVal = (  ( '{0:<+10.%df}' % prec ).format( nomPar[0] )
+                      , ( '{0:<+10.%df}' % prec ).format( nomPar[1] )\
+                        if nomPar[1] < 0. else ( '{0:<10.%df}'  % prec ).format( nomPar[1] )
+                      , ( '{0:<+10.%df}' % prec ).format( nomPar[2] ) if nomPar[1] < 0. else ''
+                     )
+            thisErr = ( 0.5 * ( par.getErrorHi() - par.getErrorLo() ) ) if par.hasAsymError() else par.getError()
+            nomErr  = ( 0.5 * ( nomPar[2]        - nomPar[1]        ) ) if nomPar[1] < 0.     else nomPar[1]
+            dev = (  ( '{0:<+10.%df}' % prec ).format( par.getVal() - nomPar[0] )
+                   , '{0:<+6.3f}'.format( 2. * ( par.getVal() - nomPar[0] ) / ( thisErr + nomErr ) )
+                  )
+
+        else :
+            nomVal = ( )
+            dev    = ( )
+
+        return ( names, thisVal, nomVal, dev )
+
+    if text :
+        # print parameters in text format
+        for par in fitPars :
+            vals = getTextVals(par)
+            if vals[1][2] :
+                print '  {0:<30s} {1} {2} {3}{4}'.format( vals[0][0], vals[1][0], vals[1][2], vals[1][1]\
+                                                         , ( ' %s (%s sigma)' % ( vals[3][0], vals[3][1] ) ) if vals[3] else '' )
+            else :
+                print '  {0:<30s} {1} +/- {2} {3}'.format( vals[0][0], vals[1][0], vals[1][1]\
+                                                          , ( '       %s (%s sigma)' % ( vals[3][0], vals[3][1] ) ) if vals[3] else '' )
+        print
+
+    if LaTeX :
+        # print parameters in LaTeX format
+        print '  \\begin{tabular}' + ( '{|c|c|c|c|}' if parValsDict else '{|c|c|}' )
+        print '    \\hline'
+        print '    parameter  &  nominal value  &  value  &  difference (sigma)  \\\\' if parValsDict else '    parameter  &  value  \\\\'
+        print '    \\hline'
+
+        for par in fitPars :
+            vals = getTextVals(par)
+            prStr = '    {0:<40s}  '.format( vals[0][1] )
+            if vals[2] :
+                if vals[2][2] : prStr += '&  $%s^{%s}_{%s}$  '          % ( vals[2][0], vals[2][2], vals[2][1] )
+                else :          prStr += '&  $%s \\pm %s$             ' % ( vals[2][0], vals[2][1] )
+            elif parValsDict :
+                prStr += '&  ' + ( ' ' * 40 )
+
+            if vals[1][2] : prStr += '&  $%s^{%s}_{%s}$  '          % ( vals[1][0], vals[1][2], vals[1][1] )
+            else :          prStr += '&  $%s \\pm %s$             ' % ( vals[1][0], vals[1][1] )
+
+            if vals[3] :
+                prStr += '&  %s  &  %s  ' % ( vals[3][0], vals[3][1] )
+            elif parValsDict :
+                prStr += '&          &          '
+
+            print prStr + '\\\\'
+
+        print '    \\hline'
+        print '  \\end{tabular}'
+        print
+
+    if normal :
+        # use normal print
+        self.Print()
+
+RooFitResult.PrintSpecial = _RooFitResultPrint

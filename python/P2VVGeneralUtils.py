@@ -368,23 +368,38 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         residHist.GetXaxis().SetLimits( xAxis.GetXmin(), xAxis.GetXmax() )
         _P2VVPlotStash.append(residHist)
 
+        xAxis.SetLabelOffset(0.1)
+        yAxis.SetTitleSize(0.08)
+        yAxis.SetLabelSize(0.07)
+        yAxis.SetTitleOffset(0.75)
+
         # create residuals frame
         residFrame = obsFrame.emptyClone( obsFrame.GetName() + '_resid' )
-        if 'Title' in frameOpts: residFrame.SetTitle(frameOpts['Title'])
+        #if 'Title' in frameOpts: residFrame.SetTitle(frameOpts['Title'])
+        #residFrame.SetTitle('')
         xAxis = residFrame.GetXaxis()
+        xAxis.SetLabelSize(0.15)
+        xAxis.SetTitleSize(0.15)
+        xAxis.SetLabelOffset(0.02)
+        xAxis.SetTitleOffset(1.0)
+        yAxis = residFrame.GetYaxis()
+        yAxis.SetTitle('')
+        yAxis.SetLabelSize(0.13)
+        yAxis.SetLabelOffset(0.01)
         _P2VVPlotStash.append(residFrame)
 
         # set minimum for observable's frame if there is a log scale for y
-        if logy : obsFrame.SetMinimum(0.1)
+        #if logy : obsFrame.SetMinimum(0.1)
 
         # set residual plot options
         #TODO: if normalize : plot residHist as a filled histogram with fillcolor blue...
         #      or, maybe, with the 'bar chart' options: 'bar' or 'b'
         if dataOpts :
-            fun = { 'MarkerSize'  : lambda x : residHist.SetMarkerSize(x) 
-                  , 'MarkerStyle' : lambda x : residHist.SetMarkerStyle(x)
-                  , 'MarkerColor' : lambda x : residHist.SetMarkerColor(x)
-                  , 'Title'       : lambda x : residFrame.SetTitle(x)
+            fun = {  'MarkerSize'  : lambda x : residHist.SetMarkerSize(x)
+                   , 'MarkerStyle' : lambda x : residHist.SetMarkerStyle(x)
+                   , 'MarkerColor' : lambda x : residHist.SetMarkerColor(x)
+                   , 'LineWidth'   : lambda x : residHist.SetLineWidth(x)
+                   , 'Title'       : lambda x : residFrame.SetTitle(x)
                   }
             for k, v in dataOpts.iteritems() : 
                 if k in fun : fun[k](v)
@@ -403,8 +418,8 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
             residFrame.SetMinimum(-maxY)
 
         if normalize :
-            if residHist.getYAxisMin() > -5 : residFrame.SetMinimum(-5)
-            if residHist.getYAxisMax() <  5 : residFrame.SetMaximum(5)
+            if residHist.getYAxisMin() > -5.5 : residFrame.SetMinimum(-5.5)
+            if residHist.getYAxisMax() < +5.5 : residFrame.SetMaximum(+5.5)
 
         # add a line at y=0
         zeroLine = TLine( xAxis.GetXmin(), 0, xAxis.GetXmax(), 0 )
@@ -416,12 +431,14 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         # draw observable frame
         canv.cd()
         obsName = obs.GetName() + '_plot1'
-        obsPad = TPad( obsName, obsName, 0, 0.2, 1, 1 )
+        obsPad = TPad( obsName, obsName, 0, 0.32, 1, 1 )
         _P2VVPlotStash.append(obsPad)
         if logy: obsPad.SetLogy(1)
         if logx: obsPad.SetLogx(1)
         obsPad.SetNumber(1)
-        obsPad.SetLeftMargin(0.12)
+        #obsPad.SetLeftMargin(0.12)
+        obsPad.SetTopMargin(0.04)
+        obsPad.SetBottomMargin(0.04)
         obsPad.Draw()
         canv.cd(1)
         if 'Title' in frameOpts and not frameOpts['Title']:
@@ -431,11 +448,13 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         # draw residuals frame
         canv.cd()
         residName = obs.GetName() + '_resid1'
-        residPad = TPad( residName, residName, 0, 0, 1, 0.2 )
+        residPad = TPad( residName, residName, 0, 0, 1, 0.32 )
         if logx: residPad.SetLogx(1)
         _P2VVPlotStash.append(residPad)
         residPad.SetNumber(2)
-        residPad.SetLeftMargin(0.12)
+        #residPad.SetLeftMargin(0.12)
+        residPad.SetTopMargin(0.)
+        residPad.SetBottomMargin(0.4)
         residPad.Draw()
         canv.cd(2)
         if 'Title' in frameOpts and not frameOpts['Title']:
