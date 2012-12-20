@@ -212,7 +212,7 @@ if doFit :
 
     fitResult.Print()
 
-assert(False)
+
 ###########################################################################################################################################
 ## make plots ##
 #####################
@@ -239,24 +239,24 @@ CpPlotsKit.setLineColors( dict(total = kBlue , even=kRed, odd=kGreen+3, swave=kM
 CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
 CpPlotsKit.setLineWidth(4)
 
-#Create a TPaveText from the LHCbStyle file
+#Gain access on the LHCb style PaveText that it is been printed on the canvas
 LHCbLabel = LHCbStyle.lhcbName
 LHCbLabel.AddText("#bf{LHCb}")
 LHCbLabel.AddText(" ")
-LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV}, #bf{#scale[0.5]{#int}L = 1 fb^{-1}}")
+LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV, L = 1 fb^{-1}}")
 
 ##Plot and Save
 for ( pad, obs, nBins, xTitle, yScale, logY )\
-                 in zip( [ TCanvas(o.GetName()) for o in observables ] 
-                        , observables
-                        , numBins
-                        , ( time.GetTitle()+' [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-                        , ( ( 0.1, 10e4 ), ) + 3 *( ( None, 1400 ), )
-                        , ( True, ) + 3 * ( False, )
-                       ) :
+        in zip(  [ TCanvas(o.GetName()) for o in observables ]
+               , observables
+               , numBins
+               , ( time.GetTitle()+' [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+               , ( ( 0.1, 10e4 ), ) + 3 *( ( None, 1400 ), )
+               , ( True, ) + 3 * ( False, )
+                ) :
     print '\n\n\n Ploting Observable {0}/{1}: '.format(observables.index(obs)+1,len(observables),obs.GetName()),'\n\n\n'
     plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
-           , frameOpts   = dict( Bins = nBins                                   )
+           , frameOpts   = dict( Bins = nBins, Name = obs.GetName() + 'Histo'   )
            , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
            , pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
                       else CpPlotsKit.getPdfOpts(BinData=True )
@@ -264,23 +264,15 @@ for ( pad, obs, nBins, xTitle, yScale, logY )\
            , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
                       else CpPlotsKit.getAddPdfsOpts(BinData=True )
            )
-
     LHCbLabel.Draw()
     filename = obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] else obs.GetName() + '_cFit.ps'
     pad.Print(filename)
 
-
-
-
-assert(False)
-## # Replacement lines to plot only the angles since the lifetime takes a long time
-## for ( pad, obs, nBins, xTitle, yScale, logY )\
-##         in zip( [ TCanvas(o.GetName()) for o in observables[1:4] ] 
-##                         , observables[1:4]
-##                         , numBins[1:4]
-##                         , (angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-##                         ,(  ( None, 1400 ), ) + 2 * ( (None,1300),)
-##                         ,   3 * ( False, )
-##                        ) :
+# Save all the plots in a root file as RooPlot objects.
+from P2VVGeneralUtils import _P2VVPlotStash as rooplots
+from ROOT import TFile
+plotsFile = TFile('RooPlots.root','recreate')
+for plot in rooplots: plot.Write()
+plotsFile.Close()
 
 
