@@ -33,11 +33,12 @@ class ShapeBuilder(object):
             
         if 'B' in masses:
             m_sig_mean  = RealVar('wpv_m_sig_mean',   Unit = 'MeV', Value = 5365, MinMax = (5363, 5372))
-            m_sig_sigma = RealVar('wpv_m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (5, 20))
+            m_sig_sigma = RealVar('wpv_m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (1, 20))
             from ROOT import RooGaussian as Gaussian
             self._sig_mass = Pdf(Name = 'wpv_sig_m', Type = Gaussian, Parameters = (masses['B'], m_sig_mean, m_sig_sigma ))
             ## self._sig_mass = BMassPdf(masses['B'], Name = 'wpv_sig_mass', Prefix = "wpv_")
-            self._bkg_mass = BBkgPdf(masses['B'],  Name = 'wpv_bkg_mass', Prefix = "wpv_")
+            self._bkg_mass = BBkgPdf(masses['B'],  Name = 'wpv_bkg_mass', Prefix = "wpv_",
+                                     wpv_m_bkg_exp = dict(Name = 'wpv_m_bkg_exp', Value = -0.0017, MinMax = (-0.01, -0.00001)))
             self._sig[masses['B']] = self._sig_mass
             self._psi[masses['B']] = self._bkg_mass.pdf()
             self._bkg[masses['B']] = self._bkg_mass.pdf()
@@ -73,6 +74,9 @@ class ShapeBuilder(object):
                 raise RuntimeError
         else:
             self._data = input_file.Get(Data)
+
+        self._data = self._data.reduce("{0} > {1} && {0} < {2}".format(time.GetName(), time.getMin(),
+                                                                       time.getMax()))
 
         # self._data = self._data.reduce("mass > 5348 && mass < 5388")
         fitOpts = dict(NumCPU = 4, Save = True, Minimizer = 'Minuit2', Optimize = 2)
@@ -121,9 +125,9 @@ class ShapeBuilder(object):
                  , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
                  , pdfOpts  = dict(LineWidth = 2)
                  , plotResidHist = True
-                 , components = { 'bkg_*'   : dict( LineColor = kRed,   LineStyle = kDashed )
-                                  , 'psi_*' : dict( LineColor = kGreen, LineStyle = kDashed )
-                                  , 'sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
+                 , components = { 'wpv_bkg_*'   : dict( LineColor = kRed,   LineStyle = kDashed )
+                                  , 'wpv_psi_*' : dict( LineColor = kGreen, LineStyle = kDashed )
+                                  , 'wpv_sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
                                   }
                  )
         if self.__st:
@@ -143,6 +147,7 @@ class ShapeBuilder(object):
             from P2VVGeneralUtils import plot
             pdfOpts  = dict(ProjWData = (RooArgSet(st), self.__sdatas[c], True))
             plot(p, t, pdf = shape, data = self.__sdatas[c]
+                 , frameOpts = dict(Title = c.GetName())
                  , dataOpts = dict(MarkerSize = 0.8, Binning = 80, MarkerColor = kBlack)
                  , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
                  , logy = False

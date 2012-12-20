@@ -27,6 +27,7 @@
 #include "MultiHistEntry.h"
 #include "RooComplementCoef.h"
 #include "RooEffConvGenContext.h"
+#include "RooBoxPdf.h"
 
 #include <map>
 #include <string>
@@ -38,8 +39,8 @@ struct Instantiations {
    std::map<RooCategoryProxy*, std::string> _i01;
    std::vector<std::pair<double, TString> > _i02;
 
-   std::map<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>         _i031;
-   std::pair<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>        _i041;
+   std::map<Int_t, MultiHistEntry*>         _i031;
+   std::pair<Int_t, MultiHistEntry*>        _i041;
 
    std::pair<RooAbsCategory*, std::string>  _i05;
 
@@ -51,9 +52,8 @@ struct Instantiations {
    std::pair<Double_t, TString> _i10;
    std::pair<RooCategoryProxy*, std::string> _i11;
 
-   MultiHistEntry<RooEffResModel, RooMultiEffResModel> _i15;
-   std::vector<MultiHistEntry<RooEffResModel, RooMultiEffResModel> > _i16;
-   std::map<int, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>::iterator _i17;
+   std::vector<MultiHistEntry> _i16;
+   std::map<int, MultiHistEntry*>::iterator _i17;
 
 };
 #endif // P2VV_H

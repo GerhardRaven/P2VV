@@ -1323,8 +1323,7 @@ class MultiHistEfficiencyModel(Pdf):
         from ROOT import std
         from ROOT import MultiHistEntry
 
-        MultiHistEntry = MultiHistEntry('RooEffResModel', 'RooMultiEffResModel')
-        efficiency_entries = std.vector('MultiHistEntry<RooEffResModel, RooMultiEffResModel>*')()
+        efficiency_entries = std.vector('MultiHistEntry*')()
 
         for categories, relative_efficiency in relative.iteritems():
             # Make EfficiencyBins for the bin values

@@ -18,7 +18,8 @@ momentsFile = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else
 plotsFile   = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' ) + '.ps'
 
 dataSetName = 'DecayTree'
-dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
+#dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_PHSP_MC11a_ntupleB_for_fitting_20121031.root'
 #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angRes/angRes.root'
 

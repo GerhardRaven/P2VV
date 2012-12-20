@@ -1,5 +1,6 @@
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
+from P2VVLoad import LHCbStyle
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -57,11 +58,11 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 # Time resolution model
 from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-                          BiasScaleFactor = False, Cache = False,
+                          BiasScaleFactor = False, Cache = True,
                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
-from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+## from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = False,
 ##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)], Fractions = [(3, 0.1), (2, 0.2)])
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
@@ -202,6 +203,8 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
                           }
          )
 
-from Dilution import dilution
+import Dilution
 diff_pdf = wpv.diff_shape('B')
-dilution(t_diff, data, diff_pdf, result, [signal], signal_wpv)
+signal_wpv[t_diff] = diff_pdf
+Dilution.dilution(t_diff, data, sigmat = st, result = result,
+                  signal = [signal], subtract = [signal_wpv])
