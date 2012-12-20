@@ -62,7 +62,7 @@ from P2VVParameterizations.TimePDFs import Single_Exponent_Time
 sig_t = Single_Exponent_Time(Name = 'sig_t', time = t, resolutionModel = tres.model())
 
 # Build the acceptance using the histogram as starting values
-input_file = 'start_values.root'
+input_file = 'start_values_20bins.root'
 hlt1_histogram = 'hlt1_shape'
 hlt2_histogram = 'hlt2_shape'
 

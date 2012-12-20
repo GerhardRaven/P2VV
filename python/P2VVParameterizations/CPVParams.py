@@ -138,26 +138,12 @@ class LambdaArg_CPParam( CPParam ) :
                         )
         self._check_extraneous_kw( kwargs )
 
-
-class LambdaAbsArg_CPVDecay_CPParam( CPParam ) :
+class CPVDecay_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
-        ampNames = kwargs.pop('AmplitudeNames')
-        amps = kwargs.pop('Amplitudes')
-
-        self._parseArg( 'rhoCP_m', kwargs, Title = 'CPV in mixing param. |rho_m|',       Value = lambVal, Error = lambErr
-                       , MinMax = (  0.,      5.     ) )
-        self._parseArg( 'phiCP_m', kwargs, Title = 'CPV in mixing param. phi_m + phi_0', Value = phiVal,  Error = phiErr
-                       , MinMax = ( -RooInf, +RooInf ) )
-
-        for ind, amp in enumerate(ampNames) :
-            self._parseArg( 'rhoCP_%s' % amp, kwargs, Title = 'CPV in decay param. |rho_%s|' % amp, Value = 1., Error = lambErr
-                           , MinMax = ( 0., 5. ) )
-            if ind == 0 :
-                self._parseArg( 'phiCP_%s' % amp, kwargs, Title = 'CPV in decay param. phi_%s - phi_0' % amp, Value = 0.
-                               , ObjectType = 'ConstVar' )
-            else :
-                self._parseArg( 'phiCP_%s' % amp, kwargs, Title = 'CPV in decay param. phi_%s - phi_0' % amp, Value = 0., Error = phiErr
-                               , MinMax = ( -RooInf, +RooInf ) )
+        ampNames   = kwargs.pop('AmplitudeNames')
+        amps       = kwargs.pop('Amplitudes')
+        magNames   = kwargs.pop('MagnitudeNames')
+        phaseNames = kwargs.pop('PhaseNames')
 
         RPlusDict = { }
         RMinDict  = { }
@@ -177,10 +163,10 @@ class LambdaAbsArg_CPVDecay_CPParam( CPParam ) :
                                                            else '' if eta0 == eta1 else '-'
                                                           , func
                                                          )
-                                                     , [  getattr( self, '_rhoCP_%s' % ampComb[0] )
-                                                        , getattr( self, '_rhoCP_%s' % ampComb[1] )
-                                                        , getattr( self, '_phiCP_%s' % ampComb[0] )
-                                                        , getattr( self, '_phiCP_%s' % ampComb[1] )
+                                                     , [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
+                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
+                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
+                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
                                                        ]
                                                     ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
                                       ] )
@@ -191,20 +177,20 @@ class LambdaAbsArg_CPVDecay_CPParam( CPParam ) :
                                                            else '-' if eta0 == eta1 else ''
                                                           , func
                                                          )
-                                                     , [  getattr( self, '_rhoCP_%s' % ampComb[0] )
-                                                        , getattr( self, '_rhoCP_%s' % ampComb[1] )
-                                                        , getattr( self, '_phiCP_%s' % ampComb[0] )
-                                                        , getattr( self, '_phiCP_%s' % ampComb[1] )
+                                                     , [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
+                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
+                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
+                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
                                                        ]
                                                     ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
                                       ] )
             RReDict[ampComb]   = tuple( [ FormulaVar(  '%sRRe_%s_%s' % ( comp, ampComb[0], ampComb[1] )
                                                      , '(%s@0*%s(@2) %s @1*%s(-@3)) / 2.'\
                                                        % ( '' if eta0 > 0 else '-', func, '+' if eta1 > 0 else '-', func )
-                                                     , [  getattr( self, '_rhoCP_%s' % ampComb[0] )
-                                                        , getattr( self, '_rhoCP_%s' % ampComb[1] )
-                                                        , getattr( self, '_phiCP_%s' % ampComb[0] )
-                                                        , getattr( self, '_phiCP_%s' % ampComb[1] )
+                                                     , [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
+                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
+                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
+                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
                                                        ]
                                                     ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
                                       ] )
@@ -215,21 +201,73 @@ class LambdaAbsArg_CPVDecay_CPParam( CPParam ) :
                                                           , '+' if ( eta1 > 0 and comp == 'Re' ) or ( eta1 < 0 and comp == 'Im' ) else '-'
                                                           , func
                                                          )
-                                                     , [  getattr( self, '_rhoCP_%s' % ampComb[0] )
-                                                        , getattr( self, '_rhoCP_%s' % ampComb[1] )
-                                                        , getattr( self, '_phiCP_%s' % ampComb[0] )
-                                                        , getattr( self, '_phiCP_%s' % ampComb[1] )
+                                                     , [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
+                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
+                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
+                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
                                                        ]
                                                     ) for ( comp, func ) in [ ( 'Re', 'sin' ), ( 'Im', 'cos' ) ]
                                       ] )
 
-        CPParam.__init__( self, AmplitudeNames = ampNames
-                         , C = FormulaVar( 'C', '(1. - @0*@0) / (1. + @0*@0)',       [ self._rhoCP_m                ] )
-                         , D = FormulaVar( 'D', '-2. * @0 * cos(@1) / (1. + @0*@0)', [ self._rhoCP_m, self._phiCP_m ] )
-                         , S = FormulaVar( 'S', '-2. * @0 * sin(@1) / (1. + @0*@0)', [ self._rhoCP_m, self._phiCP_m ] )
+        self._check_extraneous_kw( kwargs )
+        CPParam.__init__(  self, AmplitudeNames = ampNames
+                         , C = FormulaVar( 'C', '(1. - @0*@0) / (1. + @0*@0)',       [  getattr( self, '_%s' % magNames['mix'] ) ] )
+                         , D = FormulaVar( 'D', '-2. * @0 * cos(@1) / (1. + @0*@0)', [  getattr( self, '_%s' % magNames['mix']   )
+                                                                                      , getattr( self, '_%s' % phaseNames['mix'] )
+                                                                                     ]
+                                         )
+                         , S = FormulaVar( 'S', '-2. * @0 * sin(@1) / (1. + @0*@0)', [  getattr( self, '_%s' % magNames['mix']   )
+                                                                                      , getattr( self, '_%s' % phaseNames['mix'] )
+                                                                                     ]
+                                         )
                          , RPlusDict = RPlusDict
                          , RMinDict  = RMinDict
                          , RReDict   = RReDict
                          , RImDict   = RImDict
                         )
+
+class LambdaAbsArg_CPVDecay_CPParam( CPVDecay_CPParam ) :
+    def __init__( self, **kwargs ) :
+        ampNames   = kwargs.pop('AmplitudeNames')
+        amps       = kwargs.pop('Amplitudes')
+        magNames   = dict( mix = 'rhoCP_m'    )
+        phaseNames = dict( mix = 'phiCPRel_m' )
+        self._parseArg( 'rhoCP_m', kwargs, Title = 'CPV in mixing param. |rho_m|', Value = lambVal, Error = lambErr, MinMax = ( 0., 5. ) )
+        self._parseArg( 'phiCPRel_m', kwargs, Title = 'CPV in mixing param. phi_m - phi_m', Value = 0., ObjectType = 'ConstVar' )
+
+        for amp in ampNames :
+            magNames[amp]   = 'rhoCP_%s' % amp
+            phaseNames[amp] = 'phiCP_%s' % amp
+            self._parseArg( 'rhoCP_%s' % amp, kwargs, Title = 'CPV in decay param. |rho_%s|' % amp, Value = 1., Error = lambErr
+                           , MinMax = ( 0., 5. ) )
+            self._parseArg( 'phiCP_%s' % amp, kwargs, Title = 'CPV in decay param. phi_%s + phi_m' % amp, Value = 0., Error = phiErr
+                           , MinMax = ( -RooInf, +RooInf ) )
+
         self._check_extraneous_kw( kwargs )
+        CPVDecay_CPParam.__init__( self, AmplitudeNames = ampNames, Amplitudes = amps, MagnitudeNames = magNames, PhaseNames = phaseNames )
+
+class LambdaAbsArgRel_CPVDecay_CPParam( CPVDecay_CPParam ) :
+    def __init__( self, **kwargs ) :
+        ampNames   = kwargs.pop('AmplitudeNames')
+        amps       = kwargs.pop('Amplitudes')
+        magNames   = dict( mix = 'rhoCP_m' )
+        phaseNames = dict( mix = 'phiCP_m' )
+        self._parseArg( 'rhoCP_m', kwargs, Title = 'CPV in mixing param. |rho_m|',       Value = lambVal, Error = lambErr
+                       , MinMax = (  0.,      5.     ) )
+        self._parseArg( 'phiCP_m', kwargs, Title = 'CPV in mixing param. phi_m + phi_0', Value = phiVal,  Error = phiErr
+                       , MinMax = ( -RooInf, +RooInf ) )
+
+        for ind, amp in enumerate(ampNames) :
+            magNames[amp]   = 'rhoCP_%s'    % amp
+            phaseNames[amp] = 'phiCPRel_%s' % amp
+            self._parseArg( 'rhoCP_%s' % amp, kwargs, Title = 'CPV in decay param. |rho_%s|' % amp, Value = 1., Error = lambErr
+                           , MinMax = ( 0., 5. ) )
+            if ind == 0 :
+                self._parseArg( 'phiCPRel_%s' % amp, kwargs, Title = 'CPV in decay param. phi_%s - phi_0' % amp, Value = 0.
+                               , ObjectType = 'ConstVar' )
+            else :
+                self._parseArg( 'phiCPRel_%s' % amp, kwargs, Title = 'CPV in decay param. phi_%s - phi_0' % amp, Value = 0., Error = phiErr
+                               , MinMax = ( -RooInf, +RooInf ) )
+
+        self._check_extraneous_kw( kwargs )
+        CPVDecay_CPParam.__init__( self, AmplitudeNames = ampNames, Amplitudes = amps, MagnitudeNames = magNames, PhaseNames = phaseNames )
