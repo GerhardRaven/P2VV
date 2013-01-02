@@ -525,7 +525,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ###############
 
         self._dataSets = { }
-        ntupleCuts = 'sel_cleantail == 1 && '
+        ntupleCuts = ''
         if nTupleFile :
             if dataSample and type(dataSample) == tuple :
                 if dataSample[0] and dataSample[1] : dataSampleCuts = 'runNumber > %d && runNumber < %d' % dataSample
