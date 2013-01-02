@@ -724,6 +724,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     # fix mass shape parameters for fit
                     fixedMassPars = [ par for par in self._sWeightMassPdf.Parameters()\
                                       if not ( par.getAttribute('Yield') or par.isConstant() or 'Category' in par.ClassName() ) ]
+                    #from P2VVImports import parValues
                     #parVals = {  'm_bkg_exp_bin0'  : -2.1814e-03
                     #           , 'm_bkg_exp_bin1'  : -4.6151e-03
                     #           , 'm_bkg_exp_bin2'  : -1.4166e-03
@@ -736,6 +737,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     #           , 'm_sig_sigma_sf'  :  2.0769e+00
                     #          }
                     for par in fixedMassPars :
+                        #par.setVal( parValues[ par.GetName() ][0]\
+                        #            + ( 3. * parValues[ par.GetName() ][1] if par.GetName().startswith('m_bkg_exp') else 0. ) )
+                        #par.setError( parValues[ par.GetName() ][1] )
                         #par.setVal( parVals[ par.GetName() ] )
                         par.setConstant(True)
 
@@ -965,7 +969,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 , BMass.GetTitle() + ' mass fit - right side band'
                                ]
                              , [ True, False, False, False ]
-                             , [ ( 8.e1, 1.e4 ), ( None, None ), ( None, None ), ( None, None ) ] # ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
+                             , [ ( 8.e1, 1.e4 ), ( None, None ), ( None, None ), ( None, None ) ] # [ ( 8.e1, 1.e4 ), ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
                             ) :
                     plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale, plotResidHist = True
                          , normalize = True, symmetrize = True
