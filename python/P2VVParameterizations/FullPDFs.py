@@ -156,6 +156,8 @@ class PdfConfiguration( dict ) :
 
 class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
     def __init__( self ) :
+        from math import pi
+
         # job parameters
         self['dataSample'] = ''              # '' / 'Summer2011'
         self['selection']  = 'HLT1Unbiased'  # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'timeEffFit'
@@ -184,9 +186,10 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         # PDF options
         self['transversityAngles']   = False
+        self['angularRanges']        = dict( cpsi = ( -1., +1. ), ctheta = ( -1., +1. ), phi = ( -pi, +pi ) )
         self['sigMassModel']         = 'doubleGauss'       # '' / 'doubleGauss' / 'box'
         self['bkgMassModel']         = 'exponential'       # '' / 'exponential' / 'linear'
-        self['bkgAnglePdf']          = 'histPdf'           # '' / 'histPdf' / 'hybrid'
+        self['bkgAnglePdf']          = 'binned'            # '' / 'histPdf' / 'binned' / 'basis' / 'hybrid'
         self['sigTaggingPdf']        = 'tagUntag'          # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['bkgTaggingPdf']        = 'tagUntagRelative'  # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['multiplyByTagPdf']     = False
@@ -295,6 +298,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # PDF options
         transAngles       = pdfConfig.pop('transversityAngles')
+        angRanges         = pdfConfig.pop('angularRanges')
         sigMassModel      = pdfConfig.pop('sigMassModel')
         bkgMassModel      = pdfConfig.pop('bkgMassModel')
         bkgAnglePdf       = pdfConfig.pop('bkgAnglePdf')
@@ -339,6 +343,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         amplitudeParam = pdfConfig.pop('amplitudeParam')
         ASParam        = pdfConfig.pop('ASParam')
         AparParam      = pdfConfig.pop('AparParam')
+
+        if not angRanges : angRanges = dict( cpsi = ( -1., +1. ), ctheta = ( -1., +1. ), phi = ( -pi, +pi ) )
 
         if not paramKKMass :
             if not KKMassBinBounds : KKMassBinBounds = [ 1020. - 12., 1020. + 12. ]
@@ -399,11 +405,17 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # angular functions
         if not nominalPdf and transAngles :
+            helAngs = False
             from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
-            self._angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
+
         else :
+            helAngs = True
             from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
-            self._angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
+
+        self._angleFuncs = AngleFuncs(  cpsi   = dict( Name = 'helcosthetaK' if helAngs else 'trcospsi',   MinMax = angRanges['cpsi'  ] )
+                                      , ctheta = dict( Name = 'helcosthetaL' if helAngs else 'trcostheta', MinMax = angRanges['ctheta'] )
+                                      , phi    = dict( Name = 'helphi'       if helAngs else 'trphi',      MinMax = angRanges['phi'   ] )
+                                     )
 
         # variables in PDF (except for tagging category)
         time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = lifetimeRange
@@ -1747,113 +1759,121 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                           )
 
             else :
-                # create a binned PDF for background angular shape
                 print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a %s angular PDF for background'\
-                      % ( 'hybrid' if bkgAnglePdf == 'hybrid' else 'binned' )
+                      % ( 'hybrid' if bkgAnglePdf == 'hybrid' else 'basis functions' if bkgAnglePdf == 'basis' else 'binned' )
 
-                # define angular bins
-                from array import array
-                baselineBin = -1
-                if not nominalPdf and transAngles :
-                    nBins = [ 5, 7, 9 ]
-                    cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
-                    cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
-                    phiBinBounds = array( 'd', [ -pi ] + [ pi * ( -1. + 2. / 9. * float(i) ) for i in range( 1, 9 ) ] + [ pi ] )
+                if nominalPdf or bkgAnglePdf != 'basis' :
+                    # create a binned PDF for background angular shape
+                    from array import array
+                    baselineBin = -1
+                    if not nominalPdf and transAngles :
+                        nBins = [ 5, 7, 9 ]
+                        cpsBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 5. * float(i)   for i in range( 1, 5 ) ] + [ 1. ] )
+                        cthBinBounds = array( 'd', [ -1. ] + [        -1. + 2. / 7. * float(i)   for i in range( 1, 7 ) ] + [ 1. ] )
+                        phiBinBounds = array( 'd', [ -pi ] + [ pi * ( -1. + 2. / 9. * float(i) ) for i in range( 1, 9 ) ] + [ pi ] )
 
-                elif not nominalPdf and bkgAnglePdf == 'hybrid' :
-                    nBins = [ 20, 40, 20 ]
-                    cpsBinBounds = array( 'd', [ -1.,                                        1.  ] )
-                    cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, 0.85, 0.90, 0.95, 1.  ] )
-                    phiBinBounds = array( 'd', [ -pi,                                        pi  ] )
-                    baselineBin = 3
+                    elif not nominalPdf and bkgAnglePdf == 'hybrid' :
+                        nBins = [ 20, 40, 20 ]
+                        cpsBinBounds = array( 'd', [ -1.,                                        1.  ] )
+                        cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, 0.85, 0.90, 0.95, 1.  ] )
+                        phiBinBounds = array( 'd', [ -pi,                                        pi  ] )
+                        baselineBin = 3
 
-                else :
-                    nBins = [ 10, 24, 5 ]
-                    cpsBinBounds = array( 'd', [ -1. + 2. / 10.     * float(i) for i in range(11) ] )
-                    cthBinBounds = array( 'd', [ -1. + 2. / 24.     * float(i) for i in range(25) ] )
-                    #cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6, -0.2, 0.2, 0.6, 0.85, 0.90, 0.95, 1. ] )
-                    phiBinBounds = array( 'd', [ -pi + 2. * pi / 5. * float(i) for i in range(6)  ] )
+                    else :
+                        nBins = [ 10, 24, 5 ]
+                        cpsBinBounds = array( 'd', [ -1. + 2. / 10.     * float(i) for i in range(11) ] )
+                        cthBinBounds = array( 'd', [ -1. + 2. / 24.     * float(i) for i in range(25) ] )
+                        #cthBinBounds = array( 'd', [ -1., -0.95, -0.90, -0.85, -0.6, -0.2, 0.2, 0.6, 0.85, 0.90, 0.95, 1. ] )
+                        phiBinBounds = array( 'd', [ -pi + 2. * pi / 5. * float(i) for i in range(6)  ] )
 
-                    #cpsBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
-                    #cthBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
-                    #phiBinBounds = array( 'd', [ -pi, -0.5 * pi, 0., 0.5 * pi, pi ] )
+                        #cpsBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
+                        #cthBinBounds = array( 'd', [ -1., -0.5, 0., 0.5, 1. ] )
+                        #phiBinBounds = array( 'd', [ -pi, -0.5 * pi, 0., 0.5 * pi, pi ] )
 
-                cpsNumBins = len(cpsBinBounds) - 1
-                cthNumBins = len(cthBinBounds) - 1
-                phiNumBins = len(phiBinBounds) - 1
+                    cpsNumBins = len(cpsBinBounds) - 1
+                    cthNumBins = len(cthBinBounds) - 1
+                    phiNumBins = len(phiBinBounds) - 1
 
-                from ROOT import RooBinning
-                cpsBins = RooBinning( cpsNumBins, cpsBinBounds, 'bkg_cpsBins' )
-                cthBins = RooBinning( cthNumBins, cthBinBounds, 'bkg_cthBins' )
-                phiBins = RooBinning( phiNumBins, phiBinBounds, 'bkg_phiBins' )
-                cpsi.setBinning(   cpsBins, 'bkg_cpsBins' )
-                ctheta.setBinning( cthBins, 'bkg_cthBins' )
-                phi.setBinning(    phiBins, 'bkg_phiBins' )
+                    from ROOT import RooBinning
+                    cpsBins = RooBinning( cpsNumBins, cpsBinBounds, 'bkg_cpsBins' )
+                    cthBins = RooBinning( cthNumBins, cthBinBounds, 'bkg_cthBins' )
+                    phiBins = RooBinning( phiNumBins, phiBinBounds, 'bkg_phiBins' )
+                    cpsi.setBinning(   cpsBins, 'bkg_cpsBins' )
+                    ctheta.setBinning( cthBins, 'bkg_cthBins' )
+                    phi.setBinning(    phiBins, 'bkg_phiBins' )
 
-                # create bin coefficients
-                self._bkgAngCoefs = [ RealVar(  'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
-                                              , Title    = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
-                                              , Value    = 1. / cpsNumBins / cthNumBins / phiNumBins
-                                              , MinMax   = ( 0., 1. )
-                                              , Constant = False if not nominalPdf and bkgAnglePdf == 'hybrid' and bin1 != baselineBin\
-                                                           else True
-                                             )\
-                                      if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
-                                      for bin2 in range( phiNumBins ) for bin1 in range( cthNumBins ) for bin0 in range( cpsNumBins )
-                                    ]
+                    # create bin coefficients
+                    self._bkgAngCoefs = [ RealVar(  'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
+                                                  , Title    = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
+                                                  , Value    = 1. / cpsNumBins / cthNumBins / phiNumBins
+                                                  , MinMax   = ( 0., 1. )
+                                                  , Constant = False if not nominalPdf and bkgAnglePdf == 'hybrid' and bin1 != baselineBin\
+                                                               else True
+                                                 )\
+                                          if bin0 != 0 or bin1 != 0 or bin2 != 0 else None\
+                                          for bin2 in range( phiNumBins ) for bin1 in range( cthNumBins ) for bin0 in range( cpsNumBins )
+                                        ]
 
-                from RooFitWrappers import ComplementCoef
-                self._bkgAngCoefs[0] = ComplementCoef(  Name         = 'bkg_angBin_0_0_0'
-                                                      , Coefficients = self._bkgAngCoefs[ 1 : ]
-                                                     )
+                    from RooFitWrappers import ComplementCoef
+                    self._bkgAngCoefs[0] = ComplementCoef(  Name         = 'bkg_angBin_0_0_0'
+                                                          , Coefficients = self._bkgAngCoefs[ 1 : ]
+                                                         )
 
-                # create a BinnedPdf
-                from RooFitWrappers import BinnedPdf
-                self._bkg_angles = BinnedPdf(  Name = 'bkg_angBins' if not nominalPdf and bkgAnglePdf == 'hybrid' else 'bkg_angles'
-                                             , Observables = angles
-                                             , Binnings = [ cpsBins, cthBins, phiBins ]
-                                             , Coefficients = self._bkgAngCoefs
-                                             , BinIntegralCoefs = True
-                                            )
-                self._bkg_angles.setForceUnitIntegral(True)
+                    # create a BinnedPdf
+                    from RooFitWrappers import BinnedPdf
+                    self._bkg_angBins = BinnedPdf(  Name = 'bkg_angBins' if not nominalPdf and bkgAnglePdf == 'hybrid' else 'bkg_angles'
+                                                  , Observables = angles
+                                                  , Binnings = [ cpsBins, cthBins, phiBins ]
+                                                  , Coefficients = self._bkgAngCoefs
+                                                  , BinIntegralCoefs = True
+                                                 )
+                    self._bkg_angBins.setForceUnitIntegral(True)
 
-                sumWeights = 0.
-                sumBinWeights = ( cpsNumBins * cthNumBins * phiNumBins - 1 ) * [ 0. ]
-                spikesFrac = 1.
-                if bkgAngleData :
-                    # determine bin coefficient values
-                    angleInitVals = [ angle.getVal() for angle in angles ]
-                    for obsSet in bkgAngleData :
-                        for angle in angles : angle.setVal( obsSet.getRealValue( angle.GetName() ) )
-                        sumWeights += bkgAngleData.weight()
-                        cpsBin = cpsi.getBin('bkg_cpsBins')
-                        cthBin = ctheta.getBin('bkg_cthBins')
-                        phiBin = phi.getBin('bkg_phiBins')
-                        bin = cpsBin + cthBin * cpsNumBins + phiBin * cpsNumBins * cthNumBins - 1
-                        if bin >= 0 : sumBinWeights[ bin ] += bkgAngleData.weight()
-                    for angle, val in zip( angles, angleInitVals ) : angle.setVal(val)
+                    sumWeights = 0.
+                    sumBinWeights = ( cpsNumBins * cthNumBins * phiNumBins - 1 ) * [ 0. ]
+                    spikesFrac = 1.
+                    if bkgAngleData :
+                        # determine bin coefficient values
+                        angleInitVals = [ angle.getVal() for angle in angles ]
+                        for obsSet in bkgAngleData :
+                            for angle in angles : angle.setVal( obsSet.getRealValue( angle.GetName() ) )
+                            sumWeights += bkgAngleData.weight()
+                            cpsBin = cpsi.getBin('bkg_cpsBins')
+                            cthBin = ctheta.getBin('bkg_cthBins')
+                            phiBin = phi.getBin('bkg_phiBins')
+                            bin = cpsBin + cthBin * cpsNumBins + phiBin * cpsNumBins * cthNumBins - 1
+                            if bin >= 0 : sumBinWeights[ bin ] += bkgAngleData.weight()
+                        for angle, val in zip( angles, angleInitVals ) : angle.setVal(val)
+
+                        if not nominalPdf and bkgAnglePdf == 'hybrid' :
+                            baseBinVal = sumBinWeights[ baselineBin - 1 ] / sumWeights / cthBins.binWidth(baselineBin)
+                            spikesFrac -= baseBinVal * 2.
+
+                        # set bin coefficient values
+                        #binCoefVals = [ 0.10, 0.07, 0., 0.07, 0.10, 0.37 ]
+                        #binCoefErrs = [ 0.03, 0.03, 0., 0.03, 0.03, 0.03 ]
+                        for bin, ( coef, weight ) in enumerate( zip( self._bkgAngCoefs[ 1 : ], sumBinWeights ) ) :
+                            binInt = weight / sumWeights
+                            assert binInt >= 0.,\
+                                   'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background angular PDF coefficient \"%s\" has negative value: %f'\
+                                   % (coef.GetName(), binInt)
+                            if not nominalPdf and bkgAnglePdf == 'hybrid' :
+                                coef.setVal( ( ( binInt - baseBinVal * cthBins.binWidth(bin + 1) ) / spikesFrac )\
+                                             if bin != baselineBin - 1 else 0. )
+                                #coef.setVal( binCoefVals[bin] )
+                                #coef.setError( binCoefErrs[bin] )
+                            else :
+                                coef.setVal(binInt)
 
                     if not nominalPdf and bkgAnglePdf == 'hybrid' :
-                        baseBinVal = sumBinWeights[ baselineBin - 1 ] / sumWeights / cthBins.binWidth(baselineBin)
-                        spikesFrac -= baseBinVal * 2.
+                        self._bkgAngBinsFrac = RealVar(  'bkgAngBinsFrac'
+                                                       , Title  = 'Binned PDF fraction in angular background'
+                                                       , Value  = spikesFrac
+                                                       , MinMax = ( 0., 1. )
+                                                      )
 
-                    # set bin coefficient values
-                    #binCoefVals = [ 0.10, 0.07, 0., 0.07, 0.10, 0.37 ]
-                    #binCoefErrs = [ 0.03, 0.03, 0., 0.03, 0.03, 0.03 ]
-                    for bin, ( coef, weight ) in enumerate( zip( self._bkgAngCoefs[ 1 : ], sumBinWeights ) ) :
-                        binInt = weight / sumWeights
-                        assert binInt >= 0.,\
-                               'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background angular PDF coefficient \"%s\" has negative value: %f'\
-                               % (coef.GetName(), binInt)
-                        if not nominalPdf and bkgAnglePdf == 'hybrid' :
-                            coef.setVal( ( ( binInt - baseBinVal * cthBins.binWidth(bin + 1) ) / spikesFrac ) if bin != baselineBin - 1\
-                                         else 0. )
-                            #coef.setVal( binCoefVals[bin] )
-                            #coef.setError( binCoefErrs[bin] )
-                        else :
-                            coef.setVal(binInt)
-
-                if not nominalPdf and bkgAnglePdf == 'hybrid' :
+                if not nominalPdf and bkgAnglePdf in [ 'basis', 'hybrid' ] :
+                    if bkgAnglePdf == 'basis' : nBins = [ 20, 20, 20 ]
                     # create an angular PDF with basis functions
                     angPDFIndices = [ ( 2, 0, 0 ) ]
                     #angPDFIndices = [ ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 2, 2, 0 ), ( 2, 2, 2 ) ]
@@ -1875,25 +1895,28 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                             ) for inds in angPDFIndices
                                                           )
                                                  )
-
-                    # build total angular PDF
-                    from RooFitWrappers import SumPdf
-                    self._bkg_angBins  = self._bkg_angles
                     self._bkg_angFuncs = angPdfTerms.buildSumPdf('bkg_angFuncs')
-                    self._bkgAngBinsFrac = RealVar(  'bkgAngBinsFrac'
-                                                   , Title  = 'Binned PDF fraction in angular background'
-                                                   , Value  = spikesFrac
-                                                   , MinMax = ( 0., 1. )
-                                                  )
+
+                # build total angular PDF
+                if not nominalPdf and bkgAnglePdf == 'hybrid' :
+                    from RooFitWrappers import SumPdf
                     self._bkg_angles = SumPdf(  Name   = 'bkg_angles'
                                               , PDFs   = [ self._bkg_angBins, self._bkg_angFuncs ]
                                               , Yields = { self._bkg_angBins.GetName() : self._bkgAngBinsFrac }
                                              )
-                    if bkgAngleData :
-                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting background angular distributions'
-                        print '  initial parameter values:'
-                        for par in self._bkg_angles.getParameters(bkgAngleData) : par.Print()
-                        self._bkg_angles.fitTo( bkgAngleData, SumW2Error = False, Save = False, **fitOpts )
+
+                elif not nominalPdf and bkgAnglePdf == 'basis' :
+                    self._bkg_angles = self._bkg_angFuncs
+
+                else :
+                    self._bkg_angles = self._bkg_angBins
+
+                if bkgAngleData :
+                    # fit background angular distribution
+                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting background angular distribution'
+                    print '  initial parameter values:'
+                    for par in self._bkg_angles.getParameters(bkgAngleData) : par.Print()
+                    self._bkg_angles.fitTo( bkgAngleData, SumW2Error = False, Save = False, **fitOpts )
 
             if not SFit : self._backgroundComps += self._bkg_angles
 
