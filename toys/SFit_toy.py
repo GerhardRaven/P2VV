@@ -166,12 +166,6 @@ estWTagOS  = pdfBuild['observables']['estWTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
 
 gen_observables = [time] + angles
-# Wrong PV shape
-from P2VVParameterizations.WrongPV import ShapeBuilder
-from RooFitWrappers import Component, Projection
-wpv = ShapeBuilder(time, {'B' : BMass}, UseKeysPdf = True, Weights = 'B',
-                   Draw = True, sigmat = timeRes)
-wpv_signal = wpv.shape('B')
 
 if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
 
@@ -218,8 +212,8 @@ pdf.setMaxVal(0.15)
 # Wrong PV shape
 from P2VVParameterizations.WrongPV import ShapeBuilder
 from RooFitWrappers import Component, Projection
-wpv = ShapeBuilder(time, {'B' : BMass}, KeysPdf = True, Weights = 'B',
-                   InputFile = "/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled.root")
+wpv = ShapeBuilder(time, {'B' : BMass}, UseKeysPdf = True, Weights = 'B',
+                   InputFile = "/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root")
 wpv_signal = wpv.shape('B')
 
 # Projection over time of signal PDF

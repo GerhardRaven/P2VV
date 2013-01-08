@@ -10,8 +10,8 @@ class ShapeBuilder(object):
     __rho = dict(B = 2.)
     
     def __init__(self, time, masses, sigmat = None, t_diff = None,
-                 InputFile = "/stuff/PhD/mixing/Bs2JpsiPhiPrescaled.root",
-                 WorkSpace = 'Bs2JpsiPhiPrescaled_workspace', Data = 'data', UseKeysPdf = False,
+                 InputFile = "/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root",
+                 WorkSpace = 'Bs2JpsiPhiPrescaled_2011_workspace', Data = 'data', UseKeysPdf = False,
                  Weights = 'B', Draw = False):
         assert(Weights in ShapeBuilder.__weights)
         self.__weights = Weights
@@ -25,12 +25,11 @@ class ShapeBuilder(object):
         self.__diff__shapes = {}
 
         self.__masses = masses
-        
+
         self._sig = Component('wpv_signal', [], Yield = (1000, 10, 50000))
         self._psi = Component('wpv_jpsi',   [], Yield = (5000, 10, 50000))
         self._bkg = Component('wpv_bkg',    [], Yield = (5000, 10, 50000))
 
-            
         if 'B' in masses:
             m_sig_mean  = RealVar('wpv_m_sig_mean',   Unit = 'MeV', Value = 5365, MinMax = (5363, 5372))
             m_sig_sigma = RealVar('wpv_m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (1, 20))
