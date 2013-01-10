@@ -11,7 +11,7 @@ class ShapeBuilder(object):
     
     def __init__(self, time, masses, sigmat = None, t_diff = None,
                  InputFile = "/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root",
-                 WorkSpace = 'Bs2JpsiPhiPrescaled_2011_workspace', Data = 'data', UseKeysPdf = False,
+                 WorkSpace = 'Bs2JpsiPhiPrescaled_2011_workspace', Data = 'data',
                  UseKeysPdf = False, Weights = 'B', Draw = False, Reweigh = {}):
         assert(Weights in ShapeBuilder.__weights)
         self.__weights = Weights
