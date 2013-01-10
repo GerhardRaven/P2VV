@@ -27,8 +27,9 @@ for i in [ st ] : i.setBins( 20 , 'cache' )
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
 clean_tail = Category('sel_cleantail', States = {'selected' : 1, 'not_selected' : 0})
+nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 
-observables = [t, t_true, m, mpsi, st, unbiased, selected, clean_tail]
+observables = [t, t_true, m, mpsi, st, unbiased, selected, clean_tail, nPV]
 
 # Read data
 from P2VVGeneralUtils import readData
@@ -48,7 +49,7 @@ t_diff.setMin(-10)
 t_diff.setMax(10)
 observables.append(t_diff)
 
-clean_data = data.reduce('sel_cleantail == sel_cleantail::selected')
+## clean_data = data.reduce('sel_cleantail == sel_cleantail::selected')
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -59,18 +60,18 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-                          BiasScaleFactor = False, Cache = True,
-                          bias = dict(Value = -0.17, MinMax = (-1, 1)),
-                          sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
+##                           BiasScaleFactor = False, Cache = True,
+##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
+##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
-## from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = False,
 ##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
 ##                           Fractions = [(3, 0.1), (2, 0.2)])
-## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
-##                           ScaleFactors = [(2, 4), (1, 1.)], Fractions = [(2, 0.2)])
+sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
+                          ScaleFactors = [(2, 4), (1, 1.)], Fractions = [(2, 0.2)])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -125,11 +126,15 @@ prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (21582, 100, 500000))
                    
 # Wrong PV components
-from P2VVParameterizations.WrongPV import ShapeBuilder
-wpv = ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi',
-                   InputFile = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaledMC.root',
-                   WorkSpace = 'Bs2JpsiPhiPrescaledMC_workspace',
-                   Draw = True, t_diff = t_diff, sigmat = st)
+from array import array
+PV_bounds = array('d', [-0.5 + i for i in range(11)])
+
+from P2VVParameterizations import WrongPV
+wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
+                           InputFile = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_MC11a.root',
+                           Workspace = 'Bs2JpsiPhiPrescaled_MC11a_workspace',
+                           sigmat = st, t_diff = t_diff,
+                           Reweigh = dict(Data = data, DataVar = nPV, Binning = PV_bounds))
 wpv_psi = wpv.shape('jpsi')
 psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (888, 50, 30000))
 

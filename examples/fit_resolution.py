@@ -1,3 +1,35 @@
+#!/usr/bin/env python
+import optparse
+import sys
+import os
+
+parser = optparse.OptionParser(usage = '%prog year model')
+
+parser.add_option("--no-pee", dest = "pee", default = True,
+                  action = 'store_false', help = 'Do not use per-event proper-time error')
+
+(options, args) = parser.parse_args()
+
+if len(args) != 2:
+    print parser.usage
+    sys.exit(-2)
+elif args[0] not in ['2011', '2012']:
+    print parser.usage
+    sys.exit(-2)
+elif args[1] not in ['single', 'double', 'triple']:
+    print parser.usage
+    sys.exit(-2)
+    
+input_data = {}
+if args[0] == '2011':
+    input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
+    input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
+else:
+    input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'
+    input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2012.root'
+    input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2012_workspace'
+
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
 from P2VVLoad import LHCbStyle
@@ -38,21 +70,25 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-##                           BiasScaleFactor = False, Cache = False,
-##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
-##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
-
-## from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = False,
-##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
-##                           Fractions = [(3, 0.1), (2, 0.2)])
-
-from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = True,
-                          ScaleFactors = [(2, 2.3), (1, 1.2)],
-                          Fractions = [(2, 0.2)])
+sig_tres = None
+if args[1] == 'single':
+    from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+    sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
+                              BiasScaleFactor = False, Cache = True,
+                              bias = dict(Value = -0.17, MinMax = (-1, 1)),
+                              sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+elif args[1] == 'double':
+    from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
+                              PerEventError = options.pee,
+                              ScaleFactors = [(2, 2.3), (1, 1.2)],
+                              Fractions = [(2, 0.2)])
+elif args[1] == 'triple':
+    from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
+                              PerEventError = options.pee,
+                              ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
+                              Fractions = [(3, 0.1), (2, 0.2)])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -112,25 +148,9 @@ psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 5000
 # Read data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
-## Data:
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
-## Incl J/psi MC11a
-## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_from_incl_Jpsi_MC11a_ntupleB_for_fitting_20121010.root'
-## Signal MC
-## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
-
-data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)',
-                NTuple = True, observables = observables)
-
-from array import array
-from ROOT import RooBinning
-PV_bounds = array('d', [-0.5 + i for i in range(11)])
-PV_binning = RooBinning(len(PV_bounds) - 1, PV_bounds)
-nPV.setBinning(PV_binning, 'N')
-nPVs = BinningCategory(Name = 'nPVs', Observable = nPV, Binning = 'N', Data = data,
-                       Fundamental = True)
-
-##data = data.reduce(EventRange = (0, 200000))
+data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
+                cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)')
+data = data.reduce(EventRange = (0, 400000))
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
 mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
@@ -159,35 +179,27 @@ for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
 ## signal_sdata = splot.data('signal')
 psi_sdata = splot.data('psi_background')
-## bkg_sdata = splot.data('background')
+bkg_sdata = splot.data('background')
 
 # Wrong PV components
-from P2VVParameterizations.WrongPV import ShapeBuilder
-wpv = ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi',
-                   Draw = True, sigmat = st)
+from array import array
+PV_bounds = array('d', [-0.5 + i for i in range(12)])
+
+from P2VVParameterizations import WrongPV
+reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
+wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
+                           InputFile = input_data['wpv'], Workspace = input_data['workspace'],
+                           Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
+                           sigmat = st)
 wpv_psi = wpv.shape('jpsi')
 psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
 
-## wpv = ShapeBuilder(t, {'B' : m}, UseKeysPdf = True, Weights = 'B',
-##                    Draw = True, sigmat = st)
+## wpv = WrongPV.ShapeBuilder(t, {'B' : m}, UseKeysPdf = True, Weights = 'B',
+##                            Draw = True, sigmat = st)
 ## wpv_signal = wpv.shape('B')
 ## signal_wpv = Component('signal_wpv', (wpv_signal,), Yield = (888, 10, 300000))
 
-wpv_data = wpv.sdata('jpsi')
-nPV_wpv = wpv_data.get().find('nPV')
-
-wpv_bins = dict([(t.getVal(), t.GetName()) for t in nPV_wpv])
-data_bins = dict([(t.getVal(), t.GetName()) for t in nPVs])
-
-wpv_table = wpv_data.table(nPV_wpv)
-data_table = psi_sdata.table(nPVs)
-
-weights = {}
-for i, l in sorted(data_bins.iteritems())[2:]:
-    w = data_table.getFrac(l) / wpv_table.getFrac(wpv_bins[i])
-    weights[i] = w
-
-assert(False)
+print wpv.reweigh_weights('jpsi')
 
 time_pdf = buildPdf(Components = (psi_prompt, psi_background, psi_wpv), Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
@@ -200,7 +212,7 @@ result = time_pdf.fitTo(psi_sdata, SumW2Error = False, **fitOpts)
 ## profiler_stop()
 ## result.Print('v')
 
-from array import array
+
 from ROOT import RooBinning
 bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
 ## bounds = array('d', [-3 + i * 0.1 for i in range(27)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
@@ -210,14 +222,15 @@ t.setBinning(binning)
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
+import P2VVGeneralUtils
+
 print 'plotting'
 obs = [t]
 plot_data = psi_sdata
 time_canvas = TCanvas('time_canvas', 'time_canvas', len(obs) * 1000, 650)
 for (p,o) in zip(time_canvas.pads(len(obs)), obs):
-    from P2VVGeneralUtils import plot
     pdfOpts  = dict(ProjWData = (RooArgSet(st), plot_data, True))
-    plot(p, o, pdf = time_pdf if o != st else None, data = plot_data
+    P2VVGeneralUtils.plot(p, o, pdf = time_pdf if o != st else None, data = plot_data
          , frameOpts = dict(Title = "")
          , dataOpts = dict(MarkerSize = 0.8, Binning = binning, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
