@@ -475,6 +475,7 @@ class CPcomponentsPlotingToolkit():
     def getCPnormFracs(self):
         if not self._CPnormFracs: self.calculateCPnormFracs() 
         return self._CPnormFracs
+    
     def getKKslicesNormFracs(self):
         if not self._sliceNormFracs: self.calculateKKslicesNormFracs() 
         return self._sliceNormFracs
