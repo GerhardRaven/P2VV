@@ -616,6 +616,9 @@ class RealVar (RooObject) :
     def __init__(self,Name ,**kwargs):
         if 'name' in kwargs : raise RuntimeError('Please replace name argument with Name = xyz' )
         __check_name_syntax__(Name)
+
+        self.__blind = 'Blind' in kwargs
+
         blindName = '__' + Name + '__' if 'Blind' in kwargs else Name
         if Name not in self.ws():
             # construct factory string on the fly...
@@ -632,7 +635,7 @@ class RealVar (RooObject) :
                     (mi,ma) = kwargs.pop('MinMax')
                     val = kwargs.pop('Value')
                     if val < mi or val > ma : raise RuntimeError('Specified Value %s not contained in MinMax (%s,%s)' % ( val,mi,ma))
-                    self._declare("%s[%s,%s,%s]"%(blindName,val,mi,ma))
+                    self.__original = self._declare("%s[%s,%s,%s]"%(blindName,val,mi,ma))
             else :
                 assert 'Value' not in kwargs
 
@@ -669,6 +672,7 @@ class RealVar (RooObject) :
             else :
                 self._init(Name,'RooRealVar')
 
+            
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
             self._init(Name,'RooRealVar')
@@ -678,6 +682,12 @@ class RealVar (RooObject) :
                 # DataSet in the mean time
                 if k == 'Value': continue
                 assert v == self[k], '\'%s\' is not the same for %s' % ( k, Name )
+
+    def __setitem__(self,k,v):
+        from itertools import ifilter, imap
+        for setters in imap( lambda x: x._setters, ifilter( lambda x : hasattr(x,'_setters'), type(self).__mro__) ) :
+            if k in setters :  return setters[k](self if not self.__blind else self.__original, v)
+        raise KeyError('\'%s\' is not known for class %s' % (k, type(self) ) )
 
     # overrule RooRealVar.setRange
     @wraps(RooRealVar.setRange)

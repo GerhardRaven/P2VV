@@ -25,8 +25,9 @@ for i in [ st ] : i.setBins( 20 , 'cache' )
 # Categories needed for selecting events
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
+nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 
-observables = [t, m, mpsi, st, unbiased, selected]
+observables = [t, m, mpsi, st, unbiased, selected, nPV]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -107,18 +108,6 @@ background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield
 from P2VVParameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
-                   
-# Wrong PV components
-from P2VVParameterizations.WrongPV import ShapeBuilder
-wpv = ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi',
-                   Draw = True, sigmat = st)
-wpv_psi = wpv.shape('jpsi')
-psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
-
-## wpv = ShapeBuilder(t, {'B' : m}, UseKeysPdf = True, Weights = 'B',
-##                    Draw = True, sigmat = st)
-## wpv_signal = wpv.shape('B')
-## signal_wpv = Component('signal_wpv', (wpv_signal,), Yield = (888, 10, 300000))
 
 # Read data
 from P2VVGeneralUtils import readData
@@ -131,7 +120,16 @@ input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 
 data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)',
-                NTuple = False, observables = observables)
+                NTuple = True, observables = observables)
+
+from array import array
+from ROOT import RooBinning
+PV_bounds = array('d', [-0.5 + i for i in range(11)])
+PV_binning = RooBinning(len(PV_bounds) - 1, PV_bounds)
+nPV.setBinning(PV_binning, 'N')
+nPVs = BinningCategory(Name = 'nPVs', Observable = nPV, Binning = 'N', Data = data,
+                       Fundamental = True)
+
 ##data = data.reduce(EventRange = (0, 200000))
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
@@ -162,6 +160,34 @@ splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
 ## signal_sdata = splot.data('signal')
 psi_sdata = splot.data('psi_background')
 ## bkg_sdata = splot.data('background')
+
+# Wrong PV components
+from P2VVParameterizations.WrongPV import ShapeBuilder
+wpv = ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi',
+                   Draw = True, sigmat = st)
+wpv_psi = wpv.shape('jpsi')
+psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
+
+## wpv = ShapeBuilder(t, {'B' : m}, UseKeysPdf = True, Weights = 'B',
+##                    Draw = True, sigmat = st)
+## wpv_signal = wpv.shape('B')
+## signal_wpv = Component('signal_wpv', (wpv_signal,), Yield = (888, 10, 300000))
+
+wpv_data = wpv.sdata('jpsi')
+nPV_wpv = wpv_data.get().find('nPV')
+
+wpv_bins = dict([(t.getVal(), t.GetName()) for t in nPV_wpv])
+data_bins = dict([(t.getVal(), t.GetName()) for t in nPVs])
+
+wpv_table = wpv_data.table(nPV_wpv)
+data_table = psi_sdata.table(nPVs)
+
+weights = {}
+for i, l in sorted(data_bins.iteritems())[2:]:
+    w = data_table.getFrac(l) / wpv_table.getFrac(wpv_bins[i])
+    weights[i] = w
+
+assert(False)
 
 time_pdf = buildPdf(Components = (psi_prompt, psi_background, psi_wpv), Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
