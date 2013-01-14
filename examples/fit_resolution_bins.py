@@ -7,8 +7,6 @@ parser = optparse.OptionParser(usage = '%prog year model')
 
 parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
-parser.add_option("--bin-st", dest = "bin_st", default = False,
-                  action = 'store_true', help = 'Bin in sigmat')
 
 (options, args) = parser.parse_args()
 
@@ -44,7 +42,7 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 10))
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
@@ -52,16 +50,17 @@ m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax =
                          } )
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
+from array import array
+st_bins = array('d', [0.01 + i * 0.005 for i in range(13)])
 
 # add 20 bins for caching the normalization integral
 for i in [ st ] : i.setBins( 20 , 'cache' )
 
 # Categories needed for selecting events
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
 nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 
-observables = [t, m, mpsi, st, unbiased, selected, nPV]
+observables = [t, m, mpsi, st, unbiased, nPV]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -78,11 +77,11 @@ if args[1] == 'single':
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = True,
                               bias = dict(Value = -0.17, MinMax = (-1, 1)),
-                              sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+                              sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 5)))
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee,
+                              PerEventError = options.pee, ParamRMS = True,
                               ScaleFactors = [(2, 2.3), (1, 1.2)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
@@ -125,7 +124,7 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.mo
 
 ## from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Background_Time
 ## psi_t = Background_Time(Name = 'psi_t', time = t, resolutionModel = sig_tres.model(),
-##                              t_sig_tau  = dict(Name = 'psi_tau', Value = 1.5, MinMax = (0.5, 2.5))
+##                              t_sig_tau  = dict(Name = 'tau', Value = 1.5, MinMax = (0.001, 2.5))
 ##                              )
 psi_t = psi_t.pdf()
 
@@ -151,35 +150,56 @@ psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 5000
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
-                cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)')
+                ntupleCuts = 'sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1')
+datas = [data.reduce(Cut = 'sigmat > %f && sigmat < %f' % (st_bins[i], st_bins[i + 1]))
+         for i in range(len(st_bins) - 1)]
+
+## datas = []
+## from ROOT import TFile
+## input_file = TFile.Open('st_bins_data.root')
+## for i in range(1, 12):
+##     ds_name = tree_name + ('%02d' % i)
+##     datas.append(input_file.Get(ds_name))
+
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
 mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
+mass_pdf.Print('t')
 
-## Fit mass pdf
-mass_pdf.fitTo(data, **fitOpts)
+## save all fit results
+from collections import defaultdict
+results = defaultdict(list)
 
-## # Plot mass pdf
+## # Fit and plot mass pdf
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
 
-mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
-from P2VVGeneralUtils import SData
-from P2VVGeneralUtils import plot
-pdfOpts  = dict()
-plot(mass_canvas.cd(1), mpsi, pdf = mass_pdf, data = data
-     , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-     , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-     , plotResidHist = False
-     , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                      , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                      }
-     )
+mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 1200, 900)
+pads = mass_canvas.pads(4, 3)
 
+from P2VVGeneralUtils import SData
+sdatas = []
+for i, (p, ds) in enumerate(zip(pads, datas)):
+    result = mass_pdf.fitTo(ds, **fitOpts)
+    result.SetName('%d_%s' % (i, result.GetName()))
+    results['mass'].append(result)
+    splot = SData(Pdf = mass_pdf, Data = ds, Name = 'MassSplot')
+    sdatas.append(splot.data('psi_background'))
+    from P2VVGeneralUtils import plot
+    pdfOpts  = dict()
+    plot(p, mpsi, pdf = mass_pdf, data = ds
+         , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+         , plotResidHist = False
+         , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                          , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                          }
+         )
+
+mass_pdf.fitTo(data, **fitOpts)
 from P2VVGeneralUtils import SData
 for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
-## signal_sdata = splot.data('signal')
 psi_sdata = splot.data('psi_background')
 bkg_sdata = splot.data('background')
 
@@ -187,45 +207,45 @@ bkg_sdata = splot.data('background')
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
 
-from P2VVParameterizations import WrongPV
-reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
-wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
-                           InputFile = input_data['wpv'], Workspace = input_data['workspace'],
-                           Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
-                           sigmat = st)
-wpv_psi = wpv.shape('jpsi')
-psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
+## from P2VVParameterizations import WrongPV
+## reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
+## wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
+##                            InputFile = input_data['wpv'], Workspace = input_data['workspace'],
+##                            Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
+##                            sigmat = st)
+## wpv_psi = wpv.shape('jpsi')
+## psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 1, 30000))
 
-time_pdf = buildPdf(Components = (psi_prompt, psi_background, psi_wpv), Observables = (t,), Name='time_pdf')
+time_pdf = buildPdf(Components = (psi_prompt, psi_background), Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
 
-## Fit
-## print 'fitting data'
-## from profiler import profiler_start, profiler_stop
-## profiler_start("acceptance.log")
-result = time_pdf.fitTo(psi_sdata, SumW2Error = False, **fitOpts)
-## profiler_stop()
-## result.Print('v')
-
-
 from ROOT import RooBinning
-bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
-## bounds = array('d', [-3 + i * 0.1 for i in range(27)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+from array import array
+## bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(49)] + [5.2 + i * 0.4 for i in range(13)])
+bounds = array('d', [-5 + i * 0.5 for i in range(7)] + [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(37)] + [4 + i * 0.4 for i in range(16)])
+
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('var_binning')
-t.setBinning(binning)
+## t.setBinning(binning)
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
 import P2VVGeneralUtils
 
-print 'plotting'
-obs = [t]
-plot_data = psi_sdata
-time_canvas = TCanvas('time_canvas', 'time_canvas', len(obs) * 1000, 650)
-for (p,o) in zip(time_canvas.pads(len(obs)), obs):
-    pdfOpts  = dict(ProjWData = (RooArgSet(st), plot_data, True))
-    P2VVGeneralUtils.plot(p, o, pdf = time_pdf if o != st else None, data = plot_data
+assert(False)
+
+time_canvas = TCanvas('time_canvas', 'time_canvas', 1200, 990)
+pads = time_canvas.pads(4, 3)
+for i, (p, ds) in enumerate(zip(pads, sdatas)):
+    result = time_pdf.fitTo(ds, SumW2Error = False, **fitOpts)
+    j = 0
+    while result.status() != 0 and j < 4:
+        result = time_pdf.fitTo(ds, SumW2Error = False, **fitOpts)
+        j += 1
+    result.SetName('%d_%s' % (i, result.GetName()))
+    results['time'].append(result)
+    pdfOpts  = dict(ProjWData = (RooArgSet(st), ds, True))
+    P2VVGeneralUtils.plot(p, t, pdf = time_pdf, data = ds
          , frameOpts = dict(Title = "")
          , dataOpts = dict(MarkerSize = 0.8, Binning = binning, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
@@ -237,5 +257,61 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
                           }
          )
 
-import Dilution
-Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background, psi_wpv])
+for k, res in results.items():
+    results[k] = sorted(res, key = lambda r: int(r.GetName().split('_', 1)[0]))
+
+
+res_canvas = TCanvas('res_canvas', 'res_canvas', 500, 500)
+from ROOT import TH1D
+from math import sqrt
+hist_res = TH1D('hist_res', 'hist_res', len(st_bins) - 1, array('d', [1000 * v for v in st_bins]))
+hist_events = TH1D('hist_events', 'hist_events', len(st_bins) - 1, array('d', [1000 * v for v in st_bins]))
+
+resolutions = []
+
+for i, result in enumerate(results['time']):
+    fpf = result.floatParsFinal()
+    if args[1] == 'double':
+        ## frac = fpf.find('timeResFrac2').getVal()
+        ## frac_e = fpf.find('timeResFrac2').getError()
+        
+        ## sf1 = fpf.find('timeResSigmaSF_1').getVal()
+        ## sf1_e = fpf.find('timeResSigmaSF_1').getError()
+        
+        ## sf2 = fpf.find('timeResSigmaSF_2').getVal()
+        ## sf2_e = fpf.find('timeResSigmaSF_2').getError()
+        
+        ## sf = (1 - frac) * sf1 + frac * sf2
+        ## sf_cov1 = (frac_e ** 2) * (sf1 ** 2) + ((1 - frac) ** 2) * (sf1_e ** 2)
+        ## sf_cov2 = (frac_e ** 2) * (sf2 ** 2) + (frac ** 2) * (sf2_e ** 2) 
+        ## sf_e = sqrt(sf_cov1 + sf_cov2)
+        
+        sf = fpf.find('timeResRMS').getVal()
+        sf_e = fpf.find('timeResRMS').getError()
+    elif args[1] == 'single':
+        sf = fpf.find('sigmaSF').getVal()
+        sf_e = fpf.find('sigmaSF').getError()
+    
+    mean = sdatas[i].mean(st._target_())
+    res = mean * sf
+    res_e = mean * sf_e
+    
+    resolutions.append((res, res_e))
+    hist_res.SetBinContent(i + 1, 1000 * res)
+    hist_res.SetBinError(i + 1, 1000 * res_e)
+    events = results['mass'][i].floatParsFinal().find('N_psi_background')
+    hist_events.SetBinContent(i + 1, events.getVal())
+    hist_events.SetBinError(i + 1, events.getError())
+
+scale = hist_res.GetMaximum() / hist_events.GetMaximum()
+hist_events.Scale(scale)
+hist_res.Draw('pe')
+hist_events.Draw('hist, same')
+from ROOT import kGray
+hist_events.SetFillColor(kGray + 1)
+hist_res.Draw('pe, same')
+hist_res.GetXaxis().SetTitle('estimated decay time error [fs]')
+hist_res.GetYaxis().SetTitle('decay time resulution [fs]')
+
+## import Dilution
+## Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background])

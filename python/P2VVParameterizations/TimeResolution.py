@@ -137,7 +137,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         namePF = kwargs.pop( 'ResolutionNamePrefix', '' )
 
-        from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
+        from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar, FormulaVar
         from ROOT import RooNumber
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ))
         self._parseArg('sigmat', kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
@@ -150,11 +150,25 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
 
         cache = kwargs.pop('Cache', True)
         pee = kwargs.pop('PerEventError', False)
+        param_rms = kwargs.pop('ParamRMS', False)
+        ## Can only reparameterize 2 Gaussians right now
+        if param_rms:
+            assert(len(sigmasSFs) == 2)
 
         self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 200) ) for num, val in sigmasSFs ]
         self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.001, 0.99) ) for num, val in fracs  ]
 
         Name = kwargs.pop('Name', 'timeResModelMG')
+        if param_rms: 
+            from ROOT import RooNumber
+            RooInf = RooNumber.infinity()
+            from math import sqrt
+            self._rms = RealVar('timeResRMS', Value = sqrt((1 - fracs[0][1]) * sigmasSFs[1][1]
+                                                           + fracs[0][1] * sigmasSFs[0][1]),
+                                MinMax = (0, RooInf))
+            self._timeResSigmasSFs[1] = FormulaVar(Name + '_RMS', 'sqrt(1 / (1 - @0) * (@1 * @1 - @0 * @2 * @2))',
+                                                   (self._timeResFracs[0], self._rms, self._timeResSigmasSFs[0]))
+
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
 
@@ -225,13 +239,16 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
 
 class Paper2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
-        from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar
+        print 'Paper TimeRes %s' % kwargs
+
+        from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar, LinearVar
         from ROOT import RooNumber
         self._parseArg( 'time',           kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
         self._parseArg( 'timeResMean',    kwargs, Value = 0., Error = 0.1, MinMax = ( -2., 2. ), Constant = True )
         self._parseArg( 'timeResSigma',   kwargs, Title = 'Decay time error', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.2 ) )
         self._parseArg( 'timeResMeanSF',  kwargs, timeResMeanSF = self._timeResSigma )
         self._parseArg( 'timeResSigmaSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
+        self._parseArg( 'timeResSigmaOffset', kwargs, Value = 10, Error = 1, MinMax = ( 0.1, 50 ) )
 
         constraints = []
         timeResMeanConstr = kwargs.pop( 'timeResMeanConstraint', None )
@@ -268,17 +285,37 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                                    )
                               )
 
+        useOffset = kwargs.pop('timeResSFOffset', False)
+        if useOffset:
+            self._timeResMean = LinearVar(Name = 'timeResMeanLinear', Observable = self._time,
+                                          Slope = ConstVar(Name = 'timeResMeanSlope', Value = 1.),
+                                          Offset = self._timeResMean)
+            self._timeResSigmaLinear = LinearVar(Name = 'timeResSigmaLinear', Observable = self._timeResSigma,
+                                                 Slope = self._timeResSigmaSF,
+                                                 Offset = self._timeResSigmaOffset)
+            ## constraints.append( Pdf(  Name = self._timeResSigmaOffset.GetName() + '_constraint', Type = Gaussian
+            ##                         , Parameters = [  self._timeResSigmaOffset
+            ##                                         , ConstVar( Name = 'tres_offset_constraint_mean'
+            ##                                                    ,  Value = self._timeResSigmaOffset.getVal() )
+            ##                                         , ConstVar( Name = 'tres_offset_constraint_sigma'
+            ##                                                    , Value = self._timeResSigmaOffset.getError() )
+            ##                                        ]
+            ##                           )
+            ##                     )
+        
         Name =  kwargs.pop( 'Name', 'timeResModelPaper2012' )
         cache = kwargs.pop( 'Cache', True )
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
+        if useOffset:
+            parameters = [self._time, self._timeResMean, self._timeResSigmaLinear]
+        else:
+            parameters = [self._time, self._timeResMean, self._timeResSigma,
+                          self._timeResMeanSF, self._timeResSigmaSF]
         TimeResolution.__init__(  self
                                 , Model =  ResolutionModel(  Name = Name
                                                            , Type = GaussModel
-                                                           , Parameters = [  self._time
-                                                                           , self._timeResMean, self._timeResSigma
-                                                                           , self._timeResMeanSF, self._timeResSigmaSF
-                                                                          ]
+                                                           , Parameters = parameters
                                                            , ConditionalObservables = [ self._timeResSigma ]
                                                            , ExternalConstraints = constraints
                                                           )

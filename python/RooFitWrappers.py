@@ -448,24 +448,39 @@ class FormulaVar (RooObject) :
             self.setObservable(True)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-class RealCategory( RooObject ) :
+class RealCategory(RooObject) :
     def __init__(self, Name,Category ) :
         __check_name_syntax__(Name)
-        spec = 'RooRealCategory::%s(%s)'%(Name,Category)
+        spec = 'RooRealCategory::%s(%s)'%(Name, Category)
         self._declare(spec)
         self._init(Name,'RooRealCategory')
 
-
-class ConstVar (RooObject) :
+class ConstVar(RooObject) :
     def __init__(self,**kwargs):
         # construct factory string on the fly...
         __check_req_kw__( 'Value', kwargs )
         __check_req_kw__( 'Name', kwargs )
         __check_name_syntax__( kwargs['Name'] )
         self._declare("ConstVar::%(Name)s(%(Value)s)" % kwargs )
-        (Name,value) = (kwargs.pop('Name'),kwargs.pop('Value'))
+        (Name, value) = (kwargs.pop('Name'),kwargs.pop('Value'))
         self._init(Name,'RooConstVar')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+class LinearVar(RooObject) :
+    def __init__(self,**kwargs):
+        # construct factory string on the fly...
+        __check_req_kw__('Name', kwargs)
+        __check_req_kw__('Observable', kwargs )
+        __check_req_kw__('Slope', kwargs)
+        __check_req_kw__('Offset', kwargs)
+        __check_name_syntax__(kwargs['Name'])
+        args = {}
+        for k in ['Name', 'Observable', 'Slope', 'Offset']:
+            v = kwargs.pop(k)
+            args[k] = v if type(v) == str else v.GetName()
+        self._declare("LinearVar::%(Name)s(%(Observable)s,%(Slope)s,%(Offset)s )" % args )
+        self._init(args['Name'], 'RooLinearVar')
+        for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
 class P2VVAngleBasis (RooObject) :
     # TODO: replace use of RooP2VVAngleBasis with an explicit product with
