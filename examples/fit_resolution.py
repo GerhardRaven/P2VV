@@ -86,7 +86,8 @@ if args[1] == 'single':
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee, TimeResSFOffset = True,
+                              PerEventError = options.pee, ParamRMS = False,
+                              TimeResSFOffset = True,
                               ScaleFactors = [(2, 2.3), (1, 1.2)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
@@ -156,7 +157,6 @@ from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
                 cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)')
-data = data.reduce(EventRange = (0, 200000))
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
 mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')

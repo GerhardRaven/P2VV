@@ -152,7 +152,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         self._parseArg('sigmat', kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
         self._timeResMu = self._parseArg('%stimeResMu' % namePF, kwargs, Value = -0.0027, MinMax = (-2, 2))
         self._timeResMuSF = self._parseArg('%stimeResMuSF' % namePF, kwargs, Value = 1.0, Constant = True)
-        self._timeResSigmaOffset = self._parseArg( '%stimeResSigmaOffset' % namePF, kwargs, Value = 10, Error = 1, MinMax = ( 0.1, 50 ) )
+        self._timeResSigmaOffset = self._parseArg( '%stimeResSigmaOffset' % namePF, kwargs, Value = 0.01, Error = 0.001, MinMax = ( 0.00001, 1 ) )
 
         sigmasSFs = kwargs.pop('ScaleFactors', [(2, 3), (1, 1)])
         fracs     = kwargs.pop('Fractions', [(2, 0.165)])
@@ -194,7 +194,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         for ( numVal, sigmaSF ) in zip( sigmasSFs, self._timeResSigmasSFs ):
             if use_offset:
                 params = [ self._time, self._timeResMu, sigmaSF ]
-            if pee:
+            elif pee:
                 params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
             else:
                 params = [ self._time, self._timeResMu, sigmaSF ]
