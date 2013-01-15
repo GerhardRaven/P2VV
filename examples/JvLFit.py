@@ -15,7 +15,7 @@ doFit                   = True
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = True
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
@@ -1149,6 +1149,7 @@ if dllPars :
      , 'ASOddPhase_bin3' : ( '#DeltaNLL #delta_{S3} - #delta_{#perp}', '#delta_{S3} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
      , 'ASOddPhase_bin4' : ( '#DeltaNLL #delta_{S4} - #delta_{#perp}', '#delta_{S4} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
      , 'ASOddPhase_bin5' : ( '#DeltaNLL #delta_{S5} - #delta_{#perp}', '#delta_{S5} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
+     , 'timeResSigmaSF'  : ( '#DeltaNLL #sigma_{t} s.f.',              '#sigma_{t} s.f.',               1.27,     1.63,    1, 0.001, 0.01 )
     }
 
     # check DNLL parameters
@@ -1159,23 +1160,23 @@ if dllPars :
         if par[0] == 'phiCP' : phiCPPar = True
 
     # float/fix values of some parameters
-    if constLambdaCP :
-        pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
-            else pdfBuild['lambdaCP'].setConstant('lambdaCP')
-    if constAvgCEvenOdd :
-        for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
+    #if constLambdaCP :
+    #    pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
+    #        else pdfBuild['lambdaCP'].setConstant('lambdaCP')
+    #if constAvgCEvenOdd :
+    #    for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
 
-    if 'sig_ATagBBbar' in ws : ws['sig_ATagBBbar'].setConstant()
-    for bin in range(5) :
-        if 'sig_ATagBBbar_bin%d' % bin in ws : ws[ 'sig_ATagBBbar_bin%d' % bin ].setConstant()
-    pdfBuild['tagCatsOS'].setConstant('.*')
-    pdfBuild['tagCatsSS'].setConstant('.*')
-    #pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
-    pdfBuild['timeResModel'].setConstant('.*')
-    pdfBuild['signalBMass'].setConstant('.*')
-    if not pdfConfig['SFit'] :
-        pdfBuild['backgroundBMass'].setConstant('.*')
-        pdfBuild['backgroundTime'].setConstant('.*')
+    #if 'sig_ATagBBbar' in ws : ws['sig_ATagBBbar'].setConstant()
+    #for bin in range(5) :
+    #    if 'sig_ATagBBbar_bin%d' % bin in ws : ws[ 'sig_ATagBBbar_bin%d' % bin ].setConstant()
+    #pdfBuild['tagCatsOS'].setConstant('.*')
+    #pdfBuild['tagCatsSS'].setConstant('.*')
+    ##pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
+    #pdfBuild['timeResModel'].setConstant('.*')
+    #pdfBuild['signalBMass'].setConstant('.*')
+    #if not pdfConfig['SFit'] :
+    #    pdfBuild['backgroundBMass'].setConstant('.*')
+    #    pdfBuild['backgroundTime'].setConstant('.*')
 
     # build NLL
     from ROOT import RooFit, RooArgSet, RooArgList, RooFormulaVar, TCanvas
