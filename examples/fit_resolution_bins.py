@@ -7,6 +7,8 @@ parser = optparse.OptionParser(usage = '%prog year model')
 
 parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
+parser.add_option("--param-rms", dest = "param_rms", default = False,
+                  action = 'store_true', help = 'Parameterise scale factors using RMS')
 
 (options, args) = parser.parse_args()
 
@@ -42,7 +44,7 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 10))
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-1.5, 10))
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
@@ -51,6 +53,7 @@ m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax =
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
 from array import array
+##st_bins = array('d', [0.01 + i * 0.01 for i in range(7)])
 st_bins = array('d', [0.01 + i * 0.005 for i in range(13)])
 
 # add 20 bins for caching the normalization integral
@@ -80,9 +83,12 @@ if args[1] == 'single':
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 5)))
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    scaleFactors = [(2, 2.3), (1, 1.2)]
+    if not options.pee:
+        scaleFactors = [(n, 0.032 * v) for n, v in scaleFactors]
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee, ParamRMS = True,
-                              ScaleFactors = [(2, 2.3), (1, 1.2)],
+                              PerEventError = options.pee, ParamRMS = options.param_rms,
+                              ScaleFactors = scaleFactors,
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
@@ -196,12 +202,12 @@ for i, (p, ds) in enumerate(zip(pads, datas)):
                           }
          )
 
-mass_pdf.fitTo(data, **fitOpts)
-from P2VVGeneralUtils import SData
-for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
-psi_sdata = splot.data('psi_background')
-bkg_sdata = splot.data('background')
+## mass_pdf.fitTo(data, **fitOpts)
+## from P2VVGeneralUtils import SData
+## for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+## splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
+## psi_sdata = splot.data('psi_background')
+## bkg_sdata = splot.data('background')
 
 # Wrong PV components
 from array import array
@@ -222,7 +228,7 @@ time_pdf.Print("t")
 from ROOT import RooBinning
 from array import array
 ## bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(49)] + [5.2 + i * 0.4 for i in range(13)])
-bounds = array('d', [-5 + i * 0.5 for i in range(7)] + [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(37)] + [4 + i * 0.4 for i in range(16)])
+bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(37)] + [4 + i * 0.4 for i in range(21)])
 
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('var_binning')
@@ -231,8 +237,6 @@ binning.SetName('var_binning')
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
 import P2VVGeneralUtils
-
-assert(False)
 
 time_canvas = TCanvas('time_canvas', 'time_canvas', 1200, 990)
 pads = time_canvas.pads(4, 3)
@@ -260,7 +264,6 @@ for i, (p, ds) in enumerate(zip(pads, sdatas)):
 for k, res in results.items():
     results[k] = sorted(res, key = lambda r: int(r.GetName().split('_', 1)[0]))
 
-
 res_canvas = TCanvas('res_canvas', 'res_canvas', 500, 500)
 from ROOT import TH1D
 from math import sqrt
@@ -269,39 +272,61 @@ hist_events = TH1D('hist_events', 'hist_events', len(st_bins) - 1, array('d', [1
 
 resolutions = []
 
-for i, result in enumerate(results['time']):
+from ROOT import TMatrixT
+
+for index, result in enumerate(results['time']):
+    # Fill events histo
+    events = results['mass'][index].floatParsFinal().find('N_psi_background')
+    hist_events.SetBinContent(index + 1, events.getVal())
+    hist_events.SetBinError(index + 1, events.getError())
+    
+    if result.status() != 0:
+        resolutions.append((0, 0))
+        hist_res.SetBinContent(index + 1, 0)
+        hist_res.SetBinError(index + 1, 0)
+        continue
+    
     fpf = result.floatParsFinal()
+    indices = [fpf.index(n) for n in 'timeResFrac2', 'timeResSigmaSF_1', 'timeResSigmaSF_2']
+    cov = result.covarianceMatrix()
+    C = TMatrixT('double')(3, 3)
+    J = TMatrixT('double')(1, 3)
+    
     if args[1] == 'double':
-        ## frac = fpf.find('timeResFrac2').getVal()
-        ## frac_e = fpf.find('timeResFrac2').getError()
+        frac = fpf.find('timeResFrac2').getVal()
+        sf1 = fpf.find('timeResSigmaSF_1').getVal()
+        sf2 = fpf.find('timeResSigmaSF_2').getVal()
         
-        ## sf1 = fpf.find('timeResSigmaSF_1').getVal()
-        ## sf1_e = fpf.find('timeResSigmaSF_1').getError()
+        # Make our own small covariance matrix
+        for i, k in enumerate(indices):
+            for j, l in enumerate(indices):
+                C[i][j] = cov[k][l]
         
-        ## sf2 = fpf.find('timeResSigmaSF_2').getVal()
-        ## sf2_e = fpf.find('timeResSigmaSF_2').getError()
+        # Jacobian for calculation of sf
+        J[0][0] = sf1 + sf2
+        J[0][1] = 1 - frac
+        J[0][2] = frac
         
-        ## sf = (1 - frac) * sf1 + frac * sf2
-        ## sf_cov1 = (frac_e ** 2) * (sf1 ** 2) + ((1 - frac) ** 2) * (sf1_e ** 2)
-        ## sf_cov2 = (frac_e ** 2) * (sf2 ** 2) + (frac ** 2) * (sf2_e ** 2) 
-        ## sf_e = sqrt(sf_cov1 + sf_cov2)
+        # Calculate J * C * J^T
+        JT = J.Clone().T()
+        tmp = TMatrixT('double')(3, 1)
+        tmp.Mult(C, JT)
+        r = TMatrixT('double')(1, 1)
+        r.Mult(J, tmp)
         
-        sf = fpf.find('timeResRMS').getVal()
-        sf_e = fpf.find('timeResRMS').getError()
+        sf = (1 - frac) * sf1 + frac * sf2
+        sf_e = sqrt(r[0][0])
     elif args[1] == 'single':
         sf = fpf.find('sigmaSF').getVal()
         sf_e = fpf.find('sigmaSF').getError()
     
-    mean = sdatas[i].mean(st._target_())
+    mean = sdatas[index].mean(st._target_())
     res = mean * sf
     res_e = mean * sf_e
     
     resolutions.append((res, res_e))
-    hist_res.SetBinContent(i + 1, 1000 * res)
-    hist_res.SetBinError(i + 1, 1000 * res_e)
-    events = results['mass'][i].floatParsFinal().find('N_psi_background')
-    hist_events.SetBinContent(i + 1, events.getVal())
-    hist_events.SetBinError(i + 1, events.getError())
+    hist_res.SetBinContent(index + 1, 1000 * res)
+    hist_res.SetBinError(index + 1, 1000 * res_e)
 
 scale = hist_res.GetMaximum() / hist_events.GetMaximum()
 hist_events.Scale(scale)

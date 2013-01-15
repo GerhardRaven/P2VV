@@ -52,13 +52,18 @@ class Gaussian_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         scaleBias = kwargs.pop('BiasScaleFactor', True)
         pee = kwargs.pop('PerEventError', False)
+        use_offset = kwargs.pop('TimeResSFOffset', False)
         extraArgs = {}
         self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
         if pee :
             self._parseArg( 'sigmat',  kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
             self._parseArg( 'bias',    kwargs, Title = 'Decay time biased',         Value = -0.17,    MinMax = (-1, 1)  )
             self._parseArg( 'sigmaSF', kwargs, Title = 'Decay time scale factor',   Value = 1.46,     MinMax = (0.1, 2.5) )
-            if scaleBias :
+            if use_offset:
+                linear_var = LinearVar('sigmaSF_linear', Observable = self._sigmat,
+                                       Slope = self._sigmaSF, Offset = self._offset)
+                params = [ self._time, self._bias, linear_var ]
+            elif scaleBias :
                 params = [ self._time, self._bias, self._sigmat, self._sigmaSF, self._sigmaSF ]
             else :
                 self._parseArg( 'biasSF', kwargs, Title = 'Decay time bias scale factor', Value = 1, Constant = True )
@@ -137,12 +142,14 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         namePF = kwargs.pop( 'ResolutionNamePrefix', '' )
 
-        from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar, FormulaVar
+        from RooFitWrappers import ResolutionModel, AddModel, ConstVar
+        from RooFitWrappers import RealVar, FormulaVar, LinearVar
         from ROOT import RooNumber
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ))
         self._parseArg('sigmat', kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
         self._timeResMu = self._parseArg('%stimeResMu' % namePF, kwargs, Value = -0.0027, MinMax = (-2, 2))
         self._timeResMuSF = self._parseArg('%stimeResMuSF' % namePF, kwargs, Value = 1.0, Constant = True)
+        self._timeResSigmaOffset = self._parseArg( '%stimeResSigmaOffset' % namePF, kwargs, Value = 0.01, Error = 0.001, MinMax = ( 0.00001, 1 ) )
 
         sigmasSFs = kwargs.pop('ScaleFactors', [(2, 3), (1, 1)])
         fracs     = kwargs.pop('Fractions', [(2, 0.165)])
@@ -155,9 +162,11 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         if param_rms:
             assert(len(sigmasSFs) == 2)
 
-        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 200) ) for num, val in sigmasSFs ]
+        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 20) ) for num, val in sigmasSFs ]
         self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.001, 0.99) ) for num, val in fracs  ]
 
+        use_offset = kwargs.pop('TimeResSFOffset', False)
+        assert(not (use_offset and param_rms))
         Name = kwargs.pop('Name', 'timeResModelMG')
         if param_rms: 
             from ROOT import RooNumber
@@ -168,13 +177,21 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                 MinMax = (0, RooInf))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_RMS', 'sqrt(1 / (1 - @0) * (@1 * @1 - @0 * @2 * @2))',
                                                    (self._timeResFracs[0], self._rms, self._timeResSigmasSFs[0]))
+        elif use_offset:
+            assert(pee)
+            self._timeResSigmasSFs = [LinearVar(Name = sf.GetName() + '_linear',
+                                                Observable = self._sigmat,
+                                                Slope = sf, Offset = self._timeResSigmaOffset)
+                                      for sf in self._timeResSigmasSFs]
 
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
 
         models = []
         for ( numVal, sigmaSF ) in zip( sigmasSFs, self._timeResSigmasSFs ):
-            if pee:
+            if use_offset:
+                params = [ self._time, self._timeResMu, sigmaSF ]
+            elif pee:
                 params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
             else:
                 params = [ self._time, self._timeResMu, sigmaSF ]
