@@ -28,6 +28,7 @@
 #include "RooComplementCoef.h"
 #include "RooEffConvGenContext.h"
 #include "RooBoxPdf.h"
+#include "RooExplicitNormPdf.h"
 
 #include <map>
 #include <string>

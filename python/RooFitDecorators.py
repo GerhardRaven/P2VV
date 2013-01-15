@@ -470,11 +470,14 @@ def _RooFitResultPrint( self, **kwargs ) :
                      )
             thisErr = ( 0.5 * ( par.getErrorHi() - par.getErrorLo() ) ) if par.hasAsymError() else par.getError()
             nomErr  = ( 0.5 * ( nomPar[2]        - nomPar[1]        ) ) if nomPar[1] < 0.     else nomPar[1]
-            dev = '{0:<+6.3f}'.format( 2. * ( par.getVal() - nomPar[0] ) / ( thisErr + nomErr ) )
+            dev = (  ( '{0:<+10.%df}' % ( prec + 1 ) ).format( par.getVal() - nomPar[0] )
+#                   , '{0:<+6.3f}'.format( 2. * ( par.getVal() - nomPar[0] ) / ( thisErr + nomErr ) )
+                   , '{0:<+6.3f}'.format( ( par.getVal() - nomPar[0] ) / thisErr )
+                  )
 
         else :
             nomVal = ( )
-            dev    = ''
+            dev    = ( )
 
         return ( names, thisVal, nomVal, dev )
 
@@ -484,10 +487,10 @@ def _RooFitResultPrint( self, **kwargs ) :
             vals = getTextVals(par)
             if vals[1][2] :
                 print '  {0:<30s} {1} {2} {3}{4}'.format( vals[0][0], vals[1][0], vals[1][2], vals[1][1]\
-                                                         , ( ' (%s sigma)' % vals[3] ) if vals[3] else '' )
+                                                         , ( ' %s (%s sigma)' % ( vals[3][0], vals[3][1] ) ) if vals[3] else '' )
             else :
-                print '  {0:<30s} {1} +/- {2}       {3}'.format( vals[0][0], vals[1][0], vals[1][1]\
-                                                                , ( ' (%s sigma)' % vals[3] ) if vals[3] else '' )
+                print '  {0:<30s} {1} +/- {2} {3}'.format( vals[0][0], vals[1][0], vals[1][1]\
+                                                          , ( '       %s (%s sigma)' % ( vals[3][0], vals[3][1] ) ) if vals[3] else '' )
         print
 
     if LaTeX :
@@ -501,18 +504,18 @@ def _RooFitResultPrint( self, **kwargs ) :
             vals = getTextVals(par)
             prStr = '    {0:<40s}  '.format( vals[0][1] )
             if vals[2] :
-                if vals[2][2] : prStr += '&  $%s^{%s}_{%s}$  '          % ( vals[2][0], vals[2][2], vals[2][1] )
-                else :          prStr += '&  $%s \\pm %s$             ' % ( vals[2][0], vals[2][1] )
+                if vals[2][2] : prStr += '&  $%s^{%s}_{%s}$ '          % ( vals[2][0], vals[2][2], vals[2][1] )
+                else :          prStr += '&  $%s \\pm %s$            ' % ( vals[2][0], vals[2][1] )
             elif parValsDict :
-                prStr += '&  ' + ( ' ' * 40 )
+                prStr += '& ' + ( ' ' * 40 )
 
-            if vals[1][2] : prStr += '&  $%s^{%s}_{%s}$  '          % ( vals[1][0], vals[1][2], vals[1][1] )
-            else :          prStr += '&  $%s \\pm %s$             ' % ( vals[1][0], vals[1][1] )
+            if vals[1][2] : prStr += '&  $%s^{%s}_{%s}$ '          % ( vals[1][0], vals[1][2], vals[1][1] )
+            else :          prStr += '&  $%s \\pm %s$            ' % ( vals[1][0], vals[1][1] )
 
             if vals[3] :
-                prStr += '&  %s  ' % vals[3]
+                prStr += '&  $%s$ ($%s$) ' % ( vals[3][0], vals[3][1] )
             elif parValsDict :
-                prStr += '&  ' + ( ' ' * 8 )
+                prStr += '&          ' + ' ' * 16
 
             print prStr + '\\\\'
 

@@ -86,6 +86,62 @@ class Gauss_Signal_Mass ( MassPdf ) :
                         )
 
 
+class DoubleGauss_Signal_Mass ( MassPdf ) :
+    def __init__( self, mass, **kwargs ) :
+        self._prefix = kwargs.pop( 'Prefix', '' )
+        self._transWidthPars = kwargs.pop( 'TransformWidthPars', ( ) )
+        self._parseArg( '%sm_sig_mean' % self._prefix,     kwargs, Title = 'B Mass', Unit = 'MeV/c^2'
+                       , Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
+
+        if self._transWidthPars :
+            # transform width parameters
+            self._parseArg( '%sm_sig_widthPar0' % self._prefix, kwargs, Title = 'B mass width parameter 0'
+                           , Value = 20., Error = 1., MinMax = ( 0., 40. ) )
+            self._parseArg( '%sm_sig_widthPar1' % self._prefix, kwargs, Title = 'B mass width parameter 1'
+                           , Value = -59., Error = 1., MinMax = ( -100., 0. ) )
+            self._parseArg( '%sm_sig_widthPar2' % self._prefix, kwargs, Title = 'B mass width parameter 2'
+                           , Value = 47., Error = 1., MinMax = ( 0., 100. ) )
+
+            from RooFitWrappers import FormulaVar
+            for name in ( 'm_sig_frac', 'm_sig_sigma_1', 'm_sig_sigma_2' ) :
+                setattr( self, '_%s%s' % ( self._prefix, name )
+                        , FormulaVar(  '%s%s' % ( self._prefix, name )
+                                     , '%.10e*@0+%.10e*@1+%.10e*@2' % (  self._transWidthPars[name][0]
+                                                                       , self._transWidthPars[name][1]
+                                                                       , self._transWidthPars[name][2]
+                                                                      )
+                                     , (  getattr( self, '_%sm_sig_widthPar0' % self._prefix )
+                                        , getattr( self, '_%sm_sig_widthPar1' % self._prefix )
+                                        , getattr( self, '_%sm_sig_widthPar2' % self._prefix )
+                                       )
+                                    )
+                       )
+
+        else :
+            # use fraction of first Gaussian and widths directly
+            self._parseArg( '%sm_sig_frac' % self._prefix,     kwargs, Title = 'B mass fraction first Gaussian'
+                           , Value = 0.8,   Error = 0.03, MinMax = ( 0., 1. ) )
+            self._parseArg( '%sm_sig_sigma_1' % self._prefix,  kwargs, Title = 'B Mass resolution 1', Unit = 'MeV/c^2'
+                           , Value = 6.3,   Error = 0.1,  MinMax = ( 0.1, 20. ) )
+            self._parseArg( '%sm_sig_sigma_2' % self._prefix,  kwargs, Title = 'B Mass resolution 2', Unit = 'MeV/c^2'
+                           , Value = 14.5,  Error = 0.8,  MinMax = ( 0.2, 40. ) )
+
+        from ROOT import RooGaussian as Gaussian
+        from RooFitWrappers import Pdf, SumPdf
+        g1 = Pdf(  Name = '%sm_sig_1' % self._prefix
+                 , Type = Gaussian
+                 , Parameters = ( mass, getattr(self, '_%sm_sig_mean' % self._prefix), getattr(self, '_%sm_sig_sigma_1' % self._prefix) )
+                )
+        g2 = Pdf(  Name = '%sm_sig_2' % self._prefix
+                 , Type = Gaussian
+                 , Parameters = ( mass, getattr(self, '_%sm_sig_mean' % self._prefix), getattr(self, '_%sm_sig_sigma_2' % self._prefix) )
+                )
+        MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'DoubleGauss_Signal_Mass' ), PDFs = ( g1, g2 )
+                                             , Yields = { g1.GetName() : getattr( self, '_%sm_sig_frac' % self._prefix ) }
+                                            )
+                        )
+
+
 class LP2011_Signal_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
         self._prefix = kwargs.pop("Prefix", "")
