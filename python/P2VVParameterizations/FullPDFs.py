@@ -1251,8 +1251,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
 
             phiCPVar = dict( Name = 'phiCP' )
-            if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-            self._lambdaCP = CPParam( phiCP = phiCPVar )
+            lambdaCPVar = dict( Name = 'lambdaCP' )
+            if blind:
+                phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
+                lambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsCrumbleMoriond2012', 0.3 )
+            self._lambdaCP = CPParam( phiCP = phiCPVar, lambdaCP = lambdaCPVar )
             if ambiguityPars :
                 self._lambdaCP['phiCP'].setVal( pi - self._lambdaCP['phiCP'].getVal() )
 
