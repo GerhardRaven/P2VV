@@ -24,9 +24,12 @@ elif args[1] not in ['single', 'double', 'triple']:
     
 input_data = {}
 if args[0] == '2011':
-    input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
-    input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
+    input_data['data'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    input_data['wpv'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
+    ## input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    ## input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
+    ## input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
 else:
     input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2012.root'
@@ -76,13 +79,14 @@ sig_tres = None
 if args[1] == 'single':
     from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
-                              BiasScaleFactor = False, Cache = True,
+                              BiasScaleFactor = False, Cache = False,
+                              TimeResSFOffset = True,
                               bias = dict(Value = -0.17, MinMax = (-1, 1)),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee,
+                              PerEventError = options.pee, TimeResSFOffset = True,
                               ScaleFactors = [(2, 2.3), (1, 1.2)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
@@ -138,7 +142,7 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
 bkg_t = bkg_t.pdf()
 
 signal = Component('signal', (sig_m, psi_m.pdf(), sig_t), Yield = (200000, 500, 500000))
-psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (4000,100,500000) )
+psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (30000,100,500000) )
 
 background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield = (19620,100,500000) )
 
@@ -152,6 +156,7 @@ from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
 data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
                 cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)')
+data = data.reduce(EventRange = (0, 200000))
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
 mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')

@@ -22,9 +22,12 @@ elif args[1] not in ['single', 'double', 'triple']:
     
 input_data = {}
 if args[0] == '2011':
-    input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
-    input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
+    input_data['data'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    input_data['wpv'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
+    ## input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    ## input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
+    ## input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
 else:
     input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2012.root'
@@ -42,7 +45,7 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 10))
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-1.5, 10))
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
@@ -80,9 +83,12 @@ if args[1] == 'single':
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 5)))
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    scaleFactors = [(2, 2.3), (1, 1.2)]
+    if not options.pee:
+        scaleFactors = [(n, 0.032 * v) for n, v in scaleFactors]
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee, ParamRMS = True,
-                              ScaleFactors = [(2, 2.3), (1, 1.2)],
+                              PerEventError = options.pee, ParamRMS = False,
+                              ScaleFactors = scaleFactors,
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
@@ -147,19 +153,22 @@ prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
 
 # Read data
-from P2VVGeneralUtils import readData
-tree_name = 'DecayTree'
-data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
-                ntupleCuts = 'sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1')
-datas = [data.reduce(Cut = 'sigmat > %f && sigmat < %f' % (st_bins[i], st_bins[i + 1]))
-         for i in range(len(st_bins) - 1)]
+## from P2VVGeneralUtils import readData
+## tree_name = 'DecayTree'
+## data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
+##                 ntupleCuts = 'sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1')
+## datas = [data.reduce(Cut = 'sigmat > %f && sigmat < %f' % (st_bins[i], st_bins[i + 1]))
+##          for i in range(len(st_bins) - 1)]
 
-## datas = []
-## from ROOT import TFile
-## input_file = TFile.Open('st_bins_data.root')
-## for i in range(1, 12):
-##     ds_name = tree_name + ('%02d' % i)
-##     datas.append(input_file.Get(ds_name))
+datas = []
+sdatas = []
+from ROOT import TFile
+input_file = TFile.Open('/bfys/raaij/p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
+for i in range(12):
+    sds_name = 'DecayTree_%02d_weighted_psi_background' % i
+    sdatas.append(input_file.Get(sds_name))
+    ds_name = 'DecayTree_%02d' % i
+    datas.append(input_file.Get(ds_name))
 
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
@@ -177,31 +186,31 @@ from ROOT import TCanvas
 mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 1200, 900)
 pads = mass_canvas.pads(4, 3)
 
-from P2VVGeneralUtils import SData
-sdatas = []
-for i, (p, ds) in enumerate(zip(pads, datas)):
-    result = mass_pdf.fitTo(ds, **fitOpts)
-    result.SetName('%d_%s' % (i, result.GetName()))
-    results['mass'].append(result)
-    splot = SData(Pdf = mass_pdf, Data = ds, Name = 'MassSplot')
-    sdatas.append(splot.data('psi_background'))
-    from P2VVGeneralUtils import plot
-    pdfOpts  = dict()
-    plot(p, mpsi, pdf = mass_pdf, data = ds
-         , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-         , plotResidHist = False
-         , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                          , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                          }
-         )
+## from P2VVGeneralUtils import SData
+## sdatas = []
+## for i, (p, ds) in enumerate(zip(pads, datas)):
+##     result = mass_pdf.fitTo(ds, **fitOpts)
+##     result.SetName('%d_%s' % (i, result.GetName()))
+##     results['mass'].append(result)
+##     splot = SData(Pdf = mass_pdf, Data = ds, Name = 'MassSplot')
+##     sdatas.append(splot.data('psi_background'))
+##     from P2VVGeneralUtils import plot
+##     pdfOpts  = dict()
+##     plot(p, mpsi, pdf = mass_pdf, data = ds
+##          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+##          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+##          , plotResidHist = False
+##          , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+##                           , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+##                           }
+##          )
 
-mass_pdf.fitTo(data, **fitOpts)
-from P2VVGeneralUtils import SData
-for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
-psi_sdata = splot.data('psi_background')
-bkg_sdata = splot.data('background')
+## mass_pdf.fitTo(data, **fitOpts)
+## from P2VVGeneralUtils import SData
+## for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+## splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
+## psi_sdata = splot.data('psi_background')
+## bkg_sdata = splot.data('background')
 
 # Wrong PV components
 from array import array
@@ -222,7 +231,7 @@ time_pdf.Print("t")
 from ROOT import RooBinning
 from array import array
 ## bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(49)] + [5.2 + i * 0.4 for i in range(13)])
-bounds = array('d', [-5 + i * 0.5 for i in range(7)] + [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(37)] + [4 + i * 0.4 for i in range(16)])
+bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(37)] + [4 + i * 0.4 for i in range(21)])
 
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('var_binning')
@@ -231,8 +240,6 @@ binning.SetName('var_binning')
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
 import P2VVGeneralUtils
-
-assert(False)
 
 time_canvas = TCanvas('time_canvas', 'time_canvas', 1200, 990)
 pads = time_canvas.pads(4, 3)
@@ -271,23 +278,24 @@ resolutions = []
 
 for i, result in enumerate(results['time']):
     fpf = result.floatParsFinal()
+    cov = result.covarianceMatrix()
     if args[1] == 'double':
-        ## frac = fpf.find('timeResFrac2').getVal()
-        ## frac_e = fpf.find('timeResFrac2').getError()
+        frac = fpf.find('timeResFrac2').getVal()
+        frac_e = fpf.find('timeResFrac2').getError()
         
-        ## sf1 = fpf.find('timeResSigmaSF_1').getVal()
-        ## sf1_e = fpf.find('timeResSigmaSF_1').getError()
+        sf1 = fpf.find('timeResSigmaSF_1').getVal()
+        sf1_e = fpf.find('timeResSigmaSF_1').getError()
         
-        ## sf2 = fpf.find('timeResSigmaSF_2').getVal()
-        ## sf2_e = fpf.find('timeResSigmaSF_2').getError()
+        sf2 = fpf.find('timeResSigmaSF_2').getVal()
+        sf2_e = fpf.find('timeResSigmaSF_2').getError()
         
-        ## sf = (1 - frac) * sf1 + frac * sf2
-        ## sf_cov1 = (frac_e ** 2) * (sf1 ** 2) + ((1 - frac) ** 2) * (sf1_e ** 2)
-        ## sf_cov2 = (frac_e ** 2) * (sf2 ** 2) + (frac ** 2) * (sf2_e ** 2) 
-        ## sf_e = sqrt(sf_cov1 + sf_cov2)
+        sf = (1 - frac) * sf1 + frac * sf2
+        sf_cov1 = (frac_e ** 2) * (sf1 ** 2) + ((1 - frac) ** 2) * (sf1_e ** 2) + 2 * frac * sf1 * cov(6, 7)
+        sf_cov2 = (frac_e ** 2) * (sf2 ** 2) + (frac ** 2) * (sf2_e ** 2) + 2 * frac * sf1 * cov(6, 8)
+        sf_e = sqrt(sf_cov1 + sf_cov2)
         
-        sf = fpf.find('timeResRMS').getVal()
-        sf_e = fpf.find('timeResRMS').getError()
+        ## sf = fpf.find('timeResRMS').getVal()
+        ## sf_e = fpf.find('timeResRMS').getError()
     elif args[1] == 'single':
         sf = fpf.find('sigmaSF').getVal()
         sf_e = fpf.find('sigmaSF').getError()
