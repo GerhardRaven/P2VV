@@ -167,34 +167,30 @@ gROOT.ForceStyle()
 gStyle.UseCurrentStyle()
 
 
-
 # add LHCb label
 from ROOT import TPaveText
-lhcbName = TPaveText(gStyle.GetPadLeftMargin() + 0.14,
+lhcbName = TPaveText(gStyle.GetPadLeftMargin() + 0.05,
                          0.87 - gStyle.GetPadTopMargin(),
                          gStyle.GetPadLeftMargin() + 0.20,
-                         0.98 - gStyle.GetPadTopMargin(),
+                         0.95 - gStyle.GetPadTopMargin(),
                          "BRNDC")
-#lhcbName.AddText("#bf{LHCb preliminary}")
-#lhcbName.AddText(" ")
-#lhcbName.AddText("#bf{#sqrt{s} = 7 TeV}, #bf{#scale[0.5]{#int}#it{L}=1.1 fb^{-1}}")
+lhcbName.AddText("LHCb")
 lhcbName.SetFillColor(0)
 lhcbName.SetTextAlign(12)
 lhcbName.SetBorderSize(0)
-lhcbName.UseCurrentStyle()
 
-## from ROOT import TText
-## lhcbLabel = TText()
-## lhcbLabel.SetTextFont(lhcbFont)
-## lhcbLabel.SetTextColor(1)
-## lhcbLabel.SetTextSize(lhcbTSize)
-## lhcbLabel.SetTextAlign(12)
+from ROOT import TText
+lhcbLabel = TText()
+lhcbLabel.SetTextFont(lhcbFont)
+lhcbLabel.SetTextColor(1)
+lhcbLabel.SetTextSize(lhcbTSize)
+lhcbLabel.SetTextAlign(12)
 
-## from ROOT import TLatex
-## lhcbLatex = TLatex()
-## lhcbLatex.SetTextFont(lhcbFont)
-## lhcbLatex.SetTextColor(1)
-## lhcbLatex.SetTextSize(lhcbTSize)
-## lhcbLatex.SetTextAlign(12)
+from ROOT import TLatex
+lhcbLatex = TLatex()
+lhcbLatex.SetTextFont(lhcbFont)
+lhcbLatex.SetTextColor(1)
+lhcbLatex.SetTextSize(lhcbTSize)
+lhcbLatex.SetTextAlign(12)
 
 print "P2VV - INFO: setting LHCb style - Feb 2012"
