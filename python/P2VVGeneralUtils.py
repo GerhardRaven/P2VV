@@ -23,6 +23,135 @@ def numCPU( Max = sys.maxint ) :
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
 
+def readNTuple( filePath, **kwargs ) :
+    treeName = kwargs.pop( 'TreeName', 'DecayTree' )
+    MCNTuple = kwargs.pop( 'MCNTuple', False       )
+
+    # options
+    if 'Cuts' in kwargs :
+        cuts = kwargs.pop('Cuts')
+    else :
+        cuts = dict(  muPlusTrack  = 'muplus_track_chi2ndof < 4.'
+                    , muMinusTrack = 'muminus_track_chi2ndof < 4.'
+                    , KPlusTrack   = 'Kplus_track_chi2ndof < 4.'
+                    , KMinusTrack  = 'Kminus_track_chi2ndof < 4.'
+                    , mumuKKMass   = 'mass > 5200. && mass < 5550.'
+                    , mumuMass     = 'mdau1 > 3030. && mdau1 < 3150.'
+                    , KKMass       = 'mdau2 > 990. && mdau2 < 1050.'
+                    , decayTime    = 'time > 0.3 && time < 14.'
+                    , decayTimeRes = 'sigmat < 0.12'
+                    , selection    = 'sel == 1'
+                    , hlt1         = '(hlt1_unbiased_dec || hlt1_biased)'
+                    , hlt2         = 'hlt2_biased'
+                   )
+
+        if MCNTuple :
+            cuts['bkgcat'] = '(bkgcat == 0 || bkgcat == 50)'
+
+    for cutName in kwargs.pop( 'CutsMin', [ ] ) :
+        if cutName in cuts : del cuts[cutName]
+    for cutName, cut in kwargs.pop( 'CutsPlus', { } ) :
+        cuts[cutName] = cut
+
+    if 'Branches' in kwargs :
+        branches = kwargs.pop('Branches')
+
+    else :
+        branches = [  'runNumber'
+                    , 'eventNumber'
+                    , 'muplus_track_chi2ndof'
+                    , 'muminus_track_chi2ndof'
+                    , 'Kplus_track_chi2ndof'
+                    , 'Kminus_track_chi2ndof'
+                    , 'mass'
+                    , 'mdau1'
+                    , 'mdau2'
+                    , 'time'
+                    , 'sigmat'
+                    , 'tagdecision'
+                    , 'tagdecision_os'
+                    , 'tagdecision_ss'
+                    , 'tagomega'
+                    , 'tagomega_os'
+                    , 'tagomega_ss'
+                    , 'sel'
+                    , 'hlt1_unbiased_dec'
+                    , 'hlt1_biased'
+                    , 'hlt1_excl_biased_dec'
+                    , 'hlt2_unbiased'
+                    , 'hlt2_biased'
+                    #, 'muplus_PE'
+                    , 'muplus_PX'
+                    , 'muplus_PY'
+                    , 'muplus_PZ'
+                    #, 'muminus_PE'
+                    , 'muminus_PX'
+                    , 'muminus_PY'
+                    , 'muminus_PZ'
+                    #, 'Kplus_PE'
+                    , 'Kplus_PX'
+                    , 'Kplus_PY'
+                    , 'Kplus_PZ'
+                    #, 'Kminus_PE'
+                    , 'Kminus_PX'
+                    , 'Kminus_PY'
+                    , 'Kminus_PZ'
+                    , 'helcosthetaK'
+                    , 'helcosthetaL'
+                    , 'helphi'
+                    , 'bkgcat'
+                   ]
+
+        if MCNTuple :
+            branches += [  'truetime'
+                         #, 'muplus_TRUEP_E'
+                         , 'muplus_TRUEP_X'
+                         , 'muplus_TRUEP_Y'
+                         , 'muplus_TRUEP_Z'
+                         #, 'muminus_TRUEP_E'
+                         , 'muminus_TRUEP_X'
+                         , 'muminus_TRUEP_Y'
+                         , 'muminus_TRUEP_Z'
+                         #, 'Kplus_TRUEP_E'
+                         , 'Kplus_TRUEP_X'
+                         , 'Kplus_TRUEP_Y'
+                         , 'Kplus_TRUEP_Z'
+                         #, 'Kminus_TRUEP_E'
+                         , 'Kminus_TRUEP_X'
+                         , 'Kminus_TRUEP_Y'
+                         , 'Kminus_TRUEP_Z'
+                        ]
+
+    from ROOT import gROOT, TFile
+
+    # read n-tuple
+    file = TFile.Open(filePath)
+    tree = file.Get(treeName)
+    gROOT.cd('PyROOT:/')
+
+    tree.SetBranchStatus( '*', False )
+    for branch in branches : tree.SetBranchStatus( branch, True )
+
+    cutStr = ' && '.join( cut for cut in cuts.values() )
+
+    print 'P2VV INFO: readNTuple: selection cuts data:\n   %s' % cutStr
+    print 'P2VV INFO: readNTuple: numbers of events:'
+    if 'selection' in cuts and 'hlt1' in cuts and 'hlt2' in cuts :
+        print '   n-tuple: %d\n   triggers: %d\n   pre-selection: %d\n   triggers + pre-selection: %d\n   full selection: %d'\
+               % (  tree.GetEntries()
+                  , tree.GetEntries( cuts['hlt1'] + ' && ' + cuts['hlt2'] )
+                  , tree.GetEntries( cuts['selection'] )
+                  , tree.GetEntries( cuts['hlt1'] + ' && ' + cuts['hlt2'] + ' && ' + cuts['selection'] )
+                  , tree.GetEntries(cutStr)
+                 )
+    else :
+        print '   n-tuple: %d\n   full selection: %d' % (  tree.GetEntries(), tree.GetEntries(cutStr) )
+
+    tree = tree.CopyTree(cutStr)
+    file.Close()
+    print 'P2VV INFO: readNTuple: read n-tuple with %d events after selection' % tree.GetEntries()
+    return tree
+
 def readData( filePath, dataSetName, NTuple = False, observables = None, **kwargs ) :
     """reads data from file (RooDataSet or TTree(s))
     """
@@ -233,6 +362,22 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
     dataSet.addColumn(cpsi)
     dataSet.addColumn(cthetaTr)
     dataSet.addColumn(phiTr)
+
+
+# function for finding a splitted parameter in a simultaneous PDF
+def getSplitPar( parName, stateName, parSet ) :
+    from itertools import permutations
+    stateName = stateName[ 1 : -1 ].split(';') if stateName.startswith('{') and stateName.endswith('}') else [ stateName ]
+    if len(stateName) > 1 :
+        fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
+                     for perm in permutations( stateName, len(stateName) ) ]
+    else :
+        fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
+
+    name = lambda par : par if type(par) == str else par.GetName()
+    for par in parSet :
+        if name(par) in fullNames : return par
+    return None
 
 
 ###########################################################################################################################################

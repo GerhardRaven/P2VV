@@ -383,20 +383,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VVGeneralUtils import plot
             from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
 
-        # define function for finding a splitted parameter in a simultaneous PDF
-        def getSplitPar( parName, stateName, parSet ) :
-            from itertools import permutations
-            stateName = stateName[ 1 : -1 ].split(';') if stateName.startswith('{') and stateName.endswith('}') else [ stateName ]
-            if len(stateName) > 1 :
-                fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
-                             for perm in permutations( stateName, len(stateName) ) ]
-            else :
-                fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
-
-            name = lambda par : par if type(par) == str else par.GetName()
-            for par in parSet :
-                if name(par) in fullNames : return par
-            return None
+        # function for finding a splitted parameter in a simultaneous PDF
+        from P2VVGeneralUtils import getSplitPar
 
 
         ###################################################################################################################################
