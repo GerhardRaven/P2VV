@@ -24,9 +24,12 @@ elif args[1] not in ['single', 'double', 'triple']:
     
 input_data = {}
 if args[0] == '2011':
-    input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
-    input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
+    input_data['data'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    input_data['wpv'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
+    ## input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    ## input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
+    ## input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
 else:
     input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2012.root'
@@ -153,19 +156,22 @@ prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
 
 # Read data
-from P2VVGeneralUtils import readData
-tree_name = 'DecayTree'
-data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
-                ntupleCuts = 'sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1')
-datas = [data.reduce(Cut = 'sigmat > %f && sigmat < %f' % (st_bins[i], st_bins[i + 1]))
-         for i in range(len(st_bins) - 1)]
+## from P2VVGeneralUtils import readData
+## tree_name = 'DecayTree'
+## data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
+##                 ntupleCuts = 'sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1')
+## datas = [data.reduce(Cut = 'sigmat > %f && sigmat < %f' % (st_bins[i], st_bins[i + 1]))
+##          for i in range(len(st_bins) - 1)]
 
-## datas = []
-## from ROOT import TFile
-## input_file = TFile.Open('st_bins_data.root')
-## for i in range(1, 12):
-##     ds_name = tree_name + ('%02d' % i)
-##     datas.append(input_file.Get(ds_name))
+datas = []
+sdatas = []
+from ROOT import TFile
+input_file = TFile.Open('/bfys/raaij/p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
+for i in range(12):
+    sds_name = 'DecayTree_%02d_weighted_psi_background' % i
+    sdatas.append(input_file.Get(sds_name))
+    ds_name = 'DecayTree_%02d' % i
+    datas.append(input_file.Get(ds_name))
 
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
