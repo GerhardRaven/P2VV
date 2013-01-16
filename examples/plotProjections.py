@@ -239,14 +239,18 @@ CpPlotsKit.setLineColors( dict(total = kBlue , even=kRed, odd=kGreen+3, swave=kM
 CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
 CpPlotsKit.setLineWidth(4)
 
-#Access the LHCb style PaveText that it is been printed on the canvas
-LHCbLabel = LHCbStyle.lhcbName
-from ROOT import gStyle
-LHCbLabel.SetX1NDC( gStyle.GetPadLeftMargin() + 0.14 )
-LHCbLabel.SetX2NDC( gStyle.GetPadLeftMargin() + 0.20 )
-LHCbLabel.SetY1NDC( 0.87 - gStyle.GetPadTopMargin()  )
-LHCbLabel.SetY2NDC( 0.87 - gStyle.GetPadTopMargin()  )
 
+#LHCbLabel
+from ROOT import TPaveText, gStyle
+lhcbName = TPaveText(gStyle.GetPadLeftMargin() + 0.14,
+                         0.87 - gStyle.GetPadTopMargin(),
+                         gStyle.GetPadLeftMargin() + 0.20,
+                         0.95 - gStyle.GetPadTopMargin(),
+                         "BRNDC")
+lhcbName.AddText("LHCb")
+lhcbName.SetFillColor(0)
+lhcbName.SetTextAlign(12)
+lhcbName.SetBorderSize(0)
 
 
 ##Plot and Save
@@ -268,14 +272,14 @@ for ( pad, obs, nBins, xTitle, yScale, logY )\
            , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
                       else CpPlotsKit.getAddPdfsOpts(BinData=True )
            )
-    LHCbLabel.Draw()
+    lhcbName.Draw()
     filename = obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] else obs.GetName() + '_cFit.ps'
     pad.Print(filename)
 
 # Save all the plots in a root file as RooPlot objects.
 from P2VVGeneralUtils import _P2VVPlotStash as rooplots
 from ROOT import TFile
-plotsFile = TFile('RooPlots.root','recreate')
+plotsFile = TFile('RooPlotsFinal.root','recreate')
 for plot in rooplots: plot.Write()
 plotsFile.Close()
 
