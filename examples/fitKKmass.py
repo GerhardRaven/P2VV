@@ -265,63 +265,70 @@ if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
 
 
 ###########################################################################################################################################
-## generate data ##
+## get data ##
 ###################
-
-if generateData :
-    if parameterFile :
-        # read parameters from file
-        pdfConfig.readParametersFromFile( filePath = parameterFile )
-        pdfConfig.setParametersInPdf(pdf)
-
-    # print parameter values
-    print 120 * '='
-    print 'JvLFit: observables and parameters in generation process:'
-    for var in pdf.getVariables() : var.Print()
-    print 120 * '='
-
-    # generate data
-    nEvents = int( pdfConfig['numEvents'] * ( pdfConfig['signalFraction'] if pdfConfig['SFit'] else 1. ) )
-    print 'JvLFit: generating %d events' % nEvents
-    fitData = pdf.generate( obsSetP2VV, nEvents )
-
-    # additional observables
-    if pdfConfig['nominalPdf'] or not pdfConfig['transversityAngles'] :
-        from P2VVGeneralUtils import addTransversityAngles
-        addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
-                                      , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
-
-    # write data to file
-    from P2VVGeneralUtils import writeData
-    writeData( dataSetFile, dataSetName, fitData )
-
-elif pdfConfig['SFit'] :
-    defData = pdfBuild['sigSWeightData']
-    sigData = pdfBuild['sigSWeightData']
-    bkgData = pdfBuild['bkgSWeightData']
-    if corrSFitErr == 'sumWeight'\
-            or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-        from P2VVGeneralUtils import correctSWeights
-        fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
-                                  , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
-                                  , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
-
-    else :
-        fitData = pdfBuild['sigSWeightData']
-
-else :
-    defData = pdfBuild['data']
-    fitData = pdfBuild['data']
-    sigData = pdfBuild['sigSWeightData']
-    bkgData = pdfBuild['bkgSWeightData']
+#This is the unweighted dataset, after full selection and trigger
+defData = pdfBuild['data']
 
 
 
 
-from ROOT import RooRealVar, RooRelBreitWigner, RooConstVar, RooFFTConvPdf, RooGaussModel
+assert(False)
+
+##################################################
+## Make the B mass plots
+##################################################
+from P2VVGeneralUtils import plot
+from ROOT import TCanvas
+from P2VVLoad import LHCbStyle
+
+# JpsiPhi Pdf
+JpsiPhiPdf = pdfBuild._massPdf
+
+#Pdf Components
+comps = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
+         , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
+          }
+
+##!!!!!!!!!!!!!! TODO: MAKE PLOT STYLE IDENTICAL TO THAT OF THE PAPER AND APLY THE INSTRUCTION FOR THE PAPER LAYOUT
+plot(  TCanvas('JpsiPhiMass'), BMass, defData, JpsiPhiPdf, components = comps)
+
+
+assert(False)
+
+
+
+
+##################################################
+## Make the mumu mass plots
+##################################################
+from P2VVParameterizations.MassPDFs import CB_Signal_Mass, Linear_Background_Mass
+
+mumuSig = CB_Signal_Mass         ( dict( Name = 'sig_mumu', mass = mumuMass ))
+mumuBkg = Linear_Background_Mass ( dict( Name = 'bkg_mumu', mass = mumuMass ))
+
+from RooFitWrappers import buildPdf
+mumuMassPdf = buildPdf( [ mumuSig, mumuBkg ], Observables = [ mumuMass ], Name = 'mumuMass' )
+
+
+
+##!!!!!!!!!!! defData DO NOT CONTAIN mdau1!!!!!!!!!!!!!
+
+assert(False)
+
+
+
+
+
+
+##################################################
+## Make the KK mass plots
+##################################################
+#Build KK mas pdf
+from ROOT import RooRelBreitWigner, RooConstVar, RooFFTConvPdf, RooGaussModel
 
 #Observable
-KKmass = defData.get().find('mdau2')
+#KKmass = defData.get().find('mdau2')
 
 #Parameters
 mean   = RooRealVar ( 'mean'  , 'mean'  , 1020, 1015, 1020 ) 
