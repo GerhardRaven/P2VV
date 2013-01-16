@@ -10,7 +10,7 @@ pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
-doFit                   = False
+doFit                   = True
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 #OutputPath for the plots in line 
@@ -291,8 +291,7 @@ for bin in binNames:
              fName =  bin + '_' + obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] \
                 else  bin + '_' + obs.GetName() + '_cFit.ps'
              pad.Print(fName)
-         if bin == 'bin0': break
-             
+                      
 # Save all the plots in a root file as RooPlot objects.
 from P2VVGeneralUtils import _P2VVPlotStash as rooplots
 from ROOT import TFile
