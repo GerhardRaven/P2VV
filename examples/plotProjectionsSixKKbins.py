@@ -10,7 +10,7 @@ pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
-doFit                   = True
+doFit                   = False
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 #OutputPath for the plots in line 
@@ -244,13 +244,19 @@ CpPlotsKit.setLineColors( dict(total = kBlue, even=kRed, odd=kGreen+3, swave=kMa
 CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
 CpPlotsKit.setLineWidth(lineWidth)
 
-#Gain access on the LHCb style PaveText that it is been printed on the canvas
-LHCbLabel = LHCbStyle.lhcbName
-from ROOT import gStyle
-LHCbLabel.SetX1NDC( gStyle.GetPadLeftMargin() + 0.14 )
-LHCbLabel.SetX2NDC( gStyle.GetPadLeftMargin() + 0.20 )
-LHCbLabel.SetY1NDC( 0.87 - gStyle.GetPadTopMargin()  )
-LHCbLabel.SetY2NDC( 0.87 - gStyle.GetPadTopMargin()  )
+
+#LHCbLabel
+from ROOT import TPaveText, gStyle
+lhcbName = TPaveText(gStyle.GetPadLeftMargin() + 0.14,
+                         0.87 - gStyle.GetPadTopMargin(),
+                         gStyle.GetPadLeftMargin() + 0.20,
+                         0.95 - gStyle.GetPadTopMargin(),
+                         "BRNDC")
+lhcbName.AddText("LHCb")
+lhcbName.SetFillColor(0)
+lhcbName.SetTextAlign(12)
+lhcbName.SetBorderSize(0)
+
 
 #Get pdf and AdPdf options in case of bining and No bining the projData 
 PDFoptsBin   = CpPlotsKit.getPdfOptsSixKKbins(BinData=True)
@@ -280,18 +286,17 @@ for bin in binNames:
                   , addPDFsOpts = [addPDFotpsNOBin[binIdx][c] for c in CPcomps ] if obs==time\
                             else  [addPDFotpsBin[binIdx][c] for c in CPcomps ]
                    )
-             if obs == time: assert(False)
-             LHCbLabel.Draw()
+             lhcbName.Draw()
         ## print canvas to file
              fName =  bin + '_' + obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] \
                 else  bin + '_' + obs.GetName() + '_cFit.ps'
              pad.Print(fName)
-
+         if bin == 'bin0': break
              
 # Save all the plots in a root file as RooPlot objects.
 from P2VVGeneralUtils import _P2VVPlotStash as rooplots
 from ROOT import TFile
-plotsFile = TFile('RooPlots.root','recreate')
+plotsFile = TFile('RooPlots6x4.root','recreate')
 for plot in rooplots: plot.Write()
 plotsFile.Close()
 
