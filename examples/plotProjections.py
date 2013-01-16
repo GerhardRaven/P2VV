@@ -242,10 +242,10 @@ CpPlotsKit.setLineWidth(4)
 #Access the LHCb style PaveText that it is been printed on the canvas
 LHCbLabel = LHCbStyle.lhcbName
 from ROOT import gStyle
-LHCbLabel.setX1NDC( gStyle.GetPadLeftMargin() + 0.14 )
-LHCbLabel.setX2NDC( gStyle.GetPadLeftMargin() + 0.20 )
-LHCbLabel.setY1NDC( 0.87 - gStyle.GetPadTopMargin()  )
-LHCbLabel.setY2NDC( 0.87 - gStyle.GetPadTopMargin()  )
+LHCbLabel.SetX1NDC( gStyle.GetPadLeftMargin() + 0.14 )
+LHCbLabel.SetX2NDC( gStyle.GetPadLeftMargin() + 0.20 )
+LHCbLabel.SetY1NDC( 0.87 - gStyle.GetPadTopMargin()  )
+LHCbLabel.SetY2NDC( 0.87 - gStyle.GetPadTopMargin()  )
 
 
 
