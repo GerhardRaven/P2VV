@@ -211,8 +211,10 @@ result = time_pdf.fitTo(psi_sdata, SumW2Error = False, **fitOpts)
 
 
 from ROOT import RooBinning
-bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
-## bounds = array('d', [-3 + i * 0.1 for i in range(27)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+if options.wpv:
+    bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+else:
+    bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('var_binning')
 t.setBinning(binning)
