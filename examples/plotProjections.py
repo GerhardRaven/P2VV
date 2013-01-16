@@ -10,7 +10,7 @@ pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
-doFit                   = True
+doFit                   = False
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 #OutputPath for the plots in line 
@@ -239,11 +239,15 @@ CpPlotsKit.setLineColors( dict(total = kBlue , even=kRed, odd=kGreen+3, swave=kM
 CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
 CpPlotsKit.setLineWidth(4)
 
-#Gain access on the LHCb style PaveText that it is been printed on the canvas
+#Access the LHCb style PaveText that it is been printed on the canvas
 LHCbLabel = LHCbStyle.lhcbName
-LHCbLabel.AddText("#bf{LHCb}")
-LHCbLabel.AddText(" ")
-LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV, L = 1 fb^{-1}}")
+from ROOT import gStyle
+LHCbLabel.setX1NDC( gStyle.GetPadLeftMargin() + 0.14 )
+LHCbLabel.setX2NDC( gStyle.GetPadLeftMargin() + 0.20 )
+LHCbLabel.setY1NDC( 0.87 - gStyle.GetPadTopMargin()  )
+LHCbLabel.setY2NDC( 0.87 - gStyle.GetPadTopMargin()  )
+
+
 
 ##Plot and Save
 for ( pad, obs, nBins, xTitle, yScale, logY )\
