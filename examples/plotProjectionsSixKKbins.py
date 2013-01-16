@@ -246,9 +246,11 @@ CpPlotsKit.setLineWidth(lineWidth)
 
 #Gain access on the LHCb style PaveText that it is been printed on the canvas
 LHCbLabel = LHCbStyle.lhcbName
-LHCbLabel.AddText("#bf{LHCb}")
-LHCbLabel.AddText(" ")
-LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV, L = 1 fb^{-1}}")
+from ROOT import gStyle
+LHCbLabel.SetX1NDC( gStyle.GetPadLeftMargin() + 0.14 )
+LHCbLabel.SetX2NDC( gStyle.GetPadLeftMargin() + 0.20 )
+LHCbLabel.SetY1NDC( 0.87 - gStyle.GetPadTopMargin()  )
+LHCbLabel.SetY2NDC( 0.87 - gStyle.GetPadTopMargin()  )
 
 #Get pdf and AdPdf options in case of bining and No bining the projData 
 PDFoptsBin   = CpPlotsKit.getPdfOptsSixKKbins(BinData=True)
