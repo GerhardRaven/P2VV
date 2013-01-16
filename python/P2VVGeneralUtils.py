@@ -711,7 +711,7 @@ class CPcomponentsPlotingToolkit():
         originalSet.update(f_sSet)
 
         #Construct CP pdf components
-        from RooFitWrappers import ConstVar, CustomizePdf
+        from RooFitWrappers import ConstVar, Customizer
         for Comp in self._comps:
             #Dictionary with the values  of the parameters to be replaced
             replacementDict = {}
@@ -737,7 +737,8 @@ class CPcomponentsPlotingToolkit():
                 replacementDict.update(dict( (f_S_i.GetName(), f_S_i.getVal() ) for f_S_i in f_sSet)  )
 
             replacementSet = set([ConstVar(Name=k + Comp, Value=v) for k,v in replacementDict.iteritems()])
-            CPcompPDF = CustomizePdf( self._tPdf, origSet=originalSet, replSet=replacementSet, replString=Comp)
+            CPcompPDF = Customizer( Pdf = self._tPdf, OriginalArgs = originalSet, SubstituteArgs = replacementSet
+                                   , ReplaceByName = True, ArgumentSuffix = Comp )
 
             if (Comp == "even") : self._CpCompPdfs.update(dict(even  = CPcompPDF ))
             if (Comp == "odd")  : self._CpCompPdfs.update(dict(odd   = CPcompPDF ))
