@@ -31,40 +31,93 @@ using std::endl;
 #include "RooArgSet.h"
 #include "RooCustomizer.h"
 #include "RooRealVar.h"
+#include "RooAbsPdf.h"
 
 ClassImp(RooExplicitNormPdf);
 
 //_____________________________________________________________________________
 RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
       const RooArgSet& obsSet, const RooAbsReal& function,
-      const RooAbsReal& normFunc, Double_t normFactor) :
+      const RooAbsReal& normFunc, Double_t normFactor,
+      Bool_t integrateNormFunc) :
   RooAbsReal(name, title),
   _obsSet("obsSet", "observables set", this),
+  _parSet("parSet", "parameters set", this),
   _functionOrig(&function),
   _normFuncOrig(&normFunc),
   _function(0),
   _normFunc(0),
+  _functionInteg(0),
+  _normFuncInteg(0),
   _normFactor(normFactor),
-  _projData(0)
+  _projData(0),
+  _integNormFunc(integrateNormFunc)
 {
-  _obsSet.add(obsSet);
+  initVariables(&obsSet, 0);
 }
 
 //_____________________________________________________________________________
 RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
       const RooArgSet& obsSet, const RooAbsReal& function,
       const RooAbsReal& normFunc, Double_t normFactor,
-      const RooAbsData& projectionData) :
+      const RooAbsData& projectionData, Bool_t integrateNormFunc) :
   RooAbsReal(name, title),
   _obsSet("obsSet", "observables set", this),
+  _parSet("parSet", "parameters set", this),
   _functionOrig(&function),
   _normFuncOrig(&normFunc),
   _function(0),
   _normFunc(0),
+  _functionInteg(0),
+  _normFuncInteg(0),
   _normFactor(normFactor),
-  _projData(&projectionData)
+  _projData(&projectionData),
+  _integNormFunc(integrateNormFunc)
 {
-  _obsSet.add(obsSet);
+  initVariables(&obsSet, 0);
+}
+
+//_____________________________________________________________________________
+RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
+      const RooArgSet& obsSet, const RooArgSet& intObsSet,
+      const RooAbsReal& function, const RooAbsReal& normFunc,
+      Double_t normFactor, Bool_t integrateNormFunc) :
+  RooAbsReal(name, title),
+  _obsSet("obsSet", "observables set", this),
+  _parSet("parSet", "parameters set", this),
+  _functionOrig(&function),
+  _normFuncOrig(&normFunc),
+  _function(0),
+  _normFunc(0),
+  _functionInteg(0),
+  _normFuncInteg(0),
+  _normFactor(normFactor),
+  _projData(0),
+  _integNormFunc(integrateNormFunc)
+{
+  initVariables(&obsSet, &intObsSet);
+}
+
+//_____________________________________________________________________________
+RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
+      const RooArgSet& obsSet, const RooArgSet& intObsSet,
+      const RooAbsReal& function, const RooAbsReal& normFunc,
+      Double_t normFactor, const RooAbsData& projectionData,
+      Bool_t integrateNormFunc) :
+  RooAbsReal(name, title),
+  _obsSet("obsSet", "observables set", this),
+  _parSet("parSet", "parameters set", this),
+  _functionOrig(&function),
+  _normFuncOrig(&normFunc),
+  _function(0),
+  _normFunc(0),
+  _functionInteg(0),
+  _normFuncInteg(0),
+  _normFactor(normFactor),
+  _projData(&projectionData),
+  _integNormFunc(integrateNormFunc)
+{
+  initVariables(&obsSet, &intObsSet);
 }
 
 //_____________________________________________________________________________
@@ -72,12 +125,17 @@ RooExplicitNormPdf::RooExplicitNormPdf(const RooExplicitNormPdf& other,
       const char* name) :
   RooAbsReal(other, name),
   _obsSet("obsSet", this, other._obsSet),
+  _intObsSet(other._intObsSet),
+  _parSet("parSet", this, other._parSet),
   _functionOrig(other._functionOrig),
   _normFuncOrig(other._normFuncOrig),
   _function(0),
   _normFunc(0),
+  _functionInteg(0),
+  _normFuncInteg(0),
   _normFactor(other._normFactor),
-  _projData(other._projData)
+  _projData(other._projData),
+  _integNormFunc(other._integNormFunc)
 {}
 
 //_____________________________________________________________________________
@@ -110,12 +168,67 @@ Double_t RooExplicitNormPdf::evaluate() const
 }
 
 //_____________________________________________________________________________
+void RooExplicitNormPdf::initVariables(const RooArgSet* obsSet,
+    const RooArgSet* intObsSet)
+{
+  // get variables in functions
+  RooArgSet* functionVars = _functionOrig->getVariables();
+  RooArgSet* normFuncVars = _normFuncOrig->getVariables();
+
+  // set observables
+  RooAbsArg* var = 0;
+  TIterator* varIter = obsSet->createIterator();
+  while ((var = (RooAbsArg*)varIter->Next()) != 0) {
+    if (functionVars->find(var->GetName()) == 0) {
+      coutW(InputArguments) << "RooExplicitNormPdf::initVariables("
+          << GetName()
+          << "): specified function does not depend on observable \""
+          << var->GetName() << "\"" << endl;
+    }
+
+    _obsSet.add(*var);
+  }
+  delete varIter;
+
+  if (intObsSet != 0) {
+    // set integration observables
+    varIter = intObsSet->createIterator();
+    while ((var = (RooAbsArg*)varIter->Next()) != 0) {
+      if (_obsSet.find(var->GetName()) != 0) {
+        coutW(InputArguments) << "RooExplicitNormPdf::initVariables("
+            << GetName() << "): integration observable \"" << var->GetName()
+            << "\" is in the set of observables; not integrating over \""
+            << var->GetName() << "\"" << endl;
+        continue;
+      }
+
+      _intObsSet.add(*var);
+    }
+    delete varIter;
+  }
+
+  // set parameters
+  RooArgSet parSet(*functionVars);
+  parSet.add(*normFuncVars, kTRUE);
+  parSet.remove(_obsSet, kFALSE, kTRUE);
+  parSet.remove(_intObsSet, kFALSE, kTRUE);
+  if (_projData) parSet.remove(*_projData->get(), kFALSE, kTRUE);
+  _parSet.add(parSet);
+}
+
+//_____________________________________________________________________________
 void RooExplicitNormPdf::initFunctions() const
 {
-  if (_function != 0 && _function != _functionOrig) delete _function;
-  if (_normFunc != 0 && _normFunc != _normFuncOrig) delete _normFunc;
   _functionOrig->getVal();
   _normFuncOrig->getVal();
+  if (_function != 0 && _function != _functionOrig)
+    delete _function;
+  if (_normFunc != 0 && _normFunc != _normFuncOrig)
+    delete _normFunc;
+  if (_functionInteg != 0 && _functionInteg != _functionOrig)
+    delete _functionInteg;
+  if (_normFuncInteg != 0 && _normFuncInteg != _normFuncOrig)
+    delete _normFuncInteg;
 
   // create customizers for the function and normalization function
   RooCustomizer funcCust(*_functionOrig, "function");
@@ -149,11 +262,11 @@ void RooExplicitNormPdf::initFunctions() const
     delete obsIter;
 
     coutI(Eval) << "RooExplicitNormPdf::initFunctions(" << GetName()
-        << ") evaluating integral as a data-weighted average with data set \""
+        << "): evaluating integral as a data-weighted average with data set \""
         << _projData->GetName() << "\": " << setprecision(1) << fixed
         << _projData->numEntries() << " (" << _projData->sumEntries()
         << ") entries" << endl;
-    coutI(Eval) << "conditional observables:" << endl;
+    coutI(Eval) << "conditional observables: ";
     _projData->get()->Print();
   }
 
@@ -161,6 +274,19 @@ void RooExplicitNormPdf::initFunctions() const
   delete normObsSet;
 
   // build functions with replaced observables
-  _function = (RooAbsReal*)funcCust.build();
-  _normFunc = (RooAbsReal*)normCust.build();
+  _functionInteg = (RooAbsReal*)funcCust.build();
+  _normFuncInteg = (RooAbsReal*)normCust.build();
+
+  if (_intObsSet.getSize() > 0) {
+    // integrate over observables in integration set
+    RooArgSet normIntSet(_intObsSet);
+    if (_integNormFunc) normIntSet.add(_obsSet);
+    _function = _functionInteg->createIntegral(_intObsSet);
+    _normFunc = _normFuncInteg->createIntegral(normIntSet);
+
+  } else {
+    _function = _functionInteg;
+    if (_integNormFunc) _normFunc = _normFuncInteg->createIntegral(_obsSet);
+    else _normFunc = _normFuncInteg;
+  }
 }

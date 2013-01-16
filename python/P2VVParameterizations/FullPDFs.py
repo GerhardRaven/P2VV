@@ -195,7 +195,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['multiplyByTagPdf']     = False
         self['multiplyByTimeEff']    = ''                  # '' / 'all' / 'signal'
         self['timeEffType']          = 'HLT1Unbiased'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basis0123' / 'basisSig3' / 'basisSig6'
+        self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basis0123' / 'basisSig3' / 'basisSig6' / 'weights'
         self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
         self['SWeightsType']         = ''                  # '' / 'simultaneous' / 'simultaneousFixed' / 'simultaneousFreeBkg'
@@ -383,20 +383,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VVGeneralUtils import plot
             from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
 
-        # define function for finding a splitted parameter in a simultaneous PDF
-        def getSplitPar( parName, stateName, parSet ) :
-            from itertools import permutations
-            stateName = stateName[ 1 : -1 ].split(';') if stateName.startswith('{') and stateName.endswith('}') else [ stateName ]
-            if len(stateName) > 1 :
-                fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
-                             for perm in permutations( stateName, len(stateName) ) ]
-            else :
-                fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
-
-            name = lambda par : par if type(par) == str else par.GetName()
-            for par in parSet :
-                if name(par) in fullNames : return par
-            return None
+        # function for finding a splitted parameter in a simultaneous PDF
+        from P2VVGeneralUtils import getSplitPar
 
 
         ###################################################################################################################################
@@ -1517,7 +1505,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             from P2VVGeneralUtils import RealMomentsBuilder
             moments = RealMomentsBuilder()
-            if multiplyByAngEff == 'basis012' :
+            if multiplyByAngEff == 'weights' :
+                angMomInds = [ ( 0, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 0, 2, 1 ), ( 0, 2, -1 ), ( 0, 2, -2 )
+                              , ( 1, 0, 0 ), ( 1, 2, 1 ), ( 1, 2, -1 ) ]
+            elif multiplyByAngEff == 'basis012' :
                 angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
             elif multiplyByAngEff == 'basis0123' :

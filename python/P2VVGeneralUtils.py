@@ -23,6 +23,135 @@ def numCPU( Max = sys.maxint ) :
 ## Handling Data                                                                                                                         ##
 ###########################################################################################################################################
 
+def readNTuple( filePath, **kwargs ) :
+    treeName = kwargs.pop( 'TreeName', 'DecayTree' )
+    MCNTuple = kwargs.pop( 'MCNTuple', False       )
+
+    # options
+    if 'Cuts' in kwargs :
+        cuts = kwargs.pop('Cuts')
+    else :
+        cuts = dict(  muPlusTrack  = 'muplus_track_chi2ndof < 4.'
+                    , muMinusTrack = 'muminus_track_chi2ndof < 4.'
+                    , KPlusTrack   = 'Kplus_track_chi2ndof < 4.'
+                    , KMinusTrack  = 'Kminus_track_chi2ndof < 4.'
+                    , mumuKKMass   = 'mass > 5200. && mass < 5550.'
+                    , mumuMass     = 'mdau1 > 3030. && mdau1 < 3150.'
+                    , KKMass       = 'mdau2 > 990. && mdau2 < 1050.'
+                    , decayTime    = 'time > 0.3 && time < 14.'
+                    , decayTimeRes = 'sigmat < 0.12'
+                    , selection    = 'sel == 1'
+                    , hlt1         = '(hlt1_unbiased_dec || hlt1_biased)'
+                    , hlt2         = 'hlt2_biased'
+                   )
+
+        if MCNTuple :
+            cuts['bkgcat'] = '(bkgcat == 0 || bkgcat == 50)'
+
+    for cutName in kwargs.pop( 'CutsMin', [ ] ) :
+        if cutName in cuts : del cuts[cutName]
+    for cutName, cut in kwargs.pop( 'CutsPlus', { } ) :
+        cuts[cutName] = cut
+
+    if 'Branches' in kwargs :
+        branches = kwargs.pop('Branches')
+
+    else :
+        branches = [  'runNumber'
+                    , 'eventNumber'
+                    , 'muplus_track_chi2ndof'
+                    , 'muminus_track_chi2ndof'
+                    , 'Kplus_track_chi2ndof'
+                    , 'Kminus_track_chi2ndof'
+                    , 'mass'
+                    , 'mdau1'
+                    , 'mdau2'
+                    , 'time'
+                    , 'sigmat'
+                    , 'tagdecision'
+                    , 'tagdecision_os'
+                    , 'tagdecision_ss'
+                    , 'tagomega'
+                    , 'tagomega_os'
+                    , 'tagomega_ss'
+                    , 'sel'
+                    , 'hlt1_unbiased_dec'
+                    , 'hlt1_biased'
+                    , 'hlt1_excl_biased_dec'
+                    , 'hlt2_unbiased'
+                    , 'hlt2_biased'
+                    #, 'muplus_PE'
+                    , 'muplus_PX'
+                    , 'muplus_PY'
+                    , 'muplus_PZ'
+                    #, 'muminus_PE'
+                    , 'muminus_PX'
+                    , 'muminus_PY'
+                    , 'muminus_PZ'
+                    #, 'Kplus_PE'
+                    , 'Kplus_PX'
+                    , 'Kplus_PY'
+                    , 'Kplus_PZ'
+                    #, 'Kminus_PE'
+                    , 'Kminus_PX'
+                    , 'Kminus_PY'
+                    , 'Kminus_PZ'
+                    , 'helcosthetaK'
+                    , 'helcosthetaL'
+                    , 'helphi'
+                    , 'bkgcat'
+                   ]
+
+        if MCNTuple :
+            branches += [  'truetime'
+                         #, 'muplus_TRUEP_E'
+                         , 'muplus_TRUEP_X'
+                         , 'muplus_TRUEP_Y'
+                         , 'muplus_TRUEP_Z'
+                         #, 'muminus_TRUEP_E'
+                         , 'muminus_TRUEP_X'
+                         , 'muminus_TRUEP_Y'
+                         , 'muminus_TRUEP_Z'
+                         #, 'Kplus_TRUEP_E'
+                         , 'Kplus_TRUEP_X'
+                         , 'Kplus_TRUEP_Y'
+                         , 'Kplus_TRUEP_Z'
+                         #, 'Kminus_TRUEP_E'
+                         , 'Kminus_TRUEP_X'
+                         , 'Kminus_TRUEP_Y'
+                         , 'Kminus_TRUEP_Z'
+                        ]
+
+    from ROOT import gROOT, TFile
+
+    # read n-tuple
+    file = TFile.Open(filePath)
+    tree = file.Get(treeName)
+    gROOT.cd('PyROOT:/')
+
+    tree.SetBranchStatus( '*', False )
+    for branch in branches : tree.SetBranchStatus( branch, True )
+
+    cutStr = ' && '.join( cut for cut in cuts.values() )
+
+    print 'P2VV INFO: readNTuple: selection cuts data:\n   %s' % cutStr
+    print 'P2VV INFO: readNTuple: numbers of events:'
+    if 'selection' in cuts and 'hlt1' in cuts and 'hlt2' in cuts :
+        print '   n-tuple: %d\n   triggers: %d\n   pre-selection: %d\n   triggers + pre-selection: %d\n   full selection: %d'\
+               % (  tree.GetEntries()
+                  , tree.GetEntries( cuts['hlt1'] + ' && ' + cuts['hlt2'] )
+                  , tree.GetEntries( cuts['selection'] )
+                  , tree.GetEntries( cuts['hlt1'] + ' && ' + cuts['hlt2'] + ' && ' + cuts['selection'] )
+                  , tree.GetEntries(cutStr)
+                 )
+    else :
+        print '   n-tuple: %d\n   full selection: %d' % (  tree.GetEntries(), tree.GetEntries(cutStr) )
+
+    tree = tree.CopyTree(cutStr)
+    file.Close()
+    print 'P2VV INFO: readNTuple: read n-tuple with %d events after selection' % tree.GetEntries()
+    return tree
+
 def readData( filePath, dataSetName, NTuple = False, observables = None, **kwargs ) :
     """reads data from file (RooDataSet or TTree(s))
     """
@@ -351,6 +480,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     if yScale[1]    : obsFrame.SetMaximum(yScale[1])
     if yScaleRel[0] : obsFrame.SetMinimum( yScaleRel[0] * obsFrame.GetMinimum() )
     if yScaleRel[1] : obsFrame.SetMaximum( yScaleRel[1] * obsFrame.GetMaximum() )
+    if logy and obsFrame.GetMinimum() <= 0 : obsFrame.SetMinimum(0.1)
 
     # set axis titles
     if xTitle : xAxis.SetTitle(xTitle)
@@ -474,6 +604,327 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     canv.Update()
     return canv
 
+
+# function for plotting a PDF in KK mass bins
+def getCondObsPlotsInKKbins(pdf, data, canv):
+    from ROOT import TCanvas, gPad, TH1F
+    from RooFitWrappers import Category
+    import RooFitDecorators
+
+    condObs = pdf.ConditionalObservables()
+    nPads = len(condObs)
+    nBins =  pdf.indexCat().numTypes()
+
+    #canv = TCanvas('CondObsCanvInKKbins')
+    if (nPads & 1 == 0): canv.Divide(nPads/2, 2)
+    else: canv.Divide((nPads+1)/2, 2)
+    pad = 1
+    #Dictionary with all the histogrms, the form is:  { observable, {'bin_i',hist}  }
+    Histos = dict( (obs.GetName(), dict( ('bin{0}'.format(bin), TH1F() ) for bin in xrange(nBins)  ) )  for obs in condObs )
+
+    t = data.buildTree()
+    entries = t.GetEntries()
+
+    for obs in condObs:
+        canv.cd(pad)
+        obsName = obs.GetName()
+        for KKbin in xrange(nBins):
+            binName = 'bin{0}'.format(KKbin)
+            sImpose = 'same' if not KKbin == 0 else ''
+            if isinstance(obs, Category): #Is CondObs discreate?  (It makes difference in the way Categories are listed in the TTree)
+                if (obsName=='iTagOS' or 'iTagSS'):Histos[obsName][binName].SetBins(3,-1,2)
+                else: Histos[obsName][binName].SetBins(2,0,2)
+                Histos[obsName][binName].SetDefaultSumw2(True)
+                Histos[obsName][binName].SetName(obs.GetName() + 'bin{0}'.format(KKbin))
+                Histos[obsName][binName].SetLineColor(KKbin + 1)
+                Histos[obsName][binName].SetLineWidth(1)
+                Histos[obsName][binName].SetAxisRange(0, 350,'Y')
+                Histos[obsName][binName].SetXTitle(obsName)
+
+                for event in xrange(entries):
+                    t.GetEntry(event)
+                    whichKKbin = t.__getattr__('KKMassCat_idx')
+                    if (whichKKbin == KKbin ):
+                        Histos[obsName][binName].Fill( t.__getattr__(obsName+'_idx'), t.__getattr__('weightVar') )
+            else:
+                if (obsName=='sigmat'): Histos[obs.GetName()][binName].SetBins(15,0,0.12)
+                else:                   Histos[obsName][binName].SetBins(15,0.05,0.55)
+                Histos[obsName][binName].SetDefaultSumw2(True)
+                Histos[obsName][binName].SetName(obs.GetName() + 'bin{0}'.format(KKbin))
+                Histos[obsName][binName].SetLineColor(KKbin + 1)
+                Histos[obsName][binName].SetLineWidth(1)
+                Histos[obsName][binName].SetAxisRange(.01, 1e3,'Y')
+                Histos[obsName][binName].SetXTitle(obsName)
+
+                for event in xrange(entries):
+                    t.GetEntry(event)
+                    whichKKbin = t.__getattr__('KKMassCat_idx')
+                    if (whichKKbin == KKbin ):
+                        Histos[obsName][binName].Fill( t.__getattr__(obsName), t.__getattr__('weightVar') )
+
+
+            int1 = Histos[obsName][binName].GetSumOfWeights()
+            if     KKbin==0 : int0 = Histos[obsName]['bin0'].GetSumOfWeights()
+            if not KKbin==0 : Histos[obsName][binName].Scale(int0 / int1)
+
+            Histos[obsName][binName].Draw(sImpose)
+
+        if not isinstance(obs, Category): gPad.SetLogy()
+        pad += 1
+        #assert(False)
+    #return  Histos
+    if obsName=='iTagSS': assert(False)
+
+    return canv
+
+
+# class for plotting a PDF in KK mass bins
+class CPcomponentsPlotingToolkit():
+    def __init__(self, pdf, data):
+        #Initializer builds the CP component pdfs
+        #Create objects
+        self._data = data
+        self._tPdf = pdf
+        self._CpCompPdfs = dict(total = self._tPdf)
+        self._comps = ['even','odd','swave']
+        self._condObservables = self._tPdf.ConditionalObservables()
+        self._observables = self._tPdf.Observables() - self._condObservables
+        self._CPnormFracs = {}
+        self._lineColors = dict(total=1,even=4,odd=4,swave=2)
+        self._lineStyles = dict(total=1,even=9,odd=3,swave=5)
+        self._lineWidth  = 2
+
+        # Check if KK mass binning feature is active
+        from RooFitWrappers import SimultaneousPdf
+        self._flagKKbin = isinstance( self._tPdf, SimultaneousPdf )
+        if (self._flagKKbin):
+            self._nKKbins = self._tPdf.indexCat().numTypes()
+            self._binNames = [('bin{0}'.format(bin))for bin in xrange(self._nKKbins)]
+            self._pdfsSuperDict = {}
+            self._sliceNormFracs = {}
+
+        #Start CP components projection of pdf
+        # Create pdf paramters dictionary and a set for the original paramters.
+        parsDict    = dict((p.GetName(),p) for p in self._tPdf.Parameters()  )
+        originalSet = set([ self._tPdf.ws().function("AparMag2"), parsDict['AperpMag2'], parsDict['A0Mag2']])
+        if self._flagKKbin: # In the case of KK binning there are several f_S fractions
+            f_sSet = set([ parsDict['f_S_bin{0}'.format(b)] for b in xrange(self._nKKbins) ])
+        else: f_sSet = set([parsDict['f_S']])
+        originalSet.update(f_sSet)
+
+        #Construct CP pdf components
+        from RooFitWrappers import ConstVar, Customizer
+        for Comp in self._comps:
+            #Dictionary with the values  of the parameters to be replaced
+            replacementDict = {}
+            if (Comp == "even"):
+                replacementDict.update(dict(A0Mag2    = parsDict['A0Mag2'].getVal(),
+                                            AperpMag2 =            0               ,
+                                            AparMag2  = 1-parsDict['A0Mag2'].getVal()-parsDict['AperpMag2'].getVal()
+                                            ))
+                replacementDict.update(dict( (f_S_i.GetName(), 0 ) for f_S_i in f_sSet)  )
+
+            if (Comp == "odd"):
+                replacementDict.update(dict(A0Mag2    =                  0             ,
+                                            AperpMag2 = parsDict['AperpMag2'].getVal() ,
+                                            AparMag2  =                  0
+                                            ))
+                replacementDict.update(dict( (f_S_i.GetName(), 0 ) for f_S_i in f_sSet)  )
+
+            if (Comp == "swave"):
+                replacementDict.update(dict(A0Mag2    = 0 ,
+                                            AperpMag2 = 0 ,
+                                            AparMag2  = 0
+                                            ))
+                replacementDict.update(dict( (f_S_i.GetName(), f_S_i.getVal() ) for f_S_i in f_sSet)  )
+
+            replacementSet = set([ConstVar(Name=k + Comp, Value=v) for k,v in replacementDict.iteritems()])
+            CPcompPDF = Customizer( Pdf = self._tPdf, OriginalArgs = originalSet, SubstituteArgs = replacementSet
+                                   , ReplaceByName = True, ArgumentSuffix = Comp )
+
+            if (Comp == "even") : self._CpCompPdfs.update(dict(even  = CPcompPDF ))
+            if (Comp == "odd")  : self._CpCompPdfs.update(dict(odd   = CPcompPDF ))
+            if (Comp == "swave"): self._CpCompPdfs.update(dict(swave = CPcompPDF ))
+
+        if self._flagKKbin:
+            #Split the Cp Components further into individual KK mass copmponents
+            tPdfs = dict( (bin, self._CpCompPdfs['total'].getPdf(bin)) for bin in self._binNames)
+            ePdfs = dict( (bin, self._CpCompPdfs['even' ].getPdf(bin)) for bin in self._binNames)
+            oPdfs = dict( (bin, self._CpCompPdfs['odd'  ].getPdf(bin)) for bin in self._binNames)
+            sPdfs = dict( (bin, self._CpCompPdfs['swave'].getPdf(bin)) for bin in self._binNames)
+        self._pdfsSuperDict.update(dict( (bin, dict(total = tPdfs[bin],
+                                                    even  = ePdfs[bin],
+                                                    odd   = oPdfs[bin],
+                                                    swave = sPdfs[bin] ) ) for bin in self._binNames ))
+        #Sneek these lines that set a unit for the phi, it helps RooFit
+        #  when creating the RooPlot. for some reason the unit of phi was not set up
+        try: list(self._observables)[[a.GetName() for a in list(self._observables)].index('helphi')].setUnit('rad')
+        except ValueError: print 'helphi observable not in angles lsit, Failed to set, rad, as a unit. '
+
+    #End of the initialazation
+
+    #Internal methods
+    def calculateNormFracs(self, pdfDict):
+        from ROOT import RooArgSet
+        obs = RooArgSet(o._target_() for o in self._observables )
+        totInt = pdfDict['total'].getNorm(obs)
+        fEven  = pdfDict['even' ].getNorm(obs) / totInt
+        fOdd   = pdfDict['odd'  ].getNorm(obs) / totInt
+        fSwave = pdfDict['swave'].getNorm(obs) / totInt
+        return dict(even=fEven, odd=fOdd, swave=fSwave)
+
+    def calculateCPnormFracs(self):
+        print 'P2VV - INFO: Calculating relative normaliation fractions of the CP components.'
+        if not self._flagKKbin:
+             print 'P2VV - INFO: Finished calculating relative normaliation fractions of the CP components.'
+             return calculateNormFracs(self._CpCompPdfs)
+        if self._flagKKbin:
+            self._CPnormFracs = dict( (bin ,self.calculateNormFracs(dict(
+                                 total = self._CpCompPdfs['total'].getPdf(bin),
+                                 even  = self._CpCompPdfs['even'].getPdf(bin),
+                                 odd   = self._CpCompPdfs['odd'].getPdf(bin),
+                                 swave = self._CpCompPdfs['swave'].getPdf(bin)
+                                 )))for bin in self._binNames )
+            print 'P2VV - INFO: Finished calculating relative normaliation fractions of the CP components.'
+            return self._CPnormFracs
+
+    def calculateKKslicesNormFracs(self):
+        table = self._data.table(self._tPdf.indexCat())
+        total = float(self._data.sumEntries()) if   self._data.isWeighted() \
+                                               else float(self_.data.numEntries())
+        self._sliceNormFracs =  dict( (bin,table.get(bin)/total)for bin in self._binNames )
+        return self._sliceNormFracs
+
+    def getProJWdata(self,bin,Bins):
+        #Helping internal function to aviodavoid dublicating code,
+        #  Usefull in the case where you make 6x4 observable plots
+        if bin:
+            projData = self.binDataSet(Bins)
+            from ROOT import RooRealVar
+            projVars = []
+            for pV in projData.get():
+                if isinstance(pV,RooRealVar): projVars.append(pV)
+        else :
+            projVars = list(self._condObservables)
+            if self._flagKKbin: projVars.append(self._tPdf.indexCat())
+            projData = self._data.reduce(ArgSet=projVars)
+
+        return dict(data=projData, vars=projVars)
+
+    def binDataSet(self, nBins):
+        if self._flagKKbin: projVars = list(self._condObservables) + [self._tPdf.indexCat()]
+        else              : projVars = list(self._condObservables)
+
+        from RooFitWrappers import Category
+        from ROOT import RooArgSet, RooDataHist
+        binnedVarsList = []
+        #Bin only the continous observables
+        for pV in list(self._condObservables):
+            if    isinstance(pV,Category):pass
+            else: binnedVarsList.append(pV)
+        for pV in binnedVarsList: pV.setBins(nBins)
+
+        binnedVars =  RooArgSet(self._tPdf.indexCat(), *binnedVarsList)
+        return RooDataHist('RDH', 'RDH', binnedVars, self._data.reduce(RooArgSet(*projVars)))
+
+    #Interface
+    def getCPcompPdf(self):        return self._CpCompPdfs
+    def getNumKKbins(self):        return self._nKKbins
+    def getCPcompPdfKKbins(self):  return self._pdfsSuperDict
+    def getKKbinNames(self):       return self._binNames
+    def getCpCompNames(self):      return self._comps
+    def getCPnormFracs(self):
+        if not self._CPnormFracs: self.calculateCPnormFracs()
+        return self._CPnormFracs
+
+    def getKKslicesNormFracs(self):
+        if not self._sliceNormFracs: self.calculateKKslicesNormFracs()
+        return self._sliceNormFracs
+
+    def getPdfOpts(self, BinData=True,bins=20):
+        if   BinData: projDataSet=self.binDataSet(bins)
+        else:
+            projVars = list(self._condObservables) + [self._tPdf.indexCat()]
+            projDataSet = self._data.reduce(ArgSet=projVars)
+        return dict( LineWidth = self._lineWidth
+                   , LineColor = self._lineColors['total']
+                   , ProjWData = (projDataSet, False)
+                     )
+
+    def getAddPdfs(self):
+        return [self._CpCompPdfs['even' ].getPdf(b)for b in self._binNames] +\
+               [self._CpCompPdfs['odd'  ].getPdf(b)for b in self._binNames] +\
+               [self._CpCompPdfs['swave'].getPdf(b)for b in self._binNames]
+
+    def getAddPdfsOpts(self, BinData=True,bins=20):
+        if not self._CPnormFracs:    self.calculateCPnormFracs()
+        if not self._sliceNormFracs: self.calculateKKslicesNormFracs()
+        if BinData:
+            data     = self.binDataSet(bins)
+            projVars = self.getProJWdata(BinData,bins)['vars']
+        else:
+            data     = self._data
+            projVars = list(self._condObservables)
+        opts = []
+        for comp in self._comps:
+            for bin in self._binNames:
+                binInd = self._binNames.index(bin)
+                addPdfOpt_i = dict( ProjWData     = (data.reduce('KKMassCat==KKMassCat::' + bin),False),
+                                    Normalization =  self._CPnormFracs[bin][comp] * self._sliceNormFracs[bin] )
+                if not binInd==self._nKKbins-1:addPdfOpt_i.update(dict( Invisible = ()                       ))
+                if     binInd==self._nKKbins-1:addPdfOpt_i.update(dict( LineColor = self._lineColors[comp],
+                                                                        LineStyle = self._lineStyles[comp],
+                                                                        LineWidth = self._lineWidth          ))
+                if not binInd==0: #odd   Components First index = len(self._binNames)
+                                  #swave Components First index = 2 *( len(self._binNames)
+                                  if comp=='even' : argAddTo = ( 'addPDF{0}'.format(binInd-1),1.,1.)
+                                  if comp=='odd'  : argAddTo = ( 'addPDF{0}'.format(  len(self._binNames) + binInd-1 ,1.,1.) )
+                                  if comp=='swave': argAddTo = ( 'addPDF{0}'.format(2*len(self._binNames) + binInd-1 ,1.,1.) )
+                                  addPdfOpt_i.update(dict(AddTo = argAddTo))
+                opts.append(addPdfOpt_i)
+        return opts
+
+    def getPdfOptsSixKKbins(self, BinData=True, bins=20):
+        projecting = self.getProJWdata(BinData,bins)
+        projData   = projecting['data']
+        projVars   = projecting['vars']
+        if not BinData:  projVars.remove( self._tPdf.indexCat() )
+        opts = {}
+        KKCat = 'KKMassCat==KKMassCat::'
+        for b in self._binNames:
+            opts.update( {b : dict(  ProjWData = (projData.reduce(KKCat+b).reduce(ArgSet=projVars), False)
+                                   , LineWidth = self._lineWidth
+                                   , LineStyle = self._lineStyles['total']
+                                   , LineColor = self._lineColors['total'])
+                          }  )
+        return opts
+
+    def getAddPdfsOptsSixKKbins(self,BinData=True,bins=20):
+        if not self._CPnormFracs:    self.calculateCPnormFracs()
+        projecting = self.getProJWdata(BinData,bins)
+        projData   = projecting['data']
+        projVars   = projecting['vars']
+        if not BinData:  projVars.remove( self._tPdf.indexCat() )
+        opts = []
+        for bin in self._binNames:
+            ith_binOpts = { }
+            for comp in self._comps:
+                opt = dict(  ProjWData     = (projData.reduce('KKMassCat==KKMassCat::'+bin).reduce(ArgSet=projVars),False)
+                           , LineColor     =  self._lineColors[comp]
+                           , LineStyle     =  self._lineStyles[comp]
+                           , LineWidth     =  self._lineWidth
+                           , Normalization =  self._CPnormFracs[bin][comp]
+                             )
+                ith_binOpts.update( {comp:opt} )
+            opts.append( ith_binOpts  )
+        return opts
+
+    def setLineColors(self,colors): self._lineColors = colors
+    def setLineStyles(self,styles): self._lineStyles = styles
+    def setLineWidth(self, width ): self._lineWidth  = width
+
+
+# function for plotting the S-wave phases versus the (binned) KK mass
 def plotSWavePhases( **kwargs ) :
     yAxisRange  = kwargs.pop( 'DeltaSAxisRange', ( None, None )                         )
     KKMassLabel = kwargs.pop( 'KKMassLabel',     'm_{KK} (MeV)'                         )
@@ -639,6 +1090,11 @@ class Sorter(object):
     def __call__(self, o):
         if o in self.__d:  return self.__d[o]
         else:              return len(self.__d) + 1
+
+
+###########################################################################################################################################
+## (Efficiency) Moments                                                                                                                  ##
+###########################################################################################################################################
 
 class RealMomentsBuilder ( dict ) :
     # TODO:  implement reduce: clone self, selecting a subset of available moments...
@@ -1033,6 +1489,10 @@ class RealMomentsBuilder ( dict ) :
         return EditPdf( Name = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), Original = pdf, Rules = subst )
 
 
+###########################################################################################################################################
+## S-weights                                                                                                                             ##
+###########################################################################################################################################
+
 class SData( object ) :
     def __init__( self, **kwargs ) :
         # get input arguments
@@ -1185,6 +1645,11 @@ def createSData( **kwargs ) :
     for p,c in c_state.iteritems() : p.setConstant(c)
     return sdata
 
+
+###########################################################################################################################################
+## Miscellaneous                                                                                                                         ##
+###########################################################################################################################################
+
 def createProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2min,param2max,NumCPU=8,Extend=True):
     print '**************************************************'
     print 'making profile for %s and %s'%(param1.GetName(),param2.GetName())
@@ -1197,3 +1662,18 @@ def createProfile(name,data,pdf,npoints,param1,param1min,param1max,param2,param2
                                   , RooFit.Scaling(False)
                                   )
 
+
+# function for finding a splitted parameter in a simultaneous PDF
+def getSplitPar( parName, stateName, parSet ) :
+    from itertools import permutations
+    stateName = stateName[ 1 : -1 ].split(';') if stateName.startswith('{') and stateName.endswith('}') else [ stateName ]
+    if len(stateName) > 1 :
+        fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
+                     for perm in permutations( stateName, len(stateName) ) ]
+    else :
+        fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
+
+    name = lambda par : par if type(par) == str else par.GetName()
+    for par in parSet :
+        if name(par) in fullNames : return par
+    return None

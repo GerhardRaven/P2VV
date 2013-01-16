@@ -8,6 +8,14 @@
 
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin
 
+# initial values for time resolution parameters in fit
+timeResSigmaSFVal = 1.4
+timeResSigmaSFErr = 0.06
+
+timeResSigmaSFConstrVal = 1.45
+timeResSigmaSFConstrErr = 0.06
+
+
 class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin ):
     def __init__( self, **kwargs ) : 
         if 'Model' in kwargs : self._model = kwargs.pop( 'Model' )
@@ -265,7 +273,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         self._parseArg( 'timeResMean',    kwargs, Value = 0., Error = 0.1, MinMax = ( -2., 2. ), Constant = True )
         self._parseArg( 'timeResSigma',   kwargs, Title = 'Decay time error', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.2 ) )
         self._parseArg( 'timeResMeanSF',  kwargs, timeResMeanSF = self._timeResSigma )
-        self._parseArg( 'timeResSigmaSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
+        self._parseArg( 'timeResSigmaSF', kwargs, Value = timeResSigmaSFVal, Error = timeResSigmaSFErr, MinMax = ( 0.8, 2.1 ) )
         self._parseArg( 'timeResSigmaOffset', kwargs, Value = 0.0065, Error = 0.001, MinMax = ( 0.00001, 0.1 ) )
 
         constraints = []
@@ -288,6 +296,8 @@ class Paper2012_TimeResolution ( TimeResolution ) :
 
         timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
         if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' and isinstance( self._timeResSigmaSF, RealVar ) :
+            self._timeResSigmaSF.setVal(timeResSigmaSFConstrVal)
+            self._timeResSigmaSF.setError(timeResSigmaSFConstrErr)
             self._timeResSigmaSF.setConstant(True)
 
         elif timeResSFConstr and isinstance( self._timeResSigmaSF, RealVar ) :
@@ -296,9 +306,9 @@ class Paper2012_TimeResolution ( TimeResolution ) :
             constraints.append( Pdf(  Name = self._timeResSigmaSF.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._timeResSigmaSF
                                                     , ConstVar( Name = 'tres_SF_constraint_mean'
-                                                               ,  Value = self._timeResSigmaSF.getVal() )
+                                                               ,  Value = timeResSigmaSFConstrVal )
                                                     , ConstVar( Name = 'tres_SF_constraint_sigma'
-                                                               , Value = self._timeResSigmaSF.getError() )
+                                                               , Value = timeResSigmaSFConstrErr )
                                                    ]
                                    )
                               )

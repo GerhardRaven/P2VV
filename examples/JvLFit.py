@@ -15,7 +15,7 @@ doFit                   = True
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = True
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
@@ -49,7 +49,10 @@ if generateData :
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
 MinosPars = [  #'AparPhase'
+             #, 'ASOddPhase_bin0', 'ASOddPhase_bin1',                                       'ASOddPhase_bin4', 'ASOddPhase_bin5'
              #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
+             #, 'f_S_bin0',        'f_S_bin1',                                              'f_S_bin4',        'f_S_bin5'
+             #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',                           'f_S_bin4',        'f_S_bin5'
              #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
             ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
@@ -96,16 +99,20 @@ pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultan
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
                                      , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.34, 0.11),  (0.057, 0.031), (0.003, 0.006), (0.032, 0.016), (0.069, 0.032), (0.16,  0.05) ]
-#                                     , [ (0.60, 0.33 ), (0.81,  0.34 ), (0.8,   1.3  ), (-0.48, 0.19 ), (-0.47, 0.20 ), (-0.61, 0.21) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.068, 0.029), (0.013, 0.008), (0.013, 0.008), (0.055, 0.026), (0.17,  0.04) ]
+#                                     , [ (1.3,  0.7 ), (0.76,   0.27), (0.39,  0.25 ), (-0.57, 0.28 ), (-0.46, 0.21 ), (-0.64, 0.20) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07),  (0.057, 0.028), (0.003, 0.007), (0.012, 0.009), (0.046, 0.026), (0.16,  0.04) ]
+#                                     , [ (1.43, 0.85 ), (0.83,  0.34 ), (0.8,   1.4  ), (-0.62, 0.33 ), (-0.52, 0.25 ), (-0.67, 0.21) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.08), (0.058, 0.028), (0.009, 0.006), (0.009, 0.006), (0.047, 0.026), (0.16,  0.04) ]
+#                                     , [ (1.4,  0.8 ), (0.81,  0.32 ), (0.42,  0.30 ), (-0.72, 0.38 ), (-0.51, 0.24 ), (-0.66, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.06, 0.02), (0.04, 0.02), (0.27, 0.07) ]
 #                                     , [ (2.7,  0.4 ), (0.22,   0.14), (-0.11, 0.17 ), (-0.97, 0.3 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.05, 0.02), (0.27, 0.07) ]
-#                                     , [ (2.7,  0.4 ), (0.,   0.15), (-0.97, 0.3 ) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07), (0.017, 0.013), (0.020, 0.010), (0.16,  0.04) ]
+#                                     , [ (1.4,  0.9 ), (0.7,   0.4),   (-0.64, 0.25),  (-0.66, 0.20) ] )
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.964, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: True
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -180,6 +187,8 @@ pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForWeights'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForCorrWeights'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_Basis'
 
@@ -406,7 +415,11 @@ if fastFit :
 #ws['f_S_bin4'].setConstant()
 #ws['f_S_bin5'].setConstant()
 
-#ws['timeResSF'].setVal(1.4476)
+#ws['ASOddPhase_bin2'].setVal(0.812901)
+#ws['ASOddPhase_bin2'].setError(1.37)
+#ws['ASOddPhase_bin2'].setConstant()
+
+#ws['timeResSigmaSF'].setVal(1.4)
 
 #ws['ASOddPhase'].setMin(-6.)
 #ws['ASOddPhase'].setMax(6.)
@@ -422,12 +435,12 @@ if fastFit :
 #ws['Gamma'].setVal(0.683)
 #ws['dGamma'].setVal(0.068)
 #ws['dM'].setVal(17.85)
-#ws['A0Mag2'].setVal(0.6)
-#ws['AperpMag2'].setVal(0.16)
+#ws['A0Mag2'].setVal(0.534)
+#ws['AperpMag2'].setVal(0.238)
 #ws['f_S'].setVal(0.)
 #ws['f_S'].setConstant()
-#ws['AparPhase'].setVal(2.5)
-#ws['AperpPhase'].setVal(-0.14)
+#ws['AparPhase'].setVal(3.24)
+#ws['AperpPhase'].setVal(3.01)
 #ws['ASOddPhase'].setVal(0.)
 #ws['ASOddPhase'].setConstant()
 #ws['lambdaCP'].setVal(1.)
@@ -442,6 +455,13 @@ if randomParVals :
     random.seed( randomParVals[1] if randomParVals[1] else None )
     for par in pdfPars :
         if not par.isConstant() : par.setVal( par.getVal() + 2. * ( random.random() - 0.5 ) * randomParVals[0] * par.getError() )
+
+## set S-wave fractions for the two middle bins equal
+#print 'JvLFit: setting S-wave fractions for bin 2 and bin 3 equal'
+#from RooFitWrappers import Customizer
+#pdf = Customizer( Pdf = pdf, OriginalArgs = [ ws['f_S_bin3'] ], SubstituteArgs = [ ws['f_S_bin2'] ] )
+#pdfObs  = pdf.getObservables(fitData)
+#pdfPars = pdf.getParameters(fitData)
 
 # print parameters
 print 120 * '='
@@ -1147,6 +1167,7 @@ if dllPars :
      , 'ASOddPhase_bin3' : ( '#DeltaNLL #delta_{S3} - #delta_{#perp}', '#delta_{S3} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
      , 'ASOddPhase_bin4' : ( '#DeltaNLL #delta_{S4} - #delta_{#perp}', '#delta_{S4} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
      , 'ASOddPhase_bin5' : ( '#DeltaNLL #delta_{S5} - #delta_{#perp}', '#delta_{S5} - #delta_{#perp}', -2.,       5.,      1, 0.001, 0.01 )
+     , 'timeResSigmaSF'  : ( '#DeltaNLL #sigma_{t} s.f.',              '#sigma_{t} s.f.',               1.27,     1.63,    1, 0.001, 0.01 )
     }
 
     # check DNLL parameters
@@ -1157,23 +1178,23 @@ if dllPars :
         if par[0] == 'phiCP' : phiCPPar = True
 
     # float/fix values of some parameters
-    if constLambdaCP :
-        pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
-            else pdfBuild['lambdaCP'].setConstant('lambdaCP')
-    if constAvgCEvenOdd :
-        for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
+    #if constLambdaCP :
+    #    pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
+    #        else pdfBuild['lambdaCP'].setConstant('lambdaCP')
+    #if constAvgCEvenOdd :
+    #    for CEvenOdd in pdfBuild['taggingParams']['CEvenOdds'] : CEvenOdd.setConstant('avgCEven.*|avgCOdd.*')
 
-    if 'sig_ATagBBbar' in ws : ws['sig_ATagBBbar'].setConstant()
-    for bin in range(5) :
-        if 'sig_ATagBBbar_bin%d' % bin in ws : ws[ 'sig_ATagBBbar_bin%d' % bin ].setConstant()
-    pdfBuild['tagCatsOS'].setConstant('.*')
-    pdfBuild['tagCatsSS'].setConstant('.*')
-    #pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
-    pdfBuild['timeResModel'].setConstant('.*')
-    pdfBuild['signalBMass'].setConstant('.*')
-    if not pdfConfig['SFit'] :
-        pdfBuild['backgroundBMass'].setConstant('.*')
-        pdfBuild['backgroundTime'].setConstant('.*')
+    #if 'sig_ATagBBbar' in ws : ws['sig_ATagBBbar'].setConstant()
+    #for bin in range(5) :
+    #    if 'sig_ATagBBbar_bin%d' % bin in ws : ws[ 'sig_ATagBBbar_bin%d' % bin ].setConstant()
+    #pdfBuild['tagCatsOS'].setConstant('.*')
+    #pdfBuild['tagCatsSS'].setConstant('.*')
+    ##pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
+    #pdfBuild['timeResModel'].setConstant('.*')
+    #pdfBuild['signalBMass'].setConstant('.*')
+    #if not pdfConfig['SFit'] :
+    #    pdfBuild['backgroundBMass'].setConstant('.*')
+    #    pdfBuild['backgroundTime'].setConstant('.*')
 
     # build NLL
     from ROOT import RooFit, RooArgSet, RooArgList, RooFormulaVar, TCanvas
