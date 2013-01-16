@@ -244,11 +244,19 @@ CpPlotsKit.setLineColors( dict(total = kBlue, even=kRed, odd=kGreen+3, swave=kMa
 CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
 CpPlotsKit.setLineWidth(lineWidth)
 
-#Gain access on the LHCb style PaveText that it is been printed on the canvas
-LHCbLabel = LHCbStyle.lhcbName
-LHCbLabel.AddText("#bf{LHCb}")
-LHCbLabel.AddText(" ")
-LHCbLabel.AddText("#bf{#sqrt{s} = 7 TeV, L = 1 fb^{-1}}")
+
+#LHCbLabel
+from ROOT import TPaveText, gStyle
+lhcbName = TPaveText(gStyle.GetPadLeftMargin() + 0.14,
+                         0.87 - gStyle.GetPadTopMargin(),
+                         gStyle.GetPadLeftMargin() + 0.20,
+                         0.95 - gStyle.GetPadTopMargin(),
+                         "BRNDC")
+lhcbName.AddText("LHCb")
+lhcbName.SetFillColor(0)
+lhcbName.SetTextAlign(12)
+lhcbName.SetBorderSize(0)
+
 
 #Get pdf and AdPdf options in case of bining and No bining the projData 
 PDFoptsBin   = CpPlotsKit.getPdfOptsSixKKbins(BinData=True)
@@ -278,18 +286,16 @@ for bin in binNames:
                   , addPDFsOpts = [addPDFotpsNOBin[binIdx][c] for c in CPcomps ] if obs==time\
                             else  [addPDFotpsBin[binIdx][c] for c in CPcomps ]
                    )
-             if obs == time: assert(False)
-             LHCbLabel.Draw()
+             lhcbName.Draw()
         ## print canvas to file
              fName =  bin + '_' + obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] \
                 else  bin + '_' + obs.GetName() + '_cFit.ps'
              pad.Print(fName)
-
-             
+                      
 # Save all the plots in a root file as RooPlot objects.
 from P2VVGeneralUtils import _P2VVPlotStash as rooplots
 from ROOT import TFile
-plotsFile = TFile('RooPlots.root','recreate')
+plotsFile = TFile('RooPlots6x4.root','recreate')
 for plot in rooplots: plot.Write()
 plotsFile.Close()
 
