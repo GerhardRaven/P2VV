@@ -9,6 +9,10 @@ parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
 parser.add_option("--bin-st", dest = "bin_st", default = False,
                   action = 'store_true', help = 'Bin in sigmat')
+parser.add_option("--no-wpv", dest = "wpv", default = True,
+                  action = 'store_false', help = 'Add WPV component')
+parser.add_option("--verbose", dest = "verbose", default = False,
+                  action = 'store_true', help = 'Verbose fitting')
 
 (options, args) = parser.parse_args()
 
@@ -47,7 +51,11 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
+if options.wpv:
+    t_minmax = (-5, 14)
+else:
+    t_minmax = (-1.5, 8)
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
@@ -155,10 +163,15 @@ psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 5000
 # Read data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
+if options.wpv:
+    cut = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)'
+else:
+    cut = '(sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1)'
 data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
-                cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)')
+                ntupleCuts = cut)
 
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
+fitOpts = dict(NumCPU = 8, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+               Verbose = options.verbose)
 mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
 
 ## Fit mass pdf
@@ -192,16 +205,18 @@ bkg_sdata = splot.data('background')
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
 
-from P2VVParameterizations import WrongPV
-reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
-wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
-                           InputFile = input_data['wpv'], Workspace = input_data['workspace'],
-                           Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
-                           sigmat = st)
-wpv_psi = wpv.shape('jpsi')
-psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
-
-time_pdf = buildPdf(Components = (psi_prompt, psi_background, psi_wpv), Observables = (t,), Name='time_pdf')
+components = [psi_prompt, psi_background]
+if options.wpv:
+    from P2VVParameterizations import WrongPV
+    reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
+    wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
+                               InputFile = input_data['wpv'], Workspace = input_data['workspace'],
+                               Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
+                               sigmat = st)
+    wpv_psi = wpv.shape('jpsi')
+    psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
+    components.append(psi_wpv)
+time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
 
 ## Fit
@@ -214,8 +229,11 @@ result = time_pdf.fitTo(psi_sdata, SumW2Error = False, **fitOpts)
 
 
 from ROOT import RooBinning
-bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
-## bounds = array('d', [-3 + i * 0.1 for i in range(27)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+if options.wpv:
+    bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+else:
+    bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
+
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('var_binning')
 t.setBinning(binning)
@@ -243,4 +261,7 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
          )
 
 import Dilution
-Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background, psi_wpv])
+sub = [psi_background]
+if options.wpv:
+    sub.append(psi_wpv)
+Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = sub)

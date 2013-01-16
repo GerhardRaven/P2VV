@@ -259,8 +259,6 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
 
 class Paper2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
-        print 'Paper TimeRes %s' % kwargs
-
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar, LinearVar
         from ROOT import RooNumber
         self._parseArg( 'time',           kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
@@ -268,7 +266,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         self._parseArg( 'timeResSigma',   kwargs, Title = 'Decay time error', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.2 ) )
         self._parseArg( 'timeResMeanSF',  kwargs, timeResMeanSF = self._timeResSigma )
         self._parseArg( 'timeResSigmaSF', kwargs, Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
-        self._parseArg( 'timeResSigmaOffset', kwargs, Value = 10, Error = 1, MinMax = ( 0.1, 50 ) )
+        self._parseArg( 'timeResSigmaOffset', kwargs, Value = 0.0065, Error = 0.001, MinMax = ( 0.00001, 0.1 ) )
 
         constraints = []
         timeResMeanConstr = kwargs.pop( 'timeResMeanConstraint', None )
@@ -307,21 +305,19 @@ class Paper2012_TimeResolution ( TimeResolution ) :
 
         useOffset = kwargs.pop('timeResSFOffset', False)
         if useOffset:
-            self._timeResMean = LinearVar(Name = 'timeResMeanLinear', Observable = self._time,
-                                          Slope = ConstVar(Name = 'timeResMeanSlope', Value = 1.),
-                                          Offset = self._timeResMean)
-            self._timeResSigmaLinear = LinearVar(Name = 'timeResSigmaLinear', Observable = self._timeResSigma,
+            self._timeResSigmaLinear = LinearVar(Name = 'timeResSigmaLinear',
+                                                 Observable = self._timeResSigma,
                                                  Slope = self._timeResSigmaSF,
                                                  Offset = self._timeResSigmaOffset)
-            ## constraints.append( Pdf(  Name = self._timeResSigmaOffset.GetName() + '_constraint', Type = Gaussian
-            ##                         , Parameters = [  self._timeResSigmaOffset
-            ##                                         , ConstVar( Name = 'tres_offset_constraint_mean'
-            ##                                                    ,  Value = self._timeResSigmaOffset.getVal() )
-            ##                                         , ConstVar( Name = 'tres_offset_constraint_sigma'
-            ##                                                    , Value = self._timeResSigmaOffset.getError() )
-            ##                                        ]
-            ##                           )
-            ##                     )
+            constraints.append(Pdf(Name = self._timeResSigmaOffset.GetName() + '_constraint', Type = Gaussian
+                                   , Parameters = [self._timeResSigmaOffset
+                                                   , ConstVar(Name = 'tres_offset_constraint_mean'
+                                                              , Value = self._timeResSigmaOffset.getVal())
+                                                   , ConstVar(Name = 'tres_offset_constraint_sigma'
+                                                              , Value = self._timeResSigmaOffset.getError())
+                                                   ]
+                                   )
+                               )
         
         Name =  kwargs.pop( 'Name', 'timeResModelPaper2012' )
         cache = kwargs.pop( 'Cache', True )
