@@ -55,6 +55,22 @@ public:
       }
    }
 
+   MultiHistEntry(const MultiHistEntry& other, RooEffResModel* efficiency)
+      : m_rawCats(other.m_rawCats), m_rawEff(efficiency), m_rawRel(other.m_rawRel),
+        m_efficiency(0), m_index(other.m_index)
+   {
+      for (std::map<RooCategoryProxy*, std::string>::const_iterator it = other.m_categories.begin(),
+              end = other.m_categories.end(); it != end; ++it) {
+         RooCategoryProxy* proxy = new RooCategoryProxy(*it->first);
+         m_categories.insert(make_pair(proxy, it->second));
+      }
+      if (other.m_relative) {
+         m_relative = new RooRealProxy(*other.m_relative);
+      } else {
+         m_relative = 0;
+      }
+   }
+
    MultiHistEntry(const MultiHistEntry& other, RooMultiEffResModel* parent)
       : m_rawCats(other.m_rawCats), m_rawEff(other.m_rawEff), m_rawRel(other.m_rawRel),
         m_index(other.m_index)
