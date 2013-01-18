@@ -959,7 +959,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                    , TCanvas( 'massCanvLeft',  'B mass left side band'    )
                                    , TCanvas( 'massCanvRight', 'B mass right side band'   )
                                   ]
-                for ( pad, frameRange, nBins, plotTitle, logy, scale )\
+                for ( pad, frameRange, nBins, plotTitle, plotName, logy, scale )\
                       in zip(  self._massCanvs
                              , [ '', 'Signal', 'LeftSideBand', 'RightSideBand' ]
                              , [ sum(numBMassBins) ] + numBMassBins
@@ -968,12 +968,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 , BMass.GetTitle() + ' mass fit - left side band'
                                 , BMass.GetTitle() + ' mass fit - right side band'
                                ]
+                             , [  BMass.GetName()
+                                , BMass.GetName() + ' fit - signal'
+                                , BMass.GetName() + ' fit - left side band'
+                                , BMass.GetName() + ' fit - right side band'
+                               ]                             
                              , [ True, False, False, False ]
                              , [ ( 8.e1, 1.e4 ), ( None, None ), ( None, None ), ( None, None ) ] # [ ( 8.e1, 1.e4 ), ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
                             ) :
-                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale, plotResidHist = True
+                    #plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale, plotResidHist = True
+                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale
                          , normalize = True, symmetrize = True
-                         , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle )
+                         , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName)
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.6, LineWidth = 2 )
                          , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3 )
                          , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed, LineWidth = 3 )
@@ -1698,8 +1704,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                          , [ 1. - ( untagFracSigOS if SFit else untagFracOS ), 1. - untagFracSigOS, 1. - untagFracBkgOS ]
                         ) :
-                plot(  pad, estWTagOS, data, self._sig_bkg_estWTagOS
-                     , frameOpts  = dict( Bins = nBins, Title = estWTagOS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
+                #plot(  pad, estWTagOS, data, self._sig_bkg_estWTagOS
+                plot(  pad, estWTagOS,  data
+                     , xTitle     = 'Predicted Mistag #eta' 
+                     , frameOpts  = dict( Bins = nBins, Title = estWTagOS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ), Name = estWTagOS.GetName() )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
                      , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
                     )
@@ -1713,8 +1721,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                          , [ 1. - ( untagFracSigSS if SFit else untagFracSS ), 1. - untagFracSigSS, 1. - untagFracBkgSS ]
                         ) :
-                plot(  pad, estWTagSS, data, self._sig_bkg_estWTagSS
-                     , frameOpts  = dict( Bins = nBins, Title = estWTagSS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
+                #plot(  pad, estWTagSS, data, self._sig_bkg_estWTagSS
+                plot(  pad, estWTagSS, data
+                     , xTitle     = 'Predicted Mistag #eta'
+                     , frameOpts  = dict( Bins = nBins, Title = estWTagSS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ), Name = estWTagSS.GetName() )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
                      , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
                     )

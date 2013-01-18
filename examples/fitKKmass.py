@@ -1,17 +1,4 @@
 
-
-
-
-###########################################################################################################################################
-# Naive fit of the KK mass peak, (Intended to make a nice looking plot of the KK mass.)
-###########################################################################################################################################
-
-
-
-
-
-
-
 ###########################################################################################################################################
 ## set script parameters ##
 ###########################
@@ -29,8 +16,8 @@ doFit                   = False
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = False
+pdfConfig['makePlots']  = True
+pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 corrSFitErr             = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' / 'matrix' / 'sumWeight'
@@ -64,6 +51,7 @@ if generateData :
 
 MinosPars = [  #'AparPhase'
              #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
+             #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',                           'f_S_bin4',        'f_S_bin5'
              #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
             ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
@@ -110,16 +98,18 @@ pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultan
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
-                                     , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.34, 0.11),  (0.057, 0.031), (0.003, 0.006), (0.032, 0.016), (0.069, 0.032), (0.16,  0.05) ]
-#                                     , [ (0.60, 0.33 ), (0.81,  0.34 ), (0.8,   1.3  ), (-0.48, 0.19 ), (-0.47, 0.20 ), (-0.61, 0.21) ] )
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
+#                                     , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.068, 0.029), (0.013, 0.008), (0.013, 0.008), (0.055, 0.026), (0.17,  0.04) ]
+                                     , [ (1.3,  0.7 ), (0.76,   0.27), (0.39,  0.25 ), (-0.57, 0.28 ), (-0.46, 0.21 ), (-0.64, 0.20) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07),  (0.057, 0.028), (0.003, 0.007), (0.012, 0.009), (0.046, 0.026), (0.16,  0.04) ]
+#                                     , [ (1.43, 0.85 ), (0.83,  0.34 ), (0.8,   1.4  ), (-0.62, 0.33 ), (-0.52, 0.25 ), (-0.67, 0.21) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.06, 0.02), (0.04, 0.02), (0.27, 0.07) ]
 #                                     , [ (2.7,  0.4 ), (0.22,   0.14), (-0.11, 0.17 ), (-0.97, 0.3 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.05, 0.02), (0.27, 0.07) ]
-#                                     , [ (2.7,  0.4 ), (0.,   0.15), (-0.97, 0.3 ) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07), (0.017, 0.013), (0.020, 0.010), (0.16,  0.04) ]
+#                                     , [ (1.4,  0.9 ), (0.7,   0.4),   (-0.64, 0.25),  (-0.66, 0.20) ] )
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.964, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: True
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -264,57 +254,120 @@ if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
     for par in pdfBuild['taggingParams'].parameters() : par.setAttribute( 'CacheAndTrack', False )
 
 
+
 ###########################################################################################################################################
 ## get data ##
 ###################
-#This is the unweighted dataset, after full selection and trigger
-defData = pdfBuild['data']
+
+#Nominal-Unweighted data
+nomData = pdfBuild['data']
+#sWeighted data
+sigSWeigtData = pdfBuild['sigSWeightData']
+
+#Import stuff
+from P2VVGeneralUtils import plot
+from ROOT import TCanvas, TPaveText, gStyle
+from P2VVLoad import LHCbStyle
 
 
 
+###################
+#LHCbLabel
+###################
+lhcbName = TPaveText( 0.24, 0.73, 0.36, 0.90, 'BRNDC')
+lhcbName.AddText("LHCb")
+lhcbName.SetFillColor(0)
+lhcbName.SetTextAlign(12)
+lhcbName.SetBorderSize(0)
 
-assert(False)
+
+
+############################################################
+## Make the estimated OS and SS tagging probabilities plots
+############################################################
+from P2VVGeneralUtils import _P2VVPlotStash
+for plot in _P2VVPlotStash:
+    if plot.GetName():
+        name = plot.GetName()
+        if plot.GetName() == 'tagomega_os': omegaOS = plot
+        if plot.GetName() == 'tagomega_ss': omegaSS = plot
+    
+OldTitle  = omegaOS.GetYaxis().GetTitle()
+omegaOS.SetYTitle('Candidates' + OldTitle[6:] )
+OStagCanv = TCanvas('OStagCanv', 'OStagCanv')
+omegaOS.Draw()
+lhcbName.Draw()
+
+OldTitle = omegaSS.GetYaxis().GetTitle()
+omegaSS.SetYTitle('Candidates' + OldTitle[6:] )
+SStagCanv = TCanvas('SStagCanv', 'SStagCanv')
+omegaSS.Draw()
+lhcbName.Draw()
+
+
 
 ##################################################
 ## Make the B mass plots
 ##################################################
-from P2VVGeneralUtils import plot
-from ROOT import TCanvas
-from P2VVLoad import LHCbStyle
 
-# JpsiPhi Pdf
-JpsiPhiPdf = pdfBuild._massPdf
+for plot in _P2VVPlotStash:
+   if plot.GetName():
+        name = plot.GetName()
+        if plot.GetName() == 'mass fit - signal': BMassPlot = plot 
 
-#Pdf Components
-comps = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
-         , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
-          }
+BMassPlot.SetXTitle( 'm(J/#psiKK) [MeV]' )
+OldTitle = BMassPlot.GetYaxis().GetTitle()
+BMassPlot.SetYTitle('Candidates' + OldTitle[6:] )
 
-##!!!!!!!!!!!!!! TODO: MAKE PLOT STYLE IDENTICAL TO THAT OF THE PAPER AND APLY THE INSTRUCTION FOR THE PAPER LAYOUT
-plot(  TCanvas('JpsiPhiMass'), BMass, defData, JpsiPhiPdf, components = comps)
-
-
-assert(False)
-
+BMassCanv = TCanvas('BMassCanv')
+BMassPlot.Draw()
+lhcbName.Draw()
 
 
 
 ##################################################
 ## Make the mumu mass plots
 ##################################################
-from P2VVParameterizations.MassPDFs import CB_Signal_Mass, Linear_Background_Mass
-
-mumuSig = CB_Signal_Mass         ( dict( Name = 'sig_mumu', mass = mumuMass ))
-mumuBkg = Linear_Background_Mass ( dict( Name = 'bkg_mumu', mass = mumuMass ))
-
-from RooFitWrappers import buildPdf
-mumuMassPdf = buildPdf( [ mumuSig, mumuBkg ], Observables = [ mumuMass ], Name = 'mumuMass' )
+from P2VVParameterizations.MassPDFs import Signal_PsiMass, Linear_Background_Mass
 
 
+mumuSig = Signal_PsiMass(         Name = 'sig_mumu', mass = mumuMass )
+mumuBkg = Linear_Background_Mass( Name = 'bkg_mumu', mass = mumuMass )
 
-##!!!!!!!!!!! defData DO NOT CONTAIN mdau1!!!!!!!!!!!!!
+#Initialize Components
+from RooFitWrappers import buildPdf, Component
+mumuMassSigComp = Component('mumuSig', ( mumuSig.pdf(), ), Yield = (21000,10000,50000) )
+mumuMassBkgComp = Component('mumuBkg', ( mumuBkg.pdf(), ), Yield = (10000,5000,15000 ) )
+#Build mumu Mass Pdf
+mumuMassPdf = buildPdf(Components = ( mumuMassSigComp, mumuMassBkgComp ), Observables = (mumuMass, ), Name='mumuMassPdf'  )
+
+#Fit
+ws.var('m_bkg_arg').setRange(-1e-4,.5)
+mumuMassPdf.fitTo(nomData)
+
+#Plot
+mumuMassPlot = mumuMass.frame()
+mumuMassPlot.SetXTitle(mumuMass.GetTitle() + '[MeV]')
+
+nomData.plotOn(mumuMassPlot)
+
+OldTitle = mumuMassPlot.GetYaxis().GetTitle()
+mumuMassPlot.SetYTitle('Candidates' + OldTitle[6:] )
+
+mumuMassPdf.plotOn(mumuMassPlot)
+
+mumuMassCanv = TCanvas('mumuMassCanv')
+mumuMassPlot.Draw()
+lhcbName.Draw()
+
+
+
+
 
 assert(False)
+
+
+
 
 
 
@@ -325,47 +378,68 @@ assert(False)
 ## Make the KK mass plots
 ##################################################
 #Build KK mas pdf
-from ROOT import RooRelBreitWigner, RooConstVar, RooFFTConvPdf, RooGaussModel
+from ROOT import RooRealVar, RooRelBreitWigner, RooConstVar, RooFFTConvPdf, RooGaussModel
 
 #Observable
 #KKmass = defData.get().find('mdau2')
 
-#Parameters
+#Phi Mass Parameters
 mean   = RooRealVar ( 'mean'  , 'mean'  , 1020, 1015, 1020 ) 
 width  = RooRealVar ( 'width' , 'width' , 2   ,    1,    7 ) 
 spin   = RooConstVar( 'spin'  , 'spin'  , 1                )  
 radius = RooRealVar ( 'radius', 'radius', 1   ,    0,    5 )
 K1mass = RooConstVar( 'K1mass', 'K1mass', 493.7            )
 K2mass = RooConstVar( 'K2mass', 'K2mass', 493.7            )
+KKMassVar = KKMass._target_()
 
-
-#Phi Signal Mass pdf 
-PhiMassPdf  = RooRelBreitWigner('PhiMassPdf', 'PhiMassPdf', KKmass, mean, width, spin, radius, K1mass, K2mass )
+#Phi Mass pdf 
+PhiMassPdf  = RooRelBreitWigner('PhiMassPdf', 'PhiMassPdf', KKMassVar, mean, width, spin, radius, K1mass, K2mass )
  #Resolution Model
 resMean    = RooRealVar   ( 'resMean'   , 'resMean'   , 0, -2, 2  ) 
 resSigma   = RooRealVar   ( 'resSigma'  , 'resSigma'  , 2,  1, 10 ) 
-GaussModel = RooGaussModel('GaussModel', 'GaussModel' , KKmass, resMean,resSigma )
+GaussModel = RooGaussModel('GaussModel', 'GaussModel' , KKMassVar, resMean,resSigma )
  #Phi Mass Signal Total Pdf 
-PhiMassConvPdf = RooFFTConvPdf('PhiMassConvPdf', 'PhiMassConvPdf', KKmass, PhiMassPdf, GaussModel )
+PhiMassConvPdf = RooFFTConvPdf('PhiMassConvPdf', 'PhiMassConvPdf', KKMassVar, PhiMassPdf, GaussModel )
 
 
-##KK Bkg mass pdf
+##Phi Bkg Mass Parameters
+from ROOT import RooDstD0BG
+dm    = RooRealVar('dm'   , 'dm',    40,  10,   70)
+dm0   = RooRealVar('dm0'  , 'dm0',  980, 800, 1020)
+par_A = RooRealVar('par_A', 'par_A',  2,  -3,    3)
+par_B = RooRealVar('par_B', 'par_B',  2,  -3,    3)
+par_C = RooRealVar('par_C', 'par_C',  2,  -3,    3)
+#Phi Bkg Pdf
+KKbkgPdf = RooDstD0BG('KKbkgPdf', 'KKbkgPdf', dm, dm0, par_A, par_B, par_C )
 
+
+
+
+
+
+#Total Pdf
+from ROOT import RooAddPdf, RooArgList
+relCoef = RooRealVar('relCoef', 'relCoef', 0.5, 0, 1) 
+PhiMassTotalPdf = RooAddPdf('totPdf', 'totPdf', PhiMassConvPdf, KKbkgPdf, relCoef )
 
 
 assert(False)
 
 
 
+
+
+
+
 from ROOT import TCanvas
+
 c2 = TCanvas()
-
-fr = KKmass.frame()
-
-PhiMassConvPdf.plotOn(fr)
+fr = KKMassVar.frame()
+nomData.plotOn(fr)
+PhiMassTotalPdf.plotOn(fr)
 fr.Draw()
 
-data.plotOn(fr)
 
 
-data = defData.reduce(ArgSet = [KKmass] )
+
+#data = nomData.reduce(ArgSet = [KKMassVar] )
