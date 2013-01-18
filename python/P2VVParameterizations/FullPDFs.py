@@ -1193,7 +1193,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             elif not nominalPdf and 'constmean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
-                timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
+                timeResArgs['timeResMeanConstraint'] = 'constrain'
+            elif not nominalPdf and 'stoffset' in timeResType.lower():
+                timeResArgs['timeResMeanConstraint'] = 'constrain'
+                timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.30, Error = 0.06, MinMax = ( 0.1, 5. ) )
+                ## timeResArgs['timeResSigmaSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1.30 )
+                timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0065, Error = 0.001, MinMax = ( 0.00001, 0.1 ) )
+                ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
+                timeResArgs['timeResSFOffset'] = True
             else :
                 timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
 
