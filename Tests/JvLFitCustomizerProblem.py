@@ -322,6 +322,30 @@ pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
 
+###########################################################################################################################################
+## customize PDF ##
+###################
+
 from RooFitWrappers import RealVar, Customizer
 newTime = RealVar( 'newTime', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. ) )
 custPdf = Customizer( Pdf = pdf, OriginalArgs = [ time ], SubstituteArgs = [ newTime ], NameSuffix = 'newTime' )
+
+print '\noriginal PDF:'
+pdf.Print()
+
+print '\ncustomized PDF:'
+custPdf.Print()
+
+from ROOT import RooArgSet
+intSet      = RooArgSet()
+normSetOrig = RooArgSet( ws['time'],    ws['helcosthetaK'], ws['helcosthetaL'], ws['helphi'] )
+normSetCust = RooArgSet( ws['newTime'], ws['helcosthetaK'], ws['helcosthetaL'], ws['helphi'] )
+
+pdfInt  = pdf.createIntegral(     intSet, normSetOrig )
+custInt = custPdf.createIntegral( intSet, normSetCust )
+
+print '\noriginal PDF integral:'
+pdfInt.Print()
+
+print '\ncustomized PDF integral:'
+custInt.Print()
