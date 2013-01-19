@@ -267,6 +267,8 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
 
 class Paper2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
+        useOffset = kwargs.pop( 'timeResSFOffset', False )
+
         from RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar, LinearVar
         from ROOT import RooNumber
         self._parseArg( 'time',           kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
@@ -274,7 +276,8 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         self._parseArg( 'timeResSigma',   kwargs, Title = 'Decay time error', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.2 ) )
         self._parseArg( 'timeResMeanSF',  kwargs, timeResMeanSF = self._timeResSigma )
         self._parseArg( 'timeResSigmaSF', kwargs, Value = timeResSigmaSFVal, Error = timeResSigmaSFErr, MinMax = ( 0.8, 2.1 ) )
-        self._parseArg( 'timeResSigmaOffset', kwargs, Value = 0.0065, Error = 0.001, MinMax = ( 0.00001, 0.1 ) )
+        if useOffset :
+            self._parseArg( 'timeResSigmaOffset', kwargs, Value = 0.0065, Error = 0.001, MinMax = ( 0.00001, 0.1 ) )
 
         constraints = []
         timeResMeanConstr = kwargs.pop( 'timeResMeanConstraint', None )
@@ -313,7 +316,6 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                                    )
                               )
 
-        useOffset = kwargs.pop('timeResSFOffset', False)
         if useOffset:
             self._timeResSigmaLinear = LinearVar(Name = 'timeResSigmaLinear',
                                                  Observable = self._timeResSigma,
