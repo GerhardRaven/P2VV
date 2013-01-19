@@ -446,7 +446,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         mumuMass = RealVar( 'mdau1', Title = 'm(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
                            , nBins =  51 )
         KKMass = RealVar( 'mdau2', Title = 'm(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
-                         , nBins =  125 )
+                         , nBins =  51 )
         #if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
         tagDecisionComb = Category( 'tagdecision',    Title = 'Tag decision OS/SS combination', Observable = True, States = iTagStatesDecision )
@@ -1224,6 +1224,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self._timeResModel['model'].Print()
         for par in self._timeResModel.parameters() : par.Print()
 
+        if makePlots :
+            # plot event-by-event estimated time resolution
+            self._timeResCanv = TCanvas( 'timeResCanv', 'Decay time resolution' )
+            for ( pad, data, plotTitle )\
+                  in zip(  self._timeResCanv.pads( 2, 2 )
+                         , [ self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
+                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                        ) :
+                plot(  pad, timeRes, data, None
+                     , frameOpts  = dict( Title = timeRes.GetTitle() + plotTitle )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 , MarkerColor = kBlue, LineColor = kBlue )
+                    )
+
+
         # CP violation parameters
         if lambdaCPParam == 'ReIm' : 
             from P2VVParameterizations.CPVParams import LambdaCarth_CPParam as CPParam
@@ -1573,15 +1587,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             if makePlots :
                 self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
-                for ( pad, data, pdf, plotTitle )\
+                for ( pad, data, pdf, plotTitle, scale )\
                       in zip(  self._KKMassCanv.pads( 2, 2 )
                              , [ self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
                              , [ self._signalKKMass.pdf(), self._backgroundKKMass.pdf() ]
                              , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                             , [ ( 5., 1.e4 ), ( 1.2e2, 1.2e3 ) ]
                             ) :
-                    plot(  pad, KKMass, data, None #pdf, logy = True
+                    plot(  pad, KKMass, data, pdf, logy = True, yScale = scale
                          , frameOpts  = dict( Title = KKMass.GetTitle() + plotTitle )
-                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 , MarkerColor = kBlue, LineColor = kBlue )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue )
                         )
 
 

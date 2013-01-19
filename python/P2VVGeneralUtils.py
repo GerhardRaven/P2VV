@@ -414,7 +414,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
                 if y < minimum:
                     minimum = y
             #hist.SetMinimum(minimum + 0.1)
-            obsFrame.SetMinimum(max([minimum, 0.1]))
+            obsFrame.SetMinimum( max( ( minimum, 0.1 ) ) )
 
     # plot PDF
     if pdf :
@@ -569,10 +569,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         obsPad.SetBottomMargin(0.04)
         obsPad.Draw()
         canv.cd(1)
-        if 'Title' in frameOpts and not frameOpts['Title']:
-            obsFrame.SetTitle("")
-        if data and logy:
-            obsFrame.SetMinimum(max(minimum, 0.1))
+        if 'Title' in frameOpts and not frameOpts['Title'] : obsFrame.SetTitle('')
         obsFrame.Draw()
 
         # draw residuals frame

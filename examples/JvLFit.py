@@ -97,8 +97,8 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.012), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
-                                     , [ (1.3,  0.7 ), (0.76,  0.28 ), (0.51,  0.49 ), (-0.51, 0.26 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
+                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.069, 0.029), (0.009, 0.013), (0.016, 0.011), (0.056, 0.027), (0.17, 0.04) ]
 #                                     , [ (1.3,  0.6 ), (0.8,   0.3  ), (0.5,   0.5  ), (-0.5,  0.3  ), (-0.5, 0.2   ), (-0.7, 0.2 ) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.068, 0.029), (0.013, 0.008), (0.013, 0.008), (0.055, 0.026), (0.17,  0.04) ]
@@ -120,8 +120,8 @@ pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
-pdfConfig['numTimeResBins']        = 50
-pdfConfig['constrainTimeResScale'] = 'fixed'  # nominal: 'constrain'
+pdfConfig['numTimeResBins']        = 40
+pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
 pdfConfig['signalFraction'] = 0.45
@@ -1097,6 +1097,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
 if pdfConfig['makePlots'] :
     pdfBuild['massCanvs'][0].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
     for canv in pdfBuild['massCanvs'][ 1 : ] : canv.Print(plotsFile)
+    pdfBuild['timeResCanv'].Print(plotsFile)
     pdfBuild['mumuMassCanv'].Print(plotsFile)
     pdfBuild['KKMassCanv'].Print(plotsFile)
     pdfBuild['bkgAnglesSWeightCanv'].Print(plotsFile)
