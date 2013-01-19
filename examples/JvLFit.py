@@ -121,7 +121,7 @@ pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
 pdfConfig['numTimeResBins']        = 40
-pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
+pdfConfig['constrainTimeResScale'] = 'fixed'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
 pdfConfig['signalFraction'] = 0.45
@@ -135,14 +135,15 @@ pdfConfig['constrainDeltaM'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'  # default/nominal: 'lambPhi'
 
-fastFit          = False
-manualTagCatBins = False
-constTagCatCoefs = True  # default: True / nominal: False
-constAvgCEvenOdd = True  # default: False / nominal: True
-constWTagAsyms   = 'P1'  # default/nominal: 'P1'
-constCSP         = True  # default/nominal: True
-constAmplitudes  = False
-constLambdaCP    = ''  # default/nominal: ''
+fastFit           = False
+manualTagCatBins  = False
+constTagCatCoefs  = True  # default: True / nominal: False
+constAvgCEvenOdd  = True  # default: False / nominal: True
+constWTagAsyms    = 'P1'  # default/nominal: 'P1'
+constCSP          = True  # default/nominal: True
+constAmplitudes   = False
+constLambdaCP     = ''  # default/nominal: ''
+equalAbsLambdaCPs = False
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -395,12 +396,11 @@ if fastFit :
         if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
 
-#pdfBuild['lifetimeParams'].parameter('Gamma').setVal(0.72)
+if pdfConfig['lambdaCPParam'] == 'lambPhi_CPVDecay' :
+    if equalAbsLambdaCPs : pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
+    else :                 pdfBuild['lambdaCP'].setConstant('rhoCP_m')
 
-#pdfBuild['lambdaCP'].setConstant('rhoCP_m')
-#pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
-#pdfBuild['lambdaCP'].setConstant('phiCPRel_m')
-#pdfBuild['lambdaCP'].setConstant('phiCPRel_A.*')
+#pdfBuild['lifetimeParams'].parameter('Gamma').setVal(0.72)
 
 #ws['f_S'].setVal(0.026)
 #ws['ASOddPhase'].setVal(0.03)
