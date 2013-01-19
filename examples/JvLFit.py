@@ -49,10 +49,7 @@ if generateData :
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
 MinosPars = [  #'AparPhase'
-             #, 'ASOddPhase_bin0', 'ASOddPhase_bin1',                                       'ASOddPhase_bin4', 'ASOddPhase_bin5'
              #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
-             #, 'f_S_bin0',        'f_S_bin1',                                              'f_S_bin4',        'f_S_bin5'
-             #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',                           'f_S_bin4',        'f_S_bin5'
              #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
             ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
@@ -100,8 +97,10 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
-                                     , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.012), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
+                                     , [ (1.3,  0.7 ), (0.76,  0.28 ), (0.51,  0.49 ), (-0.51, 0.26 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.069, 0.029), (0.009, 0.013), (0.016, 0.011), (0.056, 0.027), (0.17, 0.04) ]
+#                                     , [ (1.3,  0.6 ), (0.8,   0.3  ), (0.5,   0.5  ), (-0.5,  0.3  ), (-0.5, 0.2   ), (-0.7, 0.2 ) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.068, 0.029), (0.013, 0.008), (0.013, 0.008), (0.055, 0.026), (0.17,  0.04) ]
 #                                     , [ (1.3,  0.7 ), (0.76,   0.27), (0.39,  0.25 ), (-0.57, 0.28 ), (-0.46, 0.21 ), (-0.64, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07),  (0.057, 0.028), (0.003, 0.007), (0.012, 0.009), (0.046, 0.026), (0.16,  0.04) ]
@@ -187,8 +186,8 @@ pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger'
-#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForWeights'
-#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForCorrWeights'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForPHSPWeights'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForCorrPHSPWeights'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_Basis'
 
@@ -415,11 +414,12 @@ if fastFit :
 #ws['f_S_bin4'].setConstant()
 #ws['f_S_bin5'].setConstant()
 
-#ws['ASOddPhase_bin2'].setVal(0.812901)
-#ws['ASOddPhase_bin2'].setError(1.37)
+#ws['f_S_bin2'].setVal(0.)
+#ws['f_S_bin2'].setConstant()
+#ws['ASOddPhase_bin2'].setVal(0.)
 #ws['ASOddPhase_bin2'].setConstant()
 
-#ws['timeResSigmaSF'].setVal(1.4)
+#ws['timeResSigmaSF'].setVal(1.55)
 
 #ws['ASOddPhase'].setMin(-6.)
 #ws['ASOddPhase'].setMax(6.)
