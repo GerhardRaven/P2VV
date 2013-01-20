@@ -8,6 +8,7 @@ plotsFilePath   = 'SWavePhases.ps'
 deltaSAxisRange = ( None, None ) # ( -1.5, 5.0 )
 LHCbText1       = 'LHCb'
 LHCbText2       = '' # '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}'
+drawLegend      = False
 
 #massBins = [ 988., 1008., 1020., 1032., 1050. ]
 massBins = [ 990., 1008., 1016., 1020., 1024., 1032., 1050. ]
@@ -59,7 +60,7 @@ theoryVals = [ delS + val for val in theoryVals ]
 from P2VVGeneralUtils import plotSWavePhases
 SWavePhaseCanv = plotSWavePhases( DeltaSAxisRange = deltaSAxisRange, LHCbTextLine1 = LHCbText1, LHCbTextLine2 = LHCbText2
                                  , MassBins = massBins, DeltaSValues = deltaSVals, TheoryValues = theoryVals
-                                 , DeltaSLowErrors = deltaSLowErrs, DeltaSHighErrors = deltaSHighErrs
+                                 , DeltaSLowErrors = deltaSLowErrs, DeltaSHighErrors = deltaSHighErrs, DrawLegend = drawLegend
                                 )
 SWavePhaseCanv.Print(plotsFilePath)
 
