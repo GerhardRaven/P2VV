@@ -324,7 +324,6 @@ BMassPlot.Draw()
 lhcbName.Draw()
 
 
-
 ##################################################
 ## Make the mumu mass plots
 ##################################################
@@ -364,7 +363,9 @@ lhcbName.Draw()
 
 
 
-assert(False)
+
+
+
 
 
 
@@ -380,14 +381,11 @@ assert(False)
 #Build KK mas pdf
 from ROOT import RooRealVar, RooRelBreitWigner, RooConstVar, RooFFTConvPdf, RooGaussModel
 
-#Observable
-#KKmass = defData.get().find('mdau2')
-
 #Phi Mass Parameters
 mean   = RooRealVar ( 'mean'  , 'mean'  , 1020, 1015, 1020 ) 
 width  = RooRealVar ( 'width' , 'width' , 2   ,    1,    7 ) 
 spin   = RooConstVar( 'spin'  , 'spin'  , 1                )  
-radius = RooRealVar ( 'radius', 'radius', 1   ,    0,    5 )
+radius = RooRealVar ( 'radius', 'radius', 1   ,   -2,    5 )
 K1mass = RooConstVar( 'K1mass', 'K1mass', 493.7            )
 K2mass = RooConstVar( 'K2mass', 'K2mass', 493.7            )
 KKMassVar = KKMass._target_()
@@ -395,20 +393,23 @@ KKMassVar = KKMass._target_()
 #Phi Mass pdf 
 PhiMassPdf  = RooRelBreitWigner('PhiMassPdf', 'PhiMassPdf', KKMassVar, mean, width, spin, radius, K1mass, K2mass )
  #Resolution Model
-resMean    = RooRealVar   ( 'resMean'   , 'resMean'   , 0, -2, 2  ) 
+resMean    = RooRealVar   ( 'resMean'   , 'resMean'   , 0, -2, 5  ) 
 resSigma   = RooRealVar   ( 'resSigma'  , 'resSigma'  , 2,  1, 10 ) 
 GaussModel = RooGaussModel('GaussModel', 'GaussModel' , KKMassVar, resMean,resSigma )
  #Phi Mass Signal Total Pdf 
 PhiMassConvPdf = RooFFTConvPdf('PhiMassConvPdf', 'PhiMassConvPdf', KKMassVar, PhiMassPdf, GaussModel )
 
 
+assert(False)
+
+
 ##Phi Bkg Mass Parameters
-from ROOT import RooDstD0BG
-dm    = RooRealVar('dm'   , 'dm',    40,  10,   70)
-dm0   = RooRealVar('dm0'  , 'dm0',  980, 800, 1020)
-par_A = RooRealVar('par_A', 'par_A',  2,  -3,    3)
-par_B = RooRealVar('par_B', 'par_B',  2,  -3,    3)
-par_C = RooRealVar('par_C', 'par_C',  2,  -3,    3)
+from ROOT import RooDstD0BG, RooFormulaVar, RooArgList
+dm    = RooFormulaVar('dm'   , 'dm', '@0 - 40', RooArgList(KKMassVar)  )
+dm0   = RooRealVar('dm0'  , 'dm0',  980)
+par_A = RooRealVar('par_A', 'par_A',  2,  -5,    5)
+par_B = RooRealVar('par_B', 'par_B',  2,  -5,    5)
+par_C = RooRealVar('par_C', 'par_C',  0,  -5,    5)
 #Phi Bkg Pdf
 KKbkgPdf = RooDstD0BG('KKbkgPdf', 'KKbkgPdf', dm, dm0, par_A, par_B, par_C )
 
@@ -418,8 +419,8 @@ KKbkgPdf = RooDstD0BG('KKbkgPdf', 'KKbkgPdf', dm, dm0, par_A, par_B, par_C )
 
 
 #Total Pdf
-from ROOT import RooAddPdf, RooArgList
-relCoef = RooRealVar('relCoef', 'relCoef', 0.5, 0, 1) 
+from ROOT import RooAddPdf
+relCoef = RooRealVar('relCoef', 'relCoef', 0.1, 0, 0.2) 
 PhiMassTotalPdf = RooAddPdf('totPdf', 'totPdf', PhiMassConvPdf, KKbkgPdf, relCoef )
 
 
@@ -436,10 +437,25 @@ from ROOT import TCanvas
 c2 = TCanvas()
 fr = KKMassVar.frame()
 nomData.plotOn(fr)
-PhiMassTotalPdf.plotOn(fr)
+
+KKbkgPdf.plotOn(fr)
 fr.Draw()
 
 
-
+PhiMassTotalPdf.plotOn(fr)
 
 #data = nomData.reduce(ArgSet = [KKMassVar] )
+
+
+assert(False)
+
+##################################################
+## Save plots
+#################################################
+
+from ROOT import TFile
+f = TFile('~/../../project/bfys/vsyropou/PhD/plots/', 'recreate')
+BMassCanv.Print('BMass.pdf')
+SStagCanv.Print('SSTmissProb.pdf')
+OStagCanv.Print('OSTmissProb.pdf')
+mumuMassCanv.Print('mumuMass.pdf')

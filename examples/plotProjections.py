@@ -19,7 +19,7 @@ pdfConfig['nTupleName'] = 'DecayTree'
 pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 
 # fit options
-fitOpts = dict(  NumCPU    = 8
+fitOpts = dict(  NumCPU    = 16
                , Optimize  = 2
                , Timer     = True
                , Minimizer = 'Minuit2'
@@ -242,11 +242,7 @@ CpPlotsKit.setLineWidth(4)
 
 #LHCbLabel
 from ROOT import TPaveText, gStyle
-lhcbName = TPaveText(gStyle.GetPadLeftMargin() + 0.14,
-                         0.87 - gStyle.GetPadTopMargin(),
-                         gStyle.GetPadLeftMargin() + 0.20,
-                         0.95 - gStyle.GetPadTopMargin(),
-                         "BRNDC")
+lhcbName = TPaveText(0.28, 0.77, 0.38, 0.90, "BRNDC")
 lhcbName.AddText("LHCb")
 lhcbName.SetFillColor(0)
 lhcbName.SetTextAlign(12)
