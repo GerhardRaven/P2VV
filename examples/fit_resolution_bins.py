@@ -9,6 +9,10 @@ parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
 parser.add_option("--param-rms", dest = "param_rms", default = False,
                   action = 'store_true', help = 'Parameterise scale factors using RMS')
+parser.add_option("--no-wpv", dest = "wpv", default = True,
+                  action = 'store_false', help = 'Add WPV component')
+parser.add_option("--fit-mass", dest = "mass_fit", default = False,
+                  action = 'store_true', help = 'Fit the mass spectrum even if data is available.')
 
 (options, args) = parser.parse_args()
 
@@ -24,14 +28,17 @@ elif args[1] not in ['single', 'double', 'triple']:
     
 input_data = {}
 if args[0] == '2011':
-    input_data['data'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_prescaled.root'
-    input_data['wpv'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root'
+    prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
+    input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130117_MagDownMagUp.root')
+    input_data['wpv'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root')
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
+    input_data['weighted'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
     ## input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
     ## input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
     ## input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
 else:
     input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'
+    input_data['weighted'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_2012_Prescaled_st_bins.root'
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2012.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2012_workspace'
 
@@ -47,7 +54,12 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-1.5, 10))
+from math import pi
+if options.wpv:
+    t_minmax = (-5, 14)
+else:
+    t_minmax = (-1.5, 8)
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
@@ -156,89 +168,120 @@ prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
 
 # Read data
-## from P2VVGeneralUtils import readData
-## tree_name = 'DecayTree'
-## data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
-##                 ntupleCuts = 'sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1')
-## datas = [data.reduce(Cut = 'sigmat > %f && sigmat < %f' % (st_bins[i], st_bins[i + 1]))
-##          for i in range(len(st_bins) - 1)]
+write_data = options.mass_fit
 
 datas = []
 sdatas = []
 from ROOT import TFile
-input_file = TFile.Open('/bfys/raaij/p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
-for i in range(12):
-    sds_name = 'DecayTree_%02d_weighted_psi_background' % i
-    sdatas.append(input_file.Get(sds_name))
-    ds_name = 'DecayTree_%02d' % i
-    datas.append(input_file.Get(ds_name))
+directory = '%sbins_%4.2fs' % (len(st_bins) - 1, (1000 * (st_bins[1] - st_bins[0])))
+if os.path.exists(input_data['weighted']):
+    input_file = TFile.Open(input_data['weighted'], 'update')
+else:
+    input_file = TFile.Open(input_data['weighted'], 'new')
+input_dir = input_file.Get(directory)
+if not input_dir:
+    input_dir = input_file.mkdir(directory)
+    write_data = True
 
-
+## Fitting options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
-mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
-mass_pdf.Print('t')
 
 ## save all fit results
 from collections import defaultdict
 results = defaultdict(list)
 
-## # Fit and plot mass pdf
+## Common imports
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
 
-mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 1200, 900)
-pads = mass_canvas.pads(4, 3)
+if not write_data:
+    rs = set()
+    for i in range(len(st_bins) - 1):
+        sds_name = 'sdata/DecayTree_%02d_weighted_psi_background' % i
+        sdatas.append(input_dir.Get(sds_name))
+        ds_name = 'data/DecayTree_%02d' % i
+        datas.append(input_dir.Get(ds_name))
+    rd = input_dir.Get('mass_results')
+    for e in rd.GetListOfKeys():
+        if e.GetClassName() == 'RooFitResult':
+            rs.add(os.path.join(rd.GetName(), e.GetName()))
+    for e in s:
+        results['mass'].append(input_dir.Get(e))
+    results['mass'] = sorted(results['mass'], key = lambda r: int(r.GetName().split('_', 1)[0]))
 
-from P2VVGeneralUtils import SData
-sdatas = []
-for i, (p, ds) in enumerate(zip(pads, datas)):
-    result = mass_pdf.fitTo(ds, **fitOpts)
-    result.SetName('%d_%s' % (i, result.GetName()))
-    results['mass'].append(result)
-    splot = SData(Pdf = mass_pdf, Data = ds, Name = 'MassSplot')
-    sdatas.append(splot.data('psi_background'))
-    from P2VVGeneralUtils import plot
-    pdfOpts  = dict()
-    plot(p, mpsi, pdf = mass_pdf, data = ds
-         , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-         , plotResidHist = False
-         , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                          , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                          }
-         )
+else:
+    from P2VVGeneralUtils import readData
+    cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+    cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
+    if not options.wpv:
+        cut += ' && sel_cleantail == 1'
 
-## mass_pdf.fitTo(data, **fitOpts)
-## from P2VVGeneralUtils import SData
-## for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-## splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
-## psi_sdata = splot.data('psi_background')
-## bkg_sdata = splot.data('background')
+    tree_name = 'DecayTree'
+    data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
+                    ntupleCuts = cut)
+    datas = [data.reduce(Cut = 'sigmat > %f && sigmat < %f' % (st_bins[i], st_bins[i + 1]))
+             for i in range(len(st_bins) - 1)]
+
+    mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
+    mass_pdf.Print('t')
+
+    mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 1200, 900)
+    pads = mass_canvas.pads(4, 3)
+
+    from P2VVGeneralUtils import SData
+    sdatas = []
+    for i, (p, ds) in enumerate(zip(pads, datas)):
+        result = mass_pdf.fitTo(ds, **fitOpts)
+        result.SetName('%d_%s' % (i, result.GetName()))
+        results['mass'].append(result)
+        splot = SData(Pdf = mass_pdf, Data = ds, Name = 'MassSplot')
+        sdatas.append(splot.data('psi_background'))
+        from P2VVGeneralUtils import plot
+        plot(p, mpsi, pdf = mass_pdf, data = ds
+             , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+             , pdfOpts  = dict(LineWidth = 2)
+             , plotResidHist = False
+             , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                              , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                              }
+             )
 
 # Wrong PV components
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
+components = [psi_prompt, psi_background]
+if options.wpv:
+    mass_pdf.fitTo(data, **fitOpts)
+    from P2VVGeneralUtils import SData
+    for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+    splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
+    psi_sdata = splot.data('psi_background')
+    bkg_sdata = splot.data('background')
 
-## from P2VVParameterizations import WrongPV
-## reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
-## wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
-##                            InputFile = input_data['wpv'], Workspace = input_data['workspace'],
-##                            Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
-##                            sigmat = st)
-## wpv_psi = wpv.shape('jpsi')
-## psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 1, 30000))
+    from P2VVParameterizations import WrongPV
+    reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
+    wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
+                               InputFile = input_data['wpv'], Workspace = input_data['workspace'],
+                               Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
+                               sigmat = st)
+    wpv_psi = wpv.shape('jpsi')
+    psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 1, 30000))
+    components.append(psi_wpv)
 
-time_pdf = buildPdf(Components = (psi_prompt, psi_background), Observables = (t,), Name='time_pdf')
+time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
 
 from ROOT import RooBinning
 from array import array
-## bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(49)] + [5.2 + i * 0.4 for i in range(13)])
-bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(37)] + [4 + i * 0.4 for i in range(21)])
+
+if options.wpv:
+    bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+else:
+    bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
 
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('var_binning')
-## t.setBinning(binning)
+t.setBinning(binning)
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
@@ -343,6 +386,29 @@ hist_events.SetFillColor(kGray + 1)
 hist_res.Draw('pe, same')
 hist_res.GetXaxis().SetTitle('estimated decay time error [fs]')
 hist_res.GetYaxis().SetTitle('decay time resulution [fs]')
+
+if write_data:
+    def get_dir(d):
+        tmp = input_dir.Get(d)
+        if not tmp:
+            tmp = input_dir.mkdir('sdata')
+        return tmp
+    sdata_dir = get_dir('sdata')
+    data_dir = get_dir('data')
+    results_dirs = dict((k, get_dir('%s_results' % k)) for k in results.iterkeys())
+    for (dss, d) in [(sdatas, sdata_dir), (datas, data_dir)]:
+        for i, ds in enumerate(dss):
+            ds_name = ds.GetName().replace('DecayTree', 'DecayTree_%02d' % i)
+            ds.SetName(ds_name)
+            d.Append(ds, True)
+            ds.Write()
+        d.Write()
+    for k, rs in results.iteritems():
+        rd = results_dirs[k]
+        for r in rs:
+            rd.Append(r, True)
+            r.Write()
+        rd.Write()
 
 ## import Dilution
 ## Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background])

@@ -113,8 +113,7 @@ protected:
   virtual Double_t evaluate() const;
 
 private:
-  Int_t createBaseCats(const RooArgList& baseVars,
-      const TObjArray& binningNames);
+   Int_t createBaseCats(const RooArgList& baseVars, const TObjArray& binningNames);
   Int_t initCoefs(const TObjArray& coefLists, Bool_t factorize = kTRUE);
 
   void reset();
@@ -135,7 +134,7 @@ private:
   RooRealProxy _function;
 
   std::vector< std::map<Int_t, Int_t> > _indexPositions;
-  std::vector<TString>                  _binningNames;
+  std::vector<const RooAbsBinning*>           _binnings;
   std::vector<Bool_t>                   _calcCoefZeros;
 
   Bool_t _continuousBase;
