@@ -924,7 +924,7 @@ class CPcomponentsPlotingToolkit():
 # function for plotting the S-wave phases versus the (binned) KK mass
 def plotSWavePhases( **kwargs ) :
     yAxisRange  = kwargs.pop( 'DeltaSAxisRange', ( None, None )                         )
-    KKMassLabel = kwargs.pop( 'KKMassLabel',     'm_{KK} [MeV/c^{2}]'                   )
+    KKMassLabel = kwargs.pop( 'KKMassLabel',     'm(K^{+}K^{-}) [MeV/c^{2}]'            )
     deltaSLabel = kwargs.pop( 'DeltaSLabel',     '#delta_{S} - #delta_{#perp}    [rad]' )
     plotTitle   = kwargs.pop( 'PlotTitle',       ''                                     )
     LHCbText1   = kwargs.pop( 'LHCbTextLine1',   'LHCb'                                 )
@@ -1066,7 +1066,7 @@ def plotSWavePhases( **kwargs ) :
     SWavePhaseCanv.SetBottomMargin(0.17)
     deltaS1Graph.Draw('AP')
     deltaS2Graph.Draw('P sames')
-    theoryGraph.Draw('P sames')
+    if theoryGraph : theoryGraph.Draw('P sames')
     if leg :      leg.Draw()
     if LHCbText : LHCbText.Draw()
 

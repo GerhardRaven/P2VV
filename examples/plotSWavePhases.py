@@ -15,10 +15,8 @@ massBins = [ 990., 1008., 1016., 1020., 1024., 1032., 1050. ]
 
 # paper2012 values
 deltaSVals     = [ 1.31, 0.77, 0.51, -0.51, -0.46, -0.65 ]
-deltaSLowErrs  = [  sqrt( 0.49**2 + 0.11**2 ), sqrt( 0.23**2 + 0.08**2 ), sqrt( 0.30**2 + 0.23**2 )
-                  , sqrt( 0.35**2 + 0.09**2 ), sqrt( 0.26**2 + 0.04**2 ), sqrt( 0.22**2 + 0.06**2 ) ]
-deltaSHighErrs = [ sqrt( 0.78**2 + 0.11**2 ), sqrt( 0.38**2 + 0.08**2 ), sqrt( 1.40**2 + 0.23**2 )
-                  , sqrt( 0.21**2 + 0.09**2 ), sqrt( 0.18**2 + 0.04**2 ), sqrt( 0.18**2 + 0.06**2 ) ]
+deltaSLowErrs  = [ 0.50, 0.24, 0.36,  0.38,  0.26,  0.23 ]
+deltaSHighErrs = [ 0.79, 0.39, 1.41,  0.26,  0.19,  0.19 ]
 
 # 6 bins, new analysis, new n-tuple, 1.0 1/fb
 #deltaSVals     = [ 1.33767, 0.771849, 0.512522, -0.505443, -0.456398, -0.650681 ]
@@ -51,11 +49,12 @@ deltaSHighErrs = [ sqrt( 0.78**2 + 0.11**2 ), sqrt( 0.38**2 + 0.08**2 ), sqrt( 1
 #deltaSHighErrs = [ 0.47209,  0.156742, 0.19807,  0.344092 ]
 
 # theory values
-theoryVals = [ 3.0221, 2.8056, 2.0224, 0.8197, 0.2828, 0.1118 ]
+theoryVals = None
+#theoryVals = [ 3.0221, 2.8056, 2.0224, 0.8197, 0.2828, 0.1118 ]
 #delS = -0.0955 - 1.5589
-delS = ( sum(deltaSVals) - sum(theoryVals) ) / float( len(deltaSVals) )
+#delS = ( sum(deltaSVals) - sum(theoryVals) ) / float( len(deltaSVals) )
 #delS = -3.
-theoryVals = [ delS + val for val in theoryVals ]
+#theoryVals = [ delS + val for val in theoryVals ]
 
 from P2VVGeneralUtils import plotSWavePhases
 SWavePhaseCanv = plotSWavePhases( DeltaSAxisRange = deltaSAxisRange, LHCbTextLine1 = LHCbText1, LHCbTextLine2 = LHCbText2
