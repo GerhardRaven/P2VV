@@ -55,6 +55,7 @@ MinosPars = [  #'AparPhase'
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
+fitRange = ''
 fitOpts = dict(  NumCPU    = 6
                , Optimize  = 2
                , Timer     = True
@@ -81,8 +82,14 @@ gStyle.SetLineStyleString( 9, ' 100 20'       )
 
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
-pdfConfig['angularRanges']      = dict( cpsi = ( -1., +1. ), ctheta = ( -1., +1. ), phi = ( -pi, +pi ) )
-
+pdfConfig['angularRanges']      = dict(  cpsi   = [ ( -1., +1. ) ]
+                                       , ctheta = [ ( -1., +1. ), ( 'ctlBin0', -1.,   -0.70 )
+                                                                , ( 'ctlBin1', -0.70, -0.25 )
+                                                                , ( 'ctlBin2', -0.25, +0.25 )
+                                                                , ( 'ctlBin3', +0.25, +0.70 )
+                                                                , ( 'ctlBin4', +0.70, +1.   ) ]
+                                       , phi    = [ ( -pi, +pi ) ]
+                                      )
 pdfConfig['sigMassModel']         = '' # 'boxFixed'
 pdfConfig['bkgMassModel']         = '' # 'linearConstant'
 pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
@@ -99,18 +106,6 @@ pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 's
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                      , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.069, 0.029), (0.009, 0.013), (0.016, 0.011), (0.056, 0.027), (0.17, 0.04) ]
-#                                     , [ (1.3,  0.6 ), (0.8,   0.3  ), (0.5,   0.5  ), (-0.5,  0.3  ), (-0.5, 0.2   ), (-0.7, 0.2 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.068, 0.029), (0.013, 0.008), (0.013, 0.008), (0.055, 0.026), (0.17,  0.04) ]
-#                                     , [ (1.3,  0.7 ), (0.76,   0.27), (0.39,  0.25 ), (-0.57, 0.28 ), (-0.46, 0.21 ), (-0.64, 0.20) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07),  (0.057, 0.028), (0.003, 0.007), (0.012, 0.009), (0.046, 0.026), (0.16,  0.04) ]
-#                                     , [ (1.43, 0.85 ), (0.83,  0.34 ), (0.8,   1.4  ), (-0.62, 0.33 ), (-0.52, 0.25 ), (-0.67, 0.21) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.08), (0.058, 0.028), (0.009, 0.006), (0.009, 0.006), (0.047, 0.026), (0.16,  0.04) ]
-#                                     , [ (1.4,  0.8 ), (0.81,  0.32 ), (0.42,  0.30 ), (-0.72, 0.38 ), (-0.51, 0.24 ), (-0.66, 0.20) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.06, 0.02), (0.04, 0.02), (0.27, 0.07) ]
-#                                     , [ (2.7,  0.4 ), (0.22,   0.14), (-0.11, 0.17 ), (-0.97, 0.3 ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07), (0.017, 0.013), (0.020, 0.010), (0.16,  0.04) ]
-#                                     , [ (1.4,  0.9 ), (0.7,   0.4),   (-0.64, 0.25),  (-0.66, 0.20) ] )
 pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.964, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: True
@@ -486,9 +481,15 @@ if ( readData or generateData ) and doFit :
         print
 
     if pdfConfig['SFit'] :
-        fitResult = pdf.fitTo(fitData, SumW2Error = True if corrSFitErr == 'matrix' else False, Minos = RooMinPars, Save = True, **fitOpts)
+        fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
+                              , Minos = RooMinPars, Save = True, Range = fitRange
+                              , **fitOpts
+                             )
     else :
-        fitResult = pdf.fitTo(fitData,                                                          Minos = RooMinPars, Save = True, **fitOpts)
+        fitResult = pdf.fitTo( fitData
+                              , Minos = RooMinPars, Save = True, Range = fitRange
+                              , **fitOpts
+                             )
 
     # reparameterize amplitudes
     if not pdfConfig['nominalPdf'] and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' \
@@ -602,7 +603,7 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
-    from P2VVImports import parNames, parValues
+    from P2VVImports import parNames, parValues#, parValuesPHSPAcc as parValues
     print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()

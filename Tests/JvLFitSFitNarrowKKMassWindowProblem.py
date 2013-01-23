@@ -84,7 +84,7 @@ gStyle.SetLineStyleString( 9, ' 100 20'       )
 
 # PDF options
 pdfConfig['transversityAngles'] = False  # default: False | nominal: True
-pdfConfig['angularRanges']      = dict( cpsi = ( -1., +1. ), ctheta = ( -1., +1. ), phi = ( -pi, +pi ) )
+pdfConfig['angularRanges']      = dict( cpsi = [ ( -1., +1. ) ], ctheta = [ ( -1., +1. ) ], phi = [ ( -pi, +pi ) ] )
 
 pdfConfig['sigMassModel']         = '' # 'boxFixed'
 pdfConfig['bkgMassModel']         = '' # 'linearConstant'
