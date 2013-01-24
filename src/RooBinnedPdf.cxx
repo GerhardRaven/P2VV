@@ -232,12 +232,12 @@ RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
   RooArgList baseVars(baseVar);
 
   // put the binning name in a list
-  TObjArray binnings;
-  TObjString os(binningName);
-  binnings.Add(&os);
+  TObjArray binningNames(1, 0);
+  TObjString strName(binningName);
+  binningNames.Add(&strName);
 
   // create base category and initialize coefficients
-  if (createBaseCats(baseVars, binnings) > 0) {
+  if (createBaseCats(baseVars, binningNames) > 0) {
     TObjArray coefLists(1, 0);
     coefLists.Add(coefList.clone(TString(name) + "_" + coefList.GetName()));
     initCoefs(coefLists);
@@ -350,13 +350,7 @@ RooBinnedPdf::RooBinnedPdf
   std::auto_ptr<RooArgSet> vars(function.getVariables());
   assert(vars->contains(baseVar));
   _baseVarsList.add(baseVar);
-  const RooAbsRealLValue& var = dynamic_cast<const RooAbsRealLValue&>(baseVar);
-  if (!var.hasBinning(binning)) {
-     coutW(InputArguments) << "Binning " << binning << " does not exist, creating it on the fly. "
-           << "This is probably not what you want!" << endl;
-     var.getBinning(binning, kTRUE, kTRUE);
-  }
-  _binnings.push_back(static_cast<const RooAbsBinning*>(var.getBinning(binning).Clone()));
+  _binningNames.push_back(binning);
 }
 
 //_____________________________________________________________________________
@@ -395,20 +389,10 @@ RooBinnedPdf::RooBinnedPdf
   }
 
   _baseVarsList.add(baseVars);
-  TIter nameIter(&binningNames);
-  RooFIter varIter = baseVars.fwdIterator();
-  RooAbsRealLValue* var = 0;
+  std::auto_ptr<TIterator> binningNamesIter(binningNames.MakeIterator());
   TObjString* binningName = 0;
-  while ((binningName = static_cast<TObjString*>(nameIter()))) {
-     var = static_cast<RooAbsRealLValue*>(varIter.next());
-     if (!var->hasBinning(binningName->String())) {
-        coutW(InputArguments) << "Binning " << binningName->String()
-                              << " does not exist, creating it on the fly. "
-                              << "This is probably not what you want!" << endl;
-      var->getBinning(binningName->String(), kTRUE, kTRUE);
-     }
-     const RooAbsBinning& binning = var->getBinning(binningName->String(), kTRUE, kTRUE);
-     _binnings.push_back(static_cast<const RooAbsBinning*>(binning.Clone()));
+  while ((binningName = static_cast<TObjString*>(binningNamesIter->Next()))) {
+    _binningNames.push_back(binningName->GetString());
   }
 }
 
@@ -421,6 +405,7 @@ RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other, const char* name)
      _coefLists(_numCats, 0),
      _function(TString(name) + "_function", this, other._function),
      _indexPositions(other._indexPositions),
+     _binningNames(other._binningNames),
      _calcCoefZeros(other._calcCoefZeros),
      _continuousBase(other._continuousBase),
      _forceUnitIntegral(other._forceUnitIntegral),
@@ -428,11 +413,6 @@ RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other, const char* name)
      _ignoreFirstBin(other._ignoreFirstBin)
 {
   // copy constructor
-  // copy binnings
-  for (vector<const RooAbsBinning*>::const_iterator it = other._binnings.begin(),
-         end = other._binnings.end(); it != end; ++it) {
-    _binnings.push_back(static_cast<const RooAbsBinning*>((*it)->Clone()));
-  }
 
   // make coefficient lists array owner of its lists
   _coefLists.SetOwner(kTRUE);
@@ -457,11 +437,6 @@ RooBinnedPdf::RooBinnedPdf(const RooBinnedPdf& other, const char* name)
 RooBinnedPdf::~RooBinnedPdf()
 {
   // destructor
-  for (vector<const RooAbsBinning*>::const_iterator it = _binnings.begin(),
-         end = _binnings.end(); it != end; ++it) {
-    delete *it;
-  }
-  _binnings.clear();
 }
 
 //_____________________________________________________________________________
@@ -555,10 +530,12 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
           // update bin volume factor
           if (!_binIntegralCoefs && (varsCode & 1 << catIter) != 0)
             // multiply bin volume by bin width of this bin
-            binVolumeFac *= _binnings[catIter]->binWidth(binPos[catIter]);
+            binVolumeFac *= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+                ->getBinning(_binningNames[catIter]).binWidth(binPos[catIter]);
           else if (_binIntegralCoefs && (varsCode & 1 << catIter) == 0)
             // divide bin volume by bin width of this bin
-            binVolumeFac /= _binnings[catIter]->binWidth(binPos[catIter]);
+            binVolumeFac /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+                ->getBinning(_binningNames[catIter]).binWidth(binPos[catIter]);
         }
 
         // update bin position for next iteration
@@ -600,10 +577,12 @@ Double_t RooBinnedPdf::analyticalIntegral(Int_t code,
           // update bin volume factor
           if (!_binIntegralCoefs && (varsCode & 1 << catIter) != 0)
             // multiply bin volume by bin width of bin 0
-            binVolumeFac *= _binnings[catIter]->binWidth(0);
+            binVolumeFac *= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+                ->getBinning(_binningNames[catIter]).binWidth(0);
           else if (_binIntegralCoefs && (varsCode & 1 << catIter) == 0)
             // divide bin volume by bin width of bin 0
-            binVolumeFac /= _binnings[catIter]->binWidth(0);
+            binVolumeFac /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+                ->getBinning(_binningNames[catIter]).binWidth(0);
         }
       }
 
@@ -656,7 +635,7 @@ Double_t RooBinnedPdf::maxVal(Int_t code) const
       
       RooAbsRealLValue* lvar = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(0));
       double original = lvar->getVal();
-      const RooAbsBinning* binning = _binnings[0];
+      const RooAbsBinning* binning = lvar->getBinningPtr(_binningNames[0].Data());
       for (Int_t i = 0; i < binning->numBins(); ++i) {
          lvar->setVal(binning->binCenter(i));
          // Get function value
@@ -704,7 +683,7 @@ list<Double_t>* RooBinnedPdf::plotSamplingHint(RooAbsRealLValue& obs,
    }
 
    // Retrieve position of all bin boundaries
-   const RooAbsBinning* binning = _binnings[i];
+   const RooAbsBinning* binning = lvar->getBinningPtr(_binningNames[i].Data());
    Double_t* boundaries = binning->array();
 
    list<Double_t>* hint = new list<Double_t>;
@@ -735,7 +714,7 @@ std::list<Double_t>* RooBinnedPdf::binBoundaries(RooAbsRealLValue& obs,
    // with the vertical lines that occur in a non-interpolated histogram
    
    // No boundaries can be supplied when there is no binning
-   if (_binnings.empty()) {
+   if (_binningNames.empty()) {
       return 0;
    }
    
@@ -746,9 +725,13 @@ std::list<Double_t>* RooBinnedPdf::binBoundaries(RooAbsRealLValue& obs,
       arg = _baseVarsList.at(i);
       if (arg && arg->GetName() == obs.GetName()) break;
    }
+   RooAbsLValue* lvarg = dynamic_cast<RooAbsLValue*>(arg);
+   if (!lvarg) {
+      return 0;
+   }
    
    // Retrieve position of all bin boundaries
-   const RooAbsBinning* binning = _binnings[i];
+   const RooAbsBinning* binning = lvarg->getBinningPtr(_binningNames[i]);
    Double_t* boundaries = binning->array();
    
    std::list<Double_t>* bounds = new list<Double_t>;
@@ -791,6 +774,7 @@ Double_t RooBinnedPdf::evaluateCoef() const
   assert(_numCats==_baseCatsList.getSize());
   // loop over base categories
   RooFIter catIter = _baseCatsList.fwdIterator();
+  RooFIter baseIter = _baseVarsList.fwdIterator();
   Int_t iCatIter = -1;
   RooAbsCategory* cat(0);
   while((cat = (RooAbsCategory*)catIter.next())) {
@@ -809,7 +793,8 @@ Double_t RooBinnedPdf::evaluateCoef() const
 
     // divide by bin widths if coefficients are bin integrals
     if (_continuousBase && _binIntegralCoefs) {
-      value /= _binnings[iCatIter]->binWidth(cPos);
+      RooAbsRealLValue* baseVar = (RooAbsRealLValue*)baseIter.next();
+      value /= baseVar->getBinning(_binningNames[iCatIter]).binWidth(cPos);
     }
   }
 
@@ -874,6 +859,7 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
 
   Int_t catIter = -1;
   RooFIter baseCatsIter = _baseCatsList.fwdIterator();
+  RooFIter baseVarsIter = _baseVarsList.fwdIterator();
   RooAbsCategory* baseCats(0);
   while ((baseCats = (RooAbsCategory*)baseCatsIter.next())) {
     ++catIter;
@@ -881,25 +867,7 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
     const std::map<Int_t, Int_t>& indexMap = _indexPositions[catIter];
     Int_t index = baseCats->getIndex();
     std::map<Int_t, Int_t>::const_iterator it = indexMap.find(index);
-    if (it == indexMap.end()) {
-       coutF(Eval) << "index " << index << " is not in map." << endl;
-       for (std::map<Int_t, Int_t>::const_iterator it = indexMap.begin(),
-               end = indexMap.end(); it != end; ++it) {
-          coutF(Eval) << it->first << " " << it->second << endl;
-       }
-       coutF(Eval) << endl;
-       Int_t n = 0, i = 0;
-       while(n < baseCats->numTypes()) {
-          if (baseCats->isValidIndex(i)) {
-             const RooCatType* t = baseCats->lookupType(i);
-             coutF(Eval) << t->GetName() << " " << t->getVal() << endl;
-             ++n;
-          }
-          ++i;
-       }
-       coutF(Eval) << endl;
-       assert(false);
-    }
+    assert(it != indexMap.end());
     cPos[catIter] = it->second;
     
     if (cPos[catIter] != 0)      ignoreBin     = kFALSE;
@@ -919,7 +887,8 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
 
       // divide by bin width if coefficients are bin integrals
       if (_continuousBase && _binIntegralCoefs) {
-        value /= _binnings[catIter]->binWidth(cPos[catIter]);
+        RooAbsRealLValue *baseVars = (RooAbsRealLValue*)baseVarsIter.next();
+        value /= baseVars->getBinning(_binningNames[catIter]).binWidth(cPos[catIter]);
       }
     }
   }
@@ -958,7 +927,8 @@ Double_t RooBinnedPdf::evaluateMultipleCoefs() const
 
       // divide by bin width if coefficients are bin integrals
       if (_continuousBase && _binIntegralCoefs) {
-        value /= _binnings[catIter]->binWidth(cPos[catIter]);
+        value /= ((RooAbsRealLValue*)_baseVarsList.at(catIter))
+            ->getBinning(_binningNames[catIter]).binWidth(cPos[catIter]);
       }
     } else if (coefSum > 1.) {
       // scale these coefficients to make their sum equal to one
@@ -984,10 +954,11 @@ Double_t RooBinnedPdf::evaluateFunction() const
 
   // Set vars to bin center
   for (Int_t i = 0; i < _baseVarsList.getSize(); ++i) {
+    const char* name = _binningNames[i].Data();
     RooAbsRealLValue* var = dynamic_cast<RooAbsRealLValue*>(_baseVarsList.at(i));
-    const RooAbsBinning* binning = _binnings[i];
-    Int_t bin = binning->binNumber(originals[i]);
-    var->setVal(binning->binCenter(bin));
+    const RooAbsBinning& binning = var->getBinning(name);
+    Int_t bin = binning.binNumber(originals[i]);
+    var->setVal(binning.binCenter(bin));
   }
   // Get function value
   Double_t value = _function.arg().getVal();
@@ -1006,14 +977,15 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
     const TObjArray& binningNames)
 {
   // creates a base category for each continuous input base variable
+
   _numCats = baseVars.getSize();
 
   // check the number of specified binnings
   if (binningNames.GetEntries() != _numCats) {
     coutF(InputArguments) << "RooBinnedPdf::createBaseCats("
-                          << GetName() << ") number of binnings (" << binningNames.GetEntries()
-                          << ") does not match the number of base variables (" << _numCats << ")"
-                          << endl;
+        << GetName() << ") number of binnings (" << binningNames.GetEntries()
+        << ") does not match the number of base variables (" << _numCats << ")"
+        << endl;
     reset();
     return -1;
   }
@@ -1048,15 +1020,12 @@ Int_t RooBinnedPdf::createBaseCats(const RooArgList& baseVars,
     _baseVarsList.add(*var);
 
     // create binning of input variable if necessary
-    const char* bins = static_cast<TObjString*>(binningNames[varIter])->String().Data();
-    if (!var->hasBinning(bins)) {
-       coutW(InputArguments) << "Binning " << bins << " does not exist, creating it on the fly. "
-                             << "This is probably not what you want!" << endl;
-       var->getBinning(bins, kTRUE, kTRUE);
-    }
-    const RooAbsBinning* binning = var->getBinningPtr(bins);
+    TString bins = ((const TObjString*)binningNames.At(varIter))->GetString();
+    if (!var->hasBinning(bins))
+      var->getBinning(bins, kTRUE, kTRUE);
+
     // add binning name to list
-    _binnings.push_back(static_cast<const RooAbsBinning*>(binning->Clone()));
+    _binningNames.push_back(bins);
 
     // create category
     RooBinningCategory* cat = new RooBinningCategory(catName, catName, *var, bins);
@@ -1216,6 +1185,6 @@ void RooBinnedPdf::reset()
   _baseVarsList.removeAll();
   _coefLists.Clear();
   _indexPositions.clear();
-  _binnings.clear();
+  _binningNames.clear();
   _calcCoefZeros.clear();
 }

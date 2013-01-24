@@ -182,6 +182,12 @@ class RooObject(object) :
     def Parameters(self) :
         return set( self._rooobject(i) for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
+    ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
+    def Type(self) :
+        _t = self._dict['Type']
+        return _t if type(_t)==str else _t.__name__
+
+
     ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
     def observable(self) :
         return self._var.getAttribute('Observable')
@@ -763,9 +769,7 @@ class Pdf(RooObject):
         if self._dict['Name'] not in self.ws():
             v = list(self._dict['Parameters'])
             deps = ','.join([i.GetName() if type(i) != str else i for i in v])
-            if type(self._dict['Type']) != str:
-                self._dict['Type'] = self._dict['Type'].__name__
-            x = self._declare('%s::%s(%s)' % (self._dict['Type'], self._dict['Name'], deps))
+            x = self._declare( '%s::%s(%s)' % (self.Type(), self._dict['Name'], deps) )
             from ROOT import RooAbsPdf
             assert isinstance(x,RooAbsPdf)
             self._init(self._dict['Name'], x.ClassName())
@@ -985,7 +989,7 @@ class SumPdf(Pdf):
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
-            self._init(self._dict['Name'], self._dict['Type'])
+            self._init(self._dict['Name'], self.Type())
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
@@ -1431,17 +1435,9 @@ class UniformPdf( Pdf ) :
         Pdf.__init__(self , Name = Name , Type = 'RooUniform')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
-class LognormalPdf(Pdf):
-    def __init__(self, Name, **kwargs):
-        observable = kwargs.pop('Observable')
-        median = kwargs.pop('Median')
-        shape = kwargs.pop('Shape')
-        # construct factory string on the fly...
-        Pdf.__init__(self , Name = Name , Type = 'RooLognormal',
-                     Parameters = [observable, median, shape])
 
 class BDecay( Pdf ) :
-    def __init__(self, Name, **kwargs):
+    def __init__(self,Name, **kwargs) :
         __check_name_syntax__(Name)
         d = dict( name = Name
                 , time = kwargs.pop('time')
@@ -1716,10 +1712,10 @@ class Customizer(Pdf) :
         custom = customizer.build()
 
         self._addObject(custom)
-        self._init( custom.GetName(), pdf['Type'] )
+        self._init( custom.GetName(), pdf.Type() )
         Pdf.__init__(  self
                      , Name = custom.GetName()
-                     , Type = pdf['Type']
+                     , Type = pdf.Type()
                      , ConditionalObservables = pdf.ConditionalObservables()
                      , ExternalConstraints = pdf.ExternalConstraints()
                     )
