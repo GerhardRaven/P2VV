@@ -272,7 +272,7 @@ class Single_Exponent_Time( TimePdf ) :
         from RooFitWrappers import Pdf
         from ROOT import RooDecay as Decay
         TimePdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name',self.__class__.__name__)
-                                          , Type =Decay
+                                          , Type = Decay
                                           , Parameters = (time, self._tau,resolutionModel,'SingleSided')
                                           , ConditionalObservables = resolutionModel.ConditionalObservables()
                                           , ExternalConstraints = resolutionModel.ExternalConstraints())
