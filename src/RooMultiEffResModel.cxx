@@ -184,7 +184,6 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
    for(vector<MultiHistEntry*>::const_iterator it = entries.begin(),
           end = entries.end(); it != end; ++it) {
       MultiHistEntry* entry = new MultiHistEntry(**it);
-      entry->print();
       entry->setParent(this);
       ownedEntries.push_back(entry);
    }

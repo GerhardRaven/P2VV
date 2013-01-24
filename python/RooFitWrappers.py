@@ -1705,9 +1705,12 @@ class Customizer(Pdf) :
             origDict = dict( ( origItem.GetName(), origItem ) for origItem in origSet )
             subsDict = dict( ( subsItem.GetName(), subsItem ) for subsItem in subsSet )
             for item in origSet:
-                customizer.replaceArg( __dref__(item), __dref__( subsDict[ item.GetName() + argSuff ] ) )
+                rep = subsDict[ item.GetName() + argSuff ]
+                self.__transplant_binnings(item, rep)
+                customizer.replaceArg( __dref__(item), __dref__( rep ) )
         else :
             for origItem, subsItem in zip( origSet, subsSet ) :
+                self.__transplant_binnings(origItem, subsItem)
                 customizer.replaceArg( __dref__(origItem), __dref__(subsItem) )
 
         custom = customizer.build()
@@ -1721,6 +1724,17 @@ class Customizer(Pdf) :
                      , ExternalConstraints = pdf.ExternalConstraints()
                     )
 
+    def __transplant_binnings(self, source, dest):
+        l = source.getBinningNames()
+        for i in range(l.size()):
+            n = l.front()
+            l.pop_front()
+            b = source.getBinning(n)
+            if n:
+                dest.setBinning(b, n)
+            else:
+                dest.setBinning(b)
+            
     def _make_pdf(self) : pass
 
 
