@@ -1726,6 +1726,8 @@ class Customizer(Pdf) :
 
     def __transplant_binnings(self, source, dest):
         l = source.getBinningNames()
+        if not source.observable() or not dest.observable():
+            return
         for i in range(l.size()):
             n = l.front()
             l.pop_front()
