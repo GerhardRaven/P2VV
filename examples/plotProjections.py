@@ -249,12 +249,24 @@ lhcbName.SetTextAlign(12)
 lhcbName.SetBorderSize(0)
 
 
+
+
+#Make the y-axis titles look nicer
+yTitles = []
+for obs in observables:
+    range = obs.getRange()[1] - obs.getRange()[0]
+    binWidth = round( range / numBins[observables.index(obs)], 3) 
+    if obs.getUnit(): yTitles.append('Candidates / ' + str(binWidth) + obs.getUnit())
+    else:             yTitles.append('Candidates / ' + str(binWidth) )
+    
+    
 ##Plot and Save
-for ( pad, obs, nBins, xTitle, yScale, logY )\
+for ( pad, obs, nBins, xTitle, yTitle, yScale, logY )\
         in zip(  [ TCanvas(o.GetName()) for o in observables ]
                , observables
                , numBins
                , ( time.GetTitle()+' [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+               , ( 'Candidates / ' 0.23 )  
                , ( ( 0.1, 10e4 ), ) + 3 *( ( None, 1400 ), )
                , ( True, ) + 3 * ( False, )
                 ) :

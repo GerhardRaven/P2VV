@@ -512,7 +512,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , KMinTrackChi2    = KMinTrackChi2
                           )
 
-        obsSetNTuple = [ time ] + angles +  [ BMass, KKMass, timeRes, tagDecisionOS, tagDecisionSS, estWTagOS, estWTagSS ]
+        obsSetNTuple = [ time ] + angles +  [ BMass, KKMass, timeRes, tagDecisionOS, tagDecisionSS, tagDecisionComb, estWTagOS, estWTagSS, estWTagComb ]
         if makePlots : obsSetNTuple += [ mumuMass ]
         if selection in [ 'timeEffFit', 'paper2012' ] or timeEffType in [ 'fit', 'paper2012' ] : obsSetNTuple += [ hlt1ExclB ]
         if selection == 'timeEffFit'                  or timeEffType == 'fit'                  : obsSetNTuple += [ hlt2B, hlt2UB ]
@@ -1706,10 +1706,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         ) :
                 #plot(  pad, estWTagOS, data, self._sig_bkg_estWTagOS
                 plot(  pad, estWTagOS,  data
-                     , xTitle     = 'Predicted Mistag #eta' 
+                     , xTitle     = '#eta^{OS}' 
                      , frameOpts  = dict( Bins = nBins, Title = estWTagOS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ), Name = estWTagOS.GetName() )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
-                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
+                     #, pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
                     )
 
             self._estWTagCanvSS = TCanvas( 'estWTagCanvSS', 'Estimated wrong-tag probability SS' )
@@ -1723,13 +1723,65 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         ) :
                 #plot(  pad, estWTagSS, data, self._sig_bkg_estWTagSS
                 plot(  pad, estWTagSS, data
-                     , xTitle     = 'Predicted Mistag #eta'
+                     , xTitle     = ' #eta^{SS}'
                      , frameOpts  = dict( Bins = nBins, Title = estWTagSS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ), Name = estWTagSS.GetName() )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
-                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
+                     #, pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
+                    )
+
+                
+##TODO::MAKE THIS MORE COMPACT, and make availble in the case of cFit,
+            #Also make these plots optional by adding a flag in the pdfConfiguration
+            self._estWTagCanvSS_B    = TCanvas( 'estWTagCanvSS_B'   , 'Estimated wrong-tag probability SS, B'    )
+            self._estWTagCanvSS_Bbar = TCanvas( 'estWTagCanvSS_Bbar', 'Estimated wrong-tag probability SS, Bbar' )
+            self._estWTagCanvOS_B    = TCanvas( 'estWTagCanvOS_B'   , 'Estimated wrong-tag probability OS, B'    )
+            self._estWTagCanvOS_Bbar = TCanvas( 'estWTagCanv0S_Bbar', 'Estimated wrong-tag probability OS, Bbar' )
+
+            self._estWTagCanvSSOS_B     = TCanvas( 'estWTagCanvSSOS_B'    , 'Estimated wrong-tag probability SS+OS, B'    )
+            self._estWTagCanvSSOS_Bbar  = TCanvas( 'estWTagCanvSS0S_Bbar' , 'Estimated wrong-tag probability SS+OS, Bbar' )
+            self._estWTagCanvSSOS_BbarB = TCanvas( 'estWTagCanvSS0S_BbarB', 'Estimated wrong-tag probability SS+OS, BbarB' )
+            
+            tagCutSS_B    = 'tagdecision_ss==tagdecision_ss::B'
+            tagCutSS_Bbar = 'tagdecision_ss==tagdecision_ss::Bbar'
+            tagCutOS_B    = 'tagdecision_os==tagdecision_os::B'
+            tagCutOS_Bbar = 'tagdecision_os==tagdecision_os::Bbar'
+
+            tagCutComb_B     = 'tagdecision==tagdecision::B'
+            tagCutComb_Bbar  = 'tagdecision==tagdecision::Bbar'
+            tagCutComb_BbarB = tagCutComb_B + '|' + tagCutComb_Bbar
+  
+        
+            for ( pad, data, nBins, BorBbar, titleX, obs )\
+                  in zip(  [ self._estWTagCanvSS_B  ,   self._estWTagCanvSS_Bbar,
+                             self._estWTagCanvOS_B  ,   self._estWTagCanvOS_Bbar,
+                             self._estWTagCanvSSOS_B,   self._estWTagCanvSSOS_Bbar,
+                             self._estWTagCanvSSOS_BbarB                      
+                             ]
+                         , [ self._dataSets['sigSWeightData'].reduce(tagCutSS_B  )     , self._dataSets['sigSWeightData'].reduce(tagCutSS_Bbar), 
+                             self._dataSets['sigSWeightData'].reduce(tagCutOS_B  )     , self._dataSets['sigSWeightData'].reduce(tagCutOS_Bbar),
+                             self._dataSets['sigSWeightData'].reduce(tagCutComb_B)     ,
+                             self._dataSets['sigSWeightData'].reduce(tagCutComb_Bbar)  ,
+                             self._dataSets['sigSWeightData'].reduce(tagCutComb_BbarB)
+                            ]
+                         , 7 * [ numEstWTagBins ]
+                         , 3 * [ 'B', 'Bbar'  ] +     [ 'BbarB'    ]
+                         , 2 * [ '#eta^{SS}'  ] + 2 * [ '#eta^{OS}'] + 3 * [ '#eta^{SS+OS}']
+                         , 2 * [  estWTagSS   ] + 2 * [  estWTagOS ] + 3 * [  estWTagComb  ]
+                        ) :
+                plot(  pad, obs , data
+                     , xTitle     = titleX
+                     , yScale     = [0, None]
+                     , frameOpts  = dict( Bins = nBins, Title = obs.GetTitle() + BorBbar, Range = ( 0., 0.499999 ), Name = obs.GetName() + BorBbar  )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
+                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3                                                 )
                     )
 
 
+
+
+
+
+                
         ###################################################################################################################################
         ## build background time PDF ##
         ###############################

@@ -274,23 +274,48 @@ from P2VVLoad import LHCbStyle
 ###################
 #LHCbLabel
 ###################
-lhcbName = TPaveText( 0.24, 0.73, 0.36, 0.90, 'BRNDC')
+lhcbName = TPaveText( 0.24, 0.67, 0.41, 0.8, 'BRNDC')
 lhcbName.AddText("LHCb")
 lhcbName.SetFillColor(0)
 lhcbName.SetTextAlign(12)
 lhcbName.SetBorderSize(0)
 
 
-
 ############################################################
 ## Make the estimated OS and SS tagging probabilities plots
 ############################################################
 from P2VVGeneralUtils import _P2VVPlotStash
+tagPlots = []
+canvList = []
 for plot in _P2VVPlotStash:
-    if plot.GetName():
-        name = plot.GetName()
-        if plot.GetName() == 'tagomega_os': omegaOS = plot
-        if plot.GetName() == 'tagomega_ss': omegaSS = plot
+    if plot.GetName() and plot.GetName().startswith('tagomega'):
+        oldTitle = plot.GetYaxis().GetTitle()
+        try: measure  = round(float(oldTitle[11:20]), 6)
+        except ValueError:
+            'Cannot round the y axzis measure, set measure number starting point.'
+            'Setting default measure value (it might not be the correct one)'
+            measure = 0.01
+
+        plot.SetYTitle( 'Candidates / ' +  str(measure) ) 
+        plot.SetMinimum(0)
+
+        tagPlots.append(plot)
+        canvList.append( TCanvas(plot.GetName(),plot.GetTitle()) )
+
+for ( canv, plot) in zip (canvList , tagPlots):
+    canv.cd()
+    plot.Draw()
+    lhcbName.Draw()
+
+   
+
+
+#if plot.GetName() == 'tagomega_os': omegaOS = plot
+#if plot.GetName() == 'tagomega_ss': omegaSS = plot
+
+
+assert(False)
+
     
 OldTitle  = omegaOS.GetYaxis().GetTitle()
 omegaOS.SetYTitle('Candidates' + OldTitle[6:] )
@@ -371,7 +396,7 @@ lhcbName.Draw()
 
 
 
-
+assert(False)
 
 
 
