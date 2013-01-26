@@ -1,5 +1,15 @@
-helEffMomentsFile = 'hel_UB_UT_trueTime_BkgCat050_KK30_allOrders_Basis'
-trEffMomentsFile  = ''
+helEffMomentsFiles = [
+                        'hel_UB_UT_trueTime_BkgCat050_KK30_allOrders_Basis'
+#                      , 'hel_UB_UT_trueTime_BkgCat050_KK30_alt_allOrders_Basis'
+#                      , 'hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_allOrders_Basis'
+                     ]
+trEffMomentsFiles  = [ ]
+f10  = 462684. / ( 462684. + 112402. )
+f11  = 112402. / ( 462684. + 112402. )
+f20  = ( 462684. + 112402. ) / ( 462684. + 112402. + 119190. )
+f21  = 119190.               / ( 462684. + 112402. + 119190. )
+f2Sc = ( f10 * 3.5923835 + f11 * 3.5971249 ) / 3.5449077
+addFactors = [  ( ) ]#, ( f10, f11 ), ( f20, f21 * f2Sc ) ]
 plotsFile = 'angularEfficiency.ps'
 
 from P2VVLoad import P2VVLibrary, LHCbStyle
@@ -36,7 +46,7 @@ yLabels = [  (  '#int d_{}cos#theta_{#mu} d#phi_{h} #varepsilon_{#Omega}(#Omega)
           ]
 
 for transAngles, canvTuple in zip( [ False, True ], canvs ) :
-    if ( not transAngles and helEffMomentsFile ) or ( transAngles and trEffMomentsFile ) :
+    if ( not transAngles and helEffMomentsFiles ) or ( transAngles and trEffMomentsFiles ) :
         ws = RooObject(workspace = ( 'trans' if transAngles else 'hel' ) + 'Workspace').ws()
 
         if transAngles :
@@ -50,17 +60,20 @@ for transAngles, canvTuple in zip( [ False, True ], canvs ) :
 
         from P2VVGeneralUtils import RealMomentsBuilder
         from math import sqrt, pi
-        indices  = [(PIndex, YIndex0, YIndex1) for PIndex in range(9) for YIndex0 in range(9) for YIndex1 in range(-YIndex0, YIndex0 + 1)]
+        indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(12) for YIndex0 in range(12)\
+                                                  for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
         moments = RealMomentsBuilder()
         moments.appendPYList( angleFuncs.angles, indices )
-        moments.read( trEffMomentsFile if transAngles else helEffMomentsFile )
-        moments.Print(  Scale = 1. / 2. / sqrt(pi)
-                      , Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022' if transAngles else 'p2vvab_0000|p2vvab_2000|p2vvab_0020'
+        for file, fac in zip( trEffMomentsFiles if transAngles else helEffMomentsFiles, addFactors ) :
+            moments.read( file, AddMoments = fac )
+        moments.Print(  Scale = 1. / 2. / sqrt(pi), Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022'\
+                                                            if transAngles else 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0040'
                      )
         moments.Print( Scale = 1. / 2. / sqrt(pi), MinSignificance = 3. )
 
-        momFuncTerms = moments.buildPDFTerms( CoefNamePrefix = 'transC_' if transAngles else 'helC_', MinSignificance = 3. )
-                #, Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022' if transAngles else 'p2vvab_0000|p2vvab_2000|p2vvab_0020' )
+        momFuncTerms = moments.buildPDFTerms( CoefNamePrefix = 'transC_' if transAngles else 'helC_'
+                                             , Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022'\
+                                                       if transAngles else 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0040' )
         momFunc = momFuncTerms.buildAddition( 'efficiency' + ( 'Trans' if transAngles else 'Hel' ) )
 
         #momFuncTermsAdd = moments.buildPDFTerms( CoefNamePrefix = 'transAddC_' if transAngles else 'helAddC_' )

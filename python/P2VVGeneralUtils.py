@@ -1369,7 +1369,8 @@ class RealMomentsBuilder ( dict ) :
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def read( self, filePath = 'moments', **kwargs ) :
-        self._coefficients = { }
+        addFacs = kwargs.pop( 'AddMoments', ( ) )
+        if not addFacs : self._coefficients = { }
 
         # get file path
         filePath = filePath.strip()
@@ -1388,6 +1389,7 @@ class RealMomentsBuilder ( dict ) :
         nameExpr = re.compile(kwargs.pop('Names')) if 'Names' in kwargs else None
 
         # loop over lines and read moments
+        from math import sqrt
         numMoments = 0
         while True :
             # read next line
@@ -1412,7 +1414,15 @@ class RealMomentsBuilder ( dict ) :
             if ( nameExpr and not nameExpr.match(line[0]) ) or signif < minSignif : continue
 
             # get moment
-            self._coefficients[line[0]] = ( coef, stdDev, signif )
+            if addFacs :
+                assert line[0] in self._coefficients\
+                    , 'P2VV - ERROR: RealMomentsBuilder.readMoments: moment %s does not exist yet' % line[0]
+                origCoef, origStdDev = self._coefficients[line[0]][ : 2 ]
+                totCoef = addFacs[0] * origCoef + addFacs[1] * coef
+                totStdDev = sqrt( addFacs[0]**2 * origStdDev**2 + addFacs[1]**2 * stdDev**2 )
+                self._coefficients[line[0]] = ( totCoef, totStdDev, abs(totCoef) / totStdDev )
+            else :
+                self._coefficients[line[0]] = ( coef, stdDev, signif )
             numMoments += 1
 
         momFile.close()
