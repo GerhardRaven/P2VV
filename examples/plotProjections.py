@@ -85,7 +85,7 @@ if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
 else :
     pdfConfig['angleNames'] = (  ( 'helcosthetaK', 'cos #theta_{K}' )
                                , ( 'helcosthetaL', 'cos #theta_{#mu}' )
-                               , ( 'helphi',       '#phi_{h} [rad]'            )
+                               , ( 'helphi',       '#varphi_{h} [rad]'            )
                               )
 
 numBins = ( 60, 30, 30, 30 )
@@ -231,7 +231,7 @@ binNames    = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
 CPcomps     = CpPlotsKit.getCpCompNames()#Get list of names of the CP components
 angleNames  = pdfConfig['angleNames']
 observables = [time] + angles
-
+assert(False)
 #Set plot options      
 markStyle = 8
 markSize  = 0.5
@@ -256,8 +256,8 @@ yTitles = []
 for obs in observables:
     range = obs.getRange()[1] - obs.getRange()[0]
     binWidth = round( range / numBins[observables.index(obs)], 3) 
-    if obs.getUnit(): yTitles.append('Candidates / ' + str(binWidth) + obs.getUnit())
-    else:             yTitles.append('Candidates / ' + str(binWidth) )
+    if obs.getUnit(): yTitles.append( 'Candidates / ' + str(binWidth) + ' ' + obs.getUnit() )
+    else:             yTitles.append( 'Candidates / ' + str(binWidth) )
     
     
 ##Plot and Save
@@ -265,13 +265,13 @@ for ( pad, obs, nBins, xTitle, yTitle, yScale, logY )\
         in zip(  [ TCanvas(o.GetName()) for o in observables ]
                , observables
                , numBins
-               , ( time.GetTitle()+' [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-               , ( 'Candidates / ' 0.23 )  
+               , ( 'B_{s}^{0} decay time [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+               , yTitles  
                , ( ( 0.1, 10e4 ), ) + 3 *( ( None, 1400 ), )
                , ( True, ) + 3 * ( False, )
                 ) :
     print '\n\n\n Ploting Observable {0}/{1}: '.format(observables.index(obs)+1,len(observables),obs.GetName()),'\n\n\n'
-    plot(  pad, obs, defData, pdf, xTitle = xTitle, yScale = yScale, logy = logY
+    plot(  pad, obs, defData, pdf, xTitle = xTitle, yTitle=yTitle, yScale = yScale, logy = logY
            , frameOpts   = dict( Bins = nBins, Name = obs.GetName() + 'Histo'   )
            , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
            , pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
