@@ -267,13 +267,13 @@ class LP2011_Background_Time( TimePdf ) :
 
 class Single_Exponent_Time( TimePdf ) :
     def __init__(self,time,resolutionModel,**kwargs) :
-        self._parseArg('t_sig_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 1.5, Error = 0.05, MinMax = ( 0.1, 10. ) )
+        self._parseArg('tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 1.5, Error = 0.05, MinMax = ( 0.1, 10. ) )
 
         from RooFitWrappers import Pdf
         from ROOT import RooDecay as Decay
         TimePdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name',self.__class__.__name__)
                                           , Type =Decay
-                                          , Parameters = (time, self._t_sig_tau,resolutionModel,'SingleSided')
+                                          , Parameters = (time, self._tau,resolutionModel,'SingleSided')
                                           , ConditionalObservables = resolutionModel.ConditionalObservables()
                                           , ExternalConstraints = resolutionModel.ExternalConstraints())
                          )

@@ -6,8 +6,7 @@ from math import pi, sin, cos, sqrt
 
 # job parameters
 readMoments = False
-multPdfEff  = False
-makePlots   = False
+makePlots   = True
 transAngles = False
 normPDF     = True
 tResModel   = ''
@@ -18,8 +17,8 @@ momentsFile = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else
 plotsFile   = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' ) + '.ps'
 
 dataSetName = 'DecayTree'
-#dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
-dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
+#dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
 #dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_PHSP_MC11a_ntupleB_for_fitting_20121031.root'
 #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angRes/angRes.root'
 
@@ -42,8 +41,8 @@ dMVal     = 17.8
 tResSigma = 0.045
 
 # plot options
-if transAngles : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
-else           : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
+if transAngles : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})',  '#phi_{tr}' )
+else           : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{#mu})', '#phi_{h}'  )
 numBins         = ( 60, 60, 60, 60 )
 lineWidth       = 2
 markStyle       = 8
@@ -178,8 +177,8 @@ if normPDF :
 
 
 ###########################################################################################################################################
-## compute angular efficiency moments and multiply PDF with efficiency function ##
-##################################################################################
+## compute angular efficiency moments ##
+########################################
 
 # print PDF, data, variables and parameters
 print '\nData set:'
@@ -222,9 +221,11 @@ else :
 
 
 # moments builder with angular basis functions
-indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+indices += [ ( 0, 4, 0 ) ]
+#indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4) for YIndex1 in range( -YIndex0, YIndex0 + 1 )\
+#             if PIndex == 3 or YIndex0 == 3 ]
 #indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ +1, -1 ] ]
-#indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ -2, 1 ] ]
 
 basisMoments = RealMomentsBuilder()
 if normPDF :
@@ -252,43 +253,34 @@ basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi), MinSignificance = 5. )
 
 
 ###########################################################################################################################################
-## build efficiency function ##
-###############################
-
-effTerms = basisMoments.buildPDFTerms()
-effFunc = effTerms.buildAddition('effFunc')
-
-from ROOT import RooArgSet
-ctkSet = RooArgSet( angles[1], angles[2] )
-ctlSet = RooArgSet( angles[0], angles[2] )
-phiSet = RooArgSet( angles[0], angles[1] )
-effFuncCtk = effFunc.createIntegral( ctkSet, RooArgSet() )
-effFuncCtl = effFunc.createIntegral( ctlSet, RooArgSet() )
-effFuncPhi = effFunc.createIntegral( phiSet, RooArgSet() )
-
-
-###########################################################################################################################################
-## multiply PDF with angular efficiency ##
-##########################################
-
-if multPdfEff and normPDF :
-  effPdf = basisMoments * pdf
-
-  basisMomentsSignif = RealMomentsBuilder()
-  basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles \
-                                                 else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
-                                 )
-  basisMomentsSignif.read(momentsFile + '_Basis')
-  basisMomentsSignif.Print( Scale = 1. / 2. / sqrt(pi) )
-
-  effSignifPdf = basisMomentsSignif.multiplyPDFWithEff( pdf, Name = 'sig_t_angles_tagCat_iTag_x_EffSignif', EffName = 'effSignif' )
-
-
-###########################################################################################################################################
 ## make some plots ##
 #####################
 
-if multPdfEff and makePlots and normPDF :
+if makePlots and normPDF :
+    # build efficiency function
+    effTerms = basisMoments.buildPDFTerms()
+    effFunc = effTerms.buildAddition('effFunc')
+
+    from ROOT import RooArgSet
+    ctkSet = RooArgSet( angles[1], angles[2] )
+    ctlSet = RooArgSet( angles[0], angles[2] )
+    phiSet = RooArgSet( angles[0], angles[1] )
+    effFuncCtk = effFunc.createIntegral( ctkSet, RooArgSet() )
+    effFuncCtl = effFunc.createIntegral( ctlSet, RooArgSet() )
+    effFuncPhi = effFunc.createIntegral( phiSet, RooArgSet() )
+
+    # multiply PDF with angular efficiency
+    effPdf = basisMoments * pdf
+
+    basisMomentsSignif = RealMomentsBuilder()
+    basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ] if not transAngles \
+                                                   else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+                                   )
+    basisMomentsSignif.read(momentsFile + '_Basis')
+    basisMomentsSignif.Print( Scale = 1. / 2. / sqrt(pi) )
+
+    effSignifPdf = basisMomentsSignif.multiplyPDFWithEff( pdf, Name = 'sig_t_angles_tagCat_iTag_x_EffSignif', EffName = 'effSignif' )
+
     # import plotting tools
     from P2VVLoad import LHCbStyle
     from P2VVGeneralUtils import plot
@@ -296,11 +288,12 @@ if multPdfEff and makePlots and normPDF :
 
     # plot efficiency
     effCanv = TCanvas( 'effCanv', 'Efficiency' )
-    for ( pad, obs, func, norm )\
+    for ( pad, obs, func, norm, xTitle )\
             in zip(  effCanv.pads( 2, 2 )
                    , obsSet[ 1 : 5 ]
                    , [ effFuncCtk, effFuncCtl, effFuncPhi ]
                    , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
+                   , angleNames
                   ) :
         plot(  pad, obs, None, func, addPDFs = [ effFunc ]
              , yScale      = ( 0.85, 1.15 )

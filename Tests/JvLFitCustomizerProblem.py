@@ -1,11 +1,3 @@
-
-###########################################################################################################################################
-## This script makes some plots for the paper             ##
-## THe plots are: Bmass, mumuMass, Flavour Tagging plots  ##
-###########################
-
-
-
 ###########################################################################################################################################
 ## set script parameters ##
 ###########################
@@ -15,21 +7,20 @@ from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-readData                  = True
-pdfConfig['dataSample']   = '' # ( None, 100260, '' )  # '' / 'Summer2011' / 'runNumber % 2 == 1'
-pdfConfig['selection']    = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-generateData              = False
-doFit                     = False
-makeObservablePlots       = False
-makeKKMassPlots           = False
-plotAnglesNoEff           = False
-pdfConfig['makePlots']    = True
-pdfConfig['AllTagPlots']  = True
-pdfConfig['SFit']         = True
-pdfConfig['blind']        = False
-pdfConfig['nominalPdf']   = False  # nominal PDF option does not work at the moment
-corrSFitErr               = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' / 'matrix' / 'sumWeight'
-randomParVals             = ( ) # ( 1., 12346 ) # ( 2., 12345 )
+readData                = True
+pdfConfig['dataSample'] = '' # ( None, 100260, '' )  # '' / 'Summer2011' / 'runNumber % 2 == 1'
+pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+generateData            = False
+doFit                   = True
+makeObservablePlots     = False
+makeKKMassPlots         = False
+plotAnglesNoEff         = False
+pdfConfig['makePlots']  = False
+pdfConfig['SFit']       = True
+pdfConfig['blind']      = False
+pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
+corrSFitErr             = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' / 'matrix' / 'sumWeight'
+randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 plotsFile = 'plots/paper2012_SFit.ps'
 #plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
@@ -58,8 +49,9 @@ if generateData :
     dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
 
 MinosPars = [  #'AparPhase'
+             #, 'ASOddPhase_bin0', 'ASOddPhase_bin1',                    'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
              #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
-             #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',                           'f_S_bin4',        'f_S_bin5'
+             #, 'f_S_bin0',        'f_S_bin1',                           'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
              #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
             ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
@@ -107,12 +99,16 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
-#                                     , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.068, 0.029), (0.013, 0.008), (0.013, 0.008), (0.055, 0.026), (0.17,  0.04) ]
-                                     , [ (1.3,  0.7 ), (0.76,   0.27), (0.39,  0.25 ), (-0.57, 0.28 ), (-0.46, 0.21 ), (-0.64, 0.20) ] )
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
+                                     , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.069, 0.029), (0.009, 0.013), (0.016, 0.011), (0.056, 0.027), (0.17, 0.04) ]
+#                                     , [ (1.3,  0.6 ), (0.8,   0.3  ), (0.5,   0.5  ), (-0.5,  0.3  ), (-0.5, 0.2   ), (-0.7, 0.2 ) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.068, 0.029), (0.013, 0.008), (0.013, 0.008), (0.055, 0.026), (0.17,  0.04) ]
+#                                     , [ (1.3,  0.7 ), (0.76,   0.27), (0.39,  0.25 ), (-0.57, 0.28 ), (-0.46, 0.21 ), (-0.64, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07),  (0.057, 0.028), (0.003, 0.007), (0.012, 0.009), (0.046, 0.026), (0.16,  0.04) ]
 #                                     , [ (1.43, 0.85 ), (0.83,  0.34 ), (0.8,   1.4  ), (-0.62, 0.33 ), (-0.52, 0.25 ), (-0.67, 0.21) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.08), (0.058, 0.028), (0.009, 0.006), (0.009, 0.006), (0.047, 0.026), (0.16,  0.04) ]
+#                                     , [ (1.4,  0.8 ), (0.81,  0.32 ), (0.42,  0.30 ), (-0.72, 0.38 ), (-0.51, 0.24 ), (-0.66, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.06, 0.02), (0.04, 0.02), (0.27, 0.07) ]
 #                                     , [ (2.7,  0.4 ), (0.22,   0.14), (-0.11, 0.17 ), (-0.97, 0.3 ) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07), (0.017, 0.013), (0.020, 0.010), (0.16,  0.04) ]
@@ -126,8 +122,8 @@ pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
-pdfConfig['numTimeResBins']        = 50
-pdfConfig['constrainTimeResScale'] = 'fixed'  # nominal: 'constrain'
+pdfConfig['numTimeResBins']        = 25
+pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000
 pdfConfig['signalFraction'] = 0.45
@@ -192,20 +188,20 @@ pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger'
-#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForWeights'
-#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForCorrWeights'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForPHSPWeights'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForCorrPHSPWeights'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_Basis'
 
 if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
-                               , ( 'trphi',      '#varphi_{tr}'        )
+                               , ( 'trphi',      '#phi_{tr}'        )
                               )
 else :
     pdfConfig['angleNames'] = (  ( 'helcosthetaK', 'cos(#theta_{K})'   )
                                , ( 'helcosthetaL', 'cos(#theta_{#mu})' )
-                               , ( 'helphi',       '#varphi_{h}'          )
+                               , ( 'helphi',       '#phi_{h}'          )
                               )
 angleNames = pdfConfig['angleNames']
 
@@ -262,197 +258,94 @@ if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
     for par in pdfBuild['taggingParams'].parameters() : par.setAttribute( 'CacheAndTrack', False )
 
 
+###########################################################################################################################################
+## generate data ##
+###################
+
+if generateData :
+    if parameterFile :
+        # read parameters from file
+        pdfConfig.readParametersFromFile( filePath = parameterFile )
+        pdfConfig.setParametersInPdf(pdf)
+
+    # print parameter values
+    print 120 * '='
+    print 'JvLFit: observables and parameters in generation process:'
+    for var in pdf.getVariables() : var.Print()
+    print 120 * '='
+
+    # generate data
+    nEvents = int( pdfConfig['numEvents'] * ( pdfConfig['signalFraction'] if pdfConfig['SFit'] else 1. ) )
+    print 'JvLFit: generating %d events' % nEvents
+    fitData = pdf.generate( obsSetP2VV, nEvents )
+
+    # additional observables
+    if pdfConfig['nominalPdf'] or not pdfConfig['transversityAngles'] :
+        from P2VVGeneralUtils import addTransversityAngles
+        addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
+                                      , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
+
+    # write data to file
+    from P2VVGeneralUtils import writeData
+    writeData( dataSetFile, dataSetName, fitData )
+
+elif pdfConfig['SFit'] :
+    defData = pdfBuild['sigSWeightData']
+    sigData = pdfBuild['sigSWeightData']
+    bkgData = pdfBuild['bkgSWeightData']
+    if corrSFitErr == 'sumWeight'\
+            or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
+        from P2VVGeneralUtils import correctSWeights
+        fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
+                                  , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
+                                  , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
+
+    else :
+        fitData = pdfBuild['sigSWeightData']
+
+else :
+    defData = pdfBuild['data']
+    fitData = pdfBuild['data']
+    sigData = pdfBuild['sigSWeightData']
+    bkgData = pdfBuild['bkgSWeightData']
+
+# get observables and parameters in PDF
+pdfObs  = pdf.getObservables(fitData)
+pdfPars = pdf.getParameters(fitData)
+
+# print parameters
+print 120 * '='
+print 'JvLFit: fit data:'
+fitData.Print()
+print 'JvLFit: observables in PDF:'
+pdfObs.Print('v')
+print 'JvLFit: parameters in PDF:'
+pdfPars.Print('v')
 
 ###########################################################################################################################################
-## get data ##
+## customize PDF ##
 ###################
 
-#Nominal-Unweighted data
-nomData = pdfBuild['data']
-#sWeighted data
-sigSWeigtData = pdfBuild['sigSWeightData']
+from RooFitWrappers import RealVar, Customizer
+newTime = RealVar( 'newTime', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. ) )
+custPdf = Customizer( Pdf = pdf, OriginalArgs = [ time ], SubstituteArgs = [ newTime ], NameSuffix = 'newTime' )
 
-#Import ploting stuff
-from P2VVGeneralUtils import plot
-from ROOT import TCanvas, TPaveText, gStyle
-from P2VVLoad import LHCbStyle
+print '\noriginal PDF:'
+pdf.Print()
 
-#########################
-#Markers and lines style
-#########################
-lineWidth = LHCbStyle.lhcbWidth
-markStyle = LHCbStyle.lhcbStyle.GetMarkerStyle()
-markSize  = LHCbStyle.lhcbStyle.GetMarkerSize()
+print '\ncustomized PDF:'
+custPdf.Print()
 
-###################
-#LHCbLabel
-###################
-lhcbName = TPaveText( 0.24, 0.733, 0.391, 0.803, 'BRNDC')
-lhcbName.AddText("LHCb")
-lhcbName.SetFillColor(0)
-lhcbName.SetTextAlign(12)
-lhcbName.SetBorderSize(0)
+from ROOT import RooArgSet
+intSet      = RooArgSet()
+normSetOrig = RooArgSet( ws['time'],    ws['helcosthetaK'], ws['helcosthetaL'], ws['helphi'] )
+normSetCust = RooArgSet( ws['newTime'], ws['helcosthetaK'], ws['helcosthetaL'], ws['helphi'] )
 
-############################################################
-## Make the estimated OS and SS tagging probabilities plots
-############################################################
-from P2VVGeneralUtils import _P2VVPlotStash
-tagPlots = []
-canvList = []
-for plot in _P2VVPlotStash:
-    if plot.GetName() and plot.GetName().startswith('tagomega'):
-        oldTitle = plot.GetYaxis().GetTitle()
-        try: measure  = round(float(oldTitle[11:20]), 6)
-        except ValueError:
-            'Cannot round the y axzis measure, set measure number starting point.'
-            'Setting default measure value (it might not be the correct one)'
-            measure = 0.01
+pdfInt  = pdf.createIntegral(     intSet, normSetOrig )
+custInt = custPdf.createIntegral( intSet, normSetCust )
 
-        plot.SetYTitle( 'Candidates / ' +  str(measure) ) 
-        plot.SetMinimum(0)
+print '\noriginal PDF integral:'
+pdfInt.Print()
 
-        tagPlots.append(plot)
-        canvList.append( TCanvas(plot.GetName(),plot.GetTitle()) )
-
-for ( canv, plot) in zip (canvList , tagPlots):
-    canv.cd()
-    plot.Draw()
-    lhcbName.Draw()
-
-
-##################################################
-## Make the B mass plots
-##################################################
-
-for plot in _P2VVPlotStash:
-   if plot.GetName():
-        name = plot.GetName()
-        if plot.GetName() == 'mass fit - signal': BMassPlot = plot 
-
-BMassPlot.SetXTitle( 'M(J/#psiK^{+}K^{-}) [MeV/c^{2}]' )
-OldTitle = BMassPlot.GetYaxis().GetTitle()
-
-BMassPlot.SetYTitle('Candidates /  (' + OldTitle[11:15] + ' MeV/c^{2})' )
-
-BMassCanv = TCanvas('BMassCanv')
-BMassPlot.Draw()
-lhcbName.Draw()
-assert(False)
-##################################################
-## Make the mumu mass plots
-##################################################
-from P2VVParameterizations.MassPDFs import Signal_PsiMass, Linear_Background_Mass
-
-mumuSig = Signal_PsiMass(         Name = 'sig_mumu', mass = mumuMass )
-mumuBkg = Linear_Background_Mass( Name = 'bkg_mumu', mass = mumuMass )
-
-#Initialize Components
-from RooFitWrappers import buildPdf, Component
-mumuMassSigComp = Component('mumuSig', ( mumuSig.pdf(), ), Yield = (21000,10000,50000) )
-mumuMassBkgComp = Component('mumuBkg', ( mumuBkg.pdf(), ), Yield = (10000,5000,15000 ) )
-#Build mumu Mass Pdf
-mumuMassPdf = buildPdf(Components = ( mumuMassSigComp, mumuMassBkgComp ), Observables = (mumuMass, ), Name='mumuMassPdf'  )
-
-#Fit
-ws.var('m_bkg_arg').setRange(-1e-4,.5)
-mumuMassPdf.fitTo(nomData)
-
-#Plot
-mumuMassPlot = mumuMass.frame()
-mumuMassPlot.SetXTitle('m(#mu^{+}#mu^{-})' + '[MeV/c^{2}]')
-
-sigArgs = {'Components':'sig_mumu', 'LineColor':kRed,     'LineStyle':10, 'LineWidth':3}
-bkgArgs = {'Components':'bkg_mumu', 'LineColor':kGreen+3, 'LineStyle': 2, 'LineWidth':3}
-
-nomData.plotOn(mumuMassPlot)
-mumuMassPdf.plotOn(mumuMassPlot)
-mumuMassPdf.plotOn(mumuMassPlot, **sigArgs)
-mumuMassPdf.plotOn(mumuMassPlot, **bkgArgs)
-
-OldTitle = mumuMassPlot.GetYaxis().GetTitle()
-mumuMassPlot.SetYTitle('Candidates /  ' + OldTitle[11:15] + ' MeV/c^{2}'  )
-
-mumuMassCanv = TCanvas('mumuMassCanv')
-mumuMassPlot.Draw()
-lhcbName.Draw()
-
-
-##################################################
-## Make the KK mass plots
-##################################################
-#Build KK mas pdf
-from ROOT import RooRealVar, RooRelBreitWigner, RooConstVar, RooFFTConvPdf, RooGaussModel
-
-#Mass Resolution Model
-KKMassVar = KKMass._target_()
-resMean    = RooRealVar   ( 'resMean'   , 'resMean'   , -0.3, -1.5, 1.2) 
-resSigma   = RooRealVar   ( 'resSigma'  , 'resSigma'  ,  0.1, 0.05, 0.2) 
-GaussModel = RooGaussModel('GaussModel', 'GaussModel' , KKMassVar, resMean,resSigma )
-
-#Build Phi Mass Pdf
-  #Phi Mass parameters
-mean   = RooRealVar ( 'mean'  , 'mean'  , 1021, 1014, 1026 ) 
-width  = RooRealVar ( 'width' , 'width' ,  5.3,    3,  6.5 )
-spin   = RooConstVar( 'spin'  , 'spin'  ,    1             )  
-radius = RooRealVar ( 'radius', 'radius', -3.8, -4.5,    0 )
-K1mass = RooConstVar( 'K1mass', 'K1mass', 493.7            )
-K2mass = RooConstVar( 'K2mass', 'K2mass', 493.7            )
- #Phi Mass pdf 
-_PhiMassPdf  = RooRelBreitWigner('_PhiMassPdf', '_PhiMassPdf', KKMassVar, mean, width, spin, radius, K1mass, K2mass )
-PhiMassPdf   = RooFFTConvPdf    ('PhiMassPdf' , 'PhiMassPdf' , KKMassVar, _PhiMassPdf, GaussModel )
-
-#s-Wave ( Background ) Pdf
-  #s-Wave Parameters
-from ROOT import RooDstD0BG as PhaseSpaceFunc
-dm0   = RooRealVar('dm0'  , 'dm0'  ,  990,          )
-par_A = RooRealVar('par_A', 'par_A',  4,   1,  6)
-par_B = RooRealVar('par_B', 'par_B',  8,    7,  11)
-par_C = RooRealVar('par_C', 'par_C',  14,     13, 16)
-  #s-Wave Pdf
-_KKbkgPdf = PhaseSpaceFunc('_KKbkgPdf', '_KKbkgPdf', KKMassVar, dm0, par_A, par_B, par_C )
-KKbkgPdf  = RooFFTConvPdf ('KKbkgPdf' , 'KKbkgPdf' , KKMassVar, _KKbkgPdf , GaussModel )
-
-#Total Pdf
-from ROOT import RooAddPdf
-relCoef         = RooRealVar('relCoef', 'relCoef', 0.5, 0.25, 0.75) 
-KKMassPdf  = RooAddPdf ('totPdf', 'totPdf', PhiMassPdf, KKbkgPdf, relCoef )
-
-
-assert(False)
-
-
-#Fit
-KKMassPdf.fitTo(nomData)
-
-#Plot
-from ROOT import TCanvas
-KKmassCanv = TCanvas()
-comps = { 'PhiMassPdf':dict( LineColor=kRed,      LineStyle=10, LineWidth=lineWidth ), 
-          'KKbkgPdf'  :dict( LineColor=kGreen +3, LineStyle= 2, LineWidth=lineWidth )
-            }
-plot(KKmassCanv, KKMass, nomData, KKMassPdf
-     , components = comps
-     , frameOpts = {'Bins':50}
-
-     )
-
-KKmassCanv.cd()
-lhcbName.Draw()
-
-
-assert(False)
-
-
-
-##################################################
-## Save plots
-#################################################
-
-#path = '~/../../project/bfys/vsyropou/PhD/plots/paperPlots/'
-#BMassCanv.Print(path + 'BMass.pdf')
-#mumuMassCanv.Print(path + 'mumuMass.pdf')
-#for ( canv, plot) in zip (canvList , tagPlots):
-#    canv.Print( path + plot.GetName() + '.pdf')
-
-
-
+print '\ncustomized PDF integral:'
+custInt.Print()

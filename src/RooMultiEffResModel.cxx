@@ -267,8 +267,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
       if (cacheParamsStr) conv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
       models.push_back(conv);
 
-      MultiHistEntry* entry = new MultiHistEntry(*(it->second), const_cast<RooMultiEffResModel*>(this));
-      entry->setEfficiency(conv);
+      MultiHistEntry* entry = new MultiHistEntry(*(it->second), conv);
       entries.push_back(entry);
    }
 

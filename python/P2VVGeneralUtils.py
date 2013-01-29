@@ -414,7 +414,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
                 if y < minimum:
                     minimum = y
             #hist.SetMinimum(minimum + 0.1)
-            obsFrame.SetMinimum(max([minimum, 0.1]))
+            obsFrame.SetMinimum( max( ( minimum, 0.1 ) ) )
 
     # plot PDF
     if pdf :
@@ -569,8 +569,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         obsPad.SetBottomMargin(0.04)
         obsPad.Draw()
         canv.cd(1)
-        if 'Title' in frameOpts and not frameOpts['Title']:
-            obsFrame.SetTitle("")
+        if 'Title' in frameOpts and not frameOpts['Title'] : obsFrame.SetTitle('')
         obsFrame.Draw()
 
         # draw residuals frame
@@ -925,23 +924,28 @@ class CPcomponentsPlotingToolkit():
 # function for plotting the S-wave phases versus the (binned) KK mass
 def plotSWavePhases( **kwargs ) :
     yAxisRange  = kwargs.pop( 'DeltaSAxisRange', ( None, None )                         )
-    KKMassLabel = kwargs.pop( 'KKMassLabel',     'm_{KK} (MeV)'                         )
-    deltaSLabel = kwargs.pop( 'DeltaSLabel',     '#delta_{S} - #delta_{#perp}    (rad)' )
+    KKMassLabel = kwargs.pop( 'KKMassLabel',     'm(K^{+}K^{-}) [MeV/c^{2}]'            )
+    deltaSLabel = kwargs.pop( 'DeltaSLabel',     '#delta_{S} - #delta_{#perp}    [rad]' )
     plotTitle   = kwargs.pop( 'PlotTitle',       ''                                     )
-    LHCbText1   = kwargs.pop( 'LHCbTextLine1',   ' LHCb'                                )
-    LHCbText2   = kwargs.pop( 'LHCbTextLine2',   '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}'    )
+    LHCbText1   = kwargs.pop( 'LHCbTextLine1',   'LHCb'                                 )
+    LHCbText2   = kwargs.pop( 'LHCbTextLine2',   ''                                     )
+    drawLegend  = kwargs.pop( 'DrawLegend',      False                                  )
 
     if any( key not in kwargs for key in [ 'DeltaSValues', 'DeltaSLowErrors', 'DeltaSHighErrors' ] ) :
         raise KeyError, 'P2VV - ERROR: plotSWavePhases: "DeltaSValues", "DeltaSLowErrors" and "DeltaSHighErrors" arguments are required'
     massBins       = kwargs.pop( 'MassBins', [ 988., 1008., 1032., 1050. ] )
-    deltaSVals     = kwargs.pop( 'DeltaSValues'     )
-    deltaSLowErrs  = kwargs.pop( 'DeltaSLowErrors'  )
-    deltaSHighErrs = kwargs.pop( 'DeltaSHighErrors' )
+    theoryVals     = kwargs.pop( 'TheoryValues', None )
+    deltaSVals     = kwargs.pop( 'DeltaSValues'       )
+    deltaSLowErrs  = kwargs.pop( 'DeltaSLowErrors'    )
+    deltaSHighErrs = kwargs.pop( 'DeltaSHighErrors'   )
 
     if kwargs :
         raise KeyError, 'P2VV - ERROR: plotSWavePhases: unexpected keyword arguments: %s' % kwargs
 
     from array import array
+    KKMass         = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + massBins[it] for it in range( len(massBins) - 1 ) ] )
+    KKMassErr      = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] )                for it in range( len(massBins) - 1 ) ] )
+
     KKMass1        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35 + massBins[it] for it in range( len(massBins) - 1 ) ] )
     KKMass1LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
     KKMass1HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
@@ -950,83 +954,121 @@ def plotSWavePhases( **kwargs ) :
     KKMass2LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
     KKMass2HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
 
+    if theoryVals :
+        from ROOT import TGraphErrors
+        theory    = array( 'd', theoryVals           )
+        theoryErr = array( 'd', [ 0. ] * len(KKMass) )
+        theoryGraph = TGraphErrors( len(KKMass), KKMass, theory, KKMassErr, theoryErr )
+    else :
+        theoryGraph = None
+
     from ROOT import TGraphAsymmErrors
     deltaS1        = array( 'd', deltaSVals      )
     deltaS1LowErr  = array( 'd', deltaSLowErrs   )
     deltaS1HighErr = array( 'd', deltaSHighErrs )
-    deltaS1Graph = TGraphAsymmErrors(  len(KKMass1), KKMass1, deltaS1\
-                                        , KKMass1LowErr, KKMass1HighErr, deltaS1LowErr, deltaS1HighErr )
+    deltaS1Graph = TGraphAsymmErrors( len(KKMass1), KKMass1, deltaS1\
+                                     , KKMass1LowErr, KKMass1HighErr, deltaS1LowErr, deltaS1HighErr )
 
     from math import pi
     deltaS2        = array( 'd', [ pi - val for val in deltaSVals ] )
     deltaS2LowErr  = array( 'd', deltaSHighErrs )
     deltaS2HighErr = array( 'd', deltaSLowErrs  )
     deltaS2Graph = TGraphAsymmErrors( len(KKMass2), KKMass2, deltaS2\
-                                        , KKMass2LowErr, KKMass2HighErr, deltaS2LowErr, deltaS2HighErr )
+                                     , KKMass2LowErr, KKMass2HighErr, deltaS2LowErr, deltaS2HighErr )
 
-    delSMin = min( delS - delSErr for delS, delSErr in zip( deltaSVals, deltaSLowErrs  ) )
-    delSMax = max( delS + delSErr for delS, delSErr in zip( deltaSVals, deltaSHighErrs ) )
-    delSMin = min( delSMin, pi - delSMax )
-    delSMax = max( delSMax, pi - delSMin )
+    delSMin0 = min( delS for delS in theoryVals ) if theoryVals else +1.e32
+    delSMax0 = max( delS for delS in theoryVals ) if theoryVals else -1.e32
+    delSMin1 = min( delS - delSErr for delS, delSErr in zip( deltaSVals, deltaSLowErrs  ) )
+    delSMax1 = max( delS + delSErr for delS, delSErr in zip( deltaSVals, deltaSHighErrs ) )
+    delSMin  = min( [ delSMin0, delSMin1, pi - delSMax1 ] )
+    delSMax  = max( [ delSMax0, delSMax1, pi - delSMin1 ] )
 
-    from ROOT import kBlack, kBlue
-    deltaS1Graph.SetLineColor(kBlue)
-    deltaS2Graph.SetLineColor(kBlack)
+    from ROOT import gStyle, kSolid
+    gStyle.SetLineStyleString( 11, ' 30 15' )
+    if theoryGraph : theoryGraph.SetLineStyle(11)
+    deltaS1Graph.SetLineStyle(kSolid)
+    deltaS2Graph.SetLineStyle(kSolid)
 
-    deltaS1Graph.SetMarkerColor(kBlue)
-    deltaS2Graph.SetMarkerColor(kBlack)
+    from ROOT import kBlack, kRed, kBlue, kWhite
+    if theoryGraph : theoryGraph.SetLineColor(kBlack)
+    deltaS1Graph.SetLineColor(kRed)
+    deltaS2Graph.SetLineColor(kBlue)
 
+    if theoryGraph : theoryGraph.SetMarkerColor(kBlack)
+    deltaS1Graph.SetMarkerColor(kRed)
+    deltaS2Graph.SetMarkerColor(kBlue)
+
+    if theoryGraph : theoryGraph.SetLineWidth(3)
     deltaS1Graph.SetLineWidth(4)
     deltaS2Graph.SetLineWidth(4)
 
     from ROOT import kFullCircle, kFullSquare
+    if theoryGraph : theoryGraph.SetMarkerStyle(kFullCircle)
     deltaS1Graph.SetMarkerStyle(kFullCircle)
     deltaS2Graph.SetMarkerStyle(kFullSquare)
-    deltaS1Graph.SetMarkerSize(1.3)
-    deltaS2Graph.SetMarkerSize(1.3)
+    if theoryGraph : theoryGraph.SetMarkerSize(0.7)
+    deltaS1Graph.SetMarkerSize(1.6)
+    deltaS2Graph.SetMarkerSize(1.5)
 
+    if theoryGraph : theoryGraph.SetMinimum( yAxisRange[0] if yAxisRange[0] else delSMin - 0.10 * ( delSMax - delSMin ) )
+    if theoryGraph : theoryGraph.SetMaximum( yAxisRange[1] if yAxisRange[1] else delSMax + 0.15 * ( delSMax - delSMin ) )
     deltaS1Graph.SetMinimum( yAxisRange[0] if yAxisRange[0] else delSMin - 0.10 * ( delSMax - delSMin ) )
     deltaS1Graph.SetMaximum( yAxisRange[1] if yAxisRange[1] else delSMax + 0.15 * ( delSMax - delSMin ) )
 
+    if theoryGraph : theoryGraph.GetXaxis().SetTitle(KKMassLabel)
+    if theoryGraph : theoryGraph.GetYaxis().SetTitle(deltaSLabel)
     deltaS1Graph.GetXaxis().SetTitle(KKMassLabel)
     deltaS1Graph.GetYaxis().SetTitle(deltaSLabel)
 
+    if theoryGraph : theoryGraph.GetXaxis().SetTitleOffset(1.0)
+    if theoryGraph : theoryGraph.GetYaxis().SetTitleOffset(0.7)
     deltaS1Graph.GetXaxis().SetTitleOffset(1.0)
     deltaS1Graph.GetYaxis().SetTitleOffset(0.7)
 
+    if theoryGraph : theoryGraph.SetTitle(plotTitle)
     deltaS1Graph.SetTitle(plotTitle)
 
     _P2VVPlotStash.append(deltaS1Graph)
     _P2VVPlotStash.append(deltaS2Graph)
+    if theoryGraph : _P2VVPlotStash.append(theoryGraph)
 
-    from ROOT import TLegend
-    leg = TLegend( 0.59, 0.45, 0.93, 0.63 )
-    leg.AddEntry( deltaS1Graph, 'solution I  (#Delta#Gamma_{s} > 0)', 'LPE' )
-    leg.AddEntry( deltaS2Graph, 'solution II (#Delta#Gamma_{s} < 0)', 'LPE' )
-    leg.SetBorderSize(1)
-    leg.SetFillStyle(0)
-    _P2VVPlotStash.append(leg)
+    if drawLegend :
+        from ROOT import gStyle, TLegend
+        leg = TLegend( 0.67, 0.46, 0.93, 0.66 )
+        leg.SetTextFont( gStyle.GetTextFont() )
+        leg.SetMargin(0.45)
+        leg.AddEntry( deltaS1Graph, '#Delta#Gamma_{s} > 0', 'LPE' )
+        leg.AddEntry( deltaS2Graph, '#Delta#Gamma_{s} < 0', 'LPE' )
+        leg.SetBorderSize(1)
+        leg.SetFillStyle(0)
+        _P2VVPlotStash.append(leg)
+    else :
+        leg = None
 
-    from ROOT import TPaveText
-    LHCbText = TPaveText( 0.13, 0.78, 0.51, 0.95, 'NDC' )
-    LHCbText.AddText(LHCbText1)
-    LHCbText.AddText(LHCbText2)
-    LHCbText.SetShadowColor(0)
-    LHCbText.SetFillStyle(0)
-    LHCbText.SetBorderSize(0)
-    LHCbText.SetTextAlign(12)
-    _P2VVPlotStash.append(LHCbText)
+    if LHCbText1 or LHCbText2 :
+        from ROOT import TPaveText
+        LHCbText = TPaveText( 0.15, 0.77 if LHCbText1 and LHCbText2 else 0.84, 0.51, 0.93, 'NDC' )
+        if LHCbText1 : LHCbText.AddText(LHCbText1)
+        if LHCbText2 : LHCbText.AddText(LHCbText2)
+        LHCbText.SetShadowColor(0)
+        LHCbText.SetFillStyle(0)
+        LHCbText.SetBorderSize(0)
+        LHCbText.SetTextAlign(12)
+        _P2VVPlotStash.append(LHCbText)
+    else :
+        LHCbText = None
 
     from ROOT import TCanvas
     SWavePhaseCanv = TCanvas( 'SWavePhaseCanv', 'S-Wave Phases' )
     SWavePhaseCanv.SetLeftMargin(0.12)
     SWavePhaseCanv.SetRightMargin(0.04)
     SWavePhaseCanv.SetTopMargin(0.04)
-    SWavePhaseCanv.SetBottomMargin(0.15)
+    SWavePhaseCanv.SetBottomMargin(0.17)
     deltaS1Graph.Draw('AP')
     deltaS2Graph.Draw('P sames')
-    leg.Draw()
-    LHCbText.Draw()
+    if theoryGraph : theoryGraph.Draw('P sames')
+    if leg :      leg.Draw()
+    if LHCbText : LHCbText.Draw()
 
     return SWavePhaseCanv
 
@@ -1327,7 +1369,8 @@ class RealMomentsBuilder ( dict ) :
                 % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
     def read( self, filePath = 'moments', **kwargs ) :
-        self._coefficients = { }
+        addFacs = kwargs.pop( 'AddMoments', ( ) )
+        if not addFacs : self._coefficients = { }
 
         # get file path
         filePath = filePath.strip()
@@ -1346,6 +1389,7 @@ class RealMomentsBuilder ( dict ) :
         nameExpr = re.compile(kwargs.pop('Names')) if 'Names' in kwargs else None
 
         # loop over lines and read moments
+        from math import sqrt
         numMoments = 0
         while True :
             # read next line
@@ -1370,7 +1414,15 @@ class RealMomentsBuilder ( dict ) :
             if ( nameExpr and not nameExpr.match(line[0]) ) or signif < minSignif : continue
 
             # get moment
-            self._coefficients[line[0]] = ( coef, stdDev, signif )
+            if addFacs :
+                assert line[0] in self._coefficients\
+                    , 'P2VV - ERROR: RealMomentsBuilder.readMoments: moment %s does not exist yet' % line[0]
+                origCoef, origStdDev = self._coefficients[line[0]][ : 2 ]
+                totCoef = addFacs[0] * origCoef + addFacs[1] * coef
+                totStdDev = sqrt( addFacs[0]**2 * origStdDev**2 + addFacs[1]**2 * stdDev**2 )
+                self._coefficients[line[0]] = ( totCoef, totStdDev, abs(totCoef) / totStdDev )
+            else :
+                self._coefficients[line[0]] = ( coef, stdDev, signif )
             numMoments += 1
 
         momFile.close()

@@ -187,7 +187,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         # PDF options
         self['transversityAngles']   = False
-        self['angularRanges']        = dict( cpsi = ( -1., +1. ), ctheta = ( -1., +1. ), phi = ( -pi, +pi ) )
+        self['angularRanges']        = dict( cpsi = [ ( -1., +1. ) ], ctheta = [ ( -1., +1. ) ], phi = [ ( -pi, +pi ) ] )
         self['sigMassModel']         = 'doubleGauss'       # '' / 'doubleGauss' / 'box'
         self['bkgMassModel']         = 'exponential'       # '' / 'exponential' / 'linear'
         self['bkgAnglePdf']          = 'binned'            # '' / 'histPdf' / 'binned' / 'basis' / 'hybrid'
@@ -346,7 +346,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ASParam        = pdfConfig.pop('ASParam')
         AparParam      = pdfConfig.pop('AparParam')
 
-        if not angRanges : angRanges = dict( cpsi = ( -1., +1. ), ctheta = ( -1., +1. ), phi = ( -pi, +pi ) )
+        if not angRanges : angRanges = dict( cpsi = [ ( -1., +1. ) ], ctheta = [ ( -1., +1. ) ], phi = [ ( -pi, +pi ) ] )
 
         if not paramKKMass :
             if not KKMassBinBounds : KKMassBinBounds = [ 1020. - 12., 1020. + 12. ]
@@ -402,9 +402,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             helAngs = True
             from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
 
-        self._angleFuncs = AngleFuncs(  cpsi   = dict( Name = 'helcosthetaK' if helAngs else 'trcospsi',   MinMax = angRanges['cpsi'  ] )
-                                      , ctheta = dict( Name = 'helcosthetaL' if helAngs else 'trcostheta', MinMax = angRanges['ctheta'] )
-                                      , phi    = dict( Name = 'helphi'       if helAngs else 'trphi',      MinMax = angRanges['phi'   ] )
+        self._angleFuncs = AngleFuncs(  cpsi   = dict(Name = 'helcosthetaK' if helAngs else 'trcospsi',   MinMax = angRanges['cpsi'  ][0])
+                                      , ctheta = dict(Name = 'helcosthetaL' if helAngs else 'trcostheta', MinMax = angRanges['ctheta'][0])
+                                      , phi    = dict(Name = 'helphi'       if helAngs else 'trphi',      MinMax = angRanges['phi'   ][0])
                                      )
 
         # variables in PDF (except for tagging category)
@@ -417,6 +417,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         cpsi   = self._angleFuncs.angles['cpsi']
         ctheta = self._angleFuncs.angles['ctheta']
         phi    = self._angleFuncs.angles['phi']
+
+        for ran in angRanges['cpsi'  ][ 1 : ] : cpsi.setRange(   ran[0], ran[ 1 : 3 ] )
+        for ran in angRanges['ctheta'][ 1 : ] : ctheta.setRange( ran[0], ran[ 1 : 3 ] )
+        for ran in angRanges['phi'   ][ 1 : ] : phi.setRange(    ran[0], ran[ 1 : 3 ] )
 
         if nominalPdf or not self._iTagZeroTrick :
             iTagOS = Category( 'iTagOS', Title = 'Initial state flavour tag opposite side', Observable = True, States = iTagStates )
@@ -447,8 +451,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # ntuple variables
         mumuMass = RealVar( 'mdau1', Title = 'm(#mu#mu)', Unit = 'MeV/c^{2}', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
                            , nBins =  51 )
+
         KKMass = RealVar( 'mdau2', Title = 'm(KK)', Unit = 'MeV/c^{2}', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
                          , nBins =  125 )
+
         #if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
         tagDecisionComb = Category( 'tagdecision',    Title = 'Tag decision OS/SS combination', Observable = True, States = iTagStatesDecision )
@@ -1201,7 +1207,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             elif not nominalPdf and 'constmean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
-                timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
+                timeResArgs['timeResMeanConstraint'] = constrTResScale
+            elif not nominalPdf and 'stoffset' in timeResType.lower():
+                timeResArgs['timeResMeanConstraint'] = 'constrain'
+                timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.30, Error = 0.06, MinMax = ( 0.1, 5. ) )
+                ## timeResArgs['timeResSigmaSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1.30 )
+                timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0065, Error = 0.001, MinMax = ( 0.00001, 0.1 ) )
+                ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
+                timeResArgs['timeResSFOffset'] = True
             else :
                 timeResArgs['timeResMeanConstraint'] = 'constrain' if nominalPdf else constrTResScale
 
@@ -1224,6 +1237,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: decay time resolution model:'
         self._timeResModel['model'].Print()
         for par in self._timeResModel.parameters() : par.Print()
+
+        if makePlots :
+            # plot event-by-event estimated time resolution
+            self._timeResCanv = TCanvas( 'timeResCanv', 'Decay time resolution' )
+            for ( pad, data, plotTitle )\
+                  in zip(  self._timeResCanv.pads( 2, 2 )
+                         , [ self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
+                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                        ) :
+                plot(  pad, timeRes, data, None
+                     , frameOpts  = dict( Title = timeRes.GetTitle() + plotTitle )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 , MarkerColor = kBlue, LineColor = kBlue )
+                    )
+
 
         # CP violation parameters
         if lambdaCPParam == 'ReIm' : 
@@ -1574,15 +1601,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             if makePlots :
                 self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
-                for ( pad, data, pdf, plotTitle )\
+                for ( pad, data, pdf, plotTitle, scale )\
                       in zip(  self._KKMassCanv.pads( 2, 2 )
                              , [ self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
                              , [ self._signalKKMass.pdf(), self._backgroundKKMass.pdf() ]
                              , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                             , [ ( 5., 1.e4 ), ( 1.2e2, 1.2e3 ) ]
                             ) :
-                    plot(  pad, KKMass, data, None #pdf, logy = True
+                    plot(  pad, KKMass, data, pdf, logy = True, yScale = scale
                          , frameOpts  = dict( Title = KKMass.GetTitle() + plotTitle )
-                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 , MarkerColor = kBlue, LineColor = kBlue )
+                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue )
                         )
 
 

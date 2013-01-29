@@ -102,7 +102,7 @@ pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
+pdfConfig['timeResType']           = 'event_stoffset' # 'event' # 'eventNoMean' # 'event_stoffset'
 pdfConfig['numTimeResBins']        = 25
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
@@ -440,6 +440,8 @@ print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
+
+assert(False)
 
 if ( readData or generateData ) and doFit :
     # fit data

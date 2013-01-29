@@ -1,19 +1,22 @@
+from math import sqrt
+
 from ROOT import gStyle
 from P2VVLoad import LHCbStyle
 gStyle.SetEndErrorSize(4)
 
 plotsFilePath   = 'SWavePhases.ps'
 deltaSAxisRange = ( None, None ) # ( -1.5, 5.0 )
-LHCbText1       = ' LHCb'
-LHCbText2       = '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}'
+LHCbText1       = 'LHCb'
+LHCbText2       = '' # '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}'
+drawLegend      = False
 
-#massBins       = [ 988., 1008., 1020., 1032., 1050. ]
-massBins       = [ 990., 1008., 1016., 1020., 1024., 1032., 1050. ]
+#massBins = [ 988., 1008., 1020., 1032., 1050. ]
+massBins = [ 990., 1008., 1016., 1020., 1024., 1032., 1050. ]
 
 # paper2012 values
 deltaSVals     = [ 1.31, 0.77, 0.51, -0.51, -0.46, -0.65 ]
-deltaSLowErrs  = [ 0.49, 0.23, 0.30, 0.35, 0.26, 0.22 ]
-deltaSHighErrs = [ 0.78, 0.38, 1.40, 0.21, 0.18, 0.18 ]
+deltaSLowErrs  = [ 0.50, 0.24, 0.36,  0.38,  0.26,  0.23 ]
+deltaSHighErrs = [ 0.79, 0.39, 1.41,  0.26,  0.19,  0.19 ]
 
 # 6 bins, new analysis, new n-tuple, 1.0 1/fb
 #deltaSVals     = [ 1.33767, 0.771849, 0.512522, -0.505443, -0.456398, -0.650681 ]
@@ -45,10 +48,18 @@ deltaSHighErrs = [ 0.78, 0.38, 1.40, 0.21, 0.18, 0.18 ]
 #deltaSLowErrs  = [ 0.742791, 0.135544, 0.215416, 0.595835 ]
 #deltaSHighErrs = [ 0.47209,  0.156742, 0.19807,  0.344092 ]
 
+# theory values
+theoryVals = None
+#theoryVals = [ 3.0221, 2.8056, 2.0224, 0.8197, 0.2828, 0.1118 ]
+#delS = -0.0955 - 1.5589
+#delS = ( sum(deltaSVals) - sum(theoryVals) ) / float( len(deltaSVals) )
+#delS = -3.
+#theoryVals = [ delS + val for val in theoryVals ]
+
 from P2VVGeneralUtils import plotSWavePhases
 SWavePhaseCanv = plotSWavePhases( DeltaSAxisRange = deltaSAxisRange, LHCbTextLine1 = LHCbText1, LHCbTextLine2 = LHCbText2
-                                 , MassBins = massBins, DeltaSValues = deltaSVals
-                                 , DeltaSLowErrors = deltaSLowErrs, DeltaSHighErrors = deltaSHighErrs
+                                 , MassBins = massBins, DeltaSValues = deltaSVals, TheoryValues = theoryVals
+                                 , DeltaSLowErrors = deltaSLowErrs, DeltaSHighErrors = deltaSHighErrs, DrawLegend = drawLegend
                                 )
 SWavePhaseCanv.Print(plotsFilePath)
 

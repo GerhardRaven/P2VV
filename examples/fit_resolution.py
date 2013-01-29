@@ -7,6 +7,12 @@ parser = optparse.OptionParser(usage = '%prog year model')
 
 parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
+parser.add_option("--bin-st", dest = "bin_st", default = False,
+                  action = 'store_true', help = 'Bin in sigmat')
+parser.add_option("--no-wpv", dest = "wpv", default = True,
+                  action = 'store_false', help = 'Add WPV component')
+parser.add_option("--verbose", dest = "verbose", default = False,
+                  action = 'store_true', help = 'Verbose fitting')
 
 (options, args) = parser.parse_args()
 
@@ -22,6 +28,9 @@ elif args[1] not in ['single', 'double', 'triple']:
     
 input_data = {}
 if args[0] == '2011':
+    ## input_data['data'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    ## input_data['wpv'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root'
+    ## input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
     input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
@@ -42,7 +51,11 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
+if options.wpv:
+    t_minmax = (-5, 14)
+else:
+    t_minmax = (-1.5, 8)
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
@@ -74,13 +87,15 @@ sig_tres = None
 if args[1] == 'single':
     from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
-                              BiasScaleFactor = False, Cache = True,
+                              BiasScaleFactor = False, Cache = False,
+                              TimeResSFOffset = True,
                               bias = dict(Value = -0.17, MinMax = (-1, 1)),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee,
+                              PerEventError = options.pee, ParamRMS = False,
+                              TimeResSFOffset = True,
                               ScaleFactors = [(2, 2.3), (1, 1.2)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
@@ -136,7 +151,7 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
 bkg_t = bkg_t.pdf()
 
 signal = Component('signal', (sig_m, psi_m.pdf(), sig_t), Yield = (200000, 500, 500000))
-psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (4000,100,500000) )
+psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (30000,100,500000) )
 
 background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield = (19620,100,500000) )
 
@@ -148,31 +163,36 @@ psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 5000
 # Read data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
+if options.wpv:
+    cut = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)'
+else:
+    cut = '(sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1)'
 data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
-                cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)')
-data = data.reduce(EventRange = (0, 400000))
+                ntupleCuts = cut)
 
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
+fitOpts = dict(NumCPU = 8, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+               Verbose = options.verbose)
 mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
+
+## Fit mass pdf
 mass_pdf.fitTo(data, **fitOpts)
 
 ## # Plot mass pdf
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
+
 mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
-obs = [mpsi]
-for (p,o) in zip(mass_canvas.pads(len(obs)), obs):
-    from P2VVGeneralUtils import plot
-    pdfOpts  = dict()
-    plot(p, o, pdf = mass_pdf, data = data
-         , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-         , plotResidHist = True
-         , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                          , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                          , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
-                          }
-         )
+from P2VVGeneralUtils import SData
+from P2VVGeneralUtils import plot
+pdfOpts  = dict()
+plot(mass_canvas.cd(1), mpsi, pdf = mass_pdf, data = data
+     , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+     , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+     , plotResidHist = False
+     , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                      , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                      }
+     )
 
 from P2VVGeneralUtils import SData
 for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
@@ -185,23 +205,18 @@ bkg_sdata = splot.data('background')
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
 
-from P2VVParameterizations import WrongPV
-reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
-wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
-                           InputFile = input_data['wpv'], Workspace = input_data['workspace'],
-                           Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
-                           sigmat = st)
-wpv_psi = wpv.shape('jpsi')
-psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
-
-## wpv = WrongPV.ShapeBuilder(t, {'B' : m}, UseKeysPdf = True, Weights = 'B',
-##                            Draw = True, sigmat = st)
-## wpv_signal = wpv.shape('B')
-## signal_wpv = Component('signal_wpv', (wpv_signal,), Yield = (888, 10, 300000))
-
-print wpv.reweigh_weights('jpsi')
-
-time_pdf = buildPdf(Components = (psi_prompt, psi_background, psi_wpv), Observables = (t,), Name='time_pdf')
+components = [psi_prompt, psi_background]
+if options.wpv:
+    from P2VVParameterizations import WrongPV
+    reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
+    wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
+                               InputFile = input_data['wpv'], Workspace = input_data['workspace'],
+                               Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
+                               sigmat = st)
+    wpv_psi = wpv.shape('jpsi')
+    psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
+    components.append(psi_wpv)
+time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
 
 ## Fit
@@ -214,8 +229,11 @@ result = time_pdf.fitTo(psi_sdata, SumW2Error = False, **fitOpts)
 
 
 from ROOT import RooBinning
-bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
-## bounds = array('d', [-3 + i * 0.1 for i in range(27)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+if options.wpv:
+    bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
+else:
+    bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
+
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('var_binning')
 t.setBinning(binning)
@@ -243,4 +261,7 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
          )
 
 import Dilution
-Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background, psi_wpv])
+sub = [psi_background]
+if options.wpv:
+    sub.append(psi_wpv)
+Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = sub)
