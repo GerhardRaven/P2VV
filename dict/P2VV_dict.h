@@ -29,6 +29,7 @@
 #include "RooEffConvGenContext.h"
 #include "RooBoxPdf.h"
 #include "RooExplicitNormPdf.h"
+#include "RooAmoroso.h"
 
 #include <map>
 #include <string>

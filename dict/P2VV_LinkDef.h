@@ -37,6 +37,7 @@
 #pragma link C++ function sigmaFromFT;
 #pragma link C++ class RooBoxPdf+;
 #pragma link C++ class RooExplicitNormPdf+;
+#pragma link C++ class RooAmoroso+;
 
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
