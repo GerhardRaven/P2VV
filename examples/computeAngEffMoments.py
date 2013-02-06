@@ -8,19 +8,21 @@ from math import pi, sin, cos, sqrt
 readMoments = False
 makePlots   = True
 transAngles = False
-normPDF     = True
+normPdf     = True
 tResModel   = ''
 trigger     = ''
 timeInt     = False
+addInvPdf   = True
 
 momentsFile = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' )
 plotsFile   = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' ) + '.ps'
+dataSetFile = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' ) + '.root'
 
-dataSetName = 'DecayTree'
-dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
-#dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
-#dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_PHSP_MC11a_ntupleB_for_fitting_20121031.root'
-#dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angRes/angRes.root'
+nTupleName = 'DecayTree'
+nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
+#nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
+#nTupleFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_PHSP_MC11a_ntupleB_for_fitting_20121031.root'
+#nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angRes/angRes.root'
 
 # transversity amplitudes
 A0Mag2Val    = 0.60
@@ -90,25 +92,22 @@ from P2VVGeneralUtils import readData
 cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
 if trigger == 'ExclBiased' :
     cuts  = 'sel == 1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
-    data = readData(  dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSet, Rename = 'DecayTreeB'
-                    , ntupleCuts = cuts )
+    data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 elif trigger == 'Unbiased' :
     cuts = 'sel == 1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
-    data = readData(  dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSet, Rename = 'DecayTreeUB'
-                    , ntupleCuts = cuts )
+    data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 else :
     cuts = 'sel == 1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
-    data = readData(  dataSetFile, dataSetName = dataSetName, NTuple = True, observables = obsSet, Rename = 'DecayTreeUBB'
-                    , ntupleCuts = cuts )
+    data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 
 ###########################################################################################################################################
 ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
 #####################################################################
 
-if normPDF :
+if normPdf :
     # transversity amplitudes
     from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
     amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
@@ -184,7 +183,7 @@ if normPDF :
 print '\nData set:'
 data.Print()
 
-if normPDF :
+if normPdf :
     print '\nPDF:'
     pdf.Print()
     print '\nIntegration set for PDF:'
@@ -205,7 +204,7 @@ else :
 
 # moments builder with angular functions from physics PDF
 from P2VVGeneralUtils import RealMomentsBuilder
-if normPDF :
+if normPdf :
     from RooFitWrappers import RealEffMoment
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( func, 1, pdf, intSet, normSet )\
                                                   for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
@@ -228,12 +227,12 @@ indices += [ ( 0, 4, 0 ) ]
 #indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ +1, -1 ] ]
 
 basisMoments = RealMomentsBuilder()
-if normPDF :
+if normPdf :
     basisMoments.appendPYList( angleFuncs.angles, indices, PDF = pdf, IntSet = intSet, NormSet = normSet )
 else :
     basisMoments.appendPYList( angleFuncs.angles, indices )
 
-PDFInt = 1. if normPDF else 8. * pi
+PDFInt = 1. if normPdf else 8. * pi
 if readMoments :
     # read moments from file
     physMoments.read(  momentsFile + '_Phys'  )
@@ -253,10 +252,37 @@ basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi), MinSignificance = 5. )
 
 
 ###########################################################################################################################################
+## add efficiency weights column to data set ##
+###############################################
+
+if addInvPdf and normPdf :
+    from ROOT import RooArgSet, RooArgList, RooFormulaVar, RooConstVar
+    rooIntSet  = RooArgSet( var._var for var in intSet  )
+    rooNormSet = RooArgSet( var._var for var in normSet )
+    pdfInt = pdf.createIntegral( rooIntSet, rooNormSet )
+    nEvents = RooConstVar( 'nEvents', 'Number of events', data.sumEntries() )
+    effWeightList = RooArgList( nEvents, pdfInt )
+    effWeight = RooFormulaVar( 'effWeight', 'Efficiency weight', '1./@0/@1', effWeightList )
+    data.addColumn(effWeight)
+
+
+###########################################################################################################################################
+## write data set to file ##
+############################
+
+if dataSetFile :
+    from ROOT import TFile
+    dataFile = TFile.Open( dataSetFile, 'RECREATE' )
+    dataFile.Add(data)
+    dataFile.Write()
+    dataFile.Close()
+
+
+###########################################################################################################################################
 ## make some plots ##
 #####################
 
-if makePlots and normPDF :
+if makePlots and normPdf :
     # build efficiency function
     effTerms = basisMoments.buildPDFTerms()
     effFunc = effTerms.buildAddition('effFunc')
