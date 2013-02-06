@@ -195,7 +195,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         self['multiplyByTagPdf']     = False
         self['multiplyByTimeEff']    = ''                  # '' / 'all' / 'signal'
         self['timeEffType']          = 'HLT1Unbiased'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basis0123' / 'basisSig3' / 'basisSig6' / 'weights'
+        self['multiplyByAngEff']     = ''                  # '' / 'basis012' / 'basis012Plus' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4' / 'weights'
         self['parameterizeKKMass']   = ''                  # '' / 'functions' / 'simultaneous'
         self['ambiguityParameters']  = False
         self['SWeightsType']         = ''                  # '' / 'simultaneous' / 'simultaneousFixed' / 'simultaneousFreeBkg'
@@ -1529,17 +1529,25 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             elif multiplyByAngEff == 'basis012' :
                 angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            elif multiplyByAngEff == 'basis012Plus' :
+                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+                angMomInds += [ ( 0, 4, 0 ) ]
             elif multiplyByAngEff == 'basis0123' :
                 angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            elif multiplyByAngEff == 'basis01234' :
+                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(5) for YIndex0 in range(5)\
                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
             elif multiplyByAngEff == 'basisSig3' :
                 angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if nominalPdf or not transAngles\
                               else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
-            elif multiplyByAngEff == 'basisSig6' :
-                angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 2, 2, 0 ), ( 1, 1, 0 ), ( 1, 2, 0 ) ]\
-                             if nominalPdf or not transAngles else\
-                             [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 2, 0 ), ( 2, 2, 2 )\
-                              , ( 1, 1, 1 ), ( 1, 2, 0 ), ( 1, 2, 2 ) ]
+            elif multiplyByAngEff == 'basisSig4' :
+                if nominalPdf or not transAngles :
+                    angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ]
+                else :
+                    raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration with transversity angles: %s'\
+                                       % multiplyByAngEff)
             else :
                 raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration: %s'\
                                    % multiplyByAngEff)
