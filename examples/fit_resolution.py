@@ -7,12 +7,12 @@ parser = optparse.OptionParser(usage = '%prog year model')
 
 parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
-parser.add_option("--bin-st", dest = "bin_st", default = False,
-                  action = 'store_true', help = 'Bin in sigmat')
 parser.add_option("--no-wpv", dest = "wpv", default = True,
                   action = 'store_false', help = 'Add WPV component')
 parser.add_option("--verbose", dest = "verbose", default = False,
                   action = 'store_true', help = 'Verbose fitting')
+parser.add_option("--offset", dest = "offset", default = False,
+                  action = 'store_true', help = 'Use sigmat offset')
 
 (options, args) = parser.parse_args()
 
@@ -31,7 +31,7 @@ if args[0] == '2011':
     ## input_data['data'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_prescaled.root'
     ## input_data['wpv'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root'
     ## input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
-    input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
+    input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130117_MagDownMagUp.root'
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
 else:
@@ -88,14 +88,14 @@ if args[1] == 'single':
     from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = False,
-                              TimeResSFOffset = True,
+                              TimeResSFOffset = options.offset,
                               bias = dict(Value = -0.17, MinMax = (-1, 1)),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = options.pee, ParamRMS = False,
-                              TimeResSFOffset = True,
+                              TimeResSFOffset = options.offset,
                               ScaleFactors = [(2, 2.3), (1, 1.2)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
@@ -163,14 +163,14 @@ psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 5000
 # Read data
 from P2VVGeneralUtils import readData
 tree_name = 'DecayTree'
-if options.wpv:
-    cut = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)'
-else:
-    cut = '(sel_cleantail == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1)'
+cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
+if not options.wpv:
+    cut += ' && sel_cleantail == 1'
 data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
                 ntupleCuts = cut)
 
-fitOpts = dict(NumCPU = 8, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
                Verbose = options.verbose)
 mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
 
@@ -245,7 +245,7 @@ import P2VVGeneralUtils
 print 'plotting'
 obs = [t]
 plot_data = psi_sdata
-time_canvas = TCanvas('time_canvas', 'time_canvas', len(obs) * 1000, 650)
+time_canvas = TCanvas('time_canvas', 'time_canvas', 500, 500)
 for (p,o) in zip(time_canvas.pads(len(obs)), obs):
     pdfOpts  = dict(ProjWData = (RooArgSet(st), plot_data, True))
     P2VVGeneralUtils.plot(p, o, pdf = time_pdf if o != st else None, data = plot_data
@@ -253,7 +253,7 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
          , dataOpts = dict(MarkerSize = 0.8, Binning = binning, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
          , logy = True
-         , plotResidHist = True
+         , plotResidHist = False
          , components = { 'psi_*'      : dict( LineColor = kRed,    LineStyle = kDashed )
                           , 'prompt_*' : dict( LineColor = kOrange, LineStyle = kDashed )
                           , 'wpv_*'    : dict( LineColor = kGreen,  LineStyle = kDashed )

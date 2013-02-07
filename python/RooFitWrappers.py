@@ -182,12 +182,6 @@ class RooObject(object) :
     def Parameters(self) :
         return set( self._rooobject(i) for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
-    ## FIXME: Should these be in RooObject? Do all RooObjects always have a non-empty _dict???
-    def Type(self) :
-        _t = self._dict['Type']
-        return _t if type(_t)==str else _t.__name__
-
-
     ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
     def observable(self) :
         return self._var.getAttribute('Observable')
@@ -769,7 +763,9 @@ class Pdf(RooObject):
         if self._dict['Name'] not in self.ws():
             v = list(self._dict['Parameters'])
             deps = ','.join([i.GetName() if type(i) != str else i for i in v])
-            x = self._declare( '%s::%s(%s)' % (self.Type(), self._dict['Name'], deps) )
+            if type(self._dict['Type']) != str:
+                self._dict['Type'] = self._dict['Type'].__name__
+            x = self._declare('%s::%s(%s)' % (self._dict['Type'], self._dict['Name'], deps))
             from ROOT import RooAbsPdf
             assert isinstance(x,RooAbsPdf)
             self._init(self._dict['Name'], x.ClassName())
@@ -989,7 +985,7 @@ class SumPdf(Pdf):
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
             self._declare(self._makeRecipe())
-            self._init(self._dict['Name'], self.Type())
+            self._init(self._dict['Name'], self._dict['Type'])
 
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
@@ -1435,9 +1431,17 @@ class UniformPdf( Pdf ) :
         Pdf.__init__(self , Name = Name , Type = 'RooUniform')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
+class LognormalPdf(Pdf):
+    def __init__(self, Name, **kwargs):
+        observable = kwargs.pop('Observable')
+        median = kwargs.pop('Median')
+        shape = kwargs.pop('Shape')
+        # construct factory string on the fly...
+        Pdf.__init__(self , Name = Name , Type = 'RooLognormal',
+                     Parameters = [observable, median, shape])
 
 class BDecay( Pdf ) :
-    def __init__(self,Name, **kwargs) :
+    def __init__(self, Name, **kwargs):
         __check_name_syntax__(Name)
         d = dict( name = Name
                 , time = kwargs.pop('time')
@@ -1701,22 +1705,38 @@ class Customizer(Pdf) :
             origDict = dict( ( origItem.GetName(), origItem ) for origItem in origSet )
             subsDict = dict( ( subsItem.GetName(), subsItem ) for subsItem in subsSet )
             for item in origSet:
-                customizer.replaceArg( __dref__(item), __dref__( subsDict[ item.GetName() + argSuff ] ) )
+                rep = subsDict[ item.GetName() + argSuff ]
+                self.__transplant_binnings(item, rep)
+                customizer.replaceArg( __dref__(item), __dref__( rep ) )
         else :
             for origItem, subsItem in zip( origSet, subsSet ) :
+                self.__transplant_binnings(origItem, subsItem)
                 customizer.replaceArg( __dref__(origItem), __dref__(subsItem) )
 
         custom = customizer.build()
 
         self._addObject(custom)
-        self._init( custom.GetName(), pdf.Type() )
+        self._init( custom.GetName(), pdf['Type'] )
         Pdf.__init__(  self
                      , Name = custom.GetName()
-                     , Type = pdf.Type()
+                     , Type = pdf['Type']
                      , ConditionalObservables = pdf.ConditionalObservables()
                      , ExternalConstraints = pdf.ExternalConstraints()
                     )
 
+    def __transplant_binnings(self, source, dest):
+        l = source.getBinningNames()
+        if not source.observable() or not dest.observable():
+            return
+        for i in range(l.size()):
+            n = l.front()
+            l.pop_front()
+            b = source.getBinning(n)
+            if n:
+                dest.setBinning(b, n)
+            else:
+                dest.setBinning(b)
+            
     def _make_pdf(self) : pass
 
 
