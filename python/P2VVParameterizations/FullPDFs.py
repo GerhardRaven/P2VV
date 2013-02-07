@@ -159,12 +159,13 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
         from math import pi
 
         # job parameters
-        self['dataSample'] = ''              # '' / 'Summer2011'
-        self['selection']  = 'HLT1Unbiased'  # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'timeEffFit'
-        self['makePlots']  = True
-        self['SFit']       = False
-        self['blind']      = False
-        self['nominalPdf'] = True    # nominal PDF option does not work at the moment
+        self['dataSample']   = ''              # '' / 'Summer2011'
+        self['selection']    = 'HLT1Unbiased'  # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'timeEffFit'
+        self['makePlots']    = True
+        self['AllTagPlots']  = False
+        self['SFit']         = False
+        self['blind']        = False
+        self['nominalPdf']   = True    # nominal PDF option does not work at the moment
 
         self['numEvents'] = 30000
 
@@ -230,7 +231,7 @@ class Bs2Jpsiphi_Winter2012( PdfConfiguration ) :
 
         self['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                               , ( 'trcostheta', 'cos(#theta_{tr})' )
-                              , ( 'trphi',      '#phi_{tr}'        )
+                              , ( 'trphi',      '#varphi_{tr}'        )
                              )
 
         self['numBMassBins'] = [ 40, 20, 20 ]
@@ -268,13 +269,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         pdfConfig = kwargs.copy()
 
         # job parameters
-        dataSample = pdfConfig.pop('dataSample')
-        selection  = pdfConfig.pop('selection')
-        SFit       = pdfConfig.pop('SFit')
-        blind      = pdfConfig.pop('blind')
-        nominalPdf = pdfConfig.pop('nominalPdf')
-        makePlots  = pdfConfig.pop('makePlots')
-
+        dataSample  = pdfConfig.pop('dataSample')
+        selection   = pdfConfig.pop('selection')
+        SFit        = pdfConfig.pop('SFit')
+        blind       = pdfConfig.pop('blind')
+        nominalPdf  = pdfConfig.pop('nominalPdf')
+        makePlots   = pdfConfig.pop('makePlots')
+        AllTagPlots = pdfConfig.pop('AllTagPlots')
+        
         numEvents = pdfConfig.pop('numEvents')
 
         nTupleName           = pdfConfig.pop('nTupleName')
@@ -430,7 +432,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         estWTagSS   = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
                               , Value = 0.25, MinMax = ( 0., 0.50001 ) )
 
-        BMass = RealVar( 'mass',  Title = 'm(J/#psiKK)', Unit = 'MeV', Observable = True
+        BMass = RealVar( 'mass',  Title = 'm(J/#psiKK)', Unit = 'MeV/c^{2}', Observable = True
                         , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
                         ,  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
                                          , Signal        = ( 5320., 5420. )
@@ -447,10 +449,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             obsSetP2VV.append(BMass)
 
         # ntuple variables
-        mumuMass = RealVar( 'mdau1', Title = 'm(#mu#mu)', Unit = 'MeV', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
+        mumuMass = RealVar( 'mdau1', Title = 'm(#mu#mu)', Unit = 'MeV/c^{2}', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
                            , nBins =  51 )
-        KKMass = RealVar( 'mdau2', Title = 'm(KK)', Unit = 'MeV', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
-                         , nBins =  51 )
+
+        KKMass = RealVar( 'mdau2', Title = 'm(KK)', Unit = 'MeV/c^{2}', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
+                         , nBins =  125 )
+
         #if paramKKMass == 'functions' : obsSetP2VV.append(KKMass)
 
         tagDecisionComb = Category( 'tagdecision',    Title = 'Tag decision OS/SS combination', Observable = True, States = iTagStatesDecision )
@@ -516,7 +520,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            , KMinTrackChi2    = KMinTrackChi2
                           )
 
-        obsSetNTuple = [ time ] + angles +  [ BMass, KKMass, timeRes, tagDecisionOS, tagDecisionSS, estWTagOS, estWTagSS ]
+        obsSetNTuple = [ time ] + angles +  [ BMass, KKMass, timeRes, tagDecisionOS, tagDecisionSS, tagDecisionComb, estWTagOS, estWTagSS, estWTagComb ]
         if makePlots : obsSetNTuple += [ mumuMass ]
         if selection in [ 'timeEffFit', 'paper2012' ] or timeEffType in [ 'fit', 'paper2012' ] : obsSetNTuple += [ hlt1ExclB ]
         if selection == 'timeEffFit'                  or timeEffType == 'fit'                  : obsSetNTuple += [ hlt2B, hlt2UB ]
@@ -963,7 +967,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                    , TCanvas( 'massCanvLeft',  'B mass left side band'    )
                                    , TCanvas( 'massCanvRight', 'B mass right side band'   )
                                   ]
-                for ( pad, frameRange, nBins, plotTitle, logy, scale )\
+                for ( pad, frameRange, nBins, plotTitle, plotName, logy, scale )\
                       in zip(  self._massCanvs
                              , [ '', 'Signal', 'LeftSideBand', 'RightSideBand' ]
                              , [ sum(numBMassBins) ] + numBMassBins
@@ -972,12 +976,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                 , BMass.GetTitle() + ' mass fit - left side band'
                                 , BMass.GetTitle() + ' mass fit - right side band'
                                ]
+                             , [  BMass.GetName()
+                                , BMass.GetName() + ' fit - signal'
+                                , BMass.GetName() + ' fit - left side band'
+                                , BMass.GetName() + ' fit - right side band'
+                               ]                             
                              , [ True, False, False, False ]
                              , [ ( 8.e1, 1.e4 ), ( None, None ), ( None, None ), ( None, None ) ] # [ ( 8.e1, 1.e4 ), ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
                             ) :
-                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale, plotResidHist = True
+                    #plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale, plotResidHist = True
+                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale
                          , normalize = True, symmetrize = True
-                         , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle )
+                         , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName)
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.6, LineWidth = 2 )
                          , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3 )
                          , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed, LineWidth = 3 )
@@ -1732,10 +1742,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                          , [ 1. - ( untagFracSigOS if SFit else untagFracOS ), 1. - untagFracSigOS, 1. - untagFracBkgOS ]
                         ) :
-                plot(  pad, estWTagOS, data, self._sig_bkg_estWTagOS
-                     , frameOpts  = dict( Bins = nBins, Title = estWTagOS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
+                #plot(  pad, estWTagOS, data, self._sig_bkg_estWTagOS
+                plot(  pad, estWTagOS,  data
+                     , xTitle     = '#eta^{OS}' 
+                     , frameOpts  = dict( Bins = nBins, Title = estWTagOS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ), Name = estWTagOS.GetName() )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
-                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
+                     #, pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
                     )
 
             self._estWTagCanvSS = TCanvas( 'estWTagCanvSS', 'Estimated wrong-tag probability SS' )
@@ -1747,13 +1759,63 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                          , [ 1. - ( untagFracSigSS if SFit else untagFracSS ), 1. - untagFracSigSS, 1. - untagFracBkgSS ]
                         ) :
-                plot(  pad, estWTagSS, data, self._sig_bkg_estWTagSS
-                     , frameOpts  = dict( Bins = nBins, Title = estWTagSS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ) )
+                #plot(  pad, estWTagSS, data, self._sig_bkg_estWTagSS
+                plot(  pad, estWTagSS, data
+                     , xTitle     = ' #eta^{SS}'
+                     , frameOpts  = dict( Bins = nBins, Title = estWTagSS.GetTitle() + plotTitle, Range = ( 0., 0.499999 ), Name = estWTagSS.GetName() )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
-                     , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
+                     #, pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm                           )
                     )
 
+                
+##TODO::Make it availble in the case of cFit
+            if AllTagPlots:
+                self._estWTagCanvSS_B    = TCanvas('estWTagCanvSS_B'   , 'Est. wrong-tag probability SS, B'   )
+                self._estWTagCanvSS_Bbar = TCanvas( 'estWTagCanvSS_Bbar','Est. wrong-tag probability SS, Bbar')
+                self._estWTagCanvOS_B    = TCanvas( 'estWTagCanvOS_B'   ,'Est. wrong-tag probability OS, B'   )
+                self._estWTagCanvOS_Bbar = TCanvas( 'estWTagCanv0S_Bbar','Est. wrong-tag probability OS, Bbar')
 
+                self._estWTagCanvSSOS_B     = TCanvas( 'estWTagCanvSSOS_B'    , 'Est. wrong-tag probability SS+OS, B'    )
+                self._estWTagCanvSSOS_Bbar  = TCanvas( 'estWTagCanvSS0S_Bbar' , 'Est. wrong-tag probability SS+OS, Bbar' )
+                self._estWTagCanvSSOS_BbarB = TCanvas( 'estWTagCanvSS0S_BbarB', 'Est. wrong-tag probability SS+OS, BbarB')
+            
+                tagCutSS_B    = 'tagdecision_ss==tagdecision_ss::B'
+                tagCutSS_Bbar = 'tagdecision_ss==tagdecision_ss::Bbar'
+                tagCutOS_B    = 'tagdecision_os==tagdecision_os::B'
+                tagCutOS_Bbar = 'tagdecision_os==tagdecision_os::Bbar'
+
+                tagCutComb_B     = 'tagdecision==tagdecision::B'
+                tagCutComb_Bbar  = 'tagdecision==tagdecision::Bbar'
+                tagCutComb_BbarB = tagCutComb_B + '|' + tagCutComb_Bbar  
+        
+                for ( pad, data, nBins, BorBbar, titleX, obs )\
+                        in zip(  [ self._estWTagCanvSS_B  ,   self._estWTagCanvSS_Bbar,
+                                   self._estWTagCanvOS_B  ,   self._estWTagCanvOS_Bbar,
+                                   self._estWTagCanvSSOS_B,   self._estWTagCanvSSOS_Bbar,
+                                   self._estWTagCanvSSOS_BbarB ]
+
+                                 , [ self._dataSets['sigSWeightData'].reduce(tagCutSS_B      ),
+                                     self._dataSets['sigSWeightData'].reduce(tagCutSS_Bbar   ), 
+                                     self._dataSets['sigSWeightData'].reduce(tagCutOS_B      ),
+                                     self._dataSets['sigSWeightData'].reduce(tagCutOS_Bbar   ),
+                                     self._dataSets['sigSWeightData'].reduce(tagCutComb_B    ),
+                                     self._dataSets['sigSWeightData'].reduce(tagCutComb_Bbar ),
+                                     self._dataSets['sigSWeightData'].reduce(tagCutComb_BbarB) ]
+                                 
+                                 , 7 * [ numEstWTagBins ]
+                                 , 3 * [ 'B', 'Bbar'  ] +     [ 'BbarB'    ]
+                                 , 2 * [ '#eta^{SS}'  ] + 2 * [ '#eta^{OS}'] + 3 * [ '#eta^{SS+OS}']
+                                 , 2 * [  estWTagSS   ] + 2 * [  estWTagOS ] + 3 * [  estWTagComb  ]
+                                 ) :
+                    plot(  pad, obs , data
+                           , xTitle     = titleX
+                           , yScale     = [0, None]
+                           , frameOpts  = dict( Bins = nBins, Title = obs.GetTitle() + BorBbar, Range = ( 0., 0.499999 ), Name = obs.GetName() + BorBbar  )
+                           , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                                                )
+                           , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3                                                 )
+                    )
+
+                
         ###################################################################################################################################
         ## build background time PDF ##
         ###############################
