@@ -63,9 +63,9 @@ class Gaussian_TimeResolution ( TimeResolution ) :
         use_offset = kwargs.pop('TimeResSFOffset', False)
         extraArgs = {}
         self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+        self._parseArg( 'timeResMu', kwargs, Title = 'Decay time resolution mean', Value = -0.00017, MinMax = (-1, 1)  )
         if pee :
             self._parseArg( 'sigmat',  kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
-            self._parseArg( 'bias',    kwargs, Title = 'Decay time biased',         Value = -0.17,    MinMax = (-1, 1)  )
             self._parseArg( 'sigmaSF', kwargs, Title = 'Decay time scale factor',   Value = 1.46,     MinMax = (0.1, 2.5) )
             if use_offset:
                 self._offset = self._parseArg('offset', kwargs, Value = 0.01, Error = 0.001,
@@ -73,16 +73,15 @@ class Gaussian_TimeResolution ( TimeResolution ) :
                 from RooFitWrappers import LinearVar
                 linear_var = LinearVar(Name = 'sigmaSF_linear', Observable = self._sigmat,
                                        Slope = self._sigmaSF, Offset = self._offset)
-                params = [ self._time, self._bias, linear_var ]
+                params = [ self._time, self._timeResMu, linear_var ]
             elif scaleBias :
-                params = [ self._time, self._bias, self._sigmat, self._sigmaSF, self._sigmaSF ]
+                params = [ self._time, self._timeResMu, self._sigmat, self._sigmaSF, self._sigmaSF ]
             else :
                 self._parseArg( 'biasSF', kwargs, Title = 'Decay time bias scale factor', Value = 1, Constant = True )
-                params = [ self._time, self._bias, self._sigmat, self._biasSF,  self._sigmaSF ]
+                params = [ self._time, self._timeResMu, self._sigmat, self._biasSF,  self._sigmaSF ]
             extraArgs['ConditionalObservables'] = [ self._sigmat ]
 
         else :
-            self._parseArg( 'timeResMu', kwargs, Title = 'Decay time resolution mean', Value = -0.00017, MinMax = (-1, 1)  )
             self._parseArg( 'timeResSigma', kwargs, Title = 'Decay time resolution width', Value = 0.05,  MinMax = (0.0001, 2.5) )
             params = [ self._time, self._timeResMu, self._timeResSigma ]
 
@@ -168,49 +167,61 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
 
         cache = kwargs.pop('Cache', True)
         pee = kwargs.pop('PerEventError', False)
-        param_rms = kwargs.pop('ParamRMS', False)
+        if not hasattr(pee, '__iter__'):
+            pee = [pee for i in range(len(sigmasSFs))]
+        param = kwargs.pop('Parameterise', False)
+        assert(param in [False, 'RMS', 'Comb'])
         ## Can only reparameterize 2 Gaussians right now
-        if param_rms:
+        if param:
             assert(len(sigmasSFs) == 2)
 
         self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 20) ) for num, val in sigmasSFs ]
-        self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.001, 0.99) ) for num, val in fracs  ]
+        self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.0001, 0.99) ) for num, val in fracs  ]
 
         use_offset = kwargs.pop('TimeResSFOffset', False)
         assert(not (use_offset and param_rms))
         Name = kwargs.pop('Name', 'timeResModelMG')
-        if param_rms: 
-            from ROOT import RooNumber
-            RooInf = RooNumber.infinity()
+
+        from ROOT import RooNumber
+        RooInf = RooNumber.infinity()
+        if param == 'RMS': 
             from math import sqrt
             self._rms = RealVar('timeResRMS', Value = sqrt((1 - fracs[0][1]) * sigmasSFs[1][1]
                                                            + fracs[0][1] * sigmasSFs[0][1]),
                                 MinMax = (0, RooInf))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_RMS', 'sqrt(1 / (1 - @0) * (@1 * @1 - @0 * @2 * @2))',
                                                    (self._timeResFracs[0], self._rms, self._timeResSigmasSFs[0]))
+        elif param == 'Comb':
+            self._comb = RealVar('timeResComb', Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
+                                                         + fracs[0][1] * sigmasSFs[0][1]),
+                                 MinMax = (0.1, RooInf))
+            self._timeResSigmasSFs[1] = FormulaVar(Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
+                                                   (self._timeResFracs[0], self._comb, self._timeResSigmasSFs[0]))
         elif use_offset:
-            assert(pee)
-            self._timeResSigmasSFs = [LinearVar(Name = sf.GetName() + '_linear',
-                                                Observable = self._sigmat,
-                                                Slope = sf, Offset = self._timeResSigmaOffset)
-                                      for sf in self._timeResSigmasSFs]
+            sfs = []
+            for sf, pee in zip(self._timeResSigmasSFs):
+                if pee:
+                    sfo = LinearVar(Name = sf.GetName() + '_linear',
+                                    Observable = self._sigmat,
+                                    Slope = sf, Offset = self._timeResSigmaOffset)
+                else:
+                    sfo = sf
+                sfs.append(sfo)
+            self._timeResSigmasSFs = sfs
 
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
 
         models = []
-        for ( numVal, sigmaSF ) in zip( sigmasSFs, self._timeResSigmasSFs ):
-            if use_offset:
+        for ( numVal, pee ), sigmaSF in zip( zip(sigmasSFs, pee), self._timeResSigmasSFs ):
+            if use_offset or not pee:
                 params = [ self._time, self._timeResMu, sigmaSF ]
-            elif pee:
-                params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
             else:
-                params = [ self._time, self._timeResMu, sigmaSF ]
+                params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
             model = ResolutionModel(  Name = 'timeResGauss_%s' % numVal[0]
                                       , Type = GaussModel
                                       , Parameters = params
-                                      , ConditionalObservables = [ self._sigmat ] if pee else []
-                                      )
+                                      , ConditionalObservables = [ self._sigmat ] if pee else [])
             models.append(model)
         TimeResolution.__init__(self, Name = Name
                                 , Model = AddModel(Name, Models = models, Fractions = self._timeResFracs)

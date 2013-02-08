@@ -30,21 +30,21 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 # Categories
 hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt1_unbiased = Category('hlt1_unbiased_dec', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-hlt1_excl_biased = Category('hlt1_excl_biased_dec', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
+hlt1_excl_biased_dec = Category('hlt1_excl_biased_dec', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
 hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 hlt2_excl_biased = Category('hlt2_excl_biased', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
 
 ## project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
-categories = [hlt1_biased, hlt1_unbiased, hlt1_excl_biased,
+categories = [hlt1_biased, hlt1_unbiased, hlt1_excl_biased_dec,
               hlt2_biased, hlt2_unbiased, hlt2_excl_biased]
 categories = dict([(c.GetName(), c) for c in categories])
 
-project_vars = [hlt1_excl_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
+project_vars = [hlt1_excl_biased_dec, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
 
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt1_excl_biased,
+observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt1_excl_biased_dec,
                hlt2_biased, hlt2_unbiased, hlt2_excl_biased, selected, nPV]
 
 # now build the actual signal PDF...
@@ -57,9 +57,8 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 
 # Time resolution model
 from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
-tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
-                                  timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
-                                                    Constant = True))
+tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = 'fixed', timeResSigma = st,
+                                  timeResSigmaSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. )))
 ## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
 ## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
@@ -100,13 +99,13 @@ mass_pdf.Print("t")
 base_location = '/stuff/PhD/p2vv'
 
 # Build the acceptance using the histogram as starting values
-## input_file = os.path.join(base_location, 'data/start_values.root')
-## hlt1_histogram = 'hlt1_shape'
-## hlt2_histogram = 'hlt2_shape'
+input_file = os.path.join(base_location, 'data/start_values.root')
+hlt1_histogram = 'hlt1_shape'
+hlt2_histogram = 'hlt2_shape'
 
-input_file = os.path.join(base_location, 'data/Bs_HltPropertimeAcceptance_Data-20120816.root')
-##hlt1_histogram = 'hlt1_shape'
-hlt2_histogram = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_20bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+## input_file = os.path.join(base_location, 'data/Bs_HltPropertimeAcceptance_Data-20120816.root')
+## hlt1_histogram = 'hlt1_shape'
+## hlt2_histogram = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_20bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 
 ## if MC:
     ## hlt1_histogram += '_MC'
@@ -146,11 +145,11 @@ hlt2_unbiased_heights = [0.5]
 
 ## valid_definition = [[(hlt1_biased, 'biased'), (hlt1_unbiased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
 ## valid_definition = [[(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
-valid_definition = [[(hlt1_excl_biased, 'excl_biased'), (hlt1_excl_biased, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
-## valid_definition = [[(hlt1_excl_biased, 'excl_biased'), (hlt1_excl_biased, 'unbiased')], [(hlt2_excl_biased, 'excl_biased'), (hlt2_excl_biased, 'unbiased')]]
+valid_definition = [[(hlt1_excl_biased_dec, 'excl_biased'), (hlt1_excl_biased_dec, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
+## valid_definition = [[(hlt1_excl_biased_dec, 'excl_biased'), (hlt1_excl_biased_dec, 'unbiased')], [(hlt2_excl_biased, 'excl_biased'), (hlt2_excl_biased, 'unbiased')]]
 valid = valid_combinations(valid_definition)
 
-spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
+spec = {'Bins' : {hlt1_excl_biased_dec : {'excl_biased' : {'bins'    : biased_bins,
                                                        'heights' : hlt1_biased_heights,
                                                        'average' : hlt1_biased_average},
                                       'unbiased'    : {'bins'    : unbiased_bins,
@@ -176,7 +175,7 @@ spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
 ##                   }
 ##         }
 
-## spec = {'Bins' : {hlt1_excl_biased : {'excl_biased' : {'bins'    : biased_bins,
+## spec = {'Bins' : {hlt1_excl_biased_dec : {'excl_biased' : {'bins'    : biased_bins,
 ##                                                        'heights' : hlt1_biased_heights,
 ##                                                        'average' : (6.285e-01, 1.633e-02)},
 ##                                       'unbiased'    : {'bins'    : unbiased_bins,
@@ -271,7 +270,7 @@ elif MC:
         if i >= 50000:
             break
 
-    new_data.table(RooArgSet(hlt1_excl_biased, hlt2_unbiased, hlt2_biased)).Print('v')
+    new_data.table(RooArgSet(hlt1_excl_biased_dec, hlt2_unbiased, hlt2_biased)).Print('v')
     del data
     data = new_data
     total = data.sumEntries()
@@ -291,19 +290,19 @@ elif MC:
     
     pdf.Print('v')
 else:
-    rel_spec = {(('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.078,
-                (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'not_biased'), ('hlt2_unbiased', 'unbiased')) : 0.027,
-                (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'unbiased')) : 0.383,
-                (('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'not_biased'), ('hlt2_unbiased', 'unbiased')) : 0.01,
-                (('hlt1_excl_biased', 'unbiased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.433,
-                (('hlt1_excl_biased', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'unbiased')) : None}
+    rel_spec = {(('hlt1_excl_biased_dec', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.078,
+                (('hlt1_excl_biased_dec', 'unbiased'), ('hlt2_biased', 'not_biased'), ('hlt2_unbiased', 'unbiased')) : 0.027,
+                (('hlt1_excl_biased_dec', 'unbiased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'unbiased')) : 0.383,
+                (('hlt1_excl_biased_dec', 'excl_biased'), ('hlt2_biased', 'not_biased'), ('hlt2_unbiased', 'unbiased')) : 0.01,
+                (('hlt1_excl_biased_dec', 'unbiased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.433,
+                (('hlt1_excl_biased_dec', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'unbiased')) : None}
     spec['Relative'] = dict([(tuple((categories[c], l) for c, l in k), {'Constant' : True, 'Value' : v} if v else None) for k, v in rel_spec.iteritems()])
     for comb in valid:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
         rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
 
     from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-    tres = TimeResolution(time = t)
+    tres = TimeResolution(time = t, timeResSigma = dict(Value = 0.5, Constant = True))
 
     res_model = MultiHistEfficiencyModel(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
                                          ConditionalCategories = True, UseSingleBinConstraint = False,
@@ -312,7 +311,7 @@ else:
     pdf = pdf.pdf()
 
     pdf.Print('v')        
-    data = pdf.generate([t, hlt1_excl_biased, hlt2_unbiased, hlt2_biased], 30000)
+    data = pdf.generate([t, hlt1_excl_biased_dec, hlt2_unbiased, hlt2_biased], 30000)
 
 ## Fit
 print 'fitting data'

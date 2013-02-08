@@ -280,7 +280,7 @@ class Single_Exponent_Time( TimePdf ) :
 
 class Prompt_Peak( TimePdf ) :
     def __init__(self, time, resolutionModel, **kwargs) :
-        self._parseArg('prompt_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 0)
+        self._parseArg('prompt_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 0, Constant = True)
 
         from RooFitWrappers import Pdf
         from ROOT import RooDecay as Decay

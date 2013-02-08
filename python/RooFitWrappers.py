@@ -297,14 +297,22 @@ class BinningCategory( Category ) :
         if type(binning) != str : binning = binning.GetName()
 
         from ROOT import RooBinningCategory
-        if 'CatTypeName' in kwargs : binCat = RooBinningCategory( Name, Name, obs, binning, kwargs.pop('CatTypeName') )
-        else                       : binCat = RooBinningCategory( Name, Name, obs, binning                            )
-
-        if kwargs.pop( 'Fundamental', False ) :
-            __check_req_kw__( 'Data', kwargs )
+        fundamental = kwargs.pop('Fundamental', False)
+        if fundamental:
+            __check_req_kw__('Data', kwargs)
             data = kwargs.pop('Data')
             if type(data) not in [ list, tuple ] : data = [ data ]
+            bins = obs.getBinning(binning)
+            for d in data:
+                obs = d.get().find(obs.GetName())
+                obs.setBinning(bins)
+        
+        if 'CatTypeName' in kwargs:
+            binCat = RooBinningCategory(Name, Name, obs, binning, kwargs.pop('CatTypeName'))
+        else:
+            binCat = RooBinningCategory(Name, Name, obs, binning)
 
+        if fundamental:
             cat = data[0].addColumn(binCat)
             for dataSet in data[ 1 : ] : dataSet.addColumn(binCat)
             cat = self._addObject( __dref__(cat) )
@@ -1227,11 +1235,17 @@ class MultiHistEfficiencyModel(Pdf):
             states = set([s.GetName() for s in category])
             coef_info = {}
 
+            from random import shuffle
             for state, state_info in [(s, entries[s]) for s in states if s in entries]:
                 heights = state_info['heights']
-                heights = [RealVar('%s_%s_bin_%03d' % (category.GetName(), state, i + 1),
-                                   Observable = False, Value = v,
-                                   MinMax = self.__binHeightMinMax) for i, v in enumerate(heights)]
+
+                order = range(len(heights))
+                shuffle(order)
+                print zip(order, heights)
+                for i, (rn, v) in enumerate(zip(order, heights)):
+                    heights[i] = RealVar('%d_%s_%s_bin_%03d' % (rn, category.GetName(), state, i + 1),
+                                         Observable = False, Value = v,
+                                         MinMax = self.__binHeightMinMax)
                 self.__heights[(category, state)] = heights
                 # Add a binning for this category and state
                 bounds = state_info['bins']
@@ -1421,7 +1435,7 @@ class GenericPdf( Pdf ) :
 
 class UniformPdf( Pdf ) :
     def _make_pdf(self) : pass
-    def __init__(self,Name,**kwargs) :
+    def __init__(self, Name, **kwargs) :
         d = { 'Name' : Name
             , 'Args' : ','.join( '%s'%i for i in kwargs.pop('Arguments') )
             }
@@ -1440,6 +1454,29 @@ class LognormalPdf(Pdf):
         Pdf.__init__(self , Name = Name , Type = 'RooLognormal',
                      Parameters = [observable, median, shape])
 
+class TPDecay(Pdf):
+    def __init__(self, Name, **kwargs):
+        from ROOT import RooTPDecay
+        from ROOT import RooArgList
+        tps = RooArgList()
+        for tp in kwargs.pop('TurningPoints'):
+            tps.add(__dref__(tp))
+        t = kwargs.pop('Time')
+        tau = kwargs.pop('Tau')
+        model = kwargs.pop('ResolutionModel')
+        nPVs = kwargs.pop('nPVs')
+        data = kwargs.pop('Data')
+        PV_table = data.table(__dref__(nPVs))
+        pvz = kwargs.pop('PVZ')
+        pvz_pdf = kwargs.pop('PVZPdf')
+
+        tp_decay = RooTPDecay(Name, Name, __dref__(t), __dref__(tau), tps, __dref__(model),
+                              PV_table, __dref__(pvz), __dref__(pvz_pdf))
+        tp_decay = self._addObject(tp_decay)
+        self._init(Name, 'RooTPDecay')
+        for (k,v) in kwargs.iteritems() :
+            self.__setitem__(k,v)
+            
 class BDecay( Pdf ) :
     def __init__(self, Name, **kwargs):
         __check_name_syntax__(Name)

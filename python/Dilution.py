@@ -49,7 +49,7 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
 
         r = data_histo.Fill(value, w)
 
-    if raw:
+    if not subtract or raw:
         # Calculate the dilution using Wouter's macro
         from ROOT import sigmaFromFT
         D = sigmaFromFT(data_histo, 17.7)
@@ -59,11 +59,13 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
     from ROOT import RooFit
     from RooFitWrappers import buildPdf
 
+    signal_yields = [s.getYield().GetName() for s in signal]
+    data_int = data_histo.Integral()
+
+    # Set the correct yields in the pdf
     # Build the PDF used for subtraction.
     subtract_pdf = buildPdf(Components = subtract, Observables = (t_diff,),
                             Name='subtract_%s_pdf' % '_'.join(c.GetName() for c in subtract))    
-
-    # Set the correct yields in the pdf
     for c in subtract:
         y = c.getYield()
         result_yield = result.floatParsFinal().find(y.GetName())
@@ -82,11 +84,7 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
     # of their integrals match the ratio of wpv / total yields
     subtract_yields = [b.getYield().GetName() for b in subtract]
     n_subtract = sum([result.floatParsFinal().find(b).getVal() for b in subtract_yields])
-
-    signal_yields = [s.getYield().GetName() for s in signal]
     total = sum([result.floatParsFinal().find(s).getVal() for s in signal_yields] + [n_subtract])
-
-    data_int = data_histo.Integral()
     sub_int = subtract_histo.Integral()
     scale =  (data_int * n_subtract) / (sub_int * total)
     subtract_histo.Scale(scale)

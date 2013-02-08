@@ -30,6 +30,7 @@
 #include "RooBoxPdf.h"
 #include "RooExplicitNormPdf.h"
 #include "RooAmoroso.h"
+#include "RooTPDecay.h"
 
 #include <map>
 #include <string>

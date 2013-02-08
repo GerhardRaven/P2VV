@@ -7,8 +7,8 @@ parser = optparse.OptionParser(usage = '%prog year model')
 
 parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
-parser.add_option("--param-rms", dest = "param_rms", default = False,
-                  action = 'store_true', help = 'Parameterise scale factors using RMS')
+parser.add_option('-p', '--parameterisation', dest = 'parameterise', default = False,
+                  action = 'store', help = 'Parameterise sigmas [False, RMS, Comb]')
 parser.add_option("--no-wpv", dest = "wpv", default = True,
                   action = 'store_false', help = 'Add WPV component')
 parser.add_option("--fit-mass", dest = "mass_fit", default = False,
@@ -29,7 +29,7 @@ elif args[1] not in ['single', 'double', 'triple']:
 input_data = {}
 if args[0] == '2011':
     prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
-    input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130117_MagDownMagUp.root')
+    input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130207.root')
     input_data['wpv'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root')
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
     input_data['weighted'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
@@ -68,8 +68,8 @@ m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax =
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
 from array import array
-##st_bins = array('d', [0.01 + i * 0.01 for i in range(7)])
-st_bins = array('d', [0.01 + i * 0.005 for i in range(13)])
+st_bins = array('d', [0.01 + i * 0.01 for i in range(7)])
+##st_bins = array('d', [0.01 + i * 0.005 for i in range(13)])
 
 # add 20 bins for caching the normalization integral
 for i in [ st ] : i.setBins( 20 , 'cache' )
@@ -102,7 +102,7 @@ elif args[1] == 'double':
     if not options.pee:
         scaleFactors = [(n, 0.032 * v) for n, v in scaleFactors]
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee, ParamRMS = options.param_rms,
+                              PerEventError = options.pee, Parameterise = options.parameterise,
                               ScaleFactors = scaleFactors,
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
@@ -165,7 +165,7 @@ background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield
 # Prompt component
 from P2VVParameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
-psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
+psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 1, 500000))
 
 # Read data
 write_data = options.mass_fit
@@ -173,14 +173,22 @@ write_data = options.mass_fit
 datas = []
 sdatas = []
 from ROOT import TFile
-directory = '%sbins_%4.2fs' % (len(st_bins) - 1, (1000 * (st_bins[1] - st_bins[0])))
+
+cut = 'nPV == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
+if not options.wpv:
+    cut += ' && sel_cleantail == 1'
+hd = ('%d' % hash('dgagaegfe')).replace('-', 'm')
+
+directory = '%sbins_%4.2ffs/%s' % (len(st_bins) - 1, (1000 * (st_bins[1] - st_bins[0])), hd)
 if os.path.exists(input_data['weighted']):
     input_file = TFile.Open(input_data['weighted'], 'update')
 else:
     input_file = TFile.Open(input_data['weighted'], 'new')
 input_dir = input_file.Get(directory)
 if not input_dir:
-    input_dir = input_file.mkdir(directory)
+    input_file.mkdir(directory)
+    input_dir = input_file.Get(directory)
     write_data = True
 
 ## Fitting options
@@ -211,11 +219,6 @@ if not write_data:
 
 else:
     from P2VVGeneralUtils import readData
-    cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
-    cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
-    if not options.wpv:
-        cut += ' && sel_cleantail == 1'
-
     tree_name = 'DecayTree'
     data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut)
@@ -335,36 +338,10 @@ for index, result in enumerate(results['time']):
         hist_res.SetBinError(index + 1, 0)
         continue
     
-    fpf = result.floatParsFinal()
-    indices = [fpf.index(n) for n in 'timeResFrac2', 'timeResSigmaSF_1', 'timeResSigmaSF_2']
-    cov = result.covarianceMatrix()
-    C = TMatrixT('double')(3, 3)
-    J = TMatrixT('double')(1, 3)
     
     if args[1] == 'double':
-        frac = fpf.find('timeResFrac2').getVal()
-        sf1 = fpf.find('timeResSigmaSF_1').getVal()
-        sf2 = fpf.find('timeResSigmaSF_2').getVal()
-        
-        # Make our own small covariance matrix
-        for i, k in enumerate(indices):
-            for j, l in enumerate(indices):
-                C[i][j] = cov[k][l]
-        
-        # Jacobian for calculation of sf
-        J[0][0] = sf1 + sf2
-        J[0][1] = 1 - frac
-        J[0][2] = frac
-        
-        # Calculate J * C * J^T
-        JT = J.Clone().T()
-        tmp = TMatrixT('double')(3, 1)
-        tmp.Mult(C, JT)
-        r = TMatrixT('double')(1, 1)
-        r.Mult(J, tmp)
-        
-        sf = (1 - frac) * sf1 + frac * sf2
-        sf_e = sqrt(r[0][0])
+        from PropagateErrors import propagateScaleFactor
+        sf, sf_e = propagateScaleFactor(result)
     elif args[1] == 'single':
         sf = fpf.find('sigmaSF').getVal()
         sf_e = fpf.find('sigmaSF').getError()
@@ -387,11 +364,13 @@ hist_res.Draw('pe, same')
 hist_res.GetXaxis().SetTitle('estimated decay time error [fs]')
 hist_res.GetYaxis().SetTitle('decay time resulution [fs]')
 
+from ROOT import TObject
 if write_data:
     def get_dir(d):
         tmp = input_dir.Get(d)
         if not tmp:
-            tmp = input_dir.mkdir('sdata')
+            input_dir.mkdir(d)
+            tmp = input_dir.Get(d)
         return tmp
     sdata_dir = get_dir('sdata')
     data_dir = get_dir('data')
@@ -401,14 +380,14 @@ if write_data:
             ds_name = ds.GetName().replace('DecayTree', 'DecayTree_%02d' % i)
             ds.SetName(ds_name)
             d.Append(ds, True)
-            ds.Write()
-        d.Write()
+            ds.Write(ds.GetName(), TObject.kOverwrite)
+        d.Write(d.GetName(), TObject.kOverwrite)
     for k, rs in results.iteritems():
         rd = results_dirs[k]
         for r in rs:
             rd.Append(r, True)
-            r.Write()
-        rd.Write()
+            r.Write(r.GetName(), TObject.kOverwrite)
+        rd.Write(rd.GetName(), TObject.kOverwrite)
 
 ## import Dilution
 ## Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background])

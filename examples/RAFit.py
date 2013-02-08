@@ -8,7 +8,7 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 pdfConfig['dataSample'] = '' # ( None, 100260, '' )  # '' / 'Summer2011' / 'runNumber % 2 == 1'
-pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['selection']  = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
 doFit                   = True
 makeObservablePlots     = False
@@ -81,7 +81,7 @@ pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal:
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffType']          = 'fit' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
@@ -102,7 +102,7 @@ pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['timeResType']           = 'event_stoffset' # 'event' # 'eventNoMean' # 'event_stoffset'
+pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStOffset'
 pdfConfig['numTimeResBins']        = 25
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
@@ -157,7 +157,7 @@ if not readData or manualTagCatBins :
     #                          , ( 'TagCat2',   2, 0.30     )
     #                         ]
 
-pdfConfig['timeEffHistFile']      = '/stuff/PhD/p2vv/data/timeAcceptanceStartValues.root'\
+pdfConfig['timeEffHistFile']      = '/stuff/PhD/p2vv/data/start_values.root'\
                                     if pdfConfig['timeEffType'] == 'fit' else\
                                     '/stuff/PhD/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
 #                                    '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
@@ -440,8 +440,6 @@ print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
-
-assert(False)
 
 if ( readData or generateData ) and doFit :
     # fit data

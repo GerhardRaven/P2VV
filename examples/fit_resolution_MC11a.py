@@ -1,3 +1,23 @@
+#!/usr/bin/env python
+import optparse
+import sys
+import os
+
+parser = optparse.OptionParser(usage = '%prog year model')
+
+parser.add_option("--no-pee", dest = "pee", default = True,
+                  action = 'store_false', help = 'Do not use per-event proper-time error')
+parser.add_option("--no-wpv", dest = "wpv", default = True,
+                  action = 'store_false', help = 'Add WPV component')
+parser.add_option('-p', '--parameterisation', dest = 'parameterise', default = False,
+                  action = 'store', help = 'Parameterise sigmas [False, RMS, Comb]')
+parser.add_option("--verbose", dest = "verbose", default = False,
+                  action = 'store_true', help = 'Verbose fitting')
+parser.add_option("--offset", dest = "offset", default = False,
+                  action = 'store_true', help = 'Use sigmat offset')
+
+(options, args) = parser.parse_args()
+
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
 from P2VVLoad import LHCbStyle
@@ -38,9 +58,12 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
 ## Signal MC
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
-data = readData(input_file, tree_name, cuts = '(sel == 1 && triggerDecisionUnbiasedPrescaled == 1)',
-                NTuple = False, observables = observables)
-data = data.reduce(EventRange = (0, 100000))
+cut = 'nPV == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
+if not options.wpv:
+    cut += ' && sel_cleantail == 1'
+data = readData(input_file, tree_name, ntupleCuts = cut, NTuple = True, observables = observables)
+data = data.reduce(EventRange = (0, 50000))
 
 # Add time difference (t - t_true) to data
 t_diff = FormulaVar('time_diff', '@0 - @1', [t, t_true], data = data)
@@ -57,17 +80,18 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-##                           BiasScaleFactor = False, Cache = True,
-##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
-##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
+                          BiasScaleFactor = False, Cache = True,
+                          timeResMu = dict(Value = -0.17, MinMax = (-1, 1)),
+                          sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
 from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = False,
 ##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)], Fractions = [(3, 0.1), (2, 0.2)])
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
-                          ScaleFactors = [(2, 4.), (1, 1.)], Fractions = [(2, 0.2)])
+## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
+##                           PerEventError = options.offset, Parameterise = options.parameterise,
+##                           ScaleFactors = [(2, 4.), (1, 1.)], Fractions = [(2, 0.2)])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -125,14 +149,17 @@ psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (21582, 100, 5000
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(11)])
 
-from P2VVParameterizations import WrongPV
-wpv = WrongPV.ShapeBuilder(t, {'B' : m}, UseKeysPdf = True, Weights = 'B', Draw = True,
-                           InputFile = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_MC11a.root',
-                           Workspace = 'Bs2JpsiPhiPrescaled_MC11a_workspace',
-                           sigmat = st, t_diff = t_diff,
-                           Reweigh = dict(Data = data, DataVar = nPV, Binning = PV_bounds))
-wpv_signal = wpv.shape('B')
-signal_wpv = Component('signal_wpv', (wpv_signal,), Yield = (888, 50, 300000))
+components = [signal]
+if options.wpv:
+    from P2VVParameterizations import WrongPV
+    wpv = WrongPV.ShapeBuilder(t, {'B' : m}, UseKeysPdf = True, Weights = 'B', Draw = True,
+                               InputFile = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_MC11a.root',
+                               Workspace = 'Bs2JpsiPhiPrescaled_MC11a_workspace',
+                               sigmat = st, t_diff = t_diff,
+                               Reweigh = dict(Data = data, DataVar = nPV, Binning = PV_bounds))
+    wpv_signal = wpv.shape('B')
+    signal_wpv = Component('signal_wpv', (wpv_signal,), Yield = (888, 50, 300000))
+    components += [signal_wpv]
 
 ## Build PDF
 ## pdf = buildPdf(Components = (psi_background, psi_wrong_pv, background, bkg_wrong_pv), Observables = (mpsi,t), Name='pdf')
@@ -166,7 +193,7 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimi
 ## psi_sdata = splot.data('psi_background')
 ## bkg_sdata = splot.data('background')
 
-time_pdf = buildPdf(Components = (signal, signal_wpv), Observables = (t,), Name='time_pdf')
+time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
 ## time_pdf.Print("t")
 ## time_pdf = sig_t
 time_pdf.Print("t")
@@ -209,7 +236,10 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
          )
 
 import Dilution
-diff_pdf = wpv.diff_shape('B')
-signal_wpv[t_diff] = diff_pdf
+sub = []
+if options.wpv:
+    diff_pdf = wpv.diff_shape('B')
+    signal_wpv[t_diff] = diff_pdf
+    sub.append(signal_wpv)
 Dilution.dilution(t_diff, data, sigmat = st, result = result,
-                  signal = [signal], subtract = [signal_wpv])
+                  signal = [signal], subtract = sub)

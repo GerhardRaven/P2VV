@@ -9,6 +9,8 @@ parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
 parser.add_option("--no-wpv", dest = "wpv", default = True,
                   action = 'store_false', help = 'Add WPV component')
+parser.add_option('-p', '--parameterisation', dest = 'parameterise', default = False,
+                  action = 'store', help = 'Parameterise sigmas [False, RMS, Comb]')
 parser.add_option("--verbose", dest = "verbose", default = False,
                   action = 'store_true', help = 'Verbose fitting')
 parser.add_option("--offset", dest = "offset", default = False,
@@ -89,20 +91,21 @@ if args[1] == 'single':
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = False,
                               TimeResSFOffset = options.offset,
-                              bias = dict(Value = -0.17, MinMax = (-1, 1)),
+                              timeResMu = dict(Value = -0.0017, MinMax = (-1, 1)),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee, ParamRMS = False,
+                              PerEventError = options.pee, Parameterise = options.parameterise,
                               TimeResSFOffset = options.offset,
-                              ScaleFactors = [(2, 2.3), (1, 1.2)],
+                              ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee,
-                              ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
+                              PerEventError = [False, options.pee, options.pee],
+                              TimeResSFOffset = options.offset, Parameterise = options.parameterise,
+                              ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)],
                               Fractions = [(3, 0.1), (2, 0.2)])
 
 # Signal time pdf
@@ -131,9 +134,9 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 # Create psi background component
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
-                         , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 0.8)
-                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,  2.5))
-                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.1, 0.5))
+                         , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 0.67)
+                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.37, MinMax = (0.5,  2.5))
+                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.13, MinMax = (0.1, 0.5))
                          )
 
 ## from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Background_Time
@@ -169,6 +172,7 @@ if not options.wpv:
     cut += ' && sel_cleantail == 1'
 data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
                 ntupleCuts = cut)
+## data = data.reduce(EventRange = (0, 100000))
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
                Verbose = options.verbose)
@@ -205,7 +209,6 @@ bkg_sdata = splot.data('background')
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
 
-components = [psi_prompt, psi_background]
 if options.wpv:
     from P2VVParameterizations import WrongPV
     reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
@@ -215,7 +218,13 @@ if options.wpv:
                                sigmat = st)
     wpv_psi = wpv.shape('jpsi')
     psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 50, 30000))
-    components.append(psi_wpv)
+else:
+    wpv_mean = sig_tres._timeResMu
+    wpv_sigma = RealVar('wpv_sigma', Value = 0.3, MinMax = (0.01, 20), Constant = True)
+    wpv_pdf = Pdf(Name = 'wpv_pdf', Type = Gaussian, Parameters = (t, wpv_mean, wpv_sigma))
+    psi_wpv = Component('wpv', (wpv_pdf, ), Yield = (100, 5, 500000))
+components = [psi_prompt, psi_background, psi_wpv]
+
 time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
 
@@ -261,7 +270,5 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
          )
 
 import Dilution
-sub = [psi_background]
-if options.wpv:
-    sub.append(psi_wpv)
-Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = sub)
+Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt],
+                  subtract = [psi_background, psi_wpv])

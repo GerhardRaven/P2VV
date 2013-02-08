@@ -38,7 +38,7 @@
 #pragma link C++ class RooBoxPdf+;
 #pragma link C++ class RooExplicitNormPdf+;
 #pragma link C++ class RooAmoroso+;
-
+#pragma link C++ class RooTPDecay+;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;
