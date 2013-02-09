@@ -150,7 +150,7 @@ class CPVDecay_CPParam( CPParam ) :
         RReDict   = { }
         RImDict   = { }
         try :   from itertools import combinations_with_replacement as cwr  # this requires python 2.7 or later
-        except: from compatibility import cwr
+        except: from Compatibility import cwr
         from RooFitWrappers import FormulaVar
         for ampComb in cwr( ampNames, 2 ) :
             eta0 = amps[ ampComb[0] ].CP

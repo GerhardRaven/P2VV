@@ -100,7 +100,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
         try : # this requires python 2.7 or later...
             from itertools import combinations_with_replacement as cwr
         except:
-            from compatibility import cwr
+            from Compatibility import cwr
 
         args = dict()
         from RooFitWrappers import Addition
@@ -158,7 +158,7 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         try : # this requires python 2.7 or later...
             from itertools import combinations_with_replacement as cwr
         except:
-            from compatibility import cwr
+            from Compatibility import cwr
 
         tag = Product('tag',( RealCategory('tag_real', itag ),dilution))
         for name in [ 'cosh', 'sinh', 'cos', 'sin' ] :

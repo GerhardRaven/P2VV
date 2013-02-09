@@ -133,7 +133,7 @@ class Amplitudes_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
         __check_req_kw__('AngFunctions',kwargs)
 
         try :   from itertools import combinations_with_replacement as cwr
-        except: from compatibility import cwr
+        except: from Compatibility import cwr
 
         # get amplitude names from arguments
         self._ampNames = kwargs.pop('AmpNames')
