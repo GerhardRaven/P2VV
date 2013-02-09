@@ -1,7 +1,6 @@
 #ifndef P2VVInc_H 
 #define P2VVInc_H 1
 
-#include "Moments.h"
 #include "RooRealMoments.h"
 #include "ProgressDisplay.h"
 #include "RooBTagDecay.h"
