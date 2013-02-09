@@ -23,8 +23,6 @@ corrSFitErr             = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' 
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 plotsFile = 'plots/paper2012_SFit.ps'
-#plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
-#       else 'plots/JvLCFit.ps'
 parFileIn  = ''# 'paper2012_SFit.par'
 parFileOut = ''# 'paper2012_SFit.par'
 
@@ -47,7 +45,7 @@ else :
 
 if generateData :
     dataSetName = 'JpsiphiData'
-    dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
+    dataSetFile = 'paper2012_SFit.root' if pdfConfig['SFit'] else 'paper2012_CFit.root'
 
 MinosPars = [  #'AparPhase'
              #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
@@ -106,6 +104,8 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07), (0.017, 0.013), (0.020, 0.011), (0.16,  0.04) ]
+#                                     , [ (1.4,  0.9 ), (0.71,  0.38 ), (-0.64, 0.25 ), (-0.66, 0.20) ] )
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                      , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
 pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.964, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
@@ -184,6 +184,7 @@ pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForWeights'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForPHSPWeights'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForCorrPHSPWeights'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
@@ -266,13 +267,13 @@ if parFileIn :
 if generateData :
     # print parameter values
     print 120 * '='
-    print 'JvLFit: observables and parameters in generation process:'
+    print 'Bs2JpsiKKFit: observables and parameters in generation process:'
     for var in pdf.getVariables() : var.Print()
     print 120 * '='
 
     # generate data
     nEvents = int( pdfConfig['numEvents'] * ( pdfConfig['signalFraction'] if pdfConfig['SFit'] else 1. ) )
-    print 'JvLFit: generating %d events' % nEvents
+    print 'Bs2JpsiKKFit: generating %d events' % nEvents
     fitData = pdf.generate( obsSetP2VV, nEvents )
 
     # additional observables
@@ -447,14 +448,14 @@ if pdfConfig['lambdaCPParam'] == 'lambPhi_CPVDecay' :
 if randomParVals :
     import random
     # give parameters random offsets
-    print 'JvLFit: give floating parameters random offsets (scale = %.2f sigma; seed = %s)'\
+    print 'Bs2JpsiKKFit: give floating parameters random offsets (scale = %.2f sigma; seed = %s)'\
           % ( randomParVals[0], str(randomParVals[1]) if randomParVals[1] else 'system time' )
     random.seed( randomParVals[1] if randomParVals[1] else None )
     for par in pdfPars :
         if not par.isConstant() : par.setVal( par.getVal() + 2. * ( random.random() - 0.5 ) * randomParVals[0] * par.getError() )
 
 ## set S-wave fractions for the two middle bins equal
-#print 'JvLFit: setting S-wave fractions for bin 2 and bin 3 equal'
+#print 'Bs2JpsiKKFit: setting S-wave fractions for bin 2 and bin 3 equal'
 #from RooFitWrappers import Customizer
 #pdf = Customizer( Pdf = pdf, OriginalArgs = [ ws['f_S_bin3'] ], SubstituteArgs = [ ws['f_S_bin2'] ] )
 #pdfObs  = pdf.getObservables(fitData)
@@ -462,21 +463,21 @@ if randomParVals :
 
 # print parameters
 print 120 * '='
-print 'JvLFit: fit data:'
+print 'Bs2JpsiKKFit: fit data:'
 fitData.Print()
-print 'JvLFit: observables in PDF:'
+print 'Bs2JpsiKKFit: observables in PDF:'
 pdfObs.Print('v')
-print 'JvLFit: parameters in PDF:'
+print 'Bs2JpsiKKFit: parameters in PDF:'
 pdfPars.Print('v')
 
 if ( readData or generateData ) and doFit :
     # fit data
     print 120 * '='
-    print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
+    print 'Bs2JpsiKKFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
     RooMinPars = [ ]
     if MinosPars :
-        print 'JvLFit: running Minos for parameters',
+        print 'Bs2JpsiKKFit: running Minos for parameters',
         for parName in MinosPars :
             RooMinPars.append( pdfPars.find(parName) )
             print '"%s"' % RooMinPars[-1],
@@ -598,7 +599,7 @@ if ( readData or generateData ) and doFit :
         ampsData.add(ampMeasSet)
         ampsFitResult = ampsGauss.fitTo( ampsData, Save = True, **fitOpts )
 
-        print '\nJvLFit: reparameterization of transversity amplitudes:'
+        print '\nBs2JpsiKKFit: reparameterization of transversity amplitudes:'
         ampsData.Print()
         ampMeasList.Print('v')
         ampMeasCovs.Print()
@@ -606,7 +607,7 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.covarianceMatrix().Print()
 
     from P2VVImports import parNames, parValues#, parValuesPHSPAcc as parValues
-    print 'JvLFit: parameters:'
+    print 'Bs2JpsiKKFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
     fitResult.correlationMatrix().Print()
@@ -650,7 +651,7 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
         projWDataBulk     = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataSet     ), False ) )
         projWDataBBulk    = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataBSet    ), False ) )
         projWDataBbarBulk = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataBbarSet ), False ) )
-        print 'JvLFit: plot projection data set:'
+        print 'Bs2JpsiKKFit: plot projection data set:'
         projWData['ProjWData'][0].Print()
     else :
         projWData         = dict()
@@ -755,7 +756,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #    polSet.add( ws['f_S'] )
     #    polSet.add( ws['ASOddPhase'] )
 
-    #print 'JvLFit: plot PDF polarization parameters:'
+    #print 'Bs2JpsiKKFit: plot PDF polarization parameters:'
     #print 'total:'
     #pdf.getObservables(polSet).Print()
     #print 'even:'
@@ -912,7 +913,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #timeBbarCanv.Print( plotsFile + ')' )
 
     ## plot lifetime and angles
-    #print 'JvLFit: plotting time and angular distributions'
+    #print 'Bs2JpsiKKFit: plotting time and angular distributions'
     #timeCanv = TCanvas( 'timeCanv', 'Decay time'   )
     #ctkCanv  = TCanvas( 'ctkCanv',  'cos(theta_K)' )
     #ctlCanv  = TCanvas( 'ctlCanv',  'cos(theta_l)' )
@@ -951,7 +952,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #    _P2VVPlotStash[-1].Draw()
 
     # plot angles
-    print 'JvLFit: plotting angular distributions'
+    print 'Bs2JpsiKKFit: plotting angular distributions'
     updateAngPlots = False
 
     from ROOT import TFile
@@ -1027,7 +1028,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #                                                               )
     #                        ] )
     #timeCanv1 = TCanvas( 'timeCanv1', 'Lifetime' )
-    #print 'JvLFit: plotting lifetime distribution'
+    #print 'Bs2JpsiKKFit: plotting lifetime distribution'
     #for ( pad, nBins, plotTitle, yTitle, yScale, dataCuts, pdfCuts, logY )\
     #        in zip(  timeCanv1.pads( 2, 2 )
     #               , 3 * [ pdfConfig['numTimeBins'] ]
@@ -1046,7 +1047,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #        )
 
     ## plot lifetime (tagged/untagged)
-    #print 'JvLFit: plotting lifetime distributions tagged/untagged'
+    #print 'Bs2JpsiKKFit: plotting lifetime distributions tagged/untagged'
     #timePlotTitles1 = tuple( [ time.GetTitle() + title for title in (  ' - untagged'
     #                                                                 , ' - tagging category 2'
     #                                                                 , ' - tagging category %d' % tagCat5Min
@@ -1083,7 +1084,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #        )
 
     ## plot angles
-    #print 'JvLFit: plotting angular distributions'
+    #print 'Bs2JpsiKKFit: plotting angular distributions'
     #if plotAnglesNoEff and pdfConfig['SFit'] and pdfConfig['multiplyByTimeEff'] not in [ 'all', 'signal' ]\
     #        and ( pdfConfig['nominalPdf'] or not pdfConfig['conditionalTagging'] ) :
     #    addPDFs = [ ws['sig_t_angles_tagCat_iTag'] ]
@@ -1112,7 +1113,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #        )
 
     ## plot background time
-    #print 'JvLFit: plotting background lifetime distribution'
+    #print 'Bs2JpsiKKFit: plotting background lifetime distribution'
     #bkgTimeCanv = TCanvas( 'bkgTimeCanv', 'Background Lifetime' )
     #for ( pad, data, plotTitle, logY )\
     #      in zip(  bkgTimeCanv.pads( 2, 2 )
@@ -1220,8 +1221,8 @@ if dllPars :
     # check DNLL parameters
     phiCPPar = False
     for par in dllPars :
-        assert par[0] in wsPars, 'JvLFit - ERROR: unknown DLL parameter: "%s"' % par[0]
-        assert par[0] in ws,     'JvLFit - ERROR: DLL parameter "%s" does not exist in work space' % par[0]
+        assert par[0] in wsPars, 'Bs2JpsiKKFit - ERROR: unknown DLL parameter: "%s"' % par[0]
+        assert par[0] in ws,     'Bs2JpsiKKFit - ERROR: DLL parameter "%s" does not exist in work space' % par[0]
         if par[0] == 'phiCP' : phiCPPar = True
 
     # float/fix values of some parameters
@@ -1248,7 +1249,7 @@ if dllPars :
     nll = pdf.createNLL( fitData, **fitOpts )
 
     print 120 * '='
-    print 'JvLFit: parameters in NLL:'
+    print 'Bs2JpsiKKFit: parameters in NLL:'
     for par in nll.getVariables() : par.Print()
     print 120 * '='
 
@@ -1270,11 +1271,11 @@ if dllPars :
             parabola.plotOn( parFrame, RooFit.LineColor(RooFit.kBlack), RooFit.Precision(0.001) )
 
         if doDLL :
-            print 'JvLFit: plotting Delta -log(L) for %s' % par
+            print 'Bs2JpsiKKFit: plotting Delta -log(L) for %s' % par
             nll.plotOn( parFrame, RooFit.ShiftToZero(), RooFit.LineColor(kBlue), RooFit.Precision( wsPars[par][5] ) )
 
         if doPLL :
-            print 'JvLFit: plotting profile Delta -log(L) for %s' % par
+            print 'Bs2JpsiKKFit: plotting profile Delta -log(L) for %s' % par
             pll = nll.createProfile( RooArgSet( rooPar ) )
             pll.plotOn( parFrame, RooFit.LineColor(kRed), RooFit.Precision( wsPars[par][6] ) )
 
