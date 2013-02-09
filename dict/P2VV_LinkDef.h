@@ -1,10 +1,6 @@
 #ifdef __CINT__
 #pragma link off all classes;
 #pragma link off all functions;
-#pragma link C++ class IMoment;
-#pragma link C++ class Moment+;
-#pragma link C++ class EffMoment+;
-#pragma link C++ class vector<IMoment*>;
 #pragma link C++ class RooAbsRealMoment+;
 #pragma link C++ class RooRealMoment+;
 #pragma link C++ class RooRealEffMoment+;
