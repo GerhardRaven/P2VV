@@ -14,8 +14,9 @@ branches  cmt doc src P2VV dict
 # Used packages. Specify the version, * at the end specifies 'any revision'
 #    Put as many lines as needed, with all packages, without the '#'
 #============================================================================
-use  Reflex  v*  LCG_Interfaces
-use  ROOT    v*  LCG_Interfaces
+use  GaudiPolicy  v*
+use  Reflex       v*  LCG_Interfaces
+use  ROOT         v*  LCG_Interfaces
 
 #============================================================================
 apply_pattern  install_more_includes  more=P2VV
@@ -34,7 +35,7 @@ apply_pattern  reflex_dictionary_src                        \
 library  P2VVLib  ../src/*.cxx  \
          ../$(tag)/dict/P2VV/P2VVDict_dict_classdef.cpp
 
-macro_append  B2DXFittersLib_cppflags " -g"
+macro_append  P2VVLib_cppflags " -g"
 
 #============================================================================
 # define linker library link options
