@@ -21,5 +21,8 @@
 .gdb*
 log
 *.pars
+x86*
+cmt/Makefile
+cmt/*.*sh
 standalone/.deps/*
 standalone/.build/*
