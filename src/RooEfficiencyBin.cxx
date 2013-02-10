@@ -16,8 +16,6 @@
 using std::make_pair;
 #include "TMath.h" 
 
-ClassImp(RooEfficiencyBin) 
-
 //_____________________________________________________________________________
 RooEfficiencyBin::RooEfficiencyBin(const char *name, const char *title,
                                    const std::map<RooAbsReal*, bool>& variables)

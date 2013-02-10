@@ -37,8 +37,6 @@ using std::string;
 #include "RooAbsCategory.h"
 #include "RooRandom.h"
 
-ClassImp(RooTrivialTagDecay);
-
 //_____________________________________________________________________________
 // For now, we assume that the cos (cosh) and sin (sinh) coefficients are odd (even) wrt. tag 
 // this is not quite right as soon as eg. |lambda|^2 != 1 -- then all coefficients

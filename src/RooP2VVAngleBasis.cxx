@@ -30,9 +30,6 @@
 #include "RooSpHarmonic.h"
 #include "RooConstVar.h"
 
-ClassImp(RooP2VVAngleBasis)
-;
-
 //_____________________________________________________________________________
 RooP2VVAngleBasis::RooP2VVAngleBasis()
 {

@@ -20,8 +20,6 @@
 #include "P2VV/RooTransAngle.h" 
 #include "TMath.h" 
 
-ClassImp(RooTransAngle) 
-
 //_____________________________________________________________________________
 RooTransAngle::RooTransAngle(const char* name, const char* title,
     RooAbsReal& cthetaK) :

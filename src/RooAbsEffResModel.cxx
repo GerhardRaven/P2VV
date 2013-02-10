@@ -1,8 +1,6 @@
 #include <RooResolutionModel.h>
 #include <P2VV/RooAbsEffResModel.h>
 
-ClassImp(RooAbsEffResModel);
-
 //_____________________________________________________________________________
 RooAbsEffResModel::RooAbsEffResModel(const char *name, const char *title, RooRealVar& convVar) 
    : RooResolutionModel(name, title, convVar)

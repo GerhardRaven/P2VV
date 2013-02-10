@@ -48,9 +48,6 @@ using std::make_pair;
 using std::endl;
 #include <assert.h>
 
-ClassImp(RooMultiCatGenerator)
-;
-
 //_____________________________________________________________________________
 void RooMultiCatGenerator::registerSampler(RooNumGenFactory& fact)
 {

@@ -32,8 +32,6 @@
 #include <iostream>
 using std::endl;
 
-ClassImp(RooTagDecisionWrapper);
-
 //_____________________________________________________________________________
 RooTagDecisionWrapper::RooTagDecisionWrapper(const char *name,
     const char* title, RooAbsCategory& tagDecision) :

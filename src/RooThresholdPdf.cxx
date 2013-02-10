@@ -32,9 +32,6 @@
 #include "RooAbsRealLValue.h"
 #include "RooRealVar.h"
 
-ClassImp(RooThresholdPdf)
-;
-
 
 //_____________________________________________________________________________
 RooThresholdPdf::RooThresholdPdf(const char* name, const char* title, RooAbsRealLValue& x)

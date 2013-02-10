@@ -43,9 +43,6 @@
 #include <iostream>
 using std::endl;
 
-ClassImp(RooEffConvGenContext)
-;
-  
 
 //_____________________________________________________________________________
 RooEffConvGenContext::RooEffConvGenContext(const RooAbsAnaConvPdf &model, const RooArgSet &vars, 

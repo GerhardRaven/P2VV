@@ -70,9 +70,6 @@ namespace {
    using std::pair;
 }
 
-ClassImp(RooMultiEffResModel) 
-;
-
 //_____________________________________________________________________________
 RooMultiEffResModel::CacheElem::~CacheElem()
 {

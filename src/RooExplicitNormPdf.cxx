@@ -33,8 +33,6 @@ using std::endl;
 #include "RooRealVar.h"
 #include "RooAbsPdf.h"
 
-ClassImp(RooExplicitNormPdf);
-
 //_____________________________________________________________________________
 RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
       const RooArgSet& obsSet, const RooAbsReal& function,

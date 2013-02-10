@@ -52,8 +52,6 @@
 
 using namespace std;
 
-ClassImp(RooBinnedPdf);
-
 //_____________________________________________________________________________
 RooBinnedPdf::RooBinnedPdf(const char* name, const char* title,
     RooAbsCategory& baseCat, const RooArgList& coefList) :

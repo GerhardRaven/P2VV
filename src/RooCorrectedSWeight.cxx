@@ -28,8 +28,6 @@
 #include "RooAbsCategory.h"
 #include "P2VV/RooCorrectedSWeight.h"
 
-ClassImp(RooCorrectedSWeight);
-
 //_____________________________________________________________________________
 RooCorrectedSWeight::RooCorrectedSWeight(const char *name, const char* title,
   RooAbsReal& sWeight, Double_t corrFactor, Bool_t bkgWeight) :

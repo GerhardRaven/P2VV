@@ -33,9 +33,6 @@
 
 using namespace std;
 
-ClassImp(RooEffResModel) 
-;
-
 //_____________________________________________________________________________
 RooEffResModel::CacheElem::~CacheElem()
 {

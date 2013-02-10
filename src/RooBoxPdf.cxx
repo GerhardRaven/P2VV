@@ -26,8 +26,6 @@
 #include "RooRealVar.h"
 #include "RooArgSet.h"
 
-ClassImp(RooBoxPdf);
-
 //_____________________________________________________________________________
 RooBoxPdf::RooBoxPdf(const char *name, const char* title, RooRealVar& var,
     RooAbsReal& mean, RooAbsReal& width) :

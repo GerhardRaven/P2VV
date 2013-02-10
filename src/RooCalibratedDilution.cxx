@@ -15,8 +15,6 @@
 #include "RooAbsReal.h" 
 #include "P2VV/RooCalibratedDilution.h" 
 
-ClassImp(RooCalibratedDilution) 
-
 //_____________________________________________________________________________
 RooCalibratedDilution::RooCalibratedDilution(const char* name,
     const char* title, RooAbsReal& WTag) :

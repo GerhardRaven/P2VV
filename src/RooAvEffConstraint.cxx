@@ -20,8 +20,6 @@
 
 #include "P2VV/RooAvEffConstraint.h" 
 
-ClassImp(RooAvEffConstraint) 
-
 using std::vector;
 using std::auto_ptr;
 

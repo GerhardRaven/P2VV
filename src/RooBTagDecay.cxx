@@ -41,8 +41,6 @@ using std::endl;
 #include "TObjArray.h"
 
 
-ClassImp(RooBTagDecay);
-
 //_____________________________________________________________________________
 RooBTagDecay::RooBTagDecay(const char *name, const char* title, 
     RooRealVar& time, RooAbsReal& tau, RooAbsReal& dGamma, RooAbsReal& dm,

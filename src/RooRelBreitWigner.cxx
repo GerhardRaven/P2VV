@@ -17,8 +17,6 @@
 #include "RooAbsReal.h"
 #include "RooRealVar.h"
 
-ClassImp(RooRelBreitWigner)
-
 RooRelBreitWigner::RooRelBreitWigner(const char *name, const char *title,
              RooAbsReal& _x, RooAbsReal& _mean,
              RooAbsReal& _width, RooAbsReal& _spin, RooAbsReal& _radius,

@@ -6,8 +6,6 @@
 #include "RooRealVar.h"
 #include "RooRealConstant.h"
 
-ClassImp(RooCruijff)
-
 RooCruijff::RooCruijff(const char *name, const char *title,
 		       RooAbsReal& _x, RooAbsReal& _m0, 
 		       RooAbsReal& _sigmaL, RooAbsReal& _sigmaR,

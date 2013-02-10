@@ -20,8 +20,6 @@
 #include <iostream>
 using std::endl;
 
-ClassImp(RooComplementCoef) 
-
 //_____________________________________________________________________________
 RooComplementCoef::RooComplementCoef(const char* name, const char* title,
     const RooArgList& coefficients) :
