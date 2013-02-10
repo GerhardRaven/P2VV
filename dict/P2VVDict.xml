@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--- $Id: -->
+<!--- Author  : Jeroen van Leerdam -->
+<!--- Created : 2013-02-10 -->
+<lcgdict>
+    <selection>
+        <class name = "RooAbsRealMoment" />
+        <class name = "RooRealMoment" />
+        <class name = "RooRealEffMoment" />
+        <function pattern = "computeRooRealMoments" />
+        <class name = "std::vector<RooAbsRealMoment*>" />
+        <class name = "ProgressDisplay" />
+        <class name = "RooBTagDecay" />
+        <class name = "RooTrivialTagDecay" />
+        <class name = "RooMultiCatGenerator" />
+        <class name = "RooBinnedPdf" />
+        <class name = "RooP2VVAngleBasis" />
+        <class name = "RooThresholdPdf" />
+        <class name = "RooRelBreitWigner" />
+        <class name = "RooTagDecisionWrapper" />
+        <class name = "RooRealCategory" />
+        <class name = "RooCalibratedDilution" />
+        <function pattern = "RooDataSetToTree" />
+        <class name = "RooTransAngle" />
+        <class name = "RooCruijff" />
+        <class name = "RooEfficiencyBin" />
+        <class name = "RooAvEffConstraint" />
+        <class name = "RooCorrectedSWeight" />
+        <class name = "RooAbsEffResModel" />
+        <class name = "RooEffResModel" />
+        <class name = "MultiHistEntry" />
+        <class name = "RooMultiEffResModel" />
+        <class name = "RooComplementCoef" />
+        <class name = "RooEffConvGenContext" />
+        <function pattern = "sigmaFromFT" />
+        <class name = "RooBoxPdf" />
+        <class name = "RooExplicitNormPdf" />
+
+
+        <class name = "std::map<RooAbsCategory*, std::string>" />
+        <class name = "std::map<RooCategoryProxy*, std::string>" />
+        <class name = "std::vector<std::pair<double, TString> >" />
+        <class name = "std::pair<RooAbsCategory*, std::string>" />
+        <class name = "std::map<RooRealProxy*, bool>" />
+        <class name = "std::map<RooAbsReal*, bool>" />
+        <class name = "std::pair<RooAbsReal*, bool>" />
+        <class name = "std::pair<RooRealProxy*, bool>" />
+        <class name = "std::pair<double, TString>" />
+        <class name = "std::pair<RooCategoryProxy*, std::string>" />
+
+        <class name = "std::map<Int_t, MultiHistEntry*>" />
+        <class name = "std::pair<Int_t, MultiHistEntry*>" />
+        <class name = "std::map<int, MultiHistEntry*>::iterator" />
+        <class name = "std::vector<MultiHistEntry*>" />
+    </selection>
+</lcgdict>
