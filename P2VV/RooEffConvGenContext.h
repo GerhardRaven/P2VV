@@ -1,6 +1,12 @@
 #ifndef ROO_EFF_CONV_GEN_CONTEXT
 #define ROO_EFF_CONV_GEN_CONTEXT
 
+// use C preprocessor to smuggle in a friend class into RooAbsGenContext
+//
+// *** this is an ugly hack but seems to work well enough for now, and is
+// *** better than hacking the header files that come with ROOT for now...
+#define RooEffGenContext RooEffGenContext; friend class RooEffConvGenContext;
+
 #include "RooConvGenContext.h"
 #include "RooArgSet.h"
 
