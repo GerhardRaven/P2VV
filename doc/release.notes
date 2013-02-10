@@ -1,0 +1,318 @@
+!-----------------------------------------------------------------------------
+! Package     : PhysFit/P2VV
+! Responsible : Juan PALACIOS, Tristan DUPREE
+! Purpose     : keeping Tristan's crazy RooFit stuff.
+!-----------------------------------------------------------------------------
+
+!============================== v2r5 2-04-2011 ==============================
+
+! 2010-11-24 - Diego Martinez Santos
+ - Make version v2r4. 
+
+! 2010-12-03 - Gerhard Raven
+ - various improvements to RooAddition_, RooLegendre and RooSpHarmonic
+
+!============================== v2r4 24-11-2010 ==============================
+
+! 2010-11-24 - Diego Martinez Santos
+ - Make version v2r4. 
+
+! 2010-11-23 - Gerhard Raven
+ - fix Condon-Shortly phase in RooLegendre/RooSpHarmonic
+
+! 2010-11-19 - Gerhard Raven
+ - add RooP2VVAngleBasis (which combines a RooLegendre with a RooSpHarmonic)
+   and RooAddition_ (which is a fast replacement for RooAddition)
+
+! 2010-10-29 - Gerhard Raven
+ - add RooLegendre and RooSpHarmonic
+
+!============================== v2r3 11-06-2010 ==============================
+
+! 2010-05-11 - Diego Martinez Santos
+ - Make version v2r3, which includes Daan's doxygen docummentation
+
+
+!============================== v2r2 11-05-2010 ==============================
+
+! 2010-05-11 - Diego Martinez Santos
+ - Make version v2r2
+
+! 2010-04-06 - Tristan Arnoldus Du Pree
+ - Repaired pass-through of the value in the data set to the pdf
+
+! 2010-04-06 - Tristan Arnoldus Du Pree
+ - Repaired memory problem in determineEffAndBkg.cpp (angular variables did not survive)
+
+! 2010-04-02 - Tristan Arnoldus Du Pree
+ - Significant changes in determineEffAndBkg:
+   - Added method to determine efficiency weights 
+   - Increased speed to determine large number of polynomial coefficients
+   - Removed unnecessary input arguments from functions (the observables are now retrieved from the dataset)
+   - Repaired the function evaluations to determine integral numerically:
+      - Pass-through of the value of the dataset to the functions and the pdf is now done correctly
+
+! 2010-03-26 - Tristan Arnoldus Du Pree
+ - Fixed typo in Legendre polynomials: removed "." in functions
+
+!========================== P2VV v2r1 2010-03-24 =============================
+
+! 2010-03-23 - Tristan Arnoldus Du Pree
+ - Fixed typo in param(3,2) in PdfMakerFunctions.cpp
+ - Added constructor to PdfMakerFunctions.{cpp,h}, such that PDFs can be made without any efficiency correction
+
+! 2010-03-09 - Roel Aaij
+ - Readded ClassDef and ClassImp macros to classes inheriting from RooFit 
+   classes to cope with a change in genreflex.
+ - Updated requirements to include ClassDef implementations in the linker
+   library.
+ - Added default constructors to OneAngleProxy and TwoAngleProxy
+ - Moved implementation of makePVVPdf helpers to .cpp file
+
+!========================== P2VV v2r0 2009-12-09 =============================
+
+! 2009-02-16 - Tristan Arnoldus DU PREE
+ - Added possibility to use 3D binned eff: will be calulated (and cached) by RooFit depending on the binning
+   Changed arguments of PdfMakerFunctions: only one mistag rate possible
+   New possibilities to use PdfMakerFunctions will break many test examples
+   
+! 2009-02-05 - Tristan Arnoldus DU PREE
+ - Added IsA() methods to TransFi classes
+
+! 2009-02-03 - Tristan Arnoldus DU PREE
+ - Added default constructors to classes
+   . AnglesAbsFunc
+   . TransFi
+   . ThreeAngles
+   . ThreeAngleProxy
+  
+! 2009-01-12 - Tristan Arnoldus DU PREE
+ - Fixed typo in Djspikstar in PdfMakerFunctions.cpp
+
+! 2009-01-12 - Tristan Arnoldus DU PREE
+ - Changed names in PdfMakerFunctions such that they are internally different for different channels.
+   Fixed bug in K*param: e.g. param(0,3) = tag*rec*D = tag*rec*(tag*rec*(1-2w)) = 1.*(1-2w). Removed rec*tag from definiotion of D.
+   Changed a bit the organization of the tagging categories in testSimultaneous.
+
+! 2009-01-05 - Tristan Arnoldus DU PREE
+ - Changed TMatrixT->Smatrix in determinePhis
+	.Removed PhysParamSet
+
+! 2009-01-05 - Tristan Arnoldus Du Pree
+ - Moved PhysParamSet.* -> PhysParamList.*
+   Changed all set properties to list properties, meaning items are retrieved by number in list.
+   Adjusted P2VVDict.{x,html} and PdfMakerFunctions accordincgly.
+
+! 2008-12-18 - Tristan Arnoldus Du Pree
+ - Added poly1Deff.{h,cpp}, which makes an efficiency function
+	 Added -lMathMore to requirements in order to use Legendre polynomials.
+   Adjusted P2VVDict.* accorxingly.
+	 Added extra check (integral of 1 over the angles) to determinePhis.
+
+! 2008-12-12 - Tristan Arnoldus DU PREE
+ - Declared member m_ctheta as RRV instead of RRV& for safety reasons.
+   When using ctheta in the main() one should only use my3Angles.ctheta()
+
+
+! 2008-12-12 - Tristan Arnoldus DU PREE
+ - Fixed bug in passing the RooRealVars in the constructor of the xAngles class.
+   Now instead of making a copy, the reference is passed.
+   Now the xAngleProxy classes make a Proxy of the original RooRealVar instead of a proxy the copy.
+
+   Removed (useless) default constructors in xAngles.
+   RRVs not const anymore in constructor.
+   Adjusted AnglesAbsFunc accordingly.
+
+! 2008-12-02 - Tristan Arnoldus DU PREE
+ - Nothing special in detPhis, 2->2. in TransF5
+
+! 2008-12-02 - Tristan Arnoldus DU PREE
+ - Only removed Dutch comments etc.
+
+! 2008-12-02 - Tristan Arnoldus DU PREE
+ - Adapted PdfMakerFunction to new PhysParamSet class
+
+! 2008-12-02 - Tristan Arnoldus DU PREE
+ - Added PhysParamSet class to group the physics parameters.
+
+! 2008-08-22 - Tristan Arnoldus DU PREE
+ - Made new determinePhis function to determine angular acceptance from data. Returns covariance matrix.
+ - Adpated P2VVDict.{xml,h} to new determinePhis function
+
+! 2008-08-21 - Tristan Arnoldus DU PREE
+ - Adapted PdfMakerFunctrions to new AmplitudesAndPhases class.
+
+! 2008-08-21 - Tristan Arnoldus DU PREE
+ - Fixed typo in AmplitudesAndPhasesList.h.
+
+! 2008-08-21 - Tristan Arnoldus DU PREE
+ - Added AmplitudesAndPhasesList class. Holds amplitudes and phases. Goal is to reduce number of arguments in maker function.
+   . Works similar to AngAccCorrList. Has extra getVal... functions to get the values of the amplitudes and phases. (these should also be added to AngAccCorr, ju$
+   . Changed P2VVDict.{h,xml} accordingly.
+
+! 2008-07-06 - Juan PALACIOS
+ - cmt/requirements
+  . Increase version to v1r2
+ - Add P2VV/Helper.h, src/Helper.cpp with stub functions for probematic 
+   RooDataHist and RooAbsPfd functions.
+ - dict/P2VVDict.xml, P2VVDict.h
+  . Add dictionaries for stubs in P2VV/Helper.h
+
+! 2008-06-20 - Tristan Arnoldus DU PREE
+ - Minor changes for new name AngAccCorr{Set->List}.
+ - Added changes to dictionaries P2VVDict.{h,xml}
+
+! 2008-06-20 - Tristan Arnoldus DU PREE
+ - P2VV/PdfMakerFunctions.h 
+	. Adapted to switch from AngAccCorrSet to AngAccCorrList.
+
+! 2008-06-20 - Tristan Arnoldus DU PREE
+ - Added AngularAcceptanceCorrectionList class (instead of AngAccCorrSet) which inherits from RooArgList. Changed way to return Phi's from list.
+  . Fixed way to retrieve Phi's from this list in PdfMakerFunctions.cpp, which now doesn't crash anymore.
+    Should remove AngAccCorrSet.
+
+! 2008-06-18 - Tristan Arnoldus DU PREE
+ - P2VV/PdfMakerFunctions.h, src/PdfMakerFunctions.cpp
+  . Made it possible to use RooCategory's:
+    Let RooRealSumPdf take list of 1's and product of param(q)*func(t,angles).
+    Made new class XXX to let make param function return matrix.
+    Changed createProduct to take angleFun, timeFun AND param.
+  . Further:
+    Total freedom for user to give amplitudes and phases terms.
+    Grouped if(usePhi) terms.  
+
+! 2008-06-18 - Tristan Arnoldus DU PREE
+ - P2VV/PdfMakerFunctions.h, src/PdfMakerFunctions.cpp
+  . Made the adding to the paramLists and the funcList more efficient.
+    Changed the return type of createProduct accordingly (RooAbsReal*).
+
+! 2008-06-10 - Tristan Arnoldus DU PREE
+ - P2VV/PdfMakerFunctions.h, src/PdfMakerFunctions.cpp
+ - dict/P2VVDict.xml
+  . Added Functions namespace to PdfMakerFunctions.{h,cpp}.
+    Modified xml files accordingly.
+
+
+! 2008-06-10 - Tristan Arnoldus DU PREE
+ - P2VV/PdfMakerFunctions.cpp
+ - src/PdfMakerFunctions.h
+  . Adapted maker function to new xAngles and AngAccCorrSet classes. 
+    Added flavour tagging. Made function more flexible for input of A_i, phi_i. 
+    For flexibility also changed phis into Cf, Df
+ 
+
+!========================== P2VV v1r1 2008-06-05 =============================
+
+! 2008-05-29 - Juan PALACIOS
+ - P2VV/AngularAcceptanceCorrectionSet.h
+  . Make accessors to Phis safe and name-independent.
+  . Inline most methods.
+ - src/AngularAcceptanceCorrectionSet.cpp
+  . Keep only one private helper method.
+ - dict/P2VVDict.xml, dict/P2VVDict.h
+  . Make dictionary for AngularAcceptanceCorrectionSet
+
+! 2008-05-29 - Juan PALACIOS
+ - Add P2VV/PdfMAkerFunctions.h, src/PdfMakerFunctions.cpp
+  . Modified versions of recently removed P2VVPdfMakerFunctions, now run with
+    new templated AnglesAbsFunc<ThreeAngleProxy> base class.
+ - dict/P2VVDict.h, P2VVDict.xml
+  . Make dictionaries for functions in P2VV/PdfMakerFunctions.h
+
+! 2008-05-28 - Juan PALACIOS
+ - P2VV/ThreeAnglesProxy.h, P2VV/TwoAngleProxy.h, P2VV/OneAngleProxy.h
+  . Fix copy constructors. RooRealProxies need to be copied in a special way.
+ - P2VV/AnglesAbsFunc.h
+  . Call new AnglesProxy copy constructors.
+  . make m_usePhi and m_Phi private and add protected by-reference accessors.
+ - src/TransF*.cpp, HelF*.cpp
+  . Use new accessors for m_phi and m_usePhi (see above)
+  . Optimise the analiticalIntegral methods a bit.
+ - P2VV/OneAngle.h, P2VV/TwoAngles.h, P2VV/ThreeAngles.h
+  . Inline angle accessor methods.
+
+! 2008-05-27 - Juan PALACIOS
+ - ThreeAngles, TwoAngles, OneAngle classes now are simple holders for 3, 2 and
+   1 RooRealVars representing the corresponding angles. No parent is involved,
+   the classes are standalone, and have accessors to references to the data.
+
+ - Add P2VV::OneAngleProxy, P2VV::TwoAngleProxy.h, P2VV::ThreeAngleProxy
+   . These classes are constructed from a OneAngle, TwoAngles or ThreeAngles
+     respectively, plus a pointer to a RooAbsReal parent. The RooRealVar data
+     from the simple Angles classes are used to construct RooRealProxies, with
+     the parent pointer used for ownership. These are used internally by all
+     derived classes of AbsAnglesFunc (HelFX and TransFX).
+
+ - P2VV/AnglesAbsFunc.h, src/AnglesAbsFunc.cpp
+   . Modify to be templated on one of the new AnglesProxy classes, while
+     taking a simple Angles type in the constructor.
+
+ - P2VV/HelF*.h, P2VV/TransF*.h
+  . Modify to adapt to changes related to new AnglesProxy classes. Concretely,
+    these classes are now all public AnglesAbsFunc<P2VV::ThreeAngleProxy>.
+
+ - dict/P2VVDict.h, dict/P2VV.xml
+  . Make dicitonaries for the new P2VV::OneAngleProxy, P2VV::TwoAngleProxy and
+    P2VV::ThreeAngleProxy classes.
+  . Fix a bunch of other problems with the dictionaries.
+
+! 2008-05-26 - Tristan Arnoldus DU PREE
+ - Removed AngularAcceptanceCorretions.{h,cpp}
+  . Inheritance from RooAbsReal was unnecessary. phi(unsigned int) was possibly dangerous.
+ - Added AngularAcceptanceCorrectionSet.{h,cpp}
+  . Is a RooArgSet which can return the (6 phi) RooRealVars it takes as argument. Removed the -possibly dangerous- functions which take unsigned ints as arguments.
+
+! 2008-05-13 - Tristan Arnoldus DU PREE
+ - ThreeAngles, TwoAngles, OneAngle classes
+  . Added these classes which hold {3,2,1} classes
+ - AnglesAbsFunc<xAngles>
+  . Templated to hold xAngles
+ - TransFi, HelFi
+  . Adjusted to above new setup
+ - AngularAcceptanceCorrections
+  . Fixed minor bugs (int==double), removed inheritance from RooAbsReal
+
+! 2008-04-24 - Tristan Arnoldus DU PREE
+ - src/AngularAcceptanceCorrections
+ - P2VV/AngularAcceptanceCorrections
+	. Added new class which holds 6 Phi's
+
+! 2008-04-22 - Tristan Arnoldus DU PREE
+ - src/AnglesAbsFunc.cpp
+	. Changed _usePhi(false) to _usePhi(true) in 6 argument constructor of AnglesAbsFunc(name, title, 3 angles, Phi).
+
+! 2008-04-04 - Juan PALACIOS
+ - src/TransF5.cpp
+  . Fix typo in THREEANGLES::FFSS::TransF5::analyticalIntegral(Int_t code,const char* range) const
+
+! 2008-01-25 - Juan PALACIOS
+
+ -  P2VV/TransF*.h, P2VV/HelF*.h (and corresponding .cpp files in src/)
+  . Put all TransF* and HelF* classes unsed P2VV::THREEANGLES::FFSS namespace.
+
+ - src/P2VVPdfMakerFunctions.cpp, dict/P2VVDict.xml
+  . Adapt to new P2VV::THREEANGLES::FFSS namespaces (see above)
+
+! 2008-01-25 - Juan PALACIOS
+
+ - P2VV/AnglesAbsFunc.h, src/AnglesAbsFunc.cpp
+  . Add five parameter constructor:
+     AnglesAbsFunc::AnglesAbsFunc(const char *name, 
+                                  const char *title,
+                                  RooRealVar& cpsi, 
+                                  RooRealVar& ctheta, 
+                                  RooRealVar& phi);
+ - cmt/requirements
+  . Prepare for ROOT 5.18. libRooFit has been split into libRooFitCore and
+    libRooFit. Link to both of these.
+
+ - P2VV/TransF*.h, P2VV/HelF*.h (and corresponding .cpp files in src/)
+  . Add five parameter constructor, simply calls AnglesAbsFunc five parameter
+    constructor (see above)
+
+ - P2VV/P2VVPdfMakerFunctions.h, src/P2VVPdfMakerFunctions.cpp
+  . New implementation of P2VV::makePVVPdf function by Tristan.
+  . New functions P2VV::createProduct, P2VV::makePhiParameters, P2VV::makeKstarParameters.
+
+! 2008-01-22 - Juan PALACIOS
+ - First import of package.
