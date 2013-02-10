@@ -7,7 +7,7 @@
 // Your description goes here... 
 
 #include "Riostream.h" 
-#include "RooRealCategory.h" 
+#include "P2VV/RooRealCategory.h" 
 #include "RooAbsCategory.h" 
 
 ClassImp(RooRealCategory) 

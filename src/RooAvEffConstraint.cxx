@@ -18,7 +18,7 @@
 #include "RooCustomizer.h"
 #include "RooStringVar.h"
 
-#include "RooAvEffConstraint.h" 
+#include "P2VV/RooAvEffConstraint.h" 
 
 ClassImp(RooAvEffConstraint) 
 

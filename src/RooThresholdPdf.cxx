@@ -28,7 +28,7 @@
 #include "RooFit.h"
 #include "Riostream.h"
 
-#include "RooThresholdPdf.h"
+#include "P2VV/RooThresholdPdf.h"
 #include "RooAbsRealLValue.h"
 #include "RooRealVar.h"
 

@@ -17,7 +17,7 @@
 #include "Riostream.h"
 #include "RooMsgService.h"
 #include "RooAbsReal.h" 
-#include "RooTransAngle.h" 
+#include "P2VV/RooTransAngle.h" 
 #include "TMath.h" 
 
 ClassImp(RooTransAngle) 

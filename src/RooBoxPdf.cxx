@@ -22,7 +22,7 @@
 //
 
 #include "TMath.h"
-#include "RooBoxPdf.h"
+#include "P2VV/RooBoxPdf.h"
 #include "RooRealVar.h"
 #include "RooArgSet.h"
 

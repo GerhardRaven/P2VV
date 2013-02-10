@@ -1,5 +1,5 @@
 #include <RooResolutionModel.h>
-#include <RooAbsEffResModel.h>
+#include <P2VV/RooAbsEffResModel.h>
 
 ClassImp(RooAbsEffResModel);
 

@@ -8,7 +8,7 @@
 #include <RooCategoryProxy.h>
 #include <RooRealProxy.h>
 
-#include <RooMultiEffResModel.h>
+#include <P2VV/RooMultiEffResModel.h>
 
 /** @class MultiHistEntry MultiHistEntry.h
  *  

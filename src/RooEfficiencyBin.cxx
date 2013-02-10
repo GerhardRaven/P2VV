@@ -8,7 +8,7 @@
 
 #include "Riostream.h" 
 
-#include "RooEfficiencyBin.h" 
+#include "P2VV/RooEfficiencyBin.h" 
 #include "RooAbsReal.h" 
 #include "RooAbsCategory.h" 
 #include <math.h> 

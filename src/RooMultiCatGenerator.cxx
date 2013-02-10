@@ -26,7 +26,7 @@
 #include "RooFit.h"
 #include "Riostream.h"
 
-#include "RooMultiCatGenerator.h"
+#include "P2VV/RooMultiCatGenerator.h"
 #include "RooAbsReal.h"
 #include "RooCategory.h"
 #include "RooRealVar.h"

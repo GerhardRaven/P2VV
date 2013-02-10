@@ -13,7 +13,7 @@
  *****************************************************************************/ 
 
 #include "RooAbsReal.h" 
-#include "RooCalibratedDilution.h" 
+#include "P2VV/RooCalibratedDilution.h" 
 
 ClassImp(RooCalibratedDilution) 
 

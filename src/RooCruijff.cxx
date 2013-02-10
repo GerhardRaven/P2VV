@@ -2,7 +2,7 @@
 #include <iostream>
 #include <math.h>
 
-#include "RooCruijff.h"
+#include "P2VV/RooCruijff.h"
 #include "RooRealVar.h"
 #include "RooRealConstant.h"
 

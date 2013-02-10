@@ -34,9 +34,9 @@ using std::make_pair;
 #include "RooSuperCategory.h"
 #include "RooRandom.h"
 
-#include "MultiHistEntry.h"
-#include "RooMultiEffResModel.h"
-#include "RooEffConvGenContext.h"
+#include "P2VV/MultiHistEntry.h"
+#include "P2VV/RooMultiEffResModel.h"
+#include "P2VV/RooEffConvGenContext.h"
 
 namespace {
    TString makeName(const char* name, const RooArgSet& terms ) {

@@ -30,7 +30,7 @@ using std::string;
 
 #include "Riostream.h"
 #include "TMath.h"
-#include "RooTrivialTagDecay.h"
+#include "P2VV/RooTrivialTagDecay.h"
 #include "RooRealVar.h"
 #include "RooProduct.h"
 #include "RooArgSet.h"

@@ -27,7 +27,7 @@ using std::endl;
 #include "Riostream.h"
 #include "RooMsgService.h"
 #include "TMath.h"
-#include "RooExplicitNormPdf.h"
+#include "P2VV/RooExplicitNormPdf.h"
 #include "RooArgSet.h"
 #include "RooCustomizer.h"
 #include "RooRealVar.h"

@@ -27,7 +27,7 @@
 #include "Riostream.h"
 #include "RooMsgService.h"
 #include "RooRandom.h"
-#include "RooTagDecisionWrapper.h"
+#include "P2VV/RooTagDecisionWrapper.h"
 
 #include <iostream>
 using std::endl;

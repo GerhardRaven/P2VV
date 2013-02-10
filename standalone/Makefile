@@ -33,7 +33,7 @@ OBJECTS = $(SOURCES:$(SRCDIR)/%.cxx=$(BUILDDIR)/%.o) $(BUILDDIR)/P2VV_dict.o
 
 vpath %.cxx $(SRCDIR):$(DICTDIR):$(BUILDDIR)
 vpath %.c   $(SRCDIR):$(DICTDIR):$(BUILDDIR)
-vpath %.h   $(INCDIR):$(DICTDIR):$(BUILDDIR)
+vpath %.h   $(INCDIR)/P2VV:$(DICTDIR):$(BUILDDIR)
 vpath %.o   $(BUILDDIR)
 
 .PHONY: all clean profiler
@@ -58,7 +58,7 @@ $(BUILDDIR)/%.o : %.c
 	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
 	rm -f $(BUILDDIR)/$*.d
 
-$(BUILDDIR)/P2VV_dict.cxx: $(wildcard $(INCDIR)/*.h) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
+$(BUILDDIR)/P2VV_dict.cxx: $(wildcard $(INCDIR)/P2VV/*.h) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
 	rootcint -f $@ -c -I$(INCDIR) -I$(DICTDIR) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
 
 $(LIBDIR)/libP2VV.so: $(OBJECTS) $(BUILDDIR)/P2VV_dict.o

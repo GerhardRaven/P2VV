@@ -15,8 +15,8 @@
 #include <RooRealProxy.h>
 #include <RooObjCacheManager.h>
 
-#include <RooEffResModel.h>
-#include <RooAbsEffResModel.h>
+#include <P2VV/RooEffResModel.h>
+#include <P2VV/RooAbsEffResModel.h>
 
 class RooSuperCategory;
 class MultiHistEntry;

@@ -33,7 +33,7 @@ using std::endl;
 #include "RooMsgService.h"
 
 #include "TMath.h"
-#include "RooBTagDecay.h"
+#include "P2VV/RooBTagDecay.h"
 #include "RooCategory.h"
 #include "RooRandom.h"
 #include "RooRealVar.h"

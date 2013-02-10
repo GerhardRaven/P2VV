@@ -15,7 +15,7 @@
 #include "RooRealProxy.h"
 #include "RooListProxy.h"
 
-#include "RooEffResModel.h"
+#include "P2VV/RooEffResModel.h"
 
 class RooEffResModel;
 class RooCustomizer;

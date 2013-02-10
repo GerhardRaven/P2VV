@@ -26,7 +26,7 @@
 #include "Riostream.h"
 #include "RooMsgService.h"
 #include "RooAbsCategory.h"
-#include "RooCorrectedSWeight.h"
+#include "P2VV/RooCorrectedSWeight.h"
 
 ClassImp(RooCorrectedSWeight);
 

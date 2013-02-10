@@ -14,7 +14,7 @@
 #include "RooAbsReal.h" 
 #include "RooArgList.h" 
 #include "RooMsgService.h"
-#include "RooComplementCoef.h" 
+#include "P2VV/RooComplementCoef.h" 
 #include "Riostream.h"
 
 #include <iostream>

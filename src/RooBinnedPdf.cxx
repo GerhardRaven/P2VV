@@ -40,7 +40,7 @@
 
 #include "RooAbsCategory.h"
 #include "RooAbsRealLValue.h"
-#include "RooBinnedPdf.h"
+#include "P2VV/RooBinnedPdf.h"
 #include "RooBinningCategory.h"
 #include "RooArgSet.h"
 #include "RooMsgService.h"
