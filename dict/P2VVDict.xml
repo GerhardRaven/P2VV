@@ -4,10 +4,12 @@
 <!--- Created : 2013-02-10 -->
 <lcgdict>
     <selection>
+        <!-- <class pattern = "std::vector<*>" /> -->
+
         <class name = "RooAbsRealMoment" />
         <class name = "RooRealMoment" />
         <class name = "RooRealEffMoment" />
-        <function pattern = "computeRooRealMoments" />
+        <function name = "computeRooRealMoments" />
         <class name = "std::vector<RooAbsRealMoment*>" />
         <class name = "ProgressDisplay" />
         <class name = "RooBTagDecay" />
@@ -20,7 +22,7 @@
         <class name = "RooTagDecisionWrapper" />
         <class name = "RooRealCategory" />
         <class name = "RooCalibratedDilution" />
-        <function pattern = "RooDataSetToTree" />
+        <function name = "RooDataSetToTree" />
         <class name = "RooTransAngle" />
         <class name = "RooCruijff" />
         <class name = "RooEfficiencyBin" />
@@ -32,7 +34,7 @@
         <class name = "RooMultiEffResModel" />
         <class name = "RooComplementCoef" />
         <class name = "RooEffConvGenContext" />
-        <function pattern = "sigmaFromFT" />
+        <function name = "sigmaFromFT" />
         <class name = "RooBoxPdf" />
         <class name = "RooExplicitNormPdf" />
 
