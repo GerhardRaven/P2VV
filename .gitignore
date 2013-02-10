@@ -24,5 +24,6 @@ log
 x86*
 cmt/Makefile
 cmt/*.*sh
+cmt/install*
 standalone/.deps/*
 standalone/.build/*
