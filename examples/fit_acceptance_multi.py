@@ -120,18 +120,18 @@ if not hlt2_histogram:
     raise ValueError, 'Cannot get acceptance historgram %s from file' % hlt2_histogram
 xaxis = hlt2_histogram.GetXaxis()
 
-## hlt1_histogram = acceptance_file.Get(hlt1_histogram)
-## if not hlt1_histogram:
-##     raise ValueError, 'Cannot get acceptance historgram %s from file' % hlt1_histogram
+hlt1_histogram = acceptance_file.Get(hlt1_histogram)
+if not hlt1_histogram:
+    raise ValueError, 'Cannot get acceptance historgram %s from file' % hlt1_histogram
 
 
 from array import array
 biased_bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, hlt2_histogram.GetNbinsX() + 2)))
 unbiased_bins = array('d', [0.3, 14])
 
-## hlt1_biased_heights = [hlt1_histogram.GetBinContent(i) for i in range(1, hlt1_histogram.GetNbinsX() + 1)]
+hlt1_biased_heights = [hlt1_histogram.GetBinContent(i) for i in range(1, hlt1_histogram.GetNbinsX() + 1)]
 hlt1_biased_average = (6.285e-01, 1.633e-02)
-hlt1_biased_heights = [hlt1_biased_average[0] for i in range(1, hlt2_histogram.GetNbinsX() + 1)]
+## hlt1_biased_heights = [hlt1_biased_average[0] for i in range(1, hlt2_histogram.GetNbinsX() + 1)]
 
 hlt1_unbiased_heights = [0.5]
 
@@ -302,7 +302,9 @@ else:
         rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
 
     from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-    tres = TimeResolution(time = t, timeResSigma = dict(Value = 0.5, Constant = True))
+    tres = TimeResolution(time = t, timeResSigma = dict(Value = 0.5, Constant = True),
+                          timeResMu = dict(Value = 0, Constant = True),
+                          BiasScaleFactor = False)
 
     res_model = MultiHistEfficiencyModel(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
                                          ConditionalCategories = True, UseSingleBinConstraint = False,
@@ -399,13 +401,15 @@ from ROOT import kYellow, kOrange
 for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
     plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
 
-output = {'hlt1_shape' : 'hlt1_excl_biased_dec_excl_biased_bin_%03d',
-          'hlt2_shape' : 'hlt2_biased_biased_bin_%03d'}
+output = {'hlt1_shape' : 'hlt1_excl_biased_dec_excl_biased_bin',
+          'hlt2_shape' : 'hlt2_biased_biased_bin'}
 output_file = TFile.Open('efficiencies.root', 'recreate')
+allVars = w.allVars()
 from ROOT import TH1D
 for name, pat in output.iteritems():
     n = len(biased_bins)
-    heights = [obj.ws().var(pat % i) for i in range(1, n)]
+    heights = [v for v in allVars if v.GetName().find(pat) != -1]
+    heights = sorted(heights, key = lambda v: int(v.GetName().split('_', 1)[-1]))
     v = [(h.getVal(), h.getError()) for h in heights]
     hist = TH1D(name, name, n - 1, biased_bins)
     for i in range(1, n):

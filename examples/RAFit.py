@@ -8,7 +8,7 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 pdfConfig['dataSample'] = '' # ( None, 100260, '' )  # '' / 'Summer2011' / 'runNumber % 2 == 1'
-pdfConfig['selection']  = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['selection']  = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'timeEffFit'
 generateData            = False
 doFit                   = True
 makeObservablePlots     = False
@@ -52,7 +52,7 @@ dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, Tr
 fitOpts = dict(  NumCPU    = 2
                , Optimize  = 2
                , Timer     = True
-#               , Verbose   = True
+               , Verbose   = True
 #               , Minos     = True
 #               , Hesse     = False
                , Minimizer = 'Minuit2'
@@ -81,7 +81,7 @@ pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal:
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'fit' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffType']          = 'fit' # 'paper2012' # 'HLT1Unbiased' # 'fit'
 pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
@@ -440,6 +440,16 @@ print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
+
+from ROOT import RooArgSet
+for constraint in pdfBuild._fullPdf.ExternalConstraints():
+    if constraint.GetName().find('average_constraint') == -1:
+        continue
+    pars = constraint.getParameters(RooArgSet())
+    phase = pars.find('ASOddPhase')
+    if phase:
+        print 'setting ASOddPhase constant for %s' % constraint.GetName()
+        phase.setConstant(True)
 
 if ( readData or generateData ) and doFit :
     # fit data

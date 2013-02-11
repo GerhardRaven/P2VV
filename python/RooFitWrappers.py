@@ -1237,15 +1237,12 @@ class MultiHistEfficiencyModel(Pdf):
 
             from random import shuffle
             for state, state_info in [(s, entries[s]) for s in states if s in entries]:
-                heights = state_info['heights']
-
+                heights = list(state_info['heights'])
                 order = range(len(heights))
                 shuffle(order)
-                print zip(order, heights)
                 for i, (rn, v) in enumerate(zip(order, heights)):
-                    heights[i] = RealVar('%d_%s_%s_bin_%03d' % (rn, category.GetName(), state, i + 1),
-                                         Observable = False, Value = v,
-                                         MinMax = self.__binHeightMinMax)
+                    name = '%d_%s_%s_bin_%03d' % (rn, category.GetName(), state, i + 1)
+                    heights[i] = RealVar(name, Observable = False, Value = v, MinMax = self.__binHeightMinMax)
                 self.__heights[(category, state)] = heights
                 # Add a binning for this category and state
                 bounds = state_info['bins']
