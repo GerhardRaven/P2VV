@@ -22,11 +22,9 @@
 //
 
 #include "TMath.h"
-#include "RooBoxPdf.h"
+#include "P2VV/RooBoxPdf.h"
 #include "RooRealVar.h"
 #include "RooArgSet.h"
-
-ClassImp(RooBoxPdf);
 
 //_____________________________________________________________________________
 RooBoxPdf::RooBoxPdf(const char *name, const char* title, RooRealVar& var,

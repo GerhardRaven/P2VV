@@ -7,10 +7,8 @@
 // Your description goes here... 
 
 #include "Riostream.h" 
-#include "RooRealCategory.h" 
+#include "P2VV/RooRealCategory.h" 
 #include "RooAbsCategory.h" 
-
-ClassImp(RooRealCategory) 
 
  RooRealCategory::RooRealCategory(const char *name, const char *title, RooAbsCategory& _c) :
    RooAbsReal(name,title), 

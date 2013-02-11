@@ -7,31 +7,31 @@ from math import pi, sin, cos, sqrt
 # job parameters
 nEvents = 50000
 
-generateData    = False
+generateData    = True
 physicsPDF      = True
 
 fitDataOriginal = False
 fitDataMoments  = False
 fitDataCoefs    = False
 computeMoments  = True
-makePlots       = False
-transAngles     = True
+makePlots       = True
+transAngles     = False
 
 # data parameters
-#dataSetName = 'JpsiKstarData'
-dataSetName = 'JpsiphiPHSP'
+dataSetName = 'JpsiKstarData'
+#dataSetName = 'JpsiphiPHSP'
 #dataSetName = 'Jpsiphi13144002'
-#dataSetFile = 'amplitudeMoments_hel.root'
+dataSetFile = 'amplitudeMoments_hel.root'
 #dataSetFile = 'amplitudeMoments_trans.root'
-dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Diego/jpsiphiTrans.root'
+#dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Diego/jpsiphiTrans.root'
 plotsFile = 'amplitudeMoments.ps'
 
 if transAngles : angleNames = ( 'cPsi',    'cTheta',    'Phi_b' ) # angleNames = ( 'cpsi_tr', 'ctheta_tr', 'phi_tr' )
 else           : angleNames = ( 'cthetaK', 'cthetal',   'phi'   )
 
 # angular moments
-#momentsFile = 'JpsiKstarMoments'
-momentsFile = 'JpsiphiPHSPMoments'
+momentsFile = 'JpsiKstarMoments'
+#momentsFile = 'JpsiphiPHSPMoments'
 #momentsFile = 'Jpsiphi13144002Moments'
 
 if physicsPDF :

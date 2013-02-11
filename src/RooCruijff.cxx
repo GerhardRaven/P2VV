@@ -2,11 +2,9 @@
 #include <iostream>
 #include <math.h>
 
-#include "RooCruijff.h"
+#include "P2VV/RooCruijff.h"
 #include "RooRealVar.h"
 #include "RooRealConstant.h"
-
-ClassImp(RooCruijff)
 
 RooCruijff::RooCruijff(const char *name, const char *title,
 		       RooAbsReal& _x, RooAbsReal& _m0, 

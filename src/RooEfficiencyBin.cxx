@@ -8,15 +8,13 @@
 
 #include "Riostream.h" 
 
-#include "RooEfficiencyBin.h" 
+#include "P2VV/RooEfficiencyBin.h" 
 #include "RooAbsReal.h" 
 #include "RooAbsCategory.h" 
 #include <math.h> 
 #include <utility> 
 using std::make_pair;
 #include "TMath.h" 
-
-ClassImp(RooEfficiencyBin) 
 
 //_____________________________________________________________________________
 RooEfficiencyBin::RooEfficiencyBin(const char *name, const char *title,

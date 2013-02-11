@@ -26,7 +26,7 @@
 #include "RooFit.h"
 #include "Riostream.h"
 
-#include "RooMultiCatGenerator.h"
+#include "P2VV/RooMultiCatGenerator.h"
 #include "RooAbsReal.h"
 #include "RooCategory.h"
 #include "RooRealVar.h"
@@ -47,9 +47,6 @@ using std::make_pair;
 #include <iostream>
 using std::endl;
 #include <assert.h>
-
-ClassImp(RooMultiCatGenerator)
-;
 
 //_____________________________________________________________________________
 void RooMultiCatGenerator::registerSampler(RooNumGenFactory& fact)

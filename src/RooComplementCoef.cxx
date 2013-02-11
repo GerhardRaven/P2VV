@@ -14,13 +14,11 @@
 #include "RooAbsReal.h" 
 #include "RooArgList.h" 
 #include "RooMsgService.h"
-#include "RooComplementCoef.h" 
+#include "P2VV/RooComplementCoef.h" 
 #include "Riostream.h"
 
 #include <iostream>
 using std::endl;
-
-ClassImp(RooComplementCoef) 
 
 //_____________________________________________________________________________
 RooComplementCoef::RooComplementCoef(const char* name, const char* title,
