@@ -9,11 +9,12 @@
 
 #include "Riostream.h" 
 
-#include "RooAmoroso.h" 
 #include "RooAbsReal.h" 
 #include "RooAbsCategory.h" 
 #include <math.h> 
 #include "TMath.h" 
+
+#include "P2VV/RooAmoroso.h" 
 
 ClassImp(RooAmoroso) 
 

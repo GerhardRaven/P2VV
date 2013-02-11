@@ -28,6 +28,8 @@
 #include "P2VV/RooEffConvGenContext.h"
 #include "P2VV/RooBoxPdf.h"
 #include "P2VV/RooExplicitNormPdf.h"
+#include "P2VV/RooAmoroso.h"
+#include "P2VV/RooTPDecay.h"
 
 #include <map>
 #include <string>
