@@ -174,21 +174,24 @@ datas = []
 sdatas = []
 from ROOT import TFile
 
-cut = 'nPV == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+cut = 'nPV == 2 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
 if not options.wpv:
     cut += ' && sel_cleantail == 1'
-hd = ('%d' % hash('dgagaegfe')).replace('-', 'm')
+hd = ('%d' % hash(cut)).replace('-', 'm')
 
 directory = '%sbins_%4.2ffs/%s' % (len(st_bins) - 1, (1000 * (st_bins[1] - st_bins[0])), hd)
 if os.path.exists(input_data['weighted']):
-    input_file = TFile.Open(input_data['weighted'], 'update')
+    cache_file = TFile.Open(input_data['weighted'], 'update')
 else:
-    input_file = TFile.Open(input_data['weighted'], 'new')
-input_dir = input_file.Get(directory)
-if not input_dir:
-    input_file.mkdir(directory)
-    input_dir = input_file.Get(directory)
+    cache_file = TFile.Open(input_data['weighted'], 'new')
+cache_dir = cache_file.Get(directory)
+if not cache_dir:
+    cache_file.mkdir(directory)
+    cache_dir = cache_file.Get(directory)
+    from ROOT import TObjString
+    cut_string = TObjString(cut)
+    cache_dir.WriteTObject(cut_string, 'cut')
     write_data = True
 
 ## Fitting options
@@ -206,15 +209,15 @@ if not write_data:
     rs = set()
     for i in range(len(st_bins) - 1):
         sds_name = 'sdata/DecayTree_%02d_weighted_psi_background' % i
-        sdatas.append(input_dir.Get(sds_name))
+        sdatas.append(cache_dir.Get(sds_name))
         ds_name = 'data/DecayTree_%02d' % i
-        datas.append(input_dir.Get(ds_name))
-    rd = input_dir.Get('mass_results')
+        datas.append(cache_dir.Get(ds_name))
+    rd = cache_dir.Get('mass_results')
     for e in rd.GetListOfKeys():
         if e.GetClassName() == 'RooFitResult':
             rs.add(os.path.join(rd.GetName(), e.GetName()))
-    for e in s:
-        results['mass'].append(input_dir.Get(e))
+    for e in rs:
+        results['mass'].append(cache_dir.Get(e))
     results['mass'] = sorted(results['mass'], key = lambda r: int(r.GetName().split('_', 1)[0]))
 
 else:
@@ -290,7 +293,7 @@ from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
 import P2VVGeneralUtils
 
-time_canvas = TCanvas('time_canvas', 'time_canvas', 1200, 990)
+time_canvas = TCanvas('time_canvas', 'time_canvas', 1200, 1050)
 pads = time_canvas.pads(4, 3)
 for i, (p, ds) in enumerate(zip(pads, sdatas)):
     result = time_pdf.fitTo(ds, SumW2Error = False, **fitOpts)
@@ -364,13 +367,14 @@ hist_res.Draw('pe, same')
 hist_res.GetXaxis().SetTitle('estimated decay time error [fs]')
 hist_res.GetYaxis().SetTitle('decay time resulution [fs]')
 
+# Write data to cache file
 from ROOT import TObject
 if write_data:
     def get_dir(d):
-        tmp = input_dir.Get(d)
+        tmp = cache_dir.Get(d)
         if not tmp:
-            input_dir.mkdir(d)
-            tmp = input_dir.Get(d)
+            cache_dir.mkdir(d)
+            tmp = cache_dir.Get(d)
         return tmp
     sdata_dir = get_dir('sdata')
     data_dir = get_dir('data')
@@ -379,15 +383,16 @@ if write_data:
         for i, ds in enumerate(dss):
             ds_name = ds.GetName().replace('DecayTree', 'DecayTree_%02d' % i)
             ds.SetName(ds_name)
-            d.Append(ds, True)
-            ds.Write(ds.GetName(), TObject.kOverwrite)
+            d.WriteTObject(ds, ds_name, "Overwrite")
         d.Write(d.GetName(), TObject.kOverwrite)
     for k, rs in results.iteritems():
         rd = results_dirs[k]
         for r in rs:
-            rd.Append(r, True)
-            r.Write(r.GetName(), TObject.kOverwrite)
+            rd.WriteTObject(r, r.GetName(), "Overwrite")
         rd.Write(rd.GetName(), TObject.kOverwrite)
+# Delete the input TTree which was automatically attached.
+if write_data:
+    cache_file.Delete('%s;*' % tree_name)
 
 ## import Dilution
 ## Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background])
