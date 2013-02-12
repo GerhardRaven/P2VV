@@ -10,11 +10,18 @@
 from P2VVParameterizations.GeneralUtils import _util_parse_mixin
 
 ###########################################################################################################################################
-# follow HFAG conventions:                                                                                                               ##
-# lambda = q/p * A^bar/A = |lambda| * e^(-i*phi_s) = |lambda| * [cos(-phi_s) + i*sin(-phi_s)] = |lambda| * [cos(phi_s) - i*sin(phi_s)]   ##
-# C = (1 - |lambda|^2) / (1 + |lambda|^2)                                                                                                ##
-# D = - Re(lambda) / (1 + |lambda|^2) =  - |lambda| / (1 + |lambda|^2) * cos(-phi_s) =  - |lambda| / (1 + |lambda|^2) * cos(phi_s)       ##
-# S = + Im(lambda) / (1 + |lambda|^2) =  + |lambda| / (1 + |lambda|^2) * sin(-phi_s) =  - |lambda| / (1 + |lambda|^2) * sin(phi_s)       ##
+## follow HFAG conventions:                                                                                                              ##
+## lambda_f = q/p * A_f^bar / A_f                                                                                                        ##
+##          = eta_f * |lambda_f| * e^(-i * phi_s^f)                                                                                      ##
+##          = eta_f * |lambda_f| * [cos(-phi_s^f) + i * sin(-phi_s^f)]                                                                   ##
+##          = eta_f * |lambda_f| * [cos(phi_s^f)  - i * sin(phi_s^f) ]                                                                   ##
+## C_f = (1 - |lambda_f|^2) / (1 + |lambda_f|^2)                                                                                         ##
+## D_f = - Re(lambda_f) / (1 + |lambda_f|^2)                                                                                             ##
+##     = -eta_f * |lambda_f| / (1 + |lambda_f|^2) * cos(-phi_s^f)                                                                        ##
+##     = -eta_f * |lambda_f| / (1 + |lambda_f|^2) * cos(phi_s^f)                                                                         ##
+## S_f = + Im(lambda_f) / (1 + |lambda_f|^2)                                                                                             ##
+##     = +eta_f * |lambda_f| / (1 + |lambda_f|^2) * sin(-phi_s^f)                                                                        ##
+##     = -eta_f * |lambda_f| / (1 + |lambda_f|^2) * sin(phi_s^f)                                                                         ##
 ###########################################################################################################################################
 from math import sqrt, cos, sin
 phiVal    = 0.
