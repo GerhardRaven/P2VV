@@ -37,7 +37,8 @@
         <function name = "sigmaFromFT" />
         <class name = "RooBoxPdf" />
         <class name = "RooExplicitNormPdf" />
-
+        <class name = "RooTPDecay" />
+        <class name = "RooAmoroso" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />

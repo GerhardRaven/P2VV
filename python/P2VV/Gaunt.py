@@ -47,7 +47,7 @@ def real_gaunt( l1, l2, l3, m1, m2, m3 ) :
      c = sorted( [ lm(l1,m1), lm(l2,m2), lm(l3,m3) ], key = lambda x: abs(x.m) )
      if c[2].m == 0 : # m1=m2=m3=0
          return gaunt( c[0].l, c[1].l, c[2].l, c[0].m, c[1].m, c[2].m ) if c[0].m == 0 else 0 
-     else c[1].m == 0 : # m1=m2=0, m3!=0
+     elif c[1].m == 0 : # m1=m2=0, m3!=0
          g = gaunt( c[0].l, c[1].l, c[2].l, c[0].m, c[1].m, c[2].m )
          u = ( _u(c[0].l,c[0].m,c[1].m ).conjugate()*_u(c[1].l,c[1].m,c[1].m ) ).real
          return 2*g*u

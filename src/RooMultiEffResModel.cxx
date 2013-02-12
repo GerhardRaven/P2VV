@@ -192,7 +192,9 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       entry->select();
       Int_t index = _super->getIndex();
       pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
-      assert(r.second);
+      if (!r.second) {
+         assert(false);
+      }
    }
    _super->setLabel(current.Data());
 }
@@ -483,7 +485,9 @@ Int_t RooMultiEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &
       } else {
          RooArgSet prodGenVars;
          Int_t code = resModel->getGenerator(testVars, prodGenVars, staticInitOK);
-         assert(prodGenVars.equals(genVars) && prodGenCode == code);
+         if (!(prodGenVars.equals(genVars) && prodGenCode == code)) {
+            assert(false);
+         }
       }
    }
 
@@ -551,20 +555,22 @@ void RooMultiEffResModel::initGenerator(Int_t code)
 //_____________________________________________________________________________
 void RooMultiEffResModel::generateEvent(Int_t code)
 {
-   Double_t r = RooRandom::uniform();
+   if (code == 2) {
+      // Only generate categories if code == 2. 
+      Double_t r = RooRandom::uniform();
+      // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
+      std::auto_ptr<TIterator> superIter(_super->MakeIterator());
 
-   // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
-   std::auto_ptr<TIterator> superIter(_super->MakeIterator());
-
-   Levels::const_iterator itLevel = _levels.begin();
-   // find the right generator, and generate categories at the same time...
-   while (itLevel != _levels.end() && itLevel->first < r) {
-      ++itLevel;
+      Levels::const_iterator itLevel = _levels.begin();
+      // find the right generator, and generate categories at the same time...
+      while (itLevel != _levels.end() && itLevel->first < r) {
+         ++itLevel;
+      }
+      // this assigns the categories.
+      _super->setLabel(itLevel->second);
    }
 
-   // this assigns the categories.
-   _super->setLabel(itLevel->second);
-
+   // Otherwise assume the categories are OK and just get the current index.
    Int_t index = _super->getIndex();
    HistEntries::const_iterator itEntry = _entries.find(index);
    assert(itEntry != _entries.end());
