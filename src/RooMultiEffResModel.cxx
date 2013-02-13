@@ -98,7 +98,8 @@ RooMultiEffResModel::CacheElem::CacheElem(const HistEntries& entries,
    : _iset(iset)
 {
    bool cats = false;
-   RooArgSet categories = entries.begin()->second->categories();
+   RooArgSet categories;
+   entries.begin()->second->addCategories(categories);
    RooArgSet observables(iset);
    RooAbsArg* cat = categories.first();
    if (iset.contains(*cat)) {
@@ -150,10 +151,12 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       MultiHistEntry* entry = *it;
       if (observables.getSize() == 0) {
          observables.add(*(entry->efficiency()->observables()));
-         categories.add(entry->categories());
+         entry->addCategories(categories);
       } else {
          assert(observables.equals(*(entry->efficiency()->observables())));
-         assert(categories.equals(entry->categories()));
+         RooArgSet tmp;
+         entry->addCategories(tmp);
+         assert(categories.equals(tmp));
       }
    }
    
@@ -300,7 +303,8 @@ Double_t RooMultiEffResModel::evaluate() const
    bool onlyVars = false;
 
    // Calculate the raw value of this p.d.f
-   RooArgSet categories(_entries.begin()->second->categories());
+   RooArgSet categories;
+   _entries.begin()->second->addCategories(categories);
    RooAbsArg* cat = categories.first();
    if (_normSet && _normSet->getSize() == categories.getSize() && 
        _normSet->contains(*cat)) {
@@ -344,7 +348,7 @@ Int_t RooMultiEffResModel::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& 
    RooArgSet categories;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      categories.add(it->second->categories());
+      it->second->addCategories(categories);
    }
 
    bool all = true;
@@ -458,7 +462,7 @@ Int_t RooMultiEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &
    RooArgSet categories;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      categories.add(it->second->categories());
+      it->second->addCategories(categories);
    }
    RooFIter iter = categories.fwdIterator();
    while (RooAbsArg* cat = iter.next()) {
@@ -522,7 +526,7 @@ void RooMultiEffResModel::initGenerator(Int_t code)
    RooArgSet categories;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      categories.add(it->second->categories());
+      it->second->addCategories(categories);
    }
    _super->recursiveRedirectServers(categories);
 
