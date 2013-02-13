@@ -143,8 +143,7 @@ public:
       }
       m_rawCats.clear();
 
-      m_catCache = new RooSetProxy(other.m_catCache->GetName(), other.m_catCache->GetName(),
-                                   parent, kFALSE, kFALSE);
+      m_catCache = new RooSetProxy("categories", "categories", parent, kFALSE, kFALSE);
       for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
               end = m_categories.end(); it != end; ++it) {
          m_catCache->add(it->first->arg());
@@ -160,8 +159,8 @@ public:
       m_categories.clear();
       delete m_efficiency;
       delete m_relative;
-      delete m_catCache;
       delete m_rawCache;
+      delete m_catCache;
    }
 
 

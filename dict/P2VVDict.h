@@ -35,30 +35,29 @@
 #include <string>
 #include <vector>
 
-template class std::vector<MultiHistEntry*>;
-template class std::vector<RooAbsRealMoment*>;
-
-template class std::map<RooAbsCategory*, std::string>;
-template class std::map<RooCategoryProxy*, std::string>;
-template class std::vector<std::pair<double, TString> >;
-
-template class std::map<Int_t, MultiHistEntry*>;
-template class std::pair<Int_t, MultiHistEntry*>;
-
-template class std::pair<RooAbsCategory*, std::string>;
-
-template class std::map<RooRealProxy*, bool>;
-template class std::pair<RooRealProxy*,bool>;
-template class std::map<RooAbsReal*, bool>;
-template class std::pair<RooAbsReal*, bool>;
-
-template class std::pair<Double_t, TString>;
-template class std::pair<RooCategoryProxy*, std::string>;
-
-template class std::vector<MultiHistEntry>;
-
 struct Instantiations {
-   std::map<int, MultiHistEntry*>::iterator _i00;
-};
 
+   std::map<RooAbsCategory*, std::string>   _i00;
+   std::map<RooCategoryProxy*, std::string> _i01;
+   std::vector<std::pair<double, TString> > _i02;
+
+   std::map<Int_t, MultiHistEntry*>         _i031;
+   std::pair<Int_t, MultiHistEntry*>        _i041;
+
+   std::pair<RooAbsCategory*, std::string>  _i05;
+
+   std::map<RooRealProxy*, bool> _i06;
+   std::pair<RooRealProxy*,bool> _i07;
+   std::map<RooAbsReal*, bool>   _i08;
+   std::pair<RooAbsReal*, bool>  _i09;
+
+   std::pair<Double_t, TString> _i10;
+   std::pair<RooCategoryProxy*, std::string> _i11;
+
+   std::vector<MultiHistEntry> _i16;
+   std::map<int, MultiHistEntry*>::iterator _i17;
+   std::vector<MultiHistEntry*> _i18;
+   std::vector<RooAbsRealMoment*> _i19;
+
+};
 #endif // DICT_P2VVDICT_H
