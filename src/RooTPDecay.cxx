@@ -38,9 +38,6 @@
 
 using namespace std;
 
-ClassImp(RooTPDecay) 
-;
-
 namespace {
    const double c_light = 0.299792458; // mm / ps
 
@@ -134,10 +131,11 @@ void RooTPDecay::initGenerator(Int_t /*code*/)
    _gauss->initGenerator(_gCode);
 }
 
-
+#ifdef STANDALONE
 //_____________________________________________________________________________
 void RooTPDecay::generateEvent(Int_t code)
 {
+   
    assert(code == 1 || code == 2) ;
    // Generate decay time
    RooDecay::generateEvent(code);
@@ -284,3 +282,10 @@ void RooTPDecay::generateEvent(Int_t code)
       break;
    }  
 }
+#else
+//_____________________________________________________________________________
+void RooTPDecay::generateEvent(Int_t /* code */)
+{
+   
+}
+#endif

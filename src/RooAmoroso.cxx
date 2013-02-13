@@ -16,8 +16,6 @@
 
 #include "P2VV/RooAmoroso.h" 
 
-ClassImp(RooAmoroso) 
-
 RooAmoroso::RooAmoroso(const char *name, const char *title, 
                        RooAbsReal& _x,
                        RooAbsReal& _a,
@@ -56,6 +54,3 @@ Double_t RooAmoroso::evaluate() const
    double ji = (x-a)*thetai;
    return pow( ji,alpha*beta-1)*exp(-pow(ji,beta));
 } 
-
-
-

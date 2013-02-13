@@ -155,12 +155,11 @@ public:
       return m_relative ? dynamic_cast<RooAbsReal*>(m_relative->absArg()) : m_rawRel;
    }
 
-   const RooAbsReal* relative() const{
+   const RooAbsReal* relative() const {
       return const_cast<MultiHistEntry*>(this)->relative();      
    }
 
-   void setParent(RooMultiEffResModel* parent)
-   {
+   void setParent(RooMultiEffResModel* parent) {
       std::string name;
       if (m_efficiency != 0) {
          RooRealProxy* temp = new RooRealProxy(m_efficiency->GetName(), parent, *m_efficiency);
@@ -203,9 +202,7 @@ public:
       m_rawCats.clear();      
    }
 
-   RooArgSet categories() const
-   {
-      RooArgSet r;
+   void addCategories(RooArgSet& r) const {
       if (!m_rawCats.empty()) {
          for (std::map<RooAbsCategory*, std::string>::const_iterator it = m_rawCats.begin(),
                  end = m_rawCats.end(); it != end; ++it) {
@@ -219,11 +216,9 @@ public:
             r.add(it->first->arg());
          }
       }
-      return r;
    }
 
-   bool thisEntry() const
-   {
+   bool thisEntry() const {
       bool r = true;
       for (std::map<RooCategoryProxy*, std::string>::const_iterator it = m_categories.begin(),
               end = m_categories.end(); it != end; ++it) {

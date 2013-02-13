@@ -56,6 +56,8 @@ struct Instantiations {
 
    std::vector<MultiHistEntry> _i16;
    std::map<int, MultiHistEntry*>::iterator _i17;
+   std::vector<MultiHistEntry*> _i18;
+   std::vector<RooAbsRealMoment*> _i19;
 
 };
 #endif // DICT_P2VVDICT_H
