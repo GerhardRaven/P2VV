@@ -130,7 +130,7 @@ pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
 
 pdfConfig['constrainDeltaM'] = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['lambdaCPParam'] = 'lambPhi'  # default/nominal: 'lambPhi'
+pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # default/nominal: 'lambPhi'
 
 fastFit           = False
 manualTagCatBins  = False
@@ -394,7 +394,7 @@ if fastFit :
         if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
 
-if pdfConfig['lambdaCPParam'] == 'lambPhi_CPVDecay' :
+if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
     if equalAbsLambdaCPs : pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
     else :                 pdfBuild['lambdaCP'].setConstant('rhoCP_m')
 
@@ -444,6 +444,9 @@ if pdfConfig['lambdaCPParam'] == 'lambPhi_CPVDecay' :
 #ws['lambdaCP'].setVal(1.)
 #ws['lambdaCP'].setConstant()
 #ws['phiCP'].setVal(-0.03)
+
+#ws['rhoCP_P'].setConstant()
+#ws['rhoCP_S'].setConstant()
 
 if randomParVals :
     import random

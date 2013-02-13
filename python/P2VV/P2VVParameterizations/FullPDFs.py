@@ -1268,16 +1268,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._lambdaCP = CPParam( phiCP_m = phiCPVar, AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes )
             if ambiguityPars : self._lambdaCP['phiCP_m'].setVal( pi - self._lambdaCP['phiCP_m'].getVal() )
 
-        elif lambdaCPParam == 'lambPhi_CPVDecay' :
+        elif lambdaCPParam.startswith('lambPhi_CPVDecay') :
             from P2VVParameterizations.CPVParams import LambdaAbsArg_CPVDecay_CPParam as CPParam
-            self._lambdaCP = CPParam( AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes )
+            if lambdaCPParam.endswith('PSWaves') :
+                rhoCP_P = RealVar( 'rhoCP_P', Title = 'CPV in decay param. |rho|', Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
+                rhoCP_S = RealVar( 'rhoCP_S', Title = 'CPV in decay param. |rho|', Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
+                phiCP_P = RealVar( 'phiCP_P', Title = 'CPV in decay param. phi',   Value = 0., Error = 0.1,  MinMax = (-RooInf, +RooInf) )
+                phiCP_S = RealVar( 'phiCP_S', Title = 'CPV in decay param. phi',   Value = 0., Error = 0.1,  MinMax = (-RooInf, +RooInf) )
+                self._lambdaCP = CPParam(  AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes
+                                         , rhoCP_A0 = rhoCP_P, rhoCP_Apar = rhoCP_P, rhoCP_Aperp = rhoCP_P, rhoCP_AS = rhoCP_S
+                                         , phiCP_A0 = phiCP_P, phiCP_Apar = phiCP_P, phiCP_Aperp = phiCP_P, phiCP_AS = phiCP_S
+                                        )
 
-            #rhoCP = RealVar( 'rhoCP', Title = 'CPV in decay param. |rho|', Value = 1., Error = 0.04, MinMax = ( 0.,      5.      ) )
-            #phiCP = RealVar( 'phiCP', Title = 'CPV in decay param. phi',   Value = 0., Error = 0.1,  MinMax = ( -RooInf, +RooInf ) )
-            #self._lambdaCP = CPParam(  AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes
-            #                         , rhoCP_A0 = rhoCP, rhoCP_Apar = rhoCP, rhoCP_Aperp = rhoCP, rhoCP_AS = rhoCP
-            #                         , phiCP_A0 = phiCP, phiCP_Apar = phiCP, phiCP_Aperp = phiCP, phiCP_AS = phiCP
-            #                        )
+            else :
+                self._lambdaCP = CPParam( AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes )
 
         else :
             if lambdaCPParam == 'lambPhi' :

@@ -239,13 +239,14 @@ class LambdaAbsArg_CPVDecay_CPParam( CPVDecay_CPParam ) :
         amps       = kwargs.pop('Amplitudes')
         magNames   = dict( mix = 'rhoCP_m'    )
         phaseNames = dict( mix = 'phiCPRel_m' )
-        self._parseArg( 'rhoCP_m', kwargs, Title = 'CPV in mixing param. |rho_m|', Value = lambVal, Error = lambErr, MinMax = ( 0., 5. ) )
+        self._parseArg( 'rhoCP_m', kwargs, Title = 'CPV in mixing param. |rho_m|', Value = 1., Error = lambErr, MinMax = ( 0., 5. )
+                       , Constant = True )
         self._parseArg( 'phiCPRel_m', kwargs, Title = 'CPV in mixing param. phi_m - phi_m', Value = 0., ObjectType = 'ConstVar' )
 
         for amp in ampNames :
             magNames[amp]   = 'rhoCP_%s' % amp
             phaseNames[amp] = 'phiCP_%s' % amp
-            self._parseArg( 'rhoCP_%s' % amp, kwargs, Title = 'CPV in decay param. |rho_%s|' % amp, Value = 1., Error = lambErr
+            self._parseArg( 'rhoCP_%s' % amp, kwargs, Title = 'CPV in decay param. |rho_%s|' % amp, Value = lambVal, Error = lambErr
                            , MinMax = ( 0., 5. ) )
             self._parseArg( 'phiCP_%s' % amp, kwargs, Title = 'CPV in decay param. phi_%s + phi_m' % amp, Value = 0., Error = phiErr
                            , MinMax = ( -RooInf, +RooInf ) )
@@ -259,8 +260,8 @@ class LambdaAbsArgRel_CPVDecay_CPParam( CPVDecay_CPParam ) :
         amps       = kwargs.pop('Amplitudes')
         magNames   = dict( mix = 'rhoCP_m' )
         phaseNames = dict( mix = 'phiCP_m' )
-        self._parseArg( 'rhoCP_m', kwargs, Title = 'CPV in mixing param. |rho_m|',       Value = lambVal, Error = lambErr
-                       , MinMax = (  0.,      5.     ) )
+        self._parseArg( 'rhoCP_m', kwargs, Title = 'CPV in mixing param. |rho_m|', Value = 1., Error = lambErr, MinMax = ( 0., 5. )
+                       , Constant = True )
         self._parseArg( 'phiCP_m', kwargs, Title = 'CPV in mixing param. phi_m + phi_0', Value = phiVal,  Error = phiErr
                        , MinMax = ( -RooInf, +RooInf ) )
 
