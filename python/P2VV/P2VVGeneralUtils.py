@@ -938,6 +938,7 @@ def plotSWavePhases( **kwargs ) :
     deltaSVals     = kwargs.pop( 'DeltaSValues'       )
     deltaSLowErrs  = kwargs.pop( 'DeltaSLowErrors'    )
     deltaSHighErrs = kwargs.pop( 'DeltaSHighErrors'   )
+    gray           = kwargs.pop( 'GrayScale', False   )
 
     if kwargs :
         raise KeyError, 'P2VV - ERROR: plotSWavePhases: unexpected keyword arguments: %s' % kwargs
@@ -954,27 +955,19 @@ def plotSWavePhases( **kwargs ) :
     KKMass2LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
     KKMass2HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
 
-    if theoryVals :
-        from ROOT import TGraphErrors
-        theory    = array( 'd', theoryVals           )
-        theoryErr = array( 'd', [ 0. ] * len(KKMass) )
-        theoryGraph = TGraphErrors( len(KKMass), KKMass, theory, KKMassErr, theoryErr )
-    else :
-        theoryGraph = None
-
     from ROOT import TGraphAsymmErrors
+    deltaSGraphs = [ ]
+
     deltaS1        = array( 'd', deltaSVals      )
     deltaS1LowErr  = array( 'd', deltaSLowErrs   )
     deltaS1HighErr = array( 'd', deltaSHighErrs )
-    deltaS1Graph = TGraphAsymmErrors( len(KKMass1), KKMass1, deltaS1\
-                                     , KKMass1LowErr, KKMass1HighErr, deltaS1LowErr, deltaS1HighErr )
+    deltaSGraphs.append( TGraphAsymmErrors(len(KKMass1), KKMass1, deltaS1, KKMass1LowErr, KKMass1HighErr, deltaS1LowErr, deltaS1HighErr) )
 
     from math import pi
     deltaS2        = array( 'd', [ pi - val for val in deltaSVals ] )
     deltaS2LowErr  = array( 'd', deltaSHighErrs )
     deltaS2HighErr = array( 'd', deltaSLowErrs  )
-    deltaS2Graph = TGraphAsymmErrors( len(KKMass2), KKMass2, deltaS2\
-                                     , KKMass2LowErr, KKMass2HighErr, deltaS2LowErr, deltaS2HighErr )
+    deltaSGraphs.append( TGraphAsymmErrors(len(KKMass2), KKMass2, deltaS2, KKMass2LowErr, KKMass2HighErr, deltaS2LowErr, deltaS2HighErr) )
 
     delSMin0 = min( delS for delS in theoryVals ) if theoryVals else +1.e32
     delSMax0 = max( delS for delS in theoryVals ) if theoryVals else -1.e32
@@ -983,62 +976,60 @@ def plotSWavePhases( **kwargs ) :
     delSMin  = min( [ delSMin0, delSMin1, pi - delSMax1 ] )
     delSMax  = max( [ delSMax0, delSMax1, pi - delSMin1 ] )
 
+    if theoryVals :
+        from ROOT import TGraphErrors
+        theory    = array( 'd', theoryVals           )
+        theoryErr = array( 'd', [ 0. ] * len(KKMass) )
+        deltaSGraphs.append( TGraphErrors( len(KKMass), KKMass, theory, KKMassErr, theoryErr ) )
+
     from ROOT import gStyle, kSolid
     gStyle.SetLineStyleString( 11, ' 30 15' )
-    if theoryGraph : theoryGraph.SetLineStyle(11)
-    deltaS1Graph.SetLineStyle(kSolid)
-    deltaS2Graph.SetLineStyle(kSolid)
+    deltaSGraphs[0].SetLineStyle(kSolid)
+    deltaSGraphs[1].SetLineStyle(kSolid)
+    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetLineStyle(11)
 
-    from ROOT import kBlack, kRed, kBlue, kWhite
-    if theoryGraph : theoryGraph.SetLineColor(kBlack)
-    deltaS1Graph.SetLineColor(kRed)
-    deltaS2Graph.SetLineColor(kBlue)
+    from ROOT import kBlack, kBlue, kRed
+    deltaSGraphs[0].SetLineColor( kBlue + 2 )
+    deltaSGraphs[1].SetLineColor( kRed - 4 )
+    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetLineColor(kBlack)
 
-    if theoryGraph : theoryGraph.SetMarkerColor(kBlack)
-    deltaS1Graph.SetMarkerColor(kRed)
-    deltaS2Graph.SetMarkerColor(kBlue)
+    deltaSGraphs[0].SetMarkerColor( kBlue + 2 )
+    deltaSGraphs[1].SetMarkerColor( kRed - 4 )
+    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerColor(kBlack)
 
-    if theoryGraph : theoryGraph.SetLineWidth(3)
-    deltaS1Graph.SetLineWidth(4)
-    deltaS2Graph.SetLineWidth(4)
+    deltaSGraphs[0].SetLineWidth(4)
+    deltaSGraphs[1].SetLineWidth(4)
+    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetLineWidth(3)
 
-    from ROOT import kFullCircle, kFullSquare
-    if theoryGraph : theoryGraph.SetMarkerStyle(kFullCircle)
-    deltaS1Graph.SetMarkerStyle(kFullCircle)
-    deltaS2Graph.SetMarkerStyle(kFullSquare)
-    if theoryGraph : theoryGraph.SetMarkerSize(0.7)
-    deltaS1Graph.SetMarkerSize(1.6)
-    deltaS2Graph.SetMarkerSize(1.5)
+    from ROOT import kFullCircle, kFullTriangleDown
+    deltaSGraphs[0].SetMarkerStyle(kFullCircle)
+    deltaSGraphs[1].SetMarkerStyle(kFullTriangleDown)
+    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerStyle(kFullCircle)
+    deltaSGraphs[0].SetMarkerSize(1.6)
+    deltaSGraphs[1].SetMarkerSize(1.6)
+    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerSize(0.7)
 
-    if theoryGraph : theoryGraph.SetMinimum( yAxisRange[0] if yAxisRange[0] else delSMin - 0.10 * ( delSMax - delSMin ) )
-    if theoryGraph : theoryGraph.SetMaximum( yAxisRange[1] if yAxisRange[1] else delSMax + 0.15 * ( delSMax - delSMin ) )
-    deltaS1Graph.SetMinimum( yAxisRange[0] if yAxisRange[0] else delSMin - 0.10 * ( delSMax - delSMin ) )
-    deltaS1Graph.SetMaximum( yAxisRange[1] if yAxisRange[1] else delSMax + 0.15 * ( delSMax - delSMin ) )
+    for graph in deltaSGraphs :
+        graph.SetMinimum( yAxisRange[0] if yAxisRange[0] else delSMin - 0.10 * ( delSMax - delSMin ) )
+        graph.SetMaximum( yAxisRange[1] if yAxisRange[1] else delSMax + 0.15 * ( delSMax - delSMin ) )
 
-    if theoryGraph : theoryGraph.GetXaxis().SetTitle(KKMassLabel)
-    if theoryGraph : theoryGraph.GetYaxis().SetTitle(deltaSLabel)
-    deltaS1Graph.GetXaxis().SetTitle(KKMassLabel)
-    deltaS1Graph.GetYaxis().SetTitle(deltaSLabel)
+        graph.GetXaxis().SetTitle(KKMassLabel)
+        graph.GetYaxis().SetTitle(deltaSLabel)
 
-    if theoryGraph : theoryGraph.GetXaxis().SetTitleOffset(1.0)
-    if theoryGraph : theoryGraph.GetYaxis().SetTitleOffset(0.7)
-    deltaS1Graph.GetXaxis().SetTitleOffset(1.0)
-    deltaS1Graph.GetYaxis().SetTitleOffset(0.7)
+        graph.GetXaxis().SetTitleOffset(1.0)
+        graph.GetYaxis().SetTitleOffset(0.7)
 
-    if theoryGraph : theoryGraph.SetTitle(plotTitle)
-    deltaS1Graph.SetTitle(plotTitle)
+        graph.SetTitle(plotTitle)
 
-    _P2VVPlotStash.append(deltaS1Graph)
-    _P2VVPlotStash.append(deltaS2Graph)
-    if theoryGraph : _P2VVPlotStash.append(theoryGraph)
+        _P2VVPlotStash.append(graph)
 
     if drawLegend :
         from ROOT import gStyle, TLegend
         leg = TLegend( 0.67, 0.46, 0.93, 0.66 )
         leg.SetTextFont( gStyle.GetTextFont() )
         leg.SetMargin(0.45)
-        leg.AddEntry( deltaS1Graph, '#Delta#Gamma_{s} > 0', 'LPE' )
-        leg.AddEntry( deltaS2Graph, '#Delta#Gamma_{s} < 0', 'LPE' )
+        leg.AddEntry( deltaSGraphs[0], '#Delta#Gamma_{s} > 0', 'LPE' )
+        leg.AddEntry( deltaSGraphs[1], '#Delta#Gamma_{s} < 0', 'LPE' )
         leg.SetBorderSize(1)
         leg.SetFillStyle(0)
         _P2VVPlotStash.append(leg)
@@ -1064,9 +1055,10 @@ def plotSWavePhases( **kwargs ) :
     SWavePhaseCanv.SetRightMargin(0.04)
     SWavePhaseCanv.SetTopMargin(0.04)
     SWavePhaseCanv.SetBottomMargin(0.17)
-    deltaS1Graph.Draw('AP')
-    deltaS2Graph.Draw('P sames')
-    if theoryGraph : theoryGraph.Draw('P sames')
+    if gray : SWavePhaseCanv.SetGrayscale()
+    deltaSGraphs[1].Draw('AP')
+    deltaSGraphs[0].Draw('P sames')
+    if len(deltaSGraphs) > 2 : deltaSGraphs[2].Draw('P sames')
     if leg :      leg.Draw()
     if LHCbText : LHCbText.Draw()
 
