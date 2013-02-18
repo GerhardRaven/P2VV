@@ -1,4 +1,4 @@
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 from ROOT import RooDecay as Decay,             \
                  RooExponential as Exponential, \
                  RooGaussian as Gaussian,       \
@@ -49,7 +49,7 @@ data = pdf.generate((m,t), 2000)
 
 pdf.fitTo(data)
 
-from P2VVGeneralUtils import plot
+from P2VV.GeneralUtils import plot
 from ROOT import TCanvas, RooFit, kDashed, kGreen, kRed
 ( sigcolor, bkgcolor) = (kGreen,kRed )
 (lw,ms,xe) = (2,0.4,0)

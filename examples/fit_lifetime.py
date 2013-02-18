@@ -1,5 +1,5 @@
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -36,7 +36,7 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import DG_TimeResolution as TimeResolution
+from P2VV.Parameterizations.TimeResolution import DG_TimeResolution as TimeResolution
 sig_tres = TimeResolution(Name = 'sig_tres', time = t, sigmat = st)
 
 # Signal time pdf
@@ -45,7 +45,7 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres
             ExternalConstraints = sig_tres.model().ExternalConstraints())
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
 
 # J/psi mass pdf
@@ -62,7 +62,7 @@ bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c
 # Create combinatorical background component
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.model()
                          , bkg_t_fll    = dict( Name = 'bkg_t_fll',    Value = 0.2 )
                          , bkg_t_ll_tau = dict( Name = 'bkg_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
@@ -82,7 +82,7 @@ bkg_t = bkg_t.pdf()
 background = Component('background', (bkg_m.pdf(), bkg_mpsi, bkg_t), Yield = (20000,2000,50000) )
 
 # Apply acceptance
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
@@ -94,7 +94,7 @@ bkg_data    = data.reduce(CutRange = 'leftsideband' )
 bkg_data.append(data.reduce(CutRange = 'rightsideband'))
 
 # Time acceptance
-from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance
+from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance
 sig_acceptance = Paper2012_TimeAcceptance(time = t, Input = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root',
                                           Histograms = {excl_biased : { 'ExclBiased' : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'},
                                                                         'Unbiased'   : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'}
@@ -137,7 +137,7 @@ print 'plotting'
 canvas = TCanvas('canvas', 'canvas', 1500, 500)
 obs = [m, mpsi, t]
 for (p,o) in zip(canvas.pads(len(obs)), obs):
-    from P2VVGeneralUtils import plot
+    from P2VV.GeneralUtils import plot
     pdfOpts  = dict(ProjWData = (RooArgSet(st), data, True))
     plot(p, o, pdf = pdf if o != st else None, data = data
          , plotResidHist = True

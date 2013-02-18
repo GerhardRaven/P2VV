@@ -1,5 +1,5 @@
 from ROOT import *
-from P2VVLoad import P2VVLibrary
+from P2VV.Load import P2VVLibrary
 gStyle.SetOptStat(0);
 from ModelBuilders import buildMomentPDF,abasis,declareObservables,buildMassPDFs
 from itertools import count,product

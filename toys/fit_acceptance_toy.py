@@ -1,16 +1,16 @@
 import sys
 import os
-from ToyMCUtils import Toy
+from P2VV.ToyMCUtils import Toy
 
 toy = Toy()
 parser = toy.parser()
 (options, args) = toy.configure()
 
 from itertools import product
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
-from P2VVParameterizations.GeneralUtils import valid_combinations
+from P2VV.Parameterizations.GeneralUtils import valid_combinations
 
 obj = RooObject( workspace = 'w')
 w = obj.ws()
@@ -49,16 +49,16 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+from P2VV.Parameterizations.TimeResolution import Moriond2012_TimeResolution
 tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = True, sigmat = st,
                                   timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. )))
-## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
+## from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+## from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 ## tres = TimeResolution(time = t)
 
 # Signal time pdf
-from P2VVParameterizations.TimePDFs import Single_Exponent_Time
+from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
 sig_t = Single_Exponent_Time(Name = 'sig_t', time = t, resolutionModel = tres.model())
 
 # Build the acceptance using the histogram as starting values

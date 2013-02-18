@@ -3,7 +3,7 @@
 ###########################
 
 from math import pi
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -68,7 +68,7 @@ pdfConfig['fitOptions'] = fitOpts
 
 # plot options
 from ROOT import gStyle, kBlack, kBlue, kRed, kGreen, kMagenta, kSolid, kDashed, kFullCircle, kFullSquare, kFullDotLarge
-from P2VVLoad import RooFitOutput, LHCbStyle
+from P2VV.Load import RooFitOutput, LHCbStyle
 gStyle.SetEndErrorSize(3)
 lineWidth     = 4
 lineColor     = kBlue
@@ -104,11 +104,9 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.22, 0.07), (0.017, 0.013), (0.020, 0.011), (0.16,  0.04) ]
-#                                     , [ (1.4,  0.9 ), (0.71,  0.38 ), (-0.64, 0.25 ), (-0.66, 0.20) ] )
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                      , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.964, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: True
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -213,10 +211,10 @@ pdfConfig['numAngleBins'] = ( 5, 7, 9 )
 ###############
 
 # workspace
-from RooFitWrappers import RooObject
+from P2VV.RooFitWrappers import RooObject
 ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
@@ -278,12 +276,12 @@ if generateData :
 
     # additional observables
     if pdfConfig['nominalPdf'] or not pdfConfig['transversityAngles'] :
-        from P2VVGeneralUtils import addTransversityAngles
+        from P2VV.GeneralUtils import addTransversityAngles
         addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
                                       , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
 
     # write data to file
-    from P2VVGeneralUtils import writeData
+    from P2VV.GeneralUtils import writeData
     writeData( dataSetFile, dataSetName, fitData )
 
 elif pdfConfig['SFit'] :
@@ -292,7 +290,7 @@ elif pdfConfig['SFit'] :
     bkgData = pdfBuild['bkgSWeightData']
     if corrSFitErr == 'sumWeight'\
             or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-        from P2VVGeneralUtils import correctSWeights
+        from P2VV.GeneralUtils import correctSWeights
         fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
                                   , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
                                   , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
@@ -459,7 +457,7 @@ if randomParVals :
 
 ## set S-wave fractions for the two middle bins equal
 #print 'Bs2JpsiKKFit: setting S-wave fractions for bin 2 and bin 3 equal'
-#from RooFitWrappers import Customizer
+#from P2VV.RooFitWrappers import Customizer
 #pdf = Customizer( Pdf = pdf, OriginalArgs = [ ws['f_S_bin3'] ], SubstituteArgs = [ ws['f_S_bin2'] ] )
 #pdfObs  = pdf.getObservables(fitData)
 #pdfPars = pdf.getParameters(fitData)
@@ -506,7 +504,7 @@ if ( readData or generateData ) and doFit :
         parCovs = fitResult.covarianceMatrix()
 
         from ROOT import RooRealVar, RooArgList
-        from P2VVParameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
+        from P2VV.Parameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
         deltaPar  = AparPh  - A0Ph
         deltaPerp = AperpPh - A0Ph
         deltaS    = ASPh    - A0Ph
@@ -609,7 +607,7 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
-    from P2VVImports import parNames, parValues#, parValuesPHSPAcc as parValues
+    from P2VV.Imports import parNames, parValues#, parValuesPHSPAcc as parValues
     print 'Bs2JpsiKKFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
@@ -632,7 +630,7 @@ if parFileOut :
 
 if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots or dllPars ) :
     # import plotting tools
-    from P2VVGeneralUtils import plot, _P2VVPlotStash
+    from P2VV.GeneralUtils import plot, _P2VVPlotStash
     from ROOT import TCanvas
 
     # create projection data set for conditional observables
@@ -643,7 +641,7 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
                  , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
                 }
 
-    from RooFitWrappers import SimultaneousPdf
+    from P2VV.RooFitWrappers import SimultaneousPdf
     projWDataSet     = [ obs for obs in pdf.ConditionalObservables() ]
     projWDataBSet    = [ obs for obs in pdf.ConditionalObservables() if obs.GetName() != iTagOS.GetName() ]
     projWDataBbarSet = [ obs for obs in pdf.ConditionalObservables() if obs.GetName() != iTagOS.GetName() ]
@@ -682,7 +680,7 @@ if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
         deltaSLowErrs  = deltaSHighErrs
         deltaSHighErrs = tempErrs
 
-    from P2VVGeneralUtils import plotSWavePhases
+    from P2VV.GeneralUtils import plotSWavePhases
     deltaSCanv = plotSWavePhases(  MassBins         = KKMassVals
                                  , DeltaSValues     = deltaSVals
                                  , DeltaSLowErrors  = deltaSLowErrs

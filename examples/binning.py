@@ -28,7 +28,7 @@ from ROOT import (RooDataHist, RooWorkspace,
                   RooArgSet, RooArgList, RooHistFunc,
                   RooFit)
 from ROOT import (TH1F, TFile, TCanvas, Double)
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 # Create a HistFunc
 obj = RooObject(workspace = 'w')

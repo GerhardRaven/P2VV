@@ -1,6 +1,6 @@
 import sys
 import os
-from ToyMCUtils import Toy
+from P2VV.ToyMCUtils import Toy
 
 toy = Toy()
 parser = toy.parser()
@@ -20,8 +20,8 @@ from ROOT import (RooDataHist, RooWorkspace,
                   RooArgSet, RooArgList, RooHistFunc,
                   RooFit)
 from ROOT import (TH1F, TFile, TCanvas, Double)
-from P2VVLoad import P2VVLibrary
-from RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
+from P2VV.RooFitWrappers import *
 
 # Create a HistFunc
 obj = RooObject(workspace = 'w')

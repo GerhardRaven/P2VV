@@ -26,7 +26,7 @@ from ROOT import (RooDataHist, RooWorkspace,
                   RooArgSet, RooArgList, RooHistFunc,
                   RooFit)
 from ROOT import (TH1F, TFile, TCanvas, Double)
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 # Create a HistFunc
 obj = RooObject(workspace = 'w')
@@ -38,7 +38,7 @@ c = RealVar('c', Title = 'c', Value = -2.37, MinMax = (-3, -2))
 
 eff = FormulaVar('eff_shape', "(t > 0.) ? (1 / (1 + (a * t) ** (c))) : 0.0001", [t, a, c])
 
-from P2VVBinningBuilders import build1DVerticalBinning
+from P2VV.BinningBuilders import build1DVerticalBinning
 binning, eff_func = build1DVerticalBinning('binning', eff, t, dy, 1.)
 
 ## Use EffHistProd to generate events

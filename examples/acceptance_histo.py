@@ -1,4 +1,4 @@
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 import PyCintex
 gbl = PyCintex.makeNamespace('')
@@ -28,7 +28,7 @@ mc_res = ResolutionModel('mc_res', Type = TruthModel, Parameters = [t])
 mcpdf = Pdf('mc_pdf', Type = Decay,  Parameters = [t,signal_tau,mc_res,'SingleSided'])
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
+from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution
 tres = LP2011_TimeResolution(time = t)['model']
 
 # Signal time pdf

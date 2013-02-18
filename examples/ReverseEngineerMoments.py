@@ -9,9 +9,9 @@
 from itertools import count
 from math import sqrt,pi
 from ModelBuilders import *
-from RooFitDecorators import *
+from P2VV.RooFitDecorators import *
 from ROOT import *
-from P2VVLoad import P2VVLibrary
+from P2VV.Load import P2VVLibrary
 
 from optparse import OptionParser
 parser = OptionParser()

@@ -1,5 +1,5 @@
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 ws = RooObject(workspace = 'workspace')
 
 from math import pi
@@ -51,7 +51,7 @@ pdf.Print("t")
 
 from ROOT import TFile
 
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DSTReaderAlgo/Reader_All'
 input_file = '/stuff/PhD/Efficiency/JpsiK/tuples_JpsiK_Detached4.root'
 data = readData(input_file, tree_name, observables = observables)

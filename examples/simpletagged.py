@@ -1,11 +1,11 @@
 from math import sqrt, pi
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')
 
-from P2VVGeneralUtils import numCPU
-from ROOTDecorators import  ROOTversion as Rv
+from P2VV.GeneralUtils import numCPU
+from P2VV.ROOTDecorators import  ROOTversion as Rv
 fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
@@ -28,14 +28,14 @@ st   = RealVar('sigmat',Title = '#sigma(t)',     Unit = 'ps',  Observable = True
 eta  = RealVar('tagomega_os',      Title = 'estimated mistag',          Observable = True, MinMax = (0,0.50001),  nBins =  25)
 iTag = Category( 'tagdecision_os', Title = 'initial state flavour tag', Observable = True, States = { 'B': +1, 'Bbar': -1, 'untagged' : 0 } )
 sel  = Category( 'sel',            Title = 'selection',                 Observable = True, States = { 'good': +1 } )
-from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
+from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',        nBins = 24 )
                     , ctheta = dict( Name = 'trcostheta', Title = 'cos(#theta_{tr})', nBins = 24 )
                     , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 #data = readData( '/tmp/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitting_20111220.root'
                , dataSetName = 'DecayTree'
@@ -44,25 +44,25 @@ data = readData( '/data/bfys/dveijk/DataJpsiPhi/2012/Bs2JpsiPhi_ntupleB_for_fitt
                )
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5368, MinMax = (5363,5372) ) )
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 # Decay time pdf
-from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
+from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
 #externalConstraints = list()
 #externalConstraints += tres.externalConstraints()
 
-from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
+from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.65
                                      , dGamma = 0.10
                                      , dM = dict( Value = 17.8, MinMax = (16.5,18.5), Constant = True)
                                      )
 
 # define tagging parameter 
-from P2VVParameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
+from P2VV.Parameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
 tagging = TaggingParams( estWTag = eta ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
 #externalConstraints += tagging.externalConstraints()
@@ -71,7 +71,7 @@ tagging = TaggingParams( estWTag = eta ) # Constant = False, Constrain = True )
 eta_pdf = UniformPdf( Name = 'eta_pdf', Arguments = (eta,) )
 
 # itag distribution
-from P2VVParameterizations.FlavourTagging import Trivial_TagPdf
+from P2VV.Parameterizations.FlavourTagging import Trivial_TagPdf
 bkg_tag = Trivial_TagPdf( Name = 'tag'
                                 , tagdecision = iTag
                                 , tagEff      = dict( Name = 'tag_bkg_eff', Value = 0.27 )
@@ -85,27 +85,27 @@ sig_tag = Trivial_TagPdf( Name = 'tag'
                                 , NamePF      = 'sig'
                                 )
 
-from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
+from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False )
                         , lambdaCPSq = ConstVar( Name = 'one', Value = 1 ) 
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
 amplitudes = JpsiVPolar_AmplitudeSet( A0Mag2 = 0.50, A0Phase = 0
                                     , AperpMag2 = 0.25, AperpPhase = dict( Value = -3.1 ) # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                     , AparPhase = -2.9
                                     , ASMag2 = dict( Value = 0, Constant = True ) , ASPhase = dict( Value = 0, Constant = True ) 
                                     )
 # need to specify order in which to traverse...
-from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
+from P2VV.Parameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , amplitudes
                                                   , CP
                                                   , Product('tag',(iTag,tagging['dilution']))
                                                   , ['A0','Apar','Aperp','AS'] ) 
 
-from RooFitWrappers import BDecay
+from P2VV.RooFitWrappers import BDecay
 sig_t_angles = BDecay( Name      = 'sig_t_angles'
                      , time      = t
                      , dm        = lifetimeParams['dM']
@@ -123,7 +123,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 ###       then multiply sig_t_angles with the efficiency...
 ###       
 #mcpdf = BDecay( ... )
-#from P2VVGeneralUtils import RealMomentsBuilder
+#from P2VV.GeneralUtils import RealMomentsBuilder
 #eff = RealMomentsBuilder()
 #eff.appendPYList( angles.angles, indices(4,2) , PDF = mcpdf, NormSet = mcpdf.getObservables( mcdata.get() ) )
 #eff.compute(mcdata)
@@ -136,7 +136,7 @@ sig_t_angles = BDecay( Name      = 'sig_t_angles'
 ###       and register as PDF for biased data...
 
 #####
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres.model()
                        , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.6 )
                        , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 2.5, MinMax = (0.5,3.5) )
@@ -151,8 +151,8 @@ bkg_background = Component('bkg'   , ( bkg_m.pdf(), bkg_t.pdf(),  eta_pdf, bkg_t
 # create PDF for angular background
 if False :
     # make sweighted dataset using J/psi phi mass
-    from P2VVGeneralUtils import createSData
-    from P2VVParameterizations.AngularPDFs import SPlot_Moment_Angles
+    from P2VV.GeneralUtils import createSData
+    from P2VV.Parameterizations.AngularPDFs import SPlot_Moment_Angles
     splot_m = createSData( Name = 'Mass' , Components =  (signal,bkg_background), Observables = (m,), FitOpts = fitOpts, Data = data )
     mompdfBuilder = SPlot_Moment_Angles( angles.angles , splot_m )
     bkg_background += mompdfBuilder.pdf( Component = bkg_background.GetName()
@@ -194,7 +194,7 @@ for rng in ( None, 'signal','leftsideband,rightsideband' ) :
     pdfOpts['ProjWData'] = ( RooArgSet( eta._var ),  data, True ) 
     obs =  [ o for o in pdf.Observables() if hasattr(o,'frame') ]
     for (p,o) in zip( canvas[rng].pads(len(obs)), obs ) :
-        from P2VVGeneralUtils import plot
+        from P2VV.GeneralUtils import plot
         plot( p, o, data, pdf, components = { 'signal*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                             , 'bkg*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                                             }

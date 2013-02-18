@@ -1,6 +1,6 @@
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
-from P2VVLoad import LHCbStyle
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
+from P2VV.Load import LHCbStyle
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -60,7 +60,7 @@ from ROOT import RooExponential as Exponential
 from ROOT import RooDecay as Decay
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
 
 # Create combinatorical background component
@@ -68,7 +68,7 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 background = Component('background', (bkg_m.pdf(),), Yield = (10000,100,500000) )
 
 # Create time resolution model
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = False,
 ##                           BiasScaleFactor = False, Cache = False, TimeResSFOffset = False,
 ##                           bias = dict(Value = 0, MinMax = (-1, 1), Constant = True),
@@ -78,7 +78,7 @@ sig_tres = TimeResolution(Name = 'tres', time = t, PerEventError = False,
                           timeResSigma = dict(Name = 'timeResSigma', Value = 0.05, Constant = True))
                           
 
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 if dataSample == '2011':
     input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20130131.root'
@@ -103,7 +103,7 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Offset = True,
                Verbose = False, Optimize = 2, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
-from P2VVGeneralUtils import SData, splot
+from P2VV.GeneralUtils import SData, splot
 
 result = mass_pdf.fitTo(data, **fitOpts)
 
@@ -113,7 +113,7 @@ from ROOT import TCanvas
 mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
 obs = [m]
 for (p,o) in zip(mass_canvas.pads(len(obs)), obs):
-    from P2VVGeneralUtils import plot
+    from P2VV.GeneralUtils import plot
     pdfOpts  = dict()
     plot(p, o, pdf = mass_pdf, data = data
          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
@@ -140,7 +140,7 @@ nPV.setBinning(PV_binning)
 nPVs = BinningCategory(Name = 'nPVs', Observable = nPV, Binning = PV_binning,
                        Data = sig_sdata, Fundamental = True)
 
-## from P2VVParameterizations.OtherPDFs import AmorosoPdf
+## from P2VV.Parameterizations.OtherPDFs import AmorosoPdf
 
 ## P_pdf = AmorosoPdf(P, Name = 'P_pdf').pdf()
 ## P_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)

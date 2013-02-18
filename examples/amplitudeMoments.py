@@ -80,14 +80,14 @@ scale = 4. * sqrt(pi)
 ############################################################
 
 # import RooFit wrappers
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 # workspace
 ws = RooObject(workspace = 'ws')
 
 # angular functions
-if transAngles : from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngularFunctions
-else           : from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngularFunctions
+if transAngles : from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles as AngularFunctions
+else           : from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngularFunctions
 angleFuncs = AngularFunctions( cpsi = angleNames[0], ctheta = angleNames[1], phi = angleNames[2] )
 
 # variables in PDF
@@ -97,7 +97,7 @@ observables = list(angles)
 # build terms for angular PDF
 if physicsPDF :
     # terms with transversity amplitudes
-    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet
+    from P2VV.Parameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet
     transAmps = JpsiVCarthesian_AmplitudeSet(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                                              , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                                              , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
@@ -106,12 +106,12 @@ if physicsPDF :
                                              , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
                                             )
 
-    from P2VVParameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
+    from P2VV.Parameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
     pdfTerms = Amplitudes_AngularPdfTerms( AmpNames = ampsToUse, Amplitudes = transAmps, AngFunctions = angleFuncs.functions )
 
 else :
     # terms with angular basis functions
-    from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
+    from P2VV.Parameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
     cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
     pdfTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
                                           , **dict( (  'C%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
@@ -127,18 +127,18 @@ else :
 # build angular PDF
 pdf = pdfTerms.buildSumPdf('AngularPDF')
 
-from P2VVLoad import RooFitOutput
+from P2VV.Load import RooFitOutput
 if generateData :
     # generate data with PDF
     print 'amplitudeMoments: generating %d events' % nEvents
     data = pdf.generate( observables, nEvents )
 
-    from P2VVGeneralUtils import writeData
+    from P2VV.GeneralUtils import writeData
     writeData( dataSetFile, dataSetName, data )
 
 else :
     # read data from file
-    from P2VVGeneralUtils import readData
+    from P2VV.GeneralUtils import readData
     data = readData( dataSetFile, dataSetName = dataSetName )
 
 if fitDataOriginal :
@@ -160,7 +160,7 @@ names0 = 'p2vvab_00..'
 names1 = names0 + '|p2vvab_10..'
 names2 = names1 + '|p2vvab_20..'
 
-from P2VVGeneralUtils import RealMomentsBuilder
+from P2VV.GeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
 
@@ -271,7 +271,7 @@ AInvMat.Print()
 ###########################################################
 
 # build new PDF with angular coefficients
-from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
+from P2VV.Parameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
 cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
 coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
                                           , **dict( (  'C%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
@@ -296,14 +296,14 @@ if fitDataCoefs :
 
 if makePlots :
     # import ROOT plot style
-    from P2VVLoad import LHCbStyle
+    from P2VV.Load import LHCbStyle
 
     # create canvas
     from ROOT import TCanvas
     anglesCanv = TCanvas( 'anglesCanv', 'Angles' )
 
     # make plots
-    from P2VVGeneralUtils import plot
+    from P2VV.GeneralUtils import plot
     from ROOT import RooFit, RooCmdArg
     for ( pad, obs, nBins, plotTitle, xTitle ) in zip(  anglesCanv.pads(2, 2)
                                                       , angles

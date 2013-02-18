@@ -26,11 +26,11 @@ class efficiency :
         return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 * ( y[0][0] + 0.1*y[1][-1+1] + 0.2*y[1][0+1] + 0.3*y[1][1+1] )
 
 
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 ws = RooObject( workspace = 'myws' )
 
-from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
+from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 observables = [ i for i in angles.angles.itervalues() ] 
@@ -39,7 +39,7 @@ for i in angles.angles.itervalues() : i.setBins(16)
 
 
 # build new PDFs with angular coefficients
-from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
+from P2VV.Parameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
 indices = [ (0,0,0, 1), (1,0,0,0.5), (2,1,0,0.1) ]
 from math import sqrt
@@ -91,7 +91,7 @@ data = inEffData;
 
 #print 'computing efficiency moments'
 ###################################
-from P2VVGeneralUtils import RealMomentsBuilder
+from P2VV.GeneralUtils import RealMomentsBuilder
 eff = RealMomentsBuilder()
 indices  = [ ( i, l, m ) for i in range(4)
                          for l in range(2)
@@ -163,7 +163,7 @@ from ROOT import TCanvas
 c = TCanvas()
 obs = [ o for o in observables if hasattr(o,'frame') and o.GetName() != 't' ]
 for (ccc,o) in zip(c.pads(len(obs)),obs) :
-    from P2VVGeneralUtils import plot
+    from P2VV.GeneralUtils import plot
     plot( ccc, o, data, pdf, addPDFs = [ mcpdf ]
                            , dataOpts = dict( MarkerSize = 0.8, MarkerColor = RooFit.kBlack )
                            , pdfOpts  = dict( LineWidth = 2 , LineColor = RooFit.kGreen)

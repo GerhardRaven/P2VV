@@ -42,9 +42,9 @@ else:
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2012.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2012_workspace'
 
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
-from P2VVLoad import LHCbStyle
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
+from P2VV.Load import LHCbStyle
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -91,13 +91,13 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 # Time resolution model
 sig_tres = None
 if args[1] == 'single':
-    from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+    from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = True,
                               bias = dict(Value = -0.17, MinMax = (-1, 1)),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 5)))
 elif args[1] == 'double':
-    from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     scaleFactors = [(2, 2.3), (1, 1.2)]
     if not options.pee:
         scaleFactors = [(n, 0.032 * v) for n, v in scaleFactors]
@@ -106,7 +106,7 @@ elif args[1] == 'double':
                               ScaleFactors = scaleFactors,
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
-    from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = options.pee,
                               ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
@@ -118,32 +118,32 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres
             ExternalConstraints = sig_tres.model().ExternalConstraints())
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 ## sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
 m_sig_mean  = RealVar('m_sig_mean',   Unit = 'MeV', Value = 5365, MinMax = (5363, 5372))
 m_sig_sigma = RealVar('m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (5, 20))
 sig_m   = Pdf(Name = 'sig_m', Type = Gaussian,  Parameters = (m,m_sig_mean, m_sig_sigma ))
 
 # J/psi mass pdf
-from P2VVParameterizations.MassPDFs import Signal_PsiMass as PsiMassPdf
+from P2VV.Parameterizations.MassPDFs import Signal_PsiMass as PsiMassPdf
 psi_m = PsiMassPdf(mpsi, Name = 'psi_m')
 
 # J/psi background
-from P2VVParameterizations.MassPDFs import Background_PsiMass as PsiBkgPdf
+from P2VV.Parameterizations.MassPDFs import Background_PsiMass as PsiBkgPdf
 bkg_mpsi = PsiBkgPdf(mpsi, Name = 'bkg_mpsi')
 
 # Create combinatorical background component
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 # Create psi background component
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 0.8)
                          , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,  2.5))
                          , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.1, 0.5))
                          )
 
-## from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Background_Time
+## from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time as Background_Time
 ## psi_t = Background_Time(Name = 'psi_t', time = t, resolutionModel = sig_tres.model(),
 ##                              t_sig_tau  = dict(Name = 'tau', Value = 1.5, MinMax = (0.001, 2.5))
 ##                              )
@@ -163,7 +163,7 @@ psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), 
 background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield = (19620,100,500000) )
 
 # Prompt component
-from P2VVParameterizations.TimePDFs import Prompt_Peak
+from P2VV.Parameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 1, 500000))
 
@@ -221,7 +221,7 @@ if not write_data:
     results['mass'] = sorted(results['mass'], key = lambda r: int(r.GetName().split('_', 1)[0]))
 
 else:
-    from P2VVGeneralUtils import readData
+    from P2VV.GeneralUtils import readData
     tree_name = 'DecayTree'
     data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut)
@@ -234,7 +234,7 @@ else:
     mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 1200, 900)
     pads = mass_canvas.pads(4, 3)
 
-    from P2VVGeneralUtils import SData
+    from P2VV.GeneralUtils import SData
     sdatas = []
     for i, (p, ds) in enumerate(zip(pads, datas)):
         result = mass_pdf.fitTo(ds, **fitOpts)
@@ -242,7 +242,7 @@ else:
         results['mass'].append(result)
         splot = SData(Pdf = mass_pdf, Data = ds, Name = 'MassSplot')
         sdatas.append(splot.data('psi_background'))
-        from P2VVGeneralUtils import plot
+        from P2VV.GeneralUtils import plot
         plot(p, mpsi, pdf = mass_pdf, data = ds
              , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
              , pdfOpts  = dict(LineWidth = 2)
@@ -258,13 +258,13 @@ PV_bounds = array('d', [-0.5 + i for i in range(12)])
 components = [psi_prompt, psi_background]
 if options.wpv:
     mass_pdf.fitTo(data, **fitOpts)
-    from P2VVGeneralUtils import SData
+    from P2VV.GeneralUtils import SData
     for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
     splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
     psi_sdata = splot.data('psi_background')
     bkg_sdata = splot.data('background')
 
-    from P2VVParameterizations import WrongPV
+    from P2VV.Parameterizations import WrongPV
     reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
     wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
                                InputFile = input_data['wpv'], Workspace = input_data['workspace'],
@@ -291,7 +291,7 @@ t.setBinning(binning)
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
-import P2VVGeneralUtils
+from P2VV.GeneralUtils import plot
 
 time_canvas = TCanvas('time_canvas', 'time_canvas', 1200, 1050)
 pads = time_canvas.pads(4, 3)
@@ -304,7 +304,7 @@ for i, (p, ds) in enumerate(zip(pads, sdatas)):
     result.SetName('%d_%s' % (i, result.GetName()))
     results['time'].append(result)
     pdfOpts  = dict(ProjWData = (RooArgSet(st), ds, True))
-    P2VVGeneralUtils.plot(p, t, pdf = time_pdf, data = ds
+    plot(p, t, pdf = time_pdf, data = ds
          , frameOpts = dict(Title = "")
          , dataOpts = dict(MarkerSize = 0.8, Binning = binning, MarkerColor = kBlack)
          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
@@ -343,7 +343,7 @@ for index, result in enumerate(results['time']):
     
     
     if args[1] == 'double':
-        from PropagateErrors import propagateScaleFactor
+        from P2VV.PropagateErrors import propagateScaleFactor
         sf, sf_e = propagateScaleFactor(result)
     elif args[1] == 'single':
         sf = fpf.find('sigmaSF').getVal()
@@ -394,5 +394,5 @@ if write_data:
 if write_data:
     cache_file.Delete('%s;*' % tree_name)
 
-## import Dilution
-## Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background])
+## from P2VV.Dilution import dilution
+## dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background])

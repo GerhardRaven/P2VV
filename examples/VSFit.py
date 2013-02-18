@@ -2,7 +2,7 @@
 ## set script parameters ##
 ###########################
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -163,13 +163,13 @@ pdfConfig['numAngleBins'] = ( 5, 7, 9 )
 ## build PDF ##
 ###############
 
-from P2VVLoad import RooFitOutput
+from P2VV.Load import RooFitOutput
 
 # workspace
-from RooFitWrappers import RooObject
+from P2VV.RooFitWrappers import RooObject
 ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
@@ -231,12 +231,12 @@ if generateData :
 
     # additional observables
     if pdfConfig['nominalPdf'] or not pdfConfig['transversityAngles'] :
-        from P2VVGeneralUtils import addTransversityAngles
+        from P2VV.GeneralUtils import addTransversityAngles
         addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
                                       , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
 
     # write data to file
-    from P2VVGeneralUtils import writeData
+    from P2VV.GeneralUtils import writeData
     writeData( dataSetFile, dataSetName, fitData )
 
 elif pdfConfig['SFit'] :
@@ -244,7 +244,7 @@ elif pdfConfig['SFit'] :
     sigData = pdfBuild['sigSWeightData']
     bkgData = pdfBuild['bkgSWeightData']
     if corrSFitErr == 'sumWeight' :
-        from P2VVGeneralUtils import correctSWeights
+        from P2VV.GeneralUtils import correctSWeights
         fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
                                   , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else '' )
     else :
@@ -368,7 +368,7 @@ if ( readData or generateData ) and doFit :
 
         from math import pi
         from ROOT import RooRealVar, RooArgList
-        from P2VVParameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
+        from P2VV.Parameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
         deltaPar  = AparPh  - A0Ph
         deltaPerp = AperpPh - A0Ph
         deltaS    = ASPh    - A0Ph
@@ -489,8 +489,8 @@ else :
 
 if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots ) :
     # import plotting tools
-    from P2VVLoad import ROOTStyle
-    from P2VVGeneralUtils import plot
+    from P2VV.Load import ROOTStyle
+    from P2VV.GeneralUtils import plot
     from ROOT import TCanvas, kBlack, kBlue, kRed, kGreen, kDashed, kFullCircle, kFullSquare
 
     # create projection data set for conditional observables
@@ -772,7 +772,7 @@ if deltaSCanv :
 
 
 #Get the normalization of the total pdf
-from P2VVGeneralUtils import getCPprojectionOFpdf, getNormOverObservables
+from P2VV.GeneralUtils import getCPprojectionOFpdf, getNormOverObservables
 normTotal = getNormOverObservables(pdf)
 
 #Construct the CP_Even component of the pdf
@@ -794,8 +794,8 @@ f_Swave = normSwave / normTotal
 
 #Plot
 from ROOT import TCanvas    
-from P2VVLoad import ROOTStyle
-from P2VVGeneralUtils import plot
+from P2VV.Load import ROOTStyle
+from P2VV.GeneralUtils import plot
 
 c = TCanvas()
 c.Divide(2,2)

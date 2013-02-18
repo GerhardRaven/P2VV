@@ -2,7 +2,7 @@
 ## set script parameters ##
 ###########################
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -62,7 +62,7 @@ pdfConfig['fitOptions'] = fitOpts
 
 # plot options
 from ROOT import gStyle, kBlack, kBlue, kRed, kGreen, kMagenta, kSolid, kDashed, kFullCircle, kFullSquare
-from P2VVLoad import RooFitOutput, LHCbStyle
+from P2VV.Load import RooFitOutput, LHCbStyle
 lineWidth     = 3
 lineColor     = kBlue
 markStyle     = 8
@@ -195,10 +195,10 @@ pdfConfig['numAngleBins'] = ( 5, 7, 9 )
 ###############
 
 # workspace
-from RooFitWrappers import RooObject
+from P2VV.RooFitWrappers import RooObject
 ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
@@ -260,12 +260,12 @@ if generateData :
 
     # additional observables
     if pdfConfig['nominalPdf'] or not pdfConfig['transversityAngles'] :
-        from P2VVGeneralUtils import addTransversityAngles
+        from P2VV.GeneralUtils import addTransversityAngles
         addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
                                       , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
 
     # write data to file
-    from P2VVGeneralUtils import writeData
+    from P2VV.GeneralUtils import writeData
     writeData( dataSetFile, dataSetName, fitData )
 
 elif pdfConfig['SFit'] :
@@ -274,7 +274,7 @@ elif pdfConfig['SFit'] :
     bkgData = pdfBuild['bkgSWeightData']
     if corrSFitErr == 'sumWeight'\
             or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-        from P2VVGeneralUtils import correctSWeights
+        from P2VV.GeneralUtils import correctSWeights
         fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
                                   , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
                                   , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
@@ -479,7 +479,7 @@ if ( readData or generateData ) and doFit :
 
         from math import pi
         from ROOT import RooRealVar, RooArgList
-        from P2VVParameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
+        from P2VV.Parameterizations.DecayAmplitudes import A02, Aperp2, Apar2, A0Ph, AperpPh, AparPh, f_S, AS2, ASPh
         deltaPar  = AparPh  - A0Ph
         deltaPerp = AperpPh - A0Ph
         deltaS    = ASPh    - A0Ph
@@ -600,7 +600,7 @@ else :
 
 if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots or dllPars ) :
     # import plotting tools
-    from P2VVGeneralUtils import plot, _P2VVPlotStash
+    from P2VV.GeneralUtils import plot, _P2VVPlotStash
     from ROOT import TCanvas
 
     # create projection data set for conditional observables
@@ -611,7 +611,7 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
                  , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
                 }
 
-    from RooFitWrappers import SimultaneousPdf
+    from P2VV.RooFitWrappers import SimultaneousPdf
     projWDataSet     = [ obs for obs in pdf.ConditionalObservables() ]
     projWDataBSet    = [ obs for obs in pdf.ConditionalObservables() if obs.GetName() != iTagOS.GetName() ]
     projWDataBbarSet = [ obs for obs in pdf.ConditionalObservables() if obs.GetName() != iTagOS.GetName() ]
@@ -670,7 +670,7 @@ if makeKKMassPlots and pdfConfig['parameterizeKKMass']\
         deltaSLowErrs  = deltaSHighErrs
         deltaSHighErrs = tempErrs
 
-    from P2VVGeneralUtils import plotSWavePhases
+    from P2VV.GeneralUtils import plotSWavePhases
     deltaSCanv = plotSWavePhases(  MassBins         = KKMassVals
                                  , DeltaSValues     = deltaSVals
                                  , DeltaSLowErrors  = deltaSLowErrs

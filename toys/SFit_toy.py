@@ -1,6 +1,6 @@
 import sys
 import os
-from ToyMCUtils import Toy
+from P2VV.ToyMCUtils import Toy
 
 toy = Toy()
 parser = toy.parser()
@@ -10,7 +10,7 @@ parser = toy.parser()
 ## set script parameters ##
 ###########################
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -145,13 +145,13 @@ pdfConfig['numAngleBins'] = ( 5, 7, 9 )
 ## build PDF ##
 ###############
 
-from P2VVLoad import RooFitOutput
+from P2VV.Load import RooFitOutput
 
 # workspace
-from RooFitWrappers import RooObject
+from P2VV.RooFitWrappers import RooObject
 ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
@@ -194,7 +194,7 @@ if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
 ###################
 
 ## Read data to use protodata
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 proto_data = pdfBuild['data']
 from ROOT import RooArgSet
 conditionals = RooArgSet()
@@ -210,8 +210,8 @@ pdfConfig.setParametersInPdf(pdf)
 pdf.setMaxVal(0.15)
 
 # Wrong PV shape
-from P2VVParameterizations.WrongPV import ShapeBuilder
-from RooFitWrappers import Component, Projection
+from P2VV.Parameterizations.WrongPV import ShapeBuilder
+from P2VV.RooFitWrappers import Component, Projection
 wpv = ShapeBuilder(time, {'B' : BMass}, UseKeysPdf = True, Weights = 'B',
                    InputFile = "/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root")
 wpv_signal = wpv.shape('B')
@@ -223,7 +223,7 @@ signal_wpv = Component('signal_wpv', (projection, wpv_signal), Yield = (100, 50,
 signal = pdfBuild._signalComps
 signal.setYield(10000, 5000, 50000)
 
-from RooFitWrappers import buildPdf
+from P2VV.RooFitWrappers import buildPdf
 genPdf = buildPdf(Components = [signal_wpv, signal], Observables = angles + [time], Name = 'genPdf')
 
 # run the toy

@@ -1,5 +1,5 @@
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -40,11 +40,11 @@ from ROOT import RooDecay as Decay
 signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =  1.484, MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as SignalTimeResolution
+from P2VV.Parameterizations.TimeResolution import Moriond2012_TimeResolution as SignalTimeResolution
 sig_tres = SignalTimeResolution(Name = 'sig_tres', time = t, timeResSFConstraint = True, sigmat = st,
                                 timeResSF = dict( Name = 'timeResSF', Value = 1.46, MinMax = (0.1,5.), Constant = True)
                                 )
-# from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as BackgroundTimeResolution
+# from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as BackgroundTimeResolution
 # bkg_tres = BackgroundTimeResolution(Name = 'bkg_tres', time = t, timeResSFConstraint = True)
 
 # Use a very simple effective time resolution
@@ -59,7 +59,7 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres
             ExternalConstraints = sig_tres.model().ExternalConstraints())
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
 
 # J/psi mass pdf
@@ -77,7 +77,7 @@ bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 background = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (20000,2000,50000) )
 
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.model()
                        , t_bkg_fll    = dict( Name = 'bkg_t_fll',    Value = 0.2 )
                        , t_bkg_ll_tau = dict( Name = 'bkg_t_ll_tau', Value = 1.25, MinMax = (0.5,2.5) )
@@ -95,7 +95,7 @@ psi_t = psi_t.pdf()
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m), Yield= (10000,500,50000) )
 
 # Apply acceptance
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
@@ -105,7 +105,7 @@ data = readData(input_file, tree_name, cuts = '(sel == 1 && (hlt1_unbiased == 1 
                 NTuple = False, observables = observables)
 
 # Time acceptance
-from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance
+from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance
 sig_acceptance = Paper2012_TimeAcceptance(time = t, Input = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root',
                                           Histograms = {excl_biased : { 'ExclBiased' : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_20bins'},
                                                                         'Unbiased'   : {'histogram' : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_20bins'}
@@ -126,7 +126,7 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
                Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
-from P2VVGeneralUtils import SData, splot
+from P2VV.GeneralUtils import SData, splot
 
 mass_pdf.fitTo(data, **fitOpts)
 
@@ -136,7 +136,7 @@ from ROOT import TCanvas
 canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
 obs = [m]
 for (p,o) in zip(canvas.pads(len(obs)), obs):
-    from P2VVGeneralUtils import plot
+    from P2VV.GeneralUtils import plot
     pdfOpts  = dict()
     plot(p, o, pdf = mass_pdf, data = data
          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
@@ -160,7 +160,7 @@ print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
 
-from P2VVGeneralUtils import plot
+from P2VV.GeneralUtils import plot
 print 'plotting'
 canvas = TCanvas('canvas', 'canvas', 500, 500)
 

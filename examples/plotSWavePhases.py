@@ -1,7 +1,7 @@
 from math import sqrt
 
 from ROOT import gStyle
-from P2VVLoad import LHCbStyle
+from P2VV.Load import LHCbStyle
 gStyle.SetEndErrorSize(4)
 
 plotsFilePath   = 'SWavePhases_gray.ps'
@@ -57,7 +57,7 @@ theoryVals = None
 #delS = -3.
 #theoryVals = [ delS + val for val in theoryVals ]
 
-from P2VVGeneralUtils import plotSWavePhases
+from P2VV.GeneralUtils import plotSWavePhases
 SWavePhaseCanv = plotSWavePhases( DeltaSAxisRange = deltaSAxisRange, LHCbTextLine1 = LHCbText1, LHCbTextLine2 = LHCbText2
                                  , MassBins = massBins, DeltaSValues = deltaSVals, TheoryValues = theoryVals
                                  , DeltaSLowErrors = deltaSLowErrs, DeltaSHighErrors = deltaSHighErrs, DrawLegend = drawLegend
