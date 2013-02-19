@@ -39,6 +39,7 @@
         <class name = "RooExplicitNormPdf" />
         <class name = "RooTPDecay" />
         <class name = "RooAmoroso" />
+        <class name = "RooMassDependence" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />
