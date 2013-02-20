@@ -22,6 +22,10 @@ parser.add_option('-s', "--simultaneous", dest = "simultaneous", default = False
                   action = 'store_true', help = 'Use sigmat offset')
 parser.add_option("--plot", dest = "make_plots", default = False,
                   action = 'store_true', help = 'Make plots')
+parser.add_option("--fit-mass", dest = "fit_mass", default = False,
+                  action = 'store_true', help = 'Fit the mass spectrum even if data is available.')
+parser.add_option("--force-write", dest = "write_data", default = False,
+                  action = 'store_true', help = 'Fit the mass spectrum even if data is available.')
 
 (options, args) = parser.parse_args()
 
@@ -36,17 +40,18 @@ elif args[1] not in ['single', 'double', 'triple']:
     sys.exit(-2)
     
 input_data = {}
+prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
 if args[0] == '2011':
-    ## input_data['data'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_prescaled.root'
-    ## input_data['wpv'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root'
-    ## input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
-    input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130117_MagDownMagUp.root'
-    input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
+    input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130207.root')
+    input_data['wpv'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root')
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
+    input_data['results'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
+    input_data['cache'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
 else:
     input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2012.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2012_workspace'
+    input_data['cache'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_2012_Prescaled_st_bins.root'
 
 if options.wpv and not options.wpv_type in ['Mixing', 'Gauss']:
     print parser.usage
@@ -176,35 +181,149 @@ prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
 
 # Read data
-from P2VV.GeneralUtils import readData
+fit_mass = options.fit_mass
+
+# Tree and cut
 tree_name = 'DecayTree'
-cut = 'nPV == 3 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+cut = 'nPV == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
 if not options.wpv:
     cut += ' && sel_cleantail == 1'
-data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
-                ntupleCuts = cut)
+hd = ('%d' % hash(cut)).replace('-', 'm')
 
 if options.simultaneous:
     from array import array
-    st_bins = array('d', [0.01 + i * 0.012 for i in range(6)])
+    split_bins = array('d', [0.01 + i * 0.012 for i in range(6)])
+    directory = '%sbins_%4.2ffs_simul/%s' % (len(split_bins) - 1, (1000 * (split_bins[1] - split_bins[0])), hd)
+else:
+    directory = '1bin_%4.2ffs_simple/%s' % (1000 * (t.getMax() - t.getMin()), hd)
+
+from ROOT import TFile
+if os.path.exists(input_data['cache']):
+    cache_file = TFile.Open(input_data['cache'], 'update')
+else:
+    cache_file = TFile.Open(input_data['cache'], 'new')
+cache_dir = cache_file.Get(directory)
+if not cache_dir:
+    cache_file.mkdir(directory)
+    cache_dir = cache_file.Get(directory)
+    from ROOT import TObjString
+    cut_string = TObjString(cut)
+    cache_dir.WriteTObject(cut_string, 'cut')
+    fit_mass = True
+
+results = []
+tree_name = 'DecayTree'
+if not fit_mass:
+    ## Read sdata
+    sds_name = 'sdata'
+    sdata_dir = cache_dir.Get('sdata')
+    sdatas = {}
+    if not sdata_dir:
+        fit_mass = True
+    else:
+        nkeys = rd.ReadKeys()
+        if nkeys != (len(split_bins)  - 1):
+            fit_mass = True
+        else:
+            dss = []
+            for e in rd.GetListOfKeys():
+                if e.GetClassName() == 'RooDataSet':
+                    dss.append(os.path.join(sdata_dir.GetName(), e.GetName()))
+            for e in dss:
+                sdata = chache_dir.Get(e)
+                if not sdata:
+                    fit_mass = True
+                    break
+                else:
+                    sdatas[bin_data.GetName()] = sdata
+            try:
+                psi_sdata = sdatas['psi_sdata']
+                bgk_sdata = sdatas['bkg_sdata']
+            except KeyError:
+                fit_mass = True
+
+    # Read data
+    data_dir = cache_dir.Get('data')
+    if not data_dir:
+        fit_mass = True
+    else:
+        data = data_dir.Get(tree_name)
+        if not data:
+            fit_mass = True
+
+    # Read results
+    rd = cache_dir.Get('results')
+    if not rd:
+        fit_mass = True
+    else:
+        mass_result = rd.Get('mass_result')
+        if not mass_result:
+            fit_mass = True
+        else:
+            results.append(mass_result)
+        if options.simultaneous:
+            sWeight_mass_result = rd.Get('sWeight_mass_result')
+            if not sWeight_mass_result:
+                fit_mass = True
+            else:
+                results.append(sWeight_mass_result)
+
+## Fitting opts
+fitOpts = dict(NumCPU = 6, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+               Verbose = options.verbose)
+
+## List of all plots we make
+plots = []
+
+## Build simple mass pdf
+if fit_mass:
+    from P2VV.GeneralUtils import readData
+    data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
+                    ntupleCuts = cut)
+    data.SetName(tree_name)
+    mass_pdf = buildPdf(Components = (psi_ll, background), Observables = (mpsi,), Name='mass_pdf')
+    mass_pdf.Print('t')
+
+    ## Fit mass pdf
+    mass_result = mass_pdf.fitTo(data, **fitOpts)
+    mass_result.SetName('mass_result')
+    results.append(mass_result)
+    
+    ## Plot mass pdf
+    from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
+    from ROOT import TCanvas
+
+    mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
+    from P2VV.GeneralUtils import SData
+    from P2VV.GeneralUtils import plot
+    pdfOpts  = dict()
+    ps = plot(mass_canvas.cd(1), mpsi, pdf = mass_pdf, data = data
+              , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+              , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+              , plotResidHist = False
+              , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                               , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                               }
+              )
+    plots.append(ps)
+    
+    from P2VV.GeneralUtils import SData
+    sData = SData(Pdf = mass_pdf, Data = data, Name = 'MassSPlot')
+    psi_sdata = sData.data('psi_ll')
+    psi_sdata.SetName('psi_sdata')
+    bkg_sdata = sData.data('background')
+    bkg_sdata.SetName('background_sdata')
+    sdatas = {psi_sdata.GetName() : psi_sdata, bkg_sdata.GetName() : bkg_sdata}
+
+if fit_mass and options.simultaneous:
     from ROOT import RooBinning
-    st_binning = RooBinning( len(st_bins) - 1, st_bins, 'st_binning' )
+    st_binning = RooBinning( len(split_bins) - 1, split_bins, 'st_binning' )
     st.setBinning(st_binning, 'st_binning')
     st_cat = BinningCategory('sigmat_cat', Observable = st, Binning = st_binning,
                              Fundamental = True, Data = data, CatTypeName = 'bin')
 
-## data = data.reduce(EventRange = (0, 50000))
-
-fitOpts = dict(NumCPU = 6, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
-               Verbose = options.verbose)
-
-<<<<<<< HEAD
-## Build a single mass PDF
-mass_pdf = buildPdf(Components = (psi_ll, background), Observables = (mpsi,), Name='mass_pdf')
-
-if options.simultaneous:
-    from P2VVGeneralUtils import getSplitPar
+    from P2VV.GeneralUtils import getSplitPar
     # categories for splitting the PDF
     # get mass parameters that are split
     split_cats = [[st_cat]]
@@ -213,7 +332,6 @@ if options.simultaneous:
     ## split_pars.append([par for par in bkg_mpsi.pdf().Parameters() if not par.isConstant()])
     
     # build simultaneous mass PDF
-    from RooFitWrappers import SimultaneousPdf
     sWeight_mass_pdf = SimultaneousPdf(mass_pdf.GetName() + '_simul',
                                        MasterPdf       = mass_pdf,
                                        SplitCategories = split_cats,
@@ -240,59 +358,17 @@ if options.simultaneous:
         bkg_yield.setMax(nEvBin)
 
     sWeight_mass_result = sWeight_mass_pdf.fitTo(data, **fitOpts)
-    from P2VVGeneralUtils import SData
+    sWeight_mass_result.SetName('sWeight_mass_result')
+    results.append(sWeight_mass_result)
+    from P2VV.GeneralUtils import SData
     sData = SData(Pdf = sWeight_mass_pdf, Data = data, Name = 'SimulMassSPlot')
     psi_sdata = sData.data('psi_ll')
     bkg_sdata = sData.data('background')
-    sdatas = dict([(ct.GetName(), psi_sdata.reduce(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))) for ct in st_cat])
-else:
-    ## Fit mass pdf
-    mass_pdf.fitTo(data, **fitOpts)
+    for ct in st_cat:
+        bin_data = psi_sdata.reduce(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
+        bin_data.SetName('psi_sdata_%s' % ct.GetName())
+        sdatas[ct.GetName()] = bin_data
 
-    ## Plot mass pdf
-    from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
-    from ROOT import TCanvas
-
-    mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
-    from P2VVGeneralUtils import SData
-    from P2VVGeneralUtils import plot
-    pdfOpts  = dict()
-    plot(mass_canvas.cd(1), mpsi, pdf = mass_pdf, data = data
-         , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-         , plotResidHist = False
-         , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                          , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                          }
-         )
-=======
-mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
-from P2VV.GeneralUtils import SData
-from P2VV.GeneralUtils import plot
-pdfOpts  = dict()
-plot(mass_canvas.cd(1), mpsi, pdf = mass_pdf, data = data
-     , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-     , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-     , plotResidHist = False
-     , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                      , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                      }
-     )
-
-from P2VV.GeneralUtils import SData
-for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
-## signal_sdata = splot.data('signal')
-psi_sdata = splot.data('psi_background')
-bkg_sdata = splot.data('background')
->>>>>>> 6d6ab6a2d0a131b17a7bdf4150f4e03f3753e3e8
-
-    from P2VVGeneralUtils import SData
-    for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-    sData = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
-    psi_sdata = sData.data('psi_ll')
-    bkg_sdata = sData.data('background')
-    
 # Wrong PV components
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
@@ -319,7 +395,6 @@ time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf'
 time_pdf.Print("t")
 
 if options.simultaneous:
-    from RooFitWrappers import SimultaneousPdf
     split_pars = []
     if args[1] == 'single':
         split_pars.append([sig_tres._sigmaSF])
@@ -339,6 +414,8 @@ if options.simultaneous:
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
 time_result = time_pdf.fitTo(psi_sdata, SumW2Error = False, **fitOpts)
+time_result.SetName('time_result')
+results.append(time_result)
 ## profiler_stop()
 ## result.Print('v')
 
@@ -357,7 +434,7 @@ zoom_binning.SetName('zoom_binning')
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
-from P2VV.P2VVGeneralUtils import plot
+from P2VV.GeneralUtils import plot
 
 print 'plotting'
 
@@ -379,27 +456,30 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             p = canvas.cd(1)
             pd = sdatas[ct.GetName()]
             pdfOpts  = dict(ProjWData = (projSet, pd, True))
-            plot(p, t, pdf = time_pdf, data = pd
-                 , frameOpts = dict(Range = r, Title = "")
-                 , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
-                 , pdfOpts  = dict(LineWidth = 4, Slice = (st_cat, ct.GetName()), **pdfOpts)
-                 , logy = pl
-                 , plotResidHist = False)
+            ps = plot(p, t, pdf = time_pdf, data = pd
+                      , frameOpts = dict(Range = r, Title = "")
+                      , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
+                      , pdfOpts  = dict(LineWidth = 4, Slice = (st_cat, ct.GetName()), **pdfOpts)
+                      , logy = pl
+                      , plotResidHist = False)
+            plots.append(ps)
     else:
         canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 400)
         __canvases.append(canvas)
         p = canvas.cd(1)
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
         pdfOpts  = dict(ProjWData = (projSet, psi_sdata, True))
-        plot(p, t, pdf = time_pdf, data = pd
-             , frameOpts = dict(Range = r, Title = "")
-             , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
-             , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
-             , logy = pl
-             , plotResidHist = False)
+        ps = plot(p, t, pdf = time_pdf, data = pd
+                  , frameOpts = dict(Range = r, Title = "")
+                  , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
+                  , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
+                  , logy = pl
+                  , plotResidHist = False)
+        plots.append(ps)
 
+fit_result = None
 if options.simultaneous:
-    split_bounds = array('d', [1000 * v for v in st_bins])
+    split_bounds = array('d', [1000 * v for v in split_bins])
     
     res_canvas = TCanvas('res_canvas', 'res_canvas', 500, 500)
     from ROOT import TH1D
@@ -445,9 +525,38 @@ if options.simultaneous:
     hist_res.GetYaxis().SetTitle('decay time resulution [fs]')
     
     from ROOT import TF1
-    fit_func = TF1('fit_func', "pol1", st_bins[0], st_bins[-1])
+    fit_func = TF1('fit_func', "pol1", split_bins[0], split_bins[-1])
     fit_result = hist_res.Fit(fit_func, "S0")
+    fr = fit_result.Get()
+    fr.SetName('fit_result')
+    results.append(fr)
 
 from P2VV import Dilution
 Dilution.dilution(t, data, result = time_result, sigmat = st, signal = [psi_prompt],
                   subtract = [psi_ll, psi_wpv] if options.wpv else [psi_ll])
+
+
+# Write data to cache file
+def get_dir(d):
+    tmp = cache_dir.Get(d)
+    if not tmp:
+        cache_dir.mkdir(d)
+        tmp = cache_dir.Get(d)
+    return tmp
+
+from ROOT import TObject
+if options.write_data or fit_mass:
+    sdata_dir = get_dir('sdata')
+    data_dir = get_dir('data')
+    for (dss, d) in [(sdatas, sdata_dir)]:
+        for i, ds in enumerate(dss.itervalues()):
+            d.WriteTObject(ds, ds.GetName(), "Overwrite")
+        d.Write(d.GetName(), TObject.kOverwrite)
+
+# Always write fit results
+results_dir = get_dir('results')
+for r in results:
+    results_dir.WriteTObject(r, r.GetName(), "Overwrite")
+results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
+# Delete the input TTree which was automatically attached.
+cache_file.Delete('%s;*' % tree_name)

@@ -31,18 +31,15 @@ elif args[1] not in ['single', 'double', 'triple']:
     sys.exit(-2)
     
 input_data = {}
+prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
 if args[0] == '2011':
-    prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
     input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130207.root')
     input_data['wpv'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root')
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
-    input_data['weighted'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
-    ## input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
-    ## input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2011.root'
-    ## input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
+    input_data['cache'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
 else:
     input_data['data'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'
-    input_data['weighted'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_2012_Prescaled_st_bins.root'
+    input_data['cache'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_2012_Prescaled_st_bins.root'
     input_data['wpv'] = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_2012.root'
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2012_workspace'
 
@@ -200,10 +197,10 @@ if options.split_var == 'st':
     directory = '%sbins_%4.2ffs/%s' % (len(split_bins) - 1, (1000 * (split_bins[1] - split_bins[0])), hd)
 elif options.split_var == 'zerr':
     directory = 'zerr_%sbins/%s' % (len(split_bins) - 1, hd)
-if os.path.exists(input_data['weighted']):
-    cache_file = TFile.Open(input_data['weighted'], 'update')
+if os.path.exists(input_data['cache']):
+    cache_file = TFile.Open(input_data['cache'], 'update')
 else:
-    cache_file = TFile.Open(input_data['weighted'], 'new')
+    cache_file = TFile.Open(input_data['cache'], 'new')
 cache_dir = cache_file.Get(directory)
 if not cache_dir:
     cache_file.mkdir(directory)
@@ -224,6 +221,7 @@ results = defaultdict(list)
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
 
+tree_name = 'DecayTree'
 if not fit_mass:
     rs = set()
     for i in range(len(split_bins) - 1):
@@ -255,9 +253,7 @@ if not fit_mass:
             for e in rs:
                 results['mass'].append(cache_dir.Get(e))
             results['mass'] = sorted(results['mass'], key = lambda r: int(r.GetName().split('_', 1)[0]))
-
-tree_name = 'DecayTree'
-if fit_mass:
+else:
     from P2VV.GeneralUtils import readData
     data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut)
