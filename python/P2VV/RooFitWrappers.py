@@ -304,8 +304,8 @@ class BinningCategory( Category ) :
             if type(data) not in [ list, tuple ] : data = [ data ]
             bins = obs.getBinning(binning)
             for d in data:
-                obs = d.get().find(obs.GetName())
-                obs.setBinning(bins)
+                o = d.get().find(obs.GetName())
+                o.setBinning(bins)
         
         if 'CatTypeName' in kwargs:
             binCat = RooBinningCategory(Name, Name, obs, binning, kwargs.pop('CatTypeName'))

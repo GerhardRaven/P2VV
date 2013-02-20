@@ -11,8 +11,12 @@ parser.add_option('-p', '--parameterisation', dest = 'parameterise', default = F
                   action = 'store', help = 'Parameterise sigmas [False, RMS, Comb]')
 parser.add_option("--no-wpv", dest = "wpv", default = True,
                   action = 'store_false', help = 'Add WPV component')
-parser.add_option("--fit-mass", dest = "mass_fit", default = False,
+parser.add_option("--fit-mass", dest = "fit_mass", default = False,
                   action = 'store_true', help = 'Fit the mass spectrum even if data is available.')
+parser.add_option("--force-write", dest = "write_data", default = False,
+                  action = 'store_true', help = 'Fit the mass spectrum even if data is available.')
+parser.add_option("--split-var", dest = "split_var", default = 'st', type = 'string',
+                  action = 'store', help = 'Split data using this variable.')
 
 (options, args) = parser.parse_args()
 
@@ -67,18 +71,29 @@ m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax =
                          } )
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
+zerr = RealVar('B_s0_bpv_zerr', Title = 'Best PV Z error', Unit = 'mm', Observable = True, MinMax = (0, 0.1))
+
+assert(options.split_var in ['st', 'zerr'])
+
 from array import array
-st_bins = array('d', [0.01 + i * 0.01 for i in range(7)])
-##st_bins = array('d', [0.01 + i * 0.005 for i in range(13)])
+if options.split_var == 'st':
+    ## split_bins = array('d', [0.01 + i * 0.005 for i in range(13)])
+    split_bins = array('d', [0.01 + i * 0.01 for i in range(5)] + [0.07])
+    ## split_bins = array('d', [0.01 + i * 0.01 for i in range(7)])
+    split_var = st
+else:
+    split_bins = array('d', [0, 0.021, 0.025, 0.03, 0.04, 0.06, 0.1])
+    split_var = zerr
+
 
 # add 20 bins for caching the normalization integral
-for i in [ st ] : i.setBins( 20 , 'cache' )
+for i in [ split_var ] : i.setBins( 20 , 'cache' )
 
 # Categories needed for selecting events
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 
-observables = [t, m, mpsi, st, unbiased, nPV]
+observables = [t, m, mpsi, st, unbiased, nPV, zerr]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -94,7 +109,7 @@ if args[1] == 'single':
     from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = True,
-                              bias = dict(Value = -0.17, MinMax = (-1, 1)),
+                              timeResMu = dict(Value = -0.17, MinMax = (-1, 1)),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 5)))
 elif args[1] == 'double':
     from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
@@ -139,8 +154,8 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 0.8)
-                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.25, MinMax = (0.5,  2.5))
-                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.16, MinMax = (0.1, 0.5))
+                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.42, MinMax = (0.5,  2.5), Constant = True)
+                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.145, MinMax = (0.01, 0.5), Constant = True)
                          )
 
 ## from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Background_Time
@@ -158,9 +173,9 @@ bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.mo
 bkg_t = bkg_t.pdf()
 
 signal = Component('signal', (sig_m, psi_m.pdf(), sig_t), Yield = (200000, 500, 500000))
-psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (4000,100,500000) )
+psi_background = Component('psi_background', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (4000,1,500000) )
 
-background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield = (19620,100,500000) )
+background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield = (19620,1,500000) )
 
 # Prompt component
 from P2VVParameterizations.TimePDFs import Prompt_Peak
@@ -168,19 +183,23 @@ prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 1, 500000))
 
 # Read data
-write_data = options.mass_fit
-
 datas = []
 sdatas = []
 from ROOT import TFile
 
-cut = 'nPV == 2 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+fit_mass = options.fit_mass
+
+cut = 'nPV > 3 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+## cut = 'B_s0_bpv_zerr > 0 && B_s0_bpv_zerr < 0.034 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
 if not options.wpv:
     cut += ' && sel_cleantail == 1'
 hd = ('%d' % hash(cut)).replace('-', 'm')
 
-directory = '%sbins_%4.2ffs/%s' % (len(st_bins) - 1, (1000 * (st_bins[1] - st_bins[0])), hd)
+if options.split_var == 'st':
+    directory = '%sbins_%4.2ffs/%s' % (len(split_bins) - 1, (1000 * (split_bins[1] - split_bins[0])), hd)
+elif options.split_var == 'zerr':
+    directory = 'zerr_%sbins/%s' % (len(split_bins) - 1, hd)
 if os.path.exists(input_data['weighted']):
     cache_file = TFile.Open(input_data['weighted'], 'update')
 else:
@@ -192,7 +211,7 @@ if not cache_dir:
     from ROOT import TObjString
     cut_string = TObjString(cut)
     cache_dir.WriteTObject(cut_string, 'cut')
-    write_data = True
+    fit_mass = True
 
 ## Fitting options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True)
@@ -205,28 +224,48 @@ results = defaultdict(list)
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
 
-if not write_data:
+if not fit_mass:
     rs = set()
-    for i in range(len(st_bins) - 1):
+    for i in range(len(split_bins) - 1):
         sds_name = 'sdata/DecayTree_%02d_weighted_psi_background' % i
-        sdatas.append(cache_dir.Get(sds_name))
+        sdata = cache_dir.Get(sds_name)
+        if sdata:
+            sdatas.append(sdata)
+        else:
+            fit_mass = True
+            break
         ds_name = 'data/DecayTree_%02d' % i
-        datas.append(cache_dir.Get(ds_name))
+        data = cache_dir.Get(ds_name)
+        if data:
+            datas.append(data)
+        else:
+            fit_mass = True
+            break
     rd = cache_dir.Get('mass_results')
-    for e in rd.GetListOfKeys():
-        if e.GetClassName() == 'RooFitResult':
-            rs.add(os.path.join(rd.GetName(), e.GetName()))
-    for e in rs:
-        results['mass'].append(cache_dir.Get(e))
-    results['mass'] = sorted(results['mass'], key = lambda r: int(r.GetName().split('_', 1)[0]))
+    if not rd:
+        fit_mass = True
+    else:
+        nkeys = rd.ReadKeys()
+        if nkeys != (len(split_bins)  - 1):
+            fit_mass = True
+        else:
+            for e in rd.GetListOfKeys():
+                if e.GetClassName() == 'RooFitResult':
+                    rs.add(os.path.join(rd.GetName(), e.GetName()))
+            for e in rs:
+                results['mass'].append(cache_dir.Get(e))
+            results['mass'] = sorted(results['mass'], key = lambda r: int(r.GetName().split('_', 1)[0]))
 
-else:
+tree_name = 'DecayTree'
+if fit_mass:
     from P2VVGeneralUtils import readData
-    tree_name = 'DecayTree'
     data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut)
-    datas = [data.reduce(Cut = 'sigmat > %f && sigmat < %f' % (st_bins[i], st_bins[i + 1]))
-             for i in range(len(st_bins) - 1)]
+    datas = [data.reduce(Cut = '{0} > {1} && {0} < {2}'.format(split_var.GetName(), split_bins[i], split_bins[i + 1]))
+             for i in range(len(split_bins) - 1)]
+    for i, ds in enumerate(datas):
+        ds_name = ds.GetName().replace('DecayTree', 'DecayTree_%02d' % i)
+        ds.SetName(ds_name)
 
     mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi,), Name='mass_pdf')
     mass_pdf.Print('t')
@@ -255,7 +294,6 @@ else:
 # Wrong PV components
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
-components = [psi_prompt, psi_background]
 if options.wpv:
     mass_pdf.fitTo(data, **fitOpts)
     from P2VVGeneralUtils import SData
@@ -272,7 +310,12 @@ if options.wpv:
                                sigmat = st)
     wpv_psi = wpv.shape('jpsi')
     psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (1000, 1, 30000))
-    components.append(psi_wpv)
+else:
+    wpv_mean = sig_tres._timeResMu
+    wpv_sigma = RealVar('wpv_sigma', Value = 0.3, MinMax = (0.01, 20), Constant = True)
+    wpv_pdf = Pdf(Name = 'wpv_pdf', Type = Gaussian, Parameters = (t, wpv_mean, wpv_sigma))
+    psi_wpv = Component('wpv', (wpv_pdf, ), Yield = (100, 5, 500000))
+components = [psi_prompt, psi_background, psi_wpv]
 
 time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
 time_pdf.Print("t")
@@ -283,7 +326,7 @@ from array import array
 if options.wpv:
     bounds = array('d', [-5 + i * 0.1 for i in range(47)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(21)])
 else:
-    bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
+    bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.05 for i in range(12)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
 
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('var_binning')
@@ -322,8 +365,14 @@ for k, res in results.items():
 res_canvas = TCanvas('res_canvas', 'res_canvas', 500, 500)
 from ROOT import TH1D
 from math import sqrt
-hist_res = TH1D('hist_res', 'hist_res', len(st_bins) - 1, array('d', [1000 * v for v in st_bins]))
-hist_events = TH1D('hist_events', 'hist_events', len(st_bins) - 1, array('d', [1000 * v for v in st_bins]))
+
+if options.split_var == 'st':
+    split_bounds = array('d', [1000 * v for v in split_bins])
+else:
+    split_bounds = array('d', [v for v in split_bins])
+    
+hist_res = TH1D('hist_res', 'hist_res', len(split_bounds) - 1, split_bounds)
+hist_events = TH1D('hist_events', 'hist_events', len(split_bounds) - 1, split_bounds)
 
 resolutions = []
 
@@ -331,7 +380,7 @@ from ROOT import TMatrixT
 
 for index, result in enumerate(results['time']):
     # Fill events histo
-    events = results['mass'][index].floatParsFinal().find('N_psi_background')
+    events = results['mass'][index].floatParsFinal().find(psi_background.getYield().GetName())
     hist_events.SetBinContent(index + 1, events.getVal())
     hist_events.SetBinError(index + 1, events.getError())
     
@@ -341,10 +390,13 @@ for index, result in enumerate(results['time']):
         hist_res.SetBinError(index + 1, 0)
         continue
     
-    
-    if args[1] == 'double':
+    fpf = result.floatParsFinal()
+    if args[1] == 'double' and options.parameterise == False:
         from PropagateErrors import propagateScaleFactor
         sf, sf_e = propagateScaleFactor(result)
+    if args[1] == 'double' and options.parameterise == 'Comb':
+        sf_comb = fpf.find('timeResComb')
+        sf, sf_e = sf_comb.getVal(), sf_comb.getError()
     elif args[1] == 'single':
         sf = fpf.find('sigmaSF').getVal()
         sf_e = fpf.find('sigmaSF').getError()
@@ -354,45 +406,55 @@ for index, result in enumerate(results['time']):
     res_e = mean * sf_e
     
     resolutions.append((res, res_e))
-    hist_res.SetBinContent(index + 1, 1000 * res)
-    hist_res.SetBinError(index + 1, 1000 * res_e)
+    hist_res.SetBinContent(index + 1, 1000 * res if options.split_var == 'st' else res)
+    hist_res.SetBinError(index + 1, 1000 * res_e if options.split_var == 'st' else res_e)
 
-scale = hist_res.GetMaximum() / hist_events.GetMaximum()
+scale = 100 / hist_events.GetMaximum()
 hist_events.Scale(scale)
+hist_events.GetYaxis().SetRangeUser(0, 110)
+hist_res.GetYaxis().SetRangeUser(0, 110)
 hist_res.Draw('pe')
 hist_events.Draw('hist, same')
 from ROOT import kGray
 hist_events.SetFillColor(kGray + 1)
 hist_res.Draw('pe, same')
-hist_res.GetXaxis().SetTitle('estimated decay time error [fs]')
+if options.split_var == 'st':
+    hist_res.GetXaxis().SetTitle('estimated decay time error [fs]')
+else:
+    hist_res.GetXaxis().SetTitle('#sigma_{PV,Z} [mm]')
+
 hist_res.GetYaxis().SetTitle('decay time resulution [fs]')
 
+from ROOT import TF1
+fit_func = TF1('fit_func', "pol1", split_bins[0], split_bins[-1])
+fit_result = hist_res.Fit(fit_func, "S0")
+
 # Write data to cache file
-from ROOT import TObject
-if write_data:
-    def get_dir(d):
+def get_dir(d):
+    tmp = cache_dir.Get(d)
+    if not tmp:
+        cache_dir.mkdir(d)
         tmp = cache_dir.Get(d)
-        if not tmp:
-            cache_dir.mkdir(d)
-            tmp = cache_dir.Get(d)
-        return tmp
+    return tmp
+
+from ROOT import TObject
+if options.write_data or fit_mass:
     sdata_dir = get_dir('sdata')
     data_dir = get_dir('data')
-    results_dirs = dict((k, get_dir('%s_results' % k)) for k in results.iterkeys())
     for (dss, d) in [(sdatas, sdata_dir), (datas, data_dir)]:
         for i, ds in enumerate(dss):
-            ds_name = ds.GetName().replace('DecayTree', 'DecayTree_%02d' % i)
-            ds.SetName(ds_name)
-            d.WriteTObject(ds, ds_name, "Overwrite")
+            d.WriteTObject(ds, ds.GetName(), "Overwrite")
         d.Write(d.GetName(), TObject.kOverwrite)
-    for k, rs in results.iteritems():
-        rd = results_dirs[k]
-        for r in rs:
-            rd.WriteTObject(r, r.GetName(), "Overwrite")
-        rd.Write(rd.GetName(), TObject.kOverwrite)
+
+# Always write fit results
+results_dirs = dict((k, get_dir('%s_results' % k)) for k in results.iterkeys())
+for k, rs in results.iteritems():
+    rd = results_dirs[k]
+    for r in rs:
+        rd.WriteTObject(r, r.GetName(), "Overwrite")
+    rd.Write(rd.GetName(), TObject.kOverwrite)
 # Delete the input TTree which was automatically attached.
-if write_data:
-    cache_file.Delete('%s;*' % tree_name)
+cache_file.Delete('%s;*' % tree_name)
 
 ## import Dilution
 ## Dilution.dilution(t, data, result = result, sigmat = st, signal = [psi_prompt], subtract = [psi_background])

@@ -81,21 +81,21 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-##                           BiasScaleFactor = False, Cache = True,
-##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
-##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
+                          BiasScaleFactor = False, Cache = True,
+                          timeResMu = dict(Value = -0.004, MinMax = (-1, 1)),
+                          sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
-from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+## from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = False, PerEventError = False,
 ##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
 ##                           Fractions = [(3, 0.1), (2, 0.2)])
-sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                          PerEventError = options.pee, Parameterise = 'Comb',
-                          TimeResSFOffset = options.offset,
-                          ScaleFactors = [(2, 2.3), (1, 1.2)],
-                          Fractions = [(2, 0.2)])
+## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
+##                           PerEventError = options.pee, Parameterise = 'Comb',
+##                           TimeResSFOffset = options.offset,
+##                           ScaleFactors = [(2, 2.3), (1, 1.2)],
+##                           Fractions = [(2, 0.2)])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -164,6 +164,12 @@ if options.wpv:
                                Reweigh = dict(Data = data, DataVar = nPV, Binning = PV_bounds))
     wpv_psi = wpv.shape('jpsi')
     psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (888, 50, 30000))
+    components += [psi_wpv]
+else:
+    wpv_mean = sig_tres._timeResMu
+    wpv_sigma = RealVar('wpv_sigma', Value = 0.3, MinMax = (0.01, 1000))
+    wpv_pdf = Pdf(Name = 'wpv_pdf', Type = Gaussian, Parameters = (t, wpv_mean, wpv_sigma))
+    psi_wpv = Component('wpv', (wpv_pdf, ), Yield = (100, 5, 500000))
     components += [psi_wpv]
 
 ## Build PDF

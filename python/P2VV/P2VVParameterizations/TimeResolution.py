@@ -99,6 +99,9 @@ class Gaussian_TimeResolution ( TimeResolution ) :
                                 , Cache = cache
                                )
 
+    def splitVars(self):
+        return [self._sigmaSF]
+
 class LP2011_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         namePF = kwargs.pop( 'ResolutionNamePrefix', '' )
@@ -175,11 +178,11 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         if param:
             assert(len(sigmasSFs) == 2)
 
-        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 20) ) for num, val in sigmasSFs ]
+        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 10) ) for num, val in sigmasSFs ]
         self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.0001, 0.99) ) for num, val in fracs  ]
 
         use_offset = kwargs.pop('TimeResSFOffset', False)
-        assert(not (use_offset and param_rms))
+        assert(not (use_offset and param))
         Name = kwargs.pop('Name', 'timeResModelMG')
 
         from ROOT import RooNumber
@@ -191,23 +194,28 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                 MinMax = (0, RooInf))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_RMS', 'sqrt(1 / (1 - @0) * (@1 * @1 - @0 * @2 * @2))',
                                                    (self._timeResFracs[0], self._rms, self._timeResSigmasSFs[0]))
+            self._realVars = [self._rms, self._timeResSigmasSFs[0]] + self._timeResFracs
         elif param == 'Comb':
             self._comb = RealVar('timeResComb', Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
                                                          + fracs[0][1] * sigmasSFs[0][1]),
                                  MinMax = (0.1, RooInf))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
                                                    (self._timeResFracs[0], self._comb, self._timeResSigmasSFs[0]))
+            self._realVars = [self._comb, self._timeResSigmasSFs[0]] + self._timeResFracs
         elif use_offset:
             sfs = []
-            for sf, pee in zip(self._timeResSigmasSFs):
-                if pee:
+            for sf, pe in zip(self._timeResSigmasSFs, pee):
+                if pe:
                     sfo = LinearVar(Name = sf.GetName() + '_linear',
                                     Observable = self._sigmat,
                                     Slope = sf, Offset = self._timeResSigmaOffset)
                 else:
                     sfo = sf
                 sfs.append(sfo)
+            self._realVars = [sf for sf in self._timeResSigmasSFs] + self._timeResFracs
             self._timeResSigmasSFs = sfs
+        else:
+            self._realVars = [sf for sf in self._timeResSigmasSFs] + self._timeResFracs
 
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
@@ -226,6 +234,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         TimeResolution.__init__(self, Name = Name
                                 , Model = AddModel(Name, Models = models, Fractions = self._timeResFracs)
                                 , Cache = cache)
+    def splitVars(self):
+        return self._realVars
 
 class Moriond2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :

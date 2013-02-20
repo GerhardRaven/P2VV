@@ -319,7 +319,7 @@ class Background_PsiMass ( MassPdf ) :
         self._prefix = kwargs.pop("Prefix", "")
         from ROOT import RooExponential as Exponential
         from RooFitWrappers import Pdf
-        self._parseArg( '%smpsi_c' % self._prefix, kwargs, Title = 'J/psi mass background slope', Unit = '1/MeV', Value = -0.01, MinMax = (-0.1, -0.0001))
+        self._parseArg( '%smpsi_c' % self._prefix, kwargs, Title = 'J/psi mass background slope', Unit = '1/MeV', Value = -0.01, MinMax = (-0.1, -0.000001))
         MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name', '%sBackground_PsiMass' % self._prefix)
                                           , Type = Exponential
                                           , Parameters = [mass, getattr(self, '_%smpsi_c' % self._prefix)]))

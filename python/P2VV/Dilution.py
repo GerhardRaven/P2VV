@@ -45,7 +45,7 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
 
         ## Weight using sigmat
         if res_var:
-            w *= exp(dms * res_var.getVal() ** 2)
+            w *= (exp(dms * res_var.getVal() ** 2) ** 2)
 
         r = data_histo.Fill(value, w)
 
@@ -124,4 +124,30 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
     # Calculate the dilution using Wouter's macro
     from ROOT import sigmaFromFT
     D = sigmaFromFT(ft_histo, 17.7)
+    return D
+
+def simple_dilution(t, data, sigmat, sfs):
+    time_var = data.get().find(t.GetName())
+    res_var = data.get().find(sigmat.GetName())
+    
+    weighted = data.isWeighted()
+    dms = -17.7 ** 2 / 2
+    
+    ## Total number of events
+    n = 0
+    D = 0
+    for i in range(data.numEntries()):
+        r = data.get(i)
+        value = time_var.getVal()
+        ## External weight
+        if weighted:
+            w = data.weight()
+        else:
+            w = 1.
+        
+        n += w
+        
+        ## Weight using sigmat
+        D += w * sum([f * exp(dms * (sf * res_var.getVal()) ** 2) for f, sf in sfs])
+    D /= n
     return D
