@@ -1,4 +1,4 @@
-from P2VV import convertComplexPars
+from P2VV. import convertComplexPars
 from math import sqrt
 
 #amplitudes = True

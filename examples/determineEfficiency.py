@@ -1,8 +1,8 @@
-import RooFitDecorators
+import P2VV.RooFitDecorators
 from itertools import product,count
 from ModelBuilders import *
 from ROOT import *
-from P2VVLoad import P2VVLibrary
+from P2VV.Load import P2VVLibrary
 from math import sqrt,pi
 
 NumCPU = RooCmdArg(RooFit.NumCPU(8))

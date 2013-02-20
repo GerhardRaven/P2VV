@@ -57,7 +57,7 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
 
     # Create a histogram of our WPV component
     from ROOT import RooFit
-    from RooFitWrappers import buildPdf
+    from P2VV.RooFitWrappers import buildPdf
 
     signal_yields = [s.getYield().GetName() for s in signal]
     data_int = data_histo.Integral()

@@ -22,11 +22,11 @@ class efficiency :
         #return random() < ( p[0]+0.2*p[1]+0.4*p[2] )/3 * ( y[0][0] + 0.1*y[1][-1+1] + 0.2*y[1][0+1] + 0.3*y[1][1+1] )
 
 
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 ws = RooObject( workspace = 'myws' )
 
-from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
+from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 t         = RealVar(  't', Title = 'decay time', Unit='ps',                  Observable = True,  MinMax=(0,14)  )
@@ -37,32 +37,32 @@ observables = [ i for i in angles.angles.itervalues() ] + [ t,iTag ]
 for i in angles.angles.itervalues() : i.setBins(16)
 t.setBins(48)
 
-from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
+from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam( phiCP = { 'Name': 'HelloWorld', 'Value': -0.04, 'MinMax': (-3.2,3.2) }, lambdaCPSq = ConstVar(Name = 'one',Value=1) )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
 amplitudes = JpsiVPolar_AmplitudeSet( A0Mag2 = 0.60, A0Phase = 0
                                     , AperpMag2 = 0.160, AperpPhase = -0.17
                                     , AparPhase = 2.5
                                     , ASMag2 = { 'Value' : 0, 'Constant': True} , ASPhase = { 'Value': 0, 'Constant':True } )
 #amplitudes.setConstant('.*AS.*',True)
 
-from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
+from P2VV.Parameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
 # need to specify what, and in which order, to traverse...
 basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes,CP, ['A0','Apar','Aperp','AS'] ) 
 
-#from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
+#from P2VV.Parameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 #basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes,CP, iTag,  ['A0','Apar','Aperp','AS'] ) 
 
-from P2VVParameterizations.FlavourTagging import WTag_TaggingParams
+from P2VV.Parameterizations.FlavourTagging import WTag_TaggingParams
 taggingParams = WTag_TaggingParams( wTag = eta ) # FormulaVar('wTag','@2 + @3*(@0-@1)',[eta,etaAverage,p0,p1] ) )
 
 # now build the actual signal PDF...
-from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
+from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.68, dGamma = 0.05, dM = dict( Value = 17.8, MinMax = (16,19), Constant = True) )
 
-from P2VVParameterizations.TimeResolution import Truth_TimeResolution
+from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution
 args = { 'time'      : t
        , 'iTag'      : iTag
        , 'dm'        : lifetimeParams['dM']
@@ -101,7 +101,7 @@ data = inEffData;
 
 print 'computing efficiency moments'
 ##################################
-from P2VVGeneralUtils import RealMomentsBuilder
+from P2VV.GeneralUtils import RealMomentsBuilder
 # eff = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, mcpdf, angles.angles.itervalues() ) for v in angles.functions.itervalues() for i in v if i ) )
 eff = RealMomentsBuilder()
 indices  = [ ( i, l, m ) for i in range(3)
@@ -185,7 +185,7 @@ for (cc) in c.pads(1,1):
     pdfCuts  = {} # dict( Slice = ( iTag, lab ) )
     obs = [ o for o in observables if hasattr(o,'frame') and o.GetName() != 't' ]
     for (ccc,o) in zip(cc.pads(len(obs)),obs) :
-        from P2VVGeneralUtils import plot
+        from P2VV.GeneralUtils import plot
         plot( ccc, o, data, pdf, addPDFs = [ mcpdf ]
                                , dataOpts = dict( MarkerSize = 0.8, MarkerColor = RooFit.kBlack, **dataCuts )
                                , pdfOpts  = dict( LineWidth = 2, **pdfCuts)

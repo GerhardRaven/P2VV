@@ -8,10 +8,10 @@ real_data = sys.argv[1] == 'data'
 MC = sys.argv[1] == 'MC'
 
 from itertools import product
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
-from P2VVParameterizations.GeneralUtils import valid_combinations
+from P2VV.Parameterizations.GeneralUtils import valid_combinations
 
 ## from ROOT import RooMsgService
 ## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
@@ -56,20 +56,20 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution
+from P2VV.Parameterizations.TimeResolution import Moriond2012_TimeResolution
 tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = 'fixed', timeResSigma = st,
                                   timeResSigmaSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. )))
-## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
+## from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
-## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+## from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 ## tres = TimeResolution(time = t)
 
 # Signal time pdf
-from P2VVParameterizations.TimePDFs import Single_Exponent_Time
+from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
 sig_t = Single_Exponent_Time(Name = 'sig_t', time = t, resolutionModel = tres.model())
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
 
 # J/psi mass pdf
@@ -191,7 +191,7 @@ spec = {'Bins' : {hlt1_excl_biased_dec : {'excl_biased' : {'bins'    : biased_bi
 ##         }
 
 # Read input data
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
@@ -229,7 +229,7 @@ if real_data:
     canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
     obs = [m]
     for (p,o) in zip(canvas.pads(len(obs)), obs):
-        from P2VVGeneralUtils import plot
+        from P2VV.GeneralUtils import plot
         pdfOpts  = dict()
         plot(p, o, pdf = mass_pdf, data = data
              , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
@@ -242,7 +242,7 @@ if real_data:
              )
     # Do the sWeights
     # make sweighted dataset. TODO: use mumu mass as well...
-    from P2VVGeneralUtils import SData, splot
+    from P2VV.GeneralUtils import SData, splot
 
     for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
     splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
@@ -301,7 +301,7 @@ else:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
         rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
 
-    from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+    from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     tres = TimeResolution(time = t, timeResSigma = dict(Value = 0.5, Constant = True),
                           timeResMu = dict(Value = 0, Constant = True),
                           BiasScaleFactor = False)
@@ -363,7 +363,7 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
     cat_data = data.reduce(cuts)
     project_set = RooArgSet(*project_vars)
     pdfOpts = dict(ProjWData = (project_set, cat_data, True))
-    from P2VVGeneralUtils import plot
+    from P2VV.GeneralUtils import plot
     binning = RooBinning(len(biased_bins) - 1, biased_bins)
     plot( p, o, cat_data, pdf, components = {'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)}
           , plotResidHist = True

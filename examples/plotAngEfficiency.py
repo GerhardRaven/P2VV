@@ -19,8 +19,8 @@ f21  = 119190.               / ( 462684. + 112402. + 119190. )
 f2Sc = ( f10 * 3.5923835 + f11 * 3.5971249 ) / 3.5449077
 addFactors = [  ( ) ]#, ( f10, f11 ), ( f20, f21 * f2Sc ) ]
 
-from P2VVLoad import P2VVLibrary, LHCbStyle
-from RooFitWrappers import RooObject
+from P2VV.Load import P2VVLibrary, LHCbStyle
+from P2VV.RooFitWrappers import RooObject
 from ROOT import TCanvas, gStyle
 gStyle.SetEndErrorSize(4)
 
@@ -43,15 +43,15 @@ yLabels = [  (  '#varepsilon_{#Omega}(cos#kern[0.3]{#theta_{K}}, 0, 0) / #LT#var
 ws = RooObject( workspace = 'workspace' ).ws()
 
 if transAngles :
-    from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
+    from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
     angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 else :
-    from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
+    from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
     angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
 
 angles = [ angleFuncs.angles[ang] for ang in [ 'cpsi', 'ctheta', 'phi' ] ]
 
-from P2VVGeneralUtils import RealMomentsBuilder
+from P2VV.GeneralUtils import RealMomentsBuilder
 from math import sqrt, pi
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(6) for YIndex0 in range(6)\
                                           for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
@@ -103,7 +103,7 @@ LHCbText.SetBorderSize(0)
 LHCbText.SetTextAlign(12)
 
 # plot efficiency function slices
-from P2VVGeneralUtils import plot
+from P2VV.GeneralUtils import plot
 from ROOT import kBlack, kBlue, kRed, kGreen, kFullDotLarge
 canvs = [  TCanvas( 'cpsiFuncCanv',   'Angular Efficiency' )
          , TCanvas( 'cthetaFuncCanv', 'Angular Efficiency' )
@@ -145,7 +145,7 @@ for ( pad, func, angle, xTitle, yTitle, yScale, norm )\
            , angles
            , xLabels
            , yLabels[1]
-           , [ ( 0.88, 1.12 ), ( 0.94, 1.18 ), ( 0.88, 1.12 ) ]
+           , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ]
            , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
           ) :
     pad.SetLeftMargin(0.28)
@@ -182,7 +182,7 @@ if dataFile :
                , angles
                , xLabels
                , yLabels[1]
-               , [ ( 0.88, 1.12 ), ( 0.94, 1.18 ), ( 0.88, 1.12 ) ]
+               , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ]
                , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
                , numBins
               ) :
@@ -209,7 +209,7 @@ if dataFile :
                , angles
                , xLabels
                , yLabels[1]
-               , [ ( 0.88, 1.12 ), ( 0.94, 1.18 ), ( 0.88, 1.12 ) ]
+               , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ]
                , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
                , numBins
               ) :

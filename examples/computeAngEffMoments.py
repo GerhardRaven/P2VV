@@ -56,24 +56,24 @@ markSize        = 0.4
 ####################################
 
 # import RooFit wrappers
-from P2VVLoad import RooFitOutput
+from P2VV.Load import RooFitOutput
 
 # workspace
-from RooFitWrappers import RooObject
+from P2VV.RooFitWrappers import RooObject
 ws = RooObject(workspace = 'ws').ws()
 
 # angular functions
 if transAngles :
-    from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
+    from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
     angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 else :
-    from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
+    from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
     angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
     #angleFuncs = AngleFuncs( cpsi = 'ctkRecoLHCb', ctheta = 'ctlRecoLHCb', phi = 'phiRecoLHCb' )
     #angleFuncs = AngleFuncs( cpsi = 'ctkTrueCalc', ctheta = 'ctlTrueCalc', phi = 'phiTrueCalc' )
 
 # variables in PDF
-from RooFitWrappers import RealVar, Category
+from P2VV.RooFitWrappers import RealVar, Category
 time     = RealVar(  'time',     Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. ) )
 trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ps', Observable = True, Value = 0.,  MinMax = ( 0.,  20. ) )
 iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
@@ -88,7 +88,7 @@ massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150.
 timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
 tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
 if trigger == 'ExclBiased' :
     cuts  = 'sel == 1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
@@ -109,7 +109,7 @@ else :
 
 if normPdf :
     # transversity amplitudes
-    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
+    from P2VV.Parameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
     amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                             , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                             , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
@@ -119,32 +119,32 @@ if normPdf :
                            )
 
     # B lifetime
-    from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
+    from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
     lifetimeParams = LifetimeParams( Gamma = GammaVal, dGamma = dGammaVal, dM = dMVal )
 
     tResArgs = { }
     if tResModel == 'Gauss' :
-        from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+        from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
         tResArgs['time']         = time
         tResArgs['timeResSigma'] = tResSigma
     elif tResModel == '3Gauss' :
-        from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
+        from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
         tResArgs['time'] = time
     else :
-        from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
+        from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
         tResArgs['time'] = trueTime
     timeResModel = TimeResolution( **tResArgs )
 
     # CP violation parameters
-    from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
+    from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
     lambdaCP = CPParam( lambdaCPSq = 1., phiCP = phiCPVal )
 
     # tagging parameters
-    from P2VVParameterizations.FlavourTagging import Trivial_TaggingParams as TaggingParams
+    from P2VV.Parameterizations.FlavourTagging import Trivial_TaggingParams as TaggingParams
     taggingParams = TaggingParams()
 
     # coefficients for time functions
-    from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
+    from P2VV.Parameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
     timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp' ] )
 
     # build signal PDF
@@ -164,7 +164,7 @@ if normPdf :
                 , resolutionModel        = timeResModel['model']
                )
 
-    from RooFitWrappers import BTagDecay
+    from P2VV.RooFitWrappers import BTagDecay
     pdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
 
     intSet  = [ ]
@@ -203,16 +203,16 @@ else :
     print
 
 # moments builder with angular functions from physics PDF
-from P2VVGeneralUtils import RealMomentsBuilder
+from P2VV.GeneralUtils import RealMomentsBuilder
 if normPdf :
-    from RooFitWrappers import RealEffMoment
+    from P2VV.RooFitWrappers import RealEffMoment
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( func, 1, pdf, intSet, normSet )\
                                                   for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
                                                 )
                                     )
 
 else :
-    from RooFitWrappers import RealMoment
+    from P2VV.RooFitWrappers import RealMoment
     physMoments = RealMomentsBuilder( Moments = ( RealMoment( func, 1 )\
                                                   for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
                                                 )
@@ -308,8 +308,8 @@ if makePlots and normPdf :
     effSignifPdf = basisMomentsSignif.multiplyPDFWithEff( pdf, Name = 'sig_t_angles_tagCat_iTag_x_EffSignif', EffName = 'effSignif' )
 
     # import plotting tools
-    from P2VVLoad import LHCbStyle
-    from P2VVGeneralUtils import plot
+    from P2VV.Load import LHCbStyle
+    from P2VV.GeneralUtils import plot
     from ROOT import TCanvas, kBlue, kRed, kGreen
 
     # plot efficiency

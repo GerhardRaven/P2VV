@@ -1,5 +1,5 @@
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -56,7 +56,7 @@ from ROOT import RooExponential as Exponential
 from ROOT import RooDecay as Decay
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
 
 # J/psi mass pdf
@@ -76,7 +76,7 @@ background = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (20000,200
 
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m), Yield= (10000,500,50000) )
 
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 if dataSample == '2011':
     input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
@@ -104,7 +104,7 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
                Verbose = False, Optimize = 2, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
-from P2VVGeneralUtils import SData, splot
+from P2VV.GeneralUtils import SData, splot
 
 result = mass_pdf.fitTo(data, **fitOpts)
 
@@ -114,7 +114,7 @@ from ROOT import TCanvas
 mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
 obs = [m]
 for (p,o) in zip(mass_canvas.pads(len(obs)), obs):
-    from P2VVGeneralUtils import plot
+    from P2VV.GeneralUtils import plot
     pdfOpts  = dict()
     plot(p, o, pdf = mass_pdf, data = data
          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
@@ -134,7 +134,7 @@ signal_sdata = splot.data('signal')
 bkg_sdata = splot.data('background')
 
 ## Fit
-from P2VVGeneralUtils import plot
+from P2VV.GeneralUtils import plot
 print 'plotting'
 canvas = TCanvas('canvas', 'canvas', 1000, 1000)
 

@@ -52,9 +52,10 @@ if options.wpv and not options.wpv_type in ['Mixing', 'Gauss']:
     print parser.usage
     sys.exit(-2)
     
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
-from P2VVLoad import LHCbStyle
+
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
+from P2VV.Load import LHCbStyle
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -98,21 +99,21 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 # Time resolution model
 sig_tres = None
 if args[1] == 'single':
-    from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+    from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = False,
                               TimeResSFOffset = options.offset,
                               timeResMu = dict(Value = 0.0, MinMax = (-1, 1), Constant = False),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 elif args[1] == 'double':
-    from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = options.pee, Parameterise = options.parameterise,
                               TimeResSFOffset = options.offset, timeResMu = dict(Value = 0.0, Constant = False),
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
-    from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = [False, options.pee, options.pee],
                               TimeResSFOffset = options.offset, Parameterise = options.parameterise,
@@ -125,32 +126,32 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres
             ExternalConstraints = sig_tres.model().ExternalConstraints())
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 ## sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
 m_sig_mean  = RealVar('m_sig_mean',   Unit = 'MeV', Value = 5365, MinMax = (5363, 5372))
 m_sig_sigma = RealVar('m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (5, 20))
 sig_m   = Pdf(Name = 'sig_m', Type = Gaussian,  Parameters = (m,m_sig_mean, m_sig_sigma ))
 
 # J/psi mass pdf
-from P2VVParameterizations.MassPDFs import Signal_PsiMass as PsiMassPdf
+from P2VV.Parameterizations.MassPDFs import Signal_PsiMass as PsiMassPdf
 psi_m = PsiMassPdf(mpsi, Name = 'psi_m')
 
 # J/psi background
-from P2VVParameterizations.MassPDFs import Background_PsiMass as PsiBkgPdf
+from P2VV.Parameterizations.MassPDFs import Background_PsiMass as PsiBkgPdf
 bkg_mpsi = PsiBkgPdf(mpsi, Name = 'bkg_mpsi')
 
 # Create combinatorical background component
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 # Create psi background component
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 0.67)
                          , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.37, MinMax = (0.5,  2.5))
                          , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.13, MinMax = (0.1, 0.5))
                          )
 
-## from P2VVParameterizations.TimePDFs import Single_Exponent_Time as Background_Time
+## from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time as Background_Time
 ## psi_t = Background_Time(Name = 'psi_t', time = t, resolutionModel = sig_tres.model(),
 ##                              t_sig_tau  = dict(Name = 'psi_tau', Value = 1.5, MinMax = (0.5, 2.5))
 ##                              )
@@ -170,12 +171,12 @@ psi_ll = Component('psi_ll', (psi_m.pdf(), bkg_m.pdf(), psi_t), Yield= (30000,10
 background = Component('background', (bkg_mpsi.pdf(), bkg_m.pdf(), bkg_t), Yield = (19620,100,500000) )
 
 # Prompt component
-from P2VVParameterizations.TimePDFs import Prompt_Peak
+from P2VV.Parameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
 
 # Read data
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 cut = 'nPV == 3 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
@@ -198,6 +199,7 @@ if options.simultaneous:
 fitOpts = dict(NumCPU = 6, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
                Verbose = options.verbose)
 
+<<<<<<< HEAD
 ## Build a single mass PDF
 mass_pdf = buildPdf(Components = (psi_ll, background), Observables = (mpsi,), Name='mass_pdf')
 
@@ -263,6 +265,27 @@ else:
                           , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                           }
          )
+=======
+mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
+from P2VV.GeneralUtils import SData
+from P2VV.GeneralUtils import plot
+pdfOpts  = dict()
+plot(mass_canvas.cd(1), mpsi, pdf = mass_pdf, data = data
+     , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+     , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+     , plotResidHist = False
+     , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                      , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                      }
+     )
+
+from P2VV.GeneralUtils import SData
+for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
+## signal_sdata = splot.data('signal')
+psi_sdata = splot.data('psi_background')
+bkg_sdata = splot.data('background')
+>>>>>>> 6d6ab6a2d0a131b17a7bdf4150f4e03f3753e3e8
 
     from P2VVGeneralUtils import SData
     for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
@@ -276,7 +299,7 @@ PV_bounds = array('d', [-0.5 + i for i in range(12)])
 
 components = [psi_prompt, psi_ll]
 if options.wpv and options.wpv_type == 'Mixing':
-    from P2VVParameterizations import WrongPV
+    from P2VV.Parameterizations import WrongPV
     reweigh_data = dict(jpsi = psi_sdata, bkg = bkg_sdata)
     wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
                                InputFile = input_data['wpv'], Workspace = input_data['workspace'],
@@ -334,7 +357,7 @@ zoom_binning.SetName('zoom_binning')
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from ROOT import TCanvas
-from P2VVGeneralUtils import plot
+from P2VV.P2VVGeneralUtils import plot
 
 print 'plotting'
 
@@ -425,9 +448,6 @@ if options.simultaneous:
     fit_func = TF1('fit_func', "pol1", st_bins[0], st_bins[-1])
     fit_result = hist_res.Fit(fit_func, "S0")
 
-import Dilution
+from P2VV import Dilution
 Dilution.dilution(t, data, result = time_result, sigmat = st, signal = [psi_prompt],
                   subtract = [psi_ll, psi_wpv] if options.wpv else [psi_ll])
-
-
-

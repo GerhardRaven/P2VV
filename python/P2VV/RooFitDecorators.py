@@ -2,7 +2,7 @@ from ROOT import (RooArgSet, RooArgList, RooDataSet,
                   RooWorkspace, RooFitResult, RooFit,
                   RooDataHist, RooLinkedList, RooCmdArg)
 
-import ROOTDecorators
+import P2VV.ROOTDecorators
 
 def __wrap_kw_subs( fun ) :
     from ROOT import RooFit, RooAbsCollection, TObject

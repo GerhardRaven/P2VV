@@ -1,4 +1,4 @@
-from RooFitDecorators import *
+from P2VV.RooFitDecorators import *
 
 ws = RooWorkspace('ws')
 ws.factory('{m[-10,10],t[0,10]}')

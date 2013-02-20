@@ -30,6 +30,7 @@
 #include "P2VV/RooExplicitNormPdf.h"
 #include "P2VV/RooAmoroso.h"
 #include "P2VV/RooTPDecay.h"
+#include "P2VV/RooMassDependence.h"
 
 #include <map>
 #include <string>

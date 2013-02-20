@@ -1,7 +1,7 @@
 from itertools import count
 from math import pi
 from ModelBuilders import buildJpsiphi,buildJpsikstar,declareObservables,definePolarAngularAmplitudes
-from RooFitDecorators import *
+from P2VV.RooFitDecorators import *
 from ROOT import *
 
 if False :

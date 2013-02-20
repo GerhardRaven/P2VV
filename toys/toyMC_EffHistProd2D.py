@@ -13,7 +13,7 @@ from ROOT import (gSystem, TH1F, TFile,
                   TCanvas)
 gSystem.Load("libP2VV")
 ## from math import sqrt,pi
-from RooFitDecorators import *
+from P2VV.RooFitDecorators import *
 
 w = RooWorkspace("w")
 

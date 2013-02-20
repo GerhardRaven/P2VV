@@ -1,4 +1,4 @@
-from RooFitDecorators import *
+from P2VV.RooFitDecorators import *
 from functools import wraps
 
 def __check_req_kw__( name, kwargs ) :
@@ -506,7 +506,7 @@ class P2VVAngleBasis (RooObject) :
         if ind2 : spec += "%d,%d,%d,%d, " % ind2
         spec += " %f)"% c
         #NOTE: this requires libP2VV.so to be loaded
-        from P2VVLoad import P2VVLibrary
+        from P2VV.Load import P2VVLibrary
         self._declare( spec )
         self._init(name,'RooP2VVAngleBasis')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
@@ -527,7 +527,7 @@ class RealMoment( AbsRealMoment ):
         self._norm      = Norm
 
         # create moment
-        from P2VVLoad import P2VVLibrary
+        from P2VV.Load import P2VVLibrary
         from ROOT import RooRealMoment
         AbsRealMoment.__init__( self, RooRealMoment( __dref__(self._basisFunc), self._norm ) )
 
@@ -545,7 +545,7 @@ class RealEffMoment( AbsRealMoment ):
         self._rooNormSet = ArgSet( self._basisFunc.GetName() + '_normSet', ( var for var in self._normSet ) )
 
         # create efficiency moment
-        from P2VVLoad import P2VVLibrary
+        from P2VV.Load import P2VVLibrary
         from ROOT import RooRealEffMoment
         AbsRealMoment.__init__( self, RooRealEffMoment(  __dref__(self._basisFunc)
                                                        , self._norm
@@ -1503,7 +1503,7 @@ class BDecay( Pdf ) :
 class BTagDecay( Pdf ) :
     def _make_pdf(self) : pass
     def __init__( self, Name, **kwargs ) :
-        from P2VVLoad import P2VVLibrary
+        from P2VV.Load import P2VVLibrary
         argDict = { 'Name' : Name, 'checkVars' : '1', 'decayType' : 'SingleSided' }
 
         cstr = lambda arg : arg if type(arg) == str else arg.GetName() if hasattr(arg,'GetName') else str(arg)
@@ -1585,7 +1585,7 @@ class BinnedPdf( Pdf ) :
     def __init__( self, Name, **kwargs ) :
 	# !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
 	# !!! work very well. We create the object directly and then add it to RooObject and the workspace.
-        from P2VVLoad import P2VVLibrary
+        from P2VV.Load import P2VVLibrary
         argDict = { 'Name' : Name }
 
         # declare PDF in workspace

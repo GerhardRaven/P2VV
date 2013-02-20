@@ -1,4 +1,4 @@
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 ws = RooObject ( workspace = 'myws' )
 
 x = RealVar('x',Value = 1 )

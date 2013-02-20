@@ -1,5 +1,5 @@
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -39,7 +39,7 @@ from ROOT import RooDecay as Decay
 signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =  1.43, MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VVParameterizations.TimeResolution import Moriond2012_TimeResolution as SignalTimeResolution
+from P2VV.Parameterizations.TimeResolution import Moriond2012_TimeResolution as SignalTimeResolution
 sig_tres = SignalTimeResolution(Name = 'sig_tres', time = t, timeResSFConstraint = True, sigmat = st,
                                 timeResSF = dict( Name = 'timeResSF', Value = 1.46, MinMax = (0.1,5.),
                                                   Constant = True)
@@ -50,11 +50,11 @@ sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres
             ExternalConstraints = sig_tres.model().ExternalConstraints())
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
 
 # Apply acceptance
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
@@ -84,7 +84,7 @@ del data
 data = new_data
 data.table(RooArgSet(excl_biased, unbiased)).Print('v')
 
-from P2VVParameterizations.TimeAcceptance import Paper2012_TimeAcceptance
+from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance
 sig_acceptance = Paper2012_TimeAcceptance(time = t, Input = '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root',
                                           Histograms = {(excl_biased, 'Biased')   : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins',
                                                         (excl_biased, 'Unbiased') : 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1UB_40bins'},
@@ -96,7 +96,7 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
                Verbose = True, Optimize = 1, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
-from P2VVGeneralUtils import SData, splot
+from P2VV.GeneralUtils import SData, splot
 
 ## Fit
 print 'fitting data'
@@ -105,7 +105,7 @@ print 'fitting data'
 result = sig_t.fitTo(data, SumW2Error = False, **fitOpts)
 result.Print('v')
 
-from P2VVGeneralUtils import plot
+from P2VV.GeneralUtils import plot
 print 'plotting'
 from ROOT import TCanvas
 canvas = TCanvas('canvas', 'canvas', 500, 500)

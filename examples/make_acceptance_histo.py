@@ -1,5 +1,5 @@
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -29,7 +29,7 @@ from ROOT import RooExponential as Exponential
 from ROOT import RooDecay as Decay
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict(Value = 5365, MinMax = (5363,5372)))
 
 # J/psi mass pdf
@@ -55,7 +55,7 @@ psi_background = Component('psi_background', (bkg_m.pdf(), psi_m), Yield= (6831,
 background = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (3054,2000,50000) )
 
 # Apply acceptance
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 ## input_file = '/stuff/PhD/p2vv/data/B_s0_Output.root'
@@ -80,7 +80,7 @@ pdf.fitTo(data, **fitOpts)
 ## output.WriteTObject(w, w.GetName())
 ## output.Close()
 
-from P2VVGeneralUtils import plot
+from P2VV.GeneralUtils import plot
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas
 print 'plotting'
@@ -98,7 +98,7 @@ for (p,o) in zip(canvas.pads(len(obs)), obs):
          )
 
 ## sPlot
-from P2VVGeneralUtils import SData
+from P2VV.GeneralUtils import SData
 constant = {}
 for p in pdf.Parameters() :
     constant[p] = p.isConstant()

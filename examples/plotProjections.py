@@ -2,7 +2,7 @@
 ## set script parameters ##
 ###########################
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -98,13 +98,13 @@ pdfConfig['numAngleBins'] = ( 5, 7, 9 )
 ## build PDF ##
 ###############
 
-from P2VVLoad import RooFitOutput
+from P2VV.Load import RooFitOutput
 
 # workspace
-from RooFitWrappers import RooObject
+from P2VV.RooFitWrappers import RooObject
 ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
-from P2VVParameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
@@ -147,7 +147,7 @@ if pdfConfig['SFit'] :
     defData = pdfBuild['sigSWeightData']
     sigData = pdfBuild['sigSWeightData']
     bkgData = pdfBuild['bkgSWeightData']
-    from P2VVGeneralUtils import correctSWeights
+    from P2VV.GeneralUtils import correctSWeights
     fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
                               , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else '' )
 
@@ -218,8 +218,8 @@ if doFit :
 #####################
 
 # import plotting tools
-from P2VVLoad import LHCbStyle
-from P2VVGeneralUtils import plot, CPcomponentsPlotingToolkit
+from P2VV.Load import LHCbStyle
+from P2VV.GeneralUtils import plot, CPcomponentsPlotingToolkit
 from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlue, kSolid
 
 #Initialaze the CP components ploting toolkit
@@ -285,7 +285,7 @@ for ( pad, obs, nBins, xTitle, yTitle, yScale, logY )\
     pad.Print(filename)
 
 # Save all the plots in a root file as RooPlot objects.
-from P2VVGeneralUtils import _P2VVPlotStash as rooplots
+from P2VV.GeneralUtils import _P2VVPlotStash as rooplots
 from ROOT import TFile
 plotsFile = TFile('RooPlotsFinal.root','recreate')
 for plot in rooplots: plot.Write()

@@ -1,5 +1,5 @@
-from RooFitWrappers import *
-from P2VVLoad import P2VVLibrary
+from P2VV.RooFitWrappers import *
+from P2VV.Load import P2VVLibrary
 
 from ROOT import RooMsgService
 
@@ -28,17 +28,17 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-## from P2VVParameterizations.TimeResolution import LP2011_TimeResolution
+## from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t, timeResSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. ),
 ##                              Constant = True))['model']
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 tres = TimeResolution(time = t).model()
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, tres, 'SingleSided'])
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
 
 # Create signal component
@@ -49,7 +49,7 @@ bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm
 
 bkg_tau = RealVar('bkg_tau', Title = 'comb background lifetime', Unit = 'ps', Value = 1, MinMax = (0.0001, 5))
 
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tres
                        , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
                        , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )
@@ -96,7 +96,7 @@ pdf = MultiHistEfficiency(Name = "RMHE", Original = sig_t, Observable = t,
                           ConditionalCategories = True, **spec)
 pdf.Print('v')
 # Read input data
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20120118.root'
@@ -116,7 +116,7 @@ if real_data:
     canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
     obs = [m,]
     for (p,o) in zip(canvas.pads(len(obs)), obs):
-        from P2VVGeneralUtils import plot
+        from P2VV.GeneralUtils import plot
         pdfOpts  = dict()
         plot(p, o, pdf = mass_pdf, data = data
              , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
@@ -129,7 +129,7 @@ if real_data:
              )
     # Do the sWeights
     # make sweighted dataset. TODO: use mumu mass as well...
-    from P2VVGeneralUtils import SData, splot
+    from P2VV.GeneralUtils import SData, splot
 
     for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
     splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
@@ -170,7 +170,7 @@ for states in plots:
         cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states.iteritems()])
         cat_data = data.reduce(cuts)
         pdfOpts = dict(ProjWData = (RooArgSet(biased, unbiased), cat_data))
-        from P2VVGeneralUtils import plot
+        from P2VV.GeneralUtils import plot
         plot( p, o, cat_data, pdf, components = { 'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)
                                             , 'bkg*' : dict(LineColor = kBlue,  LineStyle = kDashed)
                                               }

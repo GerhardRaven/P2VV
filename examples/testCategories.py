@@ -1,4 +1,4 @@
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 ws = RooObject ( workspace = 'myws' )
 x = Category('mystate', States = [ 'aap','noot','mies','vuur' ] )
 y = Category('mystate2', States = [ 'x','y' ] )

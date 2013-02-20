@@ -2,7 +2,7 @@ from ROOT import (RooWorkspace, TH1F,
                   gSystem, RooDataHist,
                   TFile)
 gSystem.Load('libP2VV')
-from RooFitDecorators import *
+from P2VV.RooFitDecorators import *
 
 w = RooWorkspace("w")
 

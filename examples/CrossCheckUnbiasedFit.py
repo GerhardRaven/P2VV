@@ -1,11 +1,11 @@
 from math import sqrt, pi
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 indices = lambda i,l : ( ( _i, _l, _m ) for _i in range(i) for _l in range(l) for _m in range( -_l, _l + 1 )  )
 obj  = RooObject( workspace = 'workspace')
 
-from P2VVGeneralUtils import numCPU
-from ROOTDecorators import  ROOTversion as Rv
+from P2VV.GeneralUtils import numCPU
+from P2VV.ROOTDecorators import  ROOTversion as Rv
 fitOpts = dict( NumCPU = numCPU() 
               , Timer=1
               , Save = True
@@ -36,14 +36,14 @@ unbiased  = Category( 'unbiased',            Title = 'unbiased',                
 #unbiased  = Category( 'unbiased',            Title = 'unbiased',                 Observable = True, States = { 'Unbiased': +1})
 biased  = Category( 'biased',            Title = 'biased',                 Observable = True, States = { 'Biased': +1, 'NotBiased': 0 } )
 
-from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
+from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as HelAngles, JpsiphiTransversityAngles as TrAngles
 #angles    = HelAngles( cpsi = 'helcthetaK', ctheta = 'helcthetaL', phi = 'helphi' )
 angles    = TrAngles( cpsi   = dict( Name = 'trcospsi',   Title = 'cos(#psi)',        nBins = 24 )
                     , ctheta = dict( Name = 'trcostheta', Title = 'cos(#theta_{tr})', nBins = 24 )
                     , phi    = dict( Name = 'trphi',      Title = '#phi_{tr}',        nBins = 24 ) 
                     )
 
-from P2VVGeneralUtils import readData
+from P2VV.GeneralUtils import readData
 data = readData( '/data/bfys/dveijk/DataJpsiPhi/2011/Pass3Version2_2012.root'
 #data = readData( '/tmp/Pass3Version2.root'
                  , dataSetName = 'MyTree'
@@ -88,24 +88,24 @@ fulldata.SetName('fulldata')
 fulldata.append(fullybiaseddata)
 
 # B mass pdf
-from P2VVParameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(     Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372) ) )
 bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
 
 #Time Resolution Model
 #Data
-from P2VVParameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
+from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as DataTimeResolution
 tresdata = DataTimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tresdata.setConstant('.*')
 
 #MC
-from P2VVParameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
+from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
 tres = TimeResolution(time = t) # TODO: extend _util_parse_mixin so that we can add: , Constant = '.*')
 tres.setConstant('.*')
 #externalConstraints = list()
 #externalConstraints += tres.externalConstraints()
 
-from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
+from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = 0.681
                                        , dGamma = 0.060
 #                                       , dGamma = 0.0
@@ -113,7 +113,7 @@ lifetimeParams = Gamma_LifetimeParams( Gamma = 0.681
                                        )
 
 # define tagging parameter 
-from P2VVParameterizations.FlavourTagging import WTag_TaggingParams as TaggingParams
+from P2VV.Parameterizations.FlavourTagging import WTag_TaggingParams as TaggingParams
 tagging = TaggingParams( wTag = eta ) # Constant = False, Constrain = True )
 # TODO: add external constraint terms for p0 and p1... (and make p0,p1 non-constant ;-)
 #externalConstraints += tagging.externalConstraints()
@@ -123,18 +123,18 @@ tagging = TaggingParams( wTag = eta ) # Constant = False, Constrain = True )
 eta_pdf = UniformPdf( Name = 'eta_pdf', Arguments = (eta,) )
 
 # Uniform bkg itag distribution
-from P2VVParameterizations.FlavourTagging import Uniform_Background_Tag
+from P2VV.Parameterizations.FlavourTagging import Uniform_Background_Tag
 bkg_tag = Uniform_Background_Tag( Name = 'bkg_tag'
                                 , tagdecision   = iTag
                                 )
 
-from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
+from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam
 CP = LambdaSqArg_CPParam(  phiCP      = dict( Name = 'phi_s', Value = -0.04, MinMax = (-pi,pi), Constant = False )
                          , lambdaCPSq = dict( Value = 1., Constant = True )
                         )
 
 # polar^2,phase transversity amplitudes, with Apar^2 = 1 - Aperp^2 - A0^2, and delta0 = 0
-from P2VVParameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
+from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolar_AmplitudeSet
 amplitudes = JpsiVPolar_AmplitudeSet( A0Mag2 = 0.60, A0Phase = 0
                                       , AperpMag2 = 0.16, AperpPhase = -0.17 # , Constant = True ) # untagged with zero CP has no sensitivity to this phase
                                       , AparPhase = 2.5
@@ -143,14 +143,14 @@ amplitudes = JpsiVPolar_AmplitudeSet( A0Mag2 = 0.60, A0Phase = 0
                                     )
 
 # need to specify order in which to traverse...
-from P2VVParameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
+from P2VV.Parameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
 basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions
                                                   , amplitudes
                                                   , CP
                                                   , Product('tag',(iTag,tagging['dilution']))
                                                   , ['A0','Apar','Aperp','AS'] ) 
 
-from RooFitWrappers import BDecay
+from P2VV.RooFitWrappers import BDecay
 MC_sig_t_angles = BDecay( Name      = 'MC_sig_t_angles'
                        , time      = t
                        , dm        = lifetimeParams['dM']
@@ -196,7 +196,7 @@ allObs = MCpdf.getObservables( MCdata.get() )
 print 'MCobservables:', [ i.GetName() for i in allObs ]
 o = MCpdf.getObservables(MCdata.get() )
 
-from P2VVGeneralUtils import RealMomentsBuilder
+from P2VV.GeneralUtils import RealMomentsBuilder
 nset = angles.angles.values()
 
 canomoms = RealMomentsBuilder( Moments = ( RealEffMoment( i, 1, MCpdf,nset) for v in angles.functions.itervalues() for i in v if i ) )
@@ -271,7 +271,7 @@ for (j,event) in enumerate(fitdata) :
 
 #####
 
-from P2VVParameterizations.TimePDFs import LP2011_Background_Time as Background_Time
+from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = tresdata.model()
                        , t_bkg_fll    = dict( Name = 't_bkg_fll',    Value = 0.3 )
                        , t_bkg_ll_tau = dict( Name = 't_bkg_ll_tau', Value = 1.92, MinMax = (0.5,2.5) )

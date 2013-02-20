@@ -58,13 +58,13 @@ markSize     = 0.4
 ###################
 
 # import RooFit wrappers
-from RooFitWrappers import *
+from P2VV.RooFitWrappers import *
 
 # workspace
 ws = RooObject(workspace = 'ws')
 
 # angular functions
-from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles
+from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles
 angleFuncs = JpsiphiHelicityAngles( cpsi = 'cthetaK', ctheta = 'cthetal', phi = 'phi' )
 
 # variables in PDF
@@ -75,7 +75,7 @@ angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFun
 observables = [ time ] + list(angles) + [ iTag ]
 
 # transversity amplitudes
-from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet
+from P2VV.Parameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet
 transAmps = JpsiVCarthesian_AmplitudeSet(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
                                          , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
                                          , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
@@ -85,29 +85,29 @@ transAmps = JpsiVCarthesian_AmplitudeSet(  ReApar  = sqrt(AparMag2Val  / A0Mag2V
                                         )
 
 # B lifetime
-from P2VVParameterizations.LifetimeParams import Gamma_LifetimeParams
+from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams
 lifetimeParams = Gamma_LifetimeParams( Gamma = GammaVal, dGamma = dGammaVal, dM = dmVal )
 
-from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution
+from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution
 timeResModel = Gaussian_TimeResolution( time = time, timeResSigma = timeResSigmaVal )
 
 # CP violation parameters
 if carthLambdaCP :
   # carthesian lambda
-  from P2VVParameterizations.CPVParams import LambdaCarth_CPParam
+  from P2VV.Parameterizations.CPVParams import LambdaCarth_CPParam
   lambdaCP = LambdaCarth_CPParam( ReLambdaCP = sqrt(lambdaCPSqVal) * cos(-phiCPVal), ImLambdaCP = sqrt(lambdaCPSqVal) * sin(-phiCPVal) )
 
 else :
   # polar lambda
-  from P2VVParameterizations.CPVParams import LambdaSqArg_CPParam
+  from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam
   lambdaCP = LambdaSqArg_CPParam( lambdaCPSq = lambdaCPSqVal, phiCP = phiCPVal )
 
 # tagging parameters
-from P2VVParameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
+from P2VV.Parameterizations.FlavourTagging import WTagsCoefAsyms_TaggingParams
 taggingParams = WTagsCoefAsyms_TaggingParams( WTag = WTagVal, AWTag = AWTagVal, AProd = AProdVal, ANorm = ANormVal )
 
 # coefficients for time functions
-from P2VVParameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
+from P2VV.Parameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
 timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients( angleFuncs.functions, transAmps, lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
 # build the B_s -> J/psi phi signal PDF
@@ -136,16 +136,16 @@ pdf = BTagDecay('JpsiphiPDF', **args)
 ################################
 
 # generate data
-from P2VVLoad import RooFitOutput
+from P2VV.Load import RooFitOutput
 if generateData :
   print 'timeAnglesSignal: generating %d events' % nEvents
   data = pdf.generate( observables, nEvents )
 
-  from P2VVGeneralUtils import writeData
+  from P2VV.GeneralUtils import writeData
   writeData( dataSetFile, dataSetName, data, NTuple )
 
 else :
-  from P2VVGeneralUtils import readData
+  from P2VV.GeneralUtils import readData
   data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = observables )
 
   # TODO: a trick to change the observables in a data set ( iTag( +1, -1 ) <--> iTag( +1, -1, 0 ) )
@@ -168,8 +168,8 @@ if fitData :
 
 if makePlots :
     # import plotting tools
-    from P2VVLoad import LHCbStyle
-    from P2VVGeneralUtils import plot
+    from P2VV.Load import LHCbStyle
+    from P2VV.GeneralUtils import plot
     from ROOT import TCanvas
 
     # plot lifetime and angles

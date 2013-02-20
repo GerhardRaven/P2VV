@@ -1,1 +1,0 @@
-../../../python/P2VV/P2VVParameterizations/FullPDFs.py
