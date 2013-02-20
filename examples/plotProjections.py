@@ -2,14 +2,13 @@
 ## set script parameters ##
 ###########################
 
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
 pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
-pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 doFit                   = True
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
@@ -74,10 +73,10 @@ pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/time
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
-                                    if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
+                                    if pdfConfig['transversityAngles'] else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 
-if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
+if pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
                                , ( 'trphi',      '#phi_{tr}'        )

@@ -3,7 +3,7 @@
 ###########################
 
 from math import pi
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -18,7 +18,6 @@ plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 corrSFitErr             = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' / 'matrix' / 'sumWeight'
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
@@ -186,14 +185,14 @@ pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
-                                    if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
+                                    if pdfConfig['transversityAngles'] else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForPHSPWeights'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger_simpleForCorrPHSPWeights'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_Basis'
 
-if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
+if pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
                                , ( 'trphi',      '#phi_{tr}'        )
@@ -280,7 +279,7 @@ if generateData :
     fitData = pdf.generate( obsSetP2VV, nEvents )
 
     # additional observables
-    if pdfConfig['nominalPdf'] or not pdfConfig['transversityAngles'] :
+    if not pdfConfig['transversityAngles'] :
         from P2VV.GeneralUtils import addTransversityAngles
         addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
                                       , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )

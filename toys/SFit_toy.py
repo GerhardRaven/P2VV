@@ -10,7 +10,7 @@ parser = toy.parser()
 ## set script parameters ##
 ###########################
 
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -19,7 +19,6 @@ pdfConfig['selection']  = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
 
 parameterFile = 'CFit_unbiased.pars'
@@ -121,10 +120,10 @@ pdfConfig['timeEffHistFile']      = '/bfys/raaij/p2vv/data/Bs_HltPropertimeAccep
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['angEffMomentsFile']    = '/bfys/raaij/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
-                                    if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
+                                    if pdfConfig['transversityAngles'] else\
                                     '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 
-if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
+if pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
                                , ( 'trphi',      '#phi_{tr}'        )

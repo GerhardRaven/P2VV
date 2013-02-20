@@ -2,7 +2,7 @@
 ## set script parameters ##
 ###########################
 
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_Winter2012 as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -16,7 +16,6 @@ plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
-pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
 corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
 randomParVals           = ( ) # ( 2., 12345 )
 
@@ -138,10 +137,10 @@ pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_Data_Hlt2BHlt1ExclB_40bins'
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
-                                    if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] else\
+                                    if pdfConfig['transversityAngles'] else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 
-if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
+if pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
                                , ( 'trcostheta', 'cos(#theta_{tr})' )
                                , ( 'trphi',      '#phi_{tr}'        )
@@ -230,7 +229,7 @@ if generateData :
     fitData = pdf.generate( obsSetP2VV, nEvents )
 
     # additional observables
-    if pdfConfig['nominalPdf'] or not pdfConfig['transversityAngles'] :
+    if not pdfConfig['transversityAngles'] :
         from P2VV.GeneralUtils import addTransversityAngles
         addTransversityAngles( fitData, 'trcospsi',          'trcostheta',        'trphi'
                                       , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
@@ -277,15 +276,15 @@ if 'phi' in constLambdaCP.lower() :
 for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
     if not pdfConfig['sameSideTagging'] :
         CEvenOdds.setConstant('avgCEven.*')
-        if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdds.setConstant( 'avgCOdd.*', True )
+        if constAvgCEvenOdd : CEvenOdds.setConstant( 'avgCOdd.*', True )
     else :
         for CEvenOdd in CEvenOdds :
             CEvenOdd.setConstant('avgCEven.*')
-            if pdfConfig['nominalPdf'] or constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
+            if constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
-if pdfConfig['nominalPdf'] or not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
+if not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
-if pdfConfig['nominalPdf'] or constWTagAsyms :
+if constWTagAsyms :
     pdfBuild['tagCatsOS'].parameter('wTagDelP0OS').setVal(0.)
     pdfBuild['tagCatsOS'].parameter('wTagDelP1OS').setVal(0.)
     pdfBuild['tagCatsSS'].parameter('wTagDelP0SS').setVal(0.)
@@ -300,7 +299,7 @@ if pdfConfig['parameterizeKKMass'] == 'functions' :
     if not pdfConfig['SFit'] :
         for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
 
-if pdfConfig['nominalPdf'] or constCSP : pdfBuild['amplitudes'].setConstant('C_SP')
+if constCSP : pdfBuild['amplitudes'].setConstant('C_SP')
 
 if fastFit or constAmplitudes :
     pdfBuild['amplitudes'].setConstant('A0Mag2')
@@ -359,7 +358,7 @@ if ( readData or generateData ) and doFit :
     else                 : fitResult = pdf.fitTo(fitData,                                                          Save = True, **fitOpts)
 
     # reparameterize amplitudes
-    if not pdfConfig['nominalPdf'] and pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' \
+    if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' \
             and pdfConfig['AparParam'] == 'Mag2ReIm' :
         from ROOT import RooArgSet
         parList = fitResult.floatParsFinal()
@@ -687,7 +686,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     # plot angles
     print 'VSFit: plotting angular distributions'
     if plotAnglesNoEff and pdfConfig['SFit'] and pdfConfig['multiplyByTimeEff'] not in [ 'all', 'signal' ]\
-            and ( pdfConfig['nominalPdf'] or not pdfConfig['conditionalTagging'] ) :
+            and not pdfConfig['conditionalTagging'] :
         addPDFs = [ ws['sig_t_angles_tagCat_iTag'] ]
     else :
         addPDFs = [ ]
