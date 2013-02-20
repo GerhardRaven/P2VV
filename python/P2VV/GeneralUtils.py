@@ -399,6 +399,9 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     yAxis = obsFrame.GetYaxis()
     _P2VVPlotStash.append(obsFrame)
 
+    frames = []
+    frames.append(obsFrame)
+
     # plot data
     if data :
         rooPlot = data.plotOn( obsFrame, Name = 'data', **dataOpts )
@@ -515,7 +518,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         yAxis.SetLabelSize(0.13)
         yAxis.SetLabelOffset(0.01)
         _P2VVPlotStash.append(residFrame)
-
+        frames.append(residFrame)
         # set minimum for observable's frame if there is a log scale for y
         #if logy : obsFrame.SetMinimum(0.1)
 
@@ -599,7 +602,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         obsFrame.Draw()
 
     canv.Update()
-    return canv
+    return frames
 
 
 # function for plotting a PDF in KK mass bins
