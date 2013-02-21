@@ -272,7 +272,9 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
                 sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += dataSet.weight()**2
 
         # get correction factors
-        corrFactors = [ sum / sumSq for sum, sumSq in zip( sumWeights, sumSqWeights ) ]
+        corrFactors = (  sumWeights[0] / sumSqWeights[0]
+                       , [ sum / sumSq for sum, sumSq in zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ]
+                      )
 
     # add corrected weights to data set
     from ROOT import RooCorrectedSWeight
@@ -281,7 +283,7 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
         corrFactorsVec = std.vector('Double_t')()
         print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f):'\
               % corrFactors[0]
-        for iter, fac in enumerate( corrFactors[ 1 : ] ) :
+        for iter, fac in enumerate( corrFactors[1] ) :
             corrFactorsVec.push_back(fac)
             print '    %d: %.4f' % ( indexDict[iter], fac )
 

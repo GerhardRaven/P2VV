@@ -6,6 +6,11 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
+###########################################################################################################################################
+## PDF configuration ##
+#######################
+
+# PDF configuration base class
 class PdfConfiguration( dict ) :
     def __init__( self, parameters = None ) :
         self._parameters = { }
@@ -154,6 +159,7 @@ class PdfConfiguration( dict ) :
                 % ( numPars, '' if numPars == 1 else 's', filePath )
 
 
+# B_s^0 -> J/psi phi analysis of 1 fb^-1 2011 data (paper) configuration
 class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
     def __init__( self ) :
         from math import pi
@@ -244,6 +250,11 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         PdfConfiguration.__init__( self )
 
 
+###########################################################################################################################################
+## PDF builders ##
+##################
+
+# PDF builder base class
 class PdfBuilder ( object ) :
     def __init__( self, pdf, observables, parameters ) :
         self._pdf         = pdf
@@ -256,6 +267,7 @@ class PdfBuilder ( object ) :
     def parameters(self)  : return self._parameters
 
 
+# B_s^0 -> J/psi phi PDF builder
 class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
     """builds the PDF for the measurement of phi_s in B_s -> J/psi(->mu^+ mu^-) phi(->K^+ K^-)
     """
@@ -465,14 +477,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            )
 
         hlt1ExclBName = 'hlt1_excl_biased_dec'
-        #hlt1ExclBName = 'hlt1_excl_biased'
-        #hlt1ExclBName = 'triggerDecisionBiasedExcl'
-        #hlt1ExclBName = 'trigger_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
         hlt1BName     = 'hlt1_biased'
         hlt1UBName    = 'hlt1_unbiased_dec'
-        #hlt1UBName    = 'hlt1_unbiased'
-        #hlt1UBName    = 'triggerDecisionUnbiased'
-        #hlt1UBName    = 'trigger_Hlt1DiMuon_Hlt2DiMuonDetached'
         hlt2BName     = 'hlt2_biased'
         hlt2UBName    = 'hlt2_unbiased'
 
