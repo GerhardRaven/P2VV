@@ -63,7 +63,7 @@ cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_tra
 if not options.wpv:
     cut += ' && sel_cleantail == 1'
 data = readData(input_file, tree_name, ntupleCuts = cut, NTuple = True, observables = observables)
-data = data.reduce(EventRange = (0, 50000))
+data = data.reduce(EventRange = (0, 10000))
 
 # Add time difference (t - t_true) to data
 t_diff = FormulaVar('time_diff', '@0 - @1', [t, t_true], data = data)
