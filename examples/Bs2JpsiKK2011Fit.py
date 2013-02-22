@@ -71,7 +71,7 @@ pdfConfig['lambdaCPParam'] = 'lambPhi'
 
 # workspace
 from P2VV.RooFitWrappers import RooObject
-ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
+worksp = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
