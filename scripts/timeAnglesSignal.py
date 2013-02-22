@@ -241,4 +241,3 @@ if makePlots :
     for frame in anglesCanv.frameHists() :
         frame.SetMaximum( maxVal[ frame.GetXaxis().GetTitle() ] )
     for pad  in anglesCanv.pads() : pad.Draw()
-
