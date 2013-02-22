@@ -47,7 +47,7 @@ scale = 4. * sqrt(pi)
 fitOpts = dict( NumCPU = 2, Optimize = 2, Timer = True, Minimizer = 'Minuit2' )
 
 # plot options
-angleTitles = ( 'cos#kern[0.1]{#theta_{K}}', 'cos#kern[0.1]{#theta_{l}}', '#phi [rad]' )
+angleTitles = ( 'cos#kern[0.1]{#theta_{K}}', 'cos#kern[0.1]{#theta_{l}}', '#varphi [rad]' )
 numBins     = ( 30, 30, 30 )
 lineWidth   = 2
 markStyle   = 8
