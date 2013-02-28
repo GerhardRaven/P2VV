@@ -11,7 +11,7 @@ readData                = True
 pdfConfig['dataSample'] = '' # ( None, 100260, '' )  # '' / 'Summer2011' / 'runNumber % 2 == 1'
 pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
-doFit                   = True
+doFit                   = True #'NLL'
 makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
@@ -22,8 +22,8 @@ corrSFitErr             = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.8
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 plotsFile = 'plots/paper2012_SFit.ps'
-parFileIn  = ''# 'paper2012_SFit.par'
-parFileOut = ''# 'paper2012_SFit.par'
+parFileIn  = 'initialValues.par'
+parFileOut = '' #'initialValues.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
@@ -46,9 +46,11 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'paper2012_SFit.root' if pdfConfig['SFit'] else 'paper2012_CFit.root'
 
-MinosPars = [  #'AparPhase'
+MinosPars = [#  'phiCP', 'lambdaCP'
+             #, 'AparPhase', 'AperpPhase'
              #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
              #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
+             #, 'timeResSigmaSF'
             ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
@@ -413,7 +415,8 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 #ws['ASOddPhase_bin2'].setVal(0.)
 #ws['ASOddPhase_bin2'].setConstant()
 
-#ws['timeResSigmaSF'].setVal(1.55)
+#ws['timeResSigmaSF'].setVal(1.451)
+#ws['timeResSigmaSF'].setConstant(False)
 
 #ws['ASOddPhase'].setMin(-6.)
 #ws['ASOddPhase'].setMax(6.)
@@ -482,16 +485,47 @@ if ( readData or generateData ) and doFit :
             print '"%s"' % RooMinPars[-1],
         print
 
-    if pdfConfig['SFit'] :
-        fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
-                              , Minos = RooMinPars, Save = True, Range = fitRange
-                              , **fitOpts
-                             )
+    if doFit == 'NLL' :
+        opts = fitOpts.copy()
+        minimizer = opts.pop( 'Minimizer', 'Minuit2' )
+        verbose   = opts.pop( 'Verbose',   False     )
+        fitTime   = opts.pop( 'Timer',     False     )
+        hesse     = opts.pop( 'Hesse',     True      )
+        minos     = opts.pop( 'Minos',     False     )
+
+        from ROOT import RooMinimizer
+        nll = pdf.createNLL( fitData, **opts )
+        minNLL = RooMinimizer(nll)
+        minNLL.setMinimizerType(minimizer)
+        minNLL.setVerbose(verbose)
+        minNLL.setProfile(fitTime)
+
+        minNLL.minimize(minimizer)
+        if hesse : minNLL.hesse()
+
+        if RooMinPars :
+            from ROOT import RooArgSet
+            minosSet = RooArgSet( par for par in RooMinPars )
+            minNLL.minos(minosSet)
+
+        elif minos :
+            minNLL.minos()
+
+        fitResult = minNLL.save(  'fitresult_%s_%s' % ( pdf.GetName(), fitData.GetName() )
+                                , 'Result of fit of p.d.f. %s to dataset %s' % ( pdf.GetName(), fitData.GetName() )
+                               )
+
     else :
-        fitResult = pdf.fitTo( fitData
-                              , Minos = RooMinPars, Save = True, Range = fitRange
-                              , **fitOpts
-                             )
+        if pdfConfig['SFit'] :
+            fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
+                                  , Minos = RooMinPars, Save = True, Range = fitRange
+                                  , **fitOpts
+                                 )
+        else :
+            fitResult = pdf.fitTo( fitData
+                                  , Minos = RooMinPars, Save = True, Range = fitRange
+                                  , **fitOpts
+                                 )
 
     # reparameterize amplitudes
     if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' and pdfConfig['AparParam'] == 'Mag2ReIm' :
