@@ -16,6 +16,8 @@ COMMONFLAGS = -Wall -O2 -pipe -ggdb -fPIC -DPIC
 PYTHONVERSION := $(shell $(PYTHON) --version 2>&1 | grep -o "2\.[567]")
 CXXFLAGS := $(COMMONFLAGS) $(shell $(ROOTCONFIG) --cflags) -I$(INCDIR) -I.
 LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
+## Reflex dictionary testing flags:
+## LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore -lReflex -lCintex
 
 HAVE_PYTHON := $(shell if `$(PKGCONFIG) --exists python-$(PYTHONVERSION)`; then echo "yes"; else echo "no"; fi)
 ifeq ($(HAVE_PYTHON), yes)
@@ -60,6 +62,7 @@ $(BUILDDIR)/%.o : %.c
 
 $(BUILDDIR)/P2VV_dict.cxx: $(wildcard $(INCDIR)/P2VV/*.h) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
 	rootcint -f $@ -c -I$(INCDIR) -I$(DICTDIR) $(DICTDIR)/P2VV_dict.h $(DICTDIR)/P2VV_LinkDef.h
+##	genreflex $(DICTDIR)/P2VV_dict.h -o $@ -s $(DICTDIR)/P2VV_dict.xml --gccxmlopt="-I${ROOTSYS}/include -I$(INCDIR)"
 
 $(LIBDIR)/libP2VV.so: $(OBJECTS) $(BUILDDIR)/P2VV_dict.o
 	$(LD) $(LDFLAGS) -shared -o $@ $^
