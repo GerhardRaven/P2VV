@@ -2,8 +2,10 @@ from P2VV.RooFitDecorators import *
 from functools import wraps
 
 ## Add this if a reflex dictionary is used.
-## from ROOT import Cintex
-## Cintex.Enable()
+from ROOT import gSystem
+gSystem.Load('libCintex')
+from ROOT import Cintex
+Cintex.Enable()
 
 def __check_req_kw__( name, kwargs ) :
     if not name in kwargs : raise KeyError( 'Must provide kw argument %s' % name )
