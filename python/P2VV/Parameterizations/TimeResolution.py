@@ -9,7 +9,7 @@
 from P2VV.Parameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin
 
 # initial values for time resolution parameters in fit
-timeResSigmaSFVal = 1.4
+timeResSigmaSFVal = 1.45
 timeResSigmaSFErr = 0.06
 
 timeResSigmaSFConstrVal = 1.45
