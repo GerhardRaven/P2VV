@@ -1,7 +1,7 @@
 from P2VV.RooFitDecorators import *
 from functools import wraps
 
-## Add this if a reflex dictionary is used.
+## Add this in case a reflex dictionary is used.
 from ROOT import gSystem
 gSystem.Load('libCintex')
 from ROOT import Cintex

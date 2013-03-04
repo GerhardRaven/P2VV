@@ -55,7 +55,8 @@ tree_name = 'DecayTree'
 ## Data:
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_prescaled.root'
 ## Incl J/psi MC11a
-input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_from_incl_Jpsi_MC11a_ntupleB_for_fitting_20121010.root'
+## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_from_incl_Jpsi_MC11a_ntupleB_for_fitting_20121010.root'
+input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntuple_B_MC11a_incl_Jpsi_20130103.root'
 ## Signal MC
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20120606.root'
 cut = 'nPV == 1 && sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
