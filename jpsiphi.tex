@@ -18,37 +18,37 @@
 
 \begin{eqnarray}
    \lambda_f &\equiv& \frac{q}{p}\frac{\overline{\cal A}_f}{{\cal A}_f} = \eta_f\frac{q}{p} \frac{\overline{\cal A}_{\overline{f}}}{{\cal A}_f} \equiv \eta_f \lambda\\
-   S &=& \frac{2 \Im \lambda}{1+|\lambda|^2};\;\; D = \frac{2 \Re \lambda}{1+|\lambda|^2};\;\; C = \frac{1-|\lambda|^2 }{1+|\lambda|^2}\\
+   S &=& -\frac{2 \Im \lambda}{1+|\lambda|^2};\;\; D = -\frac{2 \Re \lambda}{1+|\lambda|^2};\;\; C = \frac{1-|\lambda|^2 }{1+|\lambda|^2}\\
    D^2+S^2 & = & 1 - C^2 \\
-   \lambda & = & \frac{D+iS}{1+C};\;\; \frac{1}{\lambda}  =  \frac{D-iS}{1-C};\;\; |\lambda|^2 = \frac{ 1-C }{ 1+C }
+   \lambda & = & - \frac{D+iS}{1+C};\;\; \frac{1}{\lambda}  =  -\frac{D-iS}{1-C};\;\; |\lambda|^2 = \frac{ 1-C }{ 1+C }
 \end{eqnarray}
 \begin{equation}
-  \eta_f = \left\{ \begin{array}{l} +1 \;\; \mathrm{if}\;\; i=0,\parallel  \\ -1\;\; \mathrm{if}\;\; i=\perp \end{array} \right. \;\;\;;\;\; \frac{1}{\eta_f}=\eta_f
+  \eta_f = (-1)^L = \left\{ \begin{array}{l} +1 \;\; \mathrm{if}\;\; i=0,\parallel  \\ -1\;\; \mathrm{if}\;\; i=\perp,S \end{array} \right. \;\;\;;\;\; \frac{1}{\eta_f}=\eta_f
   \label{eq:etadef}
 \end{equation}
-For $B_s\rightarrow J/\psi\phi$, assuming the Standard Model,  we have $S=\sin(2\beta_s),D=\cos(2\beta_s),C=0$.
-In terms of $\phi_s$, we have $S=-\sin(\phi_s),D=\cos(\phi_s),C=0$.
+For $B_s\rightarrow J/\psi\phi$, assuming the Standard Model,  we have $S=-\sin(2\beta_s),D=-\cos(2\beta_s),C=0$.
+In terms of $\phi_s$, we have $S= \sin(\phi_s),D=-\cos(\phi_s),C=0$.
 
 \begin{eqnarray}
    {\cal A}_f(t)            &=& e^{-t/2\tau} \left[ E_+(t) + \eta_f \lambda E_-(t)  \right] a_f  \\
-                            &=&     e^{-t/2\tau} \left[ E_+(t) +\eta_f \frac{D+iS}{1+C} E_-(t)  \right] a_f  \\
+                            &=&     e^{-t/2\tau} \left[ E_+(t) -\eta_f \frac{D+iS}{1+C} E_-(t)  \right] a_f  \\
    {\overline{\cal A}}_f(t) &=& e^{-t/2\tau} \left[  E_+(t) + \frac{1}{\eta_f\lambda} E_-(t)  \right] \eta_f a_f    \\
-                            &=&     e^{-t/2\tau} \left[\eta_f E_+(t) + \frac{D-iS}{1-C} E_-(t)  \right] a_f   
+                            &=&     e^{-t/2\tau} \left[\eta_f E_+(t) - \frac{D-iS}{1-C} E_-(t)  \right] a_f   
 \end{eqnarray}
 where we have defined that $a_f \equiv {\cal A}_f(t=0)$ and thus that, by definition, $\overline{a}_f = \eta_f a_f$. The above can be
 written in a more symmetrical way as:
 \begin{eqnarray}
-   {\cal A}_f(t)           &=&     \frac{e^{-t/2\tau}}{1+C} \left[ (1+C)E_+(t) +\eta_f (D+iS) E_-(t)  \right] a_f  
-%\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_f(D+iS)(1-C)E_-(t) \right] a_f\\
-\\   {\overline{\cal A}}_f(t) &=&    \frac{e^{-t/2\tau}}{1-C} \left[ (1-C)E_+(t) +\eta_f (D-iS) E_-(t)  \right] \eta_f a_f  
-%\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)+\eta_f(D+iS)(1+C)E_-(t) \right] a_f
+   {\cal A}_f(t)           &=&     \frac{e^{-t/2\tau}}{1+C} \left[ (1+C)E_+(t) -\eta_f (D+iS) E_-(t)  \right] a_f  
+%\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)-\eta_f(D+iS)(1-C)E_-(t) \right] a_f\\
+\\   {\overline{\cal A}}_f(t) &=&    \frac{e^{-t/2\tau}}{1-C} \left[ (1-C)E_+(t) -\eta_f (D-iS) E_-(t)  \right] \eta_f a_f  
+%\\                           &=&     \frac{e^{-t/2\tau}}{1-C^2} \left[ (1-C^2)E_+(t)-\eta_f(D+iS)(1+C)E_-(t) \right] a_f
 \end{eqnarray}
 where we have used the properties of $\eta_f$ shown in (\ref{eq:etadef}).
 %Since the overall normalzation factor $\frac{1}{1-C^2}$ does not depend on any observable, it can be dropped at this point
 %(which will simplify the case when we later consider $S=D=0,C=\pm 1$!), resulting in:
 %\begin{eqnarray}
-%   {\cal A}_f(t)            &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)+\eta_f(D+iS)(1-C)E_-(t) \right] a_f\\
-%   {\overline{\cal A}}_f(t) &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)+\eta_f(D+iS)(1+C)E_-(t) \right] a_f
+%   {\cal A}_f(t)            &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)-\eta_f(D+iS)(1-C)E_-(t) \right] a_f\\
+%   {\overline{\cal A}}_f(t) &=&     e^{-t/2\tau} \left[ (1-C^2)E_+(t)-\eta_f(D+iS)(1+C)E_-(t) \right] a_f
 %\end{eqnarray}
 As a consequence, the expressions for $\overline{b}_\mathrm{tag}$ are related to those for $b_\mathrm{tag}$ by the following substitution:
 \begin{equation}
@@ -117,11 +117,11 @@ we can relate the value  of $C$ to $A_\mathrm{SL}$ as follows:
 %                                                              + \eta_{i} S\sin \left(\Delta m t \right)  
 %                                                         \right] \\
   {\cal A}_i^*(t) {\cal A}_j(t) &= \frac{ a_i^* a_j e^{-t/\tau}} {1+C}&\Biggl[ (1+C) |E_+(t)|^2  +\eta_i\eta_j (1-C)|E_-(t)|^2 \nonumber\\
-                                                                          && + \eta_j(D+iS)E_+^*E_-+\eta_i(D-iS)E_+E_-^*   \Biggr] \\
+                                                                          && - \eta_j(D+iS)E_+^*E_--\eta_i(D-iS)E_+E_-^*   \Biggr] \\
                                 &= \frac{ a_i^* a_j e^{-t/\tau}} {1+C}&\Biggl[ \left( \frac{1+\eta_i\eta_j}{2} +  \frac{1-\eta_i\eta_j}{2}C\right) \cosh\left(\frac{\Delta\Gamma}{2}t\right)\nonumber \\
                                                                           &&  +\left( \frac{1-\eta_i\eta_j}{2} +  \frac{1+\eta_i\eta_j}{2}C\right) \cos(\Delta m t) \nonumber\\
-                                                                          &&  +\left(-\frac{\eta_i+\eta_j}{2}D + \frac{\eta_i-\eta_j}{2}iS\right) \sinh\left(\frac{\Delta\Gamma}{2}t\right) \nonumber\\
-                                                                          &&  +\left(-\frac{\eta_i+\eta_j}{2}S - \frac{\eta_i-\eta_j}{2}iD\right) \sin(\Delta m t) \Biggr] 
+                                                                          &&  +\left( \frac{\eta_i+\eta_j}{2}D - \frac{\eta_i-\eta_j}{2}iS\right) \sinh\left(\frac{\Delta\Gamma}{2}t\right) \nonumber\\
+                                                                          &&  +\left( \frac{\eta_i+\eta_j}{2}S + \frac{\eta_i-\eta_j}{2}iD\right) \sin(\Delta m t) \Biggr] 
 \end{eqnarray}
 
 The result can be summarized as follows (where we have used that $q_T^2=1$):
@@ -130,22 +130,22 @@ The result can be summarized as follows (where we have used that $q_T^2=1$):
  \hline
                         q_T=+1                      &    q_T = -1&                          &  \cosh\left(\frac{\Delta\Gamma}{2}t\right) & q_T \cos(\Delta m t)  & \sinh\left(\frac{\Delta\Gamma}{2}t\right) &q_T\sin(\Delta m t)  \\
  \hline
-|{\cal A}_0(t)|^2                             &                                                                &\frac{  | a_0 |^2 e^{-t/\tau}}{1+q_TC}                  & 1 &   C  &  -D & -S   \\
-|{\cal A}_\parallel(t)|^2                     &                                                                &\frac{  | a_\parallel |^2 e^{-t/\tau}}{1+q_TC}          & 1 &   C  &  -D & -S   \\
-|{\cal A}_\perp(t)|^2                         &                                                                &\frac{  | a_\perp |^2 e^{-t/\tau}}{1+q_TC}              & 1 &   C  &  +D & +S   \\
-\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &                                                                &\frac{  \Re(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}  & 0 &   0  &   S & -D   \\                         
+|{\cal A}_0(t)|^2                             &                                                                &\frac{  | a_0 |^2 e^{-t/\tau}}{1+q_TC}                  & 1 &   C  &   D &  S   \\
+|{\cal A}_\parallel(t)|^2                     &                                                                &\frac{  | a_\parallel |^2 e^{-t/\tau}}{1+q_TC}          & 1 &   C  &   D &  S   \\
+|{\cal A}_\perp(t)|^2                         &                                                                &\frac{  | a_\perp |^2 e^{-t/\tau}}{1+q_TC}              & 1 &   C  &  -D & -S   \\
+\Im({\cal A}_\parallel^*(t){\cal A}_\perp(t)) &                                                                &\frac{  \Re(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}  & 0 &   0  &  -S &  D   \\                         
                                               &                                                                &\frac{  \Im(a_\parallel^* a_\perp)e^{-t/\tau}}{1+q_TC}  & C &   1  &   0 &  0   \\
-\Re({\cal A}_0^*(t){\cal A}_\parallel(t))     &                                                                &\frac{  \Re(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 1 &   C  &  -D & -S   \\
+\Re({\cal A}_0^*(t){\cal A}_\parallel(t))     &                                                                &\frac{  \Re(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 1 &   C  &   D &  S   \\
                                               &                                                                &\frac{  \Im(a_0^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 0 &   0  &   0 &  0   \\
-\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &                                                                &\frac{  \Re(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}          & 0 &   0  &   S & -D   \\
+\Im({\cal A}_0^*(t){\cal A}_\perp(t))         &                                                                &\frac{  \Re(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}          & 0 &   0  &  -S &  D   \\
                                               &                                                                &\frac{  \Im(a_0^* a_\perp)e^{-t/\tau}}{1+q_TC}          & C &   1  &   0 &  0   \\
-|{\cal A}_S(t)|^2                             &                                                                &\frac{  | a_S |^2 e^{-t/\tau}}{1+q_TC}                  & 1 &   C  &   D &  S   \\
+|{\cal A}_S(t)|^2                             &                                                                &\frac{  | a_S |^2 e^{-t/\tau}}{1+q_TC}                  & 1 &   C  &  -D & -S   \\
 \Re({\cal A}_S^*(t){\cal A}_\parallel(t))     &                                                                &\frac{  \Re(a_S^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & C &   1  &   0 &  0   \\
-                                              &                                                                &\frac{  \Im(a_S^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 0 &   0  &   S & -D   \\
+                                              &                                                                &\frac{  \Im(a_S^*a_\parallel)e^{-t/\tau}}{1+q_TC}       & 0 &   0  &  -S &  D   \\
 \Im({\cal A}_S^*(t){\cal A}_\perp(t))         &                                                                &\frac{  \Re(a_S^* a_\perp)e^{-t/\tau}}{1+q_TC}          & 0 &   0  &   0 &  0   \\                         
-                                              &                                                                &\frac{  \Im(a_S^* a_\perp)e^{-t/\tau}}{1+q_TC}          & 1 &   C  &   D &  S   \\
+                                              &                                                                &\frac{  \Im(a_S^* a_\perp)e^{-t/\tau}}{1+q_TC}          & 1 &   C  &  -D & -S   \\
 \Re({\cal A}_S^*(t){\cal A}_0(t))             &                                                                &\frac{  \Re(a_S^* a_0)e^{-t/\tau}}{1+q_TC}              & C &   1  &   0 &  0   \\
-                                              &                                                                &\frac{  \Im(a_S^* a_0)e^{-t/\tau}}{1+q_TC}              & 0 &   0  &   S & -D   \\
+                                              &                                                                &\frac{  \Im(a_S^* a_0)e^{-t/\tau}}{1+q_TC}              & 0 &   0  &  -S &  D   \\
 \hline
 \end{array}
 \end{equation}
