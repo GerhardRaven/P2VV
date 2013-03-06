@@ -16,8 +16,8 @@ parser.add_option('-p', '--parameterisation', dest = 'parameterise', default = F
                   action = 'store', help = 'Parameterise sigmas [RMS, Comb]')
 parser.add_option("--verbose", dest = "verbose", default = False,
                   action = 'store_true', help = 'Verbose fitting')
-parser.add_option("--offset", dest = "offset", default = False,
-                  action = 'store_true', help = 'Use sigmat offset')
+parser.add_option("--model", dest = "model", default = '', type = 'string',
+                  action = 'store', help = 'Type of model used to scale sigma_t')
 parser.add_option('-s', "--simultaneous", dest = "simultaneous", default = False,
                   action = 'store_true', help = 'Use sigmat offset')
 parser.add_option("--plot", dest = "make_plots", default = False,
@@ -123,21 +123,22 @@ if args[1] == 'single':
     from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = False,
-                              TimeResSFOffset = options.offset,
-                              timeResMu = dict(Value = 0.0, MinMax = (-2, 2), Constant = False),
+                              TimeResSFModel = options.model,
+                              timeResMu = dict(Value = -0.005, MinMax = (-2, 2), Constant = options.model != '' ),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 elif args[1] == 'double':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = options.pee, Parameterise = options.parameterise,
-                              TimeResSFOffset = options.offset, timeResMu = dict(Value = 0.0, Constant = False),
+                              TimeResSFOffset = options.model != '',
+                              timeResMu = dict(Value = 0, Constant = options.model != ''),
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = [False, options.pee, options.pee],
-                              TimeResSFOffset = options.offset, Parameterise = options.parameterise,
+                              TimeResSFOffset = options.model != '', Parameterise = options.parameterise,
                               ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)],
                               Fractions = [(3, 0.1), (2, 0.2)])
 
@@ -159,7 +160,7 @@ from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 0.67)
                          , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.37, MinMax = (0.5,  2.5))
-                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.13, MinMax = (0.1, 0.5))
+                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.103, MinMax = (0.1, 0.5))
                          )
 psi_t = psi_t.pdf()
 
@@ -222,7 +223,7 @@ else:
 if not cache_file:
     cache_file = TFile.Open(input_data['cache'], 'recreate')
     assert(cache_file)
-    
+
 cache_dir = cache_file.Get(directory)
 if not cache_dir:
     cache_file.mkdir(directory)
@@ -262,12 +263,12 @@ if not fit_mass and args[0] != 'MC11a':
                 if e.GetClassName() == 'RooDataSet':
                     dss.append(os.path.join(sdata_dir.GetName(), e.GetName()))
             for e in dss:
-                sdata = chache_dir.Get(e)
+                sdata = cache_dir.Get(e)
                 if not sdata:
                     fit_mass = True
                     break
                 else:
-                    sdatas_full[e.GetName()] = sdata
+                    sdatas_full[e] = sdata
             try:
                 single_bin_sig_sdata = sdatas_full['full_sig_sdata']
                 single_bin_bkg_sdata = sdatas_full['full_bkg_sdata']
@@ -314,7 +315,7 @@ if not fit_mass and args[0] != 'MC11a':
                 results.append(sWeight_mass_result)
 
 ## Fitting opts
-fitOpts = dict(NumCPU = 6, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
                Verbose = options.verbose)
 
 ## List of all plots we make
@@ -443,11 +444,6 @@ if fit_mass and options.simultaneous:
     bkg_sdata_full = sData.data('background')
     sdatas_full['sig_sdata'] = sig_sdata_full
     sdatas_full['bkg_sdata'] = bkg_sdata_full
-    for ct in st_cat:
-        opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
-        bin_data = sig_sdata_full.reduce(**opts)
-        bin_data.SetName('sig_sdata_%s' % ct.GetName())
-        sdatas_full[ct.GetName()] = bin_data
 
     from copy import copy
     sdatas = copy(sdatas_full)
@@ -468,6 +464,10 @@ if fit_mass and options.simultaneous:
     else:
         sig_sdata = sig_sdata_full
         bkg_sdata = bkg_sdata_full
+elif fit_mass:
+    sig_sdata = single_bin_sig_sdata
+    bkg_sdata = single_bin_bkg_sdata
+
 corr_canvas.Update()
 
 # Wrong PV components
@@ -484,7 +484,7 @@ if options.wpv and options.wpv_type == 'Mixing':
     from P2VV.Parameterizations import WrongPV
     if args[0] == 'MC11a':
         reweigh_data = dict(B = data)
-        masses = {'B', m}
+        masses = {'B' : m}
         weights = 'B'
     else:
         reweigh_data = dict(jpsi = single_bin_sig_sdata, bkg = single_bin_bkg_sdata)
@@ -506,7 +506,7 @@ elif options.wpv and options.wpv_type == 'Gauss':
     wpv_mean = sig_tres._timeResMu
     wpv_sigma = RealVar('wpv_sigma', Value = 0.3, MinMax = (0.01, 1000))
     wpv_pdf = Pdf(Name = 'wpv_pdf', Type = Gaussian, Parameters = (t, wpv_mean, wpv_sigma))
-    psi_wpv = Component('wpv', (wpv_pdf, ), Yield = (100, 0, 500000))
+    psi_wpv = Component('wpv', (wpv_pdf, ), Yield = (100, 1, 500000))
     components += [psi_wpv]
 
 time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
@@ -539,7 +539,10 @@ for i in range(5):
     time_result = time_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
     if time_result.status() == 0:
         break
-time_result.SetName('time_result_%s' % args[1])
+extra_name = args[1]
+if options.model:
+    extra_name += ('_' + options.model)
+time_result.SetName('time_result_%s' % extra_name)
 
 ## Draw correlation histogram
 corr_canvas.cd(2)
@@ -581,6 +584,8 @@ binnings = [binning, zoom_binning]
 plotLog = [True, False]
 __canvases = []
 
+from ROOT import SetOwnership
+
 for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
     if not options.make_plots:
         continue
@@ -593,7 +598,10 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             canvas = TCanvas(name, name, 600, 400)
             __canvases.append(canvas)
             p = canvas.cd(1)
-            pd = sdatas[ct.GetName()]
+            
+            opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
+            pd = sig_sdata_full.reduce(**opts)
+            SetOwnership(pd, False)
             pdfOpts  = dict(ProjWData = (projSet, pd, True))
             ps = plot(p, t, pdf = time_pdf, data = pd
                       , frameOpts = dict(Range = r, Title = "")
@@ -606,9 +614,12 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                       ##                  , 'sig_*'     : dict( LineColor = kOrange,  LineStyle = kDashed )
                       ##                  }
                       )
+            pd.Delete()
+            del pd
             for frame in ps:
                 plot_name = '_'.join((t.GetName(), bins.GetName(), ct.GetName(), frame.GetName()))
                 frame.SetName(plot_name)
+            
             plots.append(ps)
     else:
         canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 400)
@@ -616,7 +627,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
         p = canvas.cd(1)
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
         pdfOpts  = dict(ProjWData = (projSet, sig_sdata, True))
-        ps = plot(p, t, pdf = time_pdf, data = pd
+        ps = plot(p, t, pdf = time_pdf, data = sig_sdata
                   , frameOpts = dict(Range = r, Title = "")
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
@@ -625,10 +636,12 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
         for frame in ps:
             plot_name = '_'.join((t.GetName(), bins.GetName(), frame.GetName()))
             frame.SetName(plot_name)
+        
         plots.append(ps)
 
 fit_results = []
 from ROOT import TH1D, TGraphErrors
+total = sig_sdata.sumEntries()
 if options.simultaneous:
     split_bounds = array('d', [1000 * v for v in split_bins])
     
@@ -664,8 +677,10 @@ if options.simultaneous:
         elif args[1] == 'single':
             sf_var = time_fpf.find('sigmaSF_%s' % ct.GetName())
             sf, sf_e = sf_var.getVal(), sf_var.getError()
-    
-        mean = sdatas[ct.GetName()].mean(st._target_())
+        
+        range_cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName())
+        mean = sig_sdata.mean(st._target_(), range_cut)
+        mean *= total / sig_sdata.sumEntries(range_cut)
         res_x.append(1000 * mean)
         res.append(1000 * mean * sf)
         res_e.append(1000 * mean * sf_e)
@@ -685,7 +700,7 @@ if options.simultaneous:
         fr = fit_result.Get()
         fr.SetName('fit_result_%s_%s' % (func, args[1]))
         results.append(fr)
-
+    
     res_graph.GetYaxis().SetRangeUser(0, 110)
     hist_events.Draw('hist')
     from ROOT import kGray
@@ -694,9 +709,9 @@ if options.simultaneous:
     res_graph.GetXaxis().SetTitle('estimated decay time error [fs]')
     res_graph.GetYaxis().SetTitle('decay time resulution [fs]')
 
-## from P2VV import Dilution
-## Dilution.dilution(t, data, result = time_result, sigmat = st, signal = [prompt],
-##                   subtract = [psi_ll, psi_wpv] if options.wpv else [psi_ll])
+from P2VV import Dilution
+Dilution.dilution(t, data, result = time_result, sigmat = st, signal = [prompt],
+                  subtract = [psi_ll, psi_wpv] if options.wpv else [psi_ll], simultaneous = options.simultaneous)
 
 # Write data to cache file
 def get_dir(d):
@@ -710,10 +725,19 @@ from ROOT import TObject
 if (options.write_data or fit_mass):
     sdata_dir = get_dir('sdata')
     data_dir = get_dir('data')
-    for (dss, d) in [(sdatas_full, sdata_dir)]:
-        for name, ds in dss.iteritems():
-            d.WriteTObject(ds, name, "Overwrite")
-        d.Write(d.GetName(), TObject.kOverwrite)
+    for name, ds in sdatas_full.iteritems():
+        sdata_dir.WriteTObject(ds, name, "Overwrite")
+
+    if options.simultaneous:
+        for ct in st_cat:
+            opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
+            bin_data = sig_sdata_full.reduce(**opts)
+            bin_data.SetName('sig_sdata_%s' % ct.GetName())
+            sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
+            bin_data.Delete()
+            del bin_data
+    
+    sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
 
 ## Write PDFs
 pdf_dir = get_dir('PDFs')
@@ -728,14 +752,16 @@ if not options.reduce:
     results_dir = get_dir('results')
     for r in results:
         results_dir.WriteTObject(r, r.GetName(), "Overwrite")
+    
     results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
     
     ## Write plots
-    plots_dir = get_dir('plots/%s' % args[1])
+    plots_dir = get_dir('plots/%s' % extra_name)
     for ps in plots:
         for p in ps:
             plots_dir.WriteTObject(p, p.GetName(), "Overwrite")
-    plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
     
+    plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
+
 # Delete the input TTree which was automatically attached.
 cache_file.Delete('%s;*' % tree_name)
