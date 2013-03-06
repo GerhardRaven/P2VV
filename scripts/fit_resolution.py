@@ -30,6 +30,8 @@ parser.add_option("--reduce", dest = "reduce", default = False,
                   action = 'store_true', help = 'Reduce sdata sets to 2000 entries per bin.')
 parser.add_option("--extra-cut", dest = "cut", default = '', type = 'string',
                   action = 'store', help = 'extra cut to apply')
+parser.add_option("-b", "--batch", dest = "batch", default = False,
+                  action = 'store_true', help = 'run ROOT in batch mode')
 (options, args) = parser.parse_args()
 
 if len(args) != 2:
@@ -66,6 +68,9 @@ if options.wpv and not options.wpv_type in ['Mixing', 'Gauss']:
     print parser.usage
     sys.exit(-2)
 
+if options.batch:
+    from ROOT import gROOT
+    gROOT.SetBatch(True)
 from P2VV.RooFitWrappers import *
 from P2VV.Load import P2VVLibrary
 from P2VV.Load import LHCbStyle
@@ -98,8 +103,11 @@ for i in [ st ] : i.setBins( 20 , 'cache' )
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
 nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
+zerr = RealVar('B_s0_bpv_zerr', Title = 'Best PV Z error', Unit = 'mm', Observable = True, MinMax = (0, 1))
 
-observables = [t, m, mpsi, st, unbiased, selected, nPV]
+zerr_bins = [0, 0.0237, 0.0292, 0.0382, 1]
+
+observables = [t, m, mpsi, st, unbiased, selected, nPV, zerr]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -189,7 +197,7 @@ fit_mass = options.fit_mass or args[0] == 'MC11a'
 tree_name = 'DecayTree'
 cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
-if not options.wpv:
+if not options.wpv or (options.wpv and options.wpv_type == "Gauss"):
     cut += ' && sel_cleantail == 1'
 if args[0] == 'MC11a':
     cut += ' && abs(trueid) == 531'
@@ -211,6 +219,10 @@ if os.path.exists(input_data['cache']):
     cache_file = TFile.Open(input_data['cache'], 'update')
 else:
     cache_file = TFile.Open(input_data['cache'], 'new')
+if not cache_file:
+    cache_file = TFile.Open(input_data['cache'], 'recreate')
+    assert(cache_file)
+    
 cache_dir = cache_file.Get(directory)
 if not cache_dir:
     cache_file.mkdir(directory)
