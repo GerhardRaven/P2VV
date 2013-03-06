@@ -3,7 +3,7 @@ from math import exp
 
 # Calculate dilution
 __keep = []
-def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract = [], raw = False):
+def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False):
 
     assert(t_diff.getMin() < 0)
 
@@ -59,7 +59,7 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
     from ROOT import RooFit
     from P2VV.RooFitWrappers import buildPdf
 
-    signal_yields = [s.getYield().GetName() for s in signal]
+    signal_yields = [p for p in result.floatParsFinal() if any([p.GetName().startswith(s.getYield().GetName()) for s in signal])]
     data_int = data_histo.Integral()
 
     # Set the correct yields in the pdf
@@ -82,9 +82,9 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
 
     # Calculate appropriate scale factor. Scale histograms such that the ration
     # of their integrals match the ratio of wpv / total yields
-    subtract_yields = [b.getYield().GetName() for b in subtract]
-    n_subtract = sum([result.floatParsFinal().find(b).getVal() for b in subtract_yields])
-    total = sum([result.floatParsFinal().find(s).getVal() for s in signal_yields] + [n_subtract])
+    subtract_yields = [p for p in result.floatParsFinal() if any([p.GetName().startswith(b.getYield().GetName()) for b in subtract])
+    n_subtract = sum([b.getVal() for b in subtract_yields])
+    total = sum([s.getVal() for s in signal_yields] + [n_subtract])
     sub_int = subtract_histo.Integral()
     scale =  (data_int * n_subtract) / (sub_int * total)
     subtract_histo.Scale(scale)

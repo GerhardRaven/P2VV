@@ -54,12 +54,12 @@ def __wrap_kw_subs( fun ) :
         args += tuple(RooCmdArg(__disp(k,v)) for k,v in dispatch )
         try:
             return fun(self, *args, **kwargs)
-        except TypeError:
+        except TypeError as terr:
             fun_args = [ a for a in args if not isinstance(a, RooCmdArg) ]
             otr_args = [ a for a in args if     isinstance(a, RooCmdArg) ]
             l = RooLinkedList()
             for a in otr_args: l += a
-            return fun(self, *tuple(fun_args + [l]), **kwargs)
+            return fun(self, *tuple(fun_args + [l] if l.GetSize() else fun_args), **kwargs)
     return _fun
 
 def __convert_init_kw_to_setter( cl ) :

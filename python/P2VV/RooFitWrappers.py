@@ -491,6 +491,23 @@ class LinearVar(RooObject) :
         self._init(args['Name'], 'RooLinearVar')
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
+class PolyVar(RooObject) :
+    def __init__(self,**kwargs):
+        # construct factory string on the fly...
+        __check_req_kw__('Name', kwargs)
+        __check_req_kw__('Observable', kwargs )
+        __check_req_kw__('Coefficients', kwargs)
+        __check_name_syntax__(kwargs['Name'])
+        args = {}
+        for k in ['Name', 'Observable']:
+            v = kwargs.pop(k)
+            args[k] = v if type(v) == str else v.GetName()
+        args['Coefficients'] = '{%s}' % ','.join([v if type(v) == str else v.GetName()
+                                                  for v in kwargs.pop('Coefficients')])
+        self._declare("PolyVar::%(Name)s(%(Observable)s,%(Coefficients)s)" % args )
+        self._init(args['Name'], 'RooPolyVar')
+        for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
+
 class P2VVAngleBasis (RooObject) :
     # TODO: replace use of RooP2VVAngleBasis with an explicit product with
     #       some attribute set so we can recognize it by attribute instead
