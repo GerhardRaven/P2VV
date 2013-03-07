@@ -125,6 +125,36 @@ fit_type = 'single'
 __fit_results = []
 from array import array
 
+def fr_latex(frs):
+    frs = sorted(frs, key = lambda fr: fr.NPar())
+    names = ' & '.join(['result ' + fr.GetName().rsplit('_', 1)[1] for fr in frs])
+    s = "\\begin{tabular}{|l|%s|}\n\hline\nparameter & %s \\\\ \n\hline\hline\n" % ('|'.join(['r' for i in range(len(frs))]), names)
+    pars = dict((i, [frs[i].ParName(j) for j in range(frs[i].NPar())]) for i in range(len(frs)))
+    max_pars = 0
+    max_index = None
+    for i, p in pars.iteritems():
+        if len(p) > max_pars:
+            max_pars = len(p)
+            max_index = i
+    assert(i != None)
+    max_pars = pars[max_index]
+
+    for i, par in enumerate(max_pars):
+        s += "{0:<5}".format(par)
+        for j, fr in enumerate(frs):
+            if par in pars[j]:
+                s += "& ${0:>10.2e} \pm {1:>10.2e}$".format(fr.Value(i), fr.ParError(i))
+            else:
+                s += "& {0:>20}".format('-')
+        s += '\\\\ \n'
+
+    s += "{0:<5} ".format('$\chi^2$/\#DoF')
+    for fr in frs:
+        s += '& ${0:>10.3}$'.format(fr.Chi2() / fr.Ndf())
+    s += '\\\\ \n'    
+    s += "\hline\n\end{tabular}\n"
+    return s
+
 for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split('/')[-1]]):
     index = good[key.split('/')[-1]]
     full_sdata = sdatas[index]['sig_sdata']
@@ -179,14 +209,15 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     from ROOT import TF1
     fit_funcs = {'pol1' : 'S0+', 'pol2' : 'S+'}
     print titles[key]
+    frs = []
     for i, (func, opts) in enumerate(fit_funcs.iteritems()):
         fit_func = TF1('fit_func_%s' % func , func, split_bounds[0], split_bounds[-1])
         fit_result = res_graph.Fit(fit_func, opts, "L")
         print 'Chi2 / nDoF = %5.3f' % (fit_result.Chi2() / fit_result.Ndf())
         __fit_results.append(fit_result)
-        ## fr = fit_result.Get()
-        ## fr.SetName('fit_result_%s_%s' % (func, args[1]))
-        ## results.append(fr)
+        frs.append(fit_result.Get())
+    print fr_latex(frs)
+
     print ''
     res_graph.GetYaxis().SetRangeUser(0, 110)
     hist_events.Draw('hist')
@@ -195,3 +226,15 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     res_graph.Draw('P')
     res_graph.GetXaxis().SetTitle('estimated decay time error [fs]')
     res_graph.GetYaxis().SetTitle('decay time resulution [fs]')
+
+
+def chunks(l, n):
+    """ Yield successive n-sized chunks from l.
+    """
+    for i in range(0, len(l), n):
+        yield l[i:i+n]
+
+for frs in chunks(__fit_results, 2):
+    print fr_latex(frs)
+    print ''
+

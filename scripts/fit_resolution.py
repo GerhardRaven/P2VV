@@ -103,8 +103,11 @@ for i in [ st ] : i.setBins( 20 , 'cache' )
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
 nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
+zerr = RealVar('B_s0_bpv_zerr', Title = 'Best PV Z error', Unit = 'mm', Observable = True, MinMax = (0, 1))
 
-observables = [t, m, mpsi, st, unbiased, selected, nPV]
+zerr_bins = [0, 0.0237, 0.0292, 0.0382, 1]
+
+observables = [t, m, mpsi, st, unbiased, selected, nPV, zerr]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -221,6 +224,7 @@ else:
 if not cache_file:
     cache_file = TFile.Open(input_data['cache'], 'recreate')
     assert(cache_file)
+
 cache_dir = cache_file.Get(directory)
 if not cache_dir:
     cache_file.mkdir(directory)
