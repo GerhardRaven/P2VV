@@ -51,7 +51,7 @@ if args[0] == '2011':
     input_data['wpv'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root')
     input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
     input_data['results'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
-    input_data['cache'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
+    input_data['cache'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_cache.root')
 elif args[0] == '2012':
     input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root')
     input_data['wpv'] = os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_2012.root')
@@ -205,7 +205,8 @@ hd = ('%d' % hash(cut)).replace('-', 'm')
 
 if options.simultaneous:
     from array import array
-    split_bins = array('d', [0.01, 0.021, 0.025, 0.028, 0.031, 0.0345, 0.0375, 0.042, 0.048, 0.07])
+    split_bins = array('d', [0.01, 0.0215, 0.025, 0.028, 0.031, 0.0345, 0.0375, 0.042, 0.048, 0.07])
+    ## split_bins = array('d', [0.01, 0.021, 0.025, 0.028, 0.031, 0.0345, 0.0375, 0.042, 0.048, 0.07])
     ## split_bins = array('d', [0.01, 0.02, 0.025, 0.0275, 0.0325, 0.035, 0.0375, 0.041, 0.045, 0.05, 0.07])
     ## split_bins = array('d', [0.01 + i * 0.01 for i in range(5)] + [0.07])
     directory = '%sbins_%4.2ffs_simul/%s' % (len(split_bins) - 1, (1000 * (split_bins[1] - split_bins[0])), hd)
@@ -723,15 +724,15 @@ if (options.write_data or fit_mass):
     data_dir = get_dir('data')
     for name, ds in sdatas_full.iteritems():
         sdata_dir.WriteTObject(ds, name, "Overwrite")
-
-    if options.simultaneous:
-        for ct in st_cat:
-            opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
-            bin_data = sig_sdata_full.reduce(**opts)
-            bin_data.SetName('sig_sdata_%s' % ct.GetName())
-            sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
-            bin_data.Delete()
-            del bin_data
+    
+    ## if options.simultaneous:
+    ##     for ct in st_cat:
+    ##         opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
+    ##         bin_data = sig_sdata_full.reduce(**opts)
+    ##         bin_data.SetName('sig_sdata_%s' % ct.GetName())
+    ##         sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
+    ##         bin_data.Delete()
+    ##         del bin_data
     
     sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
 

@@ -82,7 +82,7 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
 
     # Calculate appropriate scale factor. Scale histograms such that the ration
     # of their integrals match the ratio of wpv / total yields
-    subtract_yields = [p for p in result.floatParsFinal() if any([p.GetName().startswith(b.getYield().GetName()) for b in subtract])
+    subtract_yields = [p for p in result.floatParsFinal() if any([p.GetName().startswith(b.getYield().GetName()) for b in subtract])]
     n_subtract = sum([b.getVal() for b in subtract_yields])
     total = sum([s.getVal() for s in signal_yields] + [n_subtract])
     sub_int = subtract_histo.Integral()

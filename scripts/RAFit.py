@@ -8,7 +8,7 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 pdfConfig['dataSample'] = '' # ( None, 100260, '' )  # '' / 'Summer2011' / 'runNumber % 2 == 1'
-pdfConfig['selection']  = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'timeEffFit'
+pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased' # 'timeEffFit'
 generateData            = False
 doFit                   = True
 makeObservablePlots     = False
@@ -27,13 +27,13 @@ parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    ## pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2012_ntupleB_20121212.root'
-    pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
-    #pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDown.root'
-    #pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagUp.root'
-    #pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Pass3-version2_Bs_050711_nocut_Phi_P2VV.root'
-    #pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
-    #pdfConfig['nTupleFile'] = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
+    ## pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_2012_ntupleB_20121212.root'
+    pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    #pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDown.root'
+    #pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagUp.root'
+    #pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Pass3-version2_Bs_050711_nocut_Phi_P2VV.root'
+    #pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
+    #pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
     pdfConfig['nominalDataSet'] = False
 else :
     pdfConfig['nTupleName'] = None
@@ -48,10 +48,10 @@ MinosPars = [ ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
-fitOpts = dict(  NumCPU    = 2
+fitOpts = dict(  NumCPU    = 6
                , Optimize  = 2
                , Timer     = True
-               , Verbose   = True
+#               , Verbose   = True
 #               , Minos     = True
 #               , Hesse     = False
                , Minimizer = 'Minuit2'
@@ -80,20 +80,20 @@ pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal:
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'fit' # 'paper2012' # 'HLT1Unbiased' # 'fit'
-pdfConfig['multiplyByAngEff']     = 'basis012'  # default: 'basis012'
+pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased' # 'fit'
+pdfConfig['multiplyByAngEff']     = 'weights'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
-                                     , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
+pdfConfig['KKMassBinBounds']      = [ 1008., 1032. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.025, 0.01)]
+                                      , [ (0.011,  0.16 )])
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.06, 0.02), (0.04, 0.02), (0.27, 0.07) ]
 #                                     , [ (2.7,  0.4 ), (0.22,   0.14), (-0.11, 0.17 ), (-0.97, 0.3 ) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.05, 0.02), (0.27, 0.07) ]
 #                                     , [ (2.7,  0.4 ), (0.,   0.15), (-0.97, 0.3 ) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: True
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -101,7 +101,7 @@ pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStOffset'
+pdfConfig['timeResType']           = 'eventStQuad' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear'
 pdfConfig['numTimeResBins']        = 25
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
@@ -156,20 +156,20 @@ if not readData or manualTagCatBins :
     #                          , ( 'TagCat2',   2, 0.30     )
     #                         ]
 
-pdfConfig['timeEffHistFile']      = '/stuff/PhD/p2vv/data/start_values.root'\
+pdfConfig['timeEffHistFile']      = '/bfys/raaij/p2vv/data/start_values.root'\
                                     if pdfConfig['timeEffType'] == 'fit' else\
-                                    '/stuff/PhD/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
-#                                    '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
-#                                    '/stuff/PhD/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504_unitAcceptance.root'
+                                    '/bfys/raaij/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
+#                                    '/bfys/raaij/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
+#                                    '/bfys/raaij/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504_unitAcceptance.root'
 #pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['angEffMomentsFile']    = '/stuff/PhD/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
+pdfConfig['angEffMomentsFile']    = '/bfys/raaij/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if pdfConfig['transversityAngles'] else\
-                                    '/stuff/PhD/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_newTrigger'
-#                                    '/stuff/PhD/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
-#                                    '/stuff/PhD/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_Basis'
+                                    '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+#                                    '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
+#                                    '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_Basis'
 
 if pdfConfig['transversityAngles'] :
     pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
@@ -183,7 +183,7 @@ else :
                               )
 angleNames = pdfConfig['angleNames']
 
-numBins = ( 50, 20, 20, 20 )
+numBins = ( 50, 21, 21, 21 )
 pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
 pdfConfig['numAngleBins'] = ( 5, 7, 9 )

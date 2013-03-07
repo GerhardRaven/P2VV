@@ -21,9 +21,13 @@ from P2VV.Load import LHCbStyle
 from P2VV.RooFitDecorators import *
 
 if args[0] == 'MC11a':
-    f = TFile.Open('/stuff/PhD/p2vv/data/Bs2JpsiPhi_MC11a_Prescaled_cache.root')
+    input_file = 'p2vv/data/Bs2JpsiPhi_MC11a_Prescaled_cache.root'
 elif args[0] == '2011':
-    f = TFile.Open('/stuff/PhD/p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')    
+    input_file = 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root'
+
+prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
+input_file = os.path.join(prefix, input_file)
+f = TFile.Open(input_file)
 
 sdatas = defaultdict(dict)
 results = defaultdict(dict)
@@ -73,6 +77,8 @@ for k, d in sorted(interesting.items(), key = lambda e: int(e[0].split('bins')[0
     dc = ' && '.join(dc)
     titles[k] = dc
     print k, dc
+
+assert(False)
 
 if args[0] == '2011':
     good = {'1243785060103642893' : 4, 'm2334064025374600976' : 3,

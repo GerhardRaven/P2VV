@@ -343,9 +343,9 @@ class Paper2012_TimeResolution ( TimeResolution ) :
             constraints.append( Pdf(  Name = self._timeResSigmaSF.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._timeResSigmaSF
                                                     , ConstVar( Name = 'tres_SF_constraint_mean'
-                                                               ,  Value = timeResSigmaSFConstrVal )
+                                                               ,  Value = self._timeResSigmaSF.getVal() )
                                                     , ConstVar( Name = 'tres_SF_constraint_sigma'
-                                                               , Value = timeResSigmaSFConstrErr )
+                                                               , Value = self._timeResSigmaSF.getError() )
                                                    ]
                                    )
                               )
