@@ -1,9 +1,12 @@
 from array import array
-from math import exp
+from math import exp, log, sqrt
+from RooFitWrappers import FormulaVar
 
 # Calculate dilution
 __keep = []
-def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False):
+def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False, calibration = None):
+    if calibration:
+        calibration.redirectServers(data.get())
 
     assert(t_diff.getMin() < 0)
 
@@ -45,7 +48,11 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
 
         ## Weight using sigmat
         if res_var:
-            w *= (exp(dms * res_var.getVal() ** 2) ** 2)
+            if calibration:
+                res = calibration.getVal()
+            else:
+                res = res_var.getVal()
+            w *= (exp(dms * res ** 2) ** 2)
 
         r = data_histo.Fill(value, w)
 
@@ -128,28 +135,33 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
     D = sigmaFromFT(ft_histo, 17.7)
     return D
 
-def simple_dilution(t, data, sigmat, sfs):
-    time_var = data.get().find(t.GetName())
+def signal_dilution(data, sigmat, calibration = None):
+    if calibration:
+        calibration.redirectServers(data.get())
+
+    dms = 17.7 ** 2 / 2
+    total = 0
     res_var = data.get().find(sigmat.GetName())
-    
     weighted = data.isWeighted()
-    dms = -17.7 ** 2 / 2
-    
-    ## Total number of events
-    n = 0
-    D = 0
+
+    values = []
     for i in range(data.numEntries()):
         r = data.get(i)
-        value = time_var.getVal()
         ## External weight
         if weighted:
             w = data.weight()
         else:
             w = 1.
-        
-        n += w
-        
-        ## Weight using sigmat
-        D += w * sum([f * exp(dms * (sf * res_var.getVal()) ** 2) for f, sf in sfs])
-    D /= n
-    return D
+
+        if calibration:
+            res = calibration.getVal()
+        else:
+            res = res_var.getVal()
+        values.append((res, w))
+        total += w * exp(- dms * res ** 2)
+    total /= data.sumEntries()
+    eff_res = sqrt(-log(total) / dms)
+    print 'Dilution = %f' % total
+    print 'Effective resolution = %f' % eff_res
+
+    return total, eff_res, values

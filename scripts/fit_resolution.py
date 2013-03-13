@@ -37,7 +37,7 @@ parser.add_option("-b", "--batch", dest = "batch", default = False,
 if len(args) != 2:
     print parser.usage
     sys.exit(-2)
-elif args[0] not in ['2011', '2012', 'MC11a']:
+elif args[0] not in ['2011', '2012', 'MC11a', 'MC11a_incl_Jpsi']:
     print parser.usage
     sys.exit(-2)
 elif args[1] not in ['single', 'double', 'triple']:
@@ -46,23 +46,23 @@ elif args[1] not in ['single', 'double', 'triple']:
     
 input_data = {}
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
-if args[0] == '2011':
-    input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130207.root')
-    input_data['wpv'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root')
-    input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2011_workspace'
-    input_data['results'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root')
-    input_data['cache'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_cache.root')
-elif args[0] == '2012':
-    input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root')
-    input_data['wpv'] = os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_2012.root')
-    input_data['workspace'] = 'Bs2JpsiPhiPrescaled_2012_workspace'
-    input_data['cache'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled_st_bins.root')
-else:
-    ## MC11a
-    input_data['data'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130222.root')
-    input_data['wpv'] = os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root')
-    input_data['workspace'] = 'Bs2JpsiPhiPrescaled_MC11a_workspace'
-    input_data['cache'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_Prescaled_cache.root')
+input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130207.root'),
+                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root'),
+                        'workspace' : 'Bs2JpsiPhiPrescaled_2011_workspace',
+                        'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled.root')},
+              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'),
+                        'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_2012.root'),
+                        'workspace' : 'Bs2JpsiPhiPrescaled_2012_workspace',
+                        'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},
+              'MC11a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130222.root'),
+                         'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
+                         'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
+                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_Prescaled.root')},
+              'MC11a_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntuple_B_MC11a_incl_Jpsi_20130103.root'),
+                                   'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
+                                   'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
+                                   'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_incl_Jpsi_Prescaled_cache.root')}
+              }
     
 if options.wpv and not options.wpv_type in ['Mixing', 'Gauss']:
     print parser.usage
@@ -108,6 +108,8 @@ zerr = RealVar('B_s0_bpv_zerr', Title = 'Best PV Z error', Unit = 'mm', Observab
 zerr_bins = [0, 0.0237, 0.0292, 0.0382, 1]
 
 observables = [t, m, mpsi, st, unbiased, selected, nPV, zerr]
+if args[0].find('MC11a') != -1:
+    t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
@@ -130,7 +132,7 @@ elif args[1] == 'double':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = options.pee, Parameterise = options.parameterise,
-                              TimeResSFOffset = options.model != '',
+                              TimeResSFOffset = options.model != '', SplitFracs = False,
                               timeResMu = dict(Value = 0, Constant = options.model != ''),
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)])
@@ -192,7 +194,7 @@ prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
 
 # Read data
-fit_mass = options.fit_mass or args[0] == 'MC11a'
+fit_mass = options.fit_mass or args[0].find('MC11a') != -1
 
 # Tree and cut
 tree_name = 'DecayTree'
@@ -216,22 +218,10 @@ if options.simultaneous:
 else:
     directory = '1bin_%4.2ffs_simple/%s' % (1000 * (t.getMax() - t.getMin()), hd)
 
-from ROOT import TFile
-if os.path.exists(input_data['cache']):
-    cache_file = TFile.Open(input_data['cache'], 'update')
-else:
-    cache_file = TFile.Open(input_data['cache'], 'new')
-if not cache_file:
-    cache_file = TFile.Open(input_data['cache'], 'recreate')
-    assert(cache_file)
-
-cache_dir = cache_file.Get(directory)
+from P2VV.CacheUtils import CacheFiles
+cache_files = CacheFiles(*input_data[args[0]]['cache'].rsplit('/', 1))
+cache_dir, cache_file = cache_files.getFromCache(directory)
 if not cache_dir:
-    cache_file.mkdir(directory)
-    cache_dir = cache_file.Get(directory)
-    from ROOT import TObjString
-    cut_string = TObjString(cut)
-    cache_dir.WriteTObject(cut_string, 'cut')
     fit_mass = True
 
 results = []
@@ -245,7 +235,7 @@ from ROOT import gStyle
 gStyle.SetPalette(1)
 
 ## Read Cache
-if not fit_mass and args[0] != 'MC11a':
+if not fit_mass:
     ## Read sdata
     sds_name = 'sdata'
     sdata_dir = cache_dir.Get('sdata')
@@ -325,9 +315,16 @@ plots = []
 ## Build simple mass pdf
 if fit_mass:
     from P2VV.GeneralUtils import readData
-    data = readData(input_data['data'], tree_name, NTuple = True, observables = observables,
+    data = readData(input_data[args[0]]['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut)
     data.SetName(tree_name)
+
+    if args[0].find('MC11a') != -1:
+        # Also incl J/psi MC11a
+        t_diff = FormulaVar('time_diff', '@0 - @1', [t, t_true], data = data)
+        t_diff.setMin(-10)
+        t_diff.setMax(10)
+        observables.append(t_diff)
 
     if args[0] == 'MC11a':
         mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'mass_pdf')
@@ -486,15 +483,17 @@ if options.wpv and options.wpv_type == 'Mixing':
     if args[0] == 'MC11a':
         reweigh_data = dict(B = data)
         masses = {'B' : m}
-        weights = 'B'
+        weights = 'B' 
+        extra_args = {'t_diff' : t_diff}
     else:
         reweigh_data = dict(jpsi = single_bin_sig_sdata, bkg = single_bin_bkg_sdata)
         masses = {'jpsi' : mpsi}
         weights = 'jpsi'
+        extra_args = {}
     wpv = WrongPV.ShapeBuilder(t, masses, UseKeysPdf = True, Weights = weights, Draw = True,
-                               InputFile = input_data['wpv'], Workspace = input_data['workspace'],
+                               InputFile = input_data[args[0]]['wpv'], Workspace = input_data[args[0]]['workspace'],
                                Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
-                               sigmat = st)
+                               sigmat = st, **extra_args)
     if args[0] == 'MC11a':
         wpv_signal = wpv.shape('B')
         signal_wpv = Component('signal_wpv', (wpv_signal,), Yield = (888, 50, 300000))
@@ -670,7 +669,7 @@ if options.simultaneous:
             hist_events.SetBinError(index + 1, events.getError() / d)
         
         if args[1] == 'double' and options.parameterise == False:
-            from PropagateErrors import propagateScaleFactor
+            from P2VV.PropagateErrors import propagateScaleFactor
             sf, sf_e = propagateScaleFactor(time_result, '_' + ct.GetName())
         elif args[1] == 'double' and options.parameterise == 'Comb':
             sf_comb = time_fpf.find('timeResComb_%s' % ct.GetName())
@@ -693,7 +692,7 @@ if options.simultaneous:
     hist_events.GetYaxis().SetRangeUser(0, 110)
         
     from ROOT import TF1
-    fit_funcs = {'pol1' : 'S0+', 'pol2' : 'S+'}
+    fit_funcs = {'pol1' : 'S0+', 'pol2' : 'S+', 'x ++ x * x' : 'S0+'}
     for i, (func, opts) in enumerate(fit_funcs.iteritems()):
         fit_func = TF1('fit_func_%s' % func , func, split_bins[0], split_bins[-1])
         fit_result = res_graph.Fit(fit_func, opts, "L")
@@ -711,58 +710,74 @@ if options.simultaneous:
     res_graph.GetYaxis().SetTitle('decay time resulution [fs]')
 
 from P2VV import Dilution
-Dilution.dilution(t, data, result = time_result, sigmat = st, signal = [prompt],
-                  subtract = [psi_ll, psi_wpv] if options.wpv else [psi_ll], simultaneous = options.simultaneous)
+if args[0] == 'MC11a':
+    sub = []
+    if options.wpv and options.wpv_type == 'Mixing':
+        diff_pdf = wpv.diff_shape('B')
+        signal_wpv[t_diff] = diff_pdf
+        sub.append(signal_wpv)
+    Dilution.dilution(t_diff, data, sigmat = st, result = result,
+                      signal = [signal], subtract = sub, simultaneous = options.simultaneous)
+else:
+    Dilution.dilution(t, data, result = time_result, sigmat = st, signal = [prompt],
+                      subtract = [psi_ll, psi_wpv] if options.wpv else [psi_ll], simultaneous = options.simultaneous)
 
-# Write data to cache file
-def get_dir(d):
-    tmp = cache_dir.Get(d)
-    if not tmp:
-        cache_dir.mkdir(d)
+from P2VV.CacheUtils import WritableCacheFile
+with WritableCacheFile(cache_files, directory) as cache_file:
+    cache_dir = cache_file.Get(directory)
+    from ROOT import TObjString
+    cut_string = TObjString(cut)
+    cache_dir.WriteTObject(cut_string, 'cut')
+    
+    # Write data to cache file
+    def get_dir(d):
         tmp = cache_dir.Get(d)
-    return tmp
-
-from ROOT import TObject
-if (options.write_data or fit_mass):
-    sdata_dir = get_dir('sdata')
-    data_dir = get_dir('data')
-    for name, ds in sdatas_full.iteritems():
-        sdata_dir.WriteTObject(ds, name, "Overwrite")
+        if not tmp:
+            cache_dir.mkdir(d)
+            tmp = cache_dir.Get(d)
+        return tmp
     
-    ## if options.simultaneous:
-    ##     for ct in st_cat:
-    ##         opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
-    ##         bin_data = sig_sdata_full.reduce(**opts)
-    ##         bin_data.SetName('sig_sdata_%s' % ct.GetName())
-    ##         sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
-    ##         bin_data.Delete()
-    ##         del bin_data
+    from ROOT import TObject
+    if (options.write_data or fit_mass):
+        sdata_dir = get_dir('sdata')
+        data_dir = get_dir('data')
+        for name, ds in sdatas_full.iteritems():
+             sdata_dir.WriteTObject(ds, name, "Overwrite")
+        
+        ## if options.simultaneous:
+        ##     for ct in st_cat:
+        ##         opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
+        ##         bin_data = sig_sdata_full.reduce(**opts)
+        ##         bin_data.SetName('sig_sdata_%s' % ct.GetName())
+        ##         sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
+        ##         bin_data.Delete()
+        ##         del bin_data
+        
+        sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
     
-    sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
-
-## Write PDFs
-pdf_dir = get_dir('PDFs')
-pdf_dir.WriteTObject(time_pdf._target_(), 'time_pdf_' + args[1] + \
-                     ('_' + options.parameterise) if options.parameterise else '', "Overwrite")
-pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
-if options.simultaneous:
-    pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
+    ## Write PDFs
+    pdf_dir = get_dir('PDFs')
+    pdf_dir.WriteTObject(time_pdf._target_(), 'time_pdf_' + args[1] + \
+                         ('_' + options.parameterise) if options.parameterise else '', "Overwrite")
+    pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
+    if options.simultaneous:
+        pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
     
-if not options.reduce:
-    ## Write fit results
-    results_dir = get_dir('results')
-    for r in results:
-        results_dir.WriteTObject(r, r.GetName(), "Overwrite")
+    if not options.reduce:
+        ## Write fit results
+        results_dir = get_dir('results')
+        for r in results:
+            results_dir.WriteTObject(r, r.GetName(), "Overwrite")
+        
+        results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
+        
+        ## Write plots
+        plots_dir = get_dir('plots/%s' % extra_name)
+        for ps in plots:
+            for p in ps:
+                plots_dir.WriteTObject(p, p.GetName(), "Overwrite")
+        
+        plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
     
-    results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
-    
-    ## Write plots
-    plots_dir = get_dir('plots/%s' % extra_name)
-    for ps in plots:
-        for p in ps:
-            plots_dir.WriteTObject(p, p.GetName(), "Overwrite")
-    
-    plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
-
-# Delete the input TTree which was automatically attached.
-cache_file.Delete('%s;*' % tree_name)
+    # Delete the input TTree which was automatically attached.
+    cache_file.Delete('%s;*' % tree_name)

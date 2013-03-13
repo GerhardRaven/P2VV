@@ -158,7 +158,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
     from ROOT import RooFit
     if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
     cuts = kwargs.pop( 'cuts', '' )
-
+    tmp_file = None
     if observables :
         print 'P2VV - INFO: readData: reading data for observables [ %s ]' % ', '.join( obs.GetName() for obs in observables )
 
@@ -175,6 +175,14 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
       if 'ntupleCuts' in kwargs :
           ntupleCuts = kwargs.pop( 'ntupleCuts', '' )
           print 'P2VV - INFO: readData: applying cuts on n-tuple: %s' % ntupleCuts
+          import tempfile
+          import os
+          from ROOT import TFile, gFile
+          orig_file = gFile
+          fd, temp_name = tempfile.mkstemp(suffix = '.root', dir = os.path.dirname(filePath))
+          os.close(fd)
+          os.remove(temp_name)
+          tmp_file = TFile.Open(temp_name, 'recreate')
           ntuple = chain.CopyTree(ntupleCuts)
       else :
           ntuple = chain
@@ -214,6 +222,10 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
     from P2VV.RooFitWrappers import RooObject
     wsData = RooObject().ws().put( data, **kwargs )
     data.IsA().Destructor(data)
+    if tmp_file:
+        tmp_file.Close()
+        os.remove(tmp_file.GetName())
+        if orig_file: orig_file.cd()
     return wsData
 
 

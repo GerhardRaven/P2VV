@@ -85,12 +85,30 @@ class ShapeBuilder(object):
         for p in self.__pdf.Parameters(): p.setConstant(not p.getAttribute('Yield'))
         splot = SData(Pdf = self.__pdf, Data = self._data, Name = 'MixingMassSplot')
         self.__sdatas = {}
+        self.__reweigh_weights = {}
         for key, c in self.__components[Weights].iteritems():
             sdata = splot.data(c.GetName())
 
             if 'Data' in Reweigh and key in Reweigh['Data']:
-                sdata = self.__reweigh(sdata, Component = key, **Reweigh)
+                from array import array
+                from ROOT import RooBinning
 
+                source = Reweigh['Data'][key]
+                binning = Reweigh['Binning']
+                if type(binning) == array:
+                    binning = RooBinning(len(binning) - 1, binning)
+                    binning.SetName('reweigh')
+                    Reweigh['DataVar'].setBinning(binning, 'reweigh')
+
+                source_obs = source.get().find('nPV')
+                source_cat = BinningCategory(Name = 'nPVs_' + key, Observable = source_obs,
+                                             Binning = binning, Data = source, Fundamental = True)
+
+                from P2VV.Reweighing import reweigh
+                sdata, weights = reweigh(sdata, sdata.get().find('nPV'),
+                                         source, source_cat)
+                self.__reweigh_weights[key] = weights
+                
             sdata = self.__ws.put(sdata)
             self.__sdatas[c] = sdata
 
@@ -171,77 +189,6 @@ class ShapeBuilder(object):
                  , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
                  , logy = False
                  , plotResidHist = False)
-
-    def __reweigh(self, wpv_data, Component = None, Data = None, DataVar = None, Binning = None):
-        from array import array
-        from ROOT import RooBinning
-
-        assert(Component)
-        assert(Binning)
-
-        Data = Data[Component]
-
-        assert(Data)
-        assert(DataVar)
-
-        if type(Binning) == array:
-            PV_binning = RooBinning(len(Binning) - 1, Binning)
-            PV_binning.SetName('reweigh')
-        else:
-            PV_binning = Binning
-        DataVar.setBinning(PV_binning, 'reweigh')
-        nPVs = Data.get().find('nPVs')
-        if not nPVs:
-            nPVs = BinningCategory(Name = 'nPVs_' + Component, Observable = DataVar,
-                                   Binning = PV_binning, Data = Data, Fundamental = True)
-
-        nPV_wpv = wpv_data.get().find('nPV')
-        print nPV_wpv
-        wpv_bins = dict([(t.getVal(), t.GetName()) for t in nPV_wpv])
-        data_bins = dict([(t.getVal(), t.GetName()) for t in nPVs])
-
-        print wpv_bins
-        print data_bins
-
-        wpv_table = wpv_data.table(nPV_wpv)
-        data_table = Data.table(nPVs)
-
-        wpv_table.Print('v')
-        data_table.Print('v')
-
-        from collections import defaultdict
-        self.__reweigh_weights = defaultdict(dict)
-        for i, l in sorted(data_bins.iteritems())[2:]:
-            try:
-                w = data_table.getFrac(l) / wpv_table.getFrac(wpv_bins[i])
-            except ZeroDivisionError:
-                print 'Warning bin %s in wpv_data is 0, setting weight to 0' % l
-                w = 0.
-            self.__reweigh_weights[Component][i] = w
-
-        # RooFit infinity
-        from ROOT import RooNumber
-        RooInf = RooNumber.infinity()
-        weight_var = RealVar('wpv_reweigh_var', MinMax = (RooInf, RooInf))
-
-        from ROOT import RooDataSet
-        data_name = wpv_data.GetName() + 'weight_data'
-        weight_data = RooDataSet(data_name, data_name, RooArgSet(weight_var))
-        weight_var = weight_data.get().find(weight_var.GetName())
-
-        for i in range(wpv_data.numEntries()):
-            r = wpv_data.get(i)
-            n = nPV_wpv.getIndex()
-            w = self.__reweigh_weights[Component][n]
-            weight_var.setVal(wpv_data.weight() * w)
-            weight_data.fill()
-
-            
-        wpv_data.merge(weight_data)
-        wpv_data = RooDataSet(wpv_data.GetName(), wpv_data.GetTitle(), wpv_data,
-                              wpv_data.get(), '', weight_var.GetName())
-        
-        return wpv_data
 
     def sdata(self, key):
         c = self.__components[self.__weights][key]

@@ -1202,30 +1202,31 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs = dict(  time = time
                                , timeResSigma = timeRes
-                               , timeResSFConstraint = constrTResScale
                                , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
                               )
             if 'nomean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
                 timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.45, Error = 0.06, MinMax = ( 0.1, 5. ) )
+                timeResArgs['timeResSFConstraint'] = constrTResScale
             elif 'constmean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
                 timeResArgs['timeResMeanConstraint'] = constrTResScale
+                timeResArgs['timeResSFConstraint'] = constrTResScale
             elif 'stlinear' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
-                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.26, Error = 0.06, MinMax = ( 0.1, 5. ) )
+                timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.26, Error = 0.06, MinMax = (0.1, 5 ), Constant = True)
                 ## timeResArgs['timeResSigmaSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1.30 )
-                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0055, Error = 0.0005
-                                                         , MinMax = ( 0.00001, 0.1 ) )
+                timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0055,
+                                                         Error = 0.0005, Constant = True)
                 ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
                 timeResArgs['timeResSFModel'] = 'linear'
             elif 'stquad' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
-                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = -0.0045, Error = 0.0013)
-                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.92, Error = 0.08, MinMax = ( 0.1, 5. ) )
-                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -0.01, Error = 0.002 )
+                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0, Error = 0.0013, Constant = True)
+                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.684, Error = 0.015, MinMax = ( 0.1, 5. ), Constant = True)
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -6.599, Error = 1.3, MinMax = (-11, -1), Constant = True)
                 ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
                 timeResArgs['timeResSFModel'] = 'quadratic'
             else :
@@ -1235,8 +1236,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         elif timeResType == '3Gauss' :
             from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution( time = time
-                                                , timeResSFConstraint = constrTResScale )
+            self._timeResModel = TimeResolution( time = time, timeResSFConstraint = constrTResScale)
 
         else :
             from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution

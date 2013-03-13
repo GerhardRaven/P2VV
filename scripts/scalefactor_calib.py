@@ -21,25 +21,27 @@ from P2VV.Load import LHCbStyle
 from P2VV.RooFitDecorators import *
 
 if args[0] == 'MC11a':
-    input_file = 'p2vv/data/Bs2JpsiPhi_MC11a_Prescaled_cache.root'
+    input_file = 'Bs2JpsiPhi_MC11a_Prescaled_st.root'
 elif args[0] == '2011':
-    input_file = 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_st_bins.root'
-
+    input_file = 'Bs2JpsiPhi_2011_Prescaled.root'
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
-input_file = os.path.join(prefix, input_file)
-f = TFile.Open(input_file)
+directory = os.path.join(prefix, 'p2vv/data')
+
+from P2VV.CacheUtils import CacheFiles
+cfs = CacheFiles(directory, input_file)
+cache_files = cfs.getCacheFiles()
 
 sdatas = defaultdict(dict)
 results = defaultdict(dict)
 
-def add_keys(class_name, keys = None, path = None):
+def add_keys(input_file, class_name, keys = None, path = None):
     if keys == None or type(keys) != dict:
         keys = {}
     if path == None or path == '/':
-        d = gFile
+        d = input_file
         path = ''
     else:
-        d = gFile.Get(path)
+        d = input_file.Get(path)
     for key in d.GetListOfKeys():
         if path:
             new_path = path + '/' + key.GetName()
@@ -48,10 +50,13 @@ def add_keys(class_name, keys = None, path = None):
         if new_path not in keys and key.GetClassName() == class_name:
             keys[new_path] = key.ReadObj()
         if key.GetClassName() == 'TDirectoryFile':
-            add_keys(class_name, keys, new_path)
+            add_keys(input_file, class_name, keys, new_path)
     return keys
 
-dirs = add_keys('TDirectoryFile')
+dirs = {}
+for f in cache_files:
+    add_keys(f, 'TDirectoryFile', keys = dirs)
+
 interesting = {}
 for key, d in dirs.iteritems():
     if len(key.split('/')) != 2:
@@ -74,16 +79,18 @@ for k, d in sorted(interesting.items(), key = lambda e: int(e[0].split('bins')[0
             break
         else:
             dc.append(c)
-    dc = ' && '.join(dc)
+    if dc:
+        dc = ' && '.join(dc)
+    else:
+        dc = 'no extra cut'
     titles[k] = dc
     print k, dc
 
-assert(False)
-
 if args[0] == '2011':
-    good = {'1243785060103642893' : 4, 'm2334064025374600976' : 3,
-            '1626518906014697943' : 2, 'm3832912631969227654' : 1,
-            '4086600821164745518' : 6, 'm6573713017788044320' : 5}
+    ## good = {'1243785060103642893' : 4, 'm2334064025374600976' : 3,
+    ##         '1626518906014697943' : 2, 'm3832912631969227654' : 1,
+    ##         '4086600821164745518' : 6, 'm6573713017788044320' : 5}
+    good = {'m934737057402830078' : 1}
     sig_name = 'psi_ll'
 elif args[0] == 'MC11a':
     good = {'389085267962218368' : 4, 'm3019457528953402347' : 3,
@@ -120,7 +127,7 @@ __canvases = []
 __histos = []
 __fit_funcs = []
 
-fit_type = 'single'
+fit_type = 'double_Comb'
 
 __fit_results = []
 from array import array
@@ -167,15 +174,18 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     canvas = TCanvas(name, titles[key], 500, 500)
     __canvases.append(canvas)
     name = 'hist_events_%s' % index
-    hist_events = TH1D(name, name, len(split_bounds) - 1, array('d', [1000 * v for v in split_bounds]))
+    hist_events = TH1D(name, name, len(split_bounds) - 1, array('d', [v for v in split_bounds]))
     __histos.append(hist_events)
-    
-    mass_fpf = fit_results['sWeight_mass_result'].floatParsFinal()
-    time_fpf = fit_results['time_result_%s' % fit_type.split('_')[0]].floatParsFinal()
+
+    mass_result = mass_fpf = fit_results['sWeight_mass_result']
+    mass_fpf = mass_result.floatParsFinal()
+    time_result = fit_results['time_result_%s' % fit_type.split('_')[0]]
+    time_fpf = time_result.floatParsFinal()
     
     res_x = array('d')
     res = array('d')
     res_e = array('d')
+    total = full_sdata.sumEntries()
     for b, ct in enumerate(st_cat):
         d = split_bounds[b + 1] - split_bounds[b]
         bin_name = '_'.join(('N', sig_name, ct.GetName()))
@@ -184,7 +194,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         hist_events.SetBinError(b + 1, events.getError() / d)
         
         if fit_type == 'double':
-            from PropagateErrors import propagateScaleFactor
+            from P2VV.PropagateErrors import propagateScaleFactor
             sf, sf_e = propagateScaleFactor(time_result, '_' + ct.GetName())
         elif fit_type == 'double_Comb':
             sf_comb = time_fpf.find('timeResComb_%s' % ct.GetName())
@@ -193,21 +203,23 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
             sf_var = time_fpf.find('sigmaSF_%s' % ct.GetName())
             sf, sf_e = sf_var.getVal(), sf_var.getError()
         
-        mean = sdatas[index][ct.GetName()].mean(st)
-        res_x.append(1000 * mean)
-        res.append(1000 * mean * sf)
-        res_e.append(1000 * mean * sf_e)
+        range_cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName())
+        mean = full_sdata.mean(st, range_cut)
+        mean *= total / full_sdata.sumEntries(range_cut)
+        res_x.append(mean)
+        res.append(mean * sf)
+        res_e.append(mean * sf_e)
     
     res_ex = array('d', [0 for i in range(len(res_x))])
     res_graph = TGraphErrors(len(res_x), res_x, res, res_ex, res_e)
     res_graph.SetName('res_graph_%d' % index)
     __histos.append(res_graph)
-    scale = 100 / hist_events.GetMaximum()
+    scale = 0.1 / hist_events.GetMaximum()
     hist_events.Scale(scale)
-    hist_events.GetYaxis().SetRangeUser(0, 110)
+    hist_events.GetYaxis().SetRangeUser(0, 0.11)
     
     from ROOT import TF1
-    fit_funcs = {'pol1' : 'S0+', 'pol2' : 'S+'}
+    fit_funcs = {'pol1' : 'S0+', 'pol2' : 'S+', 'x ++ x * x' : 'S0+'}
     print titles[key]
     frs = []
     for i, (func, opts) in enumerate(fit_funcs.iteritems()):
@@ -219,22 +231,22 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     print fr_latex(frs)
 
     print ''
-    res_graph.GetYaxis().SetRangeUser(0, 110)
-    hist_events.Draw('hist')
+    res_graph.GetYaxis().SetRangeUser(0, 0.11)
+    hist_events.Draw('hist') 
+    hist_events.GetXaxis().SetTitle('estimated decay time error [ps]')
+    hist_events.GetYaxis().SetTitle('decay time resulution [ps]')
     from ROOT import kGray
     hist_events.SetFillColor(kGray + 1)
     res_graph.Draw('P')
-    res_graph.GetXaxis().SetTitle('estimated decay time error [fs]')
-    res_graph.GetYaxis().SetTitle('decay time resulution [fs]')
 
 
-def chunks(l, n):
-    """ Yield successive n-sized chunks from l.
-    """
-    for i in range(0, len(l), n):
-        yield l[i:i+n]
+## def chunks(l, n):
+##     """ Yield successive n-sized chunks from l.
+##     """
+##     for i in range(0, len(l), n):
+##         yield l[i:i+n]
 
-for frs in chunks(__fit_results, 2):
-    print fr_latex(frs)
-    print ''
+## for frs in chunks(__fit_results, 2):
+##     print fr_latex(frs)
+##     print ''
 
