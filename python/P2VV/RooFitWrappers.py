@@ -1745,11 +1745,13 @@ class Customizer(Pdf) :
             subsDict = dict( ( subsItem.GetName(), subsItem ) for subsItem in subsSet )
             for item in origSet:
                 rep = subsDict[ item.GetName() + argSuff ]
-                self.__transplant_binnings(item, rep)
-                customizer.replaceArg( __dref__(item), __dref__( rep ) )
-        else :
+                if item in pdf.Observables():
+                    self.__transplant_binnings(item, rep)
+                customizer.replaceArg( __dref__(item), __dref__( rep ))
+        else:
             for origItem, subsItem in zip( origSet, subsSet ) :
-                self.__transplant_binnings(origItem, subsItem)
+                if item in pdf.Observables():
+                    self.__transplant_binnings(origItem, subsItem)
                 customizer.replaceArg( __dref__(origItem), __dref__(subsItem) )
 
         custom = customizer.build()
