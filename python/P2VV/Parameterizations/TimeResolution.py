@@ -60,27 +60,36 @@ class Gaussian_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         scaleBias = kwargs.pop('BiasScaleFactor', True)
         pee = kwargs.pop('PerEventError', False)
-        use_offset = kwargs.pop('TimeResSFOffset', False)
+        sf_model = kwargs.pop('TimeResSFModel', '')
+        assert(sf_model in ['', 'linear', 'quadratic'])
+
         extraArgs = {}
         self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._parseArg( 'timeResMu', kwargs, Title = 'Decay time resolution mean', Value = -0.00017, MinMax = (-1, 1)  )
+        self._parseArg( 'timeResMu', kwargs, Title = 'Decay time resolution mean', Value = -0.004, MinMax = (-1, 1)  )
         if pee :
             self._parseArg( 'sigmat',  kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
             self._parseArg( 'sigmaSF', kwargs, Title = 'Decay time scale factor',   Value = 1.46,     MinMax = (0.1, 2.5) )
-            if use_offset:
+            if sf_model:
                 self._offset = self._parseArg('offset', kwargs, Value = 0.01, Error = 0.001,
-                                              MinMax = (0.000001, 1))
+                                              MinMax = (0.000001, 1))                
+            if sf_model == 'linear':
                 from P2VV.RooFitWrappers import LinearVar
                 linear_var = LinearVar(Name = 'sigmaSF_linear', Observable = self._sigmat,
                                        Slope = self._sigmaSF, Offset = self._offset)
-                params = [ self._time, self._timeResMu, linear_var ]
+                params = [self._time, self._timeResMu, linear_var]
+            elif sf_model == 'quadratic':
+                from P2VV.RooFitWrappers import PolyVar
+                self._quad = self._parseArg('quad', kwargs, Value = -0.01, Error = 0.003, MinMax = (-0.1, 0.1))
+                self._offset.setVal(-0.005)
+                self._sigmaSF.setVal(0.0019)
+                poly_var = PolyVar(Name = 'sigmaSF_quad', Observable = self._sigmat, Coefficients = [self._offset, self._sigmaSF, self._quad])
+                params = [self._time, self._timeResMu, poly_var]
             elif scaleBias :
-                params = [ self._time, self._timeResMu, self._sigmat, self._sigmaSF, self._sigmaSF ]
+                params = [self._time, self._timeResMu, self._sigmat, self._sigmaSF, self._sigmaSF]
             else :
                 self._parseArg( 'biasSF', kwargs, Title = 'Decay time bias scale factor', Value = 1, Constant = True )
                 params = [ self._time, self._timeResMu, self._sigmat, self._biasSF,  self._sigmaSF ]
-            extraArgs['ConditionalObservables'] = [ self._sigmat ]
-
+            extraArgs['ConditionalObservables'] = [self._sigmat]
         else :
             self._parseArg( 'timeResSigma', kwargs, Title = 'Decay time resolution width', Value = 0.05,  MinMax = (0.0001, 2.5) )
             params = [ self._time, self._timeResMu, self._timeResSigma ]
@@ -98,6 +107,9 @@ class Gaussian_TimeResolution ( TimeResolution ) :
                                                           , **extraArgs)
                                 , Cache = cache
                                )
+
+    def splitVars(self):
+        return [self._sigmaSF]
 
 class LP2011_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -175,11 +187,11 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         if param:
             assert(len(sigmasSFs) == 2)
 
-        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 20) ) for num, val in sigmasSFs ]
+        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 10) ) for num, val in sigmasSFs ]
         self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.0001, 0.99) ) for num, val in fracs  ]
 
         use_offset = kwargs.pop('TimeResSFOffset', False)
-        assert(not (use_offset and param_rms))
+        assert(not (use_offset and param))
         Name = kwargs.pop('Name', 'timeResModelMG')
 
         from ROOT import RooNumber
@@ -191,23 +203,28 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                 MinMax = (0, RooInf))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_RMS', 'sqrt(1 / (1 - @0) * (@1 * @1 - @0 * @2 * @2))',
                                                    (self._timeResFracs[0], self._rms, self._timeResSigmasSFs[0]))
+            self._realVars = [self._rms, self._timeResSigmasSFs[0]] + self._timeResFracs
         elif param == 'Comb':
             self._comb = RealVar('timeResComb', Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
                                                          + fracs[0][1] * sigmasSFs[0][1]),
                                  MinMax = (0.1, RooInf))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
                                                    (self._timeResFracs[0], self._comb, self._timeResSigmasSFs[0]))
+            self._realVars = [self._comb, self._timeResSigmasSFs[0]] + self._timeResFracs
         elif use_offset:
             sfs = []
-            for sf, pee in zip(self._timeResSigmasSFs):
-                if pee:
+            for sf, pe in zip(self._timeResSigmasSFs, pee):
+                if pe:
                     sfo = LinearVar(Name = sf.GetName() + '_linear',
                                     Observable = self._sigmat,
                                     Slope = sf, Offset = self._timeResSigmaOffset)
                 else:
                     sfo = sf
                 sfs.append(sfo)
+            self._realVars = [sf for sf in self._timeResSigmasSFs] + self._timeResFracs
             self._timeResSigmasSFs = sfs
+        else:
+            self._realVars = [sf for sf in self._timeResSigmasSFs] + self._timeResFracs
 
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
@@ -226,6 +243,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         TimeResolution.__init__(self, Name = Name
                                 , Model = AddModel(Name, Models = models, Fractions = self._timeResFracs)
                                 , Cache = cache)
+    def splitVars(self):
+        return self._realVars
 
 class Moriond2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -278,18 +297,22 @@ class Moriond2012_TimeResolution ( TimeResolution ) :
 
 class Paper2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
-        useOffset = kwargs.pop( 'timeResSFOffset', False )
-
-        from P2VV.RooFitWrappers import ResolutionModel, AddModel, ConstVar, RealVar, LinearVar
+        sfModel = kwargs.pop( 'timeResSFModel', '' )
+        assert(sfModel in ['', 'linear', 'quadratic'])
+        from P2VV.RooFitWrappers import ResolutionModel, AddModel
+        from P2VV.RooFitWrappers import ConstVar, RealVar, LinearVar, PolyVar
         from ROOT import RooNumber
         self._parseArg( 'time',           kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
         self._parseArg( 'timeResMean',    kwargs, Value = 0., Error = 0.1, MinMax = ( -2., 2. ), Constant = True )
         self._parseArg( 'timeResSigma',   kwargs, Title = 'Decay time error', Unit = 'ps', Observable = True, MinMax = ( 0.0, 0.2 ) )
         self._parseArg( 'timeResMeanSF',  kwargs, timeResMeanSF = self._timeResSigma )
         self._parseArg( 'timeResSigmaSF', kwargs, Value = timeResSigmaSFVal, Error = timeResSigmaSFErr, MinMax = ( 0.8, 2.1 ) )
-        if useOffset :
-            self._parseArg( 'timeResSigmaOffset', kwargs, Value = 0.0065, Error = 0.001, MinMax = ( 0.00001, 0.1 ) )
-
+        if sfModel == 'linear':
+            self._parseArg( 'timeResSigmaOffset', kwargs, Value = 0.0065, Error = 0.001, MinMax = ( -0.02, 0.1 ) )
+        if sfModel == 'quadratic':
+            self._parseArg( 'timeResSigmaOffset', kwargs, Value = -0.004, Error = 0.001, MinMax = ( -0.02, 0.1 ) )
+            self._parseArg( 'timeResSigmaSF2', kwargs, Value = -0.11, Error = 0.01, MinMax = ( -1, 1 ) )
+            
         constraints = []
         timeResMeanConstr = kwargs.pop( 'timeResMeanConstraint', None )
         if type(timeResMeanConstr) == str and timeResMeanConstr == 'fixed' and isinstance( self._timeResMean, RealVar ) :
@@ -327,11 +350,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                                    )
                               )
 
-        if useOffset:
-            self._timeResSigmaLinear = LinearVar(Name = 'timeResSigmaLinear',
-                                                 Observable = self._timeResSigma,
-                                                 Slope = self._timeResSigmaSF,
-                                                 Offset = self._timeResSigmaOffset)
+        if sfModel != '':
             constraints.append(Pdf(Name = self._timeResSigmaOffset.GetName() + '_constraint', Type = Gaussian
                                    , Parameters = [self._timeResSigmaOffset
                                                    , ConstVar(Name = 'tres_offset_constraint_mean'
@@ -341,16 +360,36 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                                                    ]
                                    )
                                )
+        if sfModel == 'linear':
+            self._timeResSigmaLinear = LinearVar(Name = 'timeResSigmaLinear',
+                                                 Observable = self._timeResSigma,
+                                                 Slope = self._timeResSigmaSF,
+                                                 Offset = self._timeResSigmaOffset)
+            parameters = [self._time, self._timeResMean, self._timeResSigmaLinear]
+        elif sfModel == 'quadratic':
+            self._timeResSigmaQuad = PolyVar(Name = 'timeResSigmaQuad',
+                                             Observable = self._timeResSigma,
+                                             Coefficients = [self._timeResSigmaOffset,
+                                                             self._timeResSigmaSF,
+                                                             self._timeResSigmaSF2])
+            constraints.append(Pdf(Name = self._timeResSigmaSF2.GetName() + '_constraint', Type = Gaussian
+                                   , Parameters = [self._timeResSigmaSF2
+                                                   , ConstVar(Name = 'tres_sfquad_constraint_mean'
+                                                              , Value = self._timeResSigmaSF2.getVal())
+                                                   , ConstVar(Name = 'tres_sfquad_constraint_sigma'
+                                                              , Value = self._timeResSigmaSF2.getError())
+                                                   ]
+                                   )
+                               )
+            parameters = [self._time, self._timeResMean, self._timeResSigmaQuad]
+        else:
+            parameters = [self._time, self._timeResMean, self._timeResSigma,
+                          self._timeResMeanSF, self._timeResSigmaSF]
         
         Name =  kwargs.pop( 'Name', 'timeResModelPaper2012' )
         cache = kwargs.pop( 'Cache', True )
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
-        if useOffset:
-            parameters = [self._time, self._timeResMean, self._timeResSigmaLinear]
-        else:
-            parameters = [self._time, self._timeResMean, self._timeResSigma,
-                          self._timeResMeanSF, self._timeResSigmaSF]
         TimeResolution.__init__(  self
                                 , Model =  ResolutionModel(  Name = Name
                                                            , Type = GaussModel
@@ -362,8 +401,6 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                                 , Constraints = constraints
                                 , Cache = cache
                                )
-
-        from ROOT import RooArgSet
 
 class Gamma_Sigmat( _util_parse_mixin ) :
     def pdf(self) :

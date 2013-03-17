@@ -1215,12 +1215,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
                 timeResArgs['timeResMeanConstraint'] = constrTResScale
-            elif 'stoffset' in timeResType.lower():
+            elif 'linear' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
                 timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.30, Error = 0.06, MinMax = ( 0.1, 5. ) )
                 ## timeResArgs['timeResSigmaSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1.30 )
                 timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0065, Error = 0.001
                                                          , MinMax = ( 0.00001, 0.1 ) )
+                ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
+                timeResArgs['timeResSFOffset'] = True
+            elif 'quad' in timeResType.lower():
+                timeResArgs['timeResMeanConstraint'] = 'constrain'
+                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = -0.004, Error = 0.002)
+                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.95, Error = 0.1, MinMax = ( 0.1, 5. ) )
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -0.011, Error = 0.003 )
                 ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
                 timeResArgs['timeResSFOffset'] = True
             else :

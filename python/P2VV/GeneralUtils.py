@@ -401,6 +401,9 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     yAxis = obsFrame.GetYaxis()
     _P2VVPlotStash.append(obsFrame)
 
+    frames = []
+    frames.append(obsFrame)
+
     # plot data
     if data :
         rooPlot = data.plotOn( obsFrame, Name = 'data', **dataOpts )
@@ -517,7 +520,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         yAxis.SetLabelSize(0.13)
         yAxis.SetLabelOffset(0.01)
         _P2VVPlotStash.append(residFrame)
-
+        frames.append(residFrame)
         # set minimum for observable's frame if there is a log scale for y
         #if logy : obsFrame.SetMinimum(0.1)
 
@@ -601,7 +604,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         obsFrame.Draw()
 
     canv.Update()
-    return canv
+    return frames
 
 
 # function for plotting a PDF in KK mass bins
@@ -1558,22 +1561,20 @@ class SData( object ) :
         if isinstance( self._pdf._var, RooSimultaneous ) and kwargs.pop( 'Simultaneous', True ) :
             # split data set in categories of the simultaneous PDF
             splitCat        = self._pdf.indexCat()
-            splitCatIter    = splitCat.typeIterator()
             splitData       = self._inputData.split(splitCat)
             self._sPlots    = [ ]
             self._sDataSets = [ ]
-            splitCatState   = splitCatIter.Next()
             sDataVars       = None
             from ROOT import RooFormulaVar
-            while splitCatState :
+            for splitCatState in splitCat:
                 # calculate sWeights per category
                 cat = splitCatState.GetName()
                 data = splitData.FindObject(cat)
 
-                origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if cat in par.GetName() ]
+                origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if par.GetName().endswith(cat) ]
                 self._sPlots.append(  RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat
                                                      , data, self._pdf.getPdf(cat)
-                                                     , RooArgList( par._var for par in self._yields if cat in par.GetName() ) )
+                                                     , RooArgList( par._var for par in self._yields if par.GetName().endswith(cat) ) )
                                    )
                 self._sDataSets.append( self._sPlots[-1].GetSDataSet() )
 
@@ -1582,7 +1583,7 @@ class SData( object ) :
                 for vals in origYieldVals : print '%s = %.2f +/- %.2f  ' % vals,
                 print '\n    new:     ',
                 for par in self._yields :
-                    if cat in par.GetName() : print '%s = %.2f +/- %.2f  ' % ( par.GetName(), par.getVal(), par.getError() ),
+                    if par.GetName().endswith(cat) : print '%s = %.2f +/- %.2f  ' % ( par.GetName(), par.getVal(), par.getError() ),
                 print
 
                 # add column for splitting category/categories (was removed when data set was split)
@@ -1604,7 +1605,7 @@ class SData( object ) :
                                                 , RooArgList( self._sDataSets[-1].get().find( par.GetName() + '_sw' ) ) )
                                 , RooFormulaVar( 'L_' + par.GetName()[ : par.GetName().find(cat) - 1 ], '', '@0'
                                                 , RooArgList( self._sDataSets[-1].get().find( 'L_' + par.GetName() ) ) )
-                               ) for par in self._yields if cat in par.GetName()
+                               ) for par in self._yields if par.GetName().endswith(cat)
                              ]
 
                 for weight, pdfVal in weightVars :
@@ -1618,8 +1619,6 @@ class SData( object ) :
                         if cat in par.GetName() :
                             sDataVars.remove( sDataVars.find( par.GetName() + '_sw' ) )
                             sDataVars.remove( sDataVars.find( 'L_' + par.GetName()  ) )
-
-                splitCatState = splitCatIter.Next()
 
             # merge data sets from categories
             from ROOT import RooDataSet

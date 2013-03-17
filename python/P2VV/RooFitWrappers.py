@@ -1,6 +1,12 @@
 from P2VV.RooFitDecorators import *
 from functools import wraps
 
+## Add this in case a reflex dictionary is used.
+from ROOT import gSystem
+gSystem.Load('libCintex')
+from ROOT import Cintex
+Cintex.Enable()
+
 def __check_req_kw__( name, kwargs ) :
     if not name in kwargs : raise KeyError( 'Must provide kw argument %s' % name )
 def __check_exists_already__( self ) :
@@ -305,8 +311,8 @@ class BinningCategory( Category ) :
             if type(data) not in [ list, tuple ] : data = [ data ]
             bins = obs.getBinning(binning)
             for d in data:
-                obs = d.get().find(obs.GetName())
-                obs.setBinning(bins)
+                o = d.get().find(obs.GetName())
+                o.setBinning(bins)
         
         if 'CatTypeName' in kwargs:
             binCat = RooBinningCategory(Name, Name, obs, binning, kwargs.pop('CatTypeName'))
@@ -483,6 +489,23 @@ class LinearVar(RooObject) :
             args[k] = v if type(v) == str else v.GetName()
         self._declare("LinearVar::%(Name)s(%(Observable)s,%(Slope)s,%(Offset)s )" % args )
         self._init(args['Name'], 'RooLinearVar')
+        for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
+
+class PolyVar(RooObject) :
+    def __init__(self,**kwargs):
+        # construct factory string on the fly...
+        __check_req_kw__('Name', kwargs)
+        __check_req_kw__('Observable', kwargs )
+        __check_req_kw__('Coefficients', kwargs)
+        __check_name_syntax__(kwargs['Name'])
+        args = {}
+        for k in ['Name', 'Observable']:
+            v = kwargs.pop(k)
+            args[k] = v if type(v) == str else v.GetName()
+        args['Coefficients'] = '{%s}' % ','.join([v if type(v) == str else v.GetName()
+                                                  for v in kwargs.pop('Coefficients')])
+        self._declare("PolyVar::%(Name)s(%(Observable)s,%(Coefficients)s)" % args )
+        self._init(args['Name'], 'RooPolyVar')
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
 class P2VVAngleBasis (RooObject) :

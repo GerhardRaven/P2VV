@@ -88,7 +88,7 @@ class ShapeBuilder(object):
         for key, c in self.__components[Weights].iteritems():
             sdata = splot.data(c.GetName())
 
-            if key in Reweigh['Data']:
+            if 'Data' in Reweigh and key in Reweigh['Data']:
                 sdata = self.__reweigh(sdata, Component = key, **Reweigh)
 
             sdata = self.__ws.put(sdata)

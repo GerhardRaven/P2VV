@@ -22,7 +22,7 @@ m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax =
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
 mphi = RealVar('mdau2', Title = 'phi mass', Unit = 'MeV', Observable = True, MinMax = (990, 1050))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
-
+zerr = RealVar('B_s0_bpv_zerr', Title = 'Best PV Z error', Unit = 'mm', Observable = True, MinMax = (0, 1))
 from math import pi
 cpsi = RealVar('helcosthetaK', Title = 'cpsi', Observable = True, MinMax = (-1, 1))
 ctheta = RealVar('helcosthetaL', Title = 'ctheta', Observable = True, MinMax = (-1, 1))
@@ -40,7 +40,7 @@ hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0},
 hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
-observables = [t, m, mpsi, mphi, st, excl_biased, selected,
+observables = [t, m, mpsi, mphi, st, excl_biased, selected, zerr,
                hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased] + angles
                
 project_vars = [st, excl_biased]
@@ -74,13 +74,15 @@ psi_background = Component('psi_background', (bkg_m.pdf(), psi_m), Yield= (20000
 from P2VV.GeneralUtils import readData
 tree_name = 'DecayTree'
 if dataSample == '2011':
-    input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130117_MagDownMagUp.root'
+    ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_20130207.root'
 elif dataSample == '2012':
     input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhi_2012_ntupleB_20121212.root'
 else:
     raise RuntimeError
 
-cut = 'runNumber > 0 && sel == 1 && sel_cleantail == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+## cut = 'runNumber > 0 && sel == 1 && sel_cleantail == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && hlt2_biased == 1 && '
+cut = 'runNumber > 0 && sel == 1 && sel_cleantail == 1 && hlt1_unbiased_dec == 1 && hlt2_unbiased == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
 data = readData(input_file, tree_name, ntupleCuts = cut,
                 NTuple = True, observables = observables)
@@ -89,7 +91,7 @@ data = readData(input_file, tree_name, ntupleCuts = cut,
 signal = Component('signal', (sig_m.pdf(), psi_m), Yield = (21000,10000,50000))
 
 ## Build PDF
-mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi, ), Name='pdf')
+mass_pdf = buildPdf(Components = (psi_background, background), Observables = (mpsi, ), Name = 'mass_pdf')
 mass_pdf.Print("t")
 
 ## Fit options
@@ -115,15 +117,18 @@ for (p,o) in zip(mass_canvas.pads(len(obs)), obs):
          , frameOpts = dict(Title = dataSample)
          , plotResidHist = True
          , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                          ##, 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                          , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                          , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                          ##, 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                           }
          )
 
 for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
 splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
+##sig_sdata = splot.data('signal')
 psi_sdata = splot.data('psi_background')
 bkg_sdata = splot.data('background')
+
+assert(False)
 
 # Make a double Lognormal PDF
 median  = RealVar('median',   Unit = 'ps', Value = 0.03, MinMax = (0.0001, 0.12))
@@ -141,10 +146,10 @@ ln = SumPdf(Name = 'ln', PDFs = [ln1, ln2], Yields = {'ln2' : frac})
 result = ln.fitTo(psi_sdata, **fitOpts)
 
 # Plot
-canvas = TCanvas('canvas', 'canvas', 500, 500)
+canvas = TCanvas('canvas', 'canvas', 900, 600)
 p = canvas.cd(1)
 plot(p, st, pdf = ln, data = psi_sdata
-     , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-     , pdfOpts  = dict(LineWidth = 2)
+     , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 60)
+     , pdfOpts  = dict(LineWidth = 4)
      )
 

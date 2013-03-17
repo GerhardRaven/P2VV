@@ -1,16 +1,17 @@
 from ROOT import TMatrixT
 from math import sqrt
 
-def propagateScaleFactor(result):
+def propagateScaleFactor(result, suffix = ''):
     fpf = result.floatParsFinal()
-    indices = [fpf.index(n) for n in 'timeResFrac2', 'timeResSigmaSF_1', 'timeResSigmaSF_2']
+    names = [n + suffix for n in ['timeResFrac2', 'timeResSigmaSF_1', 'timeResSigmaSF_2']]
+    indices = [fpf.index(n) for n in names]
     cov = result.covarianceMatrix()
     C = TMatrixT('double')(3, 3)
     J = TMatrixT('double')(1, 3)
     
-    frac = fpf.find('timeResFrac2').getVal()
-    sf1 = fpf.find('timeResSigmaSF_1').getVal()
-    sf2 = fpf.find('timeResSigmaSF_2').getVal()
+    frac = fpf.find('timeResFrac2' + suffix).getVal()
+    sf1 = fpf.find('timeResSigmaSF_1' + suffix).getVal()
+    sf2 = fpf.find('timeResSigmaSF_2' + suffix).getVal()
         
     # Make our own small covariance matrix
     for i, k in enumerate(indices):

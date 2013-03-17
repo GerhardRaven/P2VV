@@ -3,7 +3,7 @@ from math import exp
 
 # Calculate dilution
 __keep = []
-def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract = [], raw = False):
+def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False):
 
     assert(t_diff.getMin() < 0)
 
@@ -45,7 +45,7 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
 
         ## Weight using sigmat
         if res_var:
-            w *= exp(dms * res_var.getVal() ** 2)
+            w *= (exp(dms * res_var.getVal() ** 2) ** 2)
 
         r = data_histo.Fill(value, w)
 
@@ -59,22 +59,25 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
     from ROOT import RooFit
     from P2VV.RooFitWrappers import buildPdf
 
-    signal_yields = [s.getYield().GetName() for s in signal]
+    signal_yields = [p for p in result.floatParsFinal() if any([p.GetName().startswith(s.getYield().GetName()) for s in signal])]
     data_int = data_histo.Integral()
 
     # Set the correct yields in the pdf
     # Build the PDF used for subtraction.
     subtract_pdf = buildPdf(Components = subtract, Observables = (t_diff,),
                             Name='subtract_%s_pdf' % '_'.join(c.GetName() for c in subtract))    
+
+    subtract_yields = {}
+    for b in subtract:
+        subtract_yields[b] = [p for p in result.floatParsFinal() if p.GetName().startswith(b.getYield().GetName())]
+
     for c in subtract:
         y = c.getYield()
-        result_yield = result.floatParsFinal().find(y.GetName())
-        comp_yield = (result_yield.getVal(), result_yield.getError())
+        result_yield = sum([cy.getVal() for cy in subtract_yields[c]])
         pdf_yield = subtract_pdf.getVariables().find(y.GetName())
         if not pdf_yield:
             break
-        pdf_yield.setVal(comp_yield[0])
-        pdf_yield.setError(comp_yield[1])
+        pdf_yield.setVal(result_yield)
         
     subtract_histo = subtract_pdf.createHistogram(subtract_pdf.GetName().replace('_pdf', '_histo'), t_diff._target_(),
                                                   RooFit.Binning(dilution_binning),
@@ -82,9 +85,8 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
 
     # Calculate appropriate scale factor. Scale histograms such that the ration
     # of their integrals match the ratio of wpv / total yields
-    subtract_yields = [b.getYield().GetName() for b in subtract]
-    n_subtract = sum([result.floatParsFinal().find(b).getVal() for b in subtract_yields])
-    total = sum([result.floatParsFinal().find(s).getVal() for s in signal_yields] + [n_subtract])
+    n_subtract = sum([b.getVal() for yields in subtract_yields.itervalues() for b in yields])
+    total = sum([s.getVal() for s in signal_yields] + [n_subtract])
     sub_int = subtract_histo.Integral()
     scale =  (data_int * n_subtract) / (sub_int * total)
     subtract_histo.Scale(scale)
@@ -124,4 +126,30 @@ def dilution(t_diff, data, sigmat = None, result = None, signal = [], subtract =
     # Calculate the dilution using Wouter's macro
     from ROOT import sigmaFromFT
     D = sigmaFromFT(ft_histo, 17.7)
+    return D
+
+def simple_dilution(t, data, sigmat, sfs):
+    time_var = data.get().find(t.GetName())
+    res_var = data.get().find(sigmat.GetName())
+    
+    weighted = data.isWeighted()
+    dms = -17.7 ** 2 / 2
+    
+    ## Total number of events
+    n = 0
+    D = 0
+    for i in range(data.numEntries()):
+        r = data.get(i)
+        value = time_var.getVal()
+        ## External weight
+        if weighted:
+            w = data.weight()
+        else:
+            w = 1.
+        
+        n += w
+        
+        ## Weight using sigmat
+        D += w * sum([f * exp(dms * (sf * res_var.getVal()) ** 2) for f, sf in sfs])
+    D /= n
     return D
