@@ -19,7 +19,7 @@ pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 corrSFitErr             = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
-randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
+randomParVals           = ( ) # ( 2., 12345 )
 
 plotsFile = 'plots/paper2012_SFit.ps'
 parFileIn  = 'initialValues.par'
@@ -28,6 +28,7 @@ parFileOut = '' #'initialValues.par'
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
     pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20130306_testGL.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDown.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagUp.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_rand0.root'
@@ -103,10 +104,12 @@ pdfConfig['multiplyByAngEff']     = 'weights'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
+pdfConfig['sigmatRange']          = ( 0.0001, 0.12 ) # ( 0.0001, 0.12 )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                      , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
+#pdfConfig['SWaveAmplitudeValues'] = ( )
 pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: True
@@ -174,10 +177,12 @@ if not readData or manualTagCatBins :
 pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
                                     if pdfConfig['timeEffType'] == 'fit' else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816_02.root'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504_unitAcceptance.root'
 #pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+#pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted_02'
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
@@ -398,8 +403,8 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 
 #pdfBuild['lifetimeParams'].parameter('Gamma').setVal(0.72)
 
-#ws['f_S'].setVal(0.026)
-#ws['ASOddPhase'].setVal(0.03)
+#ws['f_S'].setVal(0.)
+#ws['ASOddPhase'].setVal(0.)
 #ws['f_S'].setConstant()
 #ws['ASOddPhase'].setConstant()
 
@@ -431,7 +436,7 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 
 #ws['Gamma'].setVal(0.683)
 #ws['dGamma'].setVal(0.068)
-#ws['dM'].setVal(17.85)
+#ws['dM'].setVal(17.500)   #  17.600  17.667  17.700  17.768  17.800
 #ws['A0Mag2'].setVal(0.534)
 #ws['AperpMag2'].setVal(0.238)
 #ws['f_S'].setVal(0.)
@@ -638,7 +643,7 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
-    from P2VV.Imports import parNames, parValues#, parValuesPHSPAcc as parValues
+    from P2VV.Imports import parNames, parValues #parValuesUnbMagDown as parValues
     print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
@@ -1352,12 +1357,13 @@ sums = {
 }
 
 from math import exp
+DelmVal = 17.667
 for varSet in tagData :
   weight = tagData.weight()
   sums['numEv'] += weight
 
   sigmat = 1.45 * varSet.getRealValue('sigmat')
-  dilResSq = exp( - 17.6**2 * sigmat**2 )
+  dilResSq = exp( -DelmVal**2 * sigmat**2 )
   dilRes   = sqrt(dilResSq)
   sums['dilResAll']  += weight * dilRes
   sums['dilRes2All'] += weight * dilResSq
@@ -1475,6 +1481,9 @@ print 'Comb. <eff * dilTot2>: %.4f%% (%.4f%%)'   % (  sums['dilTot2Comb'] / sums
                                                     , sums['dilTot2CombExcl'] / sums['numEv'] * 100.
                                                    )
 print 'All   <eff * dilRes2>: %.4f\n'            % ( sums['dilRes2All'] / sums['numEv'] )
+
+from math import log
+print 'effective decay time resolution: %.4f\n' % (  sqrt( -log( sums['dilRes2All'] / sums['numEv'] ) / DelmVal**2 ) )
 
 nEv = 0.
 nBB = 0.

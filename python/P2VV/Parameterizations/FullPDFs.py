@@ -212,6 +212,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
                                         , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
         self['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
         self['lifetimeRange']        = ( 0.3, 14. )
+        self['sigmatRange']          = ( 0.0001, 0.12 ) # > 0.0075
 
         self['sameSideTagging']    = True
         self['conditionalTagging'] = True
@@ -331,8 +332,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
         CSPValues         = pdfConfig.pop('CSPValues')
         lifetimeRange     = pdfConfig.pop('lifetimeRange')
+        sigmatRange       = pdfConfig.pop('sigmatRange')
 
+        if not SWaveAmpVals : SWaveAmpVals = ( [ ], [ ] )
         assert lifetimeRange[0] > -5. and lifetimeRange[1] < 50. and lifetimeRange[1] > lifetimeRange[0]
+        assert sigmatRange[0] > 0. and sigmatRange[1] < 1. and sigmatRange[1] > sigmatRange[0]
 
         self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
         iTagStates = pdfConfig.pop('iTagStates')    # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
@@ -420,9 +424,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                      )
 
         # variables in PDF (except for tagging category)
-        time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = lifetimeRange
+        time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 1., MinMax = lifetimeRange
                        , Ranges = dict( Bulk = ( None, 5. ) ), nBins = numTimeBins )
-        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.10, MinMax = (0.0001, 0.12) # > 0.0075
+        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.05, MinMax = sigmatRange
                           , nBins = numTimeResBins )
         timeRes.setBins( numTimeResBins, 'cache' )
 
