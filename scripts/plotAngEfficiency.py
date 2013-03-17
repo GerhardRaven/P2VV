@@ -30,14 +30,18 @@ yLabels = [  (  '#varepsilon_{#Omega}(cos#kern[0.3]{#theta_{K}}, 0, 0) / #LT#var
               , '#varepsilon_{#Omega}(0, cos#kern[0.3]{#theta_{#mu}}, 0) / #LT#varepsilon_{#Omega}#GT'
               , '#varepsilon_{#Omega}(0, 0, #varphi_{h}) / #LT#varepsilon_{#Omega}#GT'
              )
-           , (  '#int d_{}cos#theta_{#mu} d#varphi_{h} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
-              , '#int d_{}cos#theta_{K} d#varphi_{h} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
-              , '#int d_{}cos#theta_{K} dcos#theta_{#mu} #varepsilon_{#Omega}(#Omega) / (4 #LT#varepsilon_{#Omega}#GT)'
-             ) if not transAngles else\
-             (  '#int d_{}cos#kern[0.3]{#theta_{tr}} d#varphi_{tr} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
-              , '#int d_{}cos#kern[0.3]{#psi_{tr}} d#varphi_{tr} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
-              , '#int d_{}cos#kern[0.3]{#psi_{tr}} dcos#kern[0.3]{#theta_{tr}} #varepsilon_{#Omega}(#Omega) / (4 #LT#varepsilon_{#Omega}#GT)'
+           , (  'Scaled acceptance integral'
+              , 'Scaled acceptance integral'
+              , 'Scaled acceptance integral'
              )
+           #, (  '#int d_{}cos#theta_{#mu} d#varphi_{h} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
+           #   , '#int d_{}cos#theta_{K} d#varphi_{h} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
+           #   , '#int d_{}cos#theta_{K} dcos#theta_{#mu} #varepsilon_{#Omega}(#Omega) / (4 #LT#varepsilon_{#Omega}#GT)'
+           #  ) if not transAngles else\
+           #  (  '#int d_{}cos#kern[0.3]{#theta_{tr}} d#varphi_{tr} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
+           #   , '#int d_{}cos#kern[0.3]{#psi_{tr}} d#varphi_{tr} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
+           #   , '#int d_{}cos#kern[0.3]{#psi_{tr}} dcos#kern[0.3]{#theta_{tr}} #varepsilon_{#Omega}(#Omega) / (4 #LT#varepsilon_{#Omega}#GT)'
+           #  )
           ]
 
 ws = RooObject( workspace = 'workspace' ).ws()
@@ -122,7 +126,7 @@ for ( pad, angle, xTitle, yTitle, yScale )\
          , xTitle       = xTitle
          , yTitle       = yTitle
          , yScale       = yScale
-         , yTitleOffset = 0.9
+         , yTitleOffset = 1.0
          , frameOpts    = dict( Title = angle.GetTitle() )
          , pdfOpts      = dict( LineColor = kBlue, LineWidth = 4 )
          #, addPDFsOpts  = [ dict( LineColor = kRed, LineWidth = 4 ), dict( LineColor = kGreen + 2, LineWidth = 4 ) ]
