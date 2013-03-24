@@ -468,13 +468,13 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         plotPDFWithSlices( pdf, obsFrame, 'pdf', **drawOpts )
 
         # draw data after drawing the PDF
-        if data and 'Asymmetry' not in pdfOpts : obsFrame.drawAfter( 'pdf',  'data' )
+        if data and 'Asymmetry' not in pdfOpts : obsFrame.drawAfter( 'data', 'pdf' )
 
     # plot additional PDFs
     if addPDFs :
         for num, addPDF in enumerate(addPDFs) :
             addPDF.plotOn( obsFrame, Name = 'addPDF' + str(num), **(addPDFsOpts[num]) )
-            if data and 'Asymmetry' not in addPDFsOpts[num] : obsFrame.drawAfter( 'addPDF' + str(num), 'data' )
+            if data and 'Asymmetry' not in addPDFsOpts[num] : obsFrame.drawAfter( 'data', 'addPDF' + str(num) )
 
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
@@ -1031,6 +1031,7 @@ def plotSWavePhases( **kwargs ) :
         from ROOT import gStyle, TLegend
         leg = TLegend( 0.67, 0.46, 0.93, 0.66 )
         leg.SetTextFont( gStyle.GetTextFont() )
+        leg.SetTextSize(0.072)
         leg.SetMargin(0.45)
         leg.AddEntry( deltaSGraphs[0], '#Delta#Gamma_{s} > 0', 'LPE' )
         leg.AddEntry( deltaSGraphs[1], '#Delta#Gamma_{s} < 0', 'LPE' )
@@ -1042,13 +1043,14 @@ def plotSWavePhases( **kwargs ) :
 
     if LHCbText1 or LHCbText2 :
         from ROOT import TPaveText
-        LHCbText = TPaveText( 0.15, 0.77 if LHCbText1 and LHCbText2 else 0.84, 0.51, 0.93, 'NDC' )
+        LHCbText = TPaveText( 0.17, 0.75 if LHCbText1 and LHCbText2 else 0.82, 0.48, 0.90, 'BRNDC' )
         if LHCbText1 : LHCbText.AddText(LHCbText1)
         if LHCbText2 : LHCbText.AddText(LHCbText2)
         LHCbText.SetShadowColor(0)
         LHCbText.SetFillStyle(0)
         LHCbText.SetBorderSize(0)
         LHCbText.SetTextAlign(12)
+        LHCbText.SetTextSize(0.072)
         _P2VVPlotStash.append(LHCbText)
     else :
         LHCbText = None
