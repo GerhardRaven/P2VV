@@ -22,7 +22,7 @@ addFactors = [  ( ) ]#, ( f10, f11 ), ( f20, f21 * f2Sc ) ]
 from P2VV.Load import P2VVLibrary, LHCbStyle
 from P2VV.RooFitWrappers import RooObject
 from ROOT import TCanvas, gStyle
-gStyle.SetEndErrorSize(4)
+#gStyle.SetEndErrorSize(4)
 
 xLabels = ( 'cos#kern[0.1]{#theta_{K}}', 'cos#kern[0.1]{#theta_{#mu}}', '#varphi_{h} [rad]'  ) if not transAngles else\
           ( 'cos#kern[0.3]{#psi_{tr}}',  'cos#kern[0.3]{#theta_{tr}}',  '#varphi_{tr} [rad]' )
@@ -99,12 +99,12 @@ momFunc2.getVariables().Print('v')
 
 # LHCb label
 from ROOT import TPaveText
-LHCbText = TPaveText( 0.31, 0.83, 0.67, 0.92, 'NDC' )
+LHCbText = TPaveText( 0.33, 0.81, 0.68, 0.89, 'BRNDC')
 LHCbText.AddText(LHCbLabel)
-LHCbText.SetShadowColor(0)
-LHCbText.SetFillStyle(0)
-LHCbText.SetBorderSize(0)
+LHCbText.SetFillColor(0)
 LHCbText.SetTextAlign(12)
+LHCbText.SetTextSize(0.072)
+LHCbText.SetBorderSize(0)
 
 # plot efficiency function slices
 from P2VV.GeneralUtils import plot
@@ -121,15 +121,19 @@ for ( pad, angle, xTitle, yTitle, yScale )\
            , [ ( 0.84, 1.08 ), ( 0.96, 1.20 ), ( 0.86, 1.10 ) ]
           ) :
     pad.SetLeftMargin(0.28)
+    pad.SetRightMargin(0.05)
+    pad.SetBottomMargin(0.18)
+    pad.SetTopMargin(0.05)
     plot(  pad, angle, None, momFunc
          #, addPDFs      = [ momFunc1, momFunc2 ]
          , xTitle       = xTitle
          , yTitle       = yTitle
          , yScale       = yScale
+         , xTitleOffset = 1.1
          , yTitleOffset = 1.0
          , frameOpts    = dict( Title = angle.GetTitle() )
-         , pdfOpts      = dict( LineColor = kBlue, LineWidth = 4 )
-         #, addPDFsOpts  = [ dict( LineColor = kRed, LineWidth = 4 ), dict( LineColor = kGreen + 2, LineWidth = 4 ) ]
+         , pdfOpts      = dict( LineColor = kBlue, LineWidth = 3 )
+         #, addPDFsOpts  = [ dict( LineColor = kRed, LineWidth = 3 ), dict( LineColor = kGreen + 2, LineWidth = 3 ) ]
         )
     LHCbText.Draw()
 
@@ -153,14 +157,18 @@ for ( pad, func, angle, xTitle, yTitle, yScale, norm )\
            , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
           ) :
     pad.SetLeftMargin(0.28)
+    pad.SetRightMargin(0.05)
+    pad.SetBottomMargin(0.18)
+    pad.SetTopMargin(0.05)
     plot(  pad, angle, None, func
          #, addPDFs      = [ momFuncAdd ]
          , xTitle       = xTitle
          , yTitle       = yTitle
          , yScale       = yScale
+         , xTitleOffset = 1.1
          , yTitleOffset = 1.0
          , frameOpts    = dict( Title = angle.GetTitle() )
-         , pdfOpts      = dict( LineColor = kBlue, LineWidth = 4, Normalization = norm )
+         , pdfOpts      = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
          #, addPDFsOpts  = [ dict( LineColor = kRed ) ]
         )
     LHCbText.Draw()
@@ -191,13 +199,17 @@ if dataFile :
                , numBins
               ) :
         pad.SetLeftMargin(0.28)
+        pad.SetRightMargin(0.05)
+        pad.SetBottomMargin(0.18)
+        pad.SetTopMargin(0.05)
         plot(  pad, angle, data, None
              , xTitle       = xTitle
              , yTitle       = yTitle
              , yScale       = yScale
+             , xTitleOffset = 1.1
              , yTitleOffset = 1.0
              , frameOpts    = dict( Title = angle.GetTitle(), Bins = nBins )
-             , dataOpts     = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.9, LineWidth = 3
+             , dataOpts     = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.8, LineWidth = 3
                                    , Rescale = norm * float(nBins) / ( angle.getMax() - angle.getMin() ) )
             )
         LHCbText.Draw()
@@ -218,15 +230,19 @@ if dataFile :
                , numBins
               ) :
         pad.SetLeftMargin(0.28)
+        pad.SetRightMargin(0.05)
+        pad.SetBottomMargin(0.18)
+        pad.SetTopMargin(0.05)
         plot(  pad, angle, data, func
              , xTitle       = xTitle
              , yTitle       = yTitle
              , yScale       = yScale
+             , xTitleOffset = 1.1
              , yTitleOffset = 1.0
              , frameOpts    = dict( Title = angle.GetTitle(), Bins = nBins )
-             , dataOpts     = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.9, LineWidth = 3
+             , dataOpts     = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.8, LineWidth = 3
                                    , Rescale = norm * float(nBins) / ( angle.getMax() - angle.getMin() ) )
-             , pdfOpts      = dict( LineColor = kBlue, LineWidth = 4, Normalization = norm )
+             , pdfOpts      = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
             )
         LHCbText.Draw()
 
