@@ -834,7 +834,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
                          , self._dataSets['data'].get().find( hlt2B.GetName() )
                         ]
-            if hasattr( self, '_KKMassCat' ) and self._KKMassCat.numTypes() > 1 :
+            ## if hasattr( self, '_KKMassCat' ) and self._KKMassCat.numTypes() > 1 :
+            if hasattr( self, '_KKMassCat' ):
                 splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
             splitCats = [ cat for cat in splitCats if cat ]
             self._dataSets['sigSWeightData'].Print()
@@ -1201,31 +1202,39 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs = dict(  time = time
                                , timeResSigma = timeRes
-                               , timeResSFConstraint = constrTResScale
                                , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
                               )
             if 'nomean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1., Error = 0.06, MinMax = ( 0.1, 5. ) )
+                timeResArgs['timeResSFConstraint'] = constrTResScale
             elif 'constmean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
                 timeResArgs['timeResMeanConstraint'] = constrTResScale
-            elif 'linear' in timeResType.lower():
+                timeResArgs['timeResSFConstraint'] = constrTResScale
+            elif 'stlinear' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
-                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.30, Error = 0.06, MinMax = ( 0.1, 5. ) )
+                timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.26, Error = 0.06, MinMax = (0.1, 5 ), Constant = True)
                 ## timeResArgs['timeResSigmaSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1.30 )
-                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0065, Error = 0.001
-                                                         , MinMax = ( 0.00001, 0.1 ) )
+                timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0055,
+                                                         Error = 0.0005, Constant = True)
                 ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
-                timeResArgs['timeResSFOffset'] = True
-            elif 'quad' in timeResType.lower():
+                timeResArgs['timeResSFModel'] = 'linear'
+            elif 'stquad' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
-                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = -0.004, Error = 0.002)
-                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.95, Error = 0.1, MinMax = ( 0.1, 5. ) )
-                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -0.011, Error = 0.003 )
-                ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
-                timeResArgs['timeResSFOffset'] = True
+                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0169, Error = 0.000149, MinMax = (0.001, 0.1))
+                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.244, Error = 0.0147, MinMax = ( 0.1, 5. ))
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -7.828, Error = 1.523, MinMax = (-11, -1))
+                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 2.225e-08,
+                                ('timeResSigmaOffset', 'timeResSigmaSF'): 5.087e-07,
+                                ('timeResSigmaOffset', 'timeResSigmaSF2'): -0.0001433,
+                                ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002148,
+                                ('timeResSigmaSF', 'timeResSigmaSF2'): 0.000655,
+                                ('timeResSigmaSF2', 'timeResSigmaSF2'): 2.32}
+                timeResArgs['Covariance'] = covariance
+                timeResArgs['timeResSFModel'] = 'quadratic'
             else :
                 timeResArgs['timeResMeanConstraint'] = constrTResScale
 
@@ -1233,8 +1242,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         elif timeResType == '3Gauss' :
             from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution( time = time
-                                                , timeResSFConstraint = constrTResScale )
+            self._timeResModel = TimeResolution( time = time, timeResSFConstraint = constrTResScale)
 
         else :
             from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution

@@ -314,6 +314,63 @@ class Signal_PsiMass ( MassPdf ) :
                                                         getattr(self, '_%smpsi_alpha' % self._prefix),
                                                         getattr(self, '_%smpsi_n' % self._prefix)]))
 
+class Signal_PsiMass ( MassPdf ) :
+    def __init__(self, mass, **kwargs ) :
+        from ROOT import RooCBShape as CrystalBall
+        from P2VV.RooFitWrappers import Pdf
+        self._prefix = kwargs.pop("Prefix", "")
+
+        self._parseArg( '%smpsi_mean' % self._prefix,  kwargs, Title = 'J/psi mass',  Unit = 'MeV', Value = 3097, MinMax = (3090, 3105))
+        self._parseArg( '%smpsi_sigma' % self._prefix, kwargs, Title = 'J/psi mass resolution',  Unit = 'MeV', Value = 14, MinMax = (8, 20))
+        self._parseArg( '%smpsi_alpha' % self._prefix, kwargs, Title = 'J/psi mass CB alpha', Unit = '', Value = 1.90, MinMax = (1, 3))
+        self._parseArg( '%smpsi_n' % self._prefix,     kwargs, Title = 'J/psi mass CB n',  Unit = '', Value = 2, MinMax = (0.1, 5), Constant = True)
+        MassPdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name','%sSignal_PsiMass' % self._prefix)
+                                        , Type = CrystalBall
+                                        , Parameters = [mass, getattr(self, '_%smpsi_mean' % self._prefix),
+                                                        getattr(self, '_%smpsi_sigma' % self._prefix),
+                                                        getattr(self, '_%smpsi_alpha' % self._prefix),
+                                                        getattr(self, '_%smpsi_n' % self._prefix)]))
+
+class DoubleCB_Psi_Mass ( MassPdf ) :
+    def __init__(self, mass, **kwargs ) :
+        self._prefix = kwargs.pop( 'Prefix', '' )
+        self._parseArg( '%smpsi_mean' % self._prefix, kwargs, Title = 'psi Mass core', Unit = 'MeV/c^2'
+                       , Value = 3100., Error = 0.05, MinMax = ( 3050., 3150. ) )
+        self._parseArg( '%smpsi_sigma_1' % self._prefix,  kwargs, Title = 'psi Mass resolution 1', Unit = 'MeV/c^2'
+                       , Value = 6.3,   Error = 0.1,  MinMax = ( 0.1, 20. ) )
+        self._parseArg( '%smpsi_sigma_sf' % self._prefix, kwargs, Title = 'psi Mass resolution 2:1 scale factor'
+                       , Value = 2.3,   Error = 0.1,  MinMax = ( 0.1, 5. ) )
+        self._parseArg( '%smpsi_alpha_1' % self._prefix,  kwargs, Title = 'psi Mass tail parameter 1'
+                       , Value = 2.,    Error = 15.,  MinMax = ( 0.1, 30. ) )
+        self._parseArg( '%smpsi_alpha_sf' % self._prefix, kwargs, Title = 'psi Mass tail parameter 2:1 scale factor'
+                       , Value = 1.,    ObjectType = 'ConstVar' )
+        self._parseArg( '%smpsi_n_1' % self._prefix,      kwargs, Title = 'psi Mass tail order 1'
+                       , Value = 2.,    ObjectType = 'ConstVar' )
+        self._parseArg( '%smpsi_n_2' % self._prefix,      kwargs, Title = 'psi Mass tail order 2'
+                       , Value = 2.,    ObjectType = 'ConstVar' )
+        self._parseArg( '%smpsi_frac' % self._prefix,     kwargs, Title = 'psi mass fraction first CB'
+                       , Value = 0.8,   Error = 0.03, MinMax = ( 0., 1. ) )
+
+        from ROOT import RooCBShape as CrystalBall
+        from P2VV.RooFitWrappers import Pdf, FormulaVar, SumPdf
+        CB1 = Pdf(Name ='%smpsi_1' % self._prefix, Type = CrystalBall,
+                  Parameters = (mass, getattr(self, '_%smpsi_mean' % self._prefix),
+                                getattr( self, '_%smpsi_sigma_1' % self._prefix),
+                                getattr( self, '_%smpsi_alpha_1' % self._prefix ),
+                                getattr( self, '_%smpsi_n_1' % self._prefix )))
+        CB2 = Pdf(Name = '%smpsi_2' % self._prefix, Type = CrystalBall,
+                  Parameters = (mass, getattr(self, '_%smpsi_mean' % self._prefix),
+                                  FormulaVar('_%smpsi_sigma_2' % self._prefix, '@0*@1',
+                                             (getattr(self, '_%smpsi_sigma_sf' % self._prefix),
+                                             getattr(self, '_%smpsi_sigma_1'  % self._prefix ))),
+                                  FormulaVar( '_%smpsi_alpha_2' % self._prefix, '@0*@1',
+                                              (getattr(self, '_%smpsi_alpha_sf' % self._prefix),
+                                               getattr(self, '_%smpsi_alpha_1'  % self._prefix))),
+                                  getattr(self, '_%smpsi_n_2' % self._prefix)))
+        MassPdf.__init__(self, pdf = SumPdf(Name = kwargs.pop('Name', 'DoubleCB_Psi_Mass'),
+                                            PDFs = (CB1, CB2), Yields = {CB1.GetName() : getattr(self, '_%smpsi_frac' % self._prefix)}))
+
+
 class Background_PsiMass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
         self._prefix = kwargs.pop("Prefix", "")

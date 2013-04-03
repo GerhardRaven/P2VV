@@ -1,12 +1,6 @@
 from P2VV.RooFitDecorators import *
 from functools import wraps
 
-## Add this in case a reflex dictionary is used.
-from ROOT import gSystem
-gSystem.Load('libCintex')
-from ROOT import Cintex
-Cintex.Enable()
-
 def __check_req_kw__( name, kwargs ) :
     if not name in kwargs : raise KeyError( 'Must provide kw argument %s' % name )
 def __check_exists_already__( self ) :
@@ -476,7 +470,7 @@ class ConstVar(RooObject) :
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class LinearVar(RooObject) :
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         # construct factory string on the fly...
         __check_req_kw__('Name', kwargs)
         __check_req_kw__('Observable', kwargs )
@@ -490,6 +484,22 @@ class LinearVar(RooObject) :
         self._declare("LinearVar::%(Name)s(%(Observable)s,%(Slope)s,%(Offset)s )" % args )
         self._init(args['Name'], 'RooLinearVar')
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
+
+class MultiVarGaussian(RooObject):
+    def __init__(self, **kwargs):
+        __check_req_kw__('Name', kwargs)
+        __check_req_kw__('Parameters', kwargs )
+        __check_req_kw__('CentralValues', kwargs)
+        __check_req_kw__('Covariance', kwargs)
+        __check_name_syntax__(kwargs['Name'])
+
+        name = kwargs.pop('Name')
+        args = [RooArgList(*kwargs.pop(k)) for k in ['Parameters', 'CentralValues']] \
+               + [kwargs.pop('Covariance')]
+        from ROOT import RooMultiVarGaussian
+        mvg = RooMultiVarGaussian(name, name, *args)
+        mvg = self._addObject(mvg)
+        self._init(name, 'RooMultiVarGaussian')
 
 class PolyVar(RooObject) :
     def __init__(self,**kwargs):
