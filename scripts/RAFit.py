@@ -101,8 +101,8 @@ pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['timeResType']           = 'eventStQuad' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear'
-pdfConfig['numTimeResBins']        = 25
+pdfConfig['timeResType']           = 'eventStQuad' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear' # 'eventStQuad'
+pdfConfig['numTimeResBins']        = 400
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
 pdfConfig['numEvents'] = 10000

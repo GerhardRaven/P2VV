@@ -5,6 +5,6 @@
 #include <iostream>
 class TH1l;
 
-double sigmaFromFT( const TH1& h1, double dMs, std::ostream& out = std::cout );
+double sigmaFromFT( const TH1& h1, const double dMs, const double dMsErr, std::ostream& out = std::cout );
 
 #endif // FUNCTIONS_H

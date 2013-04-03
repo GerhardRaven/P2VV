@@ -219,12 +219,16 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     hist_events.GetYaxis().SetRangeUser(0, 0.11)
     
     from ROOT import TF1
-    fit_funcs = {'pol1' : 'S0+', 'pol2' : 'S+', 'x ++ x * x' : 'S0+'}
+    fit_funcs = {'pol1' : ('pol1', 'S0+'), 'pol2' : ('pol2', 'S+'),
+                 'x ++ x * x' : ('pol2_no_offset', 'S0+'),
+                 '[0] + [1] + [2] * (x - [0]) + [3] * (x - [0])^2' : ('pol2_mean_param', 'S0+')}
     print titles[key]
     frs = []
     for i, (func, opts) in enumerate(fit_funcs.iteritems()):
-        fit_func = TF1('fit_func_%s' % func , func, split_bounds[0], split_bounds[-1])
-        fit_result = res_graph.Fit(fit_func, opts, "L")
+        fit_func = TF1('fit_func_%s' % opts[0], func, split_bins[0], split_bins[-1])
+        if opts[0] == 'pol2_mean_param':
+            fit_func.FixParameter(0, full_sdata.mean(st))
+        fit_result = res_graph.Fit(fit_func, opts[1], "L")
         print 'Chi2 / nDoF = %5.3f' % (fit_result.Chi2() / fit_result.Ndf())
         __fit_results.append(fit_result)
         frs.append(fit_result.Get())

@@ -27,7 +27,7 @@ parFileOut = '' #'initialValues.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDown.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagUp.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_rand0.root'
@@ -471,6 +471,8 @@ print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
+
+assert(False)
 
 if ( readData or generateData ) and doFit :
     # fit data

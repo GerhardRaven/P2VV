@@ -101,7 +101,14 @@ class ShapeBuilder(object):
                     Reweigh['DataVar'].setBinning(binning, 'reweigh')
 
                 source_obs = source.get().find('nPV')
-                source_cat = BinningCategory(Name = 'nPVs_' + key, Observable = source_obs,
+                cat_name = 'nPVs_' + key
+                source_cat = source.get().find(cat_name)
+                if source_cat:
+                    # Remove previous weights to make sure we get it right
+                    new_vars = source.get()
+                    new_vars.remove(source_cat)
+                    source = source.reduce(new_vars)
+                source_cat = BinningCategory(Name = cat_name, Observable = source_obs,
                                              Binning = binning, Data = source, Fundamental = True)
 
                 from P2VV.Reweighing import reweigh

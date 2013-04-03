@@ -201,7 +201,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             from math import sqrt
             self._rms = RealVar('timeResRMS', Value = sqrt((1 - fracs[0][1]) * sigmasSFs[1][1]
                                                            + fracs[0][1] * sigmasSFs[0][1]),
-                                MinMax = (0, RooInf))
+                                MinMax = (0.8, 5))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_RMS', 'sqrt(1 / (1 - @0) * (@1 * @1 - @0 * @2 * @2))',
                                                    (self._timeResFracs[0], self._rms, self._timeResSigmasSFs[0]))
             self._realVars = [self._rms, self._timeResSigmasSFs[0]]
@@ -210,7 +210,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         elif param == 'Comb':
             self._comb = RealVar('timeResComb', Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
                                                          + fracs[0][1] * sigmasSFs[0][1]),
-                                 MinMax = (0.1, RooInf))
+                                 MinMax = (0.8, 5))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
                                                    (self._timeResFracs[0], self._comb, self._timeResSigmasSFs[0]))
             self._realVars = [self._comb, self._timeResSigmasSFs[0]]
@@ -342,8 +342,8 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                                    )
                              )
 
-        correlations = kwargs.pop('Correlations', None)
-        if correlations: correlations = dict([(sorted(e), v) for e, v in correlations.items()])
+        covariance = kwargs.pop('Covariance', None)
+        if covariance: covariance = dict([(tuple(sorted(e)), v) for e, v in covariance.items()])
         if sfModel == '':
             timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
             if type(timeResSFConstr) == str and timeResSFConstr == 'fixed' and isinstance( self._timeResSigmaSF, RealVar ) :
@@ -369,11 +369,11 @@ class Paper2012_TimeResolution ( TimeResolution ) :
             if parameters:
                 means = [ConstVar(Name = v.GetName() + '_constraint_mean', Value = v.getVal())
                          for v in parameters]
-                cm = self.__getCorrelationMatrix(parameters, correlations)
+                cm = self.__getCovarianceMatrix(parameters, covariance)
                 from P2VV.RooFitWrappers import MultiVarGaussian
                 constraints.append(MultiVarGaussian(Name = 'time_resolution_constraint',
                                                     Parameters = parameters,
-                                                    CentralValues = mean, Correlations = cm))
+                                                    CentralValues = mean, Covariance = cm))
             parameters = [self._time, self._timeResMean, self._timeResSigmaLinear]
         elif sfModel == 'quadratic':
             parameters = [self._timeResSigmaOffset, self._timeResSigmaSF, self._timeResSigmaSF2]
@@ -383,11 +383,11 @@ class Paper2012_TimeResolution ( TimeResolution ) :
             if parameters:
                 means = [ConstVar(Name = v.GetName() + '_constraint_mean', Value = v.getVal())
                          for v in parameters]
-                cm = self.__getCorrelationMatrix(parameters, correlations)
+                cm = self.__getCovarianceMatrix(parameters, covariance)
                 from P2VV.RooFitWrappers import MultiVarGaussian
                 constraints.append(MultiVarGaussian(Name = 'time_resolution_constraint',
                                                     Parameters = parameters,
-                                                    CentralValues = means, Correlations = cm))
+                                                    CentralValues = means, Covariance = cm))
             parameters = [self._time, self._timeResMean, self._timeResSigmaQuad]
         else:
             parameters = [self._time, self._timeResMean, self._timeResSigma,
@@ -408,18 +408,18 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                                 , Cache = cache
                                )
 
-    def __getCorrelationMatrix(self, parameters, correlations):
+    def __getCovarianceMatrix(self, parameters, covariance):
         from ROOT import TMatrixTSym
         cm = TMatrixTSym('double')(len(parameters))
         from itertools import combinations
         def cwr(pars):
             return [c for c in combinations(pars, 2)] + [(p, p) for p in pars]
         indeces = cwr(range(len(parameters)))
-        if correlations:
-            keys = dict(zip(indeces, [sorted(e) for e in cwr([p.GetName() for p in parameters])]))
+        if covariance:
+            keys = dict(zip(indeces, [tuple(sorted(e)) for e in cwr([p.GetName() for p in parameters])]))
         for i, j in indeces:
-            if correlations:
-                cm[i][j] = correlations[keys[(i, j)]]
+            if covariance:
+                cm[i][j] = covariance[keys[(i, j)]]
             else:
                 cm[i][j] = 1 if i == j else 0
         return cm

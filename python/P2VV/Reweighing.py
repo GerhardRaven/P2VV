@@ -1,6 +1,41 @@
-def reweigh(target, target_cat, source, source_cat):
-    source_cat = source.get().find(source_cat.GetName())    
-    target_cat = target.get().find(target_cat.GetName())
+from ROOT import RooCategory, RooRealVar
+from ROOT import RooBinning
+from array import array
+from RooFitWrappers import BinningCategory
+
+def reweigh(target, target_cat, source, source_cat, binning = None):
+    cats = {}
+    for cat, data, name in [(target_cat, target, 'target_cat'), (source_cat, source, 'source_cat')]:
+        if hasattr(cat, '_target_'):
+            cat = cat._target_()
+        elif type(cat) == str:
+            cat_name = cat
+            cat = data.get().find(cat_name)
+            if not cat:
+                data.Print()
+                raise RuntimeError('observable or category %s is not present in data' % cat_name)
+        if not any([isinstance(cat, t) for t in [RooCategory, RooRealVar]]):
+            raise RuntimeError('category must be either a RooRealVar or a RooCategory')
+        if isinstance(cat, RooRealVar):
+            assert(binning)
+            if type(binning) == array:
+                binning = RooBinning(len(binning) - 1, binning)
+                binning.SetName('reweigh')
+            cat.setBinning(binning, 'reweigh')
+            cat_name = cat.GetName() + '_cat_' + data.GetName()
+            test_cat = data.get().find(cat_name)
+            if not test_cat:
+                cat = BinningCategory(Name = cat_name, Observable = cat,
+                                      Binning = binning, Data = data, Fundamental = True)
+            else:
+                cat = test_cat
+        cats[name] = cat
+
+    target_cat = cats['target_cat']
+    source_cat = cats['source_cat']
+
+    print target_cat
+    print source_cat
     target_bins = dict([(ct.getVal(), ct.GetName()) for ct in target_cat])
     source_bins = dict([(ct.getVal(), ct.GetName()) for ct in source_cat])
     
