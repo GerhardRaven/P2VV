@@ -87,6 +87,8 @@ pdfConfig['fitOptions'] = fitOpts
 from ROOT import gStyle, kBlack, kBlue, kRed, kGreen, kMagenta, kSolid, kDashed, kFullCircle, kFullSquare, kFullDotLarge
 from P2VV.Load import RooFitOutput, LHCbStyle
 #gStyle.SetEndErrorSize(3)
+gStyle.SetPalette(1)
+gStyle.SetNumberContours(50)
 lineWidth     = 3
 lineColor     = kBlue
 markStyle     = kFullDotLarge
@@ -98,7 +100,7 @@ gStyle.SetLineStyleString( 7, ' 40 20'        )
 gStyle.SetLineStyleString( 9, ' 100 20'       )
 
 # PDF options
-pdfConfig['transversityAngles'] = False  # default: False | nominal: True
+pdfConfig['transversityAngles'] = False
 pdfConfig['angularRanges']      = dict(  cpsi   = [ ( -1., +1. ) ]
                                        , ctheta = [ ( -1., +1. ), ( 'ctlBin0', -1.,   -0.70 )
                                                                 , ( 'ctlBin1', -0.70, -0.25 )
@@ -109,54 +111,54 @@ pdfConfig['angularRanges']      = dict(  cpsi   = [ ( -1., +1. ) ]
                                       )
 pdfConfig['sigMassModel']         = '' # 'boxFixed'
 pdfConfig['bkgMassModel']         = '' # 'linearConstant'
-pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
-pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['bkgAnglePdf']          = 'hybrid'
+pdfConfig['sigTaggingPdf']        = 'tagUntag'
+pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # 'tagUntagRelative' # 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['multiplyByAngEff']     = 'weights'  # default: 'basis012'
-pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
+pdfConfig['multiplyByAngEff']     = 'weights'  # 'basis012'
+pdfConfig['parameterizeKKMass']   = 'simultaneous'  # 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['sigmatRange']          = ( 0.0001, 0.12 ) # ( 0.0001, 0.12 )
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
+pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                      , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = ( )
 pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
-pdfConfig['sameSideTagging']    = True  # nominal: True
-pdfConfig['conditionalTagging'] = True  # nominal: True
-pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
+pdfConfig['sameSideTagging']    = True
+pdfConfig['conditionalTagging'] = True
+pdfConfig['continuousEstWTag']  = True
 pdfConfig['numEstWTagBins']     = 50
-pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
+pdfConfig['constrainTagging']   = 'constrain'  # 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
 pdfConfig['numTimeResBins']        = 40
-pdfConfig['constrainTimeResScale'] = 'fixed'  # nominal: 'constrain'
+pdfConfig['constrainTimeResScale'] = 'fixed'  # 'constrain'
 
 pdfConfig['numEvents'] = 54755
 pdfConfig['signalFraction'] = 0.504
 pdfConfig['massRangeBackground'] = True
 
-pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'phasesSWaveFrac'
-pdfConfig['ASParam']        = 'deltaPerp'  # default/nominal: 'deltaPerp'
-pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
+pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # 'bank' # 'phasesSWaveFrac'
+pdfConfig['ASParam']        = 'deltaPerp'  # 'deltaPerp'
+pdfConfig['AparParam']      = 'phase' # 'Mag2ReIm' # 'phase'
 
-pdfConfig['constrainDeltaM'] = 'constrain'  # nominal: 'constrain'
+pdfConfig['constrainDeltaM'] = 'constrain'  # 'constrain' # fixed
 
-pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # default/nominal: 'lambPhi'
+pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
 fastFit           = False
 manualTagCatBins  = False
-constTagCatCoefs  = True  # default: True / nominal: False
-constAvgCEvenOdd  = True  # default: False / nominal: True
-constWTagAsyms    = 'P1'  # default/nominal: 'P1'
-constCSP          = True  # default/nominal: True
+constTagCatCoefs  = True
+constAvgCEvenOdd  = True
+constWTagAsyms    = 'P1'
+constCSP          = True
 constAmplitudes   = False
-constLambdaCP     = ''  # default/nominal: ''
+constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
 dGammaVal = 0.108
@@ -694,6 +696,14 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
     from P2VV.GeneralUtils import plot, _P2VVPlotStash
     from ROOT import TCanvas
 
+    if type(makeObservablePlots) == str :
+        # reduce data set
+        defDataOld = defData
+        defData = defData.reduce(makeObservablePlots)
+
+    print 'JvLFit: plot data set:'
+    defData.Print()
+
     # create projection data set for conditional observables
     if pdfConfig['SFit'] :
         comps = None
@@ -934,7 +944,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                          , [ False, True ] + 3 * [ False ]
                          , [ 0.7, 0.7 ] + 3 * [ 0.7 ]
                          , [ 3, 3 ] + 3 * [ 3 ]
-                         , 4 * [ ( 0.75, 0.81, 0.88, 0.89 ) ] + [ ( 0.67, 0.81, 0.80, 0.89 ) ]
+                         , 2 * [ ( 0.75, 0.81, 0.88, 0.89 ) ] + [ ( 0.67, 0.81, 0.80, 0.89 ) ] + 2 * [ ( 0.75, 0.81, 0.88, 0.89 ) ]
                         ) ) :
         if not doPlot : continue
 
