@@ -243,7 +243,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
                               , ( 'helphi',       '#varphi_{h} [rad]'           )
                              )
 
-        self['numBMassBins'] = [ 40, 20, 20 ]
+        self['numBMassBins'] = [ 70, 40, 20, 20 ]
         self['numTimeBins']  = 30
         self['numAngleBins'] = ( 10, 24, 5 )
 
@@ -323,7 +323,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         multiplyByTagPdf  = pdfConfig.pop('multiplyByTagPdf')
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')      # '' / 'all' / 'signal'
         timeEffType       = pdfConfig.pop('timeEffType')            # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')       # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
+        multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')       # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')     # '' / 'functions' / 'simultaneous' / 'amplitudes'
         numBMassBins      = pdfConfig.pop('numBMassBins')
         ambiguityPars     = pdfConfig.pop('ambiguityParameters')
@@ -399,7 +399,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if makePlots :
             # import plotting tools
             from P2VV.GeneralUtils import plot
-            from ROOT import TCanvas, kBlue, kRed, kGreen, kDashed
+            from ROOT import TCanvas, kBlue, kRed, kGreen, kSolid, kDashed, kFullCircle, TPaveText
+            from P2VV.GeneralUtils import _P2VVPlotStash
+
+            LHCbLabel = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC' )
+            LHCbLabel.AddText('LHCb')
+            LHCbLabel.SetFillColor(0)
+            LHCbLabel.SetTextAlign(12)
+            LHCbLabel.SetTextSize(0.072)
+            LHCbLabel.SetBorderSize(0)
+            _P2VVPlotStash.append(LHCbLabel)
 
         # function for finding a splitted parameter in a simultaneous PDF
         from P2VV.GeneralUtils import getSplitPar
@@ -448,8 +457,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         estWTagSS   = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
                               , Value = 0.25, MinMax = ( 0., 0.50001 ) )
 
-        BMass = RealVar( 'mass',  Title = 'm(J/#psiKK)', Unit = 'MeV/c^{2}', Observable = True
-                        , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0] + numBMassBins[1] + numBMassBins[2]
+        BMass = RealVar( 'mass',  Title = 'm(J/#psi K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True
+                        , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0]
                         ,  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
                                          , Signal        = ( 5320., 5420. )
                                          , RightSideBand = ( 5420., 5550. )
@@ -465,11 +474,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             obsSetP2VV.append(BMass)
 
         # ntuple variables
-        mumuMass = RealVar( 'mdau1', Title = 'm(#mu#mu)', Unit = 'MeV/c^{2}', Observable = True, MinMax = ( 3090. - 60., 3090. + 60. )
-                           , nBins =  51 )
+        mumuMass = RealVar( 'mdau1', Title = 'm(#mu^{+}#mu^{-})', Unit = 'MeV/c^{2}'
+                           , Observable = True, MinMax = ( 3090. - 60., 3090. + 60. ), nBins =  51 )
+        #mumuMass = RealVar( 'mdau1', Title = 'm(#mu#mu)', Unit = 'MeV/c^{2}', Observable = True, MinMax = ( 0., RooInf ) )
 
-        KKMass = RealVar( 'mdau2', Title = 'm(KK)', Unit = 'MeV/c^{2}', Observable = True, MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] )
-                         , nBins =  125 )
+        KKMass = RealVar( 'mdau2', Title = 'm(K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True
+                         , MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] ), nBins =  125 )
 
         if paramKKMass in [ 'functions', 'amplidudes' ] : obsSetP2VV.append(KKMass)
 
@@ -495,10 +505,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         hlt2B     = Category( hlt2BName,     Observable = True, States = { 'B'     : 1, 'notB'     : 0 } )
         hlt2UB    = Category( hlt2UBName,    Observable = True, States = { 'UB'    : 1, 'notUB'    : 0 } )
 
-        muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
-        muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )
-        KPlusTrackChi2  = RealVar( 'Kplus_track_chi2ndof',   Title = 'K+ track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
-        KMinTrackChi2   = RealVar( 'Kminus_track_chi2ndof',  Title = 'K- track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )
+        muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )#5. ) )
+        muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )#5. ) )
+        KPlusTrackChi2  = RealVar( 'Kplus_track_chi2ndof',   Title = 'K+ track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )#5. ) )
+        KMinTrackChi2   = RealVar( 'Kminus_track_chi2ndof',  Title = 'K- track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )#5. ) )
 
         observables = dict(  time             = time
                            , cpsi             = angles[0]
@@ -536,6 +546,73 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if selection == 'timeEffFit'                  or timeEffType == 'fit'                  : obsSetNTuple += [ hlt2B, hlt2UB ]
         if nominalDataSet : obsSetNTuple += [  sel, selA, selB, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2
                                              , tagDecisionComb, estWTagComb ]
+        #obsSetNTuple.append(mumuMass)
+        obsSetNTuple.append(tagDecisionComb)
+
+        sWeightedNTupleFile = None #'/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_testGL_GLOneCand_20130322_MagDown.root'
+        if sWeightedNTupleFile :
+            # additional ntuple variables
+            sel_onecand                = Category( 'sel_onecand',                Observable = True, States = { 'sel' : 1, 'notSel' : 0 } )
+            sel_one_gl                 = Category( 'sel_one_gl',                 Observable = True, States = { 'sel' : 1, 'notSel' : 0 } )
+            GLsb                       = RealVar(  'GLsb',                       Observable = True, MinMax = (  0.,      1.     ) )
+            #muplus_PIDmu             = RealVar(  'muplus_PIDmu',               Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            #muminus_PIDmu            = RealVar(  'muminus_PIDmu',              Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            Kplus_pidK                 = RealVar(  'Kplus_pidK',                 Observable = True, MinMax = (  0.,     +RooInf ) )
+            Kminus_pidK                = RealVar(  'Kminus_pidK',                Observable = True, MinMax = (  0.,     +RooInf ) )
+            muplus_PX                  = RealVar(  'muplus_PX',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            muplus_PY                  = RealVar(  'muplus_PY',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            muplus_PZ                  = RealVar(  'muplus_PZ',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            muminus_PX                 = RealVar(  'muminus_PX',                 Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            muminus_PY                 = RealVar(  'muminus_PY',                 Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            muminus_PZ                 = RealVar(  'muminus_PZ',                 Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            Kplus_PX                   = RealVar(  'Kplus_PX',                   Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            Kplus_PY                   = RealVar(  'Kplus_PY',                   Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            Kplus_PZ                   = RealVar(  'Kplus_PZ',                   Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            Kminus_PX                  = RealVar(  'Kminus_PX',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            Kminus_PY                  = RealVar(  'Kminus_PY',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            Kminus_PZ                  = RealVar(  'Kminus_PZ',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            B_Pt                       = RealVar(  'B_Pt',                       Observable = True, MinMax = (  0.,      RooInf ) )
+            phi_1020_pt                = RealVar(  'phi_1020_pt',                Observable = True, MinMax = (  500.,    RooInf ) )
+            #B_s0_LOKI_CosPolAngle_Dau1 = RealVar(  'B_s0_LOKI_CosPolAngle_Dau1', Observable = True, MinMax = ( -1.,     +1.     ) )
+            #B_s0_IP_OWNPV              = RealVar(  'B_s0_IP_OWNPV',              Observable = True, MinMax = (    ,             ) )
+            B_s0_IPCHI2_OWNPV          = RealVar(  'B_s0_IPCHI2_OWNPV',          Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            B_s0_MINIPCHI2NEXTBEST     = RealVar(  'B_s0_MINIPCHI2NEXTBEST',     Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            B_s0_LOKI_DTF_VCHI2NDOF    = RealVar(  'B_s0_LOKI_DTF_VCHI2NDOF',    Observable = True, MinMax = ( -RooInf, +RooInf ) )
+            B_s0_ENDVERTEX_CHI2        = RealVar(  'B_s0_ENDVERTEX_CHI2',        Observable = True, MinMax = ( 0.,       50.    ) )
+            phi_1020_ENDVERTEX_CHI2    = RealVar(  'phi_1020_ENDVERTEX_CHI2',    Observable = True, MinMax = ( 0.,       16.    ) )
+            J_psi_1S_ENDVERTEX_CHI2    = RealVar(  'J_psi_1S_ENDVERTEX_CHI2',    Observable = True, MinMax = ( 0.,       16.    ) )
+
+            obsSetNTuple += [ mumuMass, tagDecisionComb, estWTagComb, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
+            obsSetNTuple += [ sel_onecand
+                             , sel_one_gl
+                             , GLsb
+                             #, muplus_PIDmu
+                             #, muminus_PIDmu
+                             , Kplus_pidK
+                             , Kminus_pidK
+                             , muplus_PX
+                             , muplus_PY
+                             , muplus_PZ
+                             , muminus_PX
+                             , muminus_PY
+                             , muminus_PZ
+                             , Kplus_PX
+                             , Kplus_PY
+                             , Kplus_PZ
+                             , Kminus_PX
+                             , Kminus_PY
+                             , Kminus_PZ
+                             , B_Pt
+                             , phi_1020_pt
+                             #, B_s0_LOKI_CosPolAngle_Dau1
+                             #, B_s0_IP_OWNPV
+                             , B_s0_IPCHI2_OWNPV
+                             , B_s0_MINIPCHI2NEXTBEST
+                             , B_s0_LOKI_DTF_VCHI2NDOF
+                             , B_s0_ENDVERTEX_CHI2
+                             , phi_1020_ENDVERTEX_CHI2
+                             , J_psi_1S_ENDVERTEX_CHI2
+                            ]
 
 
         ###################################################################################################################################
@@ -579,6 +656,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             else :
                 raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown selection: "%s"' % selection )
 
+            #ntupleCuts = dataSample
             from P2VV.GeneralUtils import readData
             self._dataSets['data'] = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
                                               , Rename = 'JpsiphiData', ntupleCuts = ntupleCuts )
@@ -828,11 +906,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: computing S-weights'
 
             # create sWeigthed data sets
-            from P2VV.GeneralUtils import SData, splot
+            from P2VV.GeneralUtils import SData
             self._SData = SData( Pdf = self._sWeightMassPdf, Data = self._dataSets['data'], Name = 'massSData' )
             self._dataSets['SWeightData']    = self._SData.data()
             self._dataSets['sigSWeightData'] = self._SData.data( 'sigMass' if SFit else 'signal' )
             self._dataSets['bkgSWeightData'] = self._SData.data( 'bkgMass' if SFit else 'bkg'    )
+
+            if sWeightedNTupleFile :
+                dataTree = self._dataSets['SWeightData'].buildTree( Name = 'DecayTree', Title = 'DecayTree', RooFitFormat = False )
+                from ROOT import TFile
+                dataFile = TFile.Open( sWeightedNTupleFile, 'RECREATE' )
+                dataFile.Add(dataTree)
+                dataFile.Write()
+                dataFile.Close()
 
             # print signal/background info to screen
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
@@ -977,33 +1063,44 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                    , TCanvas( 'massCanvLeft',  'B mass left side band'    )
                                    , TCanvas( 'massCanvRight', 'B mass right side band'   )
                                   ]
-                for ( pad, frameRange, nBins, plotTitle, plotName, logy, scale )\
-                      in zip(  self._massCanvs
-                             , [ '', 'Signal', 'LeftSideBand', 'RightSideBand' ]
-                             , [ sum(numBMassBins) ] + numBMassBins
-                             , [  BMass.GetTitle()
-                                , BMass.GetTitle() + ' mass fit - signal'
-                                , BMass.GetTitle() + ' mass fit - left side band'
-                                , BMass.GetTitle() + ' mass fit - right side band'
-                               ]
-                             , [  BMass.GetName()
-                                , BMass.GetName() + ' fit - signal'
-                                , BMass.GetName() + ' fit - left side band'
-                                , BMass.GetName() + ' fit - right side band'
-                               ]
-                             , [ True, False, False, False ]
-                             , [ ( 8.e1, 1.e4 ), ( None, None ), ( None, None ), ( None, None ) ] # [ ( 8.e1, 1.e4 ), ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
-                            ) :
-                    #plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale, plotResidHist = True
+                for index, ( pad, frameRange, nBins, plotTitle, plotName, logy, scale, yTitleOffset, markSize, markLineWidth )\
+                      in enumerate ( zip(  self._massCanvs
+                                         , [ '', 'Signal', 'LeftSideBand', 'RightSideBand' ]
+                                         , numBMassBins
+                                         , [  BMass.GetTitle()
+                                            , BMass.GetTitle() + ' mass fit - signal'
+                                            , BMass.GetTitle() + ' mass fit - left side band'
+                                            , BMass.GetTitle() + ' mass fit - right side band'
+                                           ]
+                                         , [  BMass.GetName()
+                                            , BMass.GetName() + ' fit - signal'
+                                            , BMass.GetName() + ' fit - left side band'
+                                            , BMass.GetName() + ' fit - right side band'
+                                           ]
+                                         , [ True, False, False, False ]
+                                         , [ ( 1.5e2, 1.2e4 ), ( None, None ), ( None, None ), ( None, None ) ] # [ ( 8.e1, 1.e4 ), ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
+                                         , [ 1.00, 1.15, 1.00, 1.00 ]
+                                         , [ 0.6,  0.7,  0.8,  0.8  ]
+                                         , [ 2,    3,    3,    3    ]
+                                   ) ) :
+                    pad.SetLeftMargin(0.18)
+                    pad.SetRightMargin(0.05)
+                    pad.SetBottomMargin(0.18)
+                    pad.SetTopMargin(0.05)
+
+                    binWidth = ( BMass.getMax(frameRange) - BMass.getMin(frameRange) ) / float(nBins)
                     plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale
-                         , normalize = True, symmetrize = True
+                         , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
+                         , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
+                         #, plotResidHist = True, normalize = True, symmetrize = True
                          , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
-                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.6, LineWidth = 2 )
+                         , dataOpts   = dict( MarkerStyle = kFullCircle, MarkerSize = markSize, LineWidth = markLineWidth )
                          , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3 )
                          , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed, LineWidth = 3 )
                                          , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed, LineWidth = 3 )
                                         }
                         )
+                    if index < 2 : LHCbLabel.Draw()
 
                 if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit']\
                       or paramKKMass == 'simultaneous' ) :
@@ -1561,6 +1658,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
                 angMomInds += [ ( 0, 4, 0 ) ]
+            elif multiplyByAngEff == 'basis012Thetal' :
+                angMomInds  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+                angMomInds += [ ( 0, YIndex0, 0 ) for YIndex0 in range( 3, 5 ) ]
+            elif multiplyByAngEff == 'basis012ThetalPhi' :
+                angMomInds  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+                angMomInds += [ ( 0, YIndex0, YIndex1 ) for YIndex0 in range( 3, 5 ) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
             elif multiplyByAngEff == 'basis0123' :
                 angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4)\
                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
@@ -2064,7 +2169,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         )
 
                 # plot 2-D angular distributions
-                from P2VV.GeneralUtils import _P2VVPlotStash
                 for angle0, angle1, data, canv, padNr in [  ( 1, 0, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  4 )
                                                           , ( 2, 0, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  5 )
                                                           , ( 1, 2, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  6 )
