@@ -3,10 +3,12 @@ momentsFiles = [
                   'hel_UB_UT_trueTime_BkgCat050_KK30_allOrders_Basis'
 #                , 'hel_UB_UT_trueTime_BkgCat050_KK30_alt_allOrders_Basis'
 #                , 'hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_allOrders_Basis'
+#                  'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'
                ]
 dataFile  = 'hel_UB_UT_trueTime_BkgCat050_KK30.root'
+#dataFile  = 'trans_UB_UT_trueTime_BkgCat050_KK30.root'
 dataName  = 'DecayTree'
-plotsFile = 'angularEfficiency.ps'
+plotsFile = 'angularEfficiencyHel.ps'
 
 LHCbLabel = 'LHCb simulation'
 
@@ -23,9 +25,11 @@ from P2VV.Load import P2VVLibrary, LHCbStyle
 from P2VV.RooFitWrappers import RooObject
 from ROOT import TCanvas, gStyle
 #gStyle.SetEndErrorSize(4)
+gStyle.SetPalette(1)
+gStyle.SetNumberContours(50)
 
 xLabels = ( 'cos#kern[0.1]{#theta_{K}}', 'cos#kern[0.1]{#theta_{#mu}}', '#varphi_{h} [rad]'  ) if not transAngles else\
-          ( 'cos#kern[0.3]{#psi_{tr}}',  'cos#kern[0.3]{#theta_{tr}}',  '#varphi_{tr} [rad]' )
+          ( 'cos#kern[0.1]{#psi_{tr}}',  'cos#kern[0.1]{#theta_{tr}}',  '#varphi_{tr} [rad]' )
 yLabels = [  (  '#varepsilon_{#Omega}(cos#kern[0.3]{#theta_{K}}, 0, 0) / #LT#varepsilon_{#Omega}#GT'
               , '#varepsilon_{#Omega}(0, cos#kern[0.3]{#theta_{#mu}}, 0) / #LT#varepsilon_{#Omega}#GT'
               , '#varepsilon_{#Omega}(0, 0, #varphi_{h}) / #LT#varepsilon_{#Omega}#GT'
@@ -42,6 +46,10 @@ yLabels = [  (  '#varepsilon_{#Omega}(cos#kern[0.3]{#theta_{K}}, 0, 0) / #LT#var
            #   , '#int d_{}cos#kern[0.3]{#psi_{tr}} d#varphi_{tr} #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
            #   , '#int d_{}cos#kern[0.3]{#psi_{tr}} dcos#kern[0.3]{#theta_{tr}} #varepsilon_{#Omega}(#Omega) / (4 #LT#varepsilon_{#Omega}#GT)'
            #  )
+           , (  'Acceptance integral'
+              , 'Acceptance integral'
+              , 'Acceptance integral'
+             )
           ]
 
 ws = RooObject( workspace = 'workspace' ).ws()
@@ -57,20 +65,23 @@ angles = [ angleFuncs.angles[ang] for ang in [ 'cpsi', 'ctheta', 'phi' ] ]
 
 from P2VV.GeneralUtils import RealMomentsBuilder
 from math import sqrt, pi
-indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(6) for YIndex0 in range(6)\
-                                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+#indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(6) for YIndex0 in range(6)\
+#                                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
 #indices  = [ ( PIndex, YIndex0, 0 ) for PIndex in range(5) for YIndex0 in range(5) ]
+indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+indices += [ ( 0, 4, 0 ), ( 0, 4, 2 ), ( 0, 4, 4 ) ]
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
 for file, fac in zip( momentsFiles, addFactors ) :
     moments.read( file, AddMoments = fac )
-moments.Print(  Scale = 1. / 2. / sqrt(pi), Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022'\
+moments.Print(  Scale = 1. / 2. / sqrt(pi), Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022|p2vvab_0040|p2vvab_0042|p2vvab_0044'\
                                                     if transAngles else 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0040'
              )
 moments.Print( Scale = 1. / 2. / sqrt(pi), MinSignificance = 2. )
 
 momFuncTerms = moments.buildPDFTerms( CoefNamePrefix = 'transC_' if transAngles else 'helC_'
-                                     , Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022'\
+                                     , Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022|p2vvab_0040|p2vvab_0042|p2vvab_0044'\
                                                if transAngles else 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0040' )
 momFunc = momFuncTerms.buildAddition( 'efficiency' + ( 'Trans' if transAngles else 'Hel' ) )
 
@@ -118,7 +129,8 @@ for ( pad, angle, xTitle, yTitle, yScale )\
            , angles
            , xLabels
            , yLabels[0]
-           , [ ( 0.84, 1.08 ), ( 0.96, 1.20 ), ( 0.86, 1.10 ) ]
+           , [ ( 0.84, 1.08 ), ( 0.96, 1.20 ), ( 0.86, 1.10 ) ] if not transAngles\
+             else [ ( 1.01, 1.25 ), ( 0.96, 1.20 ), ( 0.97, 1.21 ) ]
           ) :
     pad.SetLeftMargin(0.28)
     pad.SetRightMargin(0.05)
@@ -146,14 +158,18 @@ canvs += [  TCanvas( 'cpsiIntCanv',   'Angular Efficiency' )
 integrals = [  momFunc.createIntegral( RooArgSet( angles[1]._var, angles[2]._var ) )
              , momFunc.createIntegral( RooArgSet( angles[0]._var, angles[2]._var ) )
              , momFunc.createIntegral( RooArgSet( angles[0]._var, angles[1]._var ) )
+             , momFunc.createIntegral( RooArgSet( angles[0]._var                 ) )
+             , momFunc.createIntegral( RooArgSet( angles[1]._var                 ) )
+             , momFunc.createIntegral( RooArgSet( angles[2]._var                 ) )
             ]
 for ( pad, func, angle, xTitle, yTitle, yScale, norm )\
     in zip(  canvs[ 3 : ]
-           , integrals
+           , integrals[ : 3 ]
            , angles
            , xLabels
            , yLabels[1]
-           , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ]
+           , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ] if not transAngles\
+             else [ ( 0.88, 1.12 ), ( 0.88, 1.12 ), ( 0.8976, 1.1424 ) ]
            , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
           ) :
     pad.SetLeftMargin(0.28)
@@ -189,13 +205,13 @@ if dataFile :
               , TCanvas( 'cthetaDataCanv', 'Angular Efficiency' )
               , TCanvas( 'phiDataCanv',    'Angular Efficiency' )
              ]
-    for ( pad, angle, xTitle, yTitle, yScale, norm, nBins )\
+    for ( pad, angle, xTitle, yTitle, yScale, nBins )\
         in zip(  canvs[ 6 : ]
                , angles
                , xLabels
                , yLabels[1]
-               , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ]
-               , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
+               , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ] if not transAngles\
+                 else [ ( 0.88, 1.12 ), ( 0.88, 1.12 ), ( 0.8976, 1.1424 ) ]
                , numBins
               ) :
         pad.SetLeftMargin(0.28)
@@ -210,7 +226,7 @@ if dataFile :
              , yTitleOffset = 1.0
              , frameOpts    = dict( Title = angle.GetTitle(), Bins = nBins )
              , dataOpts     = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.8, LineWidth = 3
-                                   , Rescale = norm * float(nBins) / ( angle.getMax() - angle.getMin() ) )
+                                   , Rescale = float(nBins) / 8. / pi )
             )
         LHCbText.Draw()
 
@@ -221,11 +237,12 @@ if dataFile :
              ]
     for ( pad, func, angle, xTitle, yTitle, yScale, norm, nBins )\
         in zip(  canvs[ 9 : ]
-               , integrals
+               , integrals[ : 3 ]
                , angles
                , xLabels
                , yLabels[1]
-               , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ]
+               , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ] if not transAngles\
+                 else [ ( 0.88, 1.12 ), ( 0.88, 1.12 ), ( 0.8976, 1.1424 ) ]
                , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
                , numBins
               ) :
@@ -241,9 +258,95 @@ if dataFile :
              , yTitleOffset = 1.0
              , frameOpts    = dict( Title = angle.GetTitle(), Bins = nBins )
              , dataOpts     = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.8, LineWidth = 3
-                                   , Rescale = norm * float(nBins) / ( angle.getMax() - angle.getMin() ) )
+                                   , Rescale = float(nBins) / 8. / pi )
              , pdfOpts      = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
             )
         LHCbText.Draw()
+
+# plot 2D efficiency function integrals
+from ROOT import RooArgList, RooConstVar, RooProduct
+oneOverTwo   = RooConstVar( 'oneOverTwo',   'oneOverTwo',   0.5      )
+oneOverTwoPi = RooConstVar( 'oneOverTwoPi', 'oneOverTwoPi', 0.5 / pi )
+integrals += [  RooProduct( 'cthetaPhiEffInt',  'cthetaPhiEffInt',  RooArgList( integrals[-3], oneOverTwo   ) )
+              , RooProduct( 'cpsiPhiEffInt',    'cpsiPhiEffInt',    RooArgList( integrals[-2], oneOverTwo   ) )
+              , RooProduct( 'cpsiCthetaEffInt', 'cpsiCthetaEffInt', RooArgList( integrals[-1], oneOverTwoPi ) )
+             ]
+integrals += [  integrals[-3].asTF( RooArgList( angles[1], angles[2] ) )
+              , integrals[-2].asTF( RooArgList( angles[0], angles[2] ) )
+              , integrals[-1].asTF( RooArgList( angles[0], angles[1] ) )
+             ]
+canvs += [  TCanvas( 'cthetaPhiIntCanv',  'Angular Efficiency' )
+          , TCanvas( 'cpsiPhiIntCanv',    'Angular Efficiency' )
+          , TCanvas( 'cpsiCthetaIntCanv', 'Angular Efficiency' )
+         ]
+for integ, canv, xTitle, yTitle, zTitle, zScale\
+        in zip( integrals[ -3 : ], canvs[ -3 : ], [ xLabels[1], xLabels[0], xLabels[0] ], [ xLabels[2], xLabels[2], xLabels[1] ]
+               , [ yLabels[2][0], yLabels[2][1], yLabels[2][2] ]
+               , [ ( 0.94, 1.17 ), ( 0.94, 1.17 ), ( 0.94, 1.17 ) ]
+              ) :
+    canv.cd()
+    canv.SetLeftMargin(0.17)
+    canv.SetRightMargin(0.12)
+    canv.SetBottomMargin(0.10)
+    canv.SetTopMargin(0.05)
+
+    integ.SetMinimum( zScale[0] )
+    integ.SetMaximum( zScale[1] )
+    integ.GetXaxis().SetTitle(xTitle)
+    integ.GetYaxis().SetTitle(yTitle)
+    integ.GetZaxis().SetTitle(zTitle)
+    integ.GetXaxis().SetTitleOffset(1.4)
+    integ.GetYaxis().SetTitleOffset(1.4)
+    integ.GetZaxis().SetTitleOffset(1.2)
+
+    integ.Draw('SURF4')
+
+    canv.SetTheta(30)
+    canv.SetPhi(55)
+    canv.Update()
+
+if dataFile :
+    # plot 2D efficiency binned function integrals
+    from ROOT import TH2D
+    integrals += [  TH2D( 'cthetaPhiEffHist',  'Angular Efficiency', 10, -1., +1., 10, -pi, +pi )
+                  , TH2D( 'cpsiPhiEffHist',    'Angular Efficiency', 10, -1., +1., 10, -pi, +pi )
+                  , TH2D( 'cpsiCthetaEffHist', 'Angular Efficiency', 10, -1., +1., 10, -1., +1. )
+                 ]
+    data.fillHistogram( integrals[-3], RooArgList( angles[1], angles[2] ) )
+    data.fillHistogram( integrals[-2], RooArgList( angles[0], angles[2] ) )
+    data.fillHistogram( integrals[-1], RooArgList( angles[0], angles[1] ) )
+    integrals[-3].Scale( 100. / 8. / pi )
+    integrals[-2].Scale( 100. / 8. / pi )
+    integrals[-1].Scale( 100. / 8. / pi )
+
+    canvs += [  TCanvas( 'cthetaPhiDataCanv',  'Angular Efficiency' )
+              , TCanvas( 'cpsiPhiDataCanv',    'Angular Efficiency' )
+              , TCanvas( 'cpsiCthetaDataCanv', 'Angular Efficiency' )
+             ]
+    for hist, canv, xTitle, yTitle, zTitle, zScale\
+            in zip( integrals[ -3 : ], canvs[ -3 : ], [ xLabels[1], xLabels[0], xLabels[0] ], [ xLabels[2], xLabels[2], xLabels[1] ]
+               , [ yLabels[2][0], yLabels[2][1], yLabels[2][2] ]
+               , [ ( 0.94, 1.17 ), ( 0.94, 1.17 ), ( 0.94, 1.17 ) ]
+              ) :
+        canv.cd()
+        canv.SetLeftMargin(0.17)
+        canv.SetRightMargin(0.12)
+        canv.SetBottomMargin(0.10)
+        canv.SetTopMargin(0.05)
+
+        hist.SetMinimum( zScale[0] )
+        hist.SetMaximum( zScale[1] )
+        hist.SetXTitle(xTitle)
+        hist.SetYTitle(yTitle)
+        hist.SetZTitle(zTitle)
+        hist.SetTitleOffset( 1.4, 'X' )
+        hist.SetTitleOffset( 1.4, 'Y' )
+        hist.SetTitleOffset( 1.2, 'Z' )
+
+        hist.Draw('LEGO2')
+
+        canv.SetTheta(30)
+        canv.SetPhi(55)
+        canv.Update()
 
 for canvIt, canv in enumerate(canvs) : canv.Print( plotsFile + ( '(' if canvIt == 0 else ')' if canvIt == len(canvs) - 1 else '' ) )
