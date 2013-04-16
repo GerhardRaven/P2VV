@@ -922,8 +922,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
                          , self._dataSets['data'].get().find( hlt2B.GetName() )
                         ]
-            ## if hasattr( self, '_KKMassCat' ) and self._KKMassCat.numTypes() > 1 :
-            if hasattr( self, '_KKMassCat' ):
+            if hasattr( self, '_KKMassCat' ) :
                 splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
             splitCats = [ cat for cat in splitCats if cat ]
             self._dataSets['sigSWeightData'].Print()
@@ -1306,7 +1305,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if 'nomean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
-                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1., Error = 0.06, MinMax = ( 0.1, 5. ) )
                 timeResArgs['timeResSFConstraint'] = constrTResScale
             elif 'constmean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )

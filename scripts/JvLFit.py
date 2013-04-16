@@ -507,8 +507,6 @@ pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
 
-assert(False)
-
 if ( readData or generateData ) and doFit :
     # fit data
     print 120 * '='
