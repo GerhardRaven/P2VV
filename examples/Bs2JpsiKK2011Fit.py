@@ -64,6 +64,17 @@ pdfConfig['constrainDeltaM'] = 'constrain'
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'
 
+from P2VV.Imports import extConstraintValues
+extConstraintValues.setVal( 'DM',      ( 17.63, 0.11 ) )
+extConstraintValues.setVal( 'P0OS',    (  0.392, 0.008, 0.392 ) )
+extConstraintValues.setVal( 'DelP0OS', (  0.0110, 0.0034 ) )
+extConstraintValues.setVal( 'P1OS',    (  1.000,  0.023  ) )
+extConstraintValues.setVal( 'DelP1OS', (  0.000,  0.001  ) )
+extConstraintValues.setVal( 'P0SS',    (  0.350, 0.017, 0.350 ) )
+extConstraintValues.setVal( 'DelP0SS', ( -0.019, 0.005   ) )
+extConstraintValues.setVal( 'P1SS',    (  1.00,  0.16    ) )
+extConstraintValues.setVal( 'DelP1SS', (  0.00,  0.01    ) )
+
 
 ###########################################################################################################################################
 ## read data and build PDF ##
@@ -164,7 +175,7 @@ if doFit :
                          )
 
     # print parameter values
-    from P2VV.Imports import parNames, parValues
+    from P2VV.Imports import parNames, parValues2011 as parValues
     print 'Bs2JpsiKK2011Fit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()

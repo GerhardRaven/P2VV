@@ -16,10 +16,8 @@ DGammaErr = 0.02
 DMVal     = 17.6
 DMErr     = 0.1
 
-#DMConstrVal = 17.63
-#DMConstrErr = 0.11
-DMConstrVal = 17.768
-DMConstrErr = 0.024
+from P2VV.Imports import extConstraintValues
+( DMConstrVal, DMConstrErr ) = extConstraintValues.getSetVal( 'DM', ( 17.768, 0.024 ) )
 
 from ROOT import RooNumber
 RooInf = RooNumber.infinity()

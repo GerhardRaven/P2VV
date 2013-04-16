@@ -296,3 +296,31 @@ parValuesPHSPAcc = {  'phiCP'           : (  7.0691e-02,  9.08e-02, -1.       )
                     , 'wTagP1SS'        : (  1.0189e+00,  1.57e-01, -1.       )
                     , 'wTagDelP0SS'     : ( -1.9023e-02,  5.00e-03, -1.       )
                    }
+
+# external constraint values dictionary
+class ExtConstrValsDict( dict ) :
+    def __init__( self, valsDict ) :
+        for key, val in valsDict.iteritems() : self[key] = val
+
+    def valsDict(self)           : return self.copy()
+    def getVal( self, key )      : return self[key]
+    def setVal( self, key, val ) : self[key] = val
+
+    def getSetVal( self, key, val = None ) :
+        if not key in self :
+            assert val != None, 'ExtConstrValsDict.getSetVal(): no value provided'
+            self[key] = val
+        return self[key]
+
+constrVals = dict(  DM      = (  17.768, 0.024  )
+                  , P0OS    = (  0.392,  0.008, 0.392 )
+                  , P0SS    = (  0.350,  0.017, 0.350 )
+                  , P1OS    = (  1.000,  0.023  )
+                  , P1SS    = (  1.00,   0.16   )
+                  , DelP0OS = (  0.0110, 0.0034 )
+                  , DelP0SS = ( -0.019,  0.005  )
+                  , DelP1OS = (  0.000,  0.001  )
+                  , DelP1SS = (  0.00,   0.01   )
+                 )
+global extConstraintValues
+extConstraintValues = ExtConstrValsDict( constrVals )

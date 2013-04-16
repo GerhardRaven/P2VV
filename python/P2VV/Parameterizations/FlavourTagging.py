@@ -29,35 +29,17 @@ DelP1SSVal  =  0.00
 DelP1SSErr  =  0.01
 
 # values for tagging calibration parameters from tagging calibration: correspond to specific data sample!
-#avgEtaOSVal      = 0.379
-#P0OSConstrVal    = 0.384
-#P0OSConstrErr    = 0.009
-#DelP0OSConstrVal = 0.
-#DelP0OSConstrErr = 0.003
-#P1OSConstrVal    = 1.037
-#P1OSConstrErr    = 0.08
-#DelP1OSConstrVal = 0.
-#DelP1OSConstrErr = 0.001
+from P2VV.Imports import extConstraintValues
 
-avgEtaOSVal      = 0.392
-P0OSConstrVal    = 0.392
-P0OSConstrErr    = 0.008
-DelP0OSConstrVal = 0.0110
-DelP0OSConstrErr = 0.0034
-P1OSConstrVal    = 1.000
-P1OSConstrErr    = 0.023
-DelP1OSConstrVal = 0.000
-DelP1OSConstrErr = 0.001
+( P0OSConstrVal, P0OSConstrErr, avgEtaOSVal ) = extConstraintValues.getSetVal( 'P0OS',    (  0.392, 0.008, 0.392 ) )
+( DelP0OSConstrVal, DelP0OSConstrErr )        = extConstraintValues.getSetVal( 'DelP0OS', (  0.0110, 0.0034 ) )
+( P1OSConstrVal,    P1OSConstrErr    )        = extConstraintValues.getSetVal( 'P1OS',    (  1.000,  0.023  ) )
+( DelP1OSConstrVal, DelP1OSConstrErr )        = extConstraintValues.getSetVal( 'DelP1OS', (  0.000,  0.001  ) )
 
-avgEtaSSVal      =  0.350
-P0SSConstrVal    =  0.350
-P0SSConstrErr    =  0.017
-DelP0SSConstrVal = -0.019
-DelP0SSConstrErr =  0.005
-P1SSConstrVal    =  1.00
-P1SSConstrErr    =  0.16
-DelP1SSConstrVal =  0.00
-DelP1SSConstrErr =  0.01
+( P0SSConstrVal, P0SSConstrErr, avgEtaSSVal ) = extConstraintValues.getSetVal( 'P0SS',    (  0.350, 0.017, 0.350 ) )
+( DelP0SSConstrVal, DelP0SSConstrErr )        = extConstraintValues.getSetVal( 'DelP0SS', ( -0.019, 0.005   ) )
+( P1SSConstrVal,    P1SSConstrErr    )        = extConstraintValues.getSetVal( 'P1SS',    (  1.00,  0.16    ) )
+( DelP1SSConstrVal, DelP1SSConstrErr )        = extConstraintValues.getSetVal( 'DelP1SS', (  0.00,  0.01    ) )
 
 from ROOT import RooNumber
 RooInf = RooNumber.infinity()

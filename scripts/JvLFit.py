@@ -151,6 +151,9 @@ pdfConfig['constrainDeltaM'] = 'constrain'  # 'constrain' # fixed
 
 pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
+from P2VV.Imports import extConstraintValues
+extConstraintValues.setVal( 'DM', ( 17.63, 0.11 ) )
+
 fastFit           = False
 manualTagCatBins  = False
 constTagCatCoefs  = True
