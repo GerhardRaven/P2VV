@@ -545,9 +545,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if selection in [ 'timeEffFit', 'paper2012' ] or timeEffType in [ 'fit', 'paper2012' ] : obsSetNTuple += [ hlt1ExclB ]
         if selection == 'timeEffFit'                  or timeEffType == 'fit'                  : obsSetNTuple += [ hlt2B, hlt2UB ]
         if nominalDataSet : obsSetNTuple += [  sel, selA, selB, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2
-                                             , tagDecisionComb, estWTagComb ]
-        #obsSetNTuple.append(mumuMass)
-        obsSetNTuple.append(tagDecisionComb)
+                                             , mumuMass, tagDecisionComb, estWTagComb ]
 
         sWeightedNTupleFile = None #'/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_testGL_GLOneCand_20130322_MagDown.root'
         if sWeightedNTupleFile :
