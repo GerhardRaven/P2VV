@@ -25,7 +25,7 @@ pdfConfig['angEffMomentsFile']    = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basi
 fitOpts = dict(  NumCPU    = 2
                , Optimize  = 2
                , Minimizer = 'Minuit2'
-#               , Offset    = True
+               , Offset    = True
 #               , Hesse     = False
                , Timer     = True
 #               , Verbose   = True
