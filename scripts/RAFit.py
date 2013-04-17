@@ -93,7 +93,7 @@ pdfConfig['SWaveAmplitudeValues'] = (  [ (0.025, 0.01)]
 #                                     , [ (2.7,  0.4 ), (0.22,   0.14), (-0.11, 0.17 ), (-0.97, 0.3 ) ] )
 #pdfConfig['SWaveAmplitudeValues'] = (  [ (0.28, 0.11), (0.05, 0.02), (0.27, 0.07) ]
 #                                     , [ (2.7,  0.4 ), (0.,   0.15), (-0.97, 0.3 ) ] )
-pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['CSPValues']            = [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True  # nominal: True
 pdfConfig['conditionalTagging'] = True  # nominal: True
@@ -439,6 +439,8 @@ print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
+
+assert(False)
 
 from ROOT import RooArgSet
 for constraint in pdfBuild._fullPdf.ExternalConstraints():
