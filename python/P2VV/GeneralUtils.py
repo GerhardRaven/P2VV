@@ -179,7 +179,16 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
           import os
           from ROOT import TFile, gFile
           orig_file = gFile
-          fd, temp_name = tempfile.mkstemp(suffix = '.root', dir = os.path.dirname(filePath))
+          d = None
+          if 'TMP' in os.environ:
+              d = os.environ['TMP']
+          elif 'TMPDIR' in os.environ:
+              d = os.environ['TMPDIR']
+          elif os.access(os.path.dirname(filePath), os.W_OK):
+              d = os.path.dirname(filePath)
+          else:
+              d = '/tmp'
+          fd, temp_name = tempfile.mkstemp(suffix = '.root', dir = d)
           os.close(fd)
           os.remove(temp_name)
           tmp_file = TFile.Open(temp_name, 'recreate')
