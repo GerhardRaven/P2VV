@@ -4,9 +4,9 @@
 ! Purpose     : keeping Tristan's crazy RooFit stuff.
 !-----------------------------------------------------------------------------
 
-! 2013-02-10 - Jeroen van Leerdam
- - Removed test version of P2VV II
- - Added first P2VV II release (v3r0)
+! 2013-04-17 - Jeroen van Leerdam
+ - Removed test version of P2VV II (v3r0)
+ - Added first P2VV II release
 
    Starting from release v3r0, P2VV is no longer an update of its first
    version. P2VV I is replaced by P2VV II, which is an entirely new
