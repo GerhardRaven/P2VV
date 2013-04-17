@@ -36,7 +36,7 @@ class JpsiphiHelicityAngles( AngleDefinitions ) :
              , 'ctheta' : self._parseArg( 'ctheta', kwargs, SingleArgKey = 'Name', Name = 'helcthetaL'
                                          , Title = 'cos(#theta_{#mu})', MinMax = ( -1,  1 ),  Observable = True )
              , 'phi'    : self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name = 'helphi'
-                                         , Title = '#phi_{h}',          MinMax = ( -pi, pi ), Observable = True )
+                                         , Title = '#phi_{h}',          MinMax = ( -pi, pi ), Observable = True, Unit = 'rad' )
             }
         d['functions'] =  JpsiphiTransversityAmplitudesHelicityAngles( **d )
         AngleDefinitions.__init__(self, **d )

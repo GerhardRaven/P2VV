@@ -221,7 +221,7 @@ else :
 
 # moments builder with angular basis functions
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-indices += [ ( 0, 4, 0 ) ]
+indices += [ ( 0, 4, 0 ), ( 0, 4, 2 ), ( 0, 4, 4 ) ]
 #indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4) for YIndex1 in range( -YIndex0, YIndex0 + 1 )\
 #             if PIndex == 3 or YIndex0 == 3 ]
 #indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ +1, -1 ] ]
@@ -300,7 +300,8 @@ if makePlots and normPdf :
 
     basisMomentsSignif = RealMomentsBuilder()
     basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ] if not transAngles \
-                                                   else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+                                                   else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 )
+                                                         , ( 0, 4, 0 ), ( 0, 4, 2 ), ( 0, 4, 4 )  ]
                                    )
     basisMomentsSignif.read(momentsFile + '_Basis')
     basisMomentsSignif.Print( Scale = 1. / 2. / sqrt(pi) )
