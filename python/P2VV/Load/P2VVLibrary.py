@@ -1,17 +1,17 @@
 """load the P2VV library
 
-Load the P2VV library, assuming that $P2VVPATH/lib is in $LD_LIBRARYPATH
+Load the P2VV library, assuming that the library directory is in $LD_LIBRARYPATH
 """
 
-## Add this in case a reflex dictionary is used.
 from ROOT import gSystem
+print "P2VV - INFO: loading P2VV library"
+
+# enable support for reflex dictionaries
 gSystem.Load('libCintex')
 from ROOT import Cintex
 Cintex.Enable()
 
-print "P2VV - INFO: loading P2VV library"
-from ROOT import gSystem
+# load required libraries
 gSystem.Load('libRooFit')
-gSystem.Load('libP2VV')
-
-
+gSystem.Load('libP2VVDict')
+gSystem.Load('libP2VVLib')
