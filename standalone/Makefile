@@ -12,12 +12,10 @@ CYTHON = cython
 PYTHON = python
 ROOTCONFIG = root-config
 PKGCONFIG = pkg-config
-COMMONFLAGS = -Wall -O2 -pipe -ggdb -fPIC -DPIC -march=native -msse4 -mcx16 -msahf -mpopcnt \
-	        -flto=5 -fuse-linker-plugin -floop-interchange -floop-strip-mine -floop-block
+COMMONFLAGS = -Wall -O2 -pipe -ggdb -fPIC -DPIC
 PYTHONVERSION := $(shell $(PYTHON) --version 2>&1 | grep -o "2\.[567]")
 CXXFLAGS := $(COMMONFLAGS) $(shell $(ROOTCONFIG) --cflags) -I$(INCDIR) -I. 
-LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore \
-	    -Wl,--as-needed -Wl,-O1 -Wl,--hash-style=gnu -Wl,--sort-common -flto=5 -fuse-linker-plugin
+LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 ## Reflex dictionary testing flags:
 ## LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore -lReflex -lCintex
 
@@ -28,8 +26,7 @@ else
 PYTHON_CFLAGS = ""
 endif
 
-CFLAGS   := $(COMMONFLAGS) $(PYTHON_CFLAGS) -march=native -msse4 -mcx16 -msahf -mpopcnt \
-	    -flto=5 -fuse-linker-plugin -floop-interchange -floop-strip-mine -floop-block
+CFLAGS   := $(COMMONFLAGS) $(PYTHON_CFLAGS)
 PROF_LDFLAGS := -lpython$(PYTHONVERSION) -lprofiler
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
