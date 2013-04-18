@@ -27,6 +27,9 @@
 #include "MultiHistEntry.h"
 #include "RooComplementCoef.h"
 #include "RooEffConvGenContext.h"
+#include "RooCubicBSpline.h"
+// #include "RooBSpline.h"
+// #include "RooBSplineBases.h"
 
 #include <map>
 #include <string>
