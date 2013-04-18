@@ -4,9 +4,11 @@
 ! Purpose     : keeping Tristan's crazy RooFit stuff.
 !-----------------------------------------------------------------------------
 
+!============================== v3r1 2013-04-18 ==============================
+
 ! 2013-04-17 - Jeroen van Leerdam
  - Removed test version of P2VV II (v3r0)
- - Added first P2VV II release
+ - Added first P2VV II release (v3r1)
 
    Starting from release v3r0, P2VV is no longer an update of its first
    version. P2VV I is replaced by P2VV II, which is an entirely new
@@ -31,6 +33,8 @@
    files are symlinks to their LHCb versions by default. If differences
    between the stand-alone and LHCb versions are required, symlinks can be
    replaced by real files.
+
+!============================== v3r0 2013-02-15 ==============================
 
 ! 2013-01-29 - Diego Martinez Santos
  - Removed final version of P2VV I (v2r5) by Tristan du Pree
