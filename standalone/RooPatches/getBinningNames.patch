@@ -1,0 +1,168 @@
+Index: roofit/roofitcore/inc/RooAbsCategoryLValue.h
+===================================================================
+--- roofit/roofitcore/inc/RooAbsCategoryLValue.h	(revision 49257)
++++ roofit/roofitcore/inc/RooAbsCategoryLValue.h	(working copy)
+@@ -52,6 +52,7 @@
+   virtual void randomize(const char* rangeName=0);
+ 
+   virtual const RooAbsBinning* getBinningPtr(const char* /*rangeName*/) const { return 0 ; }
++  virtual std::list<std::string> getBinningNames() const { return std::list<std::string>(1, "") ; }
+   virtual Int_t getBin(const RooAbsBinning* /*ptr*/) const { return getBin((const char*)0) ; }
+ 
+ 
+Index: roofit/roofitcore/inc/RooAbsLValue.h
+===================================================================
+--- roofit/roofitcore/inc/RooAbsLValue.h	(revision 49257)
++++ roofit/roofitcore/inc/RooAbsLValue.h	(working copy)
+@@ -16,6 +16,9 @@
+ #ifndef ROO_ABS_LVALUE
+ #define ROO_ABS_LVALUE
+ 
++#include <list>
++#include <string>
++
+ #include "Riosfwd.h"
+ #include "Rtypes.h"
+ 
+@@ -36,6 +39,7 @@
+   virtual void randomize(const char* rangeName=0) = 0 ;
+ 
+   virtual const RooAbsBinning* getBinningPtr(const char* rangeName) const = 0 ;
++  virtual std::list<std::string> getBinningNames() const = 0;
+   virtual Int_t getBin(const RooAbsBinning*) const = 0 ;		       
+ 
+ protected:
+Index: roofit/roofitcore/inc/RooRealVar.h
+===================================================================
+--- roofit/roofitcore/inc/RooRealVar.h	(revision 49257)
++++ roofit/roofitcore/inc/RooRealVar.h	(working copy)
+@@ -16,6 +16,8 @@
+ #ifndef ROO_REAL_VAR
+ #define ROO_REAL_VAR
+ 
++#include <list>
++#include <string>
+ #include "Riosfwd.h"
+ #include <math.h>
+ #include <float.h>
+@@ -79,6 +81,7 @@
+   Bool_t hasBinning(const char* name) const ;
+   const RooAbsBinning& getBinning(const char* name=0, Bool_t verbose=kTRUE, Bool_t createOnTheFly=kFALSE) const ;
+   RooAbsBinning& getBinning(const char* name=0, Bool_t verbose=kTRUE, Bool_t createOnTheFly=kFALSE) ; 
++  std::list<std::string> getBinningNames() const ;
+ 
+   // Set infinite fit range limits
+   inline void removeMin(const char* name=0) { getBinning(name).setMin(-RooNumber::infinity()) ; }
+Index: roofit/roofitcore/src/RooRealVar.cxx
+===================================================================
+--- roofit/roofitcore/src/RooRealVar.cxx	(revision 49257)
++++ roofit/roofitcore/src/RooRealVar.cxx	(working copy)
+@@ -301,7 +301,30 @@
+   return *binning ;
+ }
+ 
++//_____________________________________________________________________________
++std::list<std::string> RooRealVar::getBinningNames() const
++{
++  // Get a list of all binning names. An empty name implies the default binning and
++  // a NULL pointer should be passed to getBinning in this case.
++  std::list<std::string> binningNames;
++  if (_binning) {
++    binningNames.push_back("");
++  }
+ 
++  RooFIter iter = _altNonSharedBinning.fwdIterator();
++  const RooAbsArg* binning = 0;
++  while((binning = iter.next())) {
++    const char* name = binning->GetName();
++    binningNames.push_back(string(name));
++  }
++  iter = sharedProp()->_altBinning.fwdIterator();
++  binning = 0;
++  while((binning = iter.next())) {
++    const char* name = binning->GetName();
++    binningNames.push_back(string(name));
++  }
++  return binningNames;
++}
+ 
+ //_____________________________________________________________________________
+ void RooRealVar::setBinning(const RooAbsBinning& binning, const char* name) 
+Index: roofit/roofitcore/inc/RooErrorVar.h
+===================================================================
+--- roofit/roofitcore/inc/RooErrorVar.h	(revision 49257)
++++ roofit/roofitcore/inc/RooErrorVar.h	(working copy)
+@@ -83,6 +83,7 @@
+   const RooAbsBinning& getBinning(const char* name=0, Bool_t verbose=kTRUE, Bool_t createOnTheFly=kFALSE) const ;
+   RooAbsBinning& getBinning(const char* name=0, Bool_t verbose=kTRUE, Bool_t createOnTheFly=kFALSE) ;
+   Bool_t hasBinning(const char* name) const ;
++  std::list<std::string> getBinningNames() const ;
+ 
+   // Set infinite fit range limits
+   inline void removeMin(const char* name=0) { 
+Index: roofit/roofitcore/src/RooErrorVar.cxx
+===================================================================
+--- roofit/roofitcore/src/RooErrorVar.cxx	(revision 49257)
++++ roofit/roofitcore/src/RooErrorVar.cxx	(working copy)
+@@ -149,7 +149,21 @@
+   return *binning ;
+ }
+ 
++//_____________________________________________________________________________
++std::list<std::string> RooErrorVar::getBinningNames() const
++{
++  // Get a list of all binning names. An empty name implies the default binning.
++  // A 0 pointer should be passed to getBinning in this case.
++  std::list<std::string> binningNames(1, "");
+ 
++  RooFIter iter = _altBinning.fwdIterator();
++  const RooAbsArg* binning = 0;
++  while((binning = iter.next())) {
++    const char* name = binning->GetName();
++    binningNames.push_back(name);
++  }
++  return binningNames;
++}
+ 
+ //_____________________________________________________________________________
+ void RooErrorVar::setBinning(const RooAbsBinning& binning, const char* name) 
+Index: roofit/roofitcore/inc/RooLinearVar.h
+===================================================================
+--- roofit/roofitcore/inc/RooLinearVar.h	(revision 49257)
++++ roofit/roofitcore/inc/RooLinearVar.h	(working copy)
+@@ -43,6 +43,7 @@
+   virtual Bool_t hasBinning(const char* name) const ;
+   virtual const RooAbsBinning& getBinning(const char* name=0, Bool_t verbose=kTRUE, Bool_t createOnTheFly=kFALSE) const ;
+   virtual RooAbsBinning& getBinning(const char* name=0, Bool_t verbose=kTRUE, Bool_t createOnTheFly=kFALSE)  ;
++  virtual std::list<std::string> getBinningNames() const;
+ 
+   virtual Double_t jacobian() const ;
+   virtual Bool_t isJacobianOK(const RooArgSet& depList) const ;
+Index: roofit/roofitcore/src/RooLinearVar.cxx
+===================================================================
+--- roofit/roofitcore/src/RooLinearVar.cxx	(revision 49257)
++++ roofit/roofitcore/src/RooLinearVar.cxx	(working copy)
+@@ -248,7 +248,23 @@
+   return const_cast<RooLinearVar*>(this)->getBinning(name,verbose,createOnTheFly) ;
+ }
+ 
++//_____________________________________________________________________________
++std::list<std::string> RooLinearVar::getBinningNames() const
++{
++  // Get a list of all binning names. An empty name implies the default binning.
++  // A 0 pointer should be passed to getBinning in this case.
++  std::list<std::string> binningNames(1, "");
+ 
++  RooFIter iter = _altBinning.fwdIterator();
++  const RooAbsArg* binning = 0;
++  while((binning = iter.next())) {
++    const char* name = binning->GetName();
++    binningNames.push_back(name);
++  }
++
++  return binningNames;
++}
++
+ //_____________________________________________________________________________
+ Bool_t RooLinearVar::hasBinning(const char* name) const 
+ {

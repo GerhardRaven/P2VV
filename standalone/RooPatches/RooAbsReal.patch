@@ -1,0 +1,28 @@
+Index: roofit/roofitcore/src/RooAbsReal.cxx
+===================================================================
+--- roofit/roofitcore/src/RooAbsReal.cxx	(revision 49257)
++++ roofit/roofitcore/src/RooAbsReal.cxx	(working copy)
+@@ -2019,7 +2019,7 @@
+     }
+ 
+     // add this new curve to the specified plot frame
+-    frame->addPlotable(curve, o.drawOptions);
++    frame->addPlotable(curve, o.drawOptions, o.curveInvisible);
+ 
+     if (projDataSel!=o.projData) delete projDataSel ;
+        
+@@ -3475,6 +3475,14 @@
+   } else if (_evalErrorMode==CollectErrors) {
+     _evalErrorList[this].first = oss2.str().c_str() ;
+     _evalErrorList[this].second.push_back(ee) ;
++    if (_evalErrorList[this].second.size() > 2000) {
++       ee = _evalErrorList[this].second.front();
++       coutE(Eval) << "RooAbsReal::logEvalError(" << GetName() << ") evaluation error, " << endl 
++                   << " origin       : " << oss2.str() << endl 
++                   << " message      : " << ee._msg << endl
++                   << " server values: " << ee._srvval << endl ;       
++       _evalErrorList[this].second.pop_front();
++    }
+   }
+ 
+   inLogEvalError = kFALSE ;
