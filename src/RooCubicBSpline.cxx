@@ -166,8 +166,8 @@ Int_t RooCubicBSpline::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& anal
     return 0 ;
   }
 
-  return 0;
   if (matchArgs(allVars, analVars, _x)) return 1;
+  return 0;
 }
 
 
@@ -177,19 +177,12 @@ Double_t RooCubicBSpline::analyticalIntegral(Int_t code, const char* rangeName) 
   assert(code==1) ;
   
   Double_t  norm(0);
-  cout << "analyticalIntegral start " << endl;   
   for (int i=0; i < _coefList.getSize()-3; ++i) {
-    cout << i << endl;   
     norm += ((RooAbsReal*)_coefList.at(i  ))->getVal()*_aux->IA(i+3);
-    cout << norm << endl;
     norm += ((RooAbsReal*)_coefList.at(i+1))->getVal()*_aux->IB(i+3) ;
-    cout << norm << endl;
     norm += ((RooAbsReal*)_coefList.at(i+2))->getVal()*_aux->IC(i+3) ;
-    cout << norm << endl;
     norm += ((RooAbsReal*)_coefList.at(i+3))->getVal()*_aux->ID(i+3) ;
-    cout << norm << endl;
   }
-  cout << "analyticalIntegral stop " << endl;   
   return norm;
 }
 
