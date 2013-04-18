@@ -35,7 +35,7 @@ randomParVals           = ( ) #( 0.2, 12345 )
 
 plotsFile     = 'plots/paper2012_SFit.ps'
 plotsROOTFile = 'paper2012_SFit_plots.root'
-parFileIn     = 'paper2012FitValues.par' #'initialValues.par'
+parFileIn     = '2011DataFitValues.par' #'initialValues.par'
 parFileOut    = '' #'initialValues.par'
 
 if readData :
