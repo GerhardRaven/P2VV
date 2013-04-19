@@ -638,7 +638,6 @@ time_pdf.Print("t")
 ## print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-assert(False)
 
 for i in range(2):
     time_result = time_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
@@ -798,15 +797,16 @@ if options.simultaneous:
     from ROOT import TF1
     fit_funcs = {'pol1' : ('pol1', 'S0+'), 'pol2' : ('pol2', 'S+'),
                  'pol2_no_offset' : ('x ++ x * x', 'S0+'),
+                 'pol1_mean_param' : ('[0] + [1] + [2] * (x - [0])', 'S0+'),
                  'pol2_mean_param' : ('[0] + [1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
     for i, (func_name, opts) in enumerate(fit_funcs.iteritems()):
         fit_func = TF1('fit_func_%s' % func_name, opts[0], split_bins[0], split_bins[-1])
-        if func_name == 'pol2_mean_param':
+        if func_name.endswith('mean_param'):
             fit_func.FixParameter(0, sig_sdata.mean(st._target_()))
         fit_result = res_graph.Fit(fit_func, opts[1], "L")
         fit_results[func_name] = fit_result
         fr = fit_result.Get()
-        fr.SetName('fit_result_%s_%s' % (opts[0], args[1]))
+        fr.SetName('fit_result_%s_%s' % (func_name, args[1]))
         results.append(fr)
     
     res_graph.GetYaxis().SetRangeUser(0, 0.11)

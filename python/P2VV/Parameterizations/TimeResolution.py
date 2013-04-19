@@ -310,7 +310,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         sfModel = kwargs.pop( 'timeResSFModel', '' )
         assert(sfModel in ['', 'linear', 'quadratic'])
         from P2VV.RooFitWrappers import ResolutionModel, AddModel
-        from P2VV.RooFitWrappers import ConstVar, RealVar, LinearVar, PolyVar
+        from P2VV.RooFitWrappers import ConstVar, RealVar, FormulaVar
         from ROOT import RooNumber
         Name = kwargs.pop('Name', 'timeResModelPaper2012')
         self._parseArg( 'time',           kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
@@ -361,11 +361,12 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                                                        , ConstVar(Name = 'tres_SF_constraint_sigma'
                                                                   , Value = self._timeResSigmaSF.getError() )]))
         if sfModel == 'linear':
-            self._timeResSigmaLinear = LinearVar(Name = 'timeResSigmaLinear',
-                                                 Observable = self._timeResSigma,
-                                                 Slope = self._timeResSigmaSF,
-                                                 Offset = self._timeResSigmaOffset)
-            parameters = [p for p in [self._timeResSigmaOffset, self._timeResSigmaSF] if not p.isConstant()]
+            parameters = [self._timeResSigmaOffset, self._timeResSigmaSF]
+            calib_offset = ConstVar(Name = 'calibration_offset', Value = 0.03366)
+            self._timeResSigmaLinear = FormulaVar('timeResSigmaLinear',
+                                                  '@0 + @1 + @2 * (@3 - @0)',
+                                                  [calib_offset] + parameters + [self._timeResSigma])
+            parameters = [p for p in parameters if not p.isConstant()]
             if parameters:
                 means = [ConstVar(Name = v.GetName() + '_constraint_mean', Value = v.getVal())
                          for v in parameters]
@@ -373,13 +374,15 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                 from P2VV.RooFitWrappers import MultiVarGaussian
                 constraints.append(MultiVarGaussian(Name = 'time_resolution_constraint',
                                                     Parameters = parameters,
-                                                    CentralValues = mean, Covariance = cm))
+                                                    CentralValues = means, Covariance = cm))
             parameters = [self._time, self._timeResMean, self._timeResSigmaLinear]
         elif sfModel == 'quadratic':
             parameters = [self._timeResSigmaOffset, self._timeResSigmaSF, self._timeResSigmaSF2]
-            self._timeResSigmaQuad = PolyVar(Name = 'timeResSigmaQuad',
-                                             Observable = self._timeResSigma,
-                                             Coefficients = parameters)
+            calib_offset = ConstVar(Name = 'calibration_offset', Value = 0.03366)
+            self._timeResSigmaQuad = FormulaVar('timeResSigmaQuad',
+                                                '@0 + @1 + @2 * (@4 - @0) + @3 * (@4 - @0)^2',
+                                                [calib_offset] + parameters + [self._timeResSigma])
+            parameters = [p for p in parameters if not p.isConstant()]
             if parameters:
                 means = [ConstVar(Name = v.GetName() + '_constraint_mean', Value = v.getVal())
                          for v in parameters]
