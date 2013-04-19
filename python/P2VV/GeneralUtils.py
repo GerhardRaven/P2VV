@@ -489,13 +489,13 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         plotPDFWithSlices( pdf, obsFrame, 'pdf', **drawOpts )
 
         # draw data after drawing the PDF
-        if data and 'Asymmetry' not in pdfOpts : obsFrame.drawAfter( 'pdf',  'data' )
+        if data and 'Asymmetry' not in pdfOpts : obsFrame.drawAfter( 'data', 'pdf' )
 
     # plot additional PDFs
     if addPDFs :
         for num, addPDF in enumerate(addPDFs) :
             addPDF.plotOn( obsFrame, Name = 'addPDF' + str(num), **(addPDFsOpts[num]) )
-            if data and 'Asymmetry' not in addPDFsOpts[num] : obsFrame.drawAfter( 'addPDF' + str(num), 'data' )
+            if data and 'Asymmetry' not in addPDFsOpts[num] : obsFrame.drawAfter( 'data', 'addPDF' + str(num) )
 
     #TODO: add chisq/nbins
     #chisq = obsFrame.chiSquare( 'pdf', 'data' )
@@ -1008,6 +1008,7 @@ def plotSWavePhases( **kwargs ) :
         deltaSGraphs.append( TGraphErrors( len(KKMass), KKMass, theory, KKMassErr, theoryErr ) )
 
     from ROOT import gStyle, kSolid
+    gStyle.SetEndErrorSize(3)
     gStyle.SetLineStyleString( 11, ' 30 15' )
     deltaSGraphs[0].SetLineStyle(kSolid)
     deltaSGraphs[1].SetLineStyle(kSolid)
@@ -1022,16 +1023,16 @@ def plotSWavePhases( **kwargs ) :
     deltaSGraphs[1].SetMarkerColor( kRed - 4 )
     if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerColor(kBlack)
 
-    deltaSGraphs[0].SetLineWidth(4)
-    deltaSGraphs[1].SetLineWidth(4)
+    deltaSGraphs[0].SetLineWidth(3)
+    deltaSGraphs[1].SetLineWidth(3)
     if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetLineWidth(3)
 
     from ROOT import kFullCircle, kFullTriangleDown
     deltaSGraphs[0].SetMarkerStyle(kFullCircle)
     deltaSGraphs[1].SetMarkerStyle(kFullTriangleDown)
     if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerStyle(kFullCircle)
-    deltaSGraphs[0].SetMarkerSize(1.6)
-    deltaSGraphs[1].SetMarkerSize(1.6)
+    deltaSGraphs[0].SetMarkerSize(1.2)
+    deltaSGraphs[1].SetMarkerSize(1.4)
     if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerSize(0.7)
 
     for graph in deltaSGraphs :
@@ -1041,8 +1042,8 @@ def plotSWavePhases( **kwargs ) :
         graph.GetXaxis().SetTitle(KKMassLabel)
         graph.GetYaxis().SetTitle(deltaSLabel)
 
-        graph.GetXaxis().SetTitleOffset(1.0)
-        graph.GetYaxis().SetTitleOffset(0.7)
+        graph.GetXaxis().SetTitleOffset(1.1)
+        graph.GetYaxis().SetTitleOffset(0.8)
 
         graph.SetTitle(plotTitle)
 
@@ -1050,12 +1051,13 @@ def plotSWavePhases( **kwargs ) :
 
     if drawLegend :
         from ROOT import gStyle, TLegend
-        leg = TLegend( 0.67, 0.46, 0.93, 0.66 )
+        leg = TLegend( 0.65, 0.46, 0.91, 0.66 )
         leg.SetTextFont( gStyle.GetTextFont() )
+        leg.SetTextSize(0.072)
         leg.SetMargin(0.45)
         leg.AddEntry( deltaSGraphs[0], '#Delta#Gamma_{s} > 0', 'LPE' )
         leg.AddEntry( deltaSGraphs[1], '#Delta#Gamma_{s} < 0', 'LPE' )
-        leg.SetBorderSize(1)
+        leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         _P2VVPlotStash.append(leg)
     else :
@@ -1063,23 +1065,24 @@ def plotSWavePhases( **kwargs ) :
 
     if LHCbText1 or LHCbText2 :
         from ROOT import TPaveText
-        LHCbText = TPaveText( 0.15, 0.77 if LHCbText1 and LHCbText2 else 0.84, 0.51, 0.93, 'NDC' )
+        LHCbText = TPaveText( 0.24, 0.73 if LHCbText1 and LHCbText2 else 0.81, 0.70 if LHCbText1 and LHCbText2 else 0.37, 0.89, 'BRNDC' )
         if LHCbText1 : LHCbText.AddText(LHCbText1)
         if LHCbText2 : LHCbText.AddText(LHCbText2)
         LHCbText.SetShadowColor(0)
         LHCbText.SetFillStyle(0)
         LHCbText.SetBorderSize(0)
         LHCbText.SetTextAlign(12)
+        LHCbText.SetTextSize(0.072)
         _P2VVPlotStash.append(LHCbText)
     else :
         LHCbText = None
 
     from ROOT import TCanvas
     SWavePhaseCanv = TCanvas( 'SWavePhaseCanv', 'S-Wave Phases' )
-    SWavePhaseCanv.SetLeftMargin(0.12)
-    SWavePhaseCanv.SetRightMargin(0.04)
-    SWavePhaseCanv.SetTopMargin(0.04)
-    SWavePhaseCanv.SetBottomMargin(0.17)
+    SWavePhaseCanv.SetLeftMargin(0.18)
+    SWavePhaseCanv.SetRightMargin(0.05)
+    SWavePhaseCanv.SetBottomMargin(0.18)
+    SWavePhaseCanv.SetTopMargin(0.05)
     if gray : SWavePhaseCanv.SetGrayscale()
     deltaSGraphs[1].Draw('AP')
     deltaSGraphs[0].Draw('P sames')

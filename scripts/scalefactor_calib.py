@@ -113,9 +113,9 @@ for k, cache_dir in filter(lambda k: k[0].split('bins')[0] in ['9', '10'], inter
     for e in rd.GetListOfKeys():
         if e.GetClassName() == 'RooFitResult':
             results[k][e.GetName()] = e.ReadObj()
-    pdf_dir = cache_dir.Get('PDFs')
-    for e in pdf_dir.GetListOfKeys():
-        PDFs[index][e.GetName()] = e.ReadObj()
+    ## pdf_dir = cache_dir.Get('PDFs')
+    ## for e in pdf_dir.GetListOfKeys():
+    ##     PDFs[index][e.GetName()] = e.ReadObj()
 
 from ROOT import kGray
 from ROOT import TH1D
@@ -176,7 +176,6 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     name = 'hist_events_%s' % index
     hist_events = TH1D(name, name, len(split_bounds) - 1, array('d', [v for v in split_bounds]))
     __histos.append(hist_events)
-
     mass_result = mass_fpf = fit_results['sWeight_mass_result']
     mass_fpf = mass_result.floatParsFinal()
     time_result = fit_results['time_result_%s' % fit_type.split('_')[0]]
@@ -233,7 +232,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         __fit_results.append(fit_result)
         frs.append(fit_result.Get())
     print fr_latex(frs)
-
+    
     print ''
     res_graph.GetYaxis().SetRangeUser(0, 0.11)
     hist_events.Draw('hist') 
@@ -254,3 +253,22 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
 ##     print fr_latex(frs)
 ##     print ''
 
+graphs = [g for g in __histos if g.GetName().find('graph') != -1]
+
+func = 'pol2'
+canvas = TCanvas('canvas', 'canvas', 500, 500)
+colors = [kRed, kGreen, kBlue, kOrange, kBlack]
+__extra_results = []
+__funcs = []
+for i, g in enumerate(graphs):
+    g.SetMarkerColor(colors[i])
+    g.SetLineColor(colors[i])
+    fit_func = TF1('fit_func_%s_%d' % (func, i) , func, split_bounds[0], split_bounds[-1])
+    __funcs.append(fit_func)
+    fit_func.SetLineColor(colors[i])
+    fit_result = g.Fit(fit_func, "S+", "L")
+    __extra_results.append(fit_result)
+    if i == 0:
+        g.Draw('AP')
+    else:
+        g.Draw('P')

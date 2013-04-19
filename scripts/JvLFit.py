@@ -9,6 +9,18 @@ pdfConfig = PdfConfig()
 # job parameters
 readData                = True
 pdfConfig['dataSample'] = '' # ( None, 100260, '' )  # '' / 'Summer2011' / 'runNumber % 2 == 1'
+#pdfConfig['dataSample'] = 'sel_one_gl == 1 && Kplus_pidK > 0. && Kminus_pidK > 0. && (B_s0_MINIPCHI2NEXTBEST > 50. || B_s0_MINIPCHI2NEXTBEST < 0.)'
+#pdfConfig['dataSample'] = 'GLsb > 0.0020 && sel_one_gl == 1'\
+#    + ' && Kplus_pidK > 0. && Kminus_pidK > 0.'\
+#    + ' && (B_s0_MINIPCHI2NEXTBEST > 50. || B_s0_MINIPCHI2NEXTBEST < 0.)'\
+#    + ' && phi_1020_pt > 750. && B_s0_LOKI_DTF_VCHI2NDOF < 6.'
+#pdfConfig['dataSample'] = 'sel_onecand == 1'\
+#    + ' && Kminus_track_chi2ndof < 4. &&  Kplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && muplus_track_chi2ndof < 4.'\
+#    + ' && B_s0_IPCHI2_OWNPV < 25. && B_s0_LOKI_DTF_VCHI2NDOF < 5. && Kplus_pidK > 0. && Kminus_pidK > 0.'\
+#    + ' && muplus_PX*muplus_PX+muplus_PY*muplus_PY > 250000. && muminus_PX*muminus_PX+muminus_PY*muminus_PY > 250000.'\
+#    + ' && phi_1020_pt > 1000. && abs(mdau1 - 3090.) < 60.'\
+#    + ' && phi_1020_ENDVERTEX_CHI2 < 16. && J_psi_1S_ENDVERTEX_CHI2 < 16. && B_s0_ENDVERTEX_CHI2 < 50.'\
+#    + ' && (B_s0_MINIPCHI2NEXTBEST > 50. || B_s0_MINIPCHI2NEXTBEST < 0.)'
 pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
 doFit                   = True #'NLL'
@@ -19,15 +31,19 @@ pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 corrSFitErr             = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
-randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
+randomParVals           = ( ) #( 0.2, 12345 )
 
-plotsFile = 'plots/paper2012_SFit.ps'
-parFileIn  = 'initialValues.par'
-parFileOut = '' #'initialValues.par'
+plotsFile     = 'plots/paper2012_SFit.ps'
+plotsROOTFile = 'paper2012_SFit_plots.root'
+parFileIn     = 'paper2012FitValues.par' #'initialValues.par'
+parFileOut    = '' #'initialValues.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20130306_testGL.root'
+    #pdfConfig['nTupleFile'] = '/data/bfys/diegoms/B_s0_Output.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Diego_B_s0_Output.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDown.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagUp.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_rand0.root'
@@ -70,8 +86,10 @@ pdfConfig['fitOptions'] = fitOpts
 # plot options
 from ROOT import gStyle, kBlack, kBlue, kRed, kGreen, kMagenta, kSolid, kDashed, kFullCircle, kFullSquare, kFullDotLarge
 from P2VV.Load import RooFitOutput, LHCbStyle
-gStyle.SetEndErrorSize(3)
-lineWidth     = 4
+#gStyle.SetEndErrorSize(3)
+gStyle.SetPalette(1)
+gStyle.SetNumberContours(50)
+lineWidth     = 3
 lineColor     = kBlue
 markStyle     = kFullDotLarge
 markSize      = 0.7
@@ -82,7 +100,7 @@ gStyle.SetLineStyleString( 7, ' 40 20'        )
 gStyle.SetLineStyleString( 9, ' 100 20'       )
 
 # PDF options
-pdfConfig['transversityAngles'] = False  # default: False | nominal: True
+pdfConfig['transversityAngles'] = False
 pdfConfig['angularRanges']      = dict(  cpsi   = [ ( -1., +1. ) ]
                                        , ctheta = [ ( -1., +1. ), ( 'ctlBin0', -1.,   -0.70 )
                                                                 , ( 'ctlBin1', -0.70, -0.25 )
@@ -93,52 +111,57 @@ pdfConfig['angularRanges']      = dict(  cpsi   = [ ( -1., +1. ) ]
                                       )
 pdfConfig['sigMassModel']         = '' # 'boxFixed'
 pdfConfig['bkgMassModel']         = '' # 'linearConstant'
-pdfConfig['bkgAnglePdf']          = 'hybrid'  # default/nominal: ''
-pdfConfig['sigTaggingPdf']        = 'tagUntag'  # default: 'tagUntag' | nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRelative' | 'tagCatsRelative'
+pdfConfig['bkgAnglePdf']          = 'hybrid'
+pdfConfig['sigTaggingPdf']        = 'tagUntag'
+pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # 'tagUntagRelative' # 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['multiplyByAngEff']     = 'weights'  # default: 'basis012'
-pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
+pdfConfig['multiplyByAngEff']     = 'weights'  # 'basis012'
+pdfConfig['parameterizeKKMass']   = 'simultaneous'  # 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # default/nominal: 'simultaneousFreeBkg'
+pdfConfig['sigmatRange']          = ( 0.0001, 0.12 ) # ( 0.0001, 0.12 )
+pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                      , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
+#pdfConfig['SWaveAmplitudeValues'] = ( )
 pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
-pdfConfig['sameSideTagging']    = True  # nominal: True
-pdfConfig['conditionalTagging'] = True  # nominal: True
-pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
+pdfConfig['sameSideTagging']    = True
+pdfConfig['conditionalTagging'] = True
+pdfConfig['continuousEstWTag']  = True
 pdfConfig['numEstWTagBins']     = 50
-pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
+pdfConfig['constrainTagging']   = 'constrain'  # 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
 pdfConfig['numTimeResBins']        = 40
-pdfConfig['constrainTimeResScale'] = 'fixed'  # nominal: 'constrain'
+pdfConfig['constrainTimeResScale'] = 'fixed'  # 'constrain'
 
 pdfConfig['numEvents'] = 54755
 pdfConfig['signalFraction'] = 0.504
 pdfConfig['massRangeBackground'] = True
 
-pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # default: 'bank' | nominal: 'phasesSWaveFrac'
-pdfConfig['ASParam']        = 'deltaPerp'  # default/nominal: 'deltaPerp'
-pdfConfig['AparParam']      = 'phase' # default: 'Mag2ReIm' | nominal: 'phase'
+pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # 'bank' # 'phasesSWaveFrac'
+pdfConfig['ASParam']        = 'deltaPerp'  # 'deltaPerp'
+pdfConfig['AparParam']      = 'phase' # 'Mag2ReIm' # 'phase'
 
-pdfConfig['constrainDeltaM'] = 'constrain'  # nominal: 'constrain'
+pdfConfig['constrainDeltaM'] = 'constrain'  # 'constrain' # fixed
 
-pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # default/nominal: 'lambPhi'
+pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
+
+from P2VV.Imports import extConstraintValues
+extConstraintValues.setVal( 'DM', ( 17.63, 0.11 ) )
 
 fastFit           = False
 manualTagCatBins  = False
-constTagCatCoefs  = True  # default: True / nominal: False
-constAvgCEvenOdd  = True  # default: False / nominal: True
-constWTagAsyms    = 'P1'  # default/nominal: 'P1'
-constCSP          = True  # default/nominal: True
+constTagCatCoefs  = True
+constAvgCEvenOdd  = True
+constWTagAsyms    = 'P1'
+constCSP          = True
 constAmplitudes   = False
-constLambdaCP     = ''  # default/nominal: ''
+constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
 dGammaVal = 0.108
@@ -174,10 +197,12 @@ if not readData or manualTagCatBins :
 pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
                                     if pdfConfig['timeEffType'] == 'fit' else\
                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
+#                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816_02.root'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 #                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504_unitAcceptance.root'
 #pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+#pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted_02'
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
@@ -198,9 +223,19 @@ else :
                                , ( 'helcosthetaL', 'cos#kern[0.1]{#theta_{#mu}}' )
                                , ( 'helphi',       '#varphi_{h} [rad]'           )
                               )
-angleNames = pdfConfig['angleNames']
+obsNames = ( ( 'time', 'Decay time [ps]' ), pdfConfig['angleNames'][0], pdfConfig['angleNames'][1], pdfConfig['angleNames'][2] )
+obsYTitles = (  'Candidates / (%.4f ps)'
+              , 'Candidates / (%.3f ps)'
+              , 'Candidates / %.3f'
+              , 'Candidates / %.3f'
+              , 'Candidates / (%.3f#kern[0.3]{#pi} rad)'
+             )
 
-numBins = ( 50, 21, 21, 21 )
+doTimeAnglePlots = ( True, False, False, False )
+#numBins = ( 40, 60 ) + 3 * ( 30, )
+#yScales = ( ( 0., None ), ( 0.1, 1.e5 ) ) + 3 * ( ( 0., 1400. ), )
+numBins = ( 40, 50 ) + 3 * ( 30, )
+yScales = ( ( 0., None ), ( 0.1, 1.e4 ) ) + 3 * ( ( 0., 1400. ), )
 pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
 pdfConfig['numAngleBins'] = ( 5, 7, 9 )
@@ -398,8 +433,8 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 
 #pdfBuild['lifetimeParams'].parameter('Gamma').setVal(0.72)
 
-#ws['f_S'].setVal(0.026)
-#ws['ASOddPhase'].setVal(0.03)
+#ws['f_S'].setVal(0.)
+#ws['ASOddPhase'].setVal(0.)
 #ws['f_S'].setConstant()
 #ws['ASOddPhase'].setConstant()
 
@@ -431,7 +466,7 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 
 #ws['Gamma'].setVal(0.683)
 #ws['dGamma'].setVal(0.068)
-#ws['dM'].setVal(17.85)
+#ws['dM'].setVal(17.500)   #  17.600  17.667  17.700  17.768  17.800
 #ws['A0Mag2'].setVal(0.534)
 #ws['AperpMag2'].setVal(0.238)
 #ws['f_S'].setVal(0.)
@@ -471,8 +506,6 @@ print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
-
-assert(False)
 
 if ( readData or generateData ) and doFit :
     # fit data
@@ -640,7 +673,7 @@ if ( readData or generateData ) and doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
-    from P2VV.Imports import parNames, parValues#, parValuesPHSPAcc as parValues
+    from P2VV.Imports import parNames, parValues2011 as parValues
     print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
@@ -666,6 +699,14 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
     from P2VV.GeneralUtils import plot, _P2VVPlotStash
     from ROOT import TCanvas
 
+    if type(makeObservablePlots) == str :
+        # reduce data set
+        defDataOld = defData
+        defData = defData.reduce(makeObservablePlots)
+
+    print 'JvLFit: plot data set:'
+    defData.Print()
+
     # create projection data set for conditional observables
     if pdfConfig['SFit'] :
         comps = None
@@ -685,8 +726,9 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
         projWDataBulk     = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataSet     ), False ) )
         projWDataBBulk    = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataBSet    ), False ) )
         projWDataBbarBulk = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataBbarSet ), False ) )
-        print 'JvLFit: plot projection data set:'
+        print 'JvLFit: plot projection data sets:'
         projWData['ProjWData'][0].Print()
+        projWDataBulk['ProjWData'][0].Print()
     else :
         projWData         = dict()
         projWDataBulk     = dict()
@@ -730,142 +772,216 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     from ROOT import RooRealVar, RooConstVar, RooCategory, RooArgSet, RooCustomizer, RooExplicitNormPdf, TPaveText
 
     # LHCb text labels
-    LHCbText = TPaveText( 0.19, 0.82, 0.32, 0.91, 'NDC' )
+    LHCbText = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC')
+    LHCbText.SetName('LHCbLabel')
     LHCbText.AddText('LHCb')
-    LHCbText.SetShadowColor(0)
     LHCbText.SetFillStyle(0)
+    LHCbText.SetFillColor(0)
+    LHCbText.SetShadowColor(0)
     LHCbText.SetBorderSize(0)
     LHCbText.SetTextAlign(12)
+    LHCbText.SetTextSize(0.072)
     _P2VVPlotStash.append(LHCbText)
-
-    LHCbTextMore = TPaveText( 0.45, 0.70, 0.90, 0.90, 'NDC' )
-    LHCbTextMore.AddText('LHCb')
-    LHCbTextMore.AddText( '#sqrt{s} = 7 TeV, L = 0.37 fb^{-1}' if pdfConfig['dataSample'] == 'Summer2011'\
-                      else '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}' )
-    LHCbTextMore.SetShadowColor(0)
-    LHCbTextMore.SetFillStyle(0)
-    LHCbTextMore.SetBorderSize(0)
-    LHCbTextMore.SetTextAlign(12)
-    _P2VVPlotStash.append(LHCbTextMore)
 
     dummyCanv = TCanvas()
     LHCbText.Draw()
-    LHCbTextMore.Draw()
     dummyCanv.Update()
 
-    ## even, odd and S-wave PDFs
-    #AparMag2Cust = RooRealVar( 'AparMag2Cust', 'AparMag2Cust', ws['AparMag2'].getVal(), 0., 1. )
-    #zeroCust = RooConstVar( 'zeroCust', 'zeroCust', 1.e-6 )
-    #evenPdfCust = RooCustomizer( pdf._var, 'even' )
-    #oddPdfCust  = RooCustomizer( pdf._var, 'odd'  )
-    #SPdfCust    = RooCustomizer( pdf._var, 'S'    )
+    # even, odd and S-wave PDFs
+    AparMag2Cust = RooRealVar( 'AparMag2Cust', 'AparMag2Cust', ws['AparMag2'].getVal(), 0., 1. )
+    zeroCust = RooConstVar( 'zeroCust', 'zeroCust', 1.e-6 )
+    evenPdfCust = RooCustomizer( pdf._var, 'even' )
+    oddPdfCust  = RooCustomizer( pdf._var, 'odd'  )
+    SPdfCust    = RooCustomizer( pdf._var, 'S'    )
 
-    #evenPdfCust.replaceArg( ws['AparMag2'],  AparMag2Cust )
-    #evenPdfCust.replaceArg( ws['AperpMag2'], zeroCust     )
-    #if pdfConfig['parameterizeKKMass'] :
-    #    for bin in range( pdfBuild['KKMassBinning'].numBins() ) : evenPdfCust.replaceArg( ws[ 'f_S_bin%d' % bin ], zeroCust )
-    #else :
-    #    evenPdfCust.replaceArg( ws['f_S'], zeroCust )
-    #evenPdf = evenPdfCust.build()
+    evenPdfCust.replaceArg( ws['AparMag2'],  AparMag2Cust )
+    evenPdfCust.replaceArg( ws['AperpMag2'], zeroCust     )
+    if pdfConfig['parameterizeKKMass'] :
+        for bin in range( pdfBuild['KKMassBinning'].numBins() ) : evenPdfCust.replaceArg( ws[ 'f_S_bin%d' % bin ], zeroCust )
+    else :
+        evenPdfCust.replaceArg( ws['f_S'], zeroCust )
+    evenPdf = evenPdfCust.build()
 
-    #oddPdfCust.replaceArg( ws['AparMag2'], zeroCust )
-    #oddPdfCust.replaceArg( ws['A0Mag2'],   zeroCust )
-    #if pdfConfig['parameterizeKKMass'] :
-    #    for bin in range( pdfBuild['KKMassBinning'].numBins() ) : oddPdfCust.replaceArg( ws[ 'f_S_bin%d' % bin ], zeroCust )
-    #else :
-    #    oddPdfCust.replaceArg( ws['f_S'], zeroCust )
-    #oddPdf = oddPdfCust.build()
+    oddPdfCust.replaceArg( ws['AparMag2'], zeroCust )
+    oddPdfCust.replaceArg( ws['A0Mag2'],   zeroCust )
+    if pdfConfig['parameterizeKKMass'] :
+        for bin in range( pdfBuild['KKMassBinning'].numBins() ) : oddPdfCust.replaceArg( ws[ 'f_S_bin%d' % bin ], zeroCust )
+    else :
+        oddPdfCust.replaceArg( ws['f_S'], zeroCust )
+    oddPdf = oddPdfCust.build()
 
-    #SPdfCust.replaceArg( ws['AparMag2'],  zeroCust )
-    #SPdfCust.replaceArg( ws['A0Mag2'],    zeroCust )
-    #SPdfCust.replaceArg( ws['AperpMag2'], zeroCust )
-    #SPdf = SPdfCust.build()
+    SPdfCust.replaceArg( ws['AparMag2'],  zeroCust )
+    SPdfCust.replaceArg( ws['A0Mag2'],    zeroCust )
+    SPdfCust.replaceArg( ws['AperpMag2'], zeroCust )
+    SPdf = SPdfCust.build()
 
-    #polSet = RooArgSet( AparMag2Cust, ws['A0Mag2'], ws['AperpMag2'], ws['AparPhase'], ws['AperpPhase'] )
-    #if pdfConfig['parameterizeKKMass'] :
-    #    for bin in range( pdfBuild['KKMassBinning'].numBins() ) :
-    #        polSet.add( ws[ 'f_S_bin%d' % bin ] )
-    #        polSet.add( ws[ 'ASOddPhase_bin%d' % bin ] )
-    #else :
-    #    polSet.add( ws['f_S'] )
-    #    polSet.add( ws['ASOddPhase'] )
+    polSet = RooArgSet( AparMag2Cust, ws['A0Mag2'], ws['AperpMag2'], ws['AparPhase'], ws['AperpPhase'] )
+    if pdfConfig['parameterizeKKMass'] :
+        for bin in range( pdfBuild['KKMassBinning'].numBins() ) :
+            polSet.add( ws[ 'f_S_bin%d' % bin ] )
+            polSet.add( ws[ 'ASOddPhase_bin%d' % bin ] )
+    else :
+        polSet.add( ws['f_S'] )
+        polSet.add( ws['ASOddPhase'] )
 
-    #print 'JvLFit: plot PDF polarization parameters:'
-    #print 'total:'
-    #pdf.getObservables(polSet).Print()
-    #print 'even:'
-    #evenPdf.getObservables(polSet).Print()
-    #print 'odd:'
-    #oddPdf.getObservables(polSet).Print()
-    #print 'S-wave:'
-    #SPdf.getObservables(polSet).Print()
+    print 'JvLFit: plot PDF polarization parameters:'
+    print 'total:'
+    pdf.getObservables(polSet).Print()
+    print 'even:'
+    evenPdf.getObservables(polSet).Print()
+    print 'odd:'
+    oddPdf.getObservables(polSet).Print()
+    print 'S-wave:'
+    SPdf.getObservables(polSet).Print()
 
-    #pdfNormSet = RooArgSet()
-    #for obs in pdf.Observables().difference( pdf.ConditionalObservables() ) : pdfNormSet.add(obs._var)
-    #timePdfSet = RooArgSet(pdfNormSet)
-    #ctkPdfSet  = RooArgSet(pdfNormSet)
-    #ctlPdfSet  = RooArgSet(pdfNormSet)
-    #phiPdfSet  = RooArgSet(pdfNormSet)
-    #timePdfSet.remove( pdfNormSet.find( time.GetName()      ) )
-    #ctkPdfSet.remove(  pdfNormSet.find( angles[0].GetName() ) )
-    #ctlPdfSet.remove(  pdfNormSet.find( angles[1].GetName() ) )
-    #phiPdfSet.remove(  pdfNormSet.find( angles[2].GetName() ) )
-    #timeSet = RooArgSet( pdfNormSet.find( time.GetName()      ) )
-    #ctkSet  = RooArgSet( pdfNormSet.find( angles[0].GetName() ) )
-    #ctlSet  = RooArgSet( pdfNormSet.find( angles[1].GetName() ) )
-    #phiSet  = RooArgSet( pdfNormSet.find( angles[2].GetName() ) )
+    pdfNormSet = RooArgSet()
+    for obs in pdf.Observables().difference( pdf.ConditionalObservables() ) : pdfNormSet.add(obs._var)
+    timePdfSet = RooArgSet(pdfNormSet)
+    ctkPdfSet  = RooArgSet(pdfNormSet)
+    ctlPdfSet  = RooArgSet(pdfNormSet)
+    phiPdfSet  = RooArgSet(pdfNormSet)
+    timePdfSet.remove( pdfNormSet.find( time.GetName()      ) )
+    ctkPdfSet.remove(  pdfNormSet.find( angles[0].GetName() ) )
+    ctlPdfSet.remove(  pdfNormSet.find( angles[1].GetName() ) )
+    phiPdfSet.remove(  pdfNormSet.find( angles[2].GetName() ) )
+    timeSet = RooArgSet( pdfNormSet.find( time.GetName()      ) )
+    ctkSet  = RooArgSet( pdfNormSet.find( angles[0].GetName() ) )
+    ctlSet  = RooArgSet( pdfNormSet.find( angles[1].GetName() ) )
+    phiSet  = RooArgSet( pdfNormSet.find( angles[2].GetName() ) )
 
-    ## time PDFs
-    #timeNorm = ( time.getMax() - time.getMin() ) * defData.sumEntries() / float( numBins[0] )
-    #if projWData :
-    #    timePdf  = RooExplicitNormPdf('timePdf',  'timePdf',  timeSet, timePdfSet, pdf._var, pdf._var, timeNorm, projWData['ProjWData'][0])
-    #    timeEven = RooExplicitNormPdf('timeEven', 'timeEven', timeSet, timePdfSet, evenPdf,  pdf._var, timeNorm, projWData['ProjWData'][0])
-    #    timeOdd  = RooExplicitNormPdf('timeOdd',  'timeOdd',  timeSet, timePdfSet, oddPdf,   pdf._var, timeNorm, projWData['ProjWData'][0])
-    #    timeS    = RooExplicitNormPdf('timeS',    'timeS',    timeSet, timePdfSet, SPdf,     pdf._var, timeNorm, projWData['ProjWData'][0])
-    #else :
-    #    timePdf  = RooExplicitNormPdf( 'timePdf',  'timePdf',  timeSet, timePdfSet, pdf._var, pdf._var, timeNorm )
-    #    timeEven = RooExplicitNormPdf( 'timeEven', 'timeEven', timeSet, timePdfSet, evenPdf,  pdf._var, timeNorm )
-    #    timeOdd  = RooExplicitNormPdf( 'timeOdd',  'timeOdd',  timeSet, timePdfSet, oddPdf,   pdf._var, timeNorm )
-    #    timeS    = RooExplicitNormPdf( 'timeS',    'timeS',    timeSet, timePdfSet, SPdf,     pdf._var, timeNorm )
+    # time PDFs
+    timeNormBulk = ( time.getMax('Bulk') - time.getMin('Bulk') ) * defData.sumEntries() / float( numBins[0] )
+    timeNorm = ( time.getMax() - time.getMin() ) * defData.sumEntries() / float( numBins[1] )
+    if projWData :
+        timePdfLin  = RooExplicitNormPdf( 'timePdfLin',  'timePdf',  timeSet, timePdfSet, pdf._var, pdf._var, timeNormBulk
+                                         , projWData['ProjWData'][0] )
+        timeEvenLin = RooExplicitNormPdf( 'timeEvenLin', 'timeEven', timeSet, timePdfSet, evenPdf,  pdf._var, timeNormBulk
+                                         , projWData['ProjWData'][0] )
+        timeOddLin  = RooExplicitNormPdf( 'timeOddLin',  'timeOdd',  timeSet, timePdfSet, oddPdf,   pdf._var, timeNormBulk
+                                         , projWData['ProjWData'][0] )
+        timeSLin    = RooExplicitNormPdf( 'timeSLin',    'timeS',    timeSet, timePdfSet, SPdf,     pdf._var, timeNormBulk
+                                         , projWData['ProjWData'][0] )
 
-    ## cos(theta_K) PDFs
-    #ctkNorm = ( angles[0].getMax() - angles[0].getMin() ) * defData.sumEntries() / float( numBins[1] )
-    #if projWData :
-    #    ctkPdf  = RooExplicitNormPdf( 'ctkPdf',  'ctkPdf',  ctkSet, ctkPdfSet, pdf._var, pdf._var, ctkNorm, projWData['ProjWData'][0] )
-    #    ctkEven = RooExplicitNormPdf( 'ctkEven', 'ctkEven', ctkSet, ctkPdfSet, evenPdf,  pdf._var, ctkNorm, projWData['ProjWData'][0] )
-    #    ctkOdd  = RooExplicitNormPdf( 'ctkOdd',  'ctkOdd',  ctkSet, ctkPdfSet, oddPdf,   pdf._var, ctkNorm, projWData['ProjWData'][0] )
-    #    ctkS    = RooExplicitNormPdf( 'ctkS',    'ctkS',    ctkSet, ctkPdfSet, SPdf,     pdf._var, ctkNorm, projWData['ProjWData'][0] )
-    #else :
-    #    ctkPdf  = RooExplicitNormPdf( 'ctkPdf',  'ctkPdf',  ctkSet, ctkPdfSet, pdf._var, pdf._var, ctkNorm )
-    #    ctkEven = RooExplicitNormPdf( 'ctkEven', 'ctkEven', ctkSet, ctkPdfSet, evenPdf,  pdf._var, ctkNorm )
-    #    ctkOdd  = RooExplicitNormPdf( 'ctkOdd',  'ctkOdd',  ctkSet, ctkPdfSet, oddPdf,   pdf._var, ctkNorm )
-    #    ctkS    = RooExplicitNormPdf( 'ctkS',    'ctkS',    ctkSet, ctkPdfSet, SPdf,     pdf._var, ctkNorm )
+        timePdfLog  = RooExplicitNormPdf( 'timePdfLog',  'timePdf',  timeSet, timePdfSet, pdf._var, pdf._var, timeNorm
+                                         , projWData['ProjWData'][0] )
+        timeEvenLog = RooExplicitNormPdf( 'timeEvenLog', 'timeEven', timeSet, timePdfSet, evenPdf,  pdf._var, timeNorm
+                                         , projWData['ProjWData'][0] )
+        timeOddLog  = RooExplicitNormPdf( 'timeOddLog',  'timeOdd',  timeSet, timePdfSet, oddPdf,   pdf._var, timeNorm
+                                         , projWData['ProjWData'][0] )
+        timeSLog    = RooExplicitNormPdf( 'timeSLog',    'timeS',    timeSet, timePdfSet, SPdf,     pdf._var, timeNorm
+                                         , projWData['ProjWData'][0] )
+    else :
+        timePdfLin  = RooExplicitNormPdf( 'timePdfLin',  'timePdf',  timeSet, timePdfSet, pdf._var, pdf._var, timeNormBulk )
+        timeEvenLin = RooExplicitNormPdf( 'timeEvenLin', 'timeEven', timeSet, timePdfSet, evenPdf,  pdf._var, timeNormBulk )
+        timeOddLin  = RooExplicitNormPdf( 'timeOddLin',  'timeOdd',  timeSet, timePdfSet, oddPdf,   pdf._var, timeNormBulk )
+        timeSLin    = RooExplicitNormPdf( 'timeSLin',    'timeS',    timeSet, timePdfSet, SPdf,     pdf._var, timeNormBulk )
 
-    ## cos(theta_l) PDFs
-    #ctlNorm = ( angles[1].getMax() - angles[1].getMin() ) * defData.sumEntries() / float( numBins[2] )
-    #if projWData :
-    #    ctlPdf  = RooExplicitNormPdf( 'ctlPdf',  'ctlPdf',  ctlSet, ctlPdfSet, pdf._var, pdf._var, ctlNorm, projWData['ProjWData'][0] )
-    #    ctlEven = RooExplicitNormPdf( 'ctlEven', 'ctlEven', ctlSet, ctlPdfSet, evenPdf,  pdf._var, ctlNorm, projWData['ProjWData'][0] )
-    #    ctlOdd  = RooExplicitNormPdf( 'ctlOdd',  'ctlOdd',  ctlSet, ctlPdfSet, oddPdf,   pdf._var, ctlNorm, projWData['ProjWData'][0] )
-    #    ctlS    = RooExplicitNormPdf( 'ctlS',    'ctlS',    ctlSet, ctlPdfSet, SPdf,     pdf._var, ctlNorm, projWData['ProjWData'][0] )
-    #else :
-    #    ctlPdf  = RooExplicitNormPdf( 'ctlPdf',  'ctlPdf',  ctlSet, ctlPdfSet, pdf._var, pdf._var, ctlNorm )
-    #    ctlEven = RooExplicitNormPdf( 'ctlEven', 'ctlEven', ctlSet, ctlPdfSet, evenPdf,  pdf._var, ctlNorm )
-    #    ctlOdd  = RooExplicitNormPdf( 'ctlOdd',  'ctlOdd',  ctlSet, ctlPdfSet, oddPdf,   pdf._var, ctlNorm )
-    #    ctlS    = RooExplicitNormPdf( 'ctlS',    'ctlS',    ctlSet, ctlPdfSet, SPdf,     pdf._var, ctlNorm )
+        timePdfLog  = RooExplicitNormPdf( 'timePdfLog',  'timePdf',  timeSet, timePdfSet, pdf._var, pdf._var, timeNorm )
+        timeEvenLog = RooExplicitNormPdf( 'timeEvenLog', 'timeEven', timeSet, timePdfSet, evenPdf,  pdf._var, timeNorm )
+        timeOddLog  = RooExplicitNormPdf( 'timeOddLog',  'timeOdd',  timeSet, timePdfSet, oddPdf,   pdf._var, timeNorm )
+        timeSLog    = RooExplicitNormPdf( 'timeSLog',    'timeS',    timeSet, timePdfSet, SPdf,     pdf._var, timeNorm )
 
-    ## phi PDFs
-    #phiNorm = ( angles[2].getMax() - angles[2].getMin() ) * defData.sumEntries() / float( numBins[3] )
-    #if projWData :
-    #    phiPdf  = RooExplicitNormPdf( 'phiPdf',  'phiPdf',  phiSet, phiPdfSet, pdf._var, pdf._var, phiNorm, projWData['ProjWData'][0] )
-    #    phiEven = RooExplicitNormPdf( 'phiEven', 'phiEven', phiSet, phiPdfSet, evenPdf,  pdf._var, phiNorm, projWData['ProjWData'][0] )
-    #    phiOdd  = RooExplicitNormPdf( 'phiOdd',  'phiOdd',  phiSet, phiPdfSet, oddPdf,   pdf._var, phiNorm, projWData['ProjWData'][0] )
-    #    phiS    = RooExplicitNormPdf( 'phiS',    'phiS',    phiSet, phiPdfSet, SPdf,     pdf._var, phiNorm, projWData['ProjWData'][0] )
-    #else :
-    #    phiPdf  = RooExplicitNormPdf( 'phiPdf',  'phiPdf',  phiSet, phiPdfSet, pdf._var, pdf._var, phiNorm )
-    #    phiEven = RooExplicitNormPdf( 'phiEven', 'phiEven', phiSet, phiPdfSet, evenPdf,  pdf._var, phiNorm )
-    #    phiOdd  = RooExplicitNormPdf( 'phiOdd',  'phiOdd',  phiSet, phiPdfSet, oddPdf,   pdf._var, phiNorm )
-    #    phiS    = RooExplicitNormPdf( 'phiS',    'phiS',    phiSet, phiPdfSet, SPdf,     pdf._var, phiNorm )
+    # cos(theta_K) PDFs
+    ctkNorm = ( angles[0].getMax() - angles[0].getMin() ) * defData.sumEntries() / float( numBins[2] )
+    if projWData :
+        ctkPdf  = RooExplicitNormPdf( 'ctkPdf',  'ctkPdf',  ctkSet, ctkPdfSet, pdf._var, pdf._var, ctkNorm, projWData['ProjWData'][0] )
+        ctkEven = RooExplicitNormPdf( 'ctkEven', 'ctkEven', ctkSet, ctkPdfSet, evenPdf,  pdf._var, ctkNorm, projWData['ProjWData'][0] )
+        ctkOdd  = RooExplicitNormPdf( 'ctkOdd',  'ctkOdd',  ctkSet, ctkPdfSet, oddPdf,   pdf._var, ctkNorm, projWData['ProjWData'][0] )
+        ctkS    = RooExplicitNormPdf( 'ctkS',    'ctkS',    ctkSet, ctkPdfSet, SPdf,     pdf._var, ctkNorm, projWData['ProjWData'][0] )
+    else :
+        ctkPdf  = RooExplicitNormPdf( 'ctkPdf',  'ctkPdf',  ctkSet, ctkPdfSet, pdf._var, pdf._var, ctkNorm )
+        ctkEven = RooExplicitNormPdf( 'ctkEven', 'ctkEven', ctkSet, ctkPdfSet, evenPdf,  pdf._var, ctkNorm )
+        ctkOdd  = RooExplicitNormPdf( 'ctkOdd',  'ctkOdd',  ctkSet, ctkPdfSet, oddPdf,   pdf._var, ctkNorm )
+        ctkS    = RooExplicitNormPdf( 'ctkS',    'ctkS',    ctkSet, ctkPdfSet, SPdf,     pdf._var, ctkNorm )
+
+    # cos(theta_l) PDFs
+    ctlNorm = ( angles[1].getMax() - angles[1].getMin() ) * defData.sumEntries() / float( numBins[3] )
+    if projWData :
+        ctlPdf  = RooExplicitNormPdf( 'ctlPdf',  'ctlPdf',  ctlSet, ctlPdfSet, pdf._var, pdf._var, ctlNorm, projWData['ProjWData'][0] )
+        ctlEven = RooExplicitNormPdf( 'ctlEven', 'ctlEven', ctlSet, ctlPdfSet, evenPdf,  pdf._var, ctlNorm, projWData['ProjWData'][0] )
+        ctlOdd  = RooExplicitNormPdf( 'ctlOdd',  'ctlOdd',  ctlSet, ctlPdfSet, oddPdf,   pdf._var, ctlNorm, projWData['ProjWData'][0] )
+        ctlS    = RooExplicitNormPdf( 'ctlS',    'ctlS',    ctlSet, ctlPdfSet, SPdf,     pdf._var, ctlNorm, projWData['ProjWData'][0] )
+    else :
+        ctlPdf  = RooExplicitNormPdf( 'ctlPdf',  'ctlPdf',  ctlSet, ctlPdfSet, pdf._var, pdf._var, ctlNorm )
+        ctlEven = RooExplicitNormPdf( 'ctlEven', 'ctlEven', ctlSet, ctlPdfSet, evenPdf,  pdf._var, ctlNorm )
+        ctlOdd  = RooExplicitNormPdf( 'ctlOdd',  'ctlOdd',  ctlSet, ctlPdfSet, oddPdf,   pdf._var, ctlNorm )
+        ctlS    = RooExplicitNormPdf( 'ctlS',    'ctlS',    ctlSet, ctlPdfSet, SPdf,     pdf._var, ctlNorm )
+
+    # phi PDFs
+    phiNorm = ( angles[2].getMax() - angles[2].getMin() ) * defData.sumEntries() / float( numBins[4] )
+    if projWData :
+        phiPdf  = RooExplicitNormPdf( 'phiPdf',  'phiPdf',  phiSet, phiPdfSet, pdf._var, pdf._var, phiNorm, projWData['ProjWData'][0] )
+        phiEven = RooExplicitNormPdf( 'phiEven', 'phiEven', phiSet, phiPdfSet, evenPdf,  pdf._var, phiNorm, projWData['ProjWData'][0] )
+        phiOdd  = RooExplicitNormPdf( 'phiOdd',  'phiOdd',  phiSet, phiPdfSet, oddPdf,   pdf._var, phiNorm, projWData['ProjWData'][0] )
+        phiS    = RooExplicitNormPdf( 'phiS',    'phiS',    phiSet, phiPdfSet, SPdf,     pdf._var, phiNorm, projWData['ProjWData'][0] )
+    else :
+        phiPdf  = RooExplicitNormPdf( 'phiPdf',  'phiPdf',  phiSet, phiPdfSet, pdf._var, pdf._var, phiNorm )
+        phiEven = RooExplicitNormPdf( 'phiEven', 'phiEven', phiSet, phiPdfSet, evenPdf,  pdf._var, phiNorm )
+        phiOdd  = RooExplicitNormPdf( 'phiOdd',  'phiOdd',  phiSet, phiPdfSet, oddPdf,   pdf._var, phiNorm )
+        phiS    = RooExplicitNormPdf( 'phiS',    'phiS',    phiSet, phiPdfSet, SPdf,     pdf._var, phiNorm )
+
+    # plot lifetime and angles
+    print 'JvLFit: plotting time and angular distributions'
+    from ROOT import TFile
+    plotsRFile  = TFile.Open( plotsROOTFile, 'RECREATE' )
+    timeLinCanv = TCanvas( 'timeLinCanv', 'Decay time'   )
+    timeLogCanv = TCanvas( 'timeLogCanv', 'Decay time'   )
+    ctkCanv     = TCanvas( 'ctkCanv',     'cos(theta_K)' )
+    ctlCanv     = TCanvas( 'ctlCanv',     'cos(theta_l)' )
+    phiCanv     = TCanvas( 'phiCanv',     'cos(phi)'     )
+    for iter, ( pad, obs, doPlot, plotRange, pdfFull, pdfEven, pdfOdd, pdfS, nBins, xTitle, yTitle, yTitleOffset, yScale, logY, mSize
+               , mLineW, LHCbCoords )\
+            in enumerate( zip(  [ timeLinCanv, timeLogCanv, ctkCanv, ctlCanv, phiCanv ]
+                         , [ obsSetP2VV[0] ] + obsSetP2VV[ : 4 ]
+                         , doTimeAnglePlots
+                         , [ 'Bulk' ] + 4 * [ '' ]
+                         , [ timePdfLin,  timePdfLog,  ctkPdf,  ctlPdf,  phiPdf  ]
+                         , [ timeEvenLin, timeEvenLog, ctkEven, ctlEven, phiEven ]
+                         , [ timeOddLin,  timeOddLog,  ctkOdd,  ctlOdd,  phiOdd  ]
+                         , [ timeSLin,    timeSLog,    ctkS,    ctlS,    phiS    ]
+                         , numBins
+                         , [ obsNames[0][1], obsNames[0][1], obsNames[1][1], obsNames[2][1], obsNames[3][1] ]
+                         , obsYTitles
+                         , [ 1.15, 1.00 ] + 3 * [ 1.15 ]
+                         , yScales
+                         , [ False, True ] + 3 * [ False ]
+                         , [ 0.7, 0.7 ] + 3 * [ 0.7 ]
+                         , [ 3, 3 ] + 3 * [ 3 ]
+                         , 2 * [ ( 0.75, 0.81, 0.88, 0.89 ) ] + [ ( 0.67, 0.81, 0.80, 0.89 ) ] + 2 * [ ( 0.75, 0.81, 0.88, 0.89 ) ]
+                        ) ) :
+        if not doPlot : continue
+
+        pad.SetLeftMargin(0.18)
+        pad.SetRightMargin(0.05)
+        pad.SetBottomMargin(0.18)
+        pad.SetTopMargin(0.05)
+
+        binWidth = ( obs.getMax(plotRange) - obs.getMin(plotRange) ) / float(nBins) / ( pi if iter == 4 else 1. )
+        plots = plot(  pad, obs, defData, pdfFull, addPDFs = [ pdfEven, pdfOdd, pdfS ]
+                     , xTitle = xTitle, yTitle = yTitle % binWidth, yScale = yScale, logy = logY
+                     , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
+                     , frameOpts   = dict( Range = plotRange, Bins = nBins, Title = ''                     )
+                     , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = mSize, LineWidth = mLineW )
+                     , pdfOpts     = dict( LineColor = kBlue, LineWidth = lineWidth, LineStyle = kSolid    )
+                     , addPDFsOpts = [  dict( LineColor = kRed,         LineWidth = lineWidth, LineStyle = 9 )
+                                      , dict( LineColor = kGreen + 3,   LineWidth = lineWidth, LineStyle = 7 )
+                                      , dict( LineColor = kMagenta + 3, LineWidth = lineWidth, LineStyle = 5 )
+                                     ]
+                     , components = comps
+                    )
+
+        _P2VVPlotStash.append( LHCbText.Clone() )
+        _P2VVPlotStash[-1].SetName( 'LHCbLabel%d_%s' % ( iter, obs.GetName() ) )
+        _P2VVPlotStash[-1].SetX1NDC( LHCbCoords[0] )
+        _P2VVPlotStash[-1].SetY1NDC( LHCbCoords[1] )
+        _P2VVPlotStash[-1].SetX2NDC( LHCbCoords[2] )
+        _P2VVPlotStash[-1].SetY2NDC( LHCbCoords[3] )
+        _P2VVPlotStash[-1].Draw()
+
+        plotsRFile.Add(pad)
+        plotsRFile.Add( _P2VVPlotStash[-1] )
+
+    plotsRFile.Write()
 
     #pdfIntSetTagCat = RooArgSet(pdfNormSet)
     #pdfIntSetTagCat.remove(tagCatP2VVOS._var)
@@ -946,114 +1062,75 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #LHCbText.Draw()
     #timeBbarCanv.Print( plotsFile + ')' )
 
-    ## plot lifetime and angles
-    #print 'JvLFit: plotting time and angular distributions'
+    ## plot angles
+    #print 'JvLFit: plotting angular distributions'
+    #updateAngPlots = False
+
+    #from ROOT import TFile
+    #if not updateAngPlots :
+    #    angPlotsFileRead = None
+    #    angPlotsFile     = TFile.Open( 'anglePlotsFile.root',       'RECREATE' )
+    #else :
+    #    angPlotsFileRead = TFile.Open( 'anglePlotsFile.root',       'READ'     )
+    #    angPlotsFile     = TFile.Open( 'anglePlotsFileUpdate.root', 'RECREATE' )
+
     #timeCanv = TCanvas( 'timeCanv', 'Decay time'   )
     #ctkCanv  = TCanvas( 'ctkCanv',  'cos(theta_K)' )
     #ctlCanv  = TCanvas( 'ctlCanv',  'cos(theta_l)' )
     #phiCanv  = TCanvas( 'phiCanv',  'cos(phi)'     )
-    #for ( pad, obs, pdfFull, pdfEven, pdfOdd, pdfS, nBins, xTitle, yScale, yScaleRel, logY, text, coords )\
-    #        in zip(  [ timeCanv, ctkCanv, ctlCanv, phiCanv ]
-    #               , obsSetP2VV[ : 4 ]
-    #               , [ timePdf,  ctkPdf,  ctlPdf,  phiPdf  ]
-    #               , [ timeEven, ctkEven, ctlEven, phiEven ]
-    #               , [ timeOdd,  ctkOdd,  ctlOdd,  phiOdd  ]
-    #               , [ timeS,    ctkS,    ctlS,    phiS    ]
-    #               , numBins
-    #               , ( '', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-    #               , ( ( 0.1, None ), ) + 3 * ( ( None, None ), )
-    #               , 2 * ( ( None, None ), ) + 2 * ( ( None, 17. / 14. ), )
-    #               , ( True, ) + 3 * ( False, )
-    #               , 4 * [ LHCbText ]
-    #               , [ ( 0.47, 0.73, 0.92, 0.93 ) ] + [ ( 0.26, 0.82, 0.39, 0.91 ) ] + 2 * [ ( 0.19, 0.82, 0.32, 0.91 ) ]
+    #for ( canv, obs, nBins, xTitle, binWidthStr, textXCoords )\
+    #        in zip(  [ ctkCanv, ctlCanv, phiCanv ]
+    #               , obsSetP2VV[ 1 : 4 ]
+    #               , numBins[ 1 : 4 ]
+    #               , ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+    #               , ( 'Candidates / %.3f', 'Candidates / %.3f', 'Candidates / (%.2f rad)' )
+    #               , ( ( 0.54, 0.69 ), ( 0.32, 0.47 ), ( 0.32, 0.47 ) )
     #              ) :
-    #    plot(  pad, obs, defData, pdfFull, addPDFs = [ pdfEven, pdfOdd, pdfS ]
-    #         , xTitle = xTitle, yScale = yScale, yScaleRel = yScaleRel, logy = logY
-    #         , frameOpts   = dict( Bins = nBins, Title = ''                       )
-    #         , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
-    #         , pdfOpts     = dict( LineColor = kBlue, LineWidth = lineWidth, LineStyle = kSolid )
-    #         , addPDFsOpts = [  dict( LineColor = kRed,         LineWidth = lineWidth, LineStyle = 9 )
-    #                          , dict( LineColor = kGreen + 3,   LineWidth = lineWidth, LineStyle = 7 )
-    #                          , dict( LineColor = kMagenta + 3, LineWidth = lineWidth, LineStyle = 5 )
-    #                         ]
-    #         , components = comps
-    #        )
-    #    _P2VVPlotStash.append( text.Clone() )
-    #    _P2VVPlotStash[-1].SetX1NDC( coords[0] )
-    #    _P2VVPlotStash[-1].SetY1NDC( coords[1] )
-    #    _P2VVPlotStash[-1].SetX2NDC( coords[2] )
-    #    _P2VVPlotStash[-1].SetY2NDC( coords[3] )
+    #    canv.cd()
+    #    canv.SetLeftMargin(0.28)
+
+    #    if not updateAngPlots :
+    #        obsFrame = obs.frame( Bins = nBins, Title = obs.GetTitle() )
+    #        xAxis = obsFrame.GetXaxis()
+    #        yAxis = obsFrame.GetYaxis()
+    #        _P2VVPlotStash.append(obsFrame)
+
+    #        obsFrame.SetMinimum(0.)
+    #        obsFrame.SetMaximum(2100.)
+    #        xAxis.SetTitle(xTitle)
+    #        yAxis.SetTitle( binWidthStr % ( ( obs.getMax() - obs.getMin() ) / float(nBins) ) )
+    #        yAxis.SetTitleOffset(1.0)
+
+    #        defData.plotOn( obsFrame, Name = 'data', MarkerStyle = markStyle, MarkerSize = markSize, MarkerColor = markColor
+    #                    , LineColor = markColor, LineWidth = markLineWidth )
+    #        pdf.plotOn( obsFrame, Name = 'pdf', LineColor = kBlue, LineWidth = lineWidth, **projWData )
+    #        obsFrame.drawAfter( 'pdf', 'data' )
+
+    #    else :
+    #        obsFrame = None
+    #        keysList = angPlotsFileRead.GetListOfKeys()
+    #        for key in keysList :
+    #            if key.GetName().startswith( 'frame_' + obs.GetName() ) : obsFrame = angPlotsFileRead.Get( key.GetName() )
+
+    #        if obsFrame :
+    #            angPlotsFile.Add(obsFrame)
+    #            pdf.plotOn( obsFrame, Name = 'pdf1', LineColor = kRed, LineStyle = 7, LineWidth = lineWidth, **projWData )
+    #            obsFrame.drawAfter( 'pdf1', 'data' )
+    #            obsFrame.drawAfter( 'pdf',  'pdf1' )
+
+    #    if obsFrame : obsFrame.Draw()
+
+    #    _P2VVPlotStash.append( LHCbText.Clone() )
+    #    _P2VVPlotStash[-1].SetX1NDC( textXCoords[0] )
+    #    _P2VVPlotStash[-1].SetY1NDC(0.82)
+    #    _P2VVPlotStash[-1].SetX2NDC( textXCoords[1] )
+    #    _P2VVPlotStash[-1].SetY2NDC(0.91)
+    #    #_P2VVPlotStash[-1].SetBorderSize(1)
     #    _P2VVPlotStash[-1].Draw()
 
-    # plot angles
-    print 'JvLFit: plotting angular distributions'
-    updateAngPlots = False
+    #    angPlotsFile.Add(canv)
 
-    from ROOT import TFile
-    if not updateAngPlots :
-        angPlotsFileRead = None
-        angPlotsFile     = TFile.Open( 'anglePlotsFile.root',       'RECREATE' )
-    else :
-        angPlotsFileRead = TFile.Open( 'anglePlotsFile.root',       'READ'     )
-        angPlotsFile     = TFile.Open( 'anglePlotsFileUpdate.root', 'RECREATE' )
-
-    timeCanv = TCanvas( 'timeCanv', 'Decay time'   )
-    ctkCanv  = TCanvas( 'ctkCanv',  'cos(theta_K)' )
-    ctlCanv  = TCanvas( 'ctlCanv',  'cos(theta_l)' )
-    phiCanv  = TCanvas( 'phiCanv',  'cos(phi)'     )
-    for ( canv, obs, nBins, xTitle, binWidthStr, textXCoords )\
-            in zip(  [ ctkCanv, ctlCanv, phiCanv ]
-                   , obsSetP2VV[ 1 : 4 ]
-                   , numBins[ 1 : 4 ]
-                   , ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-                   , ( 'Candidates / %.3f', 'Candidates / %.3f', 'Candidates / (%.2f rad)' )
-                   , ( ( 0.54, 0.69 ), ( 0.32, 0.47 ), ( 0.32, 0.47 ) )
-                  ) :
-        canv.cd()
-        canv.SetLeftMargin(0.28)
-
-        if not updateAngPlots :
-            obsFrame = obs.frame( Bins = nBins, Title = obs.GetTitle() )
-            xAxis = obsFrame.GetXaxis()
-            yAxis = obsFrame.GetYaxis()
-            _P2VVPlotStash.append(obsFrame)
-
-            obsFrame.SetMinimum(0.)
-            obsFrame.SetMaximum(2100.)
-            xAxis.SetTitle(xTitle)
-            yAxis.SetTitle( binWidthStr % ( ( obs.getMax() - obs.getMin() ) / float(nBins) ) )
-            yAxis.SetTitleOffset(1.0)
-
-            defData.plotOn( obsFrame, Name = 'data', MarkerStyle = markStyle, MarkerSize = markSize, MarkerColor = markColor
-                        , LineColor = markColor, LineWidth = markLineWidth )
-            pdf.plotOn( obsFrame, Name = 'pdf', LineColor = kBlue, LineWidth = lineWidth, **projWData )
-            obsFrame.drawAfter( 'pdf', 'data' )
-
-        else :
-            obsFrame = None
-            keysList = angPlotsFileRead.GetListOfKeys()
-            for key in keysList :
-                if key.GetName().startswith( 'frame_' + obs.GetName() ) : obsFrame = angPlotsFileRead.Get( key.GetName() )
-
-            if obsFrame :
-                angPlotsFile.Add(obsFrame)
-                pdf.plotOn( obsFrame, Name = 'pdf1', LineColor = kRed, LineStyle = 7, LineWidth = lineWidth, **projWData )
-                obsFrame.drawAfter( 'pdf1', 'data' )
-                obsFrame.drawAfter( 'pdf',  'pdf1' )
-
-        if obsFrame : obsFrame.Draw()
-
-        _P2VVPlotStash.append( LHCbText.Clone() )
-        _P2VVPlotStash[-1].SetX1NDC( textXCoords[0] )
-        _P2VVPlotStash[-1].SetY1NDC(0.82)
-        _P2VVPlotStash[-1].SetX2NDC( textXCoords[1] )
-        _P2VVPlotStash[-1].SetY2NDC(0.91)
-        #_P2VVPlotStash[-1].SetBorderSize(1)
-        _P2VVPlotStash[-1].Draw()
-
-        angPlotsFile.Add(canv)
-
-    angPlotsFile.Write()
+    #angPlotsFile.Write()
 
     ## plot lifetime
     #timePlotTitles = tuple( [ time.GetTitle() + title for title in (  ' - linear'
@@ -1166,7 +1243,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #        )
 
     # print canvas to file
-    timeCanv.Print( plotsFile + '(' )
+    timeLinCanv.Print( plotsFile + '(' )
+    timeLogCanv.Print(plotsFile)
     ctkCanv.Print(plotsFile)
     ctlCanv.Print(plotsFile)
     phiCanv.Print( plotsFile + ( ')' if not deltaSCanv and not pdfConfig['makePlots'] else '' ) )
@@ -1174,6 +1252,8 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     #timeCanv1.Print(plotsFile)
     #timeCanv2.Print(plotsFile)
     #bkgTimeCanv.Print(plotsFile)
+
+    plotsRFile.Close()
 
 if pdfConfig['makePlots'] :
     pdfBuild['massCanvs'][0].Print(plotsFile + ( '(' if not makeObservablePlots or pdfBuild['iTagZeroTrick'] else '' ) )
@@ -1354,12 +1434,13 @@ sums = {
 }
 
 from math import exp
+DelmVal = 17.667
 for varSet in tagData :
   weight = tagData.weight()
   sums['numEv'] += weight
 
   sigmat = 1.45 * varSet.getRealValue('sigmat')
-  dilResSq = exp( - 17.6**2 * sigmat**2 )
+  dilResSq = exp( -DelmVal**2 * sigmat**2 )
   dilRes   = sqrt(dilResSq)
   sums['dilResAll']  += weight * dilRes
   sums['dilRes2All'] += weight * dilResSq
@@ -1478,6 +1559,9 @@ print 'Comb. <eff * dilTot2>: %.4f%% (%.4f%%)'   % (  sums['dilTot2Comb'] / sums
                                                    )
 print 'All   <eff * dilRes2>: %.4f\n'            % ( sums['dilRes2All'] / sums['numEv'] )
 
+from math import log
+print 'effective decay time resolution: %.4f\n' % (  sqrt( -log( sums['dilRes2All'] / sums['numEv'] ) / DelmVal**2 ) )
+
 nEv = 0.
 nBB = 0.
 nBbarBbar = 0.
@@ -1508,3 +1592,38 @@ avDD   /= nEv
 
 Atags = ( nBB + nBbarBbar - nBbarB - nBBbar ) / nEv
 print avDD, avD_OS * avD_SS, Atags
+
+########################################################################
+#plotsFile = 'timeAngleData_PID_NextVert_GL0020_KKPT750_DTF6.ps'
+#
+#plotVars = [ time ] + angles
+#plots = [ time.frame(30), angles[0].frame(20), angles[1].frame(40), angles[2].frame(20) ]
+#plots[0].SetXTitle('Decay time [ps]')
+#for iter, plot in enumerate( plots[ 1 : ] ) : plot.SetXTitle( pdfConfig['angleNames'][iter][1] )
+#
+#from ROOT import kFullCircle, kBlue, kRed
+#for plot in plots :
+#    bkgData.plotOn( plot, MarkerStyle = kFullCircle, MarkerSize = 0.6, MarkerColor = kRed,  LineWidth = 3, LineColor = kRed  )
+#    sigData.plotOn( plot, MarkerStyle = kFullCircle, MarkerSize = 0.6, MarkerColor = kBlue, LineWidth = 3, LineColor = kBlue )
+#
+#plots[0].SetMinimum(0.1)
+##plots[0].SetMaximum(4.e4)
+##plots[1].SetMinimum(0.)
+##plots[1].SetMaximum(1000.)
+##plots[2].SetMinimum(0.)
+##plots[2].SetMaximum(700.)
+##plots[3].SetMinimum(0.)
+##plots[3].SetMaximum(1000.)
+#
+#from ROOT import TCanvas
+#motherCanv = TCanvas()
+#motherCanv.Divide( 2, 2 )
+#canvs = [ motherCanv.cd(iter) for iter in range( 1, 5 ) ]
+##canvs = [ TCanvas( var.GetName() ) for var in plotVars ]
+#canvs[0].SetLogy()
+#
+#for iter, ( plot, canv ) in enumerate( zip( plots, canvs ) ) :
+#    canv.cd()
+#    plot.Draw()
+#    #canv.Print( plotsFile + ( '(' if iter == 0 else ')' if iter == len(plots) - 1 else '' ) )
+#motherCanv.Print(plotsFile)

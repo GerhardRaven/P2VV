@@ -15,24 +15,30 @@ class _util_parse_mixin( object ) :
             if par.GetName() == name : return par
         return None
 
-    def _parseArg( self, arg, kwargs, ContainerList = None, ObjectType = 'RealVar', SingleArgKey = 'Value', **d ) :
-        def _create( arg,kwargs, **d ) :
+    def _parseArg( self, arg, kwargs, **parsDict ) :
+        def _create( arg, kwargs, **parsDict ) :
             import P2VV.RooFitWrappers
             from copy import copy
-            _d = copy(d) # make sure we do not modify the input!!!
-            if arg in kwargs or arg in _d :
-                a = kwargs.pop(arg) if arg in kwargs else _d.pop(arg)
-                if isinstance( a, P2VV.RooFitWrappers.RooObject ) : return a
-                _d.update( a if type(a) == dict else { SingleArgKey : a } )
-            if 'Name' not in _d : _d[ 'Name' ] = arg
+            _parsDict = copy(parsDict) # make sure we do not modify the input!!!
+            objType      = _parsDict.pop( 'ObjectType',   'RealVar' )
+            singleArgKey = _parsDict.pop( 'SingleArgKey', 'Value'   )
+            if arg in kwargs or arg in _parsDict :
+                argPars = kwargs.pop(arg) if arg in kwargs else _parsDict.pop(arg)
+                if isinstance( argPars, P2VV.RooFitWrappers.RooObject ) : return argPars
+                if type(argPars) == dict and 'ObjectType' in argPars : objType = argPars.pop('ObjectType')
+                _parsDict.update( argPars if type(argPars) == dict else { singleArgKey : argPars } )
+            if 'Name' not in _parsDict : _parsDict[ 'Name' ] = arg
 
-            return vars(P2VV.RooFitWrappers)[ObjectType](**_d)
+            return vars(P2VV.RooFitWrappers)[objType](**_parsDict)
+
+        # get object containter list
+        contList = parsDict.pop( 'ContainerList', None )
 
         # create object
-        obj = _create( arg, kwargs, **d )
+        obj = _create( arg, kwargs, **parsDict )
 
         # either put object in container list or set it as attribute
-        if ContainerList != None : ContainerList.append(obj)
+        if contList != None : contList.append(obj)
         else : setattr( self, '_%s' % arg, obj )
 
         # put object in parameters

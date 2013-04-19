@@ -1,164 +1,114 @@
+
 ###########################################################################################################################################
 ## set script parameters ##
 ###########################
 
+from math import pi
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
-doFit                   = True
-randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
+doFit                   = False
+pdfConfig['selection']  = 'paper2012'
 
-#OutputPath for the plots in line 
+parFileIn  = ''
+parFileOut = ''
 
 pdfConfig['nTupleName'] = 'DecayTree'
 pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 
+
+pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
+pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'
+
+
+
+
 # fit options
-fitOpts = dict(  NumCPU    = 16
+fitOpts = dict(  NumCPU    = 2
                , Optimize  = 2
-               , Timer     = True
                , Minimizer = 'Minuit2'
+#               , Offset    = True
+#               , Hesse     = False
+               , Timer     = True
+#               , Verbose   = True
               )
 pdfConfig['fitOptions'] = fitOpts
 
+fitRange      = ''
+corrSFitErr   = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
+randomParVals = ( ) # ( 1., 12345 )
+MinosPars     = [#  'AparPhase'
+                 #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
+                 #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
+                ]
+
 # PDF options
-pdfConfig['transversityAngles'] = False
-pdfConfig['bkgAnglePdf']          = 'hybrid'            # 'hybrid'
-pdfConfig['sigTaggingPdf']        = 'tagUntag'          # 'tagUntag' # nominal: 'tagCats'
-pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # 'tagUntagRelative' # 'tagCatsRelative'
-pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'paper2012'         # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['multiplyByAngEff']     = 'basis012'          # 'basis012'
-pdfConfig['parameterizeKKMass']   = 'simultaneous'      # 'simultaneous'
-pdfConfig['ambiguityParameters']  = False
-pdfConfig['lifetimeRange']        = ( 0.3, 14. )
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 1008., 1032. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.33, 0.09), (0.073, 0.030), (0.009, 0.012), (0.012, 0.010), (0.061, 0.027), (0.18, 0.04) ]
-                                    , [ (1.1,  0.5 ), (0.7,   0.2  ), (0.4,   0.4  ), (-0.6,  0.3  ), (-0.4, 0.2   ), (-0.7, 0.2 ) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+pdfConfig['timeEffType']          = 'paper2012'
+pdfConfig['multiplyByAngEff']     = 'basis012Plus'
+pdfConfig['parameterizeKKMass']   = 'simultaneous'
+pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
+                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 
 pdfConfig['sameSideTagging']    = True
 pdfConfig['conditionalTagging'] = True
 pdfConfig['continuousEstWTag']  = True
-pdfConfig['numEstWTagBins']     = 20
-pdfConfig['constrainTagging']   = 'constrain'  # 'constrain'
+pdfConfig['constrainTagging']   = 'constrain'
 
-pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
-pdfConfig['numTimeResBins']        = 50
-pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
+pdfConfig['timeResType']           = 'eventNoMean'
+pdfConfig['numTimeResBins']        = 40
+pdfConfig['constrainTimeResScale'] = 'fixed'
 
-pdfConfig['numEvents'] = 10000
-pdfConfig['signalFraction'] = 0.45
-pdfConfig['massRangeBackground'] = True
+pdfConfig['constrainDeltaM'] = 'constrain'
 
-pdfConfig['amplitudeParam'] = 'phasesSWaveFrac' # 'bank' # 'phasesSWaveFrac'
-pdfConfig['ASParam']        = 'deltaPerp'  # 'deltaPerp'
-pdfConfig['AparParam']      = 'phase' # 'Mag2ReIm' # 'phase'
-
-pdfConfig['constrainDeltaM'] = 'constrain'  # nominal: 'constrain'
-
-pdfConfig['lambdaCPParam'] = 'lambPhi'  # 'lambPhi'
-
-constWTagAsyms = 'P1'
-
-pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
-                                    if pdfConfig['timeEffType'] == 'fit' else\
-                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
-pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
-                                    if pdfConfig['transversityAngles'] else\
-                                    '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
-
-if pdfConfig['transversityAngles'] :
-    pdfConfig['angleNames'] = (  ( 'trcospsi',   'cos(#psi_{tr})'   )
-                               , ( 'trcostheta', 'cos(#theta_{tr})' )
-                               , ( 'trphi',      '#phi_{tr}'        )
-                              )
-else :
-    pdfConfig['angleNames'] = (  ( 'helcosthetaK', 'cos #theta_{K}' )
-                               , ( 'helcosthetaL', 'cos #theta_{#mu}' )
-                               , ( 'helphi',       '#varphi_{h} [rad]'            )
-                              )
-
-numBins = ( 60, 30, 30, 30 )
-pdfConfig['numTimeBins'] = 30
-numAngleBins = ( 20, 20, 20 )
-pdfConfig['numAngleBins'] = ( 5, 7, 9 )
+pdfConfig['lambdaCPParam'] = 'lambPhi'
 
 
 ###########################################################################################################################################
-## build PDF ##
-###############
-
-from P2VV.Load import RooFitOutput
+## read data and build PDF ##
+#############################
 
 # workspace
 from P2VV.RooFitWrappers import RooObject
-ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
+worksp = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
-# get variables
-obsSetP2VV = [ pdfBuild['observables'][obs] for obs in [ 'time', 'cpsi', 'ctheta', 'phi', 'iTagOS' ] ]
-time       = obsSetP2VV[0]
-angles     = obsSetP2VV[ 1 : 4 ]
-iTagOS     = obsSetP2VV[4]
-iTagSS     = pdfBuild['observables']['iTagSS']
-BMass      = pdfBuild['observables']['BMass']
-mumuMass   = pdfBuild['observables']['mumuMass']
-KKMass     = pdfBuild['observables']['KKMass']
-estWTagOS  = pdfBuild['observables']['estWTagOS']
-timeRes    = pdfBuild['observables']['timeRes']
+if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
+    # unset cache-and-track
+    for par in pdfBuild['taggingParams'].parameters() : par.setAttribute( 'CacheAndTrack', False )
 
-if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
+if parFileIn :
+    # read parameters from file
+    pdfConfig.readParametersFromFile( filePath = parFileIn )
+    pdfConfig.setParametersInPdf(pdf)
 
-if not pdfBuild['iTagZeroTrick'] :
-    tagCatP2VVOS = pdfBuild['observables']['tagCatP2VVOS']
-    tagCatP2VVSS = pdfBuild['observables']['tagCatP2VVSS']
-    obsSetP2VV.append(tagCatP2VVOS)
+# signal and background data sets
+sigData = pdfBuild['sigSWeightData']
+bkgData = pdfBuild['bkgSWeightData']
 
-    # tagging parameters
-    numTagCats    = pdfBuild['tagCatsOS']['numTagCats']
-    tagCat5Min    = pdfBuild['tagCatsOS'].traditionalCatRange(5)[0]
-    taggedCatsStr = ','.join( [ 'TagCat%d' % cat for cat in range( 1,          numTagCats ) ] )
-    tagCat5Str    = ','.join( [ 'TagCat%d' % cat for cat in range( tagCat5Min, numTagCats ) ] )
-
-    # tagging category ranges
-    tagCatP2VVOS.setRange( 'UntaggedRange', 'Untagged'    )
-    tagCatP2VVOS.setRange( 'TaggedRange',   taggedCatsStr )
-    tagCatP2VVOS.setRange( 'TagCat5Range',  tagCat5Str    )
-
-
-###########################################################################################################################################
-## get data ##
-##############
-
-if pdfConfig['SFit'] :
-    defData = pdfBuild['sigSWeightData']
-    sigData = pdfBuild['sigSWeightData']
-    bkgData = pdfBuild['bkgSWeightData']
+# data set with weights corrected for background dilution: for phi_s fit only!
+if corrSFitErr == 'sumWeight'\
+        or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
     from P2VV.GeneralUtils import correctSWeights
     fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
-                              , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else '' )
+                              , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
+                              , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
 
 else :
-    defData = pdfBuild['data']
-    sigData = pdfBuild['sigSWeightData']
-    bkgData = pdfBuild['bkgSWeightData']
-    fitData = pdfBuild['data']
+    fitData = pdfBuild['sigSWeightData']
 
 # get observables and parameters in PDF
-pdfObs  = pdf.getObservables(defData)
-pdfPars = pdf.getParameters(defData)
+pdfObs  = pdf.getObservables(fitData)
+pdfPars = pdf.getParameters(fitData)
 
 
 ###########################################################################################################################################
@@ -166,7 +116,6 @@ pdfPars = pdf.getParameters(defData)
 ##############
 
 # float/fix values of some parameters
-from math import sqrt
 for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
     if not pdfConfig['sameSideTagging'] :
         CEvenOdds.setConstant('avgCEven.*')
@@ -184,9 +133,9 @@ pdfBuild['tagCatsSS'].setConstant('wTagDelP1')
 pdfBuild['amplitudes'].setConstant('C_SP')
 
 if randomParVals :
-    import random
     # give parameters random offsets
-    print 'JvLFit: give floating parameters random offsets (scale = %.2f sigma; seed = %s)'\
+    import random
+    print 'Bs2JpsiKK2011Fit: give floating parameters random offsets (scale = %.2f sigma; seed = %s)'\
           % ( randomParVals[0], str(randomParVals[1]) if randomParVals[1] else 'system time' )
     random.seed( randomParVals[1] if randomParVals[1] else None )
     for par in pdfPars :
@@ -194,22 +143,45 @@ if randomParVals :
 
 # print parameters
 print 120 * '='
-print 'JvLFit: fit data:'
+print 'Bs2JpsiKK2011Fit: fit data:'
 fitData.Print()
-print 'JvLFit: observables in PDF:'
+print 'Bs2JpsiKK2011Fit: observables in PDF:'
 pdfObs.Print('v')
-print 'JvLFit: parameters in PDF:'
+print 'Bs2JpsiKK2011Fit: parameters in PDF:'
 pdfPars.Print('v')
 
 if doFit :
     # fit data
     print 120 * '='
-    print 'JvLFit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
+    print 'Bs2JpsiKK2011Fit: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
 
-    if pdfConfig['SFit'] : fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, **fitOpts )
-    else                 : fitResult = pdf.fitTo( fitData,                     Save = True, **fitOpts )
+    RooMinPars = [ ]
+    if MinosPars :
+        print 'Bs2JpsiKK2011Fit: running Minos for parameters',
+        for parName in MinosPars :
+            RooMinPars.append( pdfPars.find(parName) )
+            print '"%s"' % RooMinPars[-1],
+        print
 
-    fitResult.Print()
+    fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
+                          , Minos = RooMinPars, Save = True, Range = fitRange
+                          , **fitOpts
+                         )
+
+    # print parameter values
+    from P2VV.Imports import parNames, parValues
+    print 'Bs2JpsiKK2011Fit: parameters:'
+    fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
+    fitResult.covarianceMatrix().Print()
+    fitResult.correlationMatrix().Print()
+
+    print 120 * '=' + '\n'
+
+if parFileOut :
+    # write parameters to file
+    pdfConfig.getParametersFromPdf( pdf, fitData )
+    pdfConfig.writeParametersToFile( filePath = parFileOut )
+
 
 
 ###########################################################################################################################################
@@ -220,24 +192,6 @@ if doFit :
 from P2VV.Load import LHCbStyle
 from P2VV.GeneralUtils import plot, CPcomponentsPlotingToolkit
 from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlue, kSolid
-
-#Initialaze the CP components ploting toolkit
-CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
-
-#Get some useful stuff ncessesary for looping
-KKbins      = CpPlotsKit.getNumKKbins()  #Get nummber of KKmass bins 
-binNames    = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
-CPcomps     = CpPlotsKit.getCpCompNames()#Get list of names of the CP components
-angleNames  = pdfConfig['angleNames']
-observables = [time] + angles
-assert(False)
-#Set plot options      
-markStyle = 8
-markSize  = 0.5
-CpPlotsKit.setLineColors( dict(total = kBlue , even=kRed, odd=kGreen+3, swave=kMagenta+3) )
-CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
-CpPlotsKit.setLineWidth(4)
-
 
 #LHCbLabel
 from ROOT import TPaveText, gStyle
@@ -250,40 +204,67 @@ lhcbName.SetBorderSize(0)
 
 
 
+assert(False)
+
+
+data = fitData   # sigData fitData
+
+
+
+
+
+
+
+
+
+#Initialaze the CP components ploting toolkit
+CpPlotsKit = CPcomponentsPlotingToolkit(pdf,data)
+
+#Get some useful stuff ncessesary for looping
+angleNames  = pdfConfig['angleNames']
+observables = list(pdf.Observables()-pdf.ConditionalObservables()) # DecayTime + angles
+numBins = ( 30, 30, 30, 60 )
+
 #Make the y-axis titles look nicer
 yTitles = []
 for obs in observables:
     range = obs.getRange()[1] - obs.getRange()[0]
-    binWidth = round( range / numBins[observables.index(obs)], 3) 
+    binWidth = round( range / numBins[observables.index(obs)], 2) 
     if obs.getUnit(): yTitles.append( 'Candidates / ' + str(binWidth) + ' ' + obs.getUnit() )
     else:             yTitles.append( 'Candidates / ' + str(binWidth) )
-    
-    
+
+#Set plot options      
+markStyle = 8
+markSize  = 0.5
+CpPlotsKit.setLineColors( dict(total = kBlue , even=kRed, odd=kGreen+3, swave=kMagenta+3) )
+CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
+CpPlotsKit.setLineWidth(4)
+
 ##Plot and Save
 for ( pad, obs, nBins, xTitle, yTitle, yScale, logY )\
         in zip(  [ TCanvas(o.GetName()) for o in observables ]
                , observables
                , numBins
-               , ( 'B_{s}^{0} decay time [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-               , yTitles  
-               , ( ( 0.1, 10e4 ), ) + 3 *( ( None, 1400 ), )
-               , ( True, ) + 3 * ( False, )
+               , ( angleNames[0][1], angleNames[1][1], angleNames[2][1], 'B_{s}^{0} decay time [ps]' )
+               , yTitles
+               , 3 * ( ( None, 1400 ), ) + ( ( 0.1, 10e4 ), )
+               , 3 * ( False, ) + ( True, )
                 ) :
-    print '\n\n\n Ploting Observable {0}/{1}: '.format(observables.index(obs)+1,len(observables),obs.GetName()),'\n\n\n'
-    plot(  pad, obs, defData, pdf, xTitle = xTitle, yTitle=yTitle, yScale = yScale, logy = logY
+    print '\n\n\n Ploting Observable ' + obs.GetName() +  ' {0}/{1} '.format(observables.index(obs)+1, len(observables)) + '\n\n\n'
+    plot(  pad, obs, data, pdf, xTitle=xTitle, yTitle=yTitle, yScale=yScale, logy=logY
            , frameOpts   = dict( Bins = nBins, Name = obs.GetName() + 'Histo'   )
            , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
-           , pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
+           , pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if 'time' in obs.GetName()\
                       else CpPlotsKit.getPdfOpts(BinData=True )
            , addPDFs     = CpPlotsKit.getAddPdfs()
-           , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
+           , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if 'time' in obs.GetName()\
                       else CpPlotsKit.getAddPdfsOpts(BinData=True )
            )
     lhcbName.Draw()
     filename = obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] else obs.GetName() + '_cFit.ps'
     pad.Print(filename)
 
-# Save all the plots in a root file as RooPlot objects.
+#Save all the plots in a root file as RooPlot objects.
 from P2VV.GeneralUtils import _P2VVPlotStash as rooplots
 from ROOT import TFile
 plotsFile = TFile('RooPlotsFinal.root','recreate')

@@ -1,13 +1,10 @@
 from math import sqrt
-
-from ROOT import gStyle
 from P2VV.Load import LHCbStyle
-gStyle.SetEndErrorSize(4)
 
 plotsFilePath   = 'SWavePhases.ps'
 deltaSAxisRange = ( None, None )
 LHCbText1       = 'LHCb'
-LHCbText2       = '' # '#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}'
+LHCbText2       = ''#'#sqrt{s} = 7 TeV, L = 1.0 fb^{-1}'
 drawLegend      = False
 grayScale       = False
 

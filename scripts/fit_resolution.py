@@ -114,7 +114,7 @@ observables = [t, m, mpsi, st, unbiased, selected, nPV, zerr]
 if args[0].find('MC11a') != -1:
     t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-1100, 14))
     observables.append(t_true)
-    
+
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential

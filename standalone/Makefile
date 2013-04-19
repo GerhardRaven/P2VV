@@ -14,7 +14,7 @@ ROOTCONFIG = root-config
 PKGCONFIG = pkg-config
 COMMONFLAGS = -Wall -O2 -pipe -ggdb -fPIC -DPIC
 PYTHONVERSION := $(shell $(PYTHON) --version 2>&1 | grep -o "2\.[567]")
-CXXFLAGS := $(COMMONFLAGS) $(shell $(ROOTCONFIG) --cflags) -I$(INCDIR) -I.
+CXXFLAGS := $(COMMONFLAGS) $(shell $(ROOTCONFIG) --cflags) -I$(INCDIR) -I. 
 LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 ## Reflex dictionary testing flags:
 ## LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore -lReflex -lCintex
