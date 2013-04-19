@@ -357,8 +357,8 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
                 % ( obsSet.getCatIndex(iTagName), obsSet.getCatIndex(tagDecisionName) )
         assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getRealValue(estimWTagName) >= binOneThresh )\
                 or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getRealValue(estimWTagName) < binOneThresh ),\
-                'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while tagging category = %d'\
-                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getCatIndex(tagCatName) )
+                'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while estimated wrong-tag probability = %.10f (threshold = %.10f)'\
+                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getRealValue(estimWTagName), binOneThresh )
         assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getCatIndex(tagCatName) == 0 )\
                 or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getCatIndex(tagCatName) > 0 ),\
                 'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while tagging category = %d'\
