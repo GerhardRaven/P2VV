@@ -156,7 +156,7 @@ By using the observation that $\sin(\Delta m t) = \Im\left( e^{i\Delta m t}\righ
 be written as the sum and difference of exponentials, i.e. the same as the $\cos$ term with $\Delta m = 0$, it is sufficient to consider the following convolution:
 \begin{eqnarray*}
 f(t;\Gamma,\Delta m,\sigma) &=& \int_0^{+\infty}\;dt'\;\; e^{-(\Gamma -i \Delta m)t'} \frac{ e^{-\frac{1}{2}\left( \frac{t-t'}{\sigma} \right)^2}}{\sqrt{2\pi}\sigma}
-\\                          &=& \frac{1}{\sqrt{2\pi}} \int_0^{+\infty}\;dy \;\; e^{-z y }\;\; e^{-\frac{1}{2}\left( x-y \right)^2}
+\\                          &=& \frac{1}{\sqrt{2\pi}} \int_0^{+\infty}\;dy \;\;  e^{-\frac{1}{2}\left( x-y \right)^2-zy}
 \end{eqnarray*}
 where we have defined $z = (\Gamma - i \Delta m ) \sigma$ and $x = t / \sigma$.
 Completing the square in the exponent and absorbing the shift in the boundaries of the integral, we find:
@@ -176,6 +176,10 @@ f(t;\Gamma,\Delta m,\sigma) &=&  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}} 
 \end{eqnarray*}
 
 
+For the normalization, we require
+\begin{equation*}
+    \int_{t_0}^{t_1} dt f(t;\Gamma,\Delta m, \sigma) =
+\end{equation*}
 
 \subsection{Flavour tagging}
 
