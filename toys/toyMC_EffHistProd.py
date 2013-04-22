@@ -3,12 +3,6 @@ from ROOT import (RooWorkspace, TH1F,
                   TFile)
 gSystem.Load('libP2VV')
 from RooFitDecorators import *
-import rootStyle
-
-myStyle = rootStyle.plainstyle()
-gROOT.SetStyle(myStyle.GetName())
-gROOT.ForceStyle()
-gStyle.UseCurrentStyle()
 
 w = RooWorkspace("w")
 
@@ -56,7 +50,7 @@ gfs.setFitConfig("acc_pdf", "t", RooFit.PrintLevel(-1), RooFit.Minimizer("Minuit
 
 mgr = RooStudyManager(w, gfs)
 
-mgr.run(100)
+mgr.runProof(100, "raaij@authie.nikhef.nl:21001")
 ## mgr.prepareBatchInput("aap", 100, kTRUE) ;
 
 data = gfs.summaryData()

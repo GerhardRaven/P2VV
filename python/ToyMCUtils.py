@@ -47,7 +47,7 @@ class Toy(object):
                     archive.extract(member)
                 if member.isdir() and member.path.endswith('python'):
                     python_dirs.append(member.path)
-            sys.path.extend(python_dirs)
+            sys.path.extend([os.path.join(os.path.realpath('.'), d) for d in python_dirs])
         except OSError, e:
             print e
             sys.exit(-2)
@@ -68,8 +68,11 @@ class Toy(object):
         pdf = kwargs.pop('Pdf')
         genPdf = kwargs.pop('GenPdf', pdf)
         observables = kwargs.pop('Observables')
-        obs_set = RooArgSet(*list(o for o in observables))
+        obs_set = RooArgSet()
+        for o in list(observables) + list(pdf.ConditionalObservables()):
+            obs_set.add(o._target_())
         params = pdf.getParameters(obs_set)
+        
         pdf_params = RooArgSet()
         for p in params:
             if p.isConstant(): continue
@@ -108,7 +111,7 @@ class Toy(object):
             # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
             pdf_params.assignValueOnly(self._gen_params) 
             args = dict(NumEvent = self._options.nevents)
-            if 'ProtoData' in args:
+            if 'ProtoData' in kwargs:
                 args['ProtoData'] = kwargs.pop('ProtoData')
             data = genPdf.generate(observables, **kwargs)
             fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, **self.__fit_opts)

@@ -19,7 +19,7 @@ pdfConfig['nTupleName'] = 'DecayTree'
 pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 
 # fit options
-fitOpts = dict(  NumCPU    = 16
+fitOpts = dict(  NumCPU    = 8
                , Optimize  = 2
                , Timer     = True
                , Minimizer = 'Minuit2'
@@ -85,7 +85,7 @@ if not pdfConfig['nominalPdf'] and pdfConfig['transversityAngles'] :
 else :
     pdfConfig['angleNames'] = (  ( 'helcosthetaK', 'cos #theta_{K}' )
                                , ( 'helcosthetaL', 'cos #theta_{#mu}' )
-                               , ( 'helphi',       '#varphi_{h} [rad]'            )
+                               , ( 'helphi',       '#phi_{h} [rad]'            )
                               )
 
 numBins = ( 60, 30, 30, 30 )
@@ -225,71 +225,77 @@ from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlue, kSolid
 #Initialaze the CP components ploting toolkit
 CpPlotsKit = CPcomponentsPlotingToolkit(pdf,defData)
 
+#Get dictionary with all the pdfs in the KKmass bins
+# {'bin_i', {'total'=... , 'even'=... , 'odd'=... , 'swave'=...}}
+pdfsDict = CpPlotsKit.getCPcompPdfKKbins()
+
 #Get some useful stuff ncessesary for looping
 KKbins      = CpPlotsKit.getNumKKbins()  #Get nummber of KKmass bins 
 binNames    = CpPlotsKit.getKKbinNames() #Get list of KKmass bin names
 CPcomps     = CpPlotsKit.getCpCompNames()#Get list of names of the CP components
 angleNames  = pdfConfig['angleNames']
 observables = [time] + angles
-assert(False)
+
 #Set plot options      
 markStyle = 8
 markSize  = 0.5
-CpPlotsKit.setLineColors( dict(total = kBlue , even=kRed, odd=kGreen+3, swave=kMagenta+3) )
+lineWidth = 4
+CpPlotsKit.setLineColors( dict(total = kBlue, even=kRed, odd=kGreen+3, swave=kMagenta+3) )
 CpPlotsKit.setLineStyles( dict(total = kSolid, even=9   , odd=7       , swave=5         ) )
-CpPlotsKit.setLineWidth(4)
+CpPlotsKit.setLineWidth(lineWidth)
 
 
 #LHCbLabel
 from ROOT import TPaveText, gStyle
-lhcbName = TPaveText(0.28, 0.77, 0.38, 0.90, "BRNDC")
+lhcbName = TPaveText(gStyle.GetPadLeftMargin() + 0.14,
+                         0.87 - gStyle.GetPadTopMargin(),
+                         gStyle.GetPadLeftMargin() + 0.20,
+                         0.95 - gStyle.GetPadTopMargin(),
+                         "BRNDC")
 lhcbName.AddText("LHCb")
 lhcbName.SetFillColor(0)
 lhcbName.SetTextAlign(12)
 lhcbName.SetBorderSize(0)
 
 
+#Get pdf and AdPdf options in case of bining and No bining the projData 
+PDFoptsBin   = CpPlotsKit.getPdfOptsSixKKbins(BinData=True)
+PDFoptsNOBin =  CpPlotsKit.getPdfOptsSixKKbins(BinData=False)
+addPDFotpsBin = CpPlotsKit.getAddPdfsOptsSixKKbins(BinData=True)
+addPDFotpsNOBin = CpPlotsKit.getAddPdfsOptsSixKKbins(BinData=False)
 
-
-#Make the y-axis titles look nicer
-yTitles = []
-for obs in observables:
-    range = obs.getRange()[1] - obs.getRange()[0]
-    binWidth = round( range / numBins[observables.index(obs)], 3) 
-    if obs.getUnit(): yTitles.append( 'Candidates / ' + str(binWidth) + ' ' + obs.getUnit() )
-    else:             yTitles.append( 'Candidates / ' + str(binWidth) )
-    
-    
-##Plot and Save
-for ( pad, obs, nBins, xTitle, yTitle, yScale, logY )\
-        in zip(  [ TCanvas(o.GetName()) for o in observables ]
-               , observables
-               , numBins
-               , ( 'B_{s}^{0} decay time [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
-               , yTitles  
-               , ( ( 0.1, 10e4 ), ) + 3 *( ( None, 1400 ), )
-               , ( True, ) + 3 * ( False, )
-                ) :
-    print '\n\n\n Ploting Observable {0}/{1}: '.format(observables.index(obs)+1,len(observables),obs.GetName()),'\n\n\n'
-    plot(  pad, obs, defData, pdf, xTitle = xTitle, yTitle=yTitle, yScale = yScale, logy = logY
-           , frameOpts   = dict( Bins = nBins, Name = obs.GetName() + 'Histo'   )
-           , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
-           , pdfOpts     = CpPlotsKit.getPdfOpts(BinData=False) if obs==time\
-                      else CpPlotsKit.getPdfOpts(BinData=True )
-           , addPDFs     = CpPlotsKit.getAddPdfs()
-           , addPDFsOpts = CpPlotsKit.getAddPdfsOpts(BinData=False) if obs==time\
-                      else CpPlotsKit.getAddPdfsOpts(BinData=True )
-           )
-    lhcbName.Draw()
-    filename = obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] else obs.GetName() + '_cFit.ps'
-    pad.Print(filename)
-
+#Plot and save  lifetime and angles in all the KK mass bins
+for bin in binNames:
+         print '\n\nP2VV - INFO: Plotting decay time and angular distributions of ' + bin
+         dataSlice = defData.reduce('KKMassCat==KKMassCat::' + bin)
+         pdfSlice  = pdfsDict[bin]['total']
+         binIdx = binNames.index(bin)
+         for ( pad, obs, nBins, xTitle, yScaleRel, logY )\
+                 in zip(  [ TCanvas(o.GetName()+bin) for o in observables ]
+                        , observables
+                        , numBins
+                        , ( time.GetTitle()+' [ps]', angleNames[0][1], angleNames[1][1], angleNames[2][1] )
+                        , 2 *(( 1., 1.2 ),) + 2 *(( 1. , 1.2 ),) 
+                        , ( True, ) + 3 * ( False, )
+                       ) :           
+             plot(  pad, obs, dataSlice, pdfSlice, xTitle=xTitle, yScaleRel=yScaleRel, logy=logY
+                  , frameOpts   = dict( Bins = nBins, Name = bin + obs.GetName() + 'Histo'      )
+                  , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize          )
+                  , pdfOpts     = PDFoptsNOBin[bin] if obs==time else PDFoptsBin[bin]
+                  , addPDFs     = [ pdfsDict[bin][c] for c in CPcomps ]
+                  , addPDFsOpts = [addPDFotpsNOBin[binIdx][c] for c in CPcomps ] if obs==time\
+                            else  [addPDFotpsBin[binIdx][c] for c in CPcomps ]
+                   )
+             lhcbName.Draw()
+        ## print canvas to file
+             fName =  bin + '_' + obs.GetName() + '_sFit.ps' if pdfConfig['SFit'] \
+                else  bin + '_' + obs.GetName() + '_cFit.ps'
+             pad.Print(fName)
+                      
 # Save all the plots in a root file as RooPlot objects.
 from P2VVGeneralUtils import _P2VVPlotStash as rooplots
 from ROOT import TFile
-plotsFile = TFile('RooPlotsFinal.root','recreate')
+plotsFile = TFile('RooPlots6x4.root','recreate')
 for plot in rooplots: plot.Write()
 plotsFile.Close()
-
-
 

@@ -7,12 +7,12 @@ from P2VVParameterizations.MassPDFs import Background_PsiMass as PsiBkgPdf
 
 class ShapeBuilder(object):
     __weights = set(('jpsi', 'B', 'both'))
-    __rho = dict(B = 2.)
+    __rho = dict(B = 2., jpsi = 2.)
     
     def __init__(self, time, masses, sigmat = None, t_diff = None,
-                 InputFile = "/stuff/PhD/mixing/Bs2JpsiPhiPrescaled.root",
-                 WorkSpace = 'Bs2JpsiPhiPrescaled_workspace', Data = 'data', UseKeysPdf = False,
-                 Weights = 'B', Draw = False):
+                 InputFile = "/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root",
+                 Workspace = 'Bs2JpsiPhiPrescaled_2011_workspace', Data = 'data',
+                 UseKeysPdf = False, Weights = 'B', Draw = False, Reweigh = {}):
         assert(Weights in ShapeBuilder.__weights)
         self.__weights = Weights
         self.__time = time
@@ -25,19 +25,19 @@ class ShapeBuilder(object):
         self.__diff__shapes = {}
 
         self.__masses = masses
-        
+
         self._sig = Component('wpv_signal', [], Yield = (1000, 10, 50000))
         self._psi = Component('wpv_jpsi',   [], Yield = (5000, 10, 50000))
         self._bkg = Component('wpv_bkg',    [], Yield = (5000, 10, 50000))
 
-            
         if 'B' in masses:
             m_sig_mean  = RealVar('wpv_m_sig_mean',   Unit = 'MeV', Value = 5365, MinMax = (5363, 5372))
-            m_sig_sigma = RealVar('wpv_m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (5, 20))
+            m_sig_sigma = RealVar('wpv_m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (1, 20))
             from ROOT import RooGaussian as Gaussian
             self._sig_mass = Pdf(Name = 'wpv_sig_m', Type = Gaussian, Parameters = (masses['B'], m_sig_mean, m_sig_sigma ))
             ## self._sig_mass = BMassPdf(masses['B'], Name = 'wpv_sig_mass', Prefix = "wpv_")
-            self._bkg_mass = BBkgPdf(masses['B'],  Name = 'wpv_bkg_mass', Prefix = "wpv_")
+            self._bkg_mass = BBkgPdf(masses['B'],  Name = 'wpv_bkg_mass', Prefix = "wpv_",
+                                     wpv_m_bkg_exp = dict(Name = 'wpv_m_bkg_exp', Value = -0.0017, MinMax = (-0.01, -0.00001)))
             self._sig[masses['B']] = self._sig_mass
             self._psi[masses['B']] = self._bkg_mass.pdf()
             self._bkg[masses['B']] = self._bkg_mass.pdf()
@@ -64,8 +64,8 @@ class ShapeBuilder(object):
         if not input_file or not input_file.IsOpen():
             raise OSError
         
-        if WorkSpace:
-            self.__input_ws = input_file.Get(WorkSpace)
+        if Workspace:
+            self.__input_ws = input_file.Get(Workspace)
             if not self.__input_ws:
                 raise RuntimeError
             self._data = self.__input_ws.data(Data)
@@ -73,6 +73,9 @@ class ShapeBuilder(object):
                 raise RuntimeError
         else:
             self._data = input_file.Get(Data)
+
+        self._data = self._data.reduce("{0} > {1} && {0} < {2}".format(time.GetName(), time.getMin(),
+                                                                       time.getMax()))
 
         # self._data = self._data.reduce("mass > 5348 && mass < 5388")
         fitOpts = dict(NumCPU = 4, Save = True, Minimizer = 'Minuit2', Optimize = 2)
@@ -84,6 +87,10 @@ class ShapeBuilder(object):
         self.__sdatas = {}
         for key, c in self.__components[Weights].iteritems():
             sdata = splot.data(c.GetName())
+
+            if key in Reweigh['Data']:
+                sdata = self.__reweigh(sdata, Component = key, **Reweigh)
+
             sdata = self.__ws.put(sdata)
             self.__sdatas[c] = sdata
 
@@ -121,9 +128,9 @@ class ShapeBuilder(object):
                  , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
                  , pdfOpts  = dict(LineWidth = 2)
                  , plotResidHist = True
-                 , components = { 'bkg_*'   : dict( LineColor = kRed,   LineStyle = kDashed )
-                                  , 'psi_*' : dict( LineColor = kGreen, LineStyle = kDashed )
-                                  , 'sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
+                 , components = { 'wpv_bkg_*'   : dict( LineColor = kRed,   LineStyle = kDashed )
+                                  , 'wpv_psi_*' : dict( LineColor = kGreen, LineStyle = kDashed )
+                                  , 'wpv_sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
                                   }
                  )
         if self.__st:
@@ -143,6 +150,7 @@ class ShapeBuilder(object):
             from P2VVGeneralUtils import plot
             pdfOpts  = dict(ProjWData = (RooArgSet(st), self.__sdatas[c], True))
             plot(p, t, pdf = shape, data = self.__sdatas[c]
+                 , frameOpts = dict(Title = c.GetName())
                  , dataOpts = dict(MarkerSize = 0.8, Binning = 80, MarkerColor = kBlack)
                  , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
                  , logy = False
@@ -164,6 +172,77 @@ class ShapeBuilder(object):
                  , logy = False
                  , plotResidHist = False)
 
+    def __reweigh(self, wpv_data, Component = None, Data = None, DataVar = None, Binning = None):
+        from array import array
+        from ROOT import RooBinning
+
+        assert(Component)
+        assert(Binning)
+
+        Data = Data[Component]
+
+        assert(Data)
+        assert(DataVar)
+
+        if type(Binning) == array:
+            PV_binning = RooBinning(len(Binning) - 1, Binning)
+            PV_binning.SetName('reweigh')
+        else:
+            PV_binning = Binning
+        DataVar.setBinning(PV_binning, 'reweigh')
+        nPVs = Data.get().find('nPVs')
+        if not nPVs:
+            nPVs = BinningCategory(Name = 'nPVs_' + Component, Observable = DataVar,
+                                   Binning = PV_binning, Data = Data, Fundamental = True)
+
+        nPV_wpv = wpv_data.get().find('nPV')
+        print nPV_wpv
+        wpv_bins = dict([(t.getVal(), t.GetName()) for t in nPV_wpv])
+        data_bins = dict([(t.getVal(), t.GetName()) for t in nPVs])
+
+        print wpv_bins
+        print data_bins
+
+        wpv_table = wpv_data.table(nPV_wpv)
+        data_table = Data.table(nPVs)
+
+        wpv_table.Print('v')
+        data_table.Print('v')
+
+        from collections import defaultdict
+        self.__reweigh_weights = defaultdict(dict)
+        for i, l in sorted(data_bins.iteritems())[2:]:
+            try:
+                w = data_table.getFrac(l) / wpv_table.getFrac(wpv_bins[i])
+            except ZeroDivisionError:
+                print 'Warning bin %s in wpv_data is 0, setting weight to 0' % l
+                w = 0.
+            self.__reweigh_weights[Component][i] = w
+
+        # RooFit infinity
+        from ROOT import RooNumber
+        RooInf = RooNumber.infinity()
+        weight_var = RealVar('wpv_reweigh_var', MinMax = (RooInf, RooInf))
+
+        from ROOT import RooDataSet
+        data_name = wpv_data.GetName() + 'weight_data'
+        weight_data = RooDataSet(data_name, data_name, RooArgSet(weight_var))
+        weight_var = weight_data.get().find(weight_var.GetName())
+
+        for i in range(wpv_data.numEntries()):
+            r = wpv_data.get(i)
+            n = nPV_wpv.getIndex()
+            w = self.__reweigh_weights[Component][n]
+            weight_var.setVal(wpv_data.weight() * w)
+            weight_data.fill()
+
+            
+        wpv_data.merge(weight_data)
+        wpv_data = RooDataSet(wpv_data.GetName(), wpv_data.GetTitle(), wpv_data,
+                              wpv_data.get(), '', weight_var.GetName())
+        
+        return wpv_data
+
     def sdata(self, key):
         c = self.__components[self.__weights][key]
         return self.__sdatas[c]
@@ -178,3 +257,9 @@ class ShapeBuilder(object):
 
     def input_ws(self):
         return self.__input_ws
+
+    def reweigh_weights(self, key):
+        try:
+            return self.__reweigh_weights[key]
+        except AttributeError:
+            return {}

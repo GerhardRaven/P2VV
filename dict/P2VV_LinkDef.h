@@ -30,7 +30,7 @@
 #pragma link C++ class RooCorrectedSWeight+;
 #pragma link C++ class RooAbsEffResModel;
 #pragma link C++ class RooEffResModel+;
-#pragma link C++ class MultiHistEntry<RooEffResModel, RooMultiEffResModel>+;
+#pragma link C++ class MultiHistEntry+;
 #pragma link C++ class RooMultiEffResModel+;
 #pragma link C++ class RooComplementCoef+;
 #pragma link C++ class RooEffConvGenContext+;
@@ -38,6 +38,8 @@
 // #pragma link C++ class RooBSpline+;
 // #pragma link C++ class RooBSplineBases+;
 #pragma link C++ function sigmaFromFT;
+#pragma link C++ class RooBoxPdf+;
+#pragma link C++ class RooExplicitNormPdf+;
 
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
@@ -51,9 +53,9 @@
 #pragma link C++ class std::pair<double, TString>;
 #pragma link C++ class std::pair<RooCategoryProxy*, std::string>;
 
-#pragma link C++ class std::map<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>;
-#pragma link C++ class std::pair<Int_t, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>;
-#pragma link C++ class std::map<int, MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>::iterator;
-#pragma link C++ class std::vector<MultiHistEntry<RooEffResModel, RooMultiEffResModel>*>;
+#pragma link C++ class std::map<Int_t, MultiHistEntry*>;
+#pragma link C++ class std::pair<Int_t, MultiHistEntry*>;
+#pragma link C++ class std::map<int, MultiHistEntry*>::iterator;
+#pragma link C++ class std::vector<MultiHistEntry*>;
 
 #endif

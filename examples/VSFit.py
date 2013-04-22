@@ -9,11 +9,11 @@ pdfConfig = PdfConfig()
 readData                = True
 pdfConfig['selection']  = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
-doFit                   = False
-makeObservablePlots     = True
+doFit                   = False 
+makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
-pdfConfig['makePlots']  = True
+pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 pdfConfig['blind']      = False
 pdfConfig['nominalPdf'] = False  # nominal PDF option does not work at the moment
@@ -81,8 +81,8 @@ pdfConfig['conditionalTagging'] = False  # nominal: True
 pdfConfig['continuousEstWTag']  = False  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
-
 pdfConfig['timeResType']           = '' # 'event' # 'eventNoMean'
+
 pdfConfig['numTimeResBins']        = 100
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
@@ -504,7 +504,7 @@ if ( readData or generateData ) and ( makeObservablePlots or pdfConfig['makePlot
     projWDataSet = []
     if   pdfConfig['continuousEstWTag']   : projWDataSet += [ tagCatP2VVOS, estWTagOS, iTagOS ]
     elif pdfConfig['conditionalTagging']  : projWDataSet += [ tagCatP2VVOS, iTagOS ]
-    if   pdfConfig['eventTimeResolution'] : projWDataSet += [ timeRes ]
+#    if   pdfConfig['eventTimeResolution'] : projWDataSet += [ timeRes ]
 
     if projWDataSet :
         bulkData = data.reduce( CutRange = 'Bulk' )
@@ -766,3 +766,52 @@ elif pdfConfig['makePlots'] :
 if deltaSCanv :
     deltaSCanv.Print( plotsFile + ( ')' if makeObservablePlots or pdfConfig['makePlots'] else '' ) )
 
+
+#################################__Trial_area, (Try to make a plot of the CP odd CP even components)########################
+
+
+
+#Get the normalization of the total pdf
+from P2VVGeneralUtils import getCPprojectionOFpdf, getNormOverObservables
+normTotal = getNormOverObservables(pdf)
+
+#Construct the CP_Even component of the pdf
+pdfEven = getCPprojectionOFpdf(pdf, "EVEN")
+normEven = getNormOverObservables(pdfEven)
+f_Even = normEven /  normTotal
+
+#Construct the CP_Odd component of the pdf
+pdfOdd = getCPprojectionOFpdf(pdf, "ODD")
+normOdd = getNormOverObservables(pdfOdd)
+f_Odd = normOdd / normTotal
+
+#Co## nstruct the S-wave component of the pdf
+pdfSwave = getCPprojectionOFpdf(pdf, "SWAVE")
+normSwave = getNormOverObservables(pdfSwave)
+f_Swave = normSwave / normTotal
+
+
+
+#Plot
+from ROOT import TCanvas    
+from P2VVLoad import ROOTStyle
+from P2VVGeneralUtils import plot
+
+c = TCanvas()
+c.Divide(2,2)
+
+i = 0
+for i_thObs in set([angles[0], angles[1], angles[2], time]):
+    plot( c.cd(i+1),i_thObs, data = defData, pdf = pdf,
+          addPDFs = [pdfEven,pdfOdd,pdfSwave],
+          addPDFsOpts = [dict(LineStyle = 9, Normalization = f_Even),
+                         dict(LineStyle = 3, Normalization = f_Odd),
+                         dict(LineStyle = 5, Normalization = f_Swave)] )    
+    i += 1
+
+
+
+#Print fractions
+print "\n\nCP_Even fraction = ",f_Even
+print "CP_Odd fraction = ",f_Odd
+print "CP_Odd fraction = ",f_Swave

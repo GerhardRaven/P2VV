@@ -1,16 +1,8 @@
 from ROOT import (RooArgSet, RooArgList, RooDataSet,
                   RooWorkspace, RooFitResult, RooFit,
                   RooDataHist, RooLinkedList, RooCmdArg)
-from ROOT import gStyle,gROOT
 
-# this should move elsewhere...
 import ROOTDecorators
-gStyle.SetPalette(1)
-gROOT.SetStyle("Plain")
-
-# needed to get RooFit.Name, RooFit.Components.... kRed
-# how to get just the RooFit namespace ?
-#from ROOT import * 
 
 def __wrap_kw_subs( fun ) :
     from ROOT import RooFit, RooAbsCollection, TObject
@@ -18,19 +10,19 @@ def __wrap_kw_subs( fun ) :
     __tbl  = lambda k : getattr(RooFit, k)
     # TODO: anything relying on _target_ or _var should move to RooFitWrappers...
     __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
-    def __disp(k, v):
-        if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) \
-           or str(type(v)).find('.Category') != -1:
-            return __tbl(k)( __dref(v)  )
-        elif type(v) != type(None):
+    def __disp(k, v) :
+        if type(v) == type(None) :
+            return __tbl(k)()
+        elif any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) or str(type(v)).find('.Category') != -1 :
+            return __tbl(k)( __dref(v) )
+        else :
             return __tbl(k)(*v)
-        else:
-            __tbl(k)()
 
     from functools import wraps
     @wraps(fun)
     def _fun(self,*args,**kwargs) :
         args += tuple( RooCmdArg( __disp('Slice',  s) ) for s in kwargs.pop('Slices',  []) )
+        args += tuple( RooCmdArg( __disp('Cut',    s) ) for s in kwargs.pop('Cuts',    []) )
         if 'Imports' in kwargs :
             assert 'Index' in kwargs, 'RooFit keyword wrapper: "Imports" argument found without "Index"'
             args += ( RooCmdArg( __disp( 'Index', kwargs.pop('Index') ) ), )  # note order: "Index" before "Import"
@@ -136,9 +128,9 @@ def __createRooIterator( create_iterator ) :
             yield obj
     return __iter
 
-def __RooDataSetToTree( self, branchList = '', RooFitFormat = True ) :
+def __RooDataSetToTree( self, Name = '', Title = '', BranchList = '', RooFitFormat = True ) :
     from ROOT import RooDataSetToTree
-    return RooDataSetToTree( self, branchList, RooFitFormat )
+    return RooDataSetToTree( self, Name, Title, BranchList, RooFitFormat )
 RooDataSet.buildTree = __RooDataSetToTree
 
 # RooAbsCategory functions
@@ -384,6 +376,21 @@ def _RooFitResultParamsLatex(self,name,toys):
     string = '\\documentclass{article}\n'
     string += '\\begin{document}\n'
 
+    def __s(n, fmt = '%.3e'):
+        if type(n) == float:
+            n = fmt % n
+        if n.endswith('e+00'):
+            return n[:-4]
+        else:
+            return n
+
+    offset = 0
+    for i in self.floatParsFinal():
+        name = i.GetName().replace('_', '\_')
+        if len(name) > offset:
+            offset = len(name)
+    fmt = '{0:<' + str(offset) + '} & '
+        
     if toys:
         string += '\\begin{tabular}{|c|c|c|c|}\n'
         string += '\\hline\n'
@@ -392,10 +399,10 @@ def _RooFitResultParamsLatex(self,name,toys):
         string += '\\hline\n'
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
-            string += '%s & '% i.GetName().replace('_', '\_')
-            string += '%s $\pm$ %s & '%(round(i.getVal(),4),round(i.getError(),4))
-            string += '%s & '%round(j.getVal(),4)
-            string +=  '%s \\\\ \n'%(round((j.getVal()-i.getVal())/i.getError(),4))
+            string += fmt.format(i.GetName().replace('_', '\_'))
+            string += '%s $\pm$ %s & ' % (__s(i.getVal()),__s(i.getError()))
+            string += '%s & ' % __s(j.getVal())
+            string +=  '%s \\\\ \n' % __s((j.getVal() - i.getVal()) / i.getError())
     else:
         string += '\\begin{tabular}{|c|c|}\n'
         string += '\\hline\n'
@@ -404,8 +411,8 @@ def _RooFitResultParamsLatex(self,name,toys):
         string += '\\hline\n'
         for i,j in zip(self.floatParsFinal(),self.floatParsInit()):
             print i,j
-            string += '%s & '% i.GetName().replace('_', '\_')
-            string += '%s $\pm$ %s \\\\ \n'%(round(i.getVal(),4),round(i.getError(),4))
+            string += fmt.format(i.GetName().replace('_', '\_'))
+            string += '%s $\pm$ %s \\\\ \n' % (__s(i.getVal()), __s(i.getError()))
 
     string += '\\hline\n'
     string += '\\end{tabular}\n'
@@ -417,3 +424,107 @@ def _RooFitResultParamsLatex(self,name,toys):
     return
 
 RooFitResult.writepars = _RooFitResultParamsLatex
+
+def _RooFitResultPrint( self, **kwargs ) :
+    from math import ceil, log10
+    fitPars = self.floatParsFinal()
+
+    text   = kwargs.pop( 'text',   False )
+    LaTeX  = kwargs.pop( 'LaTeX',  False )
+    normal = kwargs.pop( 'normal', False )
+    if not text and not LaTeX : normal = True
+
+    printDecim  = kwargs.pop( 'Precision', 2   )
+    parNameDict = kwargs.pop( 'ParNames',  { } )
+    parValsDict = kwargs.pop( 'ParValues', { } )
+
+    print '  fit result:'
+    print '  status: %d' % self.status()
+    print '  NLL = %f  :  EDM = %f' % ( self.minNll(), self.edm() )
+    print
+
+    def getTextVals(par) :
+        names = (  parNameDict[ par.GetName() ][0] if par.GetName() in parNameDict else par.GetName()
+                 , parNameDict[ par.GetName() ][1] if par.GetName() in parNameDict else par.GetName()
+                )
+        if par.hasAsymError() : prec = printDecim - int( ceil( log10( max( -par.getErrorLo(), par.getErrorHi() ) ) ) )
+        else                  : prec = printDecim - int( ceil( log10( par.getError()                             ) ) )
+        if prec < 0 : prec = 0
+
+        thisVal = (  ( '{0:<+10.%df}' % prec ).format( par.getVal() )
+                   , ( '{0:<+10.%df}' % prec ).format( par.getErrorLo() )\
+                     if par.hasAsymError() else ( '{0:<10.%df}' % prec ).format( par.getError() )
+                   , ( '{0:<+10.%df}' % prec ).format( par.getErrorHi() ) if par.hasAsymError() else ''
+                  )
+
+        if parValsDict and par.GetName() in parValsDict :
+            nomPar = parValsDict[ par.GetName() ]
+            if nomPar[1] < 0. : prec = printDecim - int( ceil( log10( max( -nomPar[1], nomPar[2] ) ) ) )
+            else              : prec = printDecim - int( ceil( log10( nomPar[1]                    ) ) )
+            if prec < 0 : prec = 0
+
+            nomVal = (  ( '{0:<+10.%df}' % prec ).format( nomPar[0] )
+                      , ( '{0:<+10.%df}' % prec ).format( nomPar[1] )\
+                        if nomPar[1] < 0. else ( '{0:<10.%df}'  % prec ).format( nomPar[1] )
+                      , ( '{0:<+10.%df}' % prec ).format( nomPar[2] ) if nomPar[1] < 0. else ''
+                     )
+            thisErr = ( 0.5 * ( par.getErrorHi() - par.getErrorLo() ) ) if par.hasAsymError() else par.getError()
+            nomErr  = ( 0.5 * ( nomPar[2]        - nomPar[1]        ) ) if nomPar[1] < 0.     else nomPar[1]
+            dev = (  ( '{0:<+10.%df}' % ( prec + 1 ) ).format( par.getVal() - nomPar[0] )
+#                   , '{0:<+6.3f}'.format( 2. * ( par.getVal() - nomPar[0] ) / ( thisErr + nomErr ) )
+                   , '{0:<+6.3f}'.format( ( par.getVal() - nomPar[0] ) / thisErr )
+                  )
+
+        else :
+            nomVal = ( )
+            dev    = ( )
+
+        return ( names, thisVal, nomVal, dev )
+
+    if text :
+        # print parameters in text format
+        for par in fitPars :
+            vals = getTextVals(par)
+            if vals[1][2] :
+                print '  {0:<30s} {1} {2} {3}{4}'.format( vals[0][0], vals[1][0], vals[1][2], vals[1][1]\
+                                                         , ( ' %s (%s sigma)' % ( vals[3][0], vals[3][1] ) ) if vals[3] else '' )
+            else :
+                print '  {0:<30s} {1} +/- {2} {3}'.format( vals[0][0], vals[1][0], vals[1][1]\
+                                                          , ( '       %s (%s sigma)' % ( vals[3][0], vals[3][1] ) ) if vals[3] else '' )
+        print
+
+    if LaTeX :
+        # print parameters in LaTeX format
+        print '  \\begin{tabular}' + ( '{|c|c|c|c|}' if parValsDict else '{|c|c|}' )
+        print '    \\hline'
+        print '    parameter  &  nominal value  &  value  &  difference (sigma)  \\\\' if parValsDict else '    parameter  &  value  \\\\'
+        print '    \\hline'
+
+        for par in fitPars :
+            vals = getTextVals(par)
+            prStr = '    {0:<40s}  '.format( vals[0][1] )
+            if vals[2] :
+                if vals[2][2] : prStr += '&  $%s^{%s}_{%s}$ '          % ( vals[2][0], vals[2][2], vals[2][1] )
+                else :          prStr += '&  $%s \\pm %s$            ' % ( vals[2][0], vals[2][1] )
+            elif parValsDict :
+                prStr += '& ' + ( ' ' * 40 )
+
+            if vals[1][2] : prStr += '&  $%s^{%s}_{%s}$ '          % ( vals[1][0], vals[1][2], vals[1][1] )
+            else :          prStr += '&  $%s \\pm %s$            ' % ( vals[1][0], vals[1][1] )
+
+            if vals[3] :
+                prStr += '&  $%s$ ($%s$) ' % ( vals[3][0], vals[3][1] )
+            elif parValsDict :
+                prStr += '&          ' + ' ' * 16
+
+            print prStr + '\\\\'
+
+        print '    \\hline'
+        print '  \\end{tabular}'
+        print
+
+    if normal :
+        # use normal print
+        self.Print()
+
+RooFitResult.PrintSpecial = _RooFitResultPrint

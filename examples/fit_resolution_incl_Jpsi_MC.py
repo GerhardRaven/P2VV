@@ -1,5 +1,6 @@
 from RooFitWrappers import *
 from P2VVLoad import P2VVLibrary
+from P2VVLoad import LHCbStyle
 from ROOT import RooCBShape as CrystalBall
 from ROOT import RooMsgService
 
@@ -11,13 +12,13 @@ w = obj.ws()
 from math import pi
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
 t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-10000, 14))
-m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5250, 5550),
+m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
                          , 'rightsideband' : ( 5410, None ) 
                          } )
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
-st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
+st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.2))
 
 # add 20 bins for caching the normalization integral
 for i in [ st ] : i.setBins( 20 , 'cache' )
@@ -25,8 +26,10 @@ for i in [ st ] : i.setBins( 20 , 'cache' )
 # Categories needed for selecting events
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
+clean_tail = Category('sel_cleantail', States = {'selected' : 1, 'not_selected' : 0})
+nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 
-observables = [t, t_true, m, mpsi, st, unbiased, selected]
+observables = [t, t_true, m, mpsi, st, unbiased, selected, clean_tail, nPV]
 
 # Read data
 from P2VVGeneralUtils import readData
@@ -46,6 +49,8 @@ t_diff.setMin(-10)
 t_diff.setMax(10)
 observables.append(t_diff)
 
+## clean_data = data.reduce('sel_cleantail == sel_cleantail::selected')
+
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential
@@ -57,7 +62,7 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 # Time resolution model
 ## from P2VVParameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 ## sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = True,
-##                           BiasScaleFactor = False, Cache = False,
+##                           BiasScaleFactor = False, Cache = True,
 ##                           bias = dict(Value = -0.17, MinMax = (-1, 1)),
 ##                           sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 
@@ -66,8 +71,7 @@ from P2VVParameterizations.TimeResolution import Multi_Gauss_TimeResolution as T
 ##                           ScaleFactors = [(3, 0.5), (2, 0.08), (1, 0.04)],
 ##                           Fractions = [(3, 0.1), (2, 0.2)])
 sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True, PerEventError = True,
-                          ScaleFactors = [(2, 4), (1, 1.)],
-                          Fractions = [(2, 0.2)])
+                          ScaleFactors = [(2, 4), (1, 1.)], Fractions = [(2, 0.2)])
 
 # Signal time pdf
 sig_t = Pdf(Name = 'sig_t', Type = Decay,  Parameters = [t, signal_tau, sig_tres.model(), 'SingleSided'],
@@ -122,11 +126,15 @@ prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 psi_prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (21582, 100, 500000))
                    
 # Wrong PV components
-from P2VVParameterizations.WrongPV import ShapeBuilder
-wpv = ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi',
-                   InputFile = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaledMC.root',
-                   WorkSpace = 'Bs2JpsiPhiPrescaledMC_workspace',
-                   Draw = True, t_diff = t_diff, sigmat = st)
+from array import array
+PV_bounds = array('d', [-0.5 + i for i in range(11)])
+
+from P2VVParameterizations import WrongPV
+wpv = WrongPV.ShapeBuilder(t, {'jpsi' : mpsi}, UseKeysPdf = True, Weights = 'jpsi', Draw = True,
+                           InputFile = '/stuff/PhD/mixing/Bs2JpsiPhiPrescaled_MC11a.root',
+                           Workspace = 'Bs2JpsiPhiPrescaled_MC11a_workspace',
+                           sigmat = st, t_diff = t_diff,
+                           Reweigh = dict(Data = data, DataVar = nPV, Binning = PV_bounds))
 wpv_psi = wpv.shape('jpsi')
 psi_wpv = Component('psi_wpv', (wpv_psi,), Yield = (888, 50, 30000))
 
@@ -202,3 +210,8 @@ for (p,o) in zip(time_canvas.pads(len(obs)), obs):
                           }
          )
     
+from Dilution import dilution
+diff_pdf = wpv.diff_shape('jpsi')
+psi_wpv[t_diff] = diff_pdf
+dilution(t_diff, data, sigmat = st, result = result,
+         signal = [psi_background, psi_prompt], subtract = [psi_wpv])
