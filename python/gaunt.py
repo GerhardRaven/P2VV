@@ -77,6 +77,36 @@ def non_zero_real_coupling_coefficients( l1,m1,l2,m2 ) :
     _range = lambda l : xrange(-l,1) if m1*m2<0 else xrange(0,l+1)
     return ( (l,m) for l in xrange( l_min, l_max+1, 2 ) for m in _range( l ) )
             
+def __test_gaunt_1(l,m) : # should be 1 -- as multiplying Y(l,m) by Y(0,0) is the same as dividing by sqrt(4pi)...
+    import math
+    assert abs( gaunt(l,l,0,m,m,0)*math.sqrt(4*math.pi) - 1 ) < 1e-12
+    assert abs( gaunt(l,0,l,m,0,m)*math.sqrt(4*math.pi) - 1 ) < 1e-12
+
+
+# Conversion to real spherical harmonics....
+#  X_{l0} = Y_l^0   (m=0)
+#  X_{lm} = \frac{1}{\sqrt{2}} \left(          Y_l^{+m} + (-1)^m Y_l^{-m} \right) (m>0)
+#  X_{lm} = \frac{i}{\sqrt{2}} \left(   (-1)^m Y_l^{+m} -        Y_l^{-m} \right) (m<0)
+#
+#  X_{lm} = sum_mu _u(l,m,mu) Y_l^{mu)
+#
+#
+def _u(l,m,mu) :
+    if abs(m)!=abs(mu) : return 0
+    if m==0            : return 1 
+    import math
+    is2 = 1.0/math.sqrt(2)
+    return is2* [ [ complex(1, 0), complex(sgn(mu),0) ]   #  1,   1 * (   sgn(mu) )
+                , [ complex(0,-1), complex(0,sgn(mu)) ]   # -i , -i * ( i sgn(mu) )
+                ][ m>0 ][ mu>0 ]
+    #if m>0             : return complex(is2,0) if mu>0 else complex(sgn(mu)*is2,0) 
+    #else               : return complex(0,sgn(mu)*is2) if mu<0 else complex(0,-is2)
+
+
+
+
+if __name__ == "__main__":
+    for x in ( (l,m) for l in range(10) for m in range(-l,l+1) ) : __test_gaunt_1(*x)
 
 # CLAIM: for real spherical harmonics Y_l1,m1 * Y_l2,m2 = sum c * Y_l,m for (c,l,m) in gaunt_expansion(l1,m1, l2,m2)
 #        where c = int Y_l,m Y_l1,m1 Y_l2,m2
