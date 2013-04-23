@@ -26,10 +26,10 @@ public:
   RooCubicBSpline() ;
   RooCubicBSpline(const char *name, const char *title,
                RooRealVar& _x, const char *knotBinningName, const RooArgList& _coefList) ;
+  ~RooCubicBSpline() ;
 
   RooCubicBSpline(const RooCubicBSpline& other, const char* name = 0);
-  virtual TObject* clone(const char* newname) const { return new RooCubicBSpline(*this, newname); }
-  inline virtual ~RooCubicBSpline() { }
+  TObject* clone(const char* newname) const { return new RooCubicBSpline(*this, newname); }
 
    Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const;
    Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
