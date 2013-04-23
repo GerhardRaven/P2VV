@@ -183,10 +183,10 @@ For the normalization, we require
 \end{equation*}
 
 where we use that
-\begin{equation}
-   I_0(x_\mathrm{min},x_\mathrm{max};z)\equiv \int_{x_\mathrm{min}}^{z_\mathrm{max}} dx e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
-              = \frac{1}{z}\left[ \mathrm{erf}\left(\frac{x}{\sqrt{2}} \right) - w\left( \frac{i}{\sqrt{2}}\left(z-x\right) \right) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-\end{equation}
+\begin{eqnarray*}
+   I_0(x_\mathrm{min},x_\mathrm{max};z) &\equiv& \int_{x_\mathrm{min}}^{z_\mathrm{max}} dx e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
+\\             &=&\frac{1}{z}\left[ \mathrm{erf}\left(\frac{x}{\sqrt{2}} \right) -e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}\left(z-x\right) \right) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+\end{eqnarray*}
 
 \pagebreak
 
@@ -203,58 +203,49 @@ Once again we complete the square, and shift the integrand to obtain:
 \begin{eqnarray*}
        I(x_\mathrm{min},x_\mathrm{max};z,\lambda) &=&  \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{\lambda x} e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x)\right) 
         \\            &=&  e^{\frac{1}{2}\lambda^2}\int_{x_\mathrm{min}-\lambda}^{x_\mathrm{max}-\lambda} dx \;  e^{-\frac{1}{2}x^2} w\left(\frac{i}{\sqrt{2}}\left(z-\lambda-x\right) \right)
-        \\            &=& \frac{e^{\frac{1}{2}\lambda^2}}{z-\lambda} \left[ \mathrm{erf}\left( \frac{x}{\sqrt{2}} \right) - w\left(\frac{i}{\sqrt{2}}\left(z-\lambda-x \right) \right) \right]_{x_\mathrm{min}-\lambda}^{x_\mathrm{max}-\lambda}
-        \\            &=& e^{\frac{1}{2}\lambda^2} \left[  J(x_\mathrm{max};\lambda,z) - J(x_\mathrm{min};\lambda,z)  \right]
+        \\            &=& \frac{e^{\frac{1}{2}\lambda^2}}{z-\lambda} \left[ \mathrm{erf}\left( \frac{x}{\sqrt{2}} \right) - e^{-\frac{1}{2}x^2}w\left(\frac{i}{\sqrt{2}}\left(z-\lambda-x \right) \right) \right]_{x_\mathrm{min}-\lambda}^{x_\mathrm{max}-\lambda}
+        \\            &\equiv& K(z,\lambda) \left[  J(x_\mathrm{max};\lambda,z) - J(x_\mathrm{min};\lambda,z)  \right]
 \end{eqnarray*}
-where $J(x;\lambda,z)=\frac{1}{z-\lambda}\left[\mathrm{erf}\left(\frac{x-\lambda}{\sqrt{2}}\right)-w\left(\frac{i}{\sqrt{2}}\left(z-x\right) \right)\right]$.
+where $J(x;\lambda,z)=\mathrm{erf}\left(\frac{x-\lambda}{\sqrt{2}}\right)-e^{-\frac{1}{2}\left(x-\lambda\right)^2}w\left(\frac{i}{\sqrt{2}}\left(z-x\right) \right)$ and $K(\lambda,z)=\frac{e^{\frac{\lambda^2}{2}}}{z-\lambda}$.
 
-In order to simplify the  computation of  $I_n$, we define $K_n,L_n(z)$ and $M_n(x;z)$ as follows:
+In order to simplify the  computation of  $I_n$, we define the $n^\mathrm{th}$ order derivatives at $\lambda=0$, $K_n(z)$ and $M_n(x;z)$, as follows:
 \begin{equation}
-\begin{array}{|c|c|c|c|c|c|}
+\begin{array}{|c|c|c|}
 \hline
 n   
-& \begin{array}{l} K_n     \\ = \left. \left( \frac{d}{d\lambda} \right)^n\right|_{\lambda=0} e^{\frac{1}{2}\lambda^2}  \end{array}
-& \begin{array}{l} L_n(z)  \\ = \left. \left( \frac{d}{d\lambda} \right)^n\right|_{\lambda=0} \frac{1}{z-\lambda}\\ =n!z^{-n-1} \end{array}
-& \begin{array}{l}  M_n(x;z)  \\ = \left. \left( \frac{d}{d\lambda} \right)^n\right|_{\lambda=0} \left[ \mathrm{erf}\left(\frac{x-\lambda}{\sqrt{2}}\right)-w\left(\right) \right] \end{array}
-\\ \hline 0  & 1 & z^{-1} &  \mathrm{erf}\left(\frac{x}{\sqrt{2}}\right)-w\left( \frac{i}{\sqrt{2}} \left(z-x\right)\right) 
-\\ 1  & 0 & z^{-2} & -  \sqrt{\frac{2}{\pi}}e^{-\frac{x^2}{2}}
-\\ 2  & 1 & 2 z^{-3} & x M_1(x;z)
-\\ 3  & 3 & 6 z^{-4} & (x^2-1)M_1(x;z)
+& \begin{array}{l}  K_n(z)   = \\  \left. \left( \frac{d}{d\lambda} \right)^n\right|_{\lambda=0} \frac{e^{\frac{1}{2}\lambda^2}}{z-\lambda}  \end{array}
+& \begin{array}{l}  M_n(x;z) = \\  \left. \left( \frac{d}{d\lambda} \right)^n\right|_{\lambda=0} \left[ \mathrm{erf}\left(\frac{x-\lambda}{\sqrt{2}}\right)-  e^{-\frac{1}{2}\left(x-\lambda\right)^2}w\left(\frac{i}{\sqrt{2}}\left(z-x\right)\right)  \right] \end{array}
+\\ \hline 
+   0   & z^{-1} &  \mathrm{erf}\left(\frac{x}{\sqrt{2}}\right)-e^{-\frac{1}{2}x^2}w\left( \frac{i}{\sqrt{2}} \left(z-x\right)\right) 
+\\ 1   & z^{-2}          & e^{-\frac{1}{2}x^2} \left[ - \sqrt{\frac{2}{\pi}}   -       x w\left(\frac{i}{\sqrt{2}}(z-x)  \right) \right]
+\\ 2   & 2z^{-3}+z^{-1}  & e^{-\frac{1}{2}x^2} \left[ - \sqrt{\frac{2}{\pi}} x - (x^2-1) w\left(\frac{i}{\sqrt{2}}(z-x)\right) \right]
+\\ 3   & 6z^{-4}+3z^{-2} & e^{-\frac{1}{2}x^2} \left[ - \sqrt{\frac{2}{\pi}} (x^2-1)-x(x^2-3)w\left(\frac{i}{\sqrt{2}}(z-x)\right)   \right]
 \\ \hline
 \end{array}
 \end{equation}
 
-In terms of these functions, the normalization integrals can be written as:
+In terms of these functions, the normalization integrals can now be written as:
 \begin{eqnarray}
-     I_0(x_\mathrm{min},x_\mathrm{max};z) &=&  z^{-1} \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-\\   I_1(x_\mathrm{min},x_\mathrm{max};z) &=& %   K_1 L_0(z) \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                                  z^{-2} \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\  &+&   z^{-1} \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-\\   I_2(x_\mathrm{min},x_\mathrm{max};z) &=&     z^{-1} \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+&  2 z^{-3} \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+&    z^{-1} \left[ x M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+&  2 z^{-2} \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-\\   I_3(x_\mathrm{min},x_\mathrm{max};z) &=&   3 z^{-1} \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+&  6 z^{-4} \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+&    z^{-1} \left[ (x^2-1)M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+& 3  z^{-2} \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+& 6  z^{-3} \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+& 3  z^{-2} \left[ xM_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-                                        \\ &+& 3  z^{-1} \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+     I_0(x_\mathrm{min},x_\mathrm{max};z) &=&  \;\; K_0(z) \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\   I_1(x_\mathrm{min},x_\mathrm{max};z) &=&  \;\; K_1(z) \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+                                        \\  &+&\;\; K_0(z) \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\   I_2(x_\mathrm{min},x_\mathrm{max};z) &=&  \;\; K_2(z) \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+                                        \\ &+&  2 K_1(z) \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+                                        \\ &+& \;\; K_0(z) \left[ M_2(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\   I_3(x_\mathrm{min},x_\mathrm{max};z) &=&  \;\; K_3(z) \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+                                        \\ &+&  3 K_2(z) \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+                                        \\ &+&  3 K_1(z) \left[ M_2(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+                                        \\ &+& \;\; K_0(z) \left[ M_3(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
 \end{eqnarray}
-where the values of $K_n$ and $L_n(z)$ have already been substituted, and the expressions for $M_n$ with $n>1$ have been written in terms of $M_1$.
+We give here the expressions for $n=0,1,2,3$ (check!)
+\begin{eqnarray*}
+    I_0(x;z) &=& \frac{1}{z}\left[  \mathrm{erf}\left(\frac{x}{\sqrt{2}}\right)-e^{-\frac{1}{2}x^2}w\left( \frac{i}{\sqrt{2}} \left(z-x\right)\right)   \right]
+\\  I_1(x;z) &=& \frac{1}{z}\left[I_0(x,z)-e^{-\frac{1}{2}x^2}\left( \sqrt{\frac{2}{\pi}} + x w\left( \frac{i}{\sqrt{2}}(z-x)\right) \right)  \right]
+\\  I_2(x;z) &=& 
+\\  I_3(x;z) &=& 
+\end{eqnarray*}
+
 \pagebreak
-We give here the expressions for $n=1,2$:
-\begin{equation*}
-    I_1(x,z)\equiv \int dx\; x e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x)\right) 
-    = \frac{1}{z}\left[I_0(z,x)-\sqrt{\frac{2}{\pi}}e^{-\frac{1}{2}x^2} - x w\left( \frac{i}{\sqrt{2}}(z-x)\right)  \right]
-\end{equation*}
-\begin{equation*}
-    I_2(x,z)\equiv \int dx\; x^2 e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x)\right) 
-    = \frac{1}{z}\left[ 2I_1(x,z) - x^2z^2 w\left(\right) \right]
-\end{equation*}
-
-
 
 
 \subsection{Flavour tagging}
