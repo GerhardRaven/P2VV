@@ -37,6 +37,7 @@ class PdfConfiguration( dict ) :
 
     def getParametersFromPdf( self, pdf, data ) :
         for par in pdf.getParameters(data) :
+            if par.ClassName() != 'RooRealVar' : continue
             self.addParameter( par.GetName(), (  par.getVal()
                                                , par.getError()
                                                , par.getMin()
@@ -47,12 +48,12 @@ class PdfConfiguration( dict ) :
 
     def setParametersInPdf( self, pdf ) :
         for par in pdf.getVariables() :
-            if par.GetName() in self._parameters.keys() :
-                par.setVal(      self._parameters[ par.GetName() ][0]                    )
-                par.setError(    self._parameters[ par.GetName() ][1]                    )
-                par.setMin(      self._parameters[ par.GetName() ][2]                    )
-                par.setMax(      self._parameters[ par.GetName() ][3]                    )
-                par.setConstant( False if self._parameters[ par.GetName() ][4] else True )
+            if not par.GetName() in self._parameters.keys() : continue
+            par.setVal(      self._parameters[ par.GetName() ][0]                    )
+            par.setError(    self._parameters[ par.GetName() ][1]                    )
+            par.setMin(      self._parameters[ par.GetName() ][2]                    )
+            par.setMax(      self._parameters[ par.GetName() ][3]                    )
+            par.setConstant( False if self._parameters[ par.GetName() ][4] else True )
 
     def readParametersFromFile( self, filePath = 'parameters', **kwargs ) :
         # get file path
@@ -1076,7 +1077,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                             , BMass.GetName() + ' fit - right side band'
                                            ]
                                          , [ True, False, False, False ]
-                                         , [ ( 1.5e2, 1.2e4 ), ( None, None ), ( None, None ), ( None, None ) ] # [ ( 8.e1, 1.e4 ), ( 0., 4500. ), ( 0., 660. ), ( 0., 640. ) ]
+                                         , [ ( 1.9e2, 1.2e4 ), ( None, None ), ( None, None ), ( None, None ) ]
+                                         #, [ ( 1.e3, 2.5e4 ), ( None, None ), ( None, None ), ( None, None ) ]
                                          , [ 1.00, 1.15, 1.00, 1.00 ]
                                          , [ 0.6,  0.7,  0.8,  0.8  ]
                                          , [ 2,    3,    3,    3    ]
@@ -1292,7 +1294,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # B lifetime
         from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
         dGammaVar = dict( Name = 'dGamma' )
-        if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsRooBarbMoriond2012', 0.02 )
+        if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
         self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM )
         if ambiguityPars : self._lifetimeParams['dGamma'].setVal( -self._lifetimeParams['dGamma'].getVal() )
 
@@ -1373,14 +1375,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VV.Parameterizations.CPVParams import LambdaCarth_CPParam as CPParam
             ReLambdaCPVar = dict( Name = 'ReLambdaCP' )
             ImLambdaCPVar = dict( Name = 'ImLambdaCP' )
-            if blind: ReLambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsGoofyMoriond2012', 0.1 )
-            if blind: ImLambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsPlutoMoriond2012', 0.1 )
             self._lambdaCP = CPParam( ReLambdaCP = ReLambdaCPVar, ImLambdaCP = ImLambdaCPVar )
 
         elif lambdaCPParam == 'lambPhiRel_CPVDecay' :
             from P2VV.Parameterizations.CPVParams import LambdaAbsArgRel_CPVDecay_CPParam as CPParam
             phiCPVar = dict( Name = 'phiCP_m' )
-            if blind: phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
             self._lambdaCP = CPParam( phiCP_m = phiCPVar, AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self._amplitudes )
             if ambiguityPars : self._lambdaCP['phiCP_m'].setVal( pi - self._lambdaCP['phiCP_m'].getVal() )
 
@@ -1408,8 +1407,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             phiCPVar = dict( Name = 'phiCP' )
             lambdaCPVar = dict( Name = 'lambdaCP' )
             if blind:
-                phiCPVar['Blind'] = ( 'UnblindUniform', 'BsCustardMoriond2012', 0.3 )
-                lambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsCrumbleMoriond2012', 0.3 )
+                phiCPVar['Blind']    = ( 'UnblindUniform', 'BsPhis2013EPS',  0.2 )
+                #lambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsLambdas2013EPS', 0.1 )
             self._lambdaCP = CPParam( phiCP = phiCPVar, lambdaCP = lambdaCPVar )
             if ambiguityPars :
                 self._lambdaCP['phiCP'].setVal( pi - self._lambdaCP['phiCP'].getVal() )
@@ -1869,12 +1868,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                          , [ 1. - ( untagFracSigOS if SFit else untagFracOS ), 1. - untagFracSigOS, 1. - untagFracBkgOS ]
                         ) :
+                pad.SetLeftMargin(0.18)
+                pad.SetRightMargin(0.05)
+                pad.SetBottomMargin(0.18)
+                pad.SetTopMargin(0.05)
+
                 #plot(  pad, estWTagOS, data, self._sig_bkg_estWTagOS
-                plot(  pad, estWTagOS,  data
+                plot(  pad, estWTagOS,  data, yScale = ( 0., None ), xTitleOffset = 1.10, yTitleOffset = 1.15
                      , xTitle     = '#eta^{OS}'
+                     , yTitle     = 'Candidates / %.2f' % ( 0.499999 / float(nBins) )
                      , frameOpts  = dict( Bins = nBins, Title = estWTagOS.GetTitle() + plotTitle, Range = ( 0., 0.499999 )
                                          , Name = estWTagOS.GetName() )
-                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                      )
+                     , dataOpts   = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, LineWidth = 3 )
                      #, pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
                     )
 
@@ -1887,12 +1892,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                          , [ 1. - ( untagFracSigSS if SFit else untagFracSS ), 1. - untagFracSigSS, 1. - untagFracBkgSS ]
                         ) :
+                pad.SetLeftMargin(0.18)
+                pad.SetRightMargin(0.05)
+                pad.SetBottomMargin(0.18)
+                pad.SetTopMargin(0.05)
+
                 #plot(  pad, estWTagSS, data, self._sig_bkg_estWTagSS
-                plot(  pad, estWTagSS, data
-                     , xTitle     = ' #eta^{SS}'
+                plot(  pad, estWTagSS, data, yScale = ( 0., None ), xTitleOffset = 1.10, yTitleOffset = 1.15
+                     , xTitle     = '#eta^{SSK}'
+                     , yTitle     = 'Candidates / %.2f' % ( 0.499999 / float(nBins) )
                      , frameOpts  = dict( Bins = nBins, Title = estWTagSS.GetTitle() + plotTitle, Range = ( 0., 0.499999 )
                                          , Name = estWTagSS.GetName() )
-                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4                      )
+                     , dataOpts   = dict( MarkerStyle = kFullCircle, MarkerSize = 0.7, LineWidth = 3 )
                      #, pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
                     )
 
@@ -2093,7 +2104,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 if bkgAnglePdf in [ 'basis', 'hybrid' ] :
                     if bkgAnglePdf == 'basis' : nBins = [ 20, 20, 20 ]
                     # create an angular PDF with basis functions
-                    angPDFIndices = [ ( 2, 0, 0 ) ]
+                    angPDFIndices = [ ( 2, 0, 0 ), ( 0, 2, 0 ) ]
                     #angPDFIndices = [ ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 2, 2, 0 ), ( 2, 2, 2 ) ]
                     #angPDFIndices = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
                     #                  for YIndex1 in range( -YIndex0, YIndex0 + 1 )\
@@ -2107,7 +2118,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                                               % ( inds[0], inds[1], cnvrtInd(inds[2]) )
                                                                 , 'Value'   : 0.
                                                                 , 'Error'   : 0.01
-                                                                , 'MinMax'  : ( -0.2, 0.2 )
+                                                                , 'MinMax'  : ( -0.4, 0.4 )
                                                                 , 'Indices' : inds
                                                                }
                                                             ) for inds in angPDFIndices
@@ -2149,7 +2160,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                              , [ angle.GetTitle() for angle in angles ]
                              , ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                             ) :
-                    plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle
+                    plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle, yTitleOffset = 1.5
                          , frameOpts  = dict( Bins = bins, Title = plotTitle   )
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
                          , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3  )
@@ -2166,37 +2177,37 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                              , ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                              , ( ( None, None ), ( None, None ), ( None, None ) ) # ( ( 0., 740. * 9585. / 12005. ), ( 0., 580. * 9585. / 12005. ), ( 0., 760. * 9585. / 12005. ) ) # ( ( 0., 740. ), ( 0., 580. ), ( 0., 760. ) )
                             ) :
-                    plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle, yScale = scale
+                    plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle, yTitleOffset = 1.5, yScale = scale
                          , frameOpts  = dict( Bins = bins, Title = plotTitle   )
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )
                          , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3  )
                         )
 
                 # plot 2-D angular distributions
-                for angle0, angle1, data, canv, padNr in [  ( 1, 0, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  4 )
-                                                          , ( 2, 0, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  5 )
-                                                          , ( 1, 2, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  6 )
-                                                          , ( 1, 0, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 4 )
-                                                          , ( 2, 0, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 5 )
-                                                          , ( 1, 2, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 6 )
-                                                         ] :
-                    bkgAngHist = data.createHistogram( angles[angle0]._var, angles[angle1]._var, nBins[angle0], nBins[angle1] )
-                    _P2VVPlotStash.append(bkgAngHist)
-                    bkgAngHist.SetStats(False)
-                    bkgAngHist.SetTitle( '%s vs. %s' % ( angleNames[angle0][1], angleNames[angle1][1] ) )
-                    bkgAngHist.SetMinimum(0.)
-                    bkgAngHist.GetXaxis().SetTitle( angleNames[angle0][1] )
-                    bkgAngHist.GetYaxis().SetTitle( angleNames[angle1][1] )
-                    bkgAngHist.GetXaxis().SetLabelOffset(0.01)
-                    bkgAngHist.GetYaxis().SetLabelOffset(0.008)
-                    bkgAngHist.GetXaxis().SetTitleOffset(1.8)
-                    bkgAngHist.GetYaxis().SetTitleOffset(1.8)
-                    bkgAngPad = canv.cd(padNr)
-                    bkgAngPad.SetLeftMargin(0.08)
-                    bkgAngPad.SetRightMargin(0.05)
-                    bkgAngPad.SetBottomMargin(0.05)
-                    bkgAngPad.SetTopMargin(0.05)
-                    bkgAngHist.Draw('lego2')
+                #for angle0, angle1, data, canv, padNr in [  ( 1, 0, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  4 )
+                #                                          , ( 2, 0, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  5 )
+                #                                          , ( 1, 2, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  6 )
+                #                                          , ( 1, 0, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 4 )
+                #                                          , ( 2, 0, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 5 )
+                #                                          , ( 1, 2, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 6 )
+                #                                         ] :
+                #    bkgAngHist = data.createHistogram( angles[angle0]._var, angles[angle1]._var, nBins[angle0], nBins[angle1] )
+                #    _P2VVPlotStash.append(bkgAngHist)
+                #    bkgAngHist.SetStats(False)
+                #    bkgAngHist.SetTitle( '%s vs. %s' % ( angleNames[angle0][1], angleNames[angle1][1] ) )
+                #    bkgAngHist.SetMinimum(0.)
+                #    bkgAngHist.GetXaxis().SetTitle( angleNames[angle0][1] )
+                #    bkgAngHist.GetYaxis().SetTitle( angleNames[angle1][1] )
+                #    bkgAngHist.GetXaxis().SetLabelOffset(0.01)
+                #    bkgAngHist.GetYaxis().SetLabelOffset(0.008)
+                #    bkgAngHist.GetXaxis().SetTitleOffset(1.8)
+                #    bkgAngHist.GetYaxis().SetTitleOffset(1.8)
+                #    bkgAngPad = canv.cd(padNr)
+                #    bkgAngPad.SetLeftMargin(0.08)
+                #    bkgAngPad.SetRightMargin(0.05)
+                #    bkgAngPad.SetBottomMargin(0.05)
+                #    bkgAngPad.SetTopMargin(0.05)
+                #    bkgAngHist.Draw('lego2')
 
 
         ###################################################################################################################################
