@@ -27,7 +27,7 @@
 #include "Riostream.h"
 #include <math.h>
 #include "TMath.h"
-#include "RooCubicBSpline.h"
+#include "P2VV/RooCubicBSpline.h"
 #include "RooAbsReal.h"
 #include "RooRealVar.h"
 #include "RooArgList.h"
