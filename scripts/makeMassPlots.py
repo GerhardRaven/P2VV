@@ -10,11 +10,15 @@ pdfConfig = PdfConfig()
 doFit                   = False
 pdfConfig['selection']  = 'paper2012'
 
+mumuPlotsFilePath = 'mumuMass2012.ps'
+KKPlotsFilePath   = 'KKMass2012.ps'
+
 parFileIn  = ''
 parFileOut = ''
 
 pdfConfig['nTupleName']     = 'DecayTree'
-pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130418_tupleB.root'
+#pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 pdfConfig['nominalDataSet'] = True
 
 pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
@@ -26,7 +30,7 @@ pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_
 fitOpts = dict(  NumCPU    = 2
                , Optimize  = 2
                , Minimizer = 'Minuit2'
-#               , Offset    = True
+               , Offset    = True
 #               , Hesse     = False
                , Timer     = True
 #               , Verbose   = True
@@ -134,7 +138,7 @@ mumuSig = DoubleCB_Signal_Mass(  Name                = 'sig_mumu'
                                , mass                = mumuMass
                                , mumu_m_sig_frac     = dict( Value = 0.81,   Error = 0.03, MinMax = ( 0.,    1.    ) )
                                , mumu_m_sig_mean     = dict( Value = 3099.7, Error = 0.1,  MinMax = ( 3050., 3150. ) )
-                               , mumu_m_sig_sigma_1  = dict( Value = 12.5,   Error = 0.2,  MinMax = ( 10.,   15.   ) )
+                               , mumu_m_sig_sigma_1  = dict( Value = 12.5,   Error = 0.2,  MinMax = ( 8.,    15.   ) )
                                , mumu_m_sig_sigma_sf = dict( Value = 1.7,    Error = 0.1,  MinMax = ( 0.1,   5.0   ) )
                                , mumu_m_sig_alpha_1  = dict( Value = 1.90,   Error = 0.04, MinMax = ( 1.0,   3.0   ) )
                                , mumu_m_sig_alpha_sf = dict( Value = 1.4,    Error = 0.3,  MinMax = ( 0.1,   5.0   )
@@ -193,10 +197,10 @@ mumuMassCanv.SetBottomMargin(0.18)
 mumuMassCanv.SetTopMargin(0.05)
 mumuMassPlot.Draw()
 LHCbLabel.Draw()
-mumuMassCanv.Print('mumuMass.ps(')
+mumuMassCanv.Print( mumuPlotsFilePath + '(' )
 
-mumuMassPlot.SetMinimum(3.)
-mumuMassPlot.SetMaximum(3.e3)
+mumuMassPlot.SetMinimum(7.)#3.)
+mumuMassPlot.SetMaximum(7.e3)#3.e3)
 mumuMassPlot.SetTitleOffset( 1.0, 'y' )
 
 mumuMassCanvLog = TCanvas('mumuMassCanvLog')
@@ -207,7 +211,7 @@ mumuMassCanvLog.SetTopMargin(0.05)
 mumuMassCanvLog.SetLogy(True)
 mumuMassPlot.Draw()
 LHCbLabel.Draw()
-mumuMassCanvLog.Print('mumuMass.ps)')
+mumuMassCanvLog.Print( mumuPlotsFilePath + ')' )
 
 
 ##################################################
@@ -282,10 +286,10 @@ KKMassCanv.SetBottomMargin(0.18)
 KKMassCanv.SetTopMargin(0.05)
 KKMassPlot.Draw()
 LHCbLabel.Draw()
-KKMassCanv.Print('KKMass.ps(')
+KKMassCanv.Print( KKPlotsFilePath + '(' )
 
-KKMassPlot.SetMinimum(2.)
-KKMassPlot.SetMaximum(1.e4)
+KKMassPlot.SetMinimum(4.7)#2.)
+KKMassPlot.SetMaximum(2.4e4)#1.e4)
 KKMassPlot.SetTitleOffset( 1.0, 'y' )
 
 KKMassCanvLog = TCanvas('KKMassCanvLog')
@@ -296,4 +300,4 @@ KKMassCanvLog.SetTopMargin(0.05)
 KKMassCanvLog.SetLogy(True)
 KKMassPlot.Draw()
 LHCbLabel.Draw()
-KKMassCanvLog.Print('KKMass.ps)')
+KKMassCanvLog.Print( KKPlotsFilePath + ')' )
