@@ -1,0 +1,76 @@
+Index: roofit/roofitcore/inc/Roo1DTable.h
+===================================================================
+--- roofit/roofitcore/inc/Roo1DTable.h	(revision 49257)
++++ roofit/roofitcore/inc/Roo1DTable.h	(working copy)
+@@ -36,7 +36,9 @@
+ 
+   virtual void fill(RooAbsCategory& cat, Double_t weight=1.0) ;
+   Double_t get(const char* label, Bool_t silent=kFALSE) const ;
++  Double_t get(const int index, Bool_t silent=kFALSE) const ;
+   Double_t getFrac(const char* label, Bool_t silent=kFALSE) const ;
++  Double_t getFrac(const int index, Bool_t silent=kFALSE) const ;
+   Double_t getOverflow() const ;
+ 
+   // Printing interface (human readable)
+Index: roofit/roofitcore/src/Roo1DTable.cxx
+===================================================================
+--- roofit/roofitcore/src/Roo1DTable.cxx	(revision 49257)
++++ roofit/roofitcore/src/Roo1DTable.cxx	(working copy)
+@@ -251,6 +251,33 @@
+ 
+ 
+ //_____________________________________________________________________________
++Double_t Roo1DTable::get(const int index, Bool_t silent) const 
++{
++  // Return the table entry named 'label'. Zero is returned if given
++  // label doesn't occur in table.
++
++  const RooCatType* cat = 0;
++  int i = 0;
++  for (; i < _types.GetEntries(); ++i) {
++     cat = static_cast<const RooCatType*>(_types[i]);
++     if (cat->getVal() == index) {
++        break;
++     } else {
++        cat = 0;
++     }
++  }
++  if (!cat) {
++    if (!silent) {
++      coutE(InputArguments) << "Roo1DTable::get: ERROR: no such entry: " << index << endl ;
++    }
++    return 0 ;
++  }
++  return _count[i] ;
++}
++
++
++
++//_____________________________________________________________________________
+ Double_t Roo1DTable::getOverflow() const 
+ {
+   // Return the number of overflow entries in the table.
+@@ -278,6 +305,23 @@
+ 
+ 
+ //_____________________________________________________________________________
++Double_t Roo1DTable::getFrac(const int index, Bool_t silent) const 
++{
++  // Return the fraction of entries in the table contained in the slot named 'label'. 
++  // The normalization includes the number of overflows.
++  // Zero is returned if given label doesn't occur in table.   
++
++  if (_total) {
++    return get(index, silent) / _total ;
++  } else {
++    if (!silent) coutW(Contents) << "Roo1DTable::getFrac: WARNING table empty, returning 0" << endl ;
++    return 0. ;
++  }
++}
++
++
++
++//_____________________________________________________________________________
+ Bool_t Roo1DTable::isIdentical(const RooTable& other) 
+ {
+   // Return true if table is identical in contents to given reference table

@@ -5,89 +5,68 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
+readData = False
 nEvents = 50000
 
-generateData    = False
-physicsPDF      = True
-
-fitDataOriginal = False
+fitDataOriginal = True
 fitDataMoments  = False
-fitDataCoefs    = False
-computeMoments  = True
-makePlots       = False
-transAngles     = True
+fitDataCoefs    = True
+makePlots       = True
+
+angleNames = ( 'cthetaK', 'cthetal', 'phi' )
 
 # data parameters
-#dataSetName = 'JpsiKstarData'
-dataSetName = 'JpsiphiPHSP'
-#dataSetName = 'Jpsiphi13144002'
-#dataSetFile = 'amplitudeMoments_hel.root'
-#dataSetFile = 'amplitudeMoments_trans.root'
-dataSetFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Diego/jpsiphiTrans.root'
-plotsFile = 'amplitudeMoments.ps'
+dataSetName = 'angleData'
+dataSetFile = 'amplitudeMoments.root'
+plotsFile   = 'amplitudeMoments.ps'
+momentsFile = 'angularMoments'
 
-if transAngles : angleNames = ( 'cPsi',    'cTheta',    'Phi_b' ) # angleNames = ( 'cpsi_tr', 'ctheta_tr', 'phi_tr' )
-else           : angleNames = ( 'cthetaK', 'cthetal',   'phi'   )
+# values of transversity amplitudes
+ampsToUse = [ 'A0', 'Apar', 'Aperp', 'AS' ]
+A0Mag2Val    =  0.4
+A0PhVal      =  0.
+AparMag2Val  =  0.3
+AparPhVal    =  0.8
+AperpMag2Val =  0.3
+AperpPhVal   = -0.4
+ASMag2Val    =  0.01
+ASPhVal      =  2.4
 
-# angular moments
-#momentsFile = 'JpsiKstarMoments'
-momentsFile = 'JpsiphiPHSPMoments'
-#momentsFile = 'Jpsiphi13144002Moments'
-
-if physicsPDF :
-    # values of transversity amplitudes
-    ampsToUse = [ 'A0', 'Apar', 'Aperp' ]#, 'AS' ]
-    A0Mag2Val    =  0.45 # 0.556
-    A0PhVal      =  0.
-    AparMag2Val  =  0.35 # 0.211
-    AparPhVal    =  pi # -2.93
-    AperpMag2Val =  0.2 # 0.233
-    AperpPhVal   =  pi # 2.91
-    ASMag2Val    =  0.
-    ASPhVal      =  0.
-
-else :
-    # P_i( cos(theta_K) ) * Y_jk( cos(theta_l, phi) ) terms in angular PDF: ( ( i, j, k ), ( value, min. value, max. value ) )
-    angPDFParams = [  ( ( 0, 2,  0 ), ( 0.1, 0., 0.2 ) )
-                    , ( ( 0, 2, -1 ), ( 0.1, 0., 0.2 ) )
-                    , ( ( 0, 2,  2 ), ( 0.1, 0., 0.2 ) )
-                    , ( ( 1, 0,  0 ), ( 0.1, 0., 0.2 ) )
-                    , ( ( 2, 2,  1 ), ( 0.1, 0., 0.2 ) )
-                   ]
-
-# P_i( cos(theta_K) ) * Y_jk( cos(theta_l, phi) ) terms in coefficients PDF: ( ( i, j, k ), ( value, min. value, max. value ) )
-coefPDFParams = [  ( ( 0, 2,  0 ), ( 0., -0.6, +0.6 ) )
-                 , ( ( 0, 2, -1 ), ( 0., -0.6, +0.6 ) )
-                 , ( ( 0, 2,  2 ), ( 0., -0.6, +0.6 ) )
-                 , ( ( 1, 0,  0 ), ( 0., -0.6, +0.6 ) )
-                 , ( ( 2, 2,  1 ), ( 0., -0.6, +0.6 ) )
+# P_i( cos(theta_K) ) * Y_jk( cos(theta_l, phi) ) terms in coefficients PDF: ( ( i, j, k ), ( value, error, range [error] ) )
+coefPDFParams = [  ( ( 0, 2,  0 ), -0.039, 0.004, 3. )
+                 , ( ( 1, 0,  0 ), -0.158, 0.008, 3. )
+                 , ( ( 1, 2,  0 ), +0.071, 0.007, 3. )
+                 , ( ( 2, 0,  0 ), +0.165, 0.010, 3. )
+                 , ( ( 2, 2,  0 ), -0.498, 0.009, 3. )
                 ]
-
-# plot options
-if transAngles : angleTitles = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})', '#phi_{tr}' )
-else           : angleTitles = ( 'cos(#theta_{K})', 'cos(#theta_{l})',  '#phi'      )
-numBins    = ( 30, 30, 30 )
-lineWidth  = 2
-markStyle  = 8
-markSize   = 0.4
 
 # moments overall scale
 scale = 4. * sqrt(pi)
+
+# fit options
+fitOpts = dict( NumCPU = 2, Optimize = 2, Timer = True, Minimizer = 'Minuit2' )
+
+# plot options
+angleTitles = ( 'cos#kern[0.1]{#theta_{K}}', 'cos#kern[0.1]{#theta_{l}}', '#varphi [rad]' )
+numBins     = ( 30, 30, 30 )
+lineWidth   = 2
+markStyle   = 8
+markSize    = 0.4
 
 
 ###########################################################################################################################################
 ## build the angular PDF, generate/read data and do a fit ##
 ############################################################
 
-# import RooFit wrappers
-from RooFitWrappers import *
+# set RooFit output
+from P2VV.Load import RooFitOutput
 
 # workspace
-ws = RooObject(workspace = 'ws')
+from P2VV.RooFitWrappers import RooObject
+worksp = RooObject( workspace = 'ampMomsWS' ).ws()
 
 # angular functions
-if transAngles : from P2VVParameterizations.AngularFunctions import JpsiphiTransversityAngles as AngularFunctions
-else           : from P2VVParameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngularFunctions
+from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as AngularFunctions
 angleFuncs = AngularFunctions( cpsi = angleNames[0], ctheta = angleNames[1], phi = angleNames[2] )
 
 # variables in PDF
@@ -95,56 +74,39 @@ angles      = ( angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFun
 observables = list(angles)
 
 # build terms for angular PDF
-if physicsPDF :
-    # terms with transversity amplitudes
-    from P2VVParameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet
-    transAmps = JpsiVCarthesian_AmplitudeSet(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
-                                             , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
-                                             , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
-                                             , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
-                                             , ReAS    = sqrt(ASMag2Val    / A0Mag2Val) * cos(ASPhVal)
-                                             , ImAS    = sqrt(ASMag2Val    / A0Mag2Val) * sin(ASPhVal)
-                                            )
+from P2VV.Parameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet
+transAmps = JpsiVCarthesian_AmplitudeSet(  ReApar  = sqrt( AparMag2Val  / A0Mag2Val ) * cos( AparPhVal  - A0PhVal )
+                                         , ImApar  = sqrt( AparMag2Val  / A0Mag2Val ) * sin( AparPhVal  - A0PhVal )
+                                         , ReAperp = sqrt( AperpMag2Val / A0Mag2Val ) * cos( AperpPhVal - A0PhVal )
+                                         , ImAperp = sqrt( AperpMag2Val / A0Mag2Val ) * sin( AperpPhVal - A0PhVal )
+                                         , ReAS    = sqrt( ASMag2Val    / A0Mag2Val ) * cos( ASPhVal    - A0PhVal )
+                                         , ImAS    = sqrt( ASMag2Val    / A0Mag2Val ) * sin( ASPhVal    - A0PhVal )
+                                        )
 
-    from P2VVParameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
-    pdfTerms = Amplitudes_AngularPdfTerms( AmpNames = ampsToUse, Amplitudes = transAmps, AngFunctions = angleFuncs.functions )
-
-else :
-    # terms with angular basis functions
-    from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
-    cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
-    pdfTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
-                                          , **dict( (  'C%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
-                                                     , {  'Name'    : 'COab%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
-                                                        , 'Value'   : term[1][0]
-                                                        , 'MinMax'  : term[1][ 1 : 3 ]
-                                                        , 'Indices' : term[0]
-                                                       }
-                                                    ) for term in angPDFParams
-                                                  )
-                                         )
+from P2VV.Parameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
+pdfTerms = Amplitudes_AngularPdfTerms( AmpNames = ampsToUse, Amplitudes = transAmps, AngFunctions = angleFuncs.functions )
 
 # build angular PDF
 pdf = pdfTerms.buildSumPdf('AngularPDF')
 
-from P2VVLoad import RooFitOutput
-if generateData :
+if readData :
+    # read data
+    from P2VV.GeneralUtils import readData
+    data = readData( dataSetFile, dataSetName = dataSetName )
+    print 'amplitudeMoments: read %d events' % data.sumEntries()
+
+else :
     # generate data with PDF
     print 'amplitudeMoments: generating %d events' % nEvents
     data = pdf.generate( observables, nEvents )
 
-    from P2VVGeneralUtils import writeData
+    from P2VV.GeneralUtils import writeData
     writeData( dataSetFile, dataSetName, data )
 
-else :
-    # read data from file
-    from P2VVGeneralUtils import readData
-    data = readData( dataSetFile, dataSetName = dataSetName )
-
 if fitDataOriginal :
-    # fit data
+    # fit amplitudes PDF to data
     print 'amplitudeMoments: fitting %d events' % data.numEntries()
-    pdf.fitTo( data, NumCPU = 2, Timer = 1 )
+    pdf.fitTo( data, **fitOpts )
 
 
 ###########################################################################################################################################
@@ -152,118 +114,37 @@ if fitDataOriginal :
 ####################################################
 
 # build angular moment basis functions
-indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-#indices += [ ( PIndex, 2, YIndex1 ) for PIndex in range( 3, 10 ) for YIndex1 in [ -2, 1 ] ]
+indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
 
 # construct moment names strings
-names0 = 'p2vvab_00..'
-names1 = names0 + '|p2vvab_10..'
-names2 = names1 + '|p2vvab_20..'
+names0 = 'p2vvab_0000'
+names1 = names0 + '|p2vvab_001.|p2vvab_100.|p2vvab_101.'
 
-from P2VVGeneralUtils import RealMomentsBuilder
+from P2VV.GeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
 
-if computeMoments :
-    # compute moments from data set
-    moments.compute(data)
-    moments.write(momentsFile, Scale = scale)
-
-else :
-    # read moments from file
-    moments.read(momentsFile)
+# compute moments from data set
+moments.compute(data)
+moments.write( momentsFile, Scale = scale )
 
 # print moments to screen
+moments.Print( Scale = scale, MinSignificance = 0.                 )
 moments.Print( Scale = scale, MinSignificance = 3., Names = names0 )
 moments.Print( Scale = scale, MinSignificance = 3., Names = names1 )
-moments.Print( Scale = scale, MinSignificance = 3., Names = names2 )
-moments.Print( Scale = scale, MinSignificance = 0.                 )
 
 # build new PDFs with angular moments
-momPDFTerms0 = moments.buildPDFTerms(MinSignificance = 3., Names = names0, Scale = scale, CoefNamePrefix = 'C0_')
-momPDFTerms1 = moments.buildPDFTerms(MinSignificance = 3., Names = names1, Scale = scale, CoefNamePrefix = 'C1_')
-momPDFTerms2 = moments.buildPDFTerms(MinSignificance = 3., Names = names2, Scale = scale, CoefNamePrefix = 'C2_')
-momPDFTerms  = moments.buildPDFTerms(MinSignificance = 0.                , Scale = scale                        , RangeNumStdDevs = 5.)
+momPDFTerms  = moments.buildPDFTerms( MinSignificance = 0.                , Scale = scale                        , RangeNumStdDevs = 5. )
+momPDFTerms0 = moments.buildPDFTerms( MinSignificance = 3., Names = names0, Scale = scale, CoefNamePrefix = 'C0_'                       )
+momPDFTerms1 = moments.buildPDFTerms( MinSignificance = 3., Names = names1, Scale = scale, CoefNamePrefix = 'C1_'                       )
 
+momPDF  = momPDFTerms.buildSumPdf('angMomentsPDF')
 momPDF0 = momPDFTerms0.buildSumPdf('angMomentsPDF0')
 momPDF1 = momPDFTerms1.buildSumPdf('angMomentsPDF1')
-momPDF2 = momPDFTerms2.buildSumPdf('angMomentsPDF2')
-momPDF  = momPDFTerms.buildSumPdf('angMomentsPDF')
-
-#for event in range( data.numEntries() ) :
-#    varSet = data.get(event)
-#    angles[0].setVal( varSet.getRealValue('cthetaK') )
-#    angles[1].setVal( varSet.getRealValue('cthetal') )
-#    angles[2].setVal( varSet.getRealValue('phi') )
-#    if momPDF.getVal() < 0. : print angles[0].getVal(), angles[1].getVal(), angles[2].getVal(), momPDF.getVal()
 
 if fitDataMoments :
-    ## make some parameters constant
-    #for var in momPDF.getVariables() :
-    #    if var.GetName().startswith('C_p2vvab') : var.setConstant(True)
-
-    # fit data
-    momPDF.fitTo( data, NumCPU = 2, Timer = 1 )
-
-
-###########################################################################################################################################
-## transform moments into angular observables ##
-################################################
-
-# measured values
-coefNames = [ 'p2vvab_%d0%d%d' % inds for inds in [ ( 0, 2, 0), ( 2, 0, 0 ), ( 2, 2, 0 ) ] ]
-coefNum = [ moments[cName].coefficient() for cName in coefNames ]
-covNum  = [ [ 0. for cIt1 in range( len(coefNames) ) ] for cIt0 in range( len(coefNames) ) ]
-for cIt, cName in enumerate(coefNames) : covNum[cIt][cIt] = moments[cName].variance()
-
-# scale measured values so that C_000 = 4 * ( |A_0|^2 + |A_par|^2 + |A_perp|^2 ) = 4
-for valIt in range( len(coefNum) ) :
-    coefNum[valIt] *= 4. * scale
-    for valItCov in range( len(coefNum) ) :
-        covNum[valIt][valItCov] *= ( 4. * scale )**2
-
-# transformation matrix values
-#coef0Num = [ 0., 0., 0. ]
-#RNum = [  [ 4. / sqrt(5.), 8. / sqrt(5.)  ]
-#        , [ -8.,          -16.            ]
-#        , [ 8. / sqrt(5.), -8. / sqrt(5.) ]
-#       ]
-
-coef0Num = [ 2. / sqrt(5), -4., -2. / sqrt(5.) ]
-RNum = [  [ 6. / sqrt(5.) ]
-        , [ -12.          ]
-        , [ 6. / sqrt(5.) ]
-       ]
-
-# matrices
-from ROOT import TMatrixD, TMatrixDSym, TVectorD
-RMat    = TMatrixD( len(RNum), len(RNum[0]) )
-RTrMat  = TMatrixD( len(RNum[0]), len(RNum) )
-coefMat = TMatrixD( len(RNum), 1 )
-covMat  = TMatrixDSym( len(RNum) )
-
-for rowIt in range( len(RNum) ):
-    for colIt in range( len(RNum[0]) ) : RMat[rowIt][colIt]    = RNum[rowIt][colIt]
-    for colIt in range( len(RNum[0]) ) : RTrMat[colIt][rowIt]  = RNum[rowIt][colIt]
-    for colIt in range(1)              : coefMat[rowIt][colIt] = coefNum[rowIt] - coef0Num[rowIt]
-    for colIt in range( len(RNum) )    : covMat[rowIt][colIt]  = covNum[rowIt][colIt]
- 
-covInvMat = TMatrixD(covMat).Invert()
-
-AMat = RTrMat * covInvMat * RMat
-AInvMat = TMatrixD(AMat).Invert()
-BMat = RTrMat * covInvMat
-IMat = AInvMat * BMat * coefMat
-
-delMat = coefMat - RMat * IMat
-delTrMat = TMatrixD( 1, delMat.GetNrows() )
-delTrMat.Transpose(delMat)
-ChiSqMat = delTrMat * covInvMat * delMat
-
-print 'amplitudeMoments: angular observables from moments (Chi^2 / #dof = %.2f):' % ( ChiSqMat[0][0] / float( IMat.GetNrows() ) )
-for rowIt in range( IMat.GetNrows() ) :
-  print '  %d: %.4f +/- %.4f' % ( rowIt, IMat[rowIt][0], sqrt( AInvMat[rowIt][rowIt] ) )
-AInvMat.Print()
+    # fit angular moments PDF to data
+    momPDF.fitTo( data, **fitOpts )
 
 
 ###########################################################################################################################################
@@ -271,13 +152,14 @@ AInvMat.Print()
 ###########################################################
 
 # build new PDF with angular coefficients
-from P2VVParameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
+from P2VV.Parameterizations.AngularPDFs import AngleBasis_AngularPdfTerms
 cnvrtInd = lambda ind : 'm' + str(abs(ind)) if ind < 0 else str(ind)
 coefPDFTerms = AngleBasis_AngularPdfTerms(  Angles = angleFuncs.angles
                                           , **dict( (  'C%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
                                                      , {  'Name'    : 'Cab%d%d%s' % ( term[0][0], term[0][1], cnvrtInd(term[0][2]) )
-                                                        , 'Value'   : term[1][0]
-                                                        , 'MinMax'  : term[1][ 1 : 3 ]
+                                                        , 'Value'   : term[1]
+                                                        , 'Error'   : term[2]
+                                                        , 'MinMax'  : ( term[1] - term[3] * term[2], term[1] + term[3] * term[2] )
                                                         , 'Indices' : term[0]
                                                        }
                                                     ) for term in coefPDFParams
@@ -287,7 +169,9 @@ coefPDF = coefPDFTerms.buildSumPdf('angCoefsPDF')
 
 if fitDataCoefs :
     # fit data
-    coefPDF.fitTo( data, NumCPU = 2, Timer = 1 )
+    fitResult = coefPDF.fitTo( data, Save = True, **fitOpts )
+    fitResult.PrintSpecial( text = True )
+    fitResult.correlationMatrix().Print()
 
 
 ###########################################################################################################################################
@@ -296,14 +180,14 @@ if fitDataCoefs :
 
 if makePlots :
     # import ROOT plot style
-    from P2VVLoad import LHCbStyle
+    from P2VV.Load import LHCbStyle
 
     # create canvas
     from ROOT import TCanvas
     anglesCanv = TCanvas( 'anglesCanv', 'Angles' )
 
     # make plots
-    from P2VVGeneralUtils import plot
+    from P2VV.GeneralUtils import plot
     from ROOT import RooFit, RooCmdArg
     for ( pad, obs, nBins, plotTitle, xTitle ) in zip(  anglesCanv.pads(2, 2)
                                                       , angles
@@ -311,17 +195,15 @@ if makePlots :
                                                       , tuple( [ angle.GetTitle() for angle in angles ] )
                                                       , angleTitles
                                                      ) :
-        plot(  pad, obs, data, pdf, xTitle = xTitle, addPDFs = [ coefPDF, momPDF0, momPDF1, momPDF2, momPDF ]
+        plot(  pad, obs, data, momPDF0, xTitle = xTitle, addPDFs = [ momPDF1, momPDF, coefPDF, pdf ]
              , frameOpts   = dict( Bins = nBins, Title = plotTitle )
              , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
              , pdfOpts     = dict( LineWidth = lineWidth, LineColor = RooFit.kBlack )
              , addPDFsOpts = [  dict( LineWidth = lineWidth, LineColor = RooFit.kGreen + 2 )
-                              , dict( LineWidth = lineWidth, LineColor = RooFit.kCyan + 2  )
-                              , dict( LineWidth = lineWidth, LineColor = RooFit.kBlue      )
                               , dict( LineWidth = lineWidth, LineColor = RooFit.kMagenta   )
                               , dict( LineWidth = lineWidth, LineColor = RooFit.kRed       )
+                              , dict( LineWidth = lineWidth, LineColor = RooFit.kBlue      )
                              ]
             )
 
     anglesCanv.Print(plotsFile)
-

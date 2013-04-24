@@ -34,9 +34,9 @@ using std::make_pair;
 #include "RooSuperCategory.h"
 #include "RooRandom.h"
 
-#include "MultiHistEntry.h"
-#include "RooMultiEffResModel.h"
-#include "RooEffConvGenContext.h"
+#include "P2VV/MultiHistEntry.h"
+#include "P2VV/RooMultiEffResModel.h"
+#include "P2VV/RooEffConvGenContext.h"
 
 namespace {
    TString makeName(const char* name, const RooArgSet& terms ) {
@@ -70,9 +70,6 @@ namespace {
    using std::pair;
 }
 
-ClassImp(RooMultiEffResModel) 
-;
-
 //_____________________________________________________________________________
 RooMultiEffResModel::CacheElem::~CacheElem()
 {
@@ -101,7 +98,8 @@ RooMultiEffResModel::CacheElem::CacheElem(const HistEntries& entries,
    : _iset(iset)
 {
    bool cats = false;
-   RooArgSet categories = entries.begin()->second->categories();
+   RooArgSet categories;
+   entries.begin()->second->addCategories(categories);
    RooArgSet observables(iset);
    RooAbsArg* cat = categories.first();
    if (iset.contains(*cat)) {
@@ -153,10 +151,12 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       MultiHistEntry* entry = *it;
       if (observables.getSize() == 0) {
          observables.add(*(entry->efficiency()->observables()));
-         categories.add(entry->categories());
+         entry->addCategories(categories);
       } else {
          assert(observables.equals(*(entry->efficiency()->observables())));
-         assert(categories.equals(entry->categories()));
+         RooArgSet tmp;
+         entry->addCategories(tmp);
+         assert(categories.equals(tmp));
       }
    }
    
@@ -195,7 +195,9 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       entry->select();
       Int_t index = _super->getIndex();
       pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
-      assert(r.second);
+      if (!r.second) {
+         assert(false);
+      }
    }
    _super->setLabel(current.Data());
 }
@@ -301,7 +303,8 @@ Double_t RooMultiEffResModel::evaluate() const
    bool onlyVars = false;
 
    // Calculate the raw value of this p.d.f
-   RooArgSet categories(_entries.begin()->second->categories());
+   RooArgSet categories;
+   _entries.begin()->second->addCategories(categories);
    RooAbsArg* cat = categories.first();
    if (_normSet && _normSet->getSize() == categories.getSize() && 
        _normSet->contains(*cat)) {
@@ -345,7 +348,7 @@ Int_t RooMultiEffResModel::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& 
    RooArgSet categories;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      categories.add(it->second->categories());
+      it->second->addCategories(categories);
    }
 
    bool all = true;
@@ -459,7 +462,7 @@ Int_t RooMultiEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &
    RooArgSet categories;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      categories.add(it->second->categories());
+      it->second->addCategories(categories);
    }
    RooFIter iter = categories.fwdIterator();
    while (RooAbsArg* cat = iter.next()) {
@@ -486,7 +489,9 @@ Int_t RooMultiEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &
       } else {
          RooArgSet prodGenVars;
          Int_t code = resModel->getGenerator(testVars, prodGenVars, staticInitOK);
-         assert(prodGenVars.equals(genVars) && prodGenCode == code);
+         if (!(prodGenVars.equals(genVars) && prodGenCode == code)) {
+            assert(false);
+         }
       }
    }
 
@@ -521,7 +526,7 @@ void RooMultiEffResModel::initGenerator(Int_t code)
    RooArgSet categories;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      categories.add(it->second->categories());
+      it->second->addCategories(categories);
    }
    _super->recursiveRedirectServers(categories);
 
@@ -554,20 +559,22 @@ void RooMultiEffResModel::initGenerator(Int_t code)
 //_____________________________________________________________________________
 void RooMultiEffResModel::generateEvent(Int_t code)
 {
-   Double_t r = RooRandom::uniform();
+   if (code == 2) {
+      // Only generate categories if code == 2. 
+      Double_t r = RooRandom::uniform();
+      // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
+      std::auto_ptr<TIterator> superIter(_super->MakeIterator());
 
-   // RooSuperCategory* super = dynamic_cast<RooSuperCategory*>(_super->absArg());
-   std::auto_ptr<TIterator> superIter(_super->MakeIterator());
-
-   Levels::const_iterator itLevel = _levels.begin();
-   // find the right generator, and generate categories at the same time...
-   while (itLevel != _levels.end() && itLevel->first < r) {
-      ++itLevel;
+      Levels::const_iterator itLevel = _levels.begin();
+      // find the right generator, and generate categories at the same time...
+      while (itLevel != _levels.end() && itLevel->first < r) {
+         ++itLevel;
+      }
+      // this assigns the categories.
+      _super->setLabel(itLevel->second);
    }
 
-   // this assigns the categories.
-   _super->setLabel(itLevel->second);
-
+   // Otherwise assume the categories are OK and just get the current index.
    Int_t index = _super->getIndex();
    HistEntries::const_iterator itEntry = _entries.find(index);
    assert(itEntry != _entries.end());

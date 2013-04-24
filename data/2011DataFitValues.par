@@ -1,0 +1,46 @@
+# paper2012FitValues.par: parameters
+# name requirement: ''
+# floating:         ''
+#
+# -----------------------------------------------------------------------------------------------------------------------
+# parameter                                  value            error           min              max              floating?
+# -----------------------------------------------------------------------------------------------------------------------
+  A0Mag2                                     +0.52122162      0.0060814934    +0               +1               True
+  A0Phase                                    +0               0               -1e+30           +1e+30           False
+  ASOddPhase_bin0                            +1.3140208       0.68090987      -1e+30           +1e+30           True
+  ASOddPhase_bin1                            +0.76351163      0.27564566      -1e+30           +1e+30           True
+  ASOddPhase_bin2                            +0.49423843      0.46036154      -1e+30           +1e+30           True
+  ASOddPhase_bin3                            -0.50927668      0.25510038      -1e+30           +1e+30           True
+  ASOddPhase_bin4                            -0.45728412      0.20766886      -1e+30           +1e+30           True
+  ASOddPhase_bin5                            -0.64999894      0.19835942      -1e+30           +1e+30           True
+  AparPhase                                  +3.3096884       0.15400527      -1e+30           +1e+30           True
+  AperpMag2                                  +0.24847973      0.0086894294    +0               +1               True
+  AperpPhase                                 +3.0758742       0.21715795      -1e+30           +1e+30           True
+  Gamma                                      +0.67132242      0.0048040161    +0.1             +10              True
+  avgCEvenOSTagged                           +1               0               +0               +2               False
+  avgCEvenSSTagged                           +1               0               +0               +2               False
+  avgCEvenSum                                +1               0               +0               +2               False
+  avgCEvenTagged                             +1               0               +0               +2               False
+  avgCOddOSTagged                            +0               0.060174203     -2               +2               False
+  avgCOddSSTagged                            +0               0.060174203     -2               +2               False
+  avgCOddSum                                 +0               0.060174203     -2               +2               False
+  avgCOddTagged                              +0               0.060174203     -2               +2               False
+  dGamma                                     +0.10052842      0.016174221     -1e+30           +1e+30           True
+  dM                                         +17.666516       0.076815781     -1e+30           +1e+30           True
+  f_S_bin0                                   +0.22750905      0.077369349     +0               +1               True
+  f_S_bin1                                   +0.067227702     0.028580469     +0               +1               True
+  f_S_bin2                                   +0.007988117     0.011564817     +0               +1               True
+  f_S_bin3                                   +0.016367361     0.010768876     +0               +1               True
+  f_S_bin4                                   +0.054996632     0.026378562     +0               +1               True
+  f_S_bin5                                   +0.16756837      0.042438825     +0               +1               True
+  lambdaCP                                   +0.94367939      0.030369292     +0               +5               True
+  phiCP                                      +0.069616036     0.090941491     -1e+30           +1e+30           True
+  wTagDelP0OS                                +0.011001838     0.0033995217    -0.5             +0.5             True
+  wTagDelP0SS                                -0.019037696     0.0049987777    -0.5             +0.5             True
+  wTagDelP1OS                                +0               0.001           -0.5             +0.5             False
+  wTagDelP1SS                                +0               0.01            -0.5             +0.5             False
+  wTagP0OS                                   +0.39065269      0.0076908978    +0               +1               True
+  wTagP0SS                                   +0.36119164      0.015893608     +0               +1               True
+  wTagP1OS                                   +1.0000615       0.022949377     +0.5             +2               True
+  wTagP1SS                                   +1.0183528       0.1566082       +0.5             +2               True
+# -----------------------------------------------------------------------------------------------------------------------

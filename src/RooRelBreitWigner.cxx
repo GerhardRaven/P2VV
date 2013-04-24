@@ -13,11 +13,9 @@
 #include <iostream>
 #include <cmath>
 
-#include "RooRelBreitWigner.h"
+#include "P2VV/RooRelBreitWigner.h"
 #include "RooAbsReal.h"
 #include "RooRealVar.h"
-
-ClassImp(RooRelBreitWigner)
 
 RooRelBreitWigner::RooRelBreitWigner(const char *name, const char *title,
              RooAbsReal& _x, RooAbsReal& _mean,

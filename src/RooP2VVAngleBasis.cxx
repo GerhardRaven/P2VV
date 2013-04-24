@@ -25,13 +25,10 @@
 #include <memory>
 #include <algorithm>
 
-#include "RooP2VVAngleBasis.h"
+#include "P2VV/RooP2VVAngleBasis.h"
 #include "RooLegendre.h"
 #include "RooSpHarmonic.h"
 #include "RooConstVar.h"
-
-ClassImp(RooP2VVAngleBasis)
-;
 
 //_____________________________________________________________________________
 RooP2VVAngleBasis::RooP2VVAngleBasis()

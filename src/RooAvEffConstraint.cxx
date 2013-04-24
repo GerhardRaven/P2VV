@@ -18,9 +18,7 @@
 #include "RooCustomizer.h"
 #include "RooStringVar.h"
 
-#include "RooAvEffConstraint.h" 
-
-ClassImp(RooAvEffConstraint) 
+#include "P2VV/RooAvEffConstraint.h" 
 
 using std::vector;
 using std::auto_ptr;

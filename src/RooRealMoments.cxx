@@ -14,8 +14,8 @@
  *****************************************************************************/
 
 #include <cmath>
-#include "ProgressDisplay.h"
-#include "RooRealMoments.h"
+#include "P2VV/ProgressDisplay.h"
+#include "P2VV/RooRealMoments.h"
 #include "TMath.h"
 #include "RooArgSet.h"
 

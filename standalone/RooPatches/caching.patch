@@ -1,0 +1,63 @@
+Index: roofit/roofitcore/src/RooAbsCachedReal.cxx
+===================================================================
+--- roofit/roofitcore/src/RooAbsCachedReal.cxx	(revision 49259)
++++ roofit/roofitcore/src/RooAbsCachedReal.cxx	(working copy)
+@@ -301,8 +301,11 @@
+ {
+   // Return list of contained RooAbsArg objects
+   RooArgList ret(*func()) ;
+-
+-  ret.add(*_paramTracker) ;
++  if (sourceClone()) { 
++      //cout << "RooAbsCacheReal::FuncCacheElem::containedArgs: adding sourceClone " << sourceClone()->GetName() << " at " << sourceClone() << endl;
++      ret.add(*sourceClone()); 
++  }
++  ret.add(*paramTracker()) ;
+   if (_sourceClone) {
+     ret.add(*_sourceClone) ;
+   }
+Index: roofit/roofitcore/inc/RooAbsAnaConvPdf.h
+===================================================================
+--- roofit/roofitcore/inc/RooAbsAnaConvPdf.h	(revision 49259)
++++ roofit/roofitcore/inc/RooAbsAnaConvPdf.h	(working copy)
+@@ -68,6 +68,11 @@
+   virtual RooArgSet* coefVars(Int_t coefIdx) const ;
+ 
+   virtual Bool_t isDirectGenSafe(const RooAbsArg& arg) const ;
++
++  const RooArgList& funcList() const { 
++    // Return list of component functions
++    return _convSet ; 
++  }
+     
+ protected:
+   Double_t getCoefNorm(Int_t coefIdx, const RooArgSet* nset, const TNamed* rangeName) const ;
+Index: roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
+===================================================================
+--- roofit/roofitcore/src/RooAbsOptTestStatistic.cxx	(revision 49259)
++++ roofit/roofitcore/src/RooAbsOptTestStatistic.cxx	(working copy)
+@@ -58,6 +58,7 @@
+ #include "RooAddPdf.h"
+ #include "RooProduct.h"
+ #include "RooRealSumPdf.h"
++#include "RooAbsAnaConvPdf.h"
+ #include "RooTrace.h"
+ #include "RooVectorDataStore.h" 
+ 
+@@ -687,6 +688,16 @@
+ 	    }
+ 	  }
+ 	}
++        RooAbsAnaConvPdf *cpdf = dynamic_cast<RooAbsAnaConvPdf*>(arg);
++        if (cpdf) {
++          RooFIter citer = cpdf->funcList().fwdIterator() ;
++          RooAbsArg* carg ;
++          while ((carg=citer.next())) {
++            // cout << "Adding CacheAndTrack request to " << carg->GetName() << endl;
++            carg->setAttribute("CacheAndTrack") ;
++            trackNodes.add(*carg) ;
++          }
++        }
+       }
+     }
+     
