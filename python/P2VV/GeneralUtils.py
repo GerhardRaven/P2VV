@@ -502,10 +502,10 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     #nbins = obsFrame.GetNbinsX()
 
     # set y scale
-    if yScale[0]    : obsFrame.SetMinimum(yScale[0])
-    if yScale[1]    : obsFrame.SetMaximum(yScale[1])
-    if yScaleRel[0] : obsFrame.SetMinimum( yScaleRel[0] * obsFrame.GetMinimum() )
-    if yScaleRel[1] : obsFrame.SetMaximum( yScaleRel[1] * obsFrame.GetMaximum() )
+    if yScale[0]    != None : obsFrame.SetMinimum(yScale[0])
+    if yScale[1]    != None : obsFrame.SetMaximum(yScale[1])
+    if yScaleRel[0] != None : obsFrame.SetMinimum( yScaleRel[0] * obsFrame.GetMinimum() )
+    if yScaleRel[1] != None : obsFrame.SetMaximum( yScaleRel[1] * obsFrame.GetMaximum() )
     if logy and obsFrame.GetMinimum() <= 0 : obsFrame.SetMinimum(0.1)
 
     # set axis titles
