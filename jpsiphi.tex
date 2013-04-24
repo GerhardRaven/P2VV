@@ -247,14 +247,14 @@ I(x_\mathrm{min},x_\mathrm{max};z,\alpha,\beta,\gamma) &=&
 \\ &+& (\alpha\beta+\alpha\gamma+\beta\gamma) I_1(x_\mathrm{min},x_\mathrm{max};z) 
     -  \alpha\beta\gamma I_0(x_\mathrm{min},x_\mathrm{max};z)
 \\ &=& \left[K_3(z) -(\alpha+\beta+\gamma) K_2(z)  +(\alpha\beta+\alpha\gamma+\beta\gamma) K_1(z)-\alpha\beta\gamma  K_0(z) \right]\;\; \left. M_0(x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
-\\ &+& \left[K_2(z) -(\alpha+\beta+\gamma) K_1(z) +(\alpha\beta+\alpha\gamma+\beta\gamma) K_0(z)\right]\;\;  \left. M_1(x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
-\\ &+& \left[K_1(z) -(\alpha+\beta+\gamma) K_0(z) \right]\;\; \left. M_2(x,z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\ &+& \left[3K_2(z) -2(\alpha+\beta+\gamma) K_1(z) +(\alpha\beta+\alpha\gamma+\beta\gamma) K_0(z)\right]\;\;  \left. M_1(x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\ &+& \left[3K_1(z) -(\alpha+\beta+\gamma) K_0(z) \right]\;\; \left. M_2(x,z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
 \\ &+& K_0(z) \;\;\left. M_3 (x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
 \\ &=& 
        \left(\begin{array}{c} M_0(x;z) \\ M_1(x;z) \\ M_2(x;z) \\ M_3(x;z) \end{array}\right)
 \cdot \left(\begin{array}{cccc}  1 & -(\alpha+\beta+\gamma) & \alpha\beta+\alpha\gamma+\beta\gamma & -\alpha\beta\gamma 
-                              \\ 0 & 1 & -(\alpha+\beta+\gamma) & \alpha\beta+\alpha\gamma+\beta\gamma
-                              \\ 0 & 0 & 1 & -(\alpha+\beta+\gamma) 
+                              \\ 0 & 3 & -2(\alpha+\beta+\gamma) & \alpha\beta+\alpha\gamma+\beta\gamma
+                              \\ 0 & 0 & 3 & -(\alpha+\beta+\gamma) 
                               \\ 0 & 0 & 0 & 1  \end{array}\right) 
        \left(\begin{array}{c} K_3(z) \\ K_2(z) \\ K_1(z) \\ K_0(z) \end{array} \right) 
 \end{eqnarray*}
