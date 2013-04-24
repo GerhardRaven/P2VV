@@ -1,4 +1,5 @@
-\documentclass[a4paper,9pt,twosided]{article}
+\documentclass[a4paper,10pt,twosided]{article}
+\usepackage[cm]{fullpage}
 \usepackage{rotating}
 \usepackage{amsmath}
 
@@ -153,8 +154,8 @@ The result can be summarized as follows (where we have used that $q_T^2=1$):
 \pagebreak
 \subsection{Decay Time Resolution}
 
-By using the observation that $\sin(\Delta m t) = \Im\left( e^{i\Delta m t}\right)$ and $\cos(\Delta m t ) = \Re\left( e^{ i \Delta m t } \right)$, and that both the $\cosh$ and $\sinh$ can
-be written as the sum and difference of exponentials, i.e. the same as the $\cos$ term with $\Delta m = 0$, it is sufficient to consider the following convolution:
+By using the observation that $\sin(\Delta m t) = \Im\left( e^{i\Delta m t}\right)$ and $\cos(\Delta m t ) = \Re\left( e^{ i \Delta m t } \right)$, and that both $\cosh$ and $\sinh$ can
+be written as the sum and difference of exponentials, i.e. it is just the $\cos$ term with $\Delta m = 0$, it is sufficient to consider the following convolution:
 \begin{eqnarray*}
 f(t;\Gamma,\Delta m,\sigma) &=& \int_0^{+\infty}\;dt'\;\; e^{-(\Gamma -i \Delta m)t'} \frac{ e^{-\frac{1}{2}\left( \frac{t-t'}{\sigma} \right)^2}}{\sqrt{2\pi}\sigma}
 \\                          &=& \frac{1}{\sqrt{2\pi}} \int_0^{+\infty}\;dy \;\;  e^{-\frac{1}{2}\left( x-y \right)^2-zy}
@@ -166,11 +167,11 @@ f(t;\Gamma,\Delta m,\sigma) &=& e^{-\frac{1}{2}x^2+\frac{1}{2}(z-x)^2}  \frac{1}
 \\                          &=&  e^{-\frac{1}{2}x^2+\frac{1}{2}(z-x)^2}  \frac{1}{\sqrt{\pi}} \int_{\frac{z-x}{\sqrt{2}}}^{+\infty}\;dy \;\; e^{-y^2 }
 \\                          &=&  e^{-\frac{1}{2}x^2+\frac{1}{2}(z-x)^2}  \; \frac{1}{2}\mathrm{erfc}\left(\frac{z-x}{\sqrt{2}} \right)
 \end{eqnarray*}
-Finally, we use the Faddeeva function $w$,  defined as 
+Next we use the Faddeeva function $w$,  defined as 
 \begin{equation}
     w(z) = e^{-z^2}\mathrm{erfc}\left(-iz\right)
 \end{equation}
-and implemented in CERNLIB (see http://wwwasdoc.web.cern.ch/wwwasdoc/shortwrupsdir/c335/top.html) as $cwerf$, to write the result as:
+and implemented in CERNLIB (see http://wwwasdoc.web.cern.ch/wwwasdoc/shortwrupsdir/c335/top.html) as $\mathrm{cwerf}$, to write the result as:
 \begin{eqnarray*}
 f(t;\Gamma,\Delta m,\sigma) &=&  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}} \left( z-x\right) \right)\;\; \mathrm{where} \; x=\frac{t}{\sigma};\; z = \left(\Gamma-i\Delta m\right)\sigma
 \\   &=& e^{-\frac{1}{2}\left(\frac{t}{\sigma}\right)^2} w\left( \frac{i}{\sqrt{2}} \left( -\frac{t}{\sigma} + \sigma\left(\Gamma-i\Delta m \right) \right)  \right)
@@ -179,21 +180,19 @@ f(t;\Gamma,\Delta m,\sigma) &=&  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}} 
 
 For the normalization, we require
 \begin{equation*}
-    \int dt f(t;\Gamma,\Delta m, \sigma) = 
+    I_0(t;\Gamma,\Delta m,\sigma)  = \int dt f(t;\Gamma,\Delta m, \sigma) 
 \end{equation*}
-
 where we use that
 \begin{eqnarray*}
-   I_0(x_\mathrm{min},x_\mathrm{max};z) &\equiv& \int_{x_\mathrm{min}}^{z_\mathrm{max}} dx e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
+   I_0(x_\mathrm{min},x_\mathrm{max};z) &\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
 \\             &=&\frac{1}{z}\left[ \mathrm{erf}\left(\frac{x}{\sqrt{2}} \right) -e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}\left(z-x\right) \right) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
 \end{eqnarray*}
 
-\pagebreak
-
 \subsubsection{Describing decaytime efficiency with cubic b-splines}
 To describe a non-trivial decaytime efficiency by taking the product with cubic b-splines, 
-the integrals of $t^n f(t)$ for $n=1,2,3$ are needed for the normalization.
-These integrals can be computed using the following method\footnote{Manuel Schiller, private communication}:
+integrals of form $(t-\alpha)(t-\beta)(t-\gamma) f(t)$ are required for normalization.
+These integrals can be written in terms of integrals of $t^nf(t)$ for $n=0,1,2,3$, which can be computed 
+using the following method\footnote{Manuel Schiller, private communication}:
 \begin{eqnarray*}
     I_n(x_\mathrm{min},x_\mathrm{max};z)&\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; x^n e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x)\right) 
        \\      &  =& \left.\frac{d^n}{d\lambda^n}\right|_{\lambda=0 } \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{\lambda x} e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x)\right) 
@@ -213,8 +212,8 @@ In order to simplify the  computation of  $I_n$, we define the $n^\mathrm{th}$ o
 \begin{array}{|c|c|c|}
 \hline
 n   
-& \begin{array}{l}  K_n(z)   = \\  \left. \left( \frac{d}{d\lambda} \right)^n\right|_{\lambda=0} \frac{e^{\frac{1}{2}\lambda^2}}{z-\lambda}  \end{array}
-& \begin{array}{l}  M_n(x;z) = \\  \left. \left( \frac{d}{d\lambda} \right)^n\right|_{\lambda=0} \left[ \mathrm{erf}\left(\frac{x-\lambda}{\sqrt{2}}\right)-  e^{-\frac{1}{2}\left(x-\lambda\right)^2}w\left(\frac{i}{\sqrt{2}}\left(z-x\right)\right)  \right] \end{array}
+& \begin{array}{l}  K_n(z)   = \\  \left. \frac{d^n}{d\lambda^n}\right|_{\lambda=0} \frac{e^{\frac{1}{2}\lambda^2}}{z-\lambda}  \end{array}
+& \begin{array}{l}  M_n(x;z) = \\  \left. \frac{d^n}{d\lambda^n}\right|_{\lambda=0} \left[ \mathrm{erf}\left(\frac{x-\lambda}{\sqrt{2}}\right)-  e^{-\frac{1}{2}\left(x-\lambda\right)^2}w\left(\frac{i}{\sqrt{2}}\left(z-x\right)\right)  \right] \end{array}
 \\ \hline 
    0   & z^{-1} &  \mathrm{erf}\left(\frac{x}{\sqrt{2}}\right)-e^{-\frac{1}{2}x^2}w\left( \frac{i}{\sqrt{2}} \left(z-x\right)\right) 
 \\ 1   & z^{-2}          & e^{-\frac{1}{2}x^2} \left[ - \sqrt{\frac{2}{\pi}}   -       x w\left(\frac{i}{\sqrt{2}}(z-x)  \right) \right]
@@ -223,9 +222,8 @@ n
 \\ \hline
 \end{array}
 \end{equation}
-
 In terms of these functions, the normalization integrals can now be written as:
-\begin{eqnarray}
+\begin{eqnarray*}
      I_0(x_\mathrm{min},x_\mathrm{max};z) &=&  \;\; K_0(z) \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
 \\   I_1(x_\mathrm{min},x_\mathrm{max};z) &=&  \;\; K_1(z) \left[ M_0(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
                                         \\  &+&\;\; K_0(z) \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
@@ -236,14 +234,31 @@ In terms of these functions, the normalization integrals can now be written as:
                                         \\ &+&  3 K_2(z) \left[ M_1(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
                                         \\ &+&  3 K_1(z) \left[ M_2(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
                                         \\ &+& \;\; K_0(z) \left[ M_3(x;z) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
-\end{eqnarray}
-We give here the expressions for $n=0,1,2,3$ (check!)
-\begin{eqnarray*}
-    I_0(x;z) &=& \frac{1}{z}\left[  \mathrm{erf}\left(\frac{x}{\sqrt{2}}\right)-e^{-\frac{1}{2}x^2}w\left( \frac{i}{\sqrt{2}} \left(z-x\right)\right)   \right]
-\\  I_1(x;z) &=& \frac{1}{z}\left[I_0(x,z)-e^{-\frac{1}{2}x^2}\left( \sqrt{\frac{2}{\pi}} + x w\left( \frac{i}{\sqrt{2}}(z-x)\right) \right)  \right]
-\\  I_2(x;z) &=& 
-\\  I_3(x;z) &=& 
 \end{eqnarray*}
+
+At this point, we return to the original problem of the normalization of cubic b-spines multiplied by $f(t)$.
+In general, the cubic b-splines have the form $(x-\alpha)(x-\beta)(x-\gamma)$, which implies that the corresponding
+normalization can be written by a linear combination of $I_n$:
+\begin{eqnarray*}
+I(x_\mathrm{min},x_\mathrm{max};z,\alpha,\beta,\gamma) &=&
+  \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx (x-\alpha)(x-\beta)(x-\gamma)  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
+\\ &=& I_3(x_\mathrm{min},x_\mathrm{max};z) 
+    -  (\alpha+\beta+\gamma) I_2(x_\mathrm{min},x_\mathrm{max};z)
+\\ &+& (\alpha\beta+\alpha\gamma+\beta\gamma) I_1(x_\mathrm{min},x_\mathrm{max};z) 
+    -  \alpha\beta\gamma I_0(x_\mathrm{min},x_\mathrm{max};z)
+\\ &=& \left[K_3(z) -(\alpha+\beta+\gamma) K_2(z)  +(\alpha\beta+\alpha\gamma+\beta\gamma) K_1(z)-\alpha\beta\gamma  K_0(z) \right]\;\; \left. M_0(x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\ &+& \left[K_2(z) -(\alpha+\beta+\gamma) K_1(z) +(\alpha\beta+\alpha\gamma+\beta\gamma) K_0(z)\right]\;\;  \left. M_1(x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\ &+& \left[K_1(z) -(\alpha+\beta+\gamma) K_0(z) \right]\;\; \left. M_2(x,z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\ &+& K_0(z) \;\;\left. M_3 (x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\ &=& 
+       \left(\begin{array}{c} M_0(x;z) \\ M_1(x;z) \\ M_2(x;z) \\ M_3(x;z) \end{array}\right)
+\cdot \left(\begin{array}{cccc}  1 & -(\alpha+\beta+\gamma) & \alpha\beta+\alpha\gamma+\beta\gamma & -\alpha\beta\gamma 
+                              \\ 0 & 1 & -(\alpha+\beta+\gamma) & \alpha\beta+\alpha\gamma+\beta\gamma
+                              \\ 0 & 0 & 1 & -(\alpha+\beta+\gamma) 
+                              \\ 0 & 0 & 0 & 1  \end{array}\right) 
+       \left(\begin{array}{c} K_3(z) \\ K_2(z) \\ K_1(z) \\ K_0(z) \end{array} \right) 
+\end{eqnarray*}
+
 
 \pagebreak
 
