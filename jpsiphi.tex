@@ -251,7 +251,7 @@ In terms of these functions, the normalization integrals can now be written as:
 
 At this point, we return to the original problem of the normalization of cubic b-spines multiplied by $f(t)$.
 In general, the cubic b-splines have the form $(x-\alpha)(x-\beta)(x-\gamma)$, which implies that the corresponding
-normalization can be written by a linear combination of $I_n$:
+normalization can be written as a linear combination of $I_n$:
 \begin{eqnarray*}
 I(x_i,x_{i+1};z,\alpha,\beta,\gamma) &=&
   \int_{x_i}^{x_{i+1}} dx (x-\alpha)(x-\beta)(x-\gamma)  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
@@ -281,18 +281,18 @@ the $(i+1)^\mathrm{th}$ interval, so $M_n$ only needs to be evaluated $n+1$ time
 Given a knot vector $(u_0,u_1,\dots,u_n)$ of length $n+1$, defining $n$ intervals, there are $n+3$ cubic b-splines $\mathcal{S}_i(u)$.
 
 The complete spline function $ \mathcal{S}(u)$ is given by the linear combination $\mathcal{S}(u)= \sum_{i=0}^{n+2} b_i  \mathcal{S}_i(u)$.
-For a given knot vector and for a value $u$ in interval $u_{i}<  u\le u_{i+1}$, the four contributing b-splines are $\mathcal{S}_i(u)$ for $i\in \{i,i+1,i+2,i+3\}$.
-To compute their contribution, we extend the knot vector at both ends by three entries given by  
+For a value $u$ in the interval $u_{i}<  u\le u_{i+1}$, there are four contributing b-splines,$\mathcal{S}_i(u)$ for $i\in \{i,i+1,i+2,i+3\}$.
+To compute their contributions, we extend the knot vector at both ends by three entries given by  
 \begin{eqnarray*}
- u_{-3}=u_{-2}=u_{-1}&=&u_0
+   u_{-3}=u_{-2}=u_{-1}&=&u_0
 \\ u_{n+1}=u_{n+2}=u_{n+3}&=&u_n
 \end{eqnarray*}
-
-
-These
-four contributions can be written as:
+The four non-zero contributions can now be written as:
+\begin{equation}
+    \mathcal{S}(u) = b_i A_i(u) + b_{i+1} B_i(u) + b_{i+2} C_i(u) + b_{i+3} D_i(u)
+\end{equation}
 \begin{eqnarray*}
-     A_i(u) &=& -\frac{(u-u_{i+1})^3}{P_i} 
+     A_i(u) &=& -\frac{(u-u_{i+1})^3}{P_i}  
 \\   B_i(u) &=&  \frac{(u-u_{i-2})(u-u_{i+1})^2 }{P_i} + \frac{ (u-u_{i-1})(u-u_{i+1})(u-u_{i+2}) }{Q_i} + \frac{ (u-u_i)(u-u_{i+2})^2 }{R_i}
 \\   C_i(u) &=& -\frac{(u-u_{i-1})^2(u-u_{i+1}) }{Q_i} - \frac{ (u-u_{i-1})(u-u_i )(u-u_{i+2}) }{R_i} - \frac{ (u-u_i)^2(u-u_{i+3}) }{S_i}
 \\   D_i(u) &=&  \frac{(u-u_i)^3 }{S_i}
@@ -305,6 +305,29 @@ where the constants $P_i,Q_i,R_i$ and $S_i$ depend on the knot vector only, and 
 \\  S_i &=&(u_{i+3}-u_{i  })(u_{i+2}-u_{i  })(u_{i+1}-u_i)
 \end{eqnarray*}
 
+This implies that the top row of the matrix $S_{jk}$ (which is all that is required to fully define it) for the
+interval $[u_i,u_{i+1})$ is given by
+\begin{eqnarray*}
+            &\rightarrow& S_{1k} += -b_i/P_i  ( -u_{i+1}^3;\; 3u_{i+1}^2 ;\;-3u_{i+1} )
+     \\     &\rightarrow& S_{1k} += b_{i+1}/P_i (-u_{i-2}^2u_{i+1};\; 2u_{i-2}u_{i+1}+u_{i+1}^2;\;  -u_{i-1}-2u_{i+1} )
+     \\     &           & S_{1k} += b_{i+1}/Q_i (-u_{i-1}u_{i+1}u_{i+2};\; u_{i-1}u_{i+1}+u_{i+1}u_{i+2}+u_{i+1}u_{i+2} )
+     \\     &           & S_{1k} += b_{i+1}/R_i (-u_i u_{i+2}^2;\; 2u_iu_{i+2}+u_{i+2}^2;\;-u_i-2u_{i+2} )
+     \\     &\rightarrow& S_{1k} += b_{i+2}/Q_i
+     \\     &           & S_{1k} += b_{i+2}/R_i
+     \\     &           & S_{1k} += b_{i+2}/S_i
+     \\     &\rightarrow& 
+\end{eqnarray*}
+
+\begin{eqnarray*}
+    A_i &=& \{ \{ +1,+1,+1, -P \} \}
+ \\ B_i &=& \{ \{ -2,+1,+1, P \}, \{-1,+1,+2, Q \}, \{ 0,2,2,R\} \}
+ \\ C_i &=& \{ \{ -1,-1,+1, -Q \}, \{-1,0,+2, -R\},\{0,0,3,-S \}\}
+ \\ D_i &=& \{ \{ 0,0,0, S \}
+ \\ P_i &=& \{ \{1,-2\},\{1,-1\},\{1,0\} \}
+ \\ Q_i &=& \{ \{2,-1\},\{1,-1\},\{1,0\} \}
+ \\ R_i &=& \{ \{2,+1\},\{2,-1\},\{1,0\} \}
+ \\ S_i &=& \{ \{3,+0\},\{2,0\},\{1,0\} \}
+\end{eqnarray*}
 
 
 
