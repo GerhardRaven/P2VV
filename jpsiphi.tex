@@ -280,9 +280,9 @@ the $(i+1)^\mathrm{th}$ interval, so $M_n$ only needs to be evaluated $n+1$ time
 
 Given a knot vector $(u_0,u_1,\dots,u_n)$ of length $n+1$, defining $n$ intervals, there are $n+3$ cubic b-splines $\mathcal{S}_i(u)$.
 
-The complete spline function $ \mathcal{S}(u)$ is given by the linear combination $\mathcal{S}(u)= \sum_{i=1}^{n+3} b_i  \mathcal{S}_i(u)$.
-For a given knot vector, in the $i^\mathrm{th}$ interval, i.e. for $u_{i-1}<  u\le u_i$, there are (upto) four b-splines contributing. To
-compute their contribution, we extend the knot vector at both ends by three entries given by  
+The complete spline function $ \mathcal{S}(u)$ is given by the linear combination $\mathcal{S}(u)= \sum_{i=0}^{n+2} b_i  \mathcal{S}_i(u)$.
+For a given knot vector and for a value $u$ in interval $u_{i}<  u\le u_{i+1}$, the four contributing b-splines are $\mathcal{S}_i(u)$ for $i\in \{i,i+1,i+2,i+3\}$.
+To compute their contribution, we extend the knot vector at both ends by three entries given by  
 \begin{eqnarray*}
  u_{-3}=u_{-2}=u_{-1}&=&u_0
 \\ u_{n+1}=u_{n+2}=u_{n+3}&=&u_n
