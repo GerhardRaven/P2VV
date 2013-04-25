@@ -171,7 +171,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['makePlots']   = False
         self['AllTagPlots'] = False
         self['SFit']        = True
-        self['blind']       = False
+        self['blind']       = { }
 
         self['numEvents'] = 54755
 
@@ -244,7 +244,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
                               , ( 'helphi',       '#varphi_{h} [rad]'           )
                              )
 
-        self['numBMassBins'] = [ 70, 40, 20, 20 ]
+        self['numBMassBins'] = [ 70, 40, 20, 20, 20 ]
         self['numTimeBins']  = 30
         self['numAngleBins'] = ( 10, 24, 5 )
 
@@ -463,6 +463,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         ,  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
                                          , Signal        = ( 5320., 5420. )
                                          , RightSideBand = ( 5420., 5550. )
+                                         , PeakBkg       = ( 5390., 5440. )
                                         )
                        )
 
@@ -923,7 +924,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
                          , self._dataSets['data'].get().find( hlt2B.GetName() )
                         ]
-            if hasattr( self, '_KKMassCat' ) :
+            if hasattr( self, '_KKMassCat' ) and paramKKMass == 'simultaneous' :
                 splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
             splitCats = [ cat for cat in splitCats if cat ]
             self._dataSets['sigSWeightData'].Print()
@@ -1057,31 +1058,34 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     projWData = dict()
 
                 # plot mumuKK mass distributions
-                self._massCanvs = [  TCanvas( 'massCanvLog',   'B mass logarithmic scale' )
-                                   , TCanvas( 'massCanvSig',   'B mass signal range'      )
-                                   , TCanvas( 'massCanvLeft',  'B mass left side band'    )
-                                   , TCanvas( 'massCanvRight', 'B mass right side band'   )
+                self._massCanvs = [  TCanvas( 'massCanvLog',     'B mass logarithmic scale'  )
+                                   , TCanvas( 'massCanvSig',     'B mass signal range'       )
+                                   , TCanvas( 'massCanvLeft',    'B mass left side band'     )
+                                   , TCanvas( 'massCanvRight',   'B mass right side band'    )
+                                   , TCanvas( 'massCanvPeakBkg', 'B mass peaking background' )
                                   ]
                 for index, ( pad, frameRange, nBins, plotTitle, plotName, logy, scale, yTitleOffset, markSize, markLineWidth )\
                       in enumerate ( zip(  self._massCanvs
-                                         , [ '', 'Signal', 'LeftSideBand', 'RightSideBand' ]
+                                         , [ '', 'Signal', 'LeftSideBand', 'RightSideBand', 'PeakBkg' ]
                                          , numBMassBins
                                          , [  BMass.GetTitle()
                                             , BMass.GetTitle() + ' mass fit - signal'
                                             , BMass.GetTitle() + ' mass fit - left side band'
                                             , BMass.GetTitle() + ' mass fit - right side band'
+                                            , BMass.GetTitle() + ' mass fit - peaking background'
                                            ]
                                          , [  BMass.GetName()
                                             , BMass.GetName() + ' fit - signal'
                                             , BMass.GetName() + ' fit - left side band'
                                             , BMass.GetName() + ' fit - right side band'
+                                            , BMass.GetName() + ' fit - peaking background'
                                            ]
-                                         , [ True, False, False, False ]
-                                         , [ ( 1.9e2, 1.2e4 ), ( None, None ), ( None, None ), ( None, None ) ]
-                                         #, [ ( 1.e3, 2.5e4 ), ( None, None ), ( None, None ), ( None, None ) ]
-                                         , [ 1.00, 1.15, 1.00, 1.00 ]
-                                         , [ 0.6,  0.7,  0.8,  0.8  ]
-                                         , [ 2,    3,    3,    3    ]
+                                         , [ True, False, False, False, False ]
+                                         #, [ ( 1.9e2, 1.2e4 ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
+                                         , [ ( 1.e3, 2.5e4 ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
+                                         , [ 1.00, 1.20, 1.15, 1.15, 1.15 ]
+                                         , [ 0.6,  0.7,  0.8,  0.8,  0.8  ]
+                                         , [ 2,    3,    3,    3,    3    ]
                                    ) ) :
                     pad.SetLeftMargin(0.18)
                     pad.SetRightMargin(0.05)
@@ -1294,7 +1298,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # B lifetime
         from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
         dGammaVar = dict( Name = 'dGamma' )
-        if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
+        if blind and 'dGamma' in blind :
+            if blind['dGamma'] : dGammaVar['Blind'] = blind['dGamma']
+            else :               dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
         self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM )
         if ambiguityPars : self._lifetimeParams['dGamma'].setVal( -self._lifetimeParams['dGamma'].getVal() )
 
@@ -1406,9 +1412,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             phiCPVar = dict( Name = 'phiCP' )
             lambdaCPVar = dict( Name = 'lambdaCP' )
-            if blind:
-                phiCPVar['Blind']    = ( 'UnblindUniform', 'BsPhis2013EPS',  0.2 )
-                #lambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsLambdas2013EPS', 0.1 )
+            if blind and 'phiCP' in blind :
+                if blind['phiCP'] : phiCPVar['Blind'] = blind['phiCP']
+                else              : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsPhis2013EPS',  0.2 )
+            if blind and 'lambdaCP' in blind :
+                if blind['lambdaCP'] : phiCPVar['Blind'] = blind['lambdaCP']
+                else                 : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsLambdas2013EPS', 0.1 )
             self._lambdaCP = CPParam( phiCP = phiCPVar, lambdaCP = lambdaCPVar )
             if ambiguityPars :
                 self._lambdaCP['phiCP'].setVal( pi - self._lambdaCP['phiCP'].getVal() )
