@@ -29,18 +29,21 @@ makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
-pdfConfig['blind']      = False
 corrSFitErr             = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
 randomParVals           = ( ) #( 0.2, 12345 )
+pdfConfig['blind']      = {  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0.2  )
+                           , 'dGamma' : ( 'UnblindUniform', 'BsDGs2013EPS',   0.02 )
+                          }
 
-plotsFile     = 'plots/paper2012_SFit.ps'
-plotsROOTFile = 'paper2012_SFit_plots.root'
-parFileIn     = '2011DataFitValues.par' #'initialValues.par'
+plotsFile     = 'plots/2012Data_SFit.ps'
+plotsROOTFile = '2012Data_SFit_plots.root'
+parFileIn     = '2012DataPlotValues.par' #'initialValues.par'
 parFileOut    = '' #'initialValues.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20130306_testGL.root'
     #pdfConfig['nTupleFile'] = '/data/bfys/diegoms/B_s0_Output.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Diego_B_s0_Output.root'
@@ -117,19 +120,21 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # 'tagUntagRelative' # '
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['multiplyByAngEff']     = 'weights'  # 'basis012'
+pdfConfig['multiplyByAngEff']     = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['sigmatRange']          = ( 0.0001, 0.12 ) # ( 0.0001, 0.12 )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
-                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03, 0.01 ), (  0.22, 0.03 ) ]
+                                     , [ ( 0.8,  0.2  ), ( 2.6,  0.2  ), ( -2.7,  0.1  ), ( -1.9,  0.3  ) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
+#                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = ( )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['CSPValues']            = [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
-pdfConfig['sameSideTagging']    = True
+pdfConfig['sameSideTagging']    = False
 pdfConfig['conditionalTagging'] = True
 pdfConfig['continuousEstWTag']  = True
 pdfConfig['numEstWTagBins']     = 50
@@ -152,13 +157,17 @@ pdfConfig['constrainDeltaM'] = 'constrain'  # 'constrain' # fixed
 pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
 from P2VV.Imports import extConstraintValues
-extConstraintValues.setVal( 'DM', ( 17.63, 0.11 ) )
+extConstraintValues.setVal( 'DM',      (  17.768, 0.024 ) )
+extConstraintValues.setVal( 'P0OS',    (  0.381,  0.003, 0.383 ) )
+extConstraintValues.setVal( 'DelP0OS', (  0.015,  0.003  ) )
+extConstraintValues.setVal( 'P1OS',    (  0.978,  0.026  ) )
+extConstraintValues.setVal( 'DelP1OS', (  0.07,   0.030  ) )
 
 fastFit           = False
 manualTagCatBins  = False
 constTagCatCoefs  = True
 constAvgCEvenOdd  = True
-constWTagAsyms    = 'P1'
+constWTagAsyms    = ''
 constCSP          = True
 constAmplitudes   = False
 constLambdaCP     = ''  # 'lamb'
@@ -231,11 +240,9 @@ obsYTitles = (  'Candidates / (%.4f ps)'
               , 'Candidates / (%.3f#kern[0.3]{#pi} rad)'
              )
 
-doTimeAnglePlots = ( True, False, False, False )
+doTimeAnglePlots = ( True, False, False, False, False )
 #numBins = ( 40, 60 ) + 3 * ( 30, )
-#yScales = ( ( 0., None ), ( 0.1, 1.e5 ) ) + 3 * ( ( 0., 1400. ), )
 numBins = ( 40, 50 ) + 3 * ( 30, )
-yScales = ( ( 0., None ), ( 0.1, 1.e4 ) ) + 3 * ( ( 0., 1400. ), )
 pdfConfig['numTimeBins'] = 30
 numAngleBins = ( 20, 20, 20 )
 pdfConfig['numAngleBins'] = ( 5, 7, 9 )
@@ -506,6 +513,8 @@ print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
+print 'JvLFit: constraints in PDF:'
+for constr in pdf.ExternalConstraints() : constr.Print()
 
 if ( readData or generateData ) and doFit :
     # fit data
@@ -929,7 +938,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
     ctkCanv     = TCanvas( 'ctkCanv',     'cos(theta_K)' )
     ctlCanv     = TCanvas( 'ctlCanv',     'cos(theta_l)' )
     phiCanv     = TCanvas( 'phiCanv',     'cos(phi)'     )
-    for iter, ( pad, obs, doPlot, plotRange, pdfFull, pdfEven, pdfOdd, pdfS, nBins, xTitle, yTitle, yTitleOffset, yScale, logY, mSize
+    for iter, ( pad, obs, doPlot, plotRange, pdfFull, pdfEven, pdfOdd, pdfS, nBins, xTitle, yTitle, yTitleOffset, logY, mSize
                , mLineW, LHCbCoords )\
             in enumerate( zip(  [ timeLinCanv, timeLogCanv, ctkCanv, ctlCanv, phiCanv ]
                          , [ obsSetP2VV[0] ] + obsSetP2VV[ : 4 ]
@@ -943,7 +952,6 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
                          , [ obsNames[0][1], obsNames[0][1], obsNames[1][1], obsNames[2][1], obsNames[3][1] ]
                          , obsYTitles
                          , [ 1.15, 1.00 ] + 3 * [ 1.15 ]
-                         , yScales
                          , [ False, True ] + 3 * [ False ]
                          , [ 0.7, 0.7 ] + 3 * [ 0.7 ]
                          , [ 3, 3 ] + 3 * [ 3 ]
@@ -957,16 +965,16 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
         pad.SetTopMargin(0.05)
 
         binWidth = ( obs.getMax(plotRange) - obs.getMin(plotRange) ) / float(nBins) / ( pi if iter == 4 else 1. )
-        plots = plot(  pad, obs, defData, pdfFull, addPDFs = [ pdfEven, pdfOdd, pdfS ]
-                     , xTitle = xTitle, yTitle = yTitle % binWidth, yScale = yScale, logy = logY
+        plots = plot(  pad, obs, defData, pdfFull#, addPDFs = [ pdfEven, pdfOdd, pdfS ]
+                     , xTitle = xTitle, yTitle = yTitle % binWidth, logy = logY
                      , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
                      , frameOpts   = dict( Range = plotRange, Bins = nBins, Title = ''                     )
                      , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = mSize, LineWidth = mLineW )
                      , pdfOpts     = dict( LineColor = kBlue, LineWidth = lineWidth, LineStyle = kSolid    )
-                     , addPDFsOpts = [  dict( LineColor = kRed,         LineWidth = lineWidth, LineStyle = 9 )
-                                      , dict( LineColor = kGreen + 3,   LineWidth = lineWidth, LineStyle = 7 )
-                                      , dict( LineColor = kMagenta + 3, LineWidth = lineWidth, LineStyle = 5 )
-                                     ]
+                     #, addPDFsOpts = [  dict( LineColor = kRed,         LineWidth = lineWidth, LineStyle = 9 )
+                     #                 , dict( LineColor = kGreen + 3,   LineWidth = lineWidth, LineStyle = 7 )
+                     #                 , dict( LineColor = kMagenta + 3, LineWidth = lineWidth, LineStyle = 5 )
+                     #                ]
                      , components = comps
                     )
 
@@ -1434,7 +1442,17 @@ sums = {
 }
 
 from math import exp
-DelmVal = 17.667
+DelmVal  = 17.768
+etaOSVal = 0.383 #0.392 #0.383
+p0OSVal  = 0.381 #1.000 #0.381
+p1OSVal  = 0.978 #0.392 #0.978
+etaSSVal = 0.35
+p0SSVal  = 0.35
+p1SSVal  = 1.0
+print
+print 'Delta m_s = %.3f' % DelmVal
+print 'w_OS = %.3f + %.3f * (eta - %.3f)' % ( p0OSVal, p1OSVal, etaOSVal )
+print 'w_SS = %.3f + %.3f * (eta - %.3f)' % ( p0SSVal, p1SSVal, etaSSVal )
 for varSet in tagData :
   weight = tagData.weight()
   sums['numEv'] += weight
@@ -1447,7 +1465,7 @@ for varSet in tagData :
 
   if varSet.getCatIndex('tagdecision_os') != 0 :
     etaOS  = varSet.getRealValue('tagomega_os')
-    wTagOS = 0.392 + 1.000 * ( etaOS - 0.392 )
+    wTagOS = p0OSVal + p1OSVal * ( etaOS - etaOSVal )
     dilOS  = 1. - 2. * wTagOS
 
     sums['numOS']  += weight
@@ -1473,7 +1491,7 @@ for varSet in tagData :
 
   if varSet.getCatIndex('tagdecision_ss') != 0 :
     etaSS  = varSet.getRealValue('tagomega_ss')
-    wTagSS = 0.350 + 1.00 * ( etaSS - 0.350 )
+    wTagSS = p0SSVal + p1SSVal * ( etaSS - etaSSVal )
     dilSS  = 1. - 2. * wTagSS
 
     sums['numSS']  += weight
