@@ -150,6 +150,7 @@ Double_t RooCubicBSpline::evaluate() const
   double u = _x;
   int i = _aux->index(u); // location in knot vector
   assert(i>=0);
+  assert(i+3<_coefList.getSize());
 
   return ((RooAbsReal*)_coefList.at(i  ))->getVal()*_aux->A(u,i)
        + ((RooAbsReal*)_coefList.at(i+1))->getVal()*_aux->B(u,i) 
