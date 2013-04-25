@@ -176,13 +176,11 @@ and implemented in CERNLIB (see http://wwwasdoc.web.cern.ch/wwwasdoc/shortwrupsd
 f(t;\Gamma,\Delta m,\sigma) &=&  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}} \left( z-x\right) \right)\;\; \mathrm{where} \; x=\frac{t}{\sigma};\; z = \left(\Gamma-i\Delta m\right)\sigma
 \\   &=& e^{-\frac{1}{2}\left(\frac{t}{\sigma}\right)^2} w\left( \frac{i}{\sqrt{2}} \left( -\frac{t}{\sigma} + \sigma\left(\Gamma-i\Delta m \right) \right)  \right)
 \end{eqnarray*}
-
-
-For the normalization, we require
+The corresponding normaliztion integral is given by:
 \begin{equation*}
-    I_0(t;\Gamma,\Delta m,\sigma)  = \int dt f(t;\Gamma,\Delta m, \sigma) 
+    I_0(t;\Gamma,\Delta m,\sigma)  = \int dt f(t;\Gamma,\Delta m, \sigma) = \sigma \int dx f(x;z) = \sigma I_0(x;z)
 \end{equation*}
-where we use that
+where the latter $I_0(x;z)$ is defined as:
 \begin{eqnarray*}
    I_0(x_\mathrm{min},x_\mathrm{max};z) &\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
 \\             &=&\frac{1}{z}\left[ \mathrm{erf}\left(\frac{x}{\sqrt{2}} \right) -e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}\left(z-x\right) \right) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
@@ -255,29 +253,62 @@ At this point, we return to the original problem of the normalization of cubic b
 In general, the cubic b-splines have the form $(x-\alpha)(x-\beta)(x-\gamma)$, which implies that the corresponding
 normalization can be written by a linear combination of $I_n$:
 \begin{eqnarray*}
-I(x_\mathrm{min},x_\mathrm{max};z,\alpha,\beta,\gamma) &=&
-  \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx (x-\alpha)(x-\beta)(x-\gamma)  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
-\\ &=& I_3(x_\mathrm{min},x_\mathrm{max};z) 
-    -  (\alpha+\beta+\gamma) I_2(x_\mathrm{min},x_\mathrm{max};z)
-\\ &+& (\alpha\beta+\alpha\gamma+\beta\gamma) I_1(x_\mathrm{min},x_\mathrm{max};z) 
-    -  \alpha\beta\gamma I_0(x_\mathrm{min},x_\mathrm{max};z)
-%\\ &=& \left[K_3(z) -(\alpha+\beta+\gamma) K_2(z)  +(\alpha\beta+\alpha\gamma+\beta\gamma) K_1(z)-\alpha\beta\gamma  K_0(z) \right]\;\; \left. M_0(x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
-%\\ &+& \left[3K_2(z) -2(\alpha+\beta+\gamma) K_1(z) +(\alpha\beta+\alpha\gamma+\beta\gamma) K_0(z)\right]\;\;  \left. M_1(x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
-%\\ &+& \left[3K_1(z) -(\alpha+\beta+\gamma) K_0(z) \right]\;\; \left. M_2(x,z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
-%\\ &+& K_0(z) \;\;\left. M_3 (x;z) \right|_{x_\mathrm{min}}^{x_\mathrm{max}}
+I(x_i,x_{i+1};z,\alpha,\beta,\gamma) &=&
+  \int_{x_i}^{x_{i+1}} dx (x-\alpha)(x-\beta)(x-\gamma)  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
+\\ &=& I_3(x_i,x_{i+1};z) 
+    -  (\alpha+\beta+\gamma) I_2(x_i,x_{i+1};z)
+\\ &+& (\alpha\beta+\alpha\gamma+\beta\gamma) I_1(x_i,x_{i+1};z) 
+    -  \alpha\beta\gamma I_0(x_i,x_{i+1};z)
 \\ &=& 
-       \left(\begin{array}{c} M_0(x;z) \\ M_1(x;z) \\ M_2(x;z) \\ M_3(x;z) \end{array}\right)
-\cdot \left(\begin{array}{cccc}
+       \left(\begin{array}{c} M_0(x_{i+1};z)-M_0(x_i;z) \\ M_1(x_{i+1};z)-M_1(x_i;z) \\ M_2(x_{i+1};z)-M_2(x_i;z) \\ M_3(x_{i+1};z)-M_3(x_i;z) \end{array}\right)^T
+      \left(\begin{array}{cccc}
                    -\alpha\beta\gamma                     & \alpha\beta+\alpha\gamma+\beta\gamma & -(\alpha+\beta+\gamma)  &  1
                \\  \alpha\beta+\alpha\gamma+\beta\gamma   &              -2(\alpha+\beta+\gamma) &                      3  &  0
                \\  -(\alpha+\beta+\gamma)                 &                                    3 &                      0  &  0
                \\  1                                      &                                    0 &                      0  &  0
                \end{array}\right) 
        \left(\begin{array}{c} K_0(z) \\ K_1(z) \\ K_2(z) \\ K_3(z) \end{array} \right) 
+\\ &\equiv& \sum_{j=0}^3 \sum_{k=0}^{4-j} \left( M_j(x_{i+1};z)-M_j(x_i;z)\right) S_{jk}(\alpha,\beta,\gamma) K_k(z)
+\end{eqnarray*}
+Note that in the end, one needs to evaluate (assuming cubic splines) a sum over four splines in each interval, so one 
+needs to take a linear combination of four matrices $S_{jk}(\alpha,\beta,\gamma)$, whose values only depend on the definition 
+of the knotvector.  In addition, the upper bound of the $i^\mathrm{th}$ interval is the lower bound of 
+the $(i+1)^\mathrm{th}$ interval, so $M_n$ only needs to be evaluated $n+1$ times, where $n$ is the number of knot intervals.
+
+\subsubsection{Spline definition}
+
+
+Given a knot vector $(u_0,u_1,\dots,u_n)$ of length $n+1$, defining $n$ intervals, there are $n+3$ cubic b-splines $\mathcal{S}_i(u)$.
+
+The complete spline function $ \mathcal{S}(u)$ is given by the linear combination $\mathcal{S}(u)= \sum_{i=1}^{n+3} b_i  \mathcal{S}_i(u)$.
+For a given knot vector, in the $i^\mathrm{th}$ interval, i.e. for $u_{i-1}<  u\le u_i$, there are (upto) four b-splines contributing. To
+compute their contribution, we extend the knot vector at both ends by three entries given by  
+\begin{eqnarray*}
+ u_{-3}=u_{-2}=u_{-1}&=&u_0
+\\ u_{n+1}=u_{n+2}=u_{n+3}&=&u_n
+\end{eqnarray*}
+
+
+These
+four contributions can be written as:
+\begin{eqnarray*}
+     A_i(u) &=& -\frac{(u-u_{i+1})^3}{P_i} 
+\\   B_i(u) &=&  \frac{(u-u_{i-2})(u-u_{i+1})^2 }{P_i} + \frac{ (u-u_{i-1})(u-u_{i+1})(u-u_{i+2}) }{Q_i} + \frac{ (u-u_i)(u-u_{i+2})^2 }{R_i}
+\\   C_i(u) &=& -\frac{(u-u_{i-1})^2(u-u_{i+1}) }{Q_i} - \frac{ (u-u_{i-1})(u-u_i )(u-u_{i+2}) }{R_i} - \frac{ (u-u_i)^2(u-u_{i+3}) }{S_i}
+\\   D_i(u) &=&  \frac{(u-u_i)^3 }{S_i}
+\end{eqnarray*}
+where the constants $P_i,Q_i,R_i$ and $S_i$ depend on the knot vector only, and are defined as:
+\begin{eqnarray*}
+    P_i &=&(u_{i+1}-u_{i-2})(u_{i+1}-u_{i-1})(u_{i+1}-u_i)
+\\  Q_i &=&(u_{i+2}-u_{i-1})(u_{i+1}-u_{i-1})(u_{i+1}-u_i)
+\\  R_i &=&(u_{i+2}-u_{i  })(u_{i+2}-u_{i-1})(u_{i+1}-u_i)
+\\  S_i &=&(u_{i+3}-u_{i  })(u_{i+2}-u_{i  })(u_{i+1}-u_i)
 \end{eqnarray*}
 
 
 
+
+\pagebreak
 \subsection{Flavour tagging}
 
 Let us start by introducing the following short-hand notation. One can write the 

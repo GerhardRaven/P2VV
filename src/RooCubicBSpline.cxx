@@ -33,6 +33,7 @@
 #include "RooArgList.h"
 
 #include <iterator>
+#include <algorithm>
 
 using namespace std;
 
@@ -45,32 +46,30 @@ public:
         assert(binning!=0);
         int n = binning->numBoundaries();
         Double_t* bin = binning->array();
-        _u.resize( n+6 );
-        for (int i=0;i<3;++i) { _u[i] = bin[0] ; _u[3+n+i] = bin[n-1]; }
-        for (int i=0;i<n;++i) { _u[3+i] = bin[i] ; }
+        _u.insert( _u.begin(), bin, bin+n ) ;
     }
 
     int index(double u) const { assert(u>=_u.front() && u<=_u.back());   
-        std::vector<double>::const_iterator i = std::upper_bound(_u.begin(),_u.end()-4,u);
-        assert(std::distance(_u.begin(),i)>2);
-        assert( *(i-1) <= u && u<=*i );
-        return std::distance(_u.begin(),i)-1;
+        std::vector<double>::const_iterator i = --std::upper_bound(_u.begin(),_u.end()-1,u);
+        assert(std::distance(_u.begin(),i)>=0);
+        assert( *i <= u && u<=*(i+1) );
+        return std::distance(_u.begin(),i);
     };
 
     double A(double _u,int i) const{ return cub(u(i+1)-_u)/P(i); }
     double B(double _u,int i) const{ return sqr(u(i+1)-_u)*(_u-u(i-2))/P(i) + (_u-u(i-1))*(u(i+2)-_u)*(u(i+1)-_u)/Q(i) + (_u-u(i))*sqr(u(i+2)-_u)/R(i); }
-    double C(double _u,int i) const{ return (u(i+1)-_u)*sqr(_u-u(i-1))/Q(i) + (_u-u(i  ))*(u(i+2)-_u)*(_u-u(i-1))/R(i) + (u(i+3)-_u)*sqr(_u-u(i))/S(i); }
+    double C(double _u,int i) const{ return (u(i+1)-_u)*sqr(_u-u(i-1))/Q(i) + (_u-u(i))*(u(i+2)-_u)*(_u-u(i-1))/R(i) + (u(i+3)-_u)*sqr(_u-u(i))/S(i); }
     double D(double _u,int i) const{ return cub(_u-u(i))/S(i); }
 
     // integrals from u(i) to u(i+1) -- note: these are constant one we know the knotvector, so can (should) be cached...
-    double IA(int i) const{ return qua(u(i)-u(i+1))/(4*P(i)); }
-    double IB(int i) const{ return - cub(u(i)-u(i+1))*(3*u(i)-4*u(i-2)+u(i+1))/(12*P(i))
-                                   - sqr(u(i)-u(i+1))*(3*sqr(u(i))-2*u(i-1)*u(i+1)+sqr(u(i+1))+u(i)*(-4*u(i-1)+2*u(i+1)-4*u(i+2)) +6*u(i-1)*u(i+2)-2*u(i+1)*u(i+2) )/(12*Q(i))
-                                   + sqr(u(i)-u(i+1))*(3*sqr(u(i+1))+sqr(u(i  ))+2*u(i)*u(i+1)-8*u(i+1)*u(i+2)-4*u(i  )*u(i+2)+6*sqr(u(i+2)))/(12*R(i)); }
-    double IC(int i) const{ return sqr(u(i)-u(i+1))*(3*sqr(u(i  ))+sqr(u(i+1))+2*u(i+1)*u(i)-8*u(i  )*u(i-1)-4*u(i-1)*u(i+1)+6*sqr(u(i-1)))/(12*Q(i))
-                                 - sqr(u(i)-u(i+1))*(3*sqr(u(i+1))+sqr(u(i))-4*u(i-1)*u(i+1)+6*u(i-1)*u(i+2)-4*u(i+1)*u(i+2)-2*u(i)*(u(i-1)-u(i+1)+u(i+2)))/(12*R(i))
-                                 + cub(u(i)-u(i+1))*(3*u(i+1)-4*u(i+3)+u(i))/(12*S(i)); }
-    double ID(int i) const{ return qua(u(i)-u(i+1))/(4*S(i)); }
+    double IA(int i) const{  return qua(u(i)-u(i+1))/(4*P(i)); }
+    double IB(int i) const{  return - cub(u(i)-u(i+1))*(3*u(i)-4*u(i-2)+u(i+1))/(12*P(i))
+                              - sqr(u(i)-u(i+1))*(3*sqr(u(i))-2*u(i-1)*u(i+1)+sqr(u(i+1))+u(i)*(-4*u(i-1)+2*u(i+1)-4*u(i+2)) +6*u(i-1)*u(i+2)-2*u(i+1)*u(i+2) )/(12*Q(i))
+                              + sqr(u(i)-u(i+1))*(3*sqr(u(i+1))+sqr(u(i  ))+2*u(i)*u(i+1)-8*u(i+1)*u(i+2)-4*u(i  )*u(i+2)+6*sqr(u(i+2)))/(12*R(i)); }
+    double IC(int i) const{  return sqr(u(i)-u(i+1))*(3*sqr(u(i  ))+sqr(u(i+1))+2*u(i+1)*u(i)-8*u(i  )*u(i-1)-4*u(i-1)*u(i+1)+6*sqr(u(i-1)))/(12*Q(i))
+                              - sqr(u(i)-u(i+1))*(3*sqr(u(i+1))+sqr(u(i))-4*u(i-1)*u(i+1)+6*u(i-1)*u(i+2)-4*u(i+1)*u(i+2)-2*u(i)*(u(i-1)-u(i+1)+u(i+2)))/(12*R(i))
+                              + cub(u(i)-u(i+1))*(3*u(i+1)-4*u(i+3)+u(i))/(12*S(i)); }
+    double ID(int i) const{  return qua(u(i)-u(i+1))/(4*S(i)); }
 
 private:
     double sqr(double x) const { return x*x; }
@@ -81,7 +80,7 @@ private:
     double Q(int i) const { return  (u(i+1)-u(i-1))*(u(i+2)-u(i-1)) * (u(i+1)-u(i)); }
     double R(int i) const { return  (u(i+2)-u(i  ))*(u(i+2)-u(i-1)) * (u(i+1)-u(i)); }
     double S(int i) const { return  (u(i+2)-u(i  ))*(u(i+3)-u(i  )) * (u(i+1)-u(i)); }
-    double u(int i) const { assert(i>=0&&i<_u.size());   return _u[i]; }
+    double u(int i) const { assert(i>=-3&&i<int(_u.size()+3)); i=std::min(std::max(0,i),int(_u.size()-1));  return _u[i]; }
 
     std::vector<double> _u;
 };
@@ -150,12 +149,12 @@ Double_t RooCubicBSpline::evaluate() const
 {
   double u = _x;
   int i = _aux->index(u); // location in knot vector
-  assert(i>2);
+  assert(i>=0);
 
-  return ((RooAbsReal*)_coefList.at(i-3))->getVal()*_aux->A(u,i)
-       + ((RooAbsReal*)_coefList.at(i-2))->getVal()*_aux->B(u,i) 
-       + ((RooAbsReal*)_coefList.at(i-1))->getVal()*_aux->C(u,i) 
-       + ((RooAbsReal*)_coefList.at(i  ))->getVal()*_aux->D(u,i) ;
+  return ((RooAbsReal*)_coefList.at(i  ))->getVal()*_aux->A(u,i)
+       + ((RooAbsReal*)_coefList.at(i+1))->getVal()*_aux->B(u,i) 
+       + ((RooAbsReal*)_coefList.at(i+2))->getVal()*_aux->C(u,i) 
+       + ((RooAbsReal*)_coefList.at(i+3))->getVal()*_aux->D(u,i) ;
 }
 
 
@@ -179,10 +178,10 @@ Double_t RooCubicBSpline::analyticalIntegral(Int_t code, const char* rangeName) 
   
   Double_t  norm(0);
   for (int i=0; i < _coefList.getSize()-3; ++i) {
-    norm += ((RooAbsReal*)_coefList.at(i  ))->getVal()*_aux->IA(i+3) ;
-    norm += ((RooAbsReal*)_coefList.at(i+1))->getVal()*_aux->IB(i+3) ;
-    norm += ((RooAbsReal*)_coefList.at(i+2))->getVal()*_aux->IC(i+3) ;
-    norm += ((RooAbsReal*)_coefList.at(i+3))->getVal()*_aux->ID(i+3) ;
+    norm += ((RooAbsReal*)_coefList.at(i  ))->getVal()*_aux->IA(i) ;
+    norm += ((RooAbsReal*)_coefList.at(i+1))->getVal()*_aux->IB(i) ;
+    norm += ((RooAbsReal*)_coefList.at(i+2))->getVal()*_aux->IC(i) ;
+    norm += ((RooAbsReal*)_coefList.at(i+3))->getVal()*_aux->ID(i) ;
   }
   return norm;
 }
