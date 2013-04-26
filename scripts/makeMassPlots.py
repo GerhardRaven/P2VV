@@ -10,15 +10,15 @@ pdfConfig = PdfConfig()
 doFit                   = False
 pdfConfig['selection']  = 'paper2012'
 
-mumuPlotsFilePath = 'mumuMass2012.ps'
-KKPlotsFilePath   = 'KKMass2012.ps'
+mumuPlotsFilePath = 'mumuMass2011.ps'
+KKPlotsFilePath   = 'KKMass2011.ps'
 
 parFileIn  = ''
 parFileOut = ''
 
 pdfConfig['nTupleName']     = 'DecayTree'
-pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130418_tupleB.root'
-#pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+#pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
+pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 pdfConfig['nominalDataSet'] = True
 
 pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
@@ -51,10 +51,10 @@ pdfConfig['timeEffType']          = 'paper2012'
 pdfConfig['multiplyByAngEff']     = 'weights'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
-                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03, 0.01 ), (  0.22, 0.03 ) ]
+                                     , [ ( 0.8,  0.2  ), ( 2.6,  0.2  ), ( -2.7,  0.1  ), ( -1.9,  0.3  ) ] )
+pdfConfig['CSPValues']            = [ 0.959, 0.770, 0.824, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True
 pdfConfig['conditionalTagging'] = True
