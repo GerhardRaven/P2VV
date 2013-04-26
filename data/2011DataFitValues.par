@@ -17,14 +17,6 @@
   AperpMag2                                  +0.24847973      0.0086894294    +0               +1               True
   AperpPhase                                 +3.0758742       0.21715795      -1e+30           +1e+30           True
   Gamma                                      +0.67132242      0.0048040161    +0.1             +10              True
-  avgCEvenOSTagged                           +1               0               +0               +2               False
-  avgCEvenSSTagged                           +1               0               +0               +2               False
-  avgCEvenSum                                +1               0               +0               +2               False
-  avgCEvenTagged                             +1               0               +0               +2               False
-  avgCOddOSTagged                            +0               0.060174203     -2               +2               False
-  avgCOddSSTagged                            +0               0.060174203     -2               +2               False
-  avgCOddSum                                 +0               0.060174203     -2               +2               False
-  avgCOddTagged                              +0               0.060174203     -2               +2               False
   dGamma                                     +0.10052842      0.016174221     -1e+30           +1e+30           True
   dM                                         +17.666516       0.076815781     -1e+30           +1e+30           True
   f_S_bin0                                   +0.22750905      0.077369349     +0               +1               True
