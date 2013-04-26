@@ -323,6 +323,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         return parameters, constraints
         
     def __buildSingleGauss(self, sfModel):
+        from P2VV.RooFitWrappers import ConstVar, RealVar, FormulaVar
         constraints = []
         if sfModel == '':
             if type(self.__timeResSFConstr) == str and self.__timeResSFConstr == 'fixed' and isinstance( self._timeResSigmaSF, RealVar ) :
@@ -376,7 +377,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         else:
             print 'Error, invalid model for scale factor %s' % sfModel
             assert(False)
-        return parameters, constraints
+        return [parameters], constraints
 
     
 class Gamma_Sigmat( _util_parse_mixin ) :
