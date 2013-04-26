@@ -1302,7 +1302,29 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                , timeResSigma = timeRes
                                , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
                               )
-            if 'nomean' in timeResType.lower() :
+            if 'doublegauss' in timeResType.lower():
+                constant = 'constant' in timeResType.lower()
+                timeResArgs['timeResComb'] = dict(Name = 'timeResComb', Value = 1.457, Error = 4.18e-03, MinMax = ( 0.1, 5. ), Constant = constant)
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = 2.1599, Error = 5.65e-02, MinMax = (1, 5), Constant = constant)
+                timeResArgs['timeResSigmaFrac2'] = dict( Name = 'timeResSigmaFrac2', Value = 0.214, Error = 2.20e-02, MinMax = (0.001, 0.999), Constant = constant)
+                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 2.178e-08,
+                                ('timeResSigmaOffset', 'timeResSigmaSF'): 4.389e-07,
+                                ('timeResSigmaOffset', 'timeResSigmaSF2'): -0.000141,
+                                ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002041,
+                                ('timeResSigmaSF', 'timeResSigmaSF2'): 0.001858,
+                                ('timeResSigmaSF2', 'timeResSigmaSF2'): 2.271}
+                timeResArgs['Covariance'] = covariance
+                timeResArgs['nGauss'] = 2
+                if 'constmean' in timeResType.lower() :
+                    timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
+                    timeResArgs['timeResMeanConstraint'] = 'constrain'
+                elif 'fixedmean' in timeResType.lower() :
+                    timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
+                    timeResArgs['timeResMeanConstraint'] = 'fixed'
+                else:
+                    timeResArgs['timeResMean'] = dict(Value = 0, Error = 0)
+                    timeResArgs['timeResMeanConstraint'] = 'fixed'
+            elif 'nomean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
                 timeResArgs['timeResSFConstraint'] = constrTResScale
