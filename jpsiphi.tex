@@ -268,12 +268,29 @@ I(x_i,x_{i+1};z,\alpha,\beta,\gamma) &=&
                \\  1                                      &                                    0 &                      0  &  0
                \end{array}\right) 
        \left(\begin{array}{c} K_0(z) \\ K_1(z) \\ K_2(z) \\ K_3(z) \end{array} \right) 
-\\ &\equiv& \sum_{j=0}^3 \sum_{k=0}^{4-j} \left( M_j(x_{i+1};z)-M_j(x_i;z)\right) S_{jk}(\alpha,\beta,\gamma) K_k(z)
+\\ &\equiv& \sum_{j=0}^3 \sum_{k=0}^{3-j} \left( M_j(x_{i+1};z)-M_j(x_i;z)\right) S_{jk}(\alpha,\beta,\gamma) K_k(z)
 \end{eqnarray*}
 Note that in the end, one needs to evaluate (assuming cubic splines) a sum over four splines in each interval, so one 
 needs to take a linear combination of four matrices $S_{jk}(\alpha,\beta,\gamma)$, whose values only depend on the definition 
 of the knotvector.  In addition, the upper bound of the $i^\mathrm{th}$ interval is the lower bound of 
 the $(i+1)^\mathrm{th}$ interval, so $M_n$ only needs to be evaluated $n+1$ times, where $n$ is the number of knot intervals.
+
+We can go one step further and write $M_n(x;z)$ in terms of its basis functions (taking
+care to cancel divergent pieces):
+\begin{equation}
+     \left( \begin{array}{c} M_0(x;z) \\ M_1(x;z) \\ M_2(x;z) \\ M_3(x;z) \end{array} \right)
+     = \left( \begin{array}{ccc}
+          1 &  0 & -1
+     \\   0 & -\sqrt{\frac{2}{\pi}}& -x 
+     \\   0 & -\sqrt{\frac{2}{\pi}}x& -(x^2-1) 
+     \\   0 & -\sqrt{\frac{2}{\pi}}(x^2-1)& -x(x^2-3) 
+       \end{array}\right) 
+       \left(\begin{array}{c} 
+                      \mathrm{erf}\left(\frac{x}{\sqrt{2}}\right)
+              \\      e^{-\frac{1}{2}x^2}
+              \\      e^{-\frac{1}{2}x^2}w\left(\frac{i}{\sqrt{2}}(z-x) \right)
+             \end{array} \right)
+\end{equation}
 
 \subsubsection{Spline definition}
 
