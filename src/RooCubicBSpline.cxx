@@ -38,6 +38,23 @@
 using namespace std;
 
 namespace _aux {
+  // compute  e^{-x^2} w(I(z-x))
+  //                   w(?) = FastComplexErrFunc(?) = exp(-?^2)erfc(-i?) aka. Faddeeva function(?)
+  RooComplex evalCerf(Double_t x, const RooComplex& z) {
+    RooComplex _z( -z.im(), z.re()-x);
+    if (_z.im()>-4.0) return RooMath::FastComplexErrFunc(_z)*exp(-x*x) ;
+
+    // use the approximation: erf(z) = exp(-z*z)/(sqrt(pi)*z)
+    // to explicitly cancel the divergent exp(y*y) behaviour of
+    // CWERF for z = x + i y with large negative y
+    static Double_t rootpi= sqrt(atan2(0.,-1.));
+    RooComplex  iz(-z.re()-x,z.im()); // \frac{i}{\sqrt{2}}(z-x)
+    RooComplex zsq=z*z;
+    RooComplex v= zsq - x*x;
+
+    return v.exp()*(-zsq.exp()/(iz*rootpi)+1)*2 ;
+  }
+
 
     class L_jk {
     public:
@@ -89,44 +106,42 @@ namespace _aux {
         RooComplex _zi;        
     };
 
-RooComplex evalCerfApprox(Double_t wtc, Double_t u, Double_t c)
-{
-  // use the approximation: erf(z) = exp(-z*z)/(sqrt(pi)*z)
-  // to explicitly cancel the divergent exp(y*y) behaviour of
-  // CWERF for z = x + i y with large negative y
-
-  static Double_t rootpi= sqrt(atan2(0.,-1.));
-  RooComplex z(wtc,u+c), iz(-u-c,wtc);
-  RooComplex zsq=z*z;
-  RooComplex v= -zsq - u*u;
-
-  return v.exp()*(zsq.exp()/(iz*rootpi) + 1)*2 ;
-}
-
-
-  // Calculate exp(-x^2) cwerf(i*(z-x)/sqrt(2)), taking care of numerical instabilities
-  RooComplex evalCerf(Double_t x, const RooComplex& z) {
-    static Double_t isqrt2 = double(1)/sqrt(2.0);
-    RooComplex _z( -isqrt2*z.im(), isqrt2*(z.im()-x) ); // _z = \frac{i}{\sqrt{2}}( z - x )
-    assert(1==0);
-    //return (_z.im()>-4.0) ? RooMath::FastComplexErrFunc(_z)*exp(-x*x) : evalCerfApprox(x,z);
-  }
-    
-
     class N_n { 
     public:
-        N_n(double x, const RooComplex& z) {
+        N_n(double x, RooComplex z) {
             static const double N( double(1)/sqrt(2.0) );
-             x *= N;
-             // _z = RooComplex(N,0)*z;
-            _e = RooMath::erf(x);
-            _g = exp(-x*x);
-           assert(1==0);
-           // _w = evalCerf(... );
+             x *= N; z = z*N;
+            _n[0] = RooMath::erf(x);
+            _n[1] = exp(-x*x);
+            _n[2] = evalCerf(x, RooComplex(z.im(),-z.re())); // exp(-x^2) w(I(z-x) )
+        }
+        const RooComplex& operator()(int i) const {
+            assert(0<=i&&i<3);
+            return _n[i];
         }
     private:
-        RooComplex _e,_g,_w;
+        RooComplex _n[3];
     };
+
+    class M_n {
+    public:
+       M_n(const L_jk& L, const N_n& N) {
+           for (int i=0;i<4;++i) {
+              _m[i] = N(0)*L(i,0) + N(1)*L(i,1) + N(2)*L(i,2);
+           }
+       }
+       const RooComplex& operator()(int i) {
+           assert(0<=i&&i<4); 
+           return _m[i];
+       }
+
+       M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
+       M_n  operator-(const M_n& other) const { return M_n(*this)-=other; }
+    private:
+       RooComplex _m[4];
+    };
+
+
 }
 
 class RooCubicBSpline::_auxKnot {
@@ -160,18 +175,38 @@ public:
            // the integrals of A,B,C,D from u(i) to u(i+1) only depend on the knot vector...
            // so we create them 'on demand' and cache the result
            _IABCD.reserve(4*_u.size());
-           for (int i=0;i<_u.size();++i) { 
-                _IABCD.push_back(   qua(h(i,i+1))/(4*P(i)) ) ;
-                _IABCD.push_back( - cub(h(i,i+1))*(3*u(i)-4*u(i-2)+u(i+1))/(12*P(i))
-                                  - sqr(h(i,i+1))*(3*sqr(u(i))-2*u(i-1)*u(i+1)+sqr(u(i+1))+u(i)*(-4*u(i-1)+2*u(i+1)-4*u(i+2)) +6*u(i-1)*u(i+2)-2*u(i+1)*u(i+2) )/(12*Q(i))
-                                  + sqr(h(i,i+1))*(3*sqr(u(i+1))+sqr(u(i  ))+2*u(i)*u(i+1)-8*u(i+1)*u(i+2)-4*u(i  )*u(i+2)+6*sqr(u(i+2)))/(12*R(i)) );
-                _IABCD.push_back(   sqr(h(i,i+1))*(3*sqr(u(i  ))+sqr(u(i+1))+2*u(i+1)*u(i)-8*u(i  )*u(i-1)-4*u(i-1)*u(i+1)+6*sqr(u(i-1)))/(12*Q(i))
-                                  - sqr(h(i,i+1))*(3*sqr(u(i+1))+sqr(u(i))-4*u(i-1)*u(i+1)+6*u(i-1)*u(i+2)-4*u(i+1)*u(i+2)-2*u(i)*(u(i-1)-u(i+1)+u(i+2)))/(12*R(i))
-                                  + cub(h(i,i+1))*(3*u(i+1)-4*u(i+3)+u(i))/(12*S(i)) );
-                _IABCD.push_back(   qua(h(i,i+1))/(4*S(i)) );
+           for (int j=0;j<_u.size();++j) { 
+                _IABCD.push_back(   qua(h(j,j+1))/(4*P(j)) ) ;
+                _IABCD.push_back( - cub(h(j,j+1))*(3*u(j)-4*u(j-2)+u(j+1))/(12*P(j))
+                                  - sqr(h(j,j+1))*(3*sqr(u(j))-2*u(j-1)*u(j+1)+sqr(u(j+1))+u(j)*(-4*u(j-1)+2*u(j+1)-4*u(j+2)) +6*u(j-1)*u(j+2)-2*u(j+1)*u(j+2) )/(12*Q(j))
+                                  + sqr(h(j,j+1))*(3*sqr(u(j+1))+sqr(u(j  ))+2*u(j)*u(j+1)-8*u(j+1)*u(j+2)-4*u(j  )*u(j+2)+6*sqr(u(j+2)))/(12*R(j)) );
+                _IABCD.push_back(   sqr(h(j,j+1))*(3*sqr(u(j  ))+sqr(u(j+1))+2*u(j+1)*u(j)-8*u(j  )*u(j-1)-4*u(j-1)*u(j+1)+6*sqr(u(j-1)))/(12*Q(j))
+                                  - sqr(h(j,j+1))*(3*sqr(u(j+1))+sqr(u(j))-4*u(j-1)*u(j+1)+6*u(j-1)*u(j+2)-4*u(j+1)*u(j+2)-2*u(j)*(u(j-1)-u(j+1)+u(j+2)))/(12*R(j))
+                                  + cub(h(j,j+1))*(3*u(j+1)-4*u(j+3)+u(j))/(12*S(j)) );
+                _IABCD.push_back(   qua(h(j,j+1))/(4*S(j)) );
             }
         }
-        return b0*IA(i)+b1*IB(i)+b2*IC(i)+b3*ID(i); 
+        return b0*_IABCD[4*i  ]
+             + b1*_IABCD[4*i+1]
+             + b2*_IABCD[4*i+2]
+             + b3*_IABCD[4*i+3];
+    }
+
+    RooComplex gaussIntegral(const RooComplex& z, const std::vector<double>& coef) {
+
+        std::vector<_aux::M_n> M; M.reserve(_u.size());
+        for (int i=0;i<_u.size();++i) M.push_back( _aux::M_n( _aux::L_jk(u(i)), _aux::N_n(u(i),z) ) );
+        _aux::K_n K(z);
+
+        RooComplex sum(0,0);
+        for (int i=0;i<_u.size()-1;++i) {
+            S_jk S = S_jk_sum(i, coef[i],coef[i+1],coef[i+2],coef[i+3] ); // ? compute integral for each basis function instead, and leave summing till later/caller? (bad if 
+            _aux::M_n dM( M[i+1]-M[i] );
+            for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) {
+                sum = sum + dM(j)*S(j,k)*K(k);
+            }
+        }
+        return sum;
     }
 
 private:
@@ -181,12 +216,6 @@ private:
     double C(double _u,int i) const{ return -sqr(d(_u,i-1))*d(_u,i+1)/Q(i) - d(_u,i  )*d(_u,i+2)*d(_u,i-1)/R(i) - d(_u,i+3)*sqr(d(_u,i  ))/S(i); }
     double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
 
-    // integrals from u(i) to u(i+1) -- note: these are constant one we know the knotvector, so can (should) be cached...
-    double IA(int i) const{  return _IABCD[4*i  ]; }
-    double IB(int i) const{  return _IABCD[4*i+1]; }
-    double IC(int i) const{  return _IABCD[4*i+2]; }
-    double ID(int i) const{  return _IABCD[4*i+3]; }
-
     double P(int i) const { assert(4*i  <_PQRS.size()); return  _PQRS[4*i  ]; }
     double Q(int i) const { assert(4*i+1<_PQRS.size()); return  _PQRS[4*i+1]; }
     double R(int i) const { assert(4*i+2<_PQRS.size()); return  _PQRS[4*i+2]; }
@@ -195,7 +224,6 @@ private:
 
     class S_jk { 
     public:
-        S_jk() : t(0),d(0),s(0) {}
         S_jk(double a, double b, double c) : t(a*b*c), d(a*b+a*c+b*c), s(a+b+c) {}
         S_jk& operator*=(double z) {  t*=z; d*=z; s*=z; return *this; } 
         S_jk& operator/=(double z) {  t/=z; d/=z; s/=z; return *this; } 
@@ -232,23 +260,30 @@ private:
             if (_S_jk.empty()) {
                 _S_jk.reserve(_u.size()*4);
                 for(int i=0;i<_u.size();++i) {
-                    _S_jk.push_back(-S_jk(u(i+1),u(i+1),u(i+1))/P(i));
-                    _S_jk.push_back( S_jk(u(i-2),u(i+1),u(i+1))/P(i)+S_jk(u(i-1),u(i+1),u(i+2))/Q(i) +S_jk(u(i),u(i+2),u(i+2))/R(i)) ;
-                    _S_jk.push_back(-S_jk(u(i-1),u(i-1),u(i+1))/Q(i)-S_jk(u(i-1),u(i  ),u(i+2))/R(i) -S_jk(u(i),u(i  ),u(i+3))/S(i)) ;
-                    _S_jk.push_back( S_jk(u(i),u(i),u(i))/S(i) );
+                    _S_jk.push_back( -S_jk(u(i+1),u(i+1),u(i+1))/P(i) );
+                    _S_jk.push_back(  S_jk(u(i-2),u(i+1),u(i+1))/P(i)
+                                     +S_jk(u(i-1),u(i+1),u(i+2))/Q(i) 
+                                     +S_jk(u(i  ),u(i+2),u(i+2))/R(i) );
+                    _S_jk.push_back( -S_jk(u(i-1),u(i-1),u(i+1))/Q(i)
+                                     -S_jk(u(i-1),u(i  ),u(i+2))/R(i) 
+                                     -S_jk(u(i  ),u(i  ),u(i+3))/S(i) );
+                    _S_jk.push_back(  S_jk(u(i  ),u(i  ),u(i  ))/S(i) );
                 }
             }
-            return _S_jk[4*i  ]*b0  +_S_jk[4*i+1]*b1  +_S_jk[4*i+2]*b2  +_S_jk[4*i+3]*b3; 
+            return _S_jk[4*i  ]*b0
+                 + _S_jk[4*i+1]*b1
+                 + _S_jk[4*i+2]*b2
+                 + _S_jk[4*i+3]*b3; 
     }
     double sqr(double x) const { return x*x; }
     double cub(double x) const { return x*sqr(x); }
     double qua(double x) const { return sqr(sqr(x)); }
     double d(double _u, int j) const { return _u-u(j); }
     double h(int i, int j) const { return u(i)-u(j); }
-    double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); i=std::min(std::max(0,i),int(_u.size()-1));  return _u[i]; }
+    double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); return _u[std::min(std::max(0,i),int(_u.size()-1))]; }
 
-    std::vector<double> _u;
-    std::vector<double> _PQRS;
+    const std::vector<double> _u;
+    mutable std::vector<double> _PQRS;
     mutable std::vector<double> _IABCD;
     mutable std::vector<S_jk> _S_jk;
 };
