@@ -31,19 +31,19 @@ pdfConfig['makePlots']  = False
 pdfConfig['SFit']       = True
 corrSFitErr             = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
 randomParVals           = ( ) #( 0.2, 12345 )
-pdfConfig['blind']      = {  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0.2  )
-                           , 'dGamma' : ( 'UnblindUniform', 'BsDGs2013EPS',   0.02 )
+pdfConfig['blind']      = {#  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0.2  )
+                           #, 'dGamma' : ( 'UnblindUniform', 'BsDGs2013EPS',   0.02 )
                           }
 
-plotsFile     = 'plots/2012Data_SFit.ps'
-plotsROOTFile = '2012Data_SFit_plots.root'
-parFileIn     = '2012DataPlotValues.par' #'initialValues.par'
+plotsFile     = 'plots/2011Data_SFit.ps'
+plotsROOTFile = '2011Data_SFit_plots.root'
+parFileIn     = '2011DataFitValuesOld.par' #'initialValues.par'
 parFileOut    = '' #'initialValues.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
-    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
-    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
+    pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20130306_testGL.root'
     #pdfConfig['nTupleFile'] = '/data/bfys/diegoms/B_s0_Output.root'
     #pdfConfig['nTupleFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Diego_B_s0_Output.root'
@@ -126,21 +126,21 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['sigmatRange']          = ( 0.0001, 0.12 ) # ( 0.0001, 0.12 )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03, 0.01 ), (  0.22, 0.03 ) ]
-                                     , [ ( 0.8,  0.2  ), ( 2.6,  0.2  ), ( -2.7,  0.1  ), ( -1.9,  0.3  ) ] )
-#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
-#                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+#pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03, 0.01 ), (  0.22, 0.03 ) ]
+#                                     , [ ( 0.8,  0.2  ), ( 2.6,  0.2  ), ( -2.7,  0.1  ), ( -1.9,  0.3  ) ] )
+pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
+                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = ( )
-pdfConfig['CSPValues']            = [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
-pdfConfig['sameSideTagging']    = False
+pdfConfig['sameSideTagging']    = True
 pdfConfig['conditionalTagging'] = True
 pdfConfig['continuousEstWTag']  = True
 pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # 'constrain'
 
-pdfConfig['timeResType']           = 'eventNoMean' # 'event' # 'eventNoMean'
+pdfConfig['timeResType']           = 'eventNoMean' # 'eventDoubleGaussConstantFixedMean' # 'event' # 'eventNoMean'
 pdfConfig['numTimeResBins']        = 40
 pdfConfig['constrainTimeResScale'] = 'fixed'  # 'constrain'
 
@@ -157,17 +157,18 @@ pdfConfig['constrainDeltaM'] = 'constrain'  # 'constrain' # fixed
 pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
 from P2VV.Imports import extConstraintValues
-extConstraintValues.setVal( 'DM',      (  17.768, 0.024 ) )
-extConstraintValues.setVal( 'P0OS',    (  0.381,  0.003, 0.383 ) )
-extConstraintValues.setVal( 'DelP0OS', (  0.015,  0.003  ) )
-extConstraintValues.setVal( 'P1OS',    (  0.978,  0.026  ) )
-extConstraintValues.setVal( 'DelP1OS', (  0.07,   0.030  ) )
+extConstraintValues.setVal( 'DM',      (  17.63, 0.11 ) )
+#extConstraintValues.setVal( 'DM',      (  17.768, 0.024 ) )
+#extConstraintValues.setVal( 'P0OS',    (  0.381,  0.003, 0.383 ) )
+#extConstraintValues.setVal( 'DelP0OS', (  0.015,  0.003  ) )
+#extConstraintValues.setVal( 'P1OS',    (  0.978,  0.026  ) )
+#extConstraintValues.setVal( 'DelP1OS', (  0.07,   0.030  ) )
 
 fastFit           = False
 manualTagCatBins  = False
 constTagCatCoefs  = True
 constAvgCEvenOdd  = True
-constWTagAsyms    = ''
+constWTagAsyms    = 'P1'
 constCSP          = True
 constAmplitudes   = False
 constLambdaCP     = ''  # 'lamb'
@@ -457,7 +458,7 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 #ws['ASOddPhase_bin2'].setVal(0.)
 #ws['ASOddPhase_bin2'].setConstant()
 
-#ws['timeResSigmaSF'].setVal(1.451)
+#ws['timeResSigmaSF'].setVal(1.27)
 #ws['timeResSigmaSF'].setConstant(False)
 
 #ws['ASOddPhase'].setMin(-6.)
@@ -1443,9 +1444,9 @@ sums = {
 
 from math import exp
 DelmVal  = 17.768
-etaOSVal = 0.383 #0.392 #0.383
-p0OSVal  = 0.381 #1.000 #0.381
-p1OSVal  = 0.978 #0.392 #0.978
+etaOSVal = 0.392 #0.392 #0.383
+p0OSVal  = 0.392 #0.392 #0.381
+p1OSVal  = 1.000 #1.000 #0.978
 etaSSVal = 0.35
 p0SSVal  = 0.35
 p1SSVal  = 1.0
