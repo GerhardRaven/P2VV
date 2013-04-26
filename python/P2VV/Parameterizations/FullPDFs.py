@@ -1310,7 +1310,29 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                , timeResSigma = timeRes
                                , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
                               )
-            if 'nomean' in timeResType.lower() :
+            if 'doublegauss' in timeResType.lower():
+                constant = 'constant' in timeResType.lower()
+                timeResArgs['timeResComb'] = dict(Name = 'timeResComb', Value = 1.457, Error = 4.18e-03, MinMax = ( 0.1, 5. ), Constant = constant)
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = 2.1599, Error = 5.65e-02, MinMax = (1, 5), Constant = constant)
+                timeResArgs['timeResSigmaFrac2'] = dict( Name = 'timeResSigmaFrac2', Value = 0.214, Error = 2.20e-02, MinMax = (0.001, 0.999), Constant = constant)
+                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 2.178e-08,
+                                ('timeResSigmaOffset', 'timeResSigmaSF'): 4.389e-07,
+                                ('timeResSigmaOffset', 'timeResSigmaSF2'): -0.000141,
+                                ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002041,
+                                ('timeResSigmaSF', 'timeResSigmaSF2'): 0.001858,
+                                ('timeResSigmaSF2', 'timeResSigmaSF2'): 2.271}
+                timeResArgs['Covariance'] = covariance
+                timeResArgs['nGauss'] = 2
+                if 'constmean' in timeResType.lower() :
+                    timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
+                    timeResArgs['timeResMeanConstraint'] = 'constrain'
+                elif 'fixedmean' in timeResType.lower() :
+                    timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
+                    timeResArgs['timeResMeanConstraint'] = 'fixed'
+                else:
+                    timeResArgs['timeResMean'] = dict(Value = 0, Error = 0)
+                    timeResArgs['timeResMeanConstraint'] = 'fixed'
+            elif 'nomean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
                 timeResArgs['timeResSFConstraint'] = constrTResScale
@@ -1321,23 +1343,25 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 timeResArgs['timeResSFConstraint'] = constrTResScale
             elif 'stlinear' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
-                timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.26, Error = 0.06, MinMax = (0.1, 5 ), Constant = True)
-                ## timeResArgs['timeResSigmaSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1.30 )
-                timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0055,
-                                                         Error = 0.0005, Constant = True)
-                ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
+                timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.253, Error = 0.014, MinMax = (0.1, 5 ), Constant = True)
+                timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0153,
+                                                         Error = 0.00011, Constant = True)
+                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 1.301e-08,
+                              ('timeResSigmaOffset', 'timeResSigmaSF'): 5.545e-07,
+                              ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002012}
+                timeResArgs['Covariance'] = covariance
                 timeResArgs['timeResSFModel'] = 'linear'
             elif 'stquad' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
-                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0169, Error = 0.000149, MinMax = (0.001, 0.1))
-                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.244, Error = 0.0147, MinMax = ( 0.1, 5. ))
-                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -7.828, Error = 1.523, MinMax = (-11, -1))
-                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 2.225e-08,
-                                ('timeResSigmaOffset', 'timeResSigmaSF'): 5.087e-07,
-                                ('timeResSigmaOffset', 'timeResSigmaSF2'): -0.0001433,
-                                ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002148,
-                                ('timeResSigmaSF', 'timeResSigmaSF2'): 0.000655,
-                                ('timeResSigmaSF2', 'timeResSigmaSF2'): 2.32}
+                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0159, Error = 0.000148, MinMax = (0.001, 0.1))
+                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.245, Error = 0.0143, MinMax = ( 0.1, 5. ))
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -8.812, Error = 1.507, MinMax = (-11, -1))
+                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 2.178e-08,
+                                ('timeResSigmaOffset', 'timeResSigmaSF'): 4.389e-07,
+                                ('timeResSigmaOffset', 'timeResSigmaSF2'): -0.000141,
+                                ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002041,
+                                ('timeResSigmaSF', 'timeResSigmaSF2'): 0.001858,
+                                ('timeResSigmaSF2', 'timeResSigmaSF2'): 2.271}
                 timeResArgs['Covariance'] = covariance
                 timeResArgs['timeResSFModel'] = 'quadratic'
             else :
