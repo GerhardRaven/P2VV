@@ -30,8 +30,6 @@
 #pragma link C++ class RooComplementCoef+;
 #pragma link C++ class RooEffConvGenContext+;
 #pragma link C++ class RooCubicBSpline+;
-// #pragma link C++ class RooBSpline+;
-// #pragma link C++ class RooBSplineBases+;
 #pragma link C++ function sigmaFromFT;
 #pragma link C++ class RooBoxPdf+;
 #pragma link C++ class RooExplicitNormPdf+;
