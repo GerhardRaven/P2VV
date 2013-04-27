@@ -39,7 +39,7 @@ using namespace std;
 
 namespace _aux {
   // compute  e^{-x^2} w(I(z-x))
-  //                   w(?) = FastComplexErrFunc(?) = exp(-?^2)erfc(-i?) aka. Faddeeva function(?)
+  //                   w(?) = FastComplexErrFunc(?) = exp(-?^2)erfc(-i?) aka. Faddeeva function
   RooComplex evalCerf(Double_t x, const RooComplex& z) {
     RooComplex _z( -z.im(), z.re()-x);
     if (_z.im()>-4.0) return RooMath::FastComplexErrFunc(_z)*exp(-x*x) ;
@@ -54,7 +54,6 @@ namespace _aux {
 
     return v.exp()*(-zsq.exp()/(iz*rootpi)+1)*2 ;
   }
-
 
     class L_jk {
     public:
@@ -84,7 +83,6 @@ namespace _aux {
         }  
     private : 
         double _x;
-
     };
 
     class K_n {
@@ -97,7 +95,8 @@ namespace _aux {
                 case 0 : return _zi;
                 case 1 : return _zi*_zi;
                 case 2 : return _zi*(RooComplex(1,0)+RooComplex(2,0)*_zi*_zi);
-                case 3 : RooComplex _zi2 = _zi*_zi; return _zi2*(RooComplex(3,0)+RooComplex(6,0)*_zi2);
+                case 3 : RooComplex _zi2 = _zi*_zi; 
+                         return _zi2*(RooComplex(3,0)+RooComplex(6,0)*_zi2);
             }
             assert(1==0);
             return 0;
@@ -110,7 +109,7 @@ namespace _aux {
     public:
         N_n(double x, RooComplex z) {
             static const double N( double(1)/sqrt(2.0) );
-             x *= N; z = z*N;
+            x *= N; z = z*N;
             _n[0] = RooMath::erf(x);
             _n[1] = exp(-x*x);
             _n[2] = evalCerf(x, RooComplex(z.im(),-z.re())); // exp(-x^2) w(I(z-x) )
@@ -125,22 +124,54 @@ namespace _aux {
 
     class M_n {
     public:
-       M_n(const L_jk& L, const N_n& N) {
-           for (int i=0;i<4;++i) {
-              _m[i] = N(0)*L(i,0) + N(1)*L(i,1) + N(2)*L(i,2);
-           }
+       M_n(double x, const RooComplex& z) {
+          _aux::L_jk L(x) ;
+          _aux::N_n  N(x,z) ;
+          for (int i=0;i<4;++i) _m[i] = N(0)*L(i,0) 
+                                      + N(1)*L(i,1) 
+                                      + N(2)*L(i,2);
        }
        const RooComplex& operator()(int i) {
            assert(0<=i&&i<4); 
            return _m[i];
        }
-
        M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
-       M_n  operator-(const M_n& other) const { return M_n(*this)-=other; }
+       M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
     private:
        RooComplex _m[4];
     };
 
+    class S_jk { 
+    public:
+        S_jk(double a, double b, double c) : t(a*b*c), d(a*b+a*c+b*c), s(a+b+c), o(1.) {}
+        S_jk& operator*=(double z) { t*=z; d*=z; s*=z; o*=z; return *this; } 
+        S_jk& operator/=(double z) { t/=z; d/=z; s/=z; o/=z; return *this; } 
+        S_jk& operator-()          { t=-t; d=-d; s=-s; o=-o; return *this; }
+        S_jk& operator+=(const S_jk& other) { t+=other.t; d+=other.d; s+=other.s; o+=other.o; return *this; } 
+        S_jk& operator-=(const S_jk& other) { t-=other.t; d-=other.d; s-=other.s; o-=other.o; return *this; } 
+
+        S_jk operator*(double z)          const { return S_jk(*this)*=z; }
+        S_jk operator/(double z)          const { return S_jk(*this)/=z; }
+        S_jk operator+(const S_jk& other) const { return S_jk(*this)+=other; }
+        S_jk operator-(const S_jk& other) const { return S_jk(*this)-=other; }
+
+        double operator()(int j, int k) const { 
+            assert(0<=j&&j<4);
+            assert(0<=k&&k<4-j); // note: for 4-j<=k<4 could return 0... but better not to invoke with those..
+            if (j>k) std::swap(j,k);
+            switch(3*j+k) {
+                case 0: return   -t;   // (0,0) 
+                case 1: return    d;   // (0,1),(1,0)
+                case 2: return   -s;   // (0,2),(2,0)
+                case 3: return    o;   // (0,3),(3,0)
+                case 4: return -2*s;   // (1,1)
+                case 5: return  3*o;   // (1,2),(2,1)
+                default : assert(1==0);
+            }
+        }
+    private:
+        double t,d,s,o;
+    };
 
 }
 
@@ -165,12 +196,17 @@ public:
         return std::distance(_u.begin(),i);
     };
 
-    double evaluate(double _u, int i, double b0, double b1, double b2, double b3) const {
+    double evaluate(double _u, const RooArgList& b) const {
+        int i = index(_u); // location in knot vector
+        assert(0<=i && i+3<b.getSize());
         assert( u(i) <= _u && _u<= u(i+1) );
-        return b0*A(_u,i) + b1*B(_u,i) + b2*C(_u,i) + b3*D(_u,i);
+        return  ((RooAbsReal&)b[i  ]).getVal()*A(_u,i)
+             +  ((RooAbsReal&)b[i+1]).getVal()*B(_u,i)
+             +  ((RooAbsReal&)b[i+2]).getVal()*C(_u,i)
+             +  ((RooAbsReal&)b[i+3]).getVal()*D(_u,i);
     }
 
-    double analyticalIntegral(int i, double b0, double b1, double b2, double b3) const {
+    double analyticalIntegral(const RooArgList& b) const {
         if (_IABCD.empty()) {
            // the integrals of A,B,C,D from u(i) to u(i+1) only depend on the knot vector...
            // so we create them 'on demand' and cache the result
@@ -186,31 +222,30 @@ public:
                 _IABCD.push_back(   qua(h(j,j+1))/(4*S(j)) );
             }
         }
-        return b0*_IABCD[4*i  ]
-             + b1*_IABCD[4*i+1]
-             + b2*_IABCD[4*i+2]
-             + b3*_IABCD[4*i+3];
+        double norm(0);
+        assert(b.getSize()-2==_u.size());
+        for (int i=0; i < _u.size()-1; ++i) {
+             norm += ((RooAbsReal&)b[i  ]).getVal()*_IABCD[4*i  ]
+                   + ((RooAbsReal&)b[i+1]).getVal()*_IABCD[4*i+1]
+                   + ((RooAbsReal&)b[i+2]).getVal()*_IABCD[4*i+2]
+                   + ((RooAbsReal&)b[i+3]).getVal()*_IABCD[4*i+3];
+        }
+        return norm;
     }
 
-    RooComplex gaussIntegral(const RooComplex& z, const std::vector<double>& coef) {
-
+    RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const {
         std::vector<_aux::M_n> M; M.reserve(_u.size());
-        for (int i=0;i<_u.size();++i) M.push_back( _aux::M_n( _aux::L_jk(u(i)), _aux::N_n(u(i),z) ) );
+        for (int i=0;i<_u.size();++i) M.push_back( _aux::M_n( u(i), z ) );
         _aux::K_n K(z);
-
         RooComplex sum(0,0);
         for (int i=0;i<_u.size()-1;++i) {
-            S_jk S = S_jk_sum(i, coef[i],coef[i+1],coef[i+2],coef[i+3] ); // ? compute integral for each basis function instead, and leave summing till later/caller? (bad if 
-            _aux::M_n dM( M[i+1]-M[i] );
-            for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) {
-                sum = sum + dM(j)*S(j,k)*K(k);
-            }
+            _aux::S_jk S( S_jk_sum( i, coef ) );
+            _aux::M_n dM( M[i+1] - M[i] );
+            for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum = sum + dM(j)*S(j,k)*K(k);
         }
         return sum;
     }
-
 private:
-
     double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }
     double B(double _u,int i) const{ return  sqr(d(_u,i+1))*d(_u,i-2)/P(i) + d(_u,i-1)*d(_u,i+2)*d(_u,i+1)/Q(i) + d(_u,i  )*sqr(d(_u,i+2))/R(i); }
     double C(double _u,int i) const{ return -sqr(d(_u,i-1))*d(_u,i+1)/Q(i) - d(_u,i  )*d(_u,i+2)*d(_u,i-1)/R(i) - d(_u,i+3)*sqr(d(_u,i  ))/S(i); }
@@ -222,58 +257,26 @@ private:
     double S(int i) const { assert(4*i+3<_PQRS.size()); return  _PQRS[4*i+3]; }
 
 
-    class S_jk { 
-    public:
-        S_jk(double a, double b, double c) : t(a*b*c), d(a*b+a*c+b*c), s(a+b+c) {}
-        S_jk& operator*=(double z) {  t*=z; d*=z; s*=z; return *this; } 
-        S_jk& operator/=(double z) {  t/=z; d/=z; s/=z; return *this; } 
-        S_jk& operator-()          {  t=-t; d=-d; s=-s; return *this; }
-        S_jk& operator+=(const S_jk& other) {  t+=other.t; d+=other.d; s+=other.s; return *this; } 
-        S_jk& operator-=(const S_jk& other) {  t-=other.t; d-=other.d; s-=other.s; return *this; } 
-
-        S_jk operator*(double z)          const { return S_jk(*this)*=z; }
-        S_jk operator/(double z)          const { return S_jk(*this)/=z; }
-        S_jk operator+(const S_jk& other) const { return S_jk(*this)+=other; }
-        S_jk operator-(const S_jk& other) const { return S_jk(*this)-=other; }
-
-        double operator()(int j, int k) const { 
-            assert(0<=j&&j<4);
-            assert(0<=k&&k<4-j); // note: for 4-j<=k<4 could return 0... but better not to invoke with those..
-            if (j>k) std::swap(j,k);
-            switch(3*j+k) {
-                case 0: return   -t;   // (0,0) 
-                case 1: return    d;   // (0,1),(1,0)
-                case 2: return   -s;   // (0,2),(2,0)
-                case 3: return    1;   // (0,3),(3,0)
-                case 4: return -2*s;   // (1,1)
-                case 5: return    3;   // (1,2),(2,1)
-                default : assert(1==0);
-            }
-        }
-    private:
-        double t,d,s ;
-    };
-
 
     // S matrix for i-th interval
-    S_jk S_jk_sum(int i, double b0, double b1, double b2, double b3) const {
+    _aux::S_jk S_jk_sum(int i, const RooArgList& b) const { 
             if (_S_jk.empty()) {
                 _S_jk.reserve(_u.size()*4);
                 for(int i=0;i<_u.size();++i) {
-                    _S_jk.push_back( -S_jk(u(i+1),u(i+1),u(i+1))/P(i) );
-                    _S_jk.push_back(  S_jk(u(i-2),u(i+1),u(i+1))/P(i)
-                                     +S_jk(u(i-1),u(i+1),u(i+2))/Q(i) 
-                                     +S_jk(u(i  ),u(i+2),u(i+2))/R(i) );
-                    _S_jk.push_back( -S_jk(u(i-1),u(i-1),u(i+1))/Q(i)
-                                     -S_jk(u(i-1),u(i  ),u(i+2))/R(i) 
-                                     -S_jk(u(i  ),u(i  ),u(i+3))/S(i) );
-                    _S_jk.push_back(  S_jk(u(i  ),u(i  ),u(i  ))/S(i) );
+                    _S_jk.push_back( -_aux::S_jk(u(i+1),u(i+1),u(i+1))/P(i) );
+                    _S_jk.push_back(  _aux::S_jk(u(i-2),u(i+1),u(i+1))/P(i)
+                                     +_aux::S_jk(u(i-1),u(i+1),u(i+2))/Q(i) 
+                                     +_aux::S_jk(u(i  ),u(i+2),u(i+2))/R(i) );
+                    _S_jk.push_back( -_aux::S_jk(u(i-1),u(i-1),u(i+1))/Q(i)
+                                     -_aux::S_jk(u(i-1),u(i  ),u(i+2))/R(i) 
+                                     -_aux::S_jk(u(i  ),u(i  ),u(i+3))/S(i) );
+                    _S_jk.push_back(  _aux::S_jk(u(i  ),u(i  ),u(i  ))/S(i) );
                 }
             }
-            return _S_jk[4*i  ]*b0
-                 + _S_jk[4*i+1]*b1
-                 + _S_jk[4*i+2]*b2
-                 + _S_jk[4*i+3]*b3; 
+            return _S_jk[4*i  ]*((RooAbsReal&)b[i  ]).getVal()
+                 + _S_jk[4*i+1]*((RooAbsReal&)b[i+1]).getVal()
+                 + _S_jk[4*i+2]*((RooAbsReal&)b[i+2]).getVal()
+                 + _S_jk[4*i+3]*((RooAbsReal&)b[i+3]).getVal(); 
     }
     double sqr(double x) const { return x*x; }
     double cub(double x) const { return x*sqr(x); }
@@ -282,22 +285,20 @@ private:
     double h(int i, int j) const { return u(i)-u(j); }
     double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); return _u[std::min(std::max(0,i),int(_u.size()-1))]; }
 
-    const std::vector<double> _u;
+    const   std::vector<double> _u;
     mutable std::vector<double> _PQRS;
     mutable std::vector<double> _IABCD;
-    mutable std::vector<S_jk> _S_jk;
+    mutable std::vector<_aux::S_jk> _S_jk;
 };
 
 ClassImp(RooCubicBSpline)
 ;
-
 
 //_____________________________________________________________________________
 RooCubicBSpline::RooCubicBSpline()
     : _aux(0)
 {
 }
-
 
 //_____________________________________________________________________________
 RooCubicBSpline::RooCubicBSpline(const char* name, const char* title, 
@@ -329,8 +330,6 @@ RooCubicBSpline::RooCubicBSpline(const char* name, const char* title,
   _aux = new _auxKnot( boundaries, boundaries + binning->numBoundaries() );
 }
 
-
-
 //_____________________________________________________________________________
 RooCubicBSpline::RooCubicBSpline(const RooCubicBSpline& other, const char* name) :
   RooAbsPdf(other, name), 
@@ -346,29 +345,17 @@ RooCubicBSpline::~RooCubicBSpline()
     delete _aux;
 }
 
-
-
 //_____________________________________________________________________________
 Double_t RooCubicBSpline::evaluate() const 
 {
-  double u = _x;
-  int i = _aux->index(u); // location in knot vector
-  assert(0<=i && i+3<_coefList.getSize());
-  return _aux->evaluate(u,i, ((RooAbsReal*)_coefList.at(i  ))->getVal()
-                           , ((RooAbsReal*)_coefList.at(i+1))->getVal()
-                           , ((RooAbsReal*)_coefList.at(i+2))->getVal()
-                           , ((RooAbsReal*)_coefList.at(i+3))->getVal() );
+  return _aux->evaluate(_x,_coefList);
 }
-
 
 //_____________________________________________________________________________
 Int_t RooCubicBSpline::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
   // No analytical calculation available (yet) of integrals over subranges
-  if (rangeName && strlen(rangeName)) {
-    return 0 ;
-  }
-
+  if (rangeName && strlen(rangeName)) return 0 ;
   if (matchArgs(allVars, analVars, _x)) return 1;
   return 0;
 }
@@ -378,13 +365,6 @@ Int_t RooCubicBSpline::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& anal
 Double_t RooCubicBSpline::analyticalIntegral(Int_t code, const char* rangeName) const
 {
   assert(code==1) ;
-  Double_t  norm(0);
-  for (int i=0; i < _coefList.getSize()-3; ++i) {
-    norm += _aux->analyticalIntegral(i, ((RooAbsReal*)_coefList.at(i  ))->getVal()
-                                      , ((RooAbsReal*)_coefList.at(i+1))->getVal()
-                                      , ((RooAbsReal*)_coefList.at(i+2))->getVal()
-                                      , ((RooAbsReal*)_coefList.at(i+3))->getVal() ) ;
-  }
-  return norm;
+  return _aux->analyticalIntegral(_coefList);
 }
 
