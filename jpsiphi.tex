@@ -173,8 +173,9 @@ Next we use the Faddeeva function $w$,  defined as
 \end{equation}
 and implemented in CERNLIB (see http://wwwasdoc.web.cern.ch/wwwasdoc/shortwrupsdir/c335/top.html) as $\mathrm{cwerf}$, to write the result as:
 \begin{eqnarray*}
-f(t;\Gamma,\Delta m,\sigma) &=&  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}} \left( z-x\right) \right)\;\; \mathrm{where} \; x=\frac{t}{\sigma};\; z = \left(\Gamma-i\Delta m\right)\sigma
-\\   &=& e^{-\frac{1}{2}\left(\frac{t}{\sigma}\right)^2} w\left( \frac{i}{\sqrt{2}} \left( -\frac{t}{\sigma} + \sigma\left(\Gamma-i\Delta m \right) \right)  \right)
+f(t;\Gamma,\Delta m,\sigma) 
+     &=& e^{-\frac{1}{2}\left(\frac{t}{\sigma}\right)^2} w\left( \frac{i}{\sqrt{2}} \left( -\frac{t}{\sigma} + \sigma\left(\Gamma-i\Delta m \right) \right)  \right)
+\\ &=&  e^{-x^2} w\left( i \left( z-x\right)\right)\;\; \mathrm{where} \; x=\frac{t}{\sqrt{2}\sigma};\; z = \frac{\left(\Gamma-i\Delta m\right)\sigma}{\sqrt{2}}
 \end{eqnarray*}
 The corresponding normaliztion integral is given by:
 \begin{equation*}
@@ -182,8 +183,8 @@ The corresponding normaliztion integral is given by:
 \end{equation*}
 where the latter $I_0(x;z)$ is defined as:
 \begin{eqnarray*}
-   I_0(x_\mathrm{min},x_\mathrm{max};z) &\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
-\\             &=&\frac{1}{z}\left[ \mathrm{erf}\left(\frac{x}{\sqrt{2}} \right) -e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}\left(z-x\right) \right) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+   I_0(x_\mathrm{min},x_\mathrm{max};z) &\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{-x^2} w\left( i(z-x) \right) 
+\\             &=&\frac{1}{z}\left[ \mathrm{erf}\left(x\right) -e^{-x^2} w\left( i\left(z-x\right) \right) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
 \end{eqnarray*}
 
 \subsubsection{Describing decaytime efficiency with cubic b-splines}
@@ -192,31 +193,31 @@ integrals of form $\int_{t_i}^{t_{i+1}} dt (t-\alpha_i)(t-\beta_i)(t-\gamma_i) f
 These integrals can be written in terms of integrals of $t^nf(t)$ for $n=0,1,2,3$, which can be computed 
 using the following method\footnote{Manuel Schiller, private communication}:
 \begin{eqnarray*}
-    I_n(x_\mathrm{min},x_\mathrm{max};z)&\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; x^n e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x)\right) 
-       \\      &  =& \left.\frac{d^n}{d\lambda^n}\right|_{\lambda=0 } \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{\lambda x} e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x)\right) 
-       \\      & \equiv& \left.\frac{d^n}{d\lambda^n}\right|_{\lambda=0 } I(x_\mathrm{min},x_\mathrm{max};z,\lambda)
+    I_n(x_\mathrm{min},x_\mathrm{max};z)&\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; x^n e^{-x^2} w\left( i (z-x)\right) 
+       \\      &  =&  \frac{1}{2^n}\left.\frac{d^n}{d\lambda^n}\right|_{\lambda=0 } \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\;e^{2\lambda x} e^{-x^2} w\left( i(z-x)\right) 
+       \\      & \equiv& \frac{1}{2^n} \left.\frac{d^n}{d\lambda^n}\right|_{\lambda=0 } I(x_\mathrm{min},x_\mathrm{max};z,\lambda)
 \end{eqnarray*}
 Once again we complete the square, and shift the integrand to obtain:
 \begin{eqnarray*}
-       I(x_\mathrm{min},x_\mathrm{max};z,\lambda) &=&  \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{\lambda x} e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x)\right) 
-        \\            &=&  e^{\frac{1}{2}\lambda^2}\int_{x_\mathrm{min}-\lambda}^{x_\mathrm{max}-\lambda} dx \;  e^{-\frac{1}{2}x^2} w\left(\frac{i}{\sqrt{2}}\left(z-\lambda-x\right) \right)
-        \\            &=& \frac{e^{\frac{1}{2}\lambda^2}}{z-\lambda} \left[ \mathrm{erf}\left( \frac{x}{\sqrt{2}} \right) - e^{-\frac{1}{2}x^2}w\left(\frac{i}{\sqrt{2}}\left(z-\lambda-x \right) \right) \right]_{x_\mathrm{min}-\lambda}^{x_\mathrm{max}-\lambda}
+       I(x_\mathrm{min},x_\mathrm{max};z,\lambda) &=& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{2\lambda x} e^{-x^2} w\left( i(z-x)\right) 
+        \\            &=& e^{\frac{1}{4}\lambda^2}\int_{x_\mathrm{min}-\lambda/2}^{x_\mathrm{max}-\lambda/2} dx \;  e^{-x^2} w\left(i\left(z-\lambda/2-x\right) \right)
+        \\            &=& \frac{e^{\frac{1}{4}\lambda^2}}{z-\lambda/2} \left[ \mathrm{erf}\left( x \right) - e^{-x^2}w\left(i\left(z-\lambda/2-x \right) \right) \right]_{x_\mathrm{min}-\lambda/2}^{x_\mathrm{max}-\lambda/2}
         \\            &\equiv& K(z,\lambda) \left[  J(x_\mathrm{max};\lambda,z) - J(x_\mathrm{min};\lambda,z)  \right]
 \end{eqnarray*}
-where $J(x;\lambda,z)=\mathrm{erf}\left(\frac{x-\lambda}{\sqrt{2}}\right)-e^{-\frac{1}{2}\left(x-\lambda\right)^2}w\left(\frac{i}{\sqrt{2}}\left(z-x\right) \right)$ and $K(\lambda,z)=\frac{e^{\frac{\lambda^2}{2}}}{z-\lambda}$.
+where $K(\lambda,z)=\frac{e^{\frac{1}{4}\lambda^2}}{z-\lambda/2}$ and $J(x;\lambda,z)=\mathrm{erf}\left(x-\frac{\lambda}{2}\right)-e^{-\left(x-\frac{\lambda}{2}\right)^2}w\left(i\left(z-x\right) \right)$. 
 
 In order to simplify the  computation of  $I_n$, we define the $n^\mathrm{th}$ order derivatives at $\lambda=0$, $K_n(z)$ and $M_n(x;z)$, as follows:
 \begin{equation}
 \begin{array}{|c|c|c|}
 \hline
 n   
-& \begin{array}{l}  K_n(z)   = \\  \left. \frac{d^n}{d\lambda^n}\right|_{\lambda=0} \frac{e^{\frac{1}{2}\lambda^2}}{z-\lambda}  \end{array}
+& \begin{array}{l}  K_n(z)   = \\  \left. \frac{d^n}{d\lambda^n}\right|_{\lambda=0} \frac{e^{\frac{1}{4}\lambda^2}}{z-\lambda/2}  \end{array}
 & \begin{array}{l}  M_n(x;z) = \\  \left. \frac{d^n}{d\lambda^n}\right|_{\lambda=0} \left[ \mathrm{erf}\left(\frac{x-\lambda}{\sqrt{2}}\right)-  e^{-\frac{1}{2}\left(x-\lambda\right)^2}w\left(\frac{i}{\sqrt{2}}\left(z-x\right)\right)  \right] \end{array}
 \\ \hline 
-   0   & z^{-1} &  \mathrm{erf}\left(\frac{x}{\sqrt{2}}\right)-e^{-\frac{1}{2}x^2}w\left( \frac{i}{\sqrt{2}} \left(z-x\right)\right) 
-\\ 1   & z^{-2}          & e^{-\frac{1}{2}x^2} \left[ - \sqrt{\frac{2}{\pi}}   -       x w\left(\frac{i}{\sqrt{2}}(z-x)  \right) \right]
-\\ 2   & 2z^{-3}+z^{-1}  & e^{-\frac{1}{2}x^2} \left[ - \sqrt{\frac{2}{\pi}} x - (x^2-1) w\left(\frac{i}{\sqrt{2}}(z-x)\right) \right]
-\\ 3   & 6z^{-4}+3z^{-2} & e^{-\frac{1}{2}x^2} \left[ - \sqrt{\frac{2}{\pi}} (x^2-1)-x(x^2-3)w\left(\frac{i}{\sqrt{2}}(z-x)\right)   \right]
+   0   & \frac{1}{z}                                &  \mathrm{erf}\left(x\right)-e^{-x^2}w\left( i \left(z-x\right)\right) 
+\\ 1   & \frac{1}{2z^2}                             & e^{-x^2} \left[ - \sqrt{\frac{1}{\pi}}   -       x w\left(i(z-x)  \right) \right]
+\\ 2   & \frac{1}{2z}\left(1 + \frac{1}{z^2}\right) & e^{-x^2} \left[ - \sqrt{\frac{1}{\pi}} x - (x^2-\frac{1}{2}) w\left(i(z-x)\right) \right]
+\\ 3   & \frac{3}{4z^2}\left(1+\frac{1}{z^2}\right) & e^{-x^2} \left[ - \sqrt{\frac{1}{\pi}} (x^2-\frac{1}{2})-x(x^2-\frac{3}{2})w\left(i(z-x)\right)   \right]
 \\ \hline
 \end{array}
 \end{equation}
@@ -226,25 +227,25 @@ In terms of these functions, the normalization integrals can now be written as:
 \\   I_1(x_\mathrm{min},x_\mathrm{max};z) &=&  
        \left(\begin{array}{c} M_0(x;z) \\ M_1(x;z)   \end{array}\right)
 \cdot \left(\begin{array}{cc}
-                   0  & 1 
-               \\  1  & 0 
+                   0  & \frac{1}{2} 
+               \\  \frac{1}{2}  & 0 
                \end{array}\right) 
        \left(\begin{array}{c} K_0(z) \\ K_1(z)  \end{array} \right) 
-\\   I_2(x_\mathrm{min},x_\mathrm{max};z) &=&  
+\\   I_2(x_\mathrm{min},x_\mathrm{max};z) &=& 
        \left(\begin{array}{c} M_0(x;z) \\ M_1(x;z) \\ M_2(x;z)  \end{array}\right)
 \cdot \left(\begin{array}{ccc}
-                   0  & 0 & 1  
-               \\  0  & 2 & 0  
-               \\  1  & 0 & 0  
+                   0  & 0 & \frac{1}{4}  
+               \\  0  & \frac{1}{2} & 0  
+               \\  \frac{1}{4}  & 0 & 0  
                \end{array}\right) 
        \left(\begin{array}{c} K_0(z) \\ K_1(z) \\ K_2(z)  \end{array} \right) 
-\\   I_3(x_\mathrm{min},x_\mathrm{max};z) &=&  
+\\   I_3(x_\mathrm{min},x_\mathrm{max};z) &=&
        \left(\begin{array}{c} M_0(x;z) \\ M_1(x;z) \\ M_2(x;z) \\ M_3(x;z) \end{array}\right)
 \cdot \left(\begin{array}{cccc}
-                   0  & 0 & 0  &  1
-               \\  0  & 0 & 3  &  0
-               \\  0  & 3 & 0  &  0
-               \\  1  & 0 & 0  &  0
+                   0  & 0 & 0  &  \frac{1}{8}
+               \\  0  & 0 & \frac{3}{8}  &  0
+               \\  0  & \frac{3}{8} & 0  &  0
+               \\  \frac{1}{8}  & 0 & 0  &  0
                \end{array}\right) 
        \left(\begin{array}{c} K_0(z) \\ K_1(z) \\ K_2(z) \\ K_3(z) \end{array} \right) 
 \end{eqnarray*}
@@ -254,7 +255,7 @@ In general, the cubic b-splines have the form $(x-\alpha_i)(x-\beta_i)(x-\gamma_
 normalization can be written as a linear combination of $I_n$:
 \begin{eqnarray*}
 I(x_i,x_{i+1};z,\alpha_i,\beta_i,\gamma_i) &=&
-  \int_{x_i}^{x_{i+1}} dx (x-\alpha_i)(x-\beta_i)(x-\gamma_i)  e^{-\frac{1}{2}x^2} w\left( \frac{i}{\sqrt{2}}(z-x) \right) 
+  \int_{x_i}^{x_{i+1}} dx (x-\alpha_i)(x-\beta_i)(x-\gamma_i)  e^{-x^2} w\left( i(z-x) \right) 
 \\ &=& I_3(x_i,x_{i+1};z) 
     -  (\alpha_i+\beta_i+\gamma_i) I_2(x_i,x_{i+1};z)
 \\ &+& (\alpha_i\beta_i+\alpha_i\gamma_i+\beta_i\gamma_i) I_1(x_i,x_{i+1};z) 
@@ -262,10 +263,10 @@ I(x_i,x_{i+1};z,\alpha_i,\beta_i,\gamma_i) &=&
 \\ &=& 
        \left(\begin{array}{c} M_0(x_{i+1};z)-M_0(x_i;z) \\ M_1(x_{i+1};z)-M_1(x_i;z) \\ M_2(x_{i+1};z)-M_2(x_i;z) \\ M_3(x_{i+1};z)-M_3(x_i;z) \end{array}\right)^T
       \left(\begin{array}{cccc}
-                   -\alpha_i\beta_i\gamma_i                     & \alpha_i\beta_i+\alpha_i\gamma_i+\beta_i\gamma_i & -(\alpha_i+\beta_i+\gamma_i)  &  1
-               \\  \alpha_i\beta_i+\alpha_i\gamma_i+\beta_i\gamma_i   &              -2(\alpha_i+\beta_i+\gamma_i) &                      3  &  0
-               \\  -(\alpha_i+\beta_i+\gamma_i)                 &                                    3 &                      0  &  0
-               \\  1                                      &                                    0 &                      0  &  0
+                   -\alpha_i\beta_i\gamma_i                     & \frac{\alpha_i\beta_i+\alpha_i\gamma_i+\beta_i\gamma_i}{2} & -\frac{\alpha_i+\beta_i+\gamma_i}{4}  &  \frac{1}{8}
+               \\  \frac{\alpha_i\beta_i+\alpha_i\gamma_i+\beta_i\gamma_i}{2}   &              -\frac{\alpha_i+\beta_i+\gamma_i}{2} &                      \frac{3}{8}  &  0
+               \\  -\frac{\alpha_i+\beta_i+\gamma_i}{4}                 &                                    \frac{3}{8} &                      0  &  0
+               \\  \frac{1}{8}                                      &                                    0 &                      0  &  0
                \end{array}\right) 
        \left(\begin{array}{c} K_0(z) \\ K_1(z) \\ K_2(z) \\ K_3(z) \end{array} \right) 
 \\ &\equiv& \sum_{j=0}^3 \sum_{k=0}^{3-j} \left( M_j(x_{i+1};z)-M_j(x_i;z)\right) S_{jk}(\alpha_i,\beta_i,\gamma_i) K_k(z)
@@ -284,14 +285,14 @@ care to cancel divergent pieces):
      \left( \begin{array}{c} M_0(x;z) \\ M_1(x;z) \\ M_2(x;z) \\ M_3(x;z) \end{array} \right)
      = \left( \begin{array}{ccc}
           1 &  0 & -1
-     \\   0 & -\sqrt{\frac{2}{\pi}}& -x 
-     \\   0 & -\sqrt{\frac{2}{\pi}}x& -(x^2-1) 
-     \\   0 & -\sqrt{\frac{2}{\pi}}(x^2-1)& -x(x^2-3) 
+     \\   0 & -\sqrt{\frac{1}{\pi}}& -x 
+     \\   0 & -\sqrt{\frac{1}{\pi}}x& -(x^2-\frac{1}{2}) 
+     \\   0 & -\sqrt{\frac{1}{\pi}}(x^2-\frac{1}{2})& -x(x^2-\frac{3}{2}) 
        \end{array}\right) 
        \left(\begin{array}{c} 
-                      \mathrm{erf}\left(\frac{x}{\sqrt{2}}\right)
-              \\      e^{-\frac{1}{2}x^2}
-              \\      e^{-\frac{1}{2}x^2}w\left(\frac{i}{\sqrt{2}}(z-x) \right)
+                      \mathrm{erf}\left(x\right)
+              \\      e^{-x^2}
+              \\      e^{-x^2}w\left(i(z-x) \right)
              \end{array} \right)
 \end{equation}
 
