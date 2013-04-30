@@ -158,14 +158,14 @@ By using the observation that $\sin(\Delta m t) = \Im\left( e^{i\Delta m t}\righ
 be written as the sum and difference of exponentials, i.e. it is just the $\cos$ term with $\Delta m = 0$, it is sufficient to consider the following convolution:
 \begin{eqnarray*}
 f(t;\Gamma,\Delta m,\sigma) &=& \int_0^{+\infty}\;dt'\;\; e^{-(\Gamma -i \Delta m)t'} \frac{ e^{-\frac{1}{2}\left( \frac{t-t'}{\sigma} \right)^2}}{\sqrt{2\pi}\sigma}
-\\                          &=& \frac{1}{\sqrt{2\pi}} \int_0^{+\infty}\;dy \;\;  e^{-\frac{1}{2}\left( x-y \right)^2-zy}
+\\                          &=& \frac{1}{\sqrt{\pi}} \int_0^{+\infty}\;dy \;\;  e^{-\left(x-y \right)^2-2zy}
 \end{eqnarray*}
-where we have defined $z = (\Gamma - i \Delta m ) \sigma$ and $x = t / \sigma$.
+where we have defined $z = (\Gamma - i \Delta m ) \sigma/\sqrt{2}$ and $x = \frac{t}{\sqrt{2}\sigma}$.
 Completing the square in the exponent and absorbing the shift in the boundaries of the integral, we find:
 \begin{eqnarray*}
-f(t;\Gamma,\Delta m,\sigma) &=& e^{-\frac{1}{2}x^2+\frac{1}{2}(z-x)^2}  \frac{1}{\sqrt{2\pi}} \int_0^{+\infty}\;dy \;\; e^{-\left(\frac{ y+(z-x)}{\sqrt{2}} \right)^2}
-\\                          &=&  e^{-\frac{1}{2}x^2+\frac{1}{2}(z-x)^2}  \frac{1}{\sqrt{\pi}} \int_{\frac{z-x}{\sqrt{2}}}^{+\infty}\;dy \;\; e^{-y^2 }
-\\                          &=&  e^{-\frac{1}{2}x^2+\frac{1}{2}(z-x)^2}  \; \frac{1}{2}\mathrm{erfc}\left(\frac{z-x}{\sqrt{2}} \right)
+f(t;\Gamma,\Delta m,\sigma) &=& e^{-x^2+(z-x)^2}  \frac{1}{\sqrt{\pi}} \int_0^{+\infty}\;dy \;\; e^{-\left(y+(z-x) \right)^2}
+\\                          &=&  e^{-x^2+(z-x)^2}  \frac{1}{\sqrt{\pi}} \int_{z-x}^{+\infty}\;dy \;\; e^{-y^2 }
+\\                          &=&  e^{-x^2+(z-x)^2}  \; \frac{1}{2}\mathrm{erfc}\left(z-x \right)
 \end{eqnarray*}
 Next we use the Faddeeva function $w$,  defined as 
 \begin{equation}
