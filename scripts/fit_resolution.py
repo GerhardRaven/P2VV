@@ -251,9 +251,13 @@ from ROOT import gStyle
 gStyle.SetPalette(53)
 
 ## Extra name for fit result and plots
-extra_name = args[1]
+extra_name = [args[1]]
+if options.parameterise:
+    extra_name += [options.parameterise]
+if options.wpv:
+    extra_name += [options.wpv_type]
 if options.model:
-    extra_name += ('_' + options.model)
+    extra_name += [options.model]
 
 ## Read Cache
 if not fit_mass:
@@ -322,7 +326,7 @@ if not fit_mass:
                 fit_mass = True
             else:
                 results.append(sWeight_mass_result)
-        tr = rd.Get('time_result_%s' % extra_name)
+        tr = rd.Get('_'.join(['time_result'] + extra_name))
         if tr:
             results.append(tr)
 
@@ -620,7 +624,7 @@ if options.simultaneous:
 # Check if we have a cached time result, if so, use it as initial values for the fit
 time_result = None
 for i, r in enumerate(results):
-    if r.GetName().find('time_result') != -1:
+    if r.GetName() == '_'.join(['time_result'] + extra_name):
         time_result = results.pop(i)
         break
 
@@ -639,12 +643,21 @@ time_pdf.Print("t")
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
 
+parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(RooArgSet(*observables))])
+
+## from P2VV import Dilution
+## comb = parameters['timeResComb']
+## frac2 = parameters['timeResFrac2']
+## sf2 = parameters['timeResSigmaSF_2']
+## sf1 = (comb.getVal() - frac2.getVal() * sf2.getVal()) / (1 - frac2.getVal())
+## Dilution.signal_dilution_dg(sig_sdata, st, sf1, frac2.getVal(), sf2.getVal())
+
 for i in range(2):
     time_result = time_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
     if time_result.status() == 0:
         break
 
-time_result.SetName('time_result_%s' % extra_name)
+time_result.SetName('_'.join(['time_result'] + extra_name))
 
 ## Draw correlation histogram
 corr_canvas.cd(2)
@@ -725,7 +738,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             
             plots.append(ps)
     else:
-        canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 400)
+        canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 600)
         __canvases.append(canvas)
         p = canvas.cd(1)
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
@@ -736,7 +749,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , logy = pl
-                  , plotResidHist = False)
+                  , plotResidHist = True)
         for frame in ps:
             plot_name = '_'.join((t.GetName(), bins.GetName(), frame.GetName()))
             frame.SetName(plot_name)
@@ -912,7 +925,7 @@ with WritableCacheFile(cache_files, directory) as cache_file:
         results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
         
         ## Write plots
-        plots_dir = get_dir('plots/%s' % extra_name)
+        plots_dir = get_dir('plots/%s' % '_'.join(extra_name))
         for ps in plots:
             for p in ps:
                 plots_dir.WriteTObject(p, p.GetName(), "Overwrite")

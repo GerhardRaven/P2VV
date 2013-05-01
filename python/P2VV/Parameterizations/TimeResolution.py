@@ -265,7 +265,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         models = []
         for i, params in enumerate(parameters):
             from ROOT import RooGaussModel as GaussModel
-            model = ResolutionModel(Name = 'timeResGauss_%d' % (i + 1)
+            model = ResolutionModel(Name = 'timeResGauss_%d' % (len(parameters) - i)
                                     , Type = GaussModel
                                     , Parameters = params
                                     , ConditionalObservables = [self._timeResSigma]
@@ -308,8 +308,8 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         from P2VV.RooFitWrappers import ConstVar, RealVar, FormulaVar
         sigmaSF1 = FormulaVar('timeResSigmaSF1', '(1 / (1 - @0)) * (@1 - @0 * @2)',
                               (self._timeResSigmaFrac2, self._timeResComb, self._timeResSigmaSF2))
-        parameters = [[self._time, self._timeResMean, self._timeResSigma, self._timeResMeanSF, sigmaSF1 ],
-                      [self._time, self._timeResMean, self._timeResSigma, self._timeResMeanSF, self._timeResSigmaSF2]]
+        parameters = [[self._time, self._timeResMean, self._timeResSigma, self._timeResMeanSF, self._timeResSigmaSF2],
+                      [self._time, self._timeResMean, self._timeResSigma, self._timeResMeanSF, sigmaSF1]]
         constr_pars = [p for p in [self._timeResComb, self._timeResSigmaFrac2, self._timeResSigmaSF2] if not p.isConstant()]
         constraints = []
         if constr_pars:

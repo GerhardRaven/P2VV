@@ -356,7 +356,69 @@ def signal_dilution(data, sigmat, calibration = None):
         total += w * (exp(- dms * (res ** 2)) ** 2)
     total = sqrt(total / data.sumEntries())
     eff_res = sqrt(-log(total) / dms)
-    print 'Dilution = %f' % total
-    print 'Effective resolution = %f' % eff_res
+    ## print 'Dilution = %f' % total
+    ## print 'Effective resolution = %f' % eff_res
 
     return total, eff_res
+
+def signal_dilution_dg(data, sigmat, sf1, frac, sf2):
+    dms = 17.7 ** 2 / 2
+    total = 0
+    res_var = data.get().find(sigmat.GetName())
+    weighted = data.isWeighted()
+
+    values = []
+    total = 0
+    for i in range(data.numEntries()):
+        r = data.get(i)
+        ## External weight
+        if weighted:
+            w = data.weight()
+        else:
+            w = 1.
+        res = res_var.getVal()
+        total += w * ((1 - frac) * (exp(- dms * (sf1 * res) ** 2)) + frac * (exp(- dms * (sf2 * res)))) ** 2
+    total = sqrt(total / data.sumEntries())
+    eff_res = sqrt(-log(total) / dms)
+    ## print 'Dilution = %f' % total
+    ## print 'Effective resolution = %f' % eff_res
+
+    return total, eff_res
+
+class SolveSF(object):
+    def __init__(self, name, data, sigmat, dilution):
+        self.__data = data
+        self.__sigmat = sigmat
+        self.__D = dilution
+        self.__sf = RealVar(name + '_sf', Value = 1, MinMax = (0.1, 20))
+        self.__calib = FormulaVar(name + '_calib', '@0 * @1', [self.__sf, self.__sigmat])
+        
+        self.__min = 0.01
+        self.__max = 5
+        
+        import ROOT
+        from ROOT import TF1
+        self.__tf1 = TF1(name + '_tf1', self, self.__min, self.__max, 1)
+        self.__tf1.SetParameter(0, self.__D)
+        
+        self.__wtf1 = ROOT.Math.WrappedTF1(self.__tf1)
+        
+        self.__rf = ROOT.Math.BrentRootFinder()
+        self.__rf.SetFunction(self.__wtf1, self.__min, self.__max)
+        self.__rf.SetNpx(20)
+    
+    def __call__(self, x, par):
+        self.__sf.setVal(x[0])
+        d = signal_dilution(self.__data, self.__sigmat, self.__calib)
+        return d[0] - par[0]
+    
+    def setD(D):
+        self.__D = D
+        self.__tf1.SetParameter(0, self.__D)
+    
+    def D():
+        return self.__D
+    
+    def solve(self):
+        self.__rf.Solve()
+        return self.__rf.Root()

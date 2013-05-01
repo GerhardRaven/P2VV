@@ -1312,15 +1312,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                               )
             if 'doublegauss' in timeResType.lower():
                 constant = 'constant' in timeResType.lower()
-                timeResArgs['timeResComb'] = dict(Name = 'timeResComb', Value = 1.457, Error = 4.18e-03, MinMax = ( 0.1, 5. ), Constant = constant)
-                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = 2.1599, Error = 5.65e-02, MinMax = (1, 5), Constant = constant)
-                timeResArgs['timeResSigmaFrac2'] = dict( Name = 'timeResSigmaFrac2', Value = 0.214, Error = 2.20e-02, MinMax = (0.001, 0.999), Constant = constant)
-                covariance = {('timeResComb', 'timeResComb'): 1.748e-05,
-                              ('timeResComb', 'timeResSigmaFrac2'): -3.547e-05,
-                              ('timeResComb', 'timeResSigmaSF2'): 0.0001278,
-                              ('timeResSigmaFrac2', 'timeResSigmaFrac2'): 0.0004857,
-                              ('timeResSigmaFrac2', 'timeResSigmaSF2'): -0.001193,
-                              ('timeResSigmaSF2', 'timeResSigmaSF2'): 0.003191}
+                timeResArgs['timeResComb'] = dict(Name = 'timeResComb', Value = 1.4918, Error = 4.08e-03, MinMax = ( 0.1, 5. ), Constant = constant)
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = 6.0074, Error = 1.89e-01, MinMax = (1, 10), Constant = constant)
+                timeResArgs['timeResSigmaFrac2'] = dict( Name = 'timeResSigmaFrac2', Value = 1.5818e-02, Error = 1.07e-03, MinMax = (0.001, 0.999), Constant = constant)
+                covariance = {('timeResComb', 'timeResComb'): 1.663e-05,
+                              ('timeResComb', 'timeResSigmaFrac2'): 1.322e-06,
+                              ('timeResComb', 'timeResSigmaSF2'): 0.0001297,
+                              ('timeResSigmaFrac2', 'timeResSigmaFrac2'): 1.146e-06,
+                              ('timeResSigmaFrac2', 'timeResSigmaSF2'): -0.0001486,
+                              ('timeResSigmaSF2', 'timeResSigmaSF2'): 0.03556}
                 timeResArgs['Covariance'] = covariance
                 timeResArgs['nGauss'] = 2
                 if 'constmean' in timeResType.lower() :
