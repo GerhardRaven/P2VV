@@ -29,6 +29,7 @@
 #include "P2VV/RooBoxPdf.h"
 #include "P2VV/RooExplicitNormPdf.h"
 #include "P2VV/RooCubicBSpline.h"
+#include "P2VV/RooCubicSplineGaussModel.h"
 #include "P2VV/RooAmoroso.h"
 #include "P2VV/RooTPDecay.h"
 #include "P2VV/RooMassDependence.h"

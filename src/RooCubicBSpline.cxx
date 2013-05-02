@@ -48,7 +48,6 @@ namespace _aux {
                                              const typename T::value_type& c,
                                              const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
  
-    
 
   // compute  e^{-x^2} w(I(z-x))
   //                   w(?) = FastComplexErrFunc(?) = exp(-?^2)erfc(-i?) aka. Faddeeva function
@@ -72,21 +71,21 @@ namespace _aux {
         double operator()(int j, int k) const { 
             assert(0<=j&&j<4);
             assert(0<=k&&k<3);
-            static const double N( double(1)/sqrt(atan2(1.0,0.0)) ); // sqrt(2/pi)
+            static const double N( double(1)/sqrt(2*atan2(1.0,0.0)) ); // sqrt(1/pi)
             switch(k) {
                 case 0: return j==0 ? 1 : 0 ;
                 case 1: switch(j) {
                         case 0 : return  0;
-                        case 1 : return -N;
-                        case 2 : return -N*_x;
-                        case 3 : return -N*(_x*_x-1);
+                        case 1 : return -2*N;
+                        case 2 : return -4*N*_x;
+                        case 3 : return -4*N*(_x*_x-1);
                         default : assert(1==0); return 0;
                 }
                 case 2: switch(j) {
                         case 0 : return -1;
-                        case 1 : return -_x;
-                        case 2 : return -(_x*_x-1);
-                        case 3 : return -_x*(_x*_x-3);
+                        case 1 : return -2*_x;
+                        case 2 : return -2*(2*_x*_x-1);
+                        case 3 : return -4*_x*(2*_x*_x-3);
                         default : assert(1==0); return 0;
             }   }
             assert(1==0);
@@ -104,9 +103,9 @@ namespace _aux {
             switch(i) {
                 case 0 : return _zi;
                 case 1 : return _zi*_zi;
-                case 2 : return _zi*(RooComplex(1,0)+RooComplex(2,0)*_zi*_zi);
+                case 2 : return _zi*(RooComplex(2,0)+RooComplex(2,0)*_zi*_zi);
                 case 3 : RooComplex _zi2 = _zi*_zi; 
-                         return _zi2*(RooComplex(3,0)+RooComplex(6,0)*_zi2);
+                         return _zi2*(RooComplex(6,0)+RooComplex(6,0)*_zi2);
             }
             assert(1==0);
             return 0;
@@ -118,8 +117,6 @@ namespace _aux {
     class N_n { 
     public:
         N_n(double x, RooComplex z) {
-            static const double N( double(1)/sqrt(2.0) );
-            x *= N; z = z*N;
             _n[0] = RooMath::erf(x);
             _n[1] = exp(-x*x);
             _n[2] = evalCerf(x, RooComplex(z.im(),-z.re())); // exp(-x^2) w(I(z-x) )
@@ -153,7 +150,7 @@ namespace _aux {
 
     class S_jk { 
     public:
-        S_jk(double a, double b, double c) : t(a*b*c), d(a*b+a*c+b*c), s(a+b+c), o(1.) {}
+        S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
         S_jk& operator*=(double z) { t*=z; d*=z; s*=z; o*=z; return *this; } 
         S_jk& operator/=(double z) { t/=z; d/=z; s/=z; o/=z; return *this; } 
         S_jk& operator-()          { t=-t; d=-d; s=-s; o=-o; return *this; }

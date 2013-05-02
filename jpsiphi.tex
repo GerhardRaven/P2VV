@@ -179,13 +179,17 @@ f(t;\Gamma,\Delta m,\sigma)
 \end{eqnarray*}
 The corresponding normaliztion integral is given by:
 \begin{equation*}
-    I_0(t;\Gamma,\Delta m,\sigma)  = \int dt f(t;\Gamma,\Delta m, \sigma) = \sigma \int dx f(x;z) = \sigma I_0(x;z)
+    I_0(t;\Gamma,\Delta m,\sigma)  = \int dt f(t;\Gamma,\Delta m, \sigma) = \sigma \sqrt{2} \int dx f(x;z) = \sigma \sqrt{2} I_0(x;z)
 \end{equation*}
 where the latter $I_0(x;z)$ is defined as:
 \begin{eqnarray*}
    I_0(x_\mathrm{min},x_\mathrm{max};z) &\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; e^{-x^2} w\left( i(z-x) \right) 
-\\             &=&\frac{1}{z}\left[ \mathrm{erf}\left(x\right) -e^{-x^2} w\left( i\left(z-x\right) \right) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
+\\             &=&\frac{1}{2z}\left[ \mathrm{erf}\left(x\right) -e^{-x^2} w\left( i\left(z-x\right) \right) \right]_{x_\mathrm{min}}^{x_\mathrm{max}}
 \end{eqnarray*}
+where we have used that 
+\begin{equation}
+    \int dz\; \mathrm{erfc}(z) = z\; \mathrm{erfc}(z) - \frac{e^{-z^2}}{\sqrt{\pi}}
+\end{equation}
 
 \subsubsection{Describing decaytime efficiency with cubic b-splines}
 To describe a non-trivial decaytime efficiency by taking the product with cubic b-splines, 
