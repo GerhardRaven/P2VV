@@ -294,8 +294,14 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         for i, j in indeces:
             if covariance:
                 cm[i][j] = covariance[keys[(i, j)]]
+                if i != j : cm[j][i] = covariance[keys[(i, j)]]
             else:
-                cm[i][j] = 1 if i == j else 0
+                if i == j :
+                    cm[i][j] = 1
+                else :
+                    cm[i][j] = 0
+                    cm[j][i] = 0
+
         return cm
 
     def __buildModel(self, nGauss, sfModel):
