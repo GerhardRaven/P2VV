@@ -36,7 +36,13 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
 
 
         _util_conditionalObs_mixin.__init__( self, kwargs )
+        for obs in self._model.ConditionalObservables() :
+            if obs not in self.conditionalObservables() : self.addConditional(obs)
+
         _util_extConstraints_mixin.__init__( self, kwargs )
+        for constr in self._model.ExternalConstraints() :
+            if constr not in self.externalConstraints() : self.addConstraint(constr)
+
         self._check_extraneous_kw( kwargs )
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
