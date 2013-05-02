@@ -117,11 +117,6 @@ class Gaussian_TimeResolution ( TimeResolution ) :
     def splitVars(self):
         return [self._sigmaSF]
 
-class LP2011_TimeResolution ( TimeResolution ) :
-    def __init__( self, **kwargs ) :
-        sigmas = [ ( 3, 0.513  ), ( 2, 0.0853 ), ( 1, 0.0434 ) ]
-        fracs  = [ ( 3, 0.0017 ), ( 2, 0.165 ) ]
-
 class Multi_Gauss_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         namePF = kwargs.pop( 'ResolutionNamePrefix', '' )
