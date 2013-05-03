@@ -50,10 +50,14 @@ private:
 
   Bool_t _flatSFInt ;
   
+  RooListProxy splineCoefficients;
   RooRealProxy mean ;
   RooRealProxy sigma ;
   RooRealProxy msf ;
   RooRealProxy ssf ;
+
+  class RooCubicSplineKnot;
+  RooCubicSplineKnot *knots; // do not persist, but (TODO!) insure we know the knot locations... (eg. binningName used to define them!)
 
   ClassDef(RooCubicSplineGaussModel,1)
 };
