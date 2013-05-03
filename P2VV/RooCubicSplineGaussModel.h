@@ -18,6 +18,7 @@
 
 #include "RooResolutionModel.h"
 #include "RooRealProxy.h"
+class RooCubicSplineKnot;
 class RooComplex;
 class RooAbsReal;
 class RooRealVar;
@@ -47,6 +48,7 @@ private:
   virtual Double_t evaluate() const ;
 
   Double_t efficiency(Double_t u) const;
+  RooComplex evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) const;
 
   Bool_t _flatSFInt ;
   
@@ -56,7 +58,6 @@ private:
   RooRealProxy msf ;
   RooRealProxy ssf ;
 
-  class RooCubicSplineKnot;
   RooCubicSplineKnot *knots; // do not persist, but (TODO!) insure we know the knot locations... (eg. binningName used to define them!)
 
   ClassDef(RooCubicSplineGaussModel,1)
