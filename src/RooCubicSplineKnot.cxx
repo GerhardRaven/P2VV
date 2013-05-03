@@ -50,21 +50,6 @@ double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
         return norm;
 }
 
-#if 0
-//TODO: move into RooCubicSplineGaussModel...
-RooComplex RooCubicSplineKnot::analyticalIntegral(const RooComplex& z, const RooArgList& coef) const {
-        std::vector<RooCubicSplineKnot_aux::M_n> M; M.reserve(_u.size());
-        for (int i=0;i<_u.size();++i) M.push_back( RooCubicSplineKnot_aux::M_n( u(i), z ) );
-        RooCubicSplineKnot_aux::K_n K(z);
-        RooComplex sum(0,0);
-        for (int i=0;i<_u.size()-1;++i) {
-            RooCubicSplineKnot::S_jk S( S_jk_sum( i, coef ) );
-            RooCubicSplineKnot_aux::M_n dM( M[i+1] - M[i] );
-            for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum = sum + dM(j)*S(j,k)*K(k);
-        }
-        return sum;
-}
-#endif
 int RooCubicSplineKnot::index(double u) const 
 { 
         assert(u>=_u.front() && u<=_u.back());   
@@ -74,9 +59,7 @@ int RooCubicSplineKnot::index(double u) const
         return std::distance(_u.begin(),i);
 };
 
-
-
-    // S matrix for i-th interval
+// S matrix for i-th interval
 RooCubicSplineKnot::S_jk RooCubicSplineKnot::S_jk_sum(int i, const RooArgList& b) const 
 {
             if (_S_jk.empty()) {

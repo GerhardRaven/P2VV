@@ -30,6 +30,7 @@
 #include "TMath.h"
 #include "Riostream.h"
 #include "P2VV/RooCubicSplineGaussModel.h"
+#include "P2VV/RooCubicSplineKnot.h"
 #include "RooMath.h"
 #include "RooComplex.h"
 #include "RooRealConstant.h"
@@ -164,11 +165,6 @@ namespace {
        RooComplex _m[4];
     };
 
-    RooComplex evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) {
-      K_n K(z);
-      M_n d(M_n(xmax,z)-M_n(xmin,z));
-      return d(0)*K(0);
-    }
 
 }
 
@@ -225,12 +221,36 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
   return 0 ;
 } 
 
+
+
 //_____________________________________________________________________________
 Double_t RooCubicSplineGaussModel::efficiency(Double_t u) const 
 {
+      // BIG FAT WARNING: if 'scale' changes, we should update the knot vector, as it is not (yet)
+      //                  written to be scale invariant (i.e. it is in terms of 'u' not 'x')
     // return knots->evaluate(u,splineCoefficients);
     return 1;
 }
+
+RooComplex RooCubicSplineGaussModel::evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) const
+{
+      K_n K(z);
+      M_n d(M_n(xmax,z)-M_n(xmin,z));
+      return d(0)*K(0);
+      // BIG FAT WARNING: if 'scale' changes, we should update the knot vector, as it is not (yet)
+      //                  written to be scale invariant (i.e. it is in terms of 'u' not 'x')
+
+      std::vector<M_n> M; M.reserve( knots->size() );
+      for (int i=0;i<knots->size();++i) M.push_back( M_n( knots->u(i), z ) );
+      RooComplex sum(0,0);
+      for (int i=0;i<knots->size()-1;++i) {
+          RooCubicSplineKnot::S_jk S( knots->S_jk_sum( i, splineCoefficients ) );
+          M_n dM( M[i+1] - M[i] );
+          for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum = sum + dM(j)*S(j,k)*K(k);
+      }
+      return sum;
+}
+
 
 //_____________________________________________________________________________
 Double_t RooCubicSplineGaussModel::evaluate() const 
@@ -273,8 +293,8 @@ Double_t RooCubicSplineGaussModel::evaluate() const
     case coshBasis:
     case sinhBasis: {
         RooComplex y( scale * dGamma / 4 , 0 );
-        val += (                                    evalRe(u,z-y)
-                + ( basisCode == coshBasis ? +1 : -1 )*evalRe(u,z+y) )/2; 
+        val += (                                      evalRe(u,z-y)
+               + ( basisCode == coshBasis ? +1 : -1 )*evalRe(u,z+y) )/2; 
         break;
     }
     default:
@@ -357,8 +377,8 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
     case coshBasis:
     case sinhBasis: {
         RooComplex y( scale * dGamma / 4 , 0 );
-        result += (                                    evalInt(umin,umax,z-y).re()
-                + ( basisCode == coshBasis ? +1 : -1 )*evalInt(umin,umax,z+y).re() )/2;
+        result += (                                      evalInt(umin,umax,z-y).re()
+                  + ( basisCode == coshBasis ? +1 : -1 )*evalInt(umin,umax,z+y).re() )/2;
         break;
     }
     default: 

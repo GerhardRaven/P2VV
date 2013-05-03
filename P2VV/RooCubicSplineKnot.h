@@ -17,23 +17,10 @@ public:
            }
     }
 
+    double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); return _u[std::min(std::max(0,i),int(_u.size()-1))]; }
+    unsigned size() { return _u.size(); }
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
-    // RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const;
-private:
-    int index(double u) const;
-    double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }
-    double B(double _u,int i) const{ return  sqr(d(_u,i+1))*d(_u,i-2)/P(i) + d(_u,i-1)*d(_u,i+2)*d(_u,i+1)/Q(i) + d(_u,i  )*sqr(d(_u,i+2))/R(i); }
-    double C(double _u,int i) const{ return -sqr(d(_u,i-1))*d(_u,i+1)/Q(i) - d(_u,i  )*d(_u,i+2)*d(_u,i-1)/R(i) - d(_u,i+3)*sqr(d(_u,i  ))/S(i); }
-    double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
-
-    double P(int i) const { assert(4*i  <_PQRS.size()); return  _PQRS[4*i  ]; }
-    double Q(int i) const { assert(4*i+1<_PQRS.size()); return  _PQRS[4*i+1]; }
-    double R(int i) const { assert(4*i+2<_PQRS.size()); return  _PQRS[4*i+2]; }
-    double S(int i) const { assert(4*i+3<_PQRS.size()); return  _PQRS[4*i+3]; }
-
-
-
     class S_jk { 
     public:
         S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
@@ -65,15 +52,29 @@ private:
     private:
         double t,d,s,o;
     };
-
     // S matrix for i-th interval
     RooCubicSplineKnot::S_jk S_jk_sum(int i, const RooArgList& b) const ;
+    // RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const;
+private:
+    int index(double u) const;
+    double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }
+    double B(double _u,int i) const{ return  sqr(d(_u,i+1))*d(_u,i-2)/P(i) + d(_u,i-1)*d(_u,i+2)*d(_u,i+1)/Q(i) + d(_u,i  )*sqr(d(_u,i+2))/R(i); }
+    double C(double _u,int i) const{ return -sqr(d(_u,i-1))*d(_u,i+1)/Q(i) - d(_u,i  )*d(_u,i+2)*d(_u,i-1)/R(i) - d(_u,i+3)*sqr(d(_u,i  ))/S(i); }
+    double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
+
+    double P(int i) const { assert(4*i  <_PQRS.size()); return  _PQRS[4*i  ]; }
+    double Q(int i) const { assert(4*i+1<_PQRS.size()); return  _PQRS[4*i+1]; }
+    double R(int i) const { assert(4*i+2<_PQRS.size()); return  _PQRS[4*i+2]; }
+    double S(int i) const { assert(4*i+3<_PQRS.size()); return  _PQRS[4*i+3]; }
+
+
+
+
     double sqr(double x) const { return x*x; }
     double cub(double x) const { return x*sqr(x); }
     double qua(double x) const { return sqr(sqr(x)); }
     double d(double _u, int j) const { return _u-u(j); }
     double h(int i, int j) const { return u(i)-u(j); }
-    double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); return _u[std::min(std::max(0,i),int(_u.size()-1))]; }
 
     const   std::vector<double> _u;
     mutable std::vector<double> _PQRS;
