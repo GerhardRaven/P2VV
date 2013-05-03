@@ -44,49 +44,134 @@ namespace {
     enum basisType { noBasis=0  ,      expBasis= 3
                    , sinBasis=13,  cosBasis=23
                    , sinhBasis=63, coshBasis=53 };
-    static Double_t root2(sqrt(2.)) ;
-    static Double_t rootpi(sqrt(atan2(0.,-1.))) ;
+    static const Double_t root2(sqrt(2.)) ;
+    static const Double_t rootpi(sqrt(atan2(0.,-1.))) ;
 
-    RooComplex evalCerfApprox(Double_t x, const RooComplex& z) {
-      // compute exp(-x*x)erfc(-i(z-x)), 
+    RooComplex evalApprox(Double_t x, const RooComplex& z) {
+      // compute exp(-x^2)cwerf(-i(z-x)), cwerf(z) = exp(-z^2)erfc(-iz)
       // use the approximation: erfc(z) = exp(-z*z)/(sqrt(pi)*z)
       // to explicitly cancel the divergent exp(y*y) behaviour of
       // CWERF for z = x + i y with large negative y
-      // erfc(-i(z-x) = exp((z-x)*(z-x))/(sqrt(pi)*(-i)*(z-x))
-      // 
-      RooComplex mi(0,-1);
+      static const RooComplex mi(0,-1);
       RooComplex zp  = mi*(z-x);
       RooComplex zsq = zp*zp;
       RooComplex v = -zsq - x*x;
-      RooComplex iz(z.im()+x,z.re()-x);
+      RooComplex iz(z.im()+x,z.re()-x); // ???
       return v.exp()*(zsq.exp()/(iz*rootpi) + 1)*2 ;
     }
 
     // Calculate Re[exp(-x^2) cwerf(i (z-x) )], taking care of numerical instabilities
-    Double_t evalCerfRe(Double_t x, const RooComplex& z) {
+    Double_t evalRe(Double_t x, const RooComplex& z) {
       Double_t re =  z.re()-x;
       return (re>-4.0) ? RooMath::FastComplexErrFuncRe(RooComplex(-z.im(),re))*exp(-x*x) 
-                       : evalCerfApprox(x,z).re() ;
+                       : evalApprox(x,z).re() ;
     }
 
-    // Calculate Im(exp(-u^2) cwerf(cwt + i(u+c))), taking care of numerical instabilities
-    Double_t evalCerfIm(Double_t x, const RooComplex& z) {
+    // Calculate Im[exp(-x^2) cwerf(i(z-x))], taking care of numerical instabilities
+    Double_t evalIm(Double_t x, const RooComplex& z) {
       Double_t re = z.re()-x;
       return (re>-4.0) ? RooMath::FastComplexErrFuncIm(RooComplex(-z.im(),re))*exp(-x*x) 
-                       : evalCerfApprox(x,z).im() ;
+                       : evalApprox(x,z).im() ;
     }
 
-    // Calculate exp(-x^2) cwerf(cwt + i(u+c)), taking care of numerical instabilities
-    RooComplex evalCerf(Double_t x, const RooComplex& z) {
+    // Calculate exp(-x^2) cwerf(i(z-x)), taking care of numerical instabilities
+    RooComplex eval(Double_t x, const RooComplex& z) {
       Double_t re = z.re()-x;
       return (re>-4.0) ? RooMath::FastComplexErrFunc(RooComplex(-z.im(),re))*exp(-x*x) 
-                       : evalCerfApprox(x,z) ;
+                       : evalApprox(x,z) ;
     }
 
-    RooComplex evalCerfInt(Double_t xmin, Double_t xmax, const RooComplex& z) {
-      RooComplex d = ( evalCerf(xmin,z) - evalCerf(xmax,z) ) + ( RooMath::erf(xmax) - RooMath::erf(xmin) );
-      return d/(z*2);
+
+    class K_n {
+    public:
+        K_n(const RooComplex& z) : _zi( RooComplex(1,0)/z) {}
+        RooComplex operator()(int i) const {
+            assert(0<=i&&i<=3);
+            switch(i) {
+                case 0 : return _zi/2;
+                case 1 : return _zi*_zi/2;
+                case 2 : return _zi*(_zi*_zi+1);
+                case 3 : RooComplex _zi2 = _zi*_zi; 
+                         return _zi2*(RooComplex(3,0)+RooComplex(3,0)*_zi2);
+            }
+            assert(1==0);
+            return 0;
+        }
+    private :
+        RooComplex _zi;        
+    };
+
+    class N_n { 
+    public:
+        N_n(double x, RooComplex z) {
+            _n[0] = RooMath::erf(x);
+            _n[1] = exp(-x*x);
+            _n[2] = eval(x,z);
+        }
+        const RooComplex& operator()(int i) const {
+            assert(0<=i&&i<3);
+            return _n[i];
+        }
+    private:
+        RooComplex _n[3];
+    };
+
+    class L_jk {
+    public:
+        L_jk(double x) : _x(x) { }
+        double operator()(int j, int k) const { 
+            assert(0<=j&&j<4);
+            assert(0<=k&&k<3);
+            static const double N( double(1)/sqrt(2*atan2(1.0,0.0)) ); // sqrt(1/pi)
+            switch(k) {
+                case 0: return j==0 ? 1 : 0 ;
+                case 1: switch(j) {
+                        case 0 : return  0;
+                        case 1 : return -2*N;
+                        case 2 : return -4*N*_x;
+                        case 3 : return -4*N*(_x*_x-1);
+                        default : assert(1==0); return 0;
+                }
+                case 2: switch(j) {
+                        case 0 : return -1;
+                        case 1 : return -2*_x;
+                        case 2 : return -2*(2*_x*_x-1);
+                        case 3 : return -4*_x*(2*_x*_x-3);
+                        default : assert(1==0); return 0;
+            }   }
+            assert(1==0);
+            return 0;
+        }  
+    private : 
+        double _x;
+    };
+
+    class M_n {
+    public:
+       M_n(double x, const RooComplex& z) {
+          L_jk L(x) ;
+          N_n  N(x,z) ;
+          for (int i=0;i<4;++i) _m[i] = N(0)*L(i,0) 
+                                      + N(1)*L(i,1) 
+                                      + N(2)*L(i,2);
+       }
+       const RooComplex& operator()(int i) {
+           assert(0<=i&&i<4); 
+           return _m[i];
+       }
+       M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
+       M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
+    private:
+       RooComplex _m[4];
+    };
+
+    RooComplex evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) {
+      K_n K(z);
+      M_n M_min(xmin,z),M_max(xmax,z); M_n dM(M_max-M_min);
+      return dM(0)*K(0);
     }
+
+
 }
 
 //_____________________________________________________________________________
@@ -175,16 +260,16 @@ Double_t RooCubicSplineGaussModel::evaluate() const
   switch (basisCode) {
     case expBasis:
     case cosBasis:
-        result =             evalCerfRe(u,z);
+        result +=             evalRe(u,z);
         break;
     case sinBasis:
-        result = z.im()!=0 ? evalCerfIm(u,z) : 0;
+        result += z.im()!=0 ? evalIm(u,z) : 0;
         break;
     case coshBasis:
     case sinhBasis: {
         RooComplex y( scale* ((RooAbsReal*)basis().getParameter(2))->getVal() / 4 , 0 );
-        result = (                                    evalCerfRe(u,z-y)
-               + ( basisCode == coshBasis ? +1 : -1 )*evalCerfRe(u,z+y) )/2; 
+        result += (                                    evalRe(u,z-y)
+                + ( basisCode == coshBasis ? +1 : -1 )*evalRe(u,z+y) )/2; 
         break;
     }
     default:
@@ -224,7 +309,7 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
 {
   // Code must be 1 or 2
   assert(code==1||code==2) ;
-  Double_t ssfInt = code==2 ? (ssf.max(rangeName)-ssf.min(rangeName)) : 1.0 ;
+  Double_t ssfInt( code==2 ? (ssf.max(rangeName)-ssf.min(rangeName)) : 1.0 );
 
   basisType basisCode = (basisType) _basisCode ;
 
@@ -243,16 +328,15 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
     if (verboseEval()>0) cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") 1st form" << endl ;
     Double_t result =  0.5*(RooMath::erf( umax )-RooMath::erf( umin )) ;
     if (TMath::IsNaN(result)) { cxcoutE(Tracing) << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") got nan during case 1 " << endl; }
-    return result*ssfInt ;
+    return result*ssfInt ; // ???
   }
-  // *** 2nd form: unity, used for sinBasis and linBasis with tau=0 (PDF is zero) ***
   if (tau==0) {
     if (verboseEval()>0) cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") 2nd form" << endl ;
     return 0. ;
   }
 
   Double_t omega  = ((basisCode==sinBasis )||(basisCode==cosBasis )) ? ((RooAbsReal*)basis().getParameter(2))->getVal() : 0 ;
-  RooComplex z( double(1)/tau, -omega ); z=z*scale/2; // frac{ ( Gamma - I omega ) sigma }{ sqrt{2} }
+  RooComplex z( double(1)/tau, -omega ); z=z*scale/2;
 
   if (verboseEval()>0) cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") basisCode = " << basisCode << " z = " << z << endl ;
 
@@ -260,16 +344,16 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
   switch (basisCode) {
     case cosBasis:
     case expBasis:
-        result =             evalCerfInt(umin,umax,z).re();
+        result +=             evalInt(umin,umax,z).re();
         break;
     case sinBasis:
-        result = z.im()!=0 ? evalCerfInt(umin,umax,z).im() : 0 ;
+        result += z.im()!=0 ? evalInt(umin,umax,z).im() : 0 ;
         break;
     case coshBasis:
     case sinhBasis: {
         RooComplex y( scale * ((RooAbsReal*)basis().getParameter(2))->getVal() / 4 , 0 );
-        result = (                                    evalCerfInt(umin,umax,z-y).re()
-               + ( basisCode == coshBasis ? +1 : -1 )*evalCerfInt(umin,umax,z+y).re() )/2;
+        result += (                                    evalInt(umin,umax,z-y).re()
+                + ( basisCode == coshBasis ? +1 : -1 )*evalInt(umin,umax,z+y).re() )/2;
         break;
     }
     default: 
@@ -277,6 +361,5 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
   }
   if (TMath::IsNaN(result)) { cxcoutE(Tracing) << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") got nan for basisCode = " << basisCode << endl; }
 
-  result *= scale;
-  return result*ssfInt;
+  return scale*result*ssfInt;
 }
