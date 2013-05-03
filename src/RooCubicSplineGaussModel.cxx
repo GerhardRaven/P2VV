@@ -227,8 +227,9 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
 } 
 
 //_____________________________________________________________________________
-Double_t RooCubicSplineGaussModel::efficiency() const 
+Double_t RooCubicSplineGaussModel::efficiency(Double_t u) const 
 {
+    // return knot->evaluate(u,b); // b is RooListProxy of spline coefficients...
     return 1;
 }
 
@@ -281,7 +282,7 @@ Double_t RooCubicSplineGaussModel::evaluate() const
         assert(0);
   }
   if (TMath::IsNaN(val)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during basisCode = " << basisCode << endl; 
-  Double_t eff=efficiency();
+  Double_t eff=efficiency(u);
   if (TMath::IsNaN(eff)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during efficiency " << endl;
   return eff*val;
 }

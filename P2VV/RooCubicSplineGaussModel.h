@@ -46,7 +46,7 @@ private:
 
   virtual Double_t evaluate() const ;
 
-  Double_t efficiency() const;
+  Double_t efficiency(Double_t u) const;
 
   Bool_t _flatSFInt ;
   

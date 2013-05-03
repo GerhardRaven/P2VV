@@ -4,9 +4,9 @@
 #include "RooArgList.h"
 
 
-class RooKnot {
+class RooCubicSplineKnot {
 public:
-    template <typename Iter> RooKnot(Iter begin, Iter end) : _u(begin,end) {
+    template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end) : _u(begin,end) {
            // P,Q,R,S only depend on the knot vector, so build at construction, and cache them...
            _PQRS.reserve(4*_u.size());
            for (int i=0;i<_u.size();++i) { 
@@ -67,7 +67,7 @@ private:
     };
 
     // S matrix for i-th interval
-    RooKnot::S_jk S_jk_sum(int i, const RooArgList& b) const ;
+    RooCubicSplineKnot::S_jk S_jk_sum(int i, const RooArgList& b) const ;
     double sqr(double x) const { return x*x; }
     double cub(double x) const { return x*sqr(x); }
     double qua(double x) const { return sqr(sqr(x)); }
@@ -78,6 +78,6 @@ private:
     const   std::vector<double> _u;
     mutable std::vector<double> _PQRS;
     mutable std::vector<double> _IABCD;
-    mutable std::vector<RooKnot::S_jk> _S_jk;
+    mutable std::vector<RooCubicSplineKnot::S_jk> _S_jk;
 };
 
