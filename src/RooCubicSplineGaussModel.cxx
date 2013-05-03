@@ -40,14 +40,11 @@ using namespace std;
 ClassImp(RooCubicSplineGaussModel) 
 ;
 
-
 namespace {
-
     enum basisType { noBasis=0  ,      expBasis= 3
                    , sinBasis=13,  cosBasis=23
                    , sinhBasis=63, coshBasis=53 };
     static Double_t root2(sqrt(2.)) ;
-    static Double_t root2pi(sqrt(2*atan2(0.,-1.))) ;
     static Double_t rootpi(sqrt(atan2(0.,-1.))) ;
 
     RooComplex evalCerfApprox(Double_t x, const RooComplex& z) {
@@ -90,7 +87,6 @@ namespace {
       RooComplex d = ( evalCerf(xmin,z) - evalCerf(xmax,z) ) + ( RooMath::erf(xmax) - RooMath::erf(xmin) );
       return d/(z*2);
     }
-
 }
 
 //_____________________________________________________________________________
@@ -105,23 +101,6 @@ RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char 
 {  
 }
 
-
-
-//_____________________________________________________________________________
-RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& xIn, 
-			     RooAbsReal& _mean, RooAbsReal& _sigma, 
-			     RooAbsReal& _msSF) : 
-  RooResolutionModel(name,title,xIn), 
-  _flatSFInt(kFALSE),
-  mean("mean","Mean",this,_mean),
-  sigma("sigma","Width",this,_sigma),
-  msf("msf","Mean Scale Factor",this,_msSF),
-  ssf("ssf","Sigma Scale Factor",this,_msSF)
-{  
-}
-
-
-
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& xIn, 
 			     RooAbsReal& _mean, RooAbsReal& _sigma, 
@@ -134,8 +113,6 @@ RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char 
   ssf("ssf","Sigma Scale Factor",this,_sigmaSF)
 {  
 }
-
-
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other, const char* name) : 
@@ -190,36 +167,31 @@ Double_t RooCubicSplineGaussModel::evaluate() const
     return 0. ;
   }
 
-  RooComplex z( double(1)/tau, -omega ); z=z*scale/2; // frac{ ( Gamma - I omega ) sigma }{ sqrt{2} }
+  RooComplex z( double(1)/tau, -omega ); z=z*scale/2;
  
-  // *** 5th form: Convolution with exp(- gamma t *cos(omega*t), used for cosBasis, and expBasis (for which omega=0) ***
-  if (basisCode==cosBasis || basisCode == expBasis) {
-    if (verboseEval()>2) cout << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") 5th form z = " << z << ", u = " << u << endl ;
-    Double_t result = evalCerfRe(u,z);
-    if (TMath::IsNaN(result)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during case 4; z="<<z<<" u=" << u << " res=" << result << endl; 
-    return result ;  
-  }
+  Double_t result(0);
+  if (verboseEval()>2) cout << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") basisCode = " <<  basisCode << " z = " << z << ", u = " << u << endl ;
 
-  // *** 4th form: Convolution with exp(- gamma t )*sin(omega*t), used for sinBasis(omega<>0) ***
-  if (basisCode==sinBasis) {
-    if (verboseEval()>2) cout << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") 4th form z = " << z << ", u = " << u << endl ;
-    Double_t result = z.im()!=0 ? evalCerfIm(u,z) : 0;
-    if (TMath::IsNaN(result)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during case 3 " << endl; 
-    return result ;
+  switch (basisCode) {
+    case expBasis:
+    case cosBasis:
+        result =             evalCerfRe(u,z);
+        break;
+    case sinBasis:
+        result = z.im()!=0 ? evalCerfIm(u,z) : 0;
+        break;
+    case coshBasis:
+    case sinhBasis: {
+        RooComplex y( scale* ((RooAbsReal*)basis().getParameter(2))->getVal() / 4 , 0 );
+        result = (                                    evalCerfRe(u,z-y)
+               + ( basisCode == coshBasis ? +1 : -1 )*evalCerfRe(u,z+y) )/2; 
+        break;
+    }
+    default:
+        assert(0);
   }
-
-  if (basisCode==coshBasis || basisCode ==sinhBasis) {
-    // ***8th form: Convolution with exp(-|t|/tau)*cosh(dgamma*t/2), used for         coshBasisSum ***
-    if (verboseEval()>2) cout << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") 8th form tau = " << tau << endl ;
-    int sgn = ( basisCode == coshBasis ? +1 : -1 );
-    Double_t dgammah = ((RooAbsReal*)basis().getParameter(2))->getVal() / 2;
-    dgammah *= scale/2;
-    Double_t  result = (evalCerfRe(u,z-RooComplex(dgammah,0))+sgn*evalCerfRe(u,z+RooComplex(dgammah,0)))/2 ; 
-    if (TMath::IsNaN(result)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during case 8 " << endl; 
-    return result;
-  }
-  assert(0) ;
-  return 0 ;
+  if (TMath::IsNaN(result)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during basisCode = " << basisCode << endl; 
+  return result;
 }
 
 //_____________________________________________________________________________
@@ -282,39 +254,29 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
   Double_t omega  = ((basisCode==sinBasis )||(basisCode==cosBasis )) ? ((RooAbsReal*)basis().getParameter(2))->getVal() : 0 ;
   RooComplex z( double(1)/tau, -omega ); z=z*scale/2; // frac{ ( Gamma - I omega ) sigma }{ sqrt{2} }
 
-  // *** 3rd form: Convolution with exp(-t/tau)*cos(omega*t), used for cosBasis(omega<>0) and expBasis(omega=0) ***
-  if (basisCode==cosBasis || basisCode==expBasis) {
-    if (verboseEval()>0) cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") 3rd form z = " << z << endl ;
-    Double_t result = evalCerfInt(umin,umax,z).re();
-    if (TMath::IsNaN(result)) { cxcoutE(Tracing) << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") got nan during case 3 " << endl; }
-    result *= scale;
-    cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") 5th form umin=" << umin << ", umax=" << umax << " -> " << result << endl;
-    return result*ssfInt;
-  }
-    
-  // *** 4th form: Convolution with exp(-t/tau)*sin(omega*t), used for sinBasis(omega<>0,tau<>0) ***
-  if (basisCode==sinBasis) {    
-    if (verboseEval()>0) cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") 4th form omega = " << omega << ", tau = " << tau << endl ;
-    Double_t result = z.im()!=0 ? evalCerfInt(umin,umax,z).im() : 0 ;
-    if (TMath::IsNaN(result)) { cxcoutE(Tracing) << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") got nan during case 4 " << endl; }
-    result *= scale;
-    cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") 4th form umin=" << umin << ", umax=" << umax << " -> " << result << endl;
-    return result*ssfInt;
-  }
+  if (verboseEval()>0) cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") basisCode = " << basisCode << " z = " << z << endl ;
 
-  // *** 5th form: Convolution with exp(-|t|/tau)*{cosh,sinh}(dgamma*t/2), used for {coshBasis,sinhBasis} ***
-  if (basisCode==coshBasis || basisCode == sinhBasis) {
-    if (verboseEval()>0) {cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName()                             << ") 5th form tau=" << tau << endl ; }
-    Double_t dgammah =  ((RooAbsReal*)basis().getParameter(2))->getVal() / 2 ;
-    dgammah *= scale;
-    int sgn = ( basisCode == coshBasis ? +1 : -1 );
-    Double_t result = ( evalCerfInt(umin,umax,z-RooComplex(dgammah,0)).re()+ sgn*evalCerfInt(umin,umax,z+RooComplex(dgammah,0)).re())/2;
-    if (TMath::IsNaN(result)) { cxcoutE(Tracing) << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") got nan during case 5 " << endl; }
-    result *= scale;
-    cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") 8th form umin=" << umin << ", umax=" << umax << " -> " << result << endl;
-    return result*ssfInt;
+  Double_t result(0);
+  switch (basisCode) {
+    case cosBasis:
+    case expBasis:
+        result =             evalCerfInt(umin,umax,z).re();
+        break;
+    case sinBasis:
+        result = z.im()!=0 ? evalCerfInt(umin,umax,z).im() : 0 ;
+        break;
+    case coshBasis:
+    case sinhBasis: {
+        RooComplex y( scale * ((RooAbsReal*)basis().getParameter(2))->getVal() / 4 , 0 );
+        result = (                                    evalCerfInt(umin,umax,z-y).re()
+               + ( basisCode == coshBasis ? +1 : -1 )*evalCerfInt(umin,umax,z+y).re() )/2;
+        break;
+    }
+    default: 
+        assert(0) ;
   }
+  if (TMath::IsNaN(result)) { cxcoutE(Tracing) << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") got nan for basisCode = " << basisCode << endl; }
 
-  assert(0) ;
-  return 0 ;
+  result *= scale;
+  return result*ssfInt;
 }
