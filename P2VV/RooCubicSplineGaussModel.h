@@ -46,6 +46,8 @@ private:
 
   virtual Double_t evaluate() const ;
 
+  Double_t efficiency() const;
+
   Bool_t _flatSFInt ;
   
   RooRealProxy mean ;
