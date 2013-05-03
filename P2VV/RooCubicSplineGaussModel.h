@@ -26,13 +26,12 @@ class RooCubicSplineGaussModel : public RooResolutionModel {
 public:
 
   // Constructors, assignment etc
-  inline RooCubicSplineGaussModel() : _flatSFInt(kFALSE), _asympInt(kFALSE) { }
+  inline RooCubicSplineGaussModel() : _flatSFInt(kFALSE)  { }
   RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& x, 
 		RooAbsReal& mean, RooAbsReal& sigma) ; 
   RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& x, 
-		RooAbsReal& mean, RooAbsReal& sigma, RooAbsReal& msSF) ; 
-  RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& x, 
-		RooAbsReal& mean, RooAbsReal& sigma, RooAbsReal& meanSF, RooAbsReal& sigmaSF) ; 
+		RooAbsReal& mean,   RooAbsReal& sigma,
+        RooAbsReal& meanSF, RooAbsReal& sigmaSF) ; 
   RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other, const char* name=0);
   virtual TObject* clone(const char* newname) const { return new RooCubicSplineGaussModel(*this,newname) ; }
   virtual ~RooCubicSplineGaussModel();
@@ -43,21 +42,18 @@ public:
 
   void advertiseFlatScaleFactorIntegral(Bool_t flag) { _flatSFInt = flag ; }
 
-
 private:
 
   virtual Double_t evaluate() const ;
 
-
   Bool_t _flatSFInt ;
-  Bool_t _asympInt ;  // added FMV,07/24/03
   
   RooRealProxy mean ;
   RooRealProxy sigma ;
   RooRealProxy msf ;
   RooRealProxy ssf ;
 
-  ClassDef(RooCubicSplineGaussModel,1) // Gaussian Resolution Model
+  ClassDef(RooCubicSplineGaussModel,1)
 };
 
 #endif
