@@ -101,11 +101,11 @@ namespace _aux {
         RooComplex operator()(int i) const {
             assert(0<=i&&i<=3);
             switch(i) {
-                case 0 : return _zi;
-                case 1 : return _zi*_zi;
-                case 2 : return _zi*(RooComplex(2,0)+RooComplex(2,0)*_zi*_zi);
+                case 0 : return _zi/2;
+                case 1 : return _zi*_zi/2;
+                case 2 : return _zi*(_zi*_zi+1);
                 case 3 : RooComplex _zi2 = _zi*_zi; 
-                         return _zi2*(RooComplex(6,0)+RooComplex(6,0)*_zi2);
+                         return _zi2*(RooComplex(3,0)+RooComplex(3,0)*_zi2);
             }
             assert(1==0);
             return 0;
