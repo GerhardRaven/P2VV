@@ -38,19 +38,6 @@
 
 using namespace std;
 
-namespace _aux {
-
-  Double_t get(const RooArgList& b,int i) { return ((RooAbsReal&)b[i]).getVal() ; }
-  Double_t get(const RooArgList& b,int i,int k) { return _aux::get(b,i+k); }
-
-  template <typename T> typename T::const_reference get(const T& t, int i, int j) { return t[4*i+j]; }
-  template <typename T> void push_back(T& t, const typename T::value_type& a,
-                                             const typename T::value_type& b, 
-                                             const typename T::value_type& c,
-                                             const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
- 
-}
-
 
 ClassImp(RooCubicBSpline)
 ;
