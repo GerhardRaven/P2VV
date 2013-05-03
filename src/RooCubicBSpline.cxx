@@ -48,138 +48,6 @@ namespace _aux {
                                              const typename T::value_type& c,
                                              const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
  
-
-  // compute  e^{-x^2} w(I(z-x))
-  //                   w(?) = FastComplexErrFunc(?) = exp(-?^2)erfc(-i?) aka. Faddeeva function
-  RooComplex evalCerf(Double_t x, const RooComplex& z) {
-    RooComplex _z( -z.im(), z.re()-x);
-    if (_z.im()>-4.0) return RooMath::FastComplexErrFunc(_z)*exp(-x*x) ;
-
-    // use the approximation: erf(z) = exp(-z*z)/(sqrt(pi)*z)
-    // to explicitly cancel the divergent exp(y*y) behaviour of
-    // CWERF for z = x + i y with large negative y
-    static Double_t rootpi= sqrt(atan2(0.,-1.));
-    RooComplex  iz(-z.re()-x,z.im()); // \frac{i}{\sqrt{2}}(z-x)
-    RooComplex zsq=z*z;
-    RooComplex v= zsq - x*x;
-    return v.exp()*(-zsq.exp()/(iz*rootpi)+1)*2 ;
-  }
-
-    class L_jk {
-    public:
-        L_jk(double x) : _x(x) { }
-        double operator()(int j, int k) const { 
-            assert(0<=j&&j<4);
-            assert(0<=k&&k<3);
-            static const double N( double(1)/sqrt(2*atan2(1.0,0.0)) ); // sqrt(1/pi)
-            switch(k) {
-                case 0: return j==0 ? 1 : 0 ;
-                case 1: switch(j) {
-                        case 0 : return  0;
-                        case 1 : return -2*N;
-                        case 2 : return -4*N*_x;
-                        case 3 : return -4*N*(_x*_x-1);
-                        default : assert(1==0); return 0;
-                }
-                case 2: switch(j) {
-                        case 0 : return -1;
-                        case 1 : return -2*_x;
-                        case 2 : return -2*(2*_x*_x-1);
-                        case 3 : return -4*_x*(2*_x*_x-3);
-                        default : assert(1==0); return 0;
-            }   }
-            assert(1==0);
-            return 0;
-        }  
-    private : 
-        double _x;
-    };
-
-    class K_n {
-    public:
-        K_n(const RooComplex& z) : _zi( RooComplex(1,0)/z) {}
-        RooComplex operator()(int i) const {
-            assert(0<=i&&i<=3);
-            switch(i) {
-                case 0 : return _zi/2;
-                case 1 : return _zi*_zi/2;
-                case 2 : return _zi*(_zi*_zi+1);
-                case 3 : RooComplex _zi2 = _zi*_zi; 
-                         return _zi2*(RooComplex(3,0)+RooComplex(3,0)*_zi2);
-            }
-            assert(1==0);
-            return 0;
-        }
-    private :
-        RooComplex _zi;        
-    };
-
-    class N_n { 
-    public:
-        N_n(double x, RooComplex z) {
-            _n[0] = RooMath::erf(x);
-            _n[1] = exp(-x*x);
-            _n[2] = evalCerf(x, RooComplex(z.im(),-z.re())); // exp(-x^2) w(I(z-x) )
-        }
-        const RooComplex& operator()(int i) const {
-            assert(0<=i&&i<3);
-            return _n[i];
-        }
-    private:
-        RooComplex _n[3];
-    };
-
-    class M_n {
-    public:
-       M_n(double x, const RooComplex& z) {
-          _aux::L_jk L(x) ;
-          _aux::N_n  N(x,z) ;
-          for (int i=0;i<4;++i) _m[i] = N(0)*L(i,0) 
-                                      + N(1)*L(i,1) 
-                                      + N(2)*L(i,2);
-       }
-       const RooComplex& operator()(int i) {
-           assert(0<=i&&i<4); 
-           return _m[i];
-       }
-       M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
-       M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
-    private:
-       RooComplex _m[4];
-    };
-
-    class S_jk { 
-    public:
-        S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
-        S_jk& operator*=(double z) { t*=z; d*=z; s*=z; o*=z; return *this; } 
-        S_jk& operator/=(double z) { t/=z; d/=z; s/=z; o/=z; return *this; } 
-        S_jk& operator-()          { t=-t; d=-d; s=-s; o=-o; return *this; }
-        S_jk& operator+=(const S_jk& other) { t+=other.t; d+=other.d; s+=other.s; o+=other.o; return *this; } 
-        S_jk& operator-=(const S_jk& other) { t-=other.t; d-=other.d; s-=other.s; o-=other.o; return *this; } 
-
-        S_jk operator*(double z)          const { return S_jk(*this)*=z; }
-        S_jk operator/(double z)          const { return S_jk(*this)/=z; }
-        S_jk operator+(const S_jk& other) const { return S_jk(*this)+=other; }
-        S_jk operator-(const S_jk& other) const { return S_jk(*this)-=other; }
-
-        double operator()(int j, int k) const { 
-            assert(0<=j&&j<4);
-            assert(0<=k&&k<4-j); // note: for 4-j<=k<4 could return 0... but better not to invoke with those..
-            if (j>k) std::swap(j,k);
-            switch(3*j+k) {
-                case 0: return   -t;   // (0,0) 
-                case 1: return    d;   // (0,1),(1,0)
-                case 2: return   -s;   // (0,2),(2,0)
-                case 3: return    o;   // (0,3),(3,0)
-                case 4: return -2*s;   // (1,1)
-                case 5: return  3*o;   // (1,2),(2,1)
-                default : assert(1==0);
-            }
-        }
-    private:
-        double t,d,s,o;
-    };
-
 }
 
 class RooCubicBSpline::_auxKnot {
@@ -229,18 +97,6 @@ public:
         return norm;
     }
 
-    RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const {
-        std::vector<_aux::M_n> M; M.reserve(_u.size());
-        for (int i=0;i<_u.size();++i) M.push_back( _aux::M_n( u(i), z ) );
-        _aux::K_n K(z);
-        RooComplex sum(0,0);
-        for (int i=0;i<_u.size()-1;++i) {
-            _aux::S_jk S( S_jk_sum( i, coef ) );
-            _aux::M_n dM( M[i+1] - M[i] );
-            for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum = sum + dM(j)*S(j,k)*K(k);
-        }
-        return sum;
-    }
 private:
     int index(double u) const { 
         assert(u>=_u.front() && u<=_u.back());   
@@ -261,26 +117,6 @@ private:
 
 
 
-    // S matrix for i-th interval
-    _aux::S_jk S_jk_sum(int i, const RooArgList& b) const { 
-            if (_S_jk.empty()) {
-                _S_jk.reserve(_u.size()*4);
-                for(int i=0;i<_u.size();++i) {
-                    _S_jk.push_back( -_aux::S_jk(u(i+1),u(i+1),u(i+1))/P(i) );
-                    _S_jk.push_back(  _aux::S_jk(u(i-2),u(i+1),u(i+1))/P(i)
-                                     +_aux::S_jk(u(i-1),u(i+1),u(i+2))/Q(i) 
-                                     +_aux::S_jk(u(i  ),u(i+2),u(i+2))/R(i) );
-                    _S_jk.push_back( -_aux::S_jk(u(i-1),u(i-1),u(i+1))/Q(i)
-                                     -_aux::S_jk(u(i-1),u(i  ),u(i+2))/R(i) 
-                                     -_aux::S_jk(u(i  ),u(i  ),u(i+3))/S(i) );
-                    _S_jk.push_back(  _aux::S_jk(u(i  ),u(i  ),u(i  ))/S(i) );
-                }
-            }
-            return _S_jk[4*i  ]*((RooAbsReal&)b[i  ]).getVal()
-                 + _S_jk[4*i+1]*((RooAbsReal&)b[i+1]).getVal()
-                 + _S_jk[4*i+2]*((RooAbsReal&)b[i+2]).getVal()
-                 + _S_jk[4*i+3]*((RooAbsReal&)b[i+3]).getVal(); 
-    }
     double sqr(double x) const { return x*x; }
     double cub(double x) const { return x*sqr(x); }
     double qua(double x) const { return sqr(sqr(x)); }
@@ -291,7 +127,6 @@ private:
     const   std::vector<double> _u;
     mutable std::vector<double> _PQRS;
     mutable std::vector<double> _IABCD;
-    mutable std::vector<_aux::S_jk> _S_jk;
 };
 
 ClassImp(RooCubicBSpline)
