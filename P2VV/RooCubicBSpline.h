@@ -19,6 +19,7 @@
 
 class RooRealVar;
 class RooArgList ;
+class RooCubicSplineKnot;
 
 class RooCubicBSpline : public RooAbsPdf {
 public:
@@ -39,12 +40,11 @@ private:
   RooRealProxy _x;
   RooListProxy _coefList ;
 
-  class _auxKnot;
-  const _auxKnot *_aux; // do not persist! (but do persist the binningName used for _x!!!
+  const RooCubicSplineKnot *_aux; // do not persist! (but do persist the binningName used for _x!!!
 
   Double_t evaluate() const;
 
-  ClassDef(RooCubicBSpline,1) // Bernstein polynomial PDF
+  ClassDef(RooCubicBSpline,1) // CubicSpline polynomial PDF
 };
 
 #endif

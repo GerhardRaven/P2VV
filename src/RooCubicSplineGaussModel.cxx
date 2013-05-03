@@ -41,7 +41,7 @@ ClassImp(RooCubicSplineGaussModel)
 ;
 
 namespace {
-    enum basisType { noBasis=0  ,      expBasis= 3
+    enum basisType { noBasis=0  ,  expBasis= 3
                    , sinBasis=13,  cosBasis=23
                    , sinhBasis=63, coshBasis=53 };
     static const Double_t root2(sqrt(2.)) ;
@@ -170,7 +170,6 @@ namespace {
       return d(0)*K(0);
     }
 
-
 }
 
 //_____________________________________________________________________________
@@ -229,7 +228,7 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
 //_____________________________________________________________________________
 Double_t RooCubicSplineGaussModel::efficiency(Double_t u) const 
 {
-    // return knot->evaluate(u,b); // b is RooListProxy of spline coefficients...
+    // return knots->evaluate(u,splineCoefficients);
     return 1;
 }
 
