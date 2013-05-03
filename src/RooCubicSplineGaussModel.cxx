@@ -169,27 +169,53 @@ namespace {
 }
 
 //_____________________________________________________________________________
-RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& xIn, 
-			     RooAbsReal& _mean, RooAbsReal& _sigma) :
+RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
+                , RooRealVar& xIn, const char *knotBinningName, const RooArgList& coefList
+                , RooAbsReal& _mean, RooAbsReal& _sigma) :
   RooResolutionModel(name,title,xIn), 
   _flatSFInt(kFALSE),
+  splineCoefficients("splineCoeffiients","List of splineCoeffiients",this),
   mean("mean","Mean",this,_mean),
   sigma("sigma","Width",this,_sigma),
   msf("msf","Mean Scale Factor",this,RooRealConstant::value(1)),
-  ssf("ssf","Sigma Scale Factor",this,RooRealConstant::value(1))
+  ssf("ssf","Sigma Scale Factor",this,RooRealConstant::value(1)),
+  knots(0)
 {  
+  // TODO: verify coefList is consistent with knots as specified by the knotBinningName binning
+  //    should be N+2 coefficients for N bins...
+  const RooAbsBinning* binning = xIn.getBinningPtr(knotBinningName);
+  assert( binning!=0);
+  assert( coefList.getSize()==3+binning->numBins());
+ 
+  // Constructor
+  TIterator* coefIter = coefList.createIterator() ;
+  RooAbsArg* coef ;
+  while((coef = (RooAbsArg*)coefIter->Next())) {
+    if (!dynamic_cast<RooAbsReal*>(coef)) {
+      cout << "RooCubicBSpline::ctor(" << GetName() << ") ERROR: coefficient " << coef->GetName() 
+	   << " is not of type RooRealVar" << endl ;
+      assert(0) ;
+    }
+    splineCoefficients.add(*coef) ;
+  }
+  delete coefIter ;
+  Double_t* boundaries = binning->array();
+  knots = new RooCubicSplineKnot( boundaries, boundaries + binning->numBoundaries() );
 }
 
 //_____________________________________________________________________________
-RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& xIn, 
-			     RooAbsReal& _mean, RooAbsReal& _sigma, 
-			     RooAbsReal& _meanSF, RooAbsReal& _sigmaSF) : 
+RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
+                , RooRealVar& xIn
+			    , RooAbsReal& _mean, RooAbsReal& _sigma
+			    , RooAbsReal& _meanSF, RooAbsReal& _sigmaSF) : 
   RooResolutionModel(name,title,xIn), 
   _flatSFInt(kFALSE),
+  splineCoefficients("splineCoeffiients","List of splineCoeffiients",this),
   mean("mean","Mean",this,_mean),
   sigma("sigma","Width",this,_sigma),
   msf("msf","Mean Scale Factor",this,_meanSF),
-  ssf("ssf","Sigma Scale Factor",this,_sigmaSF)
+  ssf("ssf","Sigma Scale Factor",this,_sigmaSF),
+  knots(0)
 {  
 }
 
@@ -197,10 +223,12 @@ RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char 
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other, const char* name) : 
   RooResolutionModel(other,name),
   _flatSFInt(other._flatSFInt),
+  splineCoefficients("splineCoeffiients",this,other.splineCoefficients),
   mean("mean",this,other.mean),
   sigma("sigma",this,other.sigma),
   msf("msf",this,other.msf),
-  ssf("ssf",this,other.ssf)
+  ssf("ssf",this,other.ssf),
+  knots(new RooCubicSplineKnot(*other.knots) )
 {
 }
 
@@ -208,6 +236,7 @@ RooCubicSplineGaussModel::RooCubicSplineGaussModel(const RooCubicSplineGaussMode
 RooCubicSplineGaussModel::~RooCubicSplineGaussModel()
 {
   // Destructor
+  delete knots;
 }
 
 //_____________________________________________________________________________
@@ -224,31 +253,29 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
 
 
 //_____________________________________________________________________________
-Double_t RooCubicSplineGaussModel::efficiency(Double_t u) const 
+Double_t RooCubicSplineGaussModel::efficiency() const 
 {
-      // BIG FAT WARNING: if 'scale' changes, we should update the knot vector, as it is not (yet)
-      //                  written to be scale invariant (i.e. it is in terms of 'u' not 'x')
-    // return knots->evaluate(u,splineCoefficients);
-    return 1;
+    return knots->evaluate(x,splineCoefficients);
 }
 
-RooComplex RooCubicSplineGaussModel::evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) const
+RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const RooComplex& z) const
 {
-      K_n K(z);
-      M_n d(M_n(xmax,z)-M_n(xmin,z));
-      return d(0)*K(0);
-      // BIG FAT WARNING: if 'scale' changes, we should update the knot vector, as it is not (yet)
-      //                  written to be scale invariant (i.e. it is in terms of 'u' not 'x')
+    K_n K(z);
+    //TODO: must incorporate 'scale' factor for t->x transform... needed to match to knots...
+    //M_n d(M_n(umax,z)-M_n(umin,z));
+    //return d(0)*K(0);
+    // BIG FAT WARNING: if 'scale' changes, we should update the knot vector, as it is not (yet)
+    //                  written to be scale invariant (i.e. it is in terms of 'u' not 'x')
 
-      std::vector<M_n> M; M.reserve( knots->size() );
-      for (int i=0;i<knots->size();++i) M.push_back( M_n( knots->u(i), z ) );
-      RooComplex sum(0,0);
-      for (int i=0;i<knots->size()-1;++i) {
-          RooCubicSplineKnot::S_jk S( knots->S_jk_sum( i, splineCoefficients ) );
-          M_n dM( M[i+1] - M[i] );
-          for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum = sum + dM(j)*S(j,k)*K(k);
-      }
-      return sum;
+    std::vector<M_n> M; M.reserve( knots->size() );
+    for (int i=0;i<knots->size();++i) M.push_back( M_n( knots->u(i), z ) );
+    RooComplex sum(0,0);
+    for (int i=0;i<knots->size()-1;++i) {
+        RooCubicSplineKnot::S_jk S( knots->S_jk_sum( i, splineCoefficients ) );
+        M_n dM( M[i+1] - M[i] );
+        for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum = sum + dM(j)*S(j,k)*K(k);
+    }
+    return sum;
 }
 
 
@@ -301,7 +328,7 @@ Double_t RooCubicSplineGaussModel::evaluate() const
         assert(0);
   }
   if (TMath::IsNaN(val)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during basisCode = " << basisCode << endl; 
-  Double_t eff=efficiency(u);
+  Double_t eff=efficiency();
   if (TMath::IsNaN(eff)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during efficiency " << endl;
   return eff*val;
 }

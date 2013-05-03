@@ -28,8 +28,9 @@ public:
 
   // Constructors, assignment etc
   inline RooCubicSplineGaussModel() : _flatSFInt(kFALSE)  { }
-  RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& x, 
-		RooAbsReal& mean, RooAbsReal& sigma) ; 
+  RooCubicSplineGaussModel(const char *name, const char *title, 
+          RooRealVar& x, const char *knotBinningName, const RooArgList& coefList,
+		  RooAbsReal& mean, RooAbsReal& sigma) ; 
   RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& x, 
 		RooAbsReal& mean,   RooAbsReal& sigma,
         RooAbsReal& meanSF, RooAbsReal& sigmaSF) ; 
@@ -47,7 +48,7 @@ private:
 
   virtual Double_t evaluate() const ;
 
-  Double_t efficiency(Double_t u) const;
+  Double_t efficiency() const;
   RooComplex evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) const;
 
   Bool_t _flatSFInt ;
