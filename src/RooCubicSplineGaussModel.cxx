@@ -260,6 +260,7 @@ Double_t RooCubicSplineGaussModel::efficiency() const
 
 RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const RooComplex& z) const
 {
+    //FIXME: this only works if the mean of the resolution model is 0!!!!!
     K_n K(z);
     Double_t scale = sigma*ssf*root2; 
     std::vector<M_n> M; M.reserve( knots->size() );
