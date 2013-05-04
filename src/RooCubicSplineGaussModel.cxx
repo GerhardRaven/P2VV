@@ -261,19 +261,16 @@ Double_t RooCubicSplineGaussModel::efficiency() const
 RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const RooComplex& z) const
 {
     K_n K(z);
-    //TODO: must incorporate 'scale' factor for t->x transform... needed to match to knots...
-    //M_n d(M_n(umax,z)-M_n(umin,z));
-    //return d(0)*K(0);
-    // BIG FAT WARNING: if 'scale' changes, we should update the knot vector, as it is not (yet)
-    //                  written to be scale invariant (i.e. it is in terms of 'u' not 'x')
-
+    Double_t scale = sigma*ssf*root2; 
     std::vector<M_n> M; M.reserve( knots->size() );
-    for (int i=0;i<knots->size();++i) M.push_back( M_n( knots->u(i), z ) );
+    for (int i=0;i<knots->size();++i) M.push_back( M_n( knots->u(i)/scale, z ) );
     RooComplex sum(0,0);
     for (int i=0;i<knots->size()-1;++i) {
         RooCubicSplineKnot::S_jk S( knots->S_jk_sum( i, splineCoefficients ) );
         M_n dM( M[i+1] - M[i] );
-        for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum = sum + dM(j)*S(j,k)*K(k);
+        for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) {
+            sum = sum + dM(j)*S(j,k)*K(k)*pow(scale,j+k);
+        }
     }
     return sum;
 }

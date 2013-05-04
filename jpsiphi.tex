@@ -192,7 +192,35 @@ where we have used that
 \end{equation}
 
 \subsubsection{Describing decaytime efficiency with cubic b-splines}
-To describe a non-trivial decaytime efficiency by taking the product with cubic b-splines, 
+
+
+To describe a non-trivial decaytime efficiency by taking the product with cubic b-splines, one encounters functions of the shape:
+\begin{eqnarray*}
+     g(t) &=& (t-\alpha_i)(t-\beta_i)(t-\gamma_i) f(t)
+\\        &=& \left( t^3 - (\alpha+\beta+\gamma)t^2 + (\beta\gamma+\alpha\gamma+\alpha\beta)t - \alpha\beta\gamma \right) f(t)
+\end{eqnarray*}
+Hence one needs to compute integrals of the form:
+\begin{eqnarray*}
+  \int dt g(t;)  &=& \int dt \left( t^3 - (\alpha+\beta+\gamma)t^2 + (\beta\gamma+\alpha\gamma+\alpha\beta)t - \alpha\beta\gamma \right) f(t;\Gamma,\Delta m,\sigma)
+%\\   &=& \sqrt{2}\sigma \int dx \left(   (\sqrt{2}\sigma x )^3 
+%                                      - (\alpha+\beta+\gamma) ( \sqrt{2}\sigma x)^2 
+%                                      + (\beta\gamma+\alpha\gamma+\alpha\beta) ( \sqrt{2}\sigma t  )
+%                                      - \alpha\beta\gamma 
+%                              \right) f(x;z)
+%\\&=&  (\sqrt{2}\sigma)^4                                          \int dx x^3 f(x;z) 
+%\\&+&  (\sqrt{2}\sigma)^3 (\alpha+\beta+\gamma)                    \int dx x^2 f(x;z) 
+%\\&+&  (\sqrt{2}\sigma)^2 (\beta\gamma+\alpha\gamma+\alpha\beta)   \int dx x f(x;z) 
+%\\&+&  (\sqrt{2}\sigma)   (\alpha\beta\gamma)                      \int dx  f(x;z) 
+\\&=&                                          (\sigma\sqrt{2})^4   I_3(x;z)
+     + (\alpha+\beta+\gamma)                   (\sigma\sqrt{2})^3   I_2(x;z)
+     + (\beta\gamma+\alpha\gamma+\alpha\beta)  (\sigma\sqrt{2})^2   I_1(x;z)
+     + (\alpha\beta\gamma)                     (\sigma\sqrt{2})     I_0(x;z)
+\end{eqnarray*}
+where 
+\begin{equation}
+   I_n(x;z) = \int dx x^n f(x;z)
+\end{equation}
+
 integrals of form $\int_{t_i}^{t_{i+1}} dt (t-\alpha_i)(t-\beta_i)(t-\gamma_i) f(t)$ are required for normalization.
 These integrals can be written in terms of integrals of $t^nf(t)$ for $n=0,1,2,3$, which can be computed 
 using the following method\footnote{Manuel Schiller, private communication}:
