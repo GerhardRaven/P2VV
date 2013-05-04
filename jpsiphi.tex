@@ -157,13 +157,13 @@ The result can be summarized as follows (where we have used that $q_T^2=1$):
 By using the observation that $\sin(\Delta m t) = \Im\left( e^{i\Delta m t}\right)$ and $\cos(\Delta m t ) = \Re\left( e^{ i \Delta m t } \right)$, and that both $\cosh$ and $\sinh$ can
 be written as the sum and difference of exponentials, i.e. it is just the $\cos$ term with $\Delta m = 0$, it is sufficient to consider the following convolution:
 \begin{eqnarray*}
-f(t;\Gamma,\Delta m,\sigma) &=& \int_0^{+\infty}\;dt'\;\; e^{-(\Gamma -i \Delta m)t'} \frac{ e^{-\frac{1}{2}\left( \frac{t-t'}{\sigma} \right)^2}}{\sqrt{2\pi}\sigma}
+f(t;\Gamma,\Delta m,\sigma,\mu) &=& \int_0^{+\infty}\;dt'\;\; e^{-(\Gamma -i \Delta m)t'} \frac{ e^{-\left( \frac{t-t'-\mu}{\sqrt{2}\sigma} \right)^2}}{\sqrt{2\pi}\sigma}
 \\                          &=& \frac{1}{\sqrt{\pi}} \int_0^{+\infty}\;dy \;\;  e^{-\left(x-y \right)^2-2zy}
 \end{eqnarray*}
-where we have defined $z = (\Gamma - i \Delta m ) \sigma/\sqrt{2}$ and $x = \frac{t}{\sqrt{2}\sigma}$.
+where we have defined $z = (\Gamma - i \Delta m ) \sigma/\sqrt{2}$ and $x = \frac{t-\mu}{\sqrt{2}\sigma}$.
 Completing the square in the exponent and absorbing the shift in the boundaries of the integral, we find:
 \begin{eqnarray*}
-f(t;\Gamma,\Delta m,\sigma) &=& e^{-x^2+(z-x)^2}  \frac{1}{\sqrt{\pi}} \int_0^{+\infty}\;dy \;\; e^{-\left(y+(z-x) \right)^2}
+f(t;\Gamma,\Delta m,\sigma,\mu) &=& e^{-x^2+(z-x)^2}  \frac{1}{\sqrt{\pi}} \int_0^{+\infty}\;dy \;\; e^{-\left(y+(z-x) \right)^2}
 \\                          &=&  e^{-x^2+(z-x)^2}  \frac{1}{\sqrt{\pi}} \int_{z-x}^{+\infty}\;dy \;\; e^{-y^2 }
 \\                          &=&  e^{-x^2+(z-x)^2}  \; \frac{1}{2}\mathrm{erfc}\left(z-x \right)
 \end{eqnarray*}
@@ -174,12 +174,12 @@ Next we use the Faddeeva function $w$,  defined as
 and implemented in CERNLIB (see http://wwwasdoc.web.cern.ch/wwwasdoc/shortwrupsdir/c335/top.html) as $\mathrm{cwerf}$, to write the result as:
 \begin{eqnarray*}
 f(t;\Gamma,\Delta m,\sigma) 
-     &=& e^{-\frac{1}{2}\left(\frac{t}{\sigma}\right)^2} w\left( \frac{i}{\sqrt{2}} \left( -\frac{t}{\sigma} + \sigma\left(\Gamma-i\Delta m \right) \right)  \right)
-\\ &=&  e^{-x^2} w\left( i \left( z-x\right)\right)\;\; \mathrm{where} \; x=\frac{t}{\sqrt{2}\sigma};\; z = \frac{\left(\Gamma-i\Delta m\right)\sigma}{\sqrt{2}}
+     &=& e^{-\frac{1}{2}\left(\frac{t-\mu}{\sigma}\right)^2} w\left( \i \left( -\frac{t-\mu}{\sqrt{2}\sigma} + \frac{\sigma\left(\Gamma-i\Delta m \right)}{\sqrt{2}} \right)  \right)
+\\ &=&  e^{-x^2} w\left( i \left( z-x\right)\right)\;\; \mathrm{where} \; x=\frac{t-\mu}{\sqrt{2}\sigma};\; z = \frac{\left(\Gamma-i\Delta m\right)\sigma}{\sqrt{2}}
 \end{eqnarray*}
 The corresponding normaliztion integral is given by:
 \begin{equation*}
-    I_0(t;\Gamma,\Delta m,\sigma)  = \int dt f(t;\Gamma,\Delta m, \sigma) = \sigma \sqrt{2} \int dx f(x;z) = \sigma \sqrt{2} I_0(x;z)
+    I_0(t;\Gamma,\Delta m,\sigma,\mu)  = \int dt f(t;\Gamma,\Delta m, \sigma,\mu) = \sigma \sqrt{2} \int dx f(x;z) = \sigma \sqrt{2} I_0(x;z)
 \end{equation*}
 where the latter $I_0(x;z)$ is defined as:
 \begin{eqnarray*}
@@ -194,14 +194,14 @@ where we have used that
 \subsubsection{Describing decaytime efficiency with cubic b-splines}
 
 
-To describe a non-trivial decaytime efficiency by taking the product with cubic b-splines, one encounters functions of the shape:
+To describe a non-trivial decaytime efficiency by taking the product with cubic b-splines, one encounters functions which look like:
 \begin{eqnarray*}
-     g(t) &=& (t-\alpha_i)(t-\beta_i)(t-\gamma_i) f(t)
-\\        &=& \left( t^3 - (\alpha+\beta+\gamma)t^2 + (\beta\gamma+\alpha\gamma+\alpha\beta)t - \alpha\beta\gamma \right) f(t)
+     h_i(t) &=& (t-\alpha_i)(t-\beta_i)(t-\gamma_i) f(t)
+\\          &=& \left( t^3 - (\alpha_i+\beta_i+\gamma_i)t^2 + (\beta_i\gamma_i+\alpha_i\gamma_i+\alpha_i\beta_i)t - \alpha_i\beta_i\gamma_i \right) f(t)
 \end{eqnarray*}
-Hence one needs to compute integrals of the form:
+Hence, for the normalization, one needs to compute integrals of the form:
 \begin{eqnarray*}
-  \int dt g(t;)  &=& \int dt \left( t^3 - (\alpha+\beta+\gamma)t^2 + (\beta\gamma+\alpha\gamma+\alpha\beta)t - \alpha\beta\gamma \right) f(t;\Gamma,\Delta m,\sigma)
+  \int dt h(t;)  &=& \int dt \left( t^3 - (\alpha+\beta+\gamma)t^2 + (\beta\gamma+\alpha\gamma+\alpha\beta)t - \alpha\beta\gamma \right) f(t;\Gamma,\Delta m,\sigma)
 %\\   &=& \sqrt{2}\sigma \int dx \left(   (\sqrt{2}\sigma x )^3 
 %                                      - (\alpha+\beta+\gamma) ( \sqrt{2}\sigma x)^2 
 %                                      + (\beta\gamma+\alpha\gamma+\alpha\beta) ( \sqrt{2}\sigma t  )
@@ -220,10 +220,7 @@ where
 \begin{equation}
    I_n(x;z) = \int dx x^n f(x;z)
 \end{equation}
-
-integrals of form $\int_{t_i}^{t_{i+1}} dt (t-\alpha_i)(t-\beta_i)(t-\gamma_i) f(t)$ are required for normalization.
-These integrals can be written in terms of integrals of $t^nf(t)$ for $n=0,1,2,3$, which can be computed 
-using the following method\footnote{Manuel Schiller, private communication}:
+These integrals can be computed using the following method\footnote{Manuel Schiller, private communication}:
 \begin{eqnarray*}
     I_n(x_\mathrm{min},x_\mathrm{max};z)&\equiv& \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\; x^n e^{-x^2} w\left( i (z-x)\right) 
        \\      &  =&  \frac{1}{2^n}\left.\frac{d^n}{d\lambda^n}\right|_{\lambda=0 } \int_{x_\mathrm{min}}^{x_\mathrm{max}} dx\;e^{2\lambda x} e^{-x^2} w\left( i(z-x)\right) 

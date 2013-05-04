@@ -82,7 +82,6 @@ namespace {
                        : evalApprox(x,z) ;
     }
 
-
     class K_n {
     public:
         K_n(const RooComplex& z) : _zi( RooComplex(1,0)/z) {}
@@ -104,15 +103,8 @@ namespace {
 
     class N_n { 
     public:
-        N_n(double x, RooComplex z) {
-            _n[0] = RooMath::erf(x);
-            _n[1] = exp(-x*x);
-            _n[2] = eval(x,z);
-        }
-        const RooComplex& operator()(int i) const {
-            assert(0<=i&&i<3);
-            return _n[i];
-        }
+        N_n(double x, RooComplex z) { _n[0] = RooMath::erf(x); _n[1] = exp(-x*x); _n[2] = eval(x,z); }
+        const RooComplex& operator()(int i) const { return _n[i]; }
     private:
         RooComplex _n[3];
     };
@@ -149,23 +141,15 @@ namespace {
     class M_n {
     public:
        M_n(double x, const RooComplex& z) {
-          L_jk L(x) ;
-          N_n  N(x,z) ;
-          for (int i=0;i<4;++i) _m[i] = N(0)*L(i,0) 
-                                      + N(1)*L(i,1) 
-                                      + N(2)*L(i,2);
+          L_jk L(x); N_n N(x,z) ;
+          for (int i=0;i<4;++i) _m[i] = N(0)*L(i,0) + N(1)*L(i,1) + N(2)*L(i,2);
        }
-       const RooComplex& operator()(int i) {
-           assert(0<=i&&i<4); 
-           return _m[i];
-       }
+       const RooComplex& operator()(int i) { assert(0<=i&&i<4); return _m[i]; }
        M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
        M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
     private:
        RooComplex _m[4];
     };
-
-
 }
 
 //_____________________________________________________________________________
@@ -255,22 +239,25 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
 //_____________________________________________________________________________
 Double_t RooCubicSplineGaussModel::efficiency() const 
 {
+    // TODO: provide a RooAbsReal so we can plot it -- just like createIntegral...
     return knots->evaluate(x,splineCoefficients);
 }
 
 RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const RooComplex& z) const
 {
-    //FIXME: this only works if the mean of the resolution model is 0!!!!!
+    //FIXME: this only works if the mean of the resolution model is 0!!!!! 
     K_n K(z);
     Double_t scale = sigma*ssf*root2; 
+    Double_t offset = mean*msf;
     std::vector<M_n> M; M.reserve( knots->size() );
-    for (int i=0;i<knots->size();++i) M.push_back( M_n( knots->u(i)/scale, z ) );
+    for (int i=0;i<knots->size();++i) M.push_back( M_n( (knots->u(i)-offset)/scale, z ) );
     RooComplex sum(0,0);
-    for (int i=0;i<knots->size()-1;++i) {
-        RooCubicSplineKnot::S_jk S( knots->S_jk_sum( i, splineCoefficients ) );
+    double sc[4]; for (int i=0;i<4;++i) sc[i] = pow(scale,i);
+    for (int i=0;i<knots->size()-1;++i) { //TODO: push this loop into RooCubicSplineKnot... pass z,scale,coefficients
         M_n dM( M[i+1] - M[i] );
+        RooCubicSplineKnot::S_jk S( knots->S_jk_sum( i, splineCoefficients ), offset );
         for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) {
-            sum = sum + dM(j)*S(j,k)*K(k)*pow(scale,j+k);
+            sum = sum + dM(j)*S(j,k)*K(k)*sc[j+k];
         }
     }
     return sum;
@@ -301,7 +288,6 @@ Double_t RooCubicSplineGaussModel::evaluate() const
     if (verboseEval()>2) cout << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") 2nd form" << endl ;
     return 0. ;
   }
-
   RooComplex z( double(1)/tau, -omega ); z=z*scale/2;
  
   Double_t val(0);
