@@ -75,9 +75,10 @@ RooCubicSplineKnot::S_jk RooCubicSplineKnot::S_jk_sum(int i, const RooArgList& b
                     _S_jk.push_back(  RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i  ))/S(i) );
                 }
             }
-            return _S_jk[4*i  ]*((RooAbsReal&)b[i  ]).getVal()
-                 + _S_jk[4*i+1]*((RooAbsReal&)b[i+1]).getVal()
-                 + _S_jk[4*i+2]*((RooAbsReal&)b[i+2]).getVal()
-                 + _S_jk[4*i+3]*((RooAbsReal&)b[i+3]).getVal(); 
+            using RooCubicSplineKnot_aux::get;
+            return get(_S_jk,i,0)*get(b,i,0)
+                 + get(_S_jk,i,1)*get(b,i,1)
+                 + get(_S_jk,i,2)*get(b,i,2)
+                 + get(_S_jk,i,3)*get(b,i,3);
 }
 
