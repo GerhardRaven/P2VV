@@ -239,13 +239,13 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
 //_____________________________________________________________________________
 Double_t RooCubicSplineGaussModel::efficiency() const 
 {
-    // TODO: provide a RooAbsReal so we can plot it -- just like createIntegral...
+    // TODO: provide a RooAbsReal so we can plot the efficiency -- just like createIntegral...
     return knots->evaluate(x,splineCoefficients);
 }
 
 RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const RooComplex& z) const
 {
-    //FIXME: this only works if the mean of the resolution model is 0!!!!! 
+    // TODO: verify we remain within [umin,umax]
     K_n K(z);
     Double_t scale = sigma*ssf*root2; 
     Double_t offset = mean*msf;
