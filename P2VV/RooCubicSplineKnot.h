@@ -6,21 +6,24 @@
 
 class RooCubicSplineKnot {
 public:
-    template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end) : _u(begin,end) {
-           // P,Q,R,S only depend on the knot vector, so build at construction, and cache them...
-           _PQRS.reserve(4*_u.size());
-           for (int i=0;i<_u.size();++i) { 
-                _PQRS.push_back( h(i+1,i-2)*h(i+1,i-1)*h(i+1,i) );
-                _PQRS.push_back( h(i+1,i-1)*h(i+2,i-1)*h(i+1,i) );
-                _PQRS.push_back( h(i+2,i  )*h(i+2,i-1)*h(i+1,i) );
-                _PQRS.push_back( h(i+2,i  )*h(i+3,i  )*h(i+1,i) );
-           }
-    }
+    RooCubicSplineKnot(double *array, int nEntries) : _u( array, array+nEntries) { }
+
+    template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end) : _u(begin,end) { }
 
     double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); return _u[std::min(std::max(0,i),int(_u.size()-1))]; }
     unsigned size() { return _u.size(); }
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
+
+    double knotMatrix(int i, int j) const {
+        switch (j-i) {
+            case 0 : return A(u(i),i);
+            case 1 : return B(u(i),i);
+            case 2 : return C(u(i),i);
+            default : return 0;
+        }
+    }
+
     class S_jk { 
     public:
         S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
@@ -70,13 +73,12 @@ private:
     double C(double _u,int i) const{ return -sqr(d(_u,i-1))*d(_u,i+1)/Q(i) - d(_u,i  )*d(_u,i+2)*d(_u,i-1)/R(i) - d(_u,i+3)*sqr(d(_u,i  ))/S(i); }
     double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
 
-    double P(int i) const { assert(4*i  <_PQRS.size()); return  _PQRS[4*i  ]; }
-    double Q(int i) const { assert(4*i+1<_PQRS.size()); return  _PQRS[4*i+1]; }
-    double R(int i) const { assert(4*i+2<_PQRS.size()); return  _PQRS[4*i+2]; }
-    double S(int i) const { assert(4*i+3<_PQRS.size()); return  _PQRS[4*i+3]; }
+    double P(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i  <_PQRS.size()); return  _PQRS[4*i  ]; }
+    double Q(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+1<_PQRS.size()); return  _PQRS[4*i+1]; }
+    double R(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+2<_PQRS.size()); return  _PQRS[4*i+2]; }
+    double S(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+3<_PQRS.size()); return  _PQRS[4*i+3]; }
 
-
-
+    void fillPQRS() const;
 
     double sqr(double x) const { return x*x; }
     double cub(double x) const { return x*sqr(x); }
@@ -85,8 +87,8 @@ private:
     double h(int i, int j) const { return u(i)-u(j); }
 
     const   std::vector<double> _u;
-    mutable std::vector<double> _PQRS;
-    mutable std::vector<double> _IABCD;
-    mutable std::vector<RooCubicSplineKnot::S_jk> _S_jk;
+    mutable std::vector<double> _PQRS;                   //!
+    mutable std::vector<double> _IABCD;                  //!
+    mutable std::vector<RooCubicSplineKnot::S_jk> _S_jk; //!
 };
 

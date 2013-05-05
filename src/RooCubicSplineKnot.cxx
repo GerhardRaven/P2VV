@@ -12,6 +12,18 @@ namespace RooCubicSplineKnot_aux {
                                              const typename T::value_type& c,
                                              const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
 }
+void RooCubicSplineKnot::fillPQRS() const {
+           assert(_PQRS.empty());
+           // P,Q,R,S only depend on the knot vector, so build at construction, and cache them...
+           _PQRS.reserve(4*_u.size());
+           for (int i=0;i<_u.size();++i) { 
+                _PQRS.push_back( h(i+1,i-2)*h(i+1,i-1)*h(i+1,i) );
+                _PQRS.push_back( h(i+1,i-1)*h(i+2,i-1)*h(i+1,i) );
+                _PQRS.push_back( h(i+2,i  )*h(i+2,i-1)*h(i+1,i) );
+                _PQRS.push_back( h(i+2,i  )*h(i+3,i  )*h(i+1,i) );
+           }
+
+    }
 
 double RooCubicSplineKnot::evaluate(double _u, const RooArgList& b) const {
         using RooCubicSplineKnot_aux::get;
