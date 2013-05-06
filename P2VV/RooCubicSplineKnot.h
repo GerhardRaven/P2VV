@@ -16,11 +16,15 @@ public:
     double analyticalIntegral(const RooArgList& b) const;
 
     double knotMatrix(int i, int j) const {
-        switch (j-i) {
-            case 0 : return A(u(i),i);
-            case 1 : return B(u(i),i);
-            case 2 : return C(u(i),i);
-            default : return 0;
+        if (i==_u.size()-1) {
+                return (j==i+2) ? D(u(i),i-1) : 0 ;
+        } else {
+            switch (j-i) {
+                case 0 : return A(u(i),i);
+                case 1 : return B(u(i),i);
+                case 2 : return C(u(i),i);
+                default : return 0;
+            }
         }
     }
 
