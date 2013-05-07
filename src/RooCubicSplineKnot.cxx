@@ -53,6 +53,9 @@ void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y ) const
     double bf = y.front() / A(u(0),0) ;
     double bb = y.back()  / D(u(n-1),n-2);
 
+    y.front() = - bf * double(6) / sqr(h(1,0));
+    y.back()  = - bb * double(6) / sqr(h(n-1,n-2));
+
     std::vector<double> c ; c.reserve(n);
 
     c.push_back(mc(0) / mb(0) );
