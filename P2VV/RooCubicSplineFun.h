@@ -20,11 +20,13 @@
 class RooRealVar;
 class RooArgList ;
 class RooCubicSplineKnot;
+class TH1;
 
 class RooCubicSplineFun : public RooAbsReal {
 public:
 
   RooCubicSplineFun() ;
+  RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TH1* hist);
   RooCubicSplineFun(const char *name, const char *title,
                RooRealVar& _x, const char *knotBinningName, const RooArgList& _coefList) ;
   ~RooCubicSplineFun() ;

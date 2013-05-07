@@ -25,11 +25,13 @@
 #include "Riostream.h"
 #include <math.h>
 #include "TMath.h"
+#include "TH1.h"
 #include "P2VV/RooCubicSplineFun.h"
 #include "P2VV/RooCubicSplineKnot.h"
 #include "RooMath.h"
 #include "RooAbsReal.h"
 #include "RooRealVar.h"
+#include "RooConstVar.h"
 #include "RooComplex.h"
 #include "RooArgList.h"
 
@@ -46,6 +48,29 @@ ClassImp(RooCubicSplineFun)
 RooCubicSplineFun::RooCubicSplineFun()
     : _aux(0)
 {
+}
+
+RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, 
+                           RooRealVar& x, const TH1* hist) :
+  RooAbsReal(name, title),
+  _x("x", "Dependent", this, x),
+  _coefList("coefficients","List of coefficients",this),
+  _aux(0)
+{
+    int nBins = hist->GetNbinsX();
+    std::vector<double> boundaries,values;
+    for (int i=0;i<nBins ;++i) {
+         boundaries.push_back(hist->GetBinCenter(1+i));
+         values.push_back(hist->GetBinContent(1+i));
+         cout << " ( " << boundaries.back() << " , " << values.back()  << " ) " ;
+    }
+    cout << endl;
+    _aux = new RooCubicSplineKnot( boundaries.begin(), boundaries.end() );
+    _aux->computeCoefficients( values );
+    for (int i=0;i<values.size();++i) { 
+        _coefList.add( RooFit::RooConst( values[i] ) );
+    }
+    _coefList.Print("V");
 }
 
 //_____________________________________________________________________________
