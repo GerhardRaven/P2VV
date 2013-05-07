@@ -357,32 +357,10 @@ and the constants $P_i,Q_i,R_i$ and $S_i$ which depend on the knot vector only a
 \\  S_i &=&(u_{i+3}-u_{i  })(u_{i+2}-u_{i  })(u_{i+1}-u_i)
 \end{eqnarray*}
 
-To determine, from a set of control points, the coefficients of the b-splines, we start by determining the values at
-the locations of the knots. This given $n+1$ constraints for $n+3$ coefficients. To obtain the required additional 
-two constraints we demand that the second derivatives at the boundaries vanish, $S''(u_0)=S''(n_n)=0$. 
-We start by writing the values at spline at $u_i$:
-
-
-\begin{eqnarray*}
-     A_i(u_i) &=& \frac{(u_i-u_{i+1})^2}{(u_{i+1}-u_{i-2})(u_{i+1}-u_{i-1})}  
-\\   B_i(u_i) &=& -\frac{(u_i-u_{i-2})(u_i-u_{i+1}) }{(u_{i+1}-u_{i-2})(u_{i+1}-u_{i-1})} - \frac{ (u_i-u_{i-1})(u_i-u_{i+2}) }{(u_{i+2}-u_{i-1})(u_{i+1}-u_{i-1})} 
-\\   C_i(u_i) &=& \frac{(u_i-u_{i-1})^2 }{(u_{i+2}-u_{i-1})(u_{i+1}-u_{i-1})}
-\\   D_i(u_i) &=&  0
-\end{eqnarray*}
-
-\begin{eqnarray*}
-     A_i(u_{i+1}) &=& 0
-\\   B_i(u_{i+1}) &=&    \frac{ (u_{i+1}-u_{i+2})^2 }{(u_{i+2}-u_{i  })(u_{i+2}-u_{i-1})}
-\\   C_i(u_{i+1}) &=&  - \frac{ (u_{i+1}-u_{i-1})(u_{i+1}-u_{i+2}) }{(u_{i+2}-u_{i  })(u_{i+2}-u_{i-1})}
-                   -     \frac{ (u_{i+1}-u_i)(u_{i+1}-u_{i+3}) }{(u_{i+3}-u_{i  })(u_{i+2}-u_{i  })}
-\\   D_i(u_{i+1}) &=&  \frac{(u_{i+1}-u_i)^2 }{(u_{i+3}-u_{i  })(u_{i+2}-u_{i  })}
-\end{eqnarray*}
-Note that continuity is guaranteed by the fact that 
-$A_i(u_{i+1}) = B_{i+1}(u_{i+1})$, 
-$B_i(u_{i+1}) = C_{i+1}(u_{i+1})$,
-$C_i(u_{i+1}) = D_{i+1}(u_{i+1})$
-
-Requiring that $y_i = \mathcal{S}(u_i)$, one obtains:
+To determine, from a set of $n+1$ control points $\{(u_0,y_0),\cdots,(u_{n+1},y_{n+1})\}$, 
+the coefficients $b_i$ of the b-splines, we start by requiring that the function
+values at the locations of the knots match those of the control points. This gives 
+the following $n+1$ constraints for $n+3$ coefficients.
 \begin{equation}
    \left( \begin{array}{ccccccccccccc}  
       A_0(u_0)  & 0        & 0        & 0        & 0        & 0& \cdots & 0 
@@ -397,9 +375,10 @@ Requiring that $y_i = \mathcal{S}(u_i)$, one obtains:
 \end{equation}
 where we have used that $B_0(u_0)=C_0(u_0)=0$ and $B_{n-1}(u_n)=C_{n-1}(u_n)=0$.
 
-The missing two constraints can be obtained by requiring so-called 'natural splines', which implies
-that the second derivative vanishes at the boundaries (i.e. straight line extrapolation beyond the
-specified boundaries). The second derivatives of the four contributing b-splines at $u_0$ and at $u_n$ are given by:
+To obtain the required additional two constraints we demand that the second derivatives 
+at the boundaries vanish, $S''(u_0)=S''(n_n)=0$. This corresponds to the requirement of
+obtaining so-called natural splines.
+The second derivatives of the four contributing b-splines at $u_0$ and at $u_n$ are given by:
 \begin{equation}
 \begin{array}{ll}
      A''_0(u_0) =  \frac{6}{(u_{1}-u_{0})^2}                                      &    A''_{n-1}(u_n) = 0                                                                                      
@@ -408,16 +387,7 @@ specified boundaries). The second derivatives of the four contributing b-splines
 \\   D''_0(u_0) =  0                                                              &    D''_{n-1}(u_n) =  \frac{6 }{(u_{n}-u_{n-1})^2}
 \end{array}
 \end{equation}
-Requiring these to vanish implies
-\begin{equation}
-     \left( \begin{array}{cccccccc} A''_0(u_0) & B''_0(u_0) & C''_0(u_0)   \end{array}\right) 
-     \left( \begin{array}{c} b_0 \\ b_1 \\ b_2  \end{array}\right) =  0
-\end{equation}
-\begin{equation}
-     \left( \begin{array}{cccccccc}   B''_{n-1}(u_n) & C''_{n-1}(u_n) & D''_{n-1}(u_n)  \end{array}\right) 
-     \left( \begin{array}{c}  b_n \\ b_{n+1} \\ b_{n+2} \end{array}\right) =  0
-\end{equation}
-
+Adding the requirement that these to vanish, gives the following linear system:
 \begin{equation}
    \left( \begin{array}{ccccccccccccc}  
       A_0(u_0)  & 0        & 0        & 0        & 0        & 0& \cdots & 0 
@@ -432,12 +402,12 @@ Requiring these to vanish implies
    \left( \begin{array}{c} b_0 \\ b_1 \\ b_2 \\ \vdots \\ b_{n-1} \\ b_n \\ b_{n+1} \\ b_{n+2} \end{array}  \right) 
    = \left( \begin{array}{c} y_0 \\  0 \\ y_1 \\ y_2 \\ \vdots \\ y_{n-1} \\ 0 \\  y_n  \end{array}\right)
 \end{equation}
-We can immediately solve for $b_0$ and $b_{n+2}$:
+Solving for $b_0$ and $b_{n+2}$,
 \begin{eqnarray*}
      b_0     & = & \frac{ y_0 }{A_0(u_0)  }
 \\   b_{n+2} & = & \frac{ y_n }{D_{n-1}(u_n) }
 \end{eqnarray*}
-Eliminating these from the system, we get:
+and eliminating these from the system, one obtains the following tridiagonal system:
 \begin{equation}
    \left( \begin{array}{ccccccccccccc}  
        B''_0(u_0) & C''_0(u_0)  & 0 & 0  &  \cdots & 0
@@ -450,6 +420,8 @@ Eliminating these from the system, we get:
    \left( \begin{array}{c}  b_1 \\ b_2 \\ \vdots \\ b_{n-1} \\ b_n \\ b_{n+1}  \end{array}  \right) 
    = \left( \begin{array}{c} -\frac{A''(u_0)}{A_0(u_0)} y_0  \\ y_1 \\ y_2 \\ \vdots \\ y_{n-1} \\ -\frac{D''_{n-1}(u_n)}{D_{n-1}(u_n)} y_n         \end{array}\right)
 \end{equation}
+This can be easily solved by one sweep of forward substition, followed by backsubstitution.
+
 \pagebreak
 \subsection{Flavour tagging}
 
