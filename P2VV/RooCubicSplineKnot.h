@@ -15,10 +15,6 @@ public:
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
 
-    double ma(int i) const ;
-    double mb(int i) const ;
-    double mc(int i) const ;
-    double knotMatrix(int i, int j) const;
     void computeCoefficients(std::vector<double>& y ) const ;
 
     class S_jk { 
@@ -68,6 +64,20 @@ private:
     double B(double _u,int i) const{ return  sqr(d(_u,i+1))*d(_u,i-2)/P(i) + d(_u,i-1)*d(_u,i+2)*d(_u,i+1)/Q(i) + d(_u,i  )*sqr(d(_u,i+2))/R(i); }
     double C(double _u,int i) const{ return -sqr(d(_u,i-1))*d(_u,i+1)/Q(i) - d(_u,i  )*d(_u,i+2)*d(_u,i-1)/R(i) - d(_u,i+3)*sqr(d(_u,i  ))/S(i); }
     double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
+
+    double ma( int i) const {  // subdiagonal
+        return i==_u.size()-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
+                              : A(u(i),i);
+    }
+    double mb( int i) const {   // diagonal
+        return i==0           ?  -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0)
+             : i==_u.size()-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
+                              : B(u(i),i) ;
+    }
+    double mc( int i) const {  // superdiagonal
+        return i==0           ?   double(6)/(h(2,0)*h(1,0))
+                              : C(u(i),i);
+    }
 
     double P(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i  <_PQRS.size()); return  _PQRS[4*i  ]; }
     double Q(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+1<_PQRS.size()); return  _PQRS[4*i+1]; }

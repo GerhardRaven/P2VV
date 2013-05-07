@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "P2VV/RooCubicSplineKnot.h"
 #include "RooAbsReal.h"
 
@@ -12,31 +13,6 @@ namespace RooCubicSplineKnot_aux {
                                              const typename T::value_type& c,
                                              const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
 }
-
-double RooCubicSplineKnot::knotMatrix(int i, int j) const {
-        assert(i>=0&&i<=_u.size());
-        assert(j>=0&&j<=_u.size());
-        return i==j   ? mb(i) 
-             : i+1==j ? mc(i)
-             : i==j+1 ? ma(i)
-             :  0 ;
-}
-
-double RooCubicSplineKnot::ma( int i) const {  // subdiagonal
-    return i==_u.size()-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
-                          : A(u(i),i);
-} 
-double RooCubicSplineKnot::mb( int i) const {   // diagonal
-    return i==0           ?  -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0)
-         : i==_u.size()-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
-                          : B(u(i),i) ;
-}
-double RooCubicSplineKnot::mc( int i) const {  // superdiagonal
-    return i==0           ?   double(6)/(h(2,0)*h(1,0))
-                          : C(u(i),i);
-}
-
-
 
 // on input, y contains the values at the knot locations
 // on output, it contains the b-spline coefficients 
@@ -89,7 +65,7 @@ double RooCubicSplineKnot::evaluate(double _u, const RooArgList& b) const {
         using RooCubicSplineKnot_aux::get;
         int i = index(_u); // location in knot vector
         assert(0<=i && i+3<b.getSize());
-        assert( u(i) <= _u && _u<= u(i+1) );
+        //assert( u(i) <= _u && _u<= u(i+1) );
         return  get(b,i,0)*A(_u,i) // TODO: substitute A,B,C,D 'in situ'
              +  get(b,i,1)*B(_u,i)
              +  get(b,i,2)*C(_u,i)
@@ -124,11 +100,11 @@ double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
 
 int RooCubicSplineKnot::index(double u) const 
 { 
-        assert(u>=_u.front() && u<=_u.back());   
+        // assert(u>=_u.front() && u<=_u.back());   
         std::vector<double>::const_iterator i = --std::upper_bound(_u.begin(),_u.end()-1,u);
-        assert( _u.begin()<=i );
-        assert( *i <= u && u<=*(i+1) );
-        return std::distance(_u.begin(),i);
+        // assert( _u.begin()<=i );
+        // assert( *i <= u && u<=*(i+1) );
+        return std::max(std::distance(_u.begin(),i),0L);
 };
 
 // S matrix for i-th interval
