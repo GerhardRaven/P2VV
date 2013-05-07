@@ -12,25 +12,63 @@ namespace RooCubicSplineKnot_aux {
                                              const typename T::value_type& c,
                                              const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
 }
+
 double RooCubicSplineKnot::knotMatrix(int i, int j) const {
         assert(i>=0&&i<=_u.size());
         assert(j>=0&&j<=_u.size());
-        if (i==0) { switch (j) { 
-                case 0  : return -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0);
-                case 1  : return   double(6)/(h(2,0)*h(1,0));
-                default : return 0;
-        } } else if (i==_u.size()-1) {  switch (i-j) {
-                case  1  : return   double(6)/(h(i,i-2)*h(i,i-1) );
-                case  0  : return -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1);
-                default  : return 0;
-        } } else { switch (j-i) { // tridiagonal...
-                case -1 : return A(u(i),i);
-                case  0 : return B(u(i),i);
-                case +1 : return C(u(i),i);
-                default : return 0;
-            }
-        }
+        return i==j   ? mb(i) 
+             : i+1==j ? mc(i)
+             : i==j+1 ? ma(i)
+             :  0 ;
+}
+
+double RooCubicSplineKnot::ma( int i) const {  // subdiagonal
+    return i==_u.size()-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
+                          : A(u(i),i);
+} 
+double RooCubicSplineKnot::mb( int i) const {   // diagonal
+    return i==0           ?  -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0)
+         : i==_u.size()-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
+                          : B(u(i),i) ;
+}
+double RooCubicSplineKnot::mc( int i) const {  // superdiagonal
+    return i==0           ?   double(6)/(h(2,0)*h(1,0))
+                          : C(u(i),i);
+}
+
+
+
+// on input, y contains the values at the knot locations
+// on output, it contains the b-spline coefficients 
+// Note: one element will be pre-pended, and one post-pended !!
+void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y ) const 
+{
+ // see http://en.wikipedia.org/wiki/Spline_interpolation
+ // for the derivation of the linear system...
+ // see http://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm
+ // for the O(N) algorithm to solve the relevant linear system...
+    int n = _u.size();
+    assert(y.size()==_u.size());
+
+    double bf = y.front() / A(u(0),0) ;
+    double bb = y.back()  / D(u(n-1),n-2);
+
+    std::vector<double> c ; c.reserve(n);
+
+    c.push_back(mc(0) / mb(0) );
+    y[0] /=  mb(0);
+ 
+    for (int i = 1; i < n; ++i) {
+        double m = double(1) / (mb(i) - ma(i) * c.back() ) ;
+        c.push_back( mc(i) * m );
+        y[i] = (y[i] - ma(i) * y[i - 1]) * m;
     }
+    for (int i = n-1 ; i-- > 0; ) y[i] -= c[i] * y[i + 1];
+
+    y.push_back(bb);
+    y.insert(y.begin(),bf); // ouch... expensive!
+}
+
 void RooCubicSplineKnot::fillPQRS() const {
            assert(_PQRS.empty());
            // P,Q,R,S only depend on the knot vector, so build at construction, and cache them...

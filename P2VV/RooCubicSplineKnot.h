@@ -15,7 +15,11 @@ public:
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
 
+    double ma(int i) const ;
+    double mb(int i) const ;
+    double mc(int i) const ;
     double knotMatrix(int i, int j) const;
+    void computeCoefficients(std::vector<double>& y ) const ;
 
     class S_jk { 
     public:
