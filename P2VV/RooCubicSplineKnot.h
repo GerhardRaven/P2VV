@@ -15,26 +15,14 @@ public:
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
 
-    double knotMatrix(int i, int j) const {
-        if (i==_u.size()-1) {
-                return (j==i+2) ? D(u(i),i-1) : 0 ;
-        } else {
-            switch (j-i) {
-                case 0 : return A(u(i),i);
-                case 1 : return B(u(i),i);
-                case 2 : return C(u(i),i);
-                default : return 0;
-            }
-        }
-    }
+    double knotMatrix(int i, int j) const;
 
     class S_jk { 
     public:
         S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
-        // translate should do the same as building an S_jk with a+offset,b+offset,c+offset instead of a,b,c
         S_jk(const S_jk& other, double offset=0) : t(other.t), d(other.d), s(other.s), o(other.o) {
             if (!offset) return;
-            t+=offset*(-2*d+offset*(4*s-offset*o*8) );  
+            t+=offset*(-2*d+offset*(4*s-offset*o*8));  
             d+=offset*(-8*s+3*offset*o*8)/2; 
             s-=offset*3*o*8/4; 
         }

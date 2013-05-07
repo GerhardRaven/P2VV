@@ -12,6 +12,25 @@ namespace RooCubicSplineKnot_aux {
                                              const typename T::value_type& c,
                                              const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
 }
+double RooCubicSplineKnot::knotMatrix(int i, int j) const {
+        assert(i>=0&&i<=_u.size());
+        assert(j>=0&&j<=_u.size());
+        if (i==0) { switch (j) { 
+                case 0  : return -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0);
+                case 1  : return   double(6)/(h(2,0)*h(1,0));
+                default : return 0;
+        } } else if (i==_u.size()-1) {  switch (i-j) {
+                case  1  : return   double(6)/(h(i,i-2)*h(i,i-1) );
+                case  0  : return -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1);
+                default  : return 0;
+        } } else { switch (j-i) { // tridiagonal...
+                case -1 : return A(u(i),i);
+                case  0 : return B(u(i),i);
+                case +1 : return C(u(i),i);
+                default : return 0;
+            }
+        }
+    }
 void RooCubicSplineKnot::fillPQRS() const {
            assert(_PQRS.empty());
            // P,Q,R,S only depend on the knot vector, so build at construction, and cache them...
