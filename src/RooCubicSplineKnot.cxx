@@ -61,15 +61,25 @@ void RooCubicSplineKnot::fillPQRS() const {
 
     }
 
-double RooCubicSplineKnot::evaluate(double _u, const RooArgList& b) const {
+double RooCubicSplineKnot::evaluate(double x, const RooArgList& b) const {
         using RooCubicSplineKnot_aux::get;
-        int i = index(_u); // location in knot vector
-        assert(0<=i && i+3<b.getSize());
-        //assert( u(i) <= _u && _u<= u(i+1) );
-        return  get(b,i,0)*A(_u,i) // TODO: substitute A,B,C,D 'in situ'
-             +  get(b,i,1)*B(_u,i)
-             +  get(b,i,2)*C(_u,i)
-             +  get(b,i,3)*D(_u,i);
+        int i = index(x); // location in knot vector
+        assert(-1<=i && i<=int(_u.size()));
+        // we're a 'natural' spline. Extrapolate using the derivative at the first knot
+        if (i==-1) {
+                return evaluate(u(0),b)
+                      +(u(0)-x)/(u(1)-u(0))*3*(get(b,0,0)-get(b,0,1));
+        }
+        if (i==_u.size()) { 
+                i = _u.size()-1;
+                return evaluate(u(i),b)
+                      +(x-u(i))/(u(i)-u(i-1))*3*(get(b,i,2)-get(b,i,1));
+        }
+        assert( u(i) <= x && x<= u(i+1) );
+        return  get(b,i,0)*A(x,i) // TODO: substitute A,B,C,D 'in situ'
+             +  get(b,i,1)*B(x,i)
+             +  get(b,i,2)*C(x,i)
+             +  get(b,i,3)*D(x,i);
 }
 
 double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
@@ -100,11 +110,9 @@ double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
 
 int RooCubicSplineKnot::index(double u) const 
 { 
-        // assert(u>=_u.front() && u<=_u.back());   
+        if (u>_u.back()) return _u.size();
         std::vector<double>::const_iterator i = --std::upper_bound(_u.begin(),_u.end()-1,u);
-        // assert( _u.begin()<=i );
-        // assert( *i <= u && u<=*(i+1) );
-        return std::max(std::distance(_u.begin(),i),0L);
+        return std::distance(_u.begin(),i);
 };
 
 // S matrix for i-th interval
