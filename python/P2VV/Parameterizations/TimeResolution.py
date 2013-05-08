@@ -36,7 +36,13 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
 
 
         _util_conditionalObs_mixin.__init__( self, kwargs )
+        for obs in self._model.ConditionalObservables() :
+            if obs not in self.conditionalObservables() : self.addConditional(obs)
+
         _util_extConstraints_mixin.__init__( self, kwargs )
+        for constr in self._model.ExternalConstraints() :
+            if constr not in self.externalConstraints() : self.addConstraint(constr)
+
         self._check_extraneous_kw( kwargs )
 
     def __getitem__( self, kw ) : return getattr( self, '_' + kw )
@@ -110,11 +116,6 @@ class Gaussian_TimeResolution ( TimeResolution ) :
 
     def splitVars(self):
         return [self._sigmaSF]
-
-class LP2011_TimeResolution ( TimeResolution ) :
-    def __init__( self, **kwargs ) :
-        sigmas = [ ( 3, 0.513  ), ( 2, 0.0853 ), ( 1, 0.0434 ) ]
-        fracs  = [ ( 3, 0.0017 ), ( 2, 0.165 ) ]
 
 class Multi_Gauss_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -294,8 +295,14 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         for i, j in indeces:
             if covariance:
                 cm[i][j] = covariance[keys[(i, j)]]
+                if i != j : cm[j][i] = covariance[keys[(i, j)]]
             else:
-                cm[i][j] = 1 if i == j else 0
+                if i == j :
+                    cm[i][j] = 1
+                else :
+                    cm[i][j] = 0
+                    cm[j][i] = 0
+
         return cm
 
     def __buildModel(self, nGauss, sfModel):

@@ -1365,7 +1365,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 timeResArgs['Covariance'] = covariance
                 timeResArgs['timeResSFModel'] = 'quadratic'
             else :
+                timeResArgs['timeResMean'] = dict( Value = -4.0735e-03, Error = 1.33e-04 )
                 timeResArgs['timeResMeanConstraint'] = constrTResScale
+                timeResArgs['timeResSFConstraint'] = constrTResScale
 
             self._timeResModel = TimeResolution( **timeResArgs )
 

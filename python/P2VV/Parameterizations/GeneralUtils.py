@@ -79,6 +79,13 @@ class _util_extConstraints_mixin( object ) :
     def externalConstraints( self ) : return self._constraints
     def hasExtConstraints( self )   : return len(self._constraints) > 0
 
+    def addConstraint( self, constr ) :
+        if not constr in self._constraints : self._constraints.append(constr)
+        else : print 'P2VV - WARNING: _util_extConstraints_mixin.addConstraint(): object "%s" is already constraint' % constr
+
+    def addConstraints( self, constrList ) :
+        for constr in constrList : self.addConstraint(constr)
+
 class _util_conditionalObs_mixin( object ) :
     def __init__( self, kwargs ) :
         if   'Conditionals' in kwargs : self._conditionals = [ conditional for conditional in kwargs.pop('Conditionals') ]
