@@ -330,35 +330,79 @@ care to cancel divergent pieces):
 
 
 Given a knot vector $(u_0,u_1,\dots,u_n)$ of length $n+1$, defining $n$ intervals, there are $n+3$ cubic b-splines $\mathcal{S}_i(u)$.
-
-The complete spline function $ \mathcal{S}(u)$ is given by the linear combination $\mathcal{S}(u)= \sum_{i=0}^{n+2} b_i  \mathcal{S}_i(u)$.
+The complete spline function $\mathcal{S}(u)$ is given by the linear combination b-splines, $\mathcal{S}(u)= \sum_{i=0}^{n+2} b_i  \mathcal{S}_i(u)$.
 For a value $u$ in the interval $u_{i}<  u\le u_{i+1}$, there are four contributing b-splines, $\mathcal{S}_i(u)$ for $i\in \{i,i+1,i+2,i+3\}$.
 To compute their contributions, we extend the knot vector at both ends by three entries given by  
 \begin{eqnarray*}
    u_{-3}=u_{-2}=u_{-1}&=&u_0
 \\ u_{n+1}=u_{n+2}=u_{n+3}&=&u_n
 \end{eqnarray*}
-The four non-zero contributions can now be written as:
+If we introduce the following notation
+\begin{eqnarray*}
+       \Delta_i(u) &\equiv& u-u_i;
+   \\  \Delta'_i(u) &=& 1;
+   \\  \Delta''_i(u)&=&0
+   \\  \Delta_{i}(u_j) &=& -\Delta_j(u_i) = \Delta_i^j = -\Delta_j^i
+   \\  \Delta_{i+1}(u) &=& \Delta_i(u)+\Delta_{i+1}^i
+   \\  \Delta_{i+2}(u) &=& \Delta_i(u)+\Delta_{i+1}^i +\Delta_{i+2}^{i+1} 
+\end{eqnarray*}
+then the  four non-zero contributions can be written as:
 \begin{equation}
    \left. \mathcal{S}(u)\right|_{u_i<u\le u_{i+1}} = b_i A_i(u) + b_{i+1} B_i(u) + b_{i+2} C_i(u) + b_{i+3} D_i(u)
 \end{equation}
 where
 \begin{eqnarray*}
-     A_i(u) &=& -\frac{(u-u_{i+1})^3}{P_i}  
-\\   B_i(u) &=&  \frac{(u-u_{i-2})(u-u_{i+1})^2 }{P_i} + \frac{ (u-u_{i-1})(u-u_{i+1})(u-u_{i+2}) }{Q_i} + \frac{ (u-u_i)(u-u_{i+2})^2 }{R_i}
-\\   C_i(u) &=& -\frac{(u-u_{i-1})^2(u-u_{i+1}) }{Q_i} - \frac{ (u-u_{i-1})(u-u_i )(u-u_{i+2}) }{R_i} - \frac{ (u-u_i)^2(u-u_{i+3}) }{S_i}
-\\   D_i(u) &=&  \frac{(u-u_i)^3 }{S_i}
+     A_i(u) &=& -\frac{\Delta_{i+1}(u)^3}{P_i}  
+\\   B_i(u) &=&  \frac{\Delta_{i-2}(u)\Delta_{i+1}(u)^2 }{P_i} + \frac{ \Delta_{i-1}(u)\Delta_{i+1}(u)\Delta_{i+1}(u) }{Q_i} + \frac{ \Delta_i(u)\Delta_{i+2}(u)^2 }{R_i}
+\\   C_i(u) &=& -\frac{\Delta_{i-1}(u)^2\Delta_{i+1}(u) }{Q_i} - \frac{ \Delta_{i-1}(u)\Delta_i(u)\Delta_{i+2}(u) }{R_i} - \frac{ \Delta_i(u)^2\Delta_{i+3}(u) }{S_i}
+\\   D_i(u) &=&  \frac{\Delta_i(u)^3 }{S_i}
 \end{eqnarray*}
 and the constants $P_i,Q_i,R_i$ and $S_i$ which depend on the knot vector only are defined as:
 \begin{eqnarray*}
-    P_i &=&(u_{i+1}-u_{i-2})(u_{i+1}-u_{i-1})(u_{i+1}-u_i)
-\\  Q_i &=&(u_{i+2}-u_{i-1})(u_{i+1}-u_{i-1})(u_{i+1}-u_i)
-\\  R_i &=&(u_{i+2}-u_{i  })(u_{i+2}-u_{i-1})(u_{i+1}-u_i)
-\\  S_i &=&(u_{i+3}-u_{i  })(u_{i+2}-u_{i  })(u_{i+1}-u_i)
+    P_i &=&\Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1}\Delta_i^{i+1}
+\\  Q_i &=&\Delta_{i-1}^{i+2})\Delta_{i-1}^{i+1}\Delta_i^{i+1}
+\\  R_i &=&\Delta_i^{i+2}\Delta_{i-1}^{i+2}\Delta_i^{i+1}
+\\  S_i &=&\Delta_i^{i+3}\Delta_i^{i+2}\Delta_i^{i+1}
 \end{eqnarray*}
 
+\subsubsection{Trivia}
+\begin{eqnarray*}
+     A'_i(u) &=& -3\frac{\Delta_{i+1}(u)^2}{P_i}  
+\\   B'_i(u) &=&   \frac{\Delta_{i+1}(u)^2}{P_i}               +  2\frac{\Delta_{i-2}(u)\Delta_{i+1}(u) }{P_i} 
+        \\   &+&   \frac{\Delta_{i+1}(u)\Delta_{i+2}(u) }{Q_i} +   \frac{\Delta_{i-1}(u)\Delta_{i+2}(u) }{Q_i} + \frac{\Delta_{i-1}(u)\Delta_{i+1}(u) }{Q_i} 
+        \\   &+&   \frac{\Delta_{i+2}(u)^2 }{R_i}              + 2 \frac{\Delta_i    (u)\Delta_{i+2}(u) }{R_i}                     
+\\   C'_i(u) &=& -2\frac{\Delta_{i-1}(u)\Delta_{i+1}(u)}{Q_i}  -   \frac{\Delta_{i-1}(u)^2 }{Q_i}                                  
+        \\   &-&   \frac{\Delta_i    (u)\Delta_{i+2}(u)}{R_i}  -   \frac{\Delta_{i-1}(u)\Delta_{i+2}(u) }{R_i} - \frac{\Delta_{i-1}(u)\Delta_i(u) }{R_i} 
+        \\   &-&  2\frac{\Delta_i    (u)\Delta_{i+3}(u)}{S_i}  -   \frac{\Delta_i    (u)^2 }{S_i}
+\\   D'_i(u) &=&  3\frac{\Delta_i    (u)^2 }{S_i}
+\end{eqnarray*}
+\begin{eqnarray*}
+     A'_0(u_0) &=& \frac{-3}{\Delta_0^1}  
+\\   B'_0(u_0) &=&  \frac{3 }{\Delta_0^1} 
+\\   C'_0(u_0) &=&  0
+\\   D'_0(u_0) &=&  0
+\end{eqnarray*}
+
+\begin{eqnarray*}
+     A''_i(u) &=& -6\frac{\Delta_{i+1}(u)}{P_i}  
+\\   B''_i(u) &=& 
+              +    \left( \frac{2}{Q_i} + \frac{4}{R_i} \right) \Delta_{i+2}(u)
+              +    \left( \frac{4}{P_i} + \frac{2}{Q_i} \right)\Delta_{i+1}(u)
+              +    \frac{2}{R_i}\Delta_i    (u)
+              +    \frac{2}{Q_i}\Delta_{i-1}(u)
+              +    \frac{2}{P_i}\Delta_{i-2}(u)
+\\   C''_i(u) &=&
+              -    \frac{2}{S_i} \Delta_{i+3}(u)
+              -    \frac{2}{R_i} \Delta_{i+2}(u)
+              -    \frac{2}{Q_i} \Delta_{i+1}(u)
+              - \left(   \frac{2}{R_i} + \frac{4}{S_i}\right) \Delta_i    (u)
+              -  \left(  \frac{4}{Q_i} + \frac{2}{R_i}\right) \Delta_{i-1}(u)
+\\   D''_i(u) &=&  6\frac{\Delta_i    (u)}{S_i}
+\end{eqnarray*}
+
+\subsubsection{Interpolating Spline}
 To determine, from a set of $n+1$ control points $\{(u_0,y_0),\cdots,(u_{n+1},y_{n+1})\}$, 
-the coefficients $b_i$ of the b-splines, we start by requiring that the function
+the coefficients $b_i$ of the plines, we start by requiring that the function
 values at the locations of the knots match those of the control points. This gives 
 the following $n+1$ constraints for $n+3$ coefficients.
 \begin{equation}
@@ -381,10 +425,10 @@ obtaining so-called natural splines.
 The second derivatives of the four contributing b-splines at $u_0$ and at $u_n$ are given by:
 \begin{equation}
 \begin{array}{ll}
-     A''_0(u_0) =  \frac{6}{(u_{1}-u_{0})^2}                                      &    A''_{n-1}(u_n) = 0                                                                                      
-\\   B''_0(u_0) = -\frac{6}{(u_{1}-u_{0})^2} - \frac{6}{(u_{2}-u_{0})(u_1-u_0)}   &    B''_{n-1}(u_n) =  \frac{6 }{(u_{n}-u_{n-2})(u_{n}-u_{n-1})} 
-\\   C''_0(u_0) =  \frac{6 }{(u_{2}-u_{0})(u_1-u_0)}                              &    C''_{n-1}(u_n) = - \frac{6}{(u_{n}-u_{n-2})(u_{n}-u_{n-1})} - \frac{6}{(u_{n}-u_{n-2})(u_{n}-u_{n-1})} 
-\\   D''_0(u_0) =  0                                                              &    D''_{n-1}(u_n) =  \frac{6 }{(u_{n}-u_{n-1})^2}
+     A''_0(u_0) =  \frac{6}{(\Delta^1_0)^2}                                    &    A''_{n-1}(u_n) = 0                                                                                      
+\\   B''_0(u_0) = -\frac{6}{(\Delta^1_0)^2} - \frac{6}{\Delta^2_0\Delta^1_0}   &    B''_{n-1}(u_n) =   \frac{6}{\Delta^n_{n-2}\Delta^{n}_{n-1}} 
+\\   C''_0(u_0) =  \frac{6}{\Delta^2_0\Delta^1_0}                              &    C''_{n-1}(u_n) = - \frac{6}{\Delta^{n}_{n-2}\Delta^{n}_{n-1}} - \frac{6}{(\Delta^{n}_{n-1})^2} 
+\\   D''_0(u_0) =  0                                                           &    D''_{n-1}(u_n) =   \frac{6}{(\Delta^{n}_{n-1})^2}
 \end{array}
 \end{equation}
 Adding the requirement that these to vanish, gives the following linear system:
@@ -421,6 +465,69 @@ and eliminating these from the system, one obtains the following tridiagonal sys
    = \left( \begin{array}{c} -\frac{A''(u_0)}{A_0(u_0)} y_0  \\ y_1 \\ y_2 \\ \vdots \\ y_{n-1} \\ -\frac{D''_{n-1}(u_n)}{D_{n-1}(u_n)} y_n         \end{array}\right)
 \end{equation}
 This can be easily solved by one sweep of forward substition, followed by backsubstitution.
+
+\subsubsection{Smoothing Spline}
+The above algorithm will create a spline which, by construction, will pass through all specified points.
+This may result, in case the points are subject to statistical noise, in a curve which oscillations wildly.
+To address this issue\footnote{see Christian H. Reinsch, "Smoothing by Spline Functions", Numerische Mathematik 10, 177-183 (1967)}, one can extend the above discussion to the case where the points have specified
+statistical errors. To smooth the curve, one can define the following $\chi^2$ where we have added the
+(integrated) magnitude of the second derivative as a penalty:
+\begin{equation}
+     \chi^2(\lambda) = \sum_i \left( \frac{y_i-S(u_i)}{\sigma_i} \right)^2 - \lambda \int du \left( S''(u) \right)^2
+\end{equation}
+In case $\lambda=0$, one recovers the discussion of the previous section, as it is clear that for an
+interpolating spline $\chi^2(\lambda=0) = 0$, and hence minimized. In case $\lambda\to\infty$, the
+only thing that matters is the constraint on the second derivative, and hence one obtains a function
+with zero second derivative everywhere, i.e. a straight line.
+
+
+The constraint term can be written as a matrix product, where the matrix depends on the integrals of
+products of the second derivatives of the b-spline components:
+\begin{eqnarray*}
+    \int du \left(S''(u)\right)^2  
+    &=& \sum_{i=0}^{n-1} \int_{u_i}^{u_{i+1}} du \left[ b_i A''_i(u) + b_{i+1}B''_i(u) + b_{i+2}C''(u) + b_{i+3}D''(u)  \right]^2
+\\  &=& \sum_{i=0}^{n-1} \left( \begin{array}{c} b_i \\ b_{i+1} \\ b_{i+2} \\ b_{i+3} \end{array} \right)^T G_i  \left( \begin{array}{c} b_i \\ b_{i+1} \\ b_{i+2} \\ b_{i+3}\end{array} \right)
+\\  &=& \vec{b}^T K \vec{b}
+\end{eqnarray*}
+where the matrix $G_i$ can be written in upper-diagonal form:
+\begin{equation}
+   G_i = \left(  \begin{array}{cccc}
+                \int_{u_i}^{u_{i+1}} du \left( A''_i(u) \right)^2 
+                        & 2 \int_{u_i}^{u_{i+1}} du  A''_i(u) B''_i(u) 
+                        & 2 \int_{u_i}^{u_{i+1}} du  A''_i(u) C''_i(u) 
+                        & 2 \int_{u_i}^{u_{i+1}} du  A''_i(u) D''_i(u) 
+          \\   0 &  \int_{u_i}^{u_{i+1}} du \left( B''_i(u) \right)^2 
+                        & 2 \int_{u_i}^{u_{i+1}} du  B''_i(u) C''_i(u) 
+                        & 2 \int_{u_i}^{u_{i+1}} du  B''_i(u) D''_i(u) 
+          \\   0 & 0 &  \int_{u_i}^{u_{i+1}} du \left( C''_i(u) \right)^2 
+                        & 2 \int_{u_i}^{u_{i+1}} du  C''_i(u) D''_i(u) 
+          \\   0 & 0 & 0 &  \int_{u_i}^{u_{i+1}} du \left( D''_i(u) \right)^2 
+          \\                      
+          \\                      
+       \end{array} \right)
+\end{equation}
+For this we need a large number of integrals of quadratic combinations of $\Delta_j(u)\Delta_k(u)$. 
+Fortunately, using partial integration, one can write generically
+\begin{eqnarray*}
+   I_i^{jk}  \equiv  \int_{u_i}^{u_{i+1}} du \Delta_j(u) \Delta_k(u) 
+      &=& \left[ \frac{1}{2} \Delta_j(u)^2 \Delta_k(u) \right]_{u_i}^{u_{i+1}} - \left[  \frac{1}{6} \Delta_j(u)^3 \right]_{u_i}^{u_{i+1}} 
+\\    &=& \frac{1}{6}\left[ \Delta_j(u)^2(3\Delta_k(u)-\Delta_j(u) )\right]_{u_i}^{u_{i+1}} 
+\\    &=& \frac{1}{6}\left[ (\Delta_j^{i+1})^2(3\Delta_k^{i+1}-\Delta_j^{i+1} )
+                          - (\Delta_j^i)^2(3\Delta_k^i-\Delta_j^i )\right]
+\end{eqnarray*}
+
+\begin{eqnarray*}
+          \int_{u_i}^{u_{i+1}} du \left( A''_i(u) \right)^2  & = & 12 \frac{ (\Delta_i^{i+1})^2 }{ \Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1}}
+\\        \int_{u_i}^{u_{i+1}} du  A''_i(u) B''_i(u)         & = &
+\\        \int_{u_i}^{u_{i+1}} du  A''_i(u) C''_i(u)         & = &
+\\        \int_{u_i}^{u_{i+1}} du  A''_i(u) D''_i(u)         & = &
+\\        \int_{u_i}^{u_{i+1}} du \left( B''_i(u) \right)^2  & = &
+\\        \int_{u_i}^{u_{i+1}} du  B''_i(u) C''_i(u)         & = &
+\\        \int_{u_i}^{u_{i+1}} du  B''_i(u) D''_i(u)         & = &
+\\        \int_{u_i}^{u_{i+1}} du \left( C''_i(u) \right)^2  & = &
+\\        \int_{u_i}^{u_{i+1}} du  C''_i(u) D''_i(u)         & = &
+\\        \int_{u_i}^{u_{i+1}} du \left( D''_i(u) \right)^2  & = & 12 \frac{ (\Delta_i^{i+1})^2 }{ \Delta_i^{i+3}\Delta_i^{i+2} }
+\end{eqnarray*}
 
 \pagebreak
 \subsection{Flavour tagging}
