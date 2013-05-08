@@ -101,7 +101,7 @@ pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['timeResType']           = 'eventDoubleGauss' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear' # 'eventStQuad'
+pdfConfig['timeResType']           = 'eventDoubleGaussConstant' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear' # 'eventStQuad'
 ## pdfConfig['timeResType']           = 'eventNoMean' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear' # 'eventStQuad'
 
 pdfConfig['numTimeResBins']        = 400
@@ -442,7 +442,8 @@ pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
 
-## Calculatei
+
+## Calculate dilution for double Gauss case
 if pdfConfig['timeResType'].find('eventDoubleGauss') != -1:
     st = pdfBuild['observables']['timeRes']
     from P2VV import Dilution
