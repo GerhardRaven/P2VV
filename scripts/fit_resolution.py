@@ -34,6 +34,8 @@ parser.add_option("-b", "--batch", dest = "batch", default = False,
                   action = 'store_true', help = 'run ROOT in batch mode')
 parser.add_option("--reweigh-MC", dest = "reweigh", default = False,
                   action = 'store_true', help = 'reweigh MC PV distribution to match data')
+parser.add_option("--no-reuse-result", dest = "reuse_result", default = True,
+                  action = 'store_false', help = "Don't reuse an old result if it is available.")
 parser.add_option("--wpv-gauss-width", dest = "wpv_gauss_width", default = 0, type = 'float',
                   action = 'store', help = 'Width of the Gaussian used for the WPV component; 0 means floating.')
 (options, args) = parser.parse_args()
@@ -171,18 +173,18 @@ bkg_m = Pdf(Name = 'gauss', Type = Gaussian, Parameters = (m, mean, sigma))
 # Create psi background component
 from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
-                         , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 0.67)
-                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.37, MinMax = (0.5,  2.5))
-                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.103, MinMax = (0.1, 0.5))
+                         , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 6.7195e-01)
+                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.5,  2.5))
+                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 0.5))
                          )
 psi_t = psi_t.pdf()
 
 # J/psi signal component
-psi_ll = Component('psi_ll', (psi_m, bkg_m, psi_t), Yield= (30000,100,500000) )
+psi_ll = Component('psi_ll', (psi_m, bkg_m, psi_t), Yield= (8.5575e+03,100,500000) )
 
 # Background component
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.model()
-                         , bkg_t_fml    = dict(Name = 'bkg_t_fml',    Value = 0.76 )
+                         , bkg_t_fml    = dict(Name = 'bkg_t_fml',    Value = 6.7195e-01 )
                          , bkg_t_ll_tau = dict(Name = 'bkg_t_ll_tau', Value = 1., MinMax = (0.01, 2.5))
                          , bkg_t_ml_tau = dict(Name = 'bkg_t_ml_tau', Value = 0.1,  MinMax = (0.01, 0.5))
                          )
@@ -202,7 +204,7 @@ signal = Component('signal', (sig_m.pdf(), sig_t.pdf()), Yield = (150000, 10000,
 # Prompt component
 from P2VV.Parameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
-prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
+prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (160160, 100, 500000))
 
 # Read data
 fit_mass = options.fit_mass
@@ -335,7 +337,7 @@ if not fit_mass:
         w.put(st_cat)
 
 ## Fitting opts
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
                Verbose = options.verbose)
 
 ## List of all plots we make
@@ -586,9 +588,9 @@ elif options.wpv and options.wpv_type == 'Gauss':
     if options.wpv_gauss_width != 0:
         wpv_sigma = RealVar('wpv_sigma', Value = options.wpv_gauss_width, MinMax = (0.01, 1000), Constant = True)
     else:
-        wpv_sigma = RealVar('wpv_sigma', Value = 0.3, MinMax = (0.01, 1000))        
+        wpv_sigma = RealVar('wpv_sigma', Value = 0.305, MinMax = (0.01, 1000))        
     wpv_pdf = Pdf(Name = 'wpv_pdf', Type = Gaussian, Parameters = (t, wpv_mean, wpv_sigma))
-    wpv = Component('wpv', (wpv_pdf, ), Yield = (100, 1, 500000))
+    wpv = Component('wpv', (wpv_pdf, ), Yield = (552, 1, 500000))
     components += [wpv]
 
 
@@ -621,20 +623,21 @@ if options.simultaneous:
                                  , SplitCategories = [[st_cat]]
                                  , SplitParameters = split_pars)
 
-# Check if we have a cached time result, if so, use it as initial values for the fit
-time_result = None
-for i, r in enumerate(results):
-    if r.GetName() == '_'.join(['time_result'] + extra_name):
-        time_result = results.pop(i)
-        break
+if options.reuse_result:
+    # Check if we have a cached time result, if so, use it as initial values for the fit
+    time_result = None
+    for i, r in enumerate(results):
+        if r.GetName() == '_'.join(['time_result'] + extra_name):
+            time_result = results.pop(i)
+            break
 
-if time_result:
-    pdf_vars = time_pdf.getVariables()
-    for p in time_result.floatParsFinal():
-        pdf_par = pdf_vars.find(p.GetName())
-        if pdf_par and not pdf_par.isConstant():
-            pdf_par.setVal(p.getVal())
-            pdf_par.setError(p.getError())
+    if time_result:
+        pdf_vars = time_pdf.getVariables()
+        for p in time_result.floatParsFinal():
+            pdf_par = pdf_vars.find(p.GetName())
+            if pdf_par and not pdf_par.isConstant():
+                pdf_par.setVal(p.getVal())
+                pdf_par.setError(p.getError())
 
 time_pdf.Print("t")
 
