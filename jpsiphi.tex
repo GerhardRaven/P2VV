@@ -519,18 +519,19 @@ where the matrix $G_i$ can be written in upper-diagonal form:
           \\                      
        \end{array} \right)
 \end{equation}
-For this we need a large number of integrals of quadratic combinations of $\Delta_j(u)\Delta_k(u)$. 
-Fortunately, using partial integration, one can write generically
+For this we need integrals of quadratic combinations of $\Delta_i(u)$:
 \begin{eqnarray*}
-   I_i^{jk}  \equiv  \int_{u_i}^{u_{i+1}} du \Delta_j(u) \Delta_k(u) 
-      &=& \left[ \frac{1}{2} \Delta_j(u)^2 \Delta_k(u) \right]_{u_i}^{u_{i+1}} - \left[  \frac{1}{6} \Delta_j(u)^3 \right]_{u_i}^{u_{i+1}} 
-\\    &=& \frac{1}{6}\left[ \Delta_j(u)^2(3\Delta_k(u)-\Delta_j(u) )\right]_{u_i}^{u_{i+1}} 
-\\    &=& \frac{1}{6}\left[ (\Delta_j^{i+1})^2(3\Delta_k^{i+1}-\Delta_j^{i+1} )
-                          - (\Delta_j^i)^2(3\Delta_k^i-\Delta_j^i )\right]
+     \int_{u_i}^{u_{i+1}} du \left(\alpha \Delta_i(u) + \beta \right)\left(\gamma \Delta_i(u)-\delta\right)
+     &=& \int_{u_i}^{u_{i+1}} du \left(\alpha\gamma \Delta_i(u)^2 + (\alpha\delta+\beta\gamma)\Delta_i(u) + \beta\delta\right)
+ \\ &=&\frac{\alpha\gamma}{3} \left(\Delta^{i+1}_i\right)^3 + \frac{\alpha\delta+\beta\gamma}{2}\left(\Delta^{i+1}_i\right)^2 + \beta\delta\Delta^{i+1}_i
 \end{eqnarray*}
 
+
 \begin{eqnarray*}
-          \int_{u_i}^{u_{i+1}} du \left( A''_i(u) \right)^2  & = & 12 \frac{ \Delta_i^{i+1} }{ \left(\Delta_{i-2}^{i+1}\right)^2\left(\Delta_{i-1}^{i+1}\right)^2 }
+          \int_{u_i}^{u_{i+1}} du \left( A''_i(u) \right)^2  & = &
+          \int_{u_i}^{u_{i+1}} du \left( \alpha_i^1 \Delta_i(u)+\alpha_i^0 \right)^2  
+          \\ & = & \frac{(\alpha_i^1)^2}{3} (\Delta_i^{i+1})^3+\alpha_i^0\alpha_i^1 (\Delta_i^{i+1})^2+(\alpha_i^0)^2 \Delta_i^{i+1}
+          \\ &=&12 \frac{ \Delta_i^{i+1} }{ \left(\Delta_{i-2}^{i+1}\right)^2\left(\Delta_{i-1}^{i+1}\right)^2 }
 \\        \int_{u_i}^{u_{i+1}} du  A''_i(u) B''_i(u)       & = & \frac{1}{\Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1}}
     (   \left( \frac{2\Delta_i^{i+2}\Delta_{i-1}^{i+2} + 4\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1}}{(\Delta_{i-1}^{i+2})^2\Delta_{i-1}^{i+1}\Delta_i^{i+2}} \right)\left(\Delta_i^{i+1} -3\Delta_i^{i+2} \right)
   \\     & - &  \frac{\Delta_i^{i+1}}{\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1} }  \left( \frac{8\Delta_{i-1}^{i+2}+4\Delta_{i-2}^{i+1}}{\Delta_{i-2}^{i+1}} 
@@ -545,6 +546,8 @@ Fortunately, using partial integration, one can write generically
            +      6\Delta_{i-2}^i\Delta_{i-1}^{i+2}+2\Delta_i^{i+1}\Delta_{i-1}^{i+2} \right) )
 \\        \int_{u_i}^{u_{i+1}} du  A''_i(u) C''_i(u)         & = &
 \\        \int_{u_i}^{u_{i+1}} du  A''_i(u) D''_i(u)         & = &
+\end{eqnarray*}
+\begin{eqnarray*}
 \\        \int_{u_i}^{u_{i+1}} du \left( B''_i(u) \right)^2  & = &
 \\        \int_{u_i}^{u_{i+1}} du  B''_i(u) C''_i(u)         & = &
 \\        \int_{u_i}^{u_{i+1}} du  B''_i(u) D''_i(u)         & = &

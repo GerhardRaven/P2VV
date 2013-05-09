@@ -51,7 +51,7 @@ RooCubicSplineFun::RooCubicSplineFun()
 }
 
 RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, 
-                           RooRealVar& x, const TH1* hist) :
+                           RooRealVar& x, const TH1* hist, double smooth ) :
   RooAbsReal(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients","List of coefficients",this),
@@ -62,10 +62,13 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
     for (int i=0;i<nBins ;++i) {
          boundaries.push_back(hist->GetBinCenter(1+i));
          values.push_back(hist->GetBinContent(1+i));
-         cout << " ( " << boundaries.back() << " , " << values.back()  << " ) " ;
     }
-    cout << endl;
     _aux = new RooCubicSplineKnot( boundaries.begin(), boundaries.end() );
+    if ( smooth >= 0 ) { 
+            std::vector<double> errs;
+            for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
+            _aux->smooth( values, errs, values.size()*smooth );
+    }
     _aux->computeCoefficients( values );
     for (int i=0;i<values.size();++i) { 
         _coefList.add( RooFit::RooConst( values[i] ) );

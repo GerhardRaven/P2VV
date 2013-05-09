@@ -12,6 +12,64 @@ namespace RooCubicSplineKnot_aux {
                                              const typename T::value_type& b, 
                                              const typename T::value_type& c,
                                              const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
+
+
+    void Reinsch( const std::vector<double>& x, std::vector<double>& y, const std::vector<double>&  dy, double s ) {
+    // translated from the ALGOL original by C.H. Reinsch
+        double g,e;
+        unsigned n = x.size();
+        assert(n==y.size());
+        assert(n==dy.size());
+        std::vector<double> a(n),b(n),c(n),d(n);
+        std::vector<double> r(n+2),r1(n+2),r2(n+2),t(n+2),t1(n+2),u(n+2),v(n+2);
+        r[0]=r[1]=r1[n+1]=r2[n+1]=r2[n+2]=
+        u[0]=u[1]=u[n+1]=u[n+2]=0;
+        double h( x[1]-x[0] ), f( (y[1]-y[0])/h );
+        for (int i=2;i<n+1;++i) {
+            g = h; h =  x[i]-x[i-1];
+            e = f; f = (y[i]-y[i-1])/h;
+            a[i-1] = f-e; t[i] = 2*(g+h)/3; t1[i] = h/3;
+            r2[i]=dy[i-2]/g; r[i]=dy[i]/h;
+            r1[i]=-dy[i-1]/g-dy[i-1]/h;
+        }
+        for (int i=2;i<n+1;++i) {
+            b[i-1] = r[i]*r[i]+r1[i]*r1[i]+r2[i]*r2[i];
+            c[i-1] = r[i]*r[i+1]+r1[i]*r2[i+1];
+            d[i-1] = r[i]*r2[i+2];
+        }
+        double p=0;
+        double f2 = -s;
+        while(true) {
+            for (int i=2;i<n+1;++i) {
+                r1[i-1]=f*r[i-1]; r2[i-2]=g*r[i-2];
+                r[i] = double(1)/(p*b[i-1]+t[i]-f*r1[i-1]-g*r2[i-2]);
+                u[i] = a[i-1]-r1[i-1]*u[i-1]-r2[i-2]*u[i-2];
+                f=p*c[i-1]+t1[i]-h*r1[i-1]; g=h; h=d[i-1]*p;
+            }
+            for (int i=n;i>=2;--i) u[i]=r[i]*u[i]-r1[i]*u[i+1]-r2[i]*u[i+2];
+            e = h = 0;
+            for (int i=1;i<n+1;++i) {
+                g=h; h=(u[i+1]-u[i])/(x[i]-x[i-1]);
+                v[i] = (h-g) * dy[i-1]*dy[i-1]; e += v[i]*(h-g);
+            }
+            g=v[n+1]=-h*dy[n]*dy[n]; e-=g*h;
+            g = f2; f2 = e*p*p;
+            if (f2>=s || f2<=g ) break;
+            f=0; h=(v[2]-v[1])/(x[1]-x[0]);
+            for (int i=2;i<n+1;++i) {
+                g=h; h=(v[i+1]-v[i])/(x[i]-x[i-1]);
+                g=h-g-r1[i-1]*r[i-1]-r2[i-2]*r[i-1];
+                f+=g*r[i]*g; r[i] = g;
+            }
+            h = e-p*f ; if (h<=0) break;
+            p += (s-f2)/((sqrt(s/e)+p)*h);
+        }
+        for (int i=0;i<=n;++i) y[i] -= p*v[i+1]; // compute the smoothed ordinates
+    }
+}
+
+void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double>& dy, double s) const {
+    RooCubicSplineKnot_aux::Reinsch(_u,y,dy,s);
 }
 
 // on input, y contains the values at the knot locations
@@ -47,6 +105,9 @@ void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y ) const
     y.push_back(bb);
     y.insert(y.begin(),bf); // ouch... expensive!
 }
+
+
+
 
 void RooCubicSplineKnot::fillPQRS() const {
            assert(_PQRS.empty());
