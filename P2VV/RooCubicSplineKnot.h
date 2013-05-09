@@ -23,6 +23,7 @@ public:
     // S=0: invoke smoothing, but result should just be the interpolating spline, 
     // S->infty: zero curvature, i.e. straight line
     void smooth(std::vector<double>& y, const std::vector<double>& dy, double s) const;
+    void smooth2(std::vector<double>& y, const std::vector<double>& dy, double s) const;
 
     class S_jk { 
     public:
@@ -98,6 +99,7 @@ private:
     double qua(double x) const { return sqr(sqr(x)); }
     double d(double _u, int j) const { return _u-u(j); }
     double h(int i, int j) const { return u(i)-u(j); }
+    double h(int i) const { return u(i+1)-u(i); }
 
     const   std::vector<double> _u;
     mutable std::vector<double> _PQRS;                   //!

@@ -67,7 +67,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
     if ( smooth >= 0 ) { 
             std::vector<double> errs;
             for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
-            _aux->smooth( values, errs, values.size()*smooth );
+            _aux->smooth2( values, errs, values.size()*smooth );
     }
     _aux->computeCoefficients( values );
     for (int i=0;i<values.size();++i) { 
