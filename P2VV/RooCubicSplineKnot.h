@@ -16,14 +16,7 @@ public:
     double analyticalIntegral(const RooArgList& b) const;
 
     void computeCoefficients(std::vector<double>& y ) const ;
-    // smooth returns the spline with minimal curvature (defined as the integral of the 
-    // square of the 2nd derivative over the range between first and last point) which
-    // satisfies a chisq/npoits < S   
-    // S<0: skip smoothing, return interpolating spline
-    // S=0: invoke smoothing, but result should just be the interpolating spline, 
-    // S->infty: zero curvature, i.e. straight line
-    void smooth(std::vector<double>& y, const std::vector<double>& dy, double s) const;
-    void smooth2(std::vector<double>& y, const std::vector<double>& dy, double s) const;
+    void smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const;
 
     class S_jk { 
     public:

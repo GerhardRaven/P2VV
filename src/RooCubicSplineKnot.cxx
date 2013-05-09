@@ -13,70 +13,6 @@ namespace RooCubicSplineKnot_aux {
                                              const typename T::value_type& c,
                                              const typename T::value_type& d) { t.push_back(a); t.push_back(b); t.push_back(c); t.push_back(d) ; }
 
-
-    void Reinsch( const std::vector<double>& x, std::vector<double>& y, const std::vector<double>&  dy, double s ) {
-    // translated from the ALGOL original by C.H. Reinsch
-        double g,e;
-        unsigned n = x.size()-1;
-        std::vector<double> a(n),b(n),c(n),d(n);
-        std::vector<double> r(n+3),r1(n+3),r2(n+3),t(n+3),t1(n+3),u(n+3),v(n+3);
-        r.at(0)=r.at(1)=r1.at(n+1)=r2.at(n+1)=r2.at(n+2)=
-        u.at(0)=u.at(1)=u.at(n+1)=u.at(n+2)=0;
-        double h( x.at(1)-x.at(0) ), f( (y.at(1)-y.at(0))/h );
-        for (int i=2;i<n+1;++i) {
-            std::cout << "loop 1, i = " << i << " (" << x.at(i-1) << "," << y.at(i-1) << " +- " << dy.at(i-1) << " ) "  << std::endl;
-            g = h; 
-            h =  x.at(i)-x.at(i-1);
-            e = f; 
-            f = (y.at(i)-y.at(i-1))/h;
-            a.at(i-1) = f-e; 
-            t.at(i) = 2*(g+h)/3;
-            t1.at(i) = h/3;
-            r2.at(i)= dy.at(i-2)/g; 
-            r .at(i)= dy.at(i)  /h;
-            r1.at(i)=-dy.at(i-1)/g-dy.at(i-1)/h;
-        }
-        for (int i=2;i<n+1;++i) {
-            std::cout << "loop 2, i = " << i << std::endl;
-            b.at(i-1) = r.at(i)*r.at(i)+r1.at(i)*r1.at(i)+r2.at(i)*r2.at(i);
-            c.at(i-1) = r.at(i)*r.at(i+1)+r1.at(i)*r2.at(i+1);
-            d.at(i-1) = r.at(i)*r2.at(i+2);
-        }
-        double p=0;
-        double f2 = -s;
-        int iter(0);
-        while(true) {
-            std::cout << "iteration " << ++iter <<  std::endl;
-            for (int i=2;i<n+1;++i) {
-                std::cout << "loop 3, i = " << i << std::endl;
-                r1[i-1]=f*r[i-1]; r2[i-2]=g*r[i-2];
-                r[i] = double(1)/(p*b[i-1]+t[i]-f*r1[i-1]-g*r2[i-2]);
-                u[i] = a[i-1]-r1[i-1]*u[i-1]-r2[i-2]*u[i-2];
-                f=p*c[i-1]+t1[i]-h*r1[i-1]; g=h; h=d[i-1]*p;
-            }
-            for (int i=n;i>=2;--i) u[i]=r[i]*u[i]-r1[i]*u[i+1]-r2[i]*u[i+2];
-            e = h = 0;
-            for (int i=1;i<n+1;++i) {
-                g=h; h=(u[i+1]-u[i])/(x[i]-x[i-1]);
-                v[i] = (h-g) * dy[i-1]*dy[i-1]; e += v[i]*(h-g);
-            }
-            g=v[n+1]=-h*dy[n]*dy[n]; e-=g*h;
-            g = f2; f2 = e*p*p;
-            if (f2>=s || f2<=g ) break;
-            f=0; h=(v[2]-v[1])/(x[1]-x[0]);
-            for (int i=2;i<n+1;++i) {
-                g=h; h=(v[i+1]-v[i])/(x[i]-x[i-1]);
-                g=h-g-r1[i-1]*r[i-1]-r2[i-2]*r[i-1];
-                f+=g*r[i]*g; r[i] = g;
-            }
-            h = e-p*f ; if (h<=0) break;
-            p += (s-f2)/((sqrt(s/e)+p)*h);
-        }
-        for (int i=0;i<n+1;++i) { 
-            std::cout << " i = " << i << " y = " << y[i] << " -> " << y[i]-p*v[i+1] << std::endl;
-            y[i] -= p*v[i+1]; // compute the smoothed ordinates
-        }
-    }
 }
 
 #include "TVectorD.h"
@@ -85,7 +21,7 @@ namespace RooCubicSplineKnot_aux {
 #include "TMatrixTUtils.h"
 #include "TDecompLU.h"
 
-void RooCubicSplineKnot::smooth2(std::vector<double>& y, const std::vector<double>& dy, double lambda) const {
+void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const {
         unsigned n=y.size();
         TMatrixD D(n-2,n);
         for (int i=0;i<n-2;++i) {
@@ -115,9 +51,6 @@ void RooCubicSplineKnot::smooth2(std::vector<double>& y, const std::vector<doubl
         for (int i=0;i<n;++i) y[i]=vals(i);
 }
 
-void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double>& dy, double s) const {
-    RooCubicSplineKnot_aux::Reinsch(_u,y,dy,s);
-}
 
 // on input, y contains the values at the knot locations
 // on output, it contains the b-spline coefficients 
