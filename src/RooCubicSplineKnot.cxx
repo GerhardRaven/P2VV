@@ -25,29 +25,20 @@ void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double
         unsigned n=y.size();
         TMatrixD D(n-2,n);
         for (int i=0;i<n-2;++i) {
-            double ih0( double(1)/h(i  ) )
-                 , ih1( double(1)/h(i+1) );
-            D(i,i)   =  ih0;
-            D(i,i+1) = -ih0-ih1;
-            D(i,i+2) =  ih1;
+            double ih0( double(1)/h(i)) , ih1( double(1)/h(i+1) );
+            D(i,i) = ih0; D(i,i+1) = -ih0-ih1; D(i,i+2) = ih1;
         }
         TMatrixDSym W(n-2);
         for (int i=0;i<n-2;++i) { 
-            double h0 = h(i)
-                 , h1 = h(i+1);
-            W(i,i  ) = (h0+h1)/3;
-            if (i>0) { W(i,i-1) = h0/6; W(i-1,i) = h0/6; }
+            double h0 = h(i), h1 = h(i+1);
+            W(i,i) = (h0+h1)/3;
+            if (i>0) { W(i,i-1) = W(i-1,i) = h0/6; }
         }
-        W.Invert();
-        W.SimilarityT(D);
-        W *= lambda;
-        TMatrixDSym I(n);
-        for (int i=0;i<n;++i) I(i,i)=double(1)/dy[i];
-        W += I;
+        W.Invert(); W.SimilarityT(D); W *= lambda;
+        for (int i=0;i<n;++i) W(i,i) += double(1)/dy[i];
         TVectorD vals(n);
         for (int i=0;i<n;++i) vals(i)=y[i]/dy[i];
-        TDecompLU lu(W);
-        lu.Solve( vals );
+        TDecompLU lu(W); lu.Solve( vals );
         for (int i=0;i<n;++i) y[i]=vals(i);
 }
 
