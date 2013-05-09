@@ -17,30 +17,38 @@ namespace RooCubicSplineKnot_aux {
     void Reinsch( const std::vector<double>& x, std::vector<double>& y, const std::vector<double>&  dy, double s ) {
     // translated from the ALGOL original by C.H. Reinsch
         double g,e;
-        unsigned n = x.size();
-        assert(n==y.size());
-        assert(n==dy.size());
+        unsigned n = x.size()-1;
         std::vector<double> a(n),b(n),c(n),d(n);
-        std::vector<double> r(n+2),r1(n+2),r2(n+2),t(n+2),t1(n+2),u(n+2),v(n+2);
-        r[0]=r[1]=r1[n+1]=r2[n+1]=r2[n+2]=
-        u[0]=u[1]=u[n+1]=u[n+2]=0;
-        double h( x[1]-x[0] ), f( (y[1]-y[0])/h );
+        std::vector<double> r(n+3),r1(n+3),r2(n+3),t(n+3),t1(n+3),u(n+3),v(n+3);
+        r.at(0)=r.at(1)=r1.at(n+1)=r2.at(n+1)=r2.at(n+2)=
+        u.at(0)=u.at(1)=u.at(n+1)=u.at(n+2)=0;
+        double h( x.at(1)-x.at(0) ), f( (y.at(1)-y.at(0))/h );
         for (int i=2;i<n+1;++i) {
-            g = h; h =  x[i]-x[i-1];
-            e = f; f = (y[i]-y[i-1])/h;
-            a[i-1] = f-e; t[i] = 2*(g+h)/3; t1[i] = h/3;
-            r2[i]=dy[i-2]/g; r[i]=dy[i]/h;
-            r1[i]=-dy[i-1]/g-dy[i-1]/h;
+            std::cout << "loop 1, i = " << i << " (" << x.at(i-1) << "," << y.at(i-1) << " +- " << dy.at(i-1) << " ) "  << std::endl;
+            g = h; 
+            h =  x.at(i)-x.at(i-1);
+            e = f; 
+            f = (y.at(i)-y.at(i-1))/h;
+            a.at(i-1) = f-e; 
+            t.at(i) = 2*(g+h)/3;
+            t1.at(i) = h/3;
+            r2.at(i)= dy.at(i-2)/g; 
+            r .at(i)= dy.at(i)  /h;
+            r1.at(i)=-dy.at(i-1)/g-dy.at(i-1)/h;
         }
         for (int i=2;i<n+1;++i) {
-            b[i-1] = r[i]*r[i]+r1[i]*r1[i]+r2[i]*r2[i];
-            c[i-1] = r[i]*r[i+1]+r1[i]*r2[i+1];
-            d[i-1] = r[i]*r2[i+2];
+            std::cout << "loop 2, i = " << i << std::endl;
+            b.at(i-1) = r.at(i)*r.at(i)+r1.at(i)*r1.at(i)+r2.at(i)*r2.at(i);
+            c.at(i-1) = r.at(i)*r.at(i+1)+r1.at(i)*r2.at(i+1);
+            d.at(i-1) = r.at(i)*r2.at(i+2);
         }
         double p=0;
         double f2 = -s;
+        int iter(0);
         while(true) {
+            std::cout << "iteration " << ++iter <<  std::endl;
             for (int i=2;i<n+1;++i) {
+                std::cout << "loop 3, i = " << i << std::endl;
                 r1[i-1]=f*r[i-1]; r2[i-2]=g*r[i-2];
                 r[i] = double(1)/(p*b[i-1]+t[i]-f*r1[i-1]-g*r2[i-2]);
                 u[i] = a[i-1]-r1[i-1]*u[i-1]-r2[i-2]*u[i-2];
@@ -64,8 +72,47 @@ namespace RooCubicSplineKnot_aux {
             h = e-p*f ; if (h<=0) break;
             p += (s-f2)/((sqrt(s/e)+p)*h);
         }
-        for (int i=0;i<=n;++i) y[i] -= p*v[i+1]; // compute the smoothed ordinates
+        for (int i=0;i<n+1;++i) { 
+            std::cout << " i = " << i << " y = " << y[i] << " -> " << y[i]-p*v[i+1] << std::endl;
+            y[i] -= p*v[i+1]; // compute the smoothed ordinates
+        }
     }
+}
+
+#include "TVectorD.h"
+#include "TMatrixD.h"
+#include "TMatrixDSym.h"
+#include "TMatrixTUtils.h"
+#include "TDecompLU.h"
+
+void RooCubicSplineKnot::smooth2(std::vector<double>& y, const std::vector<double>& dy, double lambda) const {
+        unsigned n=y.size();
+        TMatrixD D(n-2,n);
+        for (int i=0;i<n-2;++i) {
+            double ih0( double(1)/h(i  ) )
+                 , ih1( double(1)/h(i+1) );
+            D(i,i)   =  ih0;
+            D(i,i+1) = -ih0-ih1;
+            D(i,i+2) =  ih1;
+        }
+        TMatrixDSym W(n-2);
+        for (int i=0;i<n-2;++i) { 
+            double h0 = h(i)
+                 , h1 = h(i+1);
+            W(i,i  ) = (h0+h1)/3;
+            if (i>0) { W(i,i-1) = h0/6; W(i-1,i) = h0/6; }
+        }
+        W.Invert();
+        W.SimilarityT(D);
+        W *= lambda;
+        TMatrixDSym I(n);
+        for (int i=0;i<n;++i) I(i,i)=double(1)/dy[i];
+        W += I;
+        TVectorD vals(n);
+        for (int i=0;i<n;++i) vals(i)=y[i]/dy[i];
+        TDecompLU lu(W);
+        lu.Solve( vals );
+        for (int i=0;i<n;++i) y[i]=vals(i);
 }
 
 void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double>& dy, double s) const {
