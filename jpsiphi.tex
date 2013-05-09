@@ -360,7 +360,7 @@ where
 and the constants $P_i,Q_i,R_i$ and $S_i$ which depend on the knot vector only are defined as:
 \begin{eqnarray*}
     P_i &=&\Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1}\Delta_i^{i+1}
-\\  Q_i &=&\Delta_{i-1}^{i+2})\Delta_{i-1}^{i+1}\Delta_i^{i+1}
+\\  Q_i &=&\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1}\Delta_i^{i+1}
 \\  R_i &=&\Delta_i^{i+2}\Delta_{i-1}^{i+2}\Delta_i^{i+1}
 \\  S_i &=&\Delta_i^{i+3}\Delta_i^{i+2}\Delta_i^{i+1}
 \end{eqnarray*}
@@ -384,20 +384,33 @@ and the constants $P_i,Q_i,R_i$ and $S_i$ which depend on the knot vector only a
 \end{eqnarray*}
 
 \begin{eqnarray*}
-     A''_i(u) &=& -6\frac{\Delta_{i+1}(u)}{P_i}  
+     A''_i(u) &=& -\frac{6}{P_i}  \Delta_i(u) -\frac{6}{P_i}  \Delta^i_{i+1} 
+\\           &\equiv&  \alpha_i^1 \Delta_i(u) + \alpha_i^0
 \\   B''_i(u) &=& 
               +    \left( \frac{2}{Q_i} + \frac{4}{R_i} \right) \Delta_{i+2}(u)
               +    \left( \frac{4}{P_i} + \frac{2}{Q_i} \right)\Delta_{i+1}(u)
               +    \frac{2}{R_i}\Delta_i    (u)
               +    \frac{2}{Q_i}\Delta_{i-1}(u)
               +    \frac{2}{P_i}\Delta_{i-2}(u)
+\\           &=& 
+              \left(  \frac{6}{Q_i} + \frac{6}{R_i} +    \frac{6}{P_i} \right) \Delta_i(u) 
+              +    \frac{4\Delta^i_{i+1}+2\Delta^i_{i-2}}{P_i} 
+              +    \frac{2\Delta^i_{i+1}+2\Delta^i_{i+2}+2\Delta^i_{i-1}}{Q_i} 
+              +    \frac{4\Delta^i_{i+2}}{R_i} 
+\\           &\equiv&  \beta_i^1 \Delta_i(u) + \beta_i^0
 \\   C''_i(u) &=&
               -    \frac{2}{S_i} \Delta_{i+3}(u)
               -    \frac{2}{R_i} \Delta_{i+2}(u)
               -    \frac{2}{Q_i} \Delta_{i+1}(u)
               - \left(   \frac{2}{R_i} + \frac{4}{S_i}\right) \Delta_i    (u)
               -  \left(  \frac{4}{Q_i} + \frac{2}{R_i}\right) \Delta_{i-1}(u)
-\\   D''_i(u) &=&  6\frac{\Delta_i    (u)}{S_i}
+\\            &=&
+              - \left( \frac{6}{Q_i}+  \frac{6}{R_i} + \frac{6}{S_i}\right)  \Delta_i(u)
+              -    \frac{2\Delta^i_{i+3} }{S_i} 
+              -    \frac{2\Delta^i_{i+1}+4\Delta^i_{i-1} }{Q_i} 
+              -    \frac{2\Delta^i_{i-1}+2 \Delta^i_{i+2}  }{R_i}
+\\           &\equiv&  \gamma_i^1 \Delta_i(u) + \gamma_i^0
+\\   D''_i(u) &=&  \frac{6}{S_i}\Delta_i    (u)
 \end{eqnarray*}
 
 \subsubsection{Interpolating Spline}
@@ -517,8 +530,19 @@ Fortunately, using partial integration, one can write generically
 \end{eqnarray*}
 
 \begin{eqnarray*}
-          \int_{u_i}^{u_{i+1}} du \left( A''_i(u) \right)^2  & = & 12 \frac{ (\Delta_i^{i+1})^2 }{ \Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1}}
-\\        \int_{u_i}^{u_{i+1}} du  A''_i(u) B''_i(u)         & = &
+          \int_{u_i}^{u_{i+1}} du \left( A''_i(u) \right)^2  & = & 12 \frac{ \Delta_i^{i+1} }{ \left(\Delta_{i-2}^{i+1}\right)^2\left(\Delta_{i-1}^{i+1}\right)^2 }
+\\        \int_{u_i}^{u_{i+1}} du  A''_i(u) B''_i(u)       & = & \frac{1}{\Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1}}
+    (   \left( \frac{2\Delta_i^{i+2}\Delta_{i-1}^{i+2} + 4\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1}}{(\Delta_{i-1}^{i+2})^2\Delta_{i-1}^{i+1}\Delta_i^{i+2}} \right)\left(\Delta_i^{i+1} -3\Delta_i^{i+2} \right)
+  \\     & - &  \frac{\Delta_i^{i+1}}{\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1} }  \left( \frac{8\Delta_{i-1}^{i+2}+4\Delta_{i-2}^{i+1}}{\Delta_{i-2}^{i+1}} 
+           -    \frac{  2 \Delta_{i-1}^{i+1} }{\Delta_i^{i+2}} \right)
+  \\     & + &\frac{1}{\Delta_{i-1}^{i+1}} \left(  \frac{  6\Delta_{i-1}^i+2\Delta_i^{i+1} }{\Delta_{i-1}^{i+2}}
+           +    \frac{  6\Delta_{i-2}^i+2\Delta_i^{i+1} }{\Delta_{i-2}^{i+1}} \right) )
+\\                                                           & = & \frac{1}{\Delta_{i-2}^{i+1}(\Delta_{i-1}^{i+1})^2\Delta_{i-1}^{i+2}}
+    (   \left( \frac{2\Delta_i^{i+2}\Delta_{i-1}^{i+2} + 4\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1}}{\Delta_{i-1}^{i+2}\Delta_i^{i+2}} \right)\left(\Delta_i^{i+1} -3\Delta_i^{i+2} \right)
+  \\     & - &  \frac{\Delta_i^{i+1}}{\Delta_{i-2}^{i+1} }  \left( 8\Delta_{i-1}^{i+2}+4\Delta_{i-2}^{i+1}
+           -    \frac{  2 \Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1} }{\Delta_i^{i+2}} \right)
+  \\     & + &\frac{1}{\Delta_{i-2}^{i+1}} \left(   6\Delta_{i-1}^i\Delta_{i-2}^{i+1}+2\Delta_i^{i+1}\Delta_{i-2}^{i+1}
+           +      6\Delta_{i-2}^i\Delta_{i-1}^{i+2}+2\Delta_i^{i+1}\Delta_{i-1}^{i+2} \right) )
 \\        \int_{u_i}^{u_{i+1}} du  A''_i(u) C''_i(u)         & = &
 \\        \int_{u_i}^{u_{i+1}} du  A''_i(u) D''_i(u)         & = &
 \\        \int_{u_i}^{u_{i+1}} du \left( B''_i(u) \right)^2  & = &
