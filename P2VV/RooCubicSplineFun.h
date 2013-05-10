@@ -27,7 +27,8 @@ class RooCubicSplineFun : public RooAbsReal {
 public:
   RooCubicSplineFun() ;
   // smooth = 0: no smoothing. As smooth becomes larger, the result will converge towards a straight line
-  RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TH1* hist, double smooth = 0);
+  RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TH1* hist,
+                    double smooth = 0, bool constCoeffs = true);
   RooCubicSplineFun(const char *name, const char *title, RooRealVar& x, const char *knotBinningName, const RooArgList& coefList) ;
   ~RooCubicSplineFun() ;
 
@@ -41,6 +42,8 @@ public:
   RooComplex  gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM, const RooCubicSplineGaussModel::K_n& K, double offset, double* sc) const ;
   unsigned knotSize() const { return _aux->size(); }
   double u(int i) const { return _aux->u(i); }
+
+  const RooArgList& coefficients() const { return _coefList; }
 
 private:
   RooRealProxy _x;
