@@ -365,53 +365,6 @@ and the constants $P_i,Q_i,R_i$ and $S_i$ which depend on the knot vector only a
 \\  S_i &=&\Delta_i^{i+3}\Delta_i^{i+2}\Delta_i^{i+1}
 \end{eqnarray*}
 
-\subsubsection{Trivia}
-\begin{eqnarray*}
-     A'_i(u) &=& -3\frac{\Delta_{i+1}(u)^2}{P_i}  
-\\   B'_i(u) &=&   \frac{\Delta_{i+1}(u)^2}{P_i}               +  2\frac{\Delta_{i-2}(u)\Delta_{i+1}(u) }{P_i} 
-        \\   &+&   \frac{\Delta_{i+1}(u)\Delta_{i+2}(u) }{Q_i} +   \frac{\Delta_{i-1}(u)\Delta_{i+2}(u) }{Q_i} + \frac{\Delta_{i-1}(u)\Delta_{i+1}(u) }{Q_i} 
-        \\   &+&   \frac{\Delta_{i+2}(u)^2 }{R_i}              + 2 \frac{\Delta_i    (u)\Delta_{i+2}(u) }{R_i}                     
-\\   C'_i(u) &=& -2\frac{\Delta_{i-1}(u)\Delta_{i+1}(u)}{Q_i}  -   \frac{\Delta_{i-1}(u)^2 }{Q_i}                                  
-        \\   &-&   \frac{\Delta_i    (u)\Delta_{i+2}(u)}{R_i}  -   \frac{\Delta_{i-1}(u)\Delta_{i+2}(u) }{R_i} - \frac{\Delta_{i-1}(u)\Delta_i(u) }{R_i} 
-        \\   &-&  2\frac{\Delta_i    (u)\Delta_{i+3}(u)}{S_i}  -   \frac{\Delta_i    (u)^2 }{S_i}
-\\   D'_i(u) &=&  3\frac{\Delta_i    (u)^2 }{S_i}
-\end{eqnarray*}
-\begin{eqnarray*}
-     A'_0(u_0) &=& \frac{-3}{\Delta_0^1}  
-\\   B'_0(u_0) &=&  \frac{3 }{\Delta_0^1} 
-\\   C'_0(u_0) &=&  0
-\\   D'_0(u_0) &=&  0
-\end{eqnarray*}
-
-\begin{eqnarray*}
-     A''_i(u) &=& -\frac{6}{P_i}  \Delta_i(u) -\frac{6}{P_i}  \Delta^i_{i+1} 
-\\           &\equiv&  \alpha_i^1 \Delta_i(u) + \alpha_i^0
-\\   B''_i(u) &=& 
-              +    \left( \frac{2}{Q_i} + \frac{4}{R_i} \right) \Delta_{i+2}(u)
-              +    \left( \frac{4}{P_i} + \frac{2}{Q_i} \right)\Delta_{i+1}(u)
-              +    \frac{2}{R_i}\Delta_i    (u)
-              +    \frac{2}{Q_i}\Delta_{i-1}(u)
-              +    \frac{2}{P_i}\Delta_{i-2}(u)
-\\           &=& 
-              \left(  \frac{6}{Q_i} + \frac{6}{R_i} +    \frac{6}{P_i} \right) \Delta_i(u) 
-              +    \frac{4\Delta^i_{i+1}+2\Delta^i_{i-2}}{P_i} 
-              +    \frac{2\Delta^i_{i+1}+2\Delta^i_{i+2}+2\Delta^i_{i-1}}{Q_i} 
-              +    \frac{4\Delta^i_{i+2}}{R_i} 
-\\           &\equiv&  \beta_i^1 \Delta_i(u) + \beta_i^0
-\\   C''_i(u) &=&
-              -    \frac{2}{S_i} \Delta_{i+3}(u)
-              -    \frac{2}{R_i} \Delta_{i+2}(u)
-              -    \frac{2}{Q_i} \Delta_{i+1}(u)
-              - \left(   \frac{2}{R_i} + \frac{4}{S_i}\right) \Delta_i    (u)
-              -  \left(  \frac{4}{Q_i} + \frac{2}{R_i}\right) \Delta_{i-1}(u)
-\\            &=&
-              - \left( \frac{6}{Q_i}+  \frac{6}{R_i} + \frac{6}{S_i}\right)  \Delta_i(u)
-              -    \frac{2\Delta^i_{i+3} }{S_i} 
-              -    \frac{2\Delta^i_{i+1}+4\Delta^i_{i-1} }{Q_i} 
-              -    \frac{2\Delta^i_{i-1}+2 \Delta^i_{i+2}  }{R_i}
-\\           &\equiv&  \gamma_i^1 \Delta_i(u) + \gamma_i^0
-\\   D''_i(u) &=&  \frac{6}{S_i}\Delta_i    (u)
-\end{eqnarray*}
 
 \subsubsection{Interpolating Spline}
 To determine, from a set of $n+1$ control points $\{(u_0,y_0),\cdots,(u_{n+1},y_{n+1})\}$, 
@@ -486,75 +439,51 @@ To address this issue\footnote{see Christian H. Reinsch, "Smoothing by Spline Fu
 statistical errors. To smooth the curve, one can define the following $\chi^2$ where we have added the
 (integrated) magnitude of the second derivative as a penalty:
 \begin{equation}
-     \chi^2(\lambda) = \sum_i \left( \frac{y_i-S(u_i)}{\sigma_i} \right)^2 - \lambda \int du \left( S''(u) \right)^2
+     \chi^2(\lambda) = \sum_i \left( \frac{y_i-\mu_i}{\sigma_i} \right)^2 - \lambda \int du \left( S''(u) \right)^2
 \end{equation}
+where $\mu_i = S(u_i)$.
 In case $\lambda=0$, one recovers the discussion of the previous section, as it is clear that for an
 interpolating spline $\chi^2(\lambda=0) = 0$, and hence minimized. In case $\lambda\to\infty$, the
 only thing that matters is the constraint on the second derivative, and hence one obtains a function
 with zero second derivative everywhere, i.e. a straight line.
 
-
-The constraint term can be written as a matrix product, where the matrix depends on the integrals of
-products of the second derivatives of the b-spline components:
-\begin{eqnarray*}
-    \int du \left(S''(u)\right)^2  
-    &=& \sum_{i=0}^{n-1} \int_{u_i}^{u_{i+1}} du \left[ b_i A''_i(u) + b_{i+1}B''_i(u) + b_{i+2}C''(u) + b_{i+3}D''(u)  \right]^2
-\\  &=& \sum_{i=0}^{n-1} \left( \begin{array}{c} b_i \\ b_{i+1} \\ b_{i+2} \\ b_{i+3} \end{array} \right)^T G_i  \left( \begin{array}{c} b_i \\ b_{i+1} \\ b_{i+2} \\ b_{i+3}\end{array} \right)
-\\  &=& \vec{b}^T K \vec{b}
-\end{eqnarray*}
-where the matrix $G_i$ can be written in upper-diagonal form:
+As the spline coefficients are fully determined by the points $(u_i,\mu_i)$, the problem above can be
+split in two steps. The first is to obtain a 'smoothed' set $\mu_i$, and then the coefficients are determined
+by constructing an interpolating spline through $(u_i,\mu_i)$.
+Because the second derivative of a cubic b-spline is a linear function, it turns out\footnote{Reinsch} that 
+the penalty term can be written in quadratic form:
 \begin{equation}
-   G_i = \left(  \begin{array}{cccc}
-                \int_{u_i}^{u_{i+1}} du \left( A''_i(u) \right)^2 
-                        & 2 \int_{u_i}^{u_{i+1}} du  A''_i(u) B''_i(u) 
-                        & 2 \int_{u_i}^{u_{i+1}} du  A''_i(u) C''_i(u) 
-                        & 2 \int_{u_i}^{u_{i+1}} du  A''_i(u) D''_i(u) 
-          \\   0 &  \int_{u_i}^{u_{i+1}} du \left( B''_i(u) \right)^2 
-                        & 2 \int_{u_i}^{u_{i+1}} du  B''_i(u) C''_i(u) 
-                        & 2 \int_{u_i}^{u_{i+1}} du  B''_i(u) D''_i(u) 
-          \\   0 & 0 &  \int_{u_i}^{u_{i+1}} du \left( C''_i(u) \right)^2 
-                        & 2 \int_{u_i}^{u_{i+1}} du  C''_i(u) D''_i(u) 
-          \\   0 & 0 & 0 &  \int_{u_i}^{u_{i+1}} du \left( D''_i(u) \right)^2 
-          \\                      
-          \\                      
-       \end{array} \right)
+    \int du (S''(u))^2 = \mu_j S^{(2)}_{jk} \mu_k
 \end{equation}
-For this we need integrals of quadratic combinations of $\Delta_i(u)$:
-\begin{eqnarray*}
-     \int_{u_i}^{u_{i+1}} du \left(\alpha \Delta_i(u) + \beta \right)\left(\gamma \Delta_i(u)-\delta\right)
-     &=& \int_{u_i}^{u_{i+1}} du \left(\alpha\gamma \Delta_i(u)^2 + (\alpha\delta+\beta\gamma)\Delta_i(u) + \beta\delta\right)
- \\ &=&\frac{\alpha\gamma}{3} \left(\Delta^{i+1}_i\right)^3 + \frac{\alpha\delta+\beta\gamma}{2}\left(\Delta^{i+1}_i\right)^2 + \beta\delta\Delta^{i+1}_i
-\end{eqnarray*}
+where the $n\times n$ matrix $S^{(2)}_{jk}$ is given by 
+\begin{equation}
+    S^{(2)} = D^T W^{-1} D
+\end{equation}
+with
+\begin{eqnarray}
+    W &=&\frac{1}{6} \left( \begin{array}{ccccccc}  
+               2 \Delta^2_0  &  \Delta^2_1 & 0 & 0 & 0& \hdots
+             \\ \Delta^2_1   & 2\Delta^3_1 &  \Delta^3_2 & 0 &0&  \hdots
+             \\ 0  & \Delta^3_2   &2\Delta^4_2 &  \Delta^4_3 &0&  \hdots
+             \\ \vdots  &  \ddots  & \ddots & \ddots & \ddots &  
+             \\ 0  &  &  \ddots  & \Delta_{n-4}^{n-3} & 2\Delta_{n-4}^{n-2} & \Delta_{n-3}^{n-2}
+             \\ 0 & 0& \hdots & 0 & \Delta_{n-3}^{n-2} & 2\Delta_{n-3}^{n-1}
+        \end{array} \right)
+\\  D &=& \left( \begin{array}{ccccccc}  
+        \end{array} \right)
+\end{eqnarray}
 
 
-\begin{eqnarray*}
-          \int_{u_i}^{u_{i+1}} du \left( A''_i(u) \right)^2  & = &
-          \int_{u_i}^{u_{i+1}} du \left( \alpha_i^1 \Delta_i(u)+\alpha_i^0 \right)^2  
-          \\ & = & \frac{(\alpha_i^1)^2}{3} (\Delta_i^{i+1})^3+\alpha_i^0\alpha_i^1 (\Delta_i^{i+1})^2+(\alpha_i^0)^2 \Delta_i^{i+1}
-          \\ &=&12 \frac{ \Delta_i^{i+1} }{ \left(\Delta_{i-2}^{i+1}\right)^2\left(\Delta_{i-1}^{i+1}\right)^2 }
-\\        \int_{u_i}^{u_{i+1}} du  A''_i(u) B''_i(u)       & = & \frac{1}{\Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1}}
-    (   \left( \frac{2\Delta_i^{i+2}\Delta_{i-1}^{i+2} + 4\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1}}{(\Delta_{i-1}^{i+2})^2\Delta_{i-1}^{i+1}\Delta_i^{i+2}} \right)\left(\Delta_i^{i+1} -3\Delta_i^{i+2} \right)
-  \\     & - &  \frac{\Delta_i^{i+1}}{\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1} }  \left( \frac{8\Delta_{i-1}^{i+2}+4\Delta_{i-2}^{i+1}}{\Delta_{i-2}^{i+1}} 
-           -    \frac{  2 \Delta_{i-1}^{i+1} }{\Delta_i^{i+2}} \right)
-  \\     & + &\frac{1}{\Delta_{i-1}^{i+1}} \left(  \frac{  6\Delta_{i-1}^i+2\Delta_i^{i+1} }{\Delta_{i-1}^{i+2}}
-           +    \frac{  6\Delta_{i-2}^i+2\Delta_i^{i+1} }{\Delta_{i-2}^{i+1}} \right) )
-\\                                                           & = & \frac{1}{\Delta_{i-2}^{i+1}(\Delta_{i-1}^{i+1})^2\Delta_{i-1}^{i+2}}
-    (   \left( \frac{2\Delta_i^{i+2}\Delta_{i-1}^{i+2} + 4\Delta_{i-1}^{i+2}\Delta_{i-1}^{i+1}}{\Delta_{i-1}^{i+2}\Delta_i^{i+2}} \right)\left(\Delta_i^{i+1} -3\Delta_i^{i+2} \right)
-  \\     & - &  \frac{\Delta_i^{i+1}}{\Delta_{i-2}^{i+1} }  \left( 8\Delta_{i-1}^{i+2}+4\Delta_{i-2}^{i+1}
-           -    \frac{  2 \Delta_{i-2}^{i+1}\Delta_{i-1}^{i+1} }{\Delta_i^{i+2}} \right)
-  \\     & + &\frac{1}{\Delta_{i-2}^{i+1}} \left(   6\Delta_{i-1}^i\Delta_{i-2}^{i+1}+2\Delta_i^{i+1}\Delta_{i-2}^{i+1}
-           +      6\Delta_{i-2}^i\Delta_{i-1}^{i+2}+2\Delta_i^{i+1}\Delta_{i-1}^{i+2} \right) )
-\\        \int_{u_i}^{u_{i+1}} du  A''_i(u) C''_i(u)         & = &
-\\        \int_{u_i}^{u_{i+1}} du  A''_i(u) D''_i(u)         & = &
-\end{eqnarray*}
-\begin{eqnarray*}
-\\        \int_{u_i}^{u_{i+1}} du \left( B''_i(u) \right)^2  & = &
-\\        \int_{u_i}^{u_{i+1}} du  B''_i(u) C''_i(u)         & = &
-\\        \int_{u_i}^{u_{i+1}} du  B''_i(u) D''_i(u)         & = &
-\\        \int_{u_i}^{u_{i+1}} du \left( C''_i(u) \right)^2  & = &
-\\        \int_{u_i}^{u_{i+1}} du  C''_i(u) D''_i(u)         & = &
-\\        \int_{u_i}^{u_{i+1}} du \left( D''_i(u) \right)^2  & = & 12 \frac{ (\Delta_i^{i+1})^2 }{ \Delta_i^{i+3}\Delta_i^{i+2} }
-\end{eqnarray*}
+This implies that $\chi^2(\lambda)$ is a second order function of the $\mu$, and hence its minimization
+results in the following linear system:
+\begin{eqnarray}
+    \chi^2 & = & (y-\mu)^T diag(\frac{1}{\sigma^2}) (y-\mu) + \lambda \mu^T S^{(2)} \mu
+\\  \frac{1}{2}\frac{\partial \chi^2}{\partial_\mu } &=& -diag(\frac{1}{\sigma^2}) (y-\mu) + S^{(2)}\mu = 0
+\\    &\Rightarrow & \left( diag(\frac{1}{\sigma^2})  + \lambda S^{(2)}\right)   \mu = diag(\frac{1}{\sigma^2}) y
+\end{eqnarray}
+Solving this system, one obtains a set of $\mu_i$, which can then be used to construct an interpolating 
+spline.
+
 
 \pagebreak
 \subsection{Flavour tagging}
