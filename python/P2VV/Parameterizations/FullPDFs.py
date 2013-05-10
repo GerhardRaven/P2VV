@@ -171,7 +171,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['makePlots']   = False
         self['AllTagPlots'] = False
         self['SFit']        = True
-        self['blind']       = False
+        self['blind']       = { }
 
         self['numEvents'] = 54755
 
@@ -244,7 +244,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
                               , ( 'helphi',       '#varphi_{h} [rad]'           )
                              )
 
-        self['numBMassBins'] = [ 70, 40, 20, 20 ]
+        self['numBMassBins'] = [ 70, 40, 20, 20, 20 ]
         self['numTimeBins']  = 30
         self['numAngleBins'] = ( 10, 24, 5 )
 
@@ -463,6 +463,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         ,  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
                                          , Signal        = ( 5320., 5420. )
                                          , RightSideBand = ( 5420., 5550. )
+                                         , PeakBkg       = ( 5390., 5440. )
                                         )
                        )
 
@@ -923,7 +924,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
                          , self._dataSets['data'].get().find( hlt2B.GetName() )
                         ]
-            if hasattr( self, '_KKMassCat' ) :
+            if hasattr( self, '_KKMassCat' ) and paramKKMass == 'simultaneous' :
                 splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
             splitCats = [ cat for cat in splitCats if cat ]
             self._dataSets['sigSWeightData'].Print()
@@ -1057,31 +1058,34 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     projWData = dict()
 
                 # plot mumuKK mass distributions
-                self._massCanvs = [  TCanvas( 'massCanvLog',   'B mass logarithmic scale' )
-                                   , TCanvas( 'massCanvSig',   'B mass signal range'      )
-                                   , TCanvas( 'massCanvLeft',  'B mass left side band'    )
-                                   , TCanvas( 'massCanvRight', 'B mass right side band'   )
+                self._massCanvs = [  TCanvas( 'massCanvLog',     'B mass logarithmic scale'  )
+                                   , TCanvas( 'massCanvSig',     'B mass signal range'       )
+                                   , TCanvas( 'massCanvLeft',    'B mass left side band'     )
+                                   , TCanvas( 'massCanvRight',   'B mass right side band'    )
+                                   , TCanvas( 'massCanvPeakBkg', 'B mass peaking background' )
                                   ]
                 for index, ( pad, frameRange, nBins, plotTitle, plotName, logy, scale, yTitleOffset, markSize, markLineWidth )\
                       in enumerate ( zip(  self._massCanvs
-                                         , [ '', 'Signal', 'LeftSideBand', 'RightSideBand' ]
+                                         , [ '', 'Signal', 'LeftSideBand', 'RightSideBand', 'PeakBkg' ]
                                          , numBMassBins
                                          , [  BMass.GetTitle()
                                             , BMass.GetTitle() + ' mass fit - signal'
                                             , BMass.GetTitle() + ' mass fit - left side band'
                                             , BMass.GetTitle() + ' mass fit - right side band'
+                                            , BMass.GetTitle() + ' mass fit - peaking background'
                                            ]
                                          , [  BMass.GetName()
                                             , BMass.GetName() + ' fit - signal'
                                             , BMass.GetName() + ' fit - left side band'
                                             , BMass.GetName() + ' fit - right side band'
+                                            , BMass.GetName() + ' fit - peaking background'
                                            ]
-                                         , [ True, False, False, False ]
-                                         , [ ( 1.9e2, 1.2e4 ), ( None, None ), ( None, None ), ( None, None ) ]
-                                         #, [ ( 1.e3, 2.5e4 ), ( None, None ), ( None, None ), ( None, None ) ]
-                                         , [ 1.00, 1.15, 1.00, 1.00 ]
-                                         , [ 0.6,  0.7,  0.8,  0.8  ]
-                                         , [ 2,    3,    3,    3    ]
+                                         , [ True, False, False, False, False ]
+                                         #, [ ( 1.9e2, 1.2e4 ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
+                                         , [ ( 1.e3, 2.5e4 ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
+                                         , [ 1.00, 1.20, 1.15, 1.15, 1.15 ]
+                                         , [ 0.6,  0.7,  0.8,  0.8,  0.8  ]
+                                         , [ 2,    3,    3,    3,    3    ]
                                    ) ) :
                     pad.SetLeftMargin(0.18)
                     pad.SetRightMargin(0.05)
@@ -1294,7 +1298,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # B lifetime
         from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
         dGammaVar = dict( Name = 'dGamma' )
-        if blind : dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
+        if blind and 'dGamma' in blind :
+            if blind['dGamma'] : dGammaVar['Blind'] = blind['dGamma']
+            else :               dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
         self._lifetimeParams = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM )
         if ambiguityPars : self._lifetimeParams['dGamma'].setVal( -self._lifetimeParams['dGamma'].getVal() )
 
@@ -1304,7 +1310,29 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                , timeResSigma = timeRes
                                , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
                               )
-            if 'nomean' in timeResType.lower() :
+            if 'doublegauss' in timeResType.lower():
+                constant = 'constant' in timeResType.lower()
+                timeResArgs['timeResComb'] = dict(Name = 'timeResComb', Value = 1.4918, Error = 4.08e-03, MinMax = ( 0.1, 5. ), Constant = constant)
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = 6.0074, Error = 1.89e-01, MinMax = (1, 10), Constant = constant)
+                timeResArgs['timeResSigmaFrac2'] = dict( Name = 'timeResSigmaFrac2', Value = 1.5818e-02, Error = 1.07e-03, MinMax = (0.001, 0.999), Constant = constant)
+                covariance = {('timeResComb', 'timeResComb'): 1.663e-05,
+                              ('timeResComb', 'timeResSigmaFrac2'): 1.322e-06,
+                              ('timeResComb', 'timeResSigmaSF2'): 0.0001297,
+                              ('timeResSigmaFrac2', 'timeResSigmaFrac2'): 1.146e-06,
+                              ('timeResSigmaFrac2', 'timeResSigmaSF2'): -0.0001486,
+                              ('timeResSigmaSF2', 'timeResSigmaSF2'): 0.03556}
+                timeResArgs['Covariance'] = covariance
+                timeResArgs['nGauss'] = 2
+                if 'constmean' in timeResType.lower() :
+                    timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
+                    timeResArgs['timeResMeanConstraint'] = 'constrain'
+                elif 'fixedmean' in timeResType.lower() :
+                    timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
+                    timeResArgs['timeResMeanConstraint'] = 'fixed'
+                else:
+                    timeResArgs['timeResMean'] = dict(Value = 0, Error = 0)
+                    timeResArgs['timeResMeanConstraint'] = 'fixed'
+            elif 'nomean' in timeResType.lower() :
                 timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
                 timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
                 timeResArgs['timeResSFConstraint'] = constrTResScale
@@ -1315,27 +1343,31 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 timeResArgs['timeResSFConstraint'] = constrTResScale
             elif 'stlinear' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
-                timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.26, Error = 0.06, MinMax = (0.1, 5 ), Constant = True)
-                ## timeResArgs['timeResSigmaSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1.30 )
-                timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0055,
-                                                         Error = 0.0005, Constant = True)
-                ## timeResArgs['timeResSigmaOffset'] = ConstVar(Name = 'timeResSigmaOffset', Value = 0.012)
+                timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.253, Error = 0.014, MinMax = (0.1, 5 ), Constant = True)
+                timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0153,
+                                                         Error = 0.00011, Constant = True)
+                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 1.301e-08,
+                              ('timeResSigmaOffset', 'timeResSigmaSF'): 5.545e-07,
+                              ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002012}
+                timeResArgs['Covariance'] = covariance
                 timeResArgs['timeResSFModel'] = 'linear'
             elif 'stquad' in timeResType.lower():
                 timeResArgs['timeResMeanConstraint'] = 'constrain'
-                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0169, Error = 0.000149, MinMax = (0.001, 0.1))
-                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.244, Error = 0.0147, MinMax = ( 0.1, 5. ))
-                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -7.828, Error = 1.523, MinMax = (-11, -1))
-                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 2.225e-08,
-                                ('timeResSigmaOffset', 'timeResSigmaSF'): 5.087e-07,
-                                ('timeResSigmaOffset', 'timeResSigmaSF2'): -0.0001433,
-                                ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002148,
-                                ('timeResSigmaSF', 'timeResSigmaSF2'): 0.000655,
-                                ('timeResSigmaSF2', 'timeResSigmaSF2'): 2.32}
+                timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0159, Error = 0.000148, MinMax = (0.001, 0.1))
+                timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.245, Error = 0.0143, MinMax = ( 0.1, 5. ))
+                timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -8.812, Error = 1.507, MinMax = (-11, -1))
+                covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 2.178e-08,
+                                ('timeResSigmaOffset', 'timeResSigmaSF'): 4.389e-07,
+                                ('timeResSigmaOffset', 'timeResSigmaSF2'): -0.000141,
+                                ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002041,
+                                ('timeResSigmaSF', 'timeResSigmaSF2'): 0.001858,
+                                ('timeResSigmaSF2', 'timeResSigmaSF2'): 2.271}
                 timeResArgs['Covariance'] = covariance
                 timeResArgs['timeResSFModel'] = 'quadratic'
             else :
+                timeResArgs['timeResMean'] = dict( Value = -4.0735e-03, Error = 1.33e-04 )
                 timeResArgs['timeResMeanConstraint'] = constrTResScale
+                timeResArgs['timeResSFConstraint'] = constrTResScale
 
             self._timeResModel = TimeResolution( **timeResArgs )
 
@@ -1406,9 +1438,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             phiCPVar = dict( Name = 'phiCP' )
             lambdaCPVar = dict( Name = 'lambdaCP' )
-            if blind:
-                phiCPVar['Blind']    = ( 'UnblindUniform', 'BsPhis2013EPS',  0.2 )
-                #lambdaCPVar['Blind'] = ( 'UnblindUniform', 'BsLambdas2013EPS', 0.1 )
+            if blind and 'phiCP' in blind :
+                if blind['phiCP'] : phiCPVar['Blind'] = blind['phiCP']
+                else              : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsPhis2013EPS',  0.2 )
+            if blind and 'lambdaCP' in blind :
+                if blind['lambdaCP'] : phiCPVar['Blind'] = blind['lambdaCP']
+                else                 : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsLambdas2013EPS', 0.1 )
             self._lambdaCP = CPParam( phiCP = phiCPVar, lambdaCP = lambdaCPVar )
             if ambiguityPars :
                 self._lambdaCP['phiCP'].setVal( pi - self._lambdaCP['phiCP'].getVal() )

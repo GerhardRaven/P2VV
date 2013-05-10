@@ -34,6 +34,8 @@ parser.add_option("-b", "--batch", dest = "batch", default = False,
                   action = 'store_true', help = 'run ROOT in batch mode')
 parser.add_option("--reweigh-MC", dest = "reweigh", default = False,
                   action = 'store_true', help = 'reweigh MC PV distribution to match data')
+parser.add_option("--no-reuse-result", dest = "reuse_result", default = True,
+                  action = 'store_false', help = "Don't reuse an old result if it is available.")
 parser.add_option("--wpv-gauss-width", dest = "wpv_gauss_width", default = 0, type = 'float',
                   action = 'store', help = 'Width of the Gaussian used for the WPV component; 0 means floating.')
 (options, args) = parser.parse_args()
@@ -171,18 +173,18 @@ bkg_m = Pdf(Name = 'gauss', Type = Gaussian, Parameters = (m, mean, sigma))
 # Create psi background component
 from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
-                         , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 0.67)
-                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.37, MinMax = (0.5,  2.5))
-                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 0.103, MinMax = (0.1, 0.5))
+                         , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 6.7195e-01)
+                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.5,  2.5))
+                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 0.5))
                          )
 psi_t = psi_t.pdf()
 
 # J/psi signal component
-psi_ll = Component('psi_ll', (psi_m, bkg_m, psi_t), Yield= (30000,100,500000) )
+psi_ll = Component('psi_ll', (psi_m, bkg_m, psi_t), Yield= (8.5575e+03,100,500000) )
 
 # Background component
 bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.model()
-                         , bkg_t_fml    = dict(Name = 'bkg_t_fml',    Value = 0.76 )
+                         , bkg_t_fml    = dict(Name = 'bkg_t_fml',    Value = 6.7195e-01 )
                          , bkg_t_ll_tau = dict(Name = 'bkg_t_ll_tau', Value = 1., MinMax = (0.01, 2.5))
                          , bkg_t_ml_tau = dict(Name = 'bkg_t_ml_tau', Value = 0.1,  MinMax = (0.01, 0.5))
                          )
@@ -202,7 +204,7 @@ signal = Component('signal', (sig_m.pdf(), sig_t.pdf()), Yield = (150000, 10000,
 # Prompt component
 from P2VV.Parameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
-prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (77000, 100, 500000))
+prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (160160, 100, 500000))
 
 # Read data
 fit_mass = options.fit_mass
@@ -251,9 +253,13 @@ from ROOT import gStyle
 gStyle.SetPalette(53)
 
 ## Extra name for fit result and plots
-extra_name = args[1]
+extra_name = [args[1]]
+if options.parameterise:
+    extra_name += [options.parameterise]
+if options.wpv:
+    extra_name += [options.wpv_type]
 if options.model:
-    extra_name += ('_' + options.model)
+    extra_name += [options.model]
 
 ## Read Cache
 if not fit_mass:
@@ -322,7 +328,7 @@ if not fit_mass:
                 fit_mass = True
             else:
                 results.append(sWeight_mass_result)
-        tr = rd.Get('time_result_%s' % extra_name)
+        tr = rd.Get('_'.join(['time_result'] + extra_name))
         if tr:
             results.append(tr)
 
@@ -331,7 +337,7 @@ if not fit_mass:
         w.put(st_cat)
 
 ## Fitting opts
-fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
                Verbose = options.verbose)
 
 ## List of all plots we make
@@ -582,9 +588,9 @@ elif options.wpv and options.wpv_type == 'Gauss':
     if options.wpv_gauss_width != 0:
         wpv_sigma = RealVar('wpv_sigma', Value = options.wpv_gauss_width, MinMax = (0.01, 1000), Constant = True)
     else:
-        wpv_sigma = RealVar('wpv_sigma', Value = 0.3, MinMax = (0.01, 1000))        
+        wpv_sigma = RealVar('wpv_sigma', Value = 0.305, MinMax = (0.01, 1000))        
     wpv_pdf = Pdf(Name = 'wpv_pdf', Type = Gaussian, Parameters = (t, wpv_mean, wpv_sigma))
-    wpv = Component('wpv', (wpv_pdf, ), Yield = (100, 1, 500000))
+    wpv = Component('wpv', (wpv_pdf, ), Yield = (552, 1, 500000))
     components += [wpv]
 
 
@@ -617,20 +623,21 @@ if options.simultaneous:
                                  , SplitCategories = [[st_cat]]
                                  , SplitParameters = split_pars)
 
-# Check if we have a cached time result, if so, use it as initial values for the fit
-time_result = None
-for i, r in enumerate(results):
-    if r.GetName().find('time_result') != -1:
-        time_result = results.pop(i)
-        break
+if options.reuse_result:
+    # Check if we have a cached time result, if so, use it as initial values for the fit
+    time_result = None
+    for i, r in enumerate(results):
+        if r.GetName() == '_'.join(['time_result'] + extra_name):
+            time_result = results.pop(i)
+            break
 
-if time_result:
-    pdf_vars = time_pdf.getVariables()
-    for p in time_result.floatParsFinal():
-        pdf_par = pdf_vars.find(p.GetName())
-        if pdf_par and not pdf_par.isConstant():
-            pdf_par.setVal(p.getVal())
-            pdf_par.setError(p.getError())
+    if time_result:
+        pdf_vars = time_pdf.getVariables()
+        for p in time_result.floatParsFinal():
+            pdf_par = pdf_vars.find(p.GetName())
+            if pdf_par and not pdf_par.isConstant():
+                pdf_par.setVal(p.getVal())
+                pdf_par.setError(p.getError())
 
 time_pdf.Print("t")
 
@@ -638,14 +645,22 @@ time_pdf.Print("t")
 ## print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-assert(False)
+
+parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(RooArgSet(*observables))])
+
+## from P2VV import Dilution
+## comb = parameters['timeResComb']
+## frac2 = parameters['timeResFrac2']
+## sf2 = parameters['timeResSigmaSF_2']
+## sf1 = (comb.getVal() - frac2.getVal() * sf2.getVal()) / (1 - frac2.getVal())
+## Dilution.signal_dilution_dg(sig_sdata, st, sf1, frac2.getVal(), sf2.getVal())
 
 for i in range(2):
     time_result = time_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
     if time_result.status() == 0:
         break
 
-time_result.SetName('time_result_%s' % extra_name)
+time_result.SetName('_'.join(['time_result'] + extra_name))
 
 ## Draw correlation histogram
 corr_canvas.cd(2)
@@ -726,7 +741,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             
             plots.append(ps)
     else:
-        canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 400)
+        canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 600)
         __canvases.append(canvas)
         p = canvas.cd(1)
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
@@ -737,7 +752,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , logy = pl
-                  , plotResidHist = False)
+                  , plotResidHist = True)
         for frame in ps:
             plot_name = '_'.join((t.GetName(), bins.GetName(), frame.GetName()))
             frame.SetName(plot_name)
@@ -798,15 +813,16 @@ if options.simultaneous:
     from ROOT import TF1
     fit_funcs = {'pol1' : ('pol1', 'S0+'), 'pol2' : ('pol2', 'S+'),
                  'pol2_no_offset' : ('x ++ x * x', 'S0+'),
+                 'pol1_mean_param' : ('[0] + [1] + [2] * (x - [0])', 'S0+'),
                  'pol2_mean_param' : ('[0] + [1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
     for i, (func_name, opts) in enumerate(fit_funcs.iteritems()):
         fit_func = TF1('fit_func_%s' % func_name, opts[0], split_bins[0], split_bins[-1])
-        if func_name == 'pol2_mean_param':
+        if func_name.endswith('mean_param'):
             fit_func.FixParameter(0, sig_sdata.mean(st._target_()))
         fit_result = res_graph.Fit(fit_func, opts[1], "L")
         fit_results[func_name] = fit_result
         fr = fit_result.Get()
-        fr.SetName('fit_result_%s_%s' % (opts[0], args[1]))
+        fr.SetName('fit_result_%s_%s' % (func_name, args[1]))
         results.append(fr)
     
     res_graph.GetYaxis().SetRangeUser(0, 0.11)
@@ -912,7 +928,7 @@ with WritableCacheFile(cache_files, directory) as cache_file:
         results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
         
         ## Write plots
-        plots_dir = get_dir('plots/%s' % extra_name)
+        plots_dir = get_dir('plots/%s' % '_'.join(extra_name))
         for ps in plots:
             for p in ps:
                 plots_dir.WriteTObject(p, p.GetName(), "Overwrite")

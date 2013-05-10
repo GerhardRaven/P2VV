@@ -848,6 +848,13 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                                    ]
                                    )
                               )
+            constraints.append( Pdf(  Name = self._wTagDelP1.GetName() + '_constraint', Type = Gaussian
+                                    , Parameters = [  self._wTagDelP1
+                                                   , ConstVar( Name = 'wTagDelP1' + tagType + '_mean',  Value = self._calVals['DelP1']    )
+                                                   , ConstVar( Name = 'wTagDelP1' + tagType + '_sigma', Value = self._calVals['DelP1Err'] )
+                                                   ]
+                                   )
+                              )
 
         # get data set
         self._data = kwargs.pop( 'DataSet', None )

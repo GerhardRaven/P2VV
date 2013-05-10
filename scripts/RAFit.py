@@ -101,7 +101,9 @@ pdfConfig['continuousEstWTag']  = True  # default: False | nominal: True
 pdfConfig['numEstWTagBins']     = 50
 pdfConfig['constrainTagging']   = 'constrain'  # nominal: 'constrain'
 
-pdfConfig['timeResType']           = 'eventStQuad' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear' # 'eventStQuad'
+pdfConfig['timeResType']           = 'eventDoubleGaussConstant' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear' # 'eventStQuad'
+## pdfConfig['timeResType']           = 'eventNoMean' # 'eventNoMean' # 'event' # 'eventNoMean' # 'eventStLinear' # 'eventStQuad'
+
 pdfConfig['numTimeResBins']        = 400
 pdfConfig['constrainTimeResScale'] = 'constrain'  # nominal: 'constrain'
 
@@ -440,7 +442,17 @@ pdfObs.Print('v')
 print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
 
-assert(False)
+
+## Calculate dilution for double Gauss case
+if pdfConfig['timeResType'].find('eventDoubleGauss') != -1:
+    st = pdfBuild['observables']['timeRes']
+    from P2VV import Dilution
+    comb = pdfPars.find('timeResComb')
+    frac2 = pdfPars.find('timeResSigmaFrac2')
+    sf2 = pdfPars.find('timeResSigmaSF2')
+    sf1 = (comb.getVal() - frac2.getVal() * sf2.getVal()) / (1 - frac2.getVal())
+    d = Dilution.signal_dilution_dg(fitData, st, sf1, frac2.getVal(), sf2.getVal())
+    print 'Dilution = %f' % d[0]
 
 from ROOT import RooArgSet
 for constraint in pdfBuild._fullPdf.ExternalConstraints():
