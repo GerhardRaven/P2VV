@@ -87,7 +87,7 @@ class Toy(object):
 
         # Some extra numbers of interest
         from ROOT import RooRealVar
-        NLL = RooRealVar('NLL', '-log(Likelihood', 1.)
+        NLL = RooRealVar('NLL', '-log(Likelihood)', 1.)
         ngen = RooRealVar('ngen', 'number of generated events', self._options.nevents)
         seed = RooRealVar('seed', 'random seed', 0.)
         result_params.add(NLL)
@@ -110,10 +110,10 @@ class Toy(object):
 
             # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
             pdf_params.assignValueOnly(self._gen_params) 
-            args = dict(NumEvent = self._options.nevents)
+            args = dict(NumEvents = self._options.nevents)
             if 'ProtoData' in kwargs:
                 args['ProtoData'] = kwargs.pop('ProtoData')
-            data = genPdf.generate(observables, **kwargs)
+            data = genPdf.generate(observables, **args)
             fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, **self.__fit_opts)
             if fit_result.status() != 0:
                 print 'Fit result status = %s' % fit_result.status()
