@@ -7,11 +7,11 @@ from ROOT import gSystem
 print "P2VV - INFO: loading P2VV library"
 
 # enable support for reflex dictionaries
-gSystem.Load('libCintex')
-from ROOT import Cintex
-Cintex.Enable()
+## gSystem.Load('libCintex')
+## from ROOT import Cintex
+## Cintex.Enable()
 
-# load required libraries
-gSystem.Load('libRooFit')
-gSystem.Load('libP2VVDict')
-gSystem.Load('libP2VVLib')
+## # load required libraries
+## gSystem.Load('libRooFit')
+## gSystem.Load('libP2VVDict')
+## gSystem.Load('libP2VVLib')

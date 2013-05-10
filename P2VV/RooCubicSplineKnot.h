@@ -20,6 +20,8 @@ public:
     void computeCoefficients(std::vector<double>& y ) const ;
     void smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const;
 
+    const std::vector<double>& knots() const { return _u; }
+
     class S_jk { 
     public:
         S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
@@ -61,6 +63,7 @@ public:
     // S matrix for i-th interval
     RooCubicSplineKnot::S_jk S_jk_sum(int i, const RooArgList& b) const ;
     // RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const;
+
 private:
     int index(double u) const;
     double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }

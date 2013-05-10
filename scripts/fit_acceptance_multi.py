@@ -1,7 +1,7 @@
 import os
 import sys
 if sys.argv[1] not in ['MC', 'data', 'generate']:
-    print 'usage: fit_acceptance_multi.py [real_data|MC|generate]'
+    print 'usage: fit_acceptance_multi.py [data|MC|generate]'
     sys.exit(-1)
 
 real_data = sys.argv[1] == 'data'
@@ -9,7 +9,6 @@ MC = sys.argv[1] == 'MC'
 
 from itertools import product
 from P2VV.RooFitWrappers import *
-from P2VV.Load import P2VVLibrary
 from ROOT import RooCBShape as CrystalBall
 from P2VV.Parameterizations.GeneralUtils import valid_combinations
 
@@ -56,9 +55,20 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VV.Parameterizations.TimeResolution import Moriond2012_TimeResolution
-tres = Moriond2012_TimeResolution(time = t, timeResSFConstraint = 'fixed', timeResSigma = st,
-                                  timeResSigmaSF =  dict(Value = 1.46, MinMax = ( 0.5, 5. )))
+from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
+tres = TimeResolution(time = t, timeResSigma = st, Cache = True,
+                      timeResComb = dict(Value = 1.4918, Error = 4.08e-03, MinMax = ( 0.1, 5. ), Constant = True),
+                      timeResSigmaSF2 = dict(Value = 6.0074, Error = 1.89e-01, MinMax = (1, 10), Constant = True),
+                      timeResSigmaFrac2 = dict(Value = 1.5818e-02, Error = 1.07e-03, MinMax = (0.001, 0.999), Constant = True),
+                      Covariance = {('timeResComb', 'timeResComb'): 1.663e-05,
+                                    ('timeResComb', 'timeResSigmaFrac2'): 1.322e-06,
+                                    ('timeResComb', 'timeResSigmaSF2'): 0.0001297,
+                                    ('timeResSigmaFrac2', 'timeResSigmaFrac2'): 1.146e-06,
+                                    ('timeResSigmaFrac2', 'timeResSigmaSF2'): -0.0001486,
+                                    ('timeResSigmaSF2', 'timeResSigmaSF2'): 0.03556},
+                      nGauss = 2, timeResMean = dict(Value = -4.0735e-03, Error = 1.33e-04),
+                      timeResMeanConstraint = 'fixed')
+
 ## from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution
 ## tres = LP2011_TimeResolution(time = t)
 ## from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
@@ -202,7 +212,7 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Verbose = True, Optimize = 1,
 data = None
 if real_data:
     ## input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_2011_biased_unbiased.root')
-    input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_ntupleB_for_fitting_20120821_MagDownMagUp.root')
+    input_file = os.path.join(base_location, 'data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root')
     data = readData(input_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                     NTuple = True, observables = observables)
     ## data = readData(input_file, tree_name, cuts = 'sel == 1 && hlt1_unbiased == 1 && (hlt2_biased == 1 || hlt2_unbiased == 1)',
@@ -217,7 +227,8 @@ if real_data:
     spec['Relative'] = rel_spec
     res_model = MultiHistEfficiencyModel(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
                                          ConditionalCategories = True, UseSingleBinConstraint = False,
-                                         ResolutionModel = tres.model(), **spec)
+                                         ResolutionModel = tres.model(), Spline = True,
+                                         SmoothSpline = 1, **spec)
     pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = res_model)
     pdf = pdf.pdf()
     pdf.Print('v')

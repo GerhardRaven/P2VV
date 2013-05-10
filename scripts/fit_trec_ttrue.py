@@ -9,7 +9,7 @@ w = obj.ws()
 t_minmax = (-1.5, 8)
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-1100, 14))
-t_diff = RealVar('time_diff', Unit = 'ps', Observable = True, MinMax = (-1, 1))
+t_diff = RealVar('time_diff', Unit = 'ps', Observable = True, MinMax = (-0.06, 0.06))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550))
 
@@ -64,7 +64,6 @@ st_pdf = SumPdf(Name = 'ln', PDFs = [ln1, ln2], Yields = {'ln2' : frac})
 # Signal t_diff PDF
 res_mean = RealVar("res_mean", Value = 0, MinMax = (-0.5, 0.5))
 res_rlife = RealVar("res_rlife", Value = 0.1, MinMax = (0.001, 10))
-res_sigma = RealVar("res_sigma", Value = 0.1, MinMax = (0.001, 2))
 res_sigma_sf = RealVar("res_sigma_sf", Value = 1., MinMax = (0.001, 10))
 res_rlife_sf = RealVar("res_rlife_sf", Value = 1., MinMax = (0.001, 10), Constant = True)
 mean_sf = ConstVar(Name = "gauss_mean_sf", Value = 1)
@@ -86,7 +85,7 @@ gauss_model_two = ResolutionModel(Name = "gauss_model_two", Type = GaussModel, C
 
 gauss_two_frac = RealVar(Name = "gauss_two_frac", Value = 0.2, MinMax = (0.0001, 0.9999))
 gexp_frac = RealVar(Name = "gexp_frac", Value = 0.2, MinMax = (0.0001, 0.9999))
-add_model = AddModel("add_model", Models = [gexp_model, gauss_model_two, gauss_model_one], Fractions = [gexp_frac, gauss_two_frac],
+add_model = AddModel("add_model", Models = [gauss_model_two, gauss_model_one], Fractions = [gauss_two_frac],
                      ConditionalObservables = [st])
 
 from ROOT import RooDecay as Decay
