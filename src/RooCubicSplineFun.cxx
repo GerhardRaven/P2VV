@@ -70,7 +70,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
         _aux->smooth( values, errs, smooth );
     }
     _aux->computeCoefficients( values );
-    for (int i=0;i<values.size();++i) { 
+    for (unsigned int i=0;i<values.size();++i) { 
         _coefList.add( RooFit::RooConst( values[i] ) );
     }
 }

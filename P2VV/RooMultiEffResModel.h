@@ -47,8 +47,8 @@ public:
    virtual void initGenerator(Int_t code);
    virtual void generateEvent(Int_t code);
 
-   virtual RooAbsReal* efficiency() const;
-   virtual std::vector<RooAbsReal*> efficiencies() const;
+   virtual const RooAbsReal* efficiency() const;
+   virtual std::vector<const RooAbsReal*> efficiencies() const;
 
    const std::map<Int_t, MultiHistEntry*>& getEntries() const
    {
@@ -59,6 +59,8 @@ public:
    {
       return _super;
    }
+
+   virtual const RooArgSet* observables() const;
 
 protected:
 

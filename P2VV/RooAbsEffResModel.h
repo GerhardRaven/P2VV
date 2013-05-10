@@ -26,8 +26,15 @@ public:
 
    virtual ~RooAbsEffResModel() {}
   
-   virtual RooAbsReal* efficiency() const = 0;
-   virtual std::vector<RooAbsReal*> efficiencies() const = 0;
+   /** 
+    * Get a RooArgSet of all observables, caller takes ownership.
+    * 
+    * @return RooArgSet of observables
+    */
+   virtual const RooArgSet* observables() const = 0;
+
+   virtual const RooAbsReal* efficiency() const = 0;
+   virtual std::vector<const RooAbsReal*> efficiencies() const = 0;
 
 private:
 

@@ -160,23 +160,6 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       }
    }
    
-   // Observable
-   RooAbsRealLValue* x = dynamic_cast<RooAbsRealLValue*>(observables.first());
-
-   // For the binnings, we just assume that they are "matched" by the user.
-   unsigned int most = 0;
-   for(vector<MultiHistEntry*>::const_iterator it = entries.begin(),
-          end = entries.end(); it != end; ++it) {
-      RooAbsReal* eff = (*it)->efficiency()->efficiency();
-      auto_ptr<BinBoundaries> bounds(eff->binBoundaries(*x, x->getMin(), x->getMax()));
-      if (!bounds.get()) {
-         continue;
-      } else if (bounds->size() > most) {
-         if (_binboundaries) delete _binboundaries;
-         _binboundaries = bounds.release();
-      }
-   }
-
    // Build entries.
    _super = makeSuper(GetName(), categories);
 
@@ -261,10 +244,10 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    if (cacheParamsStr && !strlen(cacheParamsStr)) cacheParamsStr=0;
 
    vector<MultiHistEntry*> entries;
-   vector<RooResolutionModel*> models;
+   vector<RooAbsEffResModel*> models;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      RooEffResModel *conv = it->second->efficiency()->convolution(inBasis, owner);
+      RooAbsEffResModel *conv = static_cast<RooAbsEffResModel*>(it->second->efficiency()->convolution(inBasis, owner));
       if (cacheParamsStr) conv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
       models.push_back(conv);
 
@@ -275,7 +258,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    TString newName = TString::Format("%s_conv_%s_[%s]", GetName(),inBasis->GetName(), owner->GetName());
 
    RooMultiEffResModel *effConv = new RooMultiEffResModel(newName, GetTitle(), entries);
-   for (vector<RooResolutionModel*>::iterator it = models.begin(), end = models.end();
+   for (vector<RooAbsEffResModel*>::iterator it = models.begin(), end = models.end();
         it != end; ++it) {
       effConv->addOwnedComponents(**it);
    }
@@ -483,7 +466,7 @@ Int_t RooMultiEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &
    RooArgSet genVars;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      const RooEffResModel* resModel = it->second->efficiency();
+      const RooAbsEffResModel* resModel = it->second->efficiency();
       if (genVars.getSize() == 0) {
          prodGenCode = resModel->getGenerator(testVars, genVars, staticInitOK);
       } else {
@@ -585,7 +568,7 @@ void RooMultiEffResModel::generateEvent(Int_t code)
 }
 
 //_____________________________________________________________________________
-RooAbsReal* RooMultiEffResModel::efficiency() const {
+const RooAbsReal* RooMultiEffResModel::efficiency() const {
    Int_t index = _super->getIndex();
    HistEntries::const_iterator it = _entries.find(index);
    assert(it != _entries.end());
@@ -593,12 +576,28 @@ RooAbsReal* RooMultiEffResModel::efficiency() const {
 }
 
 //_____________________________________________________________________________
-std::vector<RooAbsReal*> RooMultiEffResModel::efficiencies() const { 
-   std::vector<RooAbsReal*> effs;
+std::vector<const RooAbsReal*> RooMultiEffResModel::efficiencies() const { 
+   std::vector<const RooAbsReal*> effs;
       // Return pointer to pdf in product
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
       effs.push_back(it->second->efficiency());
    }
    return effs;
+}
+
+//_____________________________________________________________________________
+const RooArgSet* RooMultiEffResModel::observables() const { 
+   RooArgSet* observables = new RooArgSet;
+   for(HistEntries::const_iterator it = _entries.begin(),
+          end = _entries.end(); it != end; ++it) {
+      MultiHistEntry* entry = it->second;
+      std::auto_ptr<const RooArgSet> obs(entry->efficiency()->observables());
+      if (observables->getSize() == 0) {
+         observables->add(*obs);
+      } else {
+         assert(observables->equals(*obs));
+      }
+   }
+   return observables;
 }

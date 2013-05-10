@@ -43,14 +43,14 @@ public:
                                              const RooDataSet *prototype=0, const RooArgSet* auxProto=0,
                                              Bool_t verbose= kFALSE) const;
    
-   virtual RooAbsReal* efficiency() const { 
-      // Return pointer to pdf in product
-      return static_cast<RooAbsReal*>(_eff.absArg());
+   virtual const RooAbsReal* efficiency() const { 
+      // Return pointer to efficiency
+      return &_eff.arg();
    }
 
-   virtual std::vector<RooAbsReal*> efficiencies() const { 
-      // Return pointer to pdf in product
-      return std::vector<RooAbsReal*>(1, efficiency());
+   virtual std::vector<const RooAbsReal*> efficiencies() const { 
+      // Return pointer to efficiency
+      return std::vector<const RooAbsReal*>(1, efficiency());
    }   
 
    virtual RooResolutionModel& model() const {
@@ -59,9 +59,9 @@ public:
 
    const RooArgList& getIntegralRanges(const RooArgSet& iset, const char* rangeName = 0) const;
 
-   const RooArgSet* observables() const { 
+   virtual const RooArgSet* observables() const { 
       // Return pointer to pdf in product
-      return static_cast<const RooArgSet*>(&_observables);
+      return new RooArgSet(_observables);
    }
 
 protected:

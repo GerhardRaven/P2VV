@@ -16,14 +16,15 @@
 #ifndef ROO_GAUSS_MODEL
 #define ROO_GAUSS_MODEL
 
-#include "RooResolutionModel.h"
+#include "RooAbsEffResModel.h"
 #include "RooRealProxy.h"
 #include "RooComplex.h"
+
 class RooCubicSplineFun;
 class RooAbsReal;
 class RooRealVar;
 
-class RooCubicSplineGaussModel : public RooResolutionModel {
+class RooCubicSplineGaussModel : public RooAbsEffResModel {
 public:
 
   // Constructors, assignment etc
@@ -44,6 +45,10 @@ public:
   virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const ;
 
   void advertiseFlatScaleFactorIntegral(Bool_t flag) { _flatSFInt = flag ; }
+
+  const RooAbsReal* efficiency() const;
+  std::vector<const RooAbsReal*> efficiencies() const;
+  const RooArgSet* observables() const;
 
     class M_n {
     public:
@@ -72,12 +77,10 @@ public:
       RooComplex _zi;        
   };
 
-
 private:
 
   virtual Double_t evaluate() const ;
 
-  Double_t efficiency() const;
   RooComplex evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) const;
 
   Bool_t _flatSFInt ;

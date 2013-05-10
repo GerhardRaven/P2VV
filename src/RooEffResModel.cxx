@@ -164,8 +164,7 @@ RooEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
   TString newTitle = TString::Format("%s convoluted with basis function %s",conv->GetTitle(),inBasis->GetName()) ;
   conv->SetTitle(newTitle.Data()) ;
 
-  RooAbsReal* eff = efficiency();
-  RooEffResModel *effConv = new RooEffResModel(newName,newTitle, *conv, *eff);
+  RooEffResModel *effConv = new RooEffResModel(newName,newTitle, *conv, *static_cast<RooAbsReal*>(_eff.absArg()));
   effConv->addOwnedComponents(*conv);
   effConv->changeBasis(inBasis) ;
 

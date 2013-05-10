@@ -27,7 +27,7 @@ public:
    }
 
    MultiHistEntry(const std::map<RooAbsCategory*, std::string>& categories,
-                  RooEffResModel* efficiency, RooAbsReal* relative)
+                  RooAbsEffResModel* efficiency, RooAbsReal* relative)
       : m_rawCats(categories), m_rawEff(efficiency), m_rawRel(relative),
         m_efficiency(0), m_relative(0), m_index(0)
    {
@@ -55,7 +55,7 @@ public:
       }
    }
 
-   MultiHistEntry(const MultiHistEntry& other, RooEffResModel* efficiency)
+   MultiHistEntry(const MultiHistEntry& other, RooAbsEffResModel* efficiency)
       : m_rawCats(other.m_rawCats), m_rawEff(efficiency), m_rawRel(other.m_rawRel),
         m_efficiency(0), m_index(other.m_index)
    {
@@ -122,20 +122,20 @@ public:
    }
 
 
-   const RooEffResModel* efficiency() const {
+   const RooAbsEffResModel* efficiency() const {
       return const_cast<MultiHistEntry*>(this)->efficiency();
       // }
    }
 
-   RooEffResModel* efficiency() {
+   RooAbsEffResModel* efficiency() {
       if (m_efficiency) {
-         return dynamic_cast<RooEffResModel*>(m_efficiency->absArg());
+         return dynamic_cast<RooAbsEffResModel*>(m_efficiency->absArg());
       } else {
          return m_rawEff;
       }
    }
 
-   void setEfficiency(RooEffResModel* eff) {
+   void setEfficiency(RooAbsEffResModel* eff) {
       if (m_efficiency) {
          m_efficiency->setArg(*eff);
       } else {
@@ -297,7 +297,7 @@ private:
 
 
    std::map<RooAbsCategory*, std::string> m_rawCats;
-   RooEffResModel* m_rawEff; //!
+   RooAbsEffResModel* m_rawEff; //!
    RooAbsReal* m_rawRel; //!
 
    std::map<RooCategoryProxy*, std::string> m_categories;
