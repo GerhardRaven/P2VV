@@ -45,8 +45,7 @@ namespace {
     enum basisType { noBasis=0  ,  expBasis= 3
                    , sinBasis=13,  cosBasis=23
                    , sinhBasis=63, coshBasis=53 };
-    static const Double_t root2(sqrt(2.)) ;
-    static const Double_t rootpi(sqrt(atan2(0.,-1.))) ;
+    static const Double_t rootpi(sqrt(TMath::Pi())) ;
 
     RooComplex evalApprox(Double_t x, const RooComplex& z) {
       // compute exp(-x^2)cwerf(-i(z-x)), cwerf(z) = exp(-z^2)erfc(-iz)
@@ -61,24 +60,26 @@ namespace {
       return v.exp()*(zsq.exp()/(iz*rootpi) + 1)*2 ;
     }
 
+
+
     // Calculate Re[exp(-x^2) cwerf(i (z-x) )], taking care of numerical instabilities
     Double_t evalRe(Double_t x, const RooComplex& z) {
       Double_t re =  z.re()-x;
-      return (re>-4.0) ? RooMath::FastComplexErrFuncRe(RooComplex(-z.im(),re))*exp(-x*x) 
+      return (re>-5.0) ? RooMath::FastComplexErrFuncRe(RooComplex(-z.im(),re))*exp(-x*x) 
                        : evalApprox(x,z).re() ;
     }
 
     // Calculate Im[exp(-x^2) cwerf(i(z-x))], taking care of numerical instabilities
     Double_t evalIm(Double_t x, const RooComplex& z) {
       Double_t re = z.re()-x;
-      return (re>-4.0) ? RooMath::FastComplexErrFuncIm(RooComplex(-z.im(),re))*exp(-x*x) 
+      return (re>-5.0) ? RooMath::FastComplexErrFuncIm(RooComplex(-z.im(),re))*exp(-x*x) 
                        : evalApprox(x,z).im() ;
     }
 
     // Calculate exp(-x^2) cwerf(i(z-x)), taking care of numerical instabilities
     RooComplex eval(Double_t x, const RooComplex& z) {
       Double_t re = z.re()-x;
-      return (re>-4.0) ? RooMath::FastComplexErrFunc(RooComplex(-z.im(),re))*exp(-x*x) 
+      return (re>-5.0) ? RooMath::FastComplexErrFunc(RooComplex(-z.im(),re))*exp(-x*x) 
                        : evalApprox(x,z) ;
     }
 
@@ -247,7 +248,7 @@ RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const
 {
     // TODO: verify we remain within [umin,umax]
     K_n K(z);
-    Double_t scale = sigma*ssf*root2; 
+    Double_t scale = sigma*ssf*TMath::Sqrt2(); 
     Double_t offset = mean*msf;
     std::vector<M_n> M; M.reserve( knots->size() );
     for (int i=0;i<knots->size();++i) M.push_back( M_n( (knots->u(i)-offset)/scale, z ) );
@@ -275,7 +276,7 @@ Double_t RooCubicSplineGaussModel::evaluate() const
 
   if (basisCode  == coshBasis && basisCode!=noBasis && dGamma==0 ) basisCode = expBasis;
 
-  Double_t scale = sigma*ssf*root2;
+  Double_t scale = sigma*ssf*TMath::Sqrt2();
   Double_t u = (x-mean*msf)/scale;
   // *** 1st form: Straight Gaussian, used for unconvoluted PDF or expBasis with 0 lifetime ***
   if (basisCode==noBasis || ((basisCode==expBasis || basisCode==cosBasis) && tau==0)) {
@@ -357,7 +358,7 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
 
   if (basisCode == coshBasis && basisCode!=noBasis && dGamma==0 ) basisCode = expBasis;
 
-  Double_t scale = sigma*ssf*root2;
+  Double_t scale = sigma*ssf*TMath::Sqrt2();
   Double_t umin = (x.min(rangeName)-mean*msf)/scale;
   Double_t umax = (x.max(rangeName)-mean*msf)/scale;
 
