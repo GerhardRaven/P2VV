@@ -77,12 +77,12 @@ private:
 
   virtual Double_t evaluate() const ;
 
-  Double_t efficiency() const;
+  virtual RooAbsReal* efficiency() const;
   RooComplex evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) const;
 
   Bool_t _flatSFInt ;
   
-  RooRealProxy spline ;
+  RooRealProxy eff ;
   RooRealProxy mean ;
   RooRealProxy sigma ;
   RooRealProxy msf ;

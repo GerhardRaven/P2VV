@@ -58,12 +58,13 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   _aux(0)
 {
     int nBins = hist->GetNbinsX();
-    std::vector<double> boundaries,values;
+    std::vector<double> bincenters,values;
+    // bin 0 is underflow, and bin nBins + 1 is overflow...
     for (int i=0;i<nBins ;++i) {
-        boundaries.push_back(hist->GetBinCenter(1+i));
+        bincenters.push_back(hist->GetBinCenter(1+i));
         values.push_back(hist->GetBinContent(1+i));
     }
-    _aux = new RooCubicSplineKnot( boundaries.begin(), boundaries.end() );
+    _aux = new RooCubicSplineKnot( bincenters.begin(), bincenters.end() );
     if ( smooth > 0 ) { 
         std::vector<double> errs;
         for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
