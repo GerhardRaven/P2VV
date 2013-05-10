@@ -60,14 +60,14 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
     int nBins = hist->GetNbinsX();
     std::vector<double> boundaries,values;
     for (int i=0;i<nBins ;++i) {
-         boundaries.push_back(hist->GetBinCenter(1+i));
-         values.push_back(hist->GetBinContent(1+i));
+        boundaries.push_back(hist->GetBinCenter(1+i));
+        values.push_back(hist->GetBinContent(1+i));
     }
     _aux = new RooCubicSplineKnot( boundaries.begin(), boundaries.end() );
-    if ( smooth >= 0 ) { 
-            std::vector<double> errs;
-            for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
-            _aux->smooth( values, errs, smooth );
+    if ( smooth > 0 ) { 
+        std::vector<double> errs;
+        for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
+        _aux->smooth( values, errs, smooth );
     }
     _aux->computeCoefficients( values );
     for (int i=0;i<values.size();++i) { 
@@ -135,6 +135,15 @@ Int_t RooCubicSplineFun::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& an
   return 0;
 }
 
+RooComplex  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM, const RooCubicSplineGaussModel::K_n& K, double offset, double* sc) const 
+{
+        RooComplex sum(0,0);
+        RooCubicSplineKnot::S_jk S( _aux->S_jk_sum( i, _coefList ), offset );
+        for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) {
+            sum = sum + dM(j)*S(j,k)*K(k)*sc[j+k];
+        }
+        return sum;
+}
 
 //_____________________________________________________________________________
 Double_t RooCubicSplineFun::analyticalIntegral(Int_t code, const char* rangeName) const

@@ -18,8 +18,8 @@
 
 #include "RooResolutionModel.h"
 #include "RooRealProxy.h"
-class RooCubicSplineKnot;
-class RooComplex;
+#include "RooComplex.h"
+class RooCubicSplineFun;
 class RooAbsReal;
 class RooRealVar;
 
@@ -29,11 +29,12 @@ public:
   // Constructors, assignment etc
   inline RooCubicSplineGaussModel() : _flatSFInt(kFALSE)  { }
   RooCubicSplineGaussModel(const char *name, const char *title, 
-          RooRealVar& x, const char *knotBinningName, const RooArgList& coefList,
-		  RooAbsReal& mean, RooAbsReal& sigma) ; 
-  RooCubicSplineGaussModel(const char *name, const char *title, RooRealVar& x, 
-		RooAbsReal& mean,   RooAbsReal& sigma,
-        RooAbsReal& meanSF, RooAbsReal& sigmaSF) ; 
+            RooRealVar& x, RooCubicSplineFun& spline,
+            RooAbsReal& mean,   RooAbsReal& sigma );
+  RooCubicSplineGaussModel(const char *name, const char *title, 
+            RooRealVar& x, RooCubicSplineFun& spline,
+            RooAbsReal& mean,   RooAbsReal& sigma,
+            RooAbsReal& meanSF, RooAbsReal& sigmaSF) ; 
   RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other, const char* name=0);
   virtual TObject* clone(const char* newname) const { return new RooCubicSplineGaussModel(*this,newname) ; }
   virtual ~RooCubicSplineGaussModel();
@@ -44,6 +45,34 @@ public:
 
   void advertiseFlatScaleFactorIntegral(Bool_t flag) { _flatSFInt = flag ; }
 
+    class M_n {
+    public:
+       M_n(double x, const RooComplex& z) ;
+       const RooComplex& operator()(int i) const { assert(0<=i&&i<4); return _m[i]; }
+       M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
+       M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
+    private:
+       RooComplex _m[4];
+    };
+  class K_n {
+  public:
+      K_n(const RooComplex& z) : _zi( RooComplex(1,0)/z) {}
+      RooComplex operator()(int i) const {
+          assert(0<=i&&i<=3);
+          switch(i) {
+              case 0 : return _zi/2;
+              case 1 : return _zi*_zi/2;
+              case 2 : return _zi*(_zi*_zi+1);
+              case 3 : RooComplex _zi2 = _zi*_zi; return _zi2*(RooComplex(3,0)+RooComplex(3,0)*_zi2);
+          }
+          assert(1==0);
+          return 0;
+      }
+  private :
+      RooComplex _zi;        
+  };
+
+
 private:
 
   virtual Double_t evaluate() const ;
@@ -53,13 +82,11 @@ private:
 
   Bool_t _flatSFInt ;
   
-  RooListProxy splineCoefficients;
+  RooRealProxy spline ;
   RooRealProxy mean ;
   RooRealProxy sigma ;
   RooRealProxy msf ;
   RooRealProxy ssf ;
-
-  RooCubicSplineKnot *knots; // do not persist, but (TODO!) insure we know the knot locations... (eg. binningName used to define them!)
 
   ClassDef(RooCubicSplineGaussModel,1)
 };

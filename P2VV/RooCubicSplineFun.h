@@ -16,29 +16,33 @@
 #include "RooAbsReal.h"
 #include "RooRealProxy.h"
 #include "RooListProxy.h"
+#include "RooCubicSplineKnot.h"
+#include "RooCubicSplineGaussModel.h"
 
 class RooRealVar;
 class RooArgList ;
-class RooCubicSplineKnot;
 class TH1;
 
 class RooCubicSplineFun : public RooAbsReal {
 public:
-
   RooCubicSplineFun() ;
-  RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TH1* hist, double smooth = -1);
-  RooCubicSplineFun(const char *name, const char *title,
-               RooRealVar& _x, const char *knotBinningName, const RooArgList& _coefList) ;
+  // smooth = 0: no smoothing. As smooth becomes larger, the result will converge towards a straight line
+  RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TH1* hist, double smooth = 0);
+  RooCubicSplineFun(const char *name, const char *title, RooRealVar& x, const char *knotBinningName, const RooArgList& coefList) ;
   ~RooCubicSplineFun() ;
 
   RooCubicSplineFun(const RooCubicSplineFun& other, const char* name = 0);
   TObject* clone(const char* newname) const { return new RooCubicSplineFun(*this, newname); }
 
-   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const;
-   Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
+
+  // for use in RooCubicSplineGaussModel...
+  RooComplex  gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM, const RooCubicSplineGaussModel::K_n& K, double offset, double* sc) const ;
+  unsigned knotSize() const { return _aux->size(); }
+  double u(int i) const { return _aux->u(i); }
 
 private:
-
   RooRealProxy _x;
   RooListProxy _coefList ;
 

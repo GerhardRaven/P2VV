@@ -23,6 +23,8 @@ namespace RooCubicSplineKnot_aux {
 
 void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const {
         unsigned n=y.size();
+        assert(n==_u.size());
+        assert(n==dy.size());
         TMatrixD D(n-2,n);
         for (int i=0;i<n-2;++i) {
             double ih0( double(1)/h(i)) , ih1( double(1)/h(i+1) );
@@ -46,7 +48,7 @@ void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double
 // on input, y contains the values at the knot locations
 // on output, it contains the b-spline coefficients 
 // Note: one element will be pre-pended, and one post-pended !!
-void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y ) const 
+void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y) const 
 {
  // see http://en.wikipedia.org/wiki/Spline_interpolation
  // for the derivation of the linear system...
@@ -62,19 +64,15 @@ void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y ) const
     y.back()  = - bb * double(6) / sqr(h(n-1,n-2));
 
     std::vector<double> c ; c.reserve(n);
-
-    c.push_back(mc(0) / mb(0) );
+    c.push_back( mc(0) / mb(0) );
     y[0] /=  mb(0);
- 
     for (int i = 1; i < n; ++i) {
         double m = double(1) / (mb(i) - ma(i) * c.back() ) ;
         c.push_back( mc(i) * m );
         y[i] = (y[i] - ma(i) * y[i - 1]) * m;
     }
     for (int i = n-1 ; i-- > 0; ) y[i] -= c[i] * y[i + 1];
-
-    y.push_back(bb);
-    y.insert(y.begin(),bf); // ouch... expensive!
+    y.push_back(bb); y.insert(y.begin(),bf); // ouch... expensive!
 }
 
 

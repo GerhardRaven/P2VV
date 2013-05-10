@@ -1,3 +1,5 @@
+#ifndef ROO_CUBICSPLINEKNOT
+#define ROO_CUBICSPLINEKNOT
 #include <vector>
 #include <algorithm>
 #include "RooComplex.h"
@@ -11,7 +13,7 @@ public:
     template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end) : _u(begin,end) { }
 
     double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); return _u[std::min(std::max(0,i),int(_u.size()-1))]; }
-    unsigned size() { return _u.size(); }
+    unsigned size() const { return _u.size(); }
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
 
@@ -100,3 +102,4 @@ private:
     mutable std::vector<RooCubicSplineKnot::S_jk> _S_jk; //!
 };
 
+#endif
