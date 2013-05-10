@@ -450,7 +450,7 @@ with zero second derivative everywhere, i.e. a straight line.
 As the spline coefficients are fully determined by the points $(u_i,\mu_i)$, the problem above can be
 split in two steps. The first is to obtain a 'smoothed' set $\mu_i$, and then the coefficients are determined
 by constructing an interpolating spline through $(u_i,\mu_i)$.
-Because the second derivative of a cubic b-spline is a linear function, it turns out\footnote{Reinsch} that 
+Because the second derivative of a cubic b-spline is a linear function, it turns out that 
 the penalty term can be written in quadratic form:
 \begin{equation}
     \int du (S''(u))^2 = \mu_j S^{(2)}_{jk} \mu_k
@@ -473,12 +473,19 @@ with
         \end{array} \right)
 \end{eqnarray}
 
+Question: can this be derived using the following basis:
+\begin{eqnarray}
+   B_1(x) &=& 1
+\\   B_2(x) &=& x
+\\   B_{i+2}(x) &=& \frac{ (x-x_i)^3_+ - ( x-x_n)^3_+}{x_n-x_i} - \frac{ (x-x_{n-1})^3_+ - ( x-x_n)^3_+}{x_n-x_{n-1}} 
+\end{eqnarray}
+where $(x)_+ = x$ if $x>0$ and $0$ otherwise.
 
 This implies that $\chi^2(\lambda)$ is a second order function of the $\mu$, and hence its minimization
 results in the following linear system:
 \begin{eqnarray}
     \chi^2 & = & (y-\mu)^T diag(\frac{1}{\sigma^2}) (y-\mu) + \lambda \mu^T S^{(2)} \mu
-\\  \frac{1}{2}\frac{\partial \chi^2}{\partial_\mu } &=& -diag(\frac{1}{\sigma^2}) (y-\mu) + S^{(2)}\mu = 0
+\\  \frac{1}{2}\frac{\partial \chi^2}{\partial_\mu } &=& -diag(\frac{1}{\sigma^2}) (y-\mu) + \lambda S^{(2)}\mu = 0
 \\    &\Rightarrow & \left( diag(\frac{1}{\sigma^2})  + \lambda S^{(2)}\right)   \mu = diag(\frac{1}{\sigma^2}) y
 \end{eqnarray}
 Solving this system, one obtains a set of $\mu_i$, which can then be used to construct an interpolating 

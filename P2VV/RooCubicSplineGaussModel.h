@@ -85,7 +85,7 @@ private:
 
   Bool_t _flatSFInt ;
   
-  RooRealProxy spline ;
+  RooRealProxy eff ;
   RooRealProxy mean ;
   RooRealProxy sigma ;
   RooRealProxy msf ;

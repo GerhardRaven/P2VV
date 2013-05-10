@@ -124,36 +124,36 @@ RooCubicSplineGaussModel::M_n::M_n(double x, const RooComplex& z) {
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
-                , RooRealVar& x, RooCubicSplineFun& _spline
+                , RooRealVar& x, RooCubicSplineFun& _eff
 			    , RooAbsReal& _mean, RooAbsReal& _sigma ) :
   RooAbsEffResModel(name,title,x), 
   _flatSFInt(kFALSE),
-  spline("spline","Spline describing efficiency",this,_spline),
+  eff("eff","Spline describing efficiency",this,_eff),
   mean("mean","Mean",this,_mean),
   sigma("sigma","Width",this,_sigma),
   msf("msf","Mean Scale Factor",this,RooRealConstant::value(1.0)),
   ssf("ssf","Sigma Scale Factor",this,RooRealConstant::value(1.0))
 {  
-    // make sure 'x' matches the spline argument!
-    std::auto_ptr<RooArgSet> svar( spline.arg().getVariables() );
+    // make sure 'x' matches the eff argument!
+    std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
     assert( svar->contains( convVar() ) );
 }
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
-                , RooRealVar& x, RooCubicSplineFun& _spline
+                , RooRealVar& x, RooCubicSplineFun& _eff
 			    , RooAbsReal& _mean, RooAbsReal& _sigma
 			    , RooAbsReal& _meanSF, RooAbsReal& _sigmaSF) : 
   RooAbsEffResModel(name,title,x), 
   _flatSFInt(kFALSE),
-  spline("spline","Spline describing efficiency",this,_spline),
+  eff("eff","Spline describing efficiency",this,_eff),
   mean("mean","Mean",this,_mean),
   sigma("sigma","Width",this,_sigma),
   msf("msf","Mean Scale Factor",this,_meanSF),
   ssf("ssf","Sigma Scale Factor",this,_sigmaSF)
 {  
     // make sure 'x' matches the spline argument!
-    std::auto_ptr<RooArgSet> svar( spline.arg().getVariables() );
+    std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
     assert( svar->contains( convVar() ) );
 }
 
@@ -161,7 +161,7 @@ RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char 
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other, const char* name) : 
   RooAbsEffResModel(other,name),
   _flatSFInt(other._flatSFInt),
-  spline("spline",this,other.spline),
+  eff("eff",this,other.eff),
   mean("mean",this,other.mean),
   sigma("sigma",this,other.sigma),
   msf("msf",this,other.msf),
@@ -187,10 +187,17 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
 } 
 
 //_____________________________________________________________________________
+RooAbsReal* RooCubicSplineGaussModel::efficiency() const 
+{
+    return const_cast<RooAbsReal*>(&eff.arg());
+}
+
+//_____________________________________________________________________________
 RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const RooComplex& z) const
 {
-    const RooCubicSplineFun &sp = dynamic_cast<const RooCubicSplineFun&>( spline.arg() );
-    // TODO: verify we remain within [umin,umax]
+    const RooCubicSplineFun &sp = dynamic_cast<const RooCubicSplineFun&>( eff.arg() );
+    //TODO: verify we remain within [umin,umax]
+    //TODO: push this loop into RooCubicSplineFun... pass z,scale,offset and umin,umax
     RooCubicSplineGaussModel::K_n K(z);
     Double_t scale = sigma*ssf*TMath::Sqrt2(); 
     Double_t offset = mean*msf;
@@ -198,7 +205,8 @@ RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const
     for (unsigned int i=0;i<sp.knotSize();++i) M.push_back( M_n( (sp.u(i)-offset)/scale, z ) );
     RooComplex sum(0,0);
     double sc[4]; for (int i=0;i<4;++i) sc[i] = pow(scale,i);
-    for (int i=0;i<int(sp.knotSize())-1;++i) { //TODO: push this loop into RooCubicSplineFun... pass z,scale,coefficients
+    for (int i=0;i<int(sp.knotSize())-1;++i) {
+        //TODO: push this loop into RooCubicSplineFun... pass z,scale,coefficients
         sum = sum + sp.gaussIntegral( i,  M[i+1] - M[i], K, offset, sc );
     }
     return sum;
