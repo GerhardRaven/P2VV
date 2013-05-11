@@ -815,10 +815,6 @@ class Pdf(RooObject):
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
             for k, v in self._dict.iteritems():
-                # change into a frozenset AFTER _makeRecipe has been invoked
-                # as _makeRecipe relies on the a-priori given order so it can
-                # match the c'tor arguments properly!!!!
-                if k in [ 'Parameters']: v = frozenset(v)
                 attr = '_' + k.lower()
                 setattr(self._target_(), attr, v)
             del self._dict # no longer needed
@@ -826,7 +822,6 @@ class Pdf(RooObject):
             self._init(self._dict['Name'], 'RooAbsPdf')
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
-                if k in [ 'Parameters']: v = frozenset(v)
                 if v != self._get(k) : print k, v, self._get(k)
                 assert v == self._get(k)
 
@@ -1656,14 +1651,47 @@ class EffResModel(ResolutionModel) :
         def efficiency(self):
             return self.__eff
 
+class CubicSplineFun(RooObject):
+    def __init__(self, **kwargs):
+        name = kwargs.pop('Name')
+        observable = kwargs.pop('Observable')
+        knots = kwargs.pop('Knots', [])
+        values = kwargs.pop('Values', [])
+        errors = kwargs.pop('Errors', [])
+        smooth = kwargs.pop('Smooth', 0)
+        hist = kwargs.pop('Histogram', None)
+        coeffs = kwargs.pop('Coefficients', [])
+        const_coeffs = kwargs.pop('ConstantCoeffs', True)
+
+        def __make_vector(values):
+            from ROOT import std
+            v = std.vector('double')(len(values))
+            for i, val in enumerate(values):
+                v[i] = val
+            return v
+
+        from ROOT import RooCubicSplineFun
+        if hist:
+            csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeff)
+        elif knots and coeffs and not values:
+            al = RooArgList()
+            for c in coeffs:
+                al.add(__dref__(c))
+            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), al)
+        elif knots and values and errors and not coeffs:
+            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), __make_vector(values),
+                                    __make_vector(errors), smooth, const_coeffs)
+        self._addObject(csf)
+        self._init(name, 'RooCubicSplineFun')
+        
 class CubicSplineGaussModel(ResolutionModel) :
     def _make_pdf(self): pass
     
     def __init__(self, **kwargs):
         name = kwargs.pop('Name')
         res_model = kwargs.pop('ResolutionModel', None)
-        params = kwargs.pop('Parameters', [])
-        spline = kwargs.pop('SplineFunction', [])
+        params = [__dref__(p) for p in kwargs.pop('Parameters', [])]
+        spline = kwargs.pop('SplineFunction', None)
 
         constraints = set(kwargs.pop('ExternalConstraints', []))
         conds = set(kwargs.pop('ConditionalObservables', []))
@@ -1672,39 +1700,41 @@ class CubicSplineGaussModel(ResolutionModel) :
         if res_model:
             constraints |= set(res_model.ExternalConstraints())
             conds |= set(res_model.ConditionalObservables())
+            from ROOT import RooAddModel, RooGaussModel
             types = {RooAddModel : self.__from_add_model,
                      RooGaussModel : self.__from_gauss}
-            for t, fun in types.itertimes():
+            for t, fun in types.iteritems():
                 if isinstance(res_model._target_(), t):
-                    model, this_type = fun(name, res_model, spline)
+                    model, this_type, name = fun(name, res_model, spline)
         else:
             from ROOT import RooCubicSplineGaussModel
-            model = RooCubicSplineGaussModel(name, name, params[0], spline, params[1:])
+            model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline.GetName(), ','.join([p.GetName() for p in params[1:]]))
             this_type = 'RooCubicSplineGaussModel'
 
-        self._addObject(model)
-        mhe.IsA().Destructor(model)
+        if type(model) == str:
+            self._declare(model)
 
+        self._init(name, this_type)
         extraOpts = dict()
         if constraints : extraOpts['ExternalConstraints' ] = constraints
         if conds: extraOpts['ConditionalObservables'] = conds
-        self._init(self.__pdf_name, 'RooMultiEffResModel')
-        ResolutionModel.__init__(self, Name = self.__pdf_name , Type = this_type, **extraOpts)
+        ResolutionModel.__init__(self, Name = name , Type = this_type, **extraOpts)
 
     def __from_gauss(self, name, gauss_model, spline_fun):
         params = gauss_model['Parameters']
-        name = name + gauss_model.GetName() + '_spline'
+        name = name + '_' + gauss_model.GetName() + '_spline'
         from ROOT import RooCubicSplineGaussModel
-        model = RooCubicSplineGaussModel(name, name, params[0], spline, params[1:])
-        return model, 'RooCubicSplineGaussModel'
+        model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline_fun.GetName(), ','.join([p.GetName() for p in params[1:]]))
+        return model, 'RooCubicSplineGaussModel', name
 
     def __from_add_model(self, name, add_model, spline_fun):
         spline_models = []
         for model in add_model.models():
-            spline_models.append(CubicSplineGaussModel(Name = '', ResolutionModel = model, SplineFunction = spline_fun))
+            spline_models.append(CubicSplineGaussModel(Name = name, ResolutionModel = model, SplineFunction = spline_fun))
         fractions = add_model.fractions()
-        model = AddModel(name + add_model.GetName() + '_spline', Models = models, Fractions = fractions)
-        return model, 'RooAddModel'
+        name = name + '_' + add_model.GetName() + '_spline'
+        model = AddModel(name, Models = spline_models, Fractions = fractions)
+        return model, 'RooAddModel', name
         
 class MultiHistEfficiencyModel(ResolutionModel):
     def _make_pdf(self) : pass
@@ -1735,6 +1765,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
         if not self.__binHeightMinMax : self.__binHeightMinMax = (0.01, 0.999)
         self.__spline = kwargs.pop('Spline', False)
         self.__smooth = kwargs.pop('SmoothSpline', 0)
+        self.__knots = None
         from copy import copy
         from ROOT import RooBinning        
         from ROOT import RooArgList
@@ -1765,7 +1796,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
 
                 # Make the RealVars which represent the bin heights
                 if self.__spline and len(heights) > 1:
-                    from ROOT import RooCubicSplineFun, RooRealVar
+                    from ROOT import RooRealVar
                     from ROOT import std
                     from math import sqrt
                     knots = std.vector('double')(len(heights))
@@ -1775,13 +1806,16 @@ class MultiHistEfficiencyModel(ResolutionModel):
                         knots[i] = (bounds[i] + bounds[i + 1]) / 2.
                         values[i] = heights[i]
                         errors[i] = sqrt(heights[i])
-                    spline_fun = RooCubicSplineFun("spline_fun", "spline_fun", __dref__(self.__observable),
-                                                   knots, values, errors, self.__smooth, False)
-                    for h in spline_fun.coefficients():
-                        print h.GetName()
+                    sn = '%s_%s_spline' % (category.GetName(), state)
+                    spline_fun = CubicSplineFun(Name = sn, Observable = self.__observable,
+                                                Knots = knots, Values = values, Errors = errors,
+                                                Smooth = self.__smooth, ConstantCoeffs = False)
                     heights = [RooRealVar(c) for c in spline_fun.coefficients()]
-                    self.__knots[(category, state)] = [d for d in spline_fun.knots()]
-                    for i, (rn, h) in enumerate(zip(order, heights)):
+                    if not self.__knots:
+                        self.__knots = [d for d in spline_fun.knots()]
+                    else:
+                        assert(len(self.__knots) == spline_fun.knots().size())
+                    for i, (rn, h) in enumerate(zip(order, heights[1:-1])):
                         name = '%d_%s_%s_bin_%03d' % (rn, category.GetName(), state, i + 1)
                         h.SetName(name)
                         h.SetTitle(name)
@@ -1804,7 +1838,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
                     # create a shape and then the constraint.
                     shape_name = '_'.join([category.GetName(), state, 'shape'])
                     constr_heights = heights if not self.__spline else heights[1:-1]
-                    print [(h.GetName(), h) for h in constr_heights]
                     shape = BinnedPdf(shape_name, Observable = self.__observable,
                                       Binning = binning_name, Coefficients = constr_heights)
                     shape.setForceUnitIntegral(True)
@@ -1834,6 +1867,9 @@ class MultiHistEfficiencyModel(ResolutionModel):
                     self.__base_binning = shape_binning
                 coef_info[state] = copy(state_info)
                 coef_info[state].update({'heights' : heights})
+                if self.__spline and len(heights) > 1:
+                    coef_info[state].update({'knots' : knots})
+                
             self.__coefficients[category] = coef_info
 
         # Set the binning on the observable
@@ -1902,6 +1938,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
         for categories, relative_efficiency in relative.iteritems():
             # Make EfficiencyBins for the bin values
             heights = []
+            knots = []
             bin_vars = [{} for i in range(len(self.__base_bounds) - 1)]
             state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
             prefix = self.__pdf_name + '_' + state_name
@@ -1938,6 +1975,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 # cp = category_pair(__dref__(category), state)
                 cm[__dref__(category)] = state
             efficiency = self.__relative_efficiencies[state_name]
+            print type(eff_model._target_())
             entry = MultiHistEntry(cm, __dref__(eff_model), __dref__(efficiency))
             efficiency_entries.push_back(entry)
         return efficiency_entries
@@ -1954,10 +1992,10 @@ class MultiHistEfficiencyModel(ResolutionModel):
                            Efficiency = binned_pdf)
     def __build_spline(self, prefix, heights):
         spline_name = "%s_spline_fun" % prefix
-        from ROOT import RooCubicSplineFun
-        spline_fun = RooCubicSplineFun(spline_name, spline_name, __dref__(self.__observable),
-                                       self.binning().GetName(), heights)
-        return RooCubicSplineModel(Name = '%s_efficiency' % prefix, ResolutionModel = self.__resolution_model)
+        spline_fun = CubicSplineFun(Name = spline_name, Observable = self.__observable,
+                                    Knots = self.__knots, Coefficients = heights)
+        return CubicSplineGaussModel(Name = '%s_efficiency' % prefix, ResolutionModel = self.__resolution_model,
+                                     SplineFunction = spline_fun)
 
     def __add_constraints(self):
         self.setExternalConstraints(self.__constraints)

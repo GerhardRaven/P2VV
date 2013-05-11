@@ -48,10 +48,10 @@ using namespace std;
 ClassImp(RooCubicSplineFun);
 
 //_____________________________________________________________________________
-void RooCubicSplineFun::initSmooth(const std::vector<double>& knots,
-                                   const std::vector<double>& heights,
-                                   const std::vector<double>& errors,
-                                   double smooth, bool constCoeffs) {
+void RooCubicSplineFun::init(const char* name, const std::vector<double>& knots,
+                             const std::vector<double>& heights,
+                             const std::vector<double>& errors,
+                             double smooth, bool constCoeffs) {
    _aux = new RooCubicSplineKnot( knots.begin(), knots.end() );
    std::vector<double> values(heights);
    if ( smooth > 0 ) { 
@@ -63,10 +63,12 @@ void RooCubicSplineFun::initSmooth(const std::vector<double>& knots,
       if (constCoeffs) {
          _coefList.add( RooFit::RooConst( values[i] ) );
       } else {
-         stringstream name;
-         name << GetName() << "_smoothed_bin_" << i;
-         const char* n = name.str().c_str();
-         _coefList.addOwned(*new RooRealVar(n, n, values[i], 0.001, 0.999));
+         stringstream name_str;
+         name_str << name << "_smoothed_bin_" << i + 1;
+         string n(name_str.str());
+         RooRealVar* coeff = new RooRealVar(n.c_str(), n.c_str(), values[i], 0.0001, 0.9999);
+         _coefList.add(*coeff);
+         _ownList.addOwned(*coeff);
       }
    }
 }
@@ -86,9 +88,10 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, RooRea
    RooAbsReal(name, title),
    _x("x", "Dependent", this, x),
    _coefList("coefficients","List of coefficients",this),
+   _ownList("ownList", "List of owned RealVars", this),
    _aux(0)
 {
-   initSmooth(knots, values, errors, smooth, constCoeffs);
+   init(name, knots, values, errors, smooth, constCoeffs);
 }
 
 //_____________________________________________________________________________
@@ -98,6 +101,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   RooAbsReal(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients","List of coefficients",this),
+  _ownList("ownList", "List of owned RealVars", this),
   _aux(0)
 {
     int nBins = hist->GetNbinsX();
@@ -110,15 +114,17 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
     std::vector<double> errs;
     for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
     
-    initSmooth(centres, values, errs, smooth, constCoeffs);
+    init(name, centres, values, errs, smooth, constCoeffs);
 }
 
 //_____________________________________________________________________________
 RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, 
-                           RooRealVar& x, const char* knotBinningName, const RooArgList& coefList): 
+                                     RooRealVar& x, const char* knotBinningName,
+                                     const RooArgList& coefList): 
   RooAbsReal(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients", "List of coefficients", this),
+  _ownList("ownList", "List of owned RealVars", this),
   _aux(0)
 {
   // TODO: verify coefList is consistent with knots as specified by the knotBinningName binning
@@ -140,6 +146,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   RooAbsReal(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients", "List of coefficients", this),
+  _ownList("ownList", "list of owned RealVars", this),
   _aux(0)
 {
    assert(size_t(coefList.getSize()) == knots.size());
@@ -151,15 +158,24 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
 RooCubicSplineFun::RooCubicSplineFun(const RooCubicSplineFun& other, const char* name) :
   RooAbsReal(other, name), 
   _x("x", this, other._x), 
-  _coefList("coefList",this,other._coefList),
+  _coefList("coefList", "List of owned RealVars", this),
+  _ownList("ownList", "List of owned RealVars", this),
   _aux(new RooCubicSplineKnot(*other._aux))
 {
+   if (_ownList.getSize()) {
+      RooAbsCollection* copy = other._ownList.snapshot();
+      _ownList.addOwned(*copy);
+      _coefList.add(*copy);
+   } else {
+      _coefList.add(other._coefList);
+   }
 }
 
 //_____________________________________________________________________________
 RooCubicSplineFun::~RooCubicSplineFun()
 {
     delete _aux;
+    _ownList.removeAll();
 }
 
 //_____________________________________________________________________________

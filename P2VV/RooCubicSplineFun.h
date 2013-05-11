@@ -58,13 +58,15 @@ public:
   const RooArgList& coefficients() const { return _coefList; }
 
 private:
+
   RooRealProxy _x;
   RooListProxy _coefList ;
+  RooListProxy _ownList;
 
   const RooCubicSplineKnot *_aux; // do not persist! (but do persist the binningName used for _x!!!
 
-  void initSmooth(const std::vector<double>& knots, const std::vector<double>& heights,
-                  const std::vector<double>& errors, double smooth, bool constCoeffs);
+  void init(const char* name, const std::vector<double>& knots, const std::vector<double>& heights,
+            const std::vector<double>& errors, double smooth, bool constCoeffs);
 
   Double_t evaluate() const;
 
