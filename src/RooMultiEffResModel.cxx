@@ -34,9 +34,9 @@ using std::make_pair;
 #include "RooSuperCategory.h"
 #include "RooRandom.h"
 
-#include "P2VV/MultiHistEntry.h"
 #include "P2VV/RooMultiEffResModel.h"
 #include "P2VV/RooEffConvGenContext.h"
+#include "P2VV/MultiHistEntry.h"
 
 namespace {
    TString makeName(const char* name, const RooArgSet& terms ) {
@@ -119,7 +119,7 @@ RooMultiEffResModel::CacheElem::CacheElem(const HistEntries& entries,
          s >> name;
          _I.insert(make_pair(index, new RooConstVar(name.c_str(), name.c_str(), 1.)));
       } else {
-         RooAbsReal* I = entry->efficiency()->createIntegral(observables, RooNameReg::str(rangeName));
+         RooAbsReal* I = entry->effModel()->createIntegral(observables, RooNameReg::str(rangeName));
          _I.insert(make_pair(index, I));
       }
    }
@@ -138,8 +138,8 @@ Double_t RooMultiEffResModel::CacheElem::getVal(const Int_t index) const
 //_____________________________________________________________________________
 RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
                                          std::vector<MultiHistEntry*> entries)
-   : RooAbsEffResModel(name,title, entries.front()->efficiency()->convVar()),
-     _binboundaries(0),
+   : RooResolutionModel(name,title, entries.front()->effModel()->convVar()),
+     RooAbsEffResModel(),
      _prodGenCode(0),
      _super(0),
      _cacheMgr(this, 10)
@@ -187,7 +187,8 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
 
 //_____________________________________________________________________________
 RooMultiEffResModel::RooMultiEffResModel(const RooMultiEffResModel& other, const char* name) 
-   : RooAbsEffResModel(other,name),
+   : RooResolutionModel(other,name),
+     RooAbsEffResModel(),
      _prodGenObs(other._prodGenObs),
      _prodGenCode(other._prodGenCode),
      _levels(other._levels),
@@ -244,21 +245,22 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
    if (cacheParamsStr && !strlen(cacheParamsStr)) cacheParamsStr=0;
 
    vector<MultiHistEntry*> entries;
-   vector<RooAbsEffResModel*> models;
+   vector<RooResolutionModel*> models;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      RooAbsEffResModel *conv = static_cast<RooAbsEffResModel*>(it->second->efficiency()->convolution(inBasis, owner));
+      RooResolutionModel *conv = it->second->effModel()->convolution(inBasis, owner);
       if (cacheParamsStr) conv->setStringAttribute("CACHEPARAMINT",cacheParamsStr);
       models.push_back(conv);
 
-      MultiHistEntry* entry = new MultiHistEntry(*(it->second), conv);
+      RooAbsEffResModel* effModel = dynamic_cast<RooAbsEffResModel*>(conv);
+      MultiHistEntry* entry = new MultiHistEntry(*(it->second), effModel);
       entries.push_back(entry);
    }
 
    TString newName = TString::Format("%s_conv_%s_[%s]", GetName(),inBasis->GetName(), owner->GetName());
 
    RooMultiEffResModel *effConv = new RooMultiEffResModel(newName, GetTitle(), entries);
-   for (vector<RooAbsEffResModel*>::iterator it = models.begin(), end = models.end();
+   for (vector<RooResolutionModel*>::iterator it = models.begin(), end = models.end();
         it != end; ++it) {
       effConv->addOwnedComponents(**it);
    }
@@ -275,7 +277,7 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
 //_____________________________________________________________________________
 Int_t RooMultiEffResModel::basisCode(const char* name) const 
 { 
-   return _entries.begin()->second->efficiency()->basisCode(name);
+   return _entries.begin()->second->effModel()->basisCode(name);
 } 
 
 
@@ -303,9 +305,9 @@ Double_t RooMultiEffResModel::evaluate() const
          if (onlyCats) {
             val = it->second->relative()->getVal();
          } else if (onlyVars) {
-            val = it->second->relative()->getVal() * it->second->efficiency()->getVal();
+            val = it->second->relative()->getVal() * it->second->effModel()->getVal();
          } else {
-            val = it->second->relative()->getVal() * it->second->efficiency()->getVal();
+            val = it->second->relative()->getVal() * it->second->effModel()->getVal();
          }
          // cout << "RooMultiEffResModel::evaluate " 
          //      << it->second->efficiency()->GetName() << " case = " << code << " " 
@@ -466,7 +468,7 @@ Int_t RooMultiEffResModel::getGenerator(const RooArgSet& directVars, RooArgSet &
    RooArgSet genVars;
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      const RooAbsEffResModel* resModel = it->second->efficiency();
+      const RooResolutionModel* resModel = it->second->effModel();
       if (genVars.getSize() == 0) {
          prodGenCode = resModel->getGenerator(testVars, genVars, staticInitOK);
       } else {
@@ -499,7 +501,7 @@ void RooMultiEffResModel::initGenerator(Int_t code)
    // methods.
    for (HistEntries::iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      it->second->efficiency()->initGenerator(_prodGenCode);
+      it->second->effModel()->initGenerator(_prodGenCode);
    }
    if (code == 1) {
       return;
@@ -564,7 +566,7 @@ void RooMultiEffResModel::generateEvent(Int_t code)
 
    // now that've assigned the categories, we can use the 'real' samplers
    // which are conditional on the categories.
-   itEntry->second->efficiency()->generateEvent(_prodGenCode);
+   itEntry->second->effModel()->generateEvent(_prodGenCode);
 }
 
 //_____________________________________________________________________________
@@ -572,7 +574,7 @@ const RooAbsReal* RooMultiEffResModel::efficiency() const {
    Int_t index = _super->getIndex();
    HistEntries::const_iterator it = _entries.find(index);
    assert(it != _entries.end());
-   return it->second->efficiency();
+   return it->second->effModel();
 }
 
 //_____________________________________________________________________________
@@ -581,7 +583,7 @@ std::vector<const RooAbsReal*> RooMultiEffResModel::efficiencies() const {
       // Return pointer to pdf in product
    for (HistEntries::const_iterator it = _entries.begin(), end = _entries.end();
         it != end; ++it) {
-      effs.push_back(it->second->efficiency());
+      effs.push_back(it->second->effModel());
    }
    return effs;
 }

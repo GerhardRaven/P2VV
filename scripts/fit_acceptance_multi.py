@@ -12,8 +12,8 @@ from P2VV.RooFitWrappers import *
 from ROOT import RooCBShape as CrystalBall
 from P2VV.Parameterizations.GeneralUtils import valid_combinations
 
-## from ROOT import RooMsgService
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
+from ROOT import RooMsgService
+RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.ObjectHandling))
 ## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
 
 obj = RooObject( workspace = 'w')

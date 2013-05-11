@@ -5,6 +5,8 @@
 // Include files
 #include <iostream>
 
+#include <TObject.h>
+
 #include <RooCategoryProxy.h>
 #include <RooRealProxy.h>
 
@@ -16,7 +18,6 @@
  *  @author Roel Aaij
  *  @date   2012-08-21
  */
-
 class MultiHistEntry {
 public:
 
@@ -79,16 +80,18 @@ public:
       if (other.m_efficiency) {
          m_efficiency = new RooRealProxy(other.m_efficiency->GetName(), parent, *other.m_efficiency);
       } else {
-         name = m_rawEff->GetName(); name += "_proxy";
-         m_efficiency = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawEff);
+         RooResolutionModel* effModel = dynamic_cast<RooResolutionModel*>(m_rawEff);
+         name = effModel->GetName(); name += "_proxy";
+         m_efficiency = new RooRealProxy(name.c_str(), name.c_str(), parent, *effModel);
       }
       m_rawEff = 0;
          
       if (other.m_relative) {
          m_relative = new RooRealProxy(other.m_relative->GetName(), parent, *other.m_relative);
       } else {
-         name = m_rawEff->GetName(); name += "_proxy";
-         m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawRel);
+         RooResolutionModel* effModel = dynamic_cast<RooResolutionModel*>(m_rawEff);
+         name = effModel->GetName(); name += "_proxy";
+         m_relative = new RooRealProxy(name.c_str(), name.c_str(), parent, *effModel);
       }
       m_rawRel = 0;
       
@@ -121,23 +124,42 @@ public:
       if (m_relative) delete m_relative;
    }
 
+   RooResolutionModel* effModel() {
+      RooResolutionModel* model = 0;
+      if (m_efficiency) {
+         model = dynamic_cast<RooResolutionModel*>(m_efficiency->absArg());
+      } else {
+         model = dynamic_cast<RooResolutionModel*>(m_rawEff);
+      }
+      assert(model);
+      return model;
+   }
+
+   const RooResolutionModel* effModel() const {
+      return const_cast<MultiHistEntry*>(this)->effModel();
+      // }
+   }
+
+   RooAbsEffResModel* efficiency() {
+      RooAbsEffResModel* eff = 0;
+      if (m_efficiency) {
+         eff = dynamic_cast<RooAbsEffResModel*>(m_efficiency->absArg());
+      } else {
+         eff = m_rawEff;
+      }
+      assert(eff);
+      return eff;
+   }
 
    const RooAbsEffResModel* efficiency() const {
       return const_cast<MultiHistEntry*>(this)->efficiency();
       // }
    }
 
-   RooAbsEffResModel* efficiency() {
-      if (m_efficiency) {
-         return dynamic_cast<RooAbsEffResModel*>(m_efficiency->absArg());
-      } else {
-         return m_rawEff;
-      }
-   }
-
    void setEfficiency(RooAbsEffResModel* eff) {
       if (m_efficiency) {
-         m_efficiency->setArg(*eff);
+         RooResolutionModel* effModel = dynamic_cast<RooResolutionModel*>(eff);
+         m_efficiency->setArg(*effModel);
       } else {
          m_rawEff = eff;
       }
@@ -166,8 +188,9 @@ public:
          delete m_efficiency;
          m_efficiency = temp;
       } else {
-         name = m_rawEff->GetName(); name += "_proxy";
-         m_efficiency = new RooRealProxy(name.c_str(), name.c_str(), parent, *m_rawEff);
+         RooResolutionModel* effModel = dynamic_cast<RooResolutionModel*>(m_rawEff);
+         name = effModel->GetName(); name += "_proxy";
+         m_efficiency = new RooRealProxy(name.c_str(), name.c_str(), parent, *effModel);
       }
       m_rawEff = 0;
 
@@ -266,7 +289,8 @@ public:
          std::cout << it->second << std::endl;
       }
       if (m_rawEff) {
-         m_rawEff->Print();
+         RooResolutionModel* effModel = dynamic_cast<RooResolutionModel*>(m_rawEff);
+         effModel->Print();
       } else {
          std::cout << "m_rawEff == 0" << std::endl;
       }

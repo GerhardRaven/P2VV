@@ -124,48 +124,52 @@ RooCubicSplineGaussModel::M_n::M_n(double x, const RooComplex& z) {
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
-                , RooRealVar& x, RooCubicSplineFun& _eff
-			    , RooAbsReal& _mean, RooAbsReal& _sigma ) :
-  RooAbsEffResModel(name,title,x), 
-  _flatSFInt(kFALSE),
-  eff("eff","Spline describing efficiency",this,_eff),
-  mean("mean","Mean",this,_mean),
-  sigma("sigma","Width",this,_sigma),
-  msf("msf","Mean Scale Factor",this,RooRealConstant::value(1.0)),
-  ssf("ssf","Sigma Scale Factor",this,RooRealConstant::value(1.0))
+                                                   , RooRealVar& x, RooCubicSplineFun& _eff
+                                                   , RooAbsReal& _mean, RooAbsReal& _sigma )
+   : RooResolutionModel(name, title, x),
+     RooAbsEffResModel(), 
+     _flatSFInt(kFALSE),
+     eff("eff","Spline describing efficiency",this,_eff),
+     mean("mean","Mean",this,_mean),
+     sigma("sigma","Width",this,_sigma),
+     msf("msf","Mean Scale Factor",this,RooRealConstant::value(1.0)),
+     ssf("ssf","Sigma Scale Factor",this,RooRealConstant::value(1.0))
 {  
-    // make sure 'x' matches the eff argument!
-    std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
-    assert( svar->contains( convVar() ) );
+   // make sure 'x' matches the eff argument!
+   std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
+   assert( svar->contains( convVar() ) );
 }
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
-                , RooRealVar& x, RooCubicSplineFun& _eff
-			    , RooAbsReal& _mean, RooAbsReal& _sigma
-			    , RooAbsReal& _meanSF, RooAbsReal& _sigmaSF) : 
-  RooAbsEffResModel(name,title,x), 
-  _flatSFInt(kFALSE),
-  eff("eff","Spline describing efficiency",this,_eff),
-  mean("mean","Mean",this,_mean),
-  sigma("sigma","Width",this,_sigma),
-  msf("msf","Mean Scale Factor",this,_meanSF),
-  ssf("ssf","Sigma Scale Factor",this,_sigmaSF)
+                                                   , RooRealVar& x, RooCubicSplineFun& _eff
+                                                   , RooAbsReal& _mean, RooAbsReal& _sigma
+                                                   , RooAbsReal& _meanSF, RooAbsReal& _sigmaSF)
+   : RooResolutionModel(name,title,x), 
+     RooAbsEffResModel(),
+     _flatSFInt(kFALSE),
+     eff("eff","Spline describing efficiency",this,_eff),
+     mean("mean","Mean",this,_mean),
+     sigma("sigma","Width",this,_sigma),
+     msf("msf","Mean Scale Factor",this,_meanSF),
+     ssf("ssf","Sigma Scale Factor",this,_sigmaSF)
 {  
-    // make sure 'x' matches the spline argument!
-    std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
-    assert( svar->contains( convVar() ) );
+   // make sure 'x' matches the spline argument!
+   std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
+   assert( svar->contains( convVar() ) );
 }
 
 //_____________________________________________________________________________
-RooCubicSplineGaussModel::RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other, const char* name) : 
-  RooAbsEffResModel(other,name),
-  _flatSFInt(other._flatSFInt),
-  eff("eff",this,other.eff),
-  mean("mean",this,other.mean),
-  sigma("sigma",this,other.sigma),
-  msf("msf",this,other.msf),
-  ssf("ssf",this,other.ssf)
+RooCubicSplineGaussModel::RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other,
+                                                   const char* name)
+   : RooResolutionModel(other,name),
+     RooAbsEffResModel(),
+     _flatSFInt(other._flatSFInt),
+     eff("eff",this,other.eff),
+     mean("mean",this,other.mean),
+     sigma("sigma",this,other.sigma),
+     msf("msf",this,other.msf),
+     ssf("ssf",this,other.ssf)
 {
 }
 

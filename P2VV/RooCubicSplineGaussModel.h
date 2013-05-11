@@ -13,18 +13,20 @@
  * with or without modification, are permitted according to the terms        *
  * listed in LICENSE (http://roofit.sourceforge.net/license.txt)             *
  *****************************************************************************/
-#ifndef ROO_GAUSS_MODEL
-#define ROO_GAUSS_MODEL
+#ifndef ROO_CS_GAUSS_MODEL
+#define ROO_CS_GAUSS_MODEL
 
-#include "RooAbsEffResModel.h"
-#include "RooRealProxy.h"
-#include "RooComplex.h"
+#include <RooResolutionModel.h>
+#include <RooRealProxy.h>
+#include <RooComplex.h>
+
+#include <P2VV/RooAbsEffResModel.h>
 
 class RooCubicSplineFun;
 class RooAbsReal;
 class RooRealVar;
 
-class RooCubicSplineGaussModel : public RooAbsEffResModel {
+class RooCubicSplineGaussModel : public RooResolutionModel, public RooAbsEffResModel {
 public:
 
   // Constructors, assignment etc

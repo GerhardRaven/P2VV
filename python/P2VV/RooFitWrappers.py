@@ -1590,8 +1590,7 @@ class ResolutionModel(Pdf):
 
 class AddModel(ResolutionModel) :
     def __init__(self, name, **kwargs) :
-        #TODO: forward conditionalObservables and ExternalConstraints from dependents...
-        # construct factory string on the fly...
+        # TODO: construct factory string on the fly...
         __check_name_syntax__(name)
 
         self.__models = kwargs.pop('Models')
@@ -1633,6 +1632,45 @@ class AddModel(ResolutionModel) :
     def fractions(self):
         return self.__fractions
 
+class EffResAddModel(ResolutionModel):
+    def _make_pdf(self):
+        pass
+
+    def __init__(self, **kwargs) :
+        # TODO: construct factory string on the fly...
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+
+        self.__models = kwargs.pop('Models')
+        self.__fractions = kwargs.pop('Fractions')
+        conditionals = set()
+        externals = set()
+        for model in self.__models:
+            conditionals |= model.ConditionalObservables()
+            externals |= set(model.ExternalConstraints())
+
+        from ROOT import RooEffResAddModel
+        def make_alist(l):
+            alist = RooArgList()
+            for e in l:
+                alist.add(__dref__(e))
+            return alist
+        models = make_alist(self.__models)
+        fracs = make_alist(self.__fractions)
+        model = RooEffResAddModel(name, name, models, fracs)
+        self._addObject(model)
+        self._init(name, 'RooEffResAddModel')
+            
+        ResolutionModel.__init__(self, Name = name, Type = 'RooEffResAddModel',
+                                 ConditionalObservables = conditionals,
+                                 ExternalConstraints = list(externals))
+
+    def models(self):
+        return self.__models
+
+    def fractions(self):
+        return self.__fractions
+        
 class EffResModel(ResolutionModel) :
     def __init__(self,**kwargs) :
         # construct factory string on the fly...
@@ -1733,8 +1771,8 @@ class CubicSplineGaussModel(ResolutionModel) :
             spline_models.append(CubicSplineGaussModel(Name = name, ResolutionModel = model, SplineFunction = spline_fun))
         fractions = add_model.fractions()
         name = name + '_' + add_model.GetName() + '_spline'
-        model = AddModel(name, Models = spline_models, Fractions = fractions)
-        return model, 'RooAddModel', name
+        model = EffResAddModel(Name = name, Models = spline_models, Fractions = fractions)
+        return model, 'RooEffResAddModel', name
         
 class MultiHistEfficiencyModel(ResolutionModel):
     def _make_pdf(self) : pass
@@ -1896,7 +1934,11 @@ class MultiHistEfficiencyModel(ResolutionModel):
         self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
 
         efficiency_entries = self.__build_shapes(relative)
-
+        from ROOT import MultiHistEntry
+        print_entry = getattr(MultiHistEntry, 'print')
+        for entry in efficiency_entries:
+            print_entry(entry)
+        
         from ROOT import RooMultiEffResModel
         mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
         self._addObject(mhe)
@@ -1964,6 +2006,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
 
             if self.__spline and len(heights) > 1:
                 eff_model = self.__build_spline(prefix, heights)
+                print 'EffModel:', eff_model
             else:
                 eff_model = self.__build_eff_res(prefix, heights)
 

@@ -16,13 +16,11 @@
 #include "RooObjCacheManager.h"
 #include "RooSetProxy.h"
 
-class RooAbsEffResModel : public RooResolutionModel  {
+class RooAbsEffResModel {
 public:
 
    // Constructors, assignment etc
    inline RooAbsEffResModel() { }
-   RooAbsEffResModel(const char *name, const char *title, RooRealVar& convVar);
-   RooAbsEffResModel(const RooAbsEffResModel& other, const char* name=0);
 
    virtual ~RooAbsEffResModel() {}
   
@@ -38,7 +36,6 @@ public:
 
 private:
 
-   ClassDef(RooAbsEffResModel, 0) // EffResian Resolution Model
 };
 
 #endif

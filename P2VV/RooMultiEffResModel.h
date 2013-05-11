@@ -18,10 +18,10 @@
 #include <P2VV/RooEffResModel.h>
 #include <P2VV/RooAbsEffResModel.h>
 
-class RooSuperCategory;
 class MultiHistEntry;
+class RooSuperCategory;
 
-class RooMultiEffResModel : public RooAbsEffResModel {
+class RooMultiEffResModel : public RooResolutionModel, public RooAbsEffResModel {
 public:
 
    // Constructors, assignment etc
