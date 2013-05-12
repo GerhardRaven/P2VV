@@ -8,7 +8,8 @@
 
 //_____________________________________________________________________________R
 RooEffResAddModel::RooEffResAddModel()
-   : RooAddModel(), RooAbsEffResModel()
+   : RooAddModel(), RooAbsEffResModel(),
+     _addModel(0)
 {
 
 }
@@ -17,7 +18,8 @@ RooEffResAddModel::RooEffResAddModel()
 RooEffResAddModel::RooEffResAddModel(const char *name, const char *title, const RooArgList& modelList,
                   const RooArgList& coefList, Bool_t ownPdfList)
    : RooAddModel(name, title, modelList, coefList, ownPdfList),
-     RooAbsEffResModel()
+     RooAbsEffResModel(),
+     _addModel(0)
 {
    RooFIter iter = modelList.fwdIterator();
    while(RooAbsArg* model = iter.next()) {
@@ -25,13 +27,36 @@ RooEffResAddModel::RooEffResAddModel(const char *name, const char *title, const 
       assert(effModel);
    }
 }
-
+ 
 //_____________________________________________________________________________
 RooEffResAddModel::RooEffResAddModel(const RooEffResAddModel& other, const char* name)
    : RooAddModel(other, name),
-     RooAbsEffResModel()
+     RooAbsEffResModel(),
+     _addModel(0)
 {
 
+}
+
+//_____________________________________________________________________________
+RooEffResAddModel::RooEffResAddModel(const RooAddModel& other, const char* name)
+   : RooAddModel(other, name),
+     RooAbsEffResModel(),
+     _addModel(0)
+{
+
+}
+
+//_____________________________________________________________________________
+RooEffResAddModel::~RooEffResAddModel( )
+{
+   delete _addModel;
+}
+
+//_____________________________________________________________________________
+RooResolutionModel* RooEffResAddModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
+{
+   _addModel = static_cast<RooAddModel*>(RooAddModel::convolution(inBasis, owner));
+   return new RooEffResAddModel(*_addModel);
 }
    
 //_____________________________________________________________________________

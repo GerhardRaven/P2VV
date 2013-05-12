@@ -131,7 +131,11 @@ public:
       } else {
          model = dynamic_cast<RooResolutionModel*>(m_rawEff);
       }
-      assert(model);
+      // if (!model) {
+      //    const RooAbsArg& tmp = m_efficiency ? m_efficiency->arg() : dynamic_cast<const RooAbsArg&>(*m_rawEff);
+      //    cout << tmp.GetName() << " is not a " << endl;
+      //    assert(false);
+      // }
       return model;
    }
 

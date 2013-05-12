@@ -64,9 +64,10 @@ void RooCubicSplineFun::init(const char* name, const std::vector<double>& knots,
          _coefList.add( RooFit::RooConst( values[i] ) );
       } else {
          stringstream name_str;
-         name_str << name << "_smoothed_bin_" << i + 1;
+         name_str << name << "_smoothed_bin_" << i;
          string n(name_str.str());
          RooRealVar* coeff = new RooRealVar(n.c_str(), n.c_str(), values[i], 0.0001, 0.9999);
+         if (i == 0 || i == values.size() - 1) coeff->setConstant(true);
          _coefList.add(*coeff);
          _ownList.addOwned(*coeff);
       }
@@ -149,7 +150,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   _ownList("ownList", "list of owned RealVars", this),
   _aux(0)
 {
-   assert(size_t(coefList.getSize()) == knots.size());
+   assert(size_t(coefList.getSize()) == 2 + knots.size());
    _coefList.add(coefList);
    _aux = new RooCubicSplineKnot(knots.begin(), knots.end());
 }

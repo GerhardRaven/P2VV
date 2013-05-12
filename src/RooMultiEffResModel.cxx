@@ -253,6 +253,10 @@ RooMultiEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
       models.push_back(conv);
 
       RooAbsEffResModel* effModel = dynamic_cast<RooAbsEffResModel*>(conv);
+      if (!effModel) {
+         cout << conv->GetName() << " is not a RooAbsEffResModel!" << endl;
+         assert(false);
+      }
       MultiHistEntry* entry = new MultiHistEntry(*(it->second), effModel);
       entries.push_back(entry);
    }

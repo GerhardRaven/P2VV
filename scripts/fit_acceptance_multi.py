@@ -13,7 +13,7 @@ from ROOT import RooCBShape as CrystalBall
 from P2VV.Parameterizations.GeneralUtils import valid_combinations
 
 from ROOT import RooMsgService
-RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.ObjectHandling))
+## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.ObjectHandling))
 ## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
 
 obj = RooObject( workspace = 'w')
@@ -56,7 +56,7 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
 
 # Time resolution model
 from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
-tres = TimeResolution(time = t, timeResSigma = st, Cache = True,
+tres = TimeResolution(time = t, timeResSigma = st, Cache = False,
                       timeResComb = dict(Value = 1.4918, Error = 4.08e-03, MinMax = ( 0.1, 5. ), Constant = True),
                       timeResSigmaSF2 = dict(Value = 6.0074, Error = 1.89e-01, MinMax = (1, 10), Constant = True),
                       timeResSigmaFrac2 = dict(Value = 1.5818e-02, Error = 1.07e-03, MinMax = (0.001, 0.999), Constant = True),
@@ -328,10 +328,10 @@ else:
 
 ## Fit
 print 'fitting data'
-from profiler import profiler_start, profiler_stop
-profiler_start("acceptance.log")
+## from profiler import profiler_start, profiler_stop
+## profiler_start("acceptance.log")
 result = pdf.fitTo(data, **fitOpts)
-profiler_stop()
+## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
 from ROOT import TCanvas, RooBinning

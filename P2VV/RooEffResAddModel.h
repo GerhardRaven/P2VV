@@ -21,9 +21,10 @@ public:
                      const RooArgList& coefList, Bool_t ownPdfList=kFALSE);
    /// Copy constructor
    RooEffResAddModel(const RooEffResAddModel& other, const char* newName = 0);
+   RooEffResAddModel(const RooAddModel& other, const char* newName = 0);
    
    /// Destructor
-   virtual ~RooEffResAddModel( ) { }
+   virtual ~RooEffResAddModel( );
 
    /// Virtual constructor
    virtual TObject* clone(const char* name) const {
@@ -40,7 +41,13 @@ public:
    virtual const RooAbsReal* efficiency() const;
    virtual std::vector<const RooAbsReal*> efficiencies() const;
 
+protected:
+
+   RooResolutionModel* convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const;
+
 private:
+
+   mutable RooAddModel* _addModel;
 
    ClassDef(RooEffResAddModel, 1)
 

@@ -1891,7 +1891,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
 
                     self.__shapes.append(shape)
 
-                    heights_list = RooArgList(__dref__(h) for h in heights)
                     av_name = "%s_%s_average" % (category, state)
                     value, error = state_info['average']
                     mean  = RealVar(Name = av_name + '_constraint_mean', Value = value, Constant = True)
@@ -1934,10 +1933,10 @@ class MultiHistEfficiencyModel(ResolutionModel):
         self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
 
         efficiency_entries = self.__build_shapes(relative)
-        from ROOT import MultiHistEntry
-        print_entry = getattr(MultiHistEntry, 'print')
-        for entry in efficiency_entries:
-            print_entry(entry)
+        ## from ROOT import MultiHistEntry
+        ## print_entry = getattr(MultiHistEntry, 'print')
+        ## for entry in efficiency_entries:
+        ##     print_entry(entry)
         
         from ROOT import RooMultiEffResModel
         mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
@@ -1979,9 +1978,10 @@ class MultiHistEfficiencyModel(ResolutionModel):
 
         for categories, relative_efficiency in relative.iteritems():
             # Make EfficiencyBins for the bin values
+            # WIP: allow two extra coefficients for spline
             heights = []
             knots = []
-            bin_vars = [{} for i in range(len(self.__base_bounds) - 1)]
+            bin_vars = [{} for i in range(len(self.__base_bounds) + (1 if self.__spline else -1))]
             state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
             prefix = self.__pdf_name + '_' + state_name
             for category, state in categories:
@@ -1999,11 +1999,16 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 for i in range(len(self.__base_bounds) - 1):
                     val = (self.__base_bounds[i] + self.__base_bounds[i + 1]) / 2
                     coefficient = self.__find_coefficient(val, category_bounds, category_heights)
-                    bin_vars[i][__dref__(coefficient)] = state in category_info
+                    j = i + 1 if self.__spline else i
+                    bin_vars[j][__dref__(coefficient)] = state in category_info
+                if self.__spline:
+                    # Add extra coefficients
+                    bin_vars[0][__dref__(category_heights[0])] = state in category_info
+                    bin_vars[-1][__dref__(category_heights[-1])] = state in category_info
+                    
             for i, d in enumerate(bin_vars):
                 name = '%s_%d' % (prefix, i)
                 heights.append(EfficiencyBin(Name = name, Bins = d))
-
             if self.__spline and len(heights) > 1:
                 eff_model = self.__build_spline(prefix, heights)
                 print 'EffModel:', eff_model
@@ -2035,6 +2040,9 @@ class MultiHistEfficiencyModel(ResolutionModel):
                            Efficiency = binned_pdf)
     def __build_spline(self, prefix, heights):
         spline_name = "%s_spline_fun" % prefix
+        print len(heights)
+        for h in heights:
+            print h
         spline_fun = CubicSplineFun(Name = spline_name, Observable = self.__observable,
                                     Knots = self.__knots, Coefficients = heights)
         return CubicSplineGaussModel(Name = '%s_efficiency' % prefix, ResolutionModel = self.__resolution_model,
