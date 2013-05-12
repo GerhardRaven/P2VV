@@ -25,6 +25,8 @@
 // END_HTML
 //
 
+#include <memory>
+
 #include "RooFit.h"
 
 #include "TMath.h"
