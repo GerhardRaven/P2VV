@@ -151,7 +151,7 @@ Int_t RooMassDependence::numPSPars(Int_t index) const
 }
 
 //_____________________________________________________________________________
-std::complex<Double_t> RooMassDependence::funcVal(Int_t index) const
+std::complex<Double_t> RooMassDependence::funcVal(Int_t /*index*/) const
 {
   // return (complex) function value
 
@@ -159,7 +159,7 @@ std::complex<Double_t> RooMassDependence::funcVal(Int_t index) const
 }
 
 //_____________________________________________________________________________
-Double_t RooMassDependence::phaseSpaceVal(Int_t index) const
+Double_t RooMassDependence::phaseSpaceVal(Int_t /*index*/) const
 {
   // return value of phase space factor
 
