@@ -36,7 +36,10 @@
         <class name = "RooEffConvGenContext" />
         <function name = "sigmaFromFT" />
         <class name = "RooBoxPdf" />
-        <class name = "RooCubicBSpine" />
+        <class name = "RooCubicBSpline" />
+        <class name = "RooCubicSplineKnot" />
+        <class name = "RooCubicSplineFun" />
+        <class name = "RooCubicSplineGaussModel" />
         <class name = "RooExplicitNormPdf" />
         <class name = "RooTPDecay" />
         <class name = "RooAmoroso" />

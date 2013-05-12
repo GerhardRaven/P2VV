@@ -3,7 +3,7 @@
  * Package: RooFitModels                                                     *
  * @(#)root/roofit:$Id: RooBSpline.cxx 45780 2012-08-31 15:45:27Z moneta $
  * Authors:                                                                  *
- *   Kyle Cranmer
+ *   Gerhard Raven
  *                                                                           *
  *****************************************************************************/
 
@@ -25,11 +25,13 @@
 #include "Riostream.h"
 #include <math.h>
 #include "TMath.h"
-#include "P2VV/RooCubicBSpline.h"
+#include "TH1.h"
+#include "P2VV/RooCubicSplineFun.h"
 #include "P2VV/RooCubicSplineKnot.h"
 #include "RooMath.h"
 #include "RooAbsReal.h"
 #include "RooRealVar.h"
+#include "RooConstVar.h"
 #include "RooComplex.h"
 #include "RooArgList.h"
 
@@ -39,19 +41,44 @@
 using namespace std;
 
 
-ClassImp(RooCubicBSpline)
+ClassImp(RooCubicSplineFun)
 ;
 
 //_____________________________________________________________________________
-RooCubicBSpline::RooCubicBSpline()
+RooCubicSplineFun::RooCubicSplineFun()
     : _aux(0)
 {
 }
 
+RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, 
+                           RooRealVar& x, const TH1* hist, double smooth ) :
+  RooAbsReal(name, title),
+  _x("x", "Dependent", this, x),
+  _coefList("coefficients","List of coefficients",this),
+  _aux(0)
+{
+    int nBins = hist->GetNbinsX();
+    std::vector<double> boundaries,values;
+    for (int i=0;i<nBins ;++i) {
+        boundaries.push_back(hist->GetBinCenter(1+i));
+        values.push_back(hist->GetBinContent(1+i));
+    }
+    _aux = new RooCubicSplineKnot( boundaries.begin(), boundaries.end() );
+    if ( smooth > 0 ) { 
+        std::vector<double> errs;
+        for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
+        _aux->smooth( values, errs, smooth );
+    }
+    _aux->computeCoefficients( values );
+    for (int i=0;i<values.size();++i) { 
+        _coefList.add( RooFit::RooConst( values[i] ) );
+    }
+}
+
 //_____________________________________________________________________________
-RooCubicBSpline::RooCubicBSpline(const char* name, const char* title, 
+RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, 
                            RooRealVar& x, const char* knotBinningName, const RooArgList& coefList): 
-  RooAbsPdf(name, title),
+  RooAbsReal(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients","List of coefficients",this),
   _aux(0)
@@ -67,7 +94,7 @@ RooCubicBSpline::RooCubicBSpline(const char* name, const char* title,
   RooAbsArg* coef ;
   while((coef = (RooAbsArg*)coefIter->Next())) {
     if (!dynamic_cast<RooAbsReal*>(coef)) {
-      cout << "RooCubicBSpline::ctor(" << GetName() << ") ERROR: coefficient " << coef->GetName() 
+      cout << "RooCubicSplineFun::ctor(" << GetName() << ") ERROR: coefficient " << coef->GetName() 
 	   << " is not of type RooRealVar" << endl ;
       assert(0) ;
     }
@@ -79,8 +106,8 @@ RooCubicBSpline::RooCubicBSpline(const char* name, const char* title,
 }
 
 //_____________________________________________________________________________
-RooCubicBSpline::RooCubicBSpline(const RooCubicBSpline& other, const char* name) :
-  RooAbsPdf(other, name), 
+RooCubicSplineFun::RooCubicSplineFun(const RooCubicSplineFun& other, const char* name) :
+  RooAbsReal(other, name), 
   _x("x", this, other._x), 
   _coefList("coefList",this,other._coefList),
   _aux(new RooCubicSplineKnot(*other._aux))
@@ -88,19 +115,19 @@ RooCubicBSpline::RooCubicBSpline(const RooCubicBSpline& other, const char* name)
 }
 
 //_____________________________________________________________________________
-RooCubicBSpline::~RooCubicBSpline()
+RooCubicSplineFun::~RooCubicSplineFun()
 {
     delete _aux;
 }
 
 //_____________________________________________________________________________
-Double_t RooCubicBSpline::evaluate() const 
+Double_t RooCubicSplineFun::evaluate() const 
 {
   return _aux->evaluate(_x,_coefList);
 }
 
 //_____________________________________________________________________________
-Int_t RooCubicBSpline::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
+Int_t RooCubicSplineFun::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
   // No analytical calculation available (yet) of integrals over subranges
   if (rangeName && strlen(rangeName)) return 0 ;
@@ -108,9 +135,18 @@ Int_t RooCubicBSpline::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& anal
   return 0;
 }
 
+RooComplex  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM, const RooCubicSplineGaussModel::K_n& K, double offset, double* sc) const 
+{
+        RooComplex sum(0,0);
+        RooCubicSplineKnot::S_jk S( _aux->S_jk_sum( i, _coefList ), offset );
+        for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) {
+            sum = sum + dM(j)*S(j,k)*K(k)*sc[j+k];
+        }
+        return sum;
+}
 
 //_____________________________________________________________________________
-Double_t RooCubicBSpline::analyticalIntegral(Int_t code, const char* rangeName) const
+Double_t RooCubicSplineFun::analyticalIntegral(Int_t code, const char* rangeName) const
 {
   assert(code==1) ;
   return _aux->analyticalIntegral(_coefList);
