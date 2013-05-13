@@ -76,7 +76,6 @@ private:
 
    // Evaluation
    typedef std::list<double> BinBoundaries;
-   BinBoundaries* _binboundaries;
    HistEntries _entries;
 
    // Generation

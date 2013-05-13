@@ -105,6 +105,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   _ownList("ownList", "List of owned RealVars", this),
   _aux(0)
 {
+    // bin 0 is underflow, and bin nBins + 1 is overflow...
     int nBins = hist->GetNbinsX();
     std::vector<double> centres, values;
     for (int i=0;i<nBins ;++i) {
@@ -113,7 +114,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
     }
 
     std::vector<double> errs;
-    for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
+    if (smooth>0) for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
     
     init(name, centres, values, errs, smooth, constCoeffs);
 }
@@ -132,8 +133,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   //    should be N+2 coefficients for N bins...
   const RooAbsBinning* binning = x.getBinningPtr(knotBinningName);
   assert( binning!=0);
-  assert( coefList.getSize()==2+binning->numBins());
- 
+  assert( coefList.getSize()==2+binning->numBoundaries());
   _coefList.add(coefList);
 
   Double_t* boundaries = binning->array();
@@ -207,7 +207,7 @@ RooComplex  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGaussMod
 }
 
 //_____________________________________________________________________________
-Double_t RooCubicSplineFun::analyticalIntegral(Int_t code, const char* rangeName) const
+Double_t RooCubicSplineFun::analyticalIntegral(Int_t code, const char* /* rangeName */) const
 {
   assert(code==1) ;
   return _aux->analyticalIntegral(_coefList);

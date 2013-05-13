@@ -63,6 +63,7 @@ private:
   RooListProxy _coefList ;
   RooListProxy _ownList;
 
+  // TOOD: move all code in RooCubicSplineKnot into this class...
   const RooCubicSplineKnot *_aux; // do not persist! (but do persist the binningName used for _x!!!
 
   void init(const char* name, const std::vector<double>& knots, const std::vector<double>& heights,
