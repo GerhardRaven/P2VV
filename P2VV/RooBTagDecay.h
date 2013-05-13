@@ -210,7 +210,7 @@ protected:
   Int_t        _iTag1Val;
   Int_t        _fTagVal;
   Bool_t       _checkVars; 
-  Double_t*    _maxVal;
+  Double_t     _maxVal;
 
 private:
   ClassDef(RooBTagDecay, 1) // PDF of B decay time distribution with flavour tagging

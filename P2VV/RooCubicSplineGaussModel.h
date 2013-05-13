@@ -48,19 +48,20 @@ public:
 
   void advertiseFlatScaleFactorIntegral(Bool_t flag) { _flatSFInt = flag ; }
 
-  const RooAbsReal* efficiency() const;
-  std::vector<const RooAbsReal*> efficiencies() const;
-  const RooArgSet* observables() const;
+  virtual const RooAbsReal* efficiency() const;
+  virtual std::vector<const RooAbsReal*> efficiencies() const;
+  virtual const RooArgSet* observables() const;
 
-    class M_n {
-    public:
-       M_n(double x, const RooComplex& z) ;
-       const RooComplex& operator()(int i) const { assert(0<=i&&i<4); return _m[i]; }
-       M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
-       M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
-    private:
-       RooComplex _m[4];
-    };
+  // TODO: push these into RooCubicSplineFUn...
+  class M_n {
+  public:
+        M_n(double x, const RooComplex& z) ;
+        const RooComplex& operator()(int i) const { assert(0<=i&&i<4); return _m[i]; }
+        M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
+        M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
+  private:
+        RooComplex _m[4];
+  };
   class K_n {
   public:
       K_n(const RooComplex& z) : _zi( RooComplex(1,0)/z) {}
