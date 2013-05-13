@@ -191,9 +191,20 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
 } 
 
 //_____________________________________________________________________________
-RooAbsReal* RooCubicSplineGaussModel::efficiency() const 
+const RooAbsReal* RooCubicSplineGaussModel::efficiency() const 
 {
     return const_cast<RooAbsReal*>(&eff.arg());
+}
+
+//_____________________________________________________________________________
+std::vector<const RooAbsReal*> RooCubicSplineGaussModel::efficiencies() const { 
+   return std::vector<const RooAbsReal*>(1, efficiency());
+}
+
+//_____________________________________________________________________________
+const RooArgSet* RooCubicSplineGaussModel::observables() const { 
+   // Return pointer to pdf in product
+   return new RooArgSet(convVar());
 }
 
 //_____________________________________________________________________________
@@ -353,20 +364,4 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
   }
   if (TMath::IsNaN(result)) { cxcoutE(Tracing) << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") got nan for basisCode = " << basisCode << endl; }
   return scale*result*ssfInt;
-}
-
-//_____________________________________________________________________________
-const RooAbsReal* RooCubicSplineGaussModel::efficiency() const {
-   return &spline.arg();
-}
-
-//_____________________________________________________________________________
-std::vector<const RooAbsReal*> RooCubicSplineGaussModel::efficiencies() const { 
-   return std::vector<const RooAbsReal*>(1, efficiency());
-}
-
-//_____________________________________________________________________________
-const RooArgSet* RooCubicSplineGaussModel::observables() const { 
-   // Return pointer to pdf in product
-   return new RooArgSet(convVar());
 }

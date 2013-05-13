@@ -195,7 +195,6 @@ RooMultiEffResModel::RooMultiEffResModel(const RooMultiEffResModel& other, const
      _cacheMgr(other._cacheMgr,this)
 {
    // Copy constructor
-   _binboundaries = new BinBoundaries(*other._binboundaries);
    _super = new RooSuperCategory(*other._super);
 
    for (HistEntries::const_iterator it = other._entries.begin(), end = other._entries.end();
@@ -209,7 +208,6 @@ RooMultiEffResModel::RooMultiEffResModel(const RooMultiEffResModel& other, const
 RooMultiEffResModel::~RooMultiEffResModel()
 {
    // Destructor
-   if (_binboundaries) delete _binboundaries;
    if (_super) delete _super;
 }
 
