@@ -39,6 +39,7 @@
 #pragma link C++ class RooAmoroso+;
 #pragma link C++ class RooTPDecay+;
 #pragma link C++ class RooMassDependence+;
+#pragma link C++ class RooEffResAddModel+;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;

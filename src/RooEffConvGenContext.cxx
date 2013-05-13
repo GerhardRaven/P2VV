@@ -75,12 +75,12 @@ void RooEffConvGenContext::attach(const RooArgSet& args)
    
    // Attach the output value of the convolution variable to the efficiencies,
    // so the final hit-miss is with respect to the correct (smeared) value;
-   const RooAbsEffResModel* model = static_cast<const RooAbsEffResModel*>(_modelCloneSet->first());
+   const RooAbsEffResModel* model = dynamic_cast<const RooAbsEffResModel*>(_modelCloneSet->first());
    assert(model);
-   std::vector<RooAbsReal*> efficiencies = model->efficiencies();
-   for (std::vector<RooAbsReal*>::const_iterator it = efficiencies.begin(),
+   std::vector<const RooAbsReal*> efficiencies = model->efficiencies();
+   for (std::vector<const RooAbsReal*>::const_iterator it = efficiencies.begin(),
            end = efficiencies.end(); it != end; ++it) {
-      RooAbsReal* efficiency = *it;
+      RooAbsReal* efficiency = const_cast<RooAbsReal*>(*it);
       RooArgSet cvSet(*_cvOut);
       efficiency->recursiveRedirectServers(cvSet, kFALSE);
    }
@@ -126,12 +126,12 @@ void RooEffConvGenContext::generateEvent(RooArgSet &theEvent, Int_t remaining)
 void RooEffConvGenContext::initEfficiency()
 {
    // Check if efficiency supports maximum finding
-   const RooAbsEffResModel* model = static_cast<const RooAbsEffResModel*>(_modelCloneSet->first());
+   const RooAbsEffResModel* model = dynamic_cast<const RooAbsEffResModel*>(_modelCloneSet->first());
    assert(model);
-   std::vector<RooAbsReal*> efficiencies = model->efficiencies();
-   for (std::vector<RooAbsReal*>::const_iterator it = efficiencies.begin(),
+   std::vector<const RooAbsReal*> efficiencies = model->efficiencies();
+   for (std::vector<const RooAbsReal*>::const_iterator it = efficiencies.begin(),
            end = efficiencies.end(); it != end; ++it) {
-      RooAbsReal* efficiency = *it;
+      const RooAbsReal* efficiency = *it;
       Int_t maxCode = efficiency->getMaxVal(*_modelVars);
       if (!maxCode) {
          _maxEff = 1.;
@@ -146,7 +146,7 @@ void RooEffConvGenContext::initEfficiency()
 //_____________________________________________________________________________
 const RooAbsReal* RooEffConvGenContext::efficiency()
 {
-   const RooAbsEffResModel* model = static_cast<const RooAbsEffResModel*>(_modelCloneSet->first());
+   const RooAbsEffResModel* model = dynamic_cast<const RooAbsEffResModel*>(_modelCloneSet->first());
    assert(model);
    const RooAbsReal* efficiency = model->efficiency();
    assert(efficiency);

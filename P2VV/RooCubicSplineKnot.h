@@ -20,6 +20,8 @@ public:
     void computeCoefficients(std::vector<double>& y ) const ;
     void smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const;
 
+    const std::vector<double>& knots() const { return _u; }
+
     class S_jk { 
     public:
         S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
@@ -61,6 +63,7 @@ public:
     // S matrix for i-th interval
     RooCubicSplineKnot::S_jk S_jk_sum(int i, const RooArgList& b) const ;
     // RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const;
+
 private:
     int index(double u) const;
     double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }
@@ -69,12 +72,12 @@ private:
     double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
 
     double ma( int i) const {  // subdiagonal
-        return i==_u.size()-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
+        return i==int(_u.size())-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
                               : A(u(i),i);
     }
     double mb( int i) const {   // diagonal
         return i==0           ?  -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0)
-             : i==_u.size()-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
+             : i==int(_u.size())-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
                               : B(u(i),i) ;
     }
     double mc( int i) const {  // superdiagonal
@@ -82,10 +85,10 @@ private:
                               : C(u(i),i);
     }
 
-    double P(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i  <_PQRS.size()); return  _PQRS[4*i  ]; }
-    double Q(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+1<_PQRS.size()); return  _PQRS[4*i+1]; }
-    double R(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+2<_PQRS.size()); return  _PQRS[4*i+2]; }
-    double S(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+3<_PQRS.size()); return  _PQRS[4*i+3]; }
+    double P(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i  <int(_PQRS.size())); return  _PQRS[4*i  ]; }
+    double Q(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+1<int(_PQRS.size())); return  _PQRS[4*i+1]; }
+    double R(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+2<int(_PQRS.size())); return  _PQRS[4*i+2]; }
+    double S(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i+3<int(_PQRS.size())); return  _PQRS[4*i+3]; }
 
     void fillPQRS() const;
 

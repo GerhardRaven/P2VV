@@ -13,17 +13,20 @@
  * with or without modification, are permitted according to the terms        *
  * listed in LICENSE (http://roofit.sourceforge.net/license.txt)             *
  *****************************************************************************/
-#ifndef ROO_GAUSS_MODEL
-#define ROO_GAUSS_MODEL
+#ifndef ROO_CS_GAUSS_MODEL
+#define ROO_CS_GAUSS_MODEL
 
-#include "RooResolutionModel.h"
-#include "RooRealProxy.h"
-#include "RooComplex.h"
+#include <RooResolutionModel.h>
+#include <RooRealProxy.h>
+#include <RooComplex.h>
+
+#include <P2VV/RooAbsEffResModel.h>
+
 class RooCubicSplineFun;
 class RooAbsReal;
 class RooRealVar;
 
-class RooCubicSplineGaussModel : public RooResolutionModel {
+class RooCubicSplineGaussModel : public RooResolutionModel, public RooAbsEffResModel {
 public:
 
   // Constructors, assignment etc
@@ -44,6 +47,10 @@ public:
   virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const ;
 
   void advertiseFlatScaleFactorIntegral(Bool_t flag) { _flatSFInt = flag ; }
+
+  const RooAbsReal* efficiency() const;
+  std::vector<const RooAbsReal*> efficiencies() const;
+  const RooArgSet* observables() const;
 
     class M_n {
     public:
@@ -72,12 +79,10 @@ public:
       RooComplex _zi;        
   };
 
-
 private:
 
   virtual Double_t evaluate() const ;
 
-  virtual RooAbsReal* efficiency() const;
   RooComplex evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) const;
 
   Bool_t _flatSFInt ;

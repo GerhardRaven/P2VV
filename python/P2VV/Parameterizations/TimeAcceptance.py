@@ -83,7 +83,9 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         fit = kwargs.pop('Fit')
         model = kwargs.pop('ResolutionModel')
         binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
-
+        spline = kwargs.pop('Spline', False)
+        smooth = kwargs.pop('SmoothSpline', 0)
+        
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
         print 'P2VV - INFO: Paper2012_TimeAcceptance.__init__(): using time efficiency histograms file "%s"' % input_file
@@ -139,5 +141,6 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
                                        ResolutionModel = model['model'], Original = original,
                                        ConditionalObservables = model.conditionalObservables(),
                                        ExternalConstraints = model.externalConstraints(),
-                                       BinHeightMinMax = binHeightMinMax)
+                                       BinHeightMinMax = binHeightMinMax, Spline = spline,
+                                       SmoothSpline = smooth)
         TimeAcceptance.__init__(self, Acceptance = mhe)

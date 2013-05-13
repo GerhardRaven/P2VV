@@ -93,7 +93,8 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
 
 //_____________________________________________________________________________
 RooEffResModel::RooEffResModel(const char *name, const char *title, RooResolutionModel& model, RooAbsReal& eff) 
-   : RooAbsEffResModel(name,title,model.convVar())
+   : RooResolutionModel(name, title, model.convVar()),
+     RooAbsEffResModel()
    , _observables("observables", "observables", this)
    , _model("!model","Original resolution model",this,model)
    , _eff("!efficiency","efficiency of convvar", this,eff)
@@ -105,7 +106,8 @@ RooEffResModel::RooEffResModel(const char *name, const char *title, RooResolutio
 
 //_____________________________________________________________________________
 RooEffResModel::RooEffResModel(const RooEffResModel& other, const char* name) 
-  : RooAbsEffResModel(other,name)
+  : RooResolutionModel(other, name),
+    RooAbsEffResModel()
   , _observables("observables", this, other._observables)
   , _model("!model",this,other._model)
   , _eff("!efficiency",this,other._eff)
@@ -164,8 +166,7 @@ RooEffResModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
   TString newTitle = TString::Format("%s convoluted with basis function %s",conv->GetTitle(),inBasis->GetName()) ;
   conv->SetTitle(newTitle.Data()) ;
 
-  RooAbsReal* eff = efficiency();
-  RooEffResModel *effConv = new RooEffResModel(newName,newTitle, *conv, *eff);
+  RooEffResModel *effConv = new RooEffResModel(newName,newTitle, *conv, *static_cast<RooAbsReal*>(_eff.absArg()));
   effConv->addOwnedComponents(*conv);
   effConv->changeBasis(inBasis) ;
 

@@ -1,35 +1,44 @@
 import os
 from P2VV.RooFitWrappers import *
 
-generate = True
+generate = False
 
 obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 t_minmax = (-1.5, 8)
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
-st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
 t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-1100, 14))
+t_diff = RealVar('time_diff', Unit = 'ps', Observable = True, MinMax = (-0.06, 0.06))
+st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550))
 
-observables = [m, t, st, t_true]
+observables = [m, t, t_true]
 
 cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
 cut += ' && sel_cleantail == 1'
 cut += ' && abs(trueid) == 531'
 
+sig_sdata = None
 if not generate:
     prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
-    filename = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130222.root')
-    from P2VV.GeneralUtils import readData
-    data = readData(filename, "DecayTree", NTuple = True, observables = observables, ntupleCuts = cut)
+    ds_filename = os.path.join(prefix, 'p2vv/data/MC11_signal_data.root')
+    ## ds_filename = '/tmp/test.root'
+    from ROOT import TFile
+    f = TFile.Open(ds_filename)
+    if f.IsOpen() and f.GetKey("sig_sdata"):
+        sig_sdata = f.Get("sig_sdata")
+        sig_sdata = sig_sdata.reduce(Cut = 'time_diff > %f && time_diff < %f' % t_diff.getRange(), EventRange = (0, 50000))
+    else:
+        observables.append(st)
+        filename = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130222.root')
+        from P2VV.GeneralUtils import readData
+        data = readData(filename, "DecayTree", NTuple = True, observables = observables, ntupleCuts = cut)
 
-    t_diff = FormulaVar('time_diff', '@1 > -900 ? @0 - @1 : @0', [t, t_true], data = data)
-    t_diff.setMin(-10)
-    t_diff.setMax(10)
-else:
-    t_diff = RealVar('time_diff', Unit = 'ps', Observable = True, MinMax = (-0.5, 0.5))
+        t_diff = FormulaVar('time_diff', '@1 > -900 ? @0 - @1 : @0', [t, t_true], data = data)
+        t_diff.setMin(-5)
+        t_diff.setMax(5)
 
 observables.append(t_diff)
     
@@ -53,25 +62,36 @@ ln2 = LognormalPdf('ln2', Observable = st, Median = median, Shape = k2)
 st_pdf = SumPdf(Name = 'ln', PDFs = [ln1, ln2], Yields = {'ln2' : frac})
 
 # Signal t_diff PDF
-res_mean = RealVar("res_mean", Value = 0, MinMax = (-0.1, 0.1))
-res_sigma = RealVar("res_sigma", Value = 0.1, MinMax = (0.0001, 1))
+res_mean = RealVar("res_mean", Value = 0, MinMax = (-0.5, 0.5))
 res_rlife = RealVar("res_rlife", Value = 0.1, MinMax = (0.001, 10))
-res_sf = RealVar("res_sf", Value = 1., MinMax = (0.5, 10))
+res_sigma_sf = RealVar("res_sigma_sf", Value = 1., MinMax = (0.001, 10))
+res_rlife_sf = RealVar("res_rlife_sf", Value = 1., MinMax = (0.001, 10), Constant = True)
+mean_sf = ConstVar(Name = "gauss_mean_sf", Value = 1)
 
 from ROOT import RooGExpModel
-gexp_model = ResolutionModel(Name = "gexp_model", Type = RooGExpModel, Parameters = [t_diff, st, res_rlife, res_sf, 'false', 'Normal'], ConditionalObservables = [st])
+params = [t_diff, res_mean, st, res_rlife, mean_sf, res_sigma_sf, res_rlife_sf, 'false', 'Normal']
+gexp_model = ResolutionModel(Name = "gexp_model", Type = RooGExpModel, Parameters = params,
+                             ConditionalObservables = [st])
 
-gauss_sigma_sf = RealVar(Name = "gauss_sigma_sf", Value = 1., MinMax = (0.5, 10))
-gauss_mean_sf = ConstVar(Name = "gauss_mean_sf", Value = 1)
+gauss_sigma_sf_one = RealVar(Name = "gauss_sigma_sf_one", Value = 1., MinMax = (0.5, 10))
 from ROOT import RooGaussModel as GaussModel
-gauss_model = ResolutionModel(Name = "gauss_model", Type = GaussModel, Parameters = [t_diff, res_mean, st, gauss_mean_sf, gauss_sigma_sf], ConditionalObservables = [st])
+gauss_model_one = ResolutionModel(Name = "gauss_model_one", Type = GaussModel, ConditionalObservables = [st],
+                              Parameters = [t_diff, res_mean, st, mean_sf, gauss_sigma_sf_one])
 
-gexp_frac = RealVar(Name = "gexp_frac", Value = 0.1, MinMax = (0.0001, 0.9999))
-add_model = AddModel("add_model", Models = [gexp_model, gauss_model], Fractions = [gexp_frac], ConditionalObservables = [st])
+gauss_sigma_sf_two = RealVar(Name = "gauss_sigma_sf_two", Value = 1., MinMax = (0.5, 10))
+from ROOT import RooGaussModel as GaussModel
+gauss_model_two = ResolutionModel(Name = "gauss_model_two", Type = GaussModel, ConditionalObservables = [st],
+                              Parameters = [t_diff, res_mean, st, mean_sf, gauss_sigma_sf_two])
+
+gauss_two_frac = RealVar(Name = "gauss_two_frac", Value = 0.2, MinMax = (0.0001, 0.9999))
+gexp_frac = RealVar(Name = "gexp_frac", Value = 0.2, MinMax = (0.0001, 0.9999))
+add_model = AddModel("add_model", Models = [gauss_model_two, gauss_model_one], Fractions = [gauss_two_frac],
+                     ConditionalObservables = [st])
 
 from ROOT import RooDecay as Decay
 peak_tau = RealVar(Name = "peak_tau", Value = 0, Constant = True)
-peak = Pdf(Name = "peak", Type = Decay, Parameters = [t_diff, peak_tau, add_model, 'SingleSided'], ConditionalObservables = [st])
+peak = Pdf(Name = "peak", Type = Decay, Parameters = [t_diff, peak_tau, add_model, 'SingleSided'],
+           ConditionalObservables = [st])
 
 ## peak2 = Pdf(Name = "peak2", Type = Decay, Parameters = [t_diff, peak_tau, gexp_model, 'SingleSided'], ConditionalObservables = [st])
 
@@ -86,27 +106,40 @@ sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), N
 signal_name = signal.GetName()
 mass_pdf = sig_mass_pdf
 
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
-               Verbose = False)
-
-## Fit mass pdf
-## for i in range(3):
-##     mass_result = mass_pdf.fitTo(data, **fitOpts)
-##     if mass_result.status() == 0:
-##         break
-
-## assert(mass_result.status() == 0)
-## mass_result.SetName('mass_result')
-
-## from P2VV.GeneralUtils import SData
-## data_clone = data.Clone(data.GetName())
-## sData = SData(Pdf = mass_pdf, Data = data_clone, Name = 'MassSPlot')
-## sig_sdata = sData.data(signal_name)
-## bkg_sdata = sData.data('background')
-
-gen_pdf = buildPdf(Components = (signal,), Observables = (t_diff,), Name = 'gen_pdf')
-
-## gen_data = gen_pdf.generate([t_diff, st], 10000)
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 0, Verbose = False,
+               Offset = True)
 
 from ROOT import RooMsgService
-RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
+## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
+## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
+
+fit_pdf = buildPdf(Components = (signal,), Observables = (t_diff,), Name = 'fit_pdf')
+
+if not generate and not sig_sdata:
+    ## Fit mass pdf
+    for i in range(3):
+        mass_result = mass_pdf.fitTo(data, **fitOpts)
+        if mass_result.status() == 0:
+            break
+
+    assert(mass_result.status() == 0)
+    mass_result.SetName('mass_result')
+
+    from P2VV.GeneralUtils import SData
+    data_clone = data.Clone(data.GetName())
+    sData = SData(Pdf = mass_pdf, Data = data_clone, Name = 'MassSPlot')
+    sig_sdata = sData.data(signal_name)
+    bkg_sdata = sData.data('background')
+elif generate:
+    gen_pdf = buildPdf(Components = (signal,), Observables = (t_diff, st), Name = 'gen_pdf')
+    sig_sdata = gen_pdf.generate([t_diff, st], 10000)
+
+result = fit_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
+
+diff_frame = t_diff.frame(Range = (-0.5, 0.5))
+sig_sdata.plotOn(diff_frame)
+fit_pdf.plotOn(diff_frame, ProjWData = (RooArgSet(st), sig_sdata, True))
+
+from ROOT import TCanvas
+canvas = TCanvas('canvas', 'canvas', 500, 500)
+diff_frame.Draw()

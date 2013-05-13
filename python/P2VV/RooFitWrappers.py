@@ -815,10 +815,6 @@ class Pdf(RooObject):
             # Change self._dict into attributes. Cannot be done before since the
             # underlying object does only exists at this point.
             for k, v in self._dict.iteritems():
-                # change into a frozenset AFTER _makeRecipe has been invoked
-                # as _makeRecipe relies on the a-priori given order so it can
-                # match the c'tor arguments properly!!!!
-                if k in [ 'Parameters']: v = frozenset(v)
                 attr = '_' + k.lower()
                 setattr(self._target_(), attr, v)
             del self._dict # no longer needed
@@ -826,7 +822,6 @@ class Pdf(RooObject):
             self._init(self._dict['Name'], 'RooAbsPdf')
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
-                if k in [ 'Parameters']: v = frozenset(v)
                 if v != self._get(k) : print k, v, self._get(k)
                 assert v == self._get(k)
 
@@ -1229,228 +1224,6 @@ class KeysPdf(Pdf):
     def _make_pdf(self):
         pass
 
-class MultiHistEfficiencyModel(Pdf):
-    def _make_pdf(self) : pass
-    def __init__(self, **kwargs):
-
-        ## jpsiphi_1TrackMuon,1TrackAllL0: 8.285e-01 +- 1.633e-02
-        ## jpsiphi_bdi2                  : 8.330e-01 +- 1.402e-02
-
-        self.__pdf_name = kwargs.pop('Name')
-        self.__original = kwargs.pop('Original')
-        self.__resolution_model = kwargs.pop('ResolutionModel')
-        self.__bins = kwargs.pop('Bins')
-        self.__fit_bins = kwargs.pop('FitBins', True)
-        relative = kwargs.pop('Relative')
-        self.__observable = kwargs.pop('Observable')
-        self.__cc = kwargs.pop('ConditionalCategories', False)
-        self.__conditionals = self.__original.ConditionalObservables() | \
-                              set(kwargs.pop('ConditionalObservables', [])) | \
-                              self.__resolution_model.ConditionalObservables()
-        self.__fit_bins = kwargs.pop('FitAcceptance', True)
-        self.__use_bin_constraint = kwargs.pop('UseSingleBinConstraint', True) and self.__fit_bins
-        self.__heights = {}
-        self.__shapes = []
-        self.__coefficients = {}
-        self.__base_bounds = None
-        self.__constraints = []
-        self.__binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
-        if not self.__binHeightMinMax : self.__binHeightMinMax = (0.01, 0.999)
-
-        from copy import copy
-        from ROOT import RooBinning        
-        from ROOT import RooArgList
-
-        obs_set = RooArgSet()
-        for o in self.__original.Observables().intersection(self.__original.ConditionalObservables()):
-            obs_set.add(__dref__(o))
-
-        for (category, entries) in self.__bins.iteritems():
-            states = set([s.GetName() for s in category])
-            coef_info = {}
-
-            from random import shuffle
-            for state, state_info in [(s, entries[s]) for s in states if s in entries]:
-                heights = list(state_info['heights'])
-                order = range(len(heights))
-                shuffle(order)
-                for i, (rn, v) in enumerate(zip(order, heights)):
-                    name = '%d_%s_%s_bin_%03d' % (rn, category.GetName(), state, i + 1)
-                    heights[i] = RealVar(name, Observable = False, Value = v, MinMax = self.__binHeightMinMax)
-                self.__heights[(category, state)] = heights
-                # Add a binning for this category and state
-                bounds = state_info['bins']
-                binning_name = '_'.join([category.GetName(), state, 'binning'])
-                shape_binning = RooBinning(len(bounds) - 1, bounds)
-                shape_binning.SetName(binning_name)
-                self.__observable.setBinning(shape_binning, binning_name)
-
-                # Calculate a first scale factor according to the constraint
-                if not self.__fit_bins:
-                    # If we're not fitting set all bins constant
-                    for h in heights:
-                        h.setConstant(True)
-                elif len(heights) == 1 or self.__use_bin_constraint:
-                    # Fix the bin if there is only one.
-                    heights[0].setConstant(True)
-                else:
-                    # We're fitting and using the average constraint, first
-                    # create a shape and then the constraint.
-                    shape_name = '_'.join([category.GetName(), state, 'shape'])
-                    shape = BinnedPdf(shape_name, Observable = self.__observable,
-                                      Binning = binning_name, Coefficients = heights)
-                    shape.setForceUnitIntegral(True)
-
-                    eff_model = EffResModel(Efficiency = shape,
-                                            ResolutionModel = self.__resolution_model)
-
-                    # Set all observables constant for the shape to work around a
-                    # RooFit limitation
-                    observables = eff_model.getObservables(obs_set)
-                    for o in observables:
-                        o.setConstant(True)
-
-                    self.__shapes.append(shape)
-
-                    heights_list = RooArgList(__dref__(h) for h in heights)
-                    av_name = "%s_%s_average" % (category, state)
-                    value, error = state_info['average']
-                    mean  = RealVar(Name = av_name + '_constraint_mean', Value = value, Constant = True)
-                    sigma = RealVar(Name = av_name + '_constraint_sigma', Value = error, Constant = True)
-                    from ROOT import RooAvEffConstraint
-                    constraint = Pdf(Name = av_name + '_constraint', Type = RooAvEffConstraint,
-                                     Parameters = [self.__original, eff_model, mean, sigma])
-                    self.__constraints.append(constraint)
-                if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
-                    self.__base_bounds = bounds
-                    self.__base_binning = shape_binning
-                coef_info[state] = copy(state_info)
-                coef_info[state].update({'heights' : heights})
-            self.__coefficients[category] = coef_info
-
-        # Set the binning on the observable
-        self.__observable.setBinning(self.__base_binning, self.__base_binning.GetName())
-
-        # Build relative efficiencies
-        self.__relative_efficiencies = {}
-        remaining = None
-
-        for categories, re in relative.iteritems():
-            state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
-
-            # Make realvars for relative efficiencies
-            if re != None:
-                efficiency = RealVar('%s_efficiency' % state_name, Observable = False,
-                                     **re)
-                self.__relative_efficiencies[state_name] = efficiency
-            elif remaining == None:
-                remaining = state_name
-            else:
-                raise RuntimeError("More than one relative efficiency is None")
-        # FIXME: perhaps this should be a dedicated class too
-        form = '-'.join(['1'] + [e.GetName() for e in self.__relative_efficiencies.itervalues()])
-        self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
-
-        efficiency_entries = self.__build_shapes(relative)
-
-        from ROOT import RooMultiEffResModel
-        mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
-        self._addObject(mhe)
-        mhe.IsA().Destructor(mhe)
-
-        extraOpts = dict()
-        if self.__conditionals:
-            extraOpts['ConditionalObservables'] = self.__conditionals
-
-        if self.__fit_bins and not self.__use_bin_constraint:
-            self.__add_constraints()
-
-        constraints = list(set(kwargs.pop('ExternalConstraints', [])) | \
-                           set(self.__original.ExternalConstraints()) | \
-                           set(self.__resolution_model.ExternalConstraints()) | \
-                           set(self.ExternalConstraints()))
-        if constraints : extraOpts['ExternalConstraints' ] = constraints
-        self._init(self.__pdf_name, 'RooMultiEffResModel')
-        Pdf.__init__(self, Name = self.__pdf_name , Type = 'RooMultiEffResModel', **extraOpts)
-
-    def binning(self):
-        return self.__base_binning
-
-    def bounds(self):
-        return self.__base_bounds
-
-    def shapes(self):
-        return self.__shapes
-
-    def heights(self):
-        return self.__heights
-
-    def __build_shapes(self, relative):
-        from ROOT import std
-        from ROOT import MultiHistEntry
-
-        efficiency_entries = std.vector('MultiHistEntry*')()
-
-        for categories, relative_efficiency in relative.iteritems():
-            # Make EfficiencyBins for the bin values
-            heights = []
-            bin_vars = [{} for i in range(len(self.__base_bounds) - 1)]
-            state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
-            prefix = self.__pdf_name + '_' + state_name
-            for category, state in categories:
-                if self.__cc: self.__conditionals.add(category)
-                category_info = self.__coefficients[category]
-                states = [s.GetName() for s in category if s.GetName() in category_info]
-                if len(states) == 1:
-                    category_heights = category_info[states[0]]['heights']
-                    category_bounds  = category_info[states[0]]['bins']
-                elif len(states) > 1:
-                    category_heights = category_info[state]['heights']
-                    category_bounds  = category_info[state]['bins']
-                else:
-                    raise ValueError("Number of states must not be 0")
-                for i in range(len(self.__base_bounds) - 1):
-                    val = (self.__base_bounds[i] + self.__base_bounds[i + 1]) / 2
-                    coefficient = self.__find_coefficient(val, category_bounds, category_heights)
-                    bin_vars[i][__dref__(coefficient)] = state in category_info
-            for i, d in enumerate(bin_vars):
-                name = '%s_%d' % (prefix, i)
-                heights.append(EfficiencyBin(Name = name, Bins = d))
-
-            # BinnedPdf for the shape
-            binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = self.__observable,
-                                   Binning = self.__base_binning.GetName(), Coefficients = heights)
-            # note: constant optimization WILL evaluate RooBinnedPdf as a PDF, and thus normalize it...
-            binned_pdf.setForceUnitIntegral(True)
-
-            # EffResModel to combine shape with PDF
-            eff_model = EffResModel(Name = '%s_efficiency' % prefix,
-                                    ResolutionModel = self.__resolution_model, Efficiency = binned_pdf)
-
-            # MultiHistEntry
-            category_map = std.map('RooAbsCategory*', 'string')
-            category_pair = std.pair('RooAbsCategory*', 'string')
-            cm = category_map()
-            for category, state in categories:
-                # cp = category_pair(__dref__(category), state)
-                cm[__dref__(category)] = state
-            efficiency = self.__relative_efficiencies[state_name]
-            entry = MultiHistEntry(cm, __dref__(eff_model), __dref__(efficiency))
-            efficiency_entries.push_back(entry)
-        return efficiency_entries
-
-    def __add_constraints(self):
-        self.setExternalConstraints(self.__constraints)
-        
-    def __find_coefficient(self, val, bounds, coefficients):
-        for i in range(len(bounds) - 1):
-            if val > bounds[i] and val < bounds[i + 1]:
-                break
-        else:
-            raise RuntimeError;
-        return coefficients[i]
-
-
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
@@ -1817,18 +1590,18 @@ class ResolutionModel(Pdf):
 
 class AddModel(ResolutionModel) :
     def __init__(self, name, **kwargs) :
-        #TODO: forward conditionalObservables and ExternalConstraints from dependents...
-        # construct factory string on the fly...
+        # TODO: construct factory string on the fly...
         __check_name_syntax__(name)
 
-        models = kwargs.pop('Models')
+        self.__models = kwargs.pop('Models')
+        self.__fractions = kwargs.pop('Fractions')
         conditionals = set()
         externals = set()
-        for model in models:
+        for model in self.__models:
             conditionals |= model.ConditionalObservables()
             externals |= set(model.ExternalConstraints())
         ResolutionModel.__init__(self, Name = name, Type = 'RooAddModel',
-                                 Models = models, Fractions = kwargs.pop('Fractions'),
+                                 Models = self.__models, Fractions = self.__fractions,
                                  ConditionalObservables = conditionals,
                                  ExternalConstraints = list(externals))
 
@@ -1853,9 +1626,53 @@ class AddModel(ResolutionModel) :
         fractions = self._dict['Fractions']
         return "AddModel::%s({%s},{%s})"%(self._dict['Name'],','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) 
 
+    def models(self):
+        return self.__models
+
+    def fractions(self):
+        return self.__fractions
+
+class EffResAddModel(ResolutionModel):
+    def _make_pdf(self):
+        pass
+
+    def __init__(self, **kwargs) :
+        # TODO: construct factory string on the fly...
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+
+        self.__models = kwargs.pop('Models')
+        self.__fractions = kwargs.pop('Fractions')
+        conditionals = set()
+        externals = set()
+        for model in self.__models:
+            conditionals |= model.ConditionalObservables()
+            externals |= set(model.ExternalConstraints())
+
+        from ROOT import RooEffResAddModel
+        def make_alist(l):
+            alist = RooArgList()
+            for e in l:
+                alist.add(__dref__(e))
+            return alist
+        models = make_alist(self.__models)
+        fracs = make_alist(self.__fractions)
+        model = RooEffResAddModel(name, name, models, fracs)
+        self._addObject(model)
+        self._init(name, 'RooEffResAddModel')
+            
+        ResolutionModel.__init__(self, Name = name, Type = 'RooEffResAddModel',
+                                 ConditionalObservables = conditionals,
+                                 ExternalConstraints = list(externals))
+
+    def models(self):
+        return self.__models
+
+    def fractions(self):
+        return self.__fractions
+        
 class EffResModel(ResolutionModel) :
     def __init__(self,**kwargs) :
-        #TODO: forward conditionalObservables and ExternalConstraints from dependents...
         # construct factory string on the fly...
         self.__eff = kwargs.pop('Efficiency')
         self.__res = kwargs.pop('ResolutionModel')
@@ -1871,6 +1688,376 @@ class EffResModel(ResolutionModel) :
 
         def efficiency(self):
             return self.__eff
+
+class CubicSplineFun(RooObject):
+    def __init__(self, **kwargs):
+        name = kwargs.pop('Name')
+        observable = kwargs.pop('Observable')
+        knots = kwargs.pop('Knots', [])
+        values = kwargs.pop('Values', [])
+        errors = kwargs.pop('Errors', [])
+        smooth = kwargs.pop('Smooth', 0)
+        hist = kwargs.pop('Histogram', None)
+        coeffs = kwargs.pop('Coefficients', [])
+        const_coeffs = kwargs.pop('ConstantCoeffs', True)
+
+        def __make_vector(values):
+            from ROOT import std
+            v = std.vector('double')(len(values))
+            for i, val in enumerate(values):
+                v[i] = val
+            return v
+
+        from ROOT import RooCubicSplineFun
+        if hist:
+            csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeff)
+        elif knots and coeffs and not values:
+            al = RooArgList()
+            for c in coeffs:
+                al.add(__dref__(c))
+            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), al)
+        elif knots and values and errors and not coeffs:
+            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), __make_vector(values),
+                                    __make_vector(errors), smooth, const_coeffs)
+        self._addObject(csf)
+        self._init(name, 'RooCubicSplineFun')
+        
+class CubicSplineGaussModel(ResolutionModel) :
+    def _make_pdf(self): pass
+    
+    def __init__(self, **kwargs):
+        name = kwargs.pop('Name')
+        res_model = kwargs.pop('ResolutionModel', None)
+        params = [__dref__(p) for p in kwargs.pop('Parameters', [])]
+        spline = kwargs.pop('SplineFunction', None)
+
+        constraints = set(kwargs.pop('ExternalConstraints', []))
+        conds = set(kwargs.pop('ConditionalObservables', []))
+        
+        assert(not res_model or not params)
+        if res_model:
+            constraints |= set(res_model.ExternalConstraints())
+            conds |= set(res_model.ConditionalObservables())
+            from ROOT import RooAddModel, RooGaussModel
+            types = {RooAddModel : self.__from_add_model,
+                     RooGaussModel : self.__from_gauss}
+            for t, fun in types.iteritems():
+                if isinstance(res_model._target_(), t):
+                    model, this_type, name = fun(name, res_model, spline)
+        else:
+            from ROOT import RooCubicSplineGaussModel
+            model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline.GetName(), ','.join([p.GetName() for p in params[1:]]))
+            this_type = 'RooCubicSplineGaussModel'
+
+        if type(model) == str:
+            self._declare(model)
+
+        self._init(name, this_type)
+        extraOpts = dict()
+        if constraints : extraOpts['ExternalConstraints' ] = constraints
+        if conds: extraOpts['ConditionalObservables'] = conds
+        ResolutionModel.__init__(self, Name = name , Type = this_type, **extraOpts)
+
+    def __from_gauss(self, name, gauss_model, spline_fun):
+        params = gauss_model['Parameters']
+        name = name + '_' + gauss_model.GetName() + '_spline'
+        from ROOT import RooCubicSplineGaussModel
+        model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline_fun.GetName(), ','.join([p.GetName() for p in params[1:]]))
+        return model, 'RooCubicSplineGaussModel', name
+
+    def __from_add_model(self, name, add_model, spline_fun):
+        spline_models = []
+        for model in add_model.models():
+            spline_models.append(CubicSplineGaussModel(Name = name, ResolutionModel = model, SplineFunction = spline_fun))
+        fractions = add_model.fractions()
+        name = name + '_' + add_model.GetName() + '_spline'
+        model = EffResAddModel(Name = name, Models = spline_models, Fractions = fractions)
+        return model, 'RooEffResAddModel', name
+        
+class MultiHistEfficiencyModel(ResolutionModel):
+    def _make_pdf(self) : pass
+    def __init__(self, **kwargs):
+
+        ## jpsiphi_1TrackMuon,1TrackAllL0: 8.285e-01 +- 1.633e-02
+        ## jpsiphi_bdi2                  : 8.330e-01 +- 1.402e-02
+
+        self.__pdf_name = kwargs.pop('Name')
+        self.__original = kwargs.pop('Original')
+        self.__resolution_model = kwargs.pop('ResolutionModel')
+        self.__bins = kwargs.pop('Bins')
+        self.__fit_bins = kwargs.pop('FitBins', True)
+        relative = kwargs.pop('Relative')
+        self.__observable = kwargs.pop('Observable')
+        self.__cc = kwargs.pop('ConditionalCategories', False)
+        self.__conditionals = self.__original.ConditionalObservables() | \
+                              set(kwargs.pop('ConditionalObservables', [])) | \
+                              self.__resolution_model.ConditionalObservables()
+        self.__fit_bins = kwargs.pop('FitAcceptance', True)
+        self.__use_bin_constraint = kwargs.pop('UseSingleBinConstraint', True) and self.__fit_bins
+        self.__heights = {}
+        self.__shapes = []
+        self.__coefficients = {}
+        self.__base_bounds = None
+        self.__constraints = []
+        self.__binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
+        if not self.__binHeightMinMax : self.__binHeightMinMax = (0.01, 0.999)
+        self.__spline = kwargs.pop('Spline', False)
+        self.__smooth = kwargs.pop('SmoothSpline', 0)
+        self.__knots = None
+        from copy import copy
+        from ROOT import RooBinning        
+        from ROOT import RooArgList
+
+        if self.__spline:
+            self.__knots = {}
+
+        obs_set = RooArgSet()
+        for o in self.__original.Observables().intersection(self.__original.ConditionalObservables()):
+            obs_set.add(__dref__(o))
+
+        for (category, entries) in self.__bins.iteritems():
+            states = set([s.GetName() for s in category])
+            coef_info = {}
+
+            from random import shuffle
+            for state, state_info in [(s, entries[s]) for s in states if s in entries]:
+                heights = list(state_info['heights'])
+                order = range(len(heights))
+                shuffle(order)
+
+                # Add a binning for this category and state
+                bounds = state_info['bins']
+                binning_name = '_'.join([category.GetName(), state, 'binning'])
+                shape_binning = RooBinning(len(bounds) - 1, bounds)
+                shape_binning.SetName(binning_name)
+                self.__observable.setBinning(shape_binning, binning_name)
+
+                # Make the RealVars which represent the bin heights
+                if self.__spline and len(heights) > 1:
+                    from ROOT import RooRealVar
+                    from ROOT import std
+                    from math import sqrt
+                    knots = std.vector('double')(len(heights))
+                    values = std.vector('double')(len(heights))
+                    errors = std.vector('double')(len(heights))
+                    for i in range(len(heights)):
+                        knots[i] = (bounds[i] + bounds[i + 1]) / 2.
+                        values[i] = heights[i]
+                        errors[i] = sqrt(heights[i])
+                    sn = '%s_%s_spline' % (category.GetName(), state)
+                    spline_fun = CubicSplineFun(Name = sn, Observable = self.__observable,
+                                                Knots = knots, Values = values, Errors = errors,
+                                                Smooth = self.__smooth, ConstantCoeffs = False)
+                    heights = [RooRealVar(c) for c in spline_fun.coefficients()]
+                    if not self.__knots:
+                        self.__knots = [d for d in spline_fun.knots()]
+                    else:
+                        assert(len(self.__knots) == spline_fun.knots().size())
+                    for i, (rn, h) in enumerate(zip(order, heights[1:-1])):
+                        name = '%d_%s_%s_bin_%03d' % (rn, category.GetName(), state, i + 1)
+                        h.SetName(name)
+                        h.SetTitle(name)
+                else:
+                    for i, (rn, v) in enumerate(zip(order, heights)):
+                        name = '%d_%s_%s_bin_%03d' % (rn, category.GetName(), state, i + 1)
+                        heights[i] = RealVar(name, Observable = False, Value = v, MinMax = self.__binHeightMinMax)
+                self.__heights[(category, state)] = heights
+
+                # Calculate a first scale factor according to the constraint
+                if not self.__fit_bins:
+                    # If we're not fitting set all bins constant
+                    for h in heights:
+                        h.setConstant(True)
+                elif len(heights) == 1 or self.__use_bin_constraint:
+                    # Fix the bin if there is only one.
+                    heights[0].setConstant(True)
+                else:
+                    # We're fitting and using the average constraint, first
+                    # create a shape and then the constraint.
+                    shape_name = '_'.join([category.GetName(), state, 'shape'])
+                    constr_heights = heights if not self.__spline else heights[1:-1]
+                    shape = BinnedPdf(shape_name, Observable = self.__observable,
+                                      Binning = binning_name, Coefficients = constr_heights)
+                    shape.setForceUnitIntegral(True)
+
+                    eff_model = EffResModel(Efficiency = shape,
+                                            ResolutionModel = self.__resolution_model)
+
+                    # Set all observables constant for the shape to work around a
+                    # RooFit limitation
+                    observables = eff_model.getObservables(obs_set)
+                    for o in observables:
+                        o.setConstant(True)
+
+                    self.__shapes.append(shape)
+
+                    av_name = "%s_%s_average" % (category, state)
+                    value, error = state_info['average']
+                    mean  = RealVar(Name = av_name + '_constraint_mean', Value = value, Constant = True)
+                    sigma = RealVar(Name = av_name + '_constraint_sigma', Value = error, Constant = True)
+                    from ROOT import RooAvEffConstraint
+                    constraint = Pdf(Name = av_name + '_constraint', Type = RooAvEffConstraint,
+                                     Parameters = [self.__original, eff_model, mean, sigma])
+                    self.__constraints.append(constraint)
+                if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
+                    self.__base_bounds = bounds
+                    self.__base_binning = shape_binning
+                coef_info[state] = copy(state_info)
+                coef_info[state].update({'heights' : heights})
+                if self.__spline and len(heights) > 1:
+                    coef_info[state].update({'knots' : knots})
+                
+            self.__coefficients[category] = coef_info
+
+        # Set the binning on the observable
+        self.__observable.setBinning(self.__base_binning, self.__base_binning.GetName())
+
+        # Build relative efficiencies
+        self.__relative_efficiencies = {}
+        remaining = None
+
+        for categories, re in relative.iteritems():
+            state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
+
+            # Make realvars for relative efficiencies
+            if re != None:
+                efficiency = RealVar('%s_efficiency' % state_name, Observable = False,
+                                     **re)
+                self.__relative_efficiencies[state_name] = efficiency
+            elif remaining == None:
+                remaining = state_name
+            else:
+                raise RuntimeError("More than one relative efficiency is None")
+        # FIXME: perhaps this should be a dedicated class too
+        form = '-'.join(['1'] + [e.GetName() for e in self.__relative_efficiencies.itervalues()])
+        self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
+
+        efficiency_entries = self.__build_shapes(relative)
+        ## from ROOT import MultiHistEntry
+        ## print_entry = getattr(MultiHistEntry, 'print')
+        ## for entry in efficiency_entries:
+        ##     print_entry(entry)
+        
+        from ROOT import RooMultiEffResModel
+        mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
+        self._addObject(mhe)
+        mhe.IsA().Destructor(mhe)
+
+        extraOpts = dict()
+        if self.__conditionals:
+            extraOpts['ConditionalObservables'] = self.__conditionals
+
+        if self.__fit_bins and not self.__use_bin_constraint:
+            self.__add_constraints()
+
+        constraints = list(set(kwargs.pop('ExternalConstraints', [])) | \
+                           set(self.__original.ExternalConstraints()) | \
+                           set(self.__resolution_model.ExternalConstraints()) | \
+                           set(self.ExternalConstraints()))
+        if constraints : extraOpts['ExternalConstraints' ] = constraints
+        self._init(self.__pdf_name, 'RooMultiEffResModel')
+        ResolutionModel.__init__(self, Name = self.__pdf_name , Type = 'RooMultiEffResModel', **extraOpts)
+
+    def binning(self):
+        return self.__base_binning
+
+    def bounds(self):
+        return self.__base_bounds
+
+    def shapes(self):
+        return self.__shapes
+
+    def heights(self):
+        return self.__heights
+
+    def __build_shapes(self, relative):
+        from ROOT import std
+        from ROOT import MultiHistEntry
+
+        efficiency_entries = std.vector('MultiHistEntry*')()
+
+        for categories, relative_efficiency in relative.iteritems():
+            # Make EfficiencyBins for the bin values
+            # WIP: allow two extra coefficients for spline
+            heights = []
+            knots = []
+            bin_vars = [{} for i in range(len(self.__base_bounds) + (1 if self.__spline else -1))]
+            state_name = '__'.join(['%s_%s' % (c.GetName(), s) for c, s in categories])
+            prefix = self.__pdf_name + '_' + state_name
+            for category, state in categories:
+                if self.__cc: self.__conditionals.add(category)
+                category_info = self.__coefficients[category]
+                states = [s.GetName() for s in category if s.GetName() in category_info]
+                if len(states) == 1:
+                    category_heights = category_info[states[0]]['heights']
+                    category_bounds  = category_info[states[0]]['bins']
+                elif len(states) > 1:
+                    category_heights = category_info[state]['heights']
+                    category_bounds  = category_info[state]['bins']
+                else:
+                    raise ValueError("Number of states must not be 0")
+                for i in range(len(self.__base_bounds) - 1):
+                    val = (self.__base_bounds[i] + self.__base_bounds[i + 1]) / 2
+                    coefficient = self.__find_coefficient(val, category_bounds, category_heights)
+                    j = i + 1 if self.__spline else i
+                    bin_vars[j][__dref__(coefficient)] = state in category_info
+                if self.__spline:
+                    # Add extra coefficients
+                    bin_vars[0][__dref__(category_heights[0])] = state in category_info
+                    bin_vars[-1][__dref__(category_heights[-1])] = state in category_info
+                    
+            for i, d in enumerate(bin_vars):
+                name = '%s_%d' % (prefix, i)
+                heights.append(EfficiencyBin(Name = name, Bins = d))
+            if self.__spline and len(heights) > 1:
+                eff_model = self.__build_spline(prefix, heights)
+                print 'EffModel:', eff_model
+            else:
+                eff_model = self.__build_eff_res(prefix, heights)
+
+            # MultiHistEntry
+            category_map = std.map('RooAbsCategory*', 'string')
+            category_pair = std.pair('RooAbsCategory*', 'string')
+            cm = category_map()
+            for category, state in categories:
+                # cp = category_pair(__dref__(category), state)
+                cm[__dref__(category)] = state
+            efficiency = self.__relative_efficiencies[state_name]
+            print type(eff_model._target_())
+            entry = MultiHistEntry(cm, __dref__(eff_model), __dref__(efficiency))
+            efficiency_entries.push_back(entry)
+        return efficiency_entries
+
+    def __build_eff_res(self, prefix, heights):
+        # BinnedPdf for the shape
+        binned_pdf = BinnedPdf(Name = '%s_shape' % prefix, Observable = self.__observable,
+                               Binning = self.__base_binning.GetName(), Coefficients = heights)
+        # note: constant optimization WILL evaluate RooBinnedPdf as a PDF, and thus normalize it...
+        binned_pdf.setForceUnitIntegral(True)
+        
+        # EffResModel to combine shape with PDF
+        return EffResModel(Name = '%s_efficiency' % prefix, ResolutionModel = self.__resolution_model,
+                           Efficiency = binned_pdf)
+    def __build_spline(self, prefix, heights):
+        spline_name = "%s_spline_fun" % prefix
+        print len(heights)
+        for h in heights:
+            print h
+        spline_fun = CubicSplineFun(Name = spline_name, Observable = self.__observable,
+                                    Knots = self.__knots, Coefficients = heights)
+        return CubicSplineGaussModel(Name = '%s_efficiency' % prefix, ResolutionModel = self.__resolution_model,
+                                     SplineFunction = spline_fun)
+
+    def __add_constraints(self):
+        self.setExternalConstraints(self.__constraints)
+        
+    def __find_coefficient(self, val, bounds, coefficients):
+        for i in range(len(bounds) - 1):
+            if val > bounds[i] and val < bounds[i + 1]:
+                break
+        else:
+            raise RuntimeError;
+        return coefficients[i]
 
 class Component(object):
     _d = {}

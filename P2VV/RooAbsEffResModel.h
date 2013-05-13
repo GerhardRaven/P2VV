@@ -16,22 +16,26 @@
 #include "RooObjCacheManager.h"
 #include "RooSetProxy.h"
 
-class RooAbsEffResModel : public RooResolutionModel  {
+class RooAbsEffResModel {
 public:
 
    // Constructors, assignment etc
    inline RooAbsEffResModel() { }
-   RooAbsEffResModel(const char *name, const char *title, RooRealVar& convVar);
-   RooAbsEffResModel(const RooAbsEffResModel& other, const char* name=0);
 
    virtual ~RooAbsEffResModel() {}
   
-   virtual RooAbsReal* efficiency() const = 0;
-   virtual std::vector<RooAbsReal*> efficiencies() const = 0;
+   /** 
+    * Get a RooArgSet of all observables, caller takes ownership.
+    * 
+    * @return RooArgSet of observables
+    */
+   virtual const RooArgSet* observables() const = 0;
+
+   virtual const RooAbsReal* efficiency() const = 0;
+   virtual std::vector<const RooAbsReal*> efficiencies() const = 0;
 
 private:
 
-   ClassDef(RooAbsEffResModel, 0) // EffResian Resolution Model
 };
 
 #endif

@@ -24,6 +24,7 @@
 // with a cubic b-spline...
 // END_HTML
 //
+#include <memory>
 
 #include "RooFit.h"
 
@@ -124,47 +125,51 @@ RooCubicSplineGaussModel::M_n::M_n(double x, const RooComplex& z) {
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
                 , RooRealVar& x, RooCubicSplineFun& _eff
-			    , RooAbsReal& _mean, RooAbsReal& _sigma ) :
-  RooResolutionModel(name,title,x), 
-  _flatSFInt(kFALSE),
-  eff("eff","Spline describing efficiency",this,_eff),
-  mean("mean","Mean",this,_mean),
-  sigma("sigma","Width",this,_sigma),
-  msf("msf","Mean Scale Factor",this,RooRealConstant::value(1.0)),
-  ssf("ssf","Sigma Scale Factor",this,RooRealConstant::value(1.0))
+			    , RooAbsReal& _mean, RooAbsReal& _sigma ) 
+   : RooResolutionModel(name, title, x),
+     RooAbsEffResModel(), 
+     _flatSFInt(kFALSE),
+     eff("eff","Spline describing efficiency",this,_eff),
+     mean("mean","Mean",this,_mean),
+     sigma("sigma","Width",this,_sigma),
+     msf("msf","Mean Scale Factor",this,RooRealConstant::value(1.0)),
+     ssf("ssf","Sigma Scale Factor",this,RooRealConstant::value(1.0))
 {  
-    // make sure 'x' matches the eff argument!
-    std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
-    assert( svar->contains( convVar() ) );
+   // make sure 'x' matches the eff argument!
+   std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
+   assert( svar->contains( convVar() ) );
 }
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
-                , RooRealVar& x, RooCubicSplineFun& _eff
-			    , RooAbsReal& _mean, RooAbsReal& _sigma
-			    , RooAbsReal& _meanSF, RooAbsReal& _sigmaSF) : 
-  RooResolutionModel(name,title,x), 
-  _flatSFInt(kFALSE),
-  eff("eff","Spline describing efficiency",this,_eff),
-  mean("mean","Mean",this,_mean),
-  sigma("sigma","Width",this,_sigma),
-  msf("msf","Mean Scale Factor",this,_meanSF),
-  ssf("ssf","Sigma Scale Factor",this,_sigmaSF)
+                                                   , RooRealVar& x, RooCubicSplineFun& _eff
+                                                   , RooAbsReal& _mean, RooAbsReal& _sigma
+                                                   , RooAbsReal& _meanSF, RooAbsReal& _sigmaSF)
+   : RooResolutionModel(name,title,x), 
+     RooAbsEffResModel(),
+     _flatSFInt(kFALSE),
+     eff("eff","Spline describing efficiency",this,_eff),
+     mean("mean","Mean",this,_mean),
+     sigma("sigma","Width",this,_sigma),
+     msf("msf","Mean Scale Factor",this,_meanSF),
+     ssf("ssf","Sigma Scale Factor",this,_sigmaSF)
 {  
-    // make sure 'x' matches the spline argument!
-    std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
-    assert( svar->contains( convVar() ) );
+   // make sure 'x' matches the spline argument!
+   std::auto_ptr<RooArgSet> svar( eff.arg().getVariables() );
+   assert( svar->contains( convVar() ) );
 }
 
 //_____________________________________________________________________________
-RooCubicSplineGaussModel::RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other, const char* name) : 
-  RooResolutionModel(other,name),
-  _flatSFInt(other._flatSFInt),
-  eff("eff",this,other.eff),
-  mean("mean",this,other.mean),
-  sigma("sigma",this,other.sigma),
-  msf("msf",this,other.msf),
-  ssf("ssf",this,other.ssf)
+RooCubicSplineGaussModel::RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other,
+                                                   const char* name)
+   : RooResolutionModel(other,name),
+     RooAbsEffResModel(),
+     _flatSFInt(other._flatSFInt),
+     eff("eff",this,other.eff),
+     mean("mean",this,other.mean),
+     sigma("sigma",this,other.sigma),
+     msf("msf",this,other.msf),
+     ssf("ssf",this,other.ssf)
 {
 }
 
@@ -186,11 +191,23 @@ Int_t RooCubicSplineGaussModel::basisCode(const char* name) const
 } 
 
 //_____________________________________________________________________________
-RooAbsReal* RooCubicSplineGaussModel::efficiency() const 
+const RooAbsReal* RooCubicSplineGaussModel::efficiency() const 
 {
     return const_cast<RooAbsReal*>(&eff.arg());
 }
 
+//_____________________________________________________________________________
+std::vector<const RooAbsReal*> RooCubicSplineGaussModel::efficiencies() const { 
+   return std::vector<const RooAbsReal*>(1, efficiency());
+}
+
+//_____________________________________________________________________________
+const RooArgSet* RooCubicSplineGaussModel::observables() const { 
+   // Return pointer to pdf in product
+   return new RooArgSet(convVar());
+}
+
+//_____________________________________________________________________________
 RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const RooComplex& z) const
 {
     const RooCubicSplineFun &sp = dynamic_cast<const RooCubicSplineFun&>( eff.arg() );
@@ -200,10 +217,11 @@ RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const
     Double_t scale = sigma*ssf*TMath::Sqrt2(); 
     Double_t offset = mean*msf;
     std::vector<M_n> M; M.reserve( sp.knotSize() );
-    for (int i=0;i<sp.knotSize();++i) M.push_back( M_n( (sp.u(i)-offset)/scale, z ) );
+    for (unsigned int i=0;i<sp.knotSize();++i) M.push_back( M_n( (sp.u(i)-offset)/scale, z ) );
     RooComplex sum(0,0);
     double sc[4]; for (int i=0;i<4;++i) sc[i] = pow(scale,i);
-    for (int i=0;i<sp.knotSize()-1;++i) { 
+    for (int i=0;i<int(sp.knotSize())-1;++i) {
+        //TODO: push this loop into RooCubicSplineFun... pass z,scale,coefficients
         sum = sum + sp.gaussIntegral( i,  M[i+1] - M[i], K, offset, sc );
     }
     return sum;
@@ -223,7 +241,11 @@ Double_t RooCubicSplineGaussModel::evaluate() const
   // *** 1st form: Straight Gaussian, used for unconvoluted PDF or expBasis with 0 lifetime ***
   if (basisCode==noBasis || ((basisCode==expBasis || basisCode==cosBasis) && tau==0)) {
     if (verboseEval()>2) cout << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") 1st form" << endl ;
-    return exp(-u*u)/(scale*rootpi) ; // ???
+    Double_t eff=efficiency()->getVal();
+    if (TMath::IsNaN(eff)) 
+       cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() 
+                        << ") got nan during efficiency " << endl;
+    return eff * exp(-u*u)/(scale*rootpi) ; // ???
   }
 
   // *** 2nd form: 0, used for sinBasis, linBasis, and quadBasis with tau=0 ***
@@ -254,10 +276,14 @@ Double_t RooCubicSplineGaussModel::evaluate() const
     default:
         assert(0);
   }
-  if (TMath::IsNaN(val)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during basisCode = " << basisCode << endl; 
-  Double_t eff=spline;
-  if (TMath::IsNaN(eff)) cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") got nan during efficiency " << endl;
-  return eff*val;
+  if (TMath::IsNaN(val)) 
+     cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() 
+                      << ") got nan during basisCode = " << basisCode << endl; 
+  Double_t _eff=eff;
+  if (TMath::IsNaN(_eff)) 
+     cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() 
+                      << ") got nan during efficiency " << endl;
+  return _eff*val;
 }
 
 //_____________________________________________________________________________
