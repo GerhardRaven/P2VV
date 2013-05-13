@@ -61,7 +61,6 @@ private:
 
   RooRealProxy _x;
   RooListProxy _coefList ;
-  RooListProxy _ownList;
 
   const RooCubicSplineKnot *_aux; // do not persist! (but do persist the binningName used for _x!!!
 
