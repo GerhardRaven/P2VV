@@ -19,6 +19,7 @@ public:
 
     void computeCoefficients(std::vector<double>& y ) const ;
     void smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const;
+    void smooth_pollock(std::vector<double>& y, const std::vector<double>& dy, double lambda) const;
 
     const std::vector<double>& knots() const { return _u; }
 
@@ -65,7 +66,7 @@ public:
     // RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const;
 
 private:
-    int index(double u) const;
+    int index(double _u) const;
     double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }
     double B(double _u,int i) const{ return  sqr(d(_u,i+1))*d(_u,i-2)/P(i) + d(_u,i-1)*d(_u,i+2)*d(_u,i+1)/Q(i) + d(_u,i  )*sqr(d(_u,i+2))/R(i); }
     double C(double _u,int i) const{ return -sqr(d(_u,i-1))*d(_u,i+1)/Q(i) - d(_u,i  )*d(_u,i+2)*d(_u,i-1)/R(i) - d(_u,i+3)*sqr(d(_u,i  ))/S(i); }
@@ -98,6 +99,9 @@ private:
     double d(double _u, int j) const { return _u-u(j); }
     double h(int i, int j) const { return u(i)-u(j); }
     double h(int i) const { return u(i+1)-u(i); }
+    double r(int i) const { return double(3)/h(i); }
+    double f(int i) const { return -r(i-1)-r(i); }
+    double p(int i) const { return 2*h(i-1)+h(i); }
 
     const   std::vector<double> _u;
     mutable std::vector<double> _PQRS;                   //!

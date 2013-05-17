@@ -26,12 +26,14 @@ class TH1;
 class RooCubicSplineFun : public RooAbsReal {
 public:
   RooCubicSplineFun() ;
-  // smooth = 0: no smoothing. As smooth becomes larger, the result will converge towards a straight line
   RooCubicSplineFun(const char* name, const char* title, RooRealVar& x,
                     const std::vector<double>& knots,
                     const std::vector<double>& values,
                     const std::vector<double>& errors = std::vector<double>(),
                     double smooth = 0, bool constCoeffs = true);
+  // smooth = 0: no smoothing, interpolating spline
+  // smooth = Infty: extreme smoothing, resulting in a straight line (as the 2nd derivative is forced to zero)
+  // TODO: map [0,Infty] -> [0,1]
   RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TH1* hist,
                     double smooth = 0, bool constCoeffs = true);
   RooCubicSplineFun(const char *name, const char *title, RooRealVar& x,

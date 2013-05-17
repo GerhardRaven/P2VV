@@ -45,6 +45,66 @@ void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double
         for (unsigned int i=0;i<n;++i) y[i]=vals(i);
 }
 
+void RooCubicSplineKnot::smooth_pollock(std::vector<double>& y, const std::vector<double>& dy, double lambda) const {
+    int n = y.size();
+    std::vector<double> u(n-2),v(n-2),w(n-2)  //  
+                      , q(n-2); 
+    assert( dy.size()==n);
+    assert( _u.size()==n);
+    double mu = lambda;
+    for (int i=0;i<n-2;++i) { 
+        u[i] = p(i)+mu*(sqr(r(i-1)*dy[i-1])+sqr(f(i))*dy[i]+sqr(r(i))*dy[i+1] );
+        v[i] = h(i)+mu*(f(i)*r(i)*dy[i] + f(i+1)*r(i)*dy[i+1]);
+        w[i] = mu*r(i)*r(i+1)*dy[i+1];
+
+     
+        q[i] = r(i)*(y[i]-y[i+1])-r(i+1)*(y[i+1]-y[i+2]);
+
+    }
+    ///////////////////CONTINUE UNTIL HERE////
+
+   
+    // Solve A b = q:   q: [0,n-2]
+    // 
+    // factorisation; A -> L D LT 
+    //   with  A symmetric bandmatrix with bandwidth 5
+    //         D diagonal, L lower triangle (LT upper triangle) with unit diagonal
+    // input:   A_i,i = u[i], A_i,i+1 = A_i+1,i = v[i], A_i+2,i = A_i,i+2 = w[i]
+    // output:  D_i,i = u[i], L_i,i=1, L_i,i+1 = v[i], L_i,i+2 = w[i]
+    v[0] /= u[0]; w[0] /= u[0];
+    u[1] -= u[0]*sqr(v[0]); 
+    v[1] -= u[0]*v[0]*w[0]; 
+    v[1] /= u[1]; w[1] /= u[1];
+    for (int i=2;i<n-3;++i) {
+        u[i] -= u[i-1]*sqr(v[i-1])-u[i-2]*sqr(w[i-2]); // i < n-2
+        v[i] -= u[i-1]*v[i-1]*w[i-1];  v[i] /= u[i];   // i < n-3
+        w[i] /= u[i];                                  // i < n-4
+    }
+    u[n-3] -= u[n-4]*sqr(v[n-4])-u[n-5]*sqr(w[n-5]);
+    v[n-3] -= u[n-4]*v[n-4]*w[n-4];  v[n-3] /= u[n-3];
+    u[n-2] -= u[n-3]*sqr(v[n-3])-u[n-4]*sqr(w[n-4]);
+
+    // forward substitution -- solve for L x = q,  q <- x
+    // q[0]  = q[0];
+    q[1] -= q[0]*v[0];
+    for (int i=2;i<n-2;++i) { q[i] -= v[i-1]*q[i-1]+w[i-2]*q[i-2]; }
+    // rescale with 1/D    -- i.e. solution of L D x = q , q <- x
+    for (int i=0;i<n-2;++i) { q[i] /= u[i] ; } 
+
+    // backward substitution -- i.e. solve LT b = q 
+    // q[n-2]  = q[n-2]
+    q[n-3] -= v[n-3]*q[n-2];
+    for (int i=n-4;i>=0;--i) { q[i]-=v[i]*q[i+1]+w[i]*q[i+2] ; }
+
+
+    // and finally, solve for y!
+    y[0]  -=mu*dy[0  ]*(r(0)*q[0]);
+    y[1]  -=mu*dy[1  ]*(r(1)*q[1]+f(1  )*q[0  ]);
+    for (int i=2;i<n-2;++i) 
+    y[i  ]-=mu*dy[i  ]*(r(i)*q[i]+f(i  )*q[i-1]+r(i-1)*q[i-2]);
+    y[n-2]-=mu*dy[n-2]*(          f(n-2)*q[n-3]+r(n-3)*q[n-4]);
+    y[n-1]-=mu*dy[n-1]*(                        r(n-2)*q[n-3]);
+}
 
 // on input, y contains the values at the knot locations
 // on output, it contains the b-spline coefficients 
