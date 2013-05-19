@@ -13,30 +13,29 @@ public:
     template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end) : _u(begin,end) { }
 
     double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); return _u[std::min(std::max(0,i),int(_u.size()-1))]; }
-    unsigned size() const { return _u.size(); }
+    int size() const { return _u.size(); }
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
 
     void computeCoefficients(std::vector<double>& y ) const ;
     void smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const;
-    void smooth_pollock(std::vector<double>& y, const std::vector<double>& dy, double lambda) const;
 
     const std::vector<double>& knots() const { return _u; }
 
-    class S_jk { 
+    class S_jk {
     public:
         S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
         S_jk(const S_jk& other, double offset=0) : t(other.t), d(other.d), s(other.s), o(other.o) {
             if (!offset) return;
-            t+=offset*(-2*d+offset*(4*s-offset*o*8));  
-            d+=offset*(-8*s+3*offset*o*8)/2; 
-            s-=offset*3*o*8/4; 
+            t+=offset*(-2*d+offset*(4*s-offset*o*8));
+            d+=offset*(-8*s+3*offset*o*8)/2;
+            s-=offset*3*o*8/4;
         }
-        S_jk& operator*=(double z) { t*=z; d*=z; s*=z; o*=z; return *this; } 
-        S_jk& operator/=(double z) { t/=z; d/=z; s/=z; o/=z; return *this; } 
+        S_jk& operator*=(double z) { t*=z; d*=z; s*=z; o*=z; return *this; }
+        S_jk& operator/=(double z) { t/=z; d/=z; s/=z; o/=z; return *this; }
         S_jk& operator-()          { t=-t; d=-d; s=-s; o=-o; return *this; }
-        S_jk& operator+=(const S_jk& other) { t+=other.t; d+=other.d; s+=other.s; o+=other.o; return *this; } 
-        S_jk& operator-=(const S_jk& other) { t-=other.t; d-=other.d; s-=other.s; o-=other.o; return *this; } 
+        S_jk& operator+=(const S_jk& other) { t+=other.t; d+=other.d; s+=other.s; o+=other.o; return *this; }
+        S_jk& operator-=(const S_jk& other) { t-=other.t; d-=other.d; s-=other.s; o-=other.o; return *this; }
 
         S_jk operator*(double z)          const { return S_jk(*this)*=z; }
         S_jk operator/(double z)          const { return S_jk(*this)/=z; }
@@ -44,12 +43,12 @@ public:
         S_jk operator-(const S_jk& other) const { return S_jk(*this)-=other; }
 
 
-        double operator()(int j, int k) const { 
+        double operator()(int j, int k) const {
             assert(0<=j&&j<4);
             assert(0<=k&&k<4-j); // note: for 4-j<=k<4 could return 0... but better not to invoke with those..
             if (j>k) std::swap(j,k);
             switch(3*j+k) {
-                case 0: return   -t;   // (0,0) 
+                case 0: return   -t;   // (0,0)
                 case 1: return    d;   // (0,1),(1,0)
                 case 2: return   -s;   // (0,2),(2,0)
                 case 3: return    o;   // (0,3),(3,0)
@@ -98,7 +97,7 @@ private:
     double qua(double x) const { return sqr(sqr(x)); }
     double d(double _u, int j) const { return _u-u(j); }
     double h(int i, int j) const { return u(i)-u(j); }
-    double h(int i) const { return u(i+1)-u(i); }
+    double h(int i) const { return h(i+1,i); }
     double r(int i) const { return double(3)/h(i); }
     double f(int i) const { return -r(i-1)-r(i); }
     double p(int i) const { return 2*h(i-1)+h(i); }
