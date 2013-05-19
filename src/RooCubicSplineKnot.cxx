@@ -1,4 +1,3 @@
-#include "TMath.h"
 #include <algorithm>
 #include "P2VV/RooCubicSplineKnot.h"
 #include "RooAbsReal.h"
@@ -16,38 +15,6 @@ namespace RooCubicSplineKnot_aux {
 
 }
 
-#include "TVectorD.h"
-#include "TMatrixD.h"
-#include "TMatrixDSym.h"
-#include "TMatrixTUtils.h"
-#include "TDecompLU.h"
-
-#if 0
-void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const {
-        unsigned n=y.size();
-        assert(n==size());
-        assert(n==dy.size());
-        assert(n >= 2);
-        TMatrixD D(n-2,n);
-        for (unsigned int i=0;i<n-2;++i) {
-            double ih0( double(1)/h(i)) , ih1( double(1)/h(i+1) );
-            D(i,i) = ih0; D(i,i+1) = -ih0-ih1; D(i,i+2) = ih1;
-        }
-        TMatrixDSym W(n-2);
-        for (unsigned int i=0;i<n-2;++i) {
-            double h0 = h(i), h1 = h(i+1);
-            W(i,i) = (h0+h1)/3;
-            if (i>0) { W(i,i-1) = W(i-1,i) = h0/6; }
-        }
-        W.Invert(); W.SimilarityT(D); W *= lambda;
-        for (unsigned int i=0;i<n;++i) W(i,i) += double(1)/sqr(dy[i]);
-        TVectorD vals(n);
-        for (unsigned int i=0;i<n;++i) vals(i)=y[i]/dy[i];
-        TDecompLU lu(W); lu.Solve( vals );
-        for (unsigned int i=0;i<n;++i) y[i]=vals(i);
-}
-#endif
-
 void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const {
 // implementation as described in D.S.G. Pollock, Smoothing Splines" 
 // see http://r.789695.n4.nabble.com/file/n905996/SPLINES.PDF
@@ -56,25 +23,19 @@ void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double
     vector<double> uu(n-2),vv(n-3),ww(n-4), q(n-2);
     assert( dy.size()==n);
     assert( size()==n);
-    assert(lambda>0 && lambda-1<0.0001); // lambda = 0 : no smoothing ; lambda = 1: straight line (the ultimate smooth curve)
+    // lambda = 0 : no smoothing ; lambda -> 1: straight line (the ultimate smooth curve)
+    if (lambda<0|| !(lambda<1)) {
+        throw std::string("RooCubicSplineKnot::smooth: smoothing parameter must be in range [0,1)");
+    }
     double mu =2*lambda/(3*(1-lambda));
     for (int i=0;i<n-2;++i) {
         q[i]  = r(i)*(y[i]-y[i+1])-r(i+1)*(y[i+1]-y[i+2]);
-        uu[i] = p(i+1)+mu*(sqr(r(i))*sqr(dy[i])+sqr(f(i+1))*sqr(dy[i+1])+sqr(r(i+1))*sqr(dy[i+2]) );
+        uu[i] = p(i+1)+mu*(sqr(r(i)*dy[i])+sqr(f(i+1)*dy[i+1])+sqr(r(i+1)*dy[i+2]) );
         if (i>n-4) continue;
         vv[i] = h(i+1)+mu*(f(i+1)*r(i+1)*sqr(dy[i+1]) + f(i+1)*r(i+2)*sqr(dy[i+2]));
         if (i>n-5) continue ;
-        ww[i] = mu*r(i+1)*r(i+2)*sqr(dy[i+2]);
+        ww[i] =        mu*r(i+1)*r(i+2)*sqr(dy[i+2]);
     }
-
-#if 0
-    TMatrixDSym _A(n-2);
-    for (int i=0;i<n-2;++i) { _A(i,i)=uu[i]; }
-    for (int i=0;i<n-3;++i) { _A(i,i+1)=_A(i+1,i)=vv[i]; }
-    for (int i=0;i<n-4;++i) { _A(i,i+2)=_A(i+2,i)=ww[i]; }
-    _A.Print();
-    TVectorD _q(n-2) ; for (int i=0;i<n-2;++i) { _q(i)=q[i]; }
-#endif
 
     // Solve A b = q:   q: [0,n-2]
     //
@@ -96,31 +57,19 @@ void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double
     vv[n-4] -= uu[n-5]*vv[n-5]*ww[n-5];  vv[n-4] /= uu[n-4];
     uu[n-3] -= uu[n-4]*sqr(vv[n-4])+uu[n-5]*sqr(ww[n-5]);
 
-    // forward substitution -- solve for L x = q,  q <- x
-    // q[0]  = q[0];
+    // forward substitution
     q[1] -= q[0]*vv[0];
     for (int i=2;i<n-2;++i) { q[i] -= vv[i-1]*q[i-1]+ww[i-2]*q[i-2]; }
-    // rescale with 1/D    -- i.e. solution of L D x = q , q <- x
+    // rescale
     for (int i=0;i<n-2;++i) { q[i] /= uu[i] ; }
-
-    // backward substitution -- i.e. solve LT b = q
-    // q[n-2]  = q[n-2]
+    // backward substitution
     q[n-4] -= vv[n-4]*q[n-3];
     for (int i=n-5;i>=0;--i) { q[i]-=vv[i]*q[i+1]+ww[i]*q[i+2] ; }
-
-
-#if 0
-    cout << "verify solution. Residuals of linear system: " << endl;
-    TVectorD _b(n-2) ; for (int i=0;i<n-2;++i) { _b(i)=q[i]; }
-    TVectorD _x( _A * _b ); _x-=_q;
-    _x.Print();
-#endif
-
-    // and finally, solve for y!
+    // solve for y...
     int i=0;
     y[i]                 -=mu*sqr(dy[i])*(r(i)*q[i]                          ); ++i;
-    y[i]                 -=mu*sqr(dy[i])*(r(i)*q[i]+f(i)*q[i-1]              );
-    for (i=2;i<n-2;++i) y[i]-=mu*sqr(dy[i])*(r(i)*q[i]+f(i)*q[i-1]+r(i-1)*q[i-2]);
+    y[i]                 -=mu*sqr(dy[i])*(r(i)*q[i]+f(i)*q[i-1]              ); ++i;
+    for (;i<n-2;++i) y[i]-=mu*sqr(dy[i])*(r(i)*q[i]+f(i)*q[i-1]+r(i-1)*q[i-2]);
     y[i]                 -=mu*sqr(dy[i])*(          f(i)*q[i-1]+r(i-1)*q[i-2]); ++i;
     y[i]                 -=mu*sqr(dy[i])*(                      r(i-1)*q[i-2]);
 
