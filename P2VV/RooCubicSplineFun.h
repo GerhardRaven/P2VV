@@ -53,9 +53,9 @@ public:
   RooComplex gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
                            const RooCubicSplineGaussModel::K_n& K,
                            double offset, double* sc) const ;
-  unsigned knotSize() const { return _aux->size(); }
-  double u(int i) const { return _aux->u(i); }
-  const std::vector<double>& knots() const { return _aux->knots(); }
+  unsigned knotSize() const { return _aux.size(); }
+  double u(int i) const { return _aux.u(i); }
+  const std::vector<double>& knots() const { return _aux.knots(); }
 
   const RooArgList& coefficients() const { return _coefList; }
 
@@ -63,11 +63,9 @@ private:
 
   RooRealProxy _x;
   RooListProxy _coefList ;
+  RooCubicSplineKnot _aux;
 
-  // TOOD: move all code in RooCubicSplineKnot into this class...
-  const RooCubicSplineKnot *_aux; // do not persist! (but do persist the binningName used for _x!!!
-
-  void init(const char* name, const std::vector<double>& knots, const std::vector<double>& heights,
+  void init(const char* name, const std::vector<double>& heights,
             const std::vector<double>& errors, double smooth, bool constCoeffs);
 
   Double_t evaluate() const;

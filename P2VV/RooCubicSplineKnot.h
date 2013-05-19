@@ -8,11 +8,14 @@
 
 class RooCubicSplineKnot {
 public:
-    RooCubicSplineKnot(double *array, int nEntries) : _u( array, array+nEntries) { }
-
+    RooCubicSplineKnot(const double *array, int nEntries) : _u( array, array+nEntries) { }
     template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end) : _u(begin,end) { }
 
-    double u(int i) const { assert(i>-3&&i<int(_u.size()+3)); return _u[std::min(std::max(0,i),int(_u.size()-1))]; }
+    double u(int i) const { 
+        assert(size());
+        assert(i>-3);
+        assert(i<size()+3); 
+        return _u[std::min(std::max(0,i),size()-1)]; }
     int size() const { return _u.size(); }
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
@@ -72,12 +75,12 @@ private:
     double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
 
     double ma( int i) const {  // subdiagonal
-        return i==int(_u.size())-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
+        return i==size()-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
                               : A(u(i),i);
     }
     double mb( int i) const {   // diagonal
         return i==0           ?  -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0)
-             : i==int(_u.size())-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
+             : i==size()-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
                               : B(u(i),i) ;
     }
     double mc( int i) const {  // superdiagonal
@@ -102,7 +105,7 @@ private:
     double f(int i) const { return -r(i-1)-r(i); }
     double p(int i) const { return 2*h(i-1)+h(i); }
 
-    const   std::vector<double> _u;
+    std::vector<double> _u;
     mutable std::vector<double> _PQRS;                   //!
     mutable std::vector<double> _IABCD;                  //!
     mutable std::vector<RooCubicSplineKnot::S_jk> _S_jk; //!
