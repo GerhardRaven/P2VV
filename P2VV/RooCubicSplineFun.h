@@ -26,12 +26,14 @@ class TH1;
 class RooCubicSplineFun : public RooAbsReal {
 public:
   RooCubicSplineFun() ;
-  // smooth = 0: no smoothing. As smooth becomes larger, the result will converge towards a straight line
   RooCubicSplineFun(const char* name, const char* title, RooRealVar& x,
                     const std::vector<double>& knots,
                     const std::vector<double>& values,
                     const std::vector<double>& errors = std::vector<double>(),
                     double smooth = 0, bool constCoeffs = true);
+  // smooth = 0: no smoothing, interpolating spline
+  // smooth = Infty: extreme smoothing, resulting in a straight line (as the 2nd derivative is forced to zero)
+  // TODO: map [0,Infty] -> [0,1]
   RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TH1* hist,
                     double smooth = 0, bool constCoeffs = true);
   RooCubicSplineFun(const char *name, const char *title, RooRealVar& x,
@@ -51,9 +53,9 @@ public:
   RooComplex gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
                            const RooCubicSplineGaussModel::K_n& K,
                            double offset, double* sc) const ;
-  unsigned knotSize() const { return _aux->size(); }
-  double u(int i) const { return _aux->u(i); }
-  const std::vector<double>& knots() const { return _aux->knots(); }
+  unsigned knotSize() const { return _aux.size(); }
+  double u(int i) const { return _aux.u(i); }
+  const std::vector<double>& knots() const { return _aux.knots(); }
 
   const RooArgList& coefficients() const { return _coefList; }
 
@@ -61,11 +63,9 @@ private:
 
   RooRealProxy _x;
   RooListProxy _coefList ;
+  RooCubicSplineKnot _aux;
 
-  // TOOD: move all code in RooCubicSplineKnot into this class...
-  const RooCubicSplineKnot *_aux; // do not persist! (but do persist the binningName used for _x!!!
-
-  void init(const char* name, const std::vector<double>& knots, const std::vector<double>& heights,
+  void init(const char* name, const std::vector<double>& heights,
             const std::vector<double>& errors, double smooth, bool constCoeffs);
 
   Double_t evaluate() const;
