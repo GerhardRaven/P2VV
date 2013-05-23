@@ -37,7 +37,7 @@ pdfConfig['blind']      = {#  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0
 
 plotsFile     = 'plots/2011Data_SFit.ps'
 plotsROOTFile = '2011Data_SFit_plots.root'
-parFileIn     = '2011DataFitValuesOld.par' #'2011DataPlotValuesOld.par'
+parFileIn     = '2011DataFitValues.par' #'2011DataPlotValuesOld.par'
 parFileOut    = '' #'initialValues.par'
 
 if readData :
@@ -67,8 +67,8 @@ if generateData :
 
 MinosPars = [#  'phiCP', 'lambdaCP'
              #, 'AparPhase', 'AperpPhase'
-             #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
-             #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
+             #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3'#, 'ASOddPhase_bin4', 'ASOddPhase_bin5'
+             #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3'#,        'f_S_bin4',        'f_S_bin5'
              #, 'timeResSigmaSF'
             ]
 dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
@@ -126,13 +126,13 @@ pdfConfig['ambiguityParameters']  = False
 pdfConfig['lifetimeRange']        = ( 0.3, 14. )
 pdfConfig['sigmatRange']          = ( 0.0001, 0.12 ) # ( 0.0001, 0.12 )
 pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-#pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03, 0.01 ), (  0.22, 0.03 ) ]
-#                                     , [ ( 0.8,  0.2  ), ( 2.6,  0.2  ), ( -2.7,  0.1  ), ( -1.9,  0.3  ) ] )
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
-                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
+pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03, 0.01 ), (  0.22, 0.03 ) ]
+                                     , [ ( 0.8,  0.2  ), ( 2.6,  0.2  ), ( -2.7,  0.1  ), ( -1.9,  0.3  ) ] )
+#pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
+#                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
 #pdfConfig['SWaveAmplitudeValues'] = ( )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['CSPValues']            = [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
 pdfConfig['sameSideTagging']    = True
 pdfConfig['conditionalTagging'] = True
