@@ -85,16 +85,17 @@ void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y) const
     double bf = y.front() / A(u(0),0) ;
     double bb = y.back()  / D(u(n-1),n-2);
 
-    y.front() = - bf * double(6) / sqr(h(1,0));
-    y.back()  = - bb * double(6) / sqr(h(n-1,n-2));
+    y.front() = - bf * double(6) / sqr(h(0));
+    y.back()  = - bb * double(6) / sqr(h(n-2));
 
     std::vector<double> c ; c.reserve(n);
     c.push_back( mc(0) / mb(0) );
     y[0] /=  mb(0);
     for (int i = 1; i < n; ++i) {
-        double m = double(1) / (mb(i) - ma(i) * c.back() ) ;
+        double m = double(1) / ( mb(i) - ma(i) * c.back() ) ;
         c.push_back( mc(i) * m );
-        y[i] = (y[i] - ma(i) * y[i - 1]) * m;
+        y[i] -=  ma(i) * y[i - 1];
+        y[i] *=  m;
     }
     for (int i = n-1 ; i-- > 0; ) y[i] -= c[i] * y[i + 1];
     y.push_back(bb); y.insert(y.begin(),bf); // ouch... expensive!
@@ -108,10 +109,10 @@ void RooCubicSplineKnot::fillPQRS() const {
     // P,Q,R,S only depend on the knot vector, so build at construction, and cache them...
     _PQRS.reserve(4*size());
     for (unsigned int i=0;i<size();++i) {
-        _PQRS.push_back( h(i+1,i-2)*h(i+1,i-1)*h(i+1,i) );
-        _PQRS.push_back( h(i+1,i-1)*h(i+2,i-1)*h(i+1,i) );
-        _PQRS.push_back( h(i+2,i  )*h(i+2,i-1)*h(i+1,i) );
-        _PQRS.push_back( h(i+2,i  )*h(i+3,i  )*h(i+1,i) );
+        _PQRS.push_back( h(i+1,i-2)*h(i+1,i-1)*h(i) );
+        _PQRS.push_back( h(i+1,i-1)*h(i+2,i-1)*h(i) );
+        _PQRS.push_back( h(i+2,i  )*h(i+2,i-1)*h(i) );
+        _PQRS.push_back( h(i+2,i  )*h(i+3,i  )*h(i) );
     }
 
 }
