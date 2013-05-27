@@ -283,7 +283,7 @@ const RooArgList& RooEffResModel::getIntegralRanges(const RooArgSet& iset,
 
       trange.Append("_I_");
       RooNameSet ns(iset);
-      trange.Append(ns._nameList);
+      trange.Append(ns.content());
       const char* range = trange.Data();
 
       // Create a new name for the range
