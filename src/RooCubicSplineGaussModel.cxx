@@ -124,8 +124,8 @@ RooCubicSplineGaussModel::M_n::M_n(double x, const RooComplex& z) {
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
-                                                   , RooRealVar& x, RooCubicSplineFun& _eff
-                                                   , RooAbsReal& _mean, RooAbsReal& _sigma )
+                , RooRealVar& x, RooCubicSplineFun& _eff
+			    , RooAbsReal& _mean, RooAbsReal& _sigma ) 
    : RooResolutionModel(name, title, x),
      RooAbsEffResModel(), 
      _flatSFInt(kFALSE),
@@ -279,11 +279,11 @@ Double_t RooCubicSplineGaussModel::evaluate() const
   if (TMath::IsNaN(val)) 
      cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() 
                       << ") got nan during basisCode = " << basisCode << endl; 
-  Double_t eff=efficiency()->getVal();
-  if (TMath::IsNaN(eff)) 
+  Double_t _eff=eff;
+  if (TMath::IsNaN(_eff)) 
      cxcoutE(Tracing) << "RooCubicSplineGaussModel::evaluate(" << GetName() 
                       << ") got nan during efficiency " << endl;
-  return eff*val;
+  return _eff*val;
 }
 
 //_____________________________________________________________________________

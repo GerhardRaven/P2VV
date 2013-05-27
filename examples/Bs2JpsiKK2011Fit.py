@@ -58,7 +58,7 @@ pdfConfig['constrainTagging']   = 'constrain'
 
 pdfConfig['timeResType']           = 'eventNoMean'
 pdfConfig['numTimeResBins']        = 40
-pdfConfig['constrainTimeResScale'] = 'fixed'
+pdfConfig['constrainTimeResScale'] = 'constrain'
 
 pdfConfig['constrainDeltaM'] = 'constrain'
 

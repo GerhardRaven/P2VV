@@ -114,7 +114,7 @@ Int_t RooAvEffConstraint::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& a
 }
 
 //_____________________________________________________________________________
-Double_t RooAvEffConstraint::analyticalIntegral(Int_t code, const char* rangeName) const 
+Double_t RooAvEffConstraint::analyticalIntegral(Int_t code, const char* /*rangeName*/) const
 {
    assert(code == 1);
    return 1.;

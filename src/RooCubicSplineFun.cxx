@@ -48,17 +48,16 @@ using namespace std;
 ClassImp(RooCubicSplineFun);
 
 //_____________________________________________________________________________
-void RooCubicSplineFun::init(const char* name, const std::vector<double>& knots,
+void RooCubicSplineFun::init(const char* name, 
                              const std::vector<double>& heights,
                              const std::vector<double>& errors,
                              double smooth, bool constCoeffs) {
-   _aux = new RooCubicSplineKnot( knots.begin(), knots.end() );
    std::vector<double> values(heights);
    if ( smooth > 0 ) { 
-      assert(errors.size() == knots.size());
-      _aux->smooth( values, errors, smooth );
+      assert(errors.size() == _aux.size());
+      _aux.smooth( values, errors, smooth );
    }
-   _aux->computeCoefficients( values );
+   _aux.computeCoefficients( values );
    for (unsigned int i=0;i<values.size();++i) { 
       if (constCoeffs) {
          _coefList.add( RooFit::RooConst( values[i] ) );
@@ -69,14 +68,14 @@ void RooCubicSplineFun::init(const char* name, const std::vector<double>& knots,
          RooRealVar* coeff = new RooRealVar(n.c_str(), n.c_str(), values[i], 0.0001, 0.9999);
          if (i == 0 || i == values.size() - 1) coeff->setConstant(true);
          _coefList.add(*coeff);
-         _ownList.addOwned(*coeff);
+         addOwnedComponents( *coeff );
       }
    }
 }
 
 //_____________________________________________________________________________
 RooCubicSplineFun::RooCubicSplineFun()
-    : _aux(0)
+    : _aux(0,0)
 {
 }
 
@@ -89,10 +88,9 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, RooRea
    RooAbsReal(name, title),
    _x("x", "Dependent", this, x),
    _coefList("coefficients","List of coefficients",this),
-   _ownList("ownList", "List of owned RealVars", this),
-   _aux(0)
+   _aux(knots.begin(),knots.end())
 {
-   init(name, knots, values, errors, smooth, constCoeffs);
+   init(name, values, errors, smooth, constCoeffs);
 }
 
 //_____________________________________________________________________________
@@ -102,8 +100,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   RooAbsReal(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients","List of coefficients",this),
-  _ownList("ownList", "List of owned RealVars", this),
-  _aux(0)
+  _aux(0,0)
 {
     // bin 0 is underflow, and bin nBins + 1 is overflow...
     int nBins = hist->GetNbinsX();
@@ -112,11 +109,12 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
         centres.push_back(hist->GetBinCenter(1+i));
         values.push_back(hist->GetBinContent(1+i));
     }
+   _aux = RooCubicSplineKnot( centres.begin(), centres.end() );
 
     std::vector<double> errs;
     if (smooth>0) for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
     
-    init(name, centres, values, errs, smooth, constCoeffs);
+    init(name, values, errs, smooth, constCoeffs);
 }
 
 //_____________________________________________________________________________
@@ -126,8 +124,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   RooAbsReal(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients", "List of coefficients", this),
-  _ownList("ownList", "List of owned RealVars", this),
-  _aux(0)
+  _aux(0,0)
 {
   // TODO: verify coefList is consistent with knots as specified by the knotBinningName binning
   //    should be N+2 coefficients for N bins...
@@ -137,7 +134,7 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   _coefList.add(coefList);
 
   Double_t* boundaries = binning->array();
-  _aux = new RooCubicSplineKnot( boundaries, boundaries + binning->numBoundaries() );
+  _aux = RooCubicSplineKnot( boundaries, boundaries + binning->numBoundaries() );
 }
 
 //_____________________________________________________________________________
@@ -147,42 +144,30 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
   RooAbsReal(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients", "List of coefficients", this),
-  _ownList("ownList", "list of owned RealVars", this),
-  _aux(0)
+   _aux(knots.begin(), knots.end())
 {
    assert(size_t(coefList.getSize()) == 2 + knots.size());
    _coefList.add(coefList);
-   _aux = new RooCubicSplineKnot(knots.begin(), knots.end());
 }
 
 //_____________________________________________________________________________
 RooCubicSplineFun::RooCubicSplineFun(const RooCubicSplineFun& other, const char* name) :
   RooAbsReal(other, name), 
   _x("x", this, other._x), 
-  _coefList("coefList", "List of owned RealVars", this),
-  _ownList("ownList", "List of owned RealVars", this),
-  _aux(new RooCubicSplineKnot(*other._aux))
+  _coefList("coefList", this, other._coefList),
+  _aux(other._aux)
 {
-   if (_ownList.getSize()) {
-      RooAbsCollection* copy = other._ownList.snapshot();
-      _ownList.addOwned(*copy);
-      _coefList.add(*copy);
-   } else {
-      _coefList.add(other._coefList);
-   }
 }
 
 //_____________________________________________________________________________
 RooCubicSplineFun::~RooCubicSplineFun()
 {
-    delete _aux;
-    _ownList.removeAll();
 }
 
 //_____________________________________________________________________________
 Double_t RooCubicSplineFun::evaluate() const 
 {
-  return _aux->evaluate(_x,_coefList);
+  return _aux.evaluate(_x,_coefList);
 }
 
 //_____________________________________________________________________________
@@ -199,7 +184,7 @@ RooComplex  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGaussMod
                                              double* sc) const 
 {
         RooComplex sum(0,0);
-        RooCubicSplineKnot::S_jk S( _aux->S_jk_sum( i, _coefList ), offset );
+        RooCubicSplineKnot::S_jk S( _aux.S_jk_sum( i, _coefList ), offset );
         for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) {
             sum = sum + dM(j)*S(j,k)*K(k)*sc[j+k];
         }
@@ -210,6 +195,6 @@ RooComplex  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGaussMod
 Double_t RooCubicSplineFun::analyticalIntegral(Int_t code, const char* /* rangeName */) const
 {
   assert(code==1) ;
-  return _aux->analyticalIntegral(_coefList);
+  return _aux.analyticalIntegral(_coefList);
 }
 

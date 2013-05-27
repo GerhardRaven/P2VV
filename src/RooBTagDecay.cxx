@@ -1107,7 +1107,7 @@ void RooBTagDecay::setMaxVal(const Double_t val)
 }
 
 //_____________________________________________________________________________
-Int_t RooBTagDecay::getMaxVal(const RooArgSet& vars) const
+Int_t RooBTagDecay::getMaxVal(const RooArgSet& /*vars*/) const
 {
   return _maxVal < 0 ? 0 : _maxVal;
 }

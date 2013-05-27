@@ -226,7 +226,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
         self['timeResType']           = 'eventNoMean'
         self['numTimeResBins']        = 40
-        self['constrainTimeResScale'] = 'fixed'
+        self['constrainTimeResScale'] = 'constrain'
 
         self['signalFraction'] = 0.504
         self['massRangeBackground'] = True

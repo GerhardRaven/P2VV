@@ -28,7 +28,6 @@
 #include "P2VV/RooEffConvGenContext.h"
 #include "P2VV/RooBoxPdf.h"
 #include "P2VV/RooExplicitNormPdf.h"
-#include "P2VV/RooCubicBSpline.h"
 #include "P2VV/RooCubicSplineKnot.h"
 #include "P2VV/RooCubicSplineFun.h"
 #include "P2VV/RooCubicSplineGaussModel.h"
