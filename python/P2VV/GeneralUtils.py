@@ -387,6 +387,156 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
     dataSet.addColumn(phiTr)
 
 
+def printEventYields( **kwargs ) :
+    # get arguments
+    splitCats = kwargs.pop( 'SplittingCategories', [ ] )
+    dataSets  = kwargs.pop( 'DataSets',            [ ] )
+    parSet    = kwargs.pop( 'ParameterSet',        [ ] )
+
+    assert parSet, 'P2VV - ERROR: printEventYields: no parameter set with yield variables found in arguments ("ParameterSet")'
+
+    # variables for looping over splitting category states
+    iters = { }
+    inds  = { }
+    labs  = { }
+    for cat in splitCats :
+        iters[cat] = 0
+        inds[cat]  = [ ]
+        labs[cat]  = [ ]
+        catIter = cat.typeIterator()
+        catState = catIter.Next()
+        while catState :
+            inds[cat].append( catState.getVal() )
+            labs[cat].append( catState.GetName() )
+                                                                                   
+            cut    = '!(%s-%d)' % ( cat.GetName(), catState.getVal() )
+            nEv    = self._dataSets['data'].sumEntries(cut)
+            nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
+            nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
+            S_B    = nSigEv / nBkgEv
+            S_SB   = nSigEv / nEv
+            signif = nSigEv / sqrt(nEv)
+            print '    %13s | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f'\
+                  % ( catState.GetName(), nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
+                                                                                   
+            catState = catIter.Next()
+
+    # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
+    print '                  | total |        signal       |     background      |        S/B        |       S/(S+B)     |   S/sqrt(S+B)   '
+    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
+    for cat in iters.iterkeys() : iters[cat] = 0
+    cont = True
+    while cont :
+        stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
+        sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', '{%s}' % stateName, parSet )
+        bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    '{%s}' % stateName, parSet )
+
+        nSigEv = sigYield.getVal()
+        nBkgEv = bkgYield.getVal()
+        nEv    = nSigEv + nBkgEv
+        S_SB   = nSigEv / nEv
+        S_B    = nSigEv / nBkgEv
+        signif = nSigEv / sqrt(nEv)
+
+        nSigErr     = sigYield.getError()
+        nSigErrCorr = sqrt( nSigErr**2 - nSigEv**2 / nEv )
+        S_SBErr     = nSigErrCorr / nEv
+        S_BErr      = S_SBErr / ( 1 - S_SB )**2
+        signifErr   = S_SBErr * sqrt(nEv)
+        print '    %13s | %5.0f | %8.2f +/- %6.2f | %8.2f +/- %6.2f | %6.4f +/- %6.4f | %6.4f +/- %6.4f | %6.2f +/- %4.2f'\
+               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nSigErrCorr\
+                  , nBkgEv, nSigErrCorr, S_B, S_BErr, S_SB, S_SBErr, signif, signifErr )
+
+        iters[ splitCats[-1] ] += 1
+        for catIt in range( len(splitCats) ) :
+            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                if catIt == len(splitCats) - 1 :
+                    cont = False
+                else :
+                    iters[ splitCats[ -catIt - 1 ] ] = 0
+                    iters[ splitCats[ -catIt - 2 ] ] +=1
+            else :
+                continue
+    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
+
+
+def printEventYieldsData() :
+    splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
+                 , self._dataSets['data'].get().find( hlt2B.GetName() )
+                ]
+    if hasattr( self, '_KKMassCat' ) and paramKKMass == 'simultaneous' :
+        splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
+    splitCats = [ cat for cat in splitCats if cat ]
+    self._dataSets['sigSWeightData'].Print()
+    self._dataSets['bkgSWeightData'].Print()
+    nEv    = self._dataSets['data'].sumEntries()
+    nSigEv = self._dataSets['sigSWeightData'].sumEntries()
+    nBkgEv = self._dataSets['bkgSWeightData'].sumEntries()
+    S_B    = nSigEv / nBkgEv
+    S_SB   = nSigEv / nEv
+    signif = nSigEv / sqrt(nEv)
+    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: number of events:'
+    print '                  | total | signal   | backgr.  | S/B    | S/(S+B) | S/sqrt(S+B)'
+    print '    --------------|-------|----------|----------|--------|---------|------------'
+    print '            total | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f' % ( nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
+    print '    --------------|-------|----------|----------|--------|---------|------------'
+
+    if splitCats :
+        iters = { }
+        inds  = { }
+        labs  = { }
+        for cat in splitCats :
+            iters[cat] = 0
+            inds[cat]  = [ ]
+            labs[cat]  = [ ]
+            catIter = cat.typeIterator()
+            catState = catIter.Next()
+            while catState :
+                inds[cat].append( catState.getVal() )
+                labs[cat].append( catState.GetName() )
+
+                cut    = '!(%s-%d)' % ( cat.GetName(), catState.getVal() )
+                nEv    = self._dataSets['data'].sumEntries(cut)
+                nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
+                nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
+                S_B    = nSigEv / nBkgEv
+                S_SB   = nSigEv / nEv
+                signif = nSigEv / sqrt(nEv)
+                print '    %13s | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f'\
+                      % ( catState.GetName(), nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
+
+                catState = catIter.Next()
+
+            print '    --------------|-------|----------|----------|--------|---------|------------'
+
+        if len(splitCats) > 1 :
+            cont = True
+            while cont :
+                cut    = '&&'.join( '!(%s-%d)' % ( cat.GetName(), inds[cat][ iters[cat] ] ) for cat in splitCats )
+                nEv    = self._dataSets['data'].sumEntries(cut)
+                nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
+                nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
+                S_B    = nSigEv / nBkgEv
+                S_SB   = nSigEv / nEv
+                signif = nSigEv / sqrt(nEv)
+                print '    %13s | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f'\
+                       % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
+
+                iters[ splitCats[-1] ] += 1
+                for catIt in range( len(splitCats) ) :
+                    if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                        if catIt == len(splitCats) - 1 :
+                            cont = False
+                        else :
+                            iters[ splitCats[ -catIt - 1 ] ] = 0
+                            iters[ splitCats[ -catIt - 2 ] ] +=1
+                    else :
+                        continue
+
+            print '    --------------|-------|----------|----------|--------|---------|--------'
+        print
+
+
 ###########################################################################################################################################
 ## Plots                                                                                                                                 ##
 ###########################################################################################################################################
@@ -1754,7 +1904,7 @@ def getSplitPar( parName, stateName, parSet ) :
         fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
                      for perm in permutations( stateName, len(stateName) ) ]
     else :
-        fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
+        fullNames = [ ( '%s_%s' % ( parName, stateName[0] ) ) if stateName[0] else parName ]
 
     name = lambda par : par if type(par) == str else par.GetName()
     for par in parSet :
