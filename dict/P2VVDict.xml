@@ -40,6 +40,10 @@
         <class name = "RooTPDecay" />
         <class name = "RooAmoroso" />
         <class name = "RooMassDependence" />
+        <class name = "RooCubicSplineKnot" />
+        <class name = "RooCubicSplineFun" />
+        <class name = "RooCubicSplineGaussModel" />
+        <class name = "RooEffResAddModel" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />

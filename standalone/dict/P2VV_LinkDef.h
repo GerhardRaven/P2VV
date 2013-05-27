@@ -29,15 +29,16 @@
 #pragma link C++ class RooMultiEffResModel+;
 #pragma link C++ class RooComplementCoef+;
 #pragma link C++ class RooEffConvGenContext+;
-#pragma link C++ class RooCubicBSpline+;
-// #pragma link C++ class RooBSpline+;
-// #pragma link C++ class RooBSplineBases+;
+#pragma link C++ class RooCubicSplineKnot+;
+#pragma link C++ class RooCubicSplineFun+;
+#pragma link C++ class RooCubicSplineGaussModel+;
 #pragma link C++ function sigmaFromFT;
 #pragma link C++ class RooBoxPdf+;
 #pragma link C++ class RooExplicitNormPdf+;
 #pragma link C++ class RooAmoroso+;
 #pragma link C++ class RooTPDecay+;
 #pragma link C++ class RooMassDependence+;
+#pragma link C++ class RooEffResAddModel+;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;

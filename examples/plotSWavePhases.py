@@ -20,10 +20,9 @@ theoryVals = None
 #delS = ( sum(deltaSVals) - sum(theoryVals) ) / float( len(deltaSVals) )
 #theoryVals = [ delS + val for val in theoryVals ]
 
-from P2VV.GeneralUtils import plotSWavePhases
-SWavePhaseCanv = plotSWavePhases( DeltaSAxisRange = deltaSAxisRange, LHCbTextLine1 = LHCbText1, LHCbTextLine2 = LHCbText2
-                                 , MassBins = massBins, DeltaSValues = deltaSVals, TheoryValues = theoryVals
-                                 , DeltaSLowErrors = deltaSLowErrs, DeltaSHighErrors = deltaSHighErrs, DrawLegend = drawLegend
-                                 , GrayScale = grayScale
-                                )
+from P2VV.GeneralUtils import plotSWaveBins
+SWavePhaseCanv = plotSWaveBins( SAxisRange = deltaSAxisRange, LHCbTextLine1 = LHCbText1, LHCbTextLine2 = LHCbText2, MassBins = massBins
+                               , SValues = deltaSVals, TheoryValues = theoryVals, SLowErrors = deltaSLowErrs, SHighErrors = deltaSHighErrs
+                               , DrawLegend = drawLegend, GrayScale = grayScale
+                              )
 SWavePhaseCanv.Print(plotsFilePath)

@@ -18,10 +18,10 @@
 #include <P2VV/RooEffResModel.h>
 #include <P2VV/RooAbsEffResModel.h>
 
-class RooSuperCategory;
 class MultiHistEntry;
+class RooSuperCategory;
 
-class RooMultiEffResModel : public RooAbsEffResModel {
+class RooMultiEffResModel : public RooResolutionModel, public RooAbsEffResModel {
 public:
 
    // Constructors, assignment etc
@@ -47,8 +47,8 @@ public:
    virtual void initGenerator(Int_t code);
    virtual void generateEvent(Int_t code);
 
-   virtual RooAbsReal* efficiency() const;
-   virtual std::vector<RooAbsReal*> efficiencies() const;
+   virtual const RooAbsReal* efficiency() const;
+   virtual std::vector<const RooAbsReal*> efficiencies() const;
 
    const std::map<Int_t, MultiHistEntry*>& getEntries() const
    {
@@ -59,6 +59,8 @@ public:
    {
       return _super;
    }
+
+   virtual const RooArgSet* observables() const;
 
 protected:
 
@@ -74,7 +76,6 @@ private:
 
    // Evaluation
    typedef std::list<double> BinBoundaries;
-   BinBoundaries* _binboundaries;
    HistEntries _entries;
 
    // Generation

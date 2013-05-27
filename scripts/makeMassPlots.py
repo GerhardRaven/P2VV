@@ -71,6 +71,8 @@ pdfConfig['lambdaCPParam'] = 'lambPhi'
 
 pdfConfig['makePlots'] = False
 
+from ROOT import gStyle, kSolid, kFullCircle, kBlue, kRed, kGreen, kMagenta
+
 
 ###########################################################################################################################################
 ## read data and build PDF ##
@@ -163,7 +165,6 @@ fitResult = mumuMassPdf.fitTo( sigData, SumW2Error = False, Save = True, **fitOp
 fitResult.PrintSpecial( text = True )
 
 #Plot
-from ROOT import kFullCircle, kRed, kGreen
 mumuMassPlot = mumuMass.frame(60)
 
 #sigArgs = {'Components':'sig_mumu', 'LineColor':kRed,     'LineStyle':10, 'LineWidth':3}
@@ -196,7 +197,7 @@ mumuMassCanv.SetRightMargin(0.05)
 mumuMassCanv.SetBottomMargin(0.18)
 mumuMassCanv.SetTopMargin(0.05)
 mumuMassPlot.Draw()
-LHCbLabel.Draw()
+#LHCbLabel.Draw()
 mumuMassCanv.Print( mumuPlotsFilePath + '(' )
 
 mumuMassPlot.SetMinimum(7.)#3.)
@@ -210,7 +211,7 @@ mumuMassCanvLog.SetBottomMargin(0.18)
 mumuMassCanvLog.SetTopMargin(0.05)
 mumuMassCanvLog.SetLogy(True)
 mumuMassPlot.Draw()
-LHCbLabel.Draw()
+#LHCbLabel.Draw()
 mumuMassCanvLog.Print( mumuPlotsFilePath + ')' )
 
 
@@ -249,27 +250,30 @@ parC = RooRealVar(   'parC', 'parC', 1.4, 0., 10. )
 parB.setError(5.)
 parC.setError(1.)
 
-KKBkgPHSP = PhaseSpaceFunc( 'KKBkgPHSP', 'KKBkgPHSP', KKMassVar, dm0, parC, parA, parB )
-KKBkgPdf  = RooFFTConvPdf ( 'KKBkgPdf' , 'KKBkgPdf',  KKMassVar, KKBkgPHSP, GaussModel )
+KKSWavePHSP = PhaseSpaceFunc( 'KKSWavePHSP', 'KKSWavePHSP', KKMassVar, dm0, parC, parA, parB )
+KKSWavePdf  = RooFFTConvPdf ( 'KKSWavePdf' , 'KKSWavePdf',  KKMassVar, KKSWavePHSP, GaussModel )
 
 #Total Pdf
 from ROOT import RooAddPdf
 phiFrac = RooRealVar( 'phiFrac', 'phiFrac', 0.96, 0., 1. )
 phiFrac.setError(0.003)
-KKMassPdf = RooAddPdf( 'KKMassPdf', 'KKMassPdf', phiMassPdf, KKBkgPdf, phiFrac )
+KKMassPdf = RooAddPdf( 'KKMassPdf', 'KKMassPdf', phiMassPdf, KKSWavePdf, phiFrac )
 
 #Fit
-fitResult = KKMassPdf.fitTo( sigData, SumW2Error = False, Save = True, **fitOpts )
+fitResult = KKMassPdf.fitTo( sigData, SumW2Error = False, Save = True, Minos = False, **fitOpts )
 fitResult.PrintSpecial( text = True )
 
 #Plot
 KKMassPlot = KKMassVar.frame(60)
 
-#comps = { 'PhiMassPdf':dict( LineColor=kRed,      LineStyle=10, LineWidth=lineWidth ), 
-#          'KKbkgPdf'  :dict( LineColor=kGreen +3, LineStyle= 2, LineWidth=lineWidth )
-#        }
+gStyle.SetLineStyleString( 5, ' 40 20 10 20'  )
+gStyle.SetLineStyleString( 7, ' 40 20'        )
+gStyle.SetLineStyleString( 9, ' 100 20'       )
+
 sigData.plotOn( KKMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.7, LineWidth = 3 )
-KKMassPdf.plotOn( KKMassPlot, LineWidth = 3 )
+KKMassPdf.plotOn( KKMassPlot, LineStyle = kSolid, LineWidth = 3, LineColor = kBlue                                   )
+KKMassPdf.plotOn( KKMassPlot, LineStyle = 7,      LineWidth = 3, LineColor = kRed,         Components = 'phiMassPdf' )
+KKMassPdf.plotOn( KKMassPlot, LineStyle = 5,      LineWidth = 3, LineColor = kMagenta + 3, Components = 'KKSWavePdf' )
 
 binWidth = ( KKMassPlot.GetXaxis().GetXmax() - KKMassPlot.GetXaxis().GetXmin() ) / float( KKMassPlot.GetNbinsX() )
 KKMassPlot.SetXTitle('m(K^{+}K^{-}) [MeV/c^{2}]')
@@ -285,11 +289,11 @@ KKMassCanv.SetRightMargin(0.05)
 KKMassCanv.SetBottomMargin(0.18)
 KKMassCanv.SetTopMargin(0.05)
 KKMassPlot.Draw()
-LHCbLabel.Draw()
+#LHCbLabel.Draw()
 KKMassCanv.Print( KKPlotsFilePath + '(' )
 
-KKMassPlot.SetMinimum(4.7)#2.)
-KKMassPlot.SetMaximum(2.4e4)#1.e4)
+KKMassPlot.SetMinimum(2.)
+KKMassPlot.SetMaximum(1.e4)
 KKMassPlot.SetTitleOffset( 1.0, 'y' )
 
 KKMassCanvLog = TCanvas('KKMassCanvLog')
@@ -299,5 +303,5 @@ KKMassCanvLog.SetBottomMargin(0.18)
 KKMassCanvLog.SetTopMargin(0.05)
 KKMassCanvLog.SetLogy(True)
 KKMassPlot.Draw()
-LHCbLabel.Draw()
+#LHCbLabel.Draw()
 KKMassCanvLog.Print( KKPlotsFilePath + ')' )

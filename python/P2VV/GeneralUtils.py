@@ -946,117 +946,127 @@ class CPcomponentsPlotingToolkit():
     def setLineWidth(self, width ): self._lineWidth  = width
 
 
-# function for plotting the S-wave phases versus the (binned) KK mass
-def plotSWavePhases( **kwargs ) :
-    yAxisRange  = kwargs.pop( 'DeltaSAxisRange', ( None, None )                         )
-    KKMassLabel = kwargs.pop( 'KKMassLabel',     'm(K^{+}K^{-}) [MeV/c^{2}]'            )
-    deltaSLabel = kwargs.pop( 'DeltaSLabel',     '#delta_{S} - #delta_{#perp}    [rad]' )
-    plotTitle   = kwargs.pop( 'PlotTitle',       ''                                     )
-    LHCbText1   = kwargs.pop( 'LHCbTextLine1',   'LHCb'                                 )
-    LHCbText2   = kwargs.pop( 'LHCbTextLine2',   ''                                     )
-    drawLegend  = kwargs.pop( 'DrawLegend',      False                                  )
+# function for plotting the S-wave parameters versus the (binned) KK mass
+def plotSWaveBins( **kwargs ) :
+    mode = kwargs.pop( 'Mode', 'phases' )
+    if mode not in [ 'phases', 'fractions', 'events' ] :
+        raise KeyError, 'P2VV - ERROR: plotSWaveBins: possible plot modes: "phases", "fractions", "events"'
+    if any( key not in kwargs for key in [ 'SValues', 'SLowErrors', 'SHighErrors' ] ) :
+        raise KeyError, 'P2VV - ERROR: plotSWaveBins: "SValues", "SLowErrors" and "SHighErrors" arguments are required'
 
-    if any( key not in kwargs for key in [ 'DeltaSValues', 'DeltaSLowErrors', 'DeltaSHighErrors' ] ) :
-        raise KeyError, 'P2VV - ERROR: plotSWavePhases: "DeltaSValues", "DeltaSLowErrors" and "DeltaSHighErrors" arguments are required'
-    massBins       = kwargs.pop( 'MassBins', [ 988., 1008., 1032., 1050. ] )
-    theoryVals     = kwargs.pop( 'TheoryValues', None )
-    deltaSVals     = kwargs.pop( 'DeltaSValues'       )
-    deltaSLowErrs  = kwargs.pop( 'DeltaSLowErrors'    )
-    deltaSHighErrs = kwargs.pop( 'DeltaSHighErrors'   )
-    gray           = kwargs.pop( 'GrayScale', False   )
+    defRange  = ( None, None ) if mode == 'phases' else ( 0., None )
+    defSLabel = '#delta_{S} - #delta_{#perp}    [rad]' if mode == 'phases' else\
+                'F_{S}' if mode == 'fractions' else\
+                'N_{S} / (MeV/c^{2})'
+    yAxisRange  = kwargs.pop( 'SAxisRange',    defRange                      )
+    KKMassLabel = kwargs.pop( 'KKMassLabel',   'm(K^{+}K^{-}) [MeV/c^{2}]'   )
+    SLabel      = kwargs.pop( 'SLabel',        defSLabel                     )
+    plotTitle   = kwargs.pop( 'PlotTitle',     ''                            )
+    LHCbText1   = kwargs.pop( 'LHCbTextLine1', 'LHCb'                        )
+    LHCbText2   = kwargs.pop( 'LHCbTextLine2', ''                            )
+    drawLegend  = kwargs.pop( 'DrawLegend',    False                         )
+    massBins    = kwargs.pop( 'MassBins',      [ 988., 1008., 1032., 1050. ] )
+    theoryVals  = kwargs.pop( 'TheoryValues',  None                          )
+    SVals       = kwargs.pop( 'SValues'                                      )
+    SLowErrs    = kwargs.pop( 'SLowErrors'                                   )
+    SHighErrs   = kwargs.pop( 'SHighErrors'                                  )
+    gray        = kwargs.pop( 'GrayScale',     False                         )
 
     if kwargs :
-        raise KeyError, 'P2VV - ERROR: plotSWavePhases: unexpected keyword arguments: %s' % kwargs
+        raise KeyError, 'P2VV - ERROR: plotSWaveBins: unexpected keyword arguments: %s' % kwargs
 
     from array import array
     KKMass         = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + massBins[it] for it in range( len(massBins) - 1 ) ] )
     KKMassErr      = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] )                for it in range( len(massBins) - 1 ) ] )
 
-    KKMass1        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35 + massBins[it] for it in range( len(massBins) - 1 ) ] )
-    KKMass1LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
-    KKMass1HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
+    offs = 0.35 if mode == 'phases' else 0.
+    KKMass1        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + offs + massBins[it] for it in range( len(massBins) - 1 ) ] )
+    KKMass1LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + offs                for it in range( len(massBins) - 1 ) ] )
+    KKMass1HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - offs                for it in range( len(massBins) - 1 ) ] )
 
-    KKMass2        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35 + massBins[it] for it in range( len(massBins) - 1 ) ] )
-    KKMass2LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - 0.35                for it in range( len(massBins) - 1 ) ] )
-    KKMass2HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + 0.35                for it in range( len(massBins) - 1 ) ] )
+    KKMass2        = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - offs + massBins[it] for it in range( len(massBins) - 1 ) ] )
+    KKMass2LowErr  = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) - offs                for it in range( len(massBins) - 1 ) ] )
+    KKMass2HighErr = array( 'd', [ 0.5 * ( massBins[it + 1] - massBins[it] ) + offs                for it in range( len(massBins) - 1 ) ] )
 
     from ROOT import TGraphAsymmErrors
-    deltaSGraphs = [ ]
+    SGraphs = [ ]
 
-    deltaS1        = array( 'd', deltaSVals      )
-    deltaS1LowErr  = array( 'd', deltaSLowErrs   )
-    deltaS1HighErr = array( 'd', deltaSHighErrs )
-    deltaSGraphs.append( TGraphAsymmErrors(len(KKMass1), KKMass1, deltaS1, KKMass1LowErr, KKMass1HighErr, deltaS1LowErr, deltaS1HighErr) )
+    S1        = array( 'd', [ SVals[it]     / (massBins[it+1] - massBins[it]) for it in range(len(massBins)-1) ] if mode == 'events' else SVals     )
+    S1LowErr  = array( 'd', [ SLowErrs[it]  / (massBins[it+1] - massBins[it]) for it in range(len(massBins)-1) ] if mode == 'events' else SLowErrs  )
+    S1HighErr = array( 'd', [ SHighErrs[it] / (massBins[it+1] - massBins[it]) for it in range(len(massBins)-1) ] if mode == 'events' else SHighErrs )
+    SGraphs.append( TGraphAsymmErrors( len(KKMass1), KKMass1, S1, KKMass1LowErr, KKMass1HighErr, S1LowErr, S1HighErr ) )
 
-    from math import pi
-    deltaS2        = array( 'd', [ pi - val for val in deltaSVals ] )
-    deltaS2LowErr  = array( 'd', deltaSHighErrs )
-    deltaS2HighErr = array( 'd', deltaSLowErrs  )
-    deltaSGraphs.append( TGraphAsymmErrors(len(KKMass2), KKMass2, deltaS2, KKMass2LowErr, KKMass2HighErr, deltaS2LowErr, deltaS2HighErr) )
+    if mode == 'phases' :
+        from math import pi
+        S2        = array( 'd', [ pi - val for val in S1 ] )
+        S2LowErr  = array( 'd', S1HighErr )
+        S2HighErr = array( 'd', S1LowErr  )
+        SGraphs.append( TGraphAsymmErrors( len(KKMass2), KKMass2, S2, KKMass2LowErr, KKMass2HighErr, S2LowErr, S2HighErr ) )
 
-    delSMin0 = min( delS for delS in theoryVals ) if theoryVals else +1.e32
-    delSMax0 = max( delS for delS in theoryVals ) if theoryVals else -1.e32
-    delSMin1 = min( delS - delSErr for delS, delSErr in zip( deltaSVals, deltaSLowErrs  ) )
-    delSMax1 = max( delS + delSErr for delS, delSErr in zip( deltaSVals, deltaSHighErrs ) )
-    delSMin  = min( [ delSMin0, delSMin1, pi - delSMax1 ] )
-    delSMax  = max( [ delSMax0, delSMax1, pi - delSMin1 ] )
-
+    theory = None
     if theoryVals :
         from ROOT import TGraphErrors
         theory    = array( 'd', theoryVals           )
         theoryErr = array( 'd', [ 0. ] * len(KKMass) )
-        deltaSGraphs.append( TGraphErrors( len(KKMass), KKMass, theory, KKMassErr, theoryErr ) )
+        SGraphs.append( TGraphErrors( len(KKMass), KKMass, theory, KKMassErr, theoryErr ) )
+
+    SMin0 = min( val for val in theory ) if theory else +1.e32
+    SMax0 = max( val for val in theory ) if theory else -1.e32
+    SMin1 = min( val - err for val, err in zip( S1, S1LowErr  ) )
+    SMax1 = max( val + err for val, err in zip( S1, S1HighErr ) )
+    SMin  = min( [ SMin0, SMin1, ( pi - SMax1 ) if mode == 'phases' else +1.e32 ] )
+    SMax  = max( [ SMax0, SMax1, ( pi - SMin1 ) if mode == 'phases' else -1.e32 ] )
 
     from ROOT import gStyle, kSolid
     gStyle.SetEndErrorSize(3)
     gStyle.SetLineStyleString( 11, ' 30 15' )
-    deltaSGraphs[0].SetLineStyle(kSolid)
-    deltaSGraphs[1].SetLineStyle(kSolid)
-    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetLineStyle(11)
+    SGraphs[0].SetLineStyle(kSolid)
+    if len(SGraphs) > 1 : SGraphs[1].SetLineStyle(kSolid)
+    if len(SGraphs) > 2 : SGraphs[2].SetLineStyle(11)
 
     from ROOT import kBlack, kBlue, kRed
-    deltaSGraphs[0].SetLineColor( kBlue + 2 )
-    deltaSGraphs[1].SetLineColor( kRed - 4 )
-    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetLineColor(kBlack)
+    SGraphs[0].SetLineColor( kBlue + 2 )
+    if len(SGraphs) > 1 : SGraphs[1].SetLineColor( kRed - 4 )
+    if len(SGraphs) > 2 : SGraphs[2].SetLineColor(kBlack)
 
-    deltaSGraphs[0].SetMarkerColor( kBlue + 2 )
-    deltaSGraphs[1].SetMarkerColor( kRed - 4 )
-    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerColor(kBlack)
+    SGraphs[0].SetMarkerColor( kBlue + 2 )
+    if len(SGraphs) > 1 : SGraphs[1].SetMarkerColor( kRed - 4 )
+    if len(SGraphs) > 2 : SGraphs[2].SetMarkerColor(kBlack)
 
-    deltaSGraphs[0].SetLineWidth(3)
-    deltaSGraphs[1].SetLineWidth(3)
-    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetLineWidth(3)
+    SGraphs[0].SetLineWidth(3)
+    if len(SGraphs) > 1 : SGraphs[1].SetLineWidth(3)
+    if len(SGraphs) > 2 : SGraphs[2].SetLineWidth(3)
 
     from ROOT import kFullCircle, kFullTriangleDown
-    deltaSGraphs[0].SetMarkerStyle(kFullCircle)
-    deltaSGraphs[1].SetMarkerStyle(kFullTriangleDown)
-    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerStyle(kFullCircle)
-    deltaSGraphs[0].SetMarkerSize(1.2)
-    deltaSGraphs[1].SetMarkerSize(1.4)
-    if len(deltaSGraphs) > 2 : deltaSGraphs[2].SetMarkerSize(0.7)
+    SGraphs[0].SetMarkerStyle(kFullCircle)
+    if len(SGraphs) > 1 : SGraphs[1].SetMarkerStyle(kFullTriangleDown)
+    if len(SGraphs) > 2 : SGraphs[2].SetMarkerStyle(kFullCircle)
+    SGraphs[0].SetMarkerSize(1.2)
+    if len(SGraphs) > 1 : SGraphs[1].SetMarkerSize(1.4)
+    if len(SGraphs) > 2 : SGraphs[2].SetMarkerSize(0.7)
 
-    for graph in deltaSGraphs :
-        graph.SetMinimum( yAxisRange[0] if yAxisRange[0] else delSMin - 0.10 * ( delSMax - delSMin ) )
-        graph.SetMaximum( yAxisRange[1] if yAxisRange[1] else delSMax + 0.15 * ( delSMax - delSMin ) )
+    for graph in SGraphs :
+        graph.SetMinimum( yAxisRange[0] if yAxisRange[0] != None else SMin - 0.10 * ( SMax - SMin ) )
+        graph.SetMaximum( yAxisRange[1] if yAxisRange[1] != None else SMax + 0.15 * ( SMax - SMin ) )
 
         graph.GetXaxis().SetTitle(KKMassLabel)
-        graph.GetYaxis().SetTitle(deltaSLabel)
+        graph.GetYaxis().SetTitle(SLabel)
 
         graph.GetXaxis().SetTitleOffset(1.1)
-        graph.GetYaxis().SetTitleOffset(0.8)
+        graph.GetYaxis().SetTitleOffset( 0.8 if mode == 'phases' else 1.1 if mode == 'fractions' else 0.9 )
 
         graph.SetTitle(plotTitle)
 
         _P2VVPlotStash.append(graph)
 
-    if drawLegend :
+    if mode == 'phases' and drawLegend :
         from ROOT import gStyle, TLegend
         leg = TLegend( 0.65, 0.46, 0.91, 0.66 )
         leg.SetTextFont( gStyle.GetTextFont() )
         leg.SetTextSize(0.072)
         leg.SetMargin(0.45)
-        leg.AddEntry( deltaSGraphs[0], '#Delta#Gamma_{s} > 0', 'LPE' )
-        leg.AddEntry( deltaSGraphs[1], '#Delta#Gamma_{s} < 0', 'LPE' )
+        leg.AddEntry( SGraphs[0], '#Delta#Gamma_{s} > 0', 'LPE' )
+        leg.AddEntry( SGraphs[1], '#Delta#Gamma_{s} < 0', 'LPE' )
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         _P2VVPlotStash.append(leg)
@@ -1078,19 +1088,26 @@ def plotSWavePhases( **kwargs ) :
         LHCbText = None
 
     from ROOT import TCanvas
-    SWavePhaseCanv = TCanvas( 'SWavePhaseCanv', 'S-Wave Phases' )
-    SWavePhaseCanv.SetLeftMargin(0.18)
-    SWavePhaseCanv.SetRightMargin(0.05)
-    SWavePhaseCanv.SetBottomMargin(0.18)
-    SWavePhaseCanv.SetTopMargin(0.05)
-    if gray : SWavePhaseCanv.SetGrayscale()
-    deltaSGraphs[1].Draw('AP')
-    deltaSGraphs[0].Draw('P sames')
-    if len(deltaSGraphs) > 2 : deltaSGraphs[2].Draw('P sames')
-    if leg :      leg.Draw()
-    if LHCbText : LHCbText.Draw()
+    canv = TCanvas( 'SWavePhaseCanv' if mode == 'phases' else 'SWaveFracCanv' if mode == 'fractions' else 'SWaveEventsCanv', 'S-Wave' )
+    canv.SetLeftMargin(0.18)
+    canv.SetRightMargin(0.05)
+    canv.SetBottomMargin(0.18)
+    canv.SetTopMargin(0.05)
+    if gray :
+        canv.SetGrayscale()
+    if len(SGraphs) > 1 :
+        SGraphs[1].Draw('AP')
+        SGraphs[0].Draw('P sames')
+    else :
+        SGraphs[0].Draw('AP')
+    if len(SGraphs) > 2 :
+        SGraphs[2].Draw('P sames')
+    if leg :
+        leg.Draw()
+    if LHCbText :
+        LHCbText.Draw()
 
-    return SWavePhaseCanv
+    return canv
 
 def splot( pdf, sdata ) :
     # switch off all yields, except current one
