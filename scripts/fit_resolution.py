@@ -137,12 +137,12 @@ if args[1] == 'single':
 elif args[1] == 'double':
     mu = dict(MinMax = (-0.010, 0.010))
     mu['Constant'] = options.simultaneous
-    mu_values = {'MC11a' : -0.00307478, 'MC11a_incl_Jpsi' : -0.000408, '2011' : -0.00407301}
+    mu_values = {'MC11a' : -0.00307478, 'MC11a_incl_Jpsi' : -0.000408, '2011' : -0.00407301, '2012' : 0.}
     mu['Value'] = mu_values[args[0]]
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = options.pee, Parameterise = options.parameterise,
-                              TimeResSFOffset = options.model != '', SplitFracs = True, timeResMu = mu,
+                              TimeResSFOffset = options.model != '', SplitFracs = False, timeResMu = mu,
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
