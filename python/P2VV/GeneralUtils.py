@@ -7,6 +7,27 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
+# clever switch construct from http://code.activestate.com/recipes/410692/
+class switch(object):
+    def __init__(self, value):
+        self.value = value
+        self.fall = False
+
+    def __iter__(self):
+        """Return the match method once, then stop"""
+        yield self.match
+
+    def match(self, *args):
+        """Indicate whether or not to enter a case suite"""
+        if self.fall or not args:
+            return True
+        elif self.value in args:
+            self.fall = True
+            return True
+        else:
+            return False
+
+
 
 import sys
 def numCPU( Max = sys.maxint ) :
@@ -218,7 +239,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
           data = RooDataSet( dataSetName, dataSetName
                            , [ obs._var for obs in observables ]
                            , Import = file.Get(dataSetName)
-                           , Cut = noNAN + ' && ' + cuts if cuts else noNAN 
+                           , Cut = noNAN + ' && ' + cuts if cuts else noNAN
                            )
       else :
           data = file.Get(dataSetName)
@@ -555,7 +576,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
                    , 'LineWidth'   : lambda x : residHist.SetLineWidth(x)
                    , 'Title'       : lambda x : residFrame.SetTitle(x)
                   }
-            for k, v in dataOpts.iteritems() : 
+            for k, v in dataOpts.iteritems() :
                 if k in fun : fun[k](v)
 
         # residFrame.addPlotable( residHist, 'p' if not usebar else 'b' )
@@ -1172,6 +1193,44 @@ class Sorter(object):
 ###########################################################################################################################################
 ## (Efficiency) Moments                                                                                                                  ##
 ###########################################################################################################################################
+def angularMomentIndices(label,angleFuncs) :
+        from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles,  JpsiphiHelicityAngles
+        transAngles = { JpsiphiTransversityAngles : True, JpsiphiHelicityAngles : False  }[ type(angleFuncs) ]
+        for case in switch(label):
+            if case('weights') :
+                return [ ( 0, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 0, 2, 1 ), ( 0, 2, -1 ), ( 0, 2, -2 )
+                       , ( 1, 0, 0 ), ( 1, 2, 1 ), ( 1, 2, -1 ) ]
+            if case('basis012') :
+                return [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                             for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            if case('basis012Plus') :
+                return [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ] + [ ( 0, 4, 0 ) ]
+            if case( 'basis012Thetal' ) :
+                return   [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ] \
+                       + [ ( 0, YIndex0, 0 ) for YIndex0 in range( 3, 5 ) ]
+            if case('basis012ThetalPhi') :
+                return  [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ] \
+                      + [ ( 0, YIndex0, YIndex1 ) for YIndex0 in range( 3, 5 ) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            if case('basis0123') :
+                return [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            if case('basis01234') :
+                return  [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(5) for YIndex0 in range(5)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            if case('basisSig3') :
+                return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles\
+                              else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+            if case('basisSig4') :
+                if transAngles :
+                    raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration with transversity angles: %s'\
+                                       % multiplyByAngEff)
+                return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ]
+            raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration: %s'\
+                                   % label)
+
 
 class RealMomentsBuilder ( dict ) :
     # TODO:  implement reduce: clone self, selecting a subset of available moments...
@@ -1529,7 +1588,7 @@ class RealMomentsBuilder ( dict ) :
         return RealSumPdf( name
                          , functions = funs
                          , coefficients = ( ConstVar( Name = ('C_%3.6f'%c[0]).replace('-','m').replace('.','d')
-                                                    , Value = c[0]*scale ) for c in coefs ) 
+                                                    , Value = c[0]*scale ) for c in coefs )
                          )
 
     def __mul__( self, pdf ) :
@@ -1561,7 +1620,7 @@ class RealMomentsBuilder ( dict ) :
                                  , ( f2.i(),f2.j(),f2.l(),f2.m() )
                                  , NamePostFix = namePF
                                  ) # build a wrapped object inside workspace
-            
+
         # TODO: check that 'we' contain efficiency moments?
         # TODO: and that we've actually either 'read' or 'compute'-ed them??
         from ROOT import RooP2VVAngleBasis
@@ -1760,3 +1819,6 @@ def getSplitPar( parName, stateName, parSet ) :
     for par in parSet :
         if name(par) in fullNames : return par
     return None
+
+
+
