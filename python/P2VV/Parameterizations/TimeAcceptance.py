@@ -23,7 +23,6 @@ class TimeAcceptance ( TimeResolution ) :
                                 Constraints = self._acceptance.ExternalConstraints(),
                                 **kwargs)
 
-    def __getitem__( self, kw ) : return getattr( self, '_' + kw )
     def acceptance( self ) : return self._acceptance
 
 class Moriond2012_TimeAcceptance(TimeAcceptance):
@@ -35,9 +34,9 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
                        MinMax = (0.3, 14))
         input_file = kwargs.pop('Input', 'acceptance.root')
         histogram = kwargs.pop('Histogram', 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
-        binning_name = kwargs.pop('BinningName', 'efficiency_binning')
         name = kwargs.pop('Name', 'Moriond2012_Acceptance')
         model = kwargs.pop('ResolutionModel')
+
 
         acceptance_file = TFile.Open(input_file)
         if not acceptance_file:
@@ -45,31 +44,32 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         self._hist = acceptance_file.Get(histogram)
         if not self._hist:
             raise ValueError, 'Cannot get acceptance histogram %s from file' % histogram
-        xaxis = self._hist.GetXaxis()
-        bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, self._hist.GetNbinsX() + 2)))
-        self._binHeights = [self._hist.GetBinContent(i) for i in range(1, self._hist.GetNbinsX() + 1)]
+
+        if kwargs.pop('Spline',True) :
+            from P2VV.RooFitWrappers import BinnedPdf
+            self._shape = BinnedPdf(name + '_shape', Observable = self._time, Histogram = self._hist )
+            from P2VV.RooFitWrappers import EffResModel
+            TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name, Efficiency = self._shape,
+                                                                   ResolutionModel = model['model'],
+                                                                   ConditionalObservables = model.conditionalObservables(),
+                                                                   ExternalConstraints = model.externalConstraints()))
+
+        else :
+            from P2VV.RooFitWrappers import CubicSplineGaussModel, CubicSplineFun
+            self._shape = CubicSplineFun(Name=name +'_CubicSplineEff',
+                                         Histogram= self._hist,
+                                         Observable = self._time, 
+                                         Smooth = 0.1 
+                                        )
+            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
+                                                                   SplineFunction = self._shape,
+                                                                   ResolutionModel = model['model'],
+                                                                   ConditionalObservables = model.conditionalObservables(),
+                                                                   ExternalConstraints = model.externalConstraints()))
 
         acceptance_file.Close()
         print 'P2VV - INFO: Moriond2012_TimeAcceptance.__init__(): using time efficiency histogram "%s" from file "%s"'\
               % ( histogram, input_file )
-
-        from P2VV.RooFitWrappers import RealVar
-        self._binHeights = [RealVar('%s_bin_%03d' % (name, i + 1), Observable = False, Value = v,
-                           Constant = True) for i, v in enumerate(self._binHeights)]
-        # Add a binning for this category and state
-        from ROOT import RooBinning
-        self._binning = RooBinning(len(bins) - 1, bins)
-        self._binning.SetName(binning_name)
-        self._time.setBinning(self._binning, binning_name)
-
-        from P2VV.RooFitWrappers import BinnedPdf
-        self._shape = BinnedPdf(name + '_shape', Observable = self._time,
-                                Binning = binning_name, Coefficients = self._binHeights)
-        from P2VV.RooFitWrappers import EffResModel
-        TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name, Efficiency = self._shape,
-                                                               ResolutionModel = model['model'],
-                                                               ConditionalObservables = model.conditionalObservables(),
-                                                               ExternalConstraints = model.externalConstraints()))
 
 class Paper2012_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
@@ -84,7 +84,7 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         model = kwargs.pop('ResolutionModel')
         binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
         spline = kwargs.pop('Spline', False)
-        smooth = kwargs.pop('SmoothSpline', 0)
+        smooth = kwargs.pop('SmoothSpline', 0.1)
         
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
