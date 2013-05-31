@@ -38,6 +38,8 @@ parser.add_option("--no-reuse-result", dest = "reuse_result", default = True,
                   action = 'store_false', help = "Don't reuse an old result if it is available.")
 parser.add_option("--wpv-gauss-width", dest = "wpv_gauss_width", default = 0, type = 'float',
                   action = 'store', help = 'Width of the Gaussian used for the WPV component; 0 means floating.')
+parser.add_option("--peak-only", dest = "peak_only", default = False, action = 'store_true',
+                  help = 'Fit only the peak between -0.2 and 0.2 ps')
 (options, args) = parser.parse_args()
 
 if len(args) != 2:
@@ -88,7 +90,9 @@ obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-if options.wpv and options.wpv_type == 'Mixing':
+if options.peak_only:
+    t_minmax = (-0.08, 0.08)
+elif options.wpv and options.wpv_type == 'Mixing':
     t_minmax = (-5, 14)
 else:
     t_minmax = (-1.5, 8)
@@ -137,12 +141,12 @@ if args[1] == 'single':
 elif args[1] == 'double':
     mu = dict(MinMax = (-0.010, 0.010))
     mu['Constant'] = options.simultaneous
-    mu_values = {'MC11a' : -0.00307478, 'MC11a_incl_Jpsi' : -0.000408, '2011' : -0.00407301}
+    mu_values = {'MC11a' : -0.00307478, 'MC11a_incl_Jpsi' : -0.000408, '2011' : -0.00407301, '2012' : -0.00365}
     mu['Value'] = mu_values[args[0]]
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = options.pee, Parameterise = options.parameterise,
-                              TimeResSFOffset = options.model != '', SplitFracs = True, timeResMu = mu,
+                              TimeResSFOffset = options.model != '', SplitFracs = False, timeResMu = mu,
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)])
 elif args[1] == 'triple':
@@ -217,6 +221,8 @@ if not options.wpv or (options.wpv and options.wpv_type == "Gauss"):
     cut += ' && sel_cleantail == 1'
 if args[0] == 'MC11a':
     cut += ' && abs(trueid) == 531'
+if options.peak_only:
+    cut += ' && time > %5.3f && time < %5.3f' % t_minmax
 if options.cut:
     cut = options.cut + ' && ' + cut
 hd = ('%d' % hash(cut)).replace('-', 'm')
@@ -560,6 +566,9 @@ if args[0] == 'MC11a':
 else:
     components = [prompt, psi_ll]
 
+if options.peak_only:
+    components = components[:1]
+
 if options.wpv and options.wpv_type == 'Mixing':
     from P2VV.Parameterizations import WrongPV
     if args[0] == 'MC11a':
@@ -676,7 +685,24 @@ results.append(time_result)
 ## profiler_stop()
 ## result.Print('v')
 
+def cut_binning(t, binning):
+    ## find the first boundary which is equal to or larger than t_min
+    mm = [None, None]
+    for i in range(len(binning)):
+        if binning[i] >= t.getMin() and mm[0] == None:
+            mm[0] = i
+        if binning[i] == t.getMax():
+            mm[1] = i
+            break
+        if binning[i] >= t.getMax():
+            mm[1] = i - 1
+            break
+    if mm[1] == None:
+        mm[1] = t.getMax()
+    return binning[mm[0] : mm[1]]
+
 from ROOT import RooBinning
+
 if options.wpv and options.wpv_type == 'Mixing':
     bounds = array('d', [-5 + i * 0.1 for i in range(48)] + [-0.2 + i * 0.01 for i in range(40)] + \
                    [0.2 + i * 0.1 for i in range(58)] + [6 + i * 0.4 for i in range(21)])
@@ -688,6 +714,9 @@ else:
     bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
     zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
 
+bounds = cut_binning(t, bounds)
+zoom_bounds = cut_binning(t, zoom_bounds)
+    
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('full')
 
@@ -877,6 +906,9 @@ elif args[0] == 'MC11a_incl_Jpsi':
     ## Dilution.dilution(t, sig_sdata, sigmat = st, result = time_result, signal = [prompt], calibration = calibration,
     ##                   subtract = [psi_ll, wpv] if options.wpv else [psi_ll], simultaneous = options.simultaneous)
 
+if options.peak_only:
+    assert(False)
+    
 from P2VV.CacheUtils import WritableCacheFile
 with WritableCacheFile(cache_files, directory) as cache_file:
     cache_dir = cache_file.Get(directory)

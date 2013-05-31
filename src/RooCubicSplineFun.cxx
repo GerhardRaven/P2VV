@@ -54,7 +54,7 @@ void RooCubicSplineFun::init(const char* name,
                              double smooth, bool constCoeffs) {
    std::vector<double> values(heights);
    if ( smooth > 0 ) { 
-      assert(errors.size() == _aux.size());
+      assert(int(errors.size()) == _aux.size());
       _aux.smooth( values, errors, smooth );
    }
    _aux.computeCoefficients( values );

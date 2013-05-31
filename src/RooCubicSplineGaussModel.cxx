@@ -117,6 +117,7 @@ RooCubicSplineGaussModel::M_n::M_n(double x, const RooComplex& z) {
           RooComplex N0( RooMath::erf(x) )
                    , N1( exp(-x*x)       )
                    , N2( eval(x,z)       );
+          // TODO: eliminate L_jk all together...
           L_jk L(x); 
           for (int i=0;i<4;++i) _m[i] = N0*L(i,0) + N1*L(i,1) + N2*L(i,2);
 }
