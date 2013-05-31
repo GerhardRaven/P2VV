@@ -420,13 +420,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ####################################################
 
         # angular functions
+        helAngs = not transAngles
         if transAngles :
-            helAngs = False
             from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
-
         else :
-            helAngs = True
-            from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
+            from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngleFuncs
 
         self._angleFuncs = AngleFuncs(  cpsi   = dict(Name = 'helcosthetaK' if helAngs else 'trcospsi',   MinMax = angRanges['cpsi'  ][0])
                                       , ctheta = dict(Name = 'helcosthetaL' if helAngs else 'trcostheta', MinMax = angRanges['ctheta'][0])
@@ -641,20 +639,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             trackChi2Cuts = ' && '.join( '%s < %f' % ( trackChi2, trackChi2.getMax() ) for trackChi2 in\
                                                       [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ] )
 
-            if selection == 'HLT1Unbiased' :
-                ntupleCuts += '%s && %s==1 && %s==1 && %s==1 && %s'\
-                       % ( dataSampleCuts, sel, hlt1UB, hlt2B, trackChi2Cuts )
-            elif selection == 'HLT1ExclBiased' :
-                ntupleCuts += '%s && %s==1 && %s==1 && %s==1 && %s'\
-                       % ( dataSampleCuts, sel, hlt1ExclB, hlt2B, trackChi2Cuts )
-            elif selection == 'paper2012' :
-                ntupleCuts += '%s && %s==1 && (%s==1 || %s==1) && %s==1 && %s'\
-                       % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
-            elif selection == 'timeEffFit' :
-                ntupleCuts += '%s && %s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s'\
-                       % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
-            else :
-                raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown selection: "%s"' % selection )
+            selections = dict( HLT1Unbiased = '%s && %s==1 && %s==1 && %s==1 && %s'\
+                                              % ( dataSampleCuts, sel, hlt1UB, hlt2B, trackChi2Cuts )
+                             , HLT1ExclBiased = '%s && %s==1 && %s==1 && %s==1 && %s'\
+                                              % ( dataSampleCuts, sel, hlt1ExclB, hlt2B, trackChi2Cuts )
+                             , paper2012 = '%s && %s==1 && (%s==1 || %s==1) && %s==1 && %s'\
+                                              % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
+                             , timeEffFit = '%s && %s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s'\
+                                              % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
+                             )
+            ntupleCuts += selections[selection]
 
             #ntupleCuts = dataSample
             from P2VV.GeneralUtils import readData
@@ -1202,13 +1196,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 timeResArgs['timeResComb'] = dict(Name = 'timeResComb', Value = 1.4918, Error = 4.08e-03, MinMax = ( 0.1, 5. ), Constant = constant)
                 timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = 6.0074, Error = 1.89e-01, MinMax = (1, 10), Constant = constant)
                 timeResArgs['timeResSigmaFrac2'] = dict( Name = 'timeResSigmaFrac2', Value = 1.5818e-02, Error = 1.07e-03, MinMax = (0.001, 0.999), Constant = constant)
-                covariance = {('timeResComb', 'timeResComb'): 1.663e-05,
-                              ('timeResComb', 'timeResSigmaFrac2'): 1.322e-06,
-                              ('timeResComb', 'timeResSigmaSF2'): 0.0001297,
-                              ('timeResSigmaFrac2', 'timeResSigmaFrac2'): 1.146e-06,
-                              ('timeResSigmaFrac2', 'timeResSigmaSF2'): -0.0001486,
-                              ('timeResSigmaSF2', 'timeResSigmaSF2'): 0.03556}
-                timeResArgs['Covariance'] = covariance
+                timeResArgs['Covariance'] = { ('timeResComb',       'timeResComb'       ) :  1.663e-05,
+                                              ('timeResComb',       'timeResSigmaFrac2' ) :  1.322e-06,
+                                              ('timeResComb',       'timeResSigmaSF2'   ) :  0.0001297,
+                                              ('timeResSigmaFrac2', 'timeResSigmaFrac2' ) :  1.146e-06,
+                                              ('timeResSigmaFrac2', 'timeResSigmaSF2'   ) : -0.0001486,
+                                              ('timeResSigmaSF2',   'timeResSigmaSF2'   ) :  0.03556   }
                 timeResArgs['nGauss'] = 2
                 if 'constmean' in timeResType.lower() :
                     timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
@@ -1483,7 +1476,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             , tagCatCoefs = self._taggingParams['tagCatCoefs']
                            )
 
-        args = dict(  time                   = time
+        args.update(  time                   = time
                     , tau                    = self._lifetimeParams['MeanLifetime']
                     , dGamma                 = self._lifetimeParams['dGamma']
                     , dm                     = self._lifetimeParams['dM']
@@ -1498,7 +1491,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     , ExternalConstraints    = self._lifetimeParams.externalConstraints()\
                                                + self._timeResModel.externalConstraints()\
                                                + self._taggingParams.externalConstraints()
-                    , **args
                    )
 
         # build signal PDF
@@ -1554,9 +1546,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if multiplyByTimeEff in [ 'all', 'signal' ] :
             # multiply signal PDF with time acceptance
             print 'P2VV - INFO:  Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with lifetime efficiency function'
-            args['resolutionModel'] = self._timeResModel['model']
-            args['ConditionalObservables'] = list( set( args['ConditionalObservables'] + self._timeResModel.conditionalObservables() ) )
-            args['ExternalConstraints'] = list( set( args['ExternalConstraints'] + self._timeResModel.externalConstraints() ) )
+            args.update( resolutionModel= self._timeResModel['model']
+                       , ConditionalObservables = list( set( args['ConditionalObservables'] + self._timeResModel.conditionalObservables() ) )
+                       , ExternalConstraints = list( set( args['ExternalConstraints'] + self._timeResModel.externalConstraints() ) )
+                       )
             sigPdfTimeAcc = BTagDecay( 'sig_t_angles_timeEff', **args )
         else :
             sigPdfTimeAcc = sigPdf
@@ -1571,46 +1564,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"'\
                   % angEffMomentsFile
 
-            from P2VV.GeneralUtils import RealMomentsBuilder
+            from P2VV.GeneralUtils import RealMomentsBuilder,angularMomentIndices
             moments = RealMomentsBuilder()
-            if multiplyByAngEff == 'weights' :
-                angMomInds = [ ( 0, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 0, 2, 1 ), ( 0, 2, -1 ), ( 0, 2, -2 )
-                              , ( 1, 0, 0 ), ( 1, 2, 1 ), ( 1, 2, -1 ) ]
-            elif multiplyByAngEff == 'basis012' :
-                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            elif multiplyByAngEff == 'basis012Plus' :
-                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-                angMomInds += [ ( 0, 4, 0 ) ]
-            elif multiplyByAngEff == 'basis012Thetal' :
-                angMomInds  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-                angMomInds += [ ( 0, YIndex0, 0 ) for YIndex0 in range( 3, 5 ) ]
-            elif multiplyByAngEff == 'basis012ThetalPhi' :
-                angMomInds  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-                angMomInds += [ ( 0, YIndex0, YIndex1 ) for YIndex0 in range( 3, 5 ) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            elif multiplyByAngEff == 'basis0123' :
-                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4)\
-                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            elif multiplyByAngEff == 'basis01234' :
-                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(5) for YIndex0 in range(5)\
-                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            elif multiplyByAngEff == 'basisSig3' :
-                angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles\
-                              else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
-            elif multiplyByAngEff == 'basisSig4' :
-                if not transAngles :
-                    angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ]
-                else :
-                    raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration with transversity angles: %s'\
-                                       % multiplyByAngEff)
-            else :
-                raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration: %s'\
-                                   % multiplyByAngEff)
-
-            moments.appendPYList( self._angleFuncs.angles, angMomInds )
+            moments.appendPYList( self._angleFuncs.angles, angularMomentIndices(multiplyByAngEff,self._angleFuncs ) )
             moments.read(angEffMomentsFile)
             moments.Print()
             sigPdfTimeAcc = moments * sigPdfTimeAcc

@@ -2,7 +2,6 @@
 #define ROO_CUBICSPLINEKNOT
 #include <vector>
 #include <algorithm>
-#include "RooComplex.h"
 #include "RooArgList.h"
 
 
@@ -65,7 +64,6 @@ public:
     };
     // S matrix for i-th interval
     RooCubicSplineKnot::S_jk S_jk_sum(int i, const RooArgList& b) const ;
-    // RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const;
 
 private:
     int index(double _u) const;
@@ -75,17 +73,15 @@ private:
     double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
 
     double ma( int i) const {  // subdiagonal
-        return i==size()-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
-                              : A(u(i),i);
+        return i==size()-1 ?  double(6)/(h(i,i-2)*h(i-1) ) : A(u(i),i);
     }
     double mb( int i) const {   // diagonal
-        return i==0           ?  -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0)
-             : i==size()-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
-                              : B(u(i),i) ;
+        return i==0        ?  -(double(6)/h(0)+double(6)/h(2,0))/h(0)
+             : i==size()-1 ?  -(double(6)/h(i-1)+double(6)/h(i,i-2))/h(i-1)
+                           : B(u(i),i) ;
     }
     double mc( int i) const {  // superdiagonal
-        return i==0           ?   double(6)/(h(2,0)*h(1,0))
-                              : C(u(i),i);
+        return i==0        ?   double(6)/(h(2,0)*h(0)) : C(u(i),i);
     }
 
     double P(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i  <int(_PQRS.size())); return  _PQRS[4*i  ]; }
