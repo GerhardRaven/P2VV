@@ -129,10 +129,10 @@ double RooCubicSplineKnot::evaluate(double x, const RooArgList& b) const {
         return evaluate(u(i),b) + d(x,i)*r(i-1)*(get(b,i,2)-get(b,i,1));
     }
     assert( u(i) <= x && x<= u(i+1) );
-    return  get(b,i,0)*A(x,i) // TODO: substitute A,B,C,D 'in situ'
-         +  get(b,i,1)*B(x,i)
-         +  get(b,i,2)*C(x,i)
-         +  get(b,i,3)*D(x,i);
+    return get(b,i,0)*A(x,i) // TODO: substitute A,B,C,D 'in situ'
+         + get(b,i,1)*B(x,i)
+         + get(b,i,2)*C(x,i)
+         + get(b,i,3)*D(x,i);
 }
 
 double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
