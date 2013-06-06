@@ -65,13 +65,13 @@ public:
   class K_n {
   public:
       K_n(const std::complex<double>& z) : _zi( std::complex<double>(1,0)/z) {}
-      std::complex<double> operator()(int i) const {
+      std::complex<double> operator()(unsigned i) const {
           assert(0<=i&&i<=3);
           switch(i) {
               case 0 : return 0.5*_zi;
               case 1 : return 0.5*_zi*_zi;
               case 2 : return _zi*(_zi*_zi+1.0);
-              case 3 : std::complex<double> _zi2 = _zi*_zi; return _zi2*(std::complex<double>(3,0)+std::complex<double>(3,0)*_zi2);
+              case 3 : std::complex<double> _zi2 = _zi*_zi; return _zi2*(3.*_zi2+3.);
           }
           assert(1==0);
           return 0;

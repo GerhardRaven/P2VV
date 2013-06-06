@@ -175,14 +175,15 @@ RooCubicSplineKnot::S_jk RooCubicSplineKnot::S_jk_sum(int i, const RooArgList& b
     if (_S_jk.empty()) {
         _S_jk.reserve(size()*4);
         for(int i=0;i<size();++i) {
-            _S_jk.push_back( -RooCubicSplineKnot::S_jk(u(i+1),u(i+1),u(i+1))/P(i) );
+            // This 'table' should be compatible with the definitions of A,B,C, and D...
+            _S_jk.push_back( -RooCubicSplineKnot::S_jk(u(i+1),u(i+1),u(i+1))/P(i) ); // A
             _S_jk.push_back(  RooCubicSplineKnot::S_jk(u(i-2),u(i+1),u(i+1))/P(i)
                              +RooCubicSplineKnot::S_jk(u(i-1),u(i+1),u(i+2))/Q(i)
-                             +RooCubicSplineKnot::S_jk(u(i  ),u(i+2),u(i+2))/R(i) );
+                             +RooCubicSplineKnot::S_jk(u(i  ),u(i+2),u(i+2))/R(i) ); // B
             _S_jk.push_back( -RooCubicSplineKnot::S_jk(u(i-1),u(i-1),u(i+1))/Q(i)
                              -RooCubicSplineKnot::S_jk(u(i-1),u(i  ),u(i+2))/R(i)
-                             -RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i+3))/S(i) );
-            _S_jk.push_back(  RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i  ))/S(i) );
+                             -RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i+3))/S(i) ); // C
+            _S_jk.push_back(  RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i  ))/S(i) ); // D
         }
     }
     using RooCubicSplineKnot_aux::get;

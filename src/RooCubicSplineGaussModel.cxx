@@ -89,12 +89,13 @@ namespace {
             assert(0<=k&&k<3);
             switch(k) {
                 case 0: return j==0 ? 1 : 0 ;
-                case 1: switch(j) {
+                case 1: switch(j) { 
                         case 0 : return  0;
-                        case 1 : return -2/rootpi;
-                        case 2 : return -4*_x/rootpi;
-                        case 3 : return -4*(_x*_x-1)/rootpi;
-                        default : assert(1==0); return 0;
+                        default : return 2*(*this)(j-1,2)/rootpi;
+                        //case 1 : return -2/rootpi; // TODO: (j,1) = sqrt(4/pi)*(j-1,2) iff j>0
+                        //case 2 : return -4*_x/rootpi;
+                        // case 3 : return -4*(2*_x*_x-1)/rootpi;
+                        //default : assert(1==0); return 0;
                 }
                 case 2: switch(j) {
                         case 0 : return -1;
@@ -216,13 +217,20 @@ std::complex<double> RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t u
     RooCubicSplineGaussModel::K_n K(z);
     Double_t scale = sigma*ssf*TMath::Sqrt2(); 
     Double_t offset = mean*msf;
+    assert(sp.knotSize()>1);
     std::vector<M_n> M; M.reserve( sp.knotSize() );
-    for (unsigned int i=0;i<sp.knotSize();++i) M.push_back( M_n( (sp.u(i)-offset)/scale, z ) );
-    std::complex<double> sum(0,0);
+    for (unsigned int i=0;i<sp.knotSize();++i) {
+        double u = (sp.u(i)-offset)/scale ;
+        assert( u>=umin );
+        assert( u<=umax );
+        M.push_back( M_n( (sp.u(i)-offset)/scale, z ) );
+    }
     double sc[4]; for (int i=0;i<4;++i) sc[i] = pow(scale,i);
-    for (int i=0;i<int(sp.knotSize())-1;++i) {
-        //TODO: push this loop into RooCubicSplineFun... pass z,scale,coefficients
-        sum = sum + sp.gaussIntegral( i,  M[i+1] - M[i], K, offset, sc );
+    std::complex<double> sum(0,0);
+    for (unsigned i=0;i<sp.knotSize()-1;++i) {
+        complex<double> I = sp.gaussIntegral( i,  M[i+1] - M[i], K, offset, sc );
+        //cout << " analytical integral from " << sp.u(i) << " to " << sp.u(i+1) << " = " <<  I << endl;
+        sum += I ;
     }
     return sum;
 }
