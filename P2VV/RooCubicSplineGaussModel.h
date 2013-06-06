@@ -16,9 +16,9 @@
 #ifndef ROO_CS_GAUSS_MODEL
 #define ROO_CS_GAUSS_MODEL
 
+#include <complex>
 #include <RooResolutionModel.h>
 #include <RooRealProxy.h>
-#include <RooComplex.h>
 
 #include <P2VV/RooAbsEffResModel.h>
 
@@ -55,36 +55,36 @@ public:
   // TODO: push these into RooCubicSplineFUn...
   class M_n {
   public:
-        M_n(double x, const RooComplex& z) ;
-        const RooComplex& operator()(int i) const { assert(0<=i&&i<4); return _m[i]; }
+        M_n(double x, const std::complex<double>& z) ;
+        const std::complex<double>& operator()(int i) const { assert(0<=i&&i<4); return _m[i]; }
         M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
         M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
   private:
-        RooComplex _m[4];
+        std::complex<double> _m[4];
   };
   class K_n {
   public:
-      K_n(const RooComplex& z) : _zi( RooComplex(1,0)/z) {}
-      RooComplex operator()(int i) const {
+      K_n(const std::complex<double>& z) : _zi( std::complex<double>(1,0)/z) {}
+      std::complex<double> operator()(int i) const {
           assert(0<=i&&i<=3);
           switch(i) {
-              case 0 : return _zi/2;
-              case 1 : return _zi*_zi/2;
-              case 2 : return _zi*(_zi*_zi+1);
-              case 3 : RooComplex _zi2 = _zi*_zi; return _zi2*(RooComplex(3,0)+RooComplex(3,0)*_zi2);
+              case 0 : return 0.5*_zi;
+              case 1 : return 0.5*_zi*_zi;
+              case 2 : return _zi*(_zi*_zi+1.0);
+              case 3 : std::complex<double> _zi2 = _zi*_zi; return _zi2*(std::complex<double>(3,0)+std::complex<double>(3,0)*_zi2);
           }
           assert(1==0);
           return 0;
       }
   private :
-      RooComplex _zi;        
+      std::complex<double> _zi;        
   };
 
 private:
 
   virtual Double_t evaluate() const ;
 
-  RooComplex evalInt(Double_t xmin, Double_t xmax, const RooComplex& z) const;
+  std::complex<double> evalInt(Double_t xmin, Double_t xmax, const std::complex<double>& z) const;
 
   Bool_t _flatSFInt ;
   

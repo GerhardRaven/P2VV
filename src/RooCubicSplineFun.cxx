@@ -21,6 +21,7 @@
 //
 // STD & STL
 #include <cmath>
+#include <complex>
 #include <iterator>
 #include <algorithm>
 #include <sstream>
@@ -179,14 +180,14 @@ Int_t RooCubicSplineFun::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& an
   return 0;
 }
 
-RooComplex  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
+std::complex<double>  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
                                              const RooCubicSplineGaussModel::K_n& K, double offset,
                                              double* sc) const 
 {
-        RooComplex sum(0,0);
+        std::complex<double> sum(0,0);
         RooCubicSplineKnot::S_jk S( _aux.S_jk_sum( i, _coefList ), offset );
         for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) {
-            sum = sum + dM(j)*S(j,k)*K(k)*sc[j+k];
+            sum += dM(j)*S(j,k)*K(k)*sc[j+k];
         }
         return sum;
 }

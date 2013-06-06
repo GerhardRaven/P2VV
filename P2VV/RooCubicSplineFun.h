@@ -50,7 +50,7 @@ public:
   Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
 
   // for use in RooCubicSplineGaussModel...
-  RooComplex gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
+  std::complex<double> gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
                            const RooCubicSplineGaussModel::K_n& K,
                            double offset, double* sc) const ;
   unsigned knotSize() const { return _aux.size(); }
