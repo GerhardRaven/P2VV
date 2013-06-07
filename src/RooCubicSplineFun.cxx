@@ -29,6 +29,8 @@
 // ROOT
 #include "TMath.h"
 #include "TH1.h"
+#include "TGraph.h"
+#include "TGraphErrors.h"
 
 // RooFit
 #include "RooFit.h"
@@ -96,6 +98,27 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, RooRea
 
 //_____________________________________________________________________________
 RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, 
+                                     RooRealVar& x, const TGraph* graph, bool constCoeffs) :
+  RooAbsReal(name, title),
+  _x("x", "Dependent", this, x),
+  _coefList("coefficients","List of coefficients",this),
+  _aux(0,0)
+{
+    int nPoints = graph->GetN();
+    vector<double> centres, values;
+    for (int i=0;i<nPoints ;++i) {
+        double x,y;
+        graph->GetPoint(i,x,y);
+        centres.push_back(x);
+        values.push_back(y);
+    }
+   _aux = RooCubicSplineKnot( centres.begin(), centres.end() );
+    vector<double> errs;
+    init(name, values, errs, 0, constCoeffs);
+}
+
+//_____________________________________________________________________________
+RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, 
                                      RooRealVar& x, const TH1* hist, double smooth,
                                      bool constCoeffs) :
   RooAbsReal(name, title),
@@ -114,6 +137,30 @@ RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title,
 
     vector<double> errs;
     if (smooth>0) for (int i=0;i<nBins ;++i) errs.push_back(hist->GetBinError(1+i));
+    
+    init(name, values, errs, smooth, constCoeffs);
+}
+//_____________________________________________________________________________
+RooCubicSplineFun::RooCubicSplineFun(const char* name, const char* title, 
+                                     RooRealVar& x, const TGraphErrors* graph, double smooth,
+                                     bool constCoeffs) :
+  RooAbsReal(name, title),
+  _x("x", "Dependent", this, x),
+  _coefList("coefficients","List of coefficients",this),
+  _aux(0,0)
+{
+    int nPoints = graph->GetN();
+    vector<double> centres, values;
+    for (int i=0;i<nPoints ;++i) {
+        double x,y;
+        graph->GetPoint(i,x,y);
+        centres.push_back(x);
+        values.push_back(y);
+    }
+   _aux = RooCubicSplineKnot( centres.begin(), centres.end() );
+
+    vector<double> errs;
+    if (smooth>0) for (int i=0;i<nPoints ;++i) errs.push_back(graph->GetErrorY(i));
     
     init(name, values, errs, smooth, constCoeffs);
 }

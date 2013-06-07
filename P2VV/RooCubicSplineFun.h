@@ -22,6 +22,8 @@
 class RooRealVar;
 class RooArgList ;
 class TH1;
+class TGraph;
+class TGraphErrors;
 
 class RooCubicSplineFun : public RooAbsReal {
 public:
@@ -31,10 +33,14 @@ public:
                     const std::vector<double>& values,
                     const std::vector<double>& errors = std::vector<double>(),
                     double smooth = 0, bool constCoeffs = true);
+  RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TGraph* graph,
+                    bool constCoeffs = true);
   // smooth = 0: no smoothing, interpolating spline
   // smooth = Infty: extreme smoothing, resulting in a straight line (as the 2nd derivative is forced to zero)
   // TODO: map [0,Infty] -> [0,1]
   RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TH1* hist,
+                    double smooth = 0, bool constCoeffs = true);
+  RooCubicSplineFun(const char* name, const char* title, RooRealVar& x, const TGraphErrors* graph,
                     double smooth = 0, bool constCoeffs = true);
   RooCubicSplineFun(const char *name, const char *title, RooRealVar& x,
                     const char *knotBinningName, const RooArgList& coefList) ;
