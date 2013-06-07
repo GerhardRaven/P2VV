@@ -433,32 +433,33 @@ def printEventYields( **kwargs ) :
             catState = catIter.Next()
 
     # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
-    print '                  | total |        signal       |     background      |        S/B        |       S/(S+B)     |   S/sqrt(S+B)   '
-    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
+    print '|'.join( ( '{0:^%ds}' % width ).format(title) for ( title, width ) in [ ( '', 18 ), ( 'total', 7 ) ]\
+                   + [ ( name if num == 21 else 'f(' + name + ')', num ) for it, name in enumerate(yieldNames) for num in ( 21, 19 ) ] )
+    print '|'.join( dashes for dashes in [ ' ' * 4 + '-' * 14, '-' * 7 ]\
+                   + [ '-' * num for it in range( len(yieldNames) ) for num in ( 21, 19 ) ] )
     for cat in iters.iterkeys() : iters[cat] = 0
     cont = True
     while cont :
         stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
         yields = [ getSplitPar( name, ( '{%s}' % stateName ) if stateName else '', parSet ) for name in yieldNames ]
-
-        nEv = [ yieldVar.getVal() for yieldVarin yields ]
+        nEv = [ yieldVar.getVal() for yieldVar in yields ]
+        nEvTot = sum(nEv)
         
 
         nSigEv = sigYield.getVal()
         nBkgEv = bkgYield.getVal()
         nEv    = nSigEv + nBkgEv
         S_SB   = nSigEv / nEv
-        S_B    = nSigEv / nBkgEv
-        signif = nSigEv / sqrt(nEv)
 
         nSigErr     = sigYield.getError()
-        nSigErrCorr = sqrt( nSigErr**2 - nSigEv**2 / nEv )
-        S_SBErr     = nSigErrCorr / nEv
-        S_BErr      = S_SBErr / ( 1 - S_SB )**2
-        signifErr   = S_SBErr * sqrt(nEv)
-        print '    %13s | %5.0f | %8.2f +/- %6.2f | %8.2f +/- %6.2f | %6.4f +/- %6.4f | %6.4f +/- %6.4f | %6.2f +/- %4.2f'\
-               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nSigErrCorr\
-                  , nBkgEv, nSigErrCorr, S_B, S_BErr, S_SB, S_SBErr, signif, signifErr )
+        nSigErrCorr = sqrt( nSigErr**2 - nSigEv**2 / nEvTot )
+        S_SBErr     = nSigErrCorr / nEvTot
+
+
+
+        print '    %13s | %5.0f | %8.2f +/- %6.2f | %8.2f +/- %6.2f | %6.4f +/- %6.4f'\
+               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEvTot, nSigEv, nSigErrCorr, nBkgEv, nSigErrCorr\
+                  , S_SB, S_SBErr )
 
         iters[ splitCats[-1] ] += 1
         for catIt in range( len(splitCats) ) :
@@ -471,6 +472,7 @@ def printEventYields( **kwargs ) :
             else :
                 continue
     print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
+    print
 
 
 def printEventYieldsData() :
