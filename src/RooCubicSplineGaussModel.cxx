@@ -33,7 +33,6 @@
 #include "P2VV/RooCubicSplineGaussModel.h"
 #include "P2VV/RooCubicSplineFun.h"
 #include "RooMath.h"
-#include "RooComplex.h"
 #include "RooRealConstant.h"
 #include "RooRandom.h"
 
@@ -48,37 +47,37 @@ namespace {
                    , sinhBasis=63, coshBasis=53 };
     static const Double_t rootpi(sqrt(TMath::Pi())) ;
 
-    RooComplex evalApprox(Double_t x, const RooComplex& z) {
+    std::complex<double> evalApprox(Double_t x, const std::complex<double>& z) {
       // compute exp(-x^2)cwerf(-i(z-x)), cwerf(z) = exp(-z^2)erfc(-iz)
       // use the approximation: erfc(z) = exp(-z*z)/(sqrt(pi)*z)
       // to explicitly cancel the divergent exp(y*y) behaviour of
       // CWERF for z = x + i y with large negative y
-      static const RooComplex mi(0,-1);
-      RooComplex zp  = mi*(z-x);
-      RooComplex zsq = zp*zp;
-      RooComplex v = -zsq - x*x;
-      RooComplex iz(z.im()+x,z.re()-x); // ???
-      return v.exp()*(zsq.exp()/(iz*rootpi) + 1)*2 ;
+      static const std::complex<double> mi(0,-1);
+      std::complex<double> zp  = mi*(z-x);
+      std::complex<double> zsq = zp*zp;
+      std::complex<double> v = -zsq - x*x;
+      std::complex<double> iz(z.imag()+x,z.real()-x); // ???
+      return exp(v)*(exp(zsq)/(iz*rootpi) + 1.)*2. ;
     }
 
     // Calculate Re[exp(-x^2) cwerf(i (z-x) )], taking care of numerical instabilities
-    Double_t evalRe(Double_t x, const RooComplex& z) {
-      Double_t re =  z.re()-x;
-      return (re>-5.0) ? RooMath::FastComplexErrFuncRe(RooComplex(-z.im(),re))*exp(-x*x) 
-                       : evalApprox(x,z).re() ;
+    Double_t evalRe(Double_t x, const std::complex<double>& z) {
+      Double_t re =  z.real()-x;
+      return (re>-5.0) ? RooMath::faddeeva_fast(std::complex<double>(-z.imag(),re)).real()*exp(-x*x) 
+                       : evalApprox(x,z).real() ;
     }
 
     // Calculate Im[exp(-x^2) cwerf(i(z-x))], taking care of numerical instabilities
-    Double_t evalIm(Double_t x, const RooComplex& z) {
-      Double_t re = z.re()-x;
-      return (re>-5.0) ? RooMath::FastComplexErrFuncIm(RooComplex(-z.im(),re))*exp(-x*x) 
-                       : evalApprox(x,z).im() ;
+    Double_t evalIm(Double_t x, const std::complex<double>& z) {
+      Double_t re = z.real()-x;
+      return (re>-5.0) ? RooMath::faddeeva_fast(std::complex<double>(-z.imag(),re)).imag()*exp(-x*x) 
+                       : evalApprox(x,z).imag() ;
     }
 
     // Calculate exp(-x^2) cwerf(i(z-x)), taking care of numerical instabilities
-    RooComplex eval(Double_t x, const RooComplex& z) {
-      Double_t re = z.re()-x;
-      return (re>-5.0) ? RooMath::FastComplexErrFunc(RooComplex(-z.im(),re))*exp(-x*x) 
+    std::complex<double> eval(Double_t x, const std::complex<double>& z) {
+      Double_t re = z.real()-x;
+      return (re>-5.0) ? RooMath::faddeeva_fast(std::complex<double>(-z.imag(),re))*exp(-x*x) 
                        : evalApprox(x,z) ;
     }
 
@@ -90,12 +89,13 @@ namespace {
             assert(0<=k&&k<3);
             switch(k) {
                 case 0: return j==0 ? 1 : 0 ;
-                case 1: switch(j) {
+                case 1: switch(j) { 
                         case 0 : return  0;
-                        case 1 : return -2/rootpi;
-                        case 2 : return -4*_x/rootpi;
-                        case 3 : return -4*(_x*_x-1)/rootpi;
-                        default : assert(1==0); return 0;
+                        default : return 2*(*this)(j-1,2)/rootpi;
+                        //case 1 : return -2/rootpi; // TODO: (j,1) = sqrt(4/pi)*(j-1,2) iff j>0
+                        //case 2 : return -4*_x/rootpi;
+                        // case 3 : return -4*(2*_x*_x-1)/rootpi;
+                        //default : assert(1==0); return 0;
                 }
                 case 2: switch(j) {
                         case 0 : return -1;
@@ -113,8 +113,8 @@ namespace {
 
 }
 
-RooCubicSplineGaussModel::M_n::M_n(double x, const RooComplex& z) {
-          RooComplex N0( RooMath::erf(x) )
+RooCubicSplineGaussModel::M_n::M_n(double x, const std::complex<double>& z) {
+          std::complex<double> N0( RooMath::erf(x) )
                    , N1( exp(-x*x)       )
                    , N2( eval(x,z)       );
           // TODO: eliminate L_jk all together...
@@ -209,7 +209,7 @@ const RooArgSet* RooCubicSplineGaussModel::observables() const {
 }
 
 //_____________________________________________________________________________
-RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const RooComplex& z) const
+std::complex<double> RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const std::complex<double>& z) const
 {
     const RooCubicSplineFun &sp = dynamic_cast<const RooCubicSplineFun&>( eff.arg() );
     //TODO: verify we remain within [umin,umax]
@@ -217,13 +217,20 @@ RooComplex RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t umax, const
     RooCubicSplineGaussModel::K_n K(z);
     Double_t scale = sigma*ssf*TMath::Sqrt2(); 
     Double_t offset = mean*msf;
+    assert(sp.knotSize()>1);
     std::vector<M_n> M; M.reserve( sp.knotSize() );
-    for (unsigned int i=0;i<sp.knotSize();++i) M.push_back( M_n( (sp.u(i)-offset)/scale, z ) );
-    RooComplex sum(0,0);
+    for (unsigned int i=0;i<sp.knotSize();++i) {
+        double u = (sp.u(i)-offset)/scale ;
+        assert( u>=umin );
+        assert( u<=umax );
+        M.push_back( M_n( (sp.u(i)-offset)/scale, z ) );
+    }
     double sc[4]; for (int i=0;i<4;++i) sc[i] = pow(scale,i);
-    for (int i=0;i<int(sp.knotSize())-1;++i) {
-        //TODO: push this loop into RooCubicSplineFun... pass z,scale,coefficients
-        sum = sum + sp.gaussIntegral( i,  M[i+1] - M[i], K, offset, sc );
+    std::complex<double> sum(0,0);
+    for (unsigned i=0;i<sp.knotSize()-1;++i) {
+        complex<double> I = sp.gaussIntegral( i,  M[i+1] - M[i], K, offset, sc );
+        //cout << " analytical integral from " << sp.u(i) << " to " << sp.u(i+1) << " = " <<  I << endl;
+        sum += I ;
     }
     return sum;
 }
@@ -254,7 +261,7 @@ Double_t RooCubicSplineGaussModel::evaluate() const
     if (verboseEval()>2) cout << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") 2nd form" << endl ;
     return 0. ;
   }
-  RooComplex z( double(1)/tau, -omega ); z=z*scale/2;
+  std::complex<double> z( double(1)/tau, -omega ); z*=0.5*scale;
  
   Double_t val(0);
   if (verboseEval()>2) cout << "RooCubicSplineGaussModel::evaluate(" << GetName() << ") basisCode = " <<  basisCode << " z = " << z << ", u = " << u << endl ;
@@ -265,11 +272,11 @@ Double_t RooCubicSplineGaussModel::evaluate() const
         val +=             evalRe(u,z);
         break;
     case sinBasis:
-        val += z.im()!=0 ? evalIm(u,z) : 0;
+        val += z.imag()!=0 ? evalIm(u,z) : 0;
         break;
     case coshBasis:
     case sinhBasis: {
-        RooComplex y( scale * dGamma / 4 , 0 );
+        std::complex<double> y( scale * dGamma / 4 , 0 );
         val += (                                      evalRe(u,z-y)
                + ( basisCode == coshBasis ? +1 : -1 )*evalRe(u,z+y) )/2; 
         break;
@@ -340,7 +347,7 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
     return 0. ;
   }
 
-  RooComplex z( double(1)/tau, -omega ); z=z*scale/2;
+  std::complex<double> z( double(1)/tau, -omega ); z=0.5*z*scale;
 
   if (verboseEval()>0) cout << "RooCubicSplineGaussModel::analyticalIntegral(" << GetName() << ") basisCode = " << basisCode << " z = " << z << endl ;
 
@@ -348,16 +355,16 @@ Double_t RooCubicSplineGaussModel::analyticalIntegral(Int_t code, const char* ra
   switch (basisCode) {
     case expBasis:
     case cosBasis:
-        result +=             evalInt(umin,umax,z).re();
+        result +=             evalInt(umin,umax,z).real();
         break;
     case sinBasis:
-        result += z.im()!=0 ? evalInt(umin,umax,z).im() : 0 ;
+        result += z.imag()!=0 ? evalInt(umin,umax,z).imag() : 0 ;
         break;
     case coshBasis:
     case sinhBasis: {
-        RooComplex y( scale * dGamma / 4 , 0 );
-        result += (                                      evalInt(umin,umax,z-y).re()
-                  + ( basisCode == coshBasis ? +1 : -1 )*evalInt(umin,umax,z+y).re() )/2;
+        std::complex<double> y( scale * dGamma / 4 , 0 );
+        result += 0.5 * (                                      evalInt(umin,umax,z-y).real()
+                        + ( basisCode == coshBasis ? +1 : -1 )*evalInt(umin,umax,z+y).real() );
         break;
     }
     default: 

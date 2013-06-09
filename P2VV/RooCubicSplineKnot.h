@@ -26,7 +26,7 @@ public:
 
     class S_jk {
     public:
-        S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
+        S_jk(double a, double b, double c) : t(a*b*c), d(0.5*(a*b+a*c+b*c) ), s( 0.25*(a+b+c) ), o(0.125) { }
         S_jk(const S_jk& other, double offset=0) : t(other.t), d(other.d), s(other.s), o(other.o) {
             if (!offset) return;
             t+=offset*(-2*d+offset*(4*s-offset*o*8));
@@ -95,6 +95,7 @@ private:
     double cub(double x) const { return x*sqr(x); }
     double qua(double x) const { return sqr(sqr(x)); }
     double d(double _u, int j) const { return _u-u(j); }
+    double d(double _u, int i, int j, int k) const { return d(_u,i)*d(_u,j)*d(_u,k); }
     double h(int i, int j) const { return u(i)-u(j); }
     double h(int i) const { return h(i+1,i); }
     double r(int i) const { return double(3)/h(i); }
