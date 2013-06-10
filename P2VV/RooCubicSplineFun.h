@@ -55,6 +55,10 @@ public:
   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const;
   Double_t analyticalIntegral(Int_t code, const char* rangeName) const;
 
+  Int_t getMaxVal(const RooArgSet& vars) const;
+  Double_t maxVal(Int_t code) const;
+
+
   // for use in RooCubicSplineGaussModel...
   std::complex<double> gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
                            const RooCubicSplineGaussModel::K_n& K,
