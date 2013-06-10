@@ -257,3 +257,23 @@ Double_t RooCubicSplineFun::analyticalIntegral(Int_t code, const char* /* rangeN
   return _aux.analyticalIntegral(_coefList);
 }
 
+
+//_____________________________________________________________________________
+Int_t RooCubicSplineFun::getMaxVal(const RooArgSet& vars) const
+{
+    // check that vars only contains _x...
+    return ( vars.getSize() == 1 && vars.contains( _x.arg() ) ) ? 1 : 0;
+}
+//_____________________________________________________________________________
+Double_t RooCubicSplineFun::maxVal(Int_t code) const
+{
+    assert(code==1);
+    RooFIter iter = _coefList.fwdIterator();
+    RooAbsReal *c(0);
+    double res = 0;
+    while((c=(RooAbsReal*)iter.next())) {
+          double x = fabs(c->getVal());
+          if (x>res)  { res = x; }
+    }
+    return res;
+}
