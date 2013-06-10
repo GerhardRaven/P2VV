@@ -221,27 +221,27 @@ std::complex<double> RooCubicSplineGaussModel::evalInt(Double_t umin, Double_t u
         assert( u<=umax );
         M.push_back( M_n( (sp.u(i)-offset)/scale, z ) );
     }
-    cout << "knots run from " << sp.u(0) << " ( " << (sp.u(0)-offset)/scale  << " )" 
-                 <<    " to " << sp.u(sp.knotSize()-1) << " ( " << (sp.u(sp.knotSize()-1)-offset)/scale << ")" <<endl;
-    cout << "requested integral goes from " << umin << " to " << umax << endl;
+    //cout << "knots run from " << sp.u(0) << " ( " << (sp.u(0)-offset)/scale  << " )" 
+    //             <<    " to " << sp.u(sp.knotSize()-1) << " ( " << (sp.u(sp.knotSize()-1)-offset)/scale << ")" <<endl;
+    //cout << "requested integral goes from " << umin << " to " << umax << endl;
     double sc[4]; for (int i=0;i<4;++i) sc[i] = pow(scale,i);
     std::complex<double> sum(0,0);
     for (unsigned i=0;i<sp.knotSize()-1;++i) {
         complex<double> I = sp.gaussIntegral( i,  M[i+1] - M[i], K, offset, sc );
-        cout << " analytical integral from " << sp.u(i) << " to " << sp.u(i+1) << " = " <<  I << endl;
+        //cout << " analytical integral from " << sp.u(i) << " to " << sp.u(i+1) << " = " <<  I << endl;
         sum += I ;
     }
 
     double lo = scale*umin+offset;
     if (lo<sp.u(0)) {
         complex<double> I = sp.gaussIntegralE(true,  M.front() - M_n( umin,z) , K, offset, sc);
-        cout << " analytical integral from " << lo << " to " << sp.u(0) << " = " <<  I << endl;
+        // cout << " analytical integral from " << lo << " to " << sp.u(0) << " = " <<  I << endl;
         sum += I;
     }
     double hi = scale*umax+offset;
     if (hi>sp.u(sp.knotSize()-1)) {
         complex<double> I = sp.gaussIntegralE(false,  M_n(umax,z)-M.back() , K, offset, sc);
-        cout << " analytical integral from " << sp.u(sp.knotSize()-1) << " to " << hi << " = " <<  I << endl;
+        // cout << " analytical integral from " << sp.u(sp.knotSize()-1) << " to " << hi << " = " <<  I << endl;
         sum += I;
     }
     return sum;

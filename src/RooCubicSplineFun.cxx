@@ -229,6 +229,14 @@ Int_t RooCubicSplineFun::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& an
   if (matchArgs(allVars, analVars, _x)) return 1;
   return 0;
 }
+complex<double>  RooCubicSplineFun::gaussIntegralE(bool left, const RooCubicSplineGaussModel::M_n& dM,
+                                             const RooCubicSplineGaussModel::K_n& K, double offset,
+                                             double* sc) const 
+{
+        RooCubicSplineKnot::S_edge s_jk( _aux.S_jk_edge( left, _coefList ), offset );
+        return dM(0)*( s_jk(0,0) * K(0) * sc[0] + s_jk(0,1) * K(1) * sc[1] ) 
+             + dM(1)*( s_jk(1,0) * K(0) * sc[1]                            );
+}
 
 complex<double>  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
                                              const RooCubicSplineGaussModel::K_n& K, double offset,
@@ -236,16 +244,6 @@ complex<double>  RooCubicSplineFun::gaussIntegral(int i, const RooCubicSplineGau
 {
         complex<double> sum(0,0);
         RooCubicSplineKnot::S_jk s_jk( _aux.S_jk_sum( i, _coefList ), offset );
-        if (false) {
-        for (int j=0;j<4;++j) { cout << "dM("<<j<<")="<<dM(j)<<endl; }
-        for (int j=0;j<4;++j) { cout << "K("<<j<<")="<<K(j)<<endl; }
-        cout << "S=" << endl;
-        for (int j=0;j<4;++j) { 
-                    for (int k=0;k<4-j;++k) cout << "  " << s_jk(j,k) ;
-                    cout << endl;
-        }
-}
-
         for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum += dM(j)*s_jk(j,k)*K(k)*sc[j+k];
         return sum;
 }
