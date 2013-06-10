@@ -193,3 +193,18 @@ RooCubicSplineKnot::S_jk RooCubicSplineKnot::S_jk_sum(int i, const RooArgList& b
          + get(_S_jk,i,3)*get(b,i,3);
 }
 
+// S matrix for natural extrapolation beyond the first/last knot...
+RooCubicSplineKnot::S_edge RooCubicSplineKnot::S_jk_edge(bool left, const RooArgList& b) const {
+       using RooCubicSplineKnot_aux::get;
+       if (left) {
+         // efficiency = return evaluate(u(0),b) - d(x,0)*r(0)*(get(b,0,0)-get(b,0,1)); 
+         double alpha = -r(0)*(get(b,0,0)-get(b,0,1));
+         double beta = evaluate(u(0),b)-alpha*u(0);
+         return S_edge( alpha, beta );
+       } else {
+         int i = size()-1;
+         double alpha = r(i-1)*(get(b,i,2)-get(b,i,1));
+         double beta = evaluate(u(i),b)-alpha*u(i);
+         return S_edge(alpha,beta);
+       }
+}

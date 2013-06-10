@@ -65,6 +65,28 @@ public:
     // S matrix for i-th interval
     RooCubicSplineKnot::S_jk S_jk_sum(int i, const RooArgList& b) const ;
 
+    class S_edge {
+    public:
+        S_edge(double a, double b ) : alpha(a), beta(b) {}
+        S_edge(const S_edge& other, double offset=0) : alpha(other.alpha), beta(other.beta) {
+            assert(offset==0); // TODO: fix me!
+        }
+        double operator()(int j, int k) const {
+            assert(0<=j&&j<2);
+            assert(0<=k&&k<2-j);
+            if (j>k) std::swap(j,k);
+            switch(j+k) {
+                case 0: return   beta;   // (0,0)
+                case 1: return   0.5*alpha;   // (0,1),(1,0)
+                default : assert(1==0);
+            }
+        }
+    private:
+       double alpha,beta;
+    };
+
+    RooCubicSplineKnot::S_edge S_jk_edge(bool left, const RooArgList& b) const;
+
 private:
     int index(double _u) const;
     double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }
