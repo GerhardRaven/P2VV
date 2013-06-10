@@ -762,9 +762,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._massFitResult.covarianceMatrix().Print()
             self._massFitResult.correlationMatrix().Print()
 
+            splitCats = [ [ ] ]
             if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or paramKKMass == 'simultaneous' ) :
                 # categories for splitting the PDF
-                splitCats = [ [ ] ]
                 splitCats[0] += [ hlt1ExclB ] if selection == 'paper2012' else [ hlt1ExclB, hlt2B ] if selection == 'timeEffFit' else [ ]
                 splitCats[0] += [ self._KKMassCat ] if paramKKMass == 'simultaneous' else [ ]
 
@@ -783,13 +783,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                       )
 
                 # set yields for categories
-                splitCat     = self._sWeightMassPdf.indexCat()
-                splitCatIter = splitCat.typeIterator()
+                splitCat      = self._sWeightMassPdf.indexCat()
+                splitCatIter  = splitCat.typeIterator()
                 splitCatState = splitCatIter.Next()
-                splitCatPars = self._sWeightMassPdf.getVariables()
+                massPdfPars   = self._sWeightMassPdf.getVariables()
                 while splitCatState :
-                    sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', splitCatState.GetName(), splitCatPars )
-                    bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    splitCatState.GetName(), splitCatPars )
+                    sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', splitCatState.GetName(), massPdfPars )
+                    bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    splitCatState.GetName(), massPdfPars )
 
                     if splitCat.isFundamental() :
                         selStr = '!(%s-%d)' % ( splitCat.GetName(), splitCatState.getVal() )
@@ -887,7 +887,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         par.setConstant(False)
 
             else :
-                splitCatPars = None
+                massPdfPars = self._massPdf.getVariables()
                 self._sWeightMassPdf = self._massPdf
 
 
@@ -915,6 +915,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 dataFile.Close()
 
             # print signal/background info to screen
+            allCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
+                       , self._dataSets['data'].get().find( hlt2B.GetName() )
+                      ]
+            if hasattr( self, '_KKMassCat' ) and paramKKMass == 'simultaneous' :
+                allCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
+            allCats = [ cat for cat in allCats if cat ]
+
+            from P2VV.GeneralUtils import printEventYields, printEventYieldsData
+            for dataSet in self._dataSets.itervalues() : dataSet.Print()
+            printEventYields(  ParameterSet        = massPdfPars
+                             , YieldNames          = [ 'N_sigMass', 'N_bkgMass' ]
+                             , SplittingCategories = [ cat for catList in splitCats for cat in catList ]
+                            )
+            printEventYieldsData(  FullDataSet         = self._dataSets['SWeightData']
+                                 , WeightedDataSets    = [ self._dataSets[name] for name in [ 'sigSWeightData', 'bkgSWeightData' ] ]
+                                 , DataSetNames        = [ 'Signal', 'Background' ]
+                                 , SplittingCategories = allCats
+                                )
 
             # create signal and background data sets with side band ranges
             self._dataSets['sigRangeData'] = self._dataSets['data'].reduce( CutRange = 'Signal'       )
