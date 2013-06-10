@@ -98,9 +98,7 @@ void RooEffConvGenContext::generateEvent(RooArgSet &theEvent, Int_t remaining)
       // Construct smeared convolution variable
       Double_t convValSmeared = _cvPdf->getVal() + _cvModel->getVal() ;
 
-      if (!_cvOut->isValidReal(convValSmeared)) {
-         continue;
-      } 
+      if (!_cvOut->isValidReal(convValSmeared)) continue;
       
       // Hit-miss on the efficiency
       // This has to be set first to get the proper value of the efficiency
@@ -129,6 +127,7 @@ void RooEffConvGenContext::initEfficiency()
    const RooAbsEffResModel* model = dynamic_cast<const RooAbsEffResModel*>(_modelCloneSet->first());
    assert(model);
    std::vector<const RooAbsReal*> efficiencies = model->efficiencies();
+   _maxEff = 0.;
    for (std::vector<const RooAbsReal*>::const_iterator it = efficiencies.begin(),
            end = efficiencies.end(); it != end; ++it) {
       const RooAbsReal* efficiency = *it;
