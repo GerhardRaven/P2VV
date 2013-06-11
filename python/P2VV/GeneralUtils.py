@@ -408,6 +408,164 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
     dataSet.addColumn(phiTr)
 
 
+def printEventYields( **kwargs ) :
+    # get arguments
+    parSet     = kwargs.pop( 'ParameterSet',        [ ] )
+    yieldNames = kwargs.pop( 'YieldNames',          [ ] )
+    splitCats  = kwargs.pop( 'SplittingCategories', [ ] )
+
+    assert parSet,     'P2VV - ERROR: printEventYields: no parameter set with yield variables found in arguments ("ParameterSet")'
+    assert yieldNames, 'P2VV - ERROR: printEventYields: no yield names found in arguments ("YieldNames")'
+
+    if splitCats : splitCats = list( set( cat for cat in splitCats ) )
+
+    # variables for looping over splitting category states
+    iters = { }
+    inds  = { }
+    labs  = { }
+    for cat in splitCats :
+        iters[cat] = 0
+        inds[cat]  = [ ]
+        labs[cat]  = [ ]
+        catIter = cat.typeIterator()
+        catState = catIter.Next()
+        while catState :
+            inds[cat].append( catState.getVal() )
+            labs[cat].append( catState.GetName() )
+            catState = catIter.Next()
+
+    # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
+    print
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+    print ' '.join( ( '{0:^%ds}' % width ).format(title) for ( title, width ) in [ ( '', 26 ), ( ' total', 8 ) ]\
+                   + [ ( name if num == 23 else 'f(' + name + ')', num ) for name in yieldNames for num in ( 23, 19 ) ] )
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+
+    cont = True
+    while cont :
+        stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
+        yields = [ getSplitPar( name, ( '{%s}' % stateName ) if stateName else '', parSet ) for name in yieldNames ]
+
+        from math import sqrt
+        nEv        = [ yieldVar.getVal()   for yieldVar in yields ]
+        nEvErr     = [ yieldVar.getError() for yieldVar in yields ]
+        nEvTot     = sum(nEv)
+        frac       = [ num / nEvTot if nEvTot > 0. else 0. for num in nEv ]
+        nEvCorrErr = [ sqrt( numErr**2 - num**2 / nEvTot ) for num, numErr in zip( nEv, nEvErr ) ]
+        fracErr    = [ err / nEvTot if nEvTot > 0. else 0. for err in nEvCorrErr ]
+
+        print '     {0:>20s}   {1:>6.0f}  '.format( stateName, nEvTot )\
+              + ' '.join( ' {0:>9.2f} +/- {1:>7.2f}   {2:>6.4f} +/- {3:>6.4f} '.format( num, err, fr, frErr )\
+                         for ( num, err, fr, frErr ) in zip( nEv, nEvCorrErr, frac, fracErr ) )
+
+        if not splitCats : break
+
+        iters[ splitCats[-1] ] += 1
+        for catIt in range( len(splitCats) ) :
+            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                if catIt == len(splitCats) - 1 :
+                    cont = False
+                else :
+                    iters[ splitCats[ -catIt - 1 ] ] = 0
+                    iters[ splitCats[ -catIt - 2 ] ] +=1
+            else :
+                continue
+
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+    print
+
+
+def printEventYieldsData( **kwargs ) :
+    # get arguments
+    fullDataSet    = kwargs.pop( 'FullDataSet',         None )
+    weightDataSets = kwargs.pop( 'WeightedDataSets',    [ ]  )
+    dataSetNames   = kwargs.pop( 'DataSetNames',        [ ]  )
+    splitCats      = kwargs.pop( 'SplittingCategories', [ ]  )
+
+    assert fullDataSet,    'P2VV - ERROR: printEventYieldsData: no data set found in arguments ("FullDataSet")'
+    assert weightDataSets, 'P2VV - ERROR: printEventYieldsData: no weighted data sets found in arguments ("WeightedDataSets")'
+    if not dataSetNames : dataSetNames = [ 'data set %d' % it for it, dataSet in enumerate(weightDataSets) ]
+
+    if splitCats : splitCats = list( set( cat for cat in splitCats ) )
+
+    # print total numbers of events
+    from math import sqrt
+    nEvTot = fullDataSet.sumEntries()
+    nEv    = [ dataSet.sumEntries() for dataSet in weightDataSets ]
+    frac   = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
+    signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
+
+    print
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' * 35 + '|' + '|'.join( ' {0:^28} '.format(name) for name in dataSetNames )
+    print ' ' * 27 + '  total |' + '|'.join( ' {0:^9s}   {1:^6s}   {2:^9s} '\
+          .format( 'N_%d' % it, 'f_%d' % it, u'N_%d/\u221AN'.encode('utf-8') % it ) for it, dataSet in enumerate(weightDataSets) )
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( 'total', nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+          .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+
+    if not splitCats :
+        print
+        return
+
+    # print numbers of events per splitting category
+    iters = { }
+    inds  = { }
+    labs  = { }
+    for cat in splitCats :
+        iters[cat] = 0
+        inds[cat]  = [ ]
+        labs[cat]  = [ ]
+        catIter = cat.typeIterator()
+        catState = catIter.Next()
+        while catState :
+            inds[cat].append( catState.getVal() )
+            labs[cat].append( catState.GetName() )
+
+            cut    = '!(%s-%d)' % ( cat.GetName(), inds[cat][-1] )
+            nEvTot = fullDataSet.sumEntries(cut)
+            nEv    = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
+            frac   = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
+            signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
+            print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( labs[cat][-1], nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+                  .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
+
+            catState = catIter.Next()
+
+        print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+
+    if len(splitCats) < 2 :
+        print
+        return
+
+    # print numbers of events for each combination of splitting categories
+    cont = True
+    while cont :
+        stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
+        cut       = '&&'.join( '!(%s-%d)' % ( cat.GetName(), inds[cat][ iters[cat] ] ) for cat in splitCats )
+        nEvTot    = fullDataSet.sumEntries(cut)
+        nEv       = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
+        frac      = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
+        signif    = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
+        print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( stateName, nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+              .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
+
+        iters[ splitCats[-1] ] += 1
+        for catIt in range( len(splitCats) ) :
+            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                if catIt == len(splitCats) - 1 :
+                    cont = False
+                else :
+                    iters[ splitCats[ -catIt - 1 ] ] = 0
+                    iters[ splitCats[ -catIt - 2 ] ] +=1
+            else :
+                continue
+
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print
+
+
 ###########################################################################################################################################
 ## Plots                                                                                                                                 ##
 ###########################################################################################################################################
@@ -1813,7 +1971,7 @@ def getSplitPar( parName, stateName, parSet ) :
         fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
                      for perm in permutations( stateName, len(stateName) ) ]
     else :
-        fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
+        fullNames = [ ( '%s_%s' % ( parName, stateName[0] ) ) if stateName[0] else parName ]
 
     name = lambda par : par if type(par) == str else par.GetName()
     for par in parSet :
