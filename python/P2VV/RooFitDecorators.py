@@ -129,6 +129,7 @@ def __createRooIterator( create_iterator ) :
     return __iter
 
 def __RooDataSetToTree( self, Name = '', Title = '', BranchList = '', RooFitFormat = True ) :
+    from P2VV.Load import P2VVLibrary
     from ROOT import RooDataSetToTree
     return RooDataSetToTree( self, Name, Title, BranchList, RooFitFormat )
 RooDataSet.buildTree = __RooDataSetToTree
