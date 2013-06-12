@@ -161,15 +161,15 @@ class RooObject(object) :
         return self._var
 
     def __cmp__(self, other):
-        o = other if type(other) == str else other.GetName()
+        o = other if type(other) == str else other.GetName() if isinstance( other, RooObject ) else None
         return self.GetName() < o
 
     def __eq__(self, other):
-        o = other if type(other) == str else other.GetName()
+        o = other if type(other) == str else other.GetName() if isinstance( other, RooObject ) else None
         return self.GetName() == o
 
     def __ne__(self, other):
-        o = other if type(other) == str else other.GetName()
+        o = other if type(other) == str else other.GetName() if isinstance( other, RooObject ) else None
         return self.GetName() != o
 
     def __hash__(self):
