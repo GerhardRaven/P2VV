@@ -48,11 +48,18 @@ RooInf = RooNumber.infinity()
 ## Tagging tools ##
 ###################
 
-def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., avgEstWTag = avgEtaOSVal
-                            , P0 = P0OSConstrVal, P1 = P1OSConstrVal, P0Err = P0OSConstrErr, P1Err = P1OSConstrErr
-                            , AP0 = DelP0OSConstrVal / 2. / P0OSConstrVal, AP1 = DelP1OSConstrVal / 2. / P1OSConstrVal ) :
+def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., SameSide = False
+                            , avgEstWTag = None, P0 = None, P1 = None, P0Err = None, P1Err = None, AP0 = None, AP1 = None ) :
     assert data, 'getTagCatParamsFromData(): no data set found'
     assert estWTagName and data.get(0).find(estWTagName), 'getTagCatParamsFromData(): estimated wrong-tag probability not found in data'
+
+    if avgEstWTag == None : avgEstWTag = avgEtaOSVal                         if not SameSide else avgEtaSSVal
+    if P0         == None : P0         = P0OSConstrVal                       if not SameSide else P0SSConstrVal
+    if P1         == None : P1         = P1OSConstrVal                       if not SameSide else P1SSConstrVal
+    if P0Err      == None : P0Err      = P0OSConstrErr                       if not SameSide else P0SSConstrErr
+    if P1Err      == None : P1Err      = P1OSConstrErr                       if not SameSide else P1SSConstrErr
+    if AP0        == None : AP0        = (DelP0OSConstrVal/2./P0OSConstrVal) if not SameSide else (DelP0SSConstrVal/2./P0SSConstrVal)
+    if AP1        == None : AP1        = (DelP1OSConstrVal/2./P1OSConstrVal) if not SameSide else (DelP1SSConstrVal/2./P1SSConstrVal)
 
     from P2VV.RooFitWrappers import RooObject
     if isinstance( avgEstWTag, RooObject ) : avgEstWTag = avgEstWTag.getVal()
