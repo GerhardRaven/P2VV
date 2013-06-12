@@ -4,12 +4,12 @@
 
 nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 nTupleName       = 'DecayTree'
-dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets.root'
+dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
 plotsFilePath    = 'plots/P2VVMassPlots.ps'
 
 selection        = 'paper2012'
 dataSample       = ''
-addTaggingObs    = True
+addTaggingObs    = ( 2, 2 )
 KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]
 
 ntupleCuts = 'sel == 1'\
@@ -26,6 +26,16 @@ cbkgMassModel    = ''
 SWeightsType     = 'simultaneousFreeCBkg'
 numMassBins      = [ 70, 40, 20, 20, 20 ]
 massLogPlotRange = ( 1.9e2, 1.2e4 ) # ( 8.e1, 1.e4 ) # ( 1.9e2, 1.2e4 ) # ( 1.e3, 2.5e4 )
+
+fitOpts = dict(  NumCPU    = 6
+               , Optimize  = 2
+               , Timer     = True
+#               , Verbose   = True
+#               , Minos     = True
+#               , Hesse     = False
+               , Minimizer = 'Minuit2'
+               , Offset    = True
+              )
 
 from math import pi
 from ROOT import RooNumber
@@ -105,15 +115,33 @@ massRanges = dict(  LeftSideBand  = ( 5200., 5320. )
                   , PeakBkg       = ( 5390., 5440. )
                  )
 
-fitOpts = dict(  NumCPU    = 6
-               , Optimize  = 2
-               , Timer     = True
-#               , Verbose   = True
-#               , Minos     = True
-#               , Hesse     = False
-               , Minimizer = 'Minuit2'
-               , Offset    = True
-              )
+if addTaggingObs[0] == 2 :
+    tagCatsOS = [  ( 'Untagged', 0, 0.5000001 )
+                 , ( 'Tagged',   1, 0.4999999 )
+                ]
+elif addTaggingObs[0] > 2 :
+    tagCatsOS = [  ( 'Untagged', 0, 0.5000001 )
+                 , ( 'TagCat1',  1, 0.4999999 )
+                 , ( 'TagCat2',  2, 0.38      )
+                 , ( 'TagCat3',  3, 0.31      )
+                 , ( 'TagCat4',  4, 0.24      )
+                 , ( 'TagCat5',  5, 0.17      )
+                ]
+else :
+    tagCatsOS = [ ]
+
+if addTaggingObs[1] == 2 :
+    tagCatsSS = [  ( 'Untagged', 0, 0.5000001 )
+                 , ( 'Tagged',   1, 0.4999999 )
+                ]
+elif addTaggingObs[1] > 2 :
+    tagCatsSS = [  ( 'Untagged', 0, 0.5000001 )
+                 , ( 'TagCat1',  1, 0.4999999 )
+                 , ( 'TagCat2',  2, 0.32      )
+                 , ( 'TagCat3',  3, 0.25      )
+                ]
+else :
+    tagCatsSS = [ ]
 
 
 ###########################################################################################################################################
@@ -413,20 +441,15 @@ printEventYieldsData(  FullDataSet         = dataSets['SWeightData']
                      , SplittingCategories = allCats
                     )
 
-# create signal and background data sets with side band ranges
-dataSets['sigRangeData']  = dataSets['data'].reduce( Name = 'JpsiKKSigRange',  Title = 'JpsiKKSigRange',  CutRange = 'Signal'       )
-dataSets['cbkgRangeData'] = dataSets['data'].reduce( Name = 'JpsiKKCBkgRange', Title = 'JpsiKKCBkgRange', CutRange = 'LeftSideBand' )
-dataSets['cbkgRangeData'].append( dataSets['data'].reduce( CutRange = 'RightSideBand' ) )
-
-# create n-tuple containing signal and background weights
-dataSets['dataTree'] = dataSets['SWeightData'].buildTree( Name = 'DecayTree', Title = 'DecayTree', RooFitFormat = False )
-
 
 ###########################################################################################################################################
 ## make J/psiKK mass plots ##
 #############################
 
 if plotsFilePath :
+    print 120 * '='
+    print 'P2VV - INFO: createB2CCDataSet: plotting J/psiKK invariant mass distribution'
+
     # import plotting tools
     from P2VV.GeneralUtils import plot
     from ROOT import TCanvas, kBlue, kRed, kGreen, kFullCircle, TPaveText
@@ -456,7 +479,7 @@ if plotsFilePath :
         # don't use projection data set
         projWData = dict()
 
-    # plot mumuKK mass distributions
+    # plot J/psiKK mass distributions
     massCanvs = [  TCanvas( 'massCanvLog',     'B mass logarithmic scale'  )
                  , TCanvas( 'massCanvSig',     'B mass signal range'       )
                  , TCanvas( 'massCanvLeft',    'B mass left side band'     )
@@ -585,10 +608,64 @@ if plotsFilePath :
         canv.Print( plotsFilePath + ( '(' if it == 0 else ')' if it == len(massCanvs) - 1 else '' ) )
 
 
+###################################################################################################################################
+## add tagging observables to data sets ##
+##########################################
+
+if addTaggingObs :
+    print 120 * '='
+    print 'P2VV - INFO: createB2CCDataSet: building tagging categories'
+
+    # tagging observable names
+    wTagOSName   = observables['wTagOS'].GetName()
+    wTagSSName   = observables['wTagSS'].GetName()
+    tagDecOSName = observables['tagDecOS'].GetName()
+    tagDecSSName = observables['tagDecSS'].GetName()
+
+    # get tagging category bins
+    from P2VV.Parameterizations.FlavourTagging import getTagCatParamsFromData as getTagParams
+    from P2VV.Imports import extConstraintValues as extConstr
+    tagBinsOS = getTagParams( dataSets['sigSWeightData'], estWTagName = wTagOSName, tagCats = tagCatsOS, numSigmas = 1., SameSide = False )
+    tagBinsSS = getTagParams( dataSets['sigSWeightData'], estWTagName = wTagSSName, tagCats = tagCatsSS, numSigmas = 1., SameSide = True  )
+
+    # add tagging categories to data sets
+    from P2VV.GeneralUtils import addTaggingObservables
+    for dataKey, data in dataSets.iteritems() :
+        if data and not data.get().find('iTagOS') :
+            addTaggingObservables( data, 'iTagOS', 'tagCatP2VVOS', tagDecOSName, wTagOSName, tagBinsOS )
+            addTaggingObservables( data, 'iTagSS', 'tagCatP2VVSS', tagDecSSName, wTagSSName, tagBinsSS )
+
+    observables['iTagOS']       = Category( ws.put( dataSets['SWeightData'].get().find('iTagOS')       ).GetName() )
+    observables['iTagSS']       = Category( ws.put( dataSets['SWeightData'].get().find('iTagSS')       ).GetName() )
+    observables['tagCatP2VVOS'] = Category( ws.put( dataSets['SWeightData'].get().find('tagCatP2VVOS') ).GetName() )
+    observables['tagCatP2VVSS'] = Category( ws.put( dataSets['SWeightData'].get().find('tagCatP2VVSS') ).GetName() )
+
+    # print tagging categories distributions for signal and background
+    from P2VV.RooFitWrappers import ArgSet
+    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in opposite side tagging category for signal:'
+    dataSets['sigSWeightData'].table(  ArgSet( 'sigOSTagSet',  [ observables['tagCatP2VVOS'], observables['iTagOS'] ] ) ).Print('v')
+    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in opposite side tagging category for combinatorial background:'
+    dataSets['cbkgSWeightData'].table( ArgSet( 'cbkgOSTagSet', [ observables['tagCatP2VVOS'], observables['iTagOS'] ] ) ).Print('v')
+    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for signal:'
+    dataSets['sigSWeightData'].table(  ArgSet( 'sigSSTagSet',  [ observables['tagCatP2VVSS'], observables['iTagSS'] ] ) ).Print('v')
+    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for combinatorial background:'
+    dataSets['cbkgSWeightData'].table( ArgSet( 'cbkgSSTagSet', [ observables['tagCatP2VVSS'], observables['iTagSS'] ] ) ).Print('v')
+
+
 ###########################################################################################################################################
 ## store data sets in ROOT file ##
 ##################################
 
+# create signal and background data sets with side band ranges
+dataSets['sigRangeData']  = dataSets['data'].reduce( Name = 'JpsiKKSigRange',  Title = 'JpsiKKSigRange',  CutRange = 'Signal'       )
+dataSets['cbkgRangeData'] = dataSets['data'].reduce( Name = 'JpsiKKCBkgRange', Title = 'JpsiKKCBkgRange', CutRange = 'LeftSideBand' )
+dataSets['cbkgRangeData'].append( dataSets['data'].reduce( CutRange = 'RightSideBand' ) )
+
+# create n-tuple containing signal and background weights
+dataSets['dataTree'] = dataSets['SWeightData'].buildTree( Name = 'DecayTree', Title = 'DecayTree', RooFitFormat = False )
+
+# save data sets to file
+print 120 * '='
 print 'P2VV - INFO: createB2CCDataSet: saving data sets to ROOT file %s:' % dataSetsFilePath
 dataSetsFile = TFile.Open( dataSetsFilePath, 'RECREATE' )
 
