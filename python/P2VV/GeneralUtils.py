@@ -356,8 +356,9 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
     estimWTag   = obsSet.find(estimWTagName)
 
     # create initial state tag
+    from P2VV.Load import P2VVLibrary
     from ROOT import RooTagDecisionWrapper
-    iTagWrapper = RooTagDecisionWrapper(iTagName, 'Tagging Category', tagDecision)
+    iTagWrapper = RooTagDecisionWrapper(iTagName, 'Flavour tag', tagDecision)
 
     # create tagging category
     from ROOT import RooThresholdCategory

@@ -604,6 +604,7 @@ class CalibratedDilution( RooObject ) :
             for arg in arguments : __check_req_kw__( arg, kwargs )
             if all( kw in kwargs for kw in [ 'AP0', 'AP1' ] ) : arguments += [ 'AP0', 'AP1' ]
 
+        from P2VV.Load import P2VVLibrary
         self._declare( 'CalibratedDilution::%s(%s)' % ( Name, ','.join( kwargs.pop(arg).GetName() for arg in arguments ) ) )
         for arg in [ 'WTag', 'AWTag', 'EstWTag', 'AvgEstWTag', 'P0', 'P1', 'AP0', 'AP1' ] :
             assert arg not in kwargs, 'CalibratedDilution: superfluous argument found: %s' % arg
