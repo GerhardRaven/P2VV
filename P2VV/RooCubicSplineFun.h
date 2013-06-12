@@ -63,6 +63,9 @@ public:
   std::complex<double> gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
                            const RooCubicSplineGaussModel::K_n& K,
                            double offset, double* sc) const ;
+  std::complex<double> gaussIntegralE(bool left, const RooCubicSplineGaussModel::M_n& dM,
+                           const RooCubicSplineGaussModel::K_n& K,
+                           double offset, double* sc) const ;
   unsigned knotSize() const { return _aux.size(); }
   double u(int i) const { return _aux.u(i); }
   const std::vector<double>& knots() const { return _aux.knots(); }
