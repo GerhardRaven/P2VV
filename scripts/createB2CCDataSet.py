@@ -50,68 +50,68 @@ obsKeys = [  'mass', 'KKMass', 'mumuMass'
            , 'wTagOS', 'tagDecOS'#, 'tagCatOS'
            , 'wTagSS', 'tagDecSS'
            #, 'sel', 'selA', 'selB'
-           , 'hlt1ExclB'#, 'hlt1B', 'hlt1UB', 'hlt2B', 'hlt2UB'
+           , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
           ]
 
-obsDict = dict(  mass      = ( True,  'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
-               , mumuMass  = ( True,  'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.       )
-               , KKMass    = ( True,  'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,  KKMMin,  KKMMax      )
-               , time      = ( True,  'time',                 'Decay time',              'ps',        1.5,    0.3,     14.         )
-               , timeRes   = ( True,  'sigmat',               '#sigma(t)',               'ps',        0.01,   0.0001,  0.12        )
-               , ctk       = ( True,  'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.          )
-               , ctl       = ( True,  'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.          )
-               , phih      = ( True,  'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi          )
-               , cpsi      = ( True,  'trcospsi',             'cos(#psi_{tr})',          '',          0.,    -1.,     +1.          )
-               , cttr      = ( True,  'trcostheta',           'cos(#theta_{tr})',        '',          0.,    -1.,     +1.          )
-               , phitr     = ( True,  'trphi',                '#phi_{tr}',               'rad',       0.,    -pi,     +pi          )
-               , wTag      = ( True,  'tagomega',             'est. wrong-tag prob.',    '',          0.25,   0.,      0.50001     )
-               , wTagOS    = ( True,  'tagomega_os',          'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
-               , wTagSS    = ( True,  'tagomega_ss',          'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
-               , tagDec    = ( True,  'tagdecision',          'tag decision',    { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
-               , tagDecOS  = ( True,  'tagdecision_os',       'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
-               , tagDecSS  = ( True,  'tagdecision_ss',       'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
-               , tagCatOS  = ( True,  'tagcat_os',            'OS tag category', [ 'unt' ] + [ 'cat%d' % c for c in range(1, 6) ]  )
-               , sel       = ( True,  'sel',                  'selection',       { 'sel'   : 1, 'notSel'   : 0 }                   )
-               , selA      = ( True,  'selA',                 'selection A',     { 'sel'   : 1, 'notSel'   : 0 }                   )
-               , selB      = ( True,  'selB',                 'selection B',     { 'sel'   : 1, 'notSel'   : 0 }                   )
-               , hlt1ExclB = ( True,  'hlt1_excl_biased_dec', 'HLT1 excl. B.',    { 'exclB' : 1, 'notExclB' : 0 }                  )
-               , hlt1B     = ( True,  'hlt1_biased',          'HLT1 B.',          { 'B'     : 1, 'notB'     : 0 }                  )
-               , hlt1UB    = ( True,  'hlt1_unbiased_dec',    'HLT1 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
-               , hlt2B     = ( True,  'hlt2_biased',          'HLT2 B.',          { 'B'     : 1, 'notB'     : 0 }                  )
-               , hlt2UB    = ( True,  'hlt2_unbiased',        'HLT2 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
-               , sel_onecand                = ( True, 'sel_onecand',                { 'sel' : 1, 'notSel' : 0 }              )
-               , sel_one_gl                 = ( True, 'sel_one_gl',                 { 'sel' : 1, 'notSel' : 0 }              )
-               , muPTrChi2                  = ( True, 'muplus_track_chi2ndof',      'mu+ chi^2/#dof', 1.,    0.,      4.     )
-               , muMTrChi2                  = ( True, 'muminus_track_chi2ndof',     'mu- chi^2/#dof', 1.,    0.,      4.     )
-               , KPTrChi2                   = ( True, 'Kplus_track_chi2ndof',       'K+ chi^2/#dof',  1.,    0.,      4.     )
-               , KMTrChi2                   = ( True, 'Kminus_track_chi2ndof',      'K- chi^2/#dof',  1.,    0.,      4.     )
-               , GLsb                       = ( True, 'GLsb',                       'GLsb',           0.,    0.,      1.     )
-               , muplus_PIDmu               = ( True, 'muplus_PIDmu',               'muplus_PIDmu',   0.,   -RooInf, +RooInf )
-               , muminus_PIDmu              = ( True, 'muminus_PIDmu',              'muminus_PIDmu',  0.,   -RooInf, +RooInf )
-               , Kplus_pidK                 = ( True, 'Kplus_pidK',                 'Kplus_pidK',     0.,    0.,     +RooInf )
-               , Kminus_pidK                = ( True, 'Kminus_pidK',                'Kminus_pidK',    0.,    0.,     +RooInf )
-               , muplus_PX                  = ( True, 'muplus_PX',                  'muplus_PX',      0.,   -RooInf, +RooInf )
-               , muplus_PY                  = ( True, 'muplus_PY',                  'muplus_PY',      0.,   -RooInf, +RooInf )
-               , muplus_PZ                  = ( True, 'muplus_PZ',                  'muplus_PZ',      0.,   -RooInf, +RooInf )
-               , muminus_PX                 = ( True, 'muminus_PX',                 'muminus_PX',     0.,   -RooInf, +RooInf )
-               , muminus_PY                 = ( True, 'muminus_PY',                 'muminus_PY',     0.,   -RooInf, +RooInf )
-               , muminus_PZ                 = ( True, 'muminus_PZ',                 'muminus_PZ',     0.,   -RooInf, +RooInf )
-               , Kplus_PX                   = ( True, 'Kplus_PX',                   'Kplus_PX',       0.,   -RooInf, +RooInf )
-               , Kplus_PY                   = ( True, 'Kplus_PY',                   'Kplus_PY',       0.,   -RooInf, +RooInf )
-               , Kplus_PZ                   = ( True, 'Kplus_PZ',                   'Kplus_PZ',       0.,   -RooInf, +RooInf )
-               , Kminus_PX                  = ( True, 'Kminus_PX',                  'Kminus_PX',      0.,   -RooInf, +RooInf )
-               , Kminus_PY                  = ( True, 'Kminus_PY',                  'Kminus_PY',      0.,   -RooInf, +RooInf )
-               , Kminus_PZ                  = ( True, 'Kminus_PZ',                  'Kminus_PZ',      0.,   -RooInf, +RooInf )
-               , B_Pt                       = ( True, 'B_Pt',                       'B_Pt',           0.,    0.,      RooInf )
-               , phi_1020_pt                = ( True, 'phi_1020_pt',                'phi_1020_pt',    500.,  500.,    RooInf )
-               , B_s0_LOKI_CosPolAngle_Dau1 = ( True, 'B_s0_LOKI_CosPolAngle_Dau1', 'mumu cos(th)',   0.,   -1.,     +1.     )
-               , B_s0_IP_OWNPV              = ( True, 'B_s0_IP_OWNPV',              'B_s0_IP_OWNPV',  0.,   -RooInf, +RooInf )
-               , B_s0_IPCHI2_OWNPV          = ( True, 'B_s0_IPCHI2_OWNPV',          'IP chi2 PV',     0.,   -RooInf, +RooInf )
-               , B_s0_MINIPCHI2NEXTBEST     = ( True, 'B_s0_MINIPCHI2NEXTBEST',     'IP chi2 next',   0.,   -RooInf, +RooInf )
-               , B_s0_LOKI_DTF_VCHI2NDOF    = ( True, 'B_s0_LOKI_DTF_VCHI2NDOF',    'DTF chi2/#dof',  0.,   -RooInf, +RooInf )
-               , B_s0_ENDVERTEX_CHI2        = ( True, 'B_s0_ENDVERTEX_CHI2',        'Bs0 vert chi2',  0.,   0.,       50.    )
-               , phi_1020_ENDVERTEX_CHI2    = ( True, 'phi_1020_ENDVERTEX_CHI2',    'mumu vert chi2', 0.,   0.,       16.    )
-               , J_psi_1S_ENDVERTEX_CHI2    = ( True, 'J_psi_1S_ENDVERTEX_CHI2',    'KK vert chi2',   0.,   0.,       16.    )
+obsDict = dict(  mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
+               , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.       )
+               , KKMass    = ( 'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,  KKMMin,  KKMMax      )
+               , time      = ( 'time',                 'Decay time',              'ps',        1.5,    0.3,     14.         )
+               , timeRes   = ( 'sigmat',               '#sigma(t)',               'ps',        0.01,   0.0001,  0.12        )
+               , ctk       = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.          )
+               , ctl       = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.          )
+               , phih      = ( 'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi          )
+               , cpsi      = ( 'trcospsi',             'cos(#psi_{tr})',          '',          0.,    -1.,     +1.          )
+               , cttr      = ( 'trcostheta',           'cos(#theta_{tr})',        '',          0.,    -1.,     +1.          )
+               , phitr     = ( 'trphi',                '#phi_{tr}',               'rad',       0.,    -pi,     +pi          )
+               , wTag      = ( 'tagomega',             'est. wrong-tag prob.',    '',          0.25,   0.,      0.50001     )
+               , wTagOS    = ( 'tagomega_os',          'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
+               , wTagSS    = ( 'tagomega_ss',          'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
+               , tagDec    = ( 'tagdecision',          'tag decision',    { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               , tagDecOS  = ( 'tagdecision_os',       'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               , tagDecSS  = ( 'tagdecision_ss',       'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               , tagCatOS  = ( 'tagcat_os',            'OS tag category', [ 'unt' ] + [ 'cat%d' % c for c in range(1, 6) ]  )
+               , sel       = ( 'sel',                  'selection',       { 'sel'   : 1, 'notSel'   : 0 }                   )
+               , selA      = ( 'selA',                 'selection A',     { 'sel'   : 1, 'notSel'   : 0 }                   )
+               , selB      = ( 'selB',                 'selection B',     { 'sel'   : 1, 'notSel'   : 0 }                   )
+               , hlt1ExclB = ( 'hlt1_excl_biased_dec', 'HLT1 excl. B.',    { 'exclB' : 1, 'notExclB' : 0 }                  )
+               , hlt1B     = ( 'hlt1_biased',          'HLT1 B.',          { 'B'     : 1, 'notB'     : 0 }                  )
+               , hlt1UB    = ( 'hlt1_unbiased_dec',    'HLT1 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
+               , hlt2B     = ( 'hlt2_biased',          'HLT2 B.',          { 'B'     : 1, 'notB'     : 0 }                  )
+               , hlt2UB    = ( 'hlt2_unbiased',        'HLT2 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
+               , sel_onecand                = ( 'sel_onecand',                { 'sel' : 1, 'notSel' : 0 }              )
+               , sel_one_gl                 = ( 'sel_one_gl',                 { 'sel' : 1, 'notSel' : 0 }              )
+               , muPTrChi2                  = ( 'muplus_track_chi2ndof',      'mu+ chi^2/#dof', 1.,    0.,      4.     )
+               , muMTrChi2                  = ( 'muminus_track_chi2ndof',     'mu- chi^2/#dof', 1.,    0.,      4.     )
+               , KPTrChi2                   = ( 'Kplus_track_chi2ndof',       'K+ chi^2/#dof',  1.,    0.,      4.     )
+               , KMTrChi2                   = ( 'Kminus_track_chi2ndof',      'K- chi^2/#dof',  1.,    0.,      4.     )
+               , GLsb                       = ( 'GLsb',                       'GLsb',           0.,    0.,      1.     )
+               , muplus_PIDmu               = ( 'muplus_PIDmu',               'muplus_PIDmu',   0.,   -RooInf, +RooInf )
+               , muminus_PIDmu              = ( 'muminus_PIDmu',              'muminus_PIDmu',  0.,   -RooInf, +RooInf )
+               , Kplus_pidK                 = ( 'Kplus_pidK',                 'Kplus_pidK',     0.,    0.,     +RooInf )
+               , Kminus_pidK                = ( 'Kminus_pidK',                'Kminus_pidK',    0.,    0.,     +RooInf )
+               , muplus_PX                  = ( 'muplus_PX',                  'muplus_PX',      0.,   -RooInf, +RooInf )
+               , muplus_PY                  = ( 'muplus_PY',                  'muplus_PY',      0.,   -RooInf, +RooInf )
+               , muplus_PZ                  = ( 'muplus_PZ',                  'muplus_PZ',      0.,   -RooInf, +RooInf )
+               , muminus_PX                 = ( 'muminus_PX',                 'muminus_PX',     0.,   -RooInf, +RooInf )
+               , muminus_PY                 = ( 'muminus_PY',                 'muminus_PY',     0.,   -RooInf, +RooInf )
+               , muminus_PZ                 = ( 'muminus_PZ',                 'muminus_PZ',     0.,   -RooInf, +RooInf )
+               , Kplus_PX                   = ( 'Kplus_PX',                   'Kplus_PX',       0.,   -RooInf, +RooInf )
+               , Kplus_PY                   = ( 'Kplus_PY',                   'Kplus_PY',       0.,   -RooInf, +RooInf )
+               , Kplus_PZ                   = ( 'Kplus_PZ',                   'Kplus_PZ',       0.,   -RooInf, +RooInf )
+               , Kminus_PX                  = ( 'Kminus_PX',                  'Kminus_PX',      0.,   -RooInf, +RooInf )
+               , Kminus_PY                  = ( 'Kminus_PY',                  'Kminus_PY',      0.,   -RooInf, +RooInf )
+               , Kminus_PZ                  = ( 'Kminus_PZ',                  'Kminus_PZ',      0.,   -RooInf, +RooInf )
+               , B_Pt                       = ( 'B_Pt',                       'B_Pt',           0.,    0.,      RooInf )
+               , phi_1020_pt                = ( 'phi_1020_pt',                'phi_1020_pt',    500.,  500.,    RooInf )
+               , B_s0_LOKI_CosPolAngle_Dau1 = ( 'B_s0_LOKI_CosPolAngle_Dau1', 'mumu cos(th)',   0.,   -1.,     +1.     )
+               , B_s0_IP_OWNPV              = ( 'B_s0_IP_OWNPV',              'B_s0_IP_OWNPV',  0.,   -RooInf, +RooInf )
+               , B_s0_IPCHI2_OWNPV          = ( 'B_s0_IPCHI2_OWNPV',          'IP chi2 PV',     0.,   -RooInf, +RooInf )
+               , B_s0_MINIPCHI2NEXTBEST     = ( 'B_s0_MINIPCHI2NEXTBEST',     'IP chi2 next',   0.,   -RooInf, +RooInf )
+               , B_s0_LOKI_DTF_VCHI2NDOF    = ( 'B_s0_LOKI_DTF_VCHI2NDOF',    'DTF chi2/#dof',  0.,   -RooInf, +RooInf )
+               , B_s0_ENDVERTEX_CHI2        = ( 'B_s0_ENDVERTEX_CHI2',        'Bs0 vert chi2',  0.,   0.,       50.    )
+               , phi_1020_ENDVERTEX_CHI2    = ( 'phi_1020_ENDVERTEX_CHI2',    'mumu vert chi2', 0.,   0.,       16.    )
+               , J_psi_1S_ENDVERTEX_CHI2    = ( 'J_psi_1S_ENDVERTEX_CHI2',    'KK vert chi2',   0.,   0.,       16.    )
               )
 
 massRanges = dict(  LeftSideBand  = ( 5200., 5320. )
@@ -164,13 +164,13 @@ observables  = { }
 obsSetNTuple = [ ]
 from P2VV.RooFitWrappers import RealVar, Category
 for obs in obsKeys :
-    if type( obsDict[obs][3] ) == dict or type( obsDict[obs][3] ) == list :
-        observables[obs] = Category( obsDict[obs][1], Title = obsDict[obs][2], Observable = True, States = obsDict[obs][3] )
+    if type( obsDict[obs][2] ) == dict or type( obsDict[obs][2] ) == list :
+        observables[obs] = Category( obsDict[obs][0], Title = obsDict[obs][1], Observable = True, States = obsDict[obs][2] )
     else :
-        observables[obs] = RealVar( obsDict[obs][1], Title = obsDict[obs][2], Unit = obsDict[obs][3], Observable = True
-                                   , Value = obsDict[obs][4], MinMax = ( obsDict[obs][5], obsDict[obs][6] ) )
+        observables[obs] = RealVar( obsDict[obs][0], Title = obsDict[obs][1], Unit = obsDict[obs][2], Observable = True
+                                   , Value = obsDict[obs][3], MinMax = ( obsDict[obs][4], obsDict[obs][5] ) )
 
-    if obsDict[obs][0] : obsSetNTuple.append( observables[obs] )
+    obsSetNTuple.append( observables[obs] )
 
 # add mass ranges
 observables['mass'].setRanges(massRanges)
@@ -428,8 +428,8 @@ dataSets['sigSWeightData']  = SData.data( sigMassComps.GetName()  )
 dataSets['cbkgSWeightData'] = SData.data( cbkgMassComps.GetName() )
 
 # print signal/background info to screen
-allCats = [  dataSets['data'].get().find( obsDict['hlt1ExclB'][1] )
-           , dataSets['data'].get().find( obsDict['hlt2B'][1] )
+allCats = [  dataSets['data'].get().find( obsDict['hlt1ExclB'][0] )
+           , dataSets['data'].get().find( obsDict['hlt2B'][0] )
           ]
 if len(KKMassBinBounds) > 2 : allCats.append( dataSets['data'].get().find( observables['KKMassCat'].GetName() ) )
 allCats = [ cat for cat in allCats if cat ]
@@ -495,17 +495,17 @@ if plotsFilePath :
           in enumerate ( zip(  massCanvs
                              , [ '', 'Signal', 'LeftSideBand', 'RightSideBand', 'PeakBkg' ]
                              , numMassBins
-                             , [  obsDict['mass'][2]
-                                , obsDict['mass'][2] + ' mass fit - signal'
-                                , obsDict['mass'][2] + ' mass fit - left side band'
-                                , obsDict['mass'][2] + ' mass fit - right side band'
-                                , obsDict['mass'][2] + ' mass fit - peaking background'
-                               ]
                              , [  obsDict['mass'][1]
-                                , obsDict['mass'][1] + ' fit - signal'
-                                , obsDict['mass'][1] + ' fit - left side band'
-                                , obsDict['mass'][1] + ' fit - right side band'
-                                , obsDict['mass'][1] + ' fit - peaking background'
+                                , obsDict['mass'][1] + ' mass fit - signal'
+                                , obsDict['mass'][1] + ' mass fit - left side band'
+                                , obsDict['mass'][1] + ' mass fit - right side band'
+                                , obsDict['mass'][1] + ' mass fit - peaking background'
+                               ]
+                             , [  obsDict['mass'][0]
+                                , obsDict['mass'][0] + ' fit - signal'
+                                , obsDict['mass'][0] + ' fit - left side band'
+                                , obsDict['mass'][0] + ' fit - right side band'
+                                , obsDict['mass'][0] + ' fit - peaking background'
                                ]
                              , [ True, False, False, False, False ]
                              , [ massLogPlotRange, ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
@@ -622,10 +622,10 @@ if addTaggingObs :
     print 'P2VV - INFO: createB2CCDataSet: building tagging categories'
 
     # tagging observable names
-    wTagOSName   = obsDict['wTagOS'][1]
-    wTagSSName   = obsDict['wTagSS'][1]
-    tagDecOSName = obsDict['tagDecOS'][1]
-    tagDecSSName = obsDict['tagDecSS'][1]
+    wTagOSName   = obsDict['wTagOS'][0]
+    wTagSSName   = obsDict['wTagSS'][0]
+    tagDecOSName = obsDict['tagDecOS'][0]
+    tagDecSSName = obsDict['tagDecSS'][0]
 
     # get tagging category bins
     from P2VV.Parameterizations.FlavourTagging import getTagCatParamsFromData as getTagParams
