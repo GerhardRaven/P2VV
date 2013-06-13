@@ -362,9 +362,15 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
 
     # create tagging category
     from ROOT import RooThresholdCategory
-    binOneThresh = tagCatBins[1][2]
     tagCatFormula = RooThresholdCategory( tagCatName, 'P2VV tagging category', estimWTag, tagCatBins[0][0], tagCatBins[0][1] )
     for cat in range( 1, len(tagCatBins) ) : tagCatFormula.addThreshold( tagCatBins[cat][2], tagCatBins[cat][0], tagCatBins[cat][1] )
+
+    # add tagging category binning to estimated wrong-tag probability variable
+    from array import array
+    from ROOT import RooBinning
+    binBounds = array( 'd', [ 0. ] + [ tagCatBins[ len(tagCatBins) - it ][2] for it in range( 1, len(tagCatBins) + 1 ) ] )
+    tagCatBinning = RooBinning( len(binBounds) - 1, binBounds, 'tagCats' )
+    estimWTag.setBinning( tagCatBinning, 'tagCats' )
 
     # create new columns in data set
     dataSet.addColumn(iTagWrapper)
@@ -377,10 +383,10 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
         assert obsSet.getCatIndex(tagDecisionName) == 0 or obsSet.getCatIndex(iTagName) == obsSet.getCatIndex(tagDecisionName),\
                 'P2VV - ERROR: addTaggingObservables: initial state flavour tag and tag decision have different values: %+d and %+d'\
                 % ( obsSet.getCatIndex(iTagName), obsSet.getCatIndex(tagDecisionName) )
-        assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getRealValue(estimWTagName) >= binOneThresh )\
-                or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getRealValue(estimWTagName) < binOneThresh ),\
+        assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getRealValue(estimWTagName) >= binBounds[-2] )\
+                or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getRealValue(estimWTagName) < binBounds[-2] ),\
                 'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while estimated wrong-tag probability = %.10f (threshold = %.10f)'\
-                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getRealValue(estimWTagName), binOneThresh )
+                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getRealValue(estimWTagName), binBounds[-2] )
         assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getCatIndex(tagCatName) == 0 )\
                 or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getCatIndex(tagCatName) > 0 ),\
                 'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while tagging category = %d'\
