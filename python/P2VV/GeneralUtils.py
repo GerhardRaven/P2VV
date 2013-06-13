@@ -1760,3 +1760,27 @@ def getSplitPar( parName, stateName, parSet ) :
     for par in parSet :
         if name(par) in fullNames : return par
     return None
+
+def make_binning(data, var, n_bins):
+    tmp = data.get().find(var.GetName())
+    values = []
+    for i in range(data.numEntries()):
+        data.get(i)
+        values.append((tmp.getVal(), data.weight()))
+    
+    s = sum(e[1] for e in values)
+    d = s / float(n_bins)
+    
+    from operator import itemgetter
+    values = sorted(values, key = itemgetter(0))
+    
+    bounds = [values[0][0] - 0.01]
+    total = 0
+    
+    for v, w in values:
+        total += w
+        if total >= d:
+            total = 0
+            bounds.append(v)
+    bounds.append(values[-1][0] + 0.1)
+    return bounds

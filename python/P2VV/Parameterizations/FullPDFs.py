@@ -1656,7 +1656,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
                                                     , Data = self._dataSets['data'], Fit = False, Original = sigPdf
                                                     , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf )
-                                                    , Spline = True, SmoothSpline = 2 )
+                                                    , Spline = spline, SmoothSpline = smooth )
             elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
                 from P2VV.Parameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance(  time = time

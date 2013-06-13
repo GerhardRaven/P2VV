@@ -81,6 +81,11 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRela
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased' # 'fit'
+
+# Spline Acceptance
+pdfConfig['splineAcceptance']     = False
+pdfConfig['smoothSpline']         = 2
+
 pdfConfig['multiplyByAngEff']     = 'weights'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
