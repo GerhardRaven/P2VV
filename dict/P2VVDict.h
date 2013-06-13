@@ -39,6 +39,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <list>
 
 struct Instantiations {
 
@@ -63,6 +64,8 @@ struct Instantiations {
    std::map<int, MultiHistEntry*>::iterator _i17;
    std::vector<MultiHistEntry*> _i18;
    std::vector<RooAbsRealMoment*> _i19;
+
+   std::list<RooDataSet*> _i20;
 
 };
 #endif // DICT_P2VVDICT_H

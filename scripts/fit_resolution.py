@@ -57,7 +57,7 @@ input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPresc
                         'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root'),
                         'workspace' : 'Bs2JpsiPhiPrescaled_2011_workspace',
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled.root')},
-              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20121218.root'),
+              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20130419.root'),
                         'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_2012.root'),
                         'workspace' : 'Bs2JpsiPhiPrescaled_2012_workspace',
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},
@@ -260,12 +260,10 @@ gStyle.SetPalette(53)
 
 ## Extra name for fit result and plots
 extra_name = [args[1]]
-if options.parameterise:
-    extra_name += [options.parameterise]
-if options.wpv:
-    extra_name += [options.wpv_type]
-if options.model:
-    extra_name += [options.model]
+for a, n in [('parameterise', None), ('wpv_type', None), ('model', None), ('peak_only', 'peak_only')]:
+    v = getattr(options, a)
+    if v:
+        extra_name.append(n if n else v)
 
 ## Read Cache
 if not fit_mass:
@@ -697,8 +695,11 @@ def cut_binning(t, binning):
         if binning[i] >= t.getMax():
             mm[1] = i - 1
             break
+    else:
+        mm[0] = 0
     if mm[1] == None:
-        mm[1] = t.getMax()
+        mm[1] = len(binning)
+    print mm    
     return binning[mm[0] : mm[1]]
 
 from ROOT import RooBinning
@@ -906,9 +907,6 @@ elif args[0] == 'MC11a_incl_Jpsi':
     ## Dilution.dilution(t, sig_sdata, sigmat = st, result = time_result, signal = [prompt], calibration = calibration,
     ##                   subtract = [psi_ll, wpv] if options.wpv else [psi_ll], simultaneous = options.simultaneous)
 
-if options.peak_only:
-    assert(False)
-    
 from P2VV.CacheUtils import WritableCacheFile
 with WritableCacheFile(cache_files, directory) as cache_file:
     cache_dir = cache_file.Get(directory)
