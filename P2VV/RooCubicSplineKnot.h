@@ -2,7 +2,6 @@
 #define ROO_CUBICSPLINEKNOT
 #include <vector>
 #include <algorithm>
-#include "RooComplex.h"
 #include "RooArgList.h"
 
 
@@ -27,7 +26,7 @@ public:
 
     class S_jk {
     public:
-        S_jk(double a, double b, double c) : t(a*b*c), d( (a*b+a*c+b*c)/2 ), s( (a+b+c)/4 ), o(double(1)/8) {}
+        S_jk(double a, double b, double c) : t(a*b*c), d(0.5*(a*b+a*c+b*c) ), s( 0.25*(a+b+c) ), o(0.125) { }
         S_jk(const S_jk& other, double offset=0) : t(other.t), d(other.d), s(other.s), o(other.o) {
             if (!offset) return;
             t+=offset*(-2*d+offset*(4*s-offset*o*8));
@@ -65,7 +64,28 @@ public:
     };
     // S matrix for i-th interval
     RooCubicSplineKnot::S_jk S_jk_sum(int i, const RooArgList& b) const ;
-    // RooComplex analyticalIntegral(const RooComplex& z, const RooArgList& coef) const;
+
+    class S_edge {
+    public:
+        S_edge(double a, double b ) : alpha(a), beta(b) {}
+        S_edge(const S_edge& other, double offset=0) : alpha(other.alpha), beta(other.beta) {
+            assert(offset==0); // TODO: fix me!
+        }
+        double operator()(int j, int k) const {
+            assert(0<=j&&j<2);
+            assert(0<=k&&k<2-j);
+            if (j>k) std::swap(j,k);
+            switch(j+k) {
+                case 0: return   beta;   // (0,0)
+                case 1: return   0.5*alpha;   // (0,1),(1,0)
+                default : assert(1==0);
+            }
+        }
+    private:
+       double alpha,beta;
+    };
+
+    RooCubicSplineKnot::S_edge S_jk_edge(bool left, const RooArgList& b) const;
 
 private:
     int index(double _u) const;
@@ -75,17 +95,15 @@ private:
     double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
 
     double ma( int i) const {  // subdiagonal
-        return i==size()-1 ?  double(6)/(h(i,i-2)*h(i,i-1) )
-                              : A(u(i),i);
+        return i==size()-1 ?  double(6)/(h(i,i-2)*h(i-1) ) : A(u(i),i);
     }
     double mb( int i) const {   // diagonal
-        return i==0           ?  -(double(6)/h(1,0)+double(6)/h(2,0))/h(1,0)
-             : i==size()-1 ?  -(double(6)/h(i,i-1)+double(6)/h(i,i-2))/h(i,i-1)
-                              : B(u(i),i) ;
+        return i==0        ?  -(double(6)/h(0)+double(6)/h(2,0))/h(0)
+             : i==size()-1 ?  -(double(6)/h(i-1)+double(6)/h(i,i-2))/h(i-1)
+                           : B(u(i),i) ;
     }
     double mc( int i) const {  // superdiagonal
-        return i==0           ?   double(6)/(h(2,0)*h(1,0))
-                              : C(u(i),i);
+        return i==0        ?   double(6)/(h(2,0)*h(0)) : C(u(i),i);
     }
 
     double P(int i) const { if (_PQRS.empty()) fillPQRS(); assert(4*i  <int(_PQRS.size())); return  _PQRS[4*i  ]; }
@@ -99,6 +117,7 @@ private:
     double cub(double x) const { return x*sqr(x); }
     double qua(double x) const { return sqr(sqr(x)); }
     double d(double _u, int j) const { return _u-u(j); }
+    double d(double _u, int i, int j, int k) const { return d(_u,i)*d(_u,j)*d(_u,k); }
     double h(int i, int j) const { return u(i)-u(j); }
     double h(int i) const { return h(i+1,i); }
     double r(int i) const { return double(3)/h(i); }

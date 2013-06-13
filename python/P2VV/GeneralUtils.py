@@ -7,6 +7,27 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
+# clever switch construct from http://code.activestate.com/recipes/410692/
+class switch(object):
+    def __init__(self, value):
+        self.value = value
+        self.fall = False
+
+    def __iter__(self):
+        """Return the match method once, then stop"""
+        yield self.match
+
+    def match(self, *args):
+        """Indicate whether or not to enter a case suite"""
+        if self.fall or not args:
+            return True
+        elif self.value in args:
+            self.fall = True
+            return True
+        else:
+            return False
+
+
 
 import sys
 def numCPU( Max = sys.maxint ) :
@@ -156,7 +177,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
     """reads data from file (RooDataSet or TTree(s))
     """
     from ROOT import RooFit
-    if observables : noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
+    noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
     cuts = kwargs.pop( 'cuts', '' )
     tmp_file = None
     if observables :
@@ -218,7 +239,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
           data = RooDataSet( dataSetName, dataSetName
                            , [ obs._var for obs in observables ]
                            , Import = file.Get(dataSetName)
-                           , Cut = noNAN + ' && ' + cuts if cuts else noNAN 
+                           , Cut = noNAN + ' && ' + cuts if cuts else noNAN
                            )
       else :
           data = file.Get(dataSetName)
@@ -385,6 +406,164 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
     dataSet.addColumn(cpsi)
     dataSet.addColumn(cthetaTr)
     dataSet.addColumn(phiTr)
+
+
+def printEventYields( **kwargs ) :
+    # get arguments
+    parSet     = kwargs.pop( 'ParameterSet',        [ ] )
+    yieldNames = kwargs.pop( 'YieldNames',          [ ] )
+    splitCats  = kwargs.pop( 'SplittingCategories', [ ] )
+
+    assert parSet,     'P2VV - ERROR: printEventYields: no parameter set with yield variables found in arguments ("ParameterSet")'
+    assert yieldNames, 'P2VV - ERROR: printEventYields: no yield names found in arguments ("YieldNames")'
+
+    if splitCats : splitCats = list( set( cat for cat in splitCats ) )
+
+    # variables for looping over splitting category states
+    iters = { }
+    inds  = { }
+    labs  = { }
+    for cat in splitCats :
+        iters[cat] = 0
+        inds[cat]  = [ ]
+        labs[cat]  = [ ]
+        catIter = cat.typeIterator()
+        catState = catIter.Next()
+        while catState :
+            inds[cat].append( catState.getVal() )
+            labs[cat].append( catState.GetName() )
+            catState = catIter.Next()
+
+    # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
+    print
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+    print ' '.join( ( '{0:^%ds}' % width ).format(title) for ( title, width ) in [ ( '', 26 ), ( ' total', 8 ) ]\
+                   + [ ( name if num == 23 else 'f(' + name + ')', num ) for name in yieldNames for num in ( 23, 19 ) ] )
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+
+    cont = True
+    while cont :
+        stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
+        yields = [ getSplitPar( name, ( '{%s}' % stateName ) if stateName else '', parSet ) for name in yieldNames ]
+
+        from math import sqrt
+        nEv        = [ yieldVar.getVal()   for yieldVar in yields ]
+        nEvErr     = [ yieldVar.getError() for yieldVar in yields ]
+        nEvTot     = sum(nEv)
+        frac       = [ num / nEvTot if nEvTot > 0. else 0. for num in nEv ]
+        nEvCorrErr = [ sqrt( numErr**2 - num**2 / nEvTot ) for num, numErr in zip( nEv, nEvErr ) ]
+        fracErr    = [ err / nEvTot if nEvTot > 0. else 0. for err in nEvCorrErr ]
+
+        print '     {0:>20s}   {1:>6.0f}  '.format( stateName, nEvTot )\
+              + ' '.join( ' {0:>9.2f} +/- {1:>7.2f}   {2:>6.4f} +/- {3:>6.4f} '.format( num, err, fr, frErr )\
+                         for ( num, err, fr, frErr ) in zip( nEv, nEvCorrErr, frac, fracErr ) )
+
+        if not splitCats : break
+
+        iters[ splitCats[-1] ] += 1
+        for catIt in range( len(splitCats) ) :
+            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                if catIt == len(splitCats) - 1 :
+                    cont = False
+                else :
+                    iters[ splitCats[ -catIt - 1 ] ] = 0
+                    iters[ splitCats[ -catIt - 2 ] ] +=1
+            else :
+                continue
+
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+    print
+
+
+def printEventYieldsData( **kwargs ) :
+    # get arguments
+    fullDataSet    = kwargs.pop( 'FullDataSet',         None )
+    weightDataSets = kwargs.pop( 'WeightedDataSets',    [ ]  )
+    dataSetNames   = kwargs.pop( 'DataSetNames',        [ ]  )
+    splitCats      = kwargs.pop( 'SplittingCategories', [ ]  )
+
+    assert fullDataSet,    'P2VV - ERROR: printEventYieldsData: no data set found in arguments ("FullDataSet")'
+    assert weightDataSets, 'P2VV - ERROR: printEventYieldsData: no weighted data sets found in arguments ("WeightedDataSets")'
+    if not dataSetNames : dataSetNames = [ 'data set %d' % it for it, dataSet in enumerate(weightDataSets) ]
+
+    if splitCats : splitCats = list( set( cat for cat in splitCats ) )
+
+    # print total numbers of events
+    from math import sqrt
+    nEvTot = fullDataSet.sumEntries()
+    nEv    = [ dataSet.sumEntries() for dataSet in weightDataSets ]
+    frac   = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
+    signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
+
+    print
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' * 35 + '|' + '|'.join( ' {0:^28} '.format(name) for name in dataSetNames )
+    print ' ' * 27 + '  total |' + '|'.join( ' {0:^9s}   {1:^6s}   {2:^9s} '\
+          .format( 'N_%d' % it, 'f_%d' % it, u'N_%d/\u221AN'.encode('utf-8') % it ) for it, dataSet in enumerate(weightDataSets) )
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( 'total', nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+          .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+
+    if not splitCats :
+        print
+        return
+
+    # print numbers of events per splitting category
+    iters = { }
+    inds  = { }
+    labs  = { }
+    for cat in splitCats :
+        iters[cat] = 0
+        inds[cat]  = [ ]
+        labs[cat]  = [ ]
+        catIter = cat.typeIterator()
+        catState = catIter.Next()
+        while catState :
+            inds[cat].append( catState.getVal() )
+            labs[cat].append( catState.GetName() )
+
+            cut    = '!(%s-%d)' % ( cat.GetName(), inds[cat][-1] )
+            nEvTot = fullDataSet.sumEntries(cut)
+            nEv    = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
+            frac   = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
+            signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
+            print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( labs[cat][-1], nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+                  .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
+
+            catState = catIter.Next()
+
+        print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+
+    if len(splitCats) < 2 :
+        print
+        return
+
+    # print numbers of events for each combination of splitting categories
+    cont = True
+    while cont :
+        stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
+        cut       = '&&'.join( '!(%s-%d)' % ( cat.GetName(), inds[cat][ iters[cat] ] ) for cat in splitCats )
+        nEvTot    = fullDataSet.sumEntries(cut)
+        nEv       = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
+        frac      = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
+        signif    = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
+        print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( stateName, nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+              .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
+
+        iters[ splitCats[-1] ] += 1
+        for catIt in range( len(splitCats) ) :
+            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
+                if catIt == len(splitCats) - 1 :
+                    cont = False
+                else :
+                    iters[ splitCats[ -catIt - 1 ] ] = 0
+                    iters[ splitCats[ -catIt - 2 ] ] +=1
+            else :
+                continue
+
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print
 
 
 ###########################################################################################################################################
@@ -555,7 +734,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
                    , 'LineWidth'   : lambda x : residHist.SetLineWidth(x)
                    , 'Title'       : lambda x : residFrame.SetTitle(x)
                   }
-            for k, v in dataOpts.iteritems() : 
+            for k, v in dataOpts.iteritems() :
                 if k in fun : fun[k](v)
 
         # residFrame.addPlotable( residHist, 'p' if not usebar else 'b' )
@@ -1172,6 +1351,44 @@ class Sorter(object):
 ###########################################################################################################################################
 ## (Efficiency) Moments                                                                                                                  ##
 ###########################################################################################################################################
+def angularMomentIndices(label,angleFuncs) :
+        from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles,  JpsiphiHelicityAngles
+        transAngles = { JpsiphiTransversityAngles : True, JpsiphiHelicityAngles : False  }[ type(angleFuncs) ]
+        for case in switch(label):
+            if case('weights') :
+                return [ ( 0, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 0, 2, 1 ), ( 0, 2, -1 ), ( 0, 2, -2 )
+                       , ( 1, 0, 0 ), ( 1, 2, 1 ), ( 1, 2, -1 ) ]
+            if case('basis012') :
+                return [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                             for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            if case('basis012Plus') :
+                return [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ] + [ ( 0, 4, 0 ) ]
+            if case( 'basis012Thetal' ) :
+                return   [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ] \
+                       + [ ( 0, YIndex0, 0 ) for YIndex0 in range( 3, 5 ) ]
+            if case('basis012ThetalPhi') :
+                return  [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ] \
+                      + [ ( 0, YIndex0, YIndex1 ) for YIndex0 in range( 3, 5 ) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            if case('basis0123') :
+                return [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            if case('basis01234') :
+                return  [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(5) for YIndex0 in range(5)\
+                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+            if case('basisSig3') :
+                return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles\
+                              else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
+            if case('basisSig4') :
+                if transAngles :
+                    raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration with transversity angles: %s'\
+                                       % multiplyByAngEff)
+                return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ]
+            raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration: %s'\
+                                   % label)
+
 
 class RealMomentsBuilder ( dict ) :
     # TODO:  implement reduce: clone self, selecting a subset of available moments...
@@ -1529,7 +1746,7 @@ class RealMomentsBuilder ( dict ) :
         return RealSumPdf( name
                          , functions = funs
                          , coefficients = ( ConstVar( Name = ('C_%3.6f'%c[0]).replace('-','m').replace('.','d')
-                                                    , Value = c[0]*scale ) for c in coefs ) 
+                                                    , Value = c[0]*scale ) for c in coefs )
                          )
 
     def __mul__( self, pdf ) :
@@ -1561,7 +1778,7 @@ class RealMomentsBuilder ( dict ) :
                                  , ( f2.i(),f2.j(),f2.l(),f2.m() )
                                  , NamePostFix = namePF
                                  ) # build a wrapped object inside workspace
-            
+
         # TODO: check that 'we' contain efficiency moments?
         # TODO: and that we've actually either 'read' or 'compute'-ed them??
         from ROOT import RooP2VVAngleBasis
@@ -1754,7 +1971,7 @@ def getSplitPar( parName, stateName, parSet ) :
         fullNames = [ '%s_{%s}' % ( parName, ';'.join( comp for comp in perm ) )\
                      for perm in permutations( stateName, len(stateName) ) ]
     else :
-        fullNames = [ '%s_%s' % ( parName, stateName[0] ) ]
+        fullNames = [ ( '%s_%s' % ( parName, stateName[0] ) ) if stateName[0] else parName ]
 
     name = lambda par : par if type(par) == str else par.GetName()
     for par in parSet :

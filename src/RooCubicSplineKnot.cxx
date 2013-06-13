@@ -21,7 +21,7 @@ void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double
     using namespace std;
     int n = y.size();
     vector<double> uu(n-2),vv(n-3),ww(n-4), q(n-2);
-    assert( dy.size()==n);
+    assert( dy.size()==y.size());
     assert( size()==n);
     // lambda = 0 : no smoothing ; lambda -> 1: straight line (the ultimate smooth curve)
     if (lambda<0|| !(lambda<1)) {
@@ -80,21 +80,22 @@ void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y) const
  // see http://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm
  // for the O(N) algorithm to solve the relevant linear system...
     int n = size();
-    assert(y.size()==size());
+    assert(int(y.size())==size());
 
     double bf = y.front() / A(u(0),0) ;
     double bb = y.back()  / D(u(n-1),n-2);
 
-    y.front() = - bf * double(6) / sqr(h(1,0));
-    y.back()  = - bb * double(6) / sqr(h(n-1,n-2));
+    y.front() = - bf * double(6) / sqr(h(0));
+    y.back()  = - bb * double(6) / sqr(h(n-2));
 
     std::vector<double> c ; c.reserve(n);
     c.push_back( mc(0) / mb(0) );
     y[0] /=  mb(0);
     for (int i = 1; i < n; ++i) {
-        double m = double(1) / (mb(i) - ma(i) * c.back() ) ;
+        double m = double(1) / ( mb(i) - ma(i) * c.back() ) ;
         c.push_back( mc(i) * m );
-        y[i] = (y[i] - ma(i) * y[i - 1]) * m;
+        y[i] -=  ma(i) * y[i - 1];
+        y[i] *=  m;
     }
     for (int i = n-1 ; i-- > 0; ) y[i] -= c[i] * y[i + 1];
     y.push_back(bb); y.insert(y.begin(),bf); // ouch... expensive!
@@ -107,7 +108,7 @@ void RooCubicSplineKnot::fillPQRS() const {
     assert(_PQRS.empty());
     // P,Q,R,S only depend on the knot vector, so build at construction, and cache them...
     _PQRS.reserve(4*size());
-    for (unsigned int i=0;i<size();++i) {
+    for (int i=0;i<size();++i) {
         _PQRS.push_back( h(i+1,i-2)*h(i+1,i-1)*h(i+1,i) );
         _PQRS.push_back( h(i+1,i-1)*h(i+2,i-1)*h(i+1,i) );
         _PQRS.push_back( h(i+2,i  )*h(i+2,i-1)*h(i+1,i) );
@@ -129,10 +130,10 @@ double RooCubicSplineKnot::evaluate(double x, const RooArgList& b) const {
         return evaluate(u(i),b) + d(x,i)*r(i-1)*(get(b,i,2)-get(b,i,1));
     }
     assert( u(i) <= x && x<= u(i+1) );
-    return  get(b,i,0)*A(x,i) // TODO: substitute A,B,C,D 'in situ'
-         +  get(b,i,1)*B(x,i)
-         +  get(b,i,2)*C(x,i)
-         +  get(b,i,3)*D(x,i);
+    return get(b,i,0)*A(x,i) // TODO: substitute A,B,C,D 'in situ'
+         + get(b,i,1)*B(x,i)
+         + get(b,i,2)*C(x,i)
+         + get(b,i,3)*D(x,i);
 }
 
 double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
@@ -142,7 +143,7 @@ double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
         // the integrals of A,B,C,D from u(i) to u(i+1) only depend on the knot vector...
         // so we create them 'on demand' and cache the result
         _IABCD.reserve(4*size());
-        for (unsigned int j=0;j<size();++j) {
+        for (int j=0;j<size();++j) {
             push_back(_IABCD,   qua(h(j,j+1))/(4*P(j))
                             , - cub(h(j,j+1))*(3*u(j)-4*u(j-2)+u(j+1))/(12*P(j))
                               - sqr(h(j,j+1))*(3*sqr(u(j))-2*u(j-1)*u(j+1)+sqr(u(j+1))+u(j)*(-4*u(j-1)+2*u(j+1)-4*u(j+2)) +6*u(j-1)*u(j+2)-2*u(j+1)*u(j+2) )/(12*Q(j))
@@ -155,7 +156,7 @@ double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
     }
     assert(b.getSize()-2==size());
     double norm(0);
-    for (unsigned int i=0; i < size()-1; ++i) for (int k=0;k<4;++k) {
+    for (int i=0; i < size()-1; ++i) for (int k=0;k<4;++k) {
         norm += get(b,i,k)*RooCubicSplineKnot_aux::get(_IABCD,i,k) ;
     }
     return norm;
@@ -174,14 +175,15 @@ RooCubicSplineKnot::S_jk RooCubicSplineKnot::S_jk_sum(int i, const RooArgList& b
     if (_S_jk.empty()) {
         _S_jk.reserve(size()*4);
         for(int i=0;i<size();++i) {
-            _S_jk.push_back( -RooCubicSplineKnot::S_jk(u(i+1),u(i+1),u(i+1))/P(i) );
+            // This 'table' should be compatible with the definitions of A,B,C, and D...
+            _S_jk.push_back( -RooCubicSplineKnot::S_jk(u(i+1),u(i+1),u(i+1))/P(i) ); // A
             _S_jk.push_back(  RooCubicSplineKnot::S_jk(u(i-2),u(i+1),u(i+1))/P(i)
                              +RooCubicSplineKnot::S_jk(u(i-1),u(i+1),u(i+2))/Q(i)
-                             +RooCubicSplineKnot::S_jk(u(i  ),u(i+2),u(i+2))/R(i) );
+                             +RooCubicSplineKnot::S_jk(u(i  ),u(i+2),u(i+2))/R(i) ); // B
             _S_jk.push_back( -RooCubicSplineKnot::S_jk(u(i-1),u(i-1),u(i+1))/Q(i)
                              -RooCubicSplineKnot::S_jk(u(i-1),u(i  ),u(i+2))/R(i)
-                             -RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i+3))/S(i) );
-            _S_jk.push_back(  RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i  ))/S(i) );
+                             -RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i+3))/S(i) ); // C
+            _S_jk.push_back(  RooCubicSplineKnot::S_jk(u(i  ),u(i  ),u(i  ))/S(i) ); // D
         }
     }
     using RooCubicSplineKnot_aux::get;
@@ -191,3 +193,18 @@ RooCubicSplineKnot::S_jk RooCubicSplineKnot::S_jk_sum(int i, const RooArgList& b
          + get(_S_jk,i,3)*get(b,i,3);
 }
 
+// S matrix for natural extrapolation beyond the first/last knot...
+RooCubicSplineKnot::S_edge RooCubicSplineKnot::S_jk_edge(bool left, const RooArgList& b) const {
+       using RooCubicSplineKnot_aux::get;
+       if (left) {
+         // efficiency = return evaluate(u(0),b) - d(x,0)*r(0)*(get(b,0,0)-get(b,0,1)); 
+         double alpha = -r(0)*(get(b,0,0)-get(b,0,1));
+         double beta = evaluate(u(0),b)-alpha*u(0);
+         return S_edge( alpha, beta );
+       } else {
+         int i = size()-1;
+         double alpha = r(i-1)*(get(b,i,2)-get(b,i,1));
+         double beta = evaluate(u(i),b)-alpha*u(i);
+         return S_edge(alpha,beta);
+       }
+}

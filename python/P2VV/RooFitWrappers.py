@@ -1438,13 +1438,34 @@ class BinnedPdf( Pdf ) :
         elif 'Observable' in kwargs :
             # single continuous variable dependence
             var = kwargs.pop('Observable')
-            binning = kwargs.pop('Binning')
-            binning = var.getBinning(binning).GetName() if type(binning) == str else binning.GetName()
 
             if 'Function' in kwargs :
                 # bin coefficients are given by a function
                 from ROOT import RooBinnedPdf
+                binning = kwargs.pop('Binning')
+                binning = var.getBinning(binning).GetName() if type(binning) == str else binning.GetName()
                 bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], __dref__(var), binning, __dref__( kwargs.pop('Function') ) )
+
+            elif 'Histogram' in kwargs:
+                hist = kwargs.pop('Histogram')
+                xaxis = hist.GetXaxis()
+                from array import array
+                bins = array('d', (xaxis.GetBinLowEdge(i) for i in range(1, hist.GetNbinsX() + 2)))
+                self._binHeights = [hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)]
+                self._binHeights = [RealVar('%s_bin_%03d' % (argDict['Name'], i + 1), Observable = False, Value = v,
+                                   Constant = True) for i, v in enumerate(self._binHeights)]
+                # Add a binning for this category and state
+                from ROOT import RooBinning
+                self._binning = RooBinning(len(bins) - 1, bins)
+                binning_name = kwargs.pop('BinningName', hist.GetName()+'_efficiency_binning')
+                self._binning.SetName(binning_name)
+                var.setBinning(self._binning, binning_name)
+                from ROOT import RooArgList
+                coefList = RooArgList( __dref__(coef) for coef in self._binHeights )
+                from ROOT import RooBinnedPdf
+                bPdf = RooBinnedPdf( argDict['Name'],argDict['Name'],__dref__(var),binning_name, coefList
+                                    , int( kwargs.pop( 'BinIntegralCoefs', 0 ) ) )
+
 
             else:
                 # independent bin coefficients are specified
@@ -1454,6 +1475,8 @@ class BinnedPdf( Pdf ) :
                 coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
 
                 from ROOT import RooBinnedPdf
+                binning = kwargs.pop('Binning')
+                binning = var.getBinning(binning).GetName() if type(binning) == str else binning.GetName()
                 bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], __dref__(var), binning, coefList
                                     , int( kwargs.pop( 'BinIntegralCoefs', 0 ) ) )
 
@@ -1704,13 +1727,12 @@ class CubicSplineFun(RooObject):
         def __make_vector(values):
             from ROOT import std
             v = std.vector('double')(len(values))
-            for i, val in enumerate(values):
-                v[i] = val
+            for i, val in enumerate(values): v[i] = val
             return v
 
         from ROOT import RooCubicSplineFun
         if hist:
-            csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeff)
+            csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeffs)
         elif knots and coeffs and not values:
             al = RooArgList()
             for c in coeffs:

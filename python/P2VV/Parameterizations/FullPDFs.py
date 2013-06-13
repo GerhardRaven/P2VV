@@ -423,13 +423,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ####################################################
 
         # angular functions
+        helAngs = not transAngles
         if transAngles :
-            helAngs = False
             from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
-
         else :
-            helAngs = True
-            from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
+            from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngleFuncs
 
         self._angleFuncs = AngleFuncs(  cpsi   = dict(Name = 'helcosthetaK' if helAngs else 'trcospsi',   MinMax = angRanges['cpsi'  ][0])
                                       , ctheta = dict(Name = 'helcosthetaL' if helAngs else 'trcostheta', MinMax = angRanges['ctheta'][0])
@@ -644,20 +642,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             trackChi2Cuts = ' && '.join( '%s < %f' % ( trackChi2, trackChi2.getMax() ) for trackChi2 in\
                                                       [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ] )
 
-            if selection == 'HLT1Unbiased' :
-                ntupleCuts += '%s && %s==1 && %s==1 && %s==1 && %s'\
-                       % ( dataSampleCuts, sel, hlt1UB, hlt2B, trackChi2Cuts )
-            elif selection == 'HLT1ExclBiased' :
-                ntupleCuts += '%s && %s==1 && %s==1 && %s==1 && %s'\
-                       % ( dataSampleCuts, sel, hlt1ExclB, hlt2B, trackChi2Cuts )
-            elif selection == 'paper2012' :
-                ntupleCuts += '%s && %s==1 && (%s==1 || %s==1) && %s==1 && %s'\
-                       % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
-            elif selection == 'timeEffFit' :
-                ntupleCuts += '%s && %s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s'\
-                       % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
-            else :
-                raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown selection: "%s"' % selection )
+            selections = dict( HLT1Unbiased = '%s && %s==1 && %s==1 && %s==1 && %s'\
+                                              % ( dataSampleCuts, sel, hlt1UB, hlt2B, trackChi2Cuts )
+                             , HLT1ExclBiased = '%s && %s==1 && %s==1 && %s==1 && %s'\
+                                              % ( dataSampleCuts, sel, hlt1ExclB, hlt2B, trackChi2Cuts )
+                             , paper2012 = '%s && %s==1 && (%s==1 || %s==1) && %s==1 && %s'\
+                                              % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
+                             , timeEffFit = '%s && %s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s'\
+                                              % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
+                             )
+            ntupleCuts += selections[selection]
 
             #ntupleCuts = dataSample
             from P2VV.GeneralUtils import readData
@@ -771,9 +765,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._massFitResult.covarianceMatrix().Print()
             self._massFitResult.correlationMatrix().Print()
 
+            splitCats = [ [ ] ]
             if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or paramKKMass == 'simultaneous' ) :
                 # categories for splitting the PDF
-                splitCats = [ [ ] ]
                 splitCats[0] += [ hlt1ExclB ] if selection == 'paper2012' else [ hlt1ExclB, hlt2B ] if selection == 'timeEffFit' else [ ]
                 splitCats[0] += [ self._KKMassCat ] if paramKKMass == 'simultaneous' else [ ]
 
@@ -792,13 +786,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                       )
 
                 # set yields for categories
-                splitCat     = self._sWeightMassPdf.indexCat()
-                splitCatIter = splitCat.typeIterator()
+                splitCat      = self._sWeightMassPdf.indexCat()
+                splitCatIter  = splitCat.typeIterator()
                 splitCatState = splitCatIter.Next()
-                splitCatPars = self._sWeightMassPdf.getVariables()
+                massPdfPars   = self._sWeightMassPdf.getVariables()
                 while splitCatState :
-                    sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', splitCatState.GetName(), splitCatPars )
-                    bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    splitCatState.GetName(), splitCatPars )
+                    sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', splitCatState.GetName(), massPdfPars )
+                    bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    splitCatState.GetName(), massPdfPars )
 
                     if splitCat.isFundamental() :
                         selStr = '!(%s-%d)' % ( splitCat.GetName(), splitCatState.getVal() )
@@ -896,7 +890,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         par.setConstant(False)
 
             else :
-                splitCatPars = None
+                massPdfPars = self._massPdf.getVariables()
                 self._sWeightMassPdf = self._massPdf
 
 
@@ -924,119 +918,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 dataFile.Close()
 
             # print signal/background info to screen
-            splitCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
-                         , self._dataSets['data'].get().find( hlt2B.GetName() )
-                        ]
+            allCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
+                       , self._dataSets['data'].get().find( hlt2B.GetName() )
+                      ]
             if hasattr( self, '_KKMassCat' ) and paramKKMass == 'simultaneous' :
-                splitCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
-            splitCats = [ cat for cat in splitCats if cat ]
-            self._dataSets['sigSWeightData'].Print()
-            self._dataSets['bkgSWeightData'].Print()
-            nEv    = self._dataSets['data'].sumEntries()
-            nSigEv = self._dataSets['sigSWeightData'].sumEntries()
-            nBkgEv = self._dataSets['bkgSWeightData'].sumEntries()
-            S_B    = nSigEv / nBkgEv
-            S_SB   = nSigEv / nEv
-            signif = nSigEv / sqrt(nEv)
-            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: number of events:'
-            print '                  | total | signal   | backgr.  | S/B    | S/(S+B) | S/sqrt(S+B)'
-            print '    --------------|-------|----------|----------|--------|---------|------------'
-            print '            total | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f' % ( nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
-            print '    --------------|-------|----------|----------|--------|---------|------------'
+                allCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
+            allCats = [ cat for cat in allCats if cat ]
 
-            if splitCats :
-                iters = { }
-                inds  = { }
-                labs  = { }
-                for cat in splitCats :
-                    iters[cat] = 0
-                    inds[cat]  = [ ]
-                    labs[cat]  = [ ]
-                    catIter = cat.typeIterator()
-                    catState = catIter.Next()
-                    while catState :
-                        inds[cat].append( catState.getVal() )
-                        labs[cat].append( catState.GetName() )
-
-                        cut    = '!(%s-%d)' % ( cat.GetName(), catState.getVal() )
-                        nEv    = self._dataSets['data'].sumEntries(cut)
-                        nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
-                        nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
-                        S_B    = nSigEv / nBkgEv
-                        S_SB   = nSigEv / nEv
-                        signif = nSigEv / sqrt(nEv)
-                        print '    %13s | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f'\
-                              % ( catState.GetName(), nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
-
-                        catState = catIter.Next()
-
-                    print '    --------------|-------|----------|----------|--------|---------|------------'
-
-                if len(splitCats) > 1 :
-                    cont = True
-                    while cont :
-                        cut    = '&&'.join( '!(%s-%d)' % ( cat.GetName(), inds[cat][ iters[cat] ] ) for cat in splitCats )
-                        nEv    = self._dataSets['data'].sumEntries(cut)
-                        nSigEv = self._dataSets['sigSWeightData'].sumEntries(cut)
-                        nBkgEv = self._dataSets['bkgSWeightData'].sumEntries(cut)
-                        S_B    = nSigEv / nBkgEv
-                        S_SB   = nSigEv / nEv
-                        signif = nSigEv / sqrt(nEv)
-                        print '    %13s | %5.0f | %8.2f | %8.2f | %6.4f | %6.4f  | %7.3f'\
-                               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nBkgEv, S_B, S_SB, signif )
-
-                        iters[ splitCats[-1] ] += 1
-                        for catIt in range( len(splitCats) ) :
-                            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
-                                if catIt == len(splitCats) - 1 :
-                                    cont = False
-                                else :
-                                    iters[ splitCats[ -catIt - 1 ] ] = 0
-                                    iters[ splitCats[ -catIt - 2 ] ] +=1
-                            else :
-                                continue
-
-                    print '    --------------|-------|----------|----------|--------|---------|--------'
-                print
-
-                if splitCatPars :
-                    # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
-                    print '                  | total |        signal       |     background      |        S/B        |       S/(S+B)     |   S/sqrt(S+B)   '
-                    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
-                    for cat in iters.iterkeys() : iters[cat] = 0
-                    cont = True
-                    while cont :
-                        stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
-                        sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', '{%s}' % stateName, splitCatPars )
-                        bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    '{%s}' % stateName, splitCatPars )
-
-                        nSigEv = sigYield.getVal()
-                        nBkgEv = bkgYield.getVal()
-                        nEv    = nSigEv + nBkgEv
-                        S_SB   = nSigEv / nEv
-                        S_B    = nSigEv / nBkgEv
-                        signif = nSigEv / sqrt(nEv)
-
-                        nSigErr     = sigYield.getError()
-                        nSigErrCorr = sqrt( nSigErr**2 - nSigEv**2 / nEv )
-                        S_SBErr     = nSigErrCorr / nEv
-                        S_BErr      = S_SBErr / ( 1 - S_SB )**2
-                        signifErr   = S_SBErr * sqrt(nEv)
-                        print '    %13s | %5.0f | %8.2f +/- %6.2f | %8.2f +/- %6.2f | %6.4f +/- %6.4f | %6.4f +/- %6.4f | %6.2f +/- %4.2f'\
-                               % ( ';'.join( labs[cat][ iters[cat] ] for cat in splitCats ), nEv, nSigEv, nSigErrCorr\
-                                  , nBkgEv, nSigErrCorr, S_B, S_BErr, S_SB, S_SBErr, signif, signifErr )
-
-                        iters[ splitCats[-1] ] += 1
-                        for catIt in range( len(splitCats) ) :
-                            if iters[ splitCats[ -catIt - 1 ] ] >= splitCats[ -catIt - 1 ].numTypes() :
-                                if catIt == len(splitCats) - 1 :
-                                    cont = False
-                                else :
-                                    iters[ splitCats[ -catIt - 1 ] ] = 0
-                                    iters[ splitCats[ -catIt - 2 ] ] +=1
-                            else :
-                                continue
-                    print '    --------------|-------|---------------------|---------------------|-------------------|-------------------|-----------------'
+            from P2VV.GeneralUtils import printEventYields, printEventYieldsData
+            for dataSet in self._dataSets.itervalues() : dataSet.Print()
+            printEventYields(  ParameterSet        = massPdfPars
+                             , YieldNames          = [ 'N_sigMass', 'N_bkgMass' ]
+                             , SplittingCategories = [ cat for catList in splitCats for cat in catList ]
+                            )
+            printEventYieldsData(  FullDataSet         = self._dataSets['SWeightData']
+                                 , WeightedDataSets    = [ self._dataSets[name] for name in [ 'sigSWeightData', 'bkgSWeightData' ] ]
+                                 , DataSetNames        = [ 'Signal', 'Background' ]
+                                 , SplittingCategories = allCats
+                                )
 
             # create signal and background data sets with side band ranges
             self._dataSets['sigRangeData'] = self._dataSets['data'].reduce( CutRange = 'Signal'       )
@@ -1318,13 +1217,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 timeResArgs['timeResComb'] = dict(Name = 'timeResComb', Value = 1.4918, Error = 4.08e-03, MinMax = ( 0.1, 5. ), Constant = constant)
                 timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = 6.0074, Error = 1.89e-01, MinMax = (1, 10), Constant = constant)
                 timeResArgs['timeResSigmaFrac2'] = dict( Name = 'timeResSigmaFrac2', Value = 1.5818e-02, Error = 1.07e-03, MinMax = (0.001, 0.999), Constant = constant)
-                covariance = {('timeResComb', 'timeResComb'): 1.663e-05,
-                              ('timeResComb', 'timeResSigmaFrac2'): 1.322e-06,
-                              ('timeResComb', 'timeResSigmaSF2'): 0.0001297,
-                              ('timeResSigmaFrac2', 'timeResSigmaFrac2'): 1.146e-06,
-                              ('timeResSigmaFrac2', 'timeResSigmaSF2'): -0.0001486,
-                              ('timeResSigmaSF2', 'timeResSigmaSF2'): 0.03556}
-                timeResArgs['Covariance'] = covariance
+                timeResArgs['Covariance'] = { ('timeResComb',       'timeResComb'       ) :  1.663e-05,
+                                              ('timeResComb',       'timeResSigmaFrac2' ) :  1.322e-06,
+                                              ('timeResComb',       'timeResSigmaSF2'   ) :  0.0001297,
+                                              ('timeResSigmaFrac2', 'timeResSigmaFrac2' ) :  1.146e-06,
+                                              ('timeResSigmaFrac2', 'timeResSigmaSF2'   ) : -0.0001486,
+                                              ('timeResSigmaSF2',   'timeResSigmaSF2'   ) :  0.03556   }
                 timeResArgs['nGauss'] = 2
                 if 'constmean' in timeResType.lower() :
                     timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
@@ -1599,7 +1497,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             , tagCatCoefs = self._taggingParams['tagCatCoefs']
                            )
 
-        args = dict(  time                   = time
+        args.update(  time                   = time
                     , tau                    = self._lifetimeParams['MeanLifetime']
                     , dGamma                 = self._lifetimeParams['dGamma']
                     , dm                     = self._lifetimeParams['dM']
@@ -1614,7 +1512,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     , ExternalConstraints    = self._lifetimeParams.externalConstraints()\
                                                + self._timeResModel.externalConstraints()\
                                                + self._taggingParams.externalConstraints()
-                    , **args
                    )
 
         # build signal PDF
@@ -1672,9 +1569,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if multiplyByTimeEff in [ 'all', 'signal' ] :
             # multiply signal PDF with time acceptance
             print 'P2VV - INFO:  Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with lifetime efficiency function'
-            args['resolutionModel'] = self._timeResModel['model']
-            args['ConditionalObservables'] = list( set( args['ConditionalObservables'] + self._timeResModel.conditionalObservables() ) )
-            args['ExternalConstraints'] = list( set( args['ExternalConstraints'] + self._timeResModel.externalConstraints() ) )
+            args.update( resolutionModel= self._timeResModel['model']
+                       , ConditionalObservables = list( set( args['ConditionalObservables'] + self._timeResModel.conditionalObservables() ) )
+                       , ExternalConstraints = list( set( args['ExternalConstraints'] + self._timeResModel.externalConstraints() ) )
+                       )
             sigPdfTimeAcc = BTagDecay( 'sig_t_angles_timeEff', **args )
         else :
             sigPdfTimeAcc = sigPdf
@@ -1689,46 +1587,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"'\
                   % angEffMomentsFile
 
-            from P2VV.GeneralUtils import RealMomentsBuilder
+            from P2VV.GeneralUtils import RealMomentsBuilder,angularMomentIndices
             moments = RealMomentsBuilder()
-            if multiplyByAngEff == 'weights' :
-                angMomInds = [ ( 0, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 0, 2, 1 ), ( 0, 2, -1 ), ( 0, 2, -2 )
-                              , ( 1, 0, 0 ), ( 1, 2, 1 ), ( 1, 2, -1 ) ]
-            elif multiplyByAngEff == 'basis012' :
-                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            elif multiplyByAngEff == 'basis012Plus' :
-                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-                angMomInds += [ ( 0, 4, 0 ) ]
-            elif multiplyByAngEff == 'basis012Thetal' :
-                angMomInds  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-                angMomInds += [ ( 0, YIndex0, 0 ) for YIndex0 in range( 3, 5 ) ]
-            elif multiplyByAngEff == 'basis012ThetalPhi' :
-                angMomInds  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
-                               for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-                angMomInds += [ ( 0, YIndex0, YIndex1 ) for YIndex0 in range( 3, 5 ) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            elif multiplyByAngEff == 'basis0123' :
-                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4)\
-                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            elif multiplyByAngEff == 'basis01234' :
-                angMomInds = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(5) for YIndex0 in range(5)\
-                              for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-            elif multiplyByAngEff == 'basisSig3' :
-                angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ) ] if not transAngles\
-                              else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
-            elif multiplyByAngEff == 'basisSig4' :
-                if not transAngles :
-                    angMomInds = [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ]
-                else :
-                    raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration with transversity angles: %s'\
-                                       % multiplyByAngEff)
-            else :
-                raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration: %s'\
-                                   % multiplyByAngEff)
-
-            moments.appendPYList( self._angleFuncs.angles, angMomInds )
+            moments.appendPYList( self._angleFuncs.angles, angularMomentIndices(multiplyByAngEff,self._angleFuncs ) )
             moments.read(angEffMomentsFile)
             moments.Print()
             sigPdfTimeAcc = moments * sigPdfTimeAcc
