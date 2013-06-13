@@ -177,7 +177,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
     """reads data from file (RooDataSet or TTree(s))
     """
     from ROOT import RooFit
-    noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
+    noNAN = ( ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables ) ) if hasattr( observables, '__iter__' ) else ''
     cuts = kwargs.pop( 'cuts', '' )
     tmp_file = None
     if observables :
