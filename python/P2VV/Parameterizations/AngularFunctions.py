@@ -31,9 +31,9 @@ class AngleDefinitions( _util_parse_mixin ) :
 class JpsiphiHelicityAngles( AngleDefinitions ) :
     def __init__( self, **kwargs ) :
         from math import pi
-        d = {  'cpsi'   : self._parseArg( 'cpsi',   kwargs, SingleArgKey = 'Name', Name = 'helcthetaK'
+        d = {  'cpsi'   : self._parseArg( 'cpsi',   kwargs, SingleArgKey = 'Name', Name = 'helcosthetaK'
                                          , Title = 'cos(#theta_{K})',   MinMax = ( -1,  1 ),  Observable = True )
-             , 'ctheta' : self._parseArg( 'ctheta', kwargs, SingleArgKey = 'Name', Name = 'helcthetaL'
+             , 'ctheta' : self._parseArg( 'ctheta', kwargs, SingleArgKey = 'Name', Name = 'helcosthetaL'
                                          , Title = 'cos(#theta_{#mu})', MinMax = ( -1,  1 ),  Observable = True )
              , 'phi'    : self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name = 'helphi'
                                          , Title = '#phi_{h}',          MinMax = ( -pi, pi ), Observable = True, Unit = 'rad' )
@@ -45,9 +45,9 @@ class JpsiphiHelicityAngles( AngleDefinitions ) :
 class JpsiphiTransversityAngles( AngleDefinitions ) :
     def __init__( self, **kwargs ) :
         from math import pi
-        d = { 'cpsi' :   self._parseArg( 'cpsi',   kwargs, SingleArgKey = 'Name', Name='trcpsi'
+        d = { 'cpsi' :   self._parseArg( 'cpsi',   kwargs, SingleArgKey = 'Name', Name='trcospsi'
                                         , Title = 'cos(#psi_{tr})',   MinMax=( -1,  1 ),  Observable = True )
-            , 'ctheta' : self._parseArg( 'ctheta', kwargs, SingleArgKey = 'Name', Name='trctheta'
+            , 'ctheta' : self._parseArg( 'ctheta', kwargs, SingleArgKey = 'Name', Name='trcostheta'
                                         , Title = 'cos(#theta_{tr})', MinMax=( -1,  1 ),  Observable = True )
             , 'phi'   :  self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name='trphi'
                                         , Title = '#phi_{tr}',        MinMax=( -pi, pi ), Observable = True )
