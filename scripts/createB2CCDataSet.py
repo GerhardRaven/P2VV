@@ -42,10 +42,15 @@ from ROOT import RooNumber
 RooInf  = RooNumber.infinity()
 KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
-obsKeys = [  'mass', 'mumuMass', 'KKMass', 'time', 'timeRes', 'ctk', 'ctl', 'phih', 'cpsi', 'cttr', 'phitr'
-           , 'wTag', 'wTagOS', 'wTagSS', 'tagDec', 'tagDecOS', 'tagDecSS', 'tagCatOS'
+obsKeys = [  'mass', 'KKMass', 'mumuMass'
+           , 'time', 'timeRes'
+           , 'ctk', 'ctl', 'phih'
+           #, 'cpsi', 'cttr', 'phitr'
+           #, 'wTag', 'tagDec'
+           , 'wTagOS', 'tagDecOS'#, 'tagCatOS'
+           , 'wTagSS', 'tagDecSS'
            #, 'sel', 'selA', 'selB'
-           , 'hlt1ExclB', 'hlt1B', 'hlt1UB', 'hlt2B', 'hlt2UB'
+           , 'hlt1ExclB'#, 'hlt1B', 'hlt1UB', 'hlt2B', 'hlt2UB'
           ]
 
 obsDict = dict(  mass      = ( True,  'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
@@ -423,8 +428,8 @@ dataSets['sigSWeightData']  = SData.data( sigMassComps.GetName()  )
 dataSets['cbkgSWeightData'] = SData.data( cbkgMassComps.GetName() )
 
 # print signal/background info to screen
-allCats = [  dataSets['data'].get().find( observables['hlt1ExclB'].GetName() )
-           , dataSets['data'].get().find( observables['hlt2B'].GetName() )
+allCats = [  dataSets['data'].get().find( obsDict['hlt1ExclB'][1] )
+           , dataSets['data'].get().find( obsDict['hlt2B'][1] )
           ]
 if len(KKMassBinBounds) > 2 : allCats.append( dataSets['data'].get().find( observables['KKMassCat'].GetName() ) )
 allCats = [ cat for cat in allCats if cat ]
@@ -490,17 +495,17 @@ if plotsFilePath :
           in enumerate ( zip(  massCanvs
                              , [ '', 'Signal', 'LeftSideBand', 'RightSideBand', 'PeakBkg' ]
                              , numMassBins
-                             , [  observables['mass'].GetTitle()
-                                , observables['mass'].GetTitle() + ' mass fit - signal'
-                                , observables['mass'].GetTitle() + ' mass fit - left side band'
-                                , observables['mass'].GetTitle() + ' mass fit - right side band'
-                                , observables['mass'].GetTitle() + ' mass fit - peaking background'
+                             , [  obsDict['mass'][2]
+                                , obsDict['mass'][2] + ' mass fit - signal'
+                                , obsDict['mass'][2] + ' mass fit - left side band'
+                                , obsDict['mass'][2] + ' mass fit - right side band'
+                                , obsDict['mass'][2] + ' mass fit - peaking background'
                                ]
-                             , [  observables['mass'].GetName()
-                                , observables['mass'].GetName() + ' fit - signal'
-                                , observables['mass'].GetName() + ' fit - left side band'
-                                , observables['mass'].GetName() + ' fit - right side band'
-                                , observables['mass'].GetName() + ' fit - peaking background'
+                             , [  obsDict['mass'][1]
+                                , obsDict['mass'][1] + ' fit - signal'
+                                , obsDict['mass'][1] + ' fit - left side band'
+                                , obsDict['mass'][1] + ' fit - right side band'
+                                , obsDict['mass'][1] + ' fit - peaking background'
                                ]
                              , [ True, False, False, False, False ]
                              , [ massLogPlotRange, ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
@@ -617,10 +622,10 @@ if addTaggingObs :
     print 'P2VV - INFO: createB2CCDataSet: building tagging categories'
 
     # tagging observable names
-    wTagOSName   = observables['wTagOS'].GetName()
-    wTagSSName   = observables['wTagSS'].GetName()
-    tagDecOSName = observables['tagDecOS'].GetName()
-    tagDecSSName = observables['tagDecSS'].GetName()
+    wTagOSName   = obsDict['wTagOS'][1]
+    wTagSSName   = obsDict['wTagSS'][1]
+    tagDecOSName = obsDict['tagDecOS'][1]
+    tagDecSSName = obsDict['tagDecSS'][1]
 
     # get tagging category bins
     from P2VV.Parameterizations.FlavourTagging import getTagCatParamsFromData as getTagParams
