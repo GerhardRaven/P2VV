@@ -3,6 +3,7 @@
 ##                                                                                                                                       ##
 ## authors:                                                                                                                              ##
 ##   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl                                                                       ##
+##   RA,  Roel Aaij,          Nikhef, raaij@nikhef.nl                                                                                    ##
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
@@ -280,11 +281,13 @@ class Single_Exponent_Time( TimePdf ) :
 
 class Prompt_Peak( TimePdf ) :
     def __init__(self, time, resolutionModel, **kwargs) :
-        self._parseArg('prompt_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 0, Constant = True)
+        prefix = kwargs.pop('Prefix', '')
+        self._parseArg('%sprompt_tau' % prefix, kwargs, Title = 'lifetime', Unit = 'ps',
+                       Value = 0, Constant = True)
 
         from P2VV.RooFitWrappers import Pdf
         from ROOT import RooDecay as Decay
-        TimePdf.__init__(self, pdf = Pdf( Name = kwargs.pop('Name',self.__class__.__name__)
+        TimePdf.__init__(self, pdf = Pdf( Name = prefix + kwargs.pop('Name', self.__class__.__name__)
                                           , Type = Decay
                                           , Parameters = (time, self._prompt_tau, resolutionModel, 'SingleSided')
                                           , ConditionalObservables = resolutionModel.ConditionalObservables()

@@ -22,6 +22,8 @@ parser.add_option('-s', "--simultaneous", dest = "simultaneous", default = False
                   action = 'store_true', help = 'Use sigmat offset')
 parser.add_option("--plot", dest = "make_plots", default = False,
                   action = 'store_true', help = 'Make plots')
+parser.add_option("--no-fit", dest = "fit", default = True,
+                  action = 'store_false', help = 'Do the time fit')
 parser.add_option("--fit-mass", dest = "fit_mass", default = False,
                   action = 'store_true', help = 'Fit the mass spectrum even if data is available.')
 parser.add_option("--force-write", dest = "write_data", default = False,
@@ -40,6 +42,11 @@ parser.add_option("--wpv-gauss-width", dest = "wpv_gauss_width", default = 0, ty
                   action = 'store', help = 'Width of the Gaussian used for the WPV component; 0 means floating.')
 parser.add_option("--peak-only", dest = "peak_only", default = False, action = 'store_true',
                   help = 'Fit only the peak between -0.2 and 0.2 ps')
+parser.add_option("--split-mean", dest = "split_mean", default = False, action = 'store_true',
+                  help = 'Split the mean of the Gaussians in a simultaneous fit.')
+parser.add_option("--split", dest = "split", default = 'sigmat', action = 'store', type = 'string',
+                  help = 'Which categories should be used to split, [sigmat, momentum]')
+
 (options, args) = parser.parse_args()
 
 if len(args) != 2:
@@ -61,7 +68,7 @@ input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPresc
                         'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_2012.root'),
                         'workspace' : 'Bs2JpsiPhiPrescaled_2012_workspace',
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},
-              'MC11a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130222.root'),
+              'MC11a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130613.root'),
                          'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
                          'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
                          'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_Prescaled.root')},
@@ -95,7 +102,7 @@ if options.peak_only:
 elif options.wpv and options.wpv_type == 'Mixing':
     t_minmax = (-5, 14)
 else:
-    t_minmax = (-1.5, 8)
+    t_minmax = (-5, 8)
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
@@ -111,23 +118,21 @@ st.setBins(500, 'cache')
 # Categories needed for selecting events
 unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
+momentum = RealVar('B_P', Title = 'B momentum', Unit = 'MeV', Observable = True, MinMax = (0, 1e6))
+pt = RealVar('B_Pt', Title = 'B transverse momentum', Unit = 'MeV', Observable = True, MinMax = (0, 1e6))
 nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 zerr = RealVar('B_s0_bpv_zerr', Title = 'Best PV Z error', Unit = 'mm', Observable = True, MinMax = (0, 1))
 
-zerr_bins = [0, 0.0237, 0.0292, 0.0382, 1]
-
-observables = [t, m, mpsi, st, unbiased, selected, nPV, zerr]
+observables = [t, m, mpsi, st, unbiased, selected, nPV, zerr, momentum, pt]
 if args[0].find('MC11a') != -1:
     t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-1100, 14))
-    observables.append(t_true)
+    t_diff = RealVar('time_diff', Unit = 'ps', Observable = True, MinMax = (-1, 1))
+    observables.extend([t_true, t_diff])
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential
 from ROOT import RooDecay as Decay
-
-signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =  1.5,
-                     MinMax = (1., 2.5))
 
 # Time resolution model
 sig_tres = None
@@ -135,27 +140,28 @@ if args[1] == 'single':
     from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = False,
-                              TimeResSFModel = options.model,
+                              TimeResSFModel = options.model, SplitMean = options.split_mean,
                               timeResMu = dict(Value = 0, MinMax = (-2, 2), Constant = False),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 elif args[1] == 'double':
     mu = dict(MinMax = (-0.010, 0.010))
-    mu['Constant'] = options.simultaneous
-    mu_values = {'MC11a' : -0.00307478, 'MC11a_incl_Jpsi' : -0.000408, '2011' : -0.00407301, '2012' : -0.00365}
+    mu['Constant'] = options.simultaneous and not options.split_mean
+    mu_values = {'MC11a' : 0, 'MC11a_incl_Jpsi' : -0.000408, '2011' : -0.00407301, '2012' : -0.00365}
     mu['Value'] = mu_values[args[0]]
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-    sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
-                              PerEventError = options.pee, Parameterise = options.parameterise,
-                              TimeResSFOffset = options.model != '', SplitFracs = False, timeResMu = mu,
+    sig_tres = TimeResolution(Name = 'tres', time = t_diff if args[0] == 'MC11a' else t, sigmat = st,
+                              Cache = True, PerEventError = options.pee,
+                              Parameterise = options.parameterise, TimeResSFOffset = options.model != '',
+                              SplitFracs = False, timeResMu = mu, GExp = {2 : args[0] == 'MC11a', 1 : False},
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
-                              Fractions = [(2, 0.2)])
+                              Fractions = [(2, 0.2)], SplitMean = options.split_mean)
 elif args[1] == 'triple':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
                               PerEventError = [False, options.pee, options.pee],
                               TimeResSFOffset = options.model != '', Parameterise = options.parameterise,
                               ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)],
-                              Fractions = [(3, 0.1), (2, 0.2)])
+                              Fractions = [(3, 0.1), (2, 0.2)], SplitMean = options.split_mean)
 
 # J/psi mass pdf
 if args[0] == 'MC11a_incl_Jpsi':
@@ -197,16 +203,14 @@ bkg_t = bkg_t.pdf()
 background = Component('background', (bkg_mpsi.pdf(), bkg_m, bkg_t), Yield = (19620,100,500000) )
 
 # B signal component
-from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time as Signal_Time
-sig_t = Signal_Time(time = t, resolutionModel = sig_tres.model(), Name = 'sig_t',
-                    tau = dict(Name = 'sig_tau', Value = 1.5, MinMax = (0.5, 2.5)))
+from P2VV.Parameterizations.TimePDFs import Prompt_Peak
+sig_t = Prompt_Peak(t_diff, resolutionModel = sig_tres.model(), Name = 'sig_t')
 
 from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_Mass
 sig_m = Signal_Mass(Name = 'sig_m', mass = m) 
 signal = Component('signal', (sig_m.pdf(), sig_t.pdf()), Yield = (150000, 10000, 1000000))
 
 # Prompt component
-from P2VV.Parameterizations.TimePDFs import Prompt_Peak
 prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (160160, 100, 500000))
 
@@ -229,16 +233,24 @@ hd = ('%d' % hash(cut)).replace('-', 'm')
 
 if options.simultaneous:
     from array import array 
-    if args[0] == 'MC11a':
-        split_bins = array('d', [0.01000, 0.02066, 0.02375, 0.02616, 0.02833,
-                                 0.03047, 0.03269, 0.03520, 0.03837, 0.04343, 0.07000])
-    elif args[0] == 'MC11a_incl_Jpsi':
-        split_bins = array('d', [0.01000, 0.02414, 0.02720, 0.02948, 0.03145,
-                                 0.03338, 0.03537, 0.03761, 0.04049, 0.04504, 0.07000])
-    else:
-        split_bins = array('d', [0.01000, 0.02410, 0.02727, 0.02969, 0.03186,
-                                 0.03398, 0.03632, 0.03923, 0.04378, 0.07000])
-    directory = '%sbins_%4.2ffs_simul/%s' % (len(split_bins) - 1, (1000 * (split_bins[1] - split_bins[0])), hd)
+    if options.split == 'sigmat':
+        if args[0] == 'MC11a':
+            st_bins = array('d', [0.01000, 0.02066, 0.02375, 0.02616, 0.02833,
+                                  0.03047, 0.03269, 0.03520, 0.03837, 0.04343, 0.07000])
+        elif args[0] == 'MC11a_incl_Jpsi':
+            st_bins = array('d', [0.01000, 0.02414, 0.02720, 0.02948, 0.03145,
+                                  0.03338, 0.03537, 0.03761, 0.04049, 0.04504, 0.07000])
+        else:
+            st_bins = array('d', [0.01000, 0.02410, 0.02727, 0.02969, 0.03186,
+                                  0.03398, 0.03632, 0.03923, 0.04378, 0.07000])
+        directory = '%sbins_%4.2ffs_simul/%s' % (len(st_bins) - 1, (1000 * (st_bins[1] - st_bins[0])), hd)
+    elif options.split == 'momentum':
+        pt_bins = array('d', [0., 1871.9, 3352.0, 1e6])
+        momentum_bins = array('d', [0., 58962., 88835., 1e6])
+        directory = 'p_pt_{0}bins_simul/{1}'.format(len(pt_bins) * len(momentum_bins), hd)
+    elif options.split == 'pv_zerr':
+        zerr_bins = array('d', [0, 0.0237, 0.029, 0.0376, 1])
+        directory = 'pv_zerr_{0}bins_simul/{1}'.format(len(zerr_bins), hd)
 else:
     directory = '1bin_%4.2ffs_simple/%s' % (1000 * (t.getMax() - t.getMin()), hd)
 
@@ -337,9 +349,18 @@ if not fit_mass:
             results.append(tr)
 
     if options.simultaneous:
-        st_cat = sig_sdata.get().find(st.GetName() + '_cat')
-        w.put(st_cat)
-
+        if options.split == 'sigmat':
+            st_cat = sig_sdata.get().find(st.GetName() + '_cat')
+            w.put(st_cat)
+        elif options.split == 'momentum':
+            momentum_cat = sig_sdata.get().find(momentum.GetName() + '_cat')
+            momentum_cat = w.put(momentum_cat)
+            pt_cat = sig_sdata.get().find(pt.GetName() + '_cat')
+            pt_cat = w.put(pt_cat)
+        elif options.split == 'pv_zerr':
+            zerr_cat = sig_sdata.get().find(zerr.GetName() + '_cat')
+            zerr_cat = w.put(zerr_cat)
+        
 ## Fitting opts
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
                Verbose = options.verbose)
@@ -357,13 +378,8 @@ if fit_mass:
     data = readData(input_data[args[0]]['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut)
     data.SetName(tree_name)
-
-    if args[0].find('MC11a') != -1:
-        # Also incl J/psi MC11a
-        t_diff = FormulaVar('time_diff', '@1 > -900 ? @0 - @1 : @0', [t, t_true], data = data)
-        t_diff.setMin(-10)
-        t_diff.setMax(10)
-        observables.append(t_diff)
+    if args[0] == '2012':
+        data = data.reduce(EventRange = (0, 600000))
 
     # In case of reweighing 
     sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'sig_mass_pdf')
@@ -431,41 +447,38 @@ if fit_mass and options.simultaneous:
     # categories for splitting the PDF
     # get mass parameters that are split
     from ROOT import RooBinning
-    st_binning = RooBinning( len(split_bins) - 1, split_bins, 'st_binning' )
-    st.setBinning(st_binning, 'st_binning')
-    st_cat = BinningCategory('sigmat_cat', Observable = st, Binning = st_binning,
-                             Fundamental = True, Data = data, CatTypeName = 'bin')
+    if options.split == 'sigmat':
+        st_binning = RooBinning( len(st_bins) - 1, st_bins, 'st_binning' )
+        st.setBinning(st_binning, 'st_binning')
+        st_cat = BinningCategory(st.GetName() + '_cat', Observable = st, Binning = st_binning,
+                                 Fundamental = True, Data = data, CatTypeName = 'bin')
+        split_cats = [[st_cat]]
+    elif options.split == 'momentum':
+        pt_binning = RooBinning( len(pt_bins) - 1, pt_bins, 'pt_binning' )
+        pt.setBinning(pt_binning, 'pt_binning')
+        pt_cat = BinningCategory(pt.GetName() + '_cat', Observable = pt, Binning = pt_binning,
+                                 Fundamental = True, Data = data, CatTypeName = 'pt_bin_')
 
-    split_cats = [[st_cat]]
+        momentum_binning = RooBinning( len(momentum_bins) - 1, momentum_bins, 'momentum_binning' )
+        momentum.setBinning(momentum_binning, 'momentum_binning')
+        momentum_cat = BinningCategory(momentum.GetName() + '_cat', Observable = momentum,
+                                       Binning = momentum_binning, Fundamental = True,
+                                       Data = data, CatTypeName = 'p_bin_')
+        split_cats = [[momentum_cat, pt_cat]]
+    elif options.split == 'pv_zerr':
+        zerr_binning = RooBinning( len(zerr_bins) - 1, zerr_bins, 'zerr_binning' )
+        zerr.setBinning(zerr_binning, 'zerr_binning')
+        zerr_cat = BinningCategory(zerr.GetName() + '_cat', Observable = zerr, Binning = zerr_binning,
+                                   Fundamental = True, Data = data, CatTypeName = 'zerr_bin_')
+        split_cats = [[zerr_cat]]
+        
     split_pars = [[par for par in mass_pdf.Parameters() if par.getAttribute('Yield')]]
-    ## split_cats.append([st_cat])
-    ## split_pars.append([par for par in bkg_mpsi.pdf().Parameters() if not par.isConstant()])
     
     # build simultaneous mass PDF
     sWeight_mass_pdf = SimultaneousPdf(mass_pdf.GetName() + '_simul',
                                        MasterPdf       = mass_pdf,
                                        SplitCategories = split_cats,
                                        SplitParameters = split_pars)
-
-    # set yields for categories
-    split_cat_pars = sWeight_mass_pdf.getVariables()
-    for ct in st_cat:
-        psi_yield = getSplitPar('N_' + signal_name, ct.GetName(), split_cat_pars)
-        bkg_yield = getSplitPar('N_background', ct.GetName(), split_cat_pars)
-        
-        sel_str = '!(%s-%d)' % (st_cat.GetName(), ct.getVal())
-        
-        nEv    = data.sumEntries()
-        nEvBin = data.sumEntries(sel_str)
-        
-        psi_yield.setVal( psi_yield.getVal() * nEvBin / nEv )
-        psi_yield.setError( sqrt( psi_yield.getVal() ) )
-        psi_yield.setMin(0.)
-        psi_yield.setMax(nEvBin)
-        bkg_yield.setVal( bkg_yield.getVal() * nEvBin / nEv )
-        bkg_yield.setError( sqrt( bkg_yield.getVal() ) )
-        bkg_yield.setMin(0.)
-        bkg_yield.setMax(nEvBin)
 
     for i in range(5):
         sWeight_mass_result = sWeight_mass_pdf.fitTo(data, **fitOpts)
@@ -474,7 +487,7 @@ if fit_mass and options.simultaneous:
     assert(sWeight_mass_result.status() == 0)
     sWeight_mass_result.SetName('sWeight_mass_result')
     results.append(sWeight_mass_result)
-
+    
     ## Plot correlation histogram
     corr_canvas.cd(1)
     corr_hist_sWmass = sWeight_mass_result.correlationHist()
@@ -482,7 +495,7 @@ if fit_mass and options.simultaneous:
     corr_hist_sWmass.GetYaxis().SetLabelSize(0.03)
     corr_hist_sWmass.SetContour(20)
     corr_hist_sWmass.Draw('colz')
-
+    
     from P2VV.GeneralUtils import SData
     sData = SData(Pdf = sWeight_mass_pdf, Data = data, Name = 'SimulMassSPlot')
     sig_sdata_full = sData.data(signal_name)
@@ -555,9 +568,6 @@ elif fit_mass:
 
 corr_canvas.Update()
 
-## if args[0].find('MC11a') != -1:
-##    assert(False)
-
 # Define default components
 if args[0] == 'MC11a':
     components = [signal]
@@ -597,10 +607,8 @@ elif options.wpv and options.wpv_type == 'Gauss':
     else:
         wpv_sigma = RealVar('wpv_sigma', Value = 0.305, MinMax = (0.01, 1000))        
     wpv_pdf = Pdf(Name = 'wpv_pdf', Type = Gaussian, Parameters = (t, wpv_mean, wpv_sigma))
-    wpv = Component('wpv', (wpv_pdf, ), Yield = (552, 1, 500000))
+    wpv = Component('wpv', (wpv_pdf, ), Yield = (552, 1, 5000))
     components += [wpv]
-
-
 
 time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
 
@@ -615,21 +623,22 @@ if options.simultaneous:
             split_pars[0].append(par)
     else:
         split_pars[0] = [par for par in time_pdf.Parameters() if par.getAttribute('Yield')]
-    if args[1] == 'single':
-        split_pars[0].append(sig_tres._sigmaSF)
-    else:
-        split_pars[0] += sig_tres.splitVars()
+    split_pars[0] += sig_tres.splitVars()
     
     if args[0] == 'MC11a':
         split_pars[0].append(sig_t._tau)
     
     if options.wpv and options.wpv_type == 'Gauss':    
         split_pars.append([wpv_sigma, wpv.getYield()])
-    time_pdf = SimultaneousPdf(  time_pdf.GetName() + '_simul'
-                                 , MasterPdf       = time_pdf
-                                 , SplitCategories = [[st_cat]]
-                                 , SplitParameters = split_pars)
 
+    if options.split == 'sigmat':
+        split_cats = [[st_cat]]
+    elif options.split == 'momentum':
+        split_cats = [[momentum_cat, pt_cat]]
+    time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul'
+                               , MasterPdf       = time_pdf
+                               , SplitCategories = split_cats
+                               , SplitParameters = split_pars)
 if options.reuse_result:
     # Check if we have a cached time result, if so, use it as initial values for the fit
     time_result = None
@@ -652,8 +661,10 @@ time_pdf.Print("t")
 ## print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-
-parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(RooArgSet(*observables))])
+obs_arg = RooArgSet()
+for o in observables:
+    obs_arg.add(o._target_())
+parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(obs_arg)])
 
 ## from P2VV import Dilution
 ## comb = parameters['timeResComb']
@@ -662,23 +673,24 @@ parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(RooArgSet(*o
 ## sf1 = (comb.getVal() - frac2.getVal() * sf2.getVal()) / (1 - frac2.getVal())
 ## Dilution.signal_dilution_dg(sig_sdata, st, sf1, frac2.getVal(), sf2.getVal())
 
-for i in range(2):
-    time_result = time_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
-    if time_result.status() == 0:
-        break
+if options.fit:
+    for i in range(3):
+        time_result = time_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
+        if time_result.status() == 0:
+            break
 
-time_result.SetName('_'.join(['time_result'] + extra_name))
+    time_result.SetName('_'.join(['time_result'] + extra_name))
 
-## Draw correlation histogram
-corr_canvas.cd(2)
-## FIXME
-corr_hist_time = time_result.correlationHist()
-corr_hist_time.GetXaxis().SetLabelSize(0.03)
-corr_hist_time.GetYaxis().SetLabelSize(0.03)
-corr_hist_time.SetContour(20)
-corr_hist_time.Draw('colz')
+    ## Draw correlation histogram
+    corr_canvas.cd(2)
+    ## FIXME
+    corr_hist_time = time_result.correlationHist()
+    corr_hist_time.GetXaxis().SetLabelSize(0.03)
+    corr_hist_time.GetYaxis().SetLabelSize(0.03)
+    corr_hist_time.SetContour(20)
+    corr_hist_time.Draw('colz')
 
-results.append(time_result)
+    results.append(time_result)
 
 ## profiler_stop()
 ## result.Print('v')
@@ -699,7 +711,6 @@ def cut_binning(t, binning):
         mm[0] = 0
     if mm[1] == None:
         mm[1] = len(binning)
-    print mm    
     return binning[mm[0] : mm[1]]
 
 from ROOT import RooBinning
@@ -736,7 +747,7 @@ __canvases = []
 from ROOT import SetOwnership
 
 for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
-    if not options.make_plots:
+    if not options.make_plots or not time_result:
         continue
     if options.simultaneous:
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
@@ -783,129 +794,12 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , logy = pl
                   , plotResidHist = True)
+        
         for frame in ps:
             plot_name = '_'.join((t.GetName(), bins.GetName(), frame.GetName()))
             frame.SetName(plot_name)
         
         plots.append(ps)
-
-fit_results = {}
-from ROOT import TH1D, TGraphErrors
-total = sig_sdata.sumEntries()
-if options.simultaneous:
-    res_canvas = TCanvas('res_canvas', 'res_canvas', 500, 500)
-    
-    hist_events = TH1D('hist_events', 'hist_events', len(split_bins) - 1, split_bins)
-    if args[0] != 'MC11a':
-        mass_fpf = sWeight_mass_result.floatParsFinal()
-    time_fpf = time_result.floatParsFinal()
-    
-    res_x = array('d')
-    res = array('d')
-    res_e = array('d')
-    for index, ct in enumerate(st_cat):
-        d = split_bins[index + 1] - split_bins[index]
-        if args[0] == 'MC11a':
-            bin_name = '_'.join((signal.getYield().GetName(), ct.GetName()))
-            range_cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName())
-            events = sig_sdata.sumEntries(range_cut)
-            hist_events.SetBinContent(index + 1, events / d)
-            hist_events.SetBinError(index + 1, 0)
-        else:
-            bin_name = '_'.join((psi_ll.getYield().GetName(), ct.GetName()))
-            events = mass_fpf.find(bin_name)
-            hist_events.SetBinContent(index + 1, events.getVal() / d)
-            hist_events.SetBinError(index + 1, events.getError() / d)
-        
-        if args[1] == 'double' and options.parameterise == False:
-            ## from P2VV.PropagateErrors import propagateScaleFactor
-            sf, sf_e = propagateScaleFactor(time_result, '_' + ct.GetName())
-        elif args[1] == 'double' and options.parameterise == 'Comb':
-            sf_comb = time_fpf.find('timeResComb_%s' % ct.GetName())
-            sf, sf_e = sf_comb.getVal(), sf_comb.getError()
-        elif args[1] == 'single':
-            sf_var = time_fpf.find('sigmaSF_%s' % ct.GetName())
-            sf, sf_e = sf_var.getVal(), sf_var.getError()
-        
-        range_cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName())
-        mean = sig_sdata.mean(st._target_(), range_cut)
-        mean *= total / sig_sdata.sumEntries(range_cut)
-        res_x.append(mean)
-        res.append(mean * sf)
-        res_e.append(mean * sf_e)
-    
-    res_ex = array('d', [0 for i in range(len(res_x))])
-    res_graph = TGraphErrors(len(res_x), res_x, res, res_ex, res_e)
-    scale = 0.1 / hist_events.GetMaximum()
-    hist_events.Scale(scale)
-    hist_events.GetYaxis().SetRangeUser(0, 0.11)
-        
-    from ROOT import TF1
-    fit_funcs = {'pol1' : ('pol1', 'S0+'), 'pol2' : ('pol2', 'S+'),
-                 'pol2_no_offset' : ('x ++ x * x', 'S0+'),
-                 'pol1_mean_param' : ('[0] + [1] + [2] * (x - [0])', 'S0+'),
-                 'pol2_mean_param' : ('[0] + [1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
-    for i, (func_name, opts) in enumerate(fit_funcs.iteritems()):
-        fit_func = TF1('fit_func_%s' % func_name, opts[0], split_bins[0], split_bins[-1])
-        if func_name.endswith('mean_param'):
-            fit_func.FixParameter(0, sig_sdata.mean(st._target_()))
-        fit_result = res_graph.Fit(fit_func, opts[1], "L")
-        fit_results[func_name] = fit_result
-        fr = fit_result.Get()
-        fr.SetName('fit_result_%s_%s' % (func_name, args[1]))
-        results.append(fr)
-    
-    res_graph.GetYaxis().SetRangeUser(0, 0.11)
-    hist_events.Draw('hist')
-    from ROOT import kGray
-    hist_events.SetFillColor(kGray + 1)
-    res_graph.Draw('P')
-    res_graph.GetXaxis().SetTitle('estimated decay time error [fs]')
-    res_graph.GetYaxis().SetTitle('decay time resulution [fs]')
-
-if options.simultaneous:
-    if args[0] == '2011':
-        ## Use quadratic calibration with values from fit result
-        formula = fit_funcs['pol2_mean_param'][0]
-        import re
-        regex = re.compile('(\[(?P<id>\d+)\])')
-        formula = regex.sub('@\g<id>', formula)
-        n_re = re.compile('@(?P<id>\d+)')
-        n_pars = max(int(m.groups('id')[0]) for m in n_re.finditer(formula))
-        formula = formula.replace('x', '@%d' % (n_pars + 1))
-        r = fit_results['pol2_mean_param']
-        form_vars = [ConstVar(Name = 'sigmat_mean', Value = sig_sdata.mean(st._target_()))] + \
-                    [ConstVar(Name = 'calibration_par_%d' % i, Value = r.Value(i)) for i in range(n_pars)] + [st]
-    elif args[0].find('MC11a') != -1:
-        ## Use linear calibration
-        r = fit_results['pol1']
-        form_vars = [ConstVar(Name = 'calibration_par_%d' % i, Value = r.Value(i)) for i in range(r.NPar())] + [st]
-        formula = '@0 + @1 * @2'
-    calibration = FormulaVar('calibration', formula, form_vars)
-else:
-    calibration = None
-    
-from P2VV import Dilution
-if args[0] == 'MC11a':
-    sub = []
-    if options.wpv and options.wpv_type == 'Mixing':
-        diff_pdf = wpv_builder.diff_shape('B')
-        wpv[t_diff] = diff_pdf
-        sub.append(wpv)
-    ## Dilution.dilution(t_diff, sig_sdata, sigmat = st, result = time_result, calibration = calibration,
-    ##                   signal = [signal], subtract = sub, simultaneous = options.simultaneous)
-elif args[0] == 'MC11a_incl_Jpsi':
-    sub = [psi_ll]
-    if options.wpv:
-        if options.wpv_type == 'Mixing':
-            diff_pdf = wpv_builder.diff_shape('jpsi')
-            wpv[t_diff] = diff_pdf
-        sub.append(wpv)
-    ## Dilution.dilution(t, sig_sdata, sigmat = st, result = time_result, calibration = calibration,
-    ##                   signal = [prompt], subtract = sub, simultaneous = options.simultaneous)
-## else:
-    ## Dilution.dilution(t, sig_sdata, sigmat = st, result = time_result, signal = [prompt], calibration = calibration,
-    ##                   subtract = [psi_ll, wpv] if options.wpv else [psi_ll], simultaneous = options.simultaneous)
 
 from P2VV.CacheUtils import WritableCacheFile
 with WritableCacheFile(cache_files, directory) as cache_file:
@@ -949,7 +843,7 @@ with WritableCacheFile(cache_files, directory) as cache_file:
         if options.simultaneous:
             pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
     
-    if not options.reduce:
+    if not options.reduce and options.fit:
         ## Write fit results
         results_dir = get_dir('results')
         for r in results:
