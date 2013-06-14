@@ -5,11 +5,12 @@
 nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
+#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_freeTagCats.root'
 plotsFilePath    = 'plots/P2VVMassPlots.ps'
 
 selection        = 'paper2012'
 dataSample       = ''
-addTaggingObs    = ( 2, 2 )
+addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]
 
 ntupleCuts = 'sel == 1'\
@@ -629,7 +630,6 @@ if addTaggingObs :
 
     # get tagging category bins
     from P2VV.Parameterizations.FlavourTagging import getTagCatParamsFromData as getTagParams
-    from P2VV.Imports import extConstraintValues as extConstr
     tagBinsOS = getTagParams( dataSets['sigSWeightData'], estWTagName = wTagOSName, tagCats = tagCatsOS, numSigmas = 1., SameSide = False )
     tagBinsSS = getTagParams( dataSets['sigSWeightData'], estWTagName = wTagSSName, tagCats = tagCatsSS, numSigmas = 1., SameSide = True  )
 
