@@ -175,9 +175,26 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
         self['numEvents'] = 54755
 
-        self['nTupleName']     = 'DecayTree'
-        self['nTupleFile']     = 'data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
-        self['nominalDataSet'] = False
+        self['dataSet'] = None
+        self['obsDict'] = dict(  mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.   )
+                               , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.   )
+                               , KKMass    = ( 'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,   990.,   1050.   )
+                               , KKMassCat = ( 'KKMassCat',            'KK mass category',        { }                                   )
+                               , time      = ( 'time',                 'Decay time',              'ps',        1.5,    0.3,     14.     )
+                               , timeRes   = ( 'sigmat',               '#sigma(t)',               'ps',        0.01,   0.0001,  0.12    )
+                               , cpsi      = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.      )
+                               , ctheta    = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.      )
+                               , phi       = ( 'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi      )
+                               , wTagOS    = ( 'tagomega_os',          'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
+                               , wTagSS    = ( 'tagomega_ss',          'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
+                               , iTagOS    = ( 'iTagOS',               'OS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
+                               , iTagSS    = ( 'iTagSS',               'SS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
+                               , tagCatOS  = ( 'tagCatP2VVOS',         'OS flavour tag',          { 'Untagged' : 0, 'Tagged' : 1 }      )
+                               , tagCatSS  = ( 'tagCatP2VVSS',         'SS flavour tag',          { 'Untagged' : 0, 'Tagged' : 1 }      )
+                               , hlt1ExclB = ( 'hlt1_excl_biased_dec', 'HLT1 excl. B.',           { 'exclB' : 1, 'notExclB' : 0 }       )
+                               , hlt2B     = ( 'hlt2_biased',          'HLT2 B.',                 { 'B'     : 1, 'notB'     : 0 }       )
+                               , hlt2UB    = ( 'hlt2_unbiased',        'HLT2 UB.',                { 'UB'    : 1, 'notUB'    : 0 }       )
+                              )
 
         self['timeEffHistFile']      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
         self['timeEffHistUBName']    =\
@@ -195,7 +212,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
         # PDF options
         self['transversityAngles']   = False
-        self['angularRanges']        = dict( cpsi = [ ( -1., +1. ) ], ctheta = [ ( -1., +1. ) ], phi = [ ( -pi, +pi ) ] )
+        self['angularRanges']        = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
         self['sigMassModel']         = ''
         self['bkgMassModel']         = ''
         self['bkgAnglePdf']          = 'hybrid'
@@ -212,8 +229,6 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                         , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
         self['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
-        self['lifetimeRange']        = ( 0.3, 14. )
-        self['sigmatRange']          = ( 0.0001, 0.12 ) # > 0.0075
 
         self['sameSideTagging']    = True
         self['conditionalTagging'] = True
@@ -221,15 +236,11 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['numEstWTagBins']     = 50
         self['constrainTagging']   = 'constrain'
 
-        self['iTagZeroTrick'] = False
-        self['iTagStates'] = { }
-
         self['timeResType']           = 'eventNoMean'
         self['numTimeResBins']        = 40
         self['constrainTimeResScale'] = 'constrain'
 
         self['signalFraction'] = 0.504
-        self['massRangeBackground'] = True
 
         self['amplitudeParam'] = 'phasesSWaveFrac'
         self['ASParam']        = 'deltaPerp'
@@ -294,9 +305,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         numEvents = pdfConfig.pop('numEvents')
 
-        nTupleName           = pdfConfig.pop('nTupleName')
-        nTupleFile           = pdfConfig.pop('nTupleFile')
-        nominalDataSet       = pdfConfig.pop('nominalDataSet')
+        dataSet = pdfConfig.pop('dataSet')
+        obsDict = pdfConfig.pop('obsDict')
+
         angEffMomentsFile    = pdfConfig.pop('angEffMomentsFile')
         timeEffHistFile      = pdfConfig.pop('timeEffHistFile')
         timeEffHistUBName    = pdfConfig.pop('timeEffHistUBName')
@@ -332,19 +343,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
         SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
         CSPValues         = pdfConfig.pop('CSPValues')
-        lifetimeRange     = pdfConfig.pop('lifetimeRange')
-        sigmatRange       = pdfConfig.pop('sigmatRange')
 
+        assert obsDict['KKMass'][4] == KKMassBinBounds[0] and obsDict['KKMass'][5] == KKMassBinBounds[-1]\
+               , 'P2VV - ERROR:  Bs2Jpsiphi_PdfBuilder: KK mass range in "KKMassBinBounds" is not the same as in "obsDict"'
         if not SWaveAmpVals : SWaveAmpVals = ( [ ], [ ] )
-        assert lifetimeRange[0] > -5. and lifetimeRange[1] < 50. and lifetimeRange[1] > lifetimeRange[0]
-        assert sigmatRange[0] > 0. and sigmatRange[1] < 1. and sigmatRange[1] > sigmatRange[0]
-
-        self._iTagZeroTrick = pdfConfig.pop('iTagZeroTrick')
-        iTagStates = pdfConfig.pop('iTagStates')    # { } / { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
-        if not iTagStates : iTagStates = { 'B' : +1, 'Bbar' : -1 }
-        if +1 not in iTagStates.values() or -1 not in iTagStates.values() or 0 in iTagStates.values() : self._iTagZeroTrick = True
-        if self._iTagZeroTrick : iTagStatesDecision = iTagStates
-        else                   : iTagStatesDecision = { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }
 
         SSTagging        = pdfConfig.pop('sameSideTagging')
         condTagging      = pdfConfig.pop('conditionalTagging')
@@ -358,17 +360,17 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         constrTResScale = pdfConfig.pop('constrainTimeResScale')    # '' / 'constrain' / 'fixed'
 
         sigFrac = pdfConfig.pop('signalFraction')
-        massRangeBackground = pdfConfig.pop('massRangeBackground')
 
         amplitudeParam = pdfConfig.pop('amplitudeParam')    # 'phases' / 'phasesSWaveFrac' / 'ReIm' / 'bank'
         ASParam        = pdfConfig.pop('ASParam')           # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm' / 'Mag2ReImPerp'
         AparParam      = pdfConfig.pop('AparParam')         # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
 
-        if not angRanges : angRanges = dict( cpsi = [ ( -1., +1. ) ], ctheta = [ ( -1., +1. ) ], phi = [ ( -pi, +pi ) ] )
+        if not angRanges : angRanges = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
+        if 'cpsi'   not in angRanges : angRanges['cpsi']   = [ ]
+        if 'ctheta' not in angRanges : angRanges['ctheta'] = [ ]
+        if 'phi'    not in angRanges : angRanges['phi']    = [ ]
 
-        if not paramKKMass :
-            if not KKMassBinBounds : KKMassBinBounds = [ 1020. - 12., 1020. + 12. ]
-        elif ambiguityPars :
+        if paramKKMass and ambiguityPars :
             if ( amplitudeParam == 'phasesSWaveFrac' and ASParam == 'deltaPerp' ) or ( amplitudeParam == 'bank' and ASParam != 'ReIm' ) :
                 for phaseIter, phase in enumerate( SWaveAmpVals[1] ) : SWaveAmpVals[1][phaseIter] = ( pi - phase[0], phase[1] )
             elif amplitudeParam == 'phases' and ASParam in [ 'Mag2ReIm', 'ReIm' ] :
@@ -411,757 +413,211 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             LHCbLabel.SetBorderSize(0)
             _P2VVPlotStash.append(LHCbLabel)
 
-        # function for finding a splitted parameter in a simultaneous PDF
-        from P2VV.GeneralUtils import getSplitPar
-
 
         ###################################################################################################################################
-        ## create variables (except for tagging category) ##
-        ####################################################
+        ## create variables ##
+        ######################
 
-        # angular functions
-        helAngs = not transAngles
-        if transAngles :
-            from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
-        else :
-            from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngleFuncs
+        # get observables
+        obsNames = [ 'mass', 'mumuMass', 'KKMass', 'KKMassCat','time', 'timeRes', 'cpsi', 'ctheta', 'phi'
+                    , 'wTagOS', 'wTagSS', 'iTagOS', 'iTagSS', 'tagCatOS', 'tagCatSS', 'hlt1ExclB', 'hlt2B', 'hlt2UB'
+                   ]
+        observables = { }
+        for name in obsNames :
+            assert name in obsDict, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: variable "%s" not in observables dictionary' % name
+            if dataSet :
+                if   ws.var( obsDict[name][0] ) : observables[name] = RealVar(  obsDict[name][0] )
+                elif ws.cat( obsDict[name][0] ) : observables[name] = Category( obsDict[name][0] )
+                else : raise RuntimeError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: variable "%s" not in workspace' % name )
+            else :
+                if name.startswith('tagCat') :
+                    observables[name] = None
+                    continue
 
-        self._angleFuncs = AngleFuncs(  cpsi   = dict(Name = 'helcosthetaK' if helAngs else 'trcospsi',   MinMax = angRanges['cpsi'  ][0])
-                                      , ctheta = dict(Name = 'helcosthetaL' if helAngs else 'trcostheta', MinMax = angRanges['ctheta'][0])
-                                      , phi    = dict(Name = 'helphi'       if helAngs else 'trphi',      MinMax = angRanges['phi'   ][0])
+                if type( obsDict[name][2] ) != dict :
+                    observables[name] = RealVar( obsDict[name][0], Title = obsDict[name][1], Unit = obsDict[name][2]
+                                                , Value = obsDict[name][3], MinMax = ( obsDict[name][4], obsDict[name][5] )
+                                               )
+                else :
+                    states = obsDict[name][2] if name != 'KKMassCat' else\
+                             dict( [ ( 'bin%d' % it, it ) for it in range( len(KKMassBinBounds) - 1 ) ] )
+                    observables[name] = Category( obsDict[name][0], Title = obsDict[name][1], States = states )
+
+        # set observable properties
+        for obs in observables.itervalues() : obs.setObservable(True)
+
+        observables['time'].setRange( 'Bulk', ( None, 5. ) )
+        observables['time'].setBins(numTimeBins)
+        observables['timeRes'].setBins(numTimeResBins)
+        observables['timeRes'].setBins( numTimeResBins, 'cache' )
+        observables['mass'].setBins(numBMassBins[0])
+        observables['mass'].setRanges( dict(  LeftSideBand  = ( 5200., 5320. )
+                                            , Signal        = ( 5320., 5420. )
+                                            , RightSideBand = ( 5420., 5550. )
+                                            , PeakBkg       = ( 5390., 5440. )
+                                           )
                                      )
 
-        # variables in PDF (except for tagging category)
-        time = RealVar( 'time', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 1., MinMax = lifetimeRange
-                       , Ranges = dict( Bulk = ( None, 5. ) ), nBins = numTimeBins )
-        timeRes = RealVar(  'sigmat', Title = '#sigma(t)', Unit = 'ps', Observable = True, Value = 0.05, MinMax = sigmatRange
-                          , nBins = numTimeResBins )
-        timeRes.setBins( numTimeResBins, 'cache' )
+        for ran in angRanges['cpsi'  ] : observables['cpsi'].setRange(   ran[0], ran[ 1 : 3 ] )
+        for ran in angRanges['ctheta'] : observables['ctheta'].setRange( ran[0], ran[ 1 : 3 ] )
+        for ran in angRanges['phi'   ] : observables['phi'].setRange(    ran[0], ran[ 1 : 3 ] )
 
-        cpsi   = self._angleFuncs.angles['cpsi']
-        ctheta = self._angleFuncs.angles['ctheta']
-        phi    = self._angleFuncs.angles['phi']
+        if dataSet :
+            # get KK mass binning
+            assert observables['KKMass'].hasBinning('KKMassBinning')\
+                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass observable does not have a binning named "KKMassBinning"'
+            self._KKMassBinning = observables['KKMass'].getBinning('KKMassBinning')
 
-        for ran in angRanges['cpsi'  ][ 1 : ] : cpsi.setRange(   ran[0], ran[ 1 : 3 ] )
-        for ran in angRanges['ctheta'][ 1 : ] : ctheta.setRange( ran[0], ran[ 1 : 3 ] )
-        for ran in angRanges['phi'   ][ 1 : ] : phi.setRange(    ran[0], ran[ 1 : 3 ] )
-
-        if not self._iTagZeroTrick :
-            iTagOS = Category( 'iTagOS', Title = 'Initial state flavour tag opposite side', Observable = True, States = iTagStates )
-            iTagSS = Category( 'iTagSS', Title = 'Initial state flavour tag same side',     Observable = True, States = iTagStates )
-        estWTagComb = RealVar( 'tagomega',    Title = 'Estimated wrong tag probability OS/SS combination', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
-        estWTagOS   = RealVar( 'tagomega_os', Title = 'Estimated wrong tag probability opposite side', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
-        estWTagSS   = RealVar( 'tagomega_ss', Title = 'Estimated wrong tag probability same side', Observable = True
-                              , Value = 0.25, MinMax = ( 0., 0.50001 ) )
-
-        BMass = RealVar( 'mass',  Title = 'm(J/#psi K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True
-                        , Value = 5368., MinMax = ( 5200., 5550. ), nBins = numBMassBins[0]
-                        ,  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
-                                         , Signal        = ( 5320., 5420. )
-                                         , RightSideBand = ( 5420., 5550. )
-                                         , PeakBkg       = ( 5390., 5440. )
-                                        )
-                       )
-
-        angles = [ cpsi, ctheta, phi ]
-        obsSetP2VV = [ time ] + angles
-        if not self._iTagZeroTrick and ( multiplyByTagPdf or not condTagging ) :
-            obsSetP2VV.append(iTagOS)
-            if SSTagging : obsSetP2VV.append(iTagSS)
-        if not SFit :
-            obsSetP2VV.append(BMass)
-
-        # ntuple variables
-        mumuMass = RealVar( 'mdau1', Title = 'm(#mu^{+}#mu^{-})', Unit = 'MeV/c^{2}'
-                           , Observable = True, MinMax = ( 3090. - 60., 3090. + 60. ), nBins =  51 )
-        #mumuMass = RealVar( 'mdau1', Title = 'm(#mu#mu)', Unit = 'MeV/c^{2}', Observable = True, MinMax = ( 0., RooInf ) )
-
-        KKMass = RealVar( 'mdau2', Title = 'm(K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True
-                         , MinMax = ( KKMassBinBounds[0], KKMassBinBounds[-1] ), nBins =  125 )
-
-        if paramKKMass in [ 'functions', 'amplidudes' ] : obsSetP2VV.append(KKMass)
-
-        tagDecisionComb = Category( 'tagdecision',    Title = 'Tag decision OS/SS combination', Observable = True, States = iTagStatesDecision )
-        tagDecisionOS   = Category( 'tagdecision_os', Title = 'Tag decision opposite side',     Observable = True, States = iTagStatesDecision )
-        tagDecisionSS   = Category( 'tagdecision_ss', Title = 'Tag decision same side',         Observable = True, States = iTagStatesDecision )
-        tagCatOS = Category( 'tagcat_os',   Title = 'Tagging category opposite side', Observable = True
-                            , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, 6 ) ]
-                           )
-
-        hlt1ExclBName = 'hlt1_excl_biased_dec'
-        hlt1BName     = 'hlt1_biased'
-        hlt1UBName    = 'hlt1_unbiased_dec'
-        hlt2BName     = 'hlt2_biased'
-        hlt2UBName    = 'hlt2_unbiased'
-
-        sel       = Category( 'sel',         Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
-        selA      = Category( 'selA',        Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
-        selB      = Category( 'selB',        Observable = True, States = { 'sel'   : 1, 'notSel'   : 0 } )
-        hlt1ExclB = Category( hlt1ExclBName, Observable = True, States = { 'exclB' : 1, 'notExclB' : 0 } )
-        hlt1B     = Category( hlt1BName,     Observable = True, States = { 'B'     : 1, 'notB'     : 0 } )
-        hlt1UB    = Category( hlt1UBName,    Observable = True, States = { 'UB'    : 1, 'notUB'    : 0 } )
-        hlt2B     = Category( hlt2BName,     Observable = True, States = { 'B'     : 1, 'notB'     : 0 } )
-        hlt2UB    = Category( hlt2UBName,    Observable = True, States = { 'UB'    : 1, 'notUB'    : 0 } )
-
-        muPlusTrackChi2 = RealVar( 'muplus_track_chi2ndof',  Title = 'mu+ track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )#5. ) )
-        muMinTrackChi2  = RealVar( 'muminus_track_chi2ndof', Title = 'mu- track chi^2/#dof', Observable = True, MinMax = ( 0., 4. ) )#5. ) )
-        KPlusTrackChi2  = RealVar( 'Kplus_track_chi2ndof',   Title = 'K+ track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )#5. ) )
-        KMinTrackChi2   = RealVar( 'Kminus_track_chi2ndof',  Title = 'K- track chi^2/#dof',  Observable = True, MinMax = ( 0., 4. ) )#5. ) )
-
-        observables = dict(  time             = time
-                           , cpsi             = angles[0]
-                           , ctheta           = angles[1]
-                           , phi              = angles[2]
-                           , iTagOS           = iTagOS if not self._iTagZeroTrick else tagDecisionOS
-                           , iTagSS           = iTagSS if not self._iTagZeroTrick else tagDecisionSS
-                           , tagDecisionComb  = tagDecisionComb
-                           , tagDecisionOS    = tagDecisionOS
-                           , estWTagComb      = estWTagComb
-                           , estWTagOS        = estWTagOS
-                           , estWTagSS        = estWTagSS
-                           , tagCatOS         = tagCatOS
-                           , BMass            = BMass
-                           , mumuMass         = mumuMass
-                           , KKMass           = KKMass
-                           , timeRes          = timeRes
-                           , sel              = sel
-                           , selA             = selA
-                           , selB             = selB
-                           , hlt1ExclB        = hlt1ExclB
-                           , hlt1B            = hlt1B
-                           , hlt1UB           = hlt1UB
-                           , hlt2B            = hlt2B
-                           , hlt2UB           = hlt2UB
-                           , muPlusTrackChi2  = muPlusTrackChi2
-                           , muMinTrackChi2   = muMinTrackChi2
-                           , KPlusTrackChi2   = KPlusTrackChi2
-                           , KMinTrackChi2    = KMinTrackChi2
-                          )
-
-        obsSetNTuple = [ time ] + angles +  [ BMass, KKMass, timeRes, tagDecisionOS, tagDecisionSS, estWTagOS, estWTagSS ]
-        if makePlots : obsSetNTuple += [ mumuMass, tagDecisionComb, estWTagComb ]
-        if selection in [ 'timeEffFit', 'paper2012' ] or timeEffType in [ 'fit', 'paper2012' ] : obsSetNTuple += [ hlt1ExclB ]
-        if selection == 'timeEffFit'                  or timeEffType == 'fit'                  : obsSetNTuple += [ hlt2B, hlt2UB ]
-        if nominalDataSet : obsSetNTuple += [  sel, selA, selB, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2
-                                             , mumuMass, tagDecisionComb, estWTagComb ]
-
-        sWeightedNTupleFile = None #'/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_testGL_GLOneCand_20130322_MagDown.root'
-        if sWeightedNTupleFile :
-            # additional ntuple variables
-            sel_onecand                = Category( 'sel_onecand',                Observable = True, States = { 'sel' : 1, 'notSel' : 0 } )
-            sel_one_gl                 = Category( 'sel_one_gl',                 Observable = True, States = { 'sel' : 1, 'notSel' : 0 } )
-            GLsb                       = RealVar(  'GLsb',                       Observable = True, MinMax = (  0.,      1.     ) )
-            #muplus_PIDmu             = RealVar(  'muplus_PIDmu',               Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            #muminus_PIDmu            = RealVar(  'muminus_PIDmu',              Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            Kplus_pidK                 = RealVar(  'Kplus_pidK',                 Observable = True, MinMax = (  0.,     +RooInf ) )
-            Kminus_pidK                = RealVar(  'Kminus_pidK',                Observable = True, MinMax = (  0.,     +RooInf ) )
-            muplus_PX                  = RealVar(  'muplus_PX',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            muplus_PY                  = RealVar(  'muplus_PY',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            muplus_PZ                  = RealVar(  'muplus_PZ',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            muminus_PX                 = RealVar(  'muminus_PX',                 Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            muminus_PY                 = RealVar(  'muminus_PY',                 Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            muminus_PZ                 = RealVar(  'muminus_PZ',                 Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            Kplus_PX                   = RealVar(  'Kplus_PX',                   Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            Kplus_PY                   = RealVar(  'Kplus_PY',                   Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            Kplus_PZ                   = RealVar(  'Kplus_PZ',                   Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            Kminus_PX                  = RealVar(  'Kminus_PX',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            Kminus_PY                  = RealVar(  'Kminus_PY',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            Kminus_PZ                  = RealVar(  'Kminus_PZ',                  Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            B_Pt                       = RealVar(  'B_Pt',                       Observable = True, MinMax = (  0.,      RooInf ) )
-            phi_1020_pt                = RealVar(  'phi_1020_pt',                Observable = True, MinMax = (  500.,    RooInf ) )
-            #B_s0_LOKI_CosPolAngle_Dau1 = RealVar(  'B_s0_LOKI_CosPolAngle_Dau1', Observable = True, MinMax = ( -1.,     +1.     ) )
-            #B_s0_IP_OWNPV              = RealVar(  'B_s0_IP_OWNPV',              Observable = True, MinMax = (    ,             ) )
-            B_s0_IPCHI2_OWNPV          = RealVar(  'B_s0_IPCHI2_OWNPV',          Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            B_s0_MINIPCHI2NEXTBEST     = RealVar(  'B_s0_MINIPCHI2NEXTBEST',     Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            B_s0_LOKI_DTF_VCHI2NDOF    = RealVar(  'B_s0_LOKI_DTF_VCHI2NDOF',    Observable = True, MinMax = ( -RooInf, +RooInf ) )
-            B_s0_ENDVERTEX_CHI2        = RealVar(  'B_s0_ENDVERTEX_CHI2',        Observable = True, MinMax = ( 0.,       50.    ) )
-            phi_1020_ENDVERTEX_CHI2    = RealVar(  'phi_1020_ENDVERTEX_CHI2',    Observable = True, MinMax = ( 0.,       16.    ) )
-            J_psi_1S_ENDVERTEX_CHI2    = RealVar(  'J_psi_1S_ENDVERTEX_CHI2',    Observable = True, MinMax = ( 0.,       16.    ) )
-
-            obsSetNTuple += [ mumuMass, tagDecisionComb, estWTagComb, muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ]
-            obsSetNTuple += [ sel_onecand
-                             , sel_one_gl
-                             , GLsb
-                             #, muplus_PIDmu
-                             #, muminus_PIDmu
-                             , Kplus_pidK
-                             , Kminus_pidK
-                             , muplus_PX
-                             , muplus_PY
-                             , muplus_PZ
-                             , muminus_PX
-                             , muminus_PY
-                             , muminus_PZ
-                             , Kplus_PX
-                             , Kplus_PY
-                             , Kplus_PZ
-                             , Kminus_PX
-                             , Kminus_PY
-                             , Kminus_PZ
-                             , B_Pt
-                             , phi_1020_pt
-                             #, B_s0_LOKI_CosPolAngle_Dau1
-                             #, B_s0_IP_OWNPV
-                             , B_s0_IPCHI2_OWNPV
-                             , B_s0_MINIPCHI2NEXTBEST
-                             , B_s0_LOKI_DTF_VCHI2NDOF
-                             , B_s0_ENDVERTEX_CHI2
-                             , phi_1020_ENDVERTEX_CHI2
-                             , J_psi_1S_ENDVERTEX_CHI2
-                            ]
-
-
-        ###################################################################################################################################
-        ## read data ##
-        ###############
-
-        self._dataSets = { }
-        ntupleCuts = ''
-        if nTupleFile :
-            if dataSample and type(dataSample) == tuple :
-                if dataSample[0] and dataSample[1] : dataSampleCuts = 'runNumber > %d && runNumber < %d' % dataSample
-                elif dataSample[0]                 : dataSampleCuts = 'runNumber > %d' % dataSample[0]
-                elif dataSample[1]                 : dataSampleCuts = 'runNumber < %d' % dataSample[1]
-                else                               : dataSampleCuts = 'runNumber > 0'
-
-                if len(dataSample) > 2 and dataSample[2] : ntupleCuts += dataSample[2] + ' && '
-
-            elif dataSample == 'Summer2011' :
-                dataSampleCuts = 'runNumber > 87219 && runNumber < 94386'
-
-            elif dataSample and type(dataSample) == str :
-                dataSampleCuts = dataSample
-
-            else :
-                dataSampleCuts = 'runNumber > 0'
-            trackChi2Cuts = ' && '.join( '%s < %f' % ( trackChi2, trackChi2.getMax() ) for trackChi2 in\
-                                                      [ muPlusTrackChi2, muMinTrackChi2, KPlusTrackChi2, KMinTrackChi2 ] )
-
-            selections = dict( HLT1Unbiased = '%s && %s==1 && %s==1 && %s==1 && %s'\
-                                              % ( dataSampleCuts, sel, hlt1UB, hlt2B, trackChi2Cuts )
-                             , HLT1ExclBiased = '%s && %s==1 && %s==1 && %s==1 && %s'\
-                                              % ( dataSampleCuts, sel, hlt1ExclB, hlt2B, trackChi2Cuts )
-                             , paper2012 = '%s && %s==1 && (%s==1 || %s==1) && %s==1 && %s'\
-                                              % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, trackChi2Cuts )
-                             , timeEffFit = '%s && %s==1 && (%s==1 || %s==1) && (%s==1 || %s==1) && %s'\
-                                              % ( dataSampleCuts, sel, hlt1B, hlt1UB, hlt2B, hlt2UB, trackChi2Cuts )
-                             )
-            ntupleCuts += selections[selection]
-
-            #ntupleCuts = dataSample
-            from P2VV.GeneralUtils import readData
-            self._dataSets['data'] = readData(  filePath = nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
-                                              , Rename = 'JpsiphiData', ntupleCuts = ntupleCuts )
+            assert self._KKMassBinning.numBins() == observables['KKMassCat'].numTypes() == len(KKMassBinBounds) - 1\
+                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category and/or binning and specified bin bounds'
+            for it in range( self._KKMassBinning.numBins() ) :
+                assert self._KKMassBinning.binLow(it) == KKMassBinBounds[it]\
+                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass binning and specified bin bounds'
 
         else :
-            self._dataSets['data'] = None
-
-        if paramKKMass or makePlots :
             # create KK mass binning
             from array import array
             KKMassBinsArray = array( 'd', KKMassBinBounds )
 
             from ROOT import RooBinning
             self._KKMassBinning = RooBinning( len(KKMassBinBounds) - 1, KKMassBinsArray, 'KKMassBinning' )
-            KKMass.setBinning( self._KKMassBinning, 'KKMassBinning' )
+            observables['KKMass'].setBinning( KKMassBinning, 'KKMassBinning' )
 
-            # add KK mass split category to data
-            from P2VV.RooFitWrappers import BinningCategory
-            self._KKMassCat = BinningCategory( 'KKMassCat'
-                                              , Observable = KKMass
-                                              , Binning = self._KKMassBinning
-                                              , Fundamental = True
-                                              , Data = [ self._dataSets['data'] ]
-                                              , CatTypeName = 'bin'
-                                             )
-
-
-        ###################################################################################################################################
-        ## initialize PDF component objects ##
-        ######################################
-
-        nEvents     = self._dataSets['data'].sumEntries() if self._dataSets['data'] else numEvents
-        nSignal     = nEvents * sigFrac
-        nBackground = nEvents * ( 1. - sigFrac )
-
-        from P2VV.RooFitWrappers import Component
-        if SFit :
-            self._signalComps  = Component( 'signal',  [ ]                                       )
-            self._sigMassComps = Component( 'sigMass', [ ], Yield = ( nSignal,     0., nEvents ) )
-            self._bkgMassComps = Component( 'bkgMass', [ ], Yield = ( nBackground, 0., nEvents ) )
-        else :
-            self._signalComps     = Component( 'signal', [ ], Yield = ( nSignal,     0., nEvents ) )
-            self._backgroundComps = Component( 'bkg'   , [ ], Yield = ( nBackground, 0., nEvents ) )
-
-
-        ###################################################################################################################################
-        ## build B mass PDFs ##
-        #######################
-
-        # build the signal and background mass PDFs
-        sigMassArgs = dict( Name = 'sig_m', mass = BMass )
-        if sigMassModel.startswith('box') :
-            from P2VV.Parameterizations.MassPDFs import Box_Signal_Mass as SignalBMass
-            if sigMassModel.endswith('Fixed') :
-                boxWidth = 0.5 * ( BMass.getMin('RightSideBand') - BMass.getMax('LeftSideBand') )
-                boxMean  = BMass.getMax('LeftSideBand') + boxWidth
-                sigMassArgs['m_sig_mean']  = dict( Value = boxMean,  Constant = True )
-                sigMassArgs['m_sig_width'] = dict( Value = boxWidth, Constant = True, MinMax = ( 0.1, 2. * boxWidth ) )
-
-        elif sigMassModel.startswith('Gauss') :
-            from P2VV.Parameterizations.MassPDFs import Gauss_Signal_Mass as SignalBMass
-
-        elif sigMassModel.startswith('DoubleGauss') :
-            from P2VV.Parameterizations.MassPDFs import DoubleGauss_Signal_Mass as SignalBMass
-            if sigMassModel.endswith('Diag') :
-                sigMassArgs['TransformWidthPars'] = dict(  m_sig_frac    = ( +0.033129, -0.008339, -0.007473 )
-                                                         , m_sig_sigma_1 = ( +0.115025, -0.067412, +0.000953 )
-                                                         , m_sig_sigma_2 = ( +0.756560, +0.010614, +0.000182 )
-                                                        )
-
-        elif sigMassModel.startswith('CB') :
-            from P2VV.Parameterizations.MassPDFs import CB_Signal_Mass as SignalBMass
-
-        elif sigMassModel.startswith('DoubleCB') :
-            from P2VV.Parameterizations.MassPDFs import DoubleCB_Signal_Mass as SignalBMass
-
-        else :
-            from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
-
-        bkgMassArgs = dict( Name = 'bkg_m', mass = BMass )
-        if bkgMassModel.startswith('linear') :
-            from P2VV.Parameterizations.MassPDFs import Linear_Background_Mass as BackgroundBMass
-            if bkgMassModel.endswith('Constant') : bkgMassArgs['Constant'] = True
-        else :
-            from P2VV.Parameterizations.MassPDFs import LP2011_Background_Mass as BackgroundBMass
-
-        self._signalBMass     = SignalBMass(     **sigMassArgs )
-        self._backgroundBMass = BackgroundBMass( **bkgMassArgs )
-
-        from P2VV.RooFitWrappers import buildPdf
-        if SFit :
-            self._sigMassComps += self._signalBMass.pdf()
-            self._bkgMassComps += self._backgroundBMass.pdf()
-            self._massPdf = buildPdf( [ self._sigMassComps, self._bkgMassComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
-
-        else :
-            self._signalComps     += self._signalBMass.pdf()
-            self._backgroundComps += self._backgroundBMass.pdf()
-            self._massPdf = buildPdf( [ self._signalComps, self._backgroundComps ], Observables = [ BMass ], Name = 'JpsiphiMass' )
-
-        if self._dataSets['data'] :
-            # determine mass parameters with a fit
-            print 120 * '='
-            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with mass PDF'
-            self._massFitResult = self._massPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
-
-            from P2VV.Imports import parNames
-            self._massFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
-            self._massFitResult.covarianceMatrix().Print()
-            self._massFitResult.correlationMatrix().Print()
-
-            splitCats = [ [ ] ]
-            if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or paramKKMass == 'simultaneous' ) :
-                # categories for splitting the PDF
-                splitCats[0] += [ hlt1ExclB ] if selection == 'paper2012' else [ hlt1ExclB, hlt2B ] if selection == 'timeEffFit' else [ ]
-                splitCats[0] += [ self._KKMassCat ] if paramKKMass == 'simultaneous' else [ ]
-
-                # get mass parameters that are split
-                splitParams = [ [ par for par in self._massPdf.Parameters() if par.getAttribute('Yield') ] ]
-                if 'FreeBkg' in SWeightsType and paramKKMass == 'simultaneous' :
-                    splitCats.append( [ self._KKMassCat ] )
-                    splitParams.append( [ par for par in self._backgroundBMass.parameters() if not par.isConstant() ] )
-
-                # build simultaneous mass PDF
-                from P2VV.RooFitWrappers import SimultaneousPdf
-                self._sWeightMassPdf = SimultaneousPdf(  self._massPdf.GetName() + '_simul'
-                                                       , MasterPdf       = self._massPdf
-                                                       , SplitCategories = splitCats
-                                                       , SplitParameters = splitParams
-                                                      )
-
-                # set yields for categories
-                splitCat      = self._sWeightMassPdf.indexCat()
-                splitCatIter  = splitCat.typeIterator()
-                splitCatState = splitCatIter.Next()
-                massPdfPars   = self._sWeightMassPdf.getVariables()
-                while splitCatState :
-                    sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', splitCatState.GetName(), massPdfPars )
-                    bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    splitCatState.GetName(), massPdfPars )
-
-                    if splitCat.isFundamental() :
-                        selStr = '!(%s-%d)' % ( splitCat.GetName(), splitCatState.getVal() )
-                    else :
-                        splitCat.setLabel( splitCatState.GetName() )
-                        selStr = ' && '.join( '!(%s-%d)' % ( cat.GetName(), cat.getIndex() ) for cat in splitCat.inputCatList() )
-                    nEv    = self._dataSets['data'].sumEntries()
-                    nEvBin = self._dataSets['data'].sumEntries(selStr)
-
-                    sigYield.setVal( sigYield.getVal() * nEvBin / nEv )
-                    sigYield.setError( sqrt( sigYield.getVal() ) )
-                    sigYield.setMin(0.)
-                    sigYield.setMax(nEvBin)
-                    bkgYield.setVal( bkgYield.getVal() * nEvBin / nEv )
-                    bkgYield.setError( sqrt( bkgYield.getVal() ) )
-                    bkgYield.setMin(0.)
-                    bkgYield.setMax(nEvBin)
-
-                    splitCatState = splitCatIter.Next()
-
-                if SWeightsType.endswith( 'Fixed' ) :
-                    # fix mass shape parameters for fit
-                    fixedMassPars = [ par for par in self._sWeightMassPdf.Parameters()\
-                                      if not ( par.getAttribute('Yield') or par.isConstant() or 'Category' in par.ClassName() ) ]
-                    #from P2VV.Imports import parValues
-                    #parVals = {  'm_bkg_exp_bin0'  : -2.1814e-03
-                    #           , 'm_bkg_exp_bin1'  : -4.6151e-03
-                    #           , 'm_bkg_exp_bin2'  : -1.4166e-03
-                    #           , 'm_bkg_exp_bin3'  : -2.5203e-03
-                    #           , 'm_bkg_exp_bin4'  : -1.3963e-03
-                    #           , 'm_bkg_exp_bin5'  : -2.0610e-03
-                    #           , 'm_sig_frac'      :  7.4479e-01
-                    #           , 'm_sig_mean'      :  5.36809e+03
-                    #           , 'm_sig_sigma_1'   :  6.1690e+00
-                    #           , 'm_sig_sigma_sf'  :  2.0769e+00
-                    #          }
-                    for par in fixedMassPars :
-                        #par.setVal( parValues[ par.GetName() ][0]\
-                        #            + ( 3. * parValues[ par.GetName() ][1] if par.GetName().startswith('m_bkg_exp') else 0. ) )
-                        #par.setError( parValues[ par.GetName() ][1] )
-                        #par.setVal( parVals[ par.GetName() ] )
-                        par.setConstant(True)
-
-                # hack to do fit with fixed shape parameters first
-                fixedShapeFit = False
-                if fixedShapeFit :
-                    from P2VV.Imports import parNames, parValues
-                    fixedMassPars = [ par for par in self._sWeightMassPdf.Parameters()\
-                                      if not ( par.getAttribute('Yield') or par.isConstant() or 'Category' in par.ClassName() ) ]
-                    #parValues = {  'm_sig_mean'      : (  5368.236,    5.47e-02, -1.       )
-                    #             , 'm_sig_frac'      : (  8.0283e-01,  2.73e-02, -1.       )
-                    #             , 'm_sig_sigma_1'   : (  6.2728,      1.19e-01, -1.       )
-                    #             , 'm_sig_sigma_sf'  : (  2.2479,      1.24e-01, -1.       )
-                    #             , 'm_bkg_exp'       : ( -1.6249e-03,  9.67e-05, -1.       )
-                    #            }
-
-                    #fixedMassParVals = { }
-                    for par in fixedMassPars :
-                        par.setConstant(True)
-                        #fixedMassParVals[par.GetName()] = ( par.getVal(), par.getError() )
-                        par.setVal( parValues[par.GetName()][0] )
-                        par.setError( parValues[par.GetName()][1] )
-
-                    massNLL = self._sWeightMassPdf.createNLL( self._dataSets['data'] )
-                    self._simMassFitResult = self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
-                    self._simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
-                    massNLLValNom = massNLL.getVal()
-                    for par in fixedMassPars :
-                        par.setConstant(False)
-                        #par.setVal( fixedMassParVals[par.GetName()][0] )
-                        #par.setError( fixedMassParVals[par.GetName()][1] )
-
-                # determine mass parameters in each sub-sample with a fit
-                print 120 * '='
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting with simultaneous mass PDF'
-                self._simMassFitResult = self._sWeightMassPdf.fitTo( self._dataSets['data'], Save = True, **fitOpts )
-
-                from P2VV.Imports import parValues
-                self._simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
-                self._simMassFitResult.covarianceMatrix().Print()
-                self._simMassFitResult.correlationMatrix().Print()
-
-                # hack to do fit with fixed shape parameters first
-                if fixedShapeFit :
-                    massNLLValThis = massNLL.getVal()
-                    print '  mass NLL values:'
-                    print '  nominal: %f;  this: %f; 2*DeltaNLL = %f'\
-                          % ( massNLLValNom, massNLLValThis, 2. * ( massNLLValNom - massNLLValThis ) )
-
-                if SWeightsType.endswith( 'Fixed' ) :
-                    # free parameters that were fixed for mass fit
-                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: constant parameters in mass fit:'
-                    for par in fixedMassPars :
-                        par.Print()
-                        par.setConstant(False)
-
-            else :
-                massPdfPars = self._massPdf.getVariables()
-                self._sWeightMassPdf = self._massPdf
-
-
-        ###################################################################################################################################
-        ## compute S-weights and create signal and background data sets ##
-        ##################################################################
-
-        if self._dataSets['data'] :
-            print 120 * '='
-            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: computing S-weights'
-
-            # create sWeigthed data sets
-            from P2VV.GeneralUtils import SData
-            self._SData = SData( Pdf = self._sWeightMassPdf, Data = self._dataSets['data'], Name = 'massSData' )
-            self._dataSets['SWeightData']    = self._SData.data()
-            self._dataSets['sigSWeightData'] = self._SData.data( 'sigMass' if SFit else 'signal' )
-            self._dataSets['bkgSWeightData'] = self._SData.data( 'bkgMass' if SFit else 'bkg'    )
-
-            if sWeightedNTupleFile :
-                dataTree = self._dataSets['SWeightData'].buildTree( Name = 'DecayTree', Title = 'DecayTree', RooFitFormat = False )
-                from ROOT import TFile
-                dataFile = TFile.Open( sWeightedNTupleFile, 'RECREATE' )
-                dataFile.Add(dataTree)
-                dataFile.Write()
-                dataFile.Close()
-
-            # print signal/background info to screen
-            allCats = [  self._dataSets['data'].get().find( hlt1ExclB.GetName() )
-                       , self._dataSets['data'].get().find( hlt2B.GetName() )
-                      ]
-            if hasattr( self, '_KKMassCat' ) and paramKKMass == 'simultaneous' :
-                allCats.append( self._dataSets['data'].get().find( self._KKMassCat.GetName() ) )
-            allCats = [ cat for cat in allCats if cat ]
-
-            from P2VV.GeneralUtils import printEventYields, printEventYieldsData
-            for dataSet in self._dataSets.itervalues() : dataSet.Print()
-            printEventYields(  ParameterSet        = massPdfPars
-                             , YieldNames          = [ 'N_sigMass', 'N_bkgMass' ]
-                             , SplittingCategories = [ cat for catList in splitCats for cat in catList ]
-                            )
-            printEventYieldsData(  FullDataSet         = self._dataSets['SWeightData']
-                                 , WeightedDataSets    = [ self._dataSets[name] for name in [ 'sigSWeightData', 'bkgSWeightData' ] ]
-                                 , DataSetNames        = [ 'Signal', 'Background' ]
-                                 , SplittingCategories = allCats
-                                )
-
-            # create signal and background data sets with side band ranges
-            self._dataSets['sigRangeData'] = self._dataSets['data'].reduce( CutRange = 'Signal'       )
-            self._dataSets['bkgRangeData'] = self._dataSets['data'].reduce( CutRange = 'LeftSideBand' )
-            self._dataSets['bkgRangeData'].append( self._dataSets['data'].reduce( CutRange = 'RightSideBand' ) )
-
-            if makePlots :
-                if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit']\
-                      or paramKKMass == 'simultaneous' ) :
-                    # create projection data set
-                    indexCat = self._sWeightMassPdf.indexCat()
-                    if indexCat.isFundamental() :
-                        projWDataSet = [ indexCat ]
-                    else :
-                        projWDataSet = [ cat for cat in indexCat.getObservables( self._dataSets['data'] ) ]
-
-                    projWData = dict( ProjWData = ( self._dataSets['data'].reduce( ArgSet = projWDataSet ), False ) )
-                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: projection data set for mumuKK mass plots:'
-                    projWData['ProjWData'][0].Print()
-
-                else :
-                    projWData = dict()
-
-                # plot mumuKK mass distributions
-                self._massCanvs = [  TCanvas( 'massCanvLog',     'B mass logarithmic scale'  )
-                                   , TCanvas( 'massCanvSig',     'B mass signal range'       )
-                                   , TCanvas( 'massCanvLeft',    'B mass left side band'     )
-                                   , TCanvas( 'massCanvRight',   'B mass right side band'    )
-                                   , TCanvas( 'massCanvPeakBkg', 'B mass peaking background' )
-                                  ]
-                for index, ( pad, frameRange, nBins, plotTitle, plotName, logy, scale, yTitleOffset, markSize, markLineWidth )\
-                      in enumerate ( zip(  self._massCanvs
-                                         , [ '', 'Signal', 'LeftSideBand', 'RightSideBand', 'PeakBkg' ]
-                                         , numBMassBins
-                                         , [  BMass.GetTitle()
-                                            , BMass.GetTitle() + ' mass fit - signal'
-                                            , BMass.GetTitle() + ' mass fit - left side band'
-                                            , BMass.GetTitle() + ' mass fit - right side band'
-                                            , BMass.GetTitle() + ' mass fit - peaking background'
-                                           ]
-                                         , [  BMass.GetName()
-                                            , BMass.GetName() + ' fit - signal'
-                                            , BMass.GetName() + ' fit - left side band'
-                                            , BMass.GetName() + ' fit - right side band'
-                                            , BMass.GetName() + ' fit - peaking background'
-                                           ]
-                                         , [ True, False, False, False, False ]
-                                         #, [ ( 1.9e2, 1.2e4 ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
-                                         , [ ( 1.e3, 2.5e4 ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
-                                         , [ 1.00, 1.20, 1.15, 1.15, 1.15 ]
-                                         , [ 0.6,  0.7,  0.8,  0.8,  0.8  ]
-                                         , [ 2,    3,    3,    3,    3    ]
-                                   ) ) :
-                    pad.SetLeftMargin(0.18)
-                    pad.SetRightMargin(0.05)
-                    pad.SetBottomMargin(0.18)
-                    pad.SetTopMargin(0.05)
-
-                    binWidth = ( BMass.getMax(frameRange) - BMass.getMin(frameRange) ) / float(nBins)
-                    plot(  pad, BMass, self._dataSets['data'], self._sWeightMassPdf, logy = logy, yScale = scale
-                         , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
-                         , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
-                         #, plotResidHist = True, normalize = True, symmetrize = True
-                         , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
-                         , dataOpts   = dict( MarkerStyle = kFullCircle, MarkerSize = markSize, LineWidth = markLineWidth )
-                         , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3 )
-                         , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed, LineWidth = 3 )
-                                         , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed, LineWidth = 3 )
-                                        }
-                        )
-                    if index < 2 : LHCbLabel.Draw()
-
-                if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit']\
-                      or paramKKMass == 'simultaneous' ) :
-                    # get simultaneous PDFs
-                    indexCatIter  = indexCat.typeIterator()
-                    indexCatState = indexCatIter.Next()
-                    bins = [ ]
-                    pdfs = [ ]
-                    while indexCatState :
-                        indexCat.setIndex( indexCatState.getVal() )
-                        bins.append( [ ( indexCat.GetName(), indexCatState.getVal(), indexCatState.GetName() ) ] )
-                        if indexCat.isFundamental() :
-                            bins[-1].append( bins[-1][0] )
-                        else :
-                            for cat in indexCat.getObservables( self._dataSets['data'] ) :
-                                bins[-1].append( ( cat.GetName(), cat.getIndex(), cat.getLabel() ) )
-
-                        pdfs.append( self._sWeightMassPdf.getPdf( indexCatState.GetName() ) )
-                        indexCatState = indexCatIter.Next()
-
-                    # plot mumuKK mass distributions in KK mass bins
-                    if   len(bins) <= 4 : nPads = ( 2, 2 )
-                    elif len(bins) <= 6 : nPads = ( 3, 2 )
-                    elif len(bins) <= 9 : nPads = ( 3, 3 )
-                    else :                nPads = ( 4, 3 )
-                    self._massCanvs.append( TCanvas( 'massCanvSigBins', 'B mass signal range bins' ) )
-                    for ( pad, pdf, plotTitle, dataCuts, norm )\
-                            in zip(  self._massCanvs[-1].pads( nPads[0], nPads[1] )
-                                   , pdfs
-                                   , [ BMass.GetTitle() + ' bin %d - signal' % bin[0][1] for bin in bins ]
-                                   , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
-                                   , [ self._dataSets['data'].sumEntries( ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )\
-                                       / self._dataSets['data'].sumEntries() for bin in bins ]
-                                  ) :
-                        plot(  pad, BMass, self._dataSets['data'], pdf#, logy = True, yScale = ( 1., None )
-                             , frameOpts  = dict( Range = 'Signal', Bins = numBMassBins[0], Title = plotTitle )
-                             , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
-                             , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm      )
-                             , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
-                                             , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
-                                            }
-                            )
-
-                    self._massCanvs.append( TCanvas( 'massCanvLeftBins', 'B mass left side band bins' ) )
-                    for ( pad, pdf, plotTitle, dataCuts, norm )\
-                            in zip(  self._massCanvs[-1].pads( nPads[0], nPads[1] )
-                                   , pdfs
-                                   , [ BMass.GetTitle() + ' bin %d - left side band' % bin[0][1] for bin in bins ]
-                                   , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
-                                   , [ self._dataSets['data'].sumEntries( ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )\
-                                       / self._dataSets['data'].sumEntries() for bin in bins ]
-                                  ) :
-                        plot(  pad, BMass, self._dataSets['data'], pdf#, logy = True, yScale = ( 1., None )
-                             , frameOpts  = dict( Range = 'LeftSideBand', Bins = numBMassBins[1], Title = plotTitle )
-                             , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
-                             , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm      )
-                             , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
-                                             , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
-                                            }
-                            )
-
-                    self._massCanvs.append( TCanvas( 'massCanvRightBins', 'B mass right side band bins' ) )
-                    for ( pad, pdf, plotTitle, dataCuts, norm )\
-                            in zip(  self._massCanvs[-1].pads( nPads[0], nPads[1] )
-                                   , pdfs
-                                   , [ BMass.GetTitle() + ' bin %d - right side band' % bin[0][1] for bin in bins ]
-                                   , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
-                                   , [ self._dataSets['data'].sumEntries( ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )\
-                                       / self._dataSets['data'].sumEntries() for bin in bins ]
-                                  ) :
-                        plot(  pad, BMass, self._dataSets['data'], pdf#, logy = True, yScale = ( 1., None )
-                             , frameOpts  = dict( Range = 'RightSideBand', Bins = numBMassBins[2], Title = plotTitle )
-                             , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
-                             , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm      )
-                             , components = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
-                                             , 'bkg*' : dict( LineColor = kGreen + 3, LineStyle = kDashed )
-                                            }
-                            )
-
-        else :
-            self._dataSets['sigSWeightData'] = None
-            self._dataSets['bkgSWeightData'] = None
-            self._dataSets['sigRangeData']   = None
-            self._dataSets['bkgRangeData']   = None
+        # PDF observables set
+        obsSetP2VV = [ observables[name] for name in [ 'time', 'cpsi', 'ctheta', 'phi' ] ]
+        if multiplyByTagPdf or not condTagging :
+            obsSetP2VV.append( observables['iTagOS'] )
+            if SSTagging : obsSetP2VV.append( observables['iTagSS'] )
+        if not SFit :
+            obsSetP2VV.append( observables['mass'] )
+        if paramKKMass in [ 'functions', 'amplidudes' ] :
+            obsSetP2VV.append( observables['KKMass'] )
 
 
         ###################################################################################################################################
         ## build tagging categories ##
         ##############################
 
-        if not self._iTagZeroTrick :
-            print 120 * '='
-            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building tagging categories'
+        print 120 * '='
+        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building tagging categories'
 
-            # build tagging categories opposite side
-            from P2VV.Parameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
-            if contEstWTag :
-                self._tagCatsOS = TaggingCategories(  tagCat = 'tagCatP2VVOS', DataSet = self._dataSets['sigSWeightData']
-                                                    , estWTag = estWTagOS, wTagP0Constraint = constrainTagging
-                                                    , wTagP1Constraint = constrainTagging )
-                self._tagCatsSS = TaggingCategories(  tagCat = 'tagCatP2VVSS', DataSet = self._dataSets['sigSWeightData']
-                                                    , estWTag = estWTagSS, SameSide = True
-                                                    , wTagP0Constraint = constrainTagging
-                                                    , wTagP1Constraint = constrainTagging )
+        if dataSet :
+            # get category bins
+            assert observables['wTagOS'].hasBinning('tagCats'),\
+                   'P2VV - ERROR:  Bs2Jpsiphi_PdfBuilder: binning "tagCats" not found for OS estimated wrong-tag probability'
+            assert observables['wTagSS'].hasBinning('tagCats'),\
+                   'P2VV - ERROR:  Bs2Jpsiphi_PdfBuilder: binning "tagCats" not found for SS estimated wrong-tag probability'
+            etaBinsOS = observables['wTagOS'].getBinning('tagCats')
+            etaBinsSS = observables['wTagSS'].getBinning('tagCats')
+
+            # get bin parameters from data for OS and SS
+            tagBins = [ ]
+            for wTag, cat, bins, isSS in zip(  ( obsDict['wTagOS'][0],                        obsDict['wTagSS'][0]                        )
+                                             , ( observables['tagCatOS'],                     observables['tagCatSS']                     )
+                                             , ( observables['wTagOS'].getBinning('tagCats'), observables['wTagSS'].getBinning('tagCats') )
+                                             , ( False,                                       True                                        )
+                                            ) :
+                for it in range( bins.numBins() ) :
+                    assert cat.isValidIndex(it), 'P2VV - ERROR: no bin %d found for tagging category "%s" ' % ( it, cat.GetName() )
+                binPars = [ ( cat.lookupType(it).GetName(), it, bins.binHigh( bins.numBins()-it-1 ) ) for it in range( bins.numBins() ) ]
+
+                from P2VV.Parameterizations.FlavourTagging import getTagCatParamsFromData as getTagParams
+                tagBins.append( getTagParams( dataSet, estWTagName = wTag, tagCats = binPars, numSigmas = 1., SameSide = isSS ) )
+
+            tagCatsOS = tagBins[0]
+            tagCatsSS = tagBins[1]
+
+        else :
+            assert tagCatsOS and tagCatsSS, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no tagging category binnings found'
+
+        # build tagging categories
+        from P2VV.Parameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
+        self._tagCatsOS = TaggingCategories(  tagCat = observables['tagCatOS'] if observables['tagCatOS'] else obsDict['tagCatOS'][0]
+                                            , estWTag = observables['wTagOS'] if contEstWTag else None
+                                            , estWTagName = obsDict['wTagOS'][0], TagCats = tagCatsOS, SameSide = False
+                                            , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging
+                                           )
+        self._tagCatsSS = TaggingCategories(  tagCat = observables['tagCatSS'] if observables['tagCatSS'] else obsDict['tagCatSS'][0]
+                                            , estWTag = observables['wTagSS'] if contEstWTag else None
+                                            , estWTagName = obsDict['wTagSS'][0], TagCats = tagCatsSS, SameSide = True
+                                            , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging
+                                           )
+
+        observables['tagCatOS'] = self._tagCatsOS['tagCat']
+        observables['tagCatSS'] = self._tagCatsSS['tagCat']
+
+        if multiplyByTagPdf or not condTagging :
+            obsSetP2VV.append( observables['tagCatOS'] )
+            if SSTagging : obsSetP2VV.append( observables['tagCatSS'] )
+
+        if condTagging :
+            self._tagCatsOS.addConditional( observables['tagCatOS'] )
+            self._tagCatsOS.addConditional( observables['iTagOS']   )
+            self._tagCatsSS.addConditional( observables['tagCatSS'] )
+            self._tagCatsSS.addConditional( observables['iTagSS']   )
+
+
+        ###################################################################################################################################
+        ## initialize PDF component objects ##
+        ######################################
+
+        nEvents     = dataSet.sumEntries() if dataSet else numEvents
+        nSignal     = nEvents * sigFrac
+        nBackground = nEvents * ( 1. - sigFrac )
+
+        from P2VV.RooFitWrappers import Component
+        self._signalComps     = Component( 'signal', [ ], Yield = ( nSignal,     0., nEvents ) )
+        self._backgroundComps = Component( 'bkg'   , [ ], Yield = ( nBackground, 0., nEvents ) )
+
+
+        ###################################################################################################################################
+        ## build B mass PDFs ##
+        #######################
+
+        if not SFit :
+            # build the signal and background mass PDFs
+            sigMassArgs = dict( Name = 'sig_m', mass = observables['mass'] )
+            if sigMassModel.startswith('box') :
+                from P2VV.Parameterizations.MassPDFs import Box_Signal_Mass as SignalBMass
+                if sigMassModel.endswith('Fixed') :
+                    boxWidth = 0.5 * ( observables['mass'].getMin('RightSideBand') - observables['mass'].getMax('LeftSideBand') )
+                    boxMean  = observables['mass'].getMax('LeftSideBand') + boxWidth
+                    sigMassArgs['m_sig_mean']  = dict( Value = boxMean,  Constant = True )
+                    sigMassArgs['m_sig_width'] = dict( Value = boxWidth, Constant = True, MinMax = ( 0.1, 2. * boxWidth ) )
+
+            elif sigMassModel.startswith('Gauss') :
+                from P2VV.Parameterizations.MassPDFs import Gauss_Signal_Mass as SignalBMass
+
+            elif sigMassModel.startswith('DoubleGauss') :
+                from P2VV.Parameterizations.MassPDFs import DoubleGauss_Signal_Mass as SignalBMass
+                if sigMassModel.endswith('Diag') :
+                    sigMassArgs['TransformWidthPars'] = dict(  m_sig_frac    = ( +0.033129, -0.008339, -0.007473 )
+                                                             , m_sig_sigma_1 = ( +0.115025, -0.067412, +0.000953 )
+                                                             , m_sig_sigma_2 = ( +0.756560, +0.010614, +0.000182 )
+                                                            )
+
+            elif sigMassModel.startswith('CB') :
+                from P2VV.Parameterizations.MassPDFs import CB_Signal_Mass as SignalBMass
+
+            elif sigMassModel.startswith('DoubleCB') :
+                from P2VV.Parameterizations.MassPDFs import DoubleCB_Signal_Mass as SignalBMass
+
             else :
-                self._tagCatsOS = TaggingCategories(  tagCat = 'tagCatP2VVOS', DataSet = self._dataSets['sigSWeightData']
-                                                    , estWTagName = estWTagOS.GetName()
-                                                    , TagCats = tagCatsOS, NumSigmaTagBins = 1.
-                                                    , wTagP0Constraint = constrainTagging
-                                                    , wTagP1Constraint = constrainTagging )
-                self._tagCatsSS = TaggingCategories(  tagCat = 'tagCatP2VVSS', DataSet = self._dataSets['sigSWeightData']
-                                                    , SameSide = True
-                                                    , estWTagName = estWTagSS.GetName()
-                                                    , TagCats = tagCatsSS, NumSigmaTagBins = 1.
-                                                    , wTagP0Constraint = constrainTagging
-                                                    , wTagP1Constraint = constrainTagging )
+                from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
 
-            tagCatP2VVOS = self._tagCatsOS['tagCat']
-            tagCatP2VVOS.setIndex(1)
-            observables[tagCatP2VVOS.GetName()] = tagCatP2VVOS
+            bkgMassArgs = dict( Name = 'bkg_m', mass = observables['mass'] )
+            if bkgMassModel.startswith('linear') :
+                from P2VV.Parameterizations.MassPDFs import Linear_Background_Mass as BackgroundBMass
+                if bkgMassModel.endswith('Constant') : bkgMassArgs['Constant'] = True
+            else :
+                from P2VV.Parameterizations.MassPDFs import LP2011_Background_Mass as BackgroundBMass
 
-            tagCatP2VVSS = self._tagCatsSS['tagCat']
-            tagCatP2VVSS.setIndex(1)
-            observables[tagCatP2VVSS.GetName()] = tagCatP2VVSS
+            self._signalBMass     = SignalBMass(     **sigMassArgs )
+            self._backgroundBMass = BackgroundBMass( **bkgMassArgs )
 
-            if not self._iTagZeroTrick and ( multiplyByTagPdf or not condTagging ) :
-                obsSetP2VV.append(tagCatP2VVOS)
-                if SSTagging : obsSetP2VV.append(tagCatP2VVSS)
-
-            if condTagging :
-                self._tagCatsOS.addConditional(tagCatP2VVOS)
-                self._tagCatsOS.addConditional(iTagOS)
-                self._tagCatsSS.addConditional(tagCatP2VVSS)
-                self._tagCatsSS.addConditional(iTagSS)
-
-            # add tagging categories to data sets
-            from P2VV.GeneralUtils import addTaggingObservables
-            for dataKey, data in self._dataSets.iteritems() :
-                if data and not data.get().find( iTagOS.GetName() ) :
-                    addTaggingObservables( data, iTagOS.GetName(), tagCatP2VVOS.GetName(), tagDecisionOS.GetName(), estWTagOS.GetName()
-                                          , self._tagCatsOS['tagCats'] )
-                    addTaggingObservables( data, iTagSS.GetName(), tagCatP2VVSS.GetName(), tagDecisionSS.GetName(), estWTagSS.GetName()
-                                          , self._tagCatsSS['tagCats'] )
-
-            from P2VV.Parameterizations.FlavourTagging import Combined_TaggingCategories as CombTaggingCategories
-            self._tagCatsComb = CombTaggingCategories( self._tagCatsOS, self._tagCatsSS )
-
-            if self._dataSets['sigSWeightData'] :
-                # print tagging categories distribution for signal and background
-                from P2VV.RooFitWrappers import ArgSet
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in opposite side tagging category for signal:'
-                self._dataSets['sigSWeightData'].table( ArgSet( 'sigOSTagSet', [ tagCatP2VVOS, iTagOS ] ) ).Print('v')
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in opposite side tagging category for background:'
-                self._dataSets['bkgSWeightData'].table( ArgSet( 'bkgOSTagSet', [ tagCatP2VVOS, iTagOS ] ) ).Print('v')
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for signal:'
-                self._dataSets['sigSWeightData'].table( ArgSet( 'sigSSTagSet', [ tagCatP2VVSS, iTagSS ] ) ).Print('v')
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for background:'
-                self._dataSets['bkgSWeightData'].table( ArgSet( 'bkgSSTagSet', [ tagCatP2VVSS, iTagSS ] ) ).Print('v')
+            from P2VV.RooFitWrappers import buildPdf
+            self._signalComps     += self._signalBMass.pdf()
+            self._backgroundComps += self._backgroundBMass.pdf()
 
 
         ###################################################################################################################################
@@ -1171,10 +627,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         print 120 * '='
         print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building PDFs'
 
+        # angular functions
+        if transAngles : from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
+        else :           from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngleFuncs
+        self._angleFuncs = AngleFuncs( cpsi = observables['cpsi'], ctheta = observables['ctheta'], phi = observables['phi'] )
+
         # transversity amplitudes
         commonArgs = dict( AmbiguityParameters = ambiguityPars )
         if paramKKMass == 'amplitudes' :
-            commonArgs[ 'KKMass' ]        = KKMass
+            commonArgs[ 'KKMass' ]        = observables['KKMass']
             commonArgs[ 'KKMassBinning' ] = self._KKMassBinning
         if paramKKMass != 'functions' and not ASParam.startswith('Mag2ReIm') :
             commonArgs[ 'C_SP' ] = CSPValues[0]
@@ -1194,7 +655,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :
             raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no valid amplitude parameterization specified')
 
-        # B lifetime
+        # B decay time
         from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
         dGammaVar = dict( Name = 'dGamma' )
         if blind and 'dGamma' in blind :
@@ -1205,8 +666,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if timeResType.startswith('event') :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
-            timeResArgs = dict(  time = time
-                               , timeResSigma = timeRes
+            timeResArgs = dict(  time = observables['time']
+                               , timeResSigma = observables['timeRes']
                                , Cache = multiplyByTimeEff not in [ 'all', 'signal', 'background' ]  # make sure we do not 'double cache'
                               )
             if 'doublegauss' in timeResType.lower():
@@ -1271,11 +732,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         elif timeResType == '3Gauss' :
             from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution( time = time, timeResSFConstraint = constrTResScale)
+            self._timeResModel = TimeResolution( time = observables['time'], timeResSFConstraint = constrTResScale)
 
         else :
             from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-            self._timeResModel = TimeResolution(  time          = time
+            self._timeResModel = TimeResolution(  time          = observables['time']
                                                 , timeResMu     = dict( Value = 0.,    Constant = True )
                                                 , timeResSigma  = dict( Value = 0.045, Constant = True )
                                                 , PerEventError = False
@@ -1291,11 +752,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._timeResCanv = TCanvas( 'timeResCanv', 'Decay time resolution' )
             for ( pad, data, plotTitle )\
                   in zip(  self._timeResCanv.pads( 2, 2 )
-                         , [ self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
+                         , [ sigData, cbkgData ]
                          , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                         ) :
-                plot(  pad, timeRes, data, None
-                     , frameOpts  = dict( Title = timeRes.GetTitle() + plotTitle )
+                plot(  pad, observables['timeRes'], data, None
+                     , frameOpts  = dict( Title = observables['timeRes'].GetTitle() + plotTitle )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 , MarkerColor = kBlue, LineColor = kBlue )
                     )
 
@@ -1351,19 +812,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         timeBasisCoefs = TimeBasisCoefs( self._angleFuncs.functions, self._amplitudes, self._lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] )
 
         # tagging parameters
-        if self._iTagZeroTrick :
-            from P2VV.Parameterizations.FlavourTagging import LinearEstWTag_TaggingParams as TaggingParams
-            self._taggingParams = TaggingParams(  estWTag = estWTagOS, p0 = dict( Name = 'wTagP0' ), p1 = dict( Name = 'wTagP1' )
-                                                , p0Constraint = constrainTagging, p1Constraint = constrainTagging )
-
-            args = dict(  iTag     = tagDecisionOS
-                        , dilution = self._taggingParams['dilution']
-                        , ADilWTag = self._taggingParams['ADilWTag']
-                        , avgCEven = self._taggingParams['avgCEven']
-                        , avgCOdd  = self._taggingParams['avgCOdd']
-                       )
-
-        elif sigTaggingPdf == 'histPdf' :
+        if sigTaggingPdf == 'histPdf' :
             raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: A histogram tagging PDF can only be used when tagging observables are conditional')
 
         else :
@@ -1373,13 +822,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             if sigTaggingPdf.startswith('tagUntag') :
                 # assume products of asymmetries are small and B-Bbar asymmetries are equal for all tagged categories
-                if tagCatP2VVOS.numTypes() > 2 or ( SSTagging and tagCatP2VVSS.numTypes() > 2 ) :
+                if observables['tagCatOS'].numTypes() > 2 or ( SSTagging and observables['tagCatSS'].numTypes() > 2 ) :
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: tagging in signal PDF:\n'\
                         + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
 
                 # provide the same asymmetry for all tagged categories
                 asymVal = 0. #asymVal = -self._lambdaCP['C'].getVal()
-                asymErr = ( 10. / sqrt( self._dataSets['sigSWeightData'].sumEntries() ) ) if self._dataSets['sigSWeightData'] else 0.1
+                asymErr = ( 10. / sqrt( dataSet.sumEntries() ) ) if dataSet else 0.1
                 avgCEvenSum = RealVar( 'avgCEvenSum'    , Title = 'Sum of CP average even coefficients'
                                                         , Value = 1., MinMax = (  0., 2. ) )
                 avgCOddSum  = RealVar( 'avgCOddSum'     , Title = 'Sum of CP average odd coefficients'
@@ -1471,9 +920,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             from P2VV.Parameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
             self._taggingParams = TaggingParams( **tagCatsDict )
 
+            if condTagging :
+                # don't float tagging category coefficients if PDF is conditional on tagging observables
+                for coefList in self._taggingParams['singleTagCatCoefs'] :
+                    for coef in coefList :
+                        if coef.isFundamental() : coef.setConstant(True)
+
             if not SSTagging :
-                args = dict(  tagCat      = tagCatP2VVOS
-                            , iTag        = iTagOS
+                args = dict(  tagCat      = observables['tagCatOS']
+                            , iTag        = observables['iTagOS']
                             , dilutions   = self._taggingParams['dilutions']
                             , ADilWTags   = self._taggingParams['ADilWTags']
                             , avgCEvens   = self._taggingParams['avgCEvens']
@@ -1481,10 +936,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             , tagCatCoefs = self._taggingParams['tagCatCoefs']
                            )
             else :
-                args = dict(  tagCat0     = tagCatP2VVOS
-                            , tagCat1     = tagCatP2VVSS
-                            , iTag0       = iTagOS
-                            , iTag1       = iTagSS
+                args = dict(  tagCat0     = observables['tagCatOS']
+                            , tagCat1     = observables['tagCatSS']
+                            , iTag0       = observables['iTagOS']
+                            , iTag1       = observables['iTagSS']
                             , dilutions0  = self._taggingParams['dilutions'][0]
                             , dilutions1  = self._taggingParams['dilutions'][1]
                             , ADilWTags0  = self._taggingParams['ADilWTags'][0]
@@ -1494,7 +949,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                             , tagCatCoefs = self._taggingParams['tagCatCoefs']
                            )
 
-        args.update(  time                   = time
+        args.update(  time                   = observables['time']
                     , tau                    = self._lifetimeParams['MeanLifetime']
                     , dGamma                 = self._lifetimeParams['dGamma']
                     , dm                     = self._lifetimeParams['dM']
@@ -1523,18 +978,21 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         #####################
 
         if multiplyByTimeEff in [ 'all', 'signal', 'background' ] :
+            hlt1ExclB = observables['hlt1ExclB']
+            hlt2B     = observables['hlt2B']
+            hlt2UB    = observables['hlt2UB']
             self._timeResModelOriginal = self._timeResModel
             if timeEffType == 'fit' and selection == 'timeEffFit' :
                 hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
-                                        , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
+                                        , 'notExclB' : { 'bins'      : observables['time'].getRange(), 'heights' : [0.5]  }
                                        }
                          , hlt2B     : { 'B'         : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
-                         , hlt2UB    : { 'UB'        : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
+                         , hlt2UB    : { 'UB'        : { 'bins'      : observables['time'].getRange(), 'heights' : [0.5]  } }
                         }
 
                 from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-                self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
-                                                    , Data = self._dataSets['data'], Fit = True, Original = sigPdf
+                self._timeResModel = TimeAcceptance( time = observables['time'], Input = timeEffHistFile, Histograms = hists
+                                                    , Data = dataSet, Fit = True, Original = sigPdf
                                                     , ResolutionModel = self._timeResModel )
 
             elif timeEffType == 'paper2012' and selection == 'paper2012' :
@@ -1544,13 +1002,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         }
 
                 from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-                self._timeResModel = TimeAcceptance( time = time, Input = timeEffHistFile, Histograms = hists
-                                                    , Data = self._dataSets['data'], Fit = False, Original = sigPdf
+                self._timeResModel = TimeAcceptance( time = observables['time'], Input = timeEffHistFile, Histograms = hists
+                                                    , Data = dataSet, Fit = False, Original = sigPdf
                                                     , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf ) )
 
             elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
                 from P2VV.Parameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
-                self._timeResModel = TimeAcceptance(  time = time
+                self._timeResModel = TimeAcceptance(  time = observables['time']
                                                     , Input = timeEffHistFile
                                                     , Histogram = timeEffHistExclBName if timeEffType == 'HLT1ExclBiased'\
                                                                   else timeEffHistUBName
@@ -1594,7 +1052,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # add PDF to signal components
         self._signalComps += sigPdfTimeAcc
         if condTagging : self._sig_t_angles = sigPdfTimeAcc
-        else :                         self._sig_t_angles_tagCat_iTag = sigPdfTimeAcc
+        else           : self._sig_t_angles_tagCat_iTag = sigPdfTimeAcc
 
 
         ###################################################################################################################################
@@ -1605,11 +1063,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._mumuMassCanv = TCanvas( 'mumuMassCanv', 'mumu Mass' )
             for ( pad, data, plotTitle )\
                   in zip(  self._mumuMassCanv.pads( 2, 2 )
-                         , [ self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
+                         , [ sigData, cbkgData ]
                          , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                         ) :
-                plot(  pad, mumuMass, data, None
-                     , frameOpts  = dict( Title = mumuMass.GetTitle() + plotTitle )
+                plot(  pad, observables['mumuMass'], data, None
+                     , frameOpts  = dict( Title = observables['mumuMass'].GetTitle() + plotTitle )
                      , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 , MarkerColor = kBlue, LineColor = kBlue )
                     )
 
@@ -1618,13 +1076,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ## build KK mass PDFs ##
         ########################
 
-        if paramKKMass or makePlots :
+        if makePlots :
             # build the signal and background KK mass PDFs
             from P2VV.Parameterizations.MassPDFs import Binned_MassPdf
-            self._signalKKMass = Binned_MassPdf( 'sig_mKK', KKMass, Binning = self._KKMassBinning
-                                                , Data = self._dataSets['sigSWeightData'] )
-            self._backgroundKKMass = Binned_MassPdf( 'bkg_mKK', KKMass, Binning = self._KKMassBinning
-                                                    , Data = self._dataSets['bkgSWeightData'] )
+            self._signalKKMass = Binned_MassPdf( 'sig_mKK', observables['KKMass'], Binning = self._KKMassBinning
+                                                , Data = sigData )
+            self._backgroundKKMass = Binned_MassPdf( 'bkg_mKK', observables['KKMass'], Binning = self._KKMassBinning
+                                                    , Data = cbkgData )
             if paramKKMass == 'amplitudes' :
                 self._signalComps += self._signalKKMass.pdf()
                 if not SFit: self._backgroundComps += self._backgroundKKMass.pdf()
@@ -1633,13 +1091,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
                 for ( pad, data, pdf, plotTitle, scale )\
                       in zip(  self._KKMassCanv.pads( 2, 2 )
-                             , [ self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
+                             , [ sigData, cbkgData ]
                              , [ self._signalKKMass.pdf(), self._backgroundKKMass.pdf() ]
                              , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                              , [ ( 5., 1.e4 ), ( 1.2e2, 1.2e3 ) ]
                             ) :
-                    plot(  pad, KKMass, data, pdf, logy = True, yScale = scale
-                         , frameOpts  = dict( Title = KKMass.GetTitle() + plotTitle )
+                    plot(  pad, observables['KKMass'], data, pdf, logy = True, yScale = scale
+                         , frameOpts  = dict( Title = observables['KKMass'].GetTitle() + plotTitle )
                          , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue )
                         )
 
@@ -1649,85 +1107,75 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##############################
 
         if condTagging and multiplyByTagPdf :
-            if self._iTagZeroTrick :
-                # no implementation for signal tagging PDF with tag = { B, Bbar, Untagged } (yet)
-                pass
+            if sigData and sigTaggingPdf == 'histPdf' :
+                # create histogram from signal data and use the (fixed) bin coefficients for the PDF
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating signal tagging PDFs from signal data'
+                from P2VV.RooFitWrappers import HistPdf
+                if not SSTagging :
+                    self._sig_tagCat_iTag = HistPdf(  Name = 'sig_tagCat_iTag'
+                                                    , Observables = [ observables['tagCatOS'], observables['iTagOS'] ]
+                                                    , Data = sigData
+                                                   )
+                else :
+                    self._sig_tagCat_iTag = HistPdf(  Name = 'sig_tagCat_iTag'
+                                                    , Observables = [ observables['tagCatOS'], observables['tagCatSS']
+                                                                     , observables['iTagOS'], observables['iTagSS'] ]
+                                                    , Data = sigData
+                                                   )
+                self._signalComps += self._sig_tagCat_iTag
 
             else :
-                # tagCat = { Untagged, TagCat1, TagCat2, ... }, tag = { B, Bbar }
-                sigTaggingData = self._dataSets['sigRangeData'] if massRangeBackground else self._dataSets['sigSWeightData']
-                if sigTaggingData and sigTaggingPdf == 'histPdf' :
-                    # create histogram from signal data and use the (fixed) bin coefficients for the PDF
-                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating signal tagging PDFs from %s data'\
-                          % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
-                    from P2VV.RooFitWrappers import HistPdf
-                    if not SSTagging :
-                        self._sig_tagCat_iTag = HistPdf(  Name = 'sig_tagCat_iTag'
-                                                        , Observables = [ tagCatP2VVOS, iTagOS ]
-                                                        , Data = sigTaggingData
-                                                       )
+                # use a PDF with variable bin coefficients
+                if sigTaggingPdf.startswith('tagUntag') or ( observables['tagCatOS'].numTypes() == 2\
+                                                            and ( not SSTagging or observables['tagCatSS'].numTypes() == 2 ) ) :
+                    # assume B-Bbar asymmetry is equal for all tagged categories
+                    if observables['tagCatOS'].numTypes() > 2 or ( SSTagging and observables['tagCatSS'].numTypes() > 2 ) :
+                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: signal tagging PDF:\n'\
+                            + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
                     else :
-                        self._sig_tagCat_iTag = HistPdf(  Name = 'sig_tagCat_iTag'
-                                                        , Observables = [ tagCatP2VVOS, tagCatP2VVSS, iTagOS, iTagSS ]
-                                                        , Data = sigTaggingData
-                                                       )
-                    self._signalComps += self._sig_tagCat_iTag
+                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a binned signal tagging PDF'
+
+                    from P2VV.Parameterizations.FlavourTagging import TagUntag_BinnedTaggingPdf as TaggingPdf
 
                 else :
-                    # use a PDF with variable bin coefficients
-                    if sigTaggingPdf.startswith('tagUntag')\
-                            or ( tagCatP2VVOS.numTypes() == 2 and ( not SSTagging or tagCatP2VVSS.numTypes() == 2 ) ) :
-                        # assume B-Bbar asymmetry is equal for all tagged categories
-                        if tagCatP2VVOS.numTypes() > 2 or ( SSTagging and tagCatP2VVSS.numTypes() > 2 ) :
-                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: signal tagging PDF:\n'\
-                                + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
-                        else :
-                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a binned signal tagging PDF'
-
-                        from P2VV.Parameterizations.FlavourTagging import TagUntag_BinnedTaggingPdf as TaggingPdf
-
+                    # create independent tagging bin coefficients
+                    if sigData :
+                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: determining signal tagging coefficients from signal data'
                     else :
-                        # create independent tagging bin coefficients
-                        if sigTaggingData :
-                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: determining signal tagging coefficients from %s'\
-                                  % ( 'B mass signal data' if massRangeBackground else 'B mass S-weight data' )
-                        else :
-                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: WARNING:'\
-                                + ' no signal data available to determine signal tagging coefficients:\n'\
-                                + '    * assuming absence of B-Bbar asymmetries'
+                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: WARNING:'\
+                            + ' no signal data available to determine signal tagging coefficients:\n'\
+                            + '    * assuming absence of B-Bbar asymmetries'
 
-                        from P2VV.Parameterizations.FlavourTagging import TagCats_BinnedTaggingPdf as TaggingPdf
+                    from P2VV.Parameterizations.FlavourTagging import TagCats_BinnedTaggingPdf as TaggingPdf
 
-                    # build PDF
-                    self._sigTaggingPdf = TaggingPdf(  'tagCat_iTag'
-                                                     , tagCatP2VVOS, tagCatP2VVSS if SSTagging else None
-                                                     , iTagOS, iTagSS if SSTagging else None
-                                                     , NamePrefix    = 'sig'
-                                                     , TagCatCoefs   = [ sigPdf.tagCatCoefs(i) for i in range( tagCatP2VVOS.numTypes() ) ]\
-                                                                       if SSTagging else [ sigPdf.tagCatCoefs(0) ]
-                                                     , TaggedCatName = 'TagCat' if tagCatP2VVOS.numTypes() > 2 else 'Tagged'
-                                                     , Data          = sigTaggingData
-                                                     , RelativeCoefs = True if sigTaggingPdf.endswith('Relative') else False
-                                                     , Dilutions     = [ sigPdf.dilutions(False), sigPdf.dilutions(True) ]\
-                                                                       if sigTaggingPdf.startswith('tagUntag') and SSTagging else None
-                                                    )
+                # build PDF
+                self._sigTaggingPdf = TaggingPdf(  'tagCat_iTag'
+                                                 , observables['tagCatOS'], observables['tagCatSS'] if SSTagging else None
+                                                 , observables['iTagOS'], observables['iTagSS'] if SSTagging else None
+                                                 , NamePrefix    = 'sig'
+                                                 , TagCatCoefs   = [ sigPdf.tagCatCoefs(it)\
+                                                                     for it in range( observables['tagCatOS'].numTypes() ) ]\
+                                                                     if SSTagging else [ sigPdf.tagCatCoefs(0) ]
+                                                 , TaggedCatName = 'TagCat' if observables['tagCatOS'].numTypes() > 2 else 'Tagged'
+                                                 , Data          = sigData
+                                                 , RelativeCoefs = True if sigTaggingPdf.endswith('Relative') else False
+                                                 , Dilutions     = [ sigPdf.dilutions(False), sigPdf.dilutions(True) ]\
+                                                                   if sigTaggingPdf.startswith('tagUntag') and SSTagging else None
+                                                )
 
-                    self._sig_tagCat_iTag = self._sigTaggingPdf.pdf()
-                    self._signalComps += self._sig_tagCat_iTag
+                self._sig_tagCat_iTag = self._sigTaggingPdf.pdf()
+                self._signalComps += self._sig_tagCat_iTag
 
 
         ###################################################################################################################################
         ## build PDFs for estimated wrong-tag probabilities ##
         ######################################################
 
-        if self._dataSets['data'] and self._dataSets['sigSWeightData'] and self._dataSets['bkgSWeightData'] and makePlots :
+        if makePlots and fullData and sigData and cbkgData :
             # build PDFs for estimated wrong-tag probabilities
             from P2VV.RooFitWrappers import HistPdf
-            self._estWTagDataOS = self._dataSets['sigSWeightData'].reduce( '%s > 0' % tagCatP2VVOS.GetName() )
-            if tagCatP2VVSS :
-                self._estWTagDataSS = self._dataSets['sigSWeightData'].reduce( '%s > 0' % tagCatP2VVSS.GetName() )
-            else :
-                self._estWTagDataSS = self._dataSets['sigSWeightData']
+            self._estWTagDataOS = sigData.reduce( '%s > 0' % observables['tagCatOS'].GetName() )
+            self._estWTagDataSS = sigData.reduce( '%s > 0' % observables['tagCatSS'].GetName() )
 
             self._sig_bkg_estWTagOS = HistPdf(  Name = 'sig_bkg_estWTagOS'
                                               , Observables = [ estWTagOS ]
@@ -1742,24 +1190,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                              )
 
             # get normalization correction for tagged events
-            untagFracOS    = self._dataSets['data'].table(tagCatP2VVOS).getFrac('Untagged')
-            untagFracSigOS = self._dataSets['sigSWeightData'].table(tagCatP2VVOS).getFrac('Untagged')
-            untagFracBkgOS = self._dataSets['bkgSWeightData'].table(tagCatP2VVOS).getFrac('Untagged')
-            if tagCatP2VVSS :
-                untagFracSS    = self._dataSets['data'].table(tagCatP2VVSS).getFrac('Untagged')
-                untagFracSigSS = self._dataSets['sigSWeightData'].table(tagCatP2VVSS).getFrac('Untagged')
-                untagFracBkgSS = self._dataSets['bkgSWeightData'].table(tagCatP2VVSS).getFrac('Untagged')
-            else :
-                untagFracSS    = 1.
-                untagFracSigSS = 1.
-                untagFracBkgSS = 1.
+            untagFracOS    = fullData.table(observables['tagCatOS']).getFrac('Untagged')
+            untagFracSigOS = sigData.table(observables['tagCatOS']).getFrac('Untagged')
+            untagFracBkgOS = cbkgData.table(observables['tagCatOS']).getFrac('Untagged')
+            untagFracSS    = fullData.table(observables['tagCatSS']).getFrac('Untagged')
+            untagFracSigSS = sigData.table(observables['tagCatSS']).getFrac('Untagged')
+            untagFracBkgSS = cbkgData.table(observables['tagCatSS']).getFrac('Untagged')
 
             # plot estimated wrong-tag probabilities for signal and for background
             self._estWTagCanvOS = TCanvas( 'estWTagCanvOS', 'Estimated wrong-tag probability OS' )
             for ( pad, data, nBins, plotTitle, norm )\
                   in zip(  self._estWTagCanvOS.pads( 1, 1 ) if SFit else self._estWTagCanvOS.pads( 2, 2, lambda pad : pad != 2 )
-                         , [ self._dataSets['sigSWeightData'] if SFit else self._dataSets['data']
-                            , self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
+                         , [ sigData if SFit else fullData
+                            , sigData, cbkgData ]
                          , 3 * [ numEstWTagBins ]
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                          , [ 1. - ( untagFracSigOS if SFit else untagFracOS ), 1. - untagFracSigOS, 1. - untagFracBkgOS ]
@@ -1782,8 +1225,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._estWTagCanvSS = TCanvas( 'estWTagCanvSS', 'Estimated wrong-tag probability SS' )
             for ( pad, data, nBins, plotTitle, norm )\
                   in zip(  self._estWTagCanvSS.pads( 1, 1 ) if SFit else self._estWTagCanvSS.pads( 2, 2, lambda pad : pad != 2 )
-                         , [ self._dataSets['sigSWeightData'] if SFit else self._dataSets['data']
-                            , self._dataSets['sigSWeightData'], self._dataSets['bkgSWeightData'] ]
+                         , [ sigData if SFit else fullData, sigData, cbkgData ]
                          , 3 * [ numEstWTagBins ]
                          , [ '', ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
                          , [ 1. - ( untagFracSigSS if SFit else untagFracSS ), 1. - untagFracSigSS, 1. - untagFracBkgSS ]
@@ -1829,13 +1271,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                    self._estWTagCanvSSOS_B,   self._estWTagCanvSSOS_Bbar,
                                    self._estWTagCanvSSOS_BbarB ]
 
-                                 , [ self._dataSets['sigSWeightData'].reduce(tagCutSS_B      ),
-                                     self._dataSets['sigSWeightData'].reduce(tagCutSS_Bbar   ),
-                                     self._dataSets['sigSWeightData'].reduce(tagCutOS_B      ),
-                                     self._dataSets['sigSWeightData'].reduce(tagCutOS_Bbar   ),
-                                     self._dataSets['sigSWeightData'].reduce(tagCutComb_B    ),
-                                     self._dataSets['sigSWeightData'].reduce(tagCutComb_Bbar ),
-                                     self._dataSets['sigSWeightData'].reduce(tagCutComb_BbarB) ]
+                                 , [ sigData.reduce(tagCutSS_B      ),
+                                     sigData.reduce(tagCutSS_Bbar   ),
+                                     sigData.reduce(tagCutOS_B      ),
+                                     sigData.reduce(tagCutOS_Bbar   ),
+                                     sigData.reduce(tagCutComb_B    ),
+                                     sigData.reduce(tagCutComb_Bbar ),
+                                     sigData.reduce(tagCutComb_BbarB) ]
 
                                  , 7 * [ numEstWTagBins ]
                                  , 3 * [ 'B', 'Bbar'  ] +     [ 'BbarB'    ]
@@ -1857,7 +1299,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ###############################
 
         from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
-        self._backgroundTime = BackgroundTime(  Name = 'bkg_t', time = time, resolutionModel = self._timeResModel['model']
+        self._backgroundTime = BackgroundTime(  Name = 'bkg_t', time = observables['time'], resolutionModel = self._timeResModel['model']
                                               , Efficiency = timeAcceptance if multiplyByTimeEff in [ 'all', 'background' ] else None
                                              )
         self._bkg_t = self._backgroundTime.pdf()
@@ -1870,18 +1312,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##################################
 
         if not SFit or makePlots :
-            bkgAngleData = self._dataSets['bkgRangeData'] if massRangeBackground else self._dataSets['bkgSWeightData']
-            if bkgAngleData and bkgAnglePdf == 'histPdf' :
+            if cbkgData and bkgAnglePdf == 'histPdf' :
                 # create a histogram from background data and use it for background angular PDF
-                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: determining angular shape of background from %s data'\
-                      % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: determining angular shape of background from background data'\
 
                 from P2VV.RooFitWrappers import HistPdf
                 nBins = numAngleBins
                 self._bkg_angles = HistPdf(  Name = 'bkg_angles'
-                                           , Observables = angles
+                                           , Observables = [ observables['cpsi'], observables['ctheta'], observables['phi'] ]
                                            , Binning = { cpsi : nBins[0], ctheta : nBins[1], phi : nBins[2] }
-                                           , Data = bkgAngleData
+                                           , Data = cbkgData
                                           )
 
             else :
@@ -1947,7 +1387,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     # create a BinnedPdf
                     from P2VV.RooFitWrappers import BinnedPdf
                     self._bkg_angBins = BinnedPdf(  Name = 'bkg_angBins' if bkgAnglePdf == 'hybrid' else 'bkg_angles'
-                                                  , Observables = angles
+                                                  , Observables = [ observables['cpsi'], observables['ctheta'], observables['phi'] ]
                                                   , Binnings = [ cpsBins, cthBins, phiBins ]
                                                   , Coefficients = self._bkgAngCoefs
                                                   , BinIntegralCoefs = True
@@ -1957,18 +1397,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     sumWeights = 0.
                     sumBinWeights = ( cpsNumBins * cthNumBins * phiNumBins - 1 ) * [ 0. ]
                     spikesFrac = 1.
-                    if bkgAngleData :
+                    if cbkgData :
                         # determine bin coefficient values
-                        angleInitVals = [ angle.getVal() for angle in angles ]
-                        for obsSet in bkgAngleData :
-                            for angle in angles : angle.setVal( obsSet.getRealValue( angle.GetName() ) )
-                            sumWeights += bkgAngleData.weight()
+                        angleInitVals = [ observables[name].getVal() for name in [ 'cpsi', 'ctheta', 'phi' ] ]
+                        for obsSet in cbkgData :
+                            for name in [ 'cpsi', 'ctheta', 'phi' ] :
+                                observables[name].setVal( obsSet.getRealValue( observables[name].GetName() ) )
+                            sumWeights += cbkgData.weight()
                             cpsBin = cpsi.getBin('bkg_cpsBins')
                             cthBin = ctheta.getBin('bkg_cthBins')
                             phiBin = phi.getBin('bkg_phiBins')
                             bin = cpsBin + cthBin * cpsNumBins + phiBin * cpsNumBins * cthNumBins - 1
-                            if bin >= 0 : sumBinWeights[ bin ] += bkgAngleData.weight()
-                        for angle, val in zip( angles, angleInitVals ) : angle.setVal(val)
+                            if bin >= 0 : sumBinWeights[ bin ] += cbkgData.weight()
+                        for name, val in zip( [ 'cpsi', 'ctheta', 'phi' ], angleInitVals ) : observables[name].setVal(val)
 
                         if bkgAnglePdf == 'hybrid' :
                             baseBinVal = sumBinWeights[ baselineBin - 1 ] / sumWeights / cthBins.binWidth(baselineBin)
@@ -2036,24 +1477,24 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 else :
                     self._bkg_angles = self._bkg_angBins
 
-                if bkgAngleData :
+                if cbkgData :
                     # fit background angular distribution
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: fitting background angular distribution'
                     print '  initial parameter values:'
-                    for par in self._bkg_angles.getParameters(bkgAngleData) : par.Print()
-                    self._bkg_angles.fitTo( bkgAngleData, SumW2Error = False, Save = False, **fitOpts )
+                    for par in self._bkg_angles.getParameters(cbkgData) : par.Print()
+                    self._bkg_angles.fitTo( cbkgData, SumW2Error = False, Save = False, **fitOpts )
 
             if not SFit : self._backgroundComps += self._bkg_angles
 
-            if self._dataSets['bkgRangeData'] and self._dataSets['bkgSWeightData'] and makePlots :
+            if cbkgData and cbkgData and makePlots :
                 # plot background angles with S-weights
                 self._bkgAnglesSWeightCanv = TCanvas( 'bkgAnglesSWeightCanv', 'Background Decay Angles with S-Weights' )
                 for ( pad, obs, data, bins, plotTitle, xTitle )\
                       in zip(  self._bkgAnglesSWeightCanv.pads( 3, 2 )
-                             , angles
-                             , 3 * ( self._dataSets['bkgSWeightData'], )
+                             , [ observables[name] for name in [ 'cpsi', 'ctheta', 'phi' ] ]
+                             , 3 * ( cbkgData, )
                              , nBins
-                             , [ angle.GetTitle() for angle in angles ]
+                             , [ observables[name].GetTitle() for name in [ 'cpsi', 'ctheta', 'phi' ] ]
                              , ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                             ) :
                     plot(  pad, obs, data, self._bkg_angles, xTitle = xTitle, yTitleOffset = 1.5
@@ -2066,10 +1507,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 self._bkgAnglesSideBandCanv = TCanvas( 'bkgAnglesSideBandCanv', 'Background Decay Angles with Side Bands' )
                 for ( pad, obs, data, bins, plotTitle, xTitle, scale )\
                       in zip(  self._bkgAnglesSideBandCanv.pads( 3, 2 )
-                             , angles
-                             , 3 * ( self._dataSets['bkgRangeData'], )
+                             , [ observables[name] for name in [ 'cpsi', 'ctheta', 'phi' ] ]
+                             , 3 * ( cbkgData, )
                              , nBins
-                             , [ angle.GetTitle() for angle in angles ]
+                             , [ observables[name].GetTitle() for name in [ 'cpsi', 'ctheta', 'phi' ] ]
                              , ( angleNames[0][1], angleNames[1][1], angleNames[2][1] )
                              , ( ( None, None ), ( None, None ), ( None, None ) ) # ( ( 0., 740. * 9585. / 12005. ), ( 0., 580. * 9585. / 12005. ), ( 0., 760. * 9585. / 12005. ) ) # ( ( 0., 740. ), ( 0., 580. ), ( 0., 760. ) )
                             ) :
@@ -2080,12 +1521,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         )
 
                 # plot 2-D angular distributions
-                #for angle0, angle1, data, canv, padNr in [  ( 1, 0, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  4 )
-                #                                          , ( 2, 0, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  5 )
-                #                                          , ( 1, 2, self._dataSets['bkgSWeightData'], self._bkgAnglesSWeightCanv,  6 )
-                #                                          , ( 1, 0, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 4 )
-                #                                          , ( 2, 0, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 5 )
-                #                                          , ( 1, 2, self._dataSets['bkgRangeData'],   self._bkgAnglesSideBandCanv, 6 )
+                #for angle0, angle1, data, canv, padNr in [  ( 1, 0, cbkgData, self._bkgAnglesSWeightCanv,  4 )
+                #                                          , ( 2, 0, cbkgData, self._bkgAnglesSWeightCanv,  5 )
+                #                                          , ( 1, 2, cbkgData, self._bkgAnglesSWeightCanv,  6 )
+                #                                          , ( 1, 0, cbkgData,   self._bkgAnglesSideBandCanv, 4 )
+                #                                          , ( 2, 0, cbkgData,   self._bkgAnglesSideBandCanv, 5 )
+                #                                          , ( 1, 2, cbkgData,   self._bkgAnglesSideBandCanv, 6 )
                 #                                         ] :
                 #    bkgAngHist = data.createHistogram( angles[angle0]._var, angles[angle1]._var, nBins[angle0], nBins[angle1] )
                 #    _P2VVPlotStash.append(bkgAngHist)
@@ -2111,60 +1552,55 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ##################################
 
         if not SFit and ( multiplyByTagPdf or not condTagging ) :
-            if self._iTagZeroTrick :
-                # no implementation for background tagging PDF with tag = { B, Bbar, Untagged } (yet)
-                pass
+            # tagCat = { Untagged, TagCat1, TagCat2, ... }, tag = { B, Bbar }
+            if cbkgData and bkgTaggingPdf == 'histPdf' :
+                # create histogram from background data and use the (fixed) bin coefficients for the PDF
+                print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating background tagging PDFs from background data'
+                from P2VV.RooFitWrappers import HistPdf
+                self._bkg_tagCat_iTag = HistPdf(  Name = 'bkg_tagCat_iTag'
+                                                , Observables = [ observables['tagCatOS'], observables['iTagOS'] ]
+                                                , Data = cbkgData
+                                               )
+                self._backgroundComps += self._bkg_tagCat_iTag
 
             else :
-                # tagCat = { Untagged, TagCat1, TagCat2, ... }, tag = { B, Bbar }
-                bkgTaggingData = self._dataSets['bkgRangeData'] if massRangeBackground else self._dataSets['bkgSWeightData']
-                if bkgTaggingData and bkgTaggingPdf == 'histPdf' :
-                    # create histogram from background data and use the (fixed) bin coefficients for the PDF
-                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: creating background tagging PDFs from %s data'\
-                          % ( 'B mass side band' if massRangeBackground else 'B mass S-weight' )
-                    from P2VV.RooFitWrappers import HistPdf
-                    self._bkg_tagCat_iTag = HistPdf( Name = 'bkg_tagCat_iTag', Observables = [tagCatP2VVOS, iTagOS], Data = bkgTaggingData )
-                    self._backgroundComps += self._bkg_tagCat_iTag
+                # use a PDF with variable bin coefficients
+                if bkgTaggingPdf.startswith('tagUntag') or ( observables['tagCatOS'].numTypes() == 2\
+                                                            and ( not SSTagging or observables['tagCatSS'].numTypes() == 2 ) ) :
+                    # couple background tagging category coefficients to signal tagging category coefficients
+                    # and assume B-Bbar asymmetry is equal for all tagged categories
+                    if observables['tagCatOS'].numTypes() > 2  or ( SSTagging and observables['tagCatSS'].numTypes() > 2 ) :
+                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
+                            + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
+                    else :
+                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a binned background tagging PDF'
+
+                    from P2VV.Parameterizations.FlavourTagging import TagUntag_BinnedTaggingPdf as TaggingPdf
 
                 else :
-                    # use a PDF with variable bin coefficients
-                    if bkgTaggingPdf.startswith('tagUntag')\
-                            or ( tagCatP2VVOS.numTypes() == 2 and ( not SSTagging or tagCatP2VVSS.numTypes() == 2 ) ) :
-                        # couple background tagging category coefficients to signal tagging category coefficients
-                        # and assume B-Bbar asymmetry is equal for all tagged categories
-                        if tagCatP2VVOS.numTypes() > 2  or ( SSTagging and tagCatP2VVSS.numTypes() > 2 ) :
-                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: background tagging PDF:\n'\
-                                + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
-                        else :
-                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building a binned background tagging PDF'
-
-                        from P2VV.Parameterizations.FlavourTagging import TagUntag_BinnedTaggingPdf as TaggingPdf
-
+                    # create independent tagging bin coefficients
+                    if cbkgData :
+                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: determining background tagging coefficients from background data'
                     else :
-                        # create independent tagging bin coefficients
-                        if bkgTaggingData :
-                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: determining background tagging coefficients from %s'\
-                                  % ( 'B mass side band data' if massRangeBackground else 'B mass S-weight data' )
-                        else :
-                            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: WARNING:'\
-                                + ' no background data available to determine background tagging coefficients:\n'\
-                                + '    * assuming equal tagging category coefficients\n'\
-                                + '    * assuming absence of B-Bbar asymmetries'
+                        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: WARNING:'\
+                            + ' no background data available to determine background tagging coefficients:\n'\
+                            + '    * assuming equal tagging category coefficients\n'\
+                            + '    * assuming absence of B-Bbar asymmetries'
 
-                        from P2VV.Parameterizations.FlavourTagging import TagCats_BinnedTaggingPdf as TaggingPdf
+                    from P2VV.Parameterizations.FlavourTagging import TagCats_BinnedTaggingPdf as TaggingPdf
 
-                    # build PDF
-                    self._bkgTaggingPdf = TaggingPdf(  'tagCat_iTag'
-                                                     , tagCatP2VVOS, tagCatP2VVSS if SSTagging else None
-                                                     , iTagOS, iTagSS if SSTagging else None
-                                                     , NamePrefix    = 'bkg'
-                                                     , TaggedCatName = 'TagCat' if tagCatP2VVOS.numTypes() > 2 else 'Tagged'
-                                                     , Data          = bkgTaggingData
-                                                     , RelativeCoefs = True if bkgTaggingPdf.endswith('Relative') else False
-                                                    )
+                # build PDF
+                self._bkgTaggingPdf = TaggingPdf(  'tagCat_iTag'
+                                                 , observables['tagCatOS'], observables['tagCatSS'] if SSTagging else None
+                                                 , observables['iTagOS'], observables['iTagSS'] if SSTagging else None
+                                                 , NamePrefix    = 'bkg'
+                                                 , TaggedCatName = 'TagCat' if observables['tagCatOS'].numTypes() > 2 else 'Tagged'
+                                                 , Data          = cbkgData
+                                                 , RelativeCoefs = True if bkgTaggingPdf.endswith('Relative') else False
+                                                )
 
-                    self._bkg_tagCat_iTag = self._bkgTaggingPdf.pdf()
-                    self._backgroundComps += self._bkg_tagCat_iTag
+                self._bkg_tagCat_iTag = self._bkgTaggingPdf.pdf()
+                self._backgroundComps += self._bkg_tagCat_iTag
 
 
         ###################################################################################################################################
@@ -2206,7 +1642,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             splitCats = [ [ ] ]
             if not SFit :
                 splitCats[0] += [ hlt1ExclB ] if selection == 'paper2012' else [ hlt1ExclB, hlt2B ] if selection == 'timeEffFit' else [ ]
-            splitCats[0] += [ self._KKMassCat ] if paramKKMass == 'simultaneous' else [ ]
+            splitCats[0] += [ observables['KKMassCat'] ] if paramKKMass == 'simultaneous' else [ ]
 
             # specify parameters that are different in simultaneous categories
             splitParams = [ [ ] ]
@@ -2223,7 +1659,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             #    else :
             #        splitParams[-1] += [ par for par in self._timeResModel['binHeights'] ]
             if paramKKMass == 'simultaneous' :
-                splitCats.append( [ self._KKMassCat ] )
+                splitCats.append( [ observables['KKMassCat'] ] )
                 splitParams.append( [ ] )
                 for amp in self._amplitudes.parameters() :
                     if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S', 'C_SP' ] ) : splitParams[-1].append(amp)
@@ -2238,12 +1674,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                              , SplitParameters = splitParams
                                             )
 
-            massPars = self._sWeightMassPdf.getVariables()
+            from P2VV.GeneralUtils import getSplitPar
             splitCatPars = self._simulPdf.getVariables()
             if not SFit :
                 # set values for splitted yields
                 splitCatIter = self._simulPdf.indexCat().typeIterator()
                 splitCatState = splitCatIter.Next()
+                massPars = self._sWeightMassPdf.getVariables()
                 while splitCatState :
                     sigYield = getSplitPar( 'N_sigMass' if SFit else 'N_signal', splitCatState.GetName(), splitCatPars )
                     bkgYield = getSplitPar( 'N_bkgMass' if SFit else 'N_bkg',    splitCatState.GetName(), splitCatPars )
@@ -2254,8 +1691,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         else :
                             splitCat.setLabel( splitCatState.GetName() )
                             selStr = ' && '.join( '!(%s-%d)' % ( cat.GetName(), cat.getIndex() ) for cat in splitCat.inputCatList() )
-                        nEv    = self._dataSets['data'].sumEntries()
-                        nEvBin = self._dataSets['data'].sumEntries(selStr)
+                        nEv    = fullData.sumEntries()
+                        nEvBin = fullData.sumEntries(selStr)
 
                         sigYield.setVal( sigYield.getVal() * nEvBin / nEv )
                         sigYield.setError( sqrt( sigYield.getVal() ) )
@@ -2305,7 +1742,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             if paramKKMass == 'simultaneous' :
                 # set values for splitted amplitudes
-                splitCatIter = self._KKMassCat.typeIterator()
+                splitCatIter = observables['KKMassCat'].typeIterator()
                 splitCatState = splitCatIter.Next()
                 while splitCatState :
                     if ASParam != 'Mag2ReIm' :
@@ -2356,7 +1793,3 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # garbage collect
         gc.collect()
-
-    def __getitem__( self, kw ) :
-        return self._dataSets[kw] if kw in [ 'data', 'sigSWeightData', 'bkgSWeightData', 'sigRangeData', 'bkgRangeData' ]\
-               else PdfBuilder.__getitem__( self, kw )
