@@ -4,6 +4,7 @@
 
 nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 nTupleName       = 'DecayTree'
+#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_6KKMassBins_noTagCats.root'
 dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
 #dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_freeTagCats.root'
 plotsFilePath    = 'plots/P2VVMassPlots.ps'
@@ -11,7 +12,7 @@ plotsFilePath    = 'plots/P2VVMassPlots.ps'
 selection        = 'paper2012'
 dataSample       = ''
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
-KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]
+KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
 
 ntupleCuts = 'sel == 1'\
              ' && muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
@@ -647,13 +648,13 @@ if addTaggingObs :
 
     # print tagging categories distributions for signal and background
     from P2VV.RooFitWrappers import ArgSet
-    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in opposite side tagging category for signal:'
+    print 'P2VV - INFO: createB2CCDataSet: distribution in opposite side tagging category for signal:'
     dataSets['sigSWeightData'].table(  ArgSet( 'sigOSTagSet',  [ observables['tagCatP2VVOS'], observables['iTagOS'] ] ) ).Print('v')
-    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in opposite side tagging category for combinatorial background:'
+    print 'P2VV - INFO: createB2CCDataSet: distribution in opposite side tagging category for combinatorial background:'
     dataSets['cbkgSWeightData'].table( ArgSet( 'cbkgOSTagSet', [ observables['tagCatP2VVOS'], observables['iTagOS'] ] ) ).Print('v')
-    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for signal:'
+    print 'P2VV - INFO: createB2CCDataSet: distribution in same side tagging category for signal:'
     dataSets['sigSWeightData'].table(  ArgSet( 'sigSSTagSet',  [ observables['tagCatP2VVSS'], observables['iTagSS'] ] ) ).Print('v')
-    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: distribution in same side tagging category for combinatorial background:'
+    print 'P2VV - INFO: createB2CCDataSet: distribution in same side tagging category for combinatorial background:'
     dataSets['cbkgSWeightData'].table( ArgSet( 'cbkgSSTagSet', [ observables['tagCatP2VVSS'], observables['iTagSS'] ] ) ).Print('v')
 
 
