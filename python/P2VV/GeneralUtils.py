@@ -1354,6 +1354,64 @@ class Sorter(object):
         if o in self.__d:  return self.__d[o]
         else:              return len(self.__d) + 1
 
+def compareMCsWeightData(tree, sTree, var, sVar=None, cut=None, sCut=None, weight='1', sWeight='sigWeight', rangeX=[], bins=100, assymPlot=False):
+##Example: c4 = compareMCsWeightData(mcData, sData, 'B_s0_LOKI_DTF_CHI2NDOF', cut=Cuts, rangeX=[0,15] )
+    from ROOT import gPad
+
+    if rangeX:
+        Xmin=str(rangeX[0])
+        Xmax=str(rangeX[1])
+    else:
+        Xmin= str(min(tree.GetMinimum(var),sTree.GetMinimum(var)))
+        Xmax= str(max(tree.GetMaximum(var),sTree.GetMaximum(var)))
+        
+    print '\nPloting MC data: ' + var
+    if cut: tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight +'*'+'('+cut+')' )
+    else  : tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight                  )
+    hm = gPad.GetPrimitive('hm')
+
+    if not sVar: sVar=var
+    print '\nPloting sWeighted data: ' + sVar 
+    if sCut: sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight +'*'+'('+sCut+')', 'err' )
+    else   : sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight                  , 'err' )
+    hs = gPad.GetPrimitive('hs')
+   
+    hm.SetFillColor(2)
+    hm.SetStats(0)
+    hm.SetTitle(var)
+    
+    hs.SetMarkerStyle(20)
+    hs.SetMarkerSize(.5)
+    hs.SetTitle(var)
+    hs.SetStats()
+    
+    hm.Scale(hs.GetSumOfWeights() / hm.GetSumOfWeights())
+
+    if rangeX: hm.GetXaxis().SetRangeUser(rangeX[0], rangeX[1])
+    if hm.GetMaximum() < hs.GetMaximum(): hm.GetYaxis().SetRangeUser(0, int( hs.GetMaximum() + .08* hs.GetMaximum() ))
+
+    from ROOT import TCanvas
+    c = TCanvas(var,var)
+    from ROOT import TH1F, TMath
+    asymPlot = TH1F('asymPlot','Assymetry Plot', bins, rangeX[0], rangeX[1])
+    if assymPlot:
+        for b in xrange(1,hm.GetNbinsX()):
+            try:asym=(hm.GetBinContent(b) - hs.GetBinContent(b)) / (hm.GetBinContent(b) + hs.GetBinContent(b))
+            except ZeroDivisionError: asym=0
+            ##TODO:: Impliment the errors  
+            #error = TMath.sqrt ( 1/hm.GetSumOfWeights() + 1/hs.GetSumOfWeights() )
+            asymPlot.SetBinContent(b,asym)
+            #asymPlot.SetBinError(b,error)
+            c.cd()
+            asymPlot.SetStats(0)
+            asymPlot.Draw()
+        return asymPlot
+    else:
+        c.cd()
+        hm.Draw()
+        hs.Draw('same')
+        return c
+
 
 ###########################################################################################################################################
 ## (Efficiency) Moments                                                                                                                  ##
@@ -1986,4 +2044,31 @@ def getSplitPar( parName, stateName, parSet ) :
     return None
 
 
+#Functions that change the MC_pdf parameters to MC_gen and sFit_to_Data values  
+def setMonteCarloParameters(pdf,pars):
+    from ROOT import RooArgSet
+    pdfParSet = RooArgSet(p._target_() for p in pdf.Parameters())
+    for k in pdf.Parameters(): pdfParSet.find( k.GetName() ).setVal( pars[k.GetName() ])
 
+
+def setDataFitParameters(pdf,pars):    
+    from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
+    amps = Amplitudes(AmbiguityParameters=False, ASParameterization='deltaPerp', AparParameterization='phase'
+                      ,prefix     = pars['prefix']
+                      ,A0Mag2     = pars['A0Mag2']
+                      ,A0Phase    = pars['A0Phase']
+                      ,AperpMag2  = pars['AperpMag2']
+                      ,AperpPhase = pars['AperpPhase']
+                      ,AparPhase  = pars['AparPhase']
+                      ,ASOddPhase = pars['ASOddPhase']
+                      ,C_SP       = pars['C_SP']
+                      ,f_S        = pars['f_S']
+                      )
+
+    for p in pdf.Parameters(): 
+        key = p.GetName()
+        if   key.startswith('Re'):p.setVal( amps[ pars['prefix']+key[2:] ].Re.getVal() )
+        elif key.startswith('Im'):p.setVal( amps[ pars['prefix']+key[2:] ].Im.getVal() )
+        else:                     p.setVal(       pars[key]                            )
+
+   
