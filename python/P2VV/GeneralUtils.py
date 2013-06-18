@@ -319,6 +319,7 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
                       )
 
     # add corrected weights to data set
+    from P2VV.Load import P2VVLibrary
     from ROOT import RooCorrectedSWeight
     if splitCatName :
         from ROOT import std
@@ -341,9 +342,13 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
     dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet.get()
                          , Import = dataSet, WeightVar = ( 'weightVar', True ) )
 
-    # import data set into current workspace
-    from P2VV.RooFitWrappers import RooObject
-    return RooObject().ws().put( dataSet, **kwargs )
+    importIntoWS = kwargs.pop( 'ImportIntoWS', True )
+    if importIntoWS :
+        # import data set into current workspace
+        from P2VV.RooFitWrappers import RooObject
+        return RooObject().ws().put( dataSet, **kwargs )
+    else :
+        return dataSet
 
 
 def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estimWTagName, tagCatBins ) :
