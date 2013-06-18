@@ -328,11 +328,11 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
 
         else :
             # delta_par
-            self._parseArg( 'AparPhase', kwargs, Name = '%sAparPhase', Title = 'delta_par', Value = deltaPar, Error = delParErr, MinMax = ( -RooInf, RooInf ) )
+            self._parseArg( 'AparPhase', kwargs, Name = '%sAparPhase' % (prefix), Title = 'delta_par', Value = deltaPar, Error = delParErr, MinMax = ( -RooInf, RooInf ) )
             AparAmp = Polar2_Amplitude( '%sApar' % (prefix), self._AparMag2, self._AparPhase, +1 )
 
         # A_S
-        self._parseArg( 'C_SP', kwargs, Name = '%sC_SP', Title = 'S-P wave couping factor', Value = C_SP, Error = C_SPErr, MinMax = ( 0., 1. ) )
+        self._parseArg( 'C_SP', kwargs, Name = '%sC_SP' % (prefix), Title = 'S-P wave couping factor', Value = C_SP, Error = C_SPErr, MinMax = ( 0., 1. ) )
         if 'KKMass' in kwargs and 'KKMassBinning' in kwargs :
             self._KKMass = kwargs.pop('KKMass')
             self._KKMassBinning = kwargs.pop('KKMassBinning')
@@ -350,12 +350,12 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                     self._createBinnedAmp( '%sASPhase' % (prefix), 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMass, self._KKMassBinning )
 
             else :
-                self._parseArg( 'f_S', kwargs, Name = '%sf_S', Title = 'S wave fraction', Value = f_S, Error = f_SErr, MinMax = ( 0., 1. ) )
+                self._parseArg( 'f_S', kwargs, Name = '%sf_S' % (prefix), Title = 'S wave fraction', Value = f_S, Error = f_SErr, MinMax = ( 0., 1. ) )
                 if ASParam == 'deltaPerp' :
-                    self._parseArg( 'ASOddPhase', kwargs, Name = '%sASOddPhase', Title = 'delta_S - delta_perp', Value = deltaS, Error = delSErr
+                    self._parseArg( 'ASOddPhase', kwargs, Name = '%sASOddPhase' % (prefix), Title = 'delta_S - delta_perp', Value = deltaS, Error = delSErr
                                    , MinMax = ( -RooInf, RooInf ) )
                 else :
-                    self._parseArg( 'ASPhase', kwargs, Name = '%sASPhase', Title = 'delta_S', Value = deltaS, Error = delSErr, MinMax = ( -RooInf, RooInf ) )
+                    self._parseArg( 'ASPhase', kwargs, Name = '%sASPhase' % (prefix), Title = 'delta_S', Value = deltaS, Error = delSErr, MinMax = ( -RooInf, RooInf ) )
 
             self._ASMag2 = FormulaVar( '%sASMag2' % (prefix), '@0 / (1. - @0)', [ self._f_S ], Title = 'Re(A_S)' )
             if ASParam == 'deltaPerp' :
@@ -377,9 +377,9 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
                 self._createBinnedAmp( '%ssqrtfS_Im'% (prefix), 'sqrt(S wave fraction) * sin(delta_S)', sqrt(f_S) * sin(deltaS), ( -1., 1. )
                                       , self._KKMass, self._KKMassBinning )
             else :
-                self._parseArg( 'sqrtfS_Re', kwargs, Name = '%ssqrtfS_Re', Title = 'sqrt(S wave fraction) * cos(delta_S)', Value = sqrt(f_S) * cos(deltaS)
+                self._parseArg( 'sqrtfS_Re', kwargs, Name = '%ssqrtfS_Re' % (prefix), Title = 'sqrt(S wave fraction) * cos(delta_S)', Value = sqrt(f_S) * cos(deltaS)
                                , MinMax = ( -1., 1. ) )
-                self._parseArg( 'sqrtfS_Im', kwargs, Name = '%ssqrtfS_Im', Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(deltaS)
+                self._parseArg( 'sqrtfS_Im', kwargs, Name = '%ssqrtfS_Im' % (prefix), Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(deltaS)
                                , MinMax = ( -1., 1. ) )
 
             self._ASMag2 = FormulaVar( '%sASMag2' % (prefix), '@0 / (1. - @0*@0 - @1*@1)', [ self._f_S ], Title = 'Re(A_S)' )
