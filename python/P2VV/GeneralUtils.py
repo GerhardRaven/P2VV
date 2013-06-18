@@ -714,9 +714,9 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         _P2VVPlotStash.append(residHist)
 
         xAxis.SetLabelOffset(0.1)
-        yAxis.SetTitleSize(0.08)
-        yAxis.SetLabelSize(0.07)
-        yAxis.SetTitleOffset(0.75)
+        #yAxis.SetTitleSize(0.10)
+        #yAxis.SetLabelSize(0.08)
+        yAxis.SetTitleOffset( 0.7 * yAxis.GetTitleOffset() )
 
         # create residuals frame
         residFrame = obsFrame.emptyClone( obsFrame.GetName() + '_resid' )
@@ -753,7 +753,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
         #residFrame.SetBarWidth(1.0)
         #residHist.SetDrawOption("B HIST")
-        residFrame.addPlotable( residHist, 'P' )  # , 'B HIST' )
+        residFrame.addPlotable( residHist, 'P' if not type(plotResidHist) == str else plotResidHist )
         #residFrame.setDrawOptions(residHist.GetName(),'B')
 
         if symmetrize :
