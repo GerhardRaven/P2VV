@@ -4,6 +4,7 @@ INCDIR = include
 BUILDDIR = .build
 LIBDIR = lib
 DICTDIR = dict
+
 df = $(DEPDIR)/$(*F)
 
 #CXX = g++
@@ -27,11 +28,16 @@ PYTHON_CFLAGS = ""
 endif
 
 CFLAGS   := $(COMMONFLAGS) $(PYTHON_CFLAGS)
-PROF_LDFLAGS := -lpython$(PYTHONVERSION) -lprofiler
+PY_LDFLAGS := -lpython$(PYTHONVERSION)
+PROF_LDFLAGS := $(PY_LDFLAGS) -lprofiler
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
 
+DILUTION_DIR = src/dilution
+DILUTION_SOURCES = $(wildcard $(DILUTION_DIR)/*.c)
+
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cxx=$(BUILDDIR)/%.o) $(BUILDDIR)/P2VV_dict.o
+DILUTION_OBJECTS = $(DILUTION_SOURCES:$(DILUTION_DIR)/%.c=$(BUILDDIR)/%.o)
 
 vpath %.cxx $(SRCDIR):$(DICTDIR):$(BUILDDIR)
 vpath %.c   $(SRCDIR):$(DICTDIR):$(BUILDDIR)
@@ -40,7 +46,7 @@ vpath %.o   $(BUILDDIR)
 
 .PHONY: all clean profiler
 
-all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so 
+all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so $(LIBDIR)/dilution.so
 
 profiler: $(LIBDIR)/profiler.so
 
@@ -53,7 +59,7 @@ $(BUILDDIR)/%.o : %.cxx %.h
 	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
 	rm -f $(BUILDDIR)/$*.d
 
-$(BUILDDIR)/%.o : %.c
+$(BUILDDIR)/%.o : dilution/%.c
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 	@cp $(BUILDDIR)/$*.d $(df).P; \
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
@@ -73,8 +79,11 @@ $(BUILDDIR)/profiler.c: $(SRCDIR)/profiler.pyx
 $(LIBDIR)/profiler.so: $(BUILDDIR)/profiler.o
 	$(LD) $(PROF_LDFLAGS) -shared -o $@ $^
 
+$(LIBDIR)/dilution.so: $(DILUTION_OBJECTS)
+	$(LD) $(PY_LDFLAGS) -shared -o $@ $^
+
 clean:
-	-rm -rf $(LIBDIR)/libP2VV.so $(OBJECTS) P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
+	-rm -rf $(LIBDIR)/*.so $(DILUTION_OBJECTS) $(OBJECTS) P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
 
 $(DEPDIR) $(LIBDIR) $(BUILDDIR):
 	@if [ ! -d $@ ]; then mkdir $@; fi
