@@ -2034,7 +2034,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 heights.append(EfficiencyBin(Name = name, Bins = d))
             if self.__spline and len(heights) > 1:
                 eff_model = self.__build_spline(prefix, heights)
-                print 'EffModel:', eff_model
             else:
                 eff_model = self.__build_eff_res(prefix, heights)
 
@@ -2046,7 +2045,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 # cp = category_pair(__dref__(category), state)
                 cm[__dref__(category)] = state
             efficiency = self.__relative_efficiencies[state_name]
-            print type(eff_model._target_())
             entry = MultiHistEntry(cm, __dref__(eff_model), __dref__(efficiency))
             efficiency_entries.push_back(entry)
         return efficiency_entries
@@ -2063,9 +2061,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
                            Efficiency = binned_pdf)
     def __build_spline(self, prefix, heights):
         spline_name = "%s_spline_fun" % prefix
-        print len(heights)
-        for h in heights:
-            print h
         spline_fun = CubicSplineFun(Name = spline_name, Observable = self.__observable,
                                     Knots = self.__knots, Coefficients = heights)
         return CubicSplineGaussModel(Name = '%s_efficiency' % prefix, ResolutionModel = self.__resolution_model,

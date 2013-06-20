@@ -25,10 +25,13 @@ plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
        else 'plots/JvLCFit.ps'
 parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
 
+import os
+prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
+
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
     ## pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_2012_ntupleB_20121212.root'
-    pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+    pdfConfig['nTupleFile'] = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root')
     #pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDown.root'
     #pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagUp.root'
     #pdfConfig['nTupleFile'] = '/bfys/raaij/p2vv/data/Pass3-version2_Bs_050711_nocut_Phi_P2VV.root'
@@ -81,6 +84,11 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # default: 'tagUntagRela
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased' # 'fit'
+
+# Spline Acceptance
+pdfConfig['splineAcceptance']     = False
+pdfConfig['smoothSpline']         = 2
+
 pdfConfig['multiplyByAngEff']     = 'weights'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # default/nominal: 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
@@ -158,18 +166,18 @@ if not readData or manualTagCatBins :
     #                          , ( 'TagCat2',   2, 0.30     )
     #                         ]
 
-pdfConfig['timeEffHistFile']      = '/bfys/raaij/p2vv/data/start_values.root'\
-                                    if pdfConfig['timeEffType'] == 'fit' else\
-                                    '/bfys/raaij/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
+pdfConfig['timeEffHistFile']      = os.path.join(prefix, 'p2vv/data/start_values.root') \
+                                    if pdfConfig['timeEffType'] == 'fit' else \
+                                    os.path.join(prefix, 'p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root')
 #                                    '/bfys/raaij/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 #                                    '/bfys/raaij/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504_unitAcceptance.root'
 #pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['angEffMomentsFile']    = '/bfys/raaij/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
+pdfConfig['angEffMomentsFile']    = os.path.join(prefix, 'p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis')\
                                     if pdfConfig['transversityAngles'] else\
-                                    '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+                                    os.path.join(prefix, 'p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights')
 #                                    '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 #                                    '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_Basis'
 
@@ -464,6 +472,8 @@ for constraint in pdfBuild._fullPdf.ExternalConstraints():
         print 'setting ASOddPhase constant for %s' % constraint.GetName()
         phase.setConstant(True)
 
+assert(False)
+        
 if ( readData or generateData ) and doFit :
     # fit data
     print 120 * '='

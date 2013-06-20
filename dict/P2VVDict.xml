@@ -9,7 +9,6 @@
         <class name = "RooAbsRealMoment" />
         <class name = "RooRealMoment" />
         <class name = "RooRealEffMoment" />
-        <function name = "computeRooRealMoments" />
         <class name = "std::vector<RooAbsRealMoment*>" />
         <class name = "ProgressDisplay" />
         <class name = "RooBTagDecay" />
@@ -22,7 +21,6 @@
         <class name = "RooTagDecisionWrapper" />
         <class name = "RooRealCategory" />
         <class name = "RooCalibratedDilution" />
-        <function name = "RooDataSetToTree" />
         <class name = "RooTransAngle" />
         <class name = "RooCruijff" />
         <class name = "RooEfficiencyBin" />
@@ -34,7 +32,6 @@
         <class name = "RooMultiEffResModel" />
         <class name = "RooComplementCoef" />
         <class name = "RooEffConvGenContext" />
-        <function name = "sigmaFromFT" />
         <class name = "RooBoxPdf" />
         <class name = "RooExplicitNormPdf" />
         <class name = "RooTPDecay" />
@@ -60,5 +57,14 @@
         <class name = "std::pair<Int_t, MultiHistEntry*>" />
         <class name = "std::map<int, MultiHistEntry*>::iterator" />
         <class name = "std::vector<MultiHistEntry*>" />
+
+        <class name = "std::list<RooDataSet*>" />
+
+        <function name = "computeRooRealMoments" />
+        <function name = "RooDataSetToTree" />
+        <function name = "addSWeightToTree" />
+        <function name = "addVertexErrors" />
+        <function name = "sigmaFromFT" />
+
     </selection>
 </lcgdict>
