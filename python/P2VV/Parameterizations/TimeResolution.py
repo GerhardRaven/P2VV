@@ -139,7 +139,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         fracs     = kwargs.pop('Fractions', [(2, 0.165)])
         split_fracs = kwargs.pop('SplitFracs', True)
         self.__split_mean = kwargs.pop('SplitMean', False)
-        
+
         assert(len(sigmasSFs) - 1 == len(fracs))
 
         cache = kwargs.pop('Cache', True)
@@ -216,7 +216,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                 if gexp:
                     rlife = RealVar('rlife_%d' % numVal[0], Value = 0.1, MinMax = (0.0001, 10))
                     rlife_sf = ConstVar(Name = 'rlife_sf', Value = 1)
-                    params = [ self._time, self._timeResMu, self._sigmat, rlife, self._timeResMuSF, sigmaSF, rlife_sf, 'false', 'Normal' ]
+                    self._realVars += [rlife]
+                    params = [ self._time, self._timeResMu, self._sigmat, rlife, self._timeResMuSF, sigmaSF, sigmaSF, 'false', 'Normal' ]
                 else:
                     params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
                 

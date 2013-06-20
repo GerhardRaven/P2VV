@@ -4,7 +4,7 @@
 
 nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 nTupleName       = 'DecayTree'
-dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
+dataSetsFilePath = '/bfys/raaij/p2vv/data/P2VVDataSets_4KKMassBins_noTagCats.root'
 plotsFilePath    = 'plots/P2VVMassPlots.ps'
 
 selection        = 'paper2012'
