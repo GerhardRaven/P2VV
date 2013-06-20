@@ -10,7 +10,7 @@ df = $(DEPDIR)/$(*F)
 #CXX = g++
 LD  = $(CXX)
 CYTHON = cython
-PYTHON = python
+PYTHON = $(shell which python)
 ROOTCONFIG = root-config
 PKGCONFIG = pkg-config
 COMMONFLAGS = -Wall -O2 -pipe -ggdb -fPIC -DPIC
@@ -20,16 +20,18 @@ LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore 
 ## Reflex dictionary testing flags:
 ## LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore -lReflex -lCintex
 
-HAVE_PYTHON := $(shell if `$(PKGCONFIG) --exists python-$(PYTHONVERSION)`; then echo "yes"; else echo "no"; fi)
-ifeq ($(HAVE_PYTHON), yes)
+HAVE_PKG_PYTHON := $(shell if `$(PKGCONFIG) --exists python-$(PYTHONVERSION)`; then echo "yes"; else echo "no"; fi)
+ifeq ($(HAVE_PKG_PYTHON), yes)
 PYTHON_CFLAGS := $(shell $(PKGCONFIG) --cflags python-$(PYTHONVERSION))
+PYTHON_LDFLAGS := $(shell $(PKGCONFIG) --libs python-$(PYTHONVERSION))
 else
-PYTHON_CFLAGS = ""
+PYTHON_DIR := $(shell echo `dirname $(PYTHON)`/..)
+PYTHON_CFLAGS := -I$(PYTHON_DIR)/include/python$(PYTHONVERSION)
+PYTHON_LDFLAGS := -L$(PYTHON_DIR)/lib -lpython$(PYTHONVERSION)
 endif
 
-CFLAGS   := $(COMMONFLAGS) $(PYTHON_CFLAGS)
-PY_LDFLAGS := -lpython$(PYTHONVERSION)
-PROF_LDFLAGS := $(PY_LDFLAGS) -lprofiler
+CFLAGS := $(COMMONFLAGS)
+PROF_LDFLAGS := $(PYTHON_LDFLAGS) -lprofiler
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
 
@@ -60,6 +62,13 @@ $(BUILDDIR)/%.o : %.cxx %.h
 	rm -f $(BUILDDIR)/$*.d
 
 $(BUILDDIR)/%.o : dilution/%.c
+	$(CC) $(CFLAGS) $(PYTHON_CFLAGS) -MMD -c $< -o $@
+	@cp $(BUILDDIR)/$*.d $(df).P; \
+	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
+	rm -f $(BUILDDIR)/$*.d
+
+$(BUILDDIR)/%.o : %.c
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 	@cp $(BUILDDIR)/$*.d $(df).P; \
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
@@ -80,7 +89,7 @@ $(LIBDIR)/profiler.so: $(BUILDDIR)/profiler.o
 	$(LD) $(PROF_LDFLAGS) -shared -o $@ $^
 
 $(LIBDIR)/dilution.so: $(DILUTION_OBJECTS)
-	$(LD) $(PY_LDFLAGS) -shared -o $@ $^
+	$(LD) $(PYTHON_LDFLAGS) -shared -o $@ $^
 
 clean:
 	-rm -rf $(LIBDIR)/*.so $(DILUTION_OBJECTS) $(OBJECTS) P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
