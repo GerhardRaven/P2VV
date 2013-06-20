@@ -648,16 +648,26 @@ class TaggingCategories( _util_parse_mixin, _util_extConstraints_mixin, _util_co
                            , Title = 'Tagging Category 0', Observable = True
                            , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, self._numTagCats[0] ) ]
                           )
+            assert self._tagCat0.numTypes() == self._numTagCats[0]\
+                   , 'TaggingCategories: tagging category "%s" has %d states, while %d were expected'\
+                     % ( self._tagCat0.GetName(), self._tagCat0.numTypes(), self._numTagCats[0] )
+
             self._parseArg(  'tagCat1', kwargs, ObjectType = 'Category', SingleArgKey = 'Name'
                            , Title = 'Tagging Category 1', Observable = True
                            , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, self._numTagCats[1] ) ]
                           )
+            assert self._tagCat1.numTypes() == self._numTagCats[1]\
+                   , 'TaggingCategories: tagging category "%s" has %d states, while %d were expected'\
+                     % ( self._tagCat1.GetName(), self._tagCat1.numTypes(), self._numTagCats[1] )
 
         else :
             self._parseArg(  'tagCat', kwargs, ObjectType = 'Category', SingleArgKey = 'Name'
                            , Title = 'Tagging Category', Observable = True
                            , States = [ 'Untagged' ] + [ 'TagCat%d' % cat for cat in range( 1, self._numTagCats ) ]
                           )
+            assert self._tagCat.numTypes() == self._numTagCats\
+                   , 'TaggingCategories: tagging category "%s" has %d states, while %d were expected'\
+                     % ( self._tagCat.GetName(), self._tagCat.numTypes(), self._numTagCats )
 
         self._tagCatCoefs  = kwargs.pop( 'TagCatCoefs'  )
         self._ATagEffs     = kwargs.pop( 'ATagEffs'     )
@@ -761,9 +771,14 @@ class Linear_TaggingCategories( TaggingCategories ) :
         tagCat = kwargs.pop( 'tagCat', 'tagCat' + tagType )
 
         # estimated wrong-tag variable
-        if 'estWTag' in kwargs :
+        if 'estWTag' in kwargs and kwargs['estWTag'] :
             self._parseArg( 'estWTag', kwargs, Name = 'estWTag' + tagType, Title = 'Estimated wrong-tag probability'
                            , Value = 0.25, MinMax = ( 0., 0.5 ) )
+        else :
+            self._estWTag = kwargs.pop( 'estWTag', None )
+
+        # get name of estimated wrong-tag probability variable
+        self._etaName = kwargs.pop( 'estWTagName', self._estWTag.GetName() if self._estWTag else '' )
 
         # set values for calibration parameters
         self._calVals = {    'avgEta'   : avgEtaOSVal      if tagType == 'OS' else avgEtaSSVal
@@ -863,56 +878,32 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                    )
                               )
 
-        # get data set
-        self._data = kwargs.pop( 'DataSet', None )
-        self._etaName = kwargs.pop( 'estWTagName', self._estWTag.GetName() if hasattr( self, '_estWTag' ) else '' )
-        if not self._etaName : self._data = None
-
         # get tagging category binning in estimated wrong-tag probability (eta)
-        tagCats = kwargs.pop( 'TagCats', None )
-        if tagCats == None :
-            tagCats = [  ( 'Untagged', 0, 0.5000001, 0.50, 0.50, 0., 0.65,  0. )
-                       , ( 'Tagged',   1, 0.4999999, 0.40, 0.40, 0., 0.35,  0. )
-                      ] if hasattr( self, '_estWTag' ) else \
-                      [  ( 'Untagged', 0, 0.5000001, 0.50, 0.50, 0., 0.65,  0. )
-                       , ( 'TagCat1',  1, 0.4999999, 0.44, 0.44, 0., 0.24,  0. )
-                       , ( 'TagCat2',  2, 0.38,      0.35, 0.35, 0., 0.062, 0. )
-                       , ( 'TagCat3',  3, 0.31,      0.28, 0.28, 0., 0.032, 0. )
-                       , ( 'TagCat4',  4, 0.24,      0.21, 0.21, 0., 0.012, 0. )
-                       , ( 'TagCat5',  5, 0.17,      0.15, 0.14, 0., 0.004, 0. )
-                      ]
+        self._tagCats = kwargs.pop( 'TagCats', None )
+        if not self._tagCats :
+            self._tagCats = [  ( 'Untagged', 0, 0.5000001, 0.50, 0.50, 0., 0.65,  0. )
+                             , ( 'Tagged',   1, 0.4999999, 0.40, 0.40, 0., 0.35,  0. )
+                            ] if self._estWTag else \
+                            [  ( 'Untagged', 0, 0.5000001, 0.50, 0.50, 0., 0.65,  0. )
+                             , ( 'TagCat1',  1, 0.4999999, 0.44, 0.44, 0., 0.24,  0. )
+                             , ( 'TagCat2',  2, 0.38,      0.35, 0.35, 0., 0.062, 0. )
+                             , ( 'TagCat3',  3, 0.31,      0.28, 0.28, 0., 0.032, 0. )
+                             , ( 'TagCat4',  4, 0.24,      0.21, 0.21, 0., 0.012, 0. )
+                             , ( 'TagCat5',  5, 0.17,      0.15, 0.14, 0., 0.004, 0. )
+                            ]
 
         # get number of calibration parameter standard deviations for tagging category bins
         nSigmaTagBins = kwargs.pop( 'NumSigmaTagBins', 1. )
 
-        # determine tagging category parameters from data
-        if self._data and self._etaName :
-            self._tagCats = getTagCatParamsFromData(  self._data, estWTagName = self._etaName, tagCats = tagCats, numSigmas = nSigmaTagBins
-                                                    , avgEstWTag = self._avgEstWTag
-                                                    , P0    = self._calVals['P0'], P0Err = self._calVals['P0Err']
-                                                    , P1    = self._calVals['P1'], P1Err = self._calVals['P1Err']
-                                                    , AP0   = self._calVals['AP0']
-                                                    , AP1   = self._calVals['AP1']
-                                                   )
-
-            from math import sqrt
-            tagCatCoefs = [ dict(  Value = catPars[6]
-                                 , Error = sqrt( catPars[6] / self._data.sumEntries() )
-                                 , Constant = True
-                                ) for catPars in self._tagCats
-                          ]
-
-        else :
-            self._tagCats = tagCats
-            tagCatCoefs = [ catPars[6] for catPars in self._tagCats ]
-
-        ATagEffs    = [ catPars[7] for catPars in self._tagCats ]
-        dilutions = [ ]
-        ADilWTags = [ ]
+        # initialize category parameters
+        tagCatCoefs    = [ catPars[6] for catPars in self._tagCats ]
+        ATagEffs       = [ catPars[7] for catPars in self._tagCats ]
+        dilutions      = [ ]
+        ADilWTags      = [ ]
         self._estWTags = [ ]
         from P2VV.RooFitWrappers import CalibratedDilution
         for cat, catPars in enumerate( self._tagCats[ 1 : ] ) :
-            if hasattr( self, '_estWTag' ) :
+            if self._estWTag :
                 estWTag = self._estWTag
             else :
                 from P2VV.RooFitWrappers import ConstVar
@@ -947,7 +938,7 @@ class Linear_TaggingCategories( TaggingCategories ) :
         self._check_extraneous_kw( kwargs )
         TaggingCategories.__init__( self, NumTagCats = len(self._tagCats), tagCat = tagCat
                                    , TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs, TagDilutions = dilutions, ADilWTags = ADilWTags
-                                   , Conditionals = [ self._estWTag ] if hasattr( self, '_estWTag' ) else [ ]
+                                   , Conditionals = [ self._estWTag ] if self._estWTag else [ ]
                                    , Constraints = constraints
                                   )
 

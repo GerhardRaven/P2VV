@@ -177,7 +177,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
     """reads data from file (RooDataSet or TTree(s))
     """
     from ROOT import RooFit
-    noNAN = ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables )
+    noNAN = ( ' && '.join( '( %s==%s )' % ( obs, obs ) for obs in observables ) ) if hasattr( observables, '__iter__' ) else ''
     cuts = kwargs.pop( 'cuts', '' )
     tmp_file = None
     if observables :
@@ -319,6 +319,7 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
                       )
 
     # add corrected weights to data set
+    from P2VV.Load import P2VVLibrary
     from ROOT import RooCorrectedSWeight
     if splitCatName :
         from ROOT import std
@@ -341,9 +342,13 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
     dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet.get()
                          , Import = dataSet, WeightVar = ( 'weightVar', True ) )
 
-    # import data set into current workspace
-    from P2VV.RooFitWrappers import RooObject
-    return RooObject().ws().put( dataSet, **kwargs )
+    importIntoWS = kwargs.pop( 'ImportIntoWS', True )
+    if importIntoWS :
+        # import data set into current workspace
+        from P2VV.RooFitWrappers import RooObject
+        return RooObject().ws().put( dataSet, **kwargs )
+    else :
+        return dataSet
 
 
 def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estimWTagName, tagCatBins ) :
@@ -362,9 +367,15 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
 
     # create tagging category
     from ROOT import RooThresholdCategory
-    binOneThresh = tagCatBins[1][2]
     tagCatFormula = RooThresholdCategory( tagCatName, 'P2VV tagging category', estimWTag, tagCatBins[0][0], tagCatBins[0][1] )
     for cat in range( 1, len(tagCatBins) ) : tagCatFormula.addThreshold( tagCatBins[cat][2], tagCatBins[cat][0], tagCatBins[cat][1] )
+
+    # add tagging category binning to estimated wrong-tag probability variable
+    from array import array
+    from ROOT import RooBinning
+    binBounds = array( 'd', [ 0. ] + [ tagCatBins[ len(tagCatBins) - it ][2] for it in range( 1, len(tagCatBins) + 1 ) ] )
+    tagCatBinning = RooBinning( len(binBounds) - 1, binBounds, 'tagCats' )
+    estimWTag.setBinning( tagCatBinning, 'tagCats' )
 
     # create new columns in data set
     dataSet.addColumn(iTagWrapper)
@@ -377,10 +388,10 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
         assert obsSet.getCatIndex(tagDecisionName) == 0 or obsSet.getCatIndex(iTagName) == obsSet.getCatIndex(tagDecisionName),\
                 'P2VV - ERROR: addTaggingObservables: initial state flavour tag and tag decision have different values: %+d and %+d'\
                 % ( obsSet.getCatIndex(iTagName), obsSet.getCatIndex(tagDecisionName) )
-        assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getRealValue(estimWTagName) >= binOneThresh )\
-                or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getRealValue(estimWTagName) < binOneThresh ),\
+        assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getRealValue(estimWTagName) >= binBounds[-2] )\
+                or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getRealValue(estimWTagName) < binBounds[-2] ),\
                 'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while estimated wrong-tag probability = %.10f (threshold = %.10f)'\
-                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getRealValue(estimWTagName), binOneThresh )
+                % ( obsSet.getCatIndex(tagDecisionName), obsSet.getRealValue(estimWTagName), binBounds[-2] )
         assert ( obsSet.getCatIndex(tagDecisionName) == 0 and obsSet.getCatIndex(tagCatName) == 0 )\
                 or ( obsSet.getCatIndex(tagDecisionName) != 0 and obsSet.getCatIndex(tagCatName) > 0 ),\
                 'P2VV - ERROR: addTaggingObservables: tag decision = %+d, while tagging category = %d'\
@@ -703,9 +714,9 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         _P2VVPlotStash.append(residHist)
 
         xAxis.SetLabelOffset(0.1)
-        yAxis.SetTitleSize(0.08)
-        yAxis.SetLabelSize(0.07)
-        yAxis.SetTitleOffset(0.75)
+        #yAxis.SetTitleSize(0.10)
+        #yAxis.SetLabelSize(0.08)
+        yAxis.SetTitleOffset( 0.7 * yAxis.GetTitleOffset() )
 
         # create residuals frame
         residFrame = obsFrame.emptyClone( obsFrame.GetName() + '_resid' )
@@ -742,7 +753,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
         #residFrame.SetBarWidth(1.0)
         #residHist.SetDrawOption("B HIST")
-        residFrame.addPlotable( residHist, 'P' )  # , 'B HIST' )
+        residFrame.addPlotable( residHist, 'P' if not type(plotResidHist) == str else plotResidHist )
         #residFrame.setDrawOptions(residHist.GetName(),'B')
 
         if symmetrize :
@@ -1384,10 +1395,10 @@ def angularMomentIndices(label,angleFuncs) :
                               else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ) ]
             if case('basisSig4') :
                 if transAngles :
-                    raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration with transversity angles: %s'\
+                    raise RuntimeError('P2VV - ERROR: angularMomentIndices: not a valid angular efficiency configuration with transversity angles: %s'\
                                        % multiplyByAngEff)
                 return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ]
-            raise RuntimeError('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: not a valid angular efficiency configuration: %s'\
+            raise RuntimeError('P2VV - ERROR: angularMomentIndices: not a valid angular efficiency configuration: %s'\
                                    % label)
 
 
