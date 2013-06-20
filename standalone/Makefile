@@ -35,11 +35,11 @@ PROF_LDFLAGS := $(PYTHON_LDFLAGS) -lprofiler
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
 
-DILUTION_DIR = src/dilution
-DILUTION_SOURCES = $(wildcard $(DILUTION_DIR)/*.c)
+BINDINGSDIR = src/bindings
+DILUTION_SOURCES = $(wildcard $(BINDINGSDIR)/dilution*.c)
 
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cxx=$(BUILDDIR)/%.o) $(BUILDDIR)/P2VV_dict.o
-DILUTION_OBJECTS = $(DILUTION_SOURCES:$(DILUTION_DIR)/%.c=$(BUILDDIR)/%.o)
+DILUTION_OBJECTS = $(DILUTION_SOURCES:$(BINDINGSDIR)/%.c=$(BUILDDIR)/%.o)
 
 vpath %.cxx $(SRCDIR):$(DICTDIR):$(BUILDDIR)
 vpath %.c   $(SRCDIR):$(DICTDIR):$(BUILDDIR)
@@ -61,15 +61,8 @@ $(BUILDDIR)/%.o : %.cxx %.h
 	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
 	rm -f $(BUILDDIR)/$*.d
 
-$(BUILDDIR)/%.o : dilution/%.c
+$(BUILDDIR)/%.o : bindings/%.c
 	$(CC) $(CFLAGS) $(PYTHON_CFLAGS) -MMD -c $< -o $@
-	@cp $(BUILDDIR)/$*.d $(df).P; \
-	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
-	rm -f $(BUILDDIR)/$*.d
-
-$(BUILDDIR)/%.o : %.c
-	$(CC) $(CFLAGS) -MMD -c $< -o $@
 	@cp $(BUILDDIR)/$*.d $(df).P; \
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
@@ -82,7 +75,7 @@ $(BUILDDIR)/P2VV_dict.cxx: $(wildcard $(INCDIR)/P2VV/*.h) $(DICTDIR)/P2VV_dict.h
 $(LIBDIR)/libP2VV.so: $(OBJECTS) $(BUILDDIR)/P2VV_dict.o
 	$(LD) $(LDFLAGS) -shared -o $@ $^
 
-$(BUILDDIR)/profiler.c: $(SRCDIR)/profiler.pyx
+$(BINDINGSDIR)/profiler.c: $(SRCDIR)/profiler.pyx
 	$(CYTHON) -o $@ $^
 
 $(LIBDIR)/profiler.so: $(BUILDDIR)/profiler.o
