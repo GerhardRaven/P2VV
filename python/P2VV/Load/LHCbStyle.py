@@ -148,7 +148,7 @@ lhcbStyle.SetTitleH(0.05)
 # look of the statistics box:
 lhcbStyle.SetStatBorderSize(0)
 lhcbStyle.SetStatFont(lhcbFont)
-lhcbStyle.SetStatFontSize(0.05)
+#lhcbStyle.SetStatFontSize(0.05)
 lhcbStyle.SetStatX(0.9)
 lhcbStyle.SetStatY(0.9)
 lhcbStyle.SetStatW(0.25)

@@ -13,8 +13,8 @@ pdfConfig['selection']  = 'paper2012'
 parFileIn  = ''
 parFileOut = ''
 
-pdfConfig['nTupleName'] = 'DecayTree'
-pdfConfig['nTupleFile'] = 'data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+dataSetName = 'JpsiKK_splotdata_weighted_sigMass'
+dataSetFile = 'data/P2VVDataSets_6KKMassBins_noTagCats.root'
 
 pdfConfig['timeEffHistFile']      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
@@ -84,6 +84,12 @@ extConstraintValues.setVal( 'DelP1SS', (  0.00,  0.01    ) )
 from P2VV.RooFitWrappers import RooObject
 worksp = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
+# read data set from file
+from P2VV.GeneralUtils import readData
+dataSet = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
+pdfConfig['dataSet'] = dataSet
+
+# build the PDF
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
@@ -97,20 +103,16 @@ if parFileIn :
     pdfConfig.readParametersFromFile( filePath = parFileIn )
     pdfConfig.setParametersInPdf(pdf)
 
-# signal and background data sets
-sigData = pdfBuild['sigSWeightData']
-bkgData = pdfBuild['bkgSWeightData']
-
 # data set with weights corrected for background dilution: for phi_s fit only!
 if corrSFitErr == 'sumWeight'\
         or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
     from P2VV.GeneralUtils import correctSWeights
-    fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
+    fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
                               , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
                               , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
 
 else :
-    fitData = pdfBuild['sigSWeightData']
+    fitData = dataSet
 
 # get observables and parameters in PDF
 pdfObs  = pdf.getObservables(fitData)
