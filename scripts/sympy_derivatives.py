@@ -38,7 +38,7 @@ from sympy.utilities.codegen import CCodeGen
 from sympy.utilities.codegen import Routine
 
 routines = []
-for ds, args in [(derivs, symbols('st dms sf1 sf2 f')), (derivs_sfc, symbols('st dms sfc sf2 f'))]:
+for ds, args in [(derivs, symbols('st dms sf1 f sf2')), (derivs_sfc, symbols('st dms sfc f sf2'))]:
     for name, expr in ds.iteritems():
         routines.append(Routine(name, expr, argument_sequence = args))
 
