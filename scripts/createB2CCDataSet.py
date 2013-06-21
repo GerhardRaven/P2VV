@@ -11,7 +11,7 @@ nTupleName       = 'DecayTree'
 dataSetsFilePath = 'P2VVDataSets_temp.root'
 plotsFilePath    = 'plots/P2VVMassPlots2011.ps'
 
-selection        = 'paper2012'
+selection        = 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataSample       = ''
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
@@ -461,7 +461,7 @@ if plotsFilePath :
 
     # import plotting tools
     from P2VV.GeneralUtils import plot
-    from ROOT import TCanvas, kBlue, kRed, kGreen, kFullCircle, TPaveText
+    from ROOT import TCanvas, kBlue, kRed, kGreen, kFullDotLarge, TPaveText
     from P2VV.GeneralUtils import _P2VVPlotStash
 
     LHCbLabel = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC' )
@@ -528,7 +528,7 @@ if plotsFilePath :
              , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
              , plotResidHist = 'E3', normalize = True, symmetrize = True
              , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
-             , dataOpts   = dict( MarkerStyle = kFullCircle, MarkerSize = markSize, LineWidth = markLineWidth )
+             , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = markSize, LineWidth = markLineWidth )
              , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3, Precision = 1.e-4 )
              , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7, LineWidth = 3 )
                              , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9, LineWidth = 3 )
@@ -572,8 +572,8 @@ if plotsFilePath :
                       ) :
             plot(  pad, observables['mass'], dataSets['data'], pdf#, logy = True, yScale = ( 1., None )
                  , frameOpts  = dict( Range = 'Signal', Bins = numMassBins[0], Title = plotTitle )
-                 , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
-                 , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm      )
+                 , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCuts  )
+                 , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm     )
                  , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7 )
                                  , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9 )
                                 }
@@ -590,7 +590,7 @@ if plotsFilePath :
                       ) :
             plot(  pad, observables['mass'], dataSets['data'], pdf#, logy = True, yScale = ( 1., None )
                  , frameOpts  = dict( Range = 'LeftSideBand', Bins = numMassBins[1], Title = plotTitle )
-                 , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
+                 , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCuts        )
                  , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm      )
                  , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7 )
                                  , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9 )
@@ -608,12 +608,62 @@ if plotsFilePath :
                       ) :
             plot(  pad, observables['mass'], dataSets['data'], pdf#, logy = True, yScale = ( 1., None )
                  , frameOpts  = dict( Range = 'RightSideBand', Bins = numMassBins[2], Title = plotTitle )
-                 , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4, **dataCuts               )
+                 , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCuts         )
                  , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm      )
                  , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7 )
                                  , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9 )
                                 }
                 )
+
+    # plot sWeights
+    massCanvs += [ TCanvas('sWeightsAll'), TCanvas('sWeightsSignal') ]
+    for canv in massCanvs[ -2 : ] :
+        canv.SetLeftMargin(0.18)
+        canv.SetRightMargin(0.05)
+        canv.SetBottomMargin(0.18)
+        canv.SetTopMargin(0.05)
+
+    allMassVals = [ ]
+    sigMassVals = [ ]
+    allSWeights = [ ]
+    sigSWeights = [ ]
+    for obsSet in dataSets['SWeightData'] :
+        allMassVals.append( obsSet.getRealValue( obsDict['mass'][0] ) )
+        allSWeights.append( obsSet.getRealValue('N_sigMass_sw') )
+        if obsSet.find( obsDict['mass'][0] ).inRange('Signal') :
+            sigMassVals.append( obsSet.getRealValue( obsDict['mass'][0] ) )
+            sigSWeights.append( obsSet.getRealValue('N_sigMass_sw') )
+
+    from array import array
+    allMassArr = array( 'd', allMassVals )
+    sigMassArr = array( 'd', sigMassVals )
+    allSWArr   = array( 'd', allSWeights )
+    sigSWArr   = array( 'd', sigSWeights )
+
+    from ROOT import TGraph
+    allSWeights = TGraph( len(allMassArr), allMassArr, allSWArr )
+    sigSWeights = TGraph( len(sigMassArr), sigMassArr, sigSWArr )
+    for graph, range in zip( [ allSWeights, sigSWeights ], [ '', 'Signal' ] ) :
+        graph.SetMarkerStyle(kFullDotLarge)
+        graph.SetMarkerSize(0.2)
+        graph.SetMarkerColor(kBlue)
+
+        graph.GetXaxis().SetLimits( observables['mass'].getMin(range), observables['mass'].getMax(range) )
+        graph.GetXaxis().SetTitle('m(J/#psi K^{+}K^{-}) [MeV/c^{2}]')
+        graph.GetYaxis().SetTitle('sWeight')
+        graph.GetXaxis().SetTitleOffset(1.1)
+        graph.GetYaxis().SetTitleOffset(1.0)
+
+    from ROOT import TLine
+    allZeroLine = TLine( allSWeights.GetXaxis().GetXmin(), 0., allSWeights.GetXaxis().GetXmax(), 0. )
+    sigZeroLine = TLine( sigSWeights.GetXaxis().GetXmin(), 0., sigSWeights.GetXaxis().GetXmax(), 0. )
+
+    massCanvs[-2].cd()
+    allSWeights.Draw('AP')
+    allZeroLine.Draw()
+    massCanvs[-1].cd()
+    sigSWeights.Draw('AP')
+    sigZeroLine.Draw()
 
     for it, canv in enumerate(massCanvs) :
         canv.Print( plotsFilePath + ( '(' if it == 0 else ')' if it == len(massCanvs) - 1 else '' ) )
