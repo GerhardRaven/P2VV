@@ -249,12 +249,13 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
                  'pol2_no_offset' : ('x ++ x * x', 'S0+'),
                  'pol2_mean_param' : ('[0] + [1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
     print titles[key]
+    param_mean = full_sdata.mean(st)
     for g in (res_graph, sf2_graph):
         frs = []
         for i, (name, (func, opts)) in enumerate(fit_funcs.iteritems()):
             fit_func = TF1(name, func, split_bounds[0], split_bounds[-1])
             if name.endswith('mean_param'):
-                fit_func.FixParameter(0, full_sdata.mean(st))
+                fit_func.FixParameter(0, param_mean)
             print name
             fit_result = g.Fit(fit_func, opts, "L")
             fit_result.SetName('result_' + name)
@@ -304,3 +305,143 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
 ##         g.Draw('AP')
 ##     else:
 ##         g.Draw('P')
+
+## Make datasets for simultaneous fit
+import ROOT
+         
+######################################################################
+
+class SimFunction( ROOT.TPyMultiGenFunction ):
+    def __init__(self, x, c, ce, s2, s2e, sim = True):
+        ROOT.TPyMultiGenFunction.__init__(self, self)
+        self.__x = x
+        self.__c = c
+        self.__ce = ce
+        self.__s2 = s2
+        self.__s2e = s2e
+        self.__sim = sim
+        
+        self.__mean = sum(x) / float(len(x))
+        
+    def NDim(self):
+        return 3 if self.__sim else 4
+    
+    def __fun(self, x, par):
+        return par[0] + par[1] * (x - self.__mean)
+    
+    def DoEval(self, x):
+        # calculate chisquare
+        chisq, delta = 0., 0.
+        if self.__sim:
+            par_c = [x[0], x[1]]
+            par_s2 = [x[0], x[2]]
+        else:
+            par_c = [x[0], x[1]]
+            par_s2 = [x[2], x[3]]
+        for z, ze, par in [(self.__c, self.__ce, par_c),
+                           (self.__s2, self.__s2e, par_s2)]:
+            for i in range(len(self.__x)):
+                delta  = (z[i]-self.__fun(self.__x[i], par)) / ze[i]
+                chisq += delta*delta
+        
+        return chisq
+
+def sim_fit(x, c, ce, s2, s2e, sim = True):
+    fitter = ROOT.Fit.Fitter()
+    fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2")
+    fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Migrad")
+    fitter.Config().MinimizerOptions().SetPrintLevel(2) 
+    
+    fcn = SimFunction(x, c, ce, s2, s2e, sim)
+    
+    start = array('d', (0, -3, -3))
+    fitter.FitFCN(fcn, start)
+    
+    return fitter.Result()
+
+## sim_result = sim_fit(res_x, comb, comb_e, sf2s, sf2_es, True)
+## sep_result = sim_fit(res_x, comb, comb_e, sf2s, sf2_es, False)
+
+from ROOT import TFile
+sig_file = TFile.Open("/bfys/raaij/p2vv/data/P2VVDataSets_4KKMassBins_noTagCats.root")
+sig_data = sig_file.Get("JpsiKK_splotdata_weighted_sigMass")
+sig_st = sig_data.get().find("sigmat")
+st_data = []
+for i in range(sig_data.numEntries()):
+    r = sig_data.get(i)
+    st_data.append((sig_st.getVal(), sig_data.weight()))
+
+from operator import itemgetter
+st_data = sorted(st_data, key = itemgetter(0))
+binning = st.getBinning('st_binning')
+
+bins = []
+for i in range(st_binning.numBins()):
+    bins.append(st_binning.binLow(i))
+bins.append(st_binning.binHigh(st_binning.numBins() - 1))
+
+result = []
+it = iter(bins)
+boundary = it.next()
+bin_list = []
+for v in st_data:
+    try:
+        if not bin_list and v[0] < boundary:
+            continue
+        if v[0] > boundary:
+            boundary = it.next()
+            if bin_list:
+                result.append(bin_list)
+                bin_list = []
+        bin_list.append(v)
+    except StopIteration:
+        break
+
+def calib_sf1(pars, st):
+    sfc_pars = pars[0]
+    sf2_pars = pars[1]
+    frac = pars[2]
+    sfc = sum(sfc_pars[i + 1] * pow(st - sfc_pars[0], i) for i in range(len(sfc_pars) - 1))
+    sf2 = calib_sf2(sf2_pars, st) / st
+    sf1 = (sfc - frac * sf2) / (1 - frac)
+    return sf1 * st
+
+def calib_sf2(pars, st):
+    return sum(pars[i + 1] * pow(st - pars[0], i) for i in range(len(pars) - 1)) * st
+
+from P2VV.Dilution import dilution
+calib_dilutions = []
+for bin_data in result:
+    d = dilution(bin_data, [([(param_mean, 1.47141, -3.41077), (param_mean, 2.06996, -4.08342), 2.9140e-01], (1 - 2.9140e-01)), ((param_mean, 2.06996, -4.08342), 2.9140e-01)], (calib_sf1, calib_sf2))
+    calib_dilutions.append(d)
+
+sg_dilutions = []
+for bin_data in result:
+    d = dilution(bin_data, [((0., 1.45), 1)])
+    sg_dilutions.append(d)
+
+dg_dilutions = []
+for bin_data in result:
+    d = dilution(bin_data, [((0., 1.12), (1 - 0.325)), ((0, 1.988), 0.325)])
+    dg_dilutions.append(d)
+
+means = array('d')
+for bin_data in result:
+    means.append(sum(e[0] * e[1] for e in bin_data) / sum(e[1] for e in bin_data))
+    
+graphs = []
+canvas = TCanvas('dilution_canvas', 'dilution_canvas', 500, 500)
+colors = [kGreen, kBlue, kBlack]
+first = True
+for color, (ds, name) in zip(colors, [(calib_dilutions, 'calibrated'), (dg_dilutions, 'double'),
+                                (sg_dilutions, 'single')]):
+    graph = TGraph(len(means), means, array('d', [d[0] for d in ds]))
+    graph.SetName(name)
+    if first:
+        graph.Draw("AL*")
+        first = False
+    else:
+        graph.Draw("L*, same")
+    graph.SetLineColor(color)
+    graph.SetMarkerColor(color)
+    graphs.append(graph)

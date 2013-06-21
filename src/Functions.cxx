@@ -58,17 +58,35 @@ double sigmaFromFT( const TH1& h1, const double dMs, const double dMsErr, std::o
    return D;
 }
 
-void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& branch_name,
-                      const std::string& cut)
+
+void addSWeightToTree(const std::vector<double>& weights, TTree& tree, const std::string& branch_name)
 {
+   assert(Long64_t(weights.size()) == tree.GetEntries());
+
    Double_t w = 0;
-
-   tree.Draw(">>elist", cut.c_str(), "entrylist");
-   TEntryList *cut_list = static_cast<TEntryList*>(gDirectory->Get( "elist" ));
-
    //#       Create the output Branch
    std::string branch_def = branch_name + "/D";
    TBranch* branch = tree.Branch(branch_name.c_str(), &w, branch_def.c_str());
+
+   for (Long64_t i = 0; i < tree.GetEntries(); ++i) {
+      w = weights[i];
+      branch->Fill();
+   }
+   tree.FlushBaskets();
+
+}
+
+void addSWeightToTree(double* weights, size_t n, TTree& tree, const std::string& branch_name)
+{
+   std::vector<double> w(weights, weights + n);
+   addSWeightToTree(w, tree, branch_name);
+}
+
+void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& branch_name,
+                      const std::string& cut)
+{
+   tree.Draw(">>elist", cut.c_str(), "entrylist");
+   TEntryList *cut_list = static_cast<TEntryList*>(gDirectory->Get( "elist" ));
 
    Long64_t nds(ds.numEntries());
    assert(nds == cut_list->GetN());
@@ -82,12 +100,7 @@ void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& bran
          weights[i] = ds.weight();
       }
    }
-
-   for (Long64_t i = 0; i < tree.GetEntries(); ++i) {
-      w = weights[i];
-      branch->Fill();
-   }
-   tree.FlushBaskets();
+   addSWeightToTree(weights, tree, branch_name);
 }
 
 void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut) {

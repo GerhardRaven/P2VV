@@ -102,7 +102,7 @@ if options.peak_only:
 elif options.wpv and options.wpv_type == 'Mixing':
     t_minmax = (-5, 14)
 else:
-    t_minmax = (-5, 8)
+    t_minmax = (-1.5, 8)
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
@@ -129,6 +129,9 @@ if args[0].find('MC11a') != -1:
     t_diff = RealVar('time_diff', Unit = 'ps', Observable = True, MinMax = (-1, 1))
     observables.extend([t_true, t_diff])
 
+# Define a time_obs symbol to wrap around selection of t or t_diff
+time_obs = t_diff if args[0] == 'MC11a' else t
+    
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential
@@ -149,15 +152,15 @@ elif args[1] == 'double':
     mu_values = {'MC11a' : 0, 'MC11a_incl_Jpsi' : -0.000408, '2011' : -0.00407301, '2012' : -0.00365}
     mu['Value'] = mu_values[args[0]]
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-    sig_tres = TimeResolution(Name = 'tres', time = t_diff if args[0] == 'MC11a' else t, sigmat = st,
+    sig_tres = TimeResolution(Name = 'tres', time = time_obs, sigmat = st,
                               Cache = True, PerEventError = options.pee,
                               Parameterise = options.parameterise, TimeResSFOffset = options.model != '',
-                              SplitFracs = False, timeResMu = mu, GExp = {2 : args[0] == 'MC11a', 1 : False},
+                              SplitFracs = True, timeResMu = mu, GExp = {2 : args[0] == 'MC11a', 1 : False},
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)], SplitMean = options.split_mean)
 elif args[1] == 'triple':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-    sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, Cache = True,
+    sig_tres = TimeResolution(Name = 'tres', time = time_obs, sigmat = st, Cache = True,
                               PerEventError = [False, options.pee, options.pee],
                               TimeResSFOffset = options.model != '', Parameterise = options.parameterise,
                               ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)],
@@ -182,7 +185,7 @@ bkg_m = Pdf(Name = 'gauss', Type = Gaussian, Parameters = (m, mean, sigma))
 
 # Create psi background component
 from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
-psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = sig_tres.model()
+psi_t = Background_Time( Name = 'psi_t', time = time_obs, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 6.7195e-01)
                          , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.5,  2.5))
                          , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 0.5))
@@ -193,7 +196,7 @@ psi_t = psi_t.pdf()
 psi_ll = Component('psi_ll', (psi_m, bkg_m, psi_t), Yield= (8.5575e+03,100,500000) )
 
 # Background component
-bkg_t = Background_Time( Name = 'bkg_t', time = t, resolutionModel = sig_tres.model()
+bkg_t = Background_Time( Name = 'bkg_t', time = time_obs, resolutionModel = sig_tres.model()
                          , bkg_t_fml    = dict(Name = 'bkg_t_fml',    Value = 6.7195e-01 )
                          , bkg_t_ll_tau = dict(Name = 'bkg_t_ll_tau', Value = 1., MinMax = (0.01, 2.5))
                          , bkg_t_ml_tau = dict(Name = 'bkg_t_ml_tau', Value = 0.1,  MinMax = (0.01, 0.5))
@@ -204,14 +207,14 @@ background = Component('background', (bkg_mpsi.pdf(), bkg_m, bkg_t), Yield = (19
 
 # B signal component
 from P2VV.Parameterizations.TimePDFs import Prompt_Peak
-sig_t = Prompt_Peak(t_diff, resolutionModel = sig_tres.model(), Name = 'sig_t')
+sig_t = Prompt_Peak(time_obs, resolutionModel = sig_tres.model(), Name = 'sig_t')
 
 from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_Mass
 sig_m = Signal_Mass(Name = 'sig_m', mass = m) 
 signal = Component('signal', (sig_m.pdf(), sig_t.pdf()), Yield = (150000, 10000, 1000000))
 
 # Prompt component
-prompt_pdf = Prompt_Peak(t, sig_tres.model(), Name = 'prompt_pdf')
+prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), ), Yield = (160160, 100, 500000))
 
 # Read data
@@ -272,9 +275,11 @@ gStyle.SetPalette(53)
 
 ## Extra name for fit result and plots
 extra_name = [args[1]]
-for a, n in [('parameterise', None), ('wpv_type', None), ('model', None), ('peak_only', 'peak_only')]:
+for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('model', None), ('peak_only', 'peak_only')]:
     v = getattr(options, a)
     if v:
+        if n and n != v and hasattr(options, n):
+            n = getattr(options, n)
         extra_name.append(n if n else v)
 
 ## Read Cache
@@ -610,7 +615,7 @@ elif options.wpv and options.wpv_type == 'Gauss':
     wpv = Component('wpv', (wpv_pdf, ), Yield = (552, 1, 5000))
     components += [wpv]
 
-time_pdf = buildPdf(Components = components, Observables = (t,), Name='time_pdf')
+time_pdf = buildPdf(Components = components, Observables = (time_obs,), Name='time_pdf')
 
 if options.simultaneous:
     split_pars = [[]]
@@ -624,9 +629,6 @@ if options.simultaneous:
     else:
         split_pars[0] = [par for par in time_pdf.Parameters() if par.getAttribute('Yield')]
     split_pars[0] += sig_tres.splitVars()
-    
-    if args[0] == 'MC11a':
-        split_pars[0].append(sig_t._tau)
     
     if options.wpv and options.wpv_type == 'Gauss':    
         split_pars.append([wpv_sigma, wpv.getYield()])
@@ -726,8 +728,8 @@ else:
     bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
     zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
 
-bounds = cut_binning(t, bounds)
-zoom_bounds = cut_binning(t, zoom_bounds)
+bounds = cut_binning(time_obs, bounds)
+zoom_bounds = cut_binning(time_obs, zoom_bounds)
     
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('full')
@@ -757,16 +759,12 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             __canvases.append(canvas)
             p = canvas.cd(1)
             
-            opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
-            pd = sig_sdata_full.reduce(**opts)
-            pd_obs = pd.get()
-            projSet = RooArgSet(pd_obs.find(st.GetName()), time_pdf.indexCat())
-            SetOwnership(pd, False)
-            pdfOpts  = dict(ProjWData = (projSet, pd, True))
-            ps = plot(p, t, pdf = time_pdf, data = pd
+            projSet = RooArgSet(st, time_pdf.indexCat())
+            pdfOpts  = dict(Slice = (st_cat, ct.GetName()), ProjWData = (projSet, sig_sdata_full, True))
+            ps = plot(p, time_obs, pdf = time_pdf, data = sig_sdata_full
                       , frameOpts = dict(Range = r, Title = "")
-                      , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
-                      , pdfOpts  = dict(LineWidth = 4, Slice = (st_cat, ct.GetName()), **pdfOpts)
+                      , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack, Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
+                      , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                       , logy = pl
                       , plotResidHist = False
                       ## , components = { 'wpv_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
@@ -774,8 +772,6 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                       ##                  , 'sig_*'     : dict( LineColor = kOrange,  LineStyle = kDashed )
                       ##                  }
                       )
-            pd.Delete()
-            del pd
             for frame in ps:
                 plot_name = '_'.join((t.GetName(), bins.GetName(), ct.GetName(), frame.GetName()))
                 frame.SetName(plot_name)
@@ -788,7 +784,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
         projSet = RooArgSet(st)
         pdfOpts  = dict(ProjWData = (projSet, sig_sdata, True))
-        ps = plot(p, t, pdf = time_pdf, data = sig_sdata
+        ps = plot(p, time_obs, pdf = time_pdf, data = sig_sdata
                   , frameOpts = dict(Range = r, Title = "")
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
