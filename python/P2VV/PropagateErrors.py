@@ -39,3 +39,35 @@ def propagateScaleFactor(result, suffix = ''):
     sf = (1 - frac) * sf1 + frac * sf2
     sf_e = sqrt(r[0][0])
     return (sf, sf_e)
+
+def dilutionError(result, derivs):
+    """
+    propagate parameter errors to the dilution
+    result = fit result
+    derivs = [(name, deriv), ...]
+    """
+    n = len(derivs)
+    fpf = result.floatParsFinal()
+    cov = result.covarianceMatrix()
+    C = TMatrixT('double')(n, n)
+    J = TMatrixT('double')(1, n)
+
+    indices = [fpf.index(name) for e[0] in derivs if fpf.find(e[0])]
+    # Make our own small covariance matrix
+    for i, k in enumerate(indices):
+        for j, l in enumerate(indices):
+            C[i][j] = cov[k][l]
+        
+    # Jacobian for calculation of sf
+    args = [a[0] for a in derivs]
+    for i in range(n):
+        J[0][i] = derivs[i][1](*[fpf.find(a).getVal() for a in args])
+        
+    # Calculate J * C * J^T
+    JT = J.Clone().T()
+    tmp = TMatrixT('double')(3, 1)
+    tmp.Mult(C, JT)
+    r = TMatrixT('double')(1, 1)
+    r.Mult(J, tmp)
+        
+    return sqrt(r[0][0])

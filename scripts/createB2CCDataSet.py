@@ -3,18 +3,17 @@
 #####################
 
 nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+#nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
 nTupleName       = 'DecayTree'
-#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_6KKMassBins_noTagCats.root'
-dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
-#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_freeTagCats.root'
-plotsFilePath    = 'plots/P2VVMassPlots.ps'
+dataSetsFilePath = 'P2VVDataSets_temp.root'
+plotsFilePath    = 'plots/P2VVMassPlots2011.ps'
 
 selection        = 'paper2012'
 dataSample       = ''
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
 
-ntupleCuts = 'sel == 1'\
+ntupleCuts = 'sel == 1 && sel_cleantail == 1'\
              ' && muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
 selections = dict(  HLT1Unbiased   = 'hlt1_unbiased_dec==1 && hlt2_biased==1'
                   , HLT1ExclBiased = 'hlt1_excl_biased_dec==1 && hlt2_biased==1'
@@ -27,7 +26,7 @@ sigMassModel     = ''
 cbkgMassModel    = ''
 SWeightsType     = 'simultaneousFreeCBkg'
 numMassBins      = [ 70, 40, 20, 20, 20 ]
-massLogPlotRange = ( 1.9e2, 1.2e4 ) # ( 8.e1, 1.e4 ) # ( 1.9e2, 1.2e4 ) # ( 1.e3, 2.5e4 )
+massLogPlotRange = ( 1.9e2, 1.2e4 ) # ( 1.9e2, 1.2e4 ) # ( 8.e2, 2.5e4 )
 
 fitOpts = dict(  NumCPU    = 6
                , Optimize  = 2
@@ -524,15 +523,17 @@ if plotsFilePath :
         plot(  pad, observables['mass'], dataSets['data'], sWeightMassPdf, logy = logy, yScale = scale
              , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
              , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
-             #, plotResidHist = True, normalize = True, symmetrize = True
+             , plotResidHist = 'E3', normalize = True, symmetrize = True
              , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
              , dataOpts   = dict( MarkerStyle = kFullCircle, MarkerSize = markSize, LineWidth = markLineWidth )
-             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3 )
+             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3, Precision = 1.e-4 )
              , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7, LineWidth = 3 )
                              , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9, LineWidth = 3 )
                             }
             )
-        if index < 2 : LHCbLabel.Draw()
+        if index < 2 :
+            pad.cd()
+            LHCbLabel.Draw()
 
     if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
         # get simultaneous PDFs

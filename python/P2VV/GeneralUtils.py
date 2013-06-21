@@ -319,6 +319,7 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
                       )
 
     # add corrected weights to data set
+    from P2VV.Load import P2VVLibrary
     from ROOT import RooCorrectedSWeight
     if splitCatName :
         from ROOT import std
@@ -341,9 +342,13 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
     dataSet = RooDataSet( dataSet.GetName() + '_corrErrs', dataSet.GetTitle() + ' corrected errors', dataSet.get()
                          , Import = dataSet, WeightVar = ( 'weightVar', True ) )
 
-    # import data set into current workspace
-    from P2VV.RooFitWrappers import RooObject
-    return RooObject().ws().put( dataSet, **kwargs )
+    importIntoWS = kwargs.pop( 'ImportIntoWS', True )
+    if importIntoWS :
+        # import data set into current workspace
+        from P2VV.RooFitWrappers import RooObject
+        return RooObject().ws().put( dataSet, **kwargs )
+    else :
+        return dataSet
 
 
 def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estimWTagName, tagCatBins ) :
@@ -709,9 +714,9 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         _P2VVPlotStash.append(residHist)
 
         xAxis.SetLabelOffset(0.1)
-        yAxis.SetTitleSize(0.08)
-        yAxis.SetLabelSize(0.07)
-        yAxis.SetTitleOffset(0.75)
+        #yAxis.SetTitleSize(0.10)
+        #yAxis.SetLabelSize(0.08)
+        yAxis.SetTitleOffset( 0.7 * yAxis.GetTitleOffset() )
 
         # create residuals frame
         residFrame = obsFrame.emptyClone( obsFrame.GetName() + '_resid' )
@@ -748,7 +753,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
         #residFrame.SetBarWidth(1.0)
         #residHist.SetDrawOption("B HIST")
-        residFrame.addPlotable( residHist, 'P' )  # , 'B HIST' )
+        residFrame.addPlotable( residHist, 'P' if not type(plotResidHist) == str else plotResidHist )
         #residFrame.setDrawOptions(residHist.GetName(),'B')
 
         if symmetrize :
@@ -2048,4 +2053,28 @@ def getSplitPar( parName, stateName, parSet ) :
         if name(par) in fullNames : return par
     return None
 
+
+def make_binning(data, var, n_bins):
+    tmp = data.get().find(var.GetName())
+    values = []
+    for i in range(data.numEntries()):
+        data.get(i)
+        values.append((tmp.getVal(), data.weight()))
+    
+    s = sum(e[1] for e in values)
+    d = s / float(n_bins)
+    
+    from operator import itemgetter
+    values = sorted(values, key = itemgetter(0))
+    
+    bounds = [values[0][0] - 0.01]
+    total = 0
+    
+    for v, w in values:
+        total += w
+        if total >= d:
+            total = 0
+            bounds.append(v)
+    bounds.append(values[-1][0] + 0.1)
+    return bounds
 

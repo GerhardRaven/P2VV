@@ -67,6 +67,8 @@ class Gaussian_TimeResolution ( TimeResolution ) :
         scaleBias = kwargs.pop('BiasScaleFactor', True)
         pee = kwargs.pop('PerEventError', False)
         sf_model = kwargs.pop('TimeResSFModel', '')
+        self.__split_mean = kwargs.pop('SplitMean', False)
+        
         assert(sf_model in ['', 'linear', 'quadratic'])
 
         extraArgs = {}
@@ -115,7 +117,10 @@ class Gaussian_TimeResolution ( TimeResolution ) :
                                )
 
     def splitVars(self):
-        return [self._sigmaSF]
+        sv = [self._sigmaSF]
+        if self.__split_mean:
+            sv.append(self._timeResMu)
+        return sv
 
 class Multi_Gauss_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -129,10 +134,12 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         self._timeResMu = self._parseArg('%stimeResMu' % namePF, kwargs, Value = -0.0027, MinMax = (-2, 2))
         self._timeResMuSF = self._parseArg('%stimeResMuSF' % namePF, kwargs, Value = 1.0, Constant = True)
         self._timeResSigmaOffset = self._parseArg( '%stimeResSigmaOffset' % namePF, kwargs, Value = 0.01, Error = 0.001, MinMax = ( 0.00001, 1 ) )
-
         sigmasSFs = kwargs.pop('ScaleFactors', [(2, 3), (1, 1)])
+        gexps = kwargs.pop('GExp', dict([(i[0], False) for i in sigmasSFs]))
         fracs     = kwargs.pop('Fractions', [(2, 0.165)])
         split_fracs = kwargs.pop('SplitFracs', True)
+        self.__split_mean = kwargs.pop('SplitMean', False)
+
         assert(len(sigmasSFs) - 1 == len(fracs))
 
         cache = kwargs.pop('Cache', True)
@@ -195,15 +202,28 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
 
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
+        from ROOT import RooGExpModel as GExpModel
 
         models = []
-        for ( numVal, pee ), sigmaSF in zip( zip(sigmasSFs, pee), self._timeResSigmasSFs ):
+        for ( numVal, pee ), sigmaSF, in zip( zip(sigmasSFs, pee), self._timeResSigmasSFs):
+            gexp = gexps[numVal[0]]
             if use_offset or not pee:
                 params = [ self._time, self._timeResMu, sigmaSF ]
+                if gexp:
+                    rlife = RealVar('rlife_%d' % numVal[0], Value = 0.1, MinMax = (0.0001, 10))
+                    params += [rlife]
             else:
-                params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
+                if gexp:
+                    rlife = RealVar('rlife_%d' % numVal[0], Value = 0.1, MinMax = (0.0001, 10))
+                    rlife_sf = ConstVar(Name = 'rlife_sf', Value = 1)
+                    self._realVars += [rlife]
+                    params = [ self._time, self._timeResMu, self._sigmat, rlife, self._timeResMuSF, sigmaSF, sigmaSF, 'false', 'Normal' ]
+                else:
+                    params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
+                
+            model_type = GExpModel if gexp else GaussModel
             model = ResolutionModel(  Name = 'timeResGauss_%s' % numVal[0]
-                                      , Type = GaussModel
+                                      , Type = model_type
                                       , Parameters = params
                                       , ConditionalObservables = [ self._sigmat ] if pee else [])
             models.append(model)
@@ -211,7 +231,10 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                 , Model = AddModel(Name, Models = models, Fractions = self._timeResFracs)
                                 , Cache = cache)
     def splitVars(self):
-        return self._realVars
+        sv = self._realVars[:]
+        if self.__split_mean:
+            sv.append(self._timeResMu)
+        return sv
 
 class Paper2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -402,3 +425,29 @@ class Gamma_Sigmat( _util_parse_mixin ) :
                        , Parameters = ( self._st, self._st_sig_gamma, self._st_sig_beta, self._st_mu ) 
                        )
 
+class GExp_Gauss(TimeResolution):
+    def __init__(self, time, sigmat, **kwargs):
+        prefix = kwargs.pop('Prefix', '')
+        name = prefix + kwargs.pop('Name', self.__class__.__name__)        
+        mean = self._parseArg("%speak_mean" % prefix, Value = 0, MinMax = (-0.5, 0.5))
+        mean_sf = self._parseArg(Name = "%smean_sf" % prefix, Value = 1, Constant = True)
+        gexp_rlife = self._parseArg("%srlife" % prefix, Value = 0.1, MinMax = (0.001, 10))
+        gexp_sigma_sf = self._parseArg("%sgexp_sigma_sf" % prefix, Value = 1., MinMax = (0.001, 10))
+        gexp_rlife_sf = self._parseArg("%sgexp_rlife_sf" % prefix, Value = 1., MinMax = (0.001, 10), Constant = True)
+        gauss_sigma_sf = self._parseArg(Name = "%sgauss_sigma_sf" % prefix, Value = 1., MinMax = (0.5, 100))
+        gexp_frac = self._parseArg(Name = "%sgexp_frac" % prefix, Value = 0.2, MinMax = (0.0001, 0.9999))
+
+        from ROOT import RooGExpModel
+        params = [time, mean, sigmat, gexp_rlife, mean_sf, gexp_sigma_sf, gexp_rlife_sf, 'false', 'Normal']
+        gexp_model = ResolutionModel(Name = "%sgexp_model" % prefix, Type = RooGExpModel,
+                                     Parameters = params, ConditionalObservables = [sigmat])
+
+        from ROOT import RooGaussModel as GaussModel
+        gauss_model = ResolutionModel(Name = "%sgauss_model" % prefix, Type = GaussModel,
+                                      ConditionalObservables = [sigmat],
+                                      Parameters = [time, mean, sigmat, mean_sf, gauss_sigma_sf])
+
+        TimeResolution.__init__(self, Name = Name,
+                                Model = AddModel("%sadd_model" % prefix, Fractions = [gexp_frac],
+                                                 Models = [gexp_model, gauss_model],
+                                                 ConditionalObservables = [sigmat]), Cache = cache)
