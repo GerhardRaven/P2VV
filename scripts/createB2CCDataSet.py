@@ -648,6 +648,8 @@ if plotsFilePath :
         graph.SetMarkerSize(0.2)
         graph.SetMarkerColor(kBlue)
 
+        #graph.SetMinimum(-0.55)
+        #graph.SetMaximum(1.15)
         graph.GetXaxis().SetLimits( observables['mass'].getMin(range), observables['mass'].getMax(range) )
         graph.GetXaxis().SetTitle('m(J/#psi K^{+}K^{-}) [MeV/c^{2}]')
         graph.GetYaxis().SetTitle('sWeight')
