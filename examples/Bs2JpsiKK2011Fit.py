@@ -45,7 +45,6 @@ pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012'
 pdfConfig['multiplyByAngEff']     = 'weights'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                      , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )

@@ -36,15 +36,19 @@ pdfConfig['blind']      = {#  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0
 
 plotsFile     = 'plots/2011Data_SFit.ps'
 plotsROOTFile = '2011Data_SFit_plots.root'
-parFileIn     = '2011DataFitValues.par' #'2011DataPlotValuesOld.par'
-parFileOut    = '' #'initialValues.par'
+parFileIn     = '2011DataFitValues.par'
+parFileOut    = ''
 
 if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'paper2012_SFit.root' if pdfConfig['SFit'] else 'paper2012_CFit.root'
 elif pdfConfig['SFit'] :
+    #dataSetName = 'JpsiKK_weighted_sigMass'
     dataSetName = 'JpsiKK_splotdata_weighted_sigMass'
+    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_unbiased_noKKMassBins_noTagCats.root'
+    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_noKKMassBins_noTagCats.root'
     dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
+    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_6KKMassBins_noTagCats.root'
     #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_freeTagCats.root'
 else :
     dataSetName = 'JpsiKK_splotdata'
@@ -107,7 +111,6 @@ pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['multiplyByAngEff']     = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'  # 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03, 0.01 ), (  0.22, 0.03 ) ]
                                      , [ ( 0.8,  0.2  ), ( 2.6,  0.2  ), ( -2.7,  0.1  ), ( -1.9,  0.3  ) ] )
@@ -1693,4 +1696,4 @@ print avDD, avD_OS * avD_SS, Atags
 #    #canv.Print( plotsFile + ( '(' if iter == 0 else ')' if iter == len(plots) - 1 else '' ) )
 #motherCanv.Print(plotsFile)
 
-#execfile('doProfile.py')
+#execfile('plotNLL.py')
