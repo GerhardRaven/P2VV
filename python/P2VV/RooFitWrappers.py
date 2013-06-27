@@ -440,11 +440,8 @@ class FormulaVar (RooObject) :
             self._declare(spec)
             self._init(Name, 'RooFormulaVar')
         else:
-            l = RooArgList()
-            for arg in fargs:
-                l.add(__dref__(arg))
             from ROOT import RooFormulaVar
-            form = RooFormulaVar(Name, Name, formula, l)
+            form = RooFormulaVar(Name, Name, formula, RooArgList(__dref__(arg) for arg in fargs ) )
             form = data.addColumn(form)
             form = self._addObject(form)
             self._init(Name, 'RooRealVar')
@@ -1263,9 +1260,7 @@ class TPDecay(Pdf):
     def __init__(self, Name, **kwargs):
         from ROOT import RooTPDecay
         from ROOT import RooArgList
-        tps = RooArgList()
-        for tp in kwargs.pop('TurningPoints'):
-            tps.add(__dref__(tp))
+        tps = RooArgList(__dref__(tp) for tp in kwargs.pop('TurningPoints'))
         t = kwargs.pop('Time')
         tau = kwargs.pop('Tau')
         model = kwargs.pop('ResolutionModel')
@@ -1674,11 +1669,7 @@ class EffResAddModel(ResolutionModel):
             externals |= set(model.ExternalConstraints())
 
         from ROOT import RooEffResAddModel
-        def make_alist(l):
-            alist = RooArgList()
-            for e in l:
-                alist.add(__dref__(e))
-            return alist
+        make_alist = lambda l :  RooArgList(__dref__(e) for e in l )
         models = make_alist(self.__models)
         fracs = make_alist(self.__fractions)
         model = RooEffResAddModel(name, name, models, fracs)
@@ -1735,10 +1726,7 @@ class CubicSplineFun(RooObject):
         if hist:
             csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeffs)
         elif knots and coeffs and not values:
-            al = RooArgList()
-            for c in coeffs:
-                al.add(__dref__(c))
-            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), al)
+            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), RooArgList(__dref__(c) for c in coeffs ) )
         elif knots and values and errors and not coeffs:
             csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), __make_vector(values),
                                     __make_vector(errors), smooth, const_coeffs)
