@@ -5,6 +5,8 @@
 nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
 nTupleName       = 'DecayTree'
+#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_noKKMassBins_noTagCats.root'
+#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_unbiased_noKKMassBins_noTagCats.root'
 #dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_6KKMassBins_noTagCats.root'
 #dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
 #dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_freeTagCats.root'
@@ -189,24 +191,23 @@ from P2VV.GeneralUtils import readData
 dataSets = dict( data = readData( filePath = nTupleFilePath, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
                                  , Rename = 'JpsiKK', ntupleCuts = ntupleCuts ) )
 
-if len(KKMassBinBounds) > 2 :
-    # create KK mass binning
-    from array import array
-    KKMassBinsArray = array( 'd', KKMassBinBounds )
+# create KK mass binning
+from array import array
+KKMassBinsArray = array( 'd', KKMassBinBounds )
 
-    from ROOT import RooBinning
-    KKMassBinning = RooBinning( len(KKMassBinBounds) - 1, KKMassBinsArray, 'KKMassBinning' )
-    observables['KKMass'].setBinning( KKMassBinning, 'KKMassBinning' )
+from ROOT import RooBinning
+KKMassBinning = RooBinning( len(KKMassBinBounds) - 1, KKMassBinsArray, 'KKMassBinning' )
+observables['KKMass'].setBinning( KKMassBinning, 'KKMassBinning' )
 
-    # add KK mass split category to data
-    from P2VV.RooFitWrappers import BinningCategory
-    observables['KKMassCat'] = BinningCategory( 'KKMassCat'
-                                               , Observable = observables['KKMass']
-                                               , Binning = KKMassBinning
-                                               , Fundamental = True
-                                               , Data = [ dataSets['data'] ]
-                                               , CatTypeName = 'bin'
-                                              )
+# add KK mass split category to data
+from P2VV.RooFitWrappers import BinningCategory
+observables['KKMassCat'] = BinningCategory( 'KKMassCat'
+                                           , Observable = observables['KKMass']
+                                           , Binning = KKMassBinning
+                                           , Fundamental = True
+                                           , Data = [ dataSets['data'] ]
+                                           , CatTypeName = 'bin'
+                                          )
 
 
 ###########################################################################################################################################
