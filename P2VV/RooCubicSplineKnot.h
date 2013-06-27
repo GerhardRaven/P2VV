@@ -46,9 +46,9 @@ public:
 
 
         double operator()(int j, int k) const {
+            if (j>k) std::swap(j,k);
             assert(0<=j&&j<4);
             assert(0<=k&&k<4-j); // note: for 4-j<=k<4 could return 0... but better not to invoke with those..
-            if (j>k) std::swap(j,k);
             switch(3*j+k) {
                 case 0: return   -t;   // (0,0)
                 case 1: return    d;   // (0,1),(1,0)
@@ -67,19 +67,14 @@ public:
 
     class S_edge {
     public:
-        S_edge(double a, double b ) : alpha(a), beta(b) {}
+        S_edge(double a, double b) : alpha(0.5*a), beta(b) {}
         S_edge(const S_edge& other, double offset=0) : alpha(other.alpha), beta(other.beta) {
             assert(offset==0); // TODO: fix me!
         }
         double operator()(int j, int k) const {
-            assert(0<=j&&j<2);
-            assert(0<=k&&k<2-j);
-            if (j>k) std::swap(j,k);
-            switch(j+k) {
-                case 0: return   beta;   // (0,0)
-                case 1: return   0.5*alpha;   // (0,1),(1,0)
-                default : assert(1==0);
-            }
+            assert(j==0||j==1);
+            assert(0<=j+k<2);
+            return ( j+k==0 ) ? beta : alpha ;
         }
     private:
        double alpha,beta;
