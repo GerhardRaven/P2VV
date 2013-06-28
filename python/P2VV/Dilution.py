@@ -159,7 +159,7 @@ def dilution_bins(t_var, data, sigmat, sigmat_cat, result, signal = [], subtract
     return total
 
 # Calculate dilution
-def dilution(t_var, data, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False, calibration = None):
+def dilution_ft(t_var, data, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False, calibration = None):
     __bin_counter = 0
     if calibration:
         assert(sigmat.GetName() in [p.GetName() for p in calibration.getVariables()])
@@ -329,7 +329,7 @@ def dilution(t_var, data, sigmat = None, result = None, signal = [], subtract = 
     D = sigmaFromFT(ft_histo, 17.68, 0.024)
     return D
 
-def dilution(data, sfs, calib = None):
+def dilution(data, sfs, calib = None, error_fun = None):
     """
     Calculate the dilution of the data.
     data should be [(st, weight), ...]
@@ -337,6 +337,7 @@ def dilution(data, sfs, calib = None):
     calib_pars = [par0, par1, ...]
     if calib == None, a polynomial with parameters calib_pars is assumed
     else calib = [fun(pars, st), ...]
+    error_fun should calculate the error on D^2 and be callable as (st, w, [list of calibration pars])
     """
     from math import pow
     if not calib:
@@ -347,20 +348,35 @@ def dilution(data, sfs, calib = None):
     if sfs[-1][1] == None:
         sfs[-1][1] = 1 - sum(sf[1] for sf in sfs[:-1])
     
-    dms = 17.7 ** 2 / 2
+    ## reset the error functor
+    error_fun.reset()
+    dms = 17.768 ** 2 / 2
     total = 0
-    
+    err_2 = 0
     values = []
     from math import exp, sqrt
     for st, w in data:
+        d = 0
         for (pars, frac), cal in zip(sfs, calib):
-            total += w * frac * (exp(- dms * (cal(pars, st) ** 2)) ** 2)
+            d += frac * exp(- dms * cal(pars, st) ** 2)
+        total += w * d ** 2
+        ## Call error calculator to update sums
+        if error_fun:
+            error_fun(w, st)
     
-    total = sqrt(total / sum(e[1] for e in data))
-    eff_res = sqrt(-log(total) / dms)
-    return total, eff_res
-    
-    
+    sw = sum(e[1] for e in data)
+    if error_fun:
+        ## Error calculator return error on D^2
+        err = error_fun.error()
+        ## 
+        err = 2 * total / sw * err
+    else:
+        err = None
+        
+    total = sqrt(total / sw)
+    ## eff_res = sqrt(-log(total) / dms)
+    return total, err
+
 def signal_dilution(data, sigmat, calibration = None):
     if calibration:
         assert(sigmat.GetName() in [p.GetName() for p in calibration.getVariables()])
