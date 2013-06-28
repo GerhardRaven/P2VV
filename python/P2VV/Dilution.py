@@ -356,7 +356,6 @@ def dilution(data, sfs, calib = None):
         for (pars, frac), cal in zip(sfs, calib):
             total += w * frac * (exp(- dms * (cal(pars, st) ** 2)) ** 2)
     
-    print len(data)
     total = sqrt(total / sum(e[1] for e in data))
     eff_res = sqrt(-log(total) / dms)
     return total, eff_res
