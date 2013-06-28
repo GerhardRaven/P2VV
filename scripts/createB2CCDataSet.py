@@ -13,18 +13,14 @@ nTupleName       = 'DecayTree'
 dataSetsFilePath = 'P2VVDataSets_temp.root'
 plotsFilePath    = 'plots/P2VVMassPlots2011.ps'
 
-selection        = 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+triggerSel       = 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+dataCuts         = 'nominal2011'
 dataSample       = ''
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
 
 ntupleCuts = 'sel == 1 && sel_cleantail == 1'\
              ' && muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
-selections = dict(  HLT1Unbiased   = 'hlt1_unbiased_dec==1 && hlt2_biased==1'
-                  , HLT1ExclBiased = 'hlt1_excl_biased_dec==1 && hlt2_biased==1'
-                  , paper2012      = '(hlt1_biased==1 || hlt1_unbiased_dec==1) && hlt2_biased==1'
-                  , timeEffFit     = '(hlt1_biased==1 || hlt1_unbiased_dec==1) && (hlt2_biased==1 || hlt2_unbiased==1)'
-                 )
 
 sigFrac          = 0.504
 sigMassModel     = ''
@@ -182,10 +178,13 @@ for obs in obsKeys :
 observables['mass'].setRanges(massRanges)
 
 # build cuts string
+from P2VV.Imports import cutSelStrings
+ntupleCuts = cutSelStrings[dataCuts]
 if dataSample == 'Summer2011' :
     ntupleCuts = 'runNumber > 87219 && runNumber < 94386' + ( ' && ' if ntupleCuts else '' ) + ntupleCuts
 
-ntupleCuts += ( ' && ' if ntupleCuts else '' ) + selections[selection]
+from P2VV.Imports import triggerSelStrings
+ntupleCuts += ( ' && ' if ntupleCuts else '' ) + triggerSelStrings[triggerSel]
 
 from P2VV.GeneralUtils import readData
 dataSets = dict( data = readData( filePath = nTupleFilePath, dataSetName = nTupleName, NTuple = True, observables = obsSetNTuple
@@ -290,10 +289,10 @@ massFitResult.covarianceMatrix().Print()
 massFitResult.correlationMatrix().Print()
 
 splitCats = [ [ ] ]
-if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
+if SWeightsType.startswith('simultaneous') and ( triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
     # categories for splitting the PDF
-    splitCats[0] += [ observables['hlt1ExclB'] ] if selection == 'paper2012'\
-                     else [ observables['hlt1ExclB'], observables['hlt2B'] ] if selection == 'timeEffFit' else [ ]
+    splitCats[0] += [ observables['hlt1ExclB'] ] if triggerSel == 'paper2012'\
+                     else [ observables['hlt1ExclB'], observables['hlt2B'] ] if triggerSel == 'timeEffFit' else [ ]
     splitCats[0] += [ observables['KKMassCat'] ] if len(KKMassBinBounds) > 2 else [ ]
 
     # get mass parameters that are split
@@ -473,7 +472,7 @@ if plotsFilePath :
     LHCbLabel.SetBorderSize(0)
     _P2VVPlotStash.append(LHCbLabel)
 
-    if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
+    if SWeightsType.startswith('simultaneous') and ( triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
         # create projection data set
         indexCat = sWeightMassPdf.indexCat()
         if indexCat.isFundamental() :
@@ -539,7 +538,7 @@ if plotsFilePath :
             pad.cd()
             LHCbLabel.Draw()
 
-    if SWeightsType.startswith('simultaneous') and ( selection in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
+    if SWeightsType.startswith('simultaneous') and ( triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
         # get simultaneous PDFs
         indexCatIter  = indexCat.typeIterator()
         indexCatState = indexCatIter.Next()

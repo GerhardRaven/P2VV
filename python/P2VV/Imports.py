@@ -300,6 +300,21 @@ parValuesPHSPAcc = {  'phiCP'           : (  7.0691e-02,  9.08e-02, -1.       )
                     , 'wTagDelP0SS'     : ( -1.9023e-02,  5.00e-03, -1.       )
                    }
 
+# trigger selection strings
+triggerSelStrings = dict(  HLT1Unbiased   = 'hlt1_unbiased_dec==1 && hlt2_biased==1'
+                         , HLT1ExclBiased = 'hlt1_excl_biased_dec==1 && hlt2_biased==1'
+                         , paper2012      = '(hlt1_biased==1 || hlt1_unbiased_dec==1) && hlt2_biased==1'
+                         , timeEffFit     = '(hlt1_biased==1 || hlt1_unbiased_dec==1) && (hlt2_biased==1 || hlt2_unbiased==1)'
+                        )
+
+# cut selection strings
+cutSelStrings = dict( nominal2011 = 'sel == 1 && sel_cleantail == 1'\
+                                    ' && time>0.3 && time<14. && sigmat<0.12'\
+                                    ' && mass>5200. && mass<5550. && abs(mdau1-3090.)<60. && abs(mdau2-1020.)<30.'\
+                                    ' && muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4.'\
+                                    ' && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
+                    )
+
 # external constraint values dictionary
 class ExtConstrValsDict( dict ) :
     def __init__( self, valsDict ) :
