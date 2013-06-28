@@ -349,7 +349,8 @@ def dilution(data, sfs, calib = None, error_fun = None):
         sfs[-1][1] = 1 - sum(sf[1] for sf in sfs[:-1])
     
     ## reset the error functor
-    error_fun.reset()
+    if error_fun:
+        error_fun.reset()
     dms = 17.768 ** 2 / 2
     total = 0
     err_2 = 0
