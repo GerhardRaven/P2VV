@@ -25,12 +25,12 @@ st, dms, sf1, sf2, sfc, f = symbols('st dms sf1 sf2 sfc f')
 D = (1 - f) * exp(- dms ** 2 * sf1 ** 2 * st ** 2 / 2) + f * exp(- dms ** 2 * sf2 ** 2 * st ** 2 / 2)
 derivs = {}
 for s in symbols('st dms sf1 sf2 f'):
-    derivs['dD1_d' + s.name] = diff(D, s)
+    derivs['dDs2_d' + s.name] = diff(D ** 2, s)
 
 D_sfc = D.subs(sf1, (sfc - f * sf2) / (1 - f))
 derivs_sfc = {}
 for s in symbols('st dms sf2 sfc f'):
-    derivs_sfc['dDc_d' + s.name] = diff(D_sfc, s)
+    derivs_sfc['dDc2_d' + s.name] = diff(D_sfc ** 2, s)
 
 # Use codegen and autowrap to write c code and wrappers
 from sympy.utilities.autowrap import CythonCodeWrapper
