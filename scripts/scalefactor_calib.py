@@ -409,6 +409,115 @@ def calib_sf1(pars, st):
 def calib_sf2(pars, st):
     return sum(pars[i + 1] * pow(st - pars[0], i) for i in range(len(pars) - 1)) * st
 
+def sf1(p, st):
+    return (p[0].value() - p[1].value() * p[2].value()) / (1 - p[1].value()) * st
+
+class Parameter(object):
+    def __init__(self, name, value, error):
+        self.__n = name
+        self.__v = value
+        self.__e = error
+    
+    def name(self):
+        return self.__n
+    
+    def value(self):
+        return self.__v
+    
+    def error(self):
+        return self.__e
+
+def make_parameter(result, name):
+    p = result.floatParsFinal().find(name)
+    return Parameter(name, p.getVal(), p.getError())
+
+sfc_dir = result_sfc = dirs['1bin_9500.00fs_simple/m934737057402830078/results']
+result_sfc = sfc_dir.Get("time_result_double_Comb_Gauss")
+sfc = make_parameter(result_sfc, "timeResComb")
+frac = make_parameter(result_sfc, "timeResFrac2")
+sf2 = make_parameter(result_sfc, "timeResSigmaSF_2")
+matrix = result_sfc.reducedCovarianceMatrix(RooArgList(*[result_sfc.floatParsFinal().find(p.name()) for p in [sfc, frac, sf2]]))
+dms = Parameter('dms', 17.768,  0.024)
+
+class ErrorSFC(object):
+    def __init__(self, dms, sfc, frac, sf2, cv):
+        self.__dms = dms
+        self.__sfc = sfc
+        self.__frac = frac
+        self.__sf2 = sf2
+        
+        from ROOT import TMatrixT
+        self.__C = TMatrixT('double')(4, 4)
+        self.__C[0][0] = dms.error()
+        for i in range(3):
+            for j in range(3):
+                self.__C[i + 1][j + 1] = cv[i][j]
+            self.__C[0][i + 1] = 0.
+            self.__C[i + 1][0] = 0.
+        
+        import dilution
+        self.__d = [dilution.dDc2_ddms_c, dilution.dDc2_dsfc_c, dilution.dDc2_df_c, dilution.dDc2_dsf2_c]
+        self.__J = TMatrixT('double')(1, 4)
+        self.__JT = TMatrixT('double')(4, 1)
+        self.__sw = 0
+    
+    def reset(self):
+        self.__J = TMatrixT('double')(1, 4)
+        self.__JT = TMatrixT('double')(4, 1)
+        self.__sw = 0        
+    
+    def __call__(self, w, st):
+        for i in range(4):
+            d = self.__d[i](st, self.__dms.value(), self.__sfc.value(),
+                            self.__frac.value(), self.__sf2.value())
+            self.__J[0][i] += w * d
+            self.__JT[i][0] += w * d
+        self.__sw += w
+    
+    def error(self):
+        tmp = TMatrixT('double')(4, 1)
+        tmp.Mult(self.__C, self.__JT)
+        r = TMatrixT('double')(1, 1)
+        r.Mult(self.__J, tmp)
+        return 1 / self.__sw * sqrt(r[0][0])
+
+from math import exp
+class ErrorSG(object):
+    def __init__(self, dms, sf):
+        self.__dms = dms
+        self.__sf = sf
+        self.__edms = 0
+        self.__esf = 0
+        self.__sw = 0
+        
+    def reset(self):
+        self.__edms = 0
+        self.__esf = 0
+        self.__sw = 0
+    
+    def __call__(self, w, st):
+        self.__edms += w * self.__ddms(st)
+        self.__esf += w * self.__dsf(st)
+        self.__sw += w
+        
+    def __ddms(self, st):
+        sf2 = self.__sf.value() ** 2
+        st2 = st ** 2
+        dms2 = self.__dms.value() ** 2
+        return - st2 * self.__dms.value() * sf2 * exp(- dms2 * sf2 * st2  / 2.)
+    
+    def __dsf(self, st):
+        sf2 = self.__sf.value() ** 2
+        st2 = st ** 2
+        dms2 = self.__dms.value() ** 2
+        return - st2 * dms2 * self.__sf.value() * exp(- dms2 * sf2 * st2  / 2.)
+    
+    def error(self):
+        dmse2 = self.__dms.error() ** 2
+        sfe2 = self.__sf.error() ** 2
+        return 1 / self.__sw * sqrt(self.__edms ** 2 * dmse2 + self.__esf ** 2 * sfe2)
+
+        
 from P2VV.Dilution import dilution
 calib_dilutions = []
 for bin_data in result:
@@ -416,13 +525,16 @@ for bin_data in result:
     calib_dilutions.append(d)
 
 sg_dilutions = []
+sf_sg = Parameter('sf_sg', 1.45, 0.06)
+sf_sge = ErrorSG(dms, sf_sg)
 for bin_data in result:
-    d = dilution(bin_data, [((0., 1.45), 1)])
+    d = dilution(bin_data, [((sf_sg,), 1)], (lambda p, st: p[0].value() * st,), sf_sge)
     sg_dilutions.append(d)
 
 dg_dilutions = []
+error_dg = ErrorSFC(dms, sfc, frac, sf2, matrix)
 for bin_data in result:
-    d = dilution(bin_data, [((0., 1.12), (1 - 0.325)), ((0, 1.988), 0.325)])
+    d = dilution(bin_data, [((sfc, frac, sf2), (1 - frac.value())), ((0, sf2), frac.value())], (sf1, lambda p, st: p[1].value() * st), error_dg)
     dg_dilutions.append(d)
 
 means = array('d')
