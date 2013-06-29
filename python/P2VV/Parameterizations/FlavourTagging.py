@@ -132,7 +132,7 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
 
     # update tagging category parameters
     for cat in range(numTagCats) :
-        avgEtaCat = sumEtaCats[cat] / numEvCats[cat]
+        avgEtaCat = ( sumEtaCats[cat] / numEvCats[cat] ) if numEvCats[cat] != 0. else 0.
         tagCatsCalc[cat] = tagCatsCalc[cat][ : 3 ]\
                            + (  avgEtaCat
                               , P0 + P1 * ( avgEtaCat - avgEstWTag ), 0.
