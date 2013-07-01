@@ -23,6 +23,7 @@
         <class name = "RooRealCategory" />
         <class name = "RooCalibratedDilution" />
         <function name = "RooDataSetToTree" />
+        <function name = "TreeToRooDataSet" />
         <class name = "RooTransAngle" />
         <class name = "RooCruijff" />
         <class name = "RooEfficiencyBin" />

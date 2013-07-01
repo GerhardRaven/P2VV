@@ -62,6 +62,7 @@
 
         <function name = "computeRooRealMoments" />
         <function name = "RooDataSetToTree" />
+        <function name = "TreeToRooDataSet" />
         <function name = "addSWeightToTree" />
         <function name = "addVertexErrors" />
         <function name = "sigmaFromFT" />
