@@ -13,7 +13,6 @@
 #include "P2VV/RooTagDecisionWrapper.h"
 #include "P2VV/RooRealCategory.h"
 #include "P2VV/RooCalibratedDilution.h"
-#include "P2VV/RooDataSetToTree.h"
 #include "P2VV/Functions.h"
 #include "P2VV/RooTransAngle.h"
 #include "P2VV/RooCruijff.h"

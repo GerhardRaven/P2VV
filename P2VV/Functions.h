@@ -6,6 +6,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include "Rtypes.h"
 
 class TH1l;
 class TTree;
@@ -19,5 +20,9 @@ void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& bran
                       const std::string& cut = std::string("1"));
 
 void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut);
+
+TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name = 0,
+      const char* title = 0, const char* branchList = 0,
+      Bool_t RooFitFormat = kTRUE);
 
 #endif // FUNCTIONS_H
