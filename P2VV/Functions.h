@@ -26,7 +26,7 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name = 0,
       Bool_t RooFitFormat = kTRUE);
 
 RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
-      const char* name = 0, const char* title = 0, const char* indexName = 0,
-      RooDataSet* origDataSet = 0);
+      const char* name = 0, const char* title = 0, const char* cuts = 0,
+      const char* indexName = 0, RooDataSet* origDataSet = 0);
 
 #endif // FUNCTIONS_H

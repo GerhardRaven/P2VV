@@ -14,6 +14,9 @@
 #include <TMatrixT.h>
 #include <TEntryList.h>
 #include <TDirectory.h>
+#include <TBranch.h>
+#include <TLeaf.h>
+#include <TObjArray.h>
 
 // RooFit
 #include <RooFit.h>
@@ -298,8 +301,8 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name,
 }
 
 RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
-      const char* name, const char* title, const char* indexName,
-      RooDataSet* origDataSet)
+      const char* name, const char* title, const char* cuts,
+      const char* indexName, RooDataSet* origDataSet)
 {
   // get tree name and title
   TString dsName(name);
@@ -307,7 +310,7 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
   if (dsName.Length() < 1) dsName = tree.GetName();
   if (dsTitle.Length() < 1) dsTitle = tree.GetTitle();
 
-  if (indexName == 0 && origDataSet == 0)
+  if (cuts == 0 && indexName == 0 && origDataSet == 0)
     // default: import tree with RooDataSet constructor
     return new RooDataSet(dsName, dsTitle, observables, RooFit::Import(tree));
 
@@ -338,9 +341,14 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
   RooRealVar* origIndex(0);
   if (indexName != 0) {
     index = dynamic_cast<RooRealVar*>(obsSet.find(indexName));
-    origIndex = dynamic_cast<RooRealVar*>(origObsSet->find(indexName));
     if (index == 0 && obsSet.find(indexName) != 0) {
       cout << "P2VV - ERROR: TreeToRooDataSet(): index variable is not a RooRealVar"
+          << endl;
+      return 0;
+    }
+    origIndex = dynamic_cast<RooRealVar*>(origObsSet->find(indexName));
+    if (origIndex == 0 && origObsSet->find(indexName) != 0) {
+      cout << "P2VV - ERROR: TreeToRooDataSet(): original index variable is not a RooRealVar"
           << endl;
       return 0;
     }
@@ -356,8 +364,9 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
   }
 
   // initialize observables
-  TString selStr("");
-  std::map<TString,Double_t*> realMap;
+  TString selStr(cuts);
+  std::map<TString,Double_t*> doubleMap;
+  std::map<TString,Float_t*> floatMap;
   std::map<TString,Int_t*> intMap;
   RooAbsArg* arg = 0;
   RooLinkedListIter obsSetIter = obsSet.iterator();
@@ -431,15 +440,57 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
 
     // set branch address and build selection string
     if (real != 0) {
-      realMap[TString(real->GetName())] = new Double_t(0.);
-      tree.SetBranchAddress(real->GetName(), realMap[real->GetName()]);
+      // set branch address of floating point branch
+      TObjArray* lfList = tree.GetBranch(real->GetName())->GetListOfLeaves();
+      TString brType = lfList->GetEntries() == 1 ?
+          ((TLeaf*)lfList->At(0))->GetTypeName() : "";
+      Int_t setAdd(0);
+      if (brType == "Float_t") {
+        // Float_t branch
+        cout << "P2VV - INFO: TreeToRooDataSet(): values from Float_t branch \""
+          << real->GetName() << "\" will be converted to double precision"
+          << endl;
+        Float_t* brAdd = new Float_t(0.);
+        setAdd = tree.SetBranchAddress(real->GetName(), brAdd);
+        if (setAdd == 0) floatMap[TString(real->GetName())] = brAdd;
+        else delete brAdd;
+      } else if (brType == "Double_t") {
+        // Double_t branch
+        Double_t* brAdd = new Double_t(0.);
+        setAdd = tree.SetBranchAddress(real->GetName(), brAdd);
+        if (setAdd == 0) doubleMap[TString(real->GetName())] = brAdd;
+        else delete brAdd;
+      }
+
+      // check if branch address was set
+      if (setAdd != 0 || (brType != "Float_t" && brType != "Double_t")) {
+        cout << "P2VV - WARNING: TreeToRooDataSet(): branch \""
+          << real->GetName() << "\" is not of type Double_t or Float_t"
+          << endl;
+        obsSet.remove(*arg);
+        continue;
+      }
+
+      // build RealVar selection string
       selStr += TString("&&") + real->GetName() + ">=";
       selStr += real->getMin();
       selStr += TString("&&") + real->GetName() + "<=";
       selStr += real->getMax();
     } else if (cat != 0) {
-      intMap[TString(cat->GetName())] = new Int_t(0);
-      tree.SetBranchAddress(cat->GetName(), intMap[cat->GetName()]);
+      // set branch address to Int_t pointer
+      Int_t* brAdd = new Int_t(0);
+      Int_t setAdd = tree.SetBranchAddress(cat->GetName(), brAdd);
+      if (setAdd == 0) {
+        intMap[TString(cat->GetName())] = brAdd;
+      } else {
+        cout << "P2VV - WARNING: TreeToRooDataSet(): branch \""
+          << cat->GetName() << "\" is not of type Int_t" << endl;
+        delete brAdd;
+        obsSet.remove(*arg);
+        continue;
+      }
+
+      // build category selection string
       TString catSelStr("");
       std::auto_ptr<TIterator> catIt(cat->typeIterator());
       RooCatType* type(0);
@@ -451,18 +502,41 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
     }
   }
 
+  // enable branches for selection
+  std::vector<TBranch*> disabledBrList;
+  brIt->Reset();
+  while ((br = dynamic_cast<TBranch*>(brIt->Next())) != 0) {
+    if (!tree.GetBranchStatus(br->GetName())
+        && selStr.Contains(br->GetName())) {
+      disabledBrList.push_back(br);
+      br->SetStatus(kTRUE);
+    }
+  }
+
   // get selected entries
-  tree.Draw(">>elist", selStr(2, selStr.Length() - 2).Data(), "entrylist");
+  selStr = selStr.BeginsWith("&&") ? selStr(2, selStr.Length() - 2) : selStr;
+  tree.Draw(">>elist", selStr.Data(), "entrylist");
   TEntryList *entryList = static_cast<TEntryList*>(gDirectory->Get("elist"));
   cout << "P2VV - INFO: TreeToRooDataSet(): " << entryList->GetN()
-      << "/" << tree.GetEntries() << " entries selected in tree" << endl;
-  if (origDataSet != 0 && numEntr > entryList->GetN()) {
+      << "/" << tree.GetEntries() << " entries selected in tree";
+  if (origDataSet != 0)
+    cout << ", " << numEntr << " entries in data set" << endl;
+  else
+    cout << endl;
+  if (origDataSet != 0 && ((origIndex != 0 && numEntr > entryList->GetN())
+      || (origIndex == 0 && numEntr != entryList->GetN()))) {
     cout << "P2VV - ERROR: TreeToRooDataSet(): number of entries in original data set ("
         << numEntr
-        << ") is larger than the number of selected entries in the tree ("
+        << ") is not equal to number of selected entries in the tree ("
         << entryList->GetN() << ")" << endl;
     return 0;
   }
+
+  // disable branches that were only enabled for selection
+  for (std::vector<TBranch*>::iterator it = disabledBrList.begin();
+      it != disabledBrList.end(); ++it)
+    (*it)->SetStatus(kFALSE);
+  disabledBrList.clear();
 
   // create data set
   RooDataSet* dataSet = new RooDataSet(dsName, dsTitle, obsSet);
@@ -501,7 +575,10 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
       } else if (index == 0 || arg->GetName() != index->GetName()) {
         // get value from tree
         if (real != 0) {
-          real->setVal(*realMap[arg->GetName()]);
+          std::map<TString,Float_t*>::iterator
+              fIt(floatMap.find(arg->GetName()));
+          if (fIt != floatMap.end()) real->setVal(*fIt->second);
+          else real->setVal(*doubleMap[arg->GetName()]);
         } else {
           RooCategory* cat = dynamic_cast<RooCategory*>(arg);
           cat->setIndex(*intMap[arg->GetName()]);
@@ -517,8 +594,11 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
 
   // delete branch addresses
   tree.ResetBranchAddresses();
-  for (std::map<TString,Double_t*>::iterator it = realMap.begin();
-      it != realMap.end(); ++it)
+  for (std::map<TString,Double_t*>::iterator it = doubleMap.begin();
+      it != doubleMap.end(); ++it)
+    delete it->second;
+  for (std::map<TString,Float_t*>::iterator it = floatMap.begin();
+      it != floatMap.end(); ++it)
     delete it->second;
   for (std::map<TString,Int_t*>::iterator it = intMap.begin();
       it != intMap.end(); ++it)
