@@ -2003,7 +2003,7 @@ def make_binning(data, var, n_bins):
     from operator import itemgetter
     values = sorted(values, key = itemgetter(0))
     
-    bounds = [values[0][0] - 0.01]
+    bounds = [var.getMin()]
     total = 0
     
     for v, w in values:
@@ -2011,5 +2011,5 @@ def make_binning(data, var, n_bins):
         if total >= d:
             total = 0
             bounds.append(v)
-    bounds.append(values[-1][0] + 0.1)
+    bounds.append(var.getMax())
     return bounds

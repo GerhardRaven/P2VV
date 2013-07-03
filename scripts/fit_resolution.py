@@ -16,7 +16,7 @@ parser.add_option('-p', '--parameterisation', dest = 'parameterise', default = F
                   action = 'store', help = 'Parameterise sigmas [RMS, Comb]')
 parser.add_option("--verbose", dest = "verbose", default = False,
                   action = 'store_true', help = 'Verbose fitting')
-parser.add_option("--model", dest = "model", default = '', type = 'string',
+parser.add_option("--sf-parameterisation", dest = "sf_param", default = '', type = 'string',
                   action = 'store', help = 'Type of model used to scale sigma_t')
 parser.add_option('-s', "--simultaneous", dest = "simultaneous", default = False,
                   action = 'store_true', help = 'Use sigmat offset')
@@ -44,8 +44,10 @@ parser.add_option("--peak-only", dest = "peak_only", default = False, action = '
                   help = 'Fit only the peak between -0.2 and 0.2 ps')
 parser.add_option("--split-mean", dest = "split_mean", default = False, action = 'store_true',
                   help = 'Split the mean of the Gaussians in a simultaneous fit.')
+parser.add_option("--split-frac", dest = "split_frac", default = False, action = 'store_true',
+                  help = 'Split the fraction of the Gaussians in a simultaneous fit.')
 parser.add_option("--split", dest = "split", default = 'sigmat', action = 'store', type = 'string',
-                  help = 'Which categories should be used to split, [sigmat, momentum]')
+                  help = 'Which categories should be used to split, [sigmat, momentum, pt, ppt]')
 
 (options, args) = parser.parse_args()
 
@@ -143,7 +145,7 @@ if args[1] == 'single':
     from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
                               BiasScaleFactor = False, Cache = False,
-                              TimeResSFModel = options.model, SplitMean = options.split_mean,
+                              TimeResSFParam = options.sf_param, SplitMean = options.split_mean,
                               timeResMu = dict(Value = 0, MinMax = (-2, 2), Constant = False),
                               sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
 elif args[1] == 'double':
@@ -152,18 +154,18 @@ elif args[1] == 'double':
     mu_values = {'MC11a' : 0, 'MC11a_incl_Jpsi' : -0.000408, '2011' : -0.00407301, '2012' : -0.00365}
     mu['Value'] = mu_values[args[0]]
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-    sig_tres = TimeResolution(Name = 'tres', time = time_obs, sigmat = st,
-                              Cache = True, PerEventError = options.pee,
-                              Parameterise = options.parameterise, TimeResSFOffset = options.model != '',
-                              SplitFracs = True, timeResMu = mu, GExp = {2 : args[0] == 'MC11a', 1 : False},
+    sig_tres = TimeResolution(Name = 'tres', time = time_obs, sigmat = st, Cache = True,
+                              PerEventError = options.pee, Parameterise = options.parameterise,
+                              TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
+                              timeResMu = mu, GExp = {2 : args[0] == 'MC11a', 1 : False},
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)], SplitMean = options.split_mean)
 elif args[1] == 'triple':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = time_obs, sigmat = st, Cache = True,
                               PerEventError = [False, options.pee, options.pee],
-                              TimeResSFOffset = options.model != '', Parameterise = options.parameterise,
-                              ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)],
+                              TimeResSFParam = options.sf_param, Parameterise = options.parameterise,
+                              ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)], SplitFracs = options.split_frac,
                               Fractions = [(3, 0.1), (2, 0.2)], SplitMean = options.split_mean)
 
 # J/psi mass pdf
@@ -235,25 +237,14 @@ if options.cut:
 hd = ('%d' % hash(cut)).replace('-', 'm')
 
 if options.simultaneous:
-    from array import array 
-    if options.split == 'sigmat':
-        if args[0] == 'MC11a':
-            st_bins = array('d', [0.01000, 0.02066, 0.02375, 0.02616, 0.02833,
-                                  0.03047, 0.03269, 0.03520, 0.03837, 0.04343, 0.07000])
-        elif args[0] == 'MC11a_incl_Jpsi':
-            st_bins = array('d', [0.01000, 0.02414, 0.02720, 0.02948, 0.03145,
-                                  0.03338, 0.03537, 0.03761, 0.04049, 0.04504, 0.07000])
-        else:
-            st_bins = array('d', [0.01000, 0.02410, 0.02727, 0.02969, 0.03186,
-                                  0.03398, 0.03632, 0.03923, 0.04378, 0.07000])
-        directory = '%sbins_%4.2ffs_simul/%s' % (len(st_bins) - 1, (1000 * (st_bins[1] - st_bins[0])), hd)
-    elif options.split == 'momentum':
-        pt_bins = array('d', [0., 1871.9, 3352.0, 1e6])
-        momentum_bins = array('d', [0., 58962., 88835., 1e6])
-        directory = 'p_pt_{0}bins_simul/{1}'.format(len(pt_bins) * len(momentum_bins), hd)
-    elif options.split == 'pv_zerr':
-        zerr_bins = array('d', [0, 0.0237, 0.029, 0.0376, 1])
-        directory = 'pv_zerr_{0}bins_simul/{1}'.format(len(zerr_bins), hd)
+    split_utils = {'sigmat' : ('Sigmat', [st]), 'ppt' : ('PPT', [momentum, pt]),
+                   'momentum' : ('Momentum', [momentum]), 'pt' : ('PT', [pt]),
+                   'pv_zerr' : ('PVZerr', [zerr])}
+    from P2VV import ResolutionUtils
+    split_opts = split_utils[options.split]
+    SplitUtil = getattr(ResolutionUtils, 'Split' + split_opts[0])
+    split_util = SplitUtil(args[0], *(split_opts[1]))
+    directory = split_util.directory(hd)
 else:
     directory = '1bin_%4.2ffs_simple/%s' % (1000 * (t.getMax() - t.getMin()), hd)
 
@@ -275,7 +266,7 @@ gStyle.SetPalette(53)
 
 ## Extra name for fit result and plots
 extra_name = [args[1]]
-for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('model', None), ('peak_only', 'peak_only')]:
+for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None), ('peak_only', 'peak_only')]:
     v = getattr(options, a)
     if v:
         if n and n != v and hasattr(options, n):
@@ -354,17 +345,7 @@ if not fit_mass:
             results.append(tr)
 
     if options.simultaneous:
-        if options.split == 'sigmat':
-            st_cat = sig_sdata.get().find(st.GetName() + '_cat')
-            w.put(st_cat)
-        elif options.split == 'momentum':
-            momentum_cat = sig_sdata.get().find(momentum.GetName() + '_cat')
-            momentum_cat = w.put(momentum_cat)
-            pt_cat = sig_sdata.get().find(pt.GetName() + '_cat')
-            pt_cat = w.put(pt_cat)
-        elif options.split == 'pv_zerr':
-            zerr_cat = sig_sdata.get().find(zerr.GetName() + '_cat')
-            zerr_cat = w.put(zerr_cat)
+        split_cats = [split_util.split_cats(sig_sdata)]
         
 ## Fitting opts
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
@@ -451,32 +432,7 @@ if fit_mass and options.simultaneous:
     from P2VV.GeneralUtils import getSplitPar
     # categories for splitting the PDF
     # get mass parameters that are split
-    from ROOT import RooBinning
-    if options.split == 'sigmat':
-        st_binning = RooBinning( len(st_bins) - 1, st_bins, 'st_binning' )
-        st.setBinning(st_binning, 'st_binning')
-        st_cat = BinningCategory(st.GetName() + '_cat', Observable = st, Binning = st_binning,
-                                 Fundamental = True, Data = data, CatTypeName = 'bin')
-        split_cats = [[st_cat]]
-    elif options.split == 'momentum':
-        pt_binning = RooBinning( len(pt_bins) - 1, pt_bins, 'pt_binning' )
-        pt.setBinning(pt_binning, 'pt_binning')
-        pt_cat = BinningCategory(pt.GetName() + '_cat', Observable = pt, Binning = pt_binning,
-                                 Fundamental = True, Data = data, CatTypeName = 'pt_bin_')
-
-        momentum_binning = RooBinning( len(momentum_bins) - 1, momentum_bins, 'momentum_binning' )
-        momentum.setBinning(momentum_binning, 'momentum_binning')
-        momentum_cat = BinningCategory(momentum.GetName() + '_cat', Observable = momentum,
-                                       Binning = momentum_binning, Fundamental = True,
-                                       Data = data, CatTypeName = 'p_bin_')
-        split_cats = [[momentum_cat, pt_cat]]
-    elif options.split == 'pv_zerr':
-        zerr_binning = RooBinning( len(zerr_bins) - 1, zerr_bins, 'zerr_binning' )
-        zerr.setBinning(zerr_binning, 'zerr_binning')
-        zerr_cat = BinningCategory(zerr.GetName() + '_cat', Observable = zerr, Binning = zerr_binning,
-                                   Fundamental = True, Data = data, CatTypeName = 'zerr_bin_')
-        split_cats = [[zerr_cat]]
-        
+    split_cats = [split_util.split_cats(data)]
     split_pars = [[par for par in mass_pdf.Parameters() if par.getAttribute('Yield')]]
     
     # build simultaneous mass PDF
@@ -484,11 +440,12 @@ if fit_mass and options.simultaneous:
                                        MasterPdf       = mass_pdf,
                                        SplitCategories = split_cats,
                                        SplitParameters = split_pars)
-
+    
     for i in range(5):
         sWeight_mass_result = sWeight_mass_pdf.fitTo(data, **fitOpts)
         if sWeight_mass_result.status() == 0:
             break
+        
     assert(sWeight_mass_result.status() == 0)
     sWeight_mass_result.SetName('sWeight_mass_result')
     results.append(sWeight_mass_result)
@@ -505,7 +462,7 @@ if fit_mass and options.simultaneous:
     sData = SData(Pdf = sWeight_mass_pdf, Data = data, Name = 'SimulMassSPlot')
     sig_sdata_full = sData.data(signal_name)
     bkg_sdata_full = sData.data('background')
-
+    
     if args[0].find('MC11a') != -1 and options.reweigh:
         if cut.find('trueid') != -1:
             cut = cut.rsplit('&&', 1)[0]
@@ -528,7 +485,7 @@ if fit_mass and options.simultaneous:
     else:
         sdatas_full['sig_sdata'] = sig_sdata_full
         sdatas_full['bkg_sdata'] = bkg_sdata_full
-
+    
     from copy import copy
     sdatas = copy(sdatas_full)
     if options.reduce:
@@ -617,6 +574,8 @@ elif options.wpv and options.wpv_type == 'Gauss':
 
 time_pdf = buildPdf(Components = components, Observables = (time_obs,), Name='time_pdf')
 
+splitLeaves = RooArgSet()
+
 if options.simultaneous:
     split_pars = [[]]
     if options.wpv:
@@ -631,16 +590,34 @@ if options.simultaneous:
     split_pars[0] += sig_tres.splitVars()
     
     if options.wpv and options.wpv_type == 'Gauss':    
-        split_pars.append([wpv_sigma, wpv.getYield()])
+        split_pars[0].extend([wpv.getYield()])
+        ## split_pars[0].extend([wpv_sigma])
 
-    if options.split == 'sigmat':
-        split_cats = [[st_cat]]
-    elif options.split == 'momentum':
-        split_cats = [[momentum_cat, pt_cat]]
-    time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul'
-                               , MasterPdf       = time_pdf
-                               , SplitCategories = split_cats
-                               , SplitParameters = split_pars)
+    if options.sf_param:
+        assert(len(split_cats[0]) == 1)
+        split_cat = split_cats[0][0]
+        placeholder = sig_tres.sigmatPlaceHolder()
+        from ROOT import RooCustomizer
+        customizer = RooCustomizer(time_pdf._target_(), split_cat, splitLeaves)
+        to_split = RooArgSet(*(split_pars[0] + [placeholder._target_()]))
+        customizer.splitArgs(to_split, split_cat)
+        states = dict([(s.GetName(), customizer.build(s.GetName())) for s in split_cat])
+        time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul',
+                                   SplitCategory = split_cat, ExternalConstraints = time_pdf.ExternalConstraints(),
+                                   States = states, ConditionalObservables = time_pdf.ConditionalObservables())
+        means = [sig_sdata.mean(st._target_(), '{0} == {0}::{1}'.format(split_cat.GetName(), s.GetName())) for s in split_cat]
+        pars = time_pdf.getParameters(RooArgSet())
+        st_mean = sig_sdata.mean(st._target_())
+        for m, s in zip(means, split_cat):
+            p = pars.find(placeholder.GetName() + '_' + s.GetName())
+            p.setConstant(True)
+            p.setVal(m - st_mean)
+            
+    else:
+        time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul'
+                                   , MasterPdf       = time_pdf
+                                   , SplitCategories = split_cats
+                                   , SplitParameters = split_pars)
 if options.reuse_result:
     # Check if we have a cached time result, if so, use it as initial values for the fit
     time_result = None
@@ -648,7 +625,7 @@ if options.reuse_result:
         if r.GetName() == '_'.join(['time_result'] + extra_name):
             time_result = results.pop(i)
             break
-
+    
     if time_result:
         pdf_vars = time_pdf.getVariables()
         for p in time_result.floatParsFinal():
@@ -680,9 +657,9 @@ if options.fit:
         time_result = time_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
         if time_result.status() == 0:
             break
-
+    
     time_result.SetName('_'.join(['time_result'] + extra_name))
-
+    
     ## Draw correlation histogram
     corr_canvas.cd(2)
     ## FIXME
@@ -691,7 +668,7 @@ if options.fit:
     corr_hist_time.GetYaxis().SetLabelSize(0.03)
     corr_hist_time.SetContour(20)
     corr_hist_time.Draw('colz')
-
+    
     results.append(time_result)
 
 ## profiler_stop()
@@ -749,9 +726,10 @@ __canvases = []
 from ROOT import SetOwnership
 
 for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
-    if not options.make_plots or not time_result:
+    if not options.make_plots or not time_result or options.split != 'sigmat':
         continue
     if options.simultaneous:
+        st_cat = split_cats[0][0]
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
         for ct in st_cat:
             name = 'time_canvas_%s_%d' % (ct.GetName(), i)
