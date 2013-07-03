@@ -48,10 +48,11 @@ RooInf = RooNumber.infinity()
 ## Tagging tools ##
 ###################
 
-def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., SameSide = False
+def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., SameSide = False, WeightVarName = ''
                             , avgEstWTag = None, P0 = None, P1 = None, P0Err = None, P1Err = None, AP0 = None, AP1 = None ) :
     assert data, 'getTagCatParamsFromData(): no data set found'
-    assert estWTagName and data.get(0).find(estWTagName), 'getTagCatParamsFromData(): estimated wrong-tag probability not found in data'
+    assert estWTagName and data.get().find(estWTagName), 'getTagCatParamsFromData(): estimated wrong-tag probability not found in data'
+    if WeightVarName : assert data.get().find(WeightVarName), 'getTagCatParamsFromData(): weight variable not found in data'
 
     if avgEstWTag == None : avgEstWTag = avgEtaOSVal                         if not SameSide else avgEtaSSVal
     if P0         == None : P0         = P0OSConstrVal                       if not SameSide else P0SSConstrVal
@@ -70,10 +71,9 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
 
     tagCatsCalc = tagCats[ : ]
 
-    etaMin = 0.
+    etaMin = 0.5
     if not tagCatsCalc :
         # get minimum estimated wrong-tag probability
-        etaMin = 0.5
         for varSet in data : etaMin = min( etaMin, varSet.getRealValue(estWTagName) )
 
         # determine binning in estimated wrong-tag probability from data
@@ -105,12 +105,12 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
 
     # determine tagging category parameters
     numTagCats = len(tagCatsCalc)
-    numEvTot   = data.sumEntries()
     numEvCats  = [0]  * numTagCats
     sumEtaCats = [0.] * numTagCats
     for varSet in data :
         # get estimated wrong-tag probability for this event
         eta = varSet.getRealValue(estWTagName)
+        if eta < etaMin : etaMin = eta
 
         # determine tagging category
         cat = -1
@@ -121,14 +121,13 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
         if cat < 0 : raise RuntimeError('getTagCatParamsFromData(): estimated wrong-tag probability out of range')
 
         # update number of events and sum of estimated wrong-tag probabilities
-        numEvCats[cat]  += data.weight()
-        sumEtaCats[cat] += eta * data.weight()
+        weight = varSet.getRealValue(WeightVarName) if WeightVarName else data.weight()
+        numEvCats[cat]  += weight
+        sumEtaCats[cat] += eta * weight
 
-    # check number of events
-    numEvTotCount = 0.
-    for numEv in numEvCats : numEvTotCount += numEv
-    assert abs( numEvTotCount - numEvTot ) < 1.e-10 * abs( numEvTotCount + numEvTot ),\
-           'getTagCatParamsFromData(): counted number of events is not equal to number of events in data set'
+    # get total number of events
+    numEvTot = sum(numEvCats)
+    etaMean  = sum(sumEtaCats) / ( numEvTot if numEvTot else 1. )
 
     # update tagging category parameters
     for cat in range(numTagCats) :
@@ -144,7 +143,7 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
     print 'P2VV - INFO: getTagCatParamsFromData(): tagging category binning:'
     print '    <eta> = %.3f   P0 = %.3f +- %.3f   P1 = %.3f +- %.3f    P0 asym. = %.3f    P1 asym. = %.3f'\
           % ( avgEstWTag, P0, P0Err, P1, P1Err, AP0, AP1 )
-    print '    minimum eta = %.3f    average eta = %.3f' % ( etaMin, data.mean( data.get(0).find(estWTagName) ) )
+    print '    minimum eta = %.3f    average eta = %.3f' % ( etaMin, etaMean )
     for bin, cat in enumerate(tagCatsCalc) :
         deltaEta = ( ( cat[2] - tagCatsCalc[bin + 1][2] ) / 2. ) if bin < len(tagCatsCalc) - 1 else ( ( cat[2] - etaMin ) / 2. )
         if cat[2] >= avgEstWTag : binRangeSig = P1 * deltaEta / ( P0Err + P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
