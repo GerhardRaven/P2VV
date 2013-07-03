@@ -1050,7 +1050,7 @@ class SumPdf(Pdf):
 class SimultaneousPdf( Pdf ) :
     def __init__( self, Name, **kwargs ) :
         args = { 'Name' : Name }
-        pdfOpts = { }
+        pdfOpts = dict([(a, kwargs.pop(a, set())) for a in ['ConditionalObservables', 'ExternalConstraints']])
         if 'States' in kwargs :
             ## pdfs = sorted([(s, pdf) for s, pdf in args['States'].iteritems()], key = lambda (s, pdf): args['Cat'].lookupType(s).getVal())
             ## pdfs = [e[1] for e in pdfs]
@@ -1070,15 +1070,17 @@ class SimultaneousPdf( Pdf ) :
             spec = 'SIMCLONE::%(Name)s(%(Master)s,%(SplitSpecs)s)' % args
 
             cond = args['Master'].ConditionalObservables()
-            if cond : pdfOpts['ConditionalObservables'] = cond
+            if cond : pdfOpts['ConditionalObservables'].update(set(cond))
             extCon = args['Master'].ExternalConstraints()
-            if extCon : pdfOpts['ExternalConstraints' ] = extCon
+            if extCon : pdfOpts['ExternalConstraints' ].update(set(extCon))
             self._declare(spec)
 
         else :
             raise KeyError, 'P2VV - ERROR: SimultaneousdPdf: Must specify either SplitParameters or States'
 
         self._init( Name, 'RooSimultaneous' )
+        for a in ['ConditionalObservables', 'ExternalConstraints']:
+            pdfOpts[a] = list(pdfOpts[a])
         Pdf.__init__( self , Name = Name , Type = 'RooSimultaneous', **pdfOpts )
 
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )

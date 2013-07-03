@@ -249,13 +249,13 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
                  'pol2_no_offset' : ('x ++ x * x', 'S0+'),
                  'pol2_mean_param' : ('[0] + [1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
     print titles[key]
-    param_mean = full_sdata.mean(st)
+    st_mean = full_sdata.mean(st)
     for g in (res_graph, sf2_graph):
         frs = []
         for i, (name, (func, opts)) in enumerate(fit_funcs.iteritems()):
             fit_func = TF1(name, func, split_bounds[0], split_bounds[-1])
             if name.endswith('mean_param'):
-                fit_func.FixParameter(0, param_mean)
+                fit_func.FixParameter(0, st_mean)
             print name
             fit_result = g.Fit(fit_func, opts, "L")
             fit_result.SetName('result_' + name)
@@ -412,118 +412,34 @@ def calib_sf2(pars, st):
 def sf1(p, st):
     return (p[0].value() - p[1].value() * p[2].value()) / (1 - p[1].value()) * st
 
-class Parameter(object):
-    def __init__(self, name, value, error):
-        self.__n = name
-        self.__v = value
-        self.__e = error
-    
-    def name(self):
-        return self.__n
-    
-    def value(self):
-        return self.__v
-    
-    def error(self):
-        return self.__e
+from P2VV.PropagateErrors import Parameter, ErrorSFC, ErrorSG, ErrorCDG
 
 def make_parameter(result, name):
     p = result.floatParsFinal().find(name)
     return Parameter(name, p.getVal(), p.getError())
 
-sfc_dir = result_sfc = dirs['1bin_9500.00fs_simple/m934737057402830078/results']
-result_sfc = sfc_dir.Get("time_result_double_Comb_Gauss")
-sfc = make_parameter(result_sfc, "timeResComb")
-frac = make_parameter(result_sfc, "timeResFrac2")
-sf2 = make_parameter(result_sfc, "timeResSigmaSF_2")
-matrix = result_sfc.reducedCovarianceMatrix(RooArgList(*[result_sfc.floatParsFinal().find(p.name()) for p in [sfc, frac, sf2]]))
 dms = Parameter('dms', 17.768,  0.024)
 
-class ErrorSFC(object):
-    def __init__(self, dms, sfc, frac, sf2, cv):
-        self.__dms = dms
-        self.__sfc = sfc
-        self.__frac = frac
-        self.__sf2 = sf2
-        
-        from ROOT import TMatrixT
-        self.__C = TMatrixT('double')(4, 4)
-        self.__C[0][0] = dms.error()
-        for i in range(3):
-            for j in range(3):
-                self.__C[i + 1][j + 1] = cv[i][j]
-            self.__C[0][i + 1] = 0.
-            self.__C[i + 1][0] = 0.
-        
-        import dilution
-        self.__d = [dilution.dDc2_ddms_c, dilution.dDc2_dsfc_c, dilution.dDc2_df_c, dilution.dDc2_dsf2_c]
-        self.__J = TMatrixT('double')(1, 4)
-        self.__JT = TMatrixT('double')(4, 1)
-        self.__sw = 0
-    
-    def reset(self):
-        self.__J = TMatrixT('double')(1, 4)
-        self.__JT = TMatrixT('double')(4, 1)
-        self.__sw = 0        
-    
-    def __call__(self, w, st):
-        for i in range(4):
-            d = self.__d[i](st, self.__dms.value(), self.__sfc.value(),
-                            self.__frac.value(), self.__sf2.value())
-            self.__J[0][i] += w * d
-            self.__JT[i][0] += w * d
-        self.__sw += w
-    
-    def error(self):
-        tmp = TMatrixT('double')(4, 1)
-        tmp.Mult(self.__C, self.__JT)
-        r = TMatrixT('double')(1, 1)
-        r.Mult(self.__J, tmp)
-        return 1 / self.__sw * sqrt(r[0][0])
-
-from math import exp
-class ErrorSG(object):
-    def __init__(self, dms, sf):
-        self.__dms = dms
-        self.__sf = sf
-        self.__edms = 0
-        self.__esf = 0
-        self.__sw = 0
-        
-    def reset(self):
-        self.__edms = 0
-        self.__esf = 0
-        self.__sw = 0
-    
-    def __call__(self, w, st):
-        self.__edms += w * self.__ddms(st)
-        self.__esf += w * self.__dsf(st)
-        self.__sw += w
-        
-    def __ddms(self, st):
-        sf2 = self.__sf.value() ** 2
-        st2 = st ** 2
-        dms2 = self.__dms.value() ** 2
-        return - st2 * self.__dms.value() * sf2 * exp(- dms2 * sf2 * st2  / 2.)
-    
-    def __dsf(self, st):
-        sf2 = self.__sf.value() ** 2
-        st2 = st ** 2
-        dms2 = self.__dms.value() ** 2
-        return - st2 * dms2 * self.__sf.value() * exp(- dms2 * sf2 * st2  / 2.)
-    
-    def error(self):
-        dmse2 = self.__dms.error() ** 2
-        sfe2 = self.__sf.error() ** 2
-        return 1 / self.__sw * sqrt(self.__edms ** 2 * dmse2 + self.__esf ** 2 * sfe2)
-
-        
 from P2VV.Dilution import dilution
+# Dilution of double Gauss with scalefactors calibrated.
+cdg_rd = dirs['9bins_14.10fs_simul/m934737057402830078/results']
+result_cdg = rd.Get("time_result_double_Comb_Gauss_linear")
+sfc_offset = make_parameter(result_cdg, "sfc_offset")
+sfc_slope = make_parameter(result_cdg, "sfc_slope")
+cdg_frac = make_parameter(result_cdg, "timeResFrac2")
+sf2_offset = make_parameter(result_cdg, "sf2_offset")
+sf2_slope = make_parameter(result_cdg, "sf2_slope")
+cdg_cv = result_cdg.reducedCovarianceMatrix(RooArgList(*[result_cdg.floatParsFinal().find(p.name()) for p in [sfc_offset, sfc_slope, cdg_frac, sf2_offset, sf2_slope]]))
+error_cdg = ErrorCDG(st_mean, dms, sfc_offset, sfc_slope, cdg_frac, sf2_offset, sf2_slope, cdg_cv)
 calib_dilutions = []
 for bin_data in result:
-    d = dilution(bin_data, [([(param_mean, 1.47141, -3.41077), (param_mean, 2.06996, -4.08342), 2.9140e-01], (1 - 2.9140e-01)), ((param_mean, 2.06996, -4.08342), 2.9140e-01)], (calib_sf1, calib_sf2))
+    d = dilution(bin_data, [([(st_mean, sfc_offset.value(), sfc_slope.value()),
+                              (st_mean, sf2_offset.value(), sf2_slope.value()), cdg_frac.value()],
+                              (1 - cdg_frac.value())), ((st_mean, sf2_offset.value(), sf2_slope.value()), cdg_frac.value())],
+                              (calib_sf1, calib_sf2), error_cdg)
     calib_dilutions.append(d)
 
+# Dilution of single Gauss fit.
 sg_dilutions = []
 sf_sg = Parameter('sf_sg', 1.45, 0.06)
 sf_sge = ErrorSG(dms, sf_sg)
@@ -531,12 +447,21 @@ for bin_data in result:
     d = dilution(bin_data, [((sf_sg,), 1)], (lambda p, st: p[0].value() * st,), sf_sge)
     sg_dilutions.append(d)
 
+# Dilution of Double Gauss fit
+sfc_dir = result_sfc = dirs['1bin_9500.00fs_simple/m934737057402830078/results']
+result_sfc = sfc_dir.Get("time_result_double_Comb_Gauss")
+sfc = make_parameter(result_sfc, "timeResComb")
+dg_frac = make_parameter(result_sfc, "timeResFrac2")
+sf2 = make_parameter(result_sfc, "timeResSigmaSF_2")
+matrix = result_sfc.reducedCovarianceMatrix(RooArgList(*[result_sfc.floatParsFinal().find(p.name()) for p in [sfc, dg_frac, sf2]]))
+
 dg_dilutions = []
-error_dg = ErrorSFC(dms, sfc, frac, sf2, matrix)
+error_dg = ErrorSFC(dms, sfc, dg_frac, sf2, matrix)
 for bin_data in result:
-    d = dilution(bin_data, [((sfc, frac, sf2), (1 - frac.value())), ((0, sf2), frac.value())], (sf1, lambda p, st: p[1].value() * st), error_dg)
+    d = dilution(bin_data, [((sfc, dg_frac, sf2), (1 - dg_frac.value())), ((0, sf2), dg_frac.value())], (sf1, lambda p, st: p[1].value() * st), error_dg)
     dg_dilutions.append(d)
 
+# Plot Dilutions
 means = array('d')
 for bin_data in result:
     means.append(sum(e[0] * e[1] for e in bin_data) / sum(e[1] for e in bin_data))
@@ -547,13 +472,14 @@ colors = [kGreen, kBlue, kBlack]
 first = True
 for color, (ds, name) in zip(colors, [(calib_dilutions, 'calibrated'), (dg_dilutions, 'double'),
                                 (sg_dilutions, 'single')]):
-    graph = TGraph(len(means), means, array('d', [d[0] for d in ds]))
+    graph = TGraphErrors(len(means), means, array('d', [d[0] for d in ds]),
+                         array('d', len(ds) * [0]), array('d', [d[1] for d in ds]))
     graph.SetName(name)
     if first:
-        graph.Draw("AL*")
+        graph.Draw("AP")
         first = False
     else:
-        graph.Draw("L*, same")
+        graph.Draw("P, same")
     graph.SetLineColor(color)
     graph.SetMarkerColor(color)
     graphs.append(graph)

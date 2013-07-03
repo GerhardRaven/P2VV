@@ -66,10 +66,10 @@ class Gaussian_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         scaleBias = kwargs.pop('BiasScaleFactor', True)
         pee = kwargs.pop('PerEventError', False)
-        sf_model = kwargs.pop('TimeResSFModel', '')
+        sf_param = kwargs.pop('TimeResSFParam', '')
         self.__split_mean = kwargs.pop('SplitMean', False)
         
-        assert(sf_model in ['', 'linear', 'quadratic'])
+        assert(sf_param in ['', 'linear', 'quadratic'])
 
         extraArgs = {}
         self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
@@ -77,15 +77,15 @@ class Gaussian_TimeResolution ( TimeResolution ) :
         if pee :
             self._parseArg( 'sigmat',  kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
             self._parseArg( 'sigmaSF', kwargs, Title = 'Decay time scale factor',   Value = 1.46,     MinMax = (0.1, 2.5) )
-            if sf_model:
+            if sf_param:
                 self._offset = self._parseArg('offset', kwargs, Value = 0.01, Error = 0.001,
                                               MinMax = (0.000001, 1))                
-            if sf_model == 'linear':
+            if sf_param == 'linear':
                 from P2VV.RooFitWrappers import LinearVar
                 linear_var = LinearVar(Name = 'sigmaSF_linear', Observable = self._sigmat,
                                        Slope = self._sigmaSF, Offset = self._offset)
                 params = [self._time, self._timeResMu, linear_var]
-            elif sf_model == 'quadratic':
+            elif sf_param == 'quadratic':
                 from P2VV.RooFitWrappers import PolyVar
                 self._quad = self._parseArg('quad', kwargs, Value = -0.01, Error = 0.003, MinMax = (-0.1, 0.1))
                 self._offset.setVal(-0.005)
@@ -140,6 +140,13 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         split_fracs = kwargs.pop('SplitFracs', True)
         self.__split_mean = kwargs.pop('SplitMean', False)
 
+        sf_param = kwargs.pop('TimeResSFParam', False)
+        if sf_param:
+            self._parseArg('sigmat_mean', kwargs, Value = 3.47648e-02, Constant = True)
+            self.__st_placeholder = RealVar(self._sigmat.GetName() + '_placeholder', Value = 0.033, MinMax = (-0.2, 0.2), Constant = True)
+        else:
+            self.__st_placeholder = None
+        
         assert(len(sigmasSFs) - 1 == len(fracs))
 
         cache = kwargs.pop('Cache', True)
@@ -152,11 +159,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         if param:
             assert(len(sigmasSFs) == 2)
 
-        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 10) ) for num, val in sigmasSFs ]
+        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 20) ) for num, val in sigmasSFs ]
         self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.0001, 0.99) ) for num, val in fracs  ]
 
-        use_offset = kwargs.pop('TimeResSFOffset', False)
-        assert(not (use_offset and param))
         Name = kwargs.pop('Name', 'timeResModelMG')
 
         from ROOT import RooNumber
@@ -172,29 +177,30 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             if split_fracs:
                 self._realVars += self._timeResFracs
         elif param == 'Comb':
-            self._comb = RealVar('timeResComb', Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
-                                                         + fracs[0][1] * sigmasSFs[0][1]),
-                                 MinMax = (0.8, 5))
+            from P2VV.RooFitWrappers import PolyVar
+            if sf_param:
+                self._parseArg('sf2_slope', kwargs, Value = -4.08319, MinMax = (-20, 20))
+                self._parseArg('sf2_offset', kwargs, Value = 2.03079, MinMax = (-20, 20))
+                self._sf2_original = self._timeResSigmasSFs[0]
+                self._timeResSigmasSFs[0] = PolyVar(Name = self._sf2_original.GetName() + '_linear',
+                                                    Observable = self.__st_placeholder,
+                                                    Coefficients = [self._sf2_offset, self._sf2_slope])
+                self._parseArg('sfc_slope', kwargs, Value = -3.41081, MinMax = (-20, 20))
+                self._parseArg('sfc_offset', kwargs, Value = 1.43297, MinMax = (-20, 20))
+                self._comb = PolyVar(Name = 'timeResComb_linear', Observable = self.__st_placeholder,
+                                     Coefficients = [self._sfc_offset, self._sfc_slope])
+            else:
+                self._comb = RealVar('timeResComb', Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
+                                                             + fracs[0][1] * sigmasSFs[0][1]),
+                                                             MinMax = (0.5, 5))
             self._timeResSigmasSFs[1] = FormulaVar(Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
                                                    (self._timeResFracs[0], self._comb, self._timeResSigmasSFs[0]))
-            self._realVars = [self._comb, self._timeResSigmasSFs[0]]
-            if split_fracs:
-                self._realVars += self._timeResFracs
-
-        elif use_offset:
-            sfs = []
-            for sf, pe in zip(self._timeResSigmasSFs, pee):
-                if pe:
-                    sfo = LinearVar(Name = sf.GetName() + '_linear',
-                                    Observable = self._sigmat,
-                                    Slope = sf, Offset = self._timeResSigmaOffset)
-                else:
-                    sfo = sf
-                sfs.append(sfo)
-            self._realVars = [sf for sf in self._timeResSigmasSFs]
-            if split_fracs:
-                self._realVars += self._timeResFracs
-            self._timeResSigmasSFs = sfs
+            if sf_param:
+                self._realVars = []
+            else:
+                self._realVars = [self._comb, self._timeResSigmasSFs[0]]
+                if split_fracs:
+                    self._realVars += self._timeResFracs
         else:
             self._realVars = [sf for sf in self._timeResSigmasSFs]
             if split_fracs:
@@ -207,7 +213,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         models = []
         for ( numVal, pee ), sigmaSF, in zip( zip(sigmasSFs, pee), self._timeResSigmasSFs):
             gexp = gexps[numVal[0]]
-            if use_offset or not pee:
+            if not pee:
                 params = [ self._time, self._timeResMu, sigmaSF ]
                 if gexp:
                     rlife = RealVar('rlife_%d' % numVal[0], Value = 0.1, MinMax = (0.0001, 10))
@@ -236,6 +242,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             sv.append(self._timeResMu)
         return sv
 
+    def sigmatPlaceHolder(self):
+        return self.__st_placeholder
+        
 class Paper2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
         sfModel = kwargs.pop( 'timeResSFModel', '' )
