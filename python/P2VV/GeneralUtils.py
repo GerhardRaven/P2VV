@@ -232,21 +232,34 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
       print 'P2VV - INFO: readData: reading RooDataset "%s" from file "%s"' % ( dataSetName, filePath )
       file = TFile.Open( filePath, 'READ' )
       assert file, 'P2VV - ERROR: readData: file "%s" could not be opened' % filePath
+      if cuts : print 'P2VV - INFO: readData: applying cuts: %s' % cuts
 
-      if observables :
-          if cuts : print 'P2VV - INFO: readData: applying cuts: %s' % cuts
-          from ROOT import RooDataSet
-          data = RooDataSet( dataSetName, dataSetName
-                           , [ obs._var for obs in observables ]
-                           , Import = file.Get(dataSetName)
-                           , Cut = noNAN + ' && ' + cuts if cuts else noNAN
-                           )
-      else :
-          data = file.Get(dataSetName)
+      # loop over category states
+      states = tuple( [ [ ( cat[0], ind ) for ind in cat[1] ] for cat in kwargs.pop( 'Categories', [ ( '', [ '' ] ) ] ) ] )
+      from itertools import product
+      for it, state in enumerate( product(*states) ) :
+          # get data set
+          dsName = '_'.join( str(catSt[0]) + str(catSt[1]) for catSt in state )
+          dsName = dataSetName + ( ( '_' + dsName ) if dsName else '' )
+          dataSet = file.Get(dsName)
+          assert dataSet, 'P2VV - ERROR: data set "%s" not found' % dsName
+          if it == 0 :
+              if observables :
+                  from ROOT import RooDataSet
+                  data = RooDataSet( dataSetName, dataSetName
+                                   , [ obs._var for obs in observables ]
+                                   , Import = dataSet
+                                   , Cut = noNAN + ' && ' + cuts if cuts else noNAN
+                                   )
+              else :
+                  data = dataSet
+
+          else :
+              data.append(dataSet)
 
       file.Close()
 
-    print 'P2VV - INFO: read dataset with %s entries' % data.numEntries()
+    print 'P2VV - INFO: read dataset with %s entries (%.1f weighted)' % ( data.numEntries(), data.sumEntries() )
 
     # import data set into current workspace
     from P2VV.RooFitWrappers import RooObject
