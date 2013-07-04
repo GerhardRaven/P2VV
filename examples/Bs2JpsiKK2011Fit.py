@@ -13,8 +13,8 @@ pdfConfig['selection']  = 'paper2012'
 parFileIn  = ''
 parFileOut = ''
 
-dataSetName = 'JpsiKK_splotdata_weighted_sigMass'
-dataSetFile = 'data/P2VVDataSets_6KKMassBins_noTagCats.root'
+dataSetName = 'JpsiKK_sigSWeight'
+dataSetFile = 'data/P2VVDataSets2011Reco12_6KKMassBins_2TagCats.root'
 
 pdfConfig['timeEffHistFile']      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'

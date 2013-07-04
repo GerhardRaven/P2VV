@@ -43,16 +43,11 @@ if generateData :
     dataSetName = 'JpsiphiData'
     dataSetFile = 'paper2012_SFit.root' if pdfConfig['SFit'] else 'paper2012_CFit.root'
 elif pdfConfig['SFit'] :
-    #dataSetName = 'JpsiKK_weighted_sigMass'
-    dataSetName = 'JpsiKK_splotdata_weighted_sigMass'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_unbiased_noKKMassBins_noTagCats.root'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_noKKMassBins_noTagCats.root'
-    dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_6KKMassBins_noTagCats.root'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_freeTagCats.root'
+    dataSetName = 'JpsiKK_sigSWeight'
+    dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
 else :
-    dataSetName = 'JpsiKK_splotdata'
-    dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
+    dataSetName = 'JpsiKK'
+    dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
 
 MinosPars = [#  'phiCP', 'lambdaCP'
              #, 'AparPhase', 'AperpPhase'
@@ -1513,7 +1508,7 @@ for varSet in tagData :
   sums['dilResAll']  += weight * dilRes
   sums['dilRes2All'] += weight * dilResSq
 
-  if varSet.getCatIndex('tagdecision_os') != 0 :
+  if varSet.getCatIndex('tagCatP2VVOS') != 0 :
     etaOS  = varSet.getRealValue('tagomega_os')
     wTagOS = p0OSVal + p1OSVal * ( etaOS - etaOSVal )
     dilOS  = 1. - 2. * wTagOS
@@ -1524,7 +1519,7 @@ for varSet in tagData :
     sums['dilOS']  += weight * dilOS
     sums['dil2OS'] += weight * dilOS**2
 
-    if varSet.getCatIndex('tagdecision_ss') == 0 :
+    if varSet.getCatIndex('tagCatP2VVSS') == 0 :
       sums['numOSExcl']  += weight
       sums['etaOSExcl']  += weight * etaOS
       sums['wOSExcl']    += weight * wTagOS
@@ -1539,7 +1534,7 @@ for varSet in tagData :
       sums['dilRes2Comb'] += weight * dilResSq
       sums['dilTot2Comb'] += weight * dilResSq * dilOS**2
 
-  if varSet.getCatIndex('tagdecision_ss') != 0 :
+  if varSet.getCatIndex('tagCatP2VVSS') != 0 :
     etaSS  = varSet.getRealValue('tagomega_ss')
     wTagSS = p0SSVal + p1SSVal * ( etaSS - etaSSVal )
     dilSS  = 1. - 2. * wTagSS
@@ -1550,7 +1545,7 @@ for varSet in tagData :
     sums['dilSS']  += weight * dilSS
     sums['dil2SS'] += weight * dilSS**2
 
-    if varSet.getCatIndex('tagdecision_os') == 0 :
+    if varSet.getCatIndex('tagCatP2VVOS') == 0 :
       sums['numSSExcl']  += weight
       sums['etaSSExcl']  += weight * etaSS
       sums['wSSExcl']    += weight * wTagSS
@@ -1565,8 +1560,8 @@ for varSet in tagData :
       sums['dilRes2Comb'] += weight * dilResSq
       sums['dilTot2Comb'] += weight * dilResSq * dilSS**2
 
-  if varSet.getCatIndex('tagdecision_os') != 0 and varSet.getCatIndex('tagdecision_ss') != 0 :
-    dilSign = +1. if varSet.getCatIndex('tagdecision_os') == varSet.getCatIndex('tagdecision_ss') else -1.
+  if varSet.getCatIndex('tagCatP2VVOS') != 0 and varSet.getCatIndex('tagCatP2VVSS') != 0 :
+    dilSign = +1. if varSet.getCatIndex('iTagOS') == varSet.getCatIndex('iTagSS') else -1.
     dilComb = ( dilOS + dilSign * dilSS ) / ( 1. + dilSign * dilOS * dilSS )
     wTagComb = ( 1. - dilComb ) / 2.
 
@@ -1639,13 +1634,13 @@ avD_OS = 0.
 avD_SS = 0.
 avDD = 0.
 for argSet in tagData :
-    if argSet.getCatIndex('tagdecision_os') == 0 or argSet.getCatIndex('tagdecision_ss') == 0 : continue
+    if argSet.getCatIndex('tagCatP2VVOS') == 0 or argSet.getCatIndex('tagCatP2VVSS') == 0 : continue
 
     nEv += tagData.weight()
-    if argSet.getCatIndex('tagdecision_os') == +1 and argSet.getCatIndex('tagdecision_ss') == +1 : nBB += tagData.weight()
-    if argSet.getCatIndex('tagdecision_os') == -1 and argSet.getCatIndex('tagdecision_ss') == -1 : nBbarBbar += tagData.weight()
-    if argSet.getCatIndex('tagdecision_os') == -1 and argSet.getCatIndex('tagdecision_ss') == +1 : nBbarB += tagData.weight()
-    if argSet.getCatIndex('tagdecision_os') == +1 and argSet.getCatIndex('tagdecision_ss') == -1 : nBBbar += tagData.weight()
+    if argSet.getCatIndex('iTagOS') == +1 and argSet.getCatIndex('iTagSS') == +1 : nBB += tagData.weight()
+    if argSet.getCatIndex('iTagOS') == -1 and argSet.getCatIndex('iTagSS') == -1 : nBbarBbar += tagData.weight()
+    if argSet.getCatIndex('iTagOS') == -1 and argSet.getCatIndex('iTagSS') == +1 : nBbarB += tagData.weight()
+    if argSet.getCatIndex('iTagOS') == +1 and argSet.getCatIndex('iTagSS') == -1 : nBBbar += tagData.weight()
 
     D_OS = 1. - 2. * argSet.getRealValue('tagomega_os')
     D_SS = 1. - 2. * argSet.getRealValue('tagomega_ss')

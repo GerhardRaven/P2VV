@@ -42,7 +42,7 @@ from ROOT import RooNumber
 RooInf  = RooNumber.infinity()
 KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
-obsKeys = [  'mass', 'KKMass'#, 'mumuMass'
+obsKeys = [  'mass', 'KKMass', 'mumuMass'
            , 'time', 'timeRes'
            , 'ctk', 'ctl', 'phih'
            #, 'cpsi', 'cttr', 'phitr'
