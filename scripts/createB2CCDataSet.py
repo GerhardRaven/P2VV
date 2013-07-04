@@ -6,13 +6,8 @@ nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_fo
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130628.root'
 nTupleName       = 'DecayTree'
-#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_noKKMassBins_noTagCats.root'
-#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_unbiased_noKKMassBins_noTagCats.root'
-#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_6KKMassBins_noTagCats.root'
-#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
-#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_freeTagCats.root'
-#dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_simulation_4KKMassBins_noTagCats.root'
 dataSetsFilePath = 'P2VVDataSets_temp.root'
+appendToFile     = False
 plotsFilePath    = 'plots/P2VVMassPlots.ps'
 
 simulation       = False
@@ -22,7 +17,7 @@ dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
-splitDataSet    = [ ] #[ 'iTagOS', 'iTagSS' ]
+splitDataSet    = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
 KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
 
 sigFrac          = 0.504
@@ -511,9 +506,9 @@ print 'P2VV - INFO: createB2CCDataSet: creating data set'
 
 # create data sets with final columns
 mainDSList = [ ]
+samples = [ ]
 if splitDataSet :
     # get category states for splitting data set
-    samples = [ ]
     states = tuple( [ [ ( cat, observables[cat].GetName(), state.getVal() ) for state in observables[cat] ] for cat in splitDataSet ] )
     from itertools import product
     for state in product(*states) :
@@ -556,6 +551,11 @@ if not simulation :
                                            , Import = dataSets['main'][0], WeightVar = ( weightVars[0].GetName(), True ) ), [ ] )
     dataSets['cbkgSWeight'] = ( RooDataSet( 'JpsiKK_cbkgSWeight', 'JpsiKK_cbkgSWeight', dataSets['main'][0].get()
                                            , Import = dataSets['main'][0], WeightVar = ( weightVars[1].GetName(), True ) ), [ ] )
+    for sample, data in zip( samples, dataSets['main'][1] ) :
+        dataSets['sigSWeight'][1].append(  RooDataSet( 'JpsiKK_sigSWeight_'  + sample[0], 'JpsiKK_sigSWeight',  data.get(), Import = data
+                                                      , WeightVar = ( weightVars[0].GetName(), True ) ) )
+        dataSets['cbkgSWeight'][1].append( RooDataSet( 'JpsiKK_cbkgSWeight_' + sample[0], 'JpsiKK_cbkgSWeight', data.get(), Import = data
+                                                      , WeightVar = ( weightVars[1].GetName(), True ) ) )
 
     print 'P2VV - INFO: createB2CCDataSet: signal data set:\n' + ' ' * 13,
     dataSets['sigSWeight'][0].Print()
@@ -838,7 +838,7 @@ if createNTuple :
 print 120 * '='
 print 'P2VV - INFO: createB2CCDataSet: saving data sets to ROOT file %s:' % dataSetsFilePath
 from ROOT import TFile
-dataSetsFile = TFile.Open( dataSetsFilePath, 'RECREATE')
+dataSetsFile = TFile.Open( dataSetsFilePath, 'UPDATE' if appendToFile else 'RECREATE' )
 
 for data in dataSets.itervalues() :
     print
@@ -852,10 +852,17 @@ for data in dataSets.itervalues() :
         # data in RooDataSet(s)
         if not data[1] :
             data[0].Print()
-            dataSetsFile.Append(data[0])
+            if data[0].numEntries() > 0 :
+                dataSetsFile.Append(data[0])
+            else :
+                print 'P2VV - INFO: createB2CCDataSet: no entries in "%s", not saving data set' % data[0].GetName()
         for subData in data[1] :
+            print
             subData.Print()
-            dataSetsFile.Append(subData)
+            if subData.numEntries() > 0 :
+                dataSetsFile.Append(subData)
+            else :
+                print 'P2VV - INFO: createB2CCDataSet: no entries in "%s", not saving data set' % subData.GetName()
 
 dataSetsFile.Write()
 dataSetsFile.Close()
