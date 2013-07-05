@@ -45,6 +45,8 @@ if generateData :
 elif pdfConfig['SFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
+    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_noKKMassBins_2TagCats.root'
+    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_unbiased_narrowKKMass_noKKMassBins_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
@@ -66,6 +68,7 @@ fitOpts = dict(  NumCPU    = 6
 #               , Minos     = True
 #               , Hesse     = False
                , Minimizer = 'Minuit2'
+               , Strategy  = 1
                , Offset    = True
               )
 pdfConfig['fitOptions'] = fitOpts
@@ -665,7 +668,7 @@ if doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
-    from P2VV.Imports import parNames, parValues2011 as parValues
+    from P2VV.Imports import parNames, parValues4KKBins as parValues
     print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
