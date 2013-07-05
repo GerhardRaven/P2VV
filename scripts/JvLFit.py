@@ -117,6 +117,10 @@ pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03
 #pdfConfig['SWaveAmplitudeValues'] = ( )
 pdfConfig['CSPValues']            = [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 
+KKMassPars = pdfConfig['obsDict']['KKMass']
+pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
+                                  , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
+
 pdfConfig['sameSideTagging']    = True
 pdfConfig['conditionalTagging'] = True
 pdfConfig['continuousEstWTag']  = True
