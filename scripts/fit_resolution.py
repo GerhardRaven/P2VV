@@ -101,10 +101,8 @@ w = obj.ws()
 from math import pi
 if options.peak_only:
     t_minmax = (-0.08, 0.08)
-elif options.wpv and options.wpv_type == 'Mixing':
-    t_minmax = (-5, 14)
 else:
-    t_minmax = (-1.5, 8)
+    t_minmax = (-5, 14)
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
@@ -349,7 +347,7 @@ if not fit_mass:
         
 ## Fitting opts
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
-               Verbose = options.verbose)
+               Verbose = options.verbose, Strategy = 1)
 
 ## List of all plots we make
 plots = []
@@ -569,7 +567,7 @@ elif options.wpv and options.wpv_type == 'Gauss':
     else:
         wpv_sigma = RealVar('wpv_sigma', Value = 0.305, MinMax = (0.01, 1000))        
     wpv_pdf = Pdf(Name = 'wpv_pdf', Type = Gaussian, Parameters = (t, wpv_mean, wpv_sigma))
-    wpv = Component('wpv', (wpv_pdf, ), Yield = (552, 1, 5000))
+    wpv = Component('wpv', (wpv_pdf, ), Yield = (552, 1, 50000))
     components += [wpv]
 
 time_pdf = buildPdf(Components = components, Observables = (time_obs,), Name='time_pdf')
@@ -651,6 +649,8 @@ parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(obs_arg)])
 ## sf2 = parameters['timeResSigmaSF_2']
 ## sf1 = (comb.getVal() - frac2.getVal() * sf2.getVal()) / (1 - frac2.getVal())
 ## Dilution.signal_dilution_dg(sig_sdata, st, sf1, frac2.getVal(), sf2.getVal())
+
+## assert(False)
 
 if options.fit:
     for i in range(3):
@@ -835,3 +835,41 @@ with WritableCacheFile(cache_files, directory) as cache_file:
     
     # Delete the input TTree which was automatically attached.
     cache_file.Delete('%s;*' % tree_name)
+
+
+from ROOT import RooDerivative
+from ROOT import RooDerivative2D
+
+def deriv_2(f, x, h):
+    def __v(v):
+        x.setVal(v)
+        return f.getVal()
+    xo = x.getVal()
+    xc = f.getVal()
+    xp = __v(xo + h)
+    xm = __v(xo - h)
+    xph = __v(xo + h / 2.)
+    xmh = __v(xo - h / 2.)
+    
+    d0 = xm - 2 * xc + xp
+    d2 = 4 * xmh - 8 * xc + 4 * xph
+    return (4 * d2 - d0) / (3. * h **2)
+
+nll = time_pdf.createNLL(sig_sdata, **fitOpts)
+fpf = time_result.floatParsFinal()
+nll_params = nll.getObservables(RooArgSet(time_result.floatParsFinal()))
+from ROOT import TMatrixTSym
+H = TMatrixTSym('double')(fpf.getSize())
+from itertools import combinations_with_replacement
+for i, j in combinations_with_replacement(range(fpf.getSize()), 2):
+    x = nll_params.find(fpf.at(i))
+    hx = max(abs(0.001 * x.getVal()), 0.001)
+    if i == j:
+        dx = RooDerivative('dx2', 'dx2', nll, x, 2, hx)
+        H[i][i] = dx.getVal()
+    else:
+        y = nll_params.find(fpf.at(j))
+        hy = max(abs(0.001 * y.getVal()), 0.001)        
+        dx = RooDerivative2D('dxdy', 'dxdy', nll, x, y, hx, hy)
+        H[i][j] = H[j][i] = dx.getVal()
+

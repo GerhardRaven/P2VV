@@ -423,12 +423,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         ######################
 
         # get observables
-        obsNames = [ 'mass', 'mumuMass', 'KKMass', 'KKMassCat','time', 'timeRes', 'cpsi', 'ctheta', 'phi'
-                    , 'wTagOS', 'wTagSS', 'iTagOS', 'iTagSS', 'tagCatOS', 'tagCatSS', 'hlt1ExclB', 'hlt2B', 'hlt2UB'
-                   ]
         observables = { }
-        for name in obsNames :
-            assert name in obsDict, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: variable "%s" not in observables dictionary' % name
+        for name in obsDict.keys():
             if dataSet :
                 if   ws.var( obsDict[name][0] ) : observables[name] = RealVar(  obsDict[name][0] )
                 elif ws.cat( obsDict[name][0] ) : observables[name] = Category( obsDict[name][0] )
@@ -466,7 +462,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         for ran in angRanges['ctheta'] : observables['ctheta'].setRange( ran[0], ran[ 1 : 3 ] )
         for ran in angRanges['phi'   ] : observables['phi'].setRange(    ran[0], ran[ 1 : 3 ] )
 
-        if dataSet :
+        if dataSet and 'KKMassCat' in obsDict:
             # get KK mass binning
             assert observables['KKMass'].hasBinning('KKMassBinning')\
                    , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass observable does not have a binning named "KKMassBinning"'
@@ -485,7 +481,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             from ROOT import RooBinning
             self._KKMassBinning = RooBinning( len(KKMassBinBounds) - 1, KKMassBinsArray, 'KKMassBinning' )
-            observables['KKMass'].setBinning( KKMassBinning, 'KKMassBinning' )
+            observables['KKMass'].setBinning( self._KKMassBinning, 'KKMassBinning' )
 
         # PDF observables set
         obsSetP2VV = [ observables[name] for name in [ 'time', 'cpsi', 'ctheta', 'phi' ] ]

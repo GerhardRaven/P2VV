@@ -228,13 +228,12 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         
         range_cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName())
         mean = full_sdata.mean(st, range_cut)
-        mean *= total / full_sdata.sumEntries(range_cut)
         res_x.append(mean)
         comb.append(sf)
         comb_e.append(sf_e)
         sf2s.append(sf2)
         sf2_es.append(sf2_e)
-        
+    
     res_ex = array('d', [0 for i in range(len(res_x))])
     res_graph = TGraphErrors(len(res_x), res_x, comb, res_ex, comb_e)
     res_graph.SetName('res_graph_%d' % index)
@@ -265,12 +264,12 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         print fr_latex(frs)
     
     print ''
-
+    
     canvas.cd(1)
     sf1_hist = draw_res_graph(res_graph, hist_events)
     sf1_hist.GetXaxis().SetTitle('estimated decay time resolution [ps]')
     sf1_hist.GetYaxis().SetTitle('combined scale factor')
-
+    
     canvas.cd(2)
     sf2_hist = draw_res_graph(sf2_graph, hist_events)
     sf2_hist.GetXaxis().SetTitle('estimated decay time resolution [ps]')
@@ -380,7 +379,7 @@ for i in range(st_binning.numBins()):
     bins.append(st_binning.binLow(i))
 bins.append(st_binning.binHigh(st_binning.numBins() - 1))
 
-result = []
+binned_data = []
 it = iter(bins)
 boundary = it.next()
 bin_list = []
@@ -389,10 +388,10 @@ for v in st_data:
         if not bin_list and v[0] < boundary:
             continue
         if v[0] > boundary:
-            boundary = it.next()
             if bin_list:
-                result.append(bin_list)
+                binned_data.append(bin_list)
                 bin_list = []
+            boundary = it.next()
         bin_list.append(v)
     except StopIteration:
         break
@@ -432,7 +431,7 @@ sf2_slope = make_parameter(result_cdg, "sf2_slope")
 cdg_cv = result_cdg.reducedCovarianceMatrix(RooArgList(*[result_cdg.floatParsFinal().find(p.name()) for p in [sfc_offset, sfc_slope, cdg_frac, sf2_offset, sf2_slope]]))
 error_cdg = ErrorCDG(st_mean, dms, sfc_offset, sfc_slope, cdg_frac, sf2_offset, sf2_slope, cdg_cv)
 calib_dilutions = []
-for bin_data in result:
+for bin_data in binned_data:
     d = dilution(bin_data, [([(st_mean, sfc_offset.value(), sfc_slope.value()),
                               (st_mean, sf2_offset.value(), sf2_slope.value()), cdg_frac.value()],
                               (1 - cdg_frac.value())), ((st_mean, sf2_offset.value(), sf2_slope.value()), cdg_frac.value())],
@@ -443,7 +442,7 @@ for bin_data in result:
 sg_dilutions = []
 sf_sg = Parameter('sf_sg', 1.45, 0.06)
 sf_sge = ErrorSG(dms, sf_sg)
-for bin_data in result:
+for bin_data in binned_data:
     d = dilution(bin_data, [((sf_sg,), 1)], (lambda p, st: p[0].value() * st,), sf_sge)
     sg_dilutions.append(d)
 
@@ -457,17 +456,18 @@ matrix = result_sfc.reducedCovarianceMatrix(RooArgList(*[result_sfc.floatParsFin
 
 dg_dilutions = []
 error_dg = ErrorSFC(dms, sfc, dg_frac, sf2, matrix)
-for bin_data in result:
+for bin_data in binned_data:
     d = dilution(bin_data, [((sfc, dg_frac, sf2), (1 - dg_frac.value())), ((0, sf2), dg_frac.value())], (sf1, lambda p, st: p[1].value() * st), error_dg)
     dg_dilutions.append(d)
 
 # Plot Dilutions
 means = array('d')
-for bin_data in result:
+for bin_data in binned_data:
     means.append(sum(e[0] * e[1] for e in bin_data) / sum(e[1] for e in bin_data))
     
 graphs = []
-canvas = TCanvas('dilution_canvas', 'dilution_canvas', 500, 500)
+canvas = TCanvas('dilution_canvas', 'dilution_canvas', 550, 500)
+canvas.SetLeftMargin(0.18)
 colors = [kGreen, kBlue, kBlack]
 first = True
 for color, (ds, name) in zip(colors, [(calib_dilutions, 'calibrated'), (dg_dilutions, 'double'),
@@ -477,6 +477,9 @@ for color, (ds, name) in zip(colors, [(calib_dilutions, 'calibrated'), (dg_dilut
     graph.SetName(name)
     if first:
         graph.Draw("AP")
+        graph.GetXaxis().SetTitle('estimated decay time error [ps]')
+        graph.GetYaxis().SetTitle('dilution')
+        graph.GetYaxis().SetTitleOffset(1.2)
         first = False
     else:
         graph.Draw("P, same")
