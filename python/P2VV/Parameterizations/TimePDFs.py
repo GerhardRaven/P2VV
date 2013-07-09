@@ -7,12 +7,22 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
-class BDecayBasisCoefficients :
+from P2VV.Parameterizations.GeneralUtils import _util_parse_mixin
+class BDecayBasisCoefficients ( _util_parse_mixin ) :
     def __init__(self, **kwargs ) :
         for i in ['sin','cos','sinh','cosh' ] : setattr(self,i,kwargs.pop(i))
         if kwargs : raise KeyError('unknown keyword arguments: %s' % kwargs )
     def __getitem__(self,kw) :
         return getattr(self,kw)
+
+class Coefficients_BDecayBasisCoefficients ( BDecayBasisCoefficients ) :
+    def __init__( self, **kwargs ) :
+        pf = kwargs.pop( 'Prefix', '' )
+        cCosh = self._parseArg( 'cCosh', kwargs, Name = '%scCosh' % pf, Title = 'cosh coefficient', Value =  1., ObjectType = 'ConstVar' )
+        cCos  = self._parseArg( 'cCos',  kwargs, Name = '%scCos'  % pf, Title = 'cos coefficient',  Value =  0., MinMax = (-2., 2.) )
+        cSinh = self._parseArg( 'cSinh', kwargs, Name = '%scSinh' % pf, Title = 'sinh coefficient', Value = -1., MinMax = (-2., 2.) )
+        cSin  = self._parseArg( 'cSin',  kwargs, Name = '%scSin'  % pf, Title = 'sin coefficient',  Value =  0., MinMax = (-2., 2.) )
+        BDecayBasisCoefficients.__init__( self, **dict( cosh = cCosh, cos = cCos, sinh = cSinh, sin = cSin ) )
 
 class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__( self, AngFuncs, Amplitudes, CPParams, Order ) :
@@ -170,9 +180,7 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
         BDecayBasisCoefficients.__init__( self, **args )
 
 
-def JpsiphiBDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, amplitudes, CP, order ) :
-    from P2VV.Parameterizations.TimePDFs import JpsiphiBDecayBasisCoefficients
-    basisCoefficients = JpsiphiBDecayBasisCoefficients( angles.functions, amplitudes, CP, tag, tagging['dilution'], order )
+def JpsiphiBDecay( Name, time, tag, lifetimeParams, sigtres, tagging, basisCoefficients ) :
     from P2VV.RooFitWrappers import BDecay
     return  BDecay(  Name                   = Name
                    , time                   = time
@@ -190,9 +198,7 @@ def JpsiphiBDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, a
                                               + tagging.externalConstraints()
                   )
 
-def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles, amplitudes, CP, order ) :
-    from P2VV.Parameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
-    basisCoefficients = JpsiphiBTagDecayBasisCoefficients( angles.functions, amplitudes, CP, order )
+def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging, basisCoefficients ) :
     from P2VV.RooFitWrappers import BTagDecay
     return  BTagDecay(  Name                   = Name
                       , time                   = time
@@ -218,7 +224,6 @@ def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging,  angles
 
 
 
-from P2VV.Parameterizations.GeneralUtils import _util_parse_mixin
 class TimePdf( _util_parse_mixin ) :
     def __init__( self, **kwargs ) :
         self._pdf = kwargs.pop('pdf')
