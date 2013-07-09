@@ -35,6 +35,7 @@
 #include "P2VV/RooTPDecay.h"
 #include "P2VV/RooMassDependence.h"
 #include "P2VV/RooEffResAddModel.h"
+#include "P2VV/RooHessian.h"
 
 #include <map>
 #include <string>
