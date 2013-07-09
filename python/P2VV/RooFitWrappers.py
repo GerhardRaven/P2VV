@@ -457,14 +457,21 @@ class RealCategory(RooObject) :
 
 class ConstVar(RooObject) :
     def __init__(self,**kwargs):
-        # construct factory string on the fly...
-        __check_req_kw__( 'Value', kwargs )
         __check_req_kw__( 'Name', kwargs )
         __check_name_syntax__( kwargs['Name'] )
-        self._declare("ConstVar::%(Name)s(%(Value)s)" % kwargs )
-        (Name, value) = (kwargs.pop('Name'),kwargs.pop('Value'))
-        self._init(Name,'RooConstVar')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        Name = kwargs.pop('Name')
+        if Name not in self.ws():
+            # construct factory string on the fly...
+            __check_req_kw__( 'Value', kwargs )
+            value = kwargs.pop('Value')
+            self._declare("ConstVar::%s(%s)" % ( Name, value ) )
+            self._init(Name,'RooConstVar')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(Name,'RooConstVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                assert v == self[k], '\'%s\' is not the same for %s' % ( k, Name )
 
 class LinearVar(RooObject) :
     def __init__(self, **kwargs):
