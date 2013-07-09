@@ -65,6 +65,7 @@
         <function name = "addSWeightToTree" />
         <function name = "addVertexErrors" />
         <function name = "sigmaFromFT" />
+        <function name = "hessian" />
 
     </selection>
 </lcgdict>
