@@ -40,8 +40,8 @@ RooCategoryVar::RooCategoryVar(const RooCategoryVar& other, const char* name) :
 //_____________________________________________________________________________
 Double_t RooCategoryVar::evaluate() const
 {
-  if (_varPointers.empty()) initVarsMap();
-  return _varPointers[(Int_t)_cat]->getVal();
+  if (_varIndices.empty()) initVarsMap();
+  return static_cast<RooAbsReal*>(_vars.at(_varIndices[_cat]))->getVal();
 }
 
 void RooCategoryVar::initVarsMap() const
@@ -55,16 +55,16 @@ void RooCategoryVar::initVarsMap() const
 
   std::auto_ptr<TIterator> stateIt(_cat.arg().typeIterator());
   RooCatType* state(0);
-  Int_t varsIter(0);
-  _varPointers.clear();
+  Int_t varsIter(-1);
+  _varIndices.clear();
   while ((state = static_cast<RooCatType*>(stateIt->Next())) != 0) {
-    RooAbsReal* var(dynamic_cast<RooAbsReal*>(_vars.at(varsIter++)));
+    RooAbsReal* var(dynamic_cast<RooAbsReal*>(_vars.at(++varsIter)));
     if (var == 0) {
       coutF(InputArguments) << "RooCategoryVar::initVarsMap(" << GetName()
           << "): variable at index " << varsIter
           << " in list does not inherit from \"RooAbsReal\"" << endl;
       assert(0);
     }
-    _varPointers[state->getVal()] = var;
+    _varIndices[state->getVal()] = varsIter;
   }
 }

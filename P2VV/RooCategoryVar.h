@@ -46,7 +46,7 @@ protected:
   RooCategoryProxy _cat;
   RooListProxy     _vars;
 
-  mutable std::map<Int_t,RooAbsReal*> _varPointers; //!
+  mutable std::map<Int_t,Int_t> _varIndices; //!
   
   Double_t evaluate() const;
   void initVarsMap() const;
