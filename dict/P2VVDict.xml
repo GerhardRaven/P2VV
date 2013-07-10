@@ -41,6 +41,7 @@
         <class name = "RooCubicSplineFun" />
         <class name = "RooCubicSplineGaussModel" />
         <class name = "RooEffResAddModel" />
+        <class name = "RooCategoryVar" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />

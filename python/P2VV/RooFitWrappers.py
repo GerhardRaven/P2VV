@@ -769,6 +769,30 @@ class RealVar (RooObject) :
     def getRange(self):
         return self._target_().getMin(), self._target_().getMax()
 
+class CategoryVar(RooObject) :
+    _getters = { 'Value' : lambda s : s.getVal() }
+
+    def __init__(self, **kwargs):
+        __check_req_kw__( 'Name', kwargs )
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+        if name not in self.ws() :
+            __check_req_kw__( 'Category',  kwargs )
+            __check_req_kw__( 'Variables', kwargs )
+            from P2VV.Load import P2VVLibrary
+            spec = 'CategoryVar::%s(%s,{%s})'\
+                   % ( name, kwargs.pop('Category'), ','.join( var.GetName() for var in kwargs.pop('Variables') ) )
+            self._declare(spec)
+            self._init( name, 'RooCategoryVar' )
+
+        else :
+            self._init( name, 'RooCategoryVar' )
+            for key, val in kwargs.iteritems() :
+                assert val == self[key], '"%s" is not the same for "%s"' % ( key, name )
+
+        for key, val in kwargs.iteritems() : self.__setitem__( key, val )
+
+
 ##TODO, factor out common code in Pdf and ResolutionModel
 
 class Pdf(RooObject):
