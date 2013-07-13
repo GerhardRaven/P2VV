@@ -27,14 +27,15 @@ class Coefficients_BDecayBasisCoefficients ( BDecayBasisCoefficients ) :
 class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__( self, AngFuncs, Amplitudes, CPParams, Order ) :
         def combine( tCoefType, angFuncs, amplitudes, CPParams, iIndex, jIndex ) :
-            from P2VV.RooFitWrappers import ConstVar, FormulaVar, Product, Addition
+            from P2VV.RooFitWrappers import ConstVar, ConvertPolAmp, Product, Addition
             one   = ConstVar( Name = 'one',   Value =  1 )
             minus = ConstVar( Name = 'minus', Value = -1 )
 
             # define functions which return Re(Ai* Aj), Im( Ai* Aj)
-            # TODO: replace by Addition & Product
-            Re = lambda Ai, Aj : FormulaVar( 'Re_amps_%s_%s' % ( Ai, Aj ), '@0*@2+@1*@3', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
-            Im = lambda Ai, Aj : FormulaVar( 'Im_amps_%s_%s' % ( Ai, Aj ), '@0*@3-@1*@2', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+            Re = lambda Ai, Aj : ConvertPolAmp( Name = 'Re_amps_%s_%s' % ( Ai, Aj ), Type = 'ProdCarthCToRe'
+                                               , Arguments = [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+            Im = lambda Ai, Aj : ConvertPolAmp( Name = 'Im_amps_%s_%s' % ( Ai, Aj ), Type = 'ProdCarthCToIm'
+                                               , Arguments = [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
 
             # define functions which return the coefficients of the time dependence
             def CPVDec( termInd, iInd, jInd, amps, CPPar ) :
@@ -128,7 +129,7 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__(self,  angFuncs, Amplitudes,CP, itag, dilution, order ) :
         def combine( name, afun, A, CPparams, tag, i, j) :
             # TODO: deal with tag = None: create the untagged PDF in that case!
-            from P2VV.RooFitWrappers import ConstVar, FormulaVar, Product
+            from P2VV.RooFitWrappers import ConstVar, FormulaVar, ConvertPolAmp, Product
             plus  = ConstVar( Name = 'plus',  Value =  1 )
             minus = ConstVar( Name = 'minus', Value = -1 )
             if type(CP['C'])==ConstVar and CP['C'].getVal() == 0 : 
@@ -138,8 +139,8 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
                 Norm[0].setAttribute("CacheAndTrack")
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
             # TODO: replace by Addition & Product... why? (only parameters)
-            Re        = lambda ai, aj  : FormulaVar('Re_c_%s_%s'%(ai,aj),'@0*@2+@1*@3',[ai.Re,ai.Im,aj.Re,aj.Im])
-            Im        = lambda ai, aj  : FormulaVar('Im_c_%s_%s'%(ai,aj),'@0*@3-@1*@2',[ai.Re,ai.Im,aj.Re,aj.Im])
+            Re        = lambda ai, aj : ConvertPolAmp(Name='Re_c_%s_%s'%(ai,aj),Type='ProdCarthCToRe',Arguments=[ai.Re,ai.Im,aj.Re,aj.Im])
+            Im        = lambda ai, aj : ConvertPolAmp(Name='Im_c_%s_%s'%(ai,aj),Type='ProdCarthCToIm',Arguments=[ai.Re,ai.Im,aj.Re,aj.Im])
             # define functions which return the coefficients that define the time-dependence...
             _minus_if = lambda b, x : [ minus ] + x if b else  x 
             coef = { 'cosh' : lambda ai,aj,CP : ( plus if ai.CP == aj.CP else  CP['C']
