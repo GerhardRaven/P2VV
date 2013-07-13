@@ -634,6 +634,28 @@ class ComplementCoef( RooObject ) :
         self._init( name, 'RooComplementCoef' )
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
 
+class ConvertPolAmp( RooObject ) :
+    def __init__( self, **kwargs ) :
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'Type', kwargs )
+        __check_req_kw__( 'Arguments', kwargs )
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+
+        evalType = kwargs.pop('Type')
+        assert evalType in [ 'FracToMag', 'FracToMagSq', 'MagToFrac', 'MagSqToFrac', 'PolToRe', 'PolToIm', 'PolSqToRe', 'PolSqToIm'
+                            , 'MagSqSinToReIm', 'CarthToMag', 'CarthToMagSq', 'CarthFracToMagSq', 'CarthToPhase', 'ProdCarthPhaseToRe'
+                            , 'ProdCarthPhaseToIm', 'PolSqToReC', 'PolSqToImC', 'ProdCarthToRe', 'ProdCarthToIm', 'ProdCarthCToRe'
+                            , 'ProdCarthCToIm', 'PolSqToReRelC', 'PolSqToImRelC', 'FracPolToReC', 'FracPolToImC', 'FracPolToReRelC'
+                            , 'FracPolToImRelC', 'FracCarthToReRelC', 'FracCarthToImRelC', 'PolSqToReRelMagC', 'PolSqToImRelMagC'
+                            , 'MixSqToReRelMagC', 'MixSqToImRelMagC' ]\
+                , 'P2VV - ERROR: ConvertPolAmp: type "%s" unknown' % evalType
+
+        from P2VV.Load import P2VVLibrary
+        self._declare( 'ConvertPolAmp::%s(%s,{%s})' % ( name, evalType, ','.join( str(arg) for arg in kwargs.pop('Arguments') ) ) )
+        self._init( name, 'RooConvertPolAmp' )
+        for key, val in kwargs.iteritems() : self.__setitem__( key, val )
+
 class EfficiencyBin(RooObject):
     def __init__( self, **kwargs ) :
         __check_req_kw__('Name', kwargs)

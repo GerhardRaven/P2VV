@@ -36,6 +36,7 @@
 #include "P2VV/RooEffResAddModel.h"
 #include "P2VV/RooHessian.h"
 #include "P2VV/RooCategoryVar.h"
+#include "P2VV/RooConvertPolAmp.h"
 
 #include <map>
 #include <string>
