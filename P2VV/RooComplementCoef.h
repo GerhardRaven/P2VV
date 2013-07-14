@@ -40,6 +40,8 @@ public:
 
   RooArgList coefficients() const {return RooArgList(_coefs, "coefficients");}
 
+  void printArgs(std::ostream& os) const;
+
 protected:
   RooListProxy _coefs;
 
