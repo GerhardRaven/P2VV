@@ -339,7 +339,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         splineAcc         = pdfConfig.pop('splineAcceptance')
         smoothSplineAcc   = pdfConfig.pop('smoothSpline')
         multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')       # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
-        paramKKMass       = pdfConfig.pop('parameterizeKKMass')     # '' / 'simultaneous'
+        paramKKMass       = pdfConfig.pop('parameterizeKKMass')     # '' / 'parameters' / 'simultaneous'
         numBMassBins      = pdfConfig.pop('numBMassBins')
         ambiguityPars     = pdfConfig.pop('ambiguityParameters')
         KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
@@ -384,7 +384,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         assert obsDict['KKMass'][4] == KKMassBinBounds[0] and obsDict['KKMass'][5] == KKMassBinBounds[-1]\
                , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass range in "KKMassBinBounds" is not the same as in "obsDict"'
 
-        if paramKKMass == 'simultaneous' :
+        if paramKKMass == 'parameters' or 'simultaneous' :
             assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == len(CSPValues) == len(KKMassBinBounds) - 1,\
                    'P2VV - ERROR: wrong number of KK mass bin parameters specified'
             print 'P2VV - INFO: KK mass bins: %s' % ' - '.join( '%.1f' % binEdge for binEdge in KKMassBinBounds )
@@ -649,12 +649,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # transversity amplitudes
         commonArgs = dict( AmbiguityParameters = ambiguityPars )
-        if paramKKMass == 'simultaneous' :
+        if paramKKMass == 'parameters' :
             commonArgs[ 'KKMassCategory' ] = observables['KKMassCat']
         if not ASParam.startswith('Mag2ReIm') :
-            for it, val in enumerate(CSPValues) :
-                itLab = '_%d' % it if paramKKMass == 'simultaneous' else ''
-                commonArgs[ 'C_SP' + itLab ] = val
+            if len(CSPValues) == 1 :
+                commonArgs['C_SP'] = CSPValues[0]
+            elif paramKKMass == 'parameters' :
+                for it, val in enumerate(CSPValues) : commonArgs[ 'C_SP_bin%d' %it ] = val
 
         if amplitudeParam == 'phasesSWaveFrac' :
             from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
@@ -1636,7 +1637,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # first garbage collect
         gc.collect()
 
-        if False :#( not SFit and selection in ['paper2012', 'timeEffFit'] ) or paramKKMass == 'simultaneous' :
+        if ( not SFit and selection in ['paper2012', 'timeEffFit'] ) or paramKKMass == 'simultaneous' :
             # categories for splitting the PDF
             splitCats = [ [ ] ]
             if not SFit :
@@ -1786,8 +1787,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                     splitCatState = splitCatIter.Next()
 
+        else :
+            self._simulPdf = None
+
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
-        PdfBuilder.__init__( self, self._fullPdf, observables, { } )
+        PdfBuilder.__init__( self, self._simulPdf if self._simulPdf else self._fullPdf, observables, { } )
         print 120 * '='
 
         # garbage collect

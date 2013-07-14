@@ -116,7 +116,7 @@ class AmplitudeSet( dict, _util_parse_mixin, _util_conditionalObs_mixin ) :
         from P2VV.RooFitWrappers import RealVar
         while state :
             ind = state.getVal()
-            self._parseArg( '%s_%d' % ( name, ind ), kwargs, Name = '%s%s_%d' % ( prefix, name, ind ), Title = '%s %d' % ( title, ind )
+            self._parseArg( '%s_bin%d' % (name, ind), kwargs, Name = '%s%s_bin%d' % (prefix, name, ind), Title = '%s %d' % (title, ind)
                            , Value = vals[binIt], MinMax = minMax[binIt], ContainerList = coefs )
             binIt += 1
             state = stateIt.Next()
