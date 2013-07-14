@@ -56,7 +56,7 @@ void RooComplementCoef::printArgs(ostream& os) const
   RooFIter coefIter(_coefs.fwdIterator());
   RooAbsReal* coef = 0;
   while ((coef = (RooAbsReal*)coefIter.next()) != 0) {
-    if (iter < 10) {
+    if (iter < 5) {
       os << " - " << coef->GetName();
       ++iter;
     } else {
@@ -64,7 +64,7 @@ void RooComplementCoef::printArgs(ostream& os) const
       break;
     }
   }
-  os << " ]";
+  os << " (" << _coefs.getSize() << " coefficients) ]";
 }
 
 //_____________________________________________________________________________
