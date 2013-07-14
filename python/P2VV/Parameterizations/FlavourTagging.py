@@ -366,11 +366,11 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
 
         # check for remaining arguments and initialize
         self._check_extraneous_kw( kwargs )
-        from P2VV.RooFitWrappers import FormulaVar
+        from P2VV.RooFitWrappers import FormulaVar, ComplementCoef
         if hasattr( self, 'wTag' ) and hasattr( self, 'wTagBar' ) :
             TaggingParams.__init__( self
-                                   , Dilutions = [ FormulaVar(  'tagDilution', '1. - @0 - @1'
-                                                   , [ self._wTag, self._wTagBar ], Title = 'Tagging dilution' ) ]
+                                   , Dilutions = [ ComplementCoef( Name = 'tagDilution', Title = 'Tagging dilution'
+                                                                  , Coefficients = [ self._wTag, self._wTagBar ] ) ]
                                    , ADilWTags = [ FormulaVar(  'ADilWTag',    '(@0 - @1) / (1. - @0 - @1)'
                                                    , [ self._wTag, self._wTagBar ], Title = 'Dilution/wrong-tag asymmetry' ) ]
                                    , CEvenOdds = [ CEvenOdd ]
@@ -467,7 +467,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
         CEvenOdds[0].append(CEvenOddSum)
 
         # get tagging category coefficients and asymmetries (assume factorization)
-        from P2VV.RooFitWrappers import ConstVar, FormulaVar, Product
+        from P2VV.RooFitWrappers import ConstVar, ComplementCoef, Product
         if numTagCats[0] > 1 :
             for index0 in range( 1, numTagCats[0] ) :
                 self._parseArg(  'tagCatCoef0_%d' % index0, kwargs, ContainerList = self._singleTagCatCoefs[0]
@@ -481,11 +481,8 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                     if isinstance( ATagEffVal, RooObject ) : ATagEffVal = ATagEffVal.getVal()
                     self._ATagEffVals[0].append( ATagEffVal )
 
-            self._singleTagCatCoefs[0].insert( 0, FormulaVar(  'tagCatCoef0_0'
-                                                             , '1-@' + '-@'.join( str(i) for i in range( numTagCats[0] - 1 ) )
-                                                             , self._singleTagCatCoefs[0]
-                                                            )
-                                             )
+            self._singleTagCatCoefs[0].insert( 0, ComplementCoef( Name = 'tagCatCoef0_0', Title = 'Tagging category coefficient 0 0'
+                                                                 , Coefficients = self._singleTagCatCoefs[0] ) )
 
             if hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
                 tagCatProd0 = 0.
@@ -510,10 +507,10 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                     self._ATagEffVals[1].append( ATagEffVal )
 
             if numTagCats[0] > 0 :
-                self._singleTagCatCoefs[1].insert( 0, FormulaVar(  'tagCatCoef%s0' % namePF
-                                                                 , '1-@' + '-@'.join( str(i) for i in range( numTagCats[1] - 1 ) )
-                                                                 , self._singleTagCatCoefs[1]
-                                                                )
+                self._singleTagCatCoefs[1].insert( 0, ComplementCoef(  Name = 'tagCatCoef%s0' % namePF
+                                                                     , Title = 'Tagging category coefficient 1 0'
+                                                                     , Coefficients = self._singleTagCatCoefs[1]
+                                                                    )
                                                  )
 
                 if hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
@@ -1238,7 +1235,7 @@ class BinnedTaggingPdf( _util_parse_mixin ) :
             self._tagCatCoefs1 = [ ]
             self._tagCatCoefs = [ [] for cat in range( max( 1, self._numTagCats[0] ) ) ]
 
-            from P2VV.RooFitWrappers import FormulaVar
+            from P2VV.RooFitWrappers import ComplementCoef
             if self._tagCats[0] :
                 # coefficients for flavour tag 0
                 for coef0Iter in range( 1, self._numTagCats[0] ) :
@@ -1266,11 +1263,8 @@ class BinnedTaggingPdf( _util_parse_mixin ) :
                                   )
 
                 # coefficient for category 0: "one minus the sum of other categories"
-                self._tagCatCoefs0 = [ FormulaVar(  self._namePF + 'tagCatCoef0_0'
-                                                  , '1.-%s' % '-'.join( '@%d' % cat for cat in range( len(self._tagCatCoefs0) ) )
-                                                  , self._tagCatCoefs0[ : ]
-                                                  , Title = 'Tagging categories 0 coefficient 0'
-                                                 )
+                self._tagCatCoefs0 = [ ComplementCoef( Name = self._namePF + 'tagCatCoef0_0', Title = 'Tagging categories 0 coefficient 0'
+                                                      , Coefficients = self._tagCatCoefs0 )
                                      ] + self._tagCatCoefs0
 
             # coefficients for flavour tag 1
@@ -1299,11 +1293,8 @@ class BinnedTaggingPdf( _util_parse_mixin ) :
                               )
 
             # coefficient for category 0: "one minus the sum of other categories"
-            self._tagCatCoefs1 = [ FormulaVar(  self._namePF + 'tagCatCoef1_0'
-                                              , '1.-%s' % '-'.join( '@%d' % cat for cat in range( len(self._tagCatCoefs1) ) )
-                                              , self._tagCatCoefs1[ : ]
-                                              , Title = 'Tagging categories 1 coefficient 0'
-                                             )
+            self._tagCatCoefs1 = [ ComplementCoef( Name = self._namePF + 'tagCatCoef1_0', Title = 'Tagging categories 1 coefficient 0'
+                                                  , Coefficients = self._tagCatCoefs1 )
                                  ] + self._tagCatCoefs1
 
             # tagging category coefficients
