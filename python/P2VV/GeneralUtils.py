@@ -1497,11 +1497,13 @@ class RealMomentsBuilder ( dict ) :
             if not 'PDF' in kwargs and not 'IntSet' in kwargs and not 'NormSet' in kwargs :
                 # build moment
                 from P2VV.RooFitWrappers import RealMoment
-                moment = RealMoment( func, kwargs.pop('Norm',1.) )
+                moment = RealMoment( Name = func.GetName(), BasisFunc = func, Norm = kwargs.pop( 'Norm', 1. ) )
             elif 'PDF' in kwargs and 'IntSet' in kwargs and 'NormSet' in kwargs :
                 # build efficiency moment
                 from P2VV.RooFitWrappers import RealEffMoment
-                moment = RealEffMoment( func, kwargs.pop('Norm',1.), kwargs.pop('PDF'), kwargs.pop('IntSet'), kwargs.pop('NormSet') )
+                pdf = kwargs.pop('PDF')
+                moment = RealEffMoment( Name = func.GetName(), BasisFunc = func, Norm = kwargs.pop( 'Norm', 1. ), PDF = pdf
+                                       , IntSet = kwargs.pop('IntSet'), NormSet = kwargs.pop('NormSet') )
             else :
                 print 'P2VV - ERROR: RealMomentsBuilder.append: a PDF, an integration set and a normalisation set are required for an efficiency moment'
                 moment = None
@@ -1533,7 +1535,7 @@ class RealMomentsBuilder ( dict ) :
         """
         from P2VV.Load import P2VVLibrary
         from ROOT import std, computeRooRealMoments
-        momVec = std.vector('RooAbsRealMoment*')()
+        momVec = std.vector('RooRealMoment*')()
         for func in self._basisFuncNames : momVec.push_back( self[func]._var )
         computeRooRealMoments( data, momVec )
 

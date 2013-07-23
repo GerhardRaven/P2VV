@@ -1,9 +1,8 @@
 #ifdef __CINT__
 #pragma link off all classes;
-#pragma link C++ class RooAbsRealMoment+;
 #pragma link C++ class RooRealMoment+;
 #pragma link C++ class RooRealEffMoment+;
-#pragma link C++ class vector<RooAbsRealMoment*>+;
+#pragma link C++ class vector<RooRealMoment*>+;
 #pragma link C++ class ProgressDisplay+;
 #pragma link C++ class RooBTagDecay+;
 #pragma link C++ class RooTrivialTagDecay+;

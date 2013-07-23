@@ -550,48 +550,80 @@ class P2VVAngleBasis (RooObject) :
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 
-class AbsRealMoment( object ):
-    def __init__( self, moment )  : self._var = moment
-    def __getattr__( self, name ) : return getattr(self._var, name)
-    def GetName( self )           : return self.basisFunc().GetName()
-    def basisFunc( self )         : return self._basisFunc
-    def pdf( self )               : return self._pdf
-    def normSet( self )           : return self._normSet
-
-class RealMoment( AbsRealMoment ):
-    def __init__( self, BasisFunc, Norm ) :
+class RealMoment( object ):
+    def __init__( self, **kwargs ) :
         # get arguments
-        self._basisFunc = BasisFunc
-        self._norm      = Norm
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'BasisFunc', kwargs )
+        __check_req_kw__( 'Norm', kwargs )
+
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+        self._basisFunc = kwargs.pop('BasisFunc')
+        self._norm      = kwargs.pop('Norm')
+
+        # build vector with other moments
+        from P2VV.Load import P2VVLibrary
+        from ROOT import std
+        self._moments = std.vector('RooRealMoment*')()
+        for mom in kwargs.pop( 'Moments', [ ] ) : self._moments.push_back(mom._var)
 
         # create moment
         from P2VV.Load import P2VVLibrary
         from ROOT import RooRealMoment
-        AbsRealMoment.__init__( self, RooRealMoment( __dref__(self._basisFunc), self._norm ) )
+        self._var = RooRealMoment( __dref__(self._basisFunc), self._moments, self._norm, name )
 
-class RealEffMoment( AbsRealMoment ):
-    def __init__( self, BasisFunc, Norm, PDF, IntSet, NormSet ) :
+    def __getattr__( self, name ) : return getattr( self._var, name )
+    def basisFunc(self) : return self._basisFunc
+    def moments(self)   : return self._moments
+    def norm(self)      : return self._norm
+
+    def appendMoments( self, Moments ) :
+        if not Moments : return
+
+        from ROOT import std
+        appMoms = std.vector('RooRealMoment*')()
+        for mom in Moments :
+            appMoms.push_back(mom._var)
+            self._moments.push_back(mom._var)
+        self._var.appendMoments(appMoms)
+
+class RealEffMoment( RealMoment ):
+    def __init__( self, **kwargs ) :
         # get arguments
-        self._basisFunc = BasisFunc
-        self._norm      = Norm
-        self._pdf       = PDF
-        self._intSet    = IntSet
-        self._normSet   = NormSet
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'BasisFunc', kwargs )
+        __check_req_kw__( 'Norm', kwargs )
+        __check_req_kw__( 'PDF', kwargs )
+        __check_req_kw__( 'NormSet', kwargs )
+
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+        self._basisFunc = kwargs.pop('BasisFunc')
+        self._norm      = kwargs.pop('Norm')
+        self._pdf       = kwargs.pop('PDF')
+        self._intSet    = kwargs.pop( 'IntSet', [ ] )
+        self._normSet   = kwargs.pop('NormSet')
 
         # build RooFit integration and normalisation sets
         self._rooIntSet  = ArgSet( self._basisFunc.GetName() + '_intSet',  ( var for var in self._intSet  ) )
         self._rooNormSet = ArgSet( self._basisFunc.GetName() + '_normSet', ( var for var in self._normSet ) )
 
+        # build vector with other moments
+        from P2VV.Load import P2VVLibrary
+        from ROOT import std
+        self._moments = std.vector('RooRealMoment*')()
+        for mom in kwargs.pop( 'Moments', [ ] ) : self._moments.push_back(mom._var)
+
         # create efficiency moment
         from P2VV.Load import P2VVLibrary
         from ROOT import RooRealEffMoment
-        AbsRealMoment.__init__( self, RooRealEffMoment(  __dref__(self._basisFunc)
-                                                       , self._norm
-                                                       , __dref__(self._pdf)
-                                                       , __dref__(self._rooIntSet)
-                                                       , __dref__(self._rooNormSet)
-                                                      )
-                              )
+        self._var = RooRealEffMoment(  __dref__(self._basisFunc), self._moments, __dref__(self._pdf), __dref__(self._rooIntSet)
+                                     , __dref__(self._rooNormSet), self._norm, name )
+
+    def pdf(self)     : return self._pdf
+    def intSet(self)  : return self._intSet
+    def normSet(self) : return self._normSet
 
 class CalibratedDilution( RooObject ) :
     def __init__( self, **kwargs ) :
