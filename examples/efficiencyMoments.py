@@ -202,6 +202,7 @@ else :
                                                 )
                                     )
 
+physMoments.initCovariances()
 
 # moments builder with angular basis functions
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]

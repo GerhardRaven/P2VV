@@ -123,13 +123,14 @@ names1 = names0 + '|p2vvab_001.|p2vvab_100.|p2vvab_101.'
 from P2VV.GeneralUtils import RealMomentsBuilder
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
+moments.initCovariances()
 
 # compute moments from data set
 moments.compute(data)
 moments.write( momentsFile, Scale = scale )
 
 # print moments to screen
-moments.Print( Scale = scale, MinSignificance = 0.                 )
+moments.Print( Scale = scale, MinSignificance = 3.                 )
 moments.Print( Scale = scale, MinSignificance = 3., Names = names0 )
 moments.Print( Scale = scale, MinSignificance = 3., Names = names1 )
 
