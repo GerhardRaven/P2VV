@@ -20,127 +20,145 @@ namespace NumDiv {
    ///@brief Implementation of Ridder's Extrapolation to zero.
    ///The function input starts from 1.
    ///@param f Functor to extrapolate to zero.
-   template<class F> std::pair<double, double> extrapolate_to_zero(F& f)  {
-			using std::isfinite;
-			using std::max;
-			using std::isnan;
-			//Use points at c^0, c^-1, ... to extrapolate towards zero.
-			const double c = 1.1, t = 2;
+   template<class F> class extrapolate_to_zero {
+   public:
 
-			static const int Npts = 400;
+      extrapolate_to_zero(F& f) : _f(f), _best_factor(1) {}
+      
+      virtual ~extrapolate_to_zero() {}
 
-			/* Neville's table is:	
-         x_0      y_0    P_0                                 
-         P_{01}                        
-         x_1      y_1    P_1            P_{012}              
-         P_{12}             P_{0123}   
-         x_2      y_2    P_2            P_{123}              
-         P_{23}                        
-         x_3      y_3    P_3   
+      std::pair<double, double> operator()() {
+         using std::isfinite;
+         using std::max;
+         using std::isnan;
+         //Use points at c^0, c^-1, ... to extrapolate towards zero.
+         const double c = 1.1, t = 2;
 
-         In Matrix form, this is rearranged as:
+         static const int Npts = 400;
+
+         /* Neville's table is:	
+            x_0      y_0    P_0                                 
+            P_{01}                        
+            x_1      y_1    P_1            P_{012}              
+            P_{12}             P_{0123}   
+            x_2      y_2    P_2            P_{123}              
+            P_{23}                        
+            x_3      y_3    P_3   
+
+            In Matrix form, this is rearranged as:
 			
 			
-         x_0      y_0    P_0                                 
+            x_0      y_0    P_0                                 
 														  
-         x_1      y_1    P_1   P_{01}                 
+            x_1      y_1    P_1   P_{01}                 
 											   
-         x_2      y_2    P_2   P_{12}  P_{012}               
+            x_2      y_2    P_2   P_{12}  P_{012}               
 																	   
-         x_3      y_3    P_3   P_{23}  P_{123} P_{0123} 
+            x_3      y_3    P_3   P_{23}  P_{123} P_{0123} 
 
-         This is rewritten further as:
+            This is rewritten further as:
 
-         |                  0      1      2       3
-         _____|___________________________________________________	
-         0   | x_0      y_0    P^00                                
-         | 	                                          
-         1   | x_1      y_1    P^10  P^11                   
-         | 	                               
-         2   | x_2      y_2    P^10  P^21    P^22                  
-         | 	                                                       
-         3   | x_3      y_3    P^10  P^31    P^23    P^33     
+            |                  0      1      2       3
+            _____|___________________________________________________	
+            0   | x_0      y_0    P^00                                
+            | 	                                          
+            1   | x_1      y_1    P^10  P^11                   
+            | 	                               
+            2   | x_2      y_2    P^10  P^21    P^22                  
+            | 	                                                       
+            3   | x_3      y_3    P^10  P^31    P^23    P^33     
 
-         So, P^ij == P_{j-i...j}
+            So, P^ij == P_{j-i...j}
 
-         Finally, only the current and previous row are required. This reduces
-         the memory cost from quadratic to linear.  The naming scheme is:
+            Finally, only the current and previous row are required. This reduces
+            the memory cost from quadratic to linear.  The naming scheme is:
 
-         P[i][j]    -> P_i[j]
-         P[i-1][j]  -> P_i_1[j]
-			*/
+            P[i][j]    -> P_i[j]
+            P[i-1][j]  -> P_i_1[j]
+         */
 
-			vector<double> P_i(1), P_i_1;
+         vector<double> P_i(1), P_i_1;
 			
-			double best_err   = numeric_limits<double>::max();
-			double best_point = numeric_limits<double>::max();
+         double best_err   = numeric_limits<double>::max();
+         double best_point = numeric_limits<double>::max();
 
-      //The first tranche of points might be bad.
-      //Don't quit while no good points have ever happened.
-      bool ever_ok = 0;
+         //The first tranche of points might be bad.
+         //Don't quit while no good points have ever happened.
+         bool ever_ok = 0;
 
-      //Compute f(x) as x goes from 1 towards zero and extrapolate to 0
-      double x = 1;
-      for (int i = 0; i < Npts; i++) {
-         swap(P_i, P_i_1);
-         P_i.resize(i + 2);
+         //Compute f(x) as the stepfactor goes from 1 towards zero and extrapolate to 0
+         double stepfactor = 1;
+         for (int i = 0; i < Npts; i++) {
+            swap(P_i, P_i_1);
+            P_i.resize(i + 2);
 
-         //P[i][0] = c^ -i;
-         P_i[0] = f(x);
+            //P[i][0] = c^ -i;
+            P_i[0] = _f(stepfactor);
 
-         x /= c;
-        
-         //Compute the extrapolations
-         //cj id c^j
-         double cj = 1;
-         bool better = 0; //Did we get better?
-         bool any_ok = 0;
-         for (int j = 1; j <= i; j++)	{
-            cj *= c;
-            //We have (from above) n = i and k = n - j
-            //n-k = i - (n - j) = i - i + j = j
-            //Therefore c^(n-k) is just c^j
+            //Compute the extrapolations
+            //cj id c^j
+            double cj = 1;
+            bool better = 0; //Did we get better?
+            bool any_ok = 0;
+            for (int j = 1; j <= i; j++)	{
+               cj *= c;
+               //We have (from above) n = i and k = n - j
+               //n-k = i - (n - j) = i - i + j = j
+               //Therefore c^(n-k) is just c^j
 
-            P_i[j] = (cj * P_i[j-1] - P_i_1[j-1]) / (cj - 1);
+               P_i[j] = (cj * P_i[j-1] - P_i_1[j-1]) / (cj - 1);
 
-            if(any_ok || isfinite(P_i[j]))
-               ever_ok = 1;
+               if(any_ok || isfinite(P_i[j]))
+                  ever_ok = 1;
 
-            //Compute the difference between the current point (high order)
-            //and the corresponding lower order point at the current step size
-            double err1 = abs(P_i[j] - P_i[j-1]);
+               //Compute the difference between the current point (high order)
+               //and the corresponding lower order point at the current step size
+               double err1 = abs(P_i[j] - P_i[j-1]);
 
-            //Compute the difference between two consecutive points at the
-            //corresponding lower order point at the larger stepsize
-            double err2 = abs(P_i[j] - P_i_1[j-1]);
+               //Compute the difference between two consecutive points at the
+               //corresponding lower order point at the larger stepsize
+               double err2 = abs(P_i[j] - P_i_1[j-1]);
 
-            //The error is the larger of these.
-            double err = max(err1, err2);
+               //The error is the larger of these.
+               double err = max(err1, err2);
 
-            if (err < best_err && isfinite(err)) {
-               best_err = err;
-               best_point = P_i[j];
-               better=1;
+               if (err < best_err && isfinite(err)) {
+                  best_err = err;
+                  best_point = P_i[j];
+                  better=1;
+                  _best_factor = stepfactor;
+               }
+            }
+
+            std::cout << "stepfactor = " << stepfactor << std::endl;
+            stepfactor /= c;
+            //If the highest order point got worse, or went off the rails, 
+            //and some good points have been seen, then break.
+            if(ever_ok && !better && i > 0 && (std::abs(P_i[i] - P_i_1[i-1]) > t * best_err
+                                               || isnan(P_i[i]))) {
+               break;
             }
          }
-				
-         using namespace std;
-         //If the highest order point got worse, or went off the rails, 
-         //and some good points have been seen, then break.
-         if(ever_ok && !better && i > 0 && (abs(P_i[i] - P_i_1[i-1]) > t * best_err|| isnan(P_i[i])))
-            break;
-			}
 
-			return std::make_pair(best_point, best_err);
-   }
+         return std::make_pair(best_point, best_err);
+      }
+
+      double best_factor() const { return _best_factor; }
+
+   private:
+
+      F& _f;
+      double _best_factor;
+
+   };
 
    ///@internal
    ///@brief Functor wrapper for computing finite differences along an axis.
-   template<class Functor> struct CentralDifferenceGradient {
+   template<class Functor> class CentralDifferenceGradient {
    public:
 
-			CentralDifferenceGradient(const double v_, const Functor& f_)
-         : v(v_), f(f_)
+			CentralDifferenceGradient(const Functor& f_, const double v_, const double h_)
+         : v(v_), h(h_), f(f_)
 			{
       }
 			
@@ -149,23 +167,21 @@ namespace NumDiv {
       }
 
 			///Compute central difference.
-			double operator()(double hh) 
+			double operator()(double factor) 
 			{
-         using std::max;
-         using std::abs;
-
          //Make the step size be on the scale of the value.
-         double h = hh * max(abs(v) * 1e-3, 1e-3);
+         double hh = h * factor;
 
-         double f1 = f(v - h);
-         double f2 = f(v + h);
+         double f1 = f(v - hh);
+         double f2 = f(v + hh);
 
-         return (f2 - f1) / (2 * h);
+         return (f2 - f1) / (2 * hh);
 			}
       
    private:
 
       const double v;         ///< Value at witch to get the derivative
+      const double h;         ///< Initial stepsize
 			const Functor& f;       ///< Functor to evaluate
 
    };
@@ -174,29 +190,30 @@ namespace NumDiv {
    ///@brief Functor wrapper for computing finite difference second derivatives along an axis.
    template<class Functor> class CentralDifferenceSecond {
    public:
-			CentralDifferenceSecond(const double v_, const Functor& f_)
-         : v(v_), f(f_), central(f(v))
+			CentralDifferenceSecond(const Functor& f_, const double v_, const double h_)
+         : v(v_), h(h_), f(f_), central(f(v))
 			{}
 			
 			///Compute central difference.
-			double operator()(double hh) 
+			double operator()(double factor) 
 			{
          using std::max;
          using std::abs;
 
          //Make the step size be on the scale of the value.
-         double h = hh * max(abs(v) * 1e-3, 1e-3);
+         double hh = factor * h;
 
-         double f1 = f(v - h);
-         double f2 = f(v + h);
+         double f1 = f(v - hh);
+         double f2 = f(v + hh);
 
-         double d =  (f2 - 2 * central + f1) / (h * h);
+         double d =  (f2 - 2 * central + f1) / (hh * hh);
          return d;
 			}
 
    private:
 
       const double v;                      ///< Point at which to get the derivative
+      const double h;                      ///< Initial stepsize
 			const Functor&  f;                   ///< Functor to evaluate
 			const double central;                ///< Central point.
 
@@ -207,37 +224,35 @@ namespace NumDiv {
    template<class Functor> class CentralCrossDifferenceSecond {
    public:
 
-			CentralCrossDifferenceSecond(const double vx_, const double vy_, const Functor& f_)
-         : vx(vx_), vy(vy_), f(f_)
+			CentralCrossDifferenceSecond(const Functor& f_, const double vx_, const double vy_,
+                                   const double hx_, const double hy_)
+         : vx(vx_), vy(vy_), hx(hx_), hy(hy_), f(f_)
 			{}
 			
 			///Compute central difference.
-			double operator()(double hh) 
+			double operator()(double factor) 
 			{
-         using std::max;
-         using std::abs;
-
          //Make the step size be on the scale of the value.
-         double hx = hh * max(abs(vx) * 1e-3, 1e-3);
-         double hy = hh * max(abs(vy) * 1e-3, 1e-3);
+         double hhx = hx * factor;
+         double hhy = hy * factor;
 
-         x[0] = vx + hx;
-         x[1] = vy + hy;
+         x[0] = vx + hhx;
+         x[1] = vy + hhy;
          double a = f(x);
 
-         x[0] = vx - hx;
-         x[1] = vy + hy;
+         x[0] = vx - hhx;
+         x[1] = vy + hhy;
          double b = f(x);
 
-         x[0] = vx + hx;
-         x[1] = vy - hy;
+         x[0] = vx + hhx;
+         x[1] = vy - hhy;
          double c = f(x);
 
-         x[0] = vx - hx;
-         x[1] = vy - hy;
+         x[0] = vx - hhx;
+         x[1] = vy - hhy;
          double d = f(x);
 
-         return (a - b - c + d) / (4 * hx * hy);
+         return (a - b - c + d) / (4 * hhx * hhy);
 			}
 
    private:
@@ -245,6 +260,8 @@ namespace NumDiv {
 			double x[2];              ///< Local copy of v
       const double vx;          ///< Point in x at which to calculate the derivative
       const double vy;          ///< Point in y at which to calculate the derivative
+      const double hx;          ///< Initial stepsize in x
+      const double hy;          ///< Initial stepsize in y
 			const Functor&  f;        ///< Functor to evaluate
 
    };
@@ -318,24 +335,12 @@ namespace NumDiv {
     - Ridders, C. J. F, 1982, Advances in Engineering Software, 4(2) 75--76
     - Press, Vetterling, Teukolsky, Flannery, Numerical, 1997, Numerical Recipies in C (2nd ed.), Chapter 5.7
 
-    @param f Functor to differentiate
-    @param x Point about which to differentiate.
+    @param f RooAbsReal to differentiate to differentiate
+    @param params List of parameters with respect to which to differentiate. Their value defines the point around which to differentiate.
+    @param stepsizes List of stepsizes, if emptry initial stepsizes will be calculated.
     @ingroup gFunctions
 */
-
-template<class F> vector<double> numerical_gradient(const F& f, const vector<double>& x)
-{
-   // FIXME, doesn't work as currently implemented
-   using namespace NumDiv;
-   vector<double> grad(x.size());
-
-   for (int i = 0; i < x.size(); i++) {
-      CentralDifferenceGradient<F> d(x[i], f);
-			grad[i] = extrapolate_to_zero<CentralDifferenceGradient<F> >(d).first;
-   }
-
-   return grad;
-}
+vector<double> gradient(const RooAbsReal& f, const RooArgList& params, vector<double>& stepsizes);
 	
 ///Compute numerical gradients with errors.
 ///See numerical_gradient().
@@ -345,23 +350,19 @@ template<class F> vector<double> numerical_gradient(const F& f, const vector<dou
 ///@param f Functor to differentiate
 ///@param x Point about which to differentiate.
 ///@ingroup gFunctions 
-template<class F> vector<pair<double, double> > numerical_gradient_with_errors(const F& f, const vector<double>& x) {
-   // FIXME, doesn't work as currently implemented
+vector<pair<double, double> > gradient_with_errors(const RooAbsReal& f, const RooArgList& params,
+                                                   vector<double>& stepsizes);
 
-   using namespace NumDiv;
-   vector<pair<double, double> > g(x.size());
-
-   for (int i = 0; i < x.size(); i++) {	
-      CentralDifferenceGradient<F> d(x[i], f);
-
-			pair<double, double> r = extrapolate_to_zero<CentralDifferenceGradient<F> >(d);
-      g[i] = r;
-   }
-
-   return g;
-}
-
+vector<pair<double, double> > second_gradient_with_errors(const RooAbsReal& f, const RooArgList& params, 
+                                                          vector<double>& stepsizes);
 	
+vector<double> second_gradient(const RooAbsReal& f, const RooArgList& params,
+                               vector<double>& stepsizes);
+
+std::pair<TMatrixTSym<double>, TMatrixTSym<double> > cross_with_errors
+(const RooAbsReal& f, const RooArgList& params, vector<double>& stepsizes);
+
+
 ///Compute the numerical Hessian using central differences and Ridder's method:
 ///\f[
 /// \frac{\partial^2 f}{\partial x^2} \approx \frac{f(x-h) - 2f(x) + f(x+h)}{h^2}
@@ -373,34 +374,26 @@ template<class F> vector<pair<double, double> > numerical_gradient_with_errors(c
 ///@param f Functor to double-differentiate
 ///@param x Point about which to double-differentiate.
 ///@ingroup gFunctions 
-template<class F> pair<TMatrixTSym<double>, TMatrixTSym<double> > numerical_hessian_with_errors
-(const F& f, const vector<double>& x)
-{
-   // FIXME, doesn't work as currently implemented
-   using namespace NumDiv;
-   TMatrixTSym<double> hess(x.size());
-   TMatrixTSym<double> errors(x.size());
+std::pair<TMatrixTSym<double>, TMatrixTSym<double> > hessian_with_errors
+(const RooAbsReal& f, const RooArgList& params, vector<double>& stepsizes);
 
-   //Perform the cross differencing.
-   for (int r = 0; r < x.size(); r++) {
-			for (int c = r + 1; c < x.size(); c++) {
-         CentralCrossDifferenceSecond<F> cross(x[r], x[c], f);
-         pair<double, double> e = extrapolate_to_zero<CentralCrossDifferenceSecond<F> >(cross);
-         hess[r][c] = hess[c][r] = e.first;
-         errors[r][c] = errors[c][r] = e.second;
-			}
-   }
+///Compute the numerical Hessian using central differences and Ridder's method:
+///\f[
+/// \frac{\partial^2 f}{\partial x^2} \approx \frac{f(x-h) - 2f(x) + f(x+h)}{h^2}
+///\f]
+///\f[
+/// \frac{\partial^2 f}{\partial x\partial y} \approx \frac{f(x+h, y+h) - f(x-h,y+h) - f(x+h, y-h) + f(x-h, y-h)}{4h^2}
+///\f]
+///See numerical_gradient().
+///@param f Functor to double-differentiate.
+///@param params Parameters with respect to which to differentiate.
+///@param stepsizes Vector of stepsizes to use.
+///@ingroup gFunctions 
+TMatrixTSym<double> hessian(const RooAbsReal& f, const RooArgList& params,
+                            vector<double>& stepsizes);
 
-   for (int i = 0; i < x.size(); i++) {
-      CentralDifferenceSecond<F> curv(x[i], f);
-			pair<double, double> e = extrapolate_to_zero<CentralDifferenceSecond<F> >(curv);
-			hess[i][i] = e.first;
-			errors[i][i] = e.second;
-   }
-
-   return make_pair(hess, errors);
-}
-
-TMatrixTSym<double> hessian(const RooAbsReal& f, const RooArgList& params);
+/// Calculate the initial stepsizes to use
+///@param params Parameters for which to calculate initial stepsizes
+vector<double> initial_stepsizes(const RooArgList& params);
 
 #endif

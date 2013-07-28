@@ -1,6 +1,8 @@
 #ifndef DICT_P2VVDICT_H 
 #define DICT_P2VVDICT_H 1
 
+#include "TMatrixTSym.h"
+
 #include "P2VV/RooRealMoments.h"
 #include "P2VV/ProgressDisplay.h"
 #include "P2VV/RooBTagDecay.h"
@@ -67,6 +69,8 @@ struct Instantiations {
    std::vector<RooAbsRealMoment*> _i19;
 
    std::list<RooDataSet*> _i20;
+   std::vector<std::pair<double, double> > _i21;
+   std::pair<TMatrixDSym, TMatrixDSym> _i22;
 
 };
 #endif // DICT_P2VVDICT_H
