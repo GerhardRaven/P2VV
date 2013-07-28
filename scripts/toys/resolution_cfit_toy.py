@@ -108,7 +108,7 @@ gen_obs = (time_obs, mpsi, st)
 gen_pdf = buildPdf(Components = components, Observables = gen_obs, Name = 'gen_pdf')
 
 ## PDF to fit with
-fit_pdf = buildPdf(Components = components, Observables = (time_obs, mpsi), Name = 'fit_pdf')
+fit_pdf = buildPdf(Components = components, Observables = (time_obs,), Name = 'fit_pdf')
 
 ## Load parameter values
 from ROOT import TFile

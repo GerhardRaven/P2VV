@@ -28,3 +28,4 @@ cmt/*.*sh
 cmt/install*
 standalone/.deps/*
 standalone/.build/*
+standalone/lib
