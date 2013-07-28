@@ -440,11 +440,8 @@ class FormulaVar (RooObject) :
             self._declare(spec)
             self._init(Name, 'RooFormulaVar')
         else:
-            l = RooArgList()
-            for arg in fargs:
-                l.add(__dref__(arg))
             from ROOT import RooFormulaVar
-            form = RooFormulaVar(Name, Name, formula, l)
+            form = RooFormulaVar(Name, Name, formula, RooArgList(__dref__(arg) for arg in fargs ) )
             form = data.addColumn(form)
             form = self._addObject(form)
             self._init(Name, 'RooRealVar')
@@ -460,14 +457,21 @@ class RealCategory(RooObject) :
 
 class ConstVar(RooObject) :
     def __init__(self,**kwargs):
-        # construct factory string on the fly...
-        __check_req_kw__( 'Value', kwargs )
         __check_req_kw__( 'Name', kwargs )
         __check_name_syntax__( kwargs['Name'] )
-        self._declare("ConstVar::%(Name)s(%(Value)s)" % kwargs )
-        (Name, value) = (kwargs.pop('Name'),kwargs.pop('Value'))
-        self._init(Name,'RooConstVar')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        Name = kwargs.pop('Name')
+        if Name not in self.ws():
+            # construct factory string on the fly...
+            __check_req_kw__( 'Value', kwargs )
+            value = kwargs.pop('Value')
+            self._declare("ConstVar::%s(%s)" % ( Name, value ) )
+            self._init(Name,'RooConstVar')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(Name,'RooConstVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                assert v == self[k], '\'%s\' is not the same for %s' % ( k, Name )
 
 class LinearVar(RooObject) :
     def __init__(self, **kwargs):
@@ -630,6 +634,28 @@ class ComplementCoef( RooObject ) :
         self._init( name, 'RooComplementCoef' )
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
 
+class ConvertPolAmp( RooObject ) :
+    def __init__( self, **kwargs ) :
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'Type', kwargs )
+        __check_req_kw__( 'Arguments', kwargs )
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+
+        evalType = kwargs.pop('Type')
+        assert evalType in [ 'FracToMag', 'FracToMagSq', 'MagToFrac', 'MagSqToFrac', 'PolToRe', 'PolToIm', 'PolSqToRe', 'PolSqToIm'
+                            , 'MagSqSinToReIm', 'CarthToMag', 'CarthToMagSq', 'CarthFracToMagSq', 'CarthToPhase', 'ProdCarthPhaseToRe'
+                            , 'ProdCarthPhaseToIm', 'PolSqToReC', 'PolSqToImC', 'ProdCarthToRe', 'ProdCarthToIm', 'ProdCarthCToRe'
+                            , 'ProdCarthCToIm', 'PolSqToReRelC', 'PolSqToImRelC', 'FracPolToReC', 'FracPolToImC', 'FracPolToReRelC'
+                            , 'FracPolToImRelC', 'FracCarthToReRelC', 'FracCarthToImRelC', 'PolSqToReRelMagC', 'PolSqToImRelMagC'
+                            , 'MixSqToReRelMagC', 'MixSqToImRelMagC' ]\
+                , 'P2VV - ERROR: ConvertPolAmp: type "%s" unknown' % evalType
+
+        from P2VV.Load import P2VVLibrary
+        self._declare( 'ConvertPolAmp::%s(%s,{%s})' % ( name, evalType, ','.join( str(arg) for arg in kwargs.pop('Arguments') ) ) )
+        self._init( name, 'RooConvertPolAmp' )
+        for key, val in kwargs.iteritems() : self.__setitem__( key, val )
+
 class EfficiencyBin(RooObject):
     def __init__( self, **kwargs ) :
         __check_req_kw__('Name', kwargs)
@@ -764,6 +790,30 @@ class RealVar (RooObject) :
 
     def getRange(self):
         return self._target_().getMin(), self._target_().getMax()
+
+class CategoryVar(RooObject) :
+    _getters = { 'Value' : lambda s : s.getVal() }
+
+    def __init__(self, **kwargs):
+        __check_req_kw__( 'Name', kwargs )
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+        if name not in self.ws() :
+            __check_req_kw__( 'Category',  kwargs )
+            __check_req_kw__( 'Variables', kwargs )
+            from P2VV.Load import P2VVLibrary
+            spec = 'CategoryVar::%s(%s,{%s})'\
+                   % ( name, kwargs.pop('Category'), ','.join( var.GetName() for var in kwargs.pop('Variables') ) )
+            self._declare(spec)
+            self._init( name, 'RooCategoryVar' )
+
+        else :
+            self._init( name, 'RooCategoryVar' )
+            for key, val in kwargs.iteritems() :
+                assert val == self[key], '"%s" is not the same for "%s"' % ( key, name )
+
+        for key, val in kwargs.iteritems() : self.__setitem__( key, val )
+
 
 ##TODO, factor out common code in Pdf and ResolutionModel
 
@@ -1265,9 +1315,7 @@ class TPDecay(Pdf):
     def __init__(self, Name, **kwargs):
         from ROOT import RooTPDecay
         from ROOT import RooArgList
-        tps = RooArgList()
-        for tp in kwargs.pop('TurningPoints'):
-            tps.add(__dref__(tp))
+        tps = RooArgList(__dref__(tp) for tp in kwargs.pop('TurningPoints'))
         t = kwargs.pop('Time')
         tau = kwargs.pop('Tau')
         model = kwargs.pop('ResolutionModel')
@@ -1676,11 +1724,7 @@ class EffResAddModel(ResolutionModel):
             externals |= set(model.ExternalConstraints())
 
         from ROOT import RooEffResAddModel
-        def make_alist(l):
-            alist = RooArgList()
-            for e in l:
-                alist.add(__dref__(e))
-            return alist
+        make_alist = lambda l :  RooArgList(__dref__(e) for e in l )
         models = make_alist(self.__models)
         fracs = make_alist(self.__fractions)
         model = RooEffResAddModel(name, name, models, fracs)
@@ -1737,10 +1781,7 @@ class CubicSplineFun(RooObject):
         if hist:
             csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeffs)
         elif knots and coeffs and not values:
-            al = RooArgList()
-            for c in coeffs:
-                al.add(__dref__(c))
-            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), al)
+            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), RooArgList(__dref__(c) for c in coeffs ) )
         elif knots and values and errors and not coeffs:
             csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), __make_vector(values),
                                     __make_vector(errors), smooth, const_coeffs)

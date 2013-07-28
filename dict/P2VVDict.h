@@ -15,7 +15,6 @@
 #include "P2VV/RooTagDecisionWrapper.h"
 #include "P2VV/RooRealCategory.h"
 #include "P2VV/RooCalibratedDilution.h"
-#include "P2VV/RooDataSetToTree.h"
 #include "P2VV/Functions.h"
 #include "P2VV/RooTransAngle.h"
 #include "P2VV/RooCruijff.h"
@@ -38,6 +37,8 @@
 #include "P2VV/RooMassDependence.h"
 #include "P2VV/RooEffResAddModel.h"
 #include "P2VV/RooHessian.h"
+#include "P2VV/RooCategoryVar.h"
+#include "P2VV/RooConvertPolAmp.h"
 
 #include <map>
 #include <string>

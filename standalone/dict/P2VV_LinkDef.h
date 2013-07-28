@@ -35,10 +35,13 @@
 #pragma link C++ class RooTPDecay+;
 #pragma link C++ class RooMassDependence+;
 #pragma link C++ class RooEffResAddModel+;
+#pragma link C++ class RooCategoryVar+;
+#pragma link C++ class RooConvertPolAmp+;
 
 #pragma link off all functions;
 #pragma link C++ function computeRooRealMoments;
 #pragma link C++ function RooDataSetToTree;
+#pragma link C++ function TreeToRooDataSet;
 #pragma link C++ function addSWeightToTree;
 #pragma link C++ function addVertexErrors;
 #pragma link C++ function sigmaFromFT;

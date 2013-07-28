@@ -23,6 +23,7 @@
         <class name = "RooRealCategory" />
         <class name = "RooCalibratedDilution" />
         <function name = "RooDataSetToTree" />
+        <function name = "TreeToRooDataSet" />
         <class name = "RooTransAngle" />
         <class name = "RooCruijff" />
         <class name = "RooEfficiencyBin" />
@@ -43,6 +44,8 @@
         <class name = "RooTPDecay" />
         <class name = "RooAmoroso" />
         <class name = "RooMassDependence" />
+        <class name = "RooCategoryVar" />
+        <class name = "RooConvertPolAmp" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />
