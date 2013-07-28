@@ -107,10 +107,6 @@ if options.batch:
 from P2VV.RooFitWrappers import *
 from P2VV.Load import P2VVLibrary
 from P2VV.Load import LHCbStyle
-from ROOT import RooCBShape as CrystalBall
-from ROOT import RooMsgService
-
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
 
 obj = RooObject( workspace = 'w')
 w = obj.ws()
@@ -277,7 +273,8 @@ gStyle.SetPalette(53)
 
 ## Extra name for fit result and plots
 extra_name = [args[1]]
-for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None), ('peak_only', 'peak_only')]:
+for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
+             ('peak_only', 'peak_only'), ('add_background', 'cfit')]:
     v = getattr(options, a)
     if v:
         if n and n != v and hasattr(options, n):
@@ -614,7 +611,7 @@ elif options.wpv and options.wpv_type == 'Gauss':
     components += [sig_wpv]
     if options.add_background:
         bkg_wpv_pdf = make_wpv_pdf('bkg_')
-        bkg_wpv = Component('bkg_wpv', (bkg_wpv_pdf, psi_m), Yield = (552, 1, 50000))
+        bkg_wpv = Component('bkg_wpv', (bkg_wpv_pdf, bkg_mpsi.pdf()), Yield = (552, 1, 50000))
         components += [bkg_wpv]
 if options.add_background:
     pdf_obs = (time_obs, mpsi)
@@ -898,32 +895,3 @@ with WritableCacheFile(cache_files, directory) as cache_file:
     # Delete the input TTree which was automatically attached.
     cache_file.Delete('%s;*' % tree_name)
 
-nll = time_pdf.createNLL(sig_sdata, **fitOpts)
-fpf = time_result.floatParsFinal()
-nll_params = nll.getObservables(RooArgSet(fpf))
-
-from ROOT import TMatrixDSym
-H = TMatrixDSym(TMatrixDSym.kInverted, time_result.covarianceMatrix())
-
-from ROOT import std
-stepsizes = std.vector('double')(fpf.getSize())
-for i, p in enumerate(fpf):
-    stepsizes[i] = p.getError()
-
-from ROOT import hessian_with_errors, gradient
-
-## r = hessian_with_errors(nll, fpf, stepsizes)
-## HN = r.first
-## HNE = r.second
-
-## HD = TMatrixDSym(fpf.getSize())
-## from itertools import product
-## for i, j in product(range(11), range(11)):
-##     HD[i][j] = HN[i][j] / H[i][j]
-
-## CH = TMatrixTSym('double')(TMatrixTSym('double').kInverted, H)
-
-from P2VV import Hessian
-nll_min = nll.getVal()
-x = nll_params.find('wpv_sigma')
-## points = Hessian.nll_values(nll, nll_min, [x], 9)

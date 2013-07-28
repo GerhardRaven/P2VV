@@ -322,7 +322,7 @@ class DoubleCB_Psi_Mass ( MassPdf ) :
         self._parseArg( '%smpsi_sigma_1' % self._prefix,  kwargs, Title = 'psi Mass resolution 1', Unit = 'MeV/c^2'
                        , Value = 6.3,   Error = 0.1,  MinMax = ( 0.1, 20. ) )
         self._parseArg( '%smpsi_sigma_sf' % self._prefix, kwargs, Title = 'psi Mass resolution 2:1 scale factor'
-                       , Value = 2.3,   Error = 0.1,  MinMax = ( 0.1, 5. ) )
+                       , Value = 2.3,   Error = 0.1,  MinMax = ( 0.1, 20. ) )
         self._parseArg( '%smpsi_alpha_1' % self._prefix,  kwargs, Title = 'psi Mass tail parameter 1'
                        , Value = 2.,    Error = 15.,  MinMax = ( 0.1, 30. ) )
         self._parseArg( '%smpsi_alpha_sf' % self._prefix, kwargs, Title = 'psi Mass tail parameter 2:1 scale factor'
