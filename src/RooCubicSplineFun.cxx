@@ -39,7 +39,6 @@
 #include "RooAbsReal.h"
 #include "RooRealVar.h"
 #include "RooConstVar.h"
-#include "RooComplex.h"
 #include "RooArgList.h"
 
 // P2VV
