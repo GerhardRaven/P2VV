@@ -73,7 +73,7 @@ public:
         }
         double operator()(int j, int k) const {
             assert(j==0||j==1);
-            assert(0<=j+k<2);
+            assert(0<=(j+k) && (j+k)<2);
             return ( j+k==0 ) ? beta : alpha ;
         }
     private:

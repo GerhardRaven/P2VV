@@ -67,7 +67,7 @@ struct Instantiations {
    std::vector<MultiHistEntry> _i16;
    std::map<int, MultiHistEntry*>::iterator _i17;
    std::vector<MultiHistEntry*> _i18;
-   std::vector<RooAbsRealMoment*> _i19;
+   std::vector<RooRealMoment*> _i19;
 
    std::list<RooDataSet*> _i20;
    std::vector<std::pair<double, double> > _i21;
