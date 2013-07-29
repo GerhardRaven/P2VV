@@ -1416,11 +1416,17 @@ def angularMomentIndices(label,angleFuncs) :
 
 
 def getMomentFuncArgs( funcName, kwargs ) :
+    # new moments or append to existing moments?
+    kwargs['addFacs'] = kwargs.pop( 'AddMoments', ( ) )
+
+    # process all moments?
+    kwargs['procAll'] = kwargs.pop( 'ProcessAll', False )
+
     # moments and correlations
     funcNames    = kwargs.pop( 'BasisFuncNames', [ ] )
     moments      = kwargs.pop( 'Moments',        { } )
     correlations = kwargs.pop( 'Correlations',   { } )
-    if not funcNames :
+    if ( kwargs['addFacs'] or not kwargs['procAll'] ) and not funcNames :
         print 'P2VV - ERROR: %s(): no basis function names specified' % ( funcName if funcName else 'getMomentFuncArgs' )
         return False
     for name in funcNames :
@@ -1449,9 +1455,6 @@ def getMomentFuncArgs( funcName, kwargs ) :
     # scale factors
     kwargs['scale']  = kwargs.pop( 'Scale',  1. )
     kwargs['scales'] = kwargs.pop( 'Scales', ( kwargs['scale'], kwargs['scale'], 1. ) )
-
-    # new moments or append to existing moments
-    kwargs['addFacs'] = kwargs.pop( 'AddMoments', ( ) )
 
     return True
 
@@ -1607,6 +1610,7 @@ def readMoments( filePath = 'moments', **kwargs ) :
 
     # reset moments and correlations dictionaries
     if not kwargs['addFacs'] :
+        if kwargs['procAll'] : del kwargs['funcNames'][ : ]
         kwargs['moments'].clear()
         kwargs['correlations'].clear()
 
@@ -1639,7 +1643,7 @@ def readMoments( filePath = 'moments', **kwargs ) :
 
         if not corrMatrix :
             # check moment format
-            if len(line) < 4 or line[0] not in kwargs['funcNames'] : continue
+            if len(line) < 4 or ( not kwargs['addFacs'] and not kwargs['procAll'] and line[0] not in kwargs['funcNames'] ) : continue
             try :
               coef   = float(line[1])
               stdDev = float(line[2])
@@ -1660,6 +1664,7 @@ def readMoments( filePath = 'moments', **kwargs ) :
             else :
                 kwargs['moments'][line[0]] = ( coef, stdDev, signif )
             numMoments += 1
+            if kwargs['procAll'] : kwargs['funcNames'].append(line[0])
             funcNamesMoms.append(line[0])
 
         else :
