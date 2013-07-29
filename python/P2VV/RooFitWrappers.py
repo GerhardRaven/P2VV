@@ -20,6 +20,8 @@ def __wrap__dref_var__( fun ) :
     return _fun
 
 RooAbsCollection.__contains__ = __wrap__dref_var__( RooAbsCollection.__contains__ )
+RooArgSet.__init__ = __wrap__dref_var__( RooArgSet.__init__ )
+RooArgList.__init__ = __wrap__dref_var__( RooArgList.__init__ )
 RooAbsData.table = __wrap__dref_var__( RooAbsData.table )
 
 
@@ -440,8 +442,8 @@ class FormulaVar (RooObject) :
             self._declare(spec)
             self._init(Name, 'RooFormulaVar')
         else:
-            from ROOT import RooFormulaVar
-            form = RooFormulaVar(Name, Name, formula, RooArgList(__dref__(arg) for arg in fargs ) )
+            from ROOT import RooFormulaVar, RooArgList
+            form = RooFormulaVar(Name, Name, formula, RooArgList( fargs ) )
             form = data.addColumn(form)
             form = self._addObject(form)
             self._init(Name, 'RooRealVar')
@@ -498,6 +500,7 @@ class MultiVarGaussian(RooObject):
         __check_name_syntax__(kwargs['Name'])
 
         name = kwargs.pop('Name')
+        from ROOT import RooArgList
         args = [RooArgList(*kwargs.pop(k)) for k in ['Parameters', 'CentralValues']] \
                + [kwargs.pop('Covariance')]
         from ROOT import RooMultiVarGaussian
@@ -657,7 +660,7 @@ class ComplementCoef( RooObject ) :
 
         # build a RooComplementCoef (no workspace declaration, since factory string has limited length!!!)
         from ROOT import RooArgList, RooComplementCoef
-        coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
+        coefList = RooArgList( kwargs.pop('Coefficients')  )
         complCoef = RooComplementCoef( name, name, coefList )
         self._addObject(complCoef)
         complCoef.IsA().Destructor(complCoef)
@@ -1262,8 +1265,7 @@ class HistFunc(RooObject):
             raise TypeError, "HistFunc can only handle 1D historgrams"
         _dn = Name + '_data_hist'
         # Create Datahist and Import with density set to false
-        _data = RooDataHist(_dn, _dn, RooArgList(*[__dref__(o) for o in kwargs['Observables']]),
-                            RooFit.Import(_hist, False))
+        _data = RooDataHist(_dn, _dn, RooArgList( kwargs['Observables']), RooFit.Import(_hist, False))
         self.ws().put(_data)
         self._declare('RooHistFunc::%s({%s}, %s)' % (Name, ','.join([o.GetName() for o in kwargs.pop('Observables')]), _data.GetName()))
         self._init(Name, 'RooHistFunc')
@@ -1347,7 +1349,7 @@ class TPDecay(Pdf):
     def __init__(self, Name, **kwargs):
         from ROOT import RooTPDecay
         from ROOT import RooArgList
-        tps = RooArgList(__dref__(tp) for tp in kwargs.pop('TurningPoints'))
+        tps = RooArgList( kwargs.pop('TurningPoints'))
         t = kwargs.pop('Time')
         tau = kwargs.pop('Tau')
         model = kwargs.pop('ResolutionModel')
@@ -1492,7 +1494,7 @@ class BinnedPdf( Pdf ) :
             # build list of base categories
             from ROOT import RooArgList
             categories = kwargs.pop('Categories')
-            varList = RooArgList(__dref__(var) for var in categories)
+            varList = RooArgList(categories)
 
             if hasattr( kwargs['Coefficients'][0], '__iter__' ) :
                 # coefficients for different variables factorize
@@ -1503,7 +1505,7 @@ class BinnedPdf( Pdf ) :
                 from ROOT import TObjArray, RooArgList
                 coefLists = TObjArray()
                 for coefficients in kwargs.pop('Coefficients') :
-                    coefLists.Add(RooArgList( __dref__(coef) for coef in coefficients ))
+                    coefLists.Add(RooArgList(coefficients ))
 
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefLists, int( kwargs.pop( 'IgnoreFirstBin', 0 ) ) )
@@ -1513,7 +1515,7 @@ class BinnedPdf( Pdf ) :
 
                 # build coefficients list
                 from ROOT import RooArgList
-                coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') ) 
+                coefList = RooArgList( kwargs.pop('Coefficients') ) 
 
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefList )
@@ -1544,7 +1546,7 @@ class BinnedPdf( Pdf ) :
                 self._binning.SetName(binning_name)
                 var.setBinning(self._binning, binning_name)
                 from ROOT import RooArgList
-                coefList = RooArgList( __dref__(coef) for coef in self._binHeights )
+                coefList = RooArgList( self._binHeights )
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'],argDict['Name'],__dref__(var),binning_name, coefList
                                     , int( kwargs.pop( 'BinIntegralCoefs', 0 ) ) )
@@ -1569,7 +1571,7 @@ class BinnedPdf( Pdf ) :
             # build list of base variables
             from ROOT import RooArgList
             observables = kwargs.pop('Observables')
-            varList = RooArgList(__dref__(var) for var in observables )
+            varList = RooArgList( observables )
 
             # build list of binning names
             assert len(kwargs['Binnings']) == len(observables),\
@@ -1595,7 +1597,7 @@ class BinnedPdf( Pdf ) :
                     from ROOT import TObjArray, RooArgList
                     coefLists = TObjArray()
                     for coefficients in kwargs.pop('Coefficients') :
-                        coefLists.Add(RooArgList(__dref__(coef) for coef in coefficients))
+                        coefLists.Add(RooArgList(coefficients))
 
                     from ROOT import RooBinnedPdf
                     bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, binningList, coefLists
@@ -1606,7 +1608,7 @@ class BinnedPdf( Pdf ) :
 
                     # build coefficients list
                     from ROOT import RooArgList
-                    coefList = RooArgList(__dref__(coef) for coef in kwargs.pop('Coefficients') )
+                    coefList = RooArgList( kwargs.pop('Coefficients') )
 
                     from ROOT import RooBinnedPdf
                     bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, binningList, coefList
@@ -1756,9 +1758,8 @@ class EffResAddModel(ResolutionModel):
             externals |= set(model.ExternalConstraints())
 
         from ROOT import RooEffResAddModel
-        make_alist = lambda l :  RooArgList(__dref__(e) for e in l )
-        models = make_alist(self.__models)
-        fracs = make_alist(self.__fractions)
+        models = RooArgList(self.__models)
+        fracs = RooArgList(self.__fractions)
         model = RooEffResAddModel(name, name, models, fracs)
         self._addObject(model)
         self._init(name, 'RooEffResAddModel')
@@ -1813,7 +1814,7 @@ class CubicSplineFun(RooObject):
         if hist:
             csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeffs)
         elif knots and coeffs and not values:
-            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), RooArgList(__dref__(c) for c in coeffs ) )
+            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), RooArgList( coeffs ) )
         elif knots and values and errors and not coeffs:
             csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), __make_vector(values),
                                     __make_vector(errors), smooth, const_coeffs)
@@ -1904,7 +1905,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
         self.__knots = None
         from copy import copy
         from ROOT import RooBinning        
-        from ROOT import RooArgList
 
         if self.__spline:
             self.__knots = {}
