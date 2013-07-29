@@ -226,7 +226,6 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['multiplyByAngEff']     = 'weights'
         self['parameterizeKKMass']   = 'simultaneous'
         self['ambiguityParameters']  = False
-        self['SWeightsType']         = 'simultaneousFreeBkg'
         self['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
         self['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                         , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
@@ -340,16 +339,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         splineAcc         = pdfConfig.pop('splineAcceptance')
         smoothSplineAcc   = pdfConfig.pop('smoothSpline')
         multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')       # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
-        paramKKMass       = pdfConfig.pop('parameterizeKKMass')     # '' / 'functions' / 'simultaneous' / 'amplitudes'
+        paramKKMass       = pdfConfig.pop('parameterizeKKMass')     # '' / 'parameters' / 'simultaneous'
         numBMassBins      = pdfConfig.pop('numBMassBins')
         ambiguityPars     = pdfConfig.pop('ambiguityParameters')
-        SWeightsType      = pdfConfig.pop('SWeightsType')           # '' / 'simultaneous' / 'simultaneousFixed' / 'simultaneousFreeBkg'
         KKMassBinBounds   = pdfConfig.pop('KKMassBinBounds')
         SWaveAmpVals      = pdfConfig.pop('SWaveAmplitudeValues')
         CSPValues         = pdfConfig.pop('CSPValues')
 
-        assert obsDict['KKMass'][4] == KKMassBinBounds[0] and obsDict['KKMass'][5] == KKMassBinBounds[-1]\
-               , 'P2VV - ERROR:  Bs2Jpsiphi_PdfBuilder: KK mass range in "KKMassBinBounds" is not the same as in "obsDict"'
         if not SWaveAmpVals : SWaveAmpVals = ( [ ], [ ] )
 
         SSTagging        = pdfConfig.pop('sameSideTagging')
@@ -383,6 +379,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         constrainDeltaM = pdfConfig.pop('constrainDeltaM')    # '' / 'constrain' / 'fixed'
 
         lambdaCPParam = pdfConfig.pop('lambdaCPParam')    # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay' / 'lambPhiRel_CPVDecay'
+
+        # check KK mass bin parameters
+        assert obsDict['KKMass'][4] == KKMassBinBounds[0] and obsDict['KKMass'][5] == KKMassBinBounds[-1]\
+               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass range in "KKMassBinBounds" is not the same as in "obsDict"'
+
+        if paramKKMass == 'parameters' or 'simultaneous' :
+            assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == len(CSPValues) == len(KKMassBinBounds) - 1,\
+                   'P2VV - ERROR: wrong number of KK mass bin parameters specified'
+            print 'P2VV - INFO: KK mass bins: %s' % ' - '.join( '%.1f' % binEdge for binEdge in KKMassBinBounds )
+        else :
+            assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == 0 and len(CSPValues) == 1,\
+                   'P2VV - ERROR: only one S-P-wave coupling factor and no S-wave amplitude values should be specified'
+
+        if ASParam != 'Mag2ReIm' :
+            print 'P2VV - INFO: using S-P-wave coupling factors:',
+            for iter, fac in enumerate(CSPValues) : print '%d: %.4f%s' % ( iter, fac, '' if iter == len(CSPValues) - 1 else ',' ),
+            print
 
 
         ###################################################################################################################################
@@ -490,8 +503,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if SSTagging : obsSetP2VV.append( observables['iTagSS'] )
         if not SFit :
             obsSetP2VV.append( observables['mass'] )
-        if paramKKMass in [ 'functions', 'amplidudes' ] :
-            obsSetP2VV.append( observables['KKMass'] )
 
 
         ###################################################################################################################################
@@ -634,11 +645,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # transversity amplitudes
         commonArgs = dict( AmbiguityParameters = ambiguityPars )
-        if paramKKMass == 'amplitudes' :
-            commonArgs[ 'KKMass' ]        = observables['KKMass']
-            commonArgs[ 'KKMassBinning' ] = self._KKMassBinning
-        if paramKKMass != 'functions' and not ASParam.startswith('Mag2ReIm') :
-            commonArgs[ 'C_SP' ] = CSPValues[0]
+        if paramKKMass == 'parameters' :
+            commonArgs[ 'KKMassCategory' ] = observables['KKMassCat']
+        if not ASParam.startswith('Mag2ReIm') :
+            if len(CSPValues) == 1 :
+                commonArgs['C_SP'] = CSPValues[0]
+            elif paramKKMass == 'parameters' :
+                for it, val in enumerate(CSPValues) : commonArgs[ 'C_SP_bin%d' %it ] = val
 
         if amplitudeParam == 'phasesSWaveFrac' :
             from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
@@ -1015,7 +1028,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     , Histogram = timeEffHistExclBName if timeEffType == 'HLT1ExclBiased'\
                                                                   else timeEffHistUBName
                                                     , ResolutionModel = self._timeResModel
-                                                    , Spline = spline, SmoothSpline = smooth )
+                                                    , Spline = splineAcc, SmoothSpline = smoothSplineAcc )
             else:
                 raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown time efficiency type: "%s" (with "%s" selection)'\
                                  % ( timeEffType, selection ) )
@@ -1084,23 +1097,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                 , Data = sigData )
             self._backgroundKKMass = Binned_MassPdf( 'bkg_mKK', observables['KKMass'], Binning = self._KKMassBinning
                                                     , Data = cbkgData )
-            if paramKKMass == 'amplitudes' :
-                self._signalComps += self._signalKKMass.pdf()
-                if not SFit: self._backgroundComps += self._backgroundKKMass.pdf()
 
-            if makePlots :
-                self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
-                for ( pad, data, pdf, plotTitle, scale )\
-                      in zip(  self._KKMassCanv.pads( 2, 2 )
-                             , [ sigData, cbkgData ]
-                             , [ self._signalKKMass.pdf(), self._backgroundKKMass.pdf() ]
-                             , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
-                             , [ ( 5., 1.e4 ), ( 1.2e2, 1.2e3 ) ]
-                            ) :
-                    plot(  pad, observables['KKMass'], data, pdf, logy = True, yScale = scale
-                         , frameOpts  = dict( Title = observables['KKMass'].GetTitle() + plotTitle )
-                         , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue )
-                        )
+            self._KKMassCanv = TCanvas( 'KKMassCanv', 'KK Mass' )
+            for ( pad, data, pdf, plotTitle, scale )\
+                  in zip(  self._KKMassCanv.pads( 2, 2 )
+                         , [ sigData, cbkgData ]
+                         , [ self._signalKKMass.pdf(), self._backgroundKKMass.pdf() ]
+                         , [ ' - signal (B mass S-weights)', ' - background (B mass S-weights)' ]
+                         , [ ( 5., 1.e4 ), ( 1.2e2, 1.2e3 ) ]
+                        ) :
+                plot(  pad, observables['KKMass'], data, pdf, logy = True, yScale = scale
+                     , frameOpts  = dict( Title = observables['KKMass'].GetTitle() + plotTitle )
+                     , dataOpts   = dict( MarkerStyle = 8, MarkerSize = 0.4 )#, MarkerColor = kBlue, LineColor = kBlue )
+                    )
 
 
         ###################################################################################################################################
@@ -1624,20 +1633,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # first garbage collect
         gc.collect()
 
-        # check number of KK mass bin parameters
-        if paramKKMass == 'simultaneous' :
-            assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == len(CSPValues) == len(KKMassBinBounds) - 1,\
-                   'P2VV - ERROR: wrong number of KK mass bin parameters specified'
-            print 'P2VV - INFO: KK mass bins: %s' % ' - '.join( '%.1f' % binEdge for binEdge in KKMassBinBounds )
-        else :
-            assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == 0 and len(CSPValues) == 1,\
-                   'P2VV - ERROR: only one S-P-wave coupling factor and no S-wave amplitude values should be specified'
-
-        if ASParam != 'Mag2ReIm' :
-            print 'P2VV - INFO: using S-P-wave coupling factors:',
-            for iter, fac in enumerate(CSPValues) : print '%d: %.4f%s' % ( iter, fac, '' if iter == len(CSPValues) - 1 else ',' ),
-            print
-
         if ( not SFit and selection in ['paper2012', 'timeEffFit'] ) or paramKKMass == 'simultaneous' :
             # categories for splitting the PDF
             splitCats = [ [ ] ]
@@ -1788,8 +1783,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
                     splitCatState = splitCatIter.Next()
 
+        else :
+            self._simulPdf = None
+
         assert not pdfConfig, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % pdfConfig
-        PdfBuilder.__init__( self, self._simulPdf if paramKKMass == 'simultaneous' else self._fullPdf, observables, { } )
+        PdfBuilder.__init__( self, self._simulPdf if self._simulPdf else self._fullPdf, observables, { } )
         print 120 * '='
 
         # garbage collect

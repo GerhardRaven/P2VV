@@ -13,8 +13,8 @@ pdfConfig['selection']  = 'paper2012'
 parFileIn  = ''
 parFileOut = ''
 
-dataSetName = 'JpsiKK_splotdata_weighted_sigMass'
-dataSetFile = 'data/P2VVDataSets_6KKMassBins_noTagCats.root'
+dataSetName = 'JpsiKK_sigSWeight'
+dataSetFile = 'data/P2VVDataSets2011Reco12_6KKMassBins_2TagCats.root'
 
 pdfConfig['timeEffHistFile']      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
@@ -45,11 +45,14 @@ pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012'
 pdfConfig['multiplyByAngEff']     = 'weights'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
 pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
 pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
                                      , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
 pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+
+KKMassPars = pdfConfig['obsDict']['KKMass']
+pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
+                                  , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
 
 pdfConfig['sameSideTagging']    = True
 pdfConfig['conditionalTagging'] = True

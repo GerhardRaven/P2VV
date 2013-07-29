@@ -45,7 +45,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         if not self._hist:
             raise ValueError, 'Cannot get acceptance histogram %s from file' % histogram
 
-        if kwargs.pop('Spline',True) :
+        if not kwargs.pop('Spline', False) :
             from P2VV.RooFitWrappers import BinnedPdf
             self._shape = BinnedPdf(name + '_shape', Observable = self._time, Histogram = self._hist )
             from P2VV.RooFitWrappers import EffResModel

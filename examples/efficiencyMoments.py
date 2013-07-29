@@ -189,18 +189,20 @@ else :
 from P2VV.GeneralUtils import RealMomentsBuilder
 if physPdf :
     from P2VV.RooFitWrappers import RealEffMoment
-    physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( func, 1, pdf, [ ], angles )\
+    physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,
+                                                                Norm = 1., PDF = pdf, IntSet = [ ], NormSet = angles )\
                                                   for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
                                                 )
                                     )
 
 else :
     from P2VV.RooFitWrappers import RealMoment
-    physMoments = RealMomentsBuilder( Moments = ( RealMoment( func, 1 )\
+    physMoments = RealMomentsBuilder( Moments = ( RealMoment( Name = func.GetName(), BasisFunc = func, Norm = 1. )\
                                                   for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
                                                 )
                                     )
 
+physMoments.initCovariances()
 
 # moments builder with angular basis functions
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]

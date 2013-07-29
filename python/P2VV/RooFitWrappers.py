@@ -20,6 +20,8 @@ def __wrap__dref_var__( fun ) :
     return _fun
 
 RooAbsCollection.__contains__ = __wrap__dref_var__( RooAbsCollection.__contains__ )
+RooArgSet.__init__ = __wrap__dref_var__( RooArgSet.__init__ )
+RooArgList.__init__ = __wrap__dref_var__( RooArgList.__init__ )
 RooAbsData.table = __wrap__dref_var__( RooAbsData.table )
 
 
@@ -440,11 +442,8 @@ class FormulaVar (RooObject) :
             self._declare(spec)
             self._init(Name, 'RooFormulaVar')
         else:
-            l = RooArgList()
-            for arg in fargs:
-                l.add(__dref__(arg))
-            from ROOT import RooFormulaVar
-            form = RooFormulaVar(Name, Name, formula, l)
+            from ROOT import RooFormulaVar, RooArgList
+            form = RooFormulaVar(Name, Name, formula, RooArgList( fargs ) )
             form = data.addColumn(form)
             form = self._addObject(form)
             self._init(Name, 'RooRealVar')
@@ -460,14 +459,21 @@ class RealCategory(RooObject) :
 
 class ConstVar(RooObject) :
     def __init__(self,**kwargs):
-        # construct factory string on the fly...
-        __check_req_kw__( 'Value', kwargs )
         __check_req_kw__( 'Name', kwargs )
         __check_name_syntax__( kwargs['Name'] )
-        self._declare("ConstVar::%(Name)s(%(Value)s)" % kwargs )
-        (Name, value) = (kwargs.pop('Name'),kwargs.pop('Value'))
-        self._init(Name,'RooConstVar')
-        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        Name = kwargs.pop('Name')
+        if Name not in self.ws():
+            # construct factory string on the fly...
+            __check_req_kw__( 'Value', kwargs )
+            value = kwargs.pop('Value')
+            self._declare("ConstVar::%s(%s)" % ( Name, value ) )
+            self._init(Name,'RooConstVar')
+            for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+        else:
+            self._init(Name,'RooConstVar')
+            # Make sure we are the same as last time
+            for k, v in kwargs.iteritems():
+                assert v == self[k], '\'%s\' is not the same for %s' % ( k, Name )
 
 class LinearVar(RooObject) :
     def __init__(self, **kwargs):
@@ -494,6 +500,7 @@ class MultiVarGaussian(RooObject):
         __check_name_syntax__(kwargs['Name'])
 
         name = kwargs.pop('Name')
+        from ROOT import RooArgList
         args = [RooArgList(*kwargs.pop(k)) for k in ['Parameters', 'CentralValues']] \
                + [kwargs.pop('Covariance')]
         from ROOT import RooMultiVarGaussian
@@ -546,48 +553,80 @@ class P2VVAngleBasis (RooObject) :
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 
-class AbsRealMoment( object ):
-    def __init__( self, moment )  : self._var = moment
-    def __getattr__( self, name ) : return getattr(self._var, name)
-    def GetName( self )           : return self.basisFunc().GetName()
-    def basisFunc( self )         : return self._basisFunc
-    def pdf( self )               : return self._pdf
-    def normSet( self )           : return self._normSet
-
-class RealMoment( AbsRealMoment ):
-    def __init__( self, BasisFunc, Norm ) :
+class RealMoment( object ):
+    def __init__( self, **kwargs ) :
         # get arguments
-        self._basisFunc = BasisFunc
-        self._norm      = Norm
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'BasisFunc', kwargs )
+        __check_req_kw__( 'Norm', kwargs )
+
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+        self._basisFunc = kwargs.pop('BasisFunc')
+        self._norm      = kwargs.pop('Norm')
+
+        # build vector with other moments
+        from P2VV.Load import P2VVLibrary
+        from ROOT import std
+        self._moments = std.vector('RooRealMoment*')()
+        for mom in kwargs.pop( 'Moments', [ ] ) : self._moments.push_back(mom._var)
 
         # create moment
         from P2VV.Load import P2VVLibrary
         from ROOT import RooRealMoment
-        AbsRealMoment.__init__( self, RooRealMoment( __dref__(self._basisFunc), self._norm ) )
+        self._var = RooRealMoment( __dref__(self._basisFunc), self._moments, self._norm, name )
 
-class RealEffMoment( AbsRealMoment ):
-    def __init__( self, BasisFunc, Norm, PDF, IntSet, NormSet ) :
+    def __getattr__( self, name ) : return getattr( self._var, name )
+    def basisFunc(self) : return self._basisFunc
+    def moments(self)   : return self._moments
+    def norm(self)      : return self._norm
+
+    def appendMoments( self, Moments ) :
+        if not Moments : return
+
+        from ROOT import std
+        appMoms = std.vector('RooRealMoment*')()
+        for mom in Moments :
+            appMoms.push_back(mom._var)
+            self._moments.push_back(mom._var)
+        self._var.appendMoments(appMoms)
+
+class RealEffMoment( RealMoment ):
+    def __init__( self, **kwargs ) :
         # get arguments
-        self._basisFunc = BasisFunc
-        self._norm      = Norm
-        self._pdf       = PDF
-        self._intSet    = IntSet
-        self._normSet   = NormSet
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'BasisFunc', kwargs )
+        __check_req_kw__( 'Norm', kwargs )
+        __check_req_kw__( 'PDF', kwargs )
+        __check_req_kw__( 'NormSet', kwargs )
+
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+        self._basisFunc = kwargs.pop('BasisFunc')
+        self._norm      = kwargs.pop('Norm')
+        self._pdf       = kwargs.pop('PDF')
+        self._intSet    = kwargs.pop( 'IntSet', [ ] )
+        self._normSet   = kwargs.pop('NormSet')
 
         # build RooFit integration and normalisation sets
         self._rooIntSet  = ArgSet( self._basisFunc.GetName() + '_intSet',  ( var for var in self._intSet  ) )
         self._rooNormSet = ArgSet( self._basisFunc.GetName() + '_normSet', ( var for var in self._normSet ) )
 
+        # build vector with other moments
+        from P2VV.Load import P2VVLibrary
+        from ROOT import std
+        self._moments = std.vector('RooRealMoment*')()
+        for mom in kwargs.pop( 'Moments', [ ] ) : self._moments.push_back(mom._var)
+
         # create efficiency moment
         from P2VV.Load import P2VVLibrary
         from ROOT import RooRealEffMoment
-        AbsRealMoment.__init__( self, RooRealEffMoment(  __dref__(self._basisFunc)
-                                                       , self._norm
-                                                       , __dref__(self._pdf)
-                                                       , __dref__(self._rooIntSet)
-                                                       , __dref__(self._rooNormSet)
-                                                      )
-                              )
+        self._var = RooRealEffMoment(  __dref__(self._basisFunc), self._moments, __dref__(self._pdf), __dref__(self._rooIntSet)
+                                     , __dref__(self._rooNormSet), self._norm, name )
+
+    def pdf(self)     : return self._pdf
+    def intSet(self)  : return self._intSet
+    def normSet(self) : return self._normSet
 
 class CalibratedDilution( RooObject ) :
     def __init__( self, **kwargs ) :
@@ -621,7 +660,7 @@ class ComplementCoef( RooObject ) :
 
         # build a RooComplementCoef (no workspace declaration, since factory string has limited length!!!)
         from ROOT import RooArgList, RooComplementCoef
-        coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
+        coefList = RooArgList( kwargs.pop('Coefficients')  )
         complCoef = RooComplementCoef( name, name, coefList )
         self._addObject(complCoef)
         complCoef.IsA().Destructor(complCoef)
@@ -629,6 +668,28 @@ class ComplementCoef( RooObject ) :
         # initialize
         self._init( name, 'RooComplementCoef' )
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
+
+class ConvertPolAmp( RooObject ) :
+    def __init__( self, **kwargs ) :
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'Type', kwargs )
+        __check_req_kw__( 'Arguments', kwargs )
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+
+        evalType = kwargs.pop('Type')
+        assert evalType in [ 'FracToMag', 'FracToMagSq', 'MagToFrac', 'MagSqToFrac', 'PolToRe', 'PolToIm', 'PolSqToRe', 'PolSqToIm'
+                            , 'MagSqSinToReIm', 'CarthToMag', 'CarthToMagSq', 'CarthFracToMagSq', 'CarthToPhase', 'ProdCarthPhaseToRe'
+                            , 'ProdCarthPhaseToIm', 'PolSqToReC', 'PolSqToImC', 'ProdCarthToRe', 'ProdCarthToIm', 'ProdCarthCToRe'
+                            , 'ProdCarthCToIm', 'PolSqToReRelC', 'PolSqToImRelC', 'FracPolToReC', 'FracPolToImC', 'FracPolToReRelC'
+                            , 'FracPolToImRelC', 'FracCarthToReRelC', 'FracCarthToImRelC', 'PolSqToReRelMagC', 'PolSqToImRelMagC'
+                            , 'MixSqToReRelMagC', 'MixSqToImRelMagC' ]\
+                , 'P2VV - ERROR: ConvertPolAmp: type "%s" unknown' % evalType
+
+        from P2VV.Load import P2VVLibrary
+        self._declare( 'ConvertPolAmp::%s(%s,{%s})' % ( name, evalType, ','.join( str(arg) for arg in kwargs.pop('Arguments') ) ) )
+        self._init( name, 'RooConvertPolAmp' )
+        for key, val in kwargs.iteritems() : self.__setitem__( key, val )
 
 class EfficiencyBin(RooObject):
     def __init__( self, **kwargs ) :
@@ -764,6 +825,30 @@ class RealVar (RooObject) :
 
     def getRange(self):
         return self._target_().getMin(), self._target_().getMax()
+
+class CategoryVar(RooObject) :
+    _getters = { 'Value' : lambda s : s.getVal() }
+
+    def __init__(self, **kwargs):
+        __check_req_kw__( 'Name', kwargs )
+        name = kwargs.pop('Name')
+        __check_name_syntax__(name)
+        if name not in self.ws() :
+            __check_req_kw__( 'Category',  kwargs )
+            __check_req_kw__( 'Variables', kwargs )
+            from P2VV.Load import P2VVLibrary
+            spec = 'CategoryVar::%s(%s,{%s})'\
+                   % ( name, kwargs.pop('Category'), ','.join( var.GetName() for var in kwargs.pop('Variables') ) )
+            self._declare(spec)
+            self._init( name, 'RooCategoryVar' )
+
+        else :
+            self._init( name, 'RooCategoryVar' )
+            for key, val in kwargs.iteritems() :
+                assert val == self[key], '"%s" is not the same for "%s"' % ( key, name )
+
+        for key, val in kwargs.iteritems() : self.__setitem__( key, val )
+
 
 ##TODO, factor out common code in Pdf and ResolutionModel
 
@@ -1180,8 +1265,7 @@ class HistFunc(RooObject):
             raise TypeError, "HistFunc can only handle 1D historgrams"
         _dn = Name + '_data_hist'
         # Create Datahist and Import with density set to false
-        _data = RooDataHist(_dn, _dn, RooArgList(*[__dref__(o) for o in kwargs['Observables']]),
-                            RooFit.Import(_hist, False))
+        _data = RooDataHist(_dn, _dn, RooArgList( kwargs['Observables']), RooFit.Import(_hist, False))
         self.ws().put(_data)
         self._declare('RooHistFunc::%s({%s}, %s)' % (Name, ','.join([o.GetName() for o in kwargs.pop('Observables')]), _data.GetName()))
         self._init(Name, 'RooHistFunc')
@@ -1265,9 +1349,7 @@ class TPDecay(Pdf):
     def __init__(self, Name, **kwargs):
         from ROOT import RooTPDecay
         from ROOT import RooArgList
-        tps = RooArgList()
-        for tp in kwargs.pop('TurningPoints'):
-            tps.add(__dref__(tp))
+        tps = RooArgList( kwargs.pop('TurningPoints'))
         t = kwargs.pop('Time')
         tau = kwargs.pop('Tau')
         model = kwargs.pop('ResolutionModel')
@@ -1412,7 +1494,7 @@ class BinnedPdf( Pdf ) :
             # build list of base categories
             from ROOT import RooArgList
             categories = kwargs.pop('Categories')
-            varList = RooArgList(__dref__(var) for var in categories)
+            varList = RooArgList(categories)
 
             if hasattr( kwargs['Coefficients'][0], '__iter__' ) :
                 # coefficients for different variables factorize
@@ -1423,7 +1505,7 @@ class BinnedPdf( Pdf ) :
                 from ROOT import TObjArray, RooArgList
                 coefLists = TObjArray()
                 for coefficients in kwargs.pop('Coefficients') :
-                    coefLists.Add(RooArgList( __dref__(coef) for coef in coefficients ))
+                    coefLists.Add(RooArgList(coefficients ))
 
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefLists, int( kwargs.pop( 'IgnoreFirstBin', 0 ) ) )
@@ -1433,7 +1515,7 @@ class BinnedPdf( Pdf ) :
 
                 # build coefficients list
                 from ROOT import RooArgList
-                coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') ) 
+                coefList = RooArgList( kwargs.pop('Coefficients') ) 
 
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefList )
@@ -1464,7 +1546,7 @@ class BinnedPdf( Pdf ) :
                 self._binning.SetName(binning_name)
                 var.setBinning(self._binning, binning_name)
                 from ROOT import RooArgList
-                coefList = RooArgList( __dref__(coef) for coef in self._binHeights )
+                coefList = RooArgList( self._binHeights )
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'],argDict['Name'],__dref__(var),binning_name, coefList
                                     , int( kwargs.pop( 'BinIntegralCoefs', 0 ) ) )
@@ -1489,7 +1571,7 @@ class BinnedPdf( Pdf ) :
             # build list of base variables
             from ROOT import RooArgList
             observables = kwargs.pop('Observables')
-            varList = RooArgList(__dref__(var) for var in observables )
+            varList = RooArgList( observables )
 
             # build list of binning names
             assert len(kwargs['Binnings']) == len(observables),\
@@ -1515,7 +1597,7 @@ class BinnedPdf( Pdf ) :
                     from ROOT import TObjArray, RooArgList
                     coefLists = TObjArray()
                     for coefficients in kwargs.pop('Coefficients') :
-                        coefLists.Add(RooArgList(__dref__(coef) for coef in coefficients))
+                        coefLists.Add(RooArgList(coefficients))
 
                     from ROOT import RooBinnedPdf
                     bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, binningList, coefLists
@@ -1526,7 +1608,7 @@ class BinnedPdf( Pdf ) :
 
                     # build coefficients list
                     from ROOT import RooArgList
-                    coefList = RooArgList(__dref__(coef) for coef in kwargs.pop('Coefficients') )
+                    coefList = RooArgList( kwargs.pop('Coefficients') )
 
                     from ROOT import RooBinnedPdf
                     bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, binningList, coefList
@@ -1676,13 +1758,8 @@ class EffResAddModel(ResolutionModel):
             externals |= set(model.ExternalConstraints())
 
         from ROOT import RooEffResAddModel
-        def make_alist(l):
-            alist = RooArgList()
-            for e in l:
-                alist.add(__dref__(e))
-            return alist
-        models = make_alist(self.__models)
-        fracs = make_alist(self.__fractions)
+        models = RooArgList(self.__models)
+        fracs = RooArgList(self.__fractions)
         model = RooEffResAddModel(name, name, models, fracs)
         self._addObject(model)
         self._init(name, 'RooEffResAddModel')
@@ -1737,10 +1814,7 @@ class CubicSplineFun(RooObject):
         if hist:
             csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeffs)
         elif knots and coeffs and not values:
-            al = RooArgList()
-            for c in coeffs:
-                al.add(__dref__(c))
-            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), al)
+            csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), RooArgList( coeffs ) )
         elif knots and values and errors and not coeffs:
             csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), __make_vector(values),
                                     __make_vector(errors), smooth, const_coeffs)
@@ -1831,7 +1905,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
         self.__knots = None
         from copy import copy
         from ROOT import RooBinning        
-        from ROOT import RooArgList
 
         if self.__spline:
             self.__knots = {}

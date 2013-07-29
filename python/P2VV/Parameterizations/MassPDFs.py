@@ -256,6 +256,7 @@ class Box_Signal_Mass ( MassPdf ) :
         self._parseArg( '%sm_sig_width' % self._prefix,  kwargs, Title = 'B Mass width', Unit = 'MeV/c^2'
                        , Value = 11.,   Error = 0.1,  MinMax = ( 0.1, 35. ) )
 
+        from P2VV.Load import P2VVLibrary
         from ROOT import RooBoxPdf as BoxPdf
         from P2VV.RooFitWrappers import Pdf
         MassPdf.__init__( self, pdf = Pdf(  Name = kwargs.pop( 'Name', 'Box_Signal_Mass' )

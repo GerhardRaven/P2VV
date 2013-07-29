@@ -48,10 +48,11 @@ RooInf = RooNumber.infinity()
 ## Tagging tools ##
 ###################
 
-def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., SameSide = False
+def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., SameSide = False, WeightVarName = ''
                             , avgEstWTag = None, P0 = None, P1 = None, P0Err = None, P1Err = None, AP0 = None, AP1 = None ) :
     assert data, 'getTagCatParamsFromData(): no data set found'
-    assert estWTagName and data.get(0).find(estWTagName), 'getTagCatParamsFromData(): estimated wrong-tag probability not found in data'
+    assert estWTagName and data.get().find(estWTagName), 'getTagCatParamsFromData(): estimated wrong-tag probability not found in data'
+    if WeightVarName : assert data.get().find(WeightVarName), 'getTagCatParamsFromData(): weight variable not found in data'
 
     if avgEstWTag == None : avgEstWTag = avgEtaOSVal                         if not SameSide else avgEtaSSVal
     if P0         == None : P0         = P0OSConstrVal                       if not SameSide else P0SSConstrVal
@@ -70,10 +71,9 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
 
     tagCatsCalc = tagCats[ : ]
 
-    etaMin = 0.
+    etaMin = 0.5
     if not tagCatsCalc :
         # get minimum estimated wrong-tag probability
-        etaMin = 0.5
         for varSet in data : etaMin = min( etaMin, varSet.getRealValue(estWTagName) )
 
         # determine binning in estimated wrong-tag probability from data
@@ -105,12 +105,12 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
 
     # determine tagging category parameters
     numTagCats = len(tagCatsCalc)
-    numEvTot   = data.sumEntries()
     numEvCats  = [0]  * numTagCats
     sumEtaCats = [0.] * numTagCats
     for varSet in data :
         # get estimated wrong-tag probability for this event
         eta = varSet.getRealValue(estWTagName)
+        if eta < etaMin : etaMin = eta
 
         # determine tagging category
         cat = -1
@@ -121,18 +121,17 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
         if cat < 0 : raise RuntimeError('getTagCatParamsFromData(): estimated wrong-tag probability out of range')
 
         # update number of events and sum of estimated wrong-tag probabilities
-        numEvCats[cat]  += data.weight()
-        sumEtaCats[cat] += eta * data.weight()
+        weight = varSet.getRealValue(WeightVarName) if WeightVarName else data.weight()
+        numEvCats[cat]  += weight
+        sumEtaCats[cat] += eta * weight
 
-    # check number of events
-    numEvTotCount = 0.
-    for numEv in numEvCats : numEvTotCount += numEv
-    assert abs( numEvTotCount - numEvTot ) < 1.e-10 * abs( numEvTotCount + numEvTot ),\
-           'getTagCatParamsFromData(): counted number of events is not equal to number of events in data set'
+    # get total number of events
+    numEvTot = sum(numEvCats)
+    etaMean  = sum(sumEtaCats) / ( numEvTot if numEvTot else 1. )
 
     # update tagging category parameters
     for cat in range(numTagCats) :
-        avgEtaCat = sumEtaCats[cat] / numEvCats[cat]
+        avgEtaCat = ( sumEtaCats[cat] / numEvCats[cat] ) if numEvCats[cat] != 0. else 0.
         tagCatsCalc[cat] = tagCatsCalc[cat][ : 3 ]\
                            + (  avgEtaCat
                               , P0 + P1 * ( avgEtaCat - avgEstWTag ), 0.
@@ -144,7 +143,7 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
     print 'P2VV - INFO: getTagCatParamsFromData(): tagging category binning:'
     print '    <eta> = %.3f   P0 = %.3f +- %.3f   P1 = %.3f +- %.3f    P0 asym. = %.3f    P1 asym. = %.3f'\
           % ( avgEstWTag, P0, P0Err, P1, P1Err, AP0, AP1 )
-    print '    minimum eta = %.3f    average eta = %.3f' % ( etaMin, data.mean( data.get(0).find(estWTagName) ) )
+    print '    minimum eta = %.3f    average eta = %.3f' % ( etaMin, etaMean )
     for bin, cat in enumerate(tagCatsCalc) :
         deltaEta = ( ( cat[2] - tagCatsCalc[bin + 1][2] ) / 2. ) if bin < len(tagCatsCalc) - 1 else ( ( cat[2] - etaMin ) / 2. )
         if cat[2] >= avgEstWTag : binRangeSig = P1 * deltaEta / ( P0Err + P1Err * ( cat[2] - avgEstWTag - deltaEta ) )
@@ -367,11 +366,11 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
 
         # check for remaining arguments and initialize
         self._check_extraneous_kw( kwargs )
-        from P2VV.RooFitWrappers import FormulaVar
+        from P2VV.RooFitWrappers import FormulaVar, ComplementCoef
         if hasattr( self, 'wTag' ) and hasattr( self, 'wTagBar' ) :
             TaggingParams.__init__( self
-                                   , Dilutions = [ FormulaVar(  'tagDilution', '1. - @0 - @1'
-                                                   , [ self._wTag, self._wTagBar ], Title = 'Tagging dilution' ) ]
+                                   , Dilutions = [ ComplementCoef( Name = 'tagDilution', Title = 'Tagging dilution'
+                                                                  , Coefficients = [ self._wTag, self._wTagBar ] ) ]
                                    , ADilWTags = [ FormulaVar(  'ADilWTag',    '(@0 - @1) / (1. - @0 - @1)'
                                                    , [ self._wTag, self._wTagBar ], Title = 'Dilution/wrong-tag asymmetry' ) ]
                                    , CEvenOdds = [ CEvenOdd ]
@@ -468,7 +467,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
         CEvenOdds[0].append(CEvenOddSum)
 
         # get tagging category coefficients and asymmetries (assume factorization)
-        from P2VV.RooFitWrappers import ConstVar, FormulaVar, Product
+        from P2VV.RooFitWrappers import ConstVar, ComplementCoef, Product
         if numTagCats[0] > 1 :
             for index0 in range( 1, numTagCats[0] ) :
                 self._parseArg(  'tagCatCoef0_%d' % index0, kwargs, ContainerList = self._singleTagCatCoefs[0]
@@ -482,11 +481,8 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                     if isinstance( ATagEffVal, RooObject ) : ATagEffVal = ATagEffVal.getVal()
                     self._ATagEffVals[0].append( ATagEffVal )
 
-            self._singleTagCatCoefs[0].insert( 0, FormulaVar(  'tagCatCoef0_0'
-                                                             , '1-@' + '-@'.join( str(i) for i in range( numTagCats[0] - 1 ) )
-                                                             , self._singleTagCatCoefs[0]
-                                                            )
-                                             )
+            self._singleTagCatCoefs[0].insert( 0, ComplementCoef( Name = 'tagCatCoef0_0', Title = 'Tagging category coefficient 0 0'
+                                                                 , Coefficients = self._singleTagCatCoefs[0] ) )
 
             if hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
                 tagCatProd0 = 0.
@@ -511,10 +507,10 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                     self._ATagEffVals[1].append( ATagEffVal )
 
             if numTagCats[0] > 0 :
-                self._singleTagCatCoefs[1].insert( 0, FormulaVar(  'tagCatCoef%s0' % namePF
-                                                                 , '1-@' + '-@'.join( str(i) for i in range( numTagCats[1] - 1 ) )
-                                                                 , self._singleTagCatCoefs[1]
-                                                                )
+                self._singleTagCatCoefs[1].insert( 0, ComplementCoef(  Name = 'tagCatCoef%s0' % namePF
+                                                                     , Title = 'Tagging category coefficient 1 0'
+                                                                     , Coefficients = self._singleTagCatCoefs[1]
+                                                                    )
                                                  )
 
                 if hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
@@ -1239,7 +1235,7 @@ class BinnedTaggingPdf( _util_parse_mixin ) :
             self._tagCatCoefs1 = [ ]
             self._tagCatCoefs = [ [] for cat in range( max( 1, self._numTagCats[0] ) ) ]
 
-            from P2VV.RooFitWrappers import FormulaVar
+            from P2VV.RooFitWrappers import ComplementCoef
             if self._tagCats[0] :
                 # coefficients for flavour tag 0
                 for coef0Iter in range( 1, self._numTagCats[0] ) :
@@ -1267,11 +1263,8 @@ class BinnedTaggingPdf( _util_parse_mixin ) :
                                   )
 
                 # coefficient for category 0: "one minus the sum of other categories"
-                self._tagCatCoefs0 = [ FormulaVar(  self._namePF + 'tagCatCoef0_0'
-                                                  , '1.-%s' % '-'.join( '@%d' % cat for cat in range( len(self._tagCatCoefs0) ) )
-                                                  , self._tagCatCoefs0[ : ]
-                                                  , Title = 'Tagging categories 0 coefficient 0'
-                                                 )
+                self._tagCatCoefs0 = [ ComplementCoef( Name = self._namePF + 'tagCatCoef0_0', Title = 'Tagging categories 0 coefficient 0'
+                                                      , Coefficients = self._tagCatCoefs0 )
                                      ] + self._tagCatCoefs0
 
             # coefficients for flavour tag 1
@@ -1300,11 +1293,8 @@ class BinnedTaggingPdf( _util_parse_mixin ) :
                               )
 
             # coefficient for category 0: "one minus the sum of other categories"
-            self._tagCatCoefs1 = [ FormulaVar(  self._namePF + 'tagCatCoef1_0'
-                                              , '1.-%s' % '-'.join( '@%d' % cat for cat in range( len(self._tagCatCoefs1) ) )
-                                              , self._tagCatCoefs1[ : ]
-                                              , Title = 'Tagging categories 1 coefficient 0'
-                                             )
+            self._tagCatCoefs1 = [ ComplementCoef( Name = self._namePF + 'tagCatCoef1_0', Title = 'Tagging categories 1 coefficient 0'
+                                                  , Coefficients = self._tagCatCoefs1 )
                                  ] + self._tagCatCoefs1
 
             # tagging category coefficients

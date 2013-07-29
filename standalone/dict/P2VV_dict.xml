@@ -6,11 +6,10 @@
     <selection>
         <!-- <class pattern = "std::vector<*>" /> -->
 
-        <class name = "RooAbsRealMoment" />
         <class name = "RooRealMoment" />
         <class name = "RooRealEffMoment" />
         <function name = "computeRooRealMoments" />
-        <class name = "std::vector<RooAbsRealMoment*>" />
+        <class name = "std::vector<RooRealMoment*>" />
         <class name = "ProgressDisplay" />
         <class name = "RooBTagDecay" />
         <class name = "RooTrivialTagDecay" />
@@ -23,6 +22,7 @@
         <class name = "RooRealCategory" />
         <class name = "RooCalibratedDilution" />
         <function name = "RooDataSetToTree" />
+        <function name = "TreeToRooDataSet" />
         <class name = "RooTransAngle" />
         <class name = "RooCruijff" />
         <class name = "RooEfficiencyBin" />
@@ -43,6 +43,8 @@
         <class name = "RooTPDecay" />
         <class name = "RooAmoroso" />
         <class name = "RooMassDependence" />
+        <class name = "RooCategoryVar" />
+        <class name = "RooConvertPolAmp" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />

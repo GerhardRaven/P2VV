@@ -15,7 +15,6 @@
 #include "P2VV/RooTagDecisionWrapper.h"
 #include "P2VV/RooRealCategory.h"
 #include "P2VV/RooCalibratedDilution.h"
-#include "P2VV/RooDataSetToTree.h"
 #include "P2VV/Functions.h"
 #include "P2VV/RooTransAngle.h"
 #include "P2VV/RooCruijff.h"
@@ -38,6 +37,8 @@
 #include "P2VV/RooMassDependence.h"
 #include "P2VV/RooEffResAddModel.h"
 #include "P2VV/RooHessian.h"
+#include "P2VV/RooCategoryVar.h"
+#include "P2VV/RooConvertPolAmp.h"
 
 #include <map>
 #include <string>
@@ -66,7 +67,7 @@ struct Instantiations {
    std::vector<MultiHistEntry> _i16;
    std::map<int, MultiHistEntry*>::iterator _i17;
    std::vector<MultiHistEntry*> _i18;
-   std::vector<RooAbsRealMoment*> _i19;
+   std::vector<RooRealMoment*> _i19;
 
    std::list<RooDataSet*> _i20;
    std::vector<std::pair<double, double> > _i21;
