@@ -159,8 +159,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         if param:
             assert(len(sigmasSFs) == 2)
 
-        self._timeResSigmasSFs = [ RealVar( Name = 'timeResSigmaSF_%s' % num, Value = val, MinMax = (0.001, 20) ) for num, val in sigmasSFs ]
-        self._timeResFracs  = [ RealVar( Name = 'timeResFrac%s'  % num, Value = val, MinMax = (0.0001, 0.99) ) for num, val in fracs  ]
+        self._timeResSigmasSFs = [ RealVar( Name = '%stimeResSigmaSF_%s' % (namePF, num), Value = val, MinMax = (0.001, 20) ) for num, val in sigmasSFs ]
+        self._timeResFracs  = [ RealVar( Name = '%stimeResFrac%s' % (namePF, num), Value = val, MinMax = (0.0001, 0.99) ) for num, val in fracs  ]
 
         Name = kwargs.pop('Name', 'timeResModelMG')
 
@@ -168,10 +168,10 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         RooInf = RooNumber.infinity()
         if param == 'RMS': 
             from math import sqrt
-            self._rms = RealVar('timeResRMS', Value = sqrt((1 - fracs[0][1]) * sigmasSFs[1][1]
-                                                           + fracs[0][1] * sigmasSFs[0][1]),
+            self._rms = RealVar('%stimeResRMS' % namePF, Value = sqrt((1 - fracs[0][1]) * sigmasSFs[1][1]
+                                                                      + fracs[0][1] * sigmasSFs[0][1]),
                                 MinMax = (0.8, 5))
-            self._timeResSigmasSFs[1] = FormulaVar(Name + '_RMS', 'sqrt(1 / (1 - @0) * (@1 * @1 - @0 * @2 * @2))',
+            self._timeResSigmasSFs[1] = FormulaVar(namePF + Name + '_RMS', 'sqrt(1 / (1 - @0) * (@1 * @1 - @0 * @2 * @2))',
                                                    (self._timeResFracs[0], self._rms, self._timeResSigmasSFs[0]))
             self._realVars = [self._rms, self._timeResSigmasSFs[0]]
             if split_fracs:
@@ -179,21 +179,22 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         elif param == 'Comb':
             from P2VV.RooFitWrappers import PolyVar
             if sf_param:
-                self._parseArg('sf2_slope', kwargs, Value = -4.08319, MinMax = (-20, 20))
-                self._parseArg('sf2_offset', kwargs, Value = 2.03079, MinMax = (-20, 20))
+                self._parseArg('%ssf2_slope' % namePF, kwargs, Value = -4.08319, MinMax = (-20, 20))
+                self._parseArg('%ssf2_offset' % namePF, kwargs, Value = 2.03079, MinMax = (-20, 20))
                 self._sf2_original = self._timeResSigmasSFs[0]
                 self._timeResSigmasSFs[0] = PolyVar(Name = self._sf2_original.GetName() + '_linear',
                                                     Observable = self.__st_placeholder,
                                                     Coefficients = [self._sf2_offset, self._sf2_slope])
-                self._parseArg('sfc_slope', kwargs, Value = -3.41081, MinMax = (-20, 20))
-                self._parseArg('sfc_offset', kwargs, Value = 1.43297, MinMax = (-20, 20))
-                self._comb = PolyVar(Name = 'timeResComb_linear', Observable = self.__st_placeholder,
+                self._parseArg('%ssfc_slope' % namePF, kwargs, Value = -3.41081, MinMax = (-20, 20))
+                self._parseArg('%ssfc_offset' % namePF, kwargs, Value = 1.43297, MinMax = (-20, 20))
+                self._comb = PolyVar(Name = '%stimeResComb_linear' % namePF, Observable = self.__st_placeholder,
                                      Coefficients = [self._sfc_offset, self._sfc_slope])
             else:
-                self._comb = RealVar('timeResComb', Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
-                                                             + fracs[0][1] * sigmasSFs[0][1]),
-                                                             MinMax = (0.5, 5))
-            self._timeResSigmasSFs[1] = FormulaVar(Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
+                self._comb = RealVar('%stimeResComb' % namePF,
+                                     Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
+                                              + fracs[0][1] * sigmasSFs[0][1]),
+                                              MinMax = (0.5, 5))
+                self._timeResSigmasSFs[1] = FormulaVar(namePF + Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
                                                    (self._timeResFracs[0], self._comb, self._timeResSigmasSFs[0]))
             if sf_param:
                 self._realVars = []
@@ -228,7 +229,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                     params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
                 
             model_type = GExpModel if gexp else GaussModel
-            model = ResolutionModel(  Name = 'timeResGauss_%s' % numVal[0]
+            model = ResolutionModel(  Name = '%stimeResGauss_%s' % (namePF, numVal[0])
                                       , Type = model_type
                                       , Parameters = params
                                       , ConditionalObservables = [ self._sigmat ] if pee else [])

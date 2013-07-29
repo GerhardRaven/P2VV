@@ -45,6 +45,13 @@
 #pragma link C++ function addVertexErrors;
 #pragma link C++ function sigmaFromFT;
 #pragma link C++ function hessian;
+#pragma link C++ function hessian_with_errors;
+#pragma link C++ function gradient;
+#pragma link C++ function gradient_with_errors;
+#pragma link C++ function second_gradient;
+#pragma link C++ function second_gradient_with_errors;
+#pragma link C++ function cross_with_errors;
+#pragma link C++ function initial_stepsizes;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;
@@ -62,5 +69,7 @@
 #pragma link C++ class std::map<int, MultiHistEntry*>::iterator;
 #pragma link C++ class std::vector<MultiHistEntry*>;
 #pragma link C++ class std::list<RooDataSet*>;
+#pragma link C++ class std::vector<std::pair<double, double> >;
+#pragma link C++ class std::pair<TMatrixDSym, TMatrixDSym>;
 
 #endif
