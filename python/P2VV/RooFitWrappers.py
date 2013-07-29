@@ -660,7 +660,7 @@ class ComplementCoef( RooObject ) :
 
         # build a RooComplementCoef (no workspace declaration, since factory string has limited length!!!)
         from ROOT import RooArgList, RooComplementCoef
-        coefList = RooArgList( kwargs.pop('Coefficients')  )
+        coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
         complCoef = RooComplementCoef( name, name, coefList )
         self._addObject(complCoef)
         complCoef.IsA().Destructor(complCoef)
