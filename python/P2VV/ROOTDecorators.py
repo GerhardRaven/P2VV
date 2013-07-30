@@ -36,3 +36,9 @@ def __ROOTversion() :
     return (versionMajor, versionMinor, versionPatch)
 
 ROOTversion = __ROOTversion()
+
+
+from ROOT import TFile
+TFile.__enter__ = lambda self : self
+def __TFile__exit__(self,*args) : self.Close()
+TFile.__exit__ = __TFile__exit__
