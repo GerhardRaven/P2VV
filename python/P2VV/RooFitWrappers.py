@@ -11,12 +11,27 @@ def __check_name_syntax__( name ) :
     if any( whiteChar in name for whiteChar in whitespace ) :
         raise KeyError( 'Whitespace in variable names not supported: "%s"' % name )
 
-__dref__ = lambda i : i._var if hasattr(i,'_var') else i
+def __dref__(i) :
+    from ROOT import RooAbsArg
+    if isinstance(i,RooAbsArg) : 
+        # print '__dref__: RooAbsArg nop ', type(i)
+        return i
+    if hasattr(i,'_var')     : 
+        # print '__dref__: ', type(i), ' -> ', type(i._var)
+        return i._var
+    if hasattr(i,'__iter__') : 
+        # check if i is a generator
+        from types import GeneratorType
+        t = type(i) 
+        if t == GeneratorType : t = type([])
+        # print '__dref__: ',type(i),' -> ', t
+        return t( __dref__(k) for k in i ) # go recursive...
+    # print '__dref__: transparant for ', type(i)
+    return i
 
 def __wrap__dref_var__( fun ) :
     @wraps(fun)
-    def _fun(self,*args) :
-        return fun(self, *tuple( __dref__(i) for i in args ) )
+    def _fun(self,*args) : return fun(self, *__dref__(args) )
     return _fun
 
 RooAbsCollection.__contains__ = __wrap__dref_var__( RooAbsCollection.__contains__ )
@@ -1557,7 +1572,7 @@ class BinnedPdf( Pdf ) :
 
                 # build coefficients list
                 from ROOT import RooArgList
-                coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
+                coefList = RooArgList( kwargs.pop('Coefficients') )
 
                 from ROOT import RooBinnedPdf
                 binning = kwargs.pop('Binning')
@@ -1941,7 +1956,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                     for i in range(len(heights)):
                         knots[i] = (bounds[i] + bounds[i + 1]) / 2.
                         values[i] = heights[i]
-                        errors[i] = sqrt(heights[i])
+                        errors[i] = sqrt(heights[i]) # ?????  This will make the smoothing utterly meanignless!!!
                     sn = '%s_%s_spline' % (category.GetName(), state)
                     spline_fun = CubicSplineFun(Name = sn, Observable = self.__observable,
                                                 Knots = knots, Values = values, Errors = errors,

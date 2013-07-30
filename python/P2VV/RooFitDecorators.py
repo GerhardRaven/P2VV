@@ -168,20 +168,15 @@ RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 
 def __create_RooAbsCollectionInit(t) :
     def cnvrt(i) :
-        from ROOT import TObject
-        if str(type(i)).find('.Category') != -1:
-            return i._target_()
-        elif not hasattr(i, '__iter__') and hasattr(i, '_target_'):
-            return i._target_()
+        from ROOT import TObject, RooAbsArg
+        if isinstance(i,RooAbsArg) : 
+            return i
         elif not hasattr(i, '__iter__') or isinstance(i, TObject):
             return i
         _i = t()
         for j in i : 
-            from ROOT import RooAbsArg
-            if not isinstance(j,RooAbsArg):
-                print "Not a RooAbsArg"
-                return i
-            _i.add( j._target_() if hasattr(j, '_target_') else j )
+            assert( isinstance(j,RooAbsArg) )
+            _i.add( j )  # _i.add( cvrt(j) ) ????
         return _i
     __init = t.__init__
     return lambda self,*args : __init(self, *tuple(cnvrt(i) for i in args))
