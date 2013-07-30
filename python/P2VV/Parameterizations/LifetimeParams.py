@@ -39,8 +39,16 @@ class Gamma_LifetimeParams( LifetimeParams ) :
                        , MinMax = ( -RooInf, +RooInf ) )
         self._parseArg( 'dM', kwargs, Title = 'delta m', Unit = 'ps^{-1}', Value = DMVal, Error = DMErr, MinMax = ( -RooInf, +RooInf ) )
         
-        constraints = [  ]
         dMConstr = kwargs.pop( 'dMConstraint', None )
+
+        self._check_extraneous_kw( kwargs )
+
+        LifetimeParams.__init__( self
+                                 , MeanLifetime = FormulaVar( 'MeanLifetime', '1. / @0', [self._Gamma], Title = 'B Mean lifetime' )
+                                 , dGamma  = self._dGamma
+                                 , dM      = self._dM
+                               )
+
         if type(dMConstr) == str and dMConstr == 'fixed' :
             self._dM.setConstant(True)
             self._dM.setVal(DMConstrVal)
@@ -48,7 +56,7 @@ class Gamma_LifetimeParams( LifetimeParams ) :
 
         elif dMConstr :
             from ROOT import RooGaussian as Gaussian
-            constraints.append( Pdf(  Name = self._dM.GetName() + '_constraint', Type = Gaussian
+            self.addConstraint( Pdf(  Name = self._dM.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._dM
                                                     , ConstVar( Name = 'dM_mean',  Value = DMConstrVal )
                                                     , ConstVar( Name = 'dM_sigma', Value = DMConstrErr )
@@ -56,13 +64,6 @@ class Gamma_LifetimeParams( LifetimeParams ) :
                                    )
                               )
 
-        self._check_extraneous_kw( kwargs )
-        LifetimeParams.__init__( self
-                                 , MeanLifetime = FormulaVar( 'MeanLifetime', '1. / @0', [self._Gamma], Title = 'B Mean lifetime' )
-                                 , dGamma  = self._dGamma
-                                 , dM      = self._dM
-                                 , Constraints = constraints
-                               )
 
 class Tau_LifetimeParams( LifetimeParams ) :
     def __init__( self, **kwargs ) :

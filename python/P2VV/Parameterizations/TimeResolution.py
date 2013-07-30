@@ -271,7 +271,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
             self._parseArg('timeResSigmaFrac2', kwargs, Value = 0.11, Error = 0.01, MinMax = ( -1, 1 ) )
             self._parseArg('timeResSigmaSF2', kwargs, Value = -0.11, Error = 0.01, MinMax = ( -1, 1 ) )
         
-        constraints = []
+        constraints = set()
         timeResMeanConstr = kwargs.pop( 'timeResMeanConstraint', None )
         if type(timeResMeanConstr) == str and timeResMeanConstr == 'fixed' and isinstance( self._timeResMean, RealVar ) :
             self._timeResMean.setConstant(True)
@@ -279,7 +279,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         elif timeResMeanConstr and isinstance( self._timeResMean, RealVar ) :
             from ROOT import RooGaussian as Gaussian
             from P2VV.RooFitWrappers import Pdf
-            constraints.append( Pdf(  Name = self._timeResMean.GetName() + '_constraint', Type = Gaussian
+            constraints.add( Pdf(  Name = self._timeResMean.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._timeResMean
                                                     , ConstVar( Name = 'tresMean_constraint_mean'
                                                                , Value = self._timeResMean.getVal() )
@@ -294,7 +294,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         if self.__cov: self.__cov = dict([(tuple(sorted(e)), v) for e, v in self.__cov.items()])
 
         parameters, pc = self.__buildModel(nGauss, sfModel)
-        constraints += pc
+        constraints |= pc
 
         models = []
         for i, params in enumerate(parameters):
@@ -351,20 +351,20 @@ class Paper2012_TimeResolution ( TimeResolution ) :
         parameters = [[self._time, self._timeResMean, self._timeResSigma, self._timeResMeanSF, self._timeResSigmaSF2],
                       [self._time, self._timeResMean, self._timeResSigma, self._timeResMeanSF, sigmaSF1]]
         constr_pars = [p for p in [self._timeResComb, self._timeResSigmaFrac2, self._timeResSigmaSF2] if not p.isConstant()]
-        constraints = []
+        constraints = set()
         if constr_pars:
             means = [ConstVar(Name = v.GetName() + '_constraint_mean', Value = v.getVal())
                      for v in constr_pars]
             cm = self.__getCovarianceMatrix(constr_pars, self.__cov)
             from P2VV.RooFitWrappers import MultiVarGaussian
-            constraints.append(MultiVarGaussian(Name = 'time_resolution_constraint',
+            constraints.add(MultiVarGaussian(Name = 'time_resolution_constraint',
                                                 Parameters = constr_pars,
                                                 CentralValues = means, Covariance = cm))
         return parameters, constraints
         
     def __buildSingleGauss(self, sfModel):
         from P2VV.RooFitWrappers import ConstVar, RealVar, FormulaVar
-        constraints = []
+        constraints = set()
         if sfModel == '':
             if type(self.__timeResSFConstr) == str and self.__timeResSFConstr == 'fixed' and isinstance( self._timeResSigmaSF, RealVar ) :
                 self._timeResSigmaSF.setVal(timeResSigmaSFConstrVal)
@@ -374,7 +374,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
             elif self.__timeResSFConstr and isinstance( self._timeResSigmaSF, RealVar ) :
                 from ROOT import RooGaussian as Gaussian
                 from P2VV.RooFitWrappers import Pdf
-                constraints.append(Pdf(Name = self._timeResSigmaSF.GetName() + '_constraint', Type = Gaussian
+                constraints.add(Pdf(Name = self._timeResSigmaSF.GetName() + '_constraint', Type = Gaussian
                                        , Parameters = [self._timeResSigmaSF
                                                        , ConstVar(Name = 'tres_SF_constraint_mean'
                                                                   , Value = self._timeResSigmaSF.getVal() )
@@ -394,7 +394,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                          for v in parameters]
                 cm = self.__getCovarianceMatrix(parameters, self.__cov)
                 from P2VV.RooFitWrappers import MultiVarGaussian
-                constraints.append(MultiVarGaussian(Name = 'time_resolution_constraint',
+                constraints.add(MultiVarGaussian(Name = 'time_resolution_constraint',
                                                     Parameters = parameters,
                                                     CentralValues = means, Covariance = cm))
             parameters = [self._time, self._timeResMean, self._timeResSigmaLinear]
@@ -410,7 +410,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                          for v in parameters]
                 cm = self.__getCovarianceMatrix(parameters, self.__cov)
                 from P2VV.RooFitWrappers import MultiVarGaussian
-                constraints.append(MultiVarGaussian(Name = 'time_resolution_constraint',
+                constraints.add(MultiVarGaussian(Name = 'time_resolution_constraint',
                                                     Parameters = parameters,
                                                     CentralValues = means, Covariance = cm))
             parameters = [self._time, self._timeResMean, self._timeResSigmaQuad]
