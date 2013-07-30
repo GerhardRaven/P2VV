@@ -11,23 +11,17 @@ def __check_name_syntax__( name ) :
     if any( whiteChar in name for whiteChar in whitespace ) :
         raise KeyError( 'Whitespace in variable names not supported: "%s"' % name )
 
+
 def __dref__(i) :
     from ROOT import RooAbsArg
-    if isinstance(i,RooAbsArg) : 
-        # print '__dref__: RooAbsArg nop ', type(i)
-        return i
-    if hasattr(i,'_var')     : 
-        # print '__dref__: ', type(i), ' -> ', type(i._var)
-        return i._var
-    if hasattr(i,'__iter__') : 
-        # check if i is a generator
-        from types import GeneratorType
-        t = type(i) 
-        if t == GeneratorType : t = type([])
-        # print '__dref__: ',type(i),' -> ', t
-        return t( __dref__(k) for k in i ) # go recursive...
-    # print '__dref__: transparant for ', type(i)
-    return i
+    import inspect
+    def __dref_generator__(g) : 
+        for e in g : yield __dref__(e) 
+    if isinstance(i,RooAbsArg) : return i
+    if hasattr(i,'_var')       : return i._var
+    if inspect.isgenerator(i)  : return __dref_generator__(i)
+    if hasattr(i,'__iter__')   : return type(i)( __dref__(k) for k in i ) # go recursive...
+    return i  # give up...
 
 def __wrap__dref_var__( fun ) :
     @wraps(fun)
