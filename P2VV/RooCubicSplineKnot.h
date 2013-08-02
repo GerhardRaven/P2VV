@@ -3,12 +3,16 @@
 #include <vector>
 #include <algorithm>
 #include "RooArgList.h"
+#include "TVectorD.h"
+#include "TH1.h"
+#include "TGraphErrors.h"
 
 
 class RooCubicSplineKnot {
 public:
     RooCubicSplineKnot(const double *array, int nEntries) : _u( array, array+nEntries) { }
     template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end) : _u(begin,end) { }
+    RooCubicSplineKnot(const std::vector<double>& knots) : _u(knots) { } // needed to interface with python...
 
     double u(int i) const { 
         assert(size());
@@ -82,6 +86,10 @@ public:
 
     RooCubicSplineKnot::S_edge S_jk_edge(bool left, const RooArgList& b) const;
 
+    // return integrals over the i-th bin of the j-th basis spline . exp(-gamma x)
+    // as matrix_ij
+    TGraphErrors expIntegral(const TH1* hist, double gamma) const;
+
 private:
     int index(double _u) const;
     double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }
@@ -108,9 +116,9 @@ private:
 
     void fillPQRS() const;
 
-    double sqr(double x) const { return x*x; }
-    double cub(double x) const { return x*sqr(x); }
-    double qua(double x) const { return sqr(sqr(x)); }
+    static double sqr(double x) { return x*x; }
+    static double cub(double x) { return x*sqr(x); }
+    static double qua(double x) { return sqr(sqr(x)); }
     double d(double _u, int j) const { return _u-u(j); }
     double d(double _u, int i, int j, int k) const { return d(_u,i)*d(_u,j)*d(_u,k); }
     double h(int i, int j) const { return u(i)-u(j); }
