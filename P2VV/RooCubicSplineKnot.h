@@ -88,7 +88,7 @@ public:
 
     // return integrals over the i-th bin of the j-th basis spline . exp(-gamma x)
     // as matrix_ij
-    TGraphErrors expIntegral(const TH1* hist, double gamma) const;
+    double expIntegral(const TH1* hist, double gamma, TVectorD& coefficients, TMatrixD& covarianceMatrix) const;
 
 private:
     int index(double _u) const;

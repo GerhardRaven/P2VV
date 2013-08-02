@@ -255,7 +255,10 @@ namespace {
 #include "TDecompBK.h"
 
 // return integrals from lo to hi of basis spline . exp(-gamma x), for each basis spline...
-TGraphErrors RooCubicSplineKnot::expIntegral(const TH1* hist, double gamma) const {
+// FIXME: # of splines != # of knots... so cannot return as TGraphErrors...
+
+// return the chisquared , input hist + gamma, out : coefficients, errors
+double  RooCubicSplineKnot::expIntegral(const TH1* hist, double gamma, TVectorD& coefficients, TMatrixD& covarianceMatrix) const {
     assert(hist!=0);
     int nknots = size();
     int nsplines = nknots+2;
@@ -327,26 +330,31 @@ TGraphErrors RooCubicSplineKnot::expIntegral(const TH1* hist, double gamma) cons
     Y *= matrix;
     TVectorD YY = Y;
 
-    Bool_t ok = solver.Solve(Y);
-    if (!ok) std::cout << "WARNING: bad linear system solution... " << std::endl;
-
-    // TVectorD check = D*Y-YY; std::cout << " verify solution: " << std::endl; check.Print();
+    bool ok;
+    coefficients.ResizeTo(nsplines);
+    coefficients = solver.Solve(Y,ok);
+    coefficients.Print();
+    if (!ok) { 
+        std::cout << "WARNING: bad linear system solution... " << std::endl;
+        return -1;
+    }
 
     D.Invert();
-    TVectorD X(nsplines), SX(nsplines), SY(nsplines); for (int i=0;i<nsplines;++i) { X(i) = u(i); SX(i)=0; SY(i)=D(i,i); }
+    covarianceMatrix.ResizeTo(D);
+    covarianceMatrix = D;
 
     double chisq = 0;
     for (int i=0;i<nbins;++i) {
-        double lo = hist->GetBinLowEdge(1+i);
-        double hi = lo + hist->GetBinWidth(1+i);
         double y = hist->GetBinContent(1+i);
         double dy = hist->GetBinError(1+i);
-        double f = 0; for (int j=0;j<nsplines;++j) f+=matrix(j,i)*Y(j);
+        double f = 0; for (int j=0;j<nsplines;++j) f+=matrix(j,i)*coefficients(j);
         double c = sqr( (y-f)/dy );
-        std::cout << " bin " << i  << " [  " << lo << " , " << hi << " ]  y = " << y << " dy = " << dy << " f = " << f << " chi^2 = " << c << std::endl;
+        // double lo = hist->GetBinLowEdge(1+i);
+        // double hi = lo + hist->GetBinWidth(1+i);
+        // std::cout << " bin " << i  << " [  " << lo << " , " << hi << " ]  y = " << y << " dy = " << dy << " f = " << f << " chi^2 = " << c << std::endl;
         chisq+=c;
     }
     std::cout << " total chisquared / dof " <<  chisq << " / " << nbins-nsplines << std::endl;
 
-    return TGraphErrors( X, Y, SX, SY );
+    return chisq;
 }
