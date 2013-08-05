@@ -50,41 +50,16 @@ public:
 
   virtual const RooAbsReal* efficiency() const;
   virtual std::vector<const RooAbsReal*> efficiencies() const;
-  virtual const RooArgSet* observables() const;
+  virtual RooArgSet observables() const;
 
-  // TODO: push these into RooCubicSplineFUn...
-  class M_n {
-  public:
-        M_n(double x, const std::complex<double>& z) ;
-        const std::complex<double>& operator()(int i) const { assert(0<=i&&i<4); return _m[i]; }
-        M_n& operator-=(const M_n& other) { for(int i=0;i<4;++i) _m[i]= _m[i]-other._m[i]; return *this; }
-        M_n  operator- (const M_n& other) const { return M_n(*this)-=other; }
-  private:
-        std::complex<double> _m[4];
-  };
-  class K_n {
-  public:
-      K_n(const std::complex<double>& z) : _zi( std::complex<double>(1,0)/z) {}
-      std::complex<double> operator()(unsigned i) const {
-          assert(0<=i&&i<=3);
-          switch(i) {
-              case 0 : return 0.5*_zi;
-              case 1 : return 0.5*_zi*_zi;
-              case 2 : return _zi*(_zi*_zi+1.0);
-              case 3 : std::complex<double> _zi2 = _zi*_zi; return _zi2*(3.*_zi2+3.);
-          }
-          assert(1==0);
-          return 0;
-      }
-  private :
-      std::complex<double> _zi;        
-  };
 
 private:
 
   virtual Double_t evaluate() const ;
 
-  std::complex<double> evalInt(Double_t xmin, Double_t xmax, const std::complex<double>& z) const;
+  std::complex<double> evalInt(Double_t xmin, Double_t xmax, 
+                               Double_t scale, Double_t offset,
+                               const std::complex<double>& z) const;
 
   Bool_t _flatSFInt ;
   

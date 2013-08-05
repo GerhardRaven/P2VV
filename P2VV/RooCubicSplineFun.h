@@ -17,7 +17,7 @@
 #include "RooRealProxy.h"
 #include "RooListProxy.h"
 #include "RooCubicSplineKnot.h"
-#include "RooCubicSplineGaussModel.h"
+#include "RooAbsGaussModelEfficiency.h"
 
 class RooRealVar;
 class RooArgList ;
@@ -25,7 +25,7 @@ class TH1;
 class TGraph;
 class TGraphErrors;
 
-class RooCubicSplineFun : public RooAbsReal {
+class RooCubicSplineFun : public  RooAbsGaussModelEfficiency {
 public:
   RooCubicSplineFun() ;
   RooCubicSplineFun(const char* name, const char* title, RooRealVar& x,
@@ -58,18 +58,14 @@ public:
   Int_t getMaxVal(const RooArgSet& vars) const;
   Double_t maxVal(Int_t code) const;
 
+  // for use as RooAbsGaussModelEfficiency...
+  std::complex<double> productAnalyticalIntegral(Double_t umin, Double_t umax
+                                                ,Double_t scale, Double_t offset
+                                                ,const std::complex<double>& z) const;
 
-  // for use in RooCubicSplineGaussModel...
-  std::complex<double> gaussIntegral(int i, const RooCubicSplineGaussModel::M_n& dM,
-                           const RooCubicSplineGaussModel::K_n& K,
-                           double offset, double* sc) const ;
-  std::complex<double> gaussIntegralE(bool left, const RooCubicSplineGaussModel::M_n& dM,
-                           const RooCubicSplineGaussModel::K_n& K,
-                           double offset, double* sc) const ;
   unsigned knotSize() const { return _aux.size(); }
   double u(int i) const { return _aux.u(i); }
   const std::vector<double>& knots() const { return _aux.knots(); }
-
   const RooArgList& coefficients() const { return _coefList; }
 
 private:
@@ -82,6 +78,11 @@ private:
             const std::vector<double>& errors, double smooth, bool constCoeffs);
 
   Double_t evaluate() const;
+  //
+  // for use in RooCubicSplineGaussModel...
+  std::complex<double> gaussIntegralE(bool left, const RooGaussModelAcceptance::M_n<4U>& dM,
+                           const RooGaussModelAcceptance::K_n& K,
+                           double offset, double* sc) const ;
 
   ClassDef(RooCubicSplineFun,1) // CubicSpline polynomial PDF
 };

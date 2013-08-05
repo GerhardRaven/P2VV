@@ -1823,7 +1823,11 @@ class CubicSplineFun(RooObject):
         if hist:
             csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeffs)
         elif graph :
-            csf = RooCubicSplineFun(name, name, __dref__(observable), graph, smooth, const_coeffs)
+            from ROOT import TGraphErrors
+            if isinstance(graph,TGraphErrors) :
+                csf = RooCubicSplineFun(name, name, __dref__(observable), graph, smooth, const_coeffs)
+            else :
+                csf = RooCubicSplineFun(name, name, __dref__(observable), graph, const_coeffs)
         elif knots and coeffs and not values:
             csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), RooArgList( coeffs ) )
         elif knots and values and errors and not coeffs:

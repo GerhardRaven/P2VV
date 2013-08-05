@@ -29,7 +29,7 @@ public:
     * 
     * @return RooArgSet of observables
     */
-   virtual const RooArgSet* observables() const = 0;
+   virtual RooArgSet observables() const = 0;
 
    virtual const RooAbsReal* efficiency() const = 0;
    virtual std::vector<const RooAbsReal*> efficiencies() const = 0;
