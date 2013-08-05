@@ -9,6 +9,7 @@
 #include "P2VV/RooTrivialTagDecay.h"
 #include "P2VV/RooMultiCatGenerator.h"
 #include "P2VV/RooBinnedPdf.h"
+#include "P2VV/RooBinnedFun.h"
 #include "P2VV/RooP2VVAngleBasis.h"
 #include "P2VV/RooThresholdPdf.h"
 #include "P2VV/RooRelBreitWigner.h"

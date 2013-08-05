@@ -15,6 +15,7 @@
         <class name = "RooTrivialTagDecay" />
         <class name = "RooMultiCatGenerator" />
         <class name = "RooBinnedPdf" />
+        <class name = "RooBinnedFun" />
         <class name = "RooP2VVAngleBasis" />
         <class name = "RooThresholdPdf" />
         <class name = "RooRelBreitWigner" />
