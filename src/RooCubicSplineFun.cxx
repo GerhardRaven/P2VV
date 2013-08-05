@@ -67,7 +67,7 @@ void RooCubicSplineFun::init(const char* name,
          stringstream name_str;
          name_str << name << "_smoothed_bin_" << i;
          string n(name_str.str());
-         RooRealVar* coeff = new RooRealVar(n.c_str(), n.c_str(), values[i], 0.0001, 0.9999);
+         RooRealVar* coeff = new RooRealVar(n.c_str(), n.c_str(), values[i], 0.0, 1.0);
          if (i == 0 || i == values.size() - 1) coeff->setConstant(true);
          _coefList.add(*coeff);
          addOwnedComponents( *coeff );
@@ -224,7 +224,7 @@ Double_t RooCubicSplineFun::evaluate() const
 Int_t RooCubicSplineFun::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
   // No analytical calculation available (yet) of integrals over subranges
-  if (rangeName && strlen(rangeName)) return 0 ;
+  if (_x.min(rangeName)!=_aux.knots().front() || _x.max(rangeName)!=_aux.knots().back() ) return 0;
   if (matchArgs(allVars, analVars, _x)) return 1;
   return 0;
 }
