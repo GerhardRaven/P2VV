@@ -31,7 +31,6 @@
 #include "TMath.h"
 #include "Riostream.h"
 #include "P2VV/RooCubicSplineGaussModel.h"
-#include "P2VV/RooCubicSplineFun.h"
 #include "RooMath.h"
 #include "RooRealConstant.h"
 #include "RooRandom.h"
@@ -79,7 +78,7 @@ namespace {
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
-                , RooRealVar& x, RooCubicSplineFun& _eff
+                , RooRealVar& x, RooAbsGaussModelEfficiency& _eff
 			    , RooAbsReal& _mean, RooAbsReal& _sigma ) 
    : RooResolutionModel(name, title, x),
      RooAbsEffResModel(), 
@@ -97,7 +96,7 @@ RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char 
 
 //_____________________________________________________________________________
 RooCubicSplineGaussModel::RooCubicSplineGaussModel(const char *name, const char *title
-                                                   , RooRealVar& x, RooCubicSplineFun& _eff
+                                                   , RooRealVar& x, RooAbsGaussModelEfficiency& _eff
                                                    , RooAbsReal& _mean, RooAbsReal& _sigma
                                                    , RooAbsReal& _meanSF, RooAbsReal& _sigmaSF)
    : RooResolutionModel(name,title,x), 

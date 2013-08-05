@@ -257,25 +257,24 @@ RooCubicSplineFun::productAnalyticalIntegral(Double_t umin, Double_t umax,
     std::vector<M_n> M; M.reserve( knotSize() );
     for (unsigned int i=0;i<knotSize();++i) {
         double x = (u(i)-offset)/scale ;
-        //TODO: verify we remain within [umin,umax]
-        assert( x>=umin );
-        assert( x<=umax );
         M.push_back( M_n( x, z ) );
     }
     double sc[4]; for (int i=0;i<4;++i) sc[i] = pow(scale,i);
     double lo = scale*umin+offset;
     double hi = scale*umax+offset;
     std::complex<double> sum(0,0);
-    // FIXME: we currently assume that u(0),u(knotSize()-1)] fully contained in [lo,hi]
-    assert( lo<=u(0) );
-    assert( hi>=u(knotSize()-1) );
-    for (unsigned i=0;i<knotSize()-1;++i) {
-        M_n dM = M[i+1]-M[i];
+    //TODO: verify we remain within [lo,hi]
+    if (lo<u(0)) sum += gaussIntegralE(true,  M.front()-M_n( umin,z), K, offset, sc); // front only if hi>u(0)!!!
+    for (unsigned i=0;i<knotSize()-1 && u(i)<hi ;++i) {
+        if (u(i+1)<lo) continue;
+        // FIXME:TODO: we currently assume that u(0),u(knotSize()-1)] fully contained in [lo,hi]
+        assert(lo<=u(i));
+        assert(u(i+1)<=hi);
+        M_n dM = M[i+1]-M[i]; // take M[i] if lo<=u(i) else M_n(lo) ; take M[i+1] if u(i+1)<=hi else M_n(hi)
         RooCubicSplineKnot::S_jk s_jk( _aux.S_jk_sum( i, _coefList ), offset );
         for (int j=0;j<4;++j) for (int k=0;k<4-j;++k) sum += dM(j)*s_jk(j,k)*K(k)*sc[j+k];
     }
-    if (lo<u(0))              sum += gaussIntegralE(true,  M.front()-M_n( umin,z), K, offset, sc);
-    if (hi>u(knotSize()-1))   sum += gaussIntegralE(false, M_n(umax,z)-M.back(),   K, offset, sc);
+    if (hi>u(knotSize()-1)) sum += gaussIntegralE(false, M_n(umax,z)-M.back(),   K, offset, sc); // back only if lo<u(knotsiwze()-1)!!!
     return sum;
 }
 

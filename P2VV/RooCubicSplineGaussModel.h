@@ -21,8 +21,8 @@
 #include <RooRealProxy.h>
 
 #include <P2VV/RooAbsEffResModel.h>
+#include "P2VV/RooAbsGaussModelEfficiency.h"
 
-class RooCubicSplineFun;
 class RooAbsReal;
 class RooRealVar;
 
@@ -32,10 +32,10 @@ public:
   // Constructors, assignment etc
   inline RooCubicSplineGaussModel() : _flatSFInt(kFALSE)  { }
   RooCubicSplineGaussModel(const char *name, const char *title, 
-            RooRealVar& x, RooCubicSplineFun& spline,
+            RooRealVar& x, RooAbsGaussModelEfficiency& spline,
             RooAbsReal& mean,   RooAbsReal& sigma );
   RooCubicSplineGaussModel(const char *name, const char *title, 
-            RooRealVar& x, RooCubicSplineFun& spline,
+            RooRealVar& x, RooAbsGaussModelEfficiency& spline,
             RooAbsReal& mean,   RooAbsReal& sigma,
             RooAbsReal& meanSF, RooAbsReal& sigmaSF) ; 
   RooCubicSplineGaussModel(const RooCubicSplineGaussModel& other, const char* name=0);
@@ -52,7 +52,6 @@ public:
   virtual std::vector<const RooAbsReal*> efficiencies() const;
   virtual RooArgSet observables() const;
 
-
 private:
 
   virtual Double_t evaluate() const ;
@@ -60,7 +59,6 @@ private:
   std::complex<double> evalInt(Double_t xmin, Double_t xmax, 
                                Double_t scale, Double_t offset,
                                const std::complex<double>& z) const;
-
   Bool_t _flatSFInt ;
   
   RooRealProxy eff ;
