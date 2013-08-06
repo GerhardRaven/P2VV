@@ -1,6 +1,9 @@
 #include "P2VV/RooAbsGaussModelEfficiency.h"
 #include "RooMath.h"
 
+ClassImp(RooAbsGaussModelEfficiency);
+RooAbsGaussModelEfficiency::~RooAbsGaussModelEfficiency()  {};
+
 namespace {
     static const Double_t rootpi(sqrt(TMath::Pi())) ;
     std::complex<double> evalApprox(Double_t x, const std::complex<double>& z) {
@@ -23,11 +26,6 @@ namespace {
                        : evalApprox(x,z) ;
     }
 }
-
-
-//RooAbsGaussModelEfficiency::RooAbsGaussModelEfficiency(const char *name, const char *title, const char *unit) 
-//    : RooAbsReal( name, title, unit ) 
-//{}
 
 RooGaussModelAcceptance::N::N(double x, const std::complex<double>& z) 
 {

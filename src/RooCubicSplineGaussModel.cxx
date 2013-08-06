@@ -20,8 +20,8 @@
 // Class RooGaussModel implements a RooResolutionModel that models a Gaussian
 // distribution. Object of class RooGaussModel can be used
 // for analytical convolutions with classes inheriting from RooAbsAnaConvPdf
-// After  the convolution  is applied, one can then multiply the result
-// with a cubic b-spline...
+// After  the convolution  is applied,  the result is multiplied with an 
+// efficiency.
 // END_HTML
 //
 #include <memory>

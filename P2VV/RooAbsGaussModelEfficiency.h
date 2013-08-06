@@ -14,12 +14,14 @@ class RooAbsGaussModelEfficiency : public RooAbsReal {
 public:
     //C++11: using RooAbsReal::RooAbsReal;
     RooAbsGaussModelEfficiency() : RooAbsReal() {}
+    ~RooAbsGaussModelEfficiency() ;
     RooAbsGaussModelEfficiency(const char *name, const char *title, const char *unit= "")   : RooAbsReal(name,title, unit) {};
     RooAbsGaussModelEfficiency(const RooAbsGaussModelEfficiency& other, const char* name=0) : RooAbsReal(other,name) {};
     virtual std::complex<double> productAnalyticalIntegral(Double_t umin, Double_t umax, 
                                                            Double_t scale, Double_t offset,
                                                            const std::complex<double>& z) const = 0;
 private:
+  ClassDef(RooAbsGaussModelEfficiency,1) 
 };
 
 namespace RooGaussModelAcceptance {
@@ -93,12 +95,6 @@ namespace RooGaussModelAcceptance {
   private :
       std::complex<double> _zi;        
   };
-
-
-
-
-
-
 
 }
 #endif

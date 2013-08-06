@@ -8,6 +8,7 @@
 #include "P2VV/RooBTagDecay.h"
 #include "P2VV/RooTrivialTagDecay.h"
 #include "P2VV/RooMultiCatGenerator.h"
+#include "P2VV/RooAbsGaussModelEfficiency.h"
 #include "P2VV/RooBinnedPdf.h"
 #include "P2VV/RooBinnedFun.h"
 #include "P2VV/RooP2VVAngleBasis.h"

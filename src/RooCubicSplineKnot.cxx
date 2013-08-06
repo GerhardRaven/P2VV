@@ -150,6 +150,7 @@ double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
                             ,   qua(h(j,j+1))/(4*S(j)) );
         }
     }
+    // FIXME: this assumes the integration range goes from first knot to last knot...
     assert(b.getSize()-2==size());
     double norm(0);
     for (int i=0; i < size()-1; ++i) for (int k=0;k<4;++k) {
@@ -333,7 +334,6 @@ double  RooCubicSplineKnot::expIntegral(const TH1* hist, double gamma, TVectorD&
     bool ok;
     coefficients.ResizeTo(nsplines);
     coefficients = solver.Solve(Y,ok);
-    coefficients.Print();
     if (!ok) { 
         std::cout << "WARNING: bad linear system solution... " << std::endl;
         return -1;
@@ -354,7 +354,6 @@ double  RooCubicSplineKnot::expIntegral(const TH1* hist, double gamma, TVectorD&
         // std::cout << " bin " << i  << " [  " << lo << " , " << hi << " ]  y = " << y << " dy = " << dy << " f = " << f << " chi^2 = " << c << std::endl;
         chisq+=c;
     }
-    std::cout << " total chisquared / dof " <<  chisq << " / " << nbins-nsplines << std::endl;
 
     return chisq;
 }

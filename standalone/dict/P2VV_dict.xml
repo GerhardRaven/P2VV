@@ -14,6 +14,7 @@
         <class name = "RooBTagDecay" />
         <class name = "RooTrivialTagDecay" />
         <class name = "RooMultiCatGenerator" />
+        <class name = "RooAbsGaussModelEfficiency" />
         <class name = "RooBinnedPdf" />
         <class name = "RooBinnedFun" />
         <class name = "RooP2VVAngleBasis" />
