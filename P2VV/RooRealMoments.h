@@ -75,7 +75,7 @@ public:
   void Print(Bool_t normalize = kTRUE) const {print(std::cout, normalize);}
 
 protected:
-  const RooAbsReal& _basisFunc;
+  const RooAbsReal& _basisFunc; //!
   RooRealMomentsVector _moments;
   TString _name;
   Double_t _norm;
@@ -109,10 +109,10 @@ public:
   }
 
 private:
-  const RooAbsPdf&  _pdf;
+  const RooAbsPdf&  _pdf;     //!
   RooAbsReal*       _pdfInt;
-  const RooArgSet&  _intSet;
-  const RooArgSet&  _normSet;
+  const RooArgSet&  _intSet;  //!
+  const RooArgSet&  _normSet; //!
 };
 
 //_____________________________________________________________________________
