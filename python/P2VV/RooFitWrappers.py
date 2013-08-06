@@ -1546,7 +1546,7 @@ class BinnedPdf( Pdf ) :
                 self._binning.SetName(binning_name)
                 var.setBinning(self._binning, binning_name)
                 from ROOT import RooArgList
-                coefList = RooArgList( self._binHeights )
+                coefList = RooArgList( __dref__(coef) for coef in self._binHeights )
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'],argDict['Name'],__dref__(var),binning_name, coefList
                                     , int( kwargs.pop( 'BinIntegralCoefs', 0 ) ) )
