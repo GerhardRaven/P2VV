@@ -116,6 +116,8 @@ Double_t RooBinnedFun::analyticalIntegral(Int_t code, const char* /* rangeName *
   return result;
 }
 
+
+
 //_____________________________________________________________________________
 std::complex<double> 
 RooBinnedFun::productAnalyticalIntegral(Double_t umin, Double_t umax, 
@@ -133,17 +135,15 @@ RooBinnedFun::productAnalyticalIntegral(Double_t umin, Double_t umax,
     double hi = scale*umax+offset;
     std::complex<double> sum(0,0);
     //TODO: verify we remain within [lo,hi]
-    assert(lo==_u.front());
-    assert(hi==_u.back());
+    assert(fabs(lo-_u.front())<1e-7*fabs(lo+_u.front()));
+    assert(fabs(hi-_u.back())<1e-7*fabs(hi+_u.back()));
     for (unsigned i=0; i<_u.size()-1 && _u[i]<hi ;++i) {
         if (_u[i+1]<lo) continue;
         // FIXME:TODO: we currently assume that u(0),u(knotSize()-1)] fully contained in [lo,hi]
-        assert(lo<=_u[i]);
-        assert(_u[i+1]<=hi);
         M_n dM = M[i+1]-M[i]; // take M[i] if lo<=u(i) else M_n(lo) ; take M[i+1] if u(i+1)<=hi else M_n(hi)
-        sum += dM(0)*K(0);
+        sum += dM(0)*K(0) * get(_coefList, i ) ;
     }
-    return 0.5*sum*scale;
+    return sum;
 }
 
 //_____________________________________________________________________________
