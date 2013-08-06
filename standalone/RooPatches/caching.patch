@@ -1,8 +1,24 @@
-Index: roofit/roofitcore/src/RooAbsCachedReal.cxx
-===================================================================
---- roofit/roofitcore/src/RooAbsCachedReal.cxx	(revision 49259)
-+++ roofit/roofitcore/src/RooAbsCachedReal.cxx	(working copy)
-@@ -301,8 +301,11 @@
+diff --git a/roofit/roofitcore/inc/RooAbsAnaConvPdf.h b/roofit/roofitcore/inc/RooAbsAnaConvPdf.h
+index 5722ee6..d355a51 100644
+--- a/roofit/roofitcore/inc/RooAbsAnaConvPdf.h
++++ b/roofit/roofitcore/inc/RooAbsAnaConvPdf.h
+@@ -68,6 +68,11 @@ public:
+   virtual RooArgSet* coefVars(Int_t coefIdx) const ;
+ 
+   virtual Bool_t isDirectGenSafe(const RooAbsArg& arg) const ;
++
++  const RooArgList& funcList() const { 
++    // Return list of component functions
++    return _convSet ; 
++  }
+     
+ protected:
+   Double_t getCoefNorm(Int_t coefIdx, const RooArgSet* nset, const TNamed* rangeName) const ;
+diff --git a/roofit/roofitcore/src/RooAbsCachedReal.cxx b/roofit/roofitcore/src/RooAbsCachedReal.cxx
+index 8e86f09..73ed3ec 100644
+--- a/roofit/roofitcore/src/RooAbsCachedReal.cxx
++++ b/roofit/roofitcore/src/RooAbsCachedReal.cxx
+@@ -301,8 +301,11 @@ RooArgList RooAbsCachedReal::FuncCacheElem::containedArgs(Action)
  {
    // Return list of contained RooAbsArg objects
    RooArgList ret(*func()) ;
@@ -16,26 +32,10 @@ Index: roofit/roofitcore/src/RooAbsCachedReal.cxx
    if (_sourceClone) {
      ret.add(*_sourceClone) ;
    }
-Index: roofit/roofitcore/inc/RooAbsAnaConvPdf.h
-===================================================================
---- roofit/roofitcore/inc/RooAbsAnaConvPdf.h	(revision 49259)
-+++ roofit/roofitcore/inc/RooAbsAnaConvPdf.h	(working copy)
-@@ -68,6 +68,11 @@
-   virtual RooArgSet* coefVars(Int_t coefIdx) const ;
- 
-   virtual Bool_t isDirectGenSafe(const RooAbsArg& arg) const ;
-+
-+  const RooArgList& funcList() const { 
-+    // Return list of component functions
-+    return _convSet ; 
-+  }
-     
- protected:
-   Double_t getCoefNorm(Int_t coefIdx, const RooArgSet* nset, const TNamed* rangeName) const ;
-Index: roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
-===================================================================
---- roofit/roofitcore/src/RooAbsOptTestStatistic.cxx	(revision 49259)
-+++ roofit/roofitcore/src/RooAbsOptTestStatistic.cxx	(working copy)
+diff --git a/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx b/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
+index 183c983..385eb6f 100644
+--- a/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
++++ b/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
 @@ -58,6 +58,7 @@
  #include "RooAddPdf.h"
  #include "RooProduct.h"
@@ -44,7 +44,7 @@ Index: roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
  #include "RooTrace.h"
  #include "RooVectorDataStore.h" 
  
-@@ -687,6 +688,16 @@
+@@ -689,6 +690,16 @@ void RooAbsOptTestStatistic::optimizeConstantTerms(Bool_t activate, Bool_t apply
  	    }
  	  }
  	}
