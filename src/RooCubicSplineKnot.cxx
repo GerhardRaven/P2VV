@@ -1,6 +1,7 @@
 #include <algorithm>
-#include "P2VV/RooCubicSplineKnot.h"
+#include "TMath.h"
 #include "RooAbsReal.h"
+#include "P2VV/RooCubicSplineKnot.h"
 
 namespace RooCubicSplineKnot_aux {
 
@@ -118,17 +119,12 @@ void RooCubicSplineKnot::fillPQRS() const {
 }
 
 double RooCubicSplineKnot::evaluate(double x, const RooArgList& b) const {
-    using RooCubicSplineKnot_aux::get;
-    int i = index(x); // location in knot vector
+    using RooCubicSplineKnot_aux::get; 
+    int i = index(x); // location in knot vector: index of last knot less than x...
     assert(-1<=i && i<=size());
-    // we're a 'natural' spline. Extrapolate using the derivative at the first (last) knot
-    if (i==-1) {
-        return evaluate(u(0),b) - d(x,0)*r(0)*(get(b,0,0)-get(b,0,1));
-    }
-    if (i==size()) {
-        i = size()-1;
-        return evaluate(u(i),b) + d(x,i)*r(i-1)*(get(b,i,2)-get(b,i,1));
-    }
+    // we're a 'natural' spline. If beyond first/last knot, Extrapolate using the derivative at the first (last) knot
+    if (i==-1    ) { ++i; return get(b,i,0) - d(x,i)*r(i  )*(get(b,i,0)-get(b,i,1)); }
+    if (i==size()) { --i; return get(b,i,2) + d(x,i)*r(i-1)*(get(b,i,2)-get(b,i,1)); }
     assert( u(i) <= x && x<= u(i+1) );
     return get(b,i,0)*A(x,i) // TODO: substitute A,B,C,D 'in situ'
          + get(b,i,1)*B(x,i)
@@ -162,6 +158,7 @@ double RooCubicSplineKnot::analyticalIntegral(const RooArgList& b) const {
     return norm;
 }
 
+// location in knot vector: index of last knot less than x... except when beyond interval+ last +1 if to right, -1 if to left
 int RooCubicSplineKnot::index(double u) const
 {
     if (u>_u.back()) return size();
@@ -207,4 +204,157 @@ RooCubicSplineKnot::S_edge RooCubicSplineKnot::S_jk_edge(bool left, const RooArg
          double beta = evaluate(u(i),b)-alpha*u(i);
          return S_edge(alpha,beta);
        }
+}
+
+namespace {
+    // integral from lo to hi of (x-a)(x-b)(x-c)Exp[-gamma x]
+    double eI(double lo, double hi, double a, double b, double c, double gamma) {
+        assert(hi>=lo);
+        assert(0<=lo);
+          a*=gamma;b*=gamma;c*=gamma;
+          lo*=gamma;hi*=gamma;
+          double result = -a*b*c       *(TMath::Gamma(1,hi) - TMath::Gamma(1,lo))*TMath::Gamma(1) 
+                        + (b*c+a*c+a*b)*(TMath::Gamma(2,hi) - TMath::Gamma(2,lo))*TMath::Gamma(2) 
+                        - (a+b+c)      *(TMath::Gamma(3,hi) - TMath::Gamma(3,lo))*TMath::Gamma(3) 
+                        +               (TMath::Gamma(4,hi) - TMath::Gamma(4,lo))*TMath::Gamma(4);
+
+          return result / TMath::Power(gamma,4);
+    }
+    // integral from lo to hi of (x-a)(x-b)(x-c)
+    double fI(double lo, double hi, double a, double b, double c, double ) {
+        assert(hi>=lo);
+        assert(0<=lo);
+          double result = -a*b*c       *( hi - lo )
+                        + (b*c+a*c+a*b)*( hi*hi - lo*lo ) / 2.
+                        - (a+b+c)      *( hi*hi*hi - lo*lo*lo )/ 3.
+                        +               ( hi*hi*hi*hi - lo*lo*lo*lo) / 4. ;
+
+          return result ;
+    }
+
+#if 0
+    // integral from lo to hi of   [ c + slope * (x - offset) ] Exp[-Gamma x ]
+    //                           = [ c-slope*offset + slope*x ] Exp[-Gamma x ]
+    double eIn(double lo, double hi, double c, double slope, double offset, double gamma) {
+          assert(hi>=lo);
+          assert(0<=lo);
+          double a = c - slope*offset;
+          double b = slope; //  ( a + b x ) Exp[ -Gamma x ]
+                            //  (1/Gamma)  ( a Gamma      b y )      Exp[ -y ]
+
+
+
+          return result / TMath::Power(gamma,4);
+    }
+
+#endif
+}
+
+#include "TMatrixD.h"
+#include "TVectorD.h"
+#include "TDecompBK.h"
+
+// return integrals from lo to hi of basis spline . exp(-gamma x), for each basis spline...
+// FIXME: # of splines != # of knots... so cannot return as TGraphErrors...
+
+// return the chisquared , input hist + gamma, out : coefficients, errors
+double  RooCubicSplineKnot::expIntegral(const TH1* hist, double gamma, TVectorD& coefficients, TMatrixD& covarianceMatrix) const {
+    assert(hist!=0);
+    int nknots = size();
+    int nsplines = nknots+2;
+    int nbins = hist->GetNbinsX();
+    TMatrixD matrix(nsplines,nbins); for (int i=0;i<nsplines;++i) for (int j=0;j<nbins;++j) { matrix(i,j)=0; }
+    TVectorD Y(nbins), DY(nbins);
+
+    for (int i=0;i<nbins ;++i) {
+        Y(i)  = hist->GetBinContent(1+i);
+        DY(i) = hist->GetBinError(1+i);
+
+
+        Y(i) /= DY(i)*DY(i);
+
+        double lo = hist->GetBinLowEdge(1+i);
+        double hi = lo + hist->GetBinWidth(1+i);
+
+        double Norm =   (exp(-gamma*lo)-exp(-gamma*hi))/gamma;
+
+        // go for flat parent distribution;
+        // Norm = hi-lo;
+
+#if 0
+        // compute contributions beyond the first and last knot...
+        if (lo < _u.front()) {
+                // b-spline 0:  1 - d(x,0)*r(0)  // d(x,0) = x - u(0)
+                // b-spline 1:    + d(x,0)*r(0) 
+                matrix(0, 0) += eIn( lo,hi, 1., -r(0), u(0) )/Norm;
+                matrix(1, 0) += eIn( lo,hi, 0., +r(0), u(0) )/Norm;
+
+        }
+        if (hi > _u.back()) {
+                //                                           c + alpha  *    (x - x0) 
+                matrix(nknots  , nbins-1) += eIn( lo, hi, 0., -r(nknots-2), u(nknots-1) )/Norm;
+                matrix(nknots+1, nbins-1) += eIn( lo, hi, 1., +r(nknots-2), u(nknots-1) )/Norm;
+
+        }
+#else
+        //  assume nothing beyond spline interval
+        assert( lo >= _u.front() && hi <= _u.back() );
+#endif
+
+        // this bit is by construction fully contained between the first and last knot
+        for (int j=0;j<nknots-1;++j) { 
+            double l = std::max(lo,u(j));
+            double h = std::min(hi,u(j+1));
+            if (l>=h) continue;
+            // in the knot interval [ u(j),  u(j+1) ], the splines j..j+3 contribute...
+            matrix(j  ,i) += (-eI(l,h, u(j+1),u(j+1),u(j+1), gamma)/P(j) ) / Norm;
+            matrix(j+1,i) += ( eI(l,h, u(j-2),u(j+1),u(j+1), gamma)/P(j) 
+                              +eI(l,h, u(j-1),u(j+1),u(j+2), gamma)/Q(j) 
+                              +eI(l,h, u(j  ),u(j+2),u(j+2), gamma)/R(j) ) / Norm;
+            matrix(j+2,i) += (-eI(l,h, u(j-1),u(j-1),u(j+1), gamma)/Q(j) 
+                              -eI(l,h, u(j-1),u(j  ),u(j+2), gamma)/R(j) 
+                              -eI(l,h, u(j  ),u(j  ),u(j+3), gamma)/S(j) ) / Norm; 
+            matrix(j+3,i) += ( eI(l,h, u(j  ),u(j  ),u(j  ), gamma)/S(j) ) / Norm; 
+        }
+
+    }
+
+    TMatrixDSym D(nsplines); 
+    for (int i=0;i<nsplines;++i) for (int j=0;j<=i;++j) {
+        D(i,j) = 0;
+        for (int k=0;k<nbins;++k) D(i,j) += matrix(i,k)*matrix(j,k)/(DY(k)*DY(k));
+        if (i!=j) D(j,i) = D(i,j);
+    }
+    TDecompBK solver(D);
+
+    Y *= matrix;
+    TVectorD YY = Y;
+
+    bool ok;
+    coefficients.ResizeTo(nsplines);
+    coefficients = solver.Solve(Y,ok);
+    coefficients.Print();
+    if (!ok) { 
+        std::cout << "WARNING: bad linear system solution... " << std::endl;
+        return -1;
+    }
+
+    D.Invert();
+    covarianceMatrix.ResizeTo(D);
+    covarianceMatrix = D;
+
+    double chisq = 0;
+    for (int i=0;i<nbins;++i) {
+        double y = hist->GetBinContent(1+i);
+        double dy = hist->GetBinError(1+i);
+        double f = 0; for (int j=0;j<nsplines;++j) f+=matrix(j,i)*coefficients(j);
+        double c = sqr( (y-f)/dy );
+        // double lo = hist->GetBinLowEdge(1+i);
+        // double hi = lo + hist->GetBinWidth(1+i);
+        // std::cout << " bin " << i  << " [  " << lo << " , " << hi << " ]  y = " << y << " dy = " << dy << " f = " << f << " chi^2 = " << c << std::endl;
+        chisq+=c;
+    }
+    std::cout << " total chisquared / dof " <<  chisq << " / " << nbins-nsplines << std::endl;
+
+    return chisq;
 }

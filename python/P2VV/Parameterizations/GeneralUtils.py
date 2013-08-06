@@ -72,32 +72,32 @@ class _util_parse_mixin( object ) :
 
 class _util_extConstraints_mixin( object ) :
     def __init__( self, kwargs ) :
-        if   'Constraints' in kwargs : self._constraints = [ constraint for constraint in kwargs.pop('Constraints') ]
-        elif 'Constraint'  in kwargs : self._constraints = [ kwargs.pop('Constraint') ]
-        else                         : self._constraints = [  ]
+        if   'Constraints' in kwargs : self._constraints = kwargs.pop('Constraints') 
+        elif 'Constraint'  in kwargs : self._constraints = set(kwargs.pop('Constraint') )
+        else                         : self._constraints = set()
 
     def externalConstraints( self ) : return self._constraints
     def hasExtConstraints( self )   : return len(self._constraints) > 0
 
     def addConstraint( self, constr ) :
-        if not constr in self._constraints : self._constraints.append(constr)
-        else : print 'P2VV - WARNING: _util_extConstraints_mixin.addConstraint(): object "%s" is already constraint' % constr
+        self._constraints.add(constr)
 
     def addConstraints( self, constrList ) :
         for constr in constrList : self.addConstraint(constr)
 
 class _util_conditionalObs_mixin( object ) :
     def __init__( self, kwargs ) :
-        if   'Conditionals' in kwargs : self._conditionals = [ conditional for conditional in kwargs.pop('Conditionals') ]
-        elif 'Conditional'  in kwargs : self._conditionals = [ kwargs.pop('Conditional') ]
-        else                          : self._conditionals = [  ]
+        if   'Conditionals' in kwargs : self._conditionals = set( kwargs.pop('Conditionals') )
+        elif 'Conditional'  in kwargs : self._conditionals = set( kwargs.pop('Conditional') )
+        else                          : self._conditionals = set()
 
     def conditionalObservables( self ) : return self._conditionals
     def hasCondObservables( self )     : return len(self._conditionals) > 0
 
     def addConditional( self, condObs ) :
-        if not condObs in self._conditionals : self._conditionals.append(condObs)
-        else : print 'P2VV - WARNING: _util_conditionalObs_mixin.addConditional(): observable "%s" is already conditional' % condObs
+        if condObs in self._conditionals :  
+            print 'P2VV - WARNING: _util_conditionalObs_mixin.addConditional(): observable "%s" is already conditional' % condObs
+        self._conditionals.add(condObs)
 
     def addConditionals( self, condObsList ) :
         for obs in condObsList : self.addConditional(obs)

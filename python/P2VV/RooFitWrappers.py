@@ -11,12 +11,21 @@ def __check_name_syntax__( name ) :
     if any( whiteChar in name for whiteChar in whitespace ) :
         raise KeyError( 'Whitespace in variable names not supported: "%s"' % name )
 
-__dref__ = lambda i : i._var if hasattr(i,'_var') else i
+
+def __dref__(i) :
+    from ROOT import RooAbsArg
+    import inspect
+    def __dref_generator__(g) : 
+        for e in g : yield __dref__(e) 
+    if isinstance(i,RooAbsArg) : return i
+    if hasattr(i,'_var')       : return i._var
+    if inspect.isgenerator(i)  : return __dref_generator__(i)
+    if hasattr(i,'__iter__')   : return type(i)( __dref__(k) for k in i ) # go recursive...
+    return i  # give up...
 
 def __wrap__dref_var__( fun ) :
     @wraps(fun)
-    def _fun(self,*args) :
-        return fun(self, *tuple( __dref__(i) for i in args ) )
+    def _fun(self,*args) : return fun(self, *__dref__(args) )
     return _fun
 
 RooAbsCollection.__contains__ = __wrap__dref_var__( RooAbsCollection.__contains__ )
@@ -922,9 +931,10 @@ class Pdf(RooObject):
         #       our observables and provide a warning...
         self._conditionals = set( o if type(o)==str else o.GetName() for o in obs )
     def ExternalConstraints(self) :
-        if not hasattr(self, '_externalConstraints'): return list()
+        if not hasattr(self, '_externalConstraints'): return set()
         return self._externalConstraints
     def setExternalConstraints(self, constraints ) :
+        assert type(constraints) == set
         self._externalConstraints = constraints
     def GlobalObservables(self):
         if not hasattr(self,'_globalObservables') : return set()
@@ -1015,8 +1025,8 @@ class ProdPdf(Pdf):
 
         d = {  'PDFs'                   : frozenset(PDFs)
              , 'Name'                   : Name + '_' + self._separator().join( [ i.GetName() for i in PDFs ] )
-             , 'ConditionalObservables' : list( conds - obs )
-             , 'ExternalConstraints'    : list(ec)
+             , 'ConditionalObservables' : conds - obs 
+             , 'ExternalConstraints'    : ec
             }
         Pdf.__init__(self, Type = 'RooProdPdf', **d)
 
@@ -1095,7 +1105,7 @@ class SumPdf(Pdf):
             if ec != set(kwargs['ExternalConstraints']):
                 print 'WARNING: inconsistent external constraints: %s vs %s' % ( ec, kwargs['ExternalConstraints'] )
         elif ec:
-            kwargs['ExternalConstraints'] = list(ec)
+            kwargs['ExternalConstraints'] = ec
 
         diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
         if len(diff) not in [0, 1]:
@@ -1164,8 +1174,6 @@ class SimultaneousPdf( Pdf ) :
             raise KeyError, 'P2VV - ERROR: SimultaneousdPdf: Must specify either SplitParameters or States'
 
         self._init( Name, 'RooSimultaneous' )
-        for a in ['ConditionalObservables', 'ExternalConstraints']:
-            pdfOpts[a] = list(pdfOpts[a])
         Pdf.__init__( self , Name = Name , Type = 'RooSimultaneous', **pdfOpts )
 
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
@@ -1557,7 +1565,7 @@ class BinnedPdf( Pdf ) :
 
                 # build coefficients list
                 from ROOT import RooArgList
-                coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
+                coefList = RooArgList( kwargs.pop('Coefficients') )
 
                 from ROOT import RooBinnedPdf
                 binning = kwargs.pop('Binning')
@@ -1711,7 +1719,7 @@ class AddModel(ResolutionModel) :
         ResolutionModel.__init__(self, Name = name, Type = 'RooAddModel',
                                  Models = self.__models, Fractions = self.__fractions,
                                  ConditionalObservables = conditionals,
-                                 ExternalConstraints = list(externals))
+                                 ExternalConstraints = externals)
 
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
@@ -1766,7 +1774,7 @@ class EffResAddModel(ResolutionModel):
             
         ResolutionModel.__init__(self, Name = name, Type = 'RooEffResAddModel',
                                  ConditionalObservables = conditionals,
-                                 ExternalConstraints = list(externals))
+                                 ExternalConstraints = externals)
 
     def models(self):
         return self.__models
@@ -1783,7 +1791,7 @@ class EffResModel(ResolutionModel) :
         __check_name_syntax__(name)
 
         conditionals = self.__eff.ConditionalObservables() | self.__res.ConditionalObservables()
-        externals = list(set(self.__eff.ExternalConstraints()) | set(self.__res.ExternalConstraints()))
+        externals = self.__eff.ExternalConstraints() | self.__res.ExternalConstraints()
         ResolutionModel.__init__(self, Name = name, Type = 'RooEffResModel',
                                  Parameters = [self.__res, self.__eff],
                                  ConditionalObservables = conditionals,
@@ -1801,6 +1809,7 @@ class CubicSplineFun(RooObject):
         errors = kwargs.pop('Errors', [])
         smooth = kwargs.pop('Smooth', 0)
         hist = kwargs.pop('Histogram', None)
+        graph = kwargs.pop('Graph',None)
         coeffs = kwargs.pop('Coefficients', [])
         const_coeffs = kwargs.pop('ConstantCoeffs', True)
 
@@ -1813,6 +1822,8 @@ class CubicSplineFun(RooObject):
         from ROOT import RooCubicSplineFun
         if hist:
             csf = RooCubicSplineFun(name, name, __dref__(observable), hist, smooth, const_coeffs)
+        elif graph :
+            csf = RooCubicSplineFun(name, name, __dref__(observable), graph, smooth, const_coeffs)
         elif knots and coeffs and not values:
             csf = RooCubicSplineFun(name, name, __dref__(observable), __make_vector(knots), RooArgList( coeffs ) )
         elif knots and values and errors and not coeffs:
@@ -1830,31 +1841,28 @@ class CubicSplineGaussModel(ResolutionModel) :
         params = [__dref__(p) for p in kwargs.pop('Parameters', [])]
         spline = kwargs.pop('SplineFunction', None)
 
-        constraints = set(kwargs.pop('ExternalConstraints', []))
-        conds = set(kwargs.pop('ConditionalObservables', []))
+        constraints = kwargs.pop('ExternalConstraints', set())
+        conds = kwargs.pop('ConditionalObservables', set())
         
         assert(not res_model or not params)
         if res_model:
             constraints |= set(res_model.ExternalConstraints())
             conds |= set(res_model.ConditionalObservables())
             from ROOT import RooAddModel, RooGaussModel
-            types = {RooAddModel : self.__from_add_model,
-                     RooGaussModel : self.__from_gauss}
+            types = {RooAddModel : self.__from_add_model, RooGaussModel : self.__from_gauss}
             for t, fun in types.iteritems():
                 if isinstance(res_model._target_(), t):
                     model, this_type, name = fun(name, res_model, spline)
         else:
-            from ROOT import RooCubicSplineGaussModel
             model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline.GetName(), ','.join([p.GetName() for p in params[1:]]))
             this_type = 'RooCubicSplineGaussModel'
 
-        if type(model) == str:
-            self._declare(model)
+        if type(model) == str: self._declare(model)
 
         self._init(name, this_type)
         extraOpts = dict()
-        if constraints : extraOpts['ExternalConstraints' ] = constraints
-        if conds: extraOpts['ConditionalObservables'] = conds
+        if constraints : extraOpts['ExternalConstraints' ]   = constraints
+        if conds:        extraOpts['ConditionalObservables'] = conds
         ResolutionModel.__init__(self, Name = name , Type = this_type, **extraOpts)
 
     def __from_gauss(self, name, gauss_model, spline_fun):
@@ -1941,7 +1949,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                     for i in range(len(heights)):
                         knots[i] = (bounds[i] + bounds[i + 1]) / 2.
                         values[i] = heights[i]
-                        errors[i] = sqrt(heights[i])
+                        errors[i] = sqrt(heights[i]) # ?????  This will make the smoothing utterly meanignless!!!
                     sn = '%s_%s_spline' % (category.GetName(), state)
                     spline_fun = CubicSplineFun(Name = sn, Observable = self.__observable,
                                                 Knots = knots, Values = values, Errors = errors,
@@ -2048,10 +2056,10 @@ class MultiHistEfficiencyModel(ResolutionModel):
         if self.__fit_bins and not self.__use_bin_constraint:
             self.__add_constraints()
 
-        constraints = list(set(kwargs.pop('ExternalConstraints', [])) | \
-                           set(self.__original.ExternalConstraints()) | \
-                           set(self.__resolution_model.ExternalConstraints()) | \
-                           set(self.ExternalConstraints()))
+        constraints = kwargs.pop('ExternalConstraints', set()) | \
+                      self.__original.ExternalConstraints() | \
+                      self.__resolution_model.ExternalConstraints() | \
+                      self.ExternalConstraints()
         if constraints : extraOpts['ExternalConstraints' ] = constraints
         self._init(self.__pdf_name, 'RooMultiEffResModel')
         ResolutionModel.__init__(self, Name = self.__pdf_name , Type = 'RooMultiEffResModel', **extraOpts)
@@ -2275,9 +2283,8 @@ def buildPdf( Components, Observables, Name ) :
         args['PDFs'].append(pdf)
 
         # add external constraints
-        for ec in pdf.ExternalConstraints(): args['ExternalConstraints'].add(ec)
+        args['ExternalConstraints'] |= pdf.ExternalConstraints()
 
-    args['ExternalConstraints'] = list(args['ExternalConstraints'])
 
     # return product directly if PDF consists of only one component
     if len(Components) == 1 : return args['PDFs'][0] # TODO: how to change the name?

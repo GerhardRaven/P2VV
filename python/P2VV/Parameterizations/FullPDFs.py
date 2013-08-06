@@ -12,10 +12,11 @@
 
 # PDF configuration base class
 class PdfConfiguration( dict ) :
-    def __init__( self, parameters = None ) :
+    def __init__( self, parameters = None, **kwargs ) :
         self._parameters = { }
         if parameters != None : self.addParameters(parameters)
         self['parameters'] = self._parameters
+        dict.__init__(self,**kwargs)
 
     def __getitem__( self, key ) :
         if key not in self and key in self._parameters : return self._parameters[key]
@@ -92,7 +93,7 @@ class PdfConfiguration( dict ) :
               parErr   = float(line[2])
               parMin   = float(line[3])
               parMax   = float(line[4])
-              parFloat = bool( 1 if line[5] == 'True' else 0 )
+              parFloat = ( line[5] == 'True' )
             except :
               continue
 
@@ -144,7 +145,7 @@ class PdfConfiguration( dict ) :
             if nameExpr and not nameExpr.match(parName) : continue
 
             parVals = self._parameters[parName]
-            if ( floating == True and not parVals[4] ) or ( floating == False and parVals[4] ) : continue
+            if ( floating and not parVals[4] ) or ( not floating and parVals[4] ) : continue
 
             cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
                       .format( parName, parVals[0], parVals[1], parVals[2], parVals[3], 'True' if parVals[4] else 'False' )
@@ -877,8 +878,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                        , NumTagCats1  = tagCatsDictSS['NumTagCats']
                                        , AvgCEvenSum  = avgCEvenSum
                                        , AvgCOddSum   = avgCOddSum
-                                       , Conditionals = tagCatsDictOS['Conditionals'] + tagCatsDictSS['Conditionals']
-                                       , Constraints  = tagCatsDictOS['Constraints']  + tagCatsDictSS['Constraints']
+                                       , Conditionals = tagCatsDictOS['Conditionals'] | tagCatsDictSS['Conditionals']
+                                       , Constraints  = tagCatsDictOS['Constraints']  | tagCatsDictSS['Constraints']
                                       )
 
                     for catOS in range( tagCatsDictOS['NumTagCats'] ) :
@@ -972,11 +973,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     , sinCoef                = timeBasisCoefs['sin']
                     , resolutionModel        = self._timeResModel['model']
                     , ConditionalObservables = self._amplitudes.conditionalObservables()\
-                                               + self._timeResModel.conditionalObservables()\
-                                               + self._taggingParams.conditionalObservables()
+                                               | self._timeResModel.conditionalObservables()\
+                                               | self._taggingParams.conditionalObservables()
                     , ExternalConstraints    = self._lifetimeParams.externalConstraints()\
-                                               + self._timeResModel.externalConstraints()\
-                                               + self._taggingParams.externalConstraints()
+                                               | self._timeResModel.externalConstraints()\
+                                               | self._taggingParams.externalConstraints()
                    )
 
         # build signal PDF
@@ -1037,8 +1038,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # multiply signal PDF with time acceptance
             print 'P2VV - INFO:  Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with lifetime efficiency function'
             args.update( resolutionModel= self._timeResModel['model']
-                       , ConditionalObservables = list( set( args['ConditionalObservables'] + self._timeResModel.conditionalObservables() ) )
-                       , ExternalConstraints = list( set( args['ExternalConstraints'] + self._timeResModel.externalConstraints() ) )
+                       , ConditionalObservables =  args['ConditionalObservables'] | self._timeResModel.conditionalObservables() 
+                       , ExternalConstraints =  args['ExternalConstraints'] | self._timeResModel.externalConstraints()  
                        )
             sigPdfTimeAcc = BTagDecay( 'sig_t_angles_timeEff', **args )
         else :
