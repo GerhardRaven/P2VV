@@ -669,7 +669,7 @@ class ComplementCoef( RooObject ) :
 
         # build a RooComplementCoef (no workspace declaration, since factory string has limited length!!!)
         from ROOT import RooArgList, RooComplementCoef
-        coefList = RooArgList( __dref__(coef) for coef in kwargs.pop('Coefficients') )
+        coefList = RooArgList( kwargs.pop('Coefficients')  )
         complCoef = RooComplementCoef( name, name, coefList )
         self._addObject(complCoef)
         complCoef.IsA().Destructor(complCoef)
@@ -1554,7 +1554,7 @@ class BinnedPdf( Pdf ) :
                 self._binning.SetName(binning_name)
                 var.setBinning(self._binning, binning_name)
                 from ROOT import RooArgList
-                coefList = RooArgList( __dref__(coef) for coef in self._binHeights )
+                coefList = RooArgList( self._binHeights )
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'],argDict['Name'],__dref__(var),binning_name, coefList
                                     , int( kwargs.pop( 'BinIntegralCoefs', 0 ) ) )
