@@ -36,7 +36,7 @@ pdfConfig['blind']      = {#  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0
 
 plotsFile     = 'plots/2011Data_SFit.ps'
 plotsROOTFile = '2011Data_SFit_plots.root'
-parFileIn     = '2011DataFitValues.par'
+parFileIn     = '' # '2011DataFitValues.par'
 parFileOut    = ''
 
 if generateData :
@@ -107,8 +107,7 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # 'tagUntagRelative' # '
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['splineAcceptance']     = False
-pdfConfig['smoothSpline']         = 0.
+pdfConfig['timeEffParameters'].update( dict(Spline = False, smoothSpline = 0, Binned = False) )
 pdfConfig['multiplyByAngEff']     = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['parameterizeKKMass']   = 'simultaneous'  # 'simultaneous'
 pdfConfig['ambiguityParameters']  = False
