@@ -1800,6 +1800,19 @@ class EffResModel(ResolutionModel) :
         def efficiency(self):
             return self.__eff
 
+class BinnedFun(RooObject):
+    def __init__(self, **kwargs):
+        name = kwargs.pop('Name')
+        observable = kwargs.pop('Observable')
+        hist = kwargs.pop('Histogram', None)
+        const_coeffs = kwargs.pop('ConstantCoeffs', True)
+        # coeffs = kwargs.pop('Coefficients', [])
+        # binning = kwargs.pop('Binning')
+        from ROOT import RooBinnedFun
+        f = RooBinnedFun(name, name, __dref__(observable), hist, const_coeffs)
+        self._addObject(f)
+        self._init(name, 'RooBinnedFun')
+
 class CubicSplineFun(RooObject):
     def __init__(self, **kwargs):
         name = kwargs.pop('Name')
