@@ -2,6 +2,34 @@ from P2VV.Parameterizations.GeneralUtils import _util_parse_mixin, _util_extCons
 from P2VV.Parameterizations.GeneralUtils import valid_combinations, exclusive_combinations
 from P2VV.Parameterizations.TimeResolution import TimeResolution
 
+
+
+def fitAverageToHist(hist,knots, tau) :
+    # chisquared fit of spline defined by knots through histogram,
+    # do a chisquared based on the average value of the spline in the
+    # bin, after multiplying with an exponent with lifetime 1/gamma
+    # needs the histogram (and knots) to start at positive values,
+    gamma = 1.0/tau
+    print 'TimeAcceptacne::fitAverageToHist got gamma: ', gamma
+    print 'TimeAcceptance::fitAverageToHist got %s knots : %s'% (len(knots), knots)
+
+    from ROOT import TVectorD, TMatrixD, RooCubicSplineKnot
+    x = TVectorD( len(knots) )
+    for k in range(len(knots)) : x[k] = knots[k]
+
+    rcsk = RooCubicSplineKnot( x.GetMatrixArray(), x.GetNoElements() )
+
+    coefficients= TVectorD()
+    covMatrix=TMatrixD ()
+    chisq = rcsk.expIntegral( hist, gamma, coefficients, covMatrix )
+    assert chisq>=0 # negative chisq is indication of failure...
+
+    print 'average efficiency fit chisq / dof = %s / %s'% (chisq,hist.GetNbinsX()-coefficients.GetNoElements())
+    #coefficients.Print()
+    return coefficients
+
+
+
 ## Since all time acceptances are implemented in the resolution model, we inherit from there
 class TimeAcceptance ( TimeResolution ) :
     def __init__( self, **kwargs ) : 
@@ -37,15 +65,61 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         name = kwargs.pop('Name', 'Moriond2012_Acceptance')
         model = kwargs.pop('ResolutionModel')
 
+        with TFile.Open(input_file) as acceptance_file : 
+            if not acceptance_file: raise ValueError, "Cannot open ROOT file %s" % input_file
+            self._hist = acceptance_file.Get(histogram)
+            self._hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
+        if not self._hist: raise ValueError, 'Cannot get acceptance histogram %s from file' % histogram
 
-        acceptance_file = TFile.Open(input_file)
-        if not acceptance_file:
-            raise ValueError, "Cannot open histogram file %s" % input_file
-        self._hist = acceptance_file.Get(histogram)
-        if not self._hist:
-            raise ValueError, 'Cannot get acceptance histogram %s from file' % histogram
+        # TODO: kwargs Spline, Binned are mutually exclusive -- should be one keyword, with value 
 
-        if not kwargs.pop('Spline', False) :
+        if kwargs.pop('Spline',False) :
+            from P2VV.RooFitWrappers import CubicSplineGaussModel, CubicSplineFun
+
+            _hist = self._hist
+            nbins = _hist.GetNbinsX()
+            knots = [ _hist.GetBinLowEdge(1+i) for i in range( 0, nbins+1)  ]
+            # knots = knots[0:-1:4]
+            knots = knots[0:-1:2]
+            rhe = _hist.GetBinLowEdge(nbins)+_hist.GetBinWidth(nbins) 
+            knots.append(rhe)
+            self._coefficients = fitAverageToHist( _hist,knots,1.5)
+            # self._coefficients.Print()
+
+            from P2VV.RooFitWrappers import ConstVar
+            self._shape = CubicSplineFun(Name=name +'_shape'
+                                        , Observable = self._time
+                                        , Knots = knots
+                                        , Coefficients = [ ConstVar(Name = name+'_shape_%s' % i, Value = self._coefficients(i) ) for i in range(self._coefficients.GetNoElements()) ]
+                                        )
+
+            if False :
+                fr = self._time.frame()
+                self._shape.plotOn(fr)
+                fr.addTH1( _hist.Clone() )
+                x = lambda i : self._shape.u(i) 
+                from ROOT import TLine
+                lines = [ TLine( x(i),0,x(i),0.3 )  for i in range( self._shape.knotSize() ) ]
+                for line in lines : fr.addObject( line.Clone() )
+                fr.Draw()
+                import code
+                code.interact(local=locals())
+
+            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
+                                                                   SplineFunction = self._shape,
+                                                                   ResolutionModel = model['model'],
+                                                                   ConditionalObservables = model.conditionalObservables(),
+                                                                   ExternalConstraints = model.externalConstraints()))
+        elif kwargs.pop('Binned',False) :
+            from P2VV.RooFitWrappers import BinnedFun, CubicSplineGaussModel
+            self._shape = BinnedFun(name + '_shape', Observable = self._time, Histogram = self._hist )
+            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
+                                                                   SplineFunction = self._shape,
+                                                                   ResolutionModel = model['model'],
+                                                                   ConditionalObservables = model.conditionalObservables(),
+                                                                   ExternalConstraints = model.externalConstraints()))
+
+        else :
             from P2VV.RooFitWrappers import BinnedPdf
             self._shape = BinnedPdf(name + '_shape', Observable = self._time, Histogram = self._hist )
             from P2VV.RooFitWrappers import EffResModel
@@ -54,20 +128,6 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
                                                                    ConditionalObservables = model.conditionalObservables(),
                                                                    ExternalConstraints = model.externalConstraints()))
 
-        else :
-            from P2VV.RooFitWrappers import CubicSplineGaussModel, CubicSplineFun
-            self._shape = CubicSplineFun(Name=name +'_CubicSplineEff',
-                                         Histogram= self._hist,
-                                         Observable = self._time, 
-                                         Smooth = 0.1 
-                                        )
-            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
-                                                                   SplineFunction = self._shape,
-                                                                   ResolutionModel = model['model'],
-                                                                   ConditionalObservables = model.conditionalObservables(),
-                                                                   ExternalConstraints = model.externalConstraints()))
-
-        acceptance_file.Close()
         print 'P2VV - INFO: Moriond2012_TimeAcceptance.__init__(): using time efficiency histogram "%s" from file "%s"'\
               % ( histogram, input_file )
 
@@ -76,9 +136,9 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         from ROOT import TFile
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
                        MinMax = (0.3, 14))
-        input_file = kwargs.pop('Input', 'acceptance.root')
         histograms = kwargs.pop('Histograms')
         original = kwargs.pop('Original')
+        input_file = kwargs.pop('Input', 'acceptance.root')
         acceptance_file = TFile.Open(input_file)
         fit = kwargs.pop('Fit')
         model = kwargs.pop('ResolutionModel')
