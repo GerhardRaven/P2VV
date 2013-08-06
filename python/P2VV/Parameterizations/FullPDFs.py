@@ -222,8 +222,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['multiplyByTagPdf']     = False
         self['multiplyByTimeEff']    = 'signal'
         self['timeEffType']          = 'paper2012'
-        self['splineAcceptance']     = False
-        self['smoothSpline']         = 2
+        self['timeEffParameters']    = dict( Spline= False,  SmoothSpline = 0.8 )
         self['multiplyByAngEff']     = 'weights'
         self['parameterizeKKMass']   = 'simultaneous'
         self['ambiguityParameters']  = False
@@ -337,8 +336,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         multiplyByTagPdf  = pdfConfig.pop('multiplyByTagPdf')
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')      # '' / 'all' / 'signal'
         timeEffType       = pdfConfig.pop('timeEffType')            # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        splineAcc         = pdfConfig.pop('splineAcceptance')
-        smoothSplineAcc   = pdfConfig.pop('smoothSpline')
+        timeEffParameters = pdfConfig.pop('timeEffParameters')
         multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')       # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')     # '' / 'parameters' / 'simultaneous'
         numBMassBins      = pdfConfig.pop('numBMassBins')
@@ -1008,7 +1006,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 self._timeResModel = TimeAcceptance( time = observables['time'], Input = timeEffHistFile, Histograms = hists
                                                     , Data = dataSet, Fit = True, Original = sigPdf
                                                     , ResolutionModel = self._timeResModel
-                                                    , Spline = splineAcc, SmoothSpline = smoothSplineAcc )
+                                                    , **timeEffParameters )
 
             elif timeEffType == 'paper2012' and selection == 'paper2012' :
                 hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
@@ -1020,7 +1018,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 self._timeResModel = TimeAcceptance( time = observables['time'], Input = timeEffHistFile, Histograms = hists
                                                     , Data = dataSet, Fit = False, Original = sigPdf
                                                     , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf )
-                                                    , Spline = splineAcc, SmoothSpline = smoothSplineAcc )
+                                                    , **timeEffParameters )
 
             elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
                 from P2VV.Parameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
@@ -1029,7 +1027,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     , Histogram = timeEffHistExclBName if timeEffType == 'HLT1ExclBiased'\
                                                                   else timeEffHistUBName
                                                     , ResolutionModel = self._timeResModel
-                                                    , Spline = splineAcc, SmoothSpline = smoothSplineAcc )
+                                                    , **timeEffParameters )
             else:
                 raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown time efficiency type: "%s" (with "%s" selection)'\
                                  % ( timeEffType, selection ) )
