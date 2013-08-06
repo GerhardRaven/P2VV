@@ -51,7 +51,6 @@ RooBinnedFun::RooBinnedFun(const char* name, const char* title,
   _x("x", "Dependent", this, x),
   _coefList("coefficients","List of coefficients",this)
 {
-    // bin 0 is underflow, and bin nBins + 1 is overflow...
     int nBins = hist->GetNbinsX();
     _u.reserve(nBins+1);
     for (int i=0;i<nBins ;++i) {

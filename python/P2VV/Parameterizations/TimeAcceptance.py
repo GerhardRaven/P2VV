@@ -81,7 +81,6 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             rhe = _hist.GetBinLowEdge(nbins)+_hist.GetBinWidth(nbins) 
             knots.append(rhe)
             self._coefficients = fitAverageToHist( _hist,knots,1.5)
-            # self._coefficients.Print()
 
             from P2VV.RooFitWrappers import ConstVar
             self._shape = CubicSplineFun(Name=name +'_shape'

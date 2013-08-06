@@ -191,6 +191,9 @@ for t in [ RooArgSet,RooArgList ] :
     t.__sub__   = _RooTypedUnary2Binary( t, '__isub__' )
     t.__add__   = _RooTypedUnary2Binary( t, '__iadd__' )
 
+RooArgList.__str__ = lambda s : 'RooArgList(%s)' % ','.join( '%s'% i for i in s )
+RooArgSet.__str__  = lambda s : 'RooArgSet(%s)'  % ','.join( '%s'% i for i in s )
+
 # RooWorkspace functions
 
 from ROOT import RooWorkspace, RooFit
