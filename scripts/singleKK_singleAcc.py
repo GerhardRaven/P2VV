@@ -108,7 +108,7 @@ pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # 'tagUntagRelative' # '
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'].update( dict(Spline = False, smoothSpline = 0, Binned = False) )
+pdfConfig['timeEffParameters'].update( dict( Parameterization = 'BinnedFun' , ) )
 pdfConfig['multiplyByAngEff']     = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['parameterizeKKMass']   = ''  # 'simultaneous'
 pdfConfig['ambiguityParameters']  = False

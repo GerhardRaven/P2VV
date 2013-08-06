@@ -137,7 +137,8 @@ RooDataSet.buildTree = __RooDataSetToTree
 def __TreeToRooDataSet( self, Observables = [ ], Name = '', Title = '', Cuts = '', IndexName = '', OrigDataSet = None ) :
     from P2VV.Load import P2VVLibrary
     from ROOT import TreeToRooDataSet
-    obsSet = RooArgSet( obs._var if hasattr( obs, '_var') else obs for obs in Observables )
+    __dref__ = lambda i : i._var if hasattr(i,'_var') else i
+    obsSet = RooArgSet( __dref__(obs) for obs in Observables )
     if OrigDataSet :
         return TreeToRooDataSet( self, obsSet, Name, Title, Cuts, IndexName, OrigDataSet )
     else :

@@ -55,25 +55,22 @@ class TimeAcceptance ( TimeResolution ) :
 
 class Moriond2012_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
-        from ROOT import TFile
-        from array import array
-        from P2VV.RooFitWrappers import BinnedPdf
-        self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
-                       MinMax = (0.3, 14))
+        self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, MinMax = (0.3, 14))
         input_file = kwargs.pop('Input', 'acceptance.root')
         histogram = kwargs.pop('Histogram', 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
         name = kwargs.pop('Name', 'Moriond2012_Acceptance')
         model = kwargs.pop('ResolutionModel')
+        parameterization = kwargs.pop('Parameterization','BinnedPdf')
 
+        from ROOT import TFile
         with TFile.Open(input_file) as acceptance_file : 
             if not acceptance_file: raise ValueError, "Cannot open ROOT file %s" % input_file
             self._hist = acceptance_file.Get(histogram)
             self._hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
         if not self._hist: raise ValueError, 'Cannot get acceptance histogram %s from file' % histogram
 
-        # TODO: kwargs Spline, Binned are mutually exclusive -- should be one keyword, with value 
 
-        if kwargs.pop('Spline',False) :
+        if parameterization == 'Spline' :
             from P2VV.RooFitWrappers import CubicSplineGaussModel, CubicSplineFun
 
             _hist = self._hist
@@ -106,28 +103,33 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
                 code.interact(local=locals())
 
             TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
-                                                                   SplineFunction = self._shape,
+                                                                   Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.conditionalObservables(),
                                                                    ExternalConstraints = model.externalConstraints()))
-        elif kwargs.pop('Binned',False) :
+        elif parameterization == 'BinnedFun' :
             from P2VV.RooFitWrappers import BinnedFun, CubicSplineGaussModel
-            self._shape = BinnedFun(name + '_shape', Observable = self._time, Histogram = self._hist )
+            self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Histogram = self._hist )
             TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
-                                                                   SplineFunction = self._shape,
+                                                                   Efficiency = self._shape,
+                                                                   ResolutionModel = model['model'],
+                                                                   ConditionalObservables = model.conditionalObservables(),
+                                                                   ExternalConstraints = model.externalConstraints()))
+
+        elif parameterization == 'BinnedPdf' :
+            from P2VV.RooFitWrappers import BinnedPdf
+            self._shape = BinnedPdf(name + '_shape', Observable = self._time, Histogram = self._hist )
+            from P2VV.RooFitWrappers import EffResModel
+            TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name, 
+                                                                   Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.conditionalObservables(),
                                                                    ExternalConstraints = model.externalConstraints()))
 
         else :
-            from P2VV.RooFitWrappers import BinnedPdf
-            self._shape = BinnedPdf(name + '_shape', Observable = self._time, Histogram = self._hist )
-            from P2VV.RooFitWrappers import EffResModel
-            TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name, Efficiency = self._shape,
-                                                                   ResolutionModel = model['model'],
-                                                                   ConditionalObservables = model.conditionalObservables(),
-                                                                   ExternalConstraints = model.externalConstraints()))
+            raise ValueError, 'Requested unknown Moriond2012_TimeAcceptance Parameterization %s'%parameterization
 
+        self._check_extraneous_kw( kwargs )
         print 'P2VV - INFO: Moriond2012_TimeAcceptance.__init__(): using time efficiency histogram "%s" from file "%s"'\
               % ( histogram, input_file )
 

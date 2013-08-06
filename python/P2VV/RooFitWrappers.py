@@ -1802,6 +1802,7 @@ class EffResModel(ResolutionModel) :
 
 class BinnedFun(RooObject):
     def __init__(self, **kwargs):
+        print 'BinnedFun.__init__'
         name = kwargs.pop('Name')
         observable = kwargs.pop('Observable')
         hist = kwargs.pop('Histogram', None)
@@ -1856,7 +1857,7 @@ class CubicSplineGaussModel(ResolutionModel) :
         name = kwargs.pop('Name')
         res_model = kwargs.pop('ResolutionModel', None)
         params = [__dref__(p) for p in kwargs.pop('Parameters', [])]
-        spline = kwargs.pop('SplineFunction', None)
+        efficiency = kwargs.pop('Efficiency', None)
 
         constraints = kwargs.pop('ExternalConstraints', set())
         conds = kwargs.pop('ConditionalObservables', set())
@@ -1869,9 +1870,9 @@ class CubicSplineGaussModel(ResolutionModel) :
             types = {RooAddModel : self.__from_add_model, RooGaussModel : self.__from_gauss}
             for t, fun in types.iteritems():
                 if isinstance(res_model._target_(), t):
-                    model, this_type, name = fun(name, res_model, spline)
+                    model, this_type, name = fun(name, res_model, efficiency)
         else:
-            model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline.GetName(), ','.join([p.GetName() for p in params[1:]]))
+            model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), efficiency.GetName(), ','.join([p.GetName() for p in params[1:]]))
             this_type = 'RooCubicSplineGaussModel'
 
         if type(model) == str: self._declare(model)
