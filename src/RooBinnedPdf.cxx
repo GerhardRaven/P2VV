@@ -621,8 +621,11 @@ Int_t RooBinnedPdf::getMaxVal(const RooArgSet& vars) const
 Double_t RooBinnedPdf::maxVal(Int_t code) const 
 {
    // We only do 1D.
-   assert(code==1);
-   // assert(_function.absArg() != 0);
+   if (code != 1) {
+     coutF(InputArguments) << "RooBinnedPdf::maxVal(" << GetName()
+         << "): integration code should be 1 (got" << code << ")" << endl;
+     assert(0);
+   }
    
    Double_t max = -1;
    
