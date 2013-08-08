@@ -60,8 +60,9 @@ public:
                 case 3: return    o;   // (0,3),(3,0)
                 case 4: return -2*s;   // (1,1)
                 case 5: return  3*o;   // (1,2),(2,1)
-                default : assert(1==0);
             }
+            assert(1==0);
+            return 0;
         }
     private:
         double t,d,s,o;
