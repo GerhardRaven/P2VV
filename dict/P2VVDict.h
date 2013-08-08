@@ -4,7 +4,6 @@
 #include "TMatrixTSym.h"
 
 #include "P2VV/RooRealMoments.h"
-#include "P2VV/ProgressDisplay.h"
 #include "P2VV/RooBTagDecay.h"
 #include "P2VV/RooTrivialTagDecay.h"
 #include "P2VV/RooMultiCatGenerator.h"

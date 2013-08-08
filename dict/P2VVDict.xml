@@ -9,7 +9,6 @@
         <class name = "RooRealMoment" />
         <class name = "RooRealEffMoment" />
         <class name = "std::vector<RooRealMoment*>" />
-        <class name = "ProgressDisplay" />
         <class name = "RooBTagDecay" />
         <class name = "RooTrivialTagDecay" />
         <class name = "RooMultiCatGenerator" />

@@ -3,7 +3,6 @@
 #pragma link C++ class RooRealMoment+;
 #pragma link C++ class RooRealEffMoment+;
 #pragma link C++ class vector<RooRealMoment*>+;
-#pragma link C++ class ProgressDisplay+;
 #pragma link C++ class RooBTagDecay+;
 #pragma link C++ class RooTrivialTagDecay+;
 #pragma link C++ class RooMultiCatGenerator+;
