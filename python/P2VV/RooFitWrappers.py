@@ -1,6 +1,12 @@
 from P2VV.RooFitDecorators import *
 from functools import wraps
 
+def __check_mutually_exclusive_kw__( kwargs,  a, b ) :
+    keys = set(kwargs.iterkeys())
+    s = keys.intersection(a)
+    t = keys.intersection(b)
+    trouble =  s & t
+    if trouble : raise KeyError('got mutually exclusive keyword: %s' % trouble )
 def __check_req_kw__( name, kwargs ) :
     if not name in kwargs : raise KeyError( 'Must provide kw argument %s' % name )
 def __check_exists_already__( self ) :
@@ -10,28 +16,48 @@ def __check_name_syntax__( name ) :
     from string import whitespace
     if any( whiteChar in name for whiteChar in whitespace ) :
         raise KeyError( 'Whitespace in variable names not supported: "%s"' % name )
-
-
+#
+# making a decorator for this doesn't work, as kwargs is 'by value', hence we don't see what 'f' has popped ;-(
+#def __check_extraneous_kw__(f) :
+#    @wraps(f)
+#    def checked_f( *args, **kwargs ) :
+#        __aa = set(kwargs.keys())
+#        ret = f(*args,**kwargs)
+#        __bb = set(kwargs.keys())
+#        print 'initial: %s'%__aa
+#        print 'final: %s'%__bb
+#        if kwargs : print' WARNING: %s.%s has unused keywords %s ' % ( args[0].__class__, f.__name__, kwargs.keys(), )
+#        return ret
+#    return checked_f
+#
 def __dref__(i) :
     from ROOT import RooAbsArg
-    import inspect
+    import inspect, collections
     def __dref_generator__(g) : 
         for e in g : yield __dref__(e) 
     if isinstance(i,RooAbsArg) : return i
     if hasattr(i,'_var')       : return i._var
+    # go recursive...
     if inspect.isgenerator(i)  : return __dref_generator__(i)
-    if hasattr(i,'__iter__')   : return type(i)( __dref__(k) for k in i ) # go recursive...
-    return i  # give up...
+    ## damn: if i is a dict, then, if k would be a (key,value) pair, the code below would have worked
+    #        but annoyingly, 'for k in i' iterates over the keys only 
+    #        so we first have to check  especially for mappings...
+    if isinstance(i, collections.Mapping  ) : return type(i)( (__dref__(k),__dref__(v)) for k,v in i.iteritems() )
+    if isinstance(i, collections.Iterable ) : return type(i)( __dref__(k) for k in i ) 
+    return i  # nothing to do (one hopes...)
 
 def __wrap__dref_var__( fun ) :
     @wraps(fun)
-    def _fun(self,*args) : return fun(self, *__dref__(args) )
+    def _fun(self,*args,**kwargs) : return fun(self, *__dref__(args), **__dref__(kwargs) )
     return _fun
 
 RooAbsCollection.__contains__ = __wrap__dref_var__( RooAbsCollection.__contains__ )
 RooArgSet.__init__ = __wrap__dref_var__( RooArgSet.__init__ )
 RooArgList.__init__ = __wrap__dref_var__( RooArgList.__init__ )
+RooArgSet.add = __wrap__dref_var__( RooArgSet.add )
+RooArgList.add = __wrap__dref_var__( RooArgList.add )
 RooAbsData.table = __wrap__dref_var__( RooAbsData.table )
+## generates oops; why?? setattr( RooWorkspace, 'import',  __wrap__dref_var__( getattr(RooWorkspace, 'import' ) ) )
 
 
 class RooObject(object) :
@@ -117,6 +143,8 @@ class RooObject(object) :
         """
         # canonicalize 'spec' a bit by getting rid of spaces
         spec = spec.strip()
+        # protect against hardwired limit in RooFactoryWSTool
+        if (len(spec))>10000 : assert ValueError('RooWorkspace string too long')
         # TODO: Wouter promised to add a method that, given the factory 'spec' above returns
         #       the value of 'factory_tag' which is used internally in the conflict resolution
         #       and which is the 'canonical' recipe to build an object
@@ -133,9 +161,9 @@ class RooObject(object) :
             #
             # Keep the PyROOT objects in a container so they don't get garbage
             # collected.
-            # Note: use explicit GetName, not str, as x is a 'bare' PyROOT object!!!
             x = self._addObject(x)
             # and keep track what we made
+            # print 'using spec : %s whereas factory_tag = %s' % (spec,x.getStringAttribute('factory_tag'))
             self.ws()._spec[ spec ] = x
         else :
             x = self.ws()._spec[ spec ]
@@ -850,7 +878,6 @@ class CategoryVar(RooObject) :
                    % ( name, kwargs.pop('Category'), ','.join( var.GetName() for var in kwargs.pop('Variables') ) )
             self._declare(spec)
             self._init( name, 'RooCategoryVar' )
-
         else :
             self._init( name, 'RooCategoryVar' )
             for key, val in kwargs.iteritems() :
@@ -923,6 +950,7 @@ class Pdf(RooObject):
     def _separator(self):
         return '_'
 
+    ### TODO: replace ConditionalObservables and ExternalConstraints with GeneralUtil.__util_mixin__XXXXX
     def ConditionalObservables(self) :
         if not hasattr(self, '_conditionals'): return set()
         return set( i for i in self.Observables() if i.GetName() in self._conditionals )
@@ -976,8 +1004,8 @@ class Pdf(RooObject):
             assert 'GlobalObservables' not in kwargs or extConst== kwargs['GlobalObservables'] , 'Inconsistent Global Observables'
             print 'INFO: adding GlobalObservables: %s' % [ i.GetName() for i in globalObs ]
             kwargs['GlobalObservables'] = globalObs
-        for d in set(('ConditionalObservables','ExternalConstraints', 'GlobalObservables')).intersection( kwargs ) :
-            kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
+        for d in set(('ConditionalObservables','ExternalConstraints', 'GlobalObservables','Minos')).intersection( kwargs ) :
+            kwargs[d] = RooArgSet( kwargs.pop(d) )
         print kwargs
         return self._var.fitTo( data, **kwargs )
 
@@ -1029,24 +1057,6 @@ class ProdPdf(Pdf):
              , 'ExternalConstraints'    : ec
             }
         Pdf.__init__(self, Type = 'RooProdPdf', **d)
-
-        ##### FIXME/BUG/WORKAROUND #####
-        # in RooVectorDataStore::cacheArgs, leafs are cached with a (forced) normalization
-        # set corresponding to the normalization set of the top level PDF, unless the leaf
-        # has the NOCacheAndTrack attribute set.
-        # So here we walk through the leafs of our PDF, and add NOCacheAndTrack for all those
-        # PDFs which are dependent on a conditional observable which appears in the toplevel...
-        #print 'ProdPDF wrapper -- checking whether RooVectorDataStore::cacheArgs normalization bug workaround is required'
-        ## create RooArgSet of conditional observables
-        #cset = RooArgSet(__dref__(c) for c in conds )
-        #for pdf in PDFs :
-        #    for c in pdf.getComponents() :
-        #        if c.getAttribute('NOCacheAndTrack') : continue
-        #        depset = c.getObservables( cset )
-        #        if depset.getSize() > 0 :
-        #            print 'setting NOCacheAndTrack for %s as it depends on conditional observable %s ' % (c.GetName(),[i.GetName() for i in depset])
-        #            c.setAttribute('NOCacheAndTrack')
-        #print 'ProdPDF wrapper -- done checking for RooVectorDataStore::cacheArgs normalization bug '
 
 
     def _make_pdf(self):
@@ -1861,7 +1871,7 @@ class CubicSplineGaussModel(ResolutionModel) :
 
         constraints = kwargs.pop('ExternalConstraints', set())
         conds = kwargs.pop('ConditionalObservables', set())
-        
+
         assert(not res_model or not params)
         if res_model:
             constraints |= set(res_model.ExternalConstraints())
@@ -1924,20 +1934,16 @@ class MultiHistEfficiencyModel(ResolutionModel):
         self.__coefficients = {}
         self.__base_bounds = None
         self.__constraints = []
-        self.__binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
-        if not self.__binHeightMinMax : self.__binHeightMinMax = (0.01, 0.999)
+        self.__binHeightMinMax = kwargs.pop('BinHeightMinMax', (0.01, 0.999) )
         self.__spline = kwargs.pop('Spline', False)
         self.__smooth = kwargs.pop('SmoothSpline', 0)
         self.__knots = None
         from copy import copy
         from ROOT import RooBinning        
 
-        if self.__spline:
-            self.__knots = {}
+        if self.__spline: self.__knots = {}
 
-        obs_set = RooArgSet()
-        for o in self.__original.Observables().intersection(self.__original.ConditionalObservables()):
-            obs_set.add(__dref__(o))
+        obs_set = RooArgSet( self.__original.Observables().intersection(self.__original.ConditionalObservables()) )
 
         for (category, entries) in self.__bins.iteritems():
             states = set([s.GetName() for s in category])
@@ -1990,8 +1996,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 # Calculate a first scale factor according to the constraint
                 if not self.__fit_bins:
                     # If we're not fitting set all bins constant
-                    for h in heights:
-                        h.setConstant(True)
+                    for h in heights: h.setConstant(True)
                 elif len(heights) == 1 or self.__use_bin_constraint:
                     # Fix the bin if there is only one.
                     heights[0].setConstant(True)
@@ -2002,7 +2007,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                     constr_heights = heights if not self.__spline else heights[1:-1]
                     shape = BinnedPdf(shape_name, Observable = self.__observable,
                                       Binning = binning_name, Coefficients = constr_heights)
-                    shape.setForceUnitIntegral(True)
+                    shape.setForceUnitIntegral(True) # insure BinnedPdf is used as function, not PDF, i.e. skip normalization!
 
                     eff_model = EffResModel(Efficiency = shape,
                                             ResolutionModel = self.__resolution_model)
@@ -2010,8 +2015,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                     # Set all observables constant for the shape to work around a
                     # RooFit limitation
                     observables = eff_model.getObservables(obs_set)
-                    for o in observables:
-                        o.setConstant(True)
+                    for o in observables: o.setConstant(True)
 
                     self.__shapes.append(shape)
 
@@ -2045,8 +2049,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
 
             # Make realvars for relative efficiencies
             if re != None:
-                efficiency = RealVar('%s_efficiency' % state_name, Observable = False,
-                                     **re)
+                efficiency = RealVar('%s_efficiency' % state_name, Observable = False, **re)
                 self.__relative_efficiencies[state_name] = efficiency
             elif remaining == None:
                 remaining = state_name
@@ -2068,17 +2071,14 @@ class MultiHistEfficiencyModel(ResolutionModel):
         mhe.IsA().Destructor(mhe)
 
         extraOpts = dict()
-        if self.__conditionals:
-            extraOpts['ConditionalObservables'] = self.__conditionals
+        if self.__conditionals: extraOpts['ConditionalObservables'] = self.__conditionals
+        if self.__fit_bins and not self.__use_bin_constraint: self.__add_constraints()
 
-        if self.__fit_bins and not self.__use_bin_constraint:
-            self.__add_constraints()
-
-        constraints = kwargs.pop('ExternalConstraints', set()) | \
-                      self.__original.ExternalConstraints() | \
-                      self.__resolution_model.ExternalConstraints() | \
-                      self.ExternalConstraints()
-        if constraints : extraOpts['ExternalConstraints' ] = constraints
+        constraints = kwargs.pop('ExternalConstraints', set())      \
+                    | self.__original.ExternalConstraints()         \
+                    | self.__resolution_model.ExternalConstraints() \
+                    | self.ExternalConstraints()
+        if constraints : extraOpts['ExternalConstraints'] = constraints
         self._init(self.__pdf_name, 'RooMultiEffResModel')
         ResolutionModel.__init__(self, Name = self.__pdf_name , Type = 'RooMultiEffResModel', **extraOpts)
 

@@ -27,28 +27,12 @@ def __wrap_kw_subs( fun ) :
             assert 'Index' in kwargs, 'RooFit keyword wrapper: "Imports" argument found without "Index"'
             args += ( RooCmdArg( __disp( 'Index', kwargs.pop('Index') ) ), )  # note order: "Index" before "Import"
             args += tuple( RooCmdArg( __disp('Import', i) ) for i in kwargs.pop('Imports') )
-
-        if 'Minos' in kwargs and hasattr( kwargs['Minos'], '__iter__' ) :
-            if kwargs['Minos'] :
-                from ROOT import RooArgSet
-                RooPars = RooArgSet()
-                for par in kwargs['Minos'] : RooPars.add( __dref(par) )
-                kwargs['Minos'] = RooPars
-            else :
-                kwargs.pop('Minos')
-
-        # TODO: this 'if' block needs to move to RooFitWrappers...
-        if 'ArgSet' in kwargs or 'ArgList' in kwargs:
-            if 'ArgSet' in kwargs :
-                from ROOT import RooArgSet
-                P2VVVars = kwargs.pop('ArgSet')
-                RooVars = RooArgSet()
-            else :
-                from ROOT import RooArgList
-                P2VVVars = kwargs.pop('ArgList')
-                RooVars = RooArgList()
-            for var in P2VVVars : RooVars.add( __dref(var) ) 
-            args += (RooVars,)
+        if 'ArgSet' in kwargs :
+            from ROOT import RooArgSet
+            args += (RooArgSet(kwargs.pop('ArgSet')), )
+        if 'ArgList' in kwargs :
+            from ROOT import RooArgList
+            args += ( RooArgList(kwargs.pop('ArgList')), )
 
         dispatch = ( (k,kwargs.pop(k)) for k in kwargs.keys() if hasattr(RooFit,k) )
         args += tuple(RooCmdArg(__disp(k,v)) for k,v in dispatch )
@@ -170,14 +154,12 @@ RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 def __create_RooAbsCollectionInit(t) :
     def cnvrt(i) :
         from ROOT import TObject, RooAbsArg
-        if isinstance(i,RooAbsArg) : 
-            return i
-        elif not hasattr(i, '__iter__') or isinstance(i, TObject):
-            return i
+        if isinstance(i,RooAbsArg) : return i
+        if not hasattr(i, '__iter__') or isinstance(i, TObject): return i
         _i = t()
         for j in i : 
             assert( isinstance(j,RooAbsArg) )
-            _i.add( j )  # _i.add( cvrt(j) ) ????
+            _i.add( j )
         return _i
     __init = t.__init__
     return lambda self,*args : __init(self, *tuple(cnvrt(i) for i in args))
@@ -202,9 +184,10 @@ RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
 
 def __RooWorkspacePut( self ,x, **kwargs ) :
-    __dref__ = lambda i : i._var if hasattr(i,'_var') else i
+    from ROOT import TObject
+    assert isinstance(x, TObject)
     _import = getattr(RooWorkspace,'import')
-    if _import(self,__dref__(x),**kwargs) : return None
+    if _import(self,x,**kwargs) : return None
     return self[kwargs.get('Rename',x.GetName())]
 
 setattr( RooWorkspace, 'import',  __wrap_kw_subs( getattr(RooWorkspace, 'import' ) ) )
@@ -274,13 +257,13 @@ RooRealVar.format          = __wrap_kw_subs( RooRealVar.format )
 from ROOT import RooAbsCollection
 RooAbsCollection.printLatex = __wrap_kw_subs( RooAbsCollection.printLatex )
 from ROOT import RooMCStudy
-RooMCStudy.plotPull = __wrap_kw_subs( RooMCStudy.plotPull)
-RooMCStudy.plotError = __wrap_kw_subs( RooMCStudy.plotError)
-RooMCStudy.plotNLL = __wrap_kw_subs( RooMCStudy.plotNLL)
-RooMCStudy.plotParam = __wrap_kw_subs( RooMCStudy.plotParam)
-RooMCStudy.plotParamOn = __wrap_kw_subs( RooMCStudy.plotParamOn)
+RooMCStudy.plotPull         = __wrap_kw_subs( RooMCStudy.plotPull)
+RooMCStudy.plotError        = __wrap_kw_subs( RooMCStudy.plotError)
+RooMCStudy.plotNLL          = __wrap_kw_subs( RooMCStudy.plotNLL)
+RooMCStudy.plotParam        = __wrap_kw_subs( RooMCStudy.plotParam)
+RooMCStudy.plotParamOn      = __wrap_kw_subs( RooMCStudy.plotParamOn)
 from ROOT import RooDataSet
-RooDataSet.plotOnXY = __wrap_kw_subs( RooDataSet.plotOnXY )
+RooDataSet.plotOnXY         = __wrap_kw_subs( RooDataSet.plotOnXY )
 
 #from ROOT import RooSimCloneTool
 #RooSimCloneTool.build = __wrap_kw_subs(RooSimCloneTool.build )

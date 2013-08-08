@@ -481,10 +481,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._KKMassBinning = observables['KKMass'].getBinning('KKMassBinning')
 
             assert self._KKMassBinning.numBins() == observables['KKMassCat'].numTypes() == len(KKMassBinBounds) - 1\
-                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category and/or binning and specified bin bounds'
+                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category (%s) and/or binning (%s) and specified bin bounds (%s)' \
+                   % ( self._KKMassBinning.numBins(), observables['KKMassCat'].numTypes(), len(KKMassBinBounds) - 1 )
             for it in range( self._KKMassBinning.numBins() ) :
                 assert self._KKMassBinning.binLow(it) == KKMassBinBounds[it]\
-                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass binning and specified bin bounds'
+                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different boundary in KK mass binning (%s) and specified bin bounds (%s)' \
+                       % ( self._KKMassBinning.binLow(it),  KKMassBinBounds[it] )
+
 
         else :
             # create KK mass binning
@@ -970,12 +973,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     , cosCoef                = timeBasisCoefs['cos']
                     , sinCoef                = timeBasisCoefs['sin']
                     , resolutionModel        = self._timeResModel['model']
-                    , ConditionalObservables = self._amplitudes.conditionalObservables()\
-                                               | self._timeResModel.conditionalObservables()\
-                                               | self._taggingParams.conditionalObservables()
-                    , ExternalConstraints    = self._lifetimeParams.externalConstraints()\
-                                               | self._timeResModel.externalConstraints()\
-                                               | self._taggingParams.externalConstraints()
+                    , ConditionalObservables = self._amplitudes.ConditionalObservables()\
+                                               | self._timeResModel.ConditionalObservables()\
+                                               | self._taggingParams.ConditionalObservables()
+                    , ExternalConstraints    = self._lifetimeParams.ExternalConstraints()\
+                                               | self._timeResModel.ExternalConstraints()\
+                                               | self._taggingParams.ExternalConstraints()
                    )
 
         # build signal PDF
@@ -1045,8 +1048,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # multiply signal PDF with time acceptance
             print 'P2VV - INFO:  Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with lifetime efficiency function'
             args.update( resolutionModel= self._timeResModel['model']
-                       , ConditionalObservables =  args['ConditionalObservables'] | self._timeResModel.conditionalObservables() 
-                       , ExternalConstraints =  args['ExternalConstraints'] | self._timeResModel.externalConstraints()  
+                       , ConditionalObservables =  args['ConditionalObservables'] | self._timeResModel.ConditionalObservables() 
+                       , ExternalConstraints =  args['ExternalConstraints'] | self._timeResModel.ExternalConstraints()  
                        )
             sigPdfTimeAcc = BTagDecay( 'sig_t_angles_timeEff', **args )
         else :

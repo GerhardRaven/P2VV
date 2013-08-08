@@ -193,10 +193,10 @@ def JpsiphiBDecay( Name, time, tag, lifetimeParams, sigtres, tagging, basisCoeff
                    , cosCoef                = basisCoefficients['cos']
                    , sinhCoef               = basisCoefficients['sinh']
                    , sinCoef                = basisCoefficients['sin']
-                   , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
-                   , ExternalConstraints    = lifetimeParams.externalConstraints()\
-                                              + sigtres.externalConstraints()\
-                                              + tagging.externalConstraints()
+                   , ConditionalObservables = sigtres.ConditionalObservables() + tagging.ConditionalObservables()
+                   , ExternalConstraints    = lifetimeParams.ExternalConstraints()\
+                                              + sigtres.ExternalConstraints()\
+                                              + tagging.ExternalConstraints()
                   )
 
 def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging, basisCoefficients ) :
@@ -216,10 +216,10 @@ def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging, basisCo
                       , ADilWTag               = tagging['ADilWTag']
                       , avgCEven               = tagging['avgCEven']
                       , avgCOdd                = tagging['avgCOdd']
-                      , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
-                      , ExternalConstraints    = lifetimeParams.externalConstraints()\
-                                                 + sigtres.externalConstraints()\
-                                                 + tagging.externalConstraints()
+                      , ConditionalObservables = sigtres.ConditionalObservables() + tagging.ConditionalObservables()
+                      , ExternalConstraints    = lifetimeParams.ExternalConstraints()\
+                                                 + sigtres.ExternalConstraints()\
+                                                 + tagging.ExternalConstraints()
                      )
 
 

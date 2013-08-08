@@ -704,8 +704,8 @@ class TaggingCategories( _util_parse_mixin, _util_extConstraints_mixin, _util_co
 
         return dict(  [ ( 'NumTagCats', self._numTagCats ) ]
                     + dictList
-                    + [ ( 'Conditionals', self.conditionalObservables() ) ]
-                    + [ ( 'Constraints',  self.externalConstraints()    ) ]
+                    + [ ( 'Conditionals', self.ConditionalObservables() ) ]
+                    + [ ( 'Constraints',  self.ExternalConstraints()    ) ]
                    )
 
 
@@ -1085,8 +1085,8 @@ class Combined_TaggingCategories( TaggingCategories ) :
                                    , TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs
                                    , TagDilutions = ( Categories0['tagDilutions'], Categories1['tagDilutions'] )
                                    , ADilWTags = ( Categories0['ADilWTags'], Categories1['ADilWTags'] )
-                                   , Conditionals = Categories0.conditionalObservables() | Categories1.conditionalObservables()
-                                   , Constraints  = Categories0.externalConstraints() | Categories1.externalConstraints()
+                                   , Conditionals = Categories0.ConditionalObservables() | Categories1.ConditionalObservables()
+                                   , Constraints  = Categories0.ExternalConstraints() | Categories1.ExternalConstraints()
                                   )
 
 

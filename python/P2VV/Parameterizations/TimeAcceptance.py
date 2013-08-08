@@ -104,16 +104,16 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
-                                                                   ConditionalObservables = model.conditionalObservables(),
-                                                                   ExternalConstraints = model.externalConstraints()))
+                                                                   ConditionalObservables = model.ConditionalObservables(),
+                                                                   ExternalConstraints = model.ExternalConstraints()))
         elif parameterization == 'BinnedFun' :
             from P2VV.RooFitWrappers import BinnedFun, CubicSplineGaussModel
             self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Histogram = self._hist )
             TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
-                                                                   ConditionalObservables = model.conditionalObservables(),
-                                                                   ExternalConstraints = model.externalConstraints()))
+                                                                   ConditionalObservables = model.ConditionalObservables(),
+                                                                   ExternalConstraints = model.ExternalConstraints()))
 
         elif parameterization == 'BinnedPdf' :
             from P2VV.RooFitWrappers import BinnedPdf
@@ -122,8 +122,8 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name, 
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
-                                                                   ConditionalObservables = model.conditionalObservables(),
-                                                                   ExternalConstraints = model.externalConstraints()))
+                                                                   ConditionalObservables = model.ConditionalObservables(),
+                                                                   ExternalConstraints = model.ExternalConstraints()))
 
         else :
             raise ValueError, 'Requested unknown Moriond2012_TimeAcceptance Parameterization %s'%parameterization
@@ -196,12 +196,13 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
 
         from P2VV.RooFitWrappers import MultiHistEfficiencyModel
         ## FIXME: make sure all the bins are set constant if needed
-        mhe = MultiHistEfficiencyModel(Bins = bin_spec, Relative = rel_spec, Observable = self._time,
-                                       ConditionalCategories = True, Name = acceptance_name,
+        mhe = MultiHistEfficiencyModel( Name = acceptance_name, Observable = self._time,
+                                       Bins = bin_spec, Relative = rel_spec, 
+                                       ConditionalCategories = True, 
                                        FitAcceptance = fit, UseSingleBinConstraint = False,
                                        ResolutionModel = model['model'], Original = original,
-                                       ConditionalObservables = model.conditionalObservables(),
-                                       ExternalConstraints = model.externalConstraints(),
-                                       BinHeightMinMax = binHeightMinMax, Spline = spline,
-                                       SmoothSpline = smooth)
+                                       ConditionalObservables = model.ConditionalObservables(),
+                                       ExternalConstraints = model.ExternalConstraints(),
+                                       BinHeightMinMax = binHeightMinMax,
+                                       Spline = spline, SmoothSpline = smooth)
         TimeAcceptance.__init__(self, Acceptance = mhe)

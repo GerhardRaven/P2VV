@@ -27,21 +27,20 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
         from ROOT import RooAbsReal, RooArgSet
         realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal) and o != self._time  ]  )
         if cache and len(realObs) :
-            print 'invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
+            print 'P2VV::TimeResolution: invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
             self._model.setParameterizeIntegral( realObs )
             for o in realObs :
                 if not o.hasBinning('cache') : 
-                    print 'adding cache binning to %s' % o.GetName()
+                    print 'P2VV::TimeResolution: adding cache binning wth 20 bins to %s' % o.GetName()
                     o.setBins( 20 , 'cache' )
 
 
+
         _util_conditionalObs_mixin.__init__( self, kwargs )
-        for obs in self._model.ConditionalObservables() :
-            if obs not in self.conditionalObservables() : self.addConditional(obs)
+        self.addConditionals( self._model.ConditionalObservables() )
 
         _util_extConstraints_mixin.__init__( self, kwargs )
-        for constr in self._model.ExternalConstraints() :
-            if constr not in self.externalConstraints() : self.addConstraint(constr)
+        self.addConstraints( self._model.ExternalConstraints() )
 
         self._check_extraneous_kw( kwargs )
 

@@ -76,7 +76,7 @@ class _util_extConstraints_mixin( object ) :
         elif 'Constraint'  in kwargs : self._constraints = set(kwargs.pop('Constraint') )
         else                         : self._constraints = set()
 
-    def externalConstraints( self ) : return self._constraints
+    def ExternalConstraints( self ) : return self._constraints
     def hasExtConstraints( self )   : return len(self._constraints) > 0
 
     def addConstraint( self, constr ) :
@@ -87,12 +87,13 @@ class _util_extConstraints_mixin( object ) :
 
 class _util_conditionalObs_mixin( object ) :
     def __init__( self, kwargs ) :
+        assert not hasattr(self,'_conditionals')
         if   'Conditionals' in kwargs : self._conditionals = set( kwargs.pop('Conditionals') )
         elif 'Conditional'  in kwargs : self._conditionals = set( kwargs.pop('Conditional') )
+        elif 'ConditionalObservables'  in kwargs : self._conditionals = set( kwargs.pop('ConditionalObservables') )
         else                          : self._conditionals = set()
 
-    def conditionalObservables( self ) : return self._conditionals
-    def hasCondObservables( self )     : return len(self._conditionals) > 0
+    def ConditionalObservables( self ) : return self._conditionals
 
     def addConditional( self, condObs ) :
         if condObs in self._conditionals :  
