@@ -69,6 +69,25 @@ RooBinnedFun::RooBinnedFun(const char* name, const char* title,
 }
 
 //_____________________________________________________________________________
+RooBinnedFun::RooBinnedFun(const char* name, const char* title, 
+                           RooRealVar& x, const char *binningName,
+                           const RooArgList& coefList): 
+  RooAbsGaussModelEfficiency(name, title),
+  _x("x", "Dependent", this, x),
+  _coefList("coefficients","List of coefficients",this)
+{
+  const RooAbsBinning* binning = x.getBinningPtr(binningName);
+  assert( binning!=0);
+  if ( coefList.getSize()+1!=binning->numBoundaries())  {
+        cout << TString::Format( "you have specified %d coefficients for %d boundaries. The differentce should 1!",coefList.getSize(),binning->numBoundaries()) << endl;
+        throw TString::Format( "you have specified %d coefficients for %d boundaries. The differentce should 1!",coefList.getSize(),binning->numBoundaries());
+  }
+  _coefList.add(coefList);
+  Double_t* boundaries = binning->array();
+  _u.insert(_u.end(), boundaries, boundaries + binning->numBoundaries() );
+}
+
+//_____________________________________________________________________________
 RooBinnedFun::RooBinnedFun(const RooBinnedFun& other, const char* name) :
   RooAbsGaussModelEfficiency(other, name), 
   _x("x", this, other._x), 
@@ -132,10 +151,10 @@ RooBinnedFun::productAnalyticalIntegral(Double_t umin, Double_t umax,
     }
     double lo = scale*umin+offset;
     double hi = scale*umax+offset;
-    std::complex<double> sum(0,0);
     //TODO: verify we remain within [lo,hi]
     assert(fabs(lo-_u.front())<1e-7*fabs(lo+_u.front()));
     assert(fabs(hi-_u.back())<1e-7*fabs(hi+_u.back()));
+    std::complex<double> sum(0,0);
     for (unsigned i=0; i<_u.size()-1 && _u[i]<hi ;++i) {
         if (_u[i+1]<lo) continue;
         // FIXME:TODO: we currently assume that u(0),u(knotSize()-1)] fully contained in [lo,hi]

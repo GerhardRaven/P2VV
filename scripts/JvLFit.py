@@ -20,7 +20,7 @@ pdfConfig['dataSample'] = '' #'sel_cleantail==1' # ( None, 100260, '' )  # '' / 
 #    + ' && phi_1020_pt > 1000. && abs(mdau1 - 3090.) < 60.'\
 #    + ' && phi_1020_ENDVERTEX_CHI2 < 16. && J_psi_1S_ENDVERTEX_CHI2 < 16. && B_s0_ENDVERTEX_CHI2 < 50.'\
 #    + ' && (B_s0_MINIPCHI2NEXTBEST > 50. || B_s0_MINIPCHI2NEXTBEST < 0.)'
-pdfConfig['selection']  = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['selection']  = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 generateData            = False
 doFit                   = True #'NLL'
 makeObservablePlots     = False
@@ -46,8 +46,8 @@ elif pdfConfig['SFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
     #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_unbiased_4KKMassBins_2TagCats.root'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_noKKMassBins_2TagCats.root'
-    dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_unbiased_narrowKKMass_noKKMassBins_2TagCats.root'
+    dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_noKKMassBins_2TagCats.root'
+    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_unbiased_narrowKKMass_noKKMassBins_2TagCats.root'
     #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_freeTagCats.root'
 else :
     dataSetName = 'JpsiKK'
@@ -107,8 +107,8 @@ pdfConfig['sigTaggingPdf']        = 'tagUntag'
 pdfConfig['bkgTaggingPdf']        = 'tagUntagRelative'  # 'tagUntagRelative' # 'tagCatsRelative'
 pdfConfig['multiplyByTagPdf']     = False
 pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'].update( dict(Spline = False, smoothSpline = 0, Binned = False) )
+pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffParameters'].update( dict( Parameterization = 'BinnedPdf') )
 pdfConfig['multiplyByAngEff']     = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['parameterizeKKMass']   = ''  # 'simultaneous'
 pdfConfig['ambiguityParameters']  = False

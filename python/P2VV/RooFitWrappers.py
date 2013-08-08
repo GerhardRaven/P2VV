@@ -1817,17 +1817,69 @@ class EffResModel(ResolutionModel) :
 
 class BinnedFun(RooObject):
     def __init__(self, **kwargs):
-        print 'BinnedFun.__init__'
+        # TODO: add support for _multiple histograms and a Category, using RooCategoryVar to select
+        #       the right coefficient
+        __check_mutually_exclusive_kw__(kwargs,('Histogram'),('Binning'))
         name = kwargs.pop('Name')
         observable = kwargs.pop('Observable')
         hist = kwargs.pop('Histogram', None)
-        const_coeffs = kwargs.pop('ConstantCoeffs', True)
-        # coeffs = kwargs.pop('Coefficients', [])
-        # binning = kwargs.pop('Binning')
-        from ROOT import RooBinnedFun
-        f = RooBinnedFun(name, name, __dref__(observable), hist, const_coeffs)
-        self._addObject(f)
+        histograms = kwargs.pop('Histograms', None)
+        if hist:
+            self.__build_from_hist( name,observable
+                                  , hist )
+        elif histograms :
+            self.__build_from_histograms( name, observable
+                                        , kwargs.pop('Category')
+                                        , histograms )
+        else :
+            self.__build_from_coef( name,observable
+                                  , kwargs.pop('Binning')
+                                  , kwargs.pop('Coefficients') )
         self._init(name, 'RooBinnedFun')
+
+    def __create_binning(self,name,observable,hist) :
+        from ROOT import RooBinning
+        bname = '%s_%s_binning'%(name,hist.GetName())
+        binning = RooBinning(1,observable.getMin(),observable.getMax(),bname)
+        nbins = hist.GetNbinsX()
+        for i in range(1,nbins) : binning.addBoundary( hist.GetBinLowEdge(1+i) )
+        observable.setBinning(binning,bname)
+        return bname
+
+    def __build_from_coef(self,name,observable,bname,coeffs) :
+        spec = 'RooBinnedFun::%s(%s,"%s",{%s})' \
+             % ( name, observable.GetName()
+               , bname
+               , ','.join( i.GetName() for i in coeffs ) )
+        self._declare( spec )
+
+    def __build_from_hist(self,name,observable,hist) :
+        cvar = lambda i : ConstVar( Name = '%s_bin_%d'%(name,i)
+                                  , Value = hist.GetBinContent(1+i) )
+        return self.__build_from_coef( name,observable
+                                     , self.__create_binning(name,observable,hist)
+                                     , [ cvar(i) for i in range(hist.GetNbinsX()) ] )
+
+    def __build_from_histograms( self, name, observable, cat, hists ) :
+        # check that all states are present as keys
+        assert set( s.GetName() for s in cat ) == set( hists.keys() )
+        # check that histograms all have the same binning...
+        boundaries = dict( ( k, [ v.GetBinLowEdge(1+i) for i in range(v.GetNbinsX()) ] ) \
+                           for k,v in hists.iteritems() )
+        for refboundaries in boundaries.itervalues() : break # grab first item in dictionary
+        for b in boundaries.values() :
+            if b != refboundaries :
+                    for (x,y) in zip(b,refboundaries) : print x,y,x-y
+            assert b == refboundaries
+
+        cvars = lambda i : [ ConstVar( Name = '%s_state_%s_bin_%d'%(name,s.GetName(),i)
+                                     , Value = hists[ s.GetName() ].GetBinContent( 1+i ) ) for s in cat ]
+        cvar  = lambda i : CategoryVar(Name = '%s_bin_%d' % (name,i)
+                                     , Category = cat
+                                     , Variables = cvars(i) )
+        return self.__build_from_coef( name, observable
+                                     , self.__create_binning(name,observable,hists.values()[0])
+                                     , [ cvar(i) for i in range(hists.values()[0].GetNbinsX()) ] )
 
 class CubicSplineFun(RooObject):
     def __init__(self, **kwargs):

@@ -132,6 +132,45 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         print 'P2VV - INFO: Moriond2012_TimeAcceptance.__init__(): using time efficiency histogram "%s" from file "%s"'\
               % ( histogram, input_file )
 
+class Paper2012_Alternative_TimeAcceptance(TimeAcceptance):
+    def __init__(self, **kwargs ) :
+        from ROOT import TFile
+        self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
+                       MinMax = (0.3, 14))
+        histograms = kwargs.pop('Histograms')
+        input_file = kwargs.pop('Input', 'acceptance.root')
+        model = kwargs.pop('ResolutionModel')
+        name = kwargs.pop('Name', 'Paper2012_BinnedFunAcceptance')
+
+        with TFile.Open(input_file) as acceptance_file :
+            if not acceptance_file:
+                raise ValueError, "Cannot open histogram file %s" % input_file
+            print 'P2VV - INFO: Paper2012_TimeAcceptance.__init__(): using time efficiency histograms file "%s"' % input_file
+
+
+            # transform histograms in map of cat state -> histo name
+            # assume only one category for now (compositing could be implemented later)
+            assert len(histograms)==1
+            for (cat,v) in histograms.iteritems() : pass # grab the first and only k,v pair in this dictionary
+            histograms = dict( (s.GetName(), v[s.GetName()]['histogram'] ) for s in cat )
+            # substitute histo name by histo...
+            for (s,h) in histograms.iteritems() :
+                    hist = acceptance_file.Get(h)
+                    if not hist : raise ValueError, 'Cannot get acceptance histrogram %s from file %s' % (histogram, input_file)
+                    hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
+                    histograms[s] = hist
+
+
+            from P2VV.RooFitWrappers import BinnedFun, CubicSplineGaussModel
+            self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Category = cat, Histograms = histograms )
+            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name,
+                                                                       Efficiency = self._shape,
+                                                                       ResolutionModel = model['model'],
+                                                                       ConditionalObservables = model.ConditionalObservables() | set( [ cat ] ),
+                                                                       ExternalConstraints = model.ExternalConstraints()))
+        self._check_extraneous_kw( kwargs )
+
+
 class Paper2012_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
         from ROOT import TFile
