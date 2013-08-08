@@ -15,7 +15,6 @@ timeResSigmaSFErr = 0.06
 timeResSigmaSFConstrVal = 1.45
 timeResSigmaSFConstrErr = 0.06
 
-
 class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin ):
     def __init__( self, **kwargs ) : 
         if 'Model' in kwargs : self._model = kwargs.pop( 'Model' )
@@ -23,10 +22,9 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
         if 'Name' in kwargs: self._Name = kwargs.pop('Name')
 
         # cache integrals as a function of observables
-        cache = kwargs.pop('Cache', True)
         from ROOT import RooAbsReal, RooArgSet
         realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal) and o != self._time  ]  )
-        if cache and len(realObs) :
+        if kwargs.pop('Cache', True) and len(realObs) :
             print 'P2VV::TimeResolution: invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
             self._model.setParameterizeIntegral( realObs )
             for o in realObs :
@@ -101,24 +99,21 @@ class Gaussian_TimeResolution ( TimeResolution ) :
             self._parseArg( 'timeResSigma', kwargs, Title = 'Decay time resolution width', Value = 0.05,  MinMax = (0.0001, 2.5) )
             params = [ self._time, self._timeResMu, self._timeResSigma ]
 
-        name = kwargs.pop('Name', 'Gaussian_TimeResolution')
-        cache = kwargs.pop('Cache', True)
-        self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         from P2VV.RooFitWrappers import ResolutionModel
         TimeResolution.__init__(  self
-                                , Name = name
+                                , Name = kwargs.pop('Name', 'Gaussian_TimeResolution')
                                 , Model = ResolutionModel(  Name = 'timeResModelGauss'
                                                           , Type = GaussModel
                                                           , Parameters  = params
                                                           , **extraArgs)
-                                , Cache = cache
+                                , Cache = kwargs.pop('Cache', True)
                                )
+        self._check_extraneous_kw( kwargs )
 
     def splitVars(self):
         sv = [self._sigmaSF]
-        if self.__split_mean:
-            sv.append(self._timeResMu)
+        if self.__split_mean: sv.append(self._timeResMu)
         return sv
 
 class Multi_Gauss_TimeResolution ( TimeResolution ) :
@@ -238,8 +233,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                 , Cache = cache)
     def splitVars(self):
         sv = self._realVars[:]
-        if self.__split_mean:
-            sv.append(self._timeResMu)
+        if self.__split_mean: sv.append(self._timeResMu)
         return sv
 
     def sigmatPlaceHolder(self):

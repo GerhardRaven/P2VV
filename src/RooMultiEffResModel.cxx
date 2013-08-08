@@ -178,9 +178,7 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       entry->select();
       Int_t index = _super->getIndex();
       pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
-      if (!r.second) {
-         assert(false);
-      }
+      assert(r.second);
    }
    _super->setLabel(current.Data());
 }

@@ -72,9 +72,11 @@ class _util_parse_mixin( object ) :
 
 class _util_extConstraints_mixin( object ) :
     def __init__( self, kwargs ) :
+        assert not hasattr(self,'_constraints')
         if   'Constraints' in kwargs : self._constraints = kwargs.pop('Constraints') 
         elif 'Constraint'  in kwargs : self._constraints = set(kwargs.pop('Constraint') )
         else                         : self._constraints = set()
+        assert hasattr(self,'_constraints')
 
     def ExternalConstraints( self ) : return self._constraints
     def hasExtConstraints( self )   : return len(self._constraints) > 0
@@ -92,12 +94,11 @@ class _util_conditionalObs_mixin( object ) :
         elif 'Conditional'  in kwargs : self._conditionals = set( kwargs.pop('Conditional') )
         elif 'ConditionalObservables'  in kwargs : self._conditionals = set( kwargs.pop('ConditionalObservables') )
         else                          : self._conditionals = set()
+        assert hasattr(self,'_conditionals')
 
     def ConditionalObservables( self ) : return self._conditionals
 
     def addConditional( self, condObs ) :
-        if condObs in self._conditionals :  
-            print 'P2VV - WARNING: _util_conditionalObs_mixin.addConditional(): observable "%s" is already conditional' % condObs
         self._conditionals.add(condObs)
 
     def addConditionals( self, condObsList ) :

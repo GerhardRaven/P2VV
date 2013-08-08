@@ -19,7 +19,7 @@ public:
                                                            Double_t scale, Double_t offset,
                                                            const std::complex<double>& z) const = 0;
 private:
-  ClassDef(RooAbsGaussModelEfficiency,1)
+    ClassDef(RooAbsGaussModelEfficiency,1)
 };
 
 namespace RooGaussModelAcceptance {
@@ -34,10 +34,10 @@ namespace RooGaussModelAcceptance {
   };
 
   class K_n {
-      std::complex<double> _zi;
+        std::complex<double> _zi;
   public:
-      K_n(const std::complex<double>& z) : _zi( std::complex<double>(1,0)/z) {}
-      std::complex<double> operator()(unsigned i) const;
+        K_n(const std::complex<double>& z) : _zi( std::complex<double>(1,0)/z) {}
+        std::complex<double> operator()(unsigned i) const;
   };
 
 }

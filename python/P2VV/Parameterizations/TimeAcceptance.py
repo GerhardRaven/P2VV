@@ -32,7 +32,7 @@ def fitAverageToHist(hist,knots, tau) :
 
 ## Since all time acceptances are implemented in the resolution model, we inherit from there
 class TimeAcceptance ( TimeResolution ) :
-    def __init__( self, **kwargs ) : 
+    def __init__( self, **kwargs ) :
         if 'Acceptance' in kwargs: self._acceptance = kwargs.pop( 'Acceptance' )
         else: raise KeyError('P2VV - ERROR: TimeAcceptance.__init__(): TimeAcceptance: please specify an acceptance')
         # Workaround for acceptance normalization in cFit...
@@ -45,7 +45,7 @@ class TimeAcceptance ( TimeResolution ) :
             self._acceptance.efficiency().setForceUnitIntegral(True)
             print 'P2VV - WARNING: TimeAcceptance.__init__(): switched setForceUnitIntegral to true for %s' % self._acceptance.GetName()
         print self.acceptance()
-        
+
         TimeResolution.__init__(self, Model = self._acceptance,
                                 Conditionals = self._acceptance.ConditionalObservables(),
                                 Constraints = self._acceptance.ExternalConstraints(),
@@ -63,7 +63,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         parameterization = kwargs.pop('Parameterization','BinnedPdf')
 
         from ROOT import TFile
-        with TFile.Open(input_file) as acceptance_file : 
+        with TFile.Open(input_file) as acceptance_file :
             if not acceptance_file: raise ValueError, "Cannot open ROOT file %s" % input_file
             self._hist = acceptance_file.Get(histogram)
             self._hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
@@ -78,7 +78,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             knots = [ _hist.GetBinLowEdge(1+i) for i in range( 0, nbins+1)  ]
             # knots = knots[0:-1:4]
             knots = knots[0:-1:2]
-            rhe = _hist.GetBinLowEdge(nbins)+_hist.GetBinWidth(nbins) 
+            rhe = _hist.GetBinLowEdge(nbins)+_hist.GetBinWidth(nbins)
             knots.append(rhe)
             self._coefficients = fitAverageToHist( _hist,knots,1.5)
 
@@ -93,7 +93,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
                 fr = self._time.frame()
                 self._shape.plotOn(fr)
                 fr.addTH1( _hist.Clone() )
-                x = lambda i : self._shape.u(i) 
+                x = lambda i : self._shape.u(i)
                 from ROOT import TLine
                 lines = [ TLine( x(i),0,x(i),0.3 )  for i in range( self._shape.knotSize() ) ]
                 for line in lines : fr.addObject( line.Clone() )
@@ -101,7 +101,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
                 import code
                 code.interact(local=locals())
 
-            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
+            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name,
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.ConditionalObservables(),
@@ -109,7 +109,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         elif parameterization == 'BinnedFun' :
             from P2VV.RooFitWrappers import BinnedFun, CubicSplineGaussModel
             self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Histogram = self._hist )
-            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name, 
+            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name,
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.ConditionalObservables(),
@@ -119,7 +119,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             from P2VV.RooFitWrappers import BinnedPdf
             self._shape = BinnedPdf(name + '_shape', Observable = self._time, Histogram = self._hist )
             from P2VV.RooFitWrappers import EffResModel
-            TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name, 
+            TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name,
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.ConditionalObservables(),
@@ -146,7 +146,7 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
         spline = kwargs.pop('Spline', False)
         smooth = kwargs.pop('SmoothSpline', 0.1)
-        
+
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
         print 'P2VV - INFO: Paper2012_TimeAcceptance.__init__(): using time efficiency histograms file "%s"' % input_file
@@ -197,8 +197,8 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
         from P2VV.RooFitWrappers import MultiHistEfficiencyModel
         ## FIXME: make sure all the bins are set constant if needed
         mhe = MultiHistEfficiencyModel( Name = acceptance_name, Observable = self._time,
-                                       Bins = bin_spec, Relative = rel_spec, 
-                                       ConditionalCategories = True, 
+                                       Bins = bin_spec, Relative = rel_spec,
+                                       ConditionalCategories = True,
                                        FitAcceptance = fit, UseSingleBinConstraint = False,
                                        ResolutionModel = model['model'], Original = original,
                                        ConditionalObservables = model.ConditionalObservables(),
@@ -206,3 +206,4 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
                                        BinHeightMinMax = binHeightMinMax,
                                        Spline = spline, SmoothSpline = smooth)
         TimeAcceptance.__init__(self, Acceptance = mhe)
+        self._check_extraneous_kw( kwargs )

@@ -33,17 +33,17 @@ def __check_name_syntax__( name ) :
 def __dref__(i) :
     from ROOT import RooAbsArg
     import inspect, collections
-    def __dref_generator__(g) : 
-        for e in g : yield __dref__(e) 
+    def __dref_generator__(g) :
+        for e in g : yield __dref__(e)
     if isinstance(i,RooAbsArg) : return i
     if hasattr(i,'_var')       : return i._var
     # go recursive...
     if inspect.isgenerator(i)  : return __dref_generator__(i)
     ## damn: if i is a dict, then, if k would be a (key,value) pair, the code below would have worked
-    #        but annoyingly, 'for k in i' iterates over the keys only 
+    #        but annoyingly, 'for k in i' iterates over the keys only
     #        so we first have to check  especially for mappings...
     if isinstance(i, collections.Mapping  ) : return type(i)( (__dref__(k),__dref__(v)) for k,v in i.iteritems() )
-    if isinstance(i, collections.Iterable ) : return type(i)( __dref__(k) for k in i ) 
+    if isinstance(i, collections.Iterable ) : return type(i)( __dref__(k) for k in i )
     return i  # nothing to do (one hopes...)
 
 def __wrap__dref_var__( fun ) :
@@ -346,7 +346,7 @@ class BinningCategory( Category ) :
             for d in data:
                 o = d.get().find(obs.GetName())
                 o.setBinning(bins)
-        
+
         if 'CatTypeName' in kwargs:
             binCat = RooBinningCategory(Name, Name, obs, binning, kwargs.pop('CatTypeName'))
         else:
@@ -734,7 +734,7 @@ class EfficiencyBin(RooObject):
         __check_req_kw__('Bins', kwargs)
         Name = kwargs.pop('Name')
         __check_name_syntax__(Name)
-        Bins = kwargs.pop('Bins')        
+        Bins = kwargs.pop('Bins')
 
         from ROOT import RooEfficiencyBin
         b = RooEfficiencyBin(Name, Name)
@@ -743,7 +743,7 @@ class EfficiencyBin(RooObject):
         b = self._addObject(b)
         self._init( Name, 'RooEfficiencyBin' )
         for k, v in kwargs.iteritems() : self.__setitem__( k, v )
-    
+
 class RealVar (RooObject) :
     # WARNING: multiple instances don't share proxy state at this time...
     # TODO: move common things like Name and Title in RooObject...
@@ -822,7 +822,7 @@ class RealVar (RooObject) :
             else :
                 self._init(Name,'RooRealVar')
 
-            
+
             for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
         else:
             self._init(Name,'RooRealVar')
@@ -982,9 +982,14 @@ class Pdf(RooObject):
             assert 'ExternalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
             print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
             kwargs['ExternalConstraints'] = extConst
-        for d in set(('ConditionalObservables','ExternalConstraints')).intersection( kwargs ) :
-            kwargs[d] = RooArgSet( __dref__(var) for var in kwargs.pop(d) )
-        print kwargs
+        globalObs = self.GlobalObservables()
+        if globalObs:
+            assert 'GlobalObservables' not in kwargs or extConst== kwargs['GlobalObservables'] , 'Inconsistent Global Observables'
+            print 'INFO: adding GlobalObservables: %s' % [ i.GetName() for i in globalObs ]
+            kwargs['GlobalObservables'] = globalObs
+        for d in set(('ConditionalObservables','ExternalConstraints','GlobalObservables','Minos')).intersection( kwargs ) :
+            kwargs[d] = RooArgSet( kwargs.pop(d) )
+        print 'INFO: createNLL with kwargs %s' % kwargs
         return self._var.createNLL( data, **kwargs )
 
     @wraps(RooAbsPdf.fitTo)
@@ -1006,7 +1011,7 @@ class Pdf(RooObject):
             kwargs['GlobalObservables'] = globalObs
         for d in set(('ConditionalObservables','ExternalConstraints', 'GlobalObservables','Minos')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( kwargs.pop(d) )
-        print kwargs
+        print 'INFO: fitTo with kwargs %s' % kwargs
         return self._var.fitTo( data, **kwargs )
 
     @wraps(RooAbsPdf.generate)
@@ -1053,7 +1058,7 @@ class ProdPdf(Pdf):
 
         d = {  'PDFs'                   : frozenset(PDFs)
              , 'Name'                   : Name + '_' + self._separator().join( [ i.GetName() for i in PDFs ] )
-             , 'ConditionalObservables' : conds - obs 
+             , 'ConditionalObservables' : conds - obs
              , 'ExternalConstraints'    : ec
             }
         Pdf.__init__(self, Type = 'RooProdPdf', **d)
@@ -1383,7 +1388,7 @@ class TPDecay(Pdf):
         self._init(Name, 'RooTPDecay')
         for (k,v) in kwargs.iteritems() :
             self.__setitem__(k,v)
-            
+
 class BDecay( Pdf ) :
     def __init__(self, Name, **kwargs):
         __check_name_syntax__(Name)
@@ -1430,8 +1435,8 @@ class BTagDecay( Pdf ) :
             # put tagging category coefficients and average even and odd coefficients in TObjArrays of RooArgLists
             _a  = lambda x : self.ws()[ argDict[ x ] ]
             _l2 = lambda x : self.ws().factory().asLIST(  x  )
-            _l  = lambda x : _l2( argDict[x] ) 
-            def _oa( x ) : 
+            _l  = lambda x : _l2( argDict[x] )
+            def _oa( x ) :
                 from ROOT import TObjArray
                 z = TObjArray()
                 for i in kwargs.pop(x) : z.Add( _l2( convert( i ) ) )
@@ -1533,7 +1538,7 @@ class BinnedPdf( Pdf ) :
 
                 # build coefficients list
                 from ROOT import RooArgList
-                coefList = RooArgList( kwargs.pop('Coefficients') ) 
+                coefList = RooArgList( kwargs.pop('Coefficients') )
 
                 from ROOT import RooBinnedPdf
                 bPdf = RooBinnedPdf( argDict['Name'], argDict['Name'], varList, coefList )
@@ -1705,7 +1710,7 @@ class Customizer(Pdf) :
                 dest.setBinning(b, n)
             else:
                 dest.setBinning(b)
-            
+
     def _make_pdf(self) : pass
 
 
@@ -1750,7 +1755,7 @@ class AddModel(ResolutionModel) :
     def _makeRecipe(self):
         models = self._dict['Models']
         fractions = self._dict['Fractions']
-        return "AddModel::%s({%s},{%s})"%(self._dict['Name'],','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) ) 
+        return "AddModel::%s({%s},{%s})"%(self._dict['Name'],','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) )
 
     def models(self):
         return self.__models
@@ -1781,7 +1786,7 @@ class EffResAddModel(ResolutionModel):
         model = RooEffResAddModel(name, name, models, fracs)
         self._addObject(model)
         self._init(name, 'RooEffResAddModel')
-            
+
         ResolutionModel.__init__(self, Name = name, Type = 'RooEffResAddModel',
                                  ConditionalObservables = conditionals,
                                  ExternalConstraints = externals)
@@ -1791,7 +1796,7 @@ class EffResAddModel(ResolutionModel):
 
     def fractions(self):
         return self.__fractions
-        
+
 class EffResModel(ResolutionModel) :
     def __init__(self,**kwargs) :
         # construct factory string on the fly...
@@ -1859,10 +1864,10 @@ class CubicSplineFun(RooObject):
                                     __make_vector(errors), smooth, const_coeffs)
         self._addObject(csf)
         self._init(name, 'RooCubicSplineFun')
-        
+
 class CubicSplineGaussModel(ResolutionModel) :
     def _make_pdf(self): pass
-    
+
     def __init__(self, **kwargs):
         name = kwargs.pop('Name')
         res_model = kwargs.pop('ResolutionModel', None)
@@ -1908,7 +1913,7 @@ class CubicSplineGaussModel(ResolutionModel) :
         name = name + '_' + add_model.GetName() + '_spline'
         model = EffResAddModel(Name = name, Models = spline_models, Fractions = fractions)
         return model, 'RooEffResAddModel', name
-        
+
 class MultiHistEfficiencyModel(ResolutionModel):
     def _make_pdf(self) : pass
     def __init__(self, **kwargs):
@@ -1939,7 +1944,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
         self.__smooth = kwargs.pop('SmoothSpline', 0)
         self.__knots = None
         from copy import copy
-        from ROOT import RooBinning        
+        from ROOT import RooBinning
 
         if self.__spline: self.__knots = {}
 
@@ -2034,7 +2039,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 coef_info[state].update({'heights' : heights})
                 if self.__spline and len(heights) > 1:
                     coef_info[state].update({'knots' : knots})
-                
+
             self.__coefficients[category] = coef_info
 
         # Set the binning on the observable
@@ -2060,11 +2065,11 @@ class MultiHistEfficiencyModel(ResolutionModel):
         self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
 
         efficiency_entries = self.__build_shapes(relative)
+
         ## from ROOT import MultiHistEntry
         ## print_entry = getattr(MultiHistEntry, 'print')
-        ## for entry in efficiency_entries:
-        ##     print_entry(entry)
-        
+        ## for entry in efficiency_entries: print_entry(entry)
+
         from ROOT import RooMultiEffResModel
         mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
         self._addObject(mhe)
@@ -2082,17 +2087,10 @@ class MultiHistEfficiencyModel(ResolutionModel):
         self._init(self.__pdf_name, 'RooMultiEffResModel')
         ResolutionModel.__init__(self, Name = self.__pdf_name , Type = 'RooMultiEffResModel', **extraOpts)
 
-    def binning(self):
-        return self.__base_binning
-
-    def bounds(self):
-        return self.__base_bounds
-
-    def shapes(self):
-        return self.__shapes
-
-    def heights(self):
-        return self.__heights
+    def binning(self) : return self.__base_binning
+    def bounds(self)  : return self.__base_bounds
+    def shapes(self)  : return self.__shapes
+    def heights(self) : return self.__heights
 
     def __build_shapes(self, relative):
         from ROOT import std
@@ -2129,7 +2127,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                     # Add extra coefficients
                     bin_vars[0][__dref__(category_heights[0])] = state in category_info
                     bin_vars[-1][__dref__(category_heights[-1])] = state in category_info
-                    
+
             for i, d in enumerate(bin_vars):
                 name = '%s_%d' % (prefix, i)
                 heights.append(EfficiencyBin(Name = name, Bins = d))
@@ -2156,7 +2154,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                                Binning = self.__base_binning.GetName(), Coefficients = heights)
         # note: constant optimization WILL evaluate RooBinnedPdf as a PDF, and thus normalize it...
         binned_pdf.setForceUnitIntegral(True)
-        
+
         # EffResModel to combine shape with PDF
         return EffResModel(Name = '%s_efficiency' % prefix, ResolutionModel = self.__resolution_model,
                            Efficiency = binned_pdf)
@@ -2169,7 +2167,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
 
     def __add_constraints(self):
         self.setExternalConstraints(self.__constraints)
-        
+
     def __find_coefficient(self, val, bounds, coefficients):
         for i in range(len(bounds) - 1):
             if val > bounds[i] and val < bounds[i + 1]:

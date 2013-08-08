@@ -94,7 +94,6 @@ RooGaussModelAcceptance::K_n::operator()(unsigned i) const {
           return 0;
 }
 
-
 // explicitly instantiate some templates...
 template class RooGaussModelAcceptance::M_n<1U>;
 template class RooGaussModelAcceptance::M_n<2U>;

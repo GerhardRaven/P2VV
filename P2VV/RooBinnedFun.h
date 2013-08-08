@@ -25,10 +25,10 @@ class TH1;
 class RooBinnedFun : public  RooAbsGaussModelEfficiency {
 public:
   RooBinnedFun() ;
+  RooBinnedFun(const char *name, const char *title, RooRealVar& x,
+               const char *binningName, const RooArgList& coefList) ;
   RooBinnedFun(const char* name, const char* title, RooRealVar& x, const TH1* hist,
                     bool constCoeffs = true);
-//  RooBinnedFun(const char *name, const char *title, RooRealVar& x,
-//                    const char *binningName, const RooArgList& coefList) ;
 
   ~RooBinnedFun() ;
 
