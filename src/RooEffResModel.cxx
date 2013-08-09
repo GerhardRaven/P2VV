@@ -57,7 +57,16 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
    // the subset of iset on which the efficiency depends
    std::auto_ptr<const RooArgSet> effInt( eff.getObservables(iset) ); 
 
+   if (effInt->getSize()>1) {
+        std::cout << " got efficiency iset " << std::endl;
+        effInt->Print("V");
+   }
    assert(effInt->getSize() < 2); // for now, we only do 1D efficiency histograms...
+   //TODO: instead of the above, verify whether things factorize, i.e. 
+   //      allow the case where the overlap of effInt and model is 1D, and
+   //      all 'other' dependencies are from the efficiency only...
+   //      That works because we can then ingrate the 'ceff' coefficient below
+   //      over the remaining dependencies... 
    if (effInt->getSize()==0) {
       _I = model.createIntegral(iset,RooNameReg::str(rangeName)); 
       return;
@@ -264,6 +273,11 @@ const RooArgList& RooEffResModel::getIntegralRanges(const RooArgSet& iset,
 
    RooArgList* ranges = new RooArgList;
    std::auto_ptr<std::list<Double_t> > bounds(efficiency()->binBoundaries(x, x.getMin(), x.getMax()));
+   if (bounds.get()==0) {
+        TString err = TString::Format( "RooEffResModel(%s): specified efficiency %s does not provide binBoundaries..." , GetName(), efficiency()->GetName() );
+        std::cout << err << std::endl;
+        throw err;
+   }
    std::list<Double_t>::const_iterator lo, hi = bounds->begin();
    for (unsigned int i = 0; i + 1 < bounds->size();++i) {
       lo = hi++;
