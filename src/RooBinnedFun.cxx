@@ -44,7 +44,7 @@ RooBinnedFun::RooBinnedFun()
 }
 
 //_____________________________________________________________________________
-RooBinnedFun::RooBinnedFun(const char* name, const char* title, 
+RooBinnedFun::RooBinnedFun(const char* name, const char* title,
                            RooRealVar& x, const TH1* hist,
                            bool constCoeffs) :
   RooAbsGaussModelEfficiency(name, title),
@@ -59,7 +59,7 @@ RooBinnedFun::RooBinnedFun(const char* name, const char* title,
         if (constCoeffs) {
            _coefList.add( RooFit::RooConst( value ) );
         } else {
-           TString n = TString::Format("%s_bin_%d",name,i) ; 
+           TString n = TString::Format("%s_bin_%d",name,i);
            RooRealVar* coeff = new RooRealVar(n, n, value, 0.0, 1.0 );
            _coefList.add(*coeff);
            addOwnedComponents( *coeff );
@@ -69,9 +69,9 @@ RooBinnedFun::RooBinnedFun(const char* name, const char* title,
 }
 
 //_____________________________________________________________________________
-RooBinnedFun::RooBinnedFun(const char* name, const char* title, 
+RooBinnedFun::RooBinnedFun(const char* name, const char* title,
                            RooRealVar& x, const char *binningName,
-                           const RooArgList& coefList): 
+                           const RooArgList& coefList):
   RooAbsGaussModelEfficiency(name, title),
   _x("x", "Dependent", this, x),
   _coefList("coefficients","List of coefficients",this)
@@ -89,8 +89,8 @@ RooBinnedFun::RooBinnedFun(const char* name, const char* title,
 
 //_____________________________________________________________________________
 RooBinnedFun::RooBinnedFun(const RooBinnedFun& other, const char* name) :
-  RooAbsGaussModelEfficiency(other, name), 
-  _x("x", this, other._x), 
+  RooAbsGaussModelEfficiency(other, name),
+  _x("x", this, other._x),
   _coefList("coefList", this, other._coefList),
   _u(other._u)
 {
@@ -105,7 +105,7 @@ namespace {
   Double_t get(const RooArgList& b,int i) { return ((RooAbsReal&)b[i]).getVal() ; }
 }
 //_____________________________________________________________________________
-Double_t RooBinnedFun::evaluate() const 
+Double_t RooBinnedFun::evaluate() const
 {
     if (_x<_u.front()) get(_coefList,0);
     if (_x>_u.back())  get(_coefList,_u.size()-2);
@@ -137,8 +137,8 @@ Double_t RooBinnedFun::analyticalIntegral(Int_t code, const char* /* rangeName *
 
 
 //_____________________________________________________________________________
-std::complex<double> 
-RooBinnedFun::productAnalyticalIntegral(Double_t umin, Double_t umax, 
+std::complex<double>
+RooBinnedFun::productAnalyticalIntegral(Double_t umin, Double_t umax,
                                              Double_t scale, Double_t offset,
                                              const std::complex<double>& z) const
 {
@@ -182,4 +182,17 @@ Double_t RooBinnedFun::maxVal(Int_t code) const
           if (x>res)  { res = x; }
     }
     return res;
+}
+
+std::list<Double_t>* RooBinnedFun::binBoundaries(RooAbsRealLValue& obs,
+    Double_t xlo, Double_t xhi) const
+{
+   // Check that we have observable, if not no binning is returned
+   if ( _x.arg().GetName() != obs.GetName()) return 0;
+
+   std::list<Double_t>* bounds = new list<Double_t>;
+   for (size_t i=0; i<_u.size(); ++i) {
+      if (_u[i]>=xlo && _u[i]<=xhi) bounds->push_back(_u[i]);
+   }
+   return bounds;
 }
