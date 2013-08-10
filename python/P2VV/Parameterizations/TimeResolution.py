@@ -17,22 +17,19 @@ timeResSigmaSFConstrErr = 0.06
 
 class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin ):
     def __init__( self, **kwargs ) : 
-        if 'Model' in kwargs : self._model = kwargs.pop( 'Model' )
-        else :                 raise KeyError('TimeResolution: please specify a resolution model')
-        if 'Name' in kwargs: self._Name = kwargs.pop('Name')
+        if 'Model' not in kwargs : raise KeyError('TimeResolution: please specify a resolution model')
+        self._model = kwargs.pop( 'Model' )
+        if 'Name'  in kwargs : self._Name  = kwargs.pop('Name')
 
         # cache integrals as a function of observables
-        from ROOT import RooAbsReal, RooArgSet
-        realObs = RooArgSet( [ o._var for o in self._model.Observables() if isinstance(o._var,RooAbsReal) and o != self._time  ]  )
-        if kwargs.pop('Cache', True) and len(realObs) :
-            print 'P2VV::TimeResolution: invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in realObs] )
-            self._model.setParameterizeIntegral( realObs )
-            for o in realObs :
-                if not o.hasBinning('cache') : 
-                    print 'P2VV::TimeResolution: adding cache binning wth 20 bins to %s' % o.GetName()
-                    o.setBins( 20 , 'cache' )
-
-
+        from ROOT import RooArgSet, RooAbsReal, RooAbsCategory
+        obs = RooArgSet( o for o in self._model.Observables() if o != self._time   )
+        if kwargs.pop('Cache', True) and len(obs) :
+            print 'P2VV::TimeResolution: invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in obs] )
+            self._model.setParameterizeIntegral( obs )
+            for o in filter( lambda i : not ( isinstance(i,RooAbsCategory) or i.hasBinning('cache') ), obs ):
+                print 'P2VV::TimeResolution: adding cache binning wth 20 bins to %s' % o.GetName()
+                o.setBins( 20 , 'cache' )
 
         _util_conditionalObs_mixin.__init__( self, kwargs )
         self.addConditionals( self._model.ConditionalObservables() )

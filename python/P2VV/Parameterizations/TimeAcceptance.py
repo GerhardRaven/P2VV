@@ -161,9 +161,15 @@ class Paper2012_Alternative_TimeAcceptance(TimeAcceptance):
                     histograms[s] = hist
 
 
-            from P2VV.RooFitWrappers import BinnedFun, CubicSplineGaussModel
+            from P2VV.RooFitWrappers import BinnedFun
+            parameterization = kwargs.pop('Parameterization','CubicSplineGaussModel')
+            assert parameterization in [ 'CubicSplineGaussModel','EffResModel' ]
+            if parameterization == 'CubicSplineGaussModel' :
+                from P2VV.RooFitWrappers import CubicSplineGaussModel as AcceptanceModel
+            else :
+                from P2VV.RooFitWrappers import EffResModel as AcceptanceModel
             self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Category = cat, Histograms = histograms )
-            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name,
+            TimeAcceptance.__init__(self, Acceptance = AcceptanceModel( Name = name,
                                                                        Efficiency = self._shape,
                                                                        ResolutionModel = model['model'],
                                                                        ConditionalObservables = model.ConditionalObservables() | set( [ cat ] ),

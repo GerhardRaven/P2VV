@@ -58,6 +58,8 @@ RooArgSet.add = __wrap__dref_var__( RooArgSet.add )
 RooArgList.add = __wrap__dref_var__( RooArgList.add )
 RooAbsData.table = __wrap__dref_var__( RooAbsData.table )
 ## generates oops; why?? setattr( RooWorkspace, 'import',  __wrap__dref_var__( getattr(RooWorkspace, 'import' ) ) )
+## on the other hand, why would one need a __dref__ when importing? The reason for importing is that one has
+## a bare, unwrapped object in the first place -- so the argument should not need __dref__ by construction.
 
 
 class RooObject(object) :
@@ -510,7 +512,7 @@ class ConstVar(RooObject) :
             self._init(Name,'RooConstVar')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
-                assert v == self[k], '\'%s\' is not the same for %s' % ( k, Name )
+                assert v == self[k], '\'%s\' is not the same for %s; %s != %s' % ( k, Name, v, self[k] )
 
 class LinearVar(RooObject) :
     def __init__(self, **kwargs):
@@ -1805,8 +1807,20 @@ class EffResModel(ResolutionModel) :
         name = kwargs.pop('Name', '%s_x_%s' % ( self.__eff.GetName() , self.__res.GetName() ) )
         __check_name_syntax__(name)
 
-        conditionals = self.__eff.ConditionalObservables() | self.__res.ConditionalObservables()
-        externals = self.__eff.ExternalConstraints() | self.__res.ExternalConstraints()
+        ### TODO ? Note that an efficiency is NOT a pdf, so the concept of
+        ###        conditionalObservables doesn't make sense for it...
+        ###        so we should probably take all the observables the efficiency
+        ###        depends on minus those the resolution depends on
+        try :
+            ## TODO: should not allow this -- instead should even check that
+            ## self.__eff is not an instance of a PDF (but for now we allow the
+            ## use of RooBinnedPdf, we the 'forceUnitIntegral(true)' hack...
+            effconditionals = self.__eff.ConditionalObservables()
+        except AttributeError :
+            effconditionals = self.__eff.Observables()  - self.__res.Observables()
+        conditionals = effconditionals | self.__res.ConditionalObservables()
+        externals =  self.__res.ExternalConstraints()
+        if hasattr(self.__eff,'ExternalConstraints') : externals |= self.__eff.ExternalConstraints()
         ResolutionModel.__init__(self, Name = name, Type = 'RooEffResModel',
                                  Parameters = [self.__res, self.__eff],
                                  ConditionalObservables = conditionals,
@@ -1867,10 +1881,8 @@ class BinnedFun(RooObject):
         boundaries = dict( ( k, [ v.GetBinLowEdge(1+i) for i in range(v.GetNbinsX()) ] ) \
                            for k,v in hists.iteritems() )
         for refboundaries in boundaries.itervalues() : break # grab first item in dictionary
-        for b in boundaries.values() :
-            if b != refboundaries :
-                    for (x,y) in zip(b,refboundaries) : print x,y,x-y
-            assert b == refboundaries
+        if any( b != refboundaries for b in boundaries.values() ) :
+            raise ValueError('histograms do not share boundaries: %s' % boundaries)
 
         cvars = lambda i : [ ConstVar( Name = '%s_state_%s_bin_%d'%(name,s.GetName(),i)
                                      , Value = hists[ s.GetName() ].GetBinContent( 1+i ) ) for s in cat ]
@@ -2189,12 +2201,8 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 eff_model = self.__build_eff_res(prefix, heights)
 
             # MultiHistEntry
-            category_map = std.map('RooAbsCategory*', 'string')
-            category_pair = std.pair('RooAbsCategory*', 'string')
-            cm = category_map()
-            for category, state in categories:
-                # cp = category_pair(__dref__(category), state)
-                cm[__dref__(category)] = state
+            cm = std.map('RooAbsCategory*', 'string')()
+            for category, state in categories: cm[__dref__(category)] = state
             efficiency = self.__relative_efficiencies[state_name]
             entry = MultiHistEntry(cm, __dref__(eff_model), __dref__(efficiency))
             efficiency_entries.push_back(entry)

@@ -58,7 +58,7 @@ RooEffResModel::CacheElem::CacheElem(const RooEffResModel& parent, const RooArgS
    std::auto_ptr<const RooArgSet> effInt( eff.getObservables(iset) ); 
 
    if (effInt->getSize()>1) {
-        std::cout << " got efficiency iset " << std::endl;
+        std::cout << " got efficiency iset with more than 1 AbsArg -- not yet supported" << std::endl;
         effInt->Print("V");
    }
    assert(effInt->getSize() < 2); // for now, we only do 1D efficiency histograms...
