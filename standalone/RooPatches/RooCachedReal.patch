@@ -1,0 +1,41 @@
+diff --git a/roofit/roofitcore/src/RooCachedReal.cxx b/roofit/roofitcore/src/RooCachedReal.cxx
+index ccb5323..9e3b8ff 100644
+--- a/roofit/roofitcore/src/RooCachedReal.cxx
++++ b/roofit/roofitcore/src/RooCachedReal.cxx
+@@ -22,6 +22,7 @@
+ #include "RooAbsPdf.h"
+ #include "RooCachedReal.h" 
+ #include "RooAbsReal.h" 
++#include "RooAbsCategory.h" 
+ #include "RooMsgService.h"
+ #include "RooDataHist.h"
+ #include "RooHistPdf.h"
+@@ -123,8 +124,16 @@ void RooCachedReal::fillCacheObject(RooAbsCachedReal::FuncCacheElem& cache) cons
+ {
+   // Update contents of cache histogram by resampling the input function
+ 
+-  if (cache.hist()->get()->getSize()>1) {
+-    coutP(Eval) << "RooCachedReal::fillCacheObject(" << GetName() << ") filling multi-dimensional cache (" << cache.hist()->numEntries() << " points)" ;
++  unsigned nDim = cache.hist()->get()->getSize();
++  if (nDim>1) {
++    RooFIter iter = cache.hist()->get()->fwdIterator();
++    RooAbsArg* arg ;
++    unsigned nCat(0);
++    while((arg=iter.next())) if (dynamic_cast<RooAbsCategory*>(arg)) ++nCat;
++    if (nDim>nCat+1) {
++        coutP(Eval) << "RooCachedReal::fillCacheObject(" << GetName() << ") filling "
++                    << nCat << " + " << nDim-nCat <<" dimensional cache (" << cache.hist()->numEntries() << " points)" <<endl;
++    }
+   }
+ 
+   // Make deep clone of self and attach to dataset observables
+@@ -148,9 +157,6 @@ void RooCachedReal::fillCacheObject(RooAbsCachedReal::FuncCacheElem& cache) cons
+   }
+ 
+   cache.func()->setCdfBoundaries(_useCdfBoundaries) ;
+-  if (cache.hist()->get()->getSize()>1) {
+-    ccoutP(Eval) << endl ;
+-  }
+ 
+ }
+ 
