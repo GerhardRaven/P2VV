@@ -82,18 +82,31 @@ void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y) const
  // for the O(N) algorithm to solve the relevant linear system...
     int n = size();
     assert(int(y.size())==size());
+    assert(_type==LFRF || _type==LSRF || _type==LFRS || _type==LSRS);    
 
-    double bf = y.front() / A(u(0),0) ;
-    double bb = y.back()  / D(u(n-1),n-2);
+    // Weights of first and last spline are fully determined by values at knots
+    double bf = y.front();
+    double bb = y.back();
 
-    y.front() = - bf * double(6) / sqr(h(0));
-    y.back()  = - bb * double(6) / sqr(h(n-2));
+    // Set boundary conditions for linear system
+    if (_type==LSRF || _type==LSRS) {
+      y.front() = _lBoundVal - bf * double(6) / sqr(h(0));
+    } else if (_type==LFRF || _type==LFRS) {
+      y.front() = _lBoundVal + bf * double(3) / h(0);
+    }
 
-    std::vector<double> c ; c.reserve(n);
+    if (_type==LFRS || _type==LSRS) {
+      y.back() = _rBoundVal - bb * double(6) / sqr(h(n-2));
+    } else if (_type==LFRF || _type==LSRF) {
+      y.back() = _rBoundVal - bb * double(3) / h(n-2);
+    }
+
+    // Solve linear system
+    std::vector<double> c; c.reserve(n);
     c.push_back( mc(0) / mb(0) );
     y[0] /=  mb(0);
     for (int i = 1; i < n; ++i) {
-        double m = double(1) / ( mb(i) - ma(i) * c.back() ) ;
+        double m = double(1) / ( mb(i) - ma(i) * c.back() );
         c.push_back( mc(i) * m );
         y[i] -=  ma(i) * y[i - 1];
         y[i] *=  m;
