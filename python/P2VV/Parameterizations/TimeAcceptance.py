@@ -132,7 +132,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         print 'P2VV - INFO: Moriond2012_TimeAcceptance.__init__(): using time efficiency histogram "%s" from file "%s"'\
               % ( histogram, input_file )
 
-class Paper2012_Alternative_TimeAcceptance(TimeAcceptance):
+class Paper2012_csg_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
         from ROOT import TFile
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
@@ -145,7 +145,7 @@ class Paper2012_Alternative_TimeAcceptance(TimeAcceptance):
         with TFile.Open(input_file) as acceptance_file :
             if not acceptance_file:
                 raise ValueError, "Cannot open histogram file %s" % input_file
-            print 'P2VV - INFO: Paper2012_TimeAcceptance.__init__(): using time efficiency histograms file "%s"' % input_file
+            print 'P2VV - INFO: using time efficiency histograms file "%s"' % input_file
             # transform histograms in map of cat state -> histo name
             # assume only one category for now (compositing could be implemented later)
             assert len(histograms)==1
@@ -180,7 +180,7 @@ class Paper2012_Alternative_TimeAcceptance(TimeAcceptance):
         self._check_extraneous_kw( kwargs )
 
 
-class Paper2012_TimeAcceptance(TimeAcceptance):
+class Paper2012_mer_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
         from ROOT import TFile
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
@@ -197,7 +197,7 @@ class Paper2012_TimeAcceptance(TimeAcceptance):
 
         if not acceptance_file:
             raise ValueError, "Cannot open histogram file %s" % input_file
-        print 'P2VV - INFO: Paper2012_TimeAcceptance.__init__(): using time efficiency histograms file "%s"' % input_file
+        print 'P2VV - INFO: using time efficiency histograms file "%s"' % input_file
 
         acceptance_name = kwargs.pop('Name', 'Paper2012_FitAcceptance')
 

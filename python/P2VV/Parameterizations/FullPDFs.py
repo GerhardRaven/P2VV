@@ -1004,7 +1004,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , hlt2UB    : { 'UB'        : { 'bins'      : observables['time'].getRange(), 'heights' : [0.5]  } }
                         }
 
-                from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+                from P2VV.Parameterizations.TimeAcceptance import Paper2012_mer_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance( time = observables['time']
                                                     , ResolutionModel = self._timeResModel
                                                     , Input = timeEffHistFile
@@ -1014,12 +1014,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     , Original = sigPdf
                                                     , **timeEffParameters )
 
-            elif timeEffType == 'paper2012' and selection == 'paper2012' :
+            elif timeEffType == 'paper2012_multi' and selection == 'paper2012' :
                 hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
                                        , 'notExclB' : { 'histogram' : timeEffHistUBName    }
                                       }
                         }
-                from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
+                from P2VV.Parameterizations.TimeAcceptance import Paper2012_mer_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance( time = observables['time']
                                                    , ResolutionModel = self._timeResModel
                                                    , Input = timeEffHistFile
@@ -1030,12 +1030,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                    , BinHeightMinMax = ( -RooInf, RooInf )
                                                    , **timeEffParameters )
 
-            elif timeEffType == 'paper2012_alternative' and selection == 'paper2012' :
+            elif timeEffType == 'paper2012' and selection == 'paper2012' :
                 hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
                                        , 'notExclB' : { 'histogram' : timeEffHistUBName    }
                                       }
                         }
-                from P2VV.Parameterizations.TimeAcceptance import Paper2012_Alternative_TimeAcceptance as TimeAcceptance
+                from P2VV.Parameterizations.TimeAcceptance import Paper2012_csg_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance( time = observables['time']
                                                    , ResolutionModel = self._timeResModel
                                                    , Input = timeEffHistFile
