@@ -4,7 +4,8 @@ from P2VV.Parameterizations.TimeResolution import TimeResolution
 
 
 
-def fitAverageToHist(hist,knots, tau) :
+## TODO: move this to RooFitWrappers.CubicSplineFun...
+def fitAverageExpToHist(hist,knots, tau) :
     # chisquared fit of spline defined by knots through histogram,
     # do a chisquared based on the average value of the spline in the
     # bin, after multiplying with an exponent with lifetime 1/gamma
@@ -76,11 +77,10 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             _hist = self._hist
             nbins = _hist.GetNbinsX()
             knots = [ _hist.GetBinLowEdge(1+i) for i in range( 0, nbins+1)  ]
-            # knots = knots[0:-1:4]
             knots = knots[0:-1:2]
             rhe = _hist.GetBinLowEdge(nbins)+_hist.GetBinWidth(nbins)
             knots.append(rhe)
-            self._coefficients = fitAverageToHist( _hist,knots,1.5)
+            self._coefficients = fitAverageExpToHist( _hist,knots,1.5)
 
             from P2VV.RooFitWrappers import ConstVar
             self._shape = CubicSplineFun(Name=name +'_shape'
@@ -146,34 +146,37 @@ class Paper2012_Alternative_TimeAcceptance(TimeAcceptance):
             if not acceptance_file:
                 raise ValueError, "Cannot open histogram file %s" % input_file
             print 'P2VV - INFO: Paper2012_TimeAcceptance.__init__(): using time efficiency histograms file "%s"' % input_file
-
-
             # transform histograms in map of cat state -> histo name
             # assume only one category for now (compositing could be implemented later)
             assert len(histograms)==1
             for (cat,v) in histograms.iteritems() : pass # grab the first and only k,v pair in this dictionary
             histograms = dict( (s.GetName(), v[s.GetName()]['histogram'] ) for s in cat )
-            # substitute histo name by histo...
             for (s,h) in histograms.iteritems() :
                     hist = acceptance_file.Get(h)
-                    if not hist : raise ValueError, 'Cannot get acceptance histrogram %s from file %s' % (histogram, input_file)
+                    if not hist : raise ValueError, 'Failed to get histrogram %s from file %s' % (histogram, input_file)
                     hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
                     histograms[s] = hist
 
-
-            from P2VV.RooFitWrappers import BinnedFun
-            parameterization = kwargs.pop('Parameterization','CubicSplineGaussModel')
-            assert parameterization in [ 'CubicSplineGaussModel','EffResModel' ]
-            if parameterization == 'CubicSplineGaussModel' :
-                from P2VV.RooFitWrappers import CubicSplineGaussModel as AcceptanceModel
-            else :
-                from P2VV.RooFitWrappers import EffResModel as AcceptanceModel
-            self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Category = cat, Histograms = histograms )
-            TimeAcceptance.__init__(self, Acceptance = AcceptanceModel( Name = name,
-                                                                       Efficiency = self._shape,
-                                                                       ResolutionModel = model['model'],
-                                                                       ConditionalObservables = model.ConditionalObservables() | set( [ cat ] ),
-                                                                       ExternalConstraints = model.ExternalConstraints()))
+        from P2VV.RooFitWrappers import BinnedFun
+        parameterization = kwargs.pop('Parameterization','CubicSplineGaussModel')
+        assert parameterization in [ 'CubicSplineGaussModel','EffResModel' ]
+        if parameterization == 'CubicSplineGaussModel' :
+            from P2VV.RooFitWrappers import CubicSplineGaussModel as AcceptanceModel
+        else :
+            print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
+            print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
+            print 'WARNING                                                                               WARNING'
+            print 'WARNING EffResModel in combination with split BinnedFun not (yet) fully functional... WARNING'
+            print 'WARNING                                                                               WARNING'
+            print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
+            print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
+            from P2VV.RooFitWrappers import EffResModel as AcceptanceModel
+        self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Category = cat, Histograms = histograms )
+        TimeAcceptance.__init__(self, Acceptance = AcceptanceModel( Name = name,
+                                                                   Efficiency = self._shape,
+                                                                   ResolutionModel = model['model'],
+                                                                   ConditionalObservables = model.ConditionalObservables() | set( [ cat ] ),
+                                                                   ExternalConstraints = model.ExternalConstraints()))
         self._check_extraneous_kw( kwargs )
 
 
