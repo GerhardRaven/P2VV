@@ -1043,7 +1043,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                    , **timeEffParameters )
 
 
-            elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
+            elif ( timeEffType == 'HLT1Unbiased' and selection == 'HLT1Unbiased' )\
+                    or ( timeEffType == 'HLT1ExclBiased' and selection == 'HLT1ExclBiased' ) :
                 from P2VV.Parameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance(  time = observables['time']
                                                     , ResolutionModel = self._timeResModel
