@@ -938,7 +938,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # don't float tagging category coefficients if PDF is conditional on tagging observables
                 for coefList in self._taggingParams['singleTagCatCoefs'] :
                     for coef in coefList :
-                        if coef.isFundamental() : coef.setConstant(True)
+                        if coef and coef.isFundamental() : coef.setConstant(True)
 
             if not SSTagging :
                 args = dict(  tagCat      = observables['tagCatOS']
