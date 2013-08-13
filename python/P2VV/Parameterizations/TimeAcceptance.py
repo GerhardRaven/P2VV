@@ -61,7 +61,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         histogram = kwargs.pop('Histogram', 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
         name = kwargs.pop('Name', 'Moriond2012_Acceptance')
         model = kwargs.pop('ResolutionModel')
-        parameterization = kwargs.pop('Parameterization','BinnedPdf')
+        parameterization = kwargs.pop('Parameterization','BinnedFun')
 
         from ROOT import TFile
         with TFile.Open(input_file) as acceptance_file :
