@@ -7,20 +7,26 @@
 #include "TH1.h"
 #include "TGraphErrors.h"
 
+// CINT doesn't like it if we encapsulate this in RooCubicSplineKnot ;-(
 
 class RooCubicSplineKnot {
 public:
-    enum BoundCond { LFRF, LFRS, LSRF, LSRS };
 
-    RooCubicSplineKnot(const double *array, int nEntries, BoundCond type = LSRS) 
-        : _u( array, array+nEntries),
-          _type(type), _lBoundVal(0), _rBoundVal(0) { }
-    template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end, BoundCond type = LSRS) 
-        : _u(begin,end) ,
-          _type(type), _lBoundVal(0), _rBoundVal(0) { }
-    RooCubicSplineKnot(const std::vector<double>& knots, BoundCond type = LSRS) // needed to easily interface with python...
-        : _u(knots),
-          _type(type), _lBoundVal(0), _rBoundVal(0) { }
+    class BoundaryConditions {
+        public:
+            BoundaryConditions( bool leftSecondDerivative = true , bool rightSecondDerivative = true
+                              , double valueLeft=0, double valueRight=0 ) 
+            {  secondDerivative[0] = leftSecondDerivative ; secondDerivative[1] = rightSecondDerivative; 
+               value[0] = valueLeft; value[1] = valueRight; 
+            }
+            bool secondDerivative[2];
+            double value[2]; 
+    };
+
+    RooCubicSplineKnot(const double *array, int nEntries ) : _u( array, array+nEntries) {}
+    template <typename Iter> RooCubicSplineKnot(Iter begin, Iter end) : _u(begin,end) {}
+    RooCubicSplineKnot(const std::vector<double>& knots ) // needed to easily interface with python...
+        : _u(knots) {}
 
     double u(int i) const { 
         assert(size());
@@ -31,7 +37,7 @@ public:
     double evaluate(double _u, const RooArgList& b) const;
     double analyticalIntegral(const RooArgList& b) const;
 
-    void computeCoefficients(std::vector<double>& y ) const ;
+    void computeCoefficients(std::vector<double>& y, BoundaryConditions bc = BoundaryConditions() ) const ;
     void smooth(std::vector<double>& y, const std::vector<double>& dy, double lambda) const;
 
     const std::vector<double>& knots() const { return _u; }
@@ -99,72 +105,43 @@ public:
     // as matrix_ij
     double expIntegral(const TH1* hist, double gamma, TVectorD& coefficients, TMatrixD& covarianceMatrix) const;
 
-    void setLeftBoundCond(const double lcond) { _lBoundVal = lcond; }
-    void setRightBoundCond(const double rcond) { _rBoundVal = rcond; }
 
 private:
 
-    int index(double _u) const;
+    int index(double u_) const;
 
     // Basic Splines
-    double A(double _u,int i) const{ return -cub(d(_u,i+1))/P(i); }
-    double B(double _u,int i) const{ return  sqr(d(_u,i+1))*d(_u,i-2)/P(i) + d(_u,i-1)*d(_u,i+2)*d(_u,i+1)/Q(i) + d(_u,i  )*sqr(d(_u,i+2))/R(i); }
-    double C(double _u,int i) const{ return -sqr(d(_u,i-1))*d(_u,i+1)/Q(i) - d(_u,i  )*d(_u,i+2)*d(_u,i-1)/R(i) - d(_u,i+3)*sqr(d(_u,i  ))/S(i); }
-    double D(double _u,int i) const{ return  cub(d(_u,i  ))/S(i); }
+    double A(double u_,int i) const{ return -cub(d(u_,i+1))/P(i); }
+    double B(double u_,int i) const{ return  sqr(d(u_,i+1))*d(u_,i-2)/P(i) + d(u_,i-1)*d(u_,i+2)*d(u_,i+1)/Q(i) + d(u_,i  )*sqr(d(u_,i+2))/R(i); }
+    double C(double u_,int i) const{ return -sqr(d(u_,i-1))*d(u_,i+1)/Q(i) - d(u_,i  )*d(u_,i+2)*d(u_,i-1)/R(i) - d(u_,i+3)*sqr(d(u_,i  ))/S(i); }
+    double D(double u_,int i) const{ return  cub(d(u_,i  ))/S(i); }
 
     // Parameters of Linear System
-    double ma(int i) const {  // subdiagonal
-        assert(_type==LFRF || _type==LSRF || _type==LFRS || _type==LSRS);
+    double ma(int i, bool bc[]) const {  // subdiagonal
 
-        if (i!=size()-1) {
-          return A(u(i),i);
-        } else if (_type==LFRF || _type==LSRF) {
-          return double(0);
-        } else if (_type==LFRS || _type==LSRS) {
-          return double(6)/(h(i,i-2)*h(i-1));
-        }
-        // You should never get here
-        assert(1==0);
-        return -999.;
+        return (i!=size()-1)  ?  A(u(i),i) 
+             : (bc[1] )       ? double(6)/(h(i,i-2)*h(i-1))
+                              : double(0) ; 
     }
 
-    double mb(int i) const {  // diagonal
-        assert(_type==LFRF || _type==LSRF || _type==LFRS || _type==LSRS);
+    double mc(int i, bool bc[]) const {  // superdiagonal
+          return (i!=0) ? C(u(i),i)  
+               :  bc[0] ? double(6)/(h(2,0)*h(0))
+                        : double(0);
+    }
 
+    double mb(int i, bool bc[]) const {  // diagonal
         if (i!=0 && i!=size()-1) return B(u(i),i);
 
         if (i==0) {
-          if (_type==LFRF || _type==LFRS) {
-            return double(3)/h(0);
-          } else if (_type==LSRF || _type==LSRS) {
-            return -(double(6)/h(0)+double(6)/h(2,0))/h(0);
-          }
-        } else if (i==size()-1) {
-          if (_type==LFRF || _type==LSRF) {
-            return -double(3)/h(i-1);
-          } else if (_type==LFRS || _type==LSRS) {
-            return -(double(6)/h(i-1)+double(6)/h(i,i-2))/h(i-1);
-          }
+            return bc[0] ? -(double(6)/h(i)+double(6)/h(i+2,i))/h(i)
+                         :   double(3)/h(i);
+        } else  {
+            return bc[1] ? -(double(6)/h(i-1)+double(6)/h(i,i-2))/h(i-1)
+                         : - double(3)/h(i-1);
         }
-        // You should never get here
-        assert(1==0);
-        return -999.;
     }
 
-    double mc(int i) const {  // superdiagonal
-        assert(_type==LFRF || _type==LSRF || _type==LFRS || _type==LSRS);
-
-        if (i!=0) {
-          return C(u(i),i);
-        } else if (_type==LFRF || _type==LFRS) {
-          return double(0);
-        } else if (_type==LSRF || _type==LSRS) {
-          return double(6)/(h(2,0)*h(0));
-        }
-        // You should never get here
-        assert(1==0);
-        return -999.;
-    }
 
 
     // Normalisation
@@ -178,8 +155,8 @@ private:
     static double sqr(double x) { return x*x; }
     static double cub(double x) { return x*sqr(x); }
     static double qua(double x) { return sqr(sqr(x)); }
-    double d(double _u, int j) const { return _u-u(j); }
-    double d(double _u, int i, int j, int k) const { return d(_u,i)*d(_u,j)*d(_u,k); }
+    double d(double u_, int j) const { return u_-u(j); }
+    double d(double u_, int i, int j, int k) const { return d(u_,i)*d(u_,j)*d(u_,k); }
     double h(int i, int j) const { return u(i)-u(j); }
     double h(int i) const { return h(i+1,i); }
     double r(int i) const { return double(3)/h(i); }
@@ -190,8 +167,6 @@ private:
     mutable std::vector<double> _PQRS;                   //!
     mutable std::vector<double> _IABCD;                  //!
     mutable std::vector<RooCubicSplineKnot::S_jk> _S_jk; //!
-    BoundCond _type;
-    double _lBoundVal, _rBoundVal;
 };
 
 #endif
