@@ -1948,8 +1948,8 @@ class CubicSplineGaussModel(ResolutionModel) :
                 if isinstance(res_model._target_(), t):
                     model, this_type, name = fun(name, res_model, efficiency)
         else:
-            model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), efficiency.GetName(), ','.join([p.GetName() for p in params[1:]]))
-            this_type = 'RooCubicSplineGaussModel'
+            model = 'RooGaussEfficiencyModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), efficiency.GetName(), ','.join([p.GetName() for p in params[1:]]))
+            this_type = 'RooGaussEfficiencyModel'
 
         if type(model) == str: self._declare(model)
 
@@ -1962,9 +1962,9 @@ class CubicSplineGaussModel(ResolutionModel) :
     def __from_gauss(self, name, gauss_model, spline_fun):
         params = gauss_model['Parameters']
         name = name + '_' + gauss_model.GetName() + '_spline'
-        from ROOT import RooCubicSplineGaussModel
-        model = 'RooCubicSplineGaussModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline_fun.GetName(), ','.join([p.GetName() for p in params[1:]]))
-        return model, 'RooCubicSplineGaussModel', name
+        from ROOT import RooGaussEfficiencyModel
+        model = 'RooGaussEfficiencyModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline_fun.GetName(), ','.join([p.GetName() for p in params[1:]]))
+        return model, 'RooGaussEfficiencyModel', name
 
     def __from_add_model(self, name, add_model, spline_fun):
         spline_models = []

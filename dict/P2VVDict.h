@@ -32,7 +32,7 @@
 #include "P2VV/RooExplicitNormPdf.h"
 #include "P2VV/RooCubicSplineKnot.h"
 #include "P2VV/RooCubicSplineFun.h"
-#include "P2VV/RooCubicSplineGaussModel.h"
+#include "P2VV/RooGaussEfficiencyModel.h"
 #include "P2VV/RooAmoroso.h"
 #include "P2VV/RooTPDecay.h"
 #include "P2VV/RooMassDependence.h"
