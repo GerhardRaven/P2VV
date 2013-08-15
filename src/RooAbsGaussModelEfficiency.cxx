@@ -49,6 +49,7 @@ N::N(double x, const std::complex<double>& z)
           _N[1] =  exp(-x*x);
           _N[2] =  eval(x,z);
 }
+
 double
 L::operator()(unsigned j, unsigned k) const
 {
@@ -80,6 +81,8 @@ RooGaussModelAcceptance::M_n<MaxOrder>::M_n(double x, const std::complex<double>
 }
 
 
+#include <iostream>
+
 std::complex<double>
 RooGaussModelAcceptance::K_n::operator()(unsigned i) const {
           assert(0<=i&&i<=3);
@@ -90,6 +93,7 @@ RooGaussModelAcceptance::K_n::operator()(unsigned i) const {
               case 3 : std::complex<double> _zi2 = _zi*_zi; return _zi2*(3.*_zi2+3.);
               // TODO: add higher orders!!!! Go up until six... (product of two cubic splines)
           }
+          std::cerr << "K_n only implemented upto (and including) 3rd order" << std::endl;
           assert(1==0);
           return 0;
 }
@@ -99,5 +103,5 @@ template class RooGaussModelAcceptance::M_n<1U>;
 template class RooGaussModelAcceptance::M_n<2U>;
 template class RooGaussModelAcceptance::M_n<3U>;
 template class RooGaussModelAcceptance::M_n<4U>;
-template class RooGaussModelAcceptance::M_n<5U>;
-template class RooGaussModelAcceptance::M_n<6U>;
+// template class RooGaussModelAcceptance::M_n<5U>;
+// template class RooGaussModelAcceptance::M_n<6U>;
