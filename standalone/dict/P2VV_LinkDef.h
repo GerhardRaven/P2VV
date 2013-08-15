@@ -29,7 +29,7 @@
 #pragma link C++ class RooCubicSplineKnot::BoundaryConditions+;
 #pragma link C++ class RooCubicSplineKnot+;
 #pragma link C++ class RooCubicSplineFun+;
-#pragma link C++ class RooCubicSplineGaussModel+;
+#pragma link C++ class RooGaussEfficiencyModel+;
 #pragma link C++ class RooBoxPdf+;
 #pragma link C++ class RooExplicitNormPdf+;
 #pragma link C++ class RooAmoroso+;

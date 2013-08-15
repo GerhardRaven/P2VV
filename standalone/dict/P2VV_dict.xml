@@ -39,7 +39,7 @@
         <class name = "RooBoxPdf" />
         <class name = "RooCubicSplineKnot" />
         <class name = "RooCubicSplineFun" />
-        <class name = "RooCubicSplineGaussModel" />
+        <class name = "RooGaussEfficiencyModel" />
         <class name = "RooExplicitNormPdf" />
         <class name = "RooTPDecay" />
         <class name = "RooAmoroso" />

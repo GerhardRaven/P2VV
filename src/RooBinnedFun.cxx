@@ -10,7 +10,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // BEGIN_HTML
-// Piecewise constant function, suitable for use in RooCubicSplineGaussModel
+// Piecewise constant function, suitable for use in RooGaussEfficiencyModel
 // as efficiency
 // END_HTML
 //

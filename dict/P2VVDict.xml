@@ -38,7 +38,7 @@
         <class name = "RooCubicSplineKnot::BoundaryConditions" />
         <class name = "RooCubicSplineKnot" />
         <class name = "RooCubicSplineFun" />
-        <class name = "RooCubicSplineGaussModel" />
+        <class name = "RooGaussEfficiencyModel" />
         <class name = "RooEffResAddModel" />
         <class name = "RooCategoryVar" />
         <class name = "RooConvertPolAmp" />

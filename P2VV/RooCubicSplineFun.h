@@ -79,7 +79,7 @@ private:
 
   Double_t evaluate() const;
   //
-  // for use in RooCubicSplineGaussModel...
+  // for use in RooGaussEfficiencyModel...
   std::complex<double> gaussIntegralE(bool left, const RooGaussModelAcceptance::M_n<4U>& dM,
                            const RooGaussModelAcceptance::K_n& K,
                            double offset, double* sc) const ;
