@@ -938,7 +938,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # don't float tagging category coefficients if PDF is conditional on tagging observables
                 for coefList in self._taggingParams['singleTagCatCoefs'] :
                     for coef in coefList :
-                        if coef.isFundamental() : coef.setConstant(True)
+                        if coef and coef.isFundamental() : coef.setConstant(True)
 
             if not SSTagging :
                 args = dict(  tagCat      = observables['tagCatOS']
@@ -1043,7 +1043,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                    , **timeEffParameters )
 
 
-            elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
+            elif ( timeEffType == 'HLT1Unbiased' and selection == 'HLT1Unbiased' )\
+                    or ( timeEffType == 'HLT1ExclBiased' and selection == 'HLT1ExclBiased' ) :
                 from P2VV.Parameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance(  time = observables['time']
                                                     , ResolutionModel = self._timeResModel

@@ -36,7 +36,7 @@ pdfConfig['blind']      = {#  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0
 
 plotsFile     = 'plots/2011Data_SFit.ps'
 plotsROOTFile = '2011Data_SFit_plots.root'
-parFileIn     = '' # '2011DataFitValues.par'
+parFileIn     = '2011DataFitValues.par'
 parFileOut    = ''
 
 if generateData :
@@ -45,10 +45,6 @@ if generateData :
 elif pdfConfig['SFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_unbiased_4KKMassBins_2TagCats.root'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_noKKMassBins_2TagCats.root'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_unbiased_narrowKKMass_noKKMassBins_2TagCats.root'
-    #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_freeTagCats.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
