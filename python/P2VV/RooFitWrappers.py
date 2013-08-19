@@ -146,7 +146,7 @@ class RooObject(object) :
         # canonicalize 'spec' a bit by getting rid of spaces
         spec = spec.strip()
         # protect against hardwired limit in RooFactoryWSTool
-        if (len(spec))>10000 : assert ValueError('RooWorkspace string too long')
+        if (len(spec))>10000 : raise ValueError('RooWorkspace string too long')
         # TODO: Wouter promised to add a method that, given the factory 'spec' above returns
         #       the value of 'factory_tag' which is used internally in the conflict resolution
         #       and which is the 'canonical' recipe to build an object
@@ -697,12 +697,18 @@ class ComplementCoef( RooObject ) :
         name = kwargs.pop('Name')
         __check_name_syntax__(name)
 
-        # build a RooComplementCoef (no workspace declaration, since factory string has limited length!!!)
-        from ROOT import RooArgList, RooComplementCoef
-        coefList = RooArgList( kwargs.pop('Coefficients')  )
-        complCoef = RooComplementCoef( name, name, coefList )
-        self._addObject(complCoef)
-        complCoef.IsA().Destructor(complCoef)
+	coefs = kwargs.pop('Coefficients')  
+	try :
+		spec = 'RooComplementCoef::%s({%s})'%(name,','.join( i.GetName() for i in coefs ))
+		self._declare(spec)
+   	except ValueError :
+		# This can happen if the factorystring becomes too long
+		# and _declare raises a ValueError...
+		from ROOT import RooArgList, RooComplementCoef
+		coefList = RooArgList( coefs )
+		complCoef = RooComplementCoef( name, name, coefList )
+		self._addObject(complCoef)
+		complCoef.IsA().Destructor(complCoef)
 
         # initialize
         self._init( name, 'RooComplementCoef' )

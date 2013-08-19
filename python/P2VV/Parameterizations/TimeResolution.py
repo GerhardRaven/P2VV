@@ -25,7 +25,7 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
         from ROOT import RooArgSet, RooAbsReal, RooAbsCategory
         obs = RooArgSet( o for o in self._model.Observables() if o != self._time   )
         if kwargs.pop('Cache', True) and len(obs) :
-            print 'P2VV::TimeResolution: invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in obs] )
+            print 'P2VV - INFO: invoking %s.parameterizeIntegral(%s)' % ( self._model.GetName(),[o.GetName() for o in obs] )
             self._model.setParameterizeIntegral( obs )
             for o in filter( lambda i : not ( isinstance(i,RooAbsCategory) or i.hasBinning('cache') ), obs ):
                 print 'P2VV::TimeResolution: adding cache binning wth 20 bins to %s' % o.GetName()
