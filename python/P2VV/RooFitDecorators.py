@@ -121,8 +121,7 @@ RooDataSet.buildTree = __RooDataSetToTree
 def __TreeToRooDataSet( self, Observables = [ ], Name = '', Title = '', Cuts = '', IndexName = '', OrigDataSet = None ) :
     from P2VV.Load import P2VVLibrary
     from ROOT import TreeToRooDataSet
-    __dref__ = lambda i : i._var if hasattr(i,'_var') else i
-    obsSet = RooArgSet( __dref__(obs) for obs in Observables )
+    obsSet = RooArgSet( Observables )
     if OrigDataSet :
         return TreeToRooDataSet( self, obsSet, Name, Title, Cuts, IndexName, OrigDataSet )
     else :
@@ -173,8 +172,8 @@ for t in [ RooArgSet,RooArgList ] :
     t.__sub__   = _RooTypedUnary2Binary( t, '__isub__' )
     t.__add__   = _RooTypedUnary2Binary( t, '__iadd__' )
 
-RooArgList.__str__ = lambda s : 'RooArgList(%s)' % ','.join( '%s'% i for i in s )
-RooArgSet.__str__  = lambda s : 'RooArgSet(%s)'  % ','.join( '%s'% i for i in s )
+RooArgList.__str__ = lambda s : 'RooArgList(%s)' % ','.join( '%s::%s'% (i.IsA().GetName(),i.GetName()) for i in s )
+RooArgSet.__str__  = lambda s : 'RooArgSet(%s)'  % ','.join( '%s::%s'% (i.IsA().GetName(),i.GetName()) for i in s )
 
 # RooWorkspace functions
 

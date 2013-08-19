@@ -999,21 +999,18 @@ class Pdf(RooObject):
         condObs  = self.ConditionalObservables()
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'
-            print 'INFO: adding ConditionalObservables: %s' % [ i.GetName() for i in  condObs ]
             kwargs['ConditionalObservables'] = condObs
         extConst = self.ExternalConstraints()
         if extConst :
             assert 'ExternalConstraints' not in kwargs or extConst== kwargs['ExternalConstraints'] , 'Inconsistent External Constraints'
-            print 'INFO: adding ExternalConstraints: %s' % [ i.GetName() for i in extConst ]
             kwargs['ExternalConstraints'] = extConst
         globalObs = self.GlobalObservables()
         if globalObs:
             assert 'GlobalObservables' not in kwargs or extConst== kwargs['GlobalObservables'] , 'Inconsistent Global Observables'
-            print 'INFO: adding GlobalObservables: %s' % [ i.GetName() for i in globalObs ]
             kwargs['GlobalObservables'] = globalObs
         for d in set(('ConditionalObservables','ExternalConstraints', 'GlobalObservables','Minos')).intersection( kwargs ) :
             kwargs[d] = RooArgSet( kwargs.pop(d) )
-        print 'INFO: fitTo with kwargs %s' % kwargs
+        print 'INFO: fitTo: %s::%s %s' % ( data.IsA().GetName(),data.GetName(),', '.join( "%s = %s" % (k,v) for k,v in  kwargs.iteritems() ))
         return self._var.fitTo( data, **kwargs )
 
     @wraps(RooAbsPdf.generate)
@@ -1423,7 +1420,7 @@ class BTagDecay( Pdf ) :
         from P2VV.Load import P2VVLibrary
         argDict = { 'Name' : Name, 'checkVars' : '1', 'decayType' : 'SingleSided' }
 
-        cstr = lambda arg : arg if type(arg) == str else arg.GetName() if hasattr(arg,'GetName') else str(arg)
+        cstr    = lambda arg : arg if type(arg) == str else arg.GetName() if hasattr(arg,'GetName') else str(arg)
         convert = lambda arg : cstr(arg) if type(arg) != list else '{%s}' % ','.join( str(listItem) for listItem in arg )
         if 'tagCat0' in kwargs and 'tagCat1' in kwargs :
             # two tagging categories

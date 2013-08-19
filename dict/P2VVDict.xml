@@ -35,6 +35,7 @@
         <class name = "RooTPDecay" />
         <class name = "RooAmoroso" />
         <class name = "RooMassDependence" />
+        <class name = "RooCubicSplineKnot::BoundaryConditions" />
         <class name = "RooCubicSplineKnot" />
         <class name = "RooCubicSplineFun" />
         <class name = "RooCubicSplineGaussModel" />

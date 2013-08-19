@@ -3,6 +3,7 @@
 #include "RooAbsReal.h"
 #include "P2VV/RooCubicSplineKnot.h"
 
+using namespace std;
 namespace RooCubicSplineKnot_aux {
 
   Double_t get(const RooArgList& b,int i) { return ((RooAbsReal&)b[i]).getVal() ; }
@@ -74,7 +75,7 @@ void RooCubicSplineKnot::smooth(std::vector<double>& y, const std::vector<double
 // on input, y contains the values at the knot locations
 // on output, it contains the b-spline coefficients
 // Note: one element will be pre-pended, and one post-pended !!
-void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y) const
+void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y, BoundaryConditions bc) const
 {
  // see http://en.wikipedia.org/wiki/Spline_interpolation
  // for the derivation of the linear system...
@@ -83,19 +84,24 @@ void RooCubicSplineKnot::computeCoefficients(std::vector<double>& y) const
     int n = size();
     assert(int(y.size())==size());
 
-    double bf = y.front() / A(u(0),0) ;
-    double bb = y.back()  / D(u(n-1),n-2);
+    // Weights of first and last spline are fully determined by values at knots
+    double bf = y.front();
+    double bb = y.back();
 
-    y.front() = - bf * double(6) / sqr(h(0));
-    y.back()  = - bb * double(6) / sqr(h(n-2));
+    // Set boundary conditions for linear system
+    y.front() = bc.value[0] - bf * ( bc.secondDerivative[0] ? ( double(6) / sqr(h(0)) )  : ( -double(3) / h(0)   ) );
+    y.back()  = bc.value[1] - bb * ( bc.secondDerivative[1] ? ( double(6) / sqr(h(n-2))) : (  double(3) / h(n-2) ) );
 
-    std::vector<double> c ; c.reserve(n);
-    c.push_back( mc(0) / mb(0) );
-    y[0] /=  mb(0);
+    // Solve linear system
+    std::vector<double> c; c.reserve(n);
+    c.push_back( mc(0, bc.secondDerivative) / mb(0, bc.secondDerivative) );
+    y[0] /=  mb(0, bc.secondDerivative);
+    // TODO: rewrite the special cases i==1 and i==n-1 (move latter out of loop)
+    //       so we can avoid 'if' statements in the loop body...
     for (int i = 1; i < n; ++i) {
-        double m = double(1) / ( mb(i) - ma(i) * c.back() ) ;
-        c.push_back( mc(i) * m );
-        y[i] -=  ma(i) * y[i - 1];
+        double m = double(1) / ( mb(i, bc.secondDerivative ) - ma(i, bc.secondDerivative) * c.back() );
+        c.push_back( mc(i,bc.secondDerivative) * m );
+        y[i] -=  ma(i, bc.secondDerivative) * y[i - 1];
         y[i] *=  m;
     }
     for (int i = n-1 ; i-- > 0; ) y[i] -= c[i] * y[i + 1];
