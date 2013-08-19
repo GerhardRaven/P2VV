@@ -39,7 +39,6 @@ public:
    virtual RooArgSet observables() const;
 
    virtual const RooAbsReal* efficiency() const;
-   virtual std::vector<const RooAbsReal*> efficiencies() const;
 
 protected:
 
