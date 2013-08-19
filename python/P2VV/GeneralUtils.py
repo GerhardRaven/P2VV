@@ -2433,7 +2433,6 @@ class matchWeightedDistributions():
             mimicedVars[varList].update(dict( 
                     (  v , self.MimicWeightedDistribution(t,v,w,b)  )for v in self._vars[varList]['vars']  
                 ))
-        ## TO DO: write a method that checks bin by bin if the mimicing is OK. A first fast check was succesful 
         self._mimicedVars = mimicedVars
         
 
@@ -2503,8 +2502,9 @@ class matchWeightedDistributions():
             name = branch.GetName()
             names.append(branch.GetName())
             labels.append(branch.GetName() + "/F")
-        labels += ["kplus_pmod/F", "kminus_pmod/F", "ctheta_m/F", "cpsi_m/F", "trphi_m/F", "ctheta1_m/F", "ctheta2_m/F", "helphi_m/F"]
-        
+        labels += ["kplus_pmod/F", "kminus_pmod/F", "ctheta1_m/F", "ctheta2_m/F", "helphi_m/F"]
+        #labels += ["kplus_pmod/F", "kminus_pmod/F", "ctheta_m/F", "cpsi_m/F", "trphi_m/F", "ctheta1_m/F",\ "ctheta2_m/F", "helphi_m/F"]
+
         from RTuple import RTuple
         tup = RTuple(outputname, labels)
         
@@ -2541,16 +2541,16 @@ class matchWeightedDistributions():
             l2 = [Emu1, pmu1]
             l3 = [Emu2, pmu2]
 
-            Th1P, Th2P, PhiP =  JpsiKst_Angles(l0,l1,l2,l3) ### Transversity basis
+            #Th1P, Th2P, PhiP =  JpsiKst_Angles(l0,l1,l2,l3) ### Transversity basis
             Th1, Th2, Phi = P_VV_angles(l0,l1,l2,l3) ### Helicity basis
 
             for name in names: tup.fillItem(name,float(getattr(t,name)))
 
             tup.fillItem("kplus_pmod",pmod1)
             tup.fillItem("kminus_pmod",pmod2)
-            tup.fillItem("cpsi_m",cos(Th1P))
-            tup.fillItem("ctheta_m",cos(Th2P))
-            tup.fillItem("trphi_m",PhiP)
+            #tup.fillItem("cpsi_m",cos(Th1P))
+            #tup.fillItem("ctheta_m",cos(Th2P))
+            #tup.fillItem("trphi_m",PhiP)
             tup.fillItem("ctheta1_m",cos(Th1))
             tup.fillItem("ctheta2_m",cos(Th2))
             tup.fillItem("helphi_m",Phi)
