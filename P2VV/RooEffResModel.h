@@ -60,9 +60,9 @@ public:
 
    const RooArgList& getIntegralRanges(const RooArgSet& iset, const char* rangeName = 0) const;
 
-   virtual const RooArgSet* observables() const { 
+   virtual RooArgSet observables() const { 
       // Return pointer to pdf in product
-      return new RooArgSet(_observables);
+      return RooArgSet(_observables);
    }
 
 protected:

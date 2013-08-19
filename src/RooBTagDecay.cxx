@@ -1115,8 +1115,13 @@ Int_t RooBTagDecay::getMaxVal(const RooArgSet& /*vars*/) const
 //_____________________________________________________________________________
 Double_t RooBTagDecay::maxVal(Int_t code) const
 {
-   assert(code);
-   return _maxVal;
+  if (code == 0) {
+    coutF(InputArguments) << "RooBTagDecay::maxVal(" << GetName()
+        << "): got code 0" << endl;
+    assert(0);
+  }
+
+  return _maxVal;
 }
 
 //_____________________________________________________________________________

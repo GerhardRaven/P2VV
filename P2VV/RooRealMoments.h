@@ -18,95 +18,104 @@
 
 #include "RooAbsPdf.h"
 #include "RooAbsData.h"
-#include <string>
+#include "TString.h"
 #include <iosfwd>
+#include <vector>
 
 //_____________________________________________________________________________
-class RooAbsRealMoment
+class RooRealMoment;
+typedef std::vector<RooRealMoment*> RooRealMomentsVector;
+
+//_____________________________________________________________________________
+class RooRealMoment
 {
-
 public:
-  RooAbsRealMoment(RooAbsReal& basisFunc, Double_t norm = 1.,
-      const std::string& name = std::string());
-  virtual ~RooAbsRealMoment() {};
+  RooRealMoment(const RooAbsReal& basisFunc, Double_t norm = 1.,
+      const char* name = "");
+  RooRealMoment(const RooAbsReal& basisFunc,
+      const RooRealMomentsVector& moments, Double_t norm = 1.,
+      const char* name = "");
+  virtual ~RooRealMoment() {};
 
-  const char* name() {return _name.c_str();}
-  const char* GetName() {return name();}
-  RooAbsReal& basisFunc() {return _basisFunc;}
-  Double_t norm() {return _norm;}
+  const char* name() const {return _name;}
+  const char* GetName() const {return name();}
+  const RooAbsReal& basisFunc() const {return _basisFunc;}
+  RooRealMomentsVector moments() {return RooRealMomentsVector(_moments);}
+  Double_t norm() const {return _norm;}
 
-  virtual RooArgSet* getObservables(const RooArgSet* set)
+  virtual RooArgSet* getObservables(const RooArgSet* set) const
   {
     return basisFunc().getObservables(set);
   }
-  RooArgSet* getObservables(const RooAbsData& data)
+  RooArgSet* getObservables(const RooAbsData& data) const
   {
     return getObservables(data.get());
   }
 
   Double_t coefficient(Bool_t normalize = kTRUE) const;
   Double_t variance(Bool_t normalize = kTRUE) const;
+  Double_t covariance(Int_t index, Bool_t normalize = kTRUE) const;
+  Double_t correlation(Int_t index) const;
   Double_t stdDev(Bool_t normalize = kTRUE) const;
   Double_t significance() const;
 
-  Double_t m0() {return _m0;}
-  Double_t m1() {return _m1;}
-  Double_t n0() {return _n0;}
-  Double_t n1() {return _n1;}
-  Double_t n2() {return _n2;}
+  Double_t m0() const {return _m0;}
+  Double_t m1() const {return _m1;}
+  Double_t n0() const {return _n0;}
+  Double_t n1() const {return _n1;}
+  Double_t n2(Int_t index = 0) const;
 
-  virtual Double_t evaluate() {return _basisFunc.getVal();}
-  virtual void inc(Double_t weight = 1.);
-  void reset() {_m0 = _m1 = _n0 = _n1 = _n2 = 0.;}
+  virtual Double_t evaluate() const {return _basisFunc.getVal();}
+  void inc(Double_t weight = 1.);
+  void reset();
+  void appendMoments(const RooRealMomentsVector& moments);
+  void clearMoments();
 
   virtual std::ostream& print(std::ostream& os, Bool_t normalize = kTRUE) const;
   void Print(Bool_t normalize = kTRUE) const {print(std::cout, normalize);}
 
 protected:
-  RooAbsReal& _basisFunc;
-  std::string _name;
+  const RooAbsReal& _basisFunc; //!
+  RooRealMomentsVector _moments;
+  TString _name;
   Double_t _norm;
   Double_t _m0, _m1;
-  Double_t _n0, _n1, _n2;
+  Double_t _n0, _n1;
+  std::vector<Double_t> _n2;
+  Bool_t _reset;
 };
 
 //_____________________________________________________________________________
-class RooRealMoment : public RooAbsRealMoment
+class RooRealEffMoment : public RooRealMoment
 {
-
 public:
-  RooRealMoment(RooAbsReal& basisFunc, Double_t norm = 1.);
-
-private:
-};
-
-//_____________________________________________________________________________
-class RooRealEffMoment : public RooAbsRealMoment
-{
-
-public:
-  RooRealEffMoment(RooAbsReal& basisFunc, Double_t norm, const RooAbsPdf& pdf,
-      const RooArgSet& intSet, const RooArgSet& normSet);
+  RooRealEffMoment(RooAbsReal& basisFunc, const RooAbsPdf& pdf,
+      const RooArgSet& intSet, const RooArgSet& normSet, Double_t norm = 1.,
+      const char* name = "");
+  RooRealEffMoment(RooAbsReal& basisFunc, const RooRealMomentsVector& moments,
+      const RooAbsPdf& pdf, const RooArgSet& intSet, const RooArgSet& normSet,
+      Double_t norm = 1., const char* name = "");
   virtual ~RooRealEffMoment();
 
-  const RooAbsPdf&  pdf()    {return _pdf;}
-  RooAbsReal*       pdfInt() {return _pdfInt;}
+  const RooAbsPdf& pdf() const {return _pdf;}
+  RooAbsReal* pdfInt() const {return _pdfInt;}
+  RooArgSet intSet() const {return RooArgSet(_intSet);}
+  RooArgSet normSet() const {return RooArgSet(_normSet);}
 
-  Double_t evaluate() {return _basisFunc.getVal() / _pdfInt->getVal();}
-  virtual RooArgSet* getObservables(const RooArgSet* set)
+  Double_t evaluate() const {return _basisFunc.getVal() / _pdfInt->getVal();}
+  virtual RooArgSet* getObservables(const RooArgSet* set) const
   {
     return _pdf.getObservables(set);
   }
 
 private:
-  const RooAbsPdf&  _pdf;
+  const RooAbsPdf&  _pdf;     //!
   RooAbsReal*       _pdfInt;
-  const RooArgSet&  _intSet;
-  const RooArgSet&  _normSet;
+  const RooArgSet&  _intSet;  //!
+  const RooArgSet&  _normSet; //!
 };
 
-typedef std::vector<RooAbsRealMoment*> RooRealMomentsVector;
-
+//_____________________________________________________________________________
 Int_t computeRooRealMoments(RooAbsData& data, RooRealMomentsVector& moments,
     Bool_t resetFirst = kFALSE, Bool_t verbose = kTRUE);
 

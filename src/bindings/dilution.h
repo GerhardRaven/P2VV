@@ -10,16 +10,20 @@
 #ifndef P2VV__DILUTION__H
 #define P2VV__DILUTION__H
 
-double dD1_ddms(double st, double dms, double sf1, double sf2, double f);
-double dD1_df(double st, double dms, double sf1, double sf2, double f);
-double dD1_dst(double st, double dms, double sf1, double sf2, double f);
-double dD1_dsf1(double st, double dms, double sf1, double sf2, double f);
-double dD1_dsf2(double st, double dms, double sf1, double sf2, double f);
-double dDc_dst(double st, double dms, double sfc, double sf2, double f);
-double dDc_df(double st, double dms, double sfc, double sf2, double f);
-double dDc_dsfc(double st, double dms, double sfc, double sf2, double f);
-double dDc_dsf2(double st, double dms, double sfc, double sf2, double f);
-double dDc_ddms(double st, double dms, double sfc, double sf2, double f);
+double dDs2_df(double st, double dms, double sf1, double f, double sf2);
+double dDs2_dsf1(double st, double dms, double sf1, double f, double sf2);
+double dDs2_dsf2(double st, double dms, double sf1, double f, double sf2);
+double dDs2_ddms(double st, double dms, double sf1, double f, double sf2);
+double dDc2_df(double st, double dms, double sfc, double f, double sf2);
+double dDc2_dsf2(double st, double dms, double sfc, double f, double sf2);
+double dDc2_dsfc(double st, double dms, double sfc, double f, double sf2);
+double dDc2_ddms(double st, double dms, double sfc, double f, double sf2);
+double dDcc2_dsf2o(double st, double stm, double dms, double sfco, double sfcs, double f, double sf2o, double sf2s);
+double dDcc2_ddms(double st, double stm, double dms, double sfco, double sfcs, double f, double sf2o, double sf2s);
+double dDcc2_dsfcs(double st, double stm, double dms, double sfco, double sfcs, double f, double sf2o, double sf2s);
+double dDcc2_dsfco(double st, double stm, double dms, double sfco, double sfcs, double f, double sf2o, double sf2s);
+double dDcc2_df(double st, double stm, double dms, double sfco, double sfcs, double f, double sf2o, double sf2s);
+double dDcc2_dsf2s(double st, double stm, double dms, double sfco, double sfcs, double f, double sf2o, double sf2s);
 
 #endif
 

@@ -5,6 +5,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
+MCProd      = 'MC11'
 readMoments = False
 makePlots   = True
 transAngles = False
@@ -14,31 +15,32 @@ trigger     = ''
 timeInt     = False
 addInvPdf   = True
 
-momentsFile = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' )
-plotsFile   = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' ) + '.ps'
-dataSetFile = '%s_UB_UT_trueTime_BkgCat050_KK30' % ( 'trans' if transAngles else 'hel' ) + '.root'
+momentsFile = '%s_%s_UB_UT_trueTime_BkgCat050_KK30' % ( MCProd, 'trans' if transAngles else 'hel' )
+plotsFile   = '%s_%s_UB_UT_trueTime_BkgCat050_KK30' % ( MCProd, 'trans' if transAngles else 'hel' ) + '.ps'
+dataSetFile = '%s_%s_UB_UT_trueTime_BkgCat050_KK30' % ( MCProd, 'trans' if transAngles else 'hel' ) + '.root'
 
 nTupleName = 'DecayTree'
+#nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_MC2012_NoSmear_ntupleB_20130709_MagUpDown.root'
 nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 #nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
 #nTupleFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_PHSP_MC11a_ntupleB_for_fitting_20121031.root'
 #nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angRes/angRes.root'
 
 # transversity amplitudes
-A0Mag2Val    = 0.60
-AperpMag2Val = 0.16
-AparMag2Val  = 1. - A0Mag2Val - AperpMag2Val
+A0Mag2Val    = 0.722**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'MC12' else 0.775**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
+AperpMag2Val = 0.499**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'MC12' else 0.400**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
+AparMag2Val  = 0.480**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'MC12' else 0.490**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
 
-A0PhVal      =  0.
-AperpPhVal   = -0.17
-AparPhVal    =  2.50
+A0PhVal      = 0.
+AperpPhVal   = 3.07 if MCProd == 'MC12' else -0.17
+AparPhVal    = 3.30 if MCProd == 'MC12' else  2.50
 
 # CP violation parameters
-phiCPVal      = -0.04
+phiCPVal      = +0.07 if MCProd == 'MC12' else -0.04
 
 # B lifetime parameters
-GammaVal  = 0.679
-dGammaVal = 0.060
+GammaVal  = 1. / 1.503 if MCProd == 'MC12' else 0.679
+dGammaVal = 1. / 1.406 - 1. / 1.614 if MCProd == 'MC12' else 0.060
 dMVal     = 17.8
 tResSigma = 0.045
 
@@ -85,11 +87,12 @@ obsSet = [ time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime ] + angles
 bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
 trackChiSqCuts = 'muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
 massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150. && mdau2 > 990. && mdau2 < 1050.'
-timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
+timeCuts       = 'truetime > 0. && time > 0.3 && time < 14. && sigmat < 0.12'
 tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 
 from P2VV.GeneralUtils import readData
 cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
+#cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
 if trigger == 'ExclBiased' :
     cuts  = 'sel == 1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
     data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
@@ -206,18 +209,20 @@ else :
 from P2VV.GeneralUtils import RealMomentsBuilder
 if normPdf :
     from P2VV.RooFitWrappers import RealEffMoment
-    physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( func, 1, pdf, intSet, normSet )\
+    physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,Norm = 1., PDF = pdf
+                                                                , IntSet = intSet, NormSet = normSet )\
                                                   for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
                                                 )
                                     )
 
 else :
     from P2VV.RooFitWrappers import RealMoment
-    physMoments = RealMomentsBuilder( Moments = ( RealMoment( func, 1 )\
+    physMoments = RealMomentsBuilder( Moments = ( RealMoment( Name = func.GetName(), BasisFunc = func, Norm = 1. )\
                                                   for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
                                                 )
                                     )
 
+physMoments.initCovariances()
 
 # moments builder with angular basis functions
 indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]

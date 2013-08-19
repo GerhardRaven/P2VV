@@ -82,7 +82,7 @@ std::vector<const RooAbsReal*> RooEffResAddModel::efficiencies() const
 }
 
 //_____________________________________________________________________________
-const RooArgSet* RooEffResAddModel::observables() const { 
+RooArgSet RooEffResAddModel::observables() const { 
    // Return pointer to pdf in product
-   return new RooArgSet(RooAddModel::convVar());
+   return RooArgSet(RooAddModel::convVar());
 }

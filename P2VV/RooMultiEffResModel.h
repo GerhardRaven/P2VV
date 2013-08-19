@@ -60,7 +60,7 @@ public:
       return _super;
    }
 
-   virtual const RooArgSet* observables() const;
+   virtual RooArgSet observables() const;
 
 protected:
 

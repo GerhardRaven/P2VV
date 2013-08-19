@@ -49,11 +49,30 @@ RooComplementCoef::RooComplementCoef(
 {}
 
 //_____________________________________________________________________________
+void RooComplementCoef::printArgs(ostream& os) const
+{
+  os << "[ 1";
+  Int_t iter(0);
+  RooFIter coefIter(_coefs.fwdIterator());
+  RooAbsReal* coef = 0;
+  while ((coef = (RooAbsReal*)coefIter.next()) != 0) {
+    if (iter < 5) {
+      os << " - " << coef->GetName();
+      ++iter;
+    } else {
+      os << " - ...";
+      break;
+    }
+  }
+  os << " (" << _coefs.getSize() << " coefficients) ]";
+}
+
+//_____________________________________________________________________________
 Double_t RooComplementCoef::evaluate() const
 {
   Double_t result = 1.;
-  RooFIter coefIter = _coefs.fwdIterator();
+  RooFIter coefIter(_coefs.fwdIterator());
   RooAbsReal* coef = 0;
-  while((coef = (RooAbsReal*)coefIter.next()) != 0) result -= coef->getVal();
+  while ((coef = (RooAbsReal*)coefIter.next()) != 0) result -= coef->getVal();
   return result;
 }

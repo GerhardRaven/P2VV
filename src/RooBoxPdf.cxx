@@ -44,21 +44,22 @@ RooBoxPdf::RooBoxPdf(const RooBoxPdf& other, const char* name) :
 
 Double_t RooBoxPdf::evaluate() const
 {
-  return _var > _mean + _width || _var < _mean - _width ? 0. : 1.;
+  Double_t x = _var-_mean;
+  bool outsideBox = ( x < -_width ) || ( x > _width );
+  return outsideBox ? 0. : 1.;
 }
 
 Int_t RooBoxPdf::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars,
     const char* rangeName) const
 {
-  // only integrate analytically if the integral is over the full range of _var
-  if (rangeName != 0 && _var.absArg()->hasRange(rangeName)) return 0;
   if (matchArgs(allVars, analVars, _var)) return 1;
-
   return 0;
 }
 
 Double_t RooBoxPdf::analyticalIntegral(Int_t /*code*/,
-    const char* /*rangeName*/) const
+    const char* rangeName) const
 {
-  return 2. * _width;
+  Double_t lo = std::max(_mean-_width,_var.min(rangeName));
+  Double_t hi = std::min(_mean+_width,_var.max(rangeName));
+  return hi-lo;
 }

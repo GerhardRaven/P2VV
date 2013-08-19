@@ -4,6 +4,17 @@
 ! Purpose     : keeping Tristan's crazy RooFit stuff.
 !-----------------------------------------------------------------------------
 
+!============================== v3r2 2013-08-06 ==============================
+
+! 2013-08-06 - Jeroen van Leerdam
+ - Updated RooFit patches (ROOT 5.34/09)
+ - Prevent "unused parameter" compiler warnings
+ - Prevent one of the "reference data members" dictionary warnings
+ - fixed RooEffResModel to work with new version of RooNameSet
+
+! 2013-08-05 - Diego Martinez Santos
+ - Added "apply_tag skip_genconfuser" line to cmt/requirements
+
 !============================== v3r1 2013-04-18 ==============================
 
 ! 2013-04-17 - Jeroen van Leerdam

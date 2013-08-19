@@ -116,7 +116,13 @@ Int_t RooAvEffConstraint::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& a
 //_____________________________________________________________________________
 Double_t RooAvEffConstraint::analyticalIntegral(Int_t code, const char* /*rangeName*/) const
 {
-   assert(code == 1);
+   if (code != 1) {
+     coutF(InputArguments) << "RooAvEffConstraint::analyticalIntegral("
+         << GetName() << "): integration code should be 1 (got" << code << ")"
+         << endl;
+     assert(0);
+   }
+
    return 1.;
 }
 

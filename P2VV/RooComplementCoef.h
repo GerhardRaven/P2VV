@@ -38,7 +38,9 @@ public:
 
   inline virtual ~RooComplementCoef() { }
 
-  RooArgList* coefficients() {return new RooArgList(_coefs, "coefficients");}
+  RooArgList coefficients() const {return RooArgList(_coefs, "coefficients");}
+
+  void printArgs(std::ostream& os) const;
 
 protected:
   RooListProxy _coefs;

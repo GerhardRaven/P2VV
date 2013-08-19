@@ -1,19 +1,21 @@
 #ifndef DICT_P2VVDICT_H 
 #define DICT_P2VVDICT_H 1
 
+#include "TMatrixTSym.h"
+
 #include "P2VV/RooRealMoments.h"
-#include "P2VV/ProgressDisplay.h"
 #include "P2VV/RooBTagDecay.h"
 #include "P2VV/RooTrivialTagDecay.h"
 #include "P2VV/RooMultiCatGenerator.h"
+#include "P2VV/RooAbsGaussModelEfficiency.h"
 #include "P2VV/RooBinnedPdf.h"
+#include "P2VV/RooBinnedFun.h"
 #include "P2VV/RooP2VVAngleBasis.h"
 #include "P2VV/RooThresholdPdf.h"
 #include "P2VV/RooRelBreitWigner.h"
 #include "P2VV/RooTagDecisionWrapper.h"
 #include "P2VV/RooRealCategory.h"
 #include "P2VV/RooCalibratedDilution.h"
-#include "P2VV/RooDataSetToTree.h"
 #include "P2VV/Functions.h"
 #include "P2VV/RooTransAngle.h"
 #include "P2VV/RooCruijff.h"
@@ -30,11 +32,14 @@
 #include "P2VV/RooExplicitNormPdf.h"
 #include "P2VV/RooCubicSplineKnot.h"
 #include "P2VV/RooCubicSplineFun.h"
-#include "P2VV/RooCubicSplineGaussModel.h"
+#include "P2VV/RooGaussEfficiencyModel.h"
 #include "P2VV/RooAmoroso.h"
 #include "P2VV/RooTPDecay.h"
 #include "P2VV/RooMassDependence.h"
 #include "P2VV/RooEffResAddModel.h"
+#include "P2VV/RooHessian.h"
+#include "P2VV/RooCategoryVar.h"
+#include "P2VV/RooConvertPolAmp.h"
 
 #include <map>
 #include <string>
@@ -63,9 +68,11 @@ struct Instantiations {
    std::vector<MultiHistEntry> _i16;
    std::map<int, MultiHistEntry*>::iterator _i17;
    std::vector<MultiHistEntry*> _i18;
-   std::vector<RooAbsRealMoment*> _i19;
+   std::vector<RooRealMoment*> _i19;
 
    std::list<RooDataSet*> _i20;
+   std::vector<std::pair<double, double> > _i21;
+   std::pair<TMatrixDSym, TMatrixDSym> _i22;
 
 };
 #endif // DICT_P2VVDICT_H
