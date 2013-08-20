@@ -12,16 +12,11 @@
 #define ROO_ABS_EFF_RES_MODEL
 
 #include "RooResolutionModel.h"
-#include "RooRealProxy.h"
-#include "RooObjCacheManager.h"
-#include "RooSetProxy.h"
 
 class RooAbsEffResModel {
 public:
-
    // Constructors, assignment etc
    inline RooAbsEffResModel() { }
-
    virtual ~RooAbsEffResModel() {}
   
    /** 
@@ -31,9 +26,6 @@ public:
    virtual RooArgSet observables() const = 0;
 
    virtual const RooAbsReal* efficiency() const = 0;
-
-   //TODO: can we do without this one??
-   virtual std::vector<const RooAbsReal*> efficiencies() const = 0;
 
 };
 

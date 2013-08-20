@@ -152,11 +152,6 @@ const RooAbsReal* RooGaussEfficiencyModel::efficiency() const
 }
 
 //_____________________________________________________________________________
-std::vector<const RooAbsReal*> RooGaussEfficiencyModel::efficiencies() const {
-   return std::vector<const RooAbsReal*>(1, efficiency());
-}
-
-//_____________________________________________________________________________
 RooArgSet RooGaussEfficiencyModel::observables() const {
    // Return pointer to pdf in product
    // verify whether efficiency depends on additional observables!!!
