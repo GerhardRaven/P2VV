@@ -49,7 +49,8 @@ vpath %.o   $(BUILDDIR)
 
 .PHONY: all clean profiler
 
-all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so $(LIBDIR)/dilution.so
+#all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so $(LIBDIR)/dilution.so
+all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so
 
 profiler: $(LIBDIR)/profiler.so
 
