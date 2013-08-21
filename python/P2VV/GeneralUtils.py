@@ -2132,14 +2132,15 @@ def createSData( **kwargs ) :
 ###########################################################################################################################################
 
 def compareWeightedDistributions(tree, sTree, var, **kwargs):
-    sVar      =  kwargs.pop('sVar',          None  )
-    cut       =  kwargs.pop('cut',           None  )
-    sCut      =  kwargs.pop('sCut',          None  )
-    weight    =  kwargs.pop('weight',        None  )
-    sWeight   =  kwargs.pop('sWeight',       None  )
-    rangeX    =  kwargs.pop('rangeX',        None  )
-    bins      =  kwargs.pop('bins',          100   )
-    assymPlot =  kwargs.pop('assymPlot',    False  )
+    sVar      =  kwargs.pop('sVar',             None  )
+    cut       =  kwargs.pop('cut',              None  )
+    sCut      =  kwargs.pop('sCut',             None  )
+    weight    =  kwargs.pop('weight',           None  )
+    sWeight   =  kwargs.pop('sWeight',          None  )
+    rangeX    =  kwargs.pop('rangeX',           None  )
+    bins      =  kwargs.pop('bins',             100   )
+    assymPlot =  kwargs.pop('assymPlot',       False  )
+    save      =  kwargs.pop('Save',      [False,'_']  )
 
     if rangeX:
         Xmin=str(rangeX[0])
@@ -2149,19 +2150,23 @@ def compareWeightedDistributions(tree, sTree, var, **kwargs):
         Xmax= str(max(tree.GetMaximum(var),sTree.GetMaximum(var)))
 
     from ROOT import gPad
-    print 'P2VV - INFO: Ploting first distribution.'
     if cut:
         if weight: tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight +'*'+'('+cut+')' )
         else     : tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')',                 cut     )
-    else         : tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight                  )
+    else         : 
+        print 'P2VV - INFO: Ploting first distribution (1st arguement) with weight: ' + weight + '.'
+        if weight: tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight)
+        else:      tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')',    '' )
     hm = gPad.GetPrimitive('hm')
 
     if not sVar: sVar=var
-    print 'P2VV - INFO: Ploting second distribution.'
     if sCut:
         if sWeight: sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight +'*'+'('+sCut+')', 'err' )
         else      : sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')',                  sCut    , 'err' )
-    else          : sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight                  , 'err' )
+    else          : 
+        print 'P2VV - INFO: Ploting second distribution (2nd arguement) with weight: ' ,  sWeight
+        if sWeight: sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight, 'err' )
+        else:       sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')',    ''  , 'err' )
     hs = gPad.GetPrimitive('hs')
 
     hm.SetFillColor(2)
@@ -2174,15 +2179,20 @@ def compareWeightedDistributions(tree, sTree, var, **kwargs):
     hs.SetStats()
 
     def getSumOfWeights(t,pref,cut):
-        if pref=='1': return t.GetEntries(cut)
+        ## TODO: should return sumW of the selected events by the cut string.
+        if cut: print 'WARNING: Returned number is sumW of the entire tree not the of the subseset selected by cut. '
+        if pref=='': return t.GetEntries(cut)
         else:
-            sum=0
-            for e in t:sum+=getattr(e,pref)
-            return sum
+            sumW=0
+            for e in t:sumW+=getattr(e,pref)
+            return sumW
+
     if cut==None:  cut=''
     if sCut==None: sCut=''
+    if weight==None: weight=''
+    if sWeight==None: sWeight=''
     if tree.GetEntries(cut)>sTree.GetEntries(sCut): hm.Scale(getSumOfWeights(sTree,sWeight,sCut) / getSumOfWeights(tree,weight,cut))
-    else:                               hs.Scale(getSumOfWeights(tree,weight,cut) / getSumOfWeights(sTree,sWeight,sCut))
+    else:                                           hs.Scale(getSumOfWeights(tree,weight,cut)    / getSumOfWeights(sTree,sWeight,sCut))
 
     if rangeX: hm.GetXaxis().SetRangeUser(rangeX[0], rangeX[1])
     if hm.GetMaximum() < hs.GetMaximum(): hm.GetYaxis().SetRangeUser(0, int( hs.GetMaximum() + .08* hs.GetMaximum() ))
@@ -2207,11 +2217,15 @@ def compareWeightedDistributions(tree, sTree, var, **kwargs):
             c_distr.cd()
             hm.Draw()
             hs.Draw('same')
-        return c_distr, asymPlot
+            if save[0]:
+               c_distr.SaveAs('comp_' + save[1])
+               asymPlot.SaveAs('assym_'  + save[1])
+            return c_distr, asymPlot
     else:
         c_distr.cd()
         hm.Draw()
         hs.Draw('same')
+        if save[0]: c_distr.SaveAs('comp_' + save[1])
         return c_distr
 
 
@@ -2376,7 +2390,8 @@ class matchMCphysics2Data():
                        )
 
             from P2VV.RooFitWrappers import BTagDecay
-            self._pdf = pdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+            self._pdf = pdf  = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+            self._angleFuncs = angleFuncs
 
             self._time = time
             self._helcosthetaK = angles[0]
@@ -2394,6 +2409,10 @@ class matchMCphysics2Data():
             self._normSet = [time] + angles
             self._cuts = cuts
 
+    def getPdf(self):            return self._pdf
+    def getAngleFunctions(self): return self._angleFuncs
+    def getAngles(self):         return self._angles
+    
     def setMonteCarloParameters(self, pars=None):
         if not pars:
             pars = dict(  ReAperp     = self._amplitudes['Aperp'].Re.getVal()
@@ -2505,6 +2524,7 @@ class matchWeightedDistributions():
         sDInfo      = kwargs.pop('sDInfo')
         self._nBins = kwargs.pop('nBins', '1000')
         self._vars  = kwargs.pop('whichVars')
+        self._itNum = kwargs.pop('itNum')    
 
         self._tmc       = mcInfo['path']
         self._tsD       = sDInfo['path']
@@ -2594,16 +2614,17 @@ class matchWeightedDistributions():
         a = t.GetListOfBranches()
 
         from SomeUtils.GLBasic import UniFunc
-        #SomeUtils path: /cvmfs/lhcb.cern.ch/lib/lhcb/URANIA/URANIA_v1r1/InstallArea/x86_64-slc6-gcc46-opt/python/SomeUtils/GLBasic.py
+        #/cvmfs/lhcb.cern.ch/lib/lhcb/URANIA/URANIA_v1r1/InstallArea/x86_64-slc6-gcc46-opt/python/SomeUtils
         print 'P2VV - INFO: Matching kinematic distributions.'
         Udat = UniFunc(pout, nbinsmax = Nbins)
         Umc = UniFunc(pin, nbinsmax = Nbins)
         for branch in a:
-            name = branch.GetName()
-            names.append(branch.GetName())
-            labels.append(branch.GetName() + "/F")
-        labels += ["kplus_pmod/F", "kminus_pmod/F", "ctheta1_m/F", "ctheta2_m/F", "helphi_m/F"]
-        #labels += ["kplus_pmod/F", "kminus_pmod/F", "ctheta_m/F", "cpsi_m/F", "trphi_m/F", "ctheta1_m/F",\ "ctheta2_m/F", "helphi_m/F"]
+                name = branch.GetName()
+                names.append(branch.GetName())
+                labels.append(branch.GetName() + "/F")
+        num = self._itNum
+        labels += ["Kplus_P_mod%s/F" %num, "Kminus_P_mod%s/F"%num, \
+                   "helcosthetaK_mod%s/F"%num, "helcosthetaL_mod%s/F"%num, "helphi_mod%s/F"%num]
 
         from RTuple import RTuple
         tup = RTuple(outputname, labels)
@@ -2645,15 +2666,15 @@ class matchWeightedDistributions():
 
             for name in names: tup.fillItem(name,float(getattr(t,name)))
 
-            tup.fillItem("kplus_pmod",pmod1)
-            tup.fillItem("kminus_pmod",pmod2)
+            tup.fillItem("Kplus_P_mod%s" %num,pmod1)
+            tup.fillItem("Kminus_P_mod%s" %num,pmod2)
             #tup.fillItem("cpsi_m",cos(Th1P))
             #tup.fillItem("ctheta_m",cos(Th2P))
             #tup.fillItem("trphi_m",PhiP)
-            tup.fillItem("ctheta1_m",cos(Th1))
-            tup.fillItem("ctheta2_m",cos(Th2))
-            tup.fillItem("helphi_m",Phi)
-
+            tup.fillItem("helcosthetaK_mod%s"%num,cos(Th1))
+            tup.fillItem("helcosthetaL_mod%s"%num,cos(Th2))
+            tup.fillItem("helphi_mod%s"%num,Phi)
+     
             tup.fill()
 
         tup.close()
