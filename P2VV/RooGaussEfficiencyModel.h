@@ -47,6 +47,7 @@ public:
   virtual RooAbsGenContext* modelGenContext(const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars,
                                              const RooDataSet *prototype=0, const RooArgSet* auxProto=0,
                                              Bool_t verbose= kFALSE) const;
+  Bool_t isDirectGenSafe(const RooAbsArg& arg) const;
   Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK) const;
   void generateEvent(Int_t code);
 

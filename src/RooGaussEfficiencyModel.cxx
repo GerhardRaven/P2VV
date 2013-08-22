@@ -322,6 +322,16 @@ RooAbsGenContext* RooGaussEfficiencyModel::modelGenContext
 }
 
 //_____________________________________________________________________________
+Bool_t RooGaussEfficiencyModel::isDirectGenSafe(const RooAbsArg& arg) const
+{
+   if(!TString(convVar().GetName()).CompareTo(arg.GetName())) {
+      return kTRUE;
+   } else {
+      return RooResolutionModel::isDirectGenSafe(arg);
+   }
+}
+
+//_____________________________________________________________________________
 Int_t RooGaussEfficiencyModel::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
 {
    std::cerr << "getGenerator " << std::endl;
@@ -336,7 +346,6 @@ Int_t RooGaussEfficiencyModel::getGenerator(const RooArgSet& directVars, RooArgS
 //_____________________________________________________________________________
 void RooGaussEfficiencyModel::generateEvent(Int_t code)
 {
-   std::cerr << "generating!!! " << std::endl;
   assert(code==1) ;
   Double_t xmin = x.min();
   Double_t xmax = x.max();
