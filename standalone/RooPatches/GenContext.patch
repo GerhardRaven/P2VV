@@ -1,8 +1,8 @@
-Index: roofit/roofitcore/inc/RooAbsGenContext.h
-===================================================================
---- roofit/roofitcore/inc/RooAbsGenContext.h	(revision 48431)
-+++ roofit/roofitcore/inc/RooAbsGenContext.h	(working copy)
-@@ -75,6 +75,7 @@
+diff --git a/roofit/roofitcore/inc/RooAbsGenContext.h b/roofit/roofitcore/inc/RooAbsGenContext.h
+index 23c6fe2..743718c 100644
+--- a/roofit/roofitcore/inc/RooAbsGenContext.h
++++ b/roofit/roofitcore/inc/RooAbsGenContext.h
+@@ -75,6 +75,7 @@ protected:
    friend class RooSimGenContext ;
    friend class RooSimSplitGenContext ;
    friend class RooEffGenContext ;
@@ -10,11 +10,11 @@ Index: roofit/roofitcore/inc/RooAbsGenContext.h
  
    virtual void initGenerator(const RooArgSet &theEvent);
    virtual void generateEvent(RooArgSet &theEvent, Int_t remaining) = 0;
-Index: roofit/roofitcore/src/RooAcceptReject.cxx
-===================================================================
---- roofit/roofitcore/src/RooAcceptReject.cxx	(revision 48431)
-+++ roofit/roofitcore/src/RooAcceptReject.cxx	(working copy)
-@@ -105,19 +105,21 @@
+diff --git a/roofit/roofitcore/src/RooAcceptReject.cxx b/roofit/roofitcore/src/RooAcceptReject.cxx
+index 4f3d836..c5ecd2b 100644
+--- a/roofit/roofitcore/src/RooAcceptReject.cxx
++++ b/roofit/roofitcore/src/RooAcceptReject.cxx
+@@ -105,19 +105,21 @@ RooAcceptReject::RooAcceptReject(const RooAbsReal &func, const RooArgSet &genVar
      else {
        _minTrials= _minTrialsArray[_realSampleDim]*_catSampleMult;
      }
@@ -43,11 +43,11 @@ Index: roofit/roofitcore/src/RooAcceptReject.cxx
    if (_minTrials>10000) {
      coutW(Generation) << "RooAcceptReject::ctor(" << fName << "): WARNING: " << _minTrials << " trial samples requested by p.d.f for " 
  		      << _realSampleDim << "-dimensional accept/reject sampling, this may take some time" << endl ;
-Index: roofit/roofitcore/src/RooGenContext.cxx
-===================================================================
---- roofit/roofitcore/src/RooGenContext.cxx	(revision 48431)
-+++ roofit/roofitcore/src/RooGenContext.cxx	(working copy)
-@@ -237,21 +237,30 @@
+diff --git a/roofit/roofitcore/src/RooGenContext.cxx b/roofit/roofitcore/src/RooGenContext.cxx
+index 4ed2dce..a164769 100644
+--- a/roofit/roofitcore/src/RooGenContext.cxx
++++ b/roofit/roofitcore/src/RooGenContext.cxx
+@@ -237,21 +237,30 @@ RooGenContext::RooGenContext(const RooAbsPdf &model, const RooArgSet &vars,
      _acceptRejectFunc= (RooRealIntegral*) _pdfClone->createIntegral(*depList,vars) ;
      cxcoutI(Generation) << "RooGenContext::ctor() accept/reject sampling function is " << _acceptRejectFunc->GetName() << endl ;
      

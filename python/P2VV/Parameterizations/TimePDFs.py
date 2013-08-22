@@ -101,7 +101,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
             ( reAng, imAng ) = angFuncs[ ( iIndex, jIndex ) ]
 
             # (real part of) product of amplitude, time and angular (complex) factors:
-            # Re(abc) = Re(ab)Re(c) - Im(ab)Im(c) = Re(a)Re(b)Re(c) - Im(a)Im(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c)
+            # Re(abc) = Re(a)Re(b)Re(c) - Im(a)Im(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c)
             # (there is a minus in case there are 2 imaginary contributions)
             prod = lambda name, args : [ Product( name, args ) ] if all(args) else [ ]
             return prod( 'ReReRe_%s_%s_%s' % ( tCoefType, amplitudes[iIndex], amplitudes[jIndex] ), [        reAmps , reTime, reAng ] ) \
@@ -193,10 +193,10 @@ def JpsiphiBDecay( Name, time, tag, lifetimeParams, sigtres, tagging, basisCoeff
                    , cosCoef                = basisCoefficients['cos']
                    , sinhCoef               = basisCoefficients['sinh']
                    , sinCoef                = basisCoefficients['sin']
-                   , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
-                   , ExternalConstraints    = lifetimeParams.externalConstraints()\
-                                              + sigtres.externalConstraints()\
-                                              + tagging.externalConstraints()
+                   , ConditionalObservables = sigtres.ConditionalObservables() + tagging.ConditionalObservables()
+                   , ExternalConstraints    = lifetimeParams.ExternalConstraints()\
+                                              + sigtres.ExternalConstraints()\
+                                              + tagging.ExternalConstraints()
                   )
 
 def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging, basisCoefficients ) :
@@ -216,10 +216,10 @@ def JpsiphiBTagDecay( Name, time, tag, lifetimeParams, sigtres, tagging, basisCo
                       , ADilWTag               = tagging['ADilWTag']
                       , avgCEven               = tagging['avgCEven']
                       , avgCOdd                = tagging['avgCOdd']
-                      , ConditionalObservables = sigtres.conditionalObservables() + tagging.conditionalObservables()
-                      , ExternalConstraints    = lifetimeParams.externalConstraints()\
-                                                 + sigtres.externalConstraints()\
-                                                 + tagging.externalConstraints()
+                      , ConditionalObservables = sigtres.ConditionalObservables() + tagging.ConditionalObservables()
+                      , ExternalConstraints    = lifetimeParams.ExternalConstraints()\
+                                                 + sigtres.ExternalConstraints()\
+                                                 + tagging.ExternalConstraints()
                      )
 
 

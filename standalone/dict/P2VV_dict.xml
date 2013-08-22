@@ -10,11 +10,12 @@
         <class name = "RooRealEffMoment" />
         <function name = "computeRooRealMoments" />
         <class name = "std::vector<RooRealMoment*>" />
-        <class name = "ProgressDisplay" />
         <class name = "RooBTagDecay" />
         <class name = "RooTrivialTagDecay" />
         <class name = "RooMultiCatGenerator" />
+        <class name = "RooAbsGaussModelEfficiency" />
         <class name = "RooBinnedPdf" />
+        <class name = "RooBinnedFun" />
         <class name = "RooP2VVAngleBasis" />
         <class name = "RooThresholdPdf" />
         <class name = "RooRelBreitWigner" />
@@ -38,7 +39,7 @@
         <class name = "RooBoxPdf" />
         <class name = "RooCubicSplineKnot" />
         <class name = "RooCubicSplineFun" />
-        <class name = "RooCubicSplineGaussModel" />
+        <class name = "RooGaussEfficiencyModel" />
         <class name = "RooExplicitNormPdf" />
         <class name = "RooTPDecay" />
         <class name = "RooAmoroso" />

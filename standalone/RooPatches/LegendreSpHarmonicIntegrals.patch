@@ -1,8 +1,8 @@
-Index: roofit/roofit/src/RooLegendre.cxx
-===================================================================
---- roofit/roofit/src/RooLegendre.cxx	(revision 49257)
-+++ roofit/roofit/src/RooLegendre.cxx	(working copy)
-@@ -100,11 +100,15 @@
+diff --git a/roofit/roofit/src/RooLegendre.cxx b/roofit/roofit/src/RooLegendre.cxx
+index 9b7199f..6d85f3d 100644
+--- a/roofit/roofit/src/RooLegendre.cxx
++++ b/roofit/roofit/src/RooLegendre.cxx
+@@ -100,11 +100,15 @@ Double_t RooLegendre::evaluate() const
  
  //_____________________________________________________________________________
  namespace {
@@ -22,11 +22,11 @@ Index: roofit/roofit/src/RooLegendre.cxx
  Int_t RooLegendre::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const 
  {
    // don't support indefinite integrals...
-Index: roofit/roofit/src/RooSpHarmonic.cxx
-===================================================================
---- roofit/roofit/src/RooSpHarmonic.cxx	(revision 49257)
-+++ roofit/roofit/src/RooSpHarmonic.cxx	(working copy)
-@@ -112,23 +112,31 @@
+diff --git a/roofit/roofit/src/RooSpHarmonic.cxx b/roofit/roofit/src/RooSpHarmonic.cxx
+index 440fad3..75087ba 100644
+--- a/roofit/roofit/src/RooSpHarmonic.cxx
++++ b/roofit/roofit/src/RooSpHarmonic.cxx
+@@ -112,23 +112,31 @@ Double_t RooSpHarmonic::evaluate() const
      return n;
  }
  

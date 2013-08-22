@@ -17,10 +17,18 @@ dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
-splitDataSet    = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [1008, 1032] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
 
-sigFrac          = 0.504
+## splitDataSet    = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
+## KKMassBinBounds  = [1008, 1032] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
+splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
+KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
+
+eventFracs       = [  dict( N_sigMass = 0.504, N_cbkgMass = None )
+                    #, dict( N_sigMass = 0.11,  N_cbkgMass = None )
+                    #, dict( N_sigMass = 0.70,  N_cbkgMass = None )
+                    #, dict( N_sigMass = 0.64,  N_cbkgMass = None )
+                    #, dict( N_sigMass = 0.18,  N_cbkgMass = None )
+                   ]
 sigMassModel     = ''
 cbkgMassModel    = ''
 SWeightsType     = 'simultaneousFreeCBkg'
@@ -240,6 +248,7 @@ obsSetNTuple.append( observables['KKMassCat'] )
 
 if not simulation :
     # initialize PDF components
+    sigFrac     = eventFracs[0]['N_sigMass'] if eventFracs[0]['N_sigMass'] else 1. - sum(val for val in eventFracs[0].itervalues() if val)
     nEvents     = dataSets['pre'][0].sumEntries()
     nSignal     = nEvents * sigFrac
     nBackground = nEvents * ( 1. - sigFrac )
@@ -344,16 +353,30 @@ if not simulation :
         from P2VV.GeneralUtils import getSplitPar
         from math import sqrt
         while splitCatState :
+            KKMassState = -1
             if splitCat.isFundamental() :
                 selStr = '!(%s-%d)' % ( splitCat.GetName(), splitCatState.getVal() )
+                if splitCat.GetName() == observables['KKMassCat'].GetName() : KKMassState = splitCatState.getVal()
             else :
                 splitCat.setLabel( splitCatState.GetName() )
                 selStr = ' && '.join( '!(%s-%d)' % ( cat.GetName(), cat.getIndex() ) for cat in splitCat.inputCatList() )
+                if observables['KKMassCat'] in splitCats[0] :
+                    for cat in splitCat.inputCatList() :
+                        if cat.GetName() == observables['KKMassCat'].GetName() : KKMassState = cat.getIndex()
+
             nEv    = dataSets['pre'][0].sumEntries()
             nEvBin = dataSets['pre'][0].sumEntries(selStr)
+            for yName in yieldNames :
+                stateName = splitCatState.GetName()
+                yieldVar = getSplitPar( yName, stateName, massPdfPars )
 
-            for yieldVar in [ getSplitPar( name,  splitCatState.GetName(), massPdfPars ) for name in yieldNames ] :
-                yieldVar.setVal( yieldVar.getVal() * nEvBin / nEv )
+                if len(eventFracs) > 1 and KKMassState >= 0 :
+                    sigFrac = eventFracs[ KKMassState + 1 ][yName] if eventFracs[ KKMassState + 1 ][yName]\
+                              else 1. - sum( val for val in eventFracs[ KKMassState + 1 ].itervalues() if val )
+                    yieldVar.setVal( sigFrac * nEvBin )
+                else :
+                    yieldVar.setVal( yieldVar.getVal() * nEvBin / nEv )
+
                 yieldVar.setError( sqrt( yieldVar.getVal() ) )
                 yieldVar.setMin(0.)
                 yieldVar.setMax(nEvBin)

@@ -80,6 +80,3 @@ Double_t RooEfficiencyBin::evaluate() const
    }
    return val;
 } 
-
-
-

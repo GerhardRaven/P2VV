@@ -49,20 +49,15 @@ public:
       return &_eff.arg();
    }
 
-   virtual std::vector<const RooAbsReal*> efficiencies() const { 
-      // Return pointer to efficiency
-      return std::vector<const RooAbsReal*>(1, efficiency());
-   }   
-
    virtual RooResolutionModel& model() const {
       return dynamic_cast<RooResolutionModel&>(*_model.absArg());
    }
 
    const RooArgList& getIntegralRanges(const RooArgSet& iset, const char* rangeName = 0) const;
 
-   virtual const RooArgSet* observables() const { 
+   virtual RooArgSet observables() const { 
       // Return pointer to pdf in product
-      return new RooArgSet(_observables);
+      return RooArgSet(_observables);
    }
 
 protected:

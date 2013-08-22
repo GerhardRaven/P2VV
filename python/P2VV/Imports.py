@@ -216,8 +216,8 @@ parValues4KKBins = {  'phiCP'           : (  5.8786e-02, 8.99e-02, -1.       )
 # trigger selection strings
 triggerSelStrings = dict(  HLT1Unbiased   = 'hlt1_unbiased_dec==1 && hlt2_biased==1'
                          , HLT1ExclBiased = 'hlt1_excl_biased_dec==1 && hlt2_biased==1'
-                         , paper2012      = '(hlt1_biased==1 || hlt1_unbiased_dec==1) && hlt2_biased==1'
-                         , timeEffFit     = '(hlt1_biased==1 || hlt1_unbiased_dec==1) && (hlt2_biased==1 || hlt2_unbiased==1)'
+                         , paper2012      = '(hlt1_excl_biased_dec==1 || hlt1_unbiased_dec==1) && hlt2_biased==1'
+                         , timeEffFit     = '(hlt1_excl_biased_dec==1 || hlt1_unbiased_dec==1) && (hlt2_biased==1 || hlt2_unbiased==1)'
                         )
 
 # cut selection strings

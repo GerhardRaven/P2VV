@@ -12,10 +12,11 @@
 
 # PDF configuration base class
 class PdfConfiguration( dict ) :
-    def __init__( self, parameters = None ) :
+    def __init__( self, parameters = None, **kwargs ) :
         self._parameters = { }
         if parameters != None : self.addParameters(parameters)
         self['parameters'] = self._parameters
+        dict.__init__(self,**kwargs)
 
     def __getitem__( self, key ) :
         if key not in self and key in self._parameters : return self._parameters[key]
@@ -92,7 +93,7 @@ class PdfConfiguration( dict ) :
               parErr   = float(line[2])
               parMin   = float(line[3])
               parMax   = float(line[4])
-              parFloat = bool( 1 if line[5] == 'True' else 0 )
+              parFloat = ( line[5] == 'True' )
             except :
               continue
 
@@ -144,7 +145,7 @@ class PdfConfiguration( dict ) :
             if nameExpr and not nameExpr.match(parName) : continue
 
             parVals = self._parameters[parName]
-            if ( floating == True and not parVals[4] ) or ( floating == False and parVals[4] ) : continue
+            if ( floating and not parVals[4] ) or ( not floating and parVals[4] ) : continue
 
             cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
                       .format( parName, parVals[0], parVals[1], parVals[2], parVals[3], 'True' if parVals[4] else 'False' )
@@ -221,8 +222,6 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['multiplyByTagPdf']     = False
         self['multiplyByTimeEff']    = 'signal'
         self['timeEffType']          = 'paper2012'
-        self['splineAcceptance']     = False
-        self['smoothSpline']         = 2
         self['multiplyByAngEff']     = 'weights'
         self['parameterizeKKMass']   = 'simultaneous'
         self['ambiguityParameters']  = False
@@ -336,8 +335,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         multiplyByTagPdf  = pdfConfig.pop('multiplyByTagPdf')
         multiplyByTimeEff = pdfConfig.pop('multiplyByTimeEff')      # '' / 'all' / 'signal'
         timeEffType       = pdfConfig.pop('timeEffType')            # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        splineAcc         = pdfConfig.pop('splineAcceptance')
-        smoothSplineAcc   = pdfConfig.pop('smoothSpline')
+        timeEffParameters = pdfConfig.pop('timeEffParameters',dict())
         multiplyByAngEff  = pdfConfig.pop('multiplyByAngEff')       # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
         paramKKMass       = pdfConfig.pop('parameterizeKKMass')     # '' / 'parameters' / 'simultaneous'
         numBMassBins      = pdfConfig.pop('numBMassBins')
@@ -384,7 +382,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         assert obsDict['KKMass'][4] == KKMassBinBounds[0] and obsDict['KKMass'][5] == KKMassBinBounds[-1]\
                , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass range in "KKMassBinBounds" is not the same as in "obsDict"'
 
-        if paramKKMass == 'parameters' or 'simultaneous' :
+        if paramKKMass in [ 'parameters', 'simultaneous' ] :
             assert len(SWaveAmpVals[0]) == len(SWaveAmpVals[1]) == len(CSPValues) == len(KKMassBinBounds) - 1,\
                    'P2VV - ERROR: wrong number of KK mass bin parameters specified'
             print 'P2VV - INFO: KK mass bins: %s' % ' - '.join( '%.1f' % binEdge for binEdge in KKMassBinBounds )
@@ -482,10 +480,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self._KKMassBinning = observables['KKMass'].getBinning('KKMassBinning')
 
             assert self._KKMassBinning.numBins() == observables['KKMassCat'].numTypes() == len(KKMassBinBounds) - 1\
-                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category and/or binning and specified bin bounds'
+                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category (%s) and/or binning (%s) and specified bin bounds (%s)' \
+                   % ( self._KKMassBinning.numBins(), observables['KKMassCat'].numTypes(), len(KKMassBinBounds) - 1 )
             for it in range( self._KKMassBinning.numBins() ) :
                 assert self._KKMassBinning.binLow(it) == KKMassBinBounds[it]\
-                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass binning and specified bin bounds'
+                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different boundary in KK mass binning (%s) and specified bin bounds (%s)' \
+                       % ( self._KKMassBinning.binLow(it),  KKMassBinBounds[it] )
+
 
         else :
             # create KK mass binning
@@ -877,8 +878,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                        , NumTagCats1  = tagCatsDictSS['NumTagCats']
                                        , AvgCEvenSum  = avgCEvenSum
                                        , AvgCOddSum   = avgCOddSum
-                                       , Conditionals = tagCatsDictOS['Conditionals'] + tagCatsDictSS['Conditionals']
-                                       , Constraints  = tagCatsDictOS['Constraints']  + tagCatsDictSS['Constraints']
+                                       , Conditionals = tagCatsDictOS['Conditionals'] | tagCatsDictSS['Conditionals']
+                                       , Constraints  = tagCatsDictOS['Constraints']  | tagCatsDictSS['Constraints']
                                       )
 
                     for catOS in range( tagCatsDictOS['NumTagCats'] ) :
@@ -937,7 +938,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 # don't float tagging category coefficients if PDF is conditional on tagging observables
                 for coefList in self._taggingParams['singleTagCatCoefs'] :
                     for coef in coefList :
-                        if coef.isFundamental() : coef.setConstant(True)
+                        if coef and coef.isFundamental() : coef.setConstant(True)
 
             if not SSTagging :
                 args = dict(  tagCat      = observables['tagCatOS']
@@ -971,12 +972,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     , cosCoef                = timeBasisCoefs['cos']
                     , sinCoef                = timeBasisCoefs['sin']
                     , resolutionModel        = self._timeResModel['model']
-                    , ConditionalObservables = self._amplitudes.conditionalObservables()\
-                                               + self._timeResModel.conditionalObservables()\
-                                               + self._taggingParams.conditionalObservables()
-                    , ExternalConstraints    = self._lifetimeParams.externalConstraints()\
-                                               + self._timeResModel.externalConstraints()\
-                                               + self._taggingParams.externalConstraints()
+                    , ConditionalObservables = self._amplitudes.ConditionalObservables()\
+                                               | self._timeResModel.ConditionalObservables()\
+                                               | self._taggingParams.ConditionalObservables()
+                    , ExternalConstraints    = self._lifetimeParams.ExternalConstraints()\
+                                               | self._timeResModel.ExternalConstraints()\
+                                               | self._taggingParams.ExternalConstraints()
                    )
 
         # build signal PDF
@@ -1003,32 +1004,54 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                          , hlt2UB    : { 'UB'        : { 'bins'      : observables['time'].getRange(), 'heights' : [0.5]  } }
                         }
 
-                from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-                self._timeResModel = TimeAcceptance( time = observables['time'], Input = timeEffHistFile, Histograms = hists
-                                                    , Data = dataSet, Fit = True, Original = sigPdf
+                from P2VV.Parameterizations.TimeAcceptance import Paper2012_mer_TimeAcceptance as TimeAcceptance
+                self._timeResModel = TimeAcceptance( time = observables['time']
                                                     , ResolutionModel = self._timeResModel
-                                                    , Spline = splineAcc, SmoothSpline = smoothSplineAcc )
+                                                    , Input = timeEffHistFile
+                                                    , Histograms = hists
+                                                    , Data = dataSet
+                                                    , Fit = True
+                                                    , Original = sigPdf
+                                                    , **timeEffParameters )
+
+            elif timeEffType == 'paper2012_multi' and selection == 'paper2012' :
+                hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
+                                       , 'notExclB' : { 'histogram' : timeEffHistUBName    }
+                                      }
+                        }
+                from P2VV.Parameterizations.TimeAcceptance import Paper2012_mer_TimeAcceptance as TimeAcceptance
+                self._timeResModel = TimeAcceptance( time = observables['time']
+                                                   , ResolutionModel = self._timeResModel
+                                                   , Input = timeEffHistFile
+                                                   , Histograms = hists
+                                                   , Data = dataSet
+                                                   , Fit = False
+                                                   , Original = sigPdf
+                                                   , BinHeightMinMax = ( -RooInf, RooInf )
+                                                   , **timeEffParameters )
 
             elif timeEffType == 'paper2012' and selection == 'paper2012' :
                 hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : timeEffHistExclBName }
                                        , 'notExclB' : { 'histogram' : timeEffHistUBName    }
                                       }
                         }
+                from P2VV.Parameterizations.TimeAcceptance import Paper2012_csg_TimeAcceptance as TimeAcceptance
+                self._timeResModel = TimeAcceptance( time = observables['time']
+                                                   , ResolutionModel = self._timeResModel
+                                                   , Input = timeEffHistFile
+                                                   , Histograms = hists
+                                                   , **timeEffParameters )
 
-                from P2VV.Parameterizations.TimeAcceptance import Paper2012_TimeAcceptance as TimeAcceptance
-                self._timeResModel = TimeAcceptance( time = observables['time'], Input = timeEffHistFile, Histograms = hists
-                                                    , Data = dataSet, Fit = False, Original = sigPdf
-                                                    , ResolutionModel = self._timeResModel, BinHeightMinMax = ( -RooInf, RooInf )
-                                                    , Spline = splineAcc, SmoothSpline = smoothSplineAcc )
 
-            elif timeEffType in [ 'HLT1Unbiased', 'HLT1ExclBiased' ] or ( timeEffType == 'paper2012' and selection == 'paper2012' ) :
+            elif ( timeEffType == 'HLT1Unbiased' and selection == 'HLT1Unbiased' )\
+                    or ( timeEffType == 'HLT1ExclBiased' and selection == 'HLT1ExclBiased' ) :
                 from P2VV.Parameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
                 self._timeResModel = TimeAcceptance(  time = observables['time']
+                                                    , ResolutionModel = self._timeResModel
                                                     , Input = timeEffHistFile
                                                     , Histogram = timeEffHistExclBName if timeEffType == 'HLT1ExclBiased'\
                                                                   else timeEffHistUBName
-                                                    , ResolutionModel = self._timeResModel
-                                                    , Spline = splineAcc, SmoothSpline = smoothSplineAcc )
+                                                    , **timeEffParameters )
             else:
                 raise ValueError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown time efficiency type: "%s" (with "%s" selection)'\
                                  % ( timeEffType, selection ) )
@@ -1037,8 +1060,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # multiply signal PDF with time acceptance
             print 'P2VV - INFO:  Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with lifetime efficiency function'
             args.update( resolutionModel= self._timeResModel['model']
-                       , ConditionalObservables = list( set( args['ConditionalObservables'] + self._timeResModel.conditionalObservables() ) )
-                       , ExternalConstraints = list( set( args['ExternalConstraints'] + self._timeResModel.externalConstraints() ) )
+                       , ConditionalObservables =  args['ConditionalObservables'] | self._timeResModel.ConditionalObservables() 
+                       , ExternalConstraints =  args['ExternalConstraints'] | self._timeResModel.ExternalConstraints()  
                        )
             sigPdfTimeAcc = BTagDecay( 'sig_t_angles_timeEff', **args )
         else :

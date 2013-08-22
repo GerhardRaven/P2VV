@@ -15,7 +15,6 @@
 #define ROO_CATEGORY_VAR
 
 #include <map>
-
 #include "RooCategoryProxy.h"
 #include "RooListProxy.h"
 
@@ -24,7 +23,6 @@ class RooAbsCategory;
  
 class RooCategoryVar : public RooAbsReal
 {
-
 public:
   RooCategoryVar() {}; 
 
@@ -32,12 +30,12 @@ public:
       RooAbsCategory& category, const RooArgList& variables);
 
   RooCategoryVar(const RooCategoryVar& other, const char* name = 0);
-  virtual TObject* clone(const char* name) const
+  virtual RooCategoryVar* clone(const char* name) const
   { 
     return new RooCategoryVar(*this, name);
   }
 
-  inline virtual ~RooCategoryVar() { }
+  virtual ~RooCategoryVar() { }
 
   inline const RooAbsCategory& category() const {return _cat.arg();}
   inline RooArgList variables() const {return RooArgList(_vars, "variables");}

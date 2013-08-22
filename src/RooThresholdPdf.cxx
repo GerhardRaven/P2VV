@@ -27,6 +27,7 @@
 
 #include "RooFit.h"
 #include "Riostream.h"
+#include "RooMsgService.h"
 
 #include "P2VV/RooThresholdPdf.h"
 #include "RooAbsRealLValue.h"
@@ -85,8 +86,13 @@ Int_t RooThresholdPdf::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& anal
 //_____________________________________________________________________________
 Double_t RooThresholdPdf::analyticalIntegral(Int_t code, const char* rangeName) const 
 {
-  assert(code==1) ;
-  
+  if (code != 1) {
+    coutF(InputArguments) << "RooThresholdPdf::analyticalIntegral("
+        << GetName() << "): integration code should be 1 (got " << code << ")"
+        << endl;
+    assert(0);
+  }
+
   Double_t xmin = _x.min(rangeName) ;
   Double_t xmax = _x.max(rangeName) ;
 

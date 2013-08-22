@@ -82,8 +82,7 @@ pdfConfig['multiplyByTimeEff']    = 'signal'
 pdfConfig['timeEffType']          = 'paper2012' # 'paper2012' # 'HLT1Unbiased' # 'fit'
 
 # Spline Acceptance
-pdfConfig['splineAcceptance']     = False
-pdfConfig['smoothSpline']         = 2
+pdfConfig['timeEffParameters'].update( dict( Spline = False, SmoothSpline = 0.8 ) )
 
 pdfConfig['multiplyByAngEff']     = 'weights'  # default: 'basis012'
 pdfConfig['parameterizeKKMass']   = ''  # default/nominal: 'simultaneous'

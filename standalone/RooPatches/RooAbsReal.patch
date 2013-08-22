@@ -1,8 +1,8 @@
-Index: roofit/roofitcore/src/RooAbsReal.cxx
-===================================================================
---- roofit/roofitcore/src/RooAbsReal.cxx	(revision 49257)
-+++ roofit/roofitcore/src/RooAbsReal.cxx	(working copy)
-@@ -2019,7 +2019,7 @@
+diff --git a/roofit/roofitcore/src/RooAbsReal.cxx b/roofit/roofitcore/src/RooAbsReal.cxx
+index 9cdd13a..78466fb 100644
+--- a/roofit/roofitcore/src/RooAbsReal.cxx
++++ b/roofit/roofitcore/src/RooAbsReal.cxx
+@@ -2019,7 +2019,7 @@ RooPlot* RooAbsReal::plotOn(RooPlot *frame, PlotOpt o) const
      }
  
      // add this new curve to the specified plot frame
@@ -11,7 +11,7 @@ Index: roofit/roofitcore/src/RooAbsReal.cxx
  
      if (projDataSel!=o.projData) delete projDataSel ;
         
-@@ -3475,6 +3475,14 @@
+@@ -3493,6 +3493,14 @@ void RooAbsReal::logEvalError(const char* message, const char* serverValueString
    } else if (_evalErrorMode==CollectErrors) {
      _evalErrorList[this].first = oss2.str().c_str() ;
      _evalErrorList[this].second.push_back(ee) ;

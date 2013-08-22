@@ -3,11 +3,12 @@
 #pragma link C++ class RooRealMoment+;
 #pragma link C++ class RooRealEffMoment+;
 #pragma link C++ class vector<RooRealMoment*>+;
-#pragma link C++ class ProgressDisplay+;
 #pragma link C++ class RooBTagDecay+;
 #pragma link C++ class RooTrivialTagDecay+;
 #pragma link C++ class RooMultiCatGenerator+;
+#pragma link C++ class RooAbsGaussModelEfficiency+;
 #pragma link C++ class RooBinnedPdf+;
+#pragma link C++ class RooBinnedFun+;
 #pragma link C++ class RooP2VVAngleBasis+;
 #pragma link C++ class RooThresholdPdf+;
 #pragma link C++ class RooRelBreitWigner+;
@@ -25,9 +26,10 @@
 #pragma link C++ class RooMultiEffResModel+;
 #pragma link C++ class RooComplementCoef+;
 #pragma link C++ class RooEffConvGenContext+;
+#pragma link C++ class RooCubicSplineKnot::BoundaryConditions+;
 #pragma link C++ class RooCubicSplineKnot+;
 #pragma link C++ class RooCubicSplineFun+;
-#pragma link C++ class RooCubicSplineGaussModel+;
+#pragma link C++ class RooGaussEfficiencyModel+;
 #pragma link C++ class RooBoxPdf+;
 #pragma link C++ class RooExplicitNormPdf+;
 #pragma link C++ class RooAmoroso+;

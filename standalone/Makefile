@@ -7,28 +7,29 @@ DICTDIR = dict
 
 df = $(DEPDIR)/$(*F)
 
-#CXX = g++
 LD  = $(CXX)
 CYTHON = cython
-PYTHON = $(shell which python)
 ROOTCONFIG = root-config
-PKGCONFIG = pkg-config
+PYTHONCONFIG = python-config
 COMMONFLAGS = -Wall -O2 -pipe -ggdb -fPIC -DPIC
-PYTHONVERSION := $(shell $(PYTHON) --version 2>&1 | grep -o "2\.[567]")
 CXXFLAGS := $(COMMONFLAGS) $(shell $(ROOTCONFIG) --cflags) -I$(INCDIR) -I. 
 LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 ## Reflex dictionary testing flags:
 ## LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore -lReflex -lCintex
 
-HAVE_PKG_PYTHON := $(shell if `$(PKGCONFIG) --exists python-$(PYTHONVERSION)`; then echo "yes"; else echo "no"; fi)
-ifeq ($(HAVE_PKG_PYTHON), yes)
-PYTHON_CFLAGS := $(shell $(PKGCONFIG) --cflags python-$(PYTHONVERSION))
-PYTHON_LDFLAGS := $(shell $(PKGCONFIG) --libs python-$(PYTHONVERSION))
+HAVE_WORKING_PYTHONCONFIG := $(shell python-config  --prefix 2>&1 1> /dev/null ; if [[ "$?" -eq  "0" ]]  ; then echo 'yes' ; else echo 'no' ; fi )
+ifeq ($(HAVE_WORKING_PYTHONCONFIG), yes)
+PYTHON_CFLAGS := $(shell $(PYTHONCONFIG) --cflags)
+PYTHON_LDFLAGS := $(shell $(PYTHONCONFIG) --ldflags)
 else
+PYTHON = $(shell which python)
+PYTHON_VERSION := $(shell $(PYTHON) --version 2>&1 | grep -o "2\.[567]")
 PYTHON_DIR := $(shell echo `dirname $(PYTHON)`/..)
-PYTHON_CFLAGS := -I$(PYTHON_DIR)/include/python$(PYTHONVERSION)
-PYTHON_LDFLAGS := -L$(PYTHON_DIR)/lib -lpython$(PYTHONVERSION)
+PYTHON_CFLAGS := -I$(PYTHON_DIR)/include/python$(PYTHON_VERSION)
+PYTHON_LDFLAGS := -L$(PYTHON_DIR)/lib -lpython$(PYTHON_VERSION)
 endif
+
+
 
 CFLAGS := $(COMMONFLAGS)
 PROF_LDFLAGS := $(PYTHON_LDFLAGS) -lprofiler
@@ -48,7 +49,8 @@ vpath %.o   $(BUILDDIR)
 
 .PHONY: all clean profiler
 
-all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so $(LIBDIR)/dilution.so
+#all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so $(LIBDIR)/dilution.so
+all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so
 
 profiler: $(LIBDIR)/profiler.so
 

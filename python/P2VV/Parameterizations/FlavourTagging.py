@@ -250,7 +250,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         self._parseArg( 'p0', kwargs, Title = 'p0  tagging parameter', Value = P0OSVal, Error = P0OSErr, MinMax = ( 0.,  1. ) )
         self._parseArg( 'p1', kwargs, Title = 'p1  tagging parameter', Value = P1OSVal, Error = P1OSErr, MinMax = ( 0.5, 2. ) )
 
-        constraints = [ ]
+        constraints = set()
         p0Constr = kwargs.pop( 'p0Constraint', None )
         if type(p0Constr) == str and p0Constr == 'fixed' :
             self._p0.setConstant(True)
@@ -260,7 +260,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         elif p0Constr :
             from P2VV.RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
-            constraints.append( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
+            constraints.add( Pdf(  Name = self._p0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p0
                                                     , ConstVar( Name = 'p0_mean',  Value = P0OSConstrVal )
                                                     , ConstVar( Name = 'p0_sigma', Value = P0OSConstrErr )
@@ -277,7 +277,7 @@ class LinearEstWTag_TaggingParams( TaggingParams ) :
         elif p1Constr :
             from P2VV.RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
-            constraints.append( Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
+            constraints.add( Pdf(  Name = self._p1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._p1
                                                     , ConstVar( Name = 'p1_mean',  Value = P1OSConstrVal )
                                                     , ConstVar( Name = 'p1_sigma', Value = P1OSConstrErr )
@@ -617,7 +617,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
         conditionals = kwargs.pop( 'Conditionals', [] )
 
         # get external constraints
-        constraints = kwargs.pop( 'Constraints', [] )
+        constraints = kwargs.pop( 'Constraints', set() )
 
         # check for remaining keyword arguments and initialize
         self._check_extraneous_kw( kwargs )
@@ -704,8 +704,8 @@ class TaggingCategories( _util_parse_mixin, _util_extConstraints_mixin, _util_co
 
         return dict(  [ ( 'NumTagCats', self._numTagCats ) ]
                     + dictList
-                    + [ ( 'Conditionals', self.conditionalObservables() ) ]
-                    + [ ( 'Constraints',  self.externalConstraints()    ) ]
+                    + [ ( 'Conditionals', self.ConditionalObservables() ) ]
+                    + [ ( 'Constraints',  self.ExternalConstraints()    ) ]
                    )
 
 
@@ -822,7 +822,7 @@ class Linear_TaggingCategories( TaggingCategories ) :
         self._wTagAP1 = FormulaVar( 'wTagAP1' + tagType, '@0/2./@1', [ self._wTagDelP1, self._wTagP1 ] )
 
         # constrain calibration parameters
-        constraints = [ ]
+        constraints = set()
         wTagP0Constraint = kwargs.pop( 'wTagP0Constraint', None )
         if type(wTagP0Constraint) == str and wTagP0Constraint == 'fixed' :
             self._wTagP0.setConstant(True)
@@ -835,14 +835,14 @@ class Linear_TaggingCategories( TaggingCategories ) :
         elif wTagP0Constraint :
             from P2VV.RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
-            constraints.append( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
+            constraints.add( Pdf(  Name = self._wTagP0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP0
                                                     , ConstVar( Name = 'wTagP0' + tagType + '_mean',  Value = self._calVals['P0']    )
                                                     , ConstVar( Name = 'wTagP0' + tagType + '_sigma', Value = self._calVals['P0Err'] )
                                                    ]
                                    )
                               )
-            constraints.append( Pdf(  Name = self._wTagDelP0.GetName() + '_constraint', Type = Gaussian
+            constraints.add( Pdf(  Name = self._wTagDelP0.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagDelP0
                                                    , ConstVar( Name = 'wTagDelP0' + tagType + '_mean',  Value = self._calVals['DelP0']    )
                                                    , ConstVar( Name = 'wTagDelP0' + tagType + '_sigma', Value = self._calVals['DelP0Err'] )
@@ -859,14 +859,14 @@ class Linear_TaggingCategories( TaggingCategories ) :
         elif wTagP1Constraint :
             from P2VV.RooFitWrappers import Pdf, ConstVar
             from ROOT import RooGaussian as Gaussian
-            constraints.append( Pdf(  Name = self._wTagP1.GetName() + '_constraint', Type = Gaussian
+            constraints.add( Pdf(  Name = self._wTagP1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagP1
                                                     , ConstVar( Name = 'wTagP1' + tagType + '_mean',  Value = self._calVals['P1']    )
                                                     , ConstVar( Name = 'wTagP1' + tagType + '_sigma', Value = self._calVals['P1Err'] )
                                                    ]
                                    )
                               )
-            constraints.append( Pdf(  Name = self._wTagDelP1.GetName() + '_constraint', Type = Gaussian
+            constraints.add( Pdf(  Name = self._wTagDelP1.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._wTagDelP1
                                                    , ConstVar( Name = 'wTagDelP1' + tagType + '_mean',  Value = self._calVals['DelP1']    )
                                                    , ConstVar( Name = 'wTagDelP1' + tagType + '_sigma', Value = self._calVals['DelP1Err'] )
@@ -1085,8 +1085,8 @@ class Combined_TaggingCategories( TaggingCategories ) :
                                    , TagCatCoefs = tagCatCoefs, ATagEffs = ATagEffs
                                    , TagDilutions = ( Categories0['tagDilutions'], Categories1['tagDilutions'] )
                                    , ADilWTags = ( Categories0['ADilWTags'], Categories1['ADilWTags'] )
-                                   , Conditionals = Categories0.conditionalObservables() + Categories1.conditionalObservables()
-                                   , Constraints  = Categories0.externalConstraints() + Categories1.externalConstraints()
+                                   , Conditionals = Categories0.ConditionalObservables() | Categories1.ConditionalObservables()
+                                   , Constraints  = Categories0.ExternalConstraints() | Categories1.ExternalConstraints()
                                   )
 
 
