@@ -12,14 +12,7 @@
 # (6) Performs the sFit on data using the new accptance.                                          ( Under Devel )
 # At this stage a loop takes you to step (1)                                                      ( Under Devel )       
 
-
-# NOTE: VERY IMPORTANT: The KK  matching reweight cannot handle weighted datasets at this stage. 
-#  in orderr to prceed the weighted datasets are mimiced (see method matchWeightedDistributions.MimicWeightedDistribution ).
-#  As a result the output datsets have less entries. It has not been checked if this increses the statistical error of the
-#  acceptance function. 
 #----------------------------------------------------------------------------------------------------------------------------
-
-
 
 
 
@@ -66,25 +59,24 @@ initDataParameters = dict( prefix   = 'data_initVals'
 
 ####################################### Begin iterative procedure ###########################################################
 for iterNumb in range(1,3):
-
+    print 'P2VV - INFO: Iteration number ' +str(iterNumb) + '.'  
+    
     from P2VV.GeneralUtils import matchMCphysics2Data, matchWeightedDistributions, compareWeightedDistributions
     from ROOT import TFile
 
-    # Input/Output file names 
-    physReweightInputFile  = mcTuplePath if iterNumb==1 else momReweightOutputFile + '.root'
-    physReweightOutputFile = globalOutputFolder + mcTupleFile.partition('.')[0] + '_physWeights'\
-                                                + '_{0}'.format(iterNumb) + '_Iteration.root'
-    
-    # Name of the comparision plot between the K momenta before and after reweighting.
+    # Name sufix of comparision plots
     plotsSufix = str(iterNumb) + '_Iteration' + '.pdf'
-   
-    print 'P2VV - INFO: Iteration number ' +str(iterNumb) + '.'  
-    print 'P2VV - INFO: Physics matching input file: ',  physReweightInputFile
-    print 'P2VV - INFO: Physics matching output file: ', physReweightOutputFile
 
 ############################################################################################################
 ## Match Mc physics to sData. ##
 ###############################################
+    # Input/Output file names 
+    physReweightInputFile  = mcTuplePath if iterNumb==1 else momReweightOutputFile + '.root'
+    physReweightOutputFile = globalOutputFolder + mcTupleFile.partition('.')[0] + '_physWeights'\
+                                                + '_{0}'.format(iterNumb) + '_Iteration.root'
+    print 'P2VV - INFO: Physics matching input file: ',  physReweightInputFile
+    print 'P2VV - INFO: Physics matching output file: ', physReweightOutputFile
+    
     # Specify weight names for each iteration and create a string with all the weights.
     WeightName = 'weightPhys_' + str(iterNumb) + '_iter'
     if iterNumb==1: allWeights = WeightName  
@@ -94,7 +86,7 @@ for iterNumb in range(1,3):
     if iterNumb==1:dataParameters = initDataParameters
     else:
         # This is reminder to grab the sFit result.
-        print 'dataParameters = getDataParametersFromRooFitResult()'
+        print 'Impliment dataParameters = getDataParametersFromRooFitResult()'
         dataParameters = initDataParameters
 
     # Build angular pdf, calculate and write physics matcing weights
@@ -103,29 +95,29 @@ for iterNumb in range(1,3):
     matchPhysics.calculateWeights(dataParameters)
     matchPhysics.writeWeightsToFile( physReweightOutputFile, weightsName=WeightName ) 
     
-    # Check the effect of physics reweighting.
+    # Comment in to check the effect of physics reweighting.
     #t_mc = TFile.Open(physReweightOutputFile).Get(treeName)
     #c,a = compareWeightedDistributions(t_mc, t_mc, 'B_P', weight=allWeights,\
     #                                                      assymPlot=True,   \
     #                                                      Save=[True,'PhysRew_' + plotsSufix] )
    
-
 ############################################################################################################
-## Reweight Kaon momenta of MC to match the Kaon momexnta of sData.##
+## Reweight Kaon momenta of MC to match the Kaon momenta of sData.##
 ###############################################
     # Specidy input/output files
     momReweightInputFile   = physReweightOutputFile 
-    momReweightOutputFile  = globalOutputFolder + mcTupleFile.partition('.')[0] + '_physWeights_momReWeight' + '_{0}'.format(iterNumb) + '_Iteration'
+    momReweightOutputFile  = globalOutputFolder + mcTupleFile.partition('.')[0] + '_physWeights_momReWeight' \
+                                                + '_{0}'.format(iterNumb) + '_Iteration'
     reweightArgs = dict( sDInfo     = dict(path=sDataFile,            name=treeName, weight='sWeight'    )
-                         ,mcInfo    = dict(path=momReweightInputFile, name=treeName, weight=allWeights  )
+                         ,mcInfo    = dict(path=momReweightInputFile, name=treeName, weight=allWeights   )
                          ,whichVars = 'KaonMomenta'
                          ,nBins     = 500  ### WATCH OUT IN THE END YOU WILL SET THIS TO 1000
                          ,itNum     = iterNumb
                          )
     matchMC2Data = matchWeightedDistributions( momReweightOutputFile, **reweightArgs )
     matchMC2Data.mimicWeights()
-    matchMC2Data.reweightMC()
-
+    matchMC2Data.reweightMC(obsSet=matchPhysics.getObservables())
+    
     # Check if K_minus before and after reweighting DO match.
     t_mc = TFile.Open(momReweightOutputFile + '.root').Get('T')
     t_sD = TFile.Open(sDataFile).Get(treeName)
@@ -136,18 +128,20 @@ for iterNumb in range(1,3):
                                            assymPlot=True,    \
                                            Save=[True,'KmomRew_' + plotsSufix] 
                                        )
-
-
+  
 ############################################################################################################
 ## Compute angular efficiency moments for the new reweighted MC sample.##
 #########################################################################
     # Grab some stuff from the MC pdf.
     pdf = matchPhysics.getPdf()
     angleFuncs = matchPhysics.getAngleFunctions()
-    angles = matchPhysics.getAngles()
+    angles = matchPhysics.getObservables()[1:4]
+    data = TFile.Open(momReweightOutputFile + '_RDS.root').Get('MomRewMC_%s_Iter'%iterNumb)
+    momentsFile = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/hel_UB_UT_trueTime_BkgCat050_KK30'
 
     from P2VV.GeneralUtils import RealMomentsBuilder
     from P2VV.RooFitWrappers import RealEffMoment
+    from math import sqrt, pi
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,
                                                                  Norm = 1., PDF = pdf, IntSet = [ ], NormSet = angles )\
                                                       for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
@@ -172,20 +166,51 @@ for iterNumb in range(1,3):
     basisMoments.write( momentsFile + '_Basis', Scale = PDFInt                  )
 
     # print moments to screen
-    physMoments.Print(  Scale = PDFInt / 16. / sqrt(pi)                       )
-    basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi)                       )
-    basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi), MinSignificance = 5. )
+    # physMoments.Print(  Scale = PDFInt / 16. / sqrt(pi)                       )
+    # basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi)                       )
+    # basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi), MinSignificance = 5. )
 
 
-    print 'P2VV - INFO: Momentum matching input file: ',  momReweightInputFile 
-    print 'P2VV - INFO: Momentum matching output file: ', momReweightOutputFile
-    print 'P2VV - INFO: End of ' +str(iterNumb) + 'Iteration'
+    # Convert efficinecy moments to efficiency weights
+
 
     assert False
 
 
+    
 
-#c,a = compareWeightedDistributions(t_mc, t_sD, 'Kminus_P', sVar='Kminus_P_mod%s'%iterNumb, weight=allWeights, sWeight='sWeight', rangeX=[0,10e4], assymPlot=True, Save=[True,'KmomRew_' + plotsSufix] )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################################################################
+## Perform sFit on data using the new angular acceptance.##
+#########################################################################
+# set script parameters
+
+
+
+
+
+
 
 
 

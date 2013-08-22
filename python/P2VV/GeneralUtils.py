@@ -2238,7 +2238,7 @@ class matchMCphysics2Data():
         self._nTupleFile = nTupleFile
         self._nTupleName = nTupleName
 
-    def buildMonteCarloPdf(self):
+    def buildMonteCarloPdf(self,TIME=True):
         # Build Mc pdf
         from math import pi, sin, cos, sqrt
 
@@ -2248,10 +2248,7 @@ class matchMCphysics2Data():
         tResModel   = ''
         trigger     = ''
         timeInt     = False
-
-        #momentsFile = 'hel_UB_UT_trueTime_BkgCat050_KK30'
-        #plotsFile   = 'hel_UB_UT_trueTime_BkgCat050_KK30.ps'
-        #dataSetFile = 'hel_UB_UT_trueTime_BkgCat050_KK30.root'
+        self._TIME = TIME
 
         # transversity amplitudes
         A0Mag2Val    = 0.60
@@ -2270,13 +2267,6 @@ class matchMCphysics2Data():
         dGammaVal = 0.060
         dMVal     = 17.8
         tResSigma = 0.045
-
-        # plot options
-        numEffBins   = ( 20, 20, 20 )
-        numDistrBins = ( 60, 40, 40, 40 )
-        lineWidth    = 3
-        markStyle    = 8
-        markSize     = 0.4
 
         angleNames = ( 'cos#kern[0.1]{#theta_{K}}', 'cos#kern[0.1]{#theta_{l}}', '#varphi [rad]' )
         effLabels  = (  '#int d_{}cos#theta_{#mu} d#varphi #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
@@ -2306,7 +2296,7 @@ class matchMCphysics2Data():
         iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
         angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
-        obsSet = [ time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime ] + angles
+        obsSet = [ trueTime if TIME else time ] + angles
 
         # read ntuple
         bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
@@ -2392,13 +2382,14 @@ class matchMCphysics2Data():
             from P2VV.RooFitWrappers import BTagDecay
             self._pdf = pdf  = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
             self._angleFuncs = angleFuncs
-
-            self._time = time
+            self._obsSet = obsSet
+            
             self._helcosthetaK = angles[0]
             self._helcosthetaL = angles[1]
             self._helphi = angles[2]
             self._trueTime = trueTime
-            self._angles = angles
+            self._time = time
+ 
             self._amplitudes = amplitudes
             self._dMVal = dMVal
             self._dGammaVal = dGammaVal
@@ -2406,12 +2397,11 @@ class matchMCphysics2Data():
             self._phiCPVal = phiCPVal
             self._lambdaCP = lambdaCP
             self._data = data
-            self._normSet = [time] + angles
             self._cuts = cuts
 
     def getPdf(self):            return self._pdf
     def getAngleFunctions(self): return self._angleFuncs
-    def getAngles(self):         return self._angles
+    def getObservables(self): return self._obsSet
     
     def setMonteCarloParameters(self, pars=None):
         if not pars:
@@ -2453,13 +2443,14 @@ class matchMCphysics2Data():
 
     def calculateWeights(self,dataParameters):
         from ROOT import RooArgSet
-        normVars =  RooArgSet(n._target_() for n in self._normSet)
+        normVars =  RooArgSet(obs._target_() for obs in self._obsSet)
         # Reweights MC according to match the Physics of the sFit to data
         nominators, denominators,weights = [], [], []
         print 'P2VV - INFO: Calculating denominators for phyisics matching weights'
         self.setMonteCarloParameters()
         for event in self._data:
-            self._trueTime.setVal    ( event.find('truetime').getVal()     )
+            if self._TIME :self._trueTime.setVal    ( event.find('truetime').getVal()     )
+            else:          self._time.setVal        ( event.find('time').getVal()         )
             self._helcosthetaK.setVal( event.find('helcosthetaK').getVal() )
             self._helcosthetaL.setVal( event.find('helcosthetaL').getVal() )
             self._helphi.setVal      ( event.find('helphi').getVal()       )
@@ -2469,7 +2460,8 @@ class matchMCphysics2Data():
         print 'P2VV - INFO: Calculating nominators for phyisics matching weight'
         self.setDataFitParameters(dataParameters) # dataParameters dict defined constructMCpdf
         for event in self._data:
-            self._trueTime.setVal    ( event.find('truetime').getVal()     )
+            if self._TIME :self._trueTime.setVal    ( event.find('truetime').getVal()     )
+            else:          self._time.setVal        ( event.find('time').getVal()         )
             self._helcosthetaK.setVal( event.find('helcosthetaK').getVal() )
             self._helcosthetaL.setVal( event.find('helcosthetaL').getVal() )
             self._helphi.setVal      ( event.find('helphi').getVal()       )
@@ -2607,8 +2599,12 @@ class matchWeightedDistributions():
         Nbins controls the number of points for the transformation functions
         """
 
-        Mmu = 105.65836334228516
-        Mk = 493.677001953125
+        from ROOT import TDatabasePDG
+	MeV = 1000 # TDatabasePDG is in GeV, this is the factor needed to go to MeV
+        PDG = TDatabasePDG()
+        Mmu = PDG.GetParticle('mu-').Mass()*MeV
+        Mk  = PDG.GetParticle('K-').Mass()*MeV
+
         if Nbins==None: Nbins=self._nBins
         names, labels = [], []
         a = t.GetListOfBranches()
@@ -2618,20 +2614,37 @@ class matchWeightedDistributions():
         print 'P2VV - INFO: Matching kinematic distributions.'
         Udat = UniFunc(pout, nbinsmax = Nbins)
         Umc = UniFunc(pin, nbinsmax = Nbins)
-        for branch in a:
-                name = branch.GetName()
-                names.append(branch.GetName())
-                labels.append(branch.GetName() + "/F")
-        num = self._itNum
-        labels += ["Kplus_P_mod%s/F" %num, "Kminus_P_mod%s/F"%num, \
-                   "helcosthetaK_mod%s/F"%num, "helcosthetaL_mod%s/F"%num, "helphi_mod%s/F"%num]
 
-        from RTuple import RTuple
-        tup = RTuple(outputname, labels)
+        # for branch in a:
+        #         name = branch.GetName()
+        #         names.append(branch.GetName())
+        #         labels.append(branch.GetName() + "/F")
+        # num = self._itNum
+        # labels += ["Kplus_P_mod%s/F" %num, "Kminus_P_mod%s/F"%num, \
+        #            "helcosthetaK_mod%s/F"%num, "helcosthetaL_mod%s/F"%num, "helphi_mod%s/F"%num]
+        #from RTuple import RTuple
+        #tup = RTuple(outputname, labels)
 
         from math import sqrt, cos
-        from SomeUtils.alyabar import vunit, vector, JpsiKst_Angles, P_VV_angles, vmod
+        from SomeUtils.alyabar import vunit, vector, P_VV_angles, vmod
+        
+        # from ROOT import TVector3, TLorentzVector
+        # _LV2L  = lambda lv : [ lv[3], [ lv[0],lv[1],lv[2] ]  ]
+        # _VM2LV = lambda v,m : TLorentzVector( v, sqrt( m*m + v.Mag2() ) )
+        # _E2V   = lambda entry, label : TVector3( getattr(entry,label+'_PX'),getattr(entry,label+'_PY'),getattr(entry,label+'_PZ'))
+        # _VM2L  = lambda v,m : _LV2L( _VM2LV(v,m) )
+
+        # Put the newly recalculated angles plus time and true time in a RooDataSet.
+        from ROOT import RooDataSet, RooArgSet
+        helcosthetaK = self._obsSet[1]
+        helcosthetaL = self._obsSet[2]
+        helphi = self._obsSet[3]
+        time = self._obsSet[0] 
+        obsSet = RooArgSet(helcosthetaK,helcosthetaL,helphi,time)    
+        RewData = RooDataSet('MomRewMC_%s_Iter'%self._itNum, 'MomRewMC_%s_Iter'%self._itNum, obsSet)
+
         print 'P2VV - INFO: Recalculating decay angles after kinematic distributions matching.'
+       
         for entry in t:
             p01 = sqrt(entry.Kplus_PX**2 + entry.Kplus_PY**2 + entry.Kplus_PZ**2)
             p02 = sqrt(entry.Kminus_PX**2 + entry.Kminus_PY**2 + entry.Kminus_PZ**2)
@@ -2660,26 +2673,56 @@ class matchWeightedDistributions():
 
             l2 = [Emu1, pmu1]
             l3 = [Emu2, pmu2]
+            # print l0
+            # print l1
+            # print l2
+            # print l3
+            # print  P_VV_angles(l0,l1,l2,l3)
 
-            #Th1P, Th2P, PhiP =  JpsiKst_Angles(l0,l1,l2,l3) ### Transversity basis
-            Th1, Th2, Phi = P_VV_angles(l0,l1,l2,l3) ### Helicity basis
+            ### for candidate in t:
+            # pmu1 = _E2V( entry , 'muplus' )
+            # pmu2 = _E2V( entry , 'muminus')
+            # pK1  = _E2V( entry , 'Kplus' ) 
+            # pK2  = _E2V( entry , 'Kminus' )
+            # #### Modify the momentum scale, keep the direction 
+            # pK1.SetMag( Udat.inverse(Umc(pK1.Mag())) )
+            # pK2.SetMag( Udat.inverse(Umc(pK2.Mag())) )
+            # l0 = _VM2L( pK1, Mk )
+            # l1 = _VM2L( pK2, Mk )
+            # l2 = _VM2L( pmu1, Mmu )
+            # l3 = _VM2L( pmu2, Mmu )
+            # print l0
+            # print l1
+            # print l2
+            # print l3
+            # print  P_VV_angles(l0,l1,l2,l3)
+                    
+            Th1,Th2,Phi = P_VV_angles(l0,l1,l2,l3)
 
-            for name in names: tup.fillItem(name,float(getattr(t,name)))
+            helcosthetaK.setVal(cos(Th1))
+            helcosthetaL.setVal(cos(Th2))
+            helphi.setVal(Phi)
+            if self._obsSet[0].GetName().startswith('true'): time.setVal(entry.truetime )
+            else: time.setVal(entry.time )
+            RewData.add(obsSet)
 
-            tup.fillItem("Kplus_P_mod%s" %num,pmod1)
-            tup.fillItem("Kminus_P_mod%s" %num,pmod2)
-            #tup.fillItem("cpsi_m",cos(Th1P))
-            #tup.fillItem("ctheta_m",cos(Th2P))
-            #tup.fillItem("trphi_m",PhiP)
-            tup.fillItem("helcosthetaK_mod%s"%num,cos(Th1))
-            tup.fillItem("helcosthetaL_mod%s"%num,cos(Th2))
-            tup.fillItem("helphi_mod%s"%num,Phi)
-     
-            tup.fill()
+            # for name in names: tup.fillItem(name,float(getattr(t,name)))
+            # tup.fillItem("Kplus_P_mod%s" %num,pmod1)
+            # tup.fillItem("Kminus_P_mod%s" %num,pmod2)
+            # tup.fillItem("helcosthetaK_mod%s"%num,cos(Th1))
+            # tup.fillItem("helcosthetaL_mod%s"%num,cos(Th2))
+            # tup.fillItem("helphi_mod%s"%num,Phi)
+            #tup.fill()           
+        #tup.close()
+        
+        from ROOT import TFile
+        f = TFile.Open(outputname + '_RDS.root','RECREATE')
+        f.cd()
+        RewData.Write()
+        f.Close()
 
-        tup.close()
-
-    def reweightMC(self, outPath=None, var=None):
+    def reweightMC(self, outPath=None, var=None, obsSet=None):
+        self._obsSet = obsSet
         if not outPath:outPath= self._outFile
         if not var:var='Kminus_P'
 
