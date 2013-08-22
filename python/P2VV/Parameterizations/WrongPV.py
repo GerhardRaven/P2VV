@@ -1,6 +1,6 @@
 from P2VV.RooFitWrappers import *
 
-from P2VV.Parameterizations.MassPDFs import Signal_PsiMass as PsiMassPdf
+from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
 from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as BMassPdf
 from P2VV.Parameterizations.MassPDFs import LP2011_Background_Mass as BBkgPdf
 from P2VV.Parameterizations.MassPDFs import Background_PsiMass as PsiBkgPdf
@@ -9,7 +9,7 @@ class ShapeBuilder(object):
     __weights = set(('jpsi', 'B', 'both'))
     __rho = dict(B = 2., jpsi = 2.)
     
-    def __init__(self, time, masses, sigmat = None, t_diff = None,
+    def __init__(self, time, masses, sigmat = None, t_diff = None, MassResult = None,
                  InputFile = "/bfys/raaij/p2vv/data/Bs2JpsiPhiPrescaled_2011.root",
                  Workspace = 'Bs2JpsiPhiPrescaled_2011_workspace', Data = 'data',
                  UseKeysPdf = False, Weights = 'B', Draw = False, Reweigh = {}):
@@ -42,11 +42,7 @@ class ShapeBuilder(object):
             self._psi[masses['B']] = self._bkg_mass.pdf()
             self._bkg[masses['B']] = self._bkg_mass.pdf()
         if 'jpsi' in masses:
-            self._sig_mpsi = PsiMassPdf(masses['jpsi'], Name = 'wpv_sig_mpsi', Prefix = "wpv_",
-                                        wpv_mpsi_n = dict(Name = 'wpv_mpsi_n', Value = 1,
-                                                          Constant = True ),
-                                        wpv_mpsi_alpha = dict(Name = 'wpv_mpsi_alpha', Value = 3,
-                                                          MinMax = (1, 5)))
+            self._sig_mpsi = PsiMassPdf(masses['jpsi'], Name = 'wpv_sig_mpsi', Prefix = "wpv_")
             self._bkg_mpsi = PsiBkgPdf(masses['jpsi'], Name = 'wpv_bkg_mpsi', Prefix = "wpv_")
             self._sig[masses['jpsi']] = self._sig_mpsi.pdf()
             self._psi[masses['jpsi']] = self._sig_mpsi.pdf()
@@ -57,6 +53,20 @@ class ShapeBuilder(object):
                              'both' : dict(B = self._sig, jpsi = self._psi, bkg = self._bkg)}
         self.__pdf = buildPdf(self.__components[Weights].values(), Observables = masses.values(),
                              Name = 'wpv_mass_pdf')
+        if MassResult:
+            ## Use the provided mass result to set all the parameter values, only float the yields
+            pdf_params = self.__pdf.getParameters(RooArgSet(*masses.values()))
+            for p in MassResult.floatParsFinal():
+                ## ignore yields
+                if any((p.GetName().startswith(n) for n in ['N_', 'mpsi_c'])):
+                    continue
+                ## Find pdf parameter, add "wpv_" prefix
+                pdf_p = pdf_params.find('wpv_' + p.GetName())
+                if pdf_p:
+                    pdf_p.setVal(p.getVal())
+                    pdf_p.setError(p.getError())
+                    pdf_p.setConstant(True)
+        
         self.__pdf.Print("t")
 
         from ROOT import TFile
@@ -146,7 +156,7 @@ class ShapeBuilder(object):
         from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
         from ROOT import TCanvas
         obs = self.__masses.values()
-        self.__canvas = TCanvas('wpv_canvas', 'wpv_canvas', len(obs) * 500, 650)
+        self.__canvas = TCanvas('wpv_canvas', 'wpv_canvas', len(obs) * 600, 533)
         for (p,o) in zip(self.__canvas.pads(len(obs)), obs):
             from P2VV.GeneralUtils import plot
             plot(p, o, pdf = self.__pdf, data = self._data

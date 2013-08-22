@@ -1,6 +1,10 @@
 import sys
 import os
-from P2VV.ToyMCUtils import Toy
+try:
+    from P2VV.ToyMCUtils import Toy
+except ImportError:
+    print 'Could not import P2VV version, trying local directory'
+    from ToyMCUtils import Toy
 
 toy = Toy()
 parser = toy.parser()
@@ -57,7 +61,7 @@ bkg_tres = TimeResolution(Name = 'bkg_tres', ResolutionNamePrefix = 'bkg_', **tr
 
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
-psi_m = PsiMassPdf(mpsi, Name = 'psi_m')
+psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Name = 'mpsi_alpha_1', Value = 2., Constant = True))
 psi_m = psi_m.pdf()
     
 # J/psi background

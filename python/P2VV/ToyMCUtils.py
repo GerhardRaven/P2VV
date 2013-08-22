@@ -146,9 +146,12 @@ class Toy(object):
             status.setIndex(fit_result.status())
             for result_param in result_params:
                 data_param = data_params.find(result_param.GetName())
-                data_param.setVal(result_param.getVal())
-                # This sets a symmetric error, but since we don't run Minos, that's ok
-                data_param.setError(result_param.getError())
+                if isinstance(result_param, RooCategory):
+                    data_param.setIndex(result_param.getIndex())
+                else:
+                    data_param.setVal(result_param.getVal())
+                    # This sets a symmetric error, but since we don't run Minos, that's ok
+                    data_param.setError(result_param.getError())
             if self.__transform:
                 for trans_param in self.__transform.parameters():
                     data_param = data_params.find(result_param.GetName())
@@ -183,11 +186,9 @@ class SWeightTransform(object):
         self.__pdf = pdf
         self.__fit_opts = fit_opts
 
-        self.__parameters = None
-        
     def __call__(self, data):
         pdf_pars = self.__pdf.getParameters(data.get())
-        if self.__parameters == None:
+        if not hasattr(self, '__parameters'):
             self.__parameters = pdf_pars
         else:
             for p in self.__parameters:
@@ -206,7 +207,7 @@ class SWeightTransform(object):
 
     def parameters(self):
         from ROOT import RooArgSet
-        if self.__parameters:
+        if hasattr(self, '__parameters'):
             return self.__parameters
         else:
             return self.__pdf.getParameters(RooArgSet())

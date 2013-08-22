@@ -42,7 +42,11 @@ def fit_parabola(nll, nll_min, x, N):
     g_x = TGraph(N, array('d', [p[0] for p in points]), array('d', [p[1] for p in points]))
     __graphs[(frozenset((x, x)), N)] = g_x
     f_x = TF1('f_{0}'.format(x.GetName()), "[3] * (x - {0})^3 + [2] * (x - {0})^2 + [1] * (x - {0}) + [0]". format(x0))
-    result_x = g_x.Fit(f_x, 'QS+')
+    for i in range(3):
+        result_x = g_x.Fit(f_x, 'QS+')
+        par = result_x.Parameter(2)
+        if result_x.Status() == 0 and par > 0:
+            break
     __results[(frozenset([x]), N)] = result_x
     return tuple(result_x.Parameter(i) for i in range(1, 4))
 
@@ -77,10 +81,15 @@ def fit_cross(nll, nll_min, x, y, diagonals, N):
     
     for i, v in enumerate(diagonals[y.GetName()]):
         paraboloid.FixParameter(i + len(diagonals[x.GetName()]) + 1, v)
+
+    for i in range(3):
+        result_xy = g_xy.Fit(paraboloid, 'QS')
+        par = result_xy.Parameter(7)
+        if result_x.Status() == 0 and par > 0:
+            break
     
-    result_xy = g_xy.Fit(paraboloid, 'QS')
     __results[(frozenset([x, y]), N)] = result_xy.Get().Clone()
-    return result_xy.Parameter(7)
+    return par
     
 def hessian(nll, parameters, N = 9):
     values = dict([(p.GetName(), (p.getVal(), p.getError())) for p in parameters])
@@ -111,3 +120,11 @@ def graphs():
 
 def results():
     return __results
+
+
+for i, p in enumerate(time_result.floatParsFinal()):
+    p = nll_params.find(p)
+    k = (frozenset([p]), 9)
+    g = Hessian.graphs()[k]
+    canvas.cd(i + 1)
+    g.Draw("A*")

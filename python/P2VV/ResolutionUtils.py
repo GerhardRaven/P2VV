@@ -159,3 +159,14 @@ class SplitPVZerr(object):
 
     def directory(self, hd):
         return self.__format + '/' + hd
+
+parNames = {'N_prompt'      : ('#prompt', '\\# prompt \jpsi'),
+            'N_bkg'         : ('#background', '\\# background'),
+            'N_sig_wpv'     : ('#wpv' , '\\# wrong PV'),
+            'psi_t_fml'     : ('frac short lift', 'fraction short lived'),
+            'psi_t_ll_tau'  : ('tau long', 'long--lived $\\tau$'),
+            'psi_t_ml_tau'  : ('tau short', 'short--lived $\\tau$'),
+            'timeResMu'     : ('mean of Gaussians', 'common mean of Gaussians'),
+            'timeResComb'   : ('sf comb', '$\\text{sf}_{\\text{comb}}$'),
+            'timeResFrac2'  : ('frac G2', 'fraction 2nd Gauss'),
+            'timeResSigmaSF_t' : ('sf G2', '$\\text{sf}_{\\text{comb}}$')}
