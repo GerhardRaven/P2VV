@@ -39,13 +39,12 @@ class TimeAcceptance ( TimeResolution ) :
         # Workaround for acceptance normalization in cFit...
         # print 'P2VV - WARNING: TimeAcceptance.__init__(): set "NOCacheAndTrack" for %s' % self._acceptance.GetName()
 
-        from P2VV.RooFitWrappers import BinnedPdf, EffResModel
-        if type(self._acceptance) == EffResModel and type(self._acceptance.efficiency()) == BinnedPdf:
+        from P2VV.RooFitWrappers import BinnedPdf
+        if type(self._acceptance.efficiency()) == BinnedPdf:
             # note: constant optimization WILL evaluate RooBinnedPdf as a PDF,
-            # and thus normalize it...
+            # and thus normalize it... which in this case we don't want to happen...
             self._acceptance.efficiency().setForceUnitIntegral(True)
             print 'P2VV - WARNING: TimeAcceptance.__init__(): switched setForceUnitIntegral to true for %s' % self._acceptance.GetName()
-        print self.acceptance()
 
         TimeResolution.__init__(self, Model = self._acceptance,
                                 Conditionals = self._acceptance.ConditionalObservables(),

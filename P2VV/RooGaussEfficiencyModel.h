@@ -46,7 +46,6 @@ public:
   void advertiseFlatScaleFactorIntegral(Bool_t flag) { _flatSFInt = flag ; }
 
   virtual const RooAbsReal* efficiency() const;
-  virtual std::vector<const RooAbsReal*> efficiencies() const;
   virtual RooArgSet observables() const;
 
 private:
