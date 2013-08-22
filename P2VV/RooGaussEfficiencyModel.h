@@ -43,6 +43,13 @@ public:
   virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
   virtual Double_t analyticalIntegral(Int_t code, const char* rangeName) const ;
 
+  // TODO: move this one to the mixin-interface
+  virtual RooAbsGenContext* modelGenContext(const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars,
+                                             const RooDataSet *prototype=0, const RooArgSet* auxProto=0,
+                                             Bool_t verbose= kFALSE) const;
+  Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK) const;
+  void generateEvent(Int_t code);
+
   void advertiseFlatScaleFactorIntegral(Bool_t flag) { _flatSFInt = flag ; }
 
   virtual const RooAbsReal* efficiency() const;
