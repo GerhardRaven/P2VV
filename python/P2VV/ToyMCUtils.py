@@ -22,7 +22,7 @@ class Toy(object):
         self._parser.add_option("--protodata", dest = "protodata", default = '',
                                 action = 'store', help = 'use protodata')
 
-        self.__fit_opts = dict(Save = True, Optimize = 1, Verbose = True, Minos = False,
+        self.__fit_opts = dict(Save = True, Optimize = 1, Verbose = True, Minos = (),
                                Minimizer = 'Minuit2')
         self.__transform = None
         

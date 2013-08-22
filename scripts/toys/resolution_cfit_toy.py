@@ -111,6 +111,7 @@ components = [prompt, psi_ll, background, sig_wpv]
 gen_obs = (time_obs, mpsi, st)
 gen_pdf = buildPdf(Components = components, Observables = gen_obs, Name = 'gen_pdf')
 
+components = [prompt, psi_ll, sig_wpv]
 ## PDF to fit with
 fit_pdf = buildPdf(Components = components, Observables = (time_obs,), Name = 'fit_pdf')
 
@@ -141,6 +142,7 @@ toy.set_fit_opts(**fitOpts)
 from P2VV.ToyMCUtils import SWeightTransform
 mass_pdf = buildPdf(Components = (prompt, background), Observables = (mpsi,), Name = 'mass_pdf')
 toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts))
+
 toy.run(Observables = gen_obs, Pdf = fit_pdf, GenPdf = gen_pdf)
 
 toy.write_output()
