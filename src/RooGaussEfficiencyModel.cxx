@@ -317,29 +317,20 @@ RooAbsGenContext* RooGaussEfficiencyModel::modelGenContext
 (const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars, const RooDataSet *prototype,
  const RooArgSet* auxProto, Bool_t verbose) const
 {
-   std::cerr << "returning EffConvGenContext" << std::endl;
    return new RooEffConvGenContext(convPdf, vars, prototype, auxProto, verbose);
 }
 
 //_____________________________________________________________________________
 Bool_t RooGaussEfficiencyModel::isDirectGenSafe(const RooAbsArg& arg) const
 {
-   if(!TString(convVar().GetName()).CompareTo(arg.GetName())) {
-      return kTRUE;
-   } else {
-      return RooResolutionModel::isDirectGenSafe(arg);
-   }
+   return (!TString(convVar().GetName()).CompareTo(arg.GetName())) 
+       || RooResolutionModel::isDirectGenSafe(arg);
 }
 
 //_____________________________________________________________________________
 Int_t RooGaussEfficiencyModel::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
 {
-   std::cerr << "getGenerator " << std::endl;
-  if (matchArgs(directVars,generateVars,x)) { 
-   		std::cerr << "getGenerator is happy" << std::endl;
-		return 1 ;  
-  }
-   		std::cerr << "getGenerator is NOT happy" << std::endl;
+  if (matchArgs(directVars,generateVars,x)) { return 1 ;  }
   return 0 ;
 }
 
