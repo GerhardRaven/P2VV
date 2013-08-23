@@ -8,10 +8,9 @@
 #  in order to match the physics between data and MC                                              ( DONE )
 # (3) Writes the output reweighted MC sample in 'physReweightOutputFile'                          ( DONE )
 # (4) Takes the physics reweighted MC sample and reweights it again to mach the K momentum        ( DONE )
-# (5) Takes the physics + K momentum matched MC sample and calculates the angular acceptance      ( Under Devel ) 
+# (5) Takes the physics + K momentum matched MC sample and calculates the angular acceptance      ( DONE ) 
 # (6) Performs the sFit on data using the new accptance.                                          ( Under Devel )
-# At this stage a loop takes you to step (1)                                                      ( Under Devel )       
-
+# At this stage a loop takes you to step (1)                                                     
 #----------------------------------------------------------------------------------------------------------------------------
 
 
@@ -57,19 +56,20 @@ initDataParameters = dict( prefix   = 'data_initVals'
 
 
 
-####################################### Begin iterative procedure ###########################################################
+####################################### Begin iterative procedure ##########################################
+############################################################################################################
+from P2VV.GeneralUtils import matchMCphysics2Data, matchWeightedDistributions, compareWeightedDistributions
+from ROOT import TFile
+
 for iterNumb in range(1,3):
     print 'P2VV - INFO: Iteration number ' +str(iterNumb) + '.'  
-    
-    from P2VV.GeneralUtils import matchMCphysics2Data, matchWeightedDistributions, compareWeightedDistributions
-    from ROOT import TFile
 
     # Name sufix of comparision plots
     plotsSufix = str(iterNumb) + '_Iteration' + '.pdf'
 
 ############################################################################################################
 ## Match Mc physics to sData. ##
-###############################################
+################################
     # Input/Output file names 
     physReweightInputFile  = mcTuplePath if iterNumb==1 else momReweightOutputFile + '.root'
     physReweightOutputFile = globalOutputFolder + mcTupleFile.partition('.')[0] + '_physWeights'\
@@ -95,111 +95,71 @@ for iterNumb in range(1,3):
     matchPhysics.calculateWeights(dataParameters)
     matchPhysics.writeWeightsToFile( physReweightOutputFile, weightsName=WeightName ) 
     
-    # Comment in to check the effect of physics reweighting.
-    #t_mc = TFile.Open(physReweightOutputFile).Get(treeName)
-    #c,a = compareWeightedDistributions(t_mc, t_mc, 'B_P', weight=allWeights,\
-    #                                                      assymPlot=True,   \
-    #                                                      Save=[True,'PhysRew_' + plotsSufix] )
-   
-############################################################################################################
-## Reweight Kaon momenta of MC to match the Kaon momenta of sData.##
-###############################################
-    # Specidy input/output files
+     # Comment in to check the effect of physics reweighting.
+     #t_mc = TFile.Open(physReweightOutputFile).wGet(treeName)
+     #c,a = compareWeightedDistributions(t_mc, t_mc, 'B_P', weight=allWeights,\
+     #                                                      assymPlot=True,   \
+     #                                                      Save=[True,'PhysRew_' + plotsSufix] )
+
+ ############################################################################################################
+ ## Reweight Kaon momenta of the previously reweighted MC to match the Kaon momenta of sData.##
+ ##############################################################################################
+ # Specidy input/output files
     momReweightInputFile   = physReweightOutputFile 
     momReweightOutputFile  = globalOutputFolder + mcTupleFile.partition('.')[0] + '_physWeights_momReWeight' \
-                                                + '_{0}'.format(iterNumb) + '_Iteration'
-    reweightArgs = dict( sDInfo     = dict(path=sDataFile,            name=treeName, weight='sWeight'    )
-                         ,mcInfo    = dict(path=momReweightInputFile, name=treeName, weight=allWeights   )
-                         ,whichVars = 'KaonMomenta'
-                         ,nBins     = 500  ### WATCH OUT IN THE END YOU WILL SET THIS TO 1000
-                         ,itNum     = iterNumb
-                         )
-    matchMC2Data = matchWeightedDistributions( momReweightOutputFile, **reweightArgs )
-    matchMC2Data.mimicWeights()
-    matchMC2Data.reweightMC(obsSet=matchPhysics.getObservables())
+                                                 + '_%s'%iterNumb + '_Iteration'
+
+    print 'P2VV - INFO: Kinematic matching input file: ',  momReweightInputFile
+    print 'P2VV - INFO: Kinematic matching output file: ', momReweightOutputFile
     
-    # Check if K_minus before and after reweighting DO match.
-    t_mc = TFile.Open(momReweightOutputFile + '.root').Get('T')
-    t_sD = TFile.Open(sDataFile).Get(treeName)
-    c,a = compareWeightedDistributions(t_mc, t_sD, 'Kminus_P_mod%s'%iterNumb, sVar='Kminus_P',  \
-                                           weight=allWeights, \
-                                           sWeight='sWeight', \
-                                           rangeX=[0,10e4],   \
-                                           assymPlot=True,    \
-                                           Save=[True,'KmomRew_' + plotsSufix] 
-                                       )
+    reweightArgs = dict( sDInfo     = dict(path=sDataFile,            name=treeName, weight='sWeight'    )
+                          ,mcInfo    = dict(path=momReweightInputFile, name=treeName, weight=allWeights   )
+                          ,whichVars = 'KaonMomenta'
+                          ,nBins     = 500  ### WATCH OUT IN THE END YOU WILL SET THIS TO 1000
+                          ,itNum     = iterNumb
+                          )
+     matchMC2Data = matchWeightedDistributions( momReweightOutputFile, **reweightArgs )
+     matchMC2Data.mimicWeights()
+     matchMC2Data.reweightMC(obsSet=matchPhysics.getObservables())
+   
+     # Check if K_minus before and after reweighting DO match.
+     t_mc = TFile.Open(momReweightOutputFile + '.root').Get('T')
+     t_sD = TFile.Open(sDataFile).Get(treeName)
+     c,a = compareWeightedDistributions(t_mc, t_sD, 'Kminus_P_mod%s'%iterNumb, sVar='Kminus_P',  \
+                                            weight=allWeights, \
+                                            sWeight='sWeight', \
+                                            rangeX=[0,10e4],   \
+                                            assymPlot=True,    \
+                                            Save=[True,'KmomRew_' + plotsSufix] 
+                                        )
   
 ############################################################################################################
 ## Compute angular efficiency moments for the new reweighted MC sample.##
 #########################################################################
+    # Specify efficeincy moments output file.
+    effWieghtsOutputFile = 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights_%s_Iteration'%iterNumb 
+    
     # Grab some stuff from the MC pdf.
-    pdf = matchPhysics.getPdf()
+    pdf        = matchPhysics.getPdf()
     angleFuncs = matchPhysics.getAngleFunctions()
-    angles = matchPhysics.getObservables()[1:4]
-    data = TFile.Open(momReweightOutputFile + '_RDS.root').Get('MomRewMC_%s_Iter'%iterNumb)
-    momentsFile = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/hel_UB_UT_trueTime_BkgCat050_KK30'
-
+    angles     = matchPhysics.getObservables()[1:4]
+    data       = TFile.Open(momReweightOutputFile + '_RDS.root').Get('MomRewMC_%s_Iter'%iterNumb)
+    
     from P2VV.GeneralUtils import RealMomentsBuilder
     from P2VV.RooFitWrappers import RealEffMoment
-    from math import sqrt, pi
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,
                                                                  Norm = 1., PDF = pdf, IntSet = [ ], NormSet = angles )\
-                                                      for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func
-                                                  )
-                                      )
+                                                      for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func ))
     physMoments.initCovariances()
 
-    # moments builder with angular basis functions
-    indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-    indices += [ ( 0, 4, 0 ), ( 0, 4, 2 ), ( 0, 4, 4 ) ]
-
-    basisMoments = RealMomentsBuilder()
-    basisMoments.appendPYList( angleFuncs.angles, indices, PDF = pdf, IntSet = [ ], NormSet = angles )
-
-    PDFInt = 1. if physPdf else 8. * pi
-
-    # compute moments from data set
+    # Compute moments from data set and write them in a file
+       #data = matchPhysics.getInitialMCafterSel() # For xcheck you can use the initial MC dataset (after selection).
     physMoments.compute(data)
-    basisMoments.compute(data)
+       #PhysMoments.Print(  Scale = 1 / 16. / sqrt(pi) ) # Optionaly print the intermediate result.
+    # Convert efficinecy moments to efficiency weights and write them in a file.
+    scaleFactor = 0.12500024417259972 # Not so sure how and why this factor is necessary, but it gives the correct result.
+    physMoments.convertPhysicsMomentsToBasisMoments(globalOutputFolder + effWieghtsOutputFile,scale=scaleFactor)
     
-    physMoments.write(  momentsFile + '_Phys',  Scale = PDFInt / 16. / sqrt(pi) )
-    basisMoments.write( momentsFile + '_Basis', Scale = PDFInt                  )
-
-    # print moments to screen
-    # physMoments.Print(  Scale = PDFInt / 16. / sqrt(pi)                       )
-    # basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi)                       )
-    # basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi), MinSignificance = 5. )
-
-
-    # Convert efficinecy moments to efficiency weights
-
-
-    assert False
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ############################################################################################################
 ## Perform sFit on data using the new angular acceptance.##
@@ -209,8 +169,7 @@ for iterNumb in range(1,3):
 
 
 
-
-
+assert False
 
 
 

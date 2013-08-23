@@ -1853,6 +1853,50 @@ class RealMomentsBuilder ( dict ) :
                     corrs[func2] = self[func2].correlation( it1 - it2 ) if it2 < it1 else self[func1].correlation( it2 - it1)
                 self._correlations[func1] = corrs
 
+    def convertPhysicsMomentsToBasisMoments(self,outFile,scale=1):
+        # This method is ONLY intended to transform the angular function weights to the equivalent weights in the orthogonal base.
+        if not ( self._basisFuncNames[0].startswith('Re') or self._basisFuncNames[0].startswith('Im') ):
+            print 'P2VV - ERROR: Method convertPhysicsToBasisMoments() of class RealMomentsBuilder is intended only for angular function weights conversion.:'
+        else:
+            from math import sqrt, pi
+            physMoments = self._coefficients
+            orthBaseEquivMoms = { }
+            s = scale #Apply a scale factor to the converted moments
+            orthBaseEquivMoms['p2vvab_0000']  = (  physMoments['Re_ang_A0_A0'][0]             \
+                                                 + physMoments['Re_ang_Apar_Apar'][0]         \
+                                                 + physMoments['Re_ang_Aperp_Aperp'] [0]      \
+                                                  ) / 3.
+            orthBaseEquivMoms['p2vvab_0020']  = (  physMoments['Re_ang_A0_A0'][0]             \
+                                                 + physMoments['Re_ang_Apar_Apar'][0]         \
+                                                 + physMoments['Re_ang_Aperp_Aperp'][0]       \
+                                                 - physMoments['Re_ang_AS_AS'][0]   * 3.      \
+                                                  ) / 3. * sqrt(5.)
+            orthBaseEquivMoms['p2vvab_0022']  = (  physMoments['Re_ang_Apar_Apar'][0]         \
+                                                 - physMoments['Re_ang_Aperp_Aperp'][0]       \
+                                                  ) * -sqrt(5. / 3.)
+            orthBaseEquivMoms['p2vvab_2000']  = (  physMoments['Re_ang_A0_A0'][0]             \
+                                                 - physMoments['Re_ang_AS_AS'][0]             \
+                                                  ) * 5. / 2.
+            orthBaseEquivMoms['p2vvab_0021']  = (  physMoments['Re_ang_Apar_AS'][0]           \
+                                                  ) * -8. / 3. * sqrt(5. / 2.) / pi
+            orthBaseEquivMoms['p2vvab_002m1'] = (- physMoments['Im_ang_Aperp_AS'][0]          \
+                                                  ) * -8. / 3. * sqrt(5. / 2.) / pi
+            orthBaseEquivMoms['p2vvab_002m2'] = (- physMoments['Im_ang_Apar_Aperp'][0]        \
+                                                  ) * sqrt(5. / 3.)
+            orthBaseEquivMoms['p2vvab_1000']  = (  physMoments['Re_ang_A0_AS'][0]             \
+                                                  ) * sqrt(3.) / 2.
+            orthBaseEquivMoms['p2vvab_1021']  = (  physMoments['Re_ang_A0_Apar'][0]           \
+                                                  ) * -32. / 3. * sqrt(5. / 6.) / pi
+            orthBaseEquivMoms['p2vvab_102m1'] = (- physMoments['Im_ang_A0_Aperp'][0]          \
+                                                  ) * +32. / 3. * sqrt(5. / 6.) / pi
+
+            # Apply a scale factor and mutch the format that writeMoments requires.
+            for k in orthBaseEquivMoms.keys(): orthBaseEquivMoms[k] = ( s*orthBaseEquivMoms[k],0,0 )           
+            # Write the converted moments to a file 
+            writeMoments( outFile, BasisFuncNames=orthBaseEquivMoms.keys(), Moments=orthBaseEquivMoms )
+ 
+
+
     def Print( self, **kwargs ) :
         printMoments( BasisFuncNames = self._basisFuncNames, Moments = self._coefficients, Correlations = self._correlations, **kwargs )
 
@@ -2383,6 +2427,7 @@ class matchMCphysics2Data():
             self._pdf = pdf  = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
             self._angleFuncs = angleFuncs
             self._obsSet = obsSet
+            self._data = data
             
             self._helcosthetaK = angles[0]
             self._helcosthetaL = angles[1]
@@ -2401,7 +2446,8 @@ class matchMCphysics2Data():
 
     def getPdf(self):            return self._pdf
     def getAngleFunctions(self): return self._angleFuncs
-    def getObservables(self): return self._obsSet
+    def getObservables(self):    return self._obsSet
+    def getInitialMCafterSel(self):  return self._data
     
     def setMonteCarloParameters(self, pars=None):
         if not pars:
