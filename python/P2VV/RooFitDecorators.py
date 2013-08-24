@@ -11,9 +11,8 @@ def __wrap_kw_subs( fun ) :
     # TODO: anything relying on _target_ or _var should move to RooFitWrappers...
     __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
     def __disp(k, v) :
-        if type(v) == type(None) :
-            return __tbl(k)()
-        elif any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) or str(type(v)).find('.Category') != -1 :
+        if type(v) == type(None) : raise RuntimeError('you are using  %s = None -- please replace by %s = ()' % (k,k) )
+        if any( isinstance( v, t ) for t in __doNotConvert ) or not hasattr( v,'__iter__' ) or str(type(v)).find('.Category') != -1 :
             return __tbl(k)( __dref(v) )
         else :
             return __tbl(k)(*v)
@@ -33,9 +32,8 @@ def __wrap_kw_subs( fun ) :
         if 'ArgList' in kwargs :
             from ROOT import RooArgList
             args += ( RooArgList(kwargs.pop('ArgList')), )
-
-        dispatch = ( (k,kwargs.pop(k)) for k in kwargs.keys() if hasattr(RooFit,k) )
-        args += tuple(RooCmdArg(__disp(k,v)) for k,v in dispatch )
+        # convert any named keywords into RooCmdArgs if possible...
+        args += tuple(RooCmdArg(__disp(k,kwargs.pop(k))) for k in kwargs.keys() if hasattr(RooFit,k) )
         try:
             return fun(self, *args, **kwargs)
         except TypeError as terr:
