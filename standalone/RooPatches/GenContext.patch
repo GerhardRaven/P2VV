@@ -1,15 +1,3 @@
-diff --git a/roofit/roofitcore/inc/RooAbsGenContext.h b/roofit/roofitcore/inc/RooAbsGenContext.h
-index 23c6fe2..743718c 100644
---- a/roofit/roofitcore/inc/RooAbsGenContext.h
-+++ b/roofit/roofitcore/inc/RooAbsGenContext.h
-@@ -75,6 +75,7 @@ protected:
-   friend class RooSimGenContext ;
-   friend class RooSimSplitGenContext ;
-   friend class RooEffGenContext ;
-+  friend class RooEffConvGenContext;
- 
-   virtual void initGenerator(const RooArgSet &theEvent);
-   virtual void generateEvent(RooArgSet &theEvent, Int_t remaining) = 0;
 diff --git a/roofit/roofitcore/src/RooAcceptReject.cxx b/roofit/roofitcore/src/RooAcceptReject.cxx
 index 4f3d836..c5ecd2b 100644
 --- a/roofit/roofitcore/src/RooAcceptReject.cxx
