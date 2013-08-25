@@ -141,11 +141,11 @@ if generateData :
   print 'timeAnglesSignal: generating %d events' % nEvents
   data = pdf.generate( observables, nEvents )
 
-  from P2VV.GeneralUtils import writeData
+  from P2VV.Utilities.DataHandling import writeData
   writeData( dataSetFile, dataSetName, data, NTuple )
 
 else :
-  from P2VV.GeneralUtils import readData
+  from P2VV.Utilities.DataHandling import readData
   data = readData( dataSetFile, dataSetName = dataSetName, NTuple = NTuple, observables = observables )
 
   # TODO: a trick to change the observables in a data set ( iTag( +1, -1 ) <--> iTag( +1, -1, 0 ) )
@@ -169,7 +169,7 @@ if fitData :
 if makePlots :
     # import plotting tools
     from P2VV.Load import LHCbStyle
-    from P2VV.GeneralUtils import plot
+    from P2VV.Utilities.Plotting import plot
     from ROOT import TCanvas
 
     # plot lifetime and angles

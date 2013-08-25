@@ -10,7 +10,7 @@ correlations = { }
 
 # read moments
 print 'input moments:'
-from P2VV.GeneralUtils import readMoments, printMoments
+from P2VV.Utilities.DataMoments import readMoments, printMoments
 readMoments( momentsFileOrig, BasisFuncNames = funcNames, Moments = moments, Correlations = correlations, ProcessAll = True )
 printMoments( BasisFuncNames = funcNames, Moments = moments, Correlations = correlations )
 
@@ -52,6 +52,6 @@ for name0 in funcNames :
         corrsNew[name1][name0] = corr01New
 
 print 'output moments:'
-from P2VV.GeneralUtils import writeMoments
+from P2VV.Utilities.DataMoments import writeMoments
 writeMoments( momentsFileNorm, BasisFuncNames = funcNames, Moments = momsNew, Correlations = corrsNew )
 printMoments( BasisFuncNames = funcNames, Moments = momsNew, Correlations = corrsNew )

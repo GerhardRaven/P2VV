@@ -22,7 +22,7 @@ pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 pdfConfig['angEffMomentsFile']    = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 
 # fit options
-fitOpts = dict(  NumCPU    = 2
+fitOpts = dict(  NumCPU    = 6
                , Optimize  = 2
                , Minimizer = 'Minuit2'
                , Offset    = True
@@ -88,7 +88,7 @@ from P2VV.RooFitWrappers import RooObject
 worksp = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
 # read data set from file
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 dataSet = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
 pdfConfig['dataSet'] = dataSet
 
@@ -109,7 +109,7 @@ if parFileIn :
 # data set with weights corrected for background dilution: for phi_s fit only!
 if corrSFitErr == 'sumWeight'\
         or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-    from P2VV.GeneralUtils import correctSWeights
+    from P2VV.Utilities.DataHandling import correctSWeights
     fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
                               , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
                               , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )

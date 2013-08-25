@@ -98,7 +98,7 @@ bkgData = pdfBuild['bkgSWeightData']
 # data set with weights corrected for background dilution: for phi_s fit only!
 if corrSFitErr == 'sumWeight'\
         or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-    from P2VV.GeneralUtils import correctSWeights
+    from P2VV.Utilities.DataHandling import correctSWeights
     fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
                               , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
                               , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
@@ -190,7 +190,7 @@ if parFileOut :
 
 # import plotting tools
 from P2VV.Load import LHCbStyle
-from P2VV.GeneralUtils import plot, CPcomponentsPlotingToolkit
+from P2VV.Utilities.Plotting import plot, CPcomponentsPlotingToolkit
 from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlue, kSolid
 
 #LHCbLabel
@@ -265,7 +265,7 @@ for ( pad, obs, nBins, xTitle, yTitle, yScale, logY )\
     pad.Print(filename)
 
 #Save all the plots in a root file as RooPlot objects.
-from P2VV.GeneralUtils import _P2VVPlotStash as rooplots
+from P2VV.Utilities.Plotting import _P2VVPlotStash as rooplots
 from ROOT import TFile
 plotsFile = TFile('RooPlotsFinal.root','recreate')
 for plot in rooplots: plot.Write()

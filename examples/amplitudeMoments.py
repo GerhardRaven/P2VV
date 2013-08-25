@@ -91,7 +91,7 @@ pdf = pdfTerms.buildSumPdf('AngularPDF')
 
 if readData :
     # read data
-    from P2VV.GeneralUtils import readData
+    from P2VV.Utilities.DataHandling import readData
     data = readData( dataSetFile, dataSetName = dataSetName )
     print 'amplitudeMoments: read %d events' % data.sumEntries()
 
@@ -100,7 +100,7 @@ else :
     print 'amplitudeMoments: generating %d events' % nEvents
     data = pdf.generate( observables, nEvents )
 
-    from P2VV.GeneralUtils import writeData
+    from P2VV.Utilities.DataHandling import writeData
     writeData( dataSetFile, dataSetName, data )
 
 if fitDataOriginal :
@@ -120,7 +120,7 @@ indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in 
 names0 = 'p2vvab_0000'
 names1 = names0 + '|p2vvab_001.|p2vvab_100.|p2vvab_101.'
 
-from P2VV.GeneralUtils import RealMomentsBuilder
+from P2VV.Utilities.DataMoments import RealMomentsBuilder
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
 moments.initCovariances()
@@ -188,7 +188,7 @@ if makePlots :
     anglesCanv = TCanvas( 'anglesCanv', 'Angles' )
 
     # make plots
-    from P2VV.GeneralUtils import plot
+    from P2VV.Utilities.Plotting import plot
     from ROOT import RooFit, RooCmdArg
     for ( pad, obs, nBins, plotTitle, xTitle ) in zip(  anglesCanv.pads(2, 2)
                                                       , angles

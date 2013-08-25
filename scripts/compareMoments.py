@@ -14,12 +14,12 @@ correlations2 = { }
 
 # read moments
 print 'input moments 1:'
-from P2VV.GeneralUtils import readMoments, printMoments
+from P2VV.Utilities.DataMoments import readMoments, printMoments
 readMoments( momentsFile1, BasisFuncNames = funcNames, Moments = moments1, Correlations = correlations1 )
 printMoments( BasisFuncNames = funcNames, Moments = moments1, Correlations = correlations1 )
 
 print 'input moments 2:'
-from P2VV.GeneralUtils import readMoments, printMoments
+from P2VV.Utilities.DataMoments import readMoments, printMoments
 readMoments( momentsFile2, BasisFuncNames = funcNames, Moments = moments2, Correlations = correlations2 )
 printMoments( BasisFuncNames = funcNames, Moments = moments2, Correlations = correlations2 )
 

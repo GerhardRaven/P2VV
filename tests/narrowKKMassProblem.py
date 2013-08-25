@@ -219,7 +219,7 @@ ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
 if not generateData :
     # read data set from file
-    from P2VV.GeneralUtils import readData
+    from P2VV.Utilities.DataHandling import readData
     dataSet = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
     pdfConfig['dataSet'] = dataSet
 
@@ -274,18 +274,18 @@ if generateData :
 
     # additional observables
     if not pdfConfig['transversityAngles'] :
-        from P2VV.GeneralUtils import addTransversityAngles
+        from P2VV.Utilities.DataHandling import addTransversityAngles
         addTransversityAngles( dataSet, 'trcospsi',          'trcostheta',        'trphi'
                                       , angles[0].GetName(), angles[1].GetName(), angles[2].GetName() )
 
     # write data to file
-    from P2VV.GeneralUtils import writeData
+    from P2VV.Utilities.DataHandling import writeData
     writeData( dataSetFile, dataSetName, dataSet )
 
 elif pdfConfig['SFit'] :
     if corrSFitErr == 'sumWeight'\
             or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-        from P2VV.GeneralUtils import correctSWeights
+        from P2VV.Utilities.DataHandling import correctSWeights
         fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
                                   , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
                                   , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )

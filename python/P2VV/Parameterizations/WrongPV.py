@@ -91,7 +91,7 @@ class ShapeBuilder(object):
         fitOpts = dict(NumCPU = 4, Save = True, Minimizer = 'Minuit2', Optimize = 2)
         self.__result = self.__pdf.fitTo(self._data, **fitOpts)
             
-        from P2VV.GeneralUtils import SData
+        from P2VV.Utilities.SWeights import SData
         for p in self.__pdf.Parameters(): p.setConstant(not p.getAttribute('Yield'))
         splot = SData(Pdf = self.__pdf, Data = self._data, Name = 'MixingMassSplot')
         self.__sdatas = {}
@@ -158,7 +158,7 @@ class ShapeBuilder(object):
         obs = self.__masses.values()
         self.__canvas = TCanvas('wpv_canvas', 'wpv_canvas', len(obs) * 600, 533)
         for (p,o) in zip(self.__canvas.pads(len(obs)), obs):
-            from P2VV.GeneralUtils import plot
+            from P2VV.Utilities.Plotting import plot
             plot(p, o, pdf = self.__pdf, data = self._data
                  , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
                  , pdfOpts  = dict(LineWidth = 2)
@@ -182,7 +182,7 @@ class ShapeBuilder(object):
         st = self.__st
         from ROOT import RooArgSet
         for (p, (c, shape)) in zip(self.__time_canvas.pads(len(self.__shapes)), self.__shapes.items()):
-            from P2VV.GeneralUtils import plot
+            from P2VV.Utilities.Plotting import plot
             pdfOpts  = dict(ProjWData = (RooArgSet(st), self.__sdatas[c], True))
             plot(p, t, pdf = shape, data = self.__sdatas[c]
                  , frameOpts = dict(Title = c.GetName())
@@ -199,7 +199,7 @@ class ShapeBuilder(object):
         st = self.__st
         from ROOT import RooArgSet
         for (p, (c, shape)) in zip(self.__diff_canvas.pads(len(self.__diff_shapes)), self.__diff_shapes.items()):
-            from P2VV.GeneralUtils import plot
+            from P2VV.Utilities.Plotting import plot
             pdfOpts  = dict(ProjWData = (RooArgSet(st), self.__sdatas[c], True))
             plot(p, t_diff, pdf = shape, data = self.__sdatas[c]
                  , dataOpts = dict(MarkerSize = 0.8, Binning = 80, MarkerColor = kBlack)

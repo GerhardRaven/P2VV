@@ -201,7 +201,7 @@ spec = {'Bins' : {hlt1_excl_biased_dec : {'excl_biased' : {'bins'    : biased_bi
 ##         }
 
 # Read input data
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
@@ -240,7 +240,7 @@ if real_data:
     canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
     obs = [m]
     for (p,o) in zip(canvas.pads(len(obs)), obs):
-        from P2VV.GeneralUtils import plot
+        from P2VV.Utilities.Plotting import plot
         pdfOpts  = dict()
         plot(p, o, pdf = mass_pdf, data = data
              , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
@@ -253,7 +253,7 @@ if real_data:
              )
     # Do the sWeights
     # make sweighted dataset. TODO: use mumu mass as well...
-    from P2VV.GeneralUtils import SData, splot
+    from P2VV.Utilities.SWeights import SData, splot
 
     for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
     splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
@@ -374,7 +374,7 @@ for states, (p, o) in zip(sorted(spec['Relative'].keys(), key = sort_combination
     cat_data = data.reduce(cuts)
     project_set = RooArgSet(*project_vars)
     pdfOpts = dict(ProjWData = (project_set, cat_data, True))
-    from P2VV.GeneralUtils import plot
+    from P2VV.Utilities.Plotting import plot
     binning = RooBinning(len(biased_bins) - 1, biased_bins)
     plot( p, o, cat_data, pdf, components = {'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)}
           , plotResidHist = True
