@@ -11,7 +11,7 @@ from P2VV.RooFitWrappers import RooObject
 ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
 # read data sets
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 fullData = readData( filePath = dataSetFilePath, dataSetName = fullDataSetName, NTuple = False )
 sigData  = readData( filePath = dataSetFilePath, dataSetName = sigDataSetName,  NTuple = False )
 cbkgData = readData( filePath = dataSetFilePath, dataSetName = cbkgDataSetName, NTuple = False )
@@ -50,7 +50,7 @@ untagFracBkgSS = cbkgData.table(tagCatSS).getFrac('Untagged')
                                                                                                                      
 # plot estimated wrong-tag probabilities for signal and for background
 from P2VV.Load import LHCbStyle
-from P2VV.GeneralUtils import plot
+from P2VV.Utilities.Plotting import plot
 from ROOT import TCanvas, kBlue, kFullDotLarge
 canvsOS = [ TCanvas( 'estWTagCanvOS%d' % it ) for it in range(3) ]
 for ( canv, data, nBins, norm ) in zip(  canvsOS

@@ -29,7 +29,7 @@ cut += ' && abs(trueid) == 531'
 if not generate:
     prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
     filename = os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130222.root')
-    from P2VV.GeneralUtils import readData
+    from P2VV.Utilities.DataHandling import readData
     data = readData(filename, "DecayTree", NTuple = True, observables = observables, ntupleCuts = cut)
 
     t_diff = FormulaVar('time_diff', '@1 > -900 ? @0 - @1 : @0', [t, t_true], data = data)

@@ -30,7 +30,7 @@ deltaSVals     = [ 1.33, 0.60, -0.53, -0.64 ]
 deltaSLowErrs  = [ 0.51, 0.22,  0.26,  0.23 ]
 deltaSHighErrs = [ 0.78, 0.36,  0.20,  0.19 ]
 
-from P2VV.GeneralUtils import plotSWaveBins
+from P2VV.Utilities.Plotting import plotSWaveBins
 SWavePhaseCanv = plotSWaveBins(  Mode = 'fractions', LHCbTextLine1 = LHCbText, GrayScale = grayScale
                                , MassBins = massBins, SValues = fSVals, SLowErrors = fSLowErrs, SHighErrors = fSHighErrs
                               )

@@ -146,7 +146,7 @@ if pdfConfig['SFit'] :
     defData = pdfBuild['sigSWeightData']
     sigData = pdfBuild['sigSWeightData']
     bkgData = pdfBuild['bkgSWeightData']
-    from P2VV.GeneralUtils import correctSWeights
+    from P2VV.Utilities.DataHandling import correctSWeights
     fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
                               , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else '' )
 
@@ -218,7 +218,7 @@ if doFit :
 
 # import plotting tools
 from P2VV.Load import LHCbStyle
-from P2VV.GeneralUtils import plot, CPcomponentsPlotingToolkit
+from P2VV.Utilities.Plotting import plot, CPcomponentsPlotingToolkit
 from ROOT import TCanvas, kRed, kGreen, kMagenta, kBlue, kSolid
 
 #Initialaze the CP components ploting toolkit
@@ -292,7 +292,7 @@ for bin in binNames:
              pad.Print(fName)
                       
 # Save all the plots in a root file as RooPlot objects.
-from P2VV.GeneralUtils import _P2VVPlotStash as rooplots
+from P2VV.Utilities.Plotting import _P2VVPlotStash as rooplots
 from ROOT import TFile
 plotsFile = TFile('RooPlots6x4.root','recreate')
 for plot in rooplots: plot.Write()

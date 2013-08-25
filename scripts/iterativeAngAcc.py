@@ -58,7 +58,7 @@ initDataParameters = dict( prefix   = 'data_initVals'
 
 ####################################### Begin iterative procedure ##########################################
 ############################################################################################################
-from P2VV.GeneralUtils import matchMCphysics2Data, matchWeightedDistributions, compareWeightedDistributions
+from P2VV.Utilities.MCReweighting import matchMCphysics2Data, matchWeightedDistributions, compareWeightedDistributions
 from ROOT import TFile
 
 for iterNumb in range(1,3):
@@ -145,7 +145,7 @@ for iterNumb in range(1,3):
     angles     = matchPhysics.getObservables()[1:4]
     data       = TFile.Open(momReweightOutputFile + '_RDS.root').Get('MomRewMC_%s_Iter'%iterNumb)
     
-    from P2VV.GeneralUtils import RealMomentsBuilder
+    from P2VV.Utilities.DataMoments import RealMomentsBuilder
     from P2VV.RooFitWrappers import RealEffMoment
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,
                                                                  Norm = 1., PDF = pdf, IntSet = [ ], NormSet = angles )\

@@ -63,7 +63,7 @@ else :
 
 angles = [ angleFuncs.angles[ang] for ang in [ 'cpsi', 'ctheta', 'phi' ] ]
 
-from P2VV.GeneralUtils import RealMomentsBuilder
+from P2VV.Utilities.DataMoments import RealMomentsBuilder
 from math import sqrt, pi
 #indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(6) for YIndex0 in range(6)\
 #                                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
@@ -118,7 +118,7 @@ LHCbText.SetTextSize(0.072)
 LHCbText.SetBorderSize(0)
 
 # plot efficiency function slices
-from P2VV.GeneralUtils import plot
+from P2VV.Utilities.Plotting import plot
 from ROOT import kBlack, kBlue, kRed, kGreen, kFullDotLarge
 canvs = [  TCanvas( 'cpsiFuncCanv',   'Angular Efficiency' )
          , TCanvas( 'cthetaFuncCanv', 'Angular Efficiency' )

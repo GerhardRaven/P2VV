@@ -64,7 +64,7 @@ bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c
 background = Component('background', (bkg_mpsi,), Yield= (200000,500,500000) )
 psi = Component('psi', (psi_m,), Yield= (200000,500,500000) )
 
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 tree_name = 'DecayTree'
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
 if dataSample == '2011':
@@ -90,7 +90,7 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
                Verbose = False, Optimize = 2, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
-from P2VV.GeneralUtils import SData, splot
+from P2VV.Utilities.SWeights import SData, splot
 
 result = mass_pdf.fitTo(data, **fitOpts)
 
@@ -100,7 +100,7 @@ from ROOT import TCanvas
 mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
 obs = [mpsi]
 for (p,o) in zip(mass_canvas.pads(len(obs)), obs):
-    from P2VV.GeneralUtils import plot
+    from P2VV.Utilities.Plotting import plot
     pdfOpts  = dict()
     plot(p, o, pdf = mass_pdf, data = data
          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)

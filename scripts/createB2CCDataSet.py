@@ -347,7 +347,7 @@ if not simulation :
         splitCatIter  = splitCat.typeIterator()
         splitCatState = splitCatIter.Next()
         massPdfPars   = sWeightMassPdf.getVariables()
-        from P2VV.GeneralUtils import getSplitPar
+        from P2VV.Utilities.General import getSplitPar
         from math import sqrt
         while splitCatState :
             KKMassState = -1
@@ -469,7 +469,7 @@ if not simulation :
     print 'P2VV - INFO: createB2CCDataSet: computing sWeights'
 
     # compute sWeights
-    from P2VV.GeneralUtils import SData
+    from P2VV.Utilities.SWeights import SData
     sWeightsBuilder = SData( Pdf = sWeightMassPdf, Data = dataSets['pre'][0], Name = 'JpsiKK' )
     dataSets['preS'] = ( sWeightsBuilder.data(), [ ] )
 
@@ -506,7 +506,7 @@ if addTaggingObs :
                              , WeightVarName = '' if simulation else weightVars[0].GetName() )
 
     # add tagging categories to data sets
-    from P2VV.GeneralUtils import addTaggingObservables
+    from P2VV.Utilities.DataHandling import addTaggingObservables
     addTaggingObservables( dataSets['preS'][0], 'iTagOS', 'tagCatP2VVOS', tagDecOSName, wTagOSName, tagBinsOS )
     addTaggingObservables( dataSets['preS'][0], 'iTagSS', 'tagCatP2VVSS', tagDecSSName, wTagSSName, tagBinsSS )
 
@@ -593,7 +593,7 @@ if not simulation :
     if len(KKMassBinBounds) > 2 : allCats.append( dataSets['main'][0].get().find( observables['KKMassCat'].GetName() ) )
     allCats = [ cat for cat in allCats if cat ]
 
-    from P2VV.GeneralUtils import printEventYields, printEventYieldsData
+    from P2VV.Utilities.DataHandling import printEventYields, printEventYieldsData
     printEventYields(  ParameterSet        = massPdfPars
                      , YieldNames          = yieldNames
                      , SplittingCategories = [ cat for catList in splitCats for cat in catList ]
@@ -629,9 +629,9 @@ if not simulation and plotsFilePath :
     print 'P2VV - INFO: createB2CCDataSet: plotting J/psiKK invariant mass distribution'
 
     # import plotting tools
-    from P2VV.GeneralUtils import plot
+    from P2VV.Utilities.Plotting import plot
     from ROOT import TCanvas, kBlue, kRed, kGreen, kFullDotLarge, TPaveText
-    from P2VV.GeneralUtils import _P2VVPlotStash
+    from P2VV.Utilities.Plotting import _P2VVPlotStash
 
     LHCbLabel = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC' )
     LHCbLabel.AddText('LHCb')

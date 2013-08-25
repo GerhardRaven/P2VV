@@ -193,7 +193,7 @@ if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
 ###################
 
 ## Read data to use protodata
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 proto_data = pdfBuild['data']
 from ROOT import RooArgSet
 conditionals = RooArgSet()

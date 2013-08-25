@@ -180,7 +180,7 @@ class Uniform_Angles( _util_parse_mixin ) :
 
 class SPlot_Moment_Angles( object ) :
     def pdf(self, **kwargs ) :
-        from P2VV.GeneralUtils import RealMomentsBuilder
+        from P2VV.Utilities.DataMoments import RealMomentsBuilder
         mb = RealMomentsBuilder()
         mb.appendPYList( self._angles, kwargs.pop('Indices') )
         mb.compute( self._splot.data( kwargs.pop('Component') ) )
