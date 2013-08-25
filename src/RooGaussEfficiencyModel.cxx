@@ -32,6 +32,7 @@
 #include "TMath.h"
 #include "Riostream.h"
 #include "P2VV/RooGaussEfficiencyModel.h"
+#include "P2VV/RooEffConvGenContext.h"
 #include "RooMath.h"
 #include "RooRealConstant.h"
 #include "RooRandom.h"
@@ -308,5 +309,45 @@ Double_t RooGaussEfficiencyModel::analyticalIntegral(Int_t code, const char* ran
                                                << basisCode << endl;
   }
   return scale*result*ssfInt;
+}
+
+
+//_____________________________________________________________________________
+RooAbsGenContext* RooGaussEfficiencyModel::modelGenContext
+(const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars, const RooDataSet *prototype,
+ const RooArgSet* auxProto, Bool_t verbose) const
+{
+   return new RooEffConvGenContext(convPdf, vars, prototype, auxProto, verbose);
+}
+
+//_____________________________________________________________________________
+Bool_t RooGaussEfficiencyModel::isDirectGenSafe(const RooAbsArg& arg) const
+{
+   return (!TString(convVar().GetName()).CompareTo(arg.GetName())) 
+       || RooResolutionModel::isDirectGenSafe(arg);
+}
+
+//_____________________________________________________________________________
+Int_t RooGaussEfficiencyModel::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
+{
+  if (matchArgs(directVars,generateVars,x)) { return 1 ;  }
+  return 0 ;
+}
+
+//_____________________________________________________________________________
+void RooGaussEfficiencyModel::generateEvent(Int_t code)
+{
+  assert(code==1) ;
+  Double_t xmin = x.min();
+  Double_t xmax = x.max();
+  Double_t m = mean*msf;
+  Double_t s = sigma*ssf;
+  TRandom *generator = RooRandom::randomGenerator();
+  while(true) {
+    Double_t xgen = generator->Gaus(m,s);
+    if (xgen<xmax && xgen>xmin) {
+      x = xgen ; return ;
+    }
+  }
 }
 

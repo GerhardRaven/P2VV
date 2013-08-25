@@ -58,6 +58,7 @@ class Truth_TimeResolution ( TimeResolution ) :
 
 class Gaussian_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
+        prefix = kwargs.pop( 'ResolutionNamePrefix', '' )
         scaleBias = kwargs.pop('BiasScaleFactor', True)
         pee = kwargs.pop('PerEventError', False)
         sf_param = kwargs.pop('TimeResSFParam', '')
@@ -67,40 +68,45 @@ class Gaussian_TimeResolution ( TimeResolution ) :
 
         extraArgs = {}
         self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._parseArg( 'timeResMu', kwargs, Title = 'Decay time resolution mean', Value = -0.004, MinMax = (-1, 1)  )
+        self._timeResMu = self._parseArg( '%stimeResMu' % prefix, kwargs, Title = 'Decay time resolution mean',
+                                          Value = -0.004, MinMax = (-1, 1)  )
         if pee :
             self._parseArg( 'sigmat',  kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
-            self._parseArg( 'sigmaSF', kwargs, Title = 'Decay time scale factor',   Value = 1.46,     MinMax = (0.1, 2.5) )
+            self._timeResSigmaSF = self._parseArg( '%stimeResSigmaSF' % prefix, kwargs, Title = 'Decay time scale factor',
+                                                   Value = 1.46,     MinMax = (0.1, 2.5) )
             if sf_param:
-                self._offset = self._parseArg('offset', kwargs, Value = 0.01, Error = 0.001,
+                self._offset = self._parseArg('%soffset' % prefix, kwargs, Value = 0.01, Error = 0.001,
                                               MinMax = (0.000001, 1))                
             if sf_param == 'linear':
                 from P2VV.RooFitWrappers import LinearVar
-                linear_var = LinearVar(Name = 'sigmaSF_linear', Observable = self._sigmat,
-                                       Slope = self._sigmaSF, Offset = self._offset)
+                linear_var = LinearVar(Name = '%stimeResSigmaSF_linear' % prefix,
+                                       Observable = self._sigmat, Slope = self._timeResSigmaSF,
+                                       Offset = self._offset)
                 params = [self._time, self._timeResMu, linear_var]
             elif sf_param == 'quadratic':
                 from P2VV.RooFitWrappers import PolyVar
-                self._quad = self._parseArg('quad', kwargs, Value = -0.01, Error = 0.003, MinMax = (-0.1, 0.1))
+                self._quad = self._parseArg('%squad' % prefix, kwargs, Value = -0.01, Error = 0.003, MinMax = (-0.1, 0.1))
                 self._offset.setVal(-0.005)
-                self._sigmaSF.setVal(0.0019)
-                poly_var = PolyVar(Name = 'sigmaSF_quad', Observable = self._sigmat, Coefficients = [self._offset, self._sigmaSF, self._quad])
+                self._timeResSigmaSF.setVal(0.0019)
+                poly_var = PolyVar(Name = '%stimeResSigmaSF_quad' % prefix, Observable = self._sigmat,
+                                   Coefficients = [self._offset, self._timeResSigmaSF, self._quad])
                 params = [self._time, self._timeResMu, poly_var]
             elif scaleBias :
-                params = [self._time, self._timeResMu, self._sigmat, self._sigmaSF, self._sigmaSF]
+                params = [self._time, self._timeResMu, self._sigmat, self._timeResSigmaSF, self._timeResSigmaSF]
             else :
-                self._parseArg( 'biasSF', kwargs, Title = 'Decay time bias scale factor', Value = 1, Constant = True )
-                params = [ self._time, self._timeResMu, self._sigmat, self._biasSF,  self._sigmaSF ]
+                self._timeResMuSF = self._parseArg( '%stimeResMuSF' % prefix, kwargs, Title = 'Decay time bias scale factor', Value = 1, Constant = True )
+                params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF,  self._timeResSigmaSF ]
             extraArgs['ConditionalObservables'] = [self._sigmat]
         else :
-            self._parseArg( 'timeResSigma', kwargs, Title = 'Decay time resolution width', Value = 0.05,  MinMax = (0.0001, 2.5) )
+            self._timeResSigma = self._parseArg( '%stimeResSigma' % prefix, kwargs, Title = 'Decay time resolution width',
+                                                 Value = 0.05,  MinMax = (0.0001, 2.5) )
             params = [ self._time, self._timeResMu, self._timeResSigma ]
 
         from ROOT import RooGaussModel as GaussModel
         from P2VV.RooFitWrappers import ResolutionModel
         TimeResolution.__init__(  self
-                                , Name = kwargs.pop('Name', 'Gaussian_TimeResolution')
-                                , Model = ResolutionModel(  Name = 'timeResModelGauss'
+                                , Name = name
+                                , Model = ResolutionModel(  Name = '%stimeResModelGauss' % prefix
                                                           , Type = GaussModel
                                                           , Parameters  = params
                                                           , **extraArgs)
@@ -109,8 +115,9 @@ class Gaussian_TimeResolution ( TimeResolution ) :
         self._check_extraneous_kw( kwargs )
 
     def splitVars(self):
-        sv = [self._sigmaSF]
-        if self.__split_mean: sv.append(self._timeResMu)
+        sv = [self._timeResSigmaSF]
+        if self.__split_mean:
+            sv.append(self._timeResMu)
         return sv
 
 class Multi_Gauss_TimeResolution ( TimeResolution ) :

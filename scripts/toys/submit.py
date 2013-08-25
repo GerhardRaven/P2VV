@@ -51,29 +51,29 @@ for var, d in env_vars.iteritems():
 j.application.env = env
 
 # Add the inputsandbox
-j.inputsandbox = ['/project/bfys/raaij/p2vv/code/python/ToyMCUtils.py',
-                  '/project/bfys/raaij/p2vv/code/toys/SFit_toy.py',
-                  '/project/bfys/raaij/p2vv/code/toys/CFit_unbiased.pars',
-                  '/project/bfys/raaij/p2vv/code/lib/libP2VV.so',
+j.inputsandbox = ['/project/bfys/raaij/p2vv/code/python/P2VV/ToyMCUtils.py',
+                  '/project/bfys/raaij/p2vv/code/scripts/toys/resolution_cfit_toy.py',
+                  '/project/bfys/raaij/p2vv/code/standalone/lib/libP2VV.so',
+                  '/project/bfys/raaij/p2vv/code/scripts/toys/gen_params.root',
                   '/project/bfys/raaij/p2vv/code/snapshot.tar.bz2']
 
 # Add the outputsandbox
-j.outputsandbox = ['*.root']
+j.outputfiles = [SandboxFile('*.root')]
 
 # The merger
-j.merger = CustomMerger(
+j.postprocessors = [CustomMerger(
     files = ['toy.root'],
     module = '/project/bfys/raaij/cmtuser/Ganga_v505r9/Utils/MergeDataSets.py'
-    )
+    )]
 
 # Add the splitter
-args = ['SFit_toy.py', '--ncpu=1', '-n',
-        '10', '--nevents=20000', '-s', 'snapshot.tar.bz2']
+args = ['resolution_cfit_toy.py', '--ncpu=1', '-n',
+        '10', '--nevents=100000', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
     values = [args for i in range(100)]
     )
-j.name = 'SFit_toys'
+j.name = 'resolution_toys'
 
 # backend
 j.backend = PBS(queue = 'stbcq')

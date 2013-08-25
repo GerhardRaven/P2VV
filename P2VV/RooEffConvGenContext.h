@@ -24,10 +24,10 @@ public:
                         const RooArgSet* auxProto=0, Bool_t _verbose= kFALSE);
    virtual ~RooEffConvGenContext() { }
 
-   virtual void attach(const RooArgSet& params);
 
 protected:
 
+   virtual void initGenerator(const RooArgSet& theEvent) ;
    virtual void generateEvent(RooArgSet &theEvent, Int_t remaining);
 
    RooEffConvGenContext(const RooEffConvGenContext& other) ;

@@ -22,9 +22,10 @@ class Toy(object):
         self._parser.add_option("--protodata", dest = "protodata", default = '',
                                 action = 'store', help = 'use protodata')
 
-        self.__fit_opts = dict(Save = True, Optimize = 1, Verbose = True, Minos = False,
+        self.__fit_opts = dict(Save = True, Optimize = 1, Verbose = True, Minos = (),
                                Minimizer = 'Minuit2')
-
+        self.__transform = None
+        
     def parser(self):
         return self._parser
 
@@ -72,7 +73,7 @@ class Toy(object):
         for o in list(observables) + list(pdf.ConditionalObservables()):
             obs_set.add(o._target_())
         params = pdf.getParameters(obs_set)
-        
+
         pdf_params = RooArgSet()
         for p in params:
             if p.isConstant(): continue
@@ -85,11 +86,23 @@ class Toy(object):
         # Make another ArgSet to put the fit results in
         result_params = RooArgSet(pdf_params, "result_params")
 
+        if self.__transform:
+            trans_params = self.__transform.parameters()
+            trans_params.remove(obs_set, False, True)
+            result_params.add(trans_params)
+            
         # Some extra numbers of interest
         from ROOT import RooRealVar
         NLL = RooRealVar('NLL', '-log(Likelihood)', 1.)
         ngen = RooRealVar('ngen', 'number of generated events', self._options.nevents)
         seed = RooRealVar('seed', 'random seed', 0.)
+        from ROOT import RooCategory
+        status = RooCategory('status', 'fit status')
+        status.defineType('success', 0)
+        status.defineType('one', 1)
+        status.defineType('two', 2)
+        status.defineType('three', 3)
+        result_params.add(status)
         result_params.add(NLL)
         result_params.add(ngen)
         result_params.add(seed)
@@ -114,16 +127,38 @@ class Toy(object):
             if 'ProtoData' in kwargs:
                 args['ProtoData'] = kwargs.pop('ProtoData')
             data = genPdf.generate(observables, **args)
-            fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, **self.__fit_opts)
+            if self.__transform:
+                data = self.__transform(data)
+            
+            i = 0
+
+            if data.isWeighted() and 'SumW2Error' not in self.__fit_opts:
+                self.__fit_opts['SumW2Error'] = False
+
+            while i < 4: 
+                fit_result = pdf.fitTo(data, NumCPU = self._options.ncpu, **self.__fit_opts)
+                if fit_result.status() == 0:
+                    break
+                i += 1
             if fit_result.status() != 0:
                 print 'Fit result status = %s' % fit_result.status()
-                continue
             NLL.setVal(fit_result.minNll())
+            status.setIndex(fit_result.status())
             for result_param in result_params:
                 data_param = data_params.find(result_param.GetName())
-                data_param.setVal(result_param.getVal())
-                # This sets a symmetric error, but since we don't run Minos, that's ok
-                data_param.setError(result_param.getError())
+                if isinstance(result_param, RooCategory):
+                    data_param.setIndex(result_param.getIndex())
+                else:
+                    data_param.setVal(result_param.getVal())
+                    # This sets a symmetric error, but since we don't run Minos, that's ok
+                    data_param.setError(result_param.getError())
+            if self.__transform:
+                for trans_param in self.__transform.parameters():
+                    data_param = data_params.find(result_param.GetName())
+                    data_param.setVal(result_param.getVal())
+                    # This sets a symmetric error, but since we don't run Minos, that's ok
+                    data_param.setError(result_param.getError())
+            
             self._data.fill()
 
         return self.data()
@@ -141,3 +176,38 @@ class Toy(object):
         
     def set_fit_opts(self, **opts):
         self.__fit_opts.update(opts)
+
+    def set_transform(self, t):
+        self.__transform = t
+        
+class SWeightTransform(object):
+    def __init__(self, pdf, component, fit_opts):
+        self.__comp = component
+        self.__pdf = pdf
+        self.__fit_opts = fit_opts
+
+    def __call__(self, data):
+        pdf_pars = self.__pdf.getParameters(data.get())
+        if not hasattr(self, '__parameters'):
+            self.__parameters = pdf_pars
+        else:
+            for p in self.__parameters:
+                pdf_par = pdf_pars.find(p.GetName())
+                pdf_par.setVal(p.getVal())
+                pdf_par.setError(p.getError())
+            
+        for i in range(3):
+            result = self.__pdf.fitTo(data, **self.__fit_opts)
+            if result.status() == 0:
+                break
+
+        from P2VV.GeneralUtils import SData
+        sData = SData(Pdf = self.__pdf, Data = data, Name = 'MassSPlot')
+        return sData.data(self.__comp)
+
+    def parameters(self):
+        from ROOT import RooArgSet
+        if hasattr(self, '__parameters'):
+            return self.__parameters
+        else:
+            return self.__pdf.getParameters(RooArgSet())

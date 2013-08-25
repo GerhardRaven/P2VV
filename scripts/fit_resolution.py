@@ -72,18 +72,18 @@ prompt_MC = args[0] in ['MC11a_incl_Jpsi', 'MC2012_incl_Jpsi']
 
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
 input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_ntupleB_20130722.root'),
-                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011.root'),
+                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_DataSet.root'),
                         'workspace' : 'Bs2JpsiPhiPrescaled_2011_workspace',
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled.root')},
               '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20130722.root'),
-                        'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_2012.root'),
+                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2012_DataSet.root'),
                         'workspace' : 'Bs2JpsiPhiPrescaled_2012_workspace',
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},
               'MC11a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130613.root'),
                          'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
                          'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
                          'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_Prescaled.root')},
-              'MC11a_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_ntuple_B_MC11a_incl_Jpsi_20130103.root'),
+              'MC11a_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_incl_Jpsi_ntupleB_20130801.root'),
                                    'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
                                    'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
                                    'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_incl_Jpsi_Prescaled.root')},
@@ -107,10 +107,6 @@ if options.batch:
 from P2VV.RooFitWrappers import *
 from P2VV.Load import P2VVLibrary
 from P2VV.Load import LHCbStyle
-from ROOT import RooCBShape as CrystalBall
-from ROOT import RooMsgService
-
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
 
 obj = RooObject( workspace = 'w')
 w = obj.ws()
@@ -158,11 +154,11 @@ from ROOT import RooDecay as Decay
 sig_tres = None
 if args[1] == 'single':
     from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-    sig_tres = TimeResolution(Name = 'tres', time = t, sigmat = st, PerEventError = options.pee,
-                              BiasScaleFactor = False, Cache = False,
-                              TimeResSFParam = options.sf_param, SplitMean = options.split_mean,
-                              timeResMu = dict(Value = 0, MinMax = (-2, 2), Constant = False),
-                              sigmaSF  = dict(Value = 1.46, MinMax = (0.1, 2)))
+    tres_args = dict(time = t, sigmat = st, PerEventError = options.pee,
+                     BiasScaleFactor = False, Cache = False,
+                     TimeResSFParam = options.sf_param, SplitMean = options.split_mean)
+    sig_tres = TimeResolution(Name = 'tres', **tres_args)
+    bkg_tres = TimeResolution(Name = 'bkg_tres', ResolutionNamePrefix = 'bkg_', **tres_args)
 elif args[1] == 'double':
     mu = dict(MinMax = (-0.010, 0.010))
     mu['Constant'] = options.simultaneous and not options.split_mean
@@ -206,7 +202,7 @@ bkg_m = Pdf(Name = 'gauss', Type = Gaussian, Parameters = (m, mean, sigma))
 from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = time_obs, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 6.7195e-01)
-                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.5,  2.5))
+                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.1,  2.5))
                          , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 0.5))
                          )
 psi_t = psi_t.pdf()
@@ -277,7 +273,8 @@ gStyle.SetPalette(53)
 
 ## Extra name for fit result and plots
 extra_name = [args[1]]
-for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None), ('peak_only', 'peak_only')]:
+for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
+             ('peak_only', 'peak_only'), ('add_background', 'cfit')]:
     v = getattr(options, a)
     if v:
         if n and n != v and hasattr(options, n):
@@ -586,7 +583,7 @@ if options.wpv and options.wpv_type == 'Mixing':
     wpv_builder = WrongPV.ShapeBuilder(t, masses, UseKeysPdf = True, Weights = weights, Draw = True,
                                        InputFile = input_data[args[0]]['wpv'], Workspace = input_data[args[0]]['workspace'],
                                        Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
-                                       sigmat = st, **extra_args)
+                                       sigmat = st, MassResult = mass_result, **extra_args)
     if signal_MC:
         wpv_signal = wpv_builder.shape('B')
         sig_wpv = Component('sig_wpv', (wpv_signal, m), Yield = (888, 50, 300000))
@@ -614,7 +611,7 @@ elif options.wpv and options.wpv_type == 'Gauss':
     components += [sig_wpv]
     if options.add_background:
         bkg_wpv_pdf = make_wpv_pdf('bkg_')
-        bkg_wpv = Component('bkg_wpv', (bkg_wpv_pdf, psi_m), Yield = (552, 1, 50000))
+        bkg_wpv = Component('bkg_wpv', (bkg_wpv_pdf, bkg_mpsi.pdf()), Yield = (552, 1, 50000))
         components += [bkg_wpv]
 if options.add_background:
     pdf_obs = (time_obs, mpsi)
@@ -702,22 +699,22 @@ parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(obs_arg)])
 
 ## assert(False)
 
+if options.add_background:
+    fit_data = data
+    fit_data_full = data
+else:
+    if options.scale_weights:
+        fit_data = scaled_sig_sdata
+    else:
+        fit_data = sig_sdata
+    if options.simultaneous:
+        fit_data_full = sig_sdata_full
+
 if options.fit:
     for i in range(3):
-        if options.add_background:
-            fit_data = data
-            fit_data_full = data
-        else:
-            if options.scale_weights:
-                fit_data = scaled_sig_sdata
-            else:
-                fit_data = sig_sdata
-            if options.simultaneous:
-                fit_data_full = sig_sdata_full
         time_result = time_pdf.fitTo(fit_data, SumW2Error = options.correct_errors, **fitOpts)
         if time_result.status() == 0:
-            break
-    
+            break    
     time_result.SetName('_'.join(['time_result'] + extra_name))
     
     ## Draw correlation histogram
@@ -756,7 +753,7 @@ from ROOT import RooBinning
 
 if options.wpv and options.wpv_type == 'Mixing':
     bounds = array('d', [-5 + i * 0.1 for i in range(48)] + [-0.2 + i * 0.01 for i in range(40)] + \
-                   [0.2 + i * 0.1 for i in range(58)] + [6 + i * 0.4 for i in range(21)])
+                   [0.2 + i * 0.1 for i in range(58)])
     zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
 elif signal_MC:
     bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.05 for i in range(12)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
@@ -816,7 +813,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             
             plots.append(ps)
     else:
-        canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 600)
+        canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 533)
         __canvases.append(canvas)
         p = canvas.cd(1)
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
@@ -898,32 +895,3 @@ with WritableCacheFile(cache_files, directory) as cache_file:
     # Delete the input TTree which was automatically attached.
     cache_file.Delete('%s;*' % tree_name)
 
-nll = time_pdf.createNLL(sig_sdata, **fitOpts)
-fpf = time_result.floatParsFinal()
-nll_params = nll.getObservables(RooArgSet(fpf))
-
-from ROOT import TMatrixDSym
-H = TMatrixDSym(TMatrixDSym.kInverted, time_result.covarianceMatrix())
-
-from ROOT import std
-stepsizes = std.vector('double')(fpf.getSize())
-for i, p in enumerate(fpf):
-    stepsizes[i] = p.getError()
-
-from ROOT import hessian_with_errors, gradient
-
-## r = hessian_with_errors(nll, fpf, stepsizes)
-## HN = r.first
-## HNE = r.second
-
-## HD = TMatrixDSym(fpf.getSize())
-## from itertools import product
-## for i, j in product(range(11), range(11)):
-##     HD[i][j] = HN[i][j] / H[i][j]
-
-## CH = TMatrixTSym('double')(TMatrixTSym('double').kInverted, H)
-
-from P2VV import Hessian
-nll_min = nll.getVal()
-x = nll_params.find('wpv_sigma')
-## points = Hessian.nll_values(nll, nll_min, [x], 9)

@@ -2,7 +2,7 @@
 ## script settings ##
 #####################
 
-nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+nTupleFilePath   = '/bfys/raaij/p2vv/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130628.root'
 nTupleName       = 'DecayTree'
@@ -17,6 +17,9 @@ dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
+
+## splitDataSet    = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
+## KKMassBinBounds  = [1008, 1032] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
 KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
 
