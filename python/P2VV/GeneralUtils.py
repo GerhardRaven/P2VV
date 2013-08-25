@@ -1853,6 +1853,50 @@ class RealMomentsBuilder ( dict ) :
                     corrs[func2] = self[func2].correlation( it1 - it2 ) if it2 < it1 else self[func1].correlation( it2 - it1)
                 self._correlations[func1] = corrs
 
+    def convertPhysicsMomentsToBasisMoments(self,outFile,scale=1):
+        # This method is ONLY intended to transform the angular function weights to the equivalent weights in the orthogonal base.
+        if not ( self._basisFuncNames[0].startswith('Re') or self._basisFuncNames[0].startswith('Im') ):
+            print 'P2VV - ERROR: Method convertPhysicsToBasisMoments() of class RealMomentsBuilder is intended only for angular function weights conversion.:'
+        else:
+            from math import sqrt, pi
+            physMoments = self._coefficients
+            orthBaseEquivMoms = { }
+            s = scale #Apply a scale factor to the converted moments
+            orthBaseEquivMoms['p2vvab_0000']  = (  physMoments['Re_ang_A0_A0'][0]             \
+                                                 + physMoments['Re_ang_Apar_Apar'][0]         \
+                                                 + physMoments['Re_ang_Aperp_Aperp'] [0]      \
+                                                  ) / 3.
+            orthBaseEquivMoms['p2vvab_0020']  = (  physMoments['Re_ang_A0_A0'][0]             \
+                                                 + physMoments['Re_ang_Apar_Apar'][0]         \
+                                                 + physMoments['Re_ang_Aperp_Aperp'][0]       \
+                                                 - physMoments['Re_ang_AS_AS'][0]   * 3.      \
+                                                  ) / 3. * sqrt(5.)
+            orthBaseEquivMoms['p2vvab_0022']  = (  physMoments['Re_ang_Apar_Apar'][0]         \
+                                                 - physMoments['Re_ang_Aperp_Aperp'][0]       \
+                                                  ) * -sqrt(5. / 3.)
+            orthBaseEquivMoms['p2vvab_2000']  = (  physMoments['Re_ang_A0_A0'][0]             \
+                                                 - physMoments['Re_ang_AS_AS'][0]             \
+                                                  ) * 5. / 2.
+            orthBaseEquivMoms['p2vvab_0021']  = (  physMoments['Re_ang_Apar_AS'][0]           \
+                                                  ) * -8. / 3. * sqrt(5. / 2.) / pi
+            orthBaseEquivMoms['p2vvab_002m1'] = (- physMoments['Im_ang_Aperp_AS'][0]          \
+                                                  ) * -8. / 3. * sqrt(5. / 2.) / pi
+            orthBaseEquivMoms['p2vvab_002m2'] = (- physMoments['Im_ang_Apar_Aperp'][0]        \
+                                                  ) * sqrt(5. / 3.)
+            orthBaseEquivMoms['p2vvab_1000']  = (  physMoments['Re_ang_A0_AS'][0]             \
+                                                  ) * sqrt(3.) / 2.
+            orthBaseEquivMoms['p2vvab_1021']  = (  physMoments['Re_ang_A0_Apar'][0]           \
+                                                  ) * -32. / 3. * sqrt(5. / 6.) / pi
+            orthBaseEquivMoms['p2vvab_102m1'] = (- physMoments['Im_ang_A0_Aperp'][0]          \
+                                                  ) * +32. / 3. * sqrt(5. / 6.) / pi
+
+            # Apply a scale factor and mutch the format that writeMoments requires.
+            for k in orthBaseEquivMoms.keys(): orthBaseEquivMoms[k] = ( s*orthBaseEquivMoms[k],0,0 )           
+            # Write the converted moments to a file 
+            writeMoments( outFile, BasisFuncNames=orthBaseEquivMoms.keys(), Moments=orthBaseEquivMoms )
+ 
+
+
     def Print( self, **kwargs ) :
         printMoments( BasisFuncNames = self._basisFuncNames, Moments = self._coefficients, Correlations = self._correlations, **kwargs )
 
@@ -2132,14 +2176,15 @@ def createSData( **kwargs ) :
 ###########################################################################################################################################
 
 def compareWeightedDistributions(tree, sTree, var, **kwargs):
-    sVar      =  kwargs.pop('sVar',          None  )
-    cut       =  kwargs.pop('cut',           None  )
-    sCut      =  kwargs.pop('sCut',          None  )
-    weight    =  kwargs.pop('weight',        None  )
-    sWeight   =  kwargs.pop('sWeight',       None  )
-    rangeX    =  kwargs.pop('rangeX',        None  )
-    bins      =  kwargs.pop('bins',          100   )
-    assymPlot =  kwargs.pop('assymPlot',    False  )
+    sVar      =  kwargs.pop('sVar',             None  )
+    cut       =  kwargs.pop('cut',              None  )
+    sCut      =  kwargs.pop('sCut',             None  )
+    weight    =  kwargs.pop('weight',           None  )
+    sWeight   =  kwargs.pop('sWeight',          None  )
+    rangeX    =  kwargs.pop('rangeX',           None  )
+    bins      =  kwargs.pop('bins',             100   )
+    assymPlot =  kwargs.pop('assymPlot',       False  )
+    save      =  kwargs.pop('Save',      [False,'_']  )
 
     if rangeX:
         Xmin=str(rangeX[0])
@@ -2149,19 +2194,23 @@ def compareWeightedDistributions(tree, sTree, var, **kwargs):
         Xmax= str(max(tree.GetMaximum(var),sTree.GetMaximum(var)))
 
     from ROOT import gPad
-    print 'P2VV - INFO: Ploting first distribution.'
     if cut:
         if weight: tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight +'*'+'('+cut+')' )
         else     : tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')',                 cut     )
-    else         : tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight                  )
+    else         : 
+        print 'P2VV - INFO: Ploting first distribution (1st arguement) with weight: ' + weight + '.'
+        if weight: tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight)
+        else:      tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')',    '' )
     hm = gPad.GetPrimitive('hm')
 
     if not sVar: sVar=var
-    print 'P2VV - INFO: Ploting second distribution.'
     if sCut:
         if sWeight: sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight +'*'+'('+sCut+')', 'err' )
         else      : sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')',                  sCut    , 'err' )
-    else          : sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight                  , 'err' )
+    else          : 
+        print 'P2VV - INFO: Ploting second distribution (2nd arguement) with weight: ' ,  sWeight
+        if sWeight: sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight, 'err' )
+        else:       sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')',    ''  , 'err' )
     hs = gPad.GetPrimitive('hs')
 
     hm.SetFillColor(2)
@@ -2174,15 +2223,20 @@ def compareWeightedDistributions(tree, sTree, var, **kwargs):
     hs.SetStats()
 
     def getSumOfWeights(t,pref,cut):
-        if pref=='1': return t.GetEntries(cut)
+        ## TODO: should return sumW of the selected events by the cut string.
+        if cut: print 'WARNING: Returned number is sumW of the entire tree not the of the subseset selected by cut. '
+        if pref=='': return t.GetEntries(cut)
         else:
-            sum=0
-            for e in t:sum+=getattr(e,pref)
-            return sum
+            sumW=0
+            for e in t:sumW+=getattr(e,pref)
+            return sumW
+
     if cut==None:  cut=''
     if sCut==None: sCut=''
+    if weight==None: weight=''
+    if sWeight==None: sWeight=''
     if tree.GetEntries(cut)>sTree.GetEntries(sCut): hm.Scale(getSumOfWeights(sTree,sWeight,sCut) / getSumOfWeights(tree,weight,cut))
-    else:                               hs.Scale(getSumOfWeights(tree,weight,cut) / getSumOfWeights(sTree,sWeight,sCut))
+    else:                                           hs.Scale(getSumOfWeights(tree,weight,cut)    / getSumOfWeights(sTree,sWeight,sCut))
 
     if rangeX: hm.GetXaxis().SetRangeUser(rangeX[0], rangeX[1])
     if hm.GetMaximum() < hs.GetMaximum(): hm.GetYaxis().SetRangeUser(0, int( hs.GetMaximum() + .08* hs.GetMaximum() ))
@@ -2207,11 +2261,15 @@ def compareWeightedDistributions(tree, sTree, var, **kwargs):
             c_distr.cd()
             hm.Draw()
             hs.Draw('same')
-        return c_distr, asymPlot
+            if save[0]:
+               c_distr.SaveAs('comp_' + save[1])
+               asymPlot.SaveAs('assym_'  + save[1])
+            return c_distr, asymPlot
     else:
         c_distr.cd()
         hm.Draw()
         hs.Draw('same')
+        if save[0]: c_distr.SaveAs('comp_' + save[1])
         return c_distr
 
 
@@ -2224,7 +2282,7 @@ class matchMCphysics2Data():
         self._nTupleFile = nTupleFile
         self._nTupleName = nTupleName
 
-    def buildMonteCarloPdf(self):
+    def buildMonteCarloPdf(self,TIME=True):
         # Build Mc pdf
         from math import pi, sin, cos, sqrt
 
@@ -2234,10 +2292,7 @@ class matchMCphysics2Data():
         tResModel   = ''
         trigger     = ''
         timeInt     = False
-
-        #momentsFile = 'hel_UB_UT_trueTime_BkgCat050_KK30'
-        #plotsFile   = 'hel_UB_UT_trueTime_BkgCat050_KK30.ps'
-        #dataSetFile = 'hel_UB_UT_trueTime_BkgCat050_KK30.root'
+        self._TIME = TIME
 
         # transversity amplitudes
         A0Mag2Val    = 0.60
@@ -2256,13 +2311,6 @@ class matchMCphysics2Data():
         dGammaVal = 0.060
         dMVal     = 17.8
         tResSigma = 0.045
-
-        # plot options
-        numEffBins   = ( 20, 20, 20 )
-        numDistrBins = ( 60, 40, 40, 40 )
-        lineWidth    = 3
-        markStyle    = 8
-        markSize     = 0.4
 
         angleNames = ( 'cos#kern[0.1]{#theta_{K}}', 'cos#kern[0.1]{#theta_{l}}', '#varphi [rad]' )
         effLabels  = (  '#int d_{}cos#theta_{#mu} d#varphi #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
@@ -2292,7 +2340,7 @@ class matchMCphysics2Data():
         iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
         angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
-        obsSet = [ time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime ] + angles
+        obsSet = [ trueTime if TIME else time ] + angles
 
         # read ntuple
         bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
@@ -2376,14 +2424,17 @@ class matchMCphysics2Data():
                        )
 
             from P2VV.RooFitWrappers import BTagDecay
-            self._pdf = pdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
-
-            self._time = time
+            self._pdf = pdf  = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+            self._angleFuncs = angleFuncs
+            self._obsSet = obsSet
+            self._data = data
+            
             self._helcosthetaK = angles[0]
             self._helcosthetaL = angles[1]
             self._helphi = angles[2]
             self._trueTime = trueTime
-            self._angles = angles
+            self._time = time
+ 
             self._amplitudes = amplitudes
             self._dMVal = dMVal
             self._dGammaVal = dGammaVal
@@ -2391,9 +2442,13 @@ class matchMCphysics2Data():
             self._phiCPVal = phiCPVal
             self._lambdaCP = lambdaCP
             self._data = data
-            self._normSet = [time] + angles
             self._cuts = cuts
 
+    def getPdf(self):            return self._pdf
+    def getAngleFunctions(self): return self._angleFuncs
+    def getObservables(self):    return self._obsSet
+    def getInitialMCafterSel(self):  return self._data
+    
     def setMonteCarloParameters(self, pars=None):
         if not pars:
             pars = dict(  ReAperp     = self._amplitudes['Aperp'].Re.getVal()
@@ -2434,13 +2489,14 @@ class matchMCphysics2Data():
 
     def calculateWeights(self,dataParameters):
         from ROOT import RooArgSet
-        normVars =  RooArgSet(n._target_() for n in self._normSet)
+        normVars =  RooArgSet(obs._target_() for obs in self._obsSet)
         # Reweights MC according to match the Physics of the sFit to data
         nominators, denominators,weights = [], [], []
         print 'P2VV - INFO: Calculating denominators for phyisics matching weights'
         self.setMonteCarloParameters()
         for event in self._data:
-            self._trueTime.setVal    ( event.find('truetime').getVal()     )
+            if self._TIME :self._trueTime.setVal    ( event.find('truetime').getVal()     )
+            else:          self._time.setVal        ( event.find('time').getVal()         )
             self._helcosthetaK.setVal( event.find('helcosthetaK').getVal() )
             self._helcosthetaL.setVal( event.find('helcosthetaL').getVal() )
             self._helphi.setVal      ( event.find('helphi').getVal()       )
@@ -2450,7 +2506,8 @@ class matchMCphysics2Data():
         print 'P2VV - INFO: Calculating nominators for phyisics matching weight'
         self.setDataFitParameters(dataParameters) # dataParameters dict defined constructMCpdf
         for event in self._data:
-            self._trueTime.setVal    ( event.find('truetime').getVal()     )
+            if self._TIME :self._trueTime.setVal    ( event.find('truetime').getVal()     )
+            else:          self._time.setVal        ( event.find('time').getVal()         )
             self._helcosthetaK.setVal( event.find('helcosthetaK').getVal() )
             self._helcosthetaL.setVal( event.find('helcosthetaL').getVal() )
             self._helphi.setVal      ( event.find('helphi').getVal()       )
@@ -2505,6 +2562,7 @@ class matchWeightedDistributions():
         sDInfo      = kwargs.pop('sDInfo')
         self._nBins = kwargs.pop('nBins', '1000')
         self._vars  = kwargs.pop('whichVars')
+        self._itNum = kwargs.pop('itNum')    
 
         self._tmc       = mcInfo['path']
         self._tsD       = sDInfo['path']
@@ -2587,30 +2645,52 @@ class matchWeightedDistributions():
         Nbins controls the number of points for the transformation functions
         """
 
-        Mmu = 105.65836334228516
-        Mk = 493.677001953125
+        from ROOT import TDatabasePDG
+	MeV = 1000 # TDatabasePDG is in GeV, this is the factor needed to go to MeV
+        PDG = TDatabasePDG()
+        Mmu = PDG.GetParticle('mu-').Mass()*MeV
+        Mk  = PDG.GetParticle('K-').Mass()*MeV
+
         if Nbins==None: Nbins=self._nBins
         names, labels = [], []
         a = t.GetListOfBranches()
 
         from SomeUtils.GLBasic import UniFunc
-        #SomeUtils path: /cvmfs/lhcb.cern.ch/lib/lhcb/URANIA/URANIA_v1r1/InstallArea/x86_64-slc6-gcc46-opt/python/SomeUtils/GLBasic.py
+        #/cvmfs/lhcb.cern.ch/lib/lhcb/URANIA/URANIA_v1r1/InstallArea/x86_64-slc6-gcc46-opt/python/SomeUtils
         print 'P2VV - INFO: Matching kinematic distributions.'
         Udat = UniFunc(pout, nbinsmax = Nbins)
         Umc = UniFunc(pin, nbinsmax = Nbins)
-        for branch in a:
-            name = branch.GetName()
-            names.append(branch.GetName())
-            labels.append(branch.GetName() + "/F")
-        labels += ["kplus_pmod/F", "kminus_pmod/F", "ctheta1_m/F", "ctheta2_m/F", "helphi_m/F"]
-        #labels += ["kplus_pmod/F", "kminus_pmod/F", "ctheta_m/F", "cpsi_m/F", "trphi_m/F", "ctheta1_m/F",\ "ctheta2_m/F", "helphi_m/F"]
 
-        from RTuple import RTuple
-        tup = RTuple(outputname, labels)
+        # for branch in a:
+        #         name = branch.GetName()
+        #         names.append(branch.GetName())
+        #         labels.append(branch.GetName() + "/F")
+        # num = self._itNum
+        # labels += ["Kplus_P_mod%s/F" %num, "Kminus_P_mod%s/F"%num, \
+        #            "helcosthetaK_mod%s/F"%num, "helcosthetaL_mod%s/F"%num, "helphi_mod%s/F"%num]
+        #from RTuple import RTuple
+        #tup = RTuple(outputname, labels)
 
         from math import sqrt, cos
-        from SomeUtils.alyabar import vunit, vector, JpsiKst_Angles, P_VV_angles, vmod
+        from SomeUtils.alyabar import vunit, vector, P_VV_angles, vmod
+        
+        # from ROOT import TVector3, TLorentzVector
+        # _LV2L  = lambda lv : [ lv[3], [ lv[0],lv[1],lv[2] ]  ]
+        # _VM2LV = lambda v,m : TLorentzVector( v, sqrt( m*m + v.Mag2() ) )
+        # _E2V   = lambda entry, label : TVector3( getattr(entry,label+'_PX'),getattr(entry,label+'_PY'),getattr(entry,label+'_PZ'))
+        # _VM2L  = lambda v,m : _LV2L( _VM2LV(v,m) )
+
+        # Put the newly recalculated angles plus time and true time in a RooDataSet.
+        from ROOT import RooDataSet, RooArgSet
+        helcosthetaK = self._obsSet[1]
+        helcosthetaL = self._obsSet[2]
+        helphi = self._obsSet[3]
+        time = self._obsSet[0] 
+        obsSet = RooArgSet(helcosthetaK,helcosthetaL,helphi,time)    
+        RewData = RooDataSet('MomRewMC_%s_Iter'%self._itNum, 'MomRewMC_%s_Iter'%self._itNum, obsSet)
+
         print 'P2VV - INFO: Recalculating decay angles after kinematic distributions matching.'
+       
         for entry in t:
             p01 = sqrt(entry.Kplus_PX**2 + entry.Kplus_PY**2 + entry.Kplus_PZ**2)
             p02 = sqrt(entry.Kminus_PX**2 + entry.Kminus_PY**2 + entry.Kminus_PZ**2)
@@ -2639,26 +2719,56 @@ class matchWeightedDistributions():
 
             l2 = [Emu1, pmu1]
             l3 = [Emu2, pmu2]
+            # print l0
+            # print l1
+            # print l2
+            # print l3
+            # print  P_VV_angles(l0,l1,l2,l3)
 
-            #Th1P, Th2P, PhiP =  JpsiKst_Angles(l0,l1,l2,l3) ### Transversity basis
-            Th1, Th2, Phi = P_VV_angles(l0,l1,l2,l3) ### Helicity basis
+            ### for candidate in t:
+            # pmu1 = _E2V( entry , 'muplus' )
+            # pmu2 = _E2V( entry , 'muminus')
+            # pK1  = _E2V( entry , 'Kplus' ) 
+            # pK2  = _E2V( entry , 'Kminus' )
+            # #### Modify the momentum scale, keep the direction 
+            # pK1.SetMag( Udat.inverse(Umc(pK1.Mag())) )
+            # pK2.SetMag( Udat.inverse(Umc(pK2.Mag())) )
+            # l0 = _VM2L( pK1, Mk )
+            # l1 = _VM2L( pK2, Mk )
+            # l2 = _VM2L( pmu1, Mmu )
+            # l3 = _VM2L( pmu2, Mmu )
+            # print l0
+            # print l1
+            # print l2
+            # print l3
+            # print  P_VV_angles(l0,l1,l2,l3)
+                    
+            Th1,Th2,Phi = P_VV_angles(l0,l1,l2,l3)
 
-            for name in names: tup.fillItem(name,float(getattr(t,name)))
+            helcosthetaK.setVal(cos(Th1))
+            helcosthetaL.setVal(cos(Th2))
+            helphi.setVal(Phi)
+            if self._obsSet[0].GetName().startswith('true'): time.setVal(entry.truetime )
+            else: time.setVal(entry.time )
+            RewData.add(obsSet)
 
-            tup.fillItem("kplus_pmod",pmod1)
-            tup.fillItem("kminus_pmod",pmod2)
-            #tup.fillItem("cpsi_m",cos(Th1P))
-            #tup.fillItem("ctheta_m",cos(Th2P))
-            #tup.fillItem("trphi_m",PhiP)
-            tup.fillItem("ctheta1_m",cos(Th1))
-            tup.fillItem("ctheta2_m",cos(Th2))
-            tup.fillItem("helphi_m",Phi)
+            # for name in names: tup.fillItem(name,float(getattr(t,name)))
+            # tup.fillItem("Kplus_P_mod%s" %num,pmod1)
+            # tup.fillItem("Kminus_P_mod%s" %num,pmod2)
+            # tup.fillItem("helcosthetaK_mod%s"%num,cos(Th1))
+            # tup.fillItem("helcosthetaL_mod%s"%num,cos(Th2))
+            # tup.fillItem("helphi_mod%s"%num,Phi)
+            #tup.fill()           
+        #tup.close()
+        
+        from ROOT import TFile
+        f = TFile.Open(outputname + '_RDS.root','RECREATE')
+        f.cd()
+        RewData.Write()
+        f.Close()
 
-            tup.fill()
-
-        tup.close()
-
-    def reweightMC(self, outPath=None, var=None):
+    def reweightMC(self, outPath=None, var=None, obsSet=None):
+        self._obsSet = obsSet
         if not outPath:outPath= self._outFile
         if not var:var='Kminus_P'
 
