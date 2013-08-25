@@ -431,6 +431,7 @@ def printEventYields( **kwargs ) :
                    + [ ( name if num == 23 else 'f(' + name + ')', num ) for name in yieldNames for num in ( 23, 19 ) ] )
     print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
 
+    from P2VV.Utilities.General import getSplitPar
     cont = True
     while cont :
         stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
