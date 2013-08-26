@@ -35,7 +35,7 @@ env_vars = {'PATH' : 'bin',
             'LD_LIBRARY_PATH' : 'lib',
             'ROOTSYS' : ''}
 for var, d in env_vars.iteritems():
-    val = os.environ[var]
+    val = os.environ[var].replace('python2.6', 'pyton2.7').replace('2.6.5p2', '2.7.3')
     s = val.split(':')
     found = False
     for k in s:
@@ -68,10 +68,10 @@ j.postprocessors = [CustomMerger(
 
 # Add the splitter
 args = ['resolution_cfit_toy.py', '--ncpu=1', '-n',
-        '10', '--nevents=100000', '-s', 'snapshot.tar.bz2']
+        '2', '--nevents=100000', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
-    values = [args for i in range(100)]
+    values = [args for i in range(10)]
     )
 j.name = 'resolution_toys'
 
