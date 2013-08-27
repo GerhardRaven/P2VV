@@ -87,11 +87,11 @@ input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPresc
                                    'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
                                    'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
                                    'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_incl_Jpsi_Prescaled.root')},
-              'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_NoSmear_ntupleB_20130709_MagUpDown.root'),
+              'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_ntupleB_20130709_MagUpDown.root'),
                           'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012.root'),
                           'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
                           'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_Prescaled.root')},
-              'MC2012_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_NoSmear_incl_Jpsi_ntupleB_20130709_MagUpDown.root'),
+              'MC2012_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_incl_Jpsi_ntupleB_20130709_MagUpDown.root'),
                                     'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012.root'),
                                     'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
                                     'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_incl_Jpsi_Prescaled.root')}
@@ -247,7 +247,7 @@ if options.simultaneous:
     split_utils = {'sigmat' : ('Sigmat', [st]), 'ppt' : ('PPT', [momentum, pt]),
                    'momentum' : ('Momentum', [momentum]), 'pt' : ('PT', [pt]),
                    'pv_zerr' : ('PVZerr', [zerr])}
-    from P2VV import ResolutionUtils
+    from P2VV.Utilities import Resolution as ResolutionUtils
     split_opts = split_utils[options.split]
     SplitUtil = getattr(ResolutionUtils, 'Split' + split_opts[0])
     split_util = SplitUtil(args[0], *(split_opts[1]))
