@@ -103,7 +103,7 @@ data    = pdfBuild['data']
 # data set with weights corrected for background dilution: for phi_s fit only!
 if corrSFitErr == 'sumWeight'\
         or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-    from P2VV.GeneralUtils import correctSWeights
+    from P2VV.Utilities.DataHandling import correctSWeights
     fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
                               , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
                               , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )

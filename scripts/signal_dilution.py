@@ -70,7 +70,7 @@ background = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (100000,10
 
 psi_background = Component('psi_background', (bkg_m.pdf(), psi_m), Yield= (200000,500,500000) )
 
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 tree_name = 'DecayTree'
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
 if dataSample == '2011':
@@ -98,11 +98,11 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
                Verbose = False, Optimize = 2, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
-from P2VV.GeneralUtils import SData, splot
+from P2VV.Utilities.SWeights import SData, splot
 
 single_bin_result = mass_pdf.fitTo(data, **fitOpts)
 
-from P2VV.GeneralUtils import getSplitPar
+from P2VV.Utilities.General import getSplitPar
 # categories for splitting the PDF
 # get mass parameters that are split
 from ROOT import RooBinning
@@ -159,7 +159,7 @@ corr_hist_sWmass.GetYaxis().SetLabelSize(0.03)
 corr_hist_sWmass.SetContour(20)
 corr_hist_sWmass.Draw('colz')
 
-from P2VV.GeneralUtils import SData
+from P2VV.Utilities.SWeights import SData
 sData = SData(Pdf = sWeight_mass_pdf, Data = data, Name = 'SimulMassSPlot')
 sig_sdata = sData.data('signal')
 bkg_sdata = sData.data('background')

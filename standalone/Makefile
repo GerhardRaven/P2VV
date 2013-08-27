@@ -19,8 +19,8 @@ LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore 
 
 HAVE_WORKING_PYTHONCONFIG := $(shell python-config  --prefix 2>&1 1> /dev/null ; if [[ "$?" -eq  "0" ]]  ; then echo 'yes' ; else echo 'no' ; fi )
 ifeq ($(HAVE_WORKING_PYTHONCONFIG), yes)
-PYTHON_CFLAGS := $(shell $(PYTHONCONFIG) --cflags)
-PYTHON_LDFLAGS := $(shell $(PYTHONCONFIG) --ldflags)
+PYTHON_CFLAGS := $(shell $(PYTHONCONFIG) --cflags | sed -e "s=/afs/cern.ch/sw=/cvmfs/lhcb.cern.ch/lib=")
+PYTHON_LDFLAGS := $(shell $(PYTHONCONFIG) --ldflags | sed -e "s=/afs/cern.ch/sw=/cvmfs/lhcb.cern.ch/lib=")
 else
 PYTHON = $(shell which python)
 PYTHON_VERSION := $(shell $(PYTHON) --version 2>&1 | grep -o "2\.[567]")
@@ -49,8 +49,7 @@ vpath %.o   $(BUILDDIR)
 
 .PHONY: all clean profiler
 
-#all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so $(LIBDIR)/dilution.so
-all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so
+all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so $(LIBDIR)/dilution.so
 
 profiler: $(LIBDIR)/profiler.so
 

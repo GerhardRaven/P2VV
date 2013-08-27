@@ -132,12 +132,12 @@ if generateData :
     print 'computeMoments: generating %d events' % nEvents
     data = pdf.generate( observables, nEvents )
 
-    from P2VV.GeneralUtils import writeData
+    from P2VV.Utilities.DataHandling import writeData
     writeData( dataSetFile, dataSetName, data )
 
 else :
     # read data from file
-    from P2VV.GeneralUtils import readData
+    from P2VV.Utilities.DataHandling import readData
     data = readData( dataSetFile, dataSetName = dataSetName )
 
 if fitDataOriginal :
@@ -159,7 +159,7 @@ names0 = 'p2vvab_00..'
 names1 = names0 + '|p2vvab_10..'
 names2 = names1 + '|p2vvab_20..'
 
-from P2VV.GeneralUtils import RealMomentsBuilder
+from P2VV.Utilities.DataMoments import RealMomentsBuilder
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
 
@@ -302,7 +302,7 @@ if makePlots :
     anglesCanv = TCanvas( 'anglesCanv', 'Angles' )
 
     # make plots
-    from P2VV.GeneralUtils import plot
+    from P2VV.Utilities.Plotting import plot
     from ROOT import RooFit, RooCmdArg
     for ( pad, obs, nBins, plotTitle, xTitle ) in zip(  anglesCanv.pads(2, 2)
                                                       , angles

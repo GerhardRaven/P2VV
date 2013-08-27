@@ -416,9 +416,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if makePlots :
             # import plotting tools
-            from P2VV.GeneralUtils import plot
+            from P2VV.Utilities.Plotting import plot
             from ROOT import TCanvas, kBlue, kRed, kGreen, kSolid, kDashed, kFullCircle, TPaveText
-            from P2VV.GeneralUtils import _P2VVPlotStash
+            from P2VV.Utilities.Plotting import _P2VVPlotStash
 
             LHCbLabel = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC' )
             LHCbLabel.AddText('LHCb')
@@ -1077,7 +1077,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: multiplying signal PDF with angular efficiency moments from file "%s"'\
                   % angEffMomentsFile
 
-            from P2VV.GeneralUtils import RealMomentsBuilder,angularMomentIndices
+            from P2VV.Utilities.DataMoments import RealMomentsBuilder,angularMomentIndices
             moments = RealMomentsBuilder()
             moments.appendPYList( self._angleFuncs.angles, angularMomentIndices(multiplyByAngEff,self._angleFuncs ) )
             moments.read(angEffMomentsFile)
@@ -1693,7 +1693,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                              , SplitParameters = splitParams
                                             )
 
-            from P2VV.GeneralUtils import getSplitPar
+            from P2VV.Utilities.General import getSplitPar
             splitCatPars = self._simulPdf.getVariables()
             if not SFit :
                 # set values for splitted yields

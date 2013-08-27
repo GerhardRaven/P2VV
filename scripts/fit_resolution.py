@@ -364,7 +364,7 @@ PV_bounds = array('d', [-0.5 + i for i in range(12)])
 
 ## Build simple mass pdf
 if fit_mass:
-    from P2VV.GeneralUtils import readData
+    from P2VV.Utilities.DataHandling import readData
     data = readData(input_data[args[0]]['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut)
     data.SetName(tree_name)
@@ -407,8 +407,8 @@ if fit_mass:
     from ROOT import TCanvas
 
     mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 650)
-    from P2VV.GeneralUtils import SData
-    from P2VV.GeneralUtils import plot
+    from P2VV.Utilities.SWeights import SData
+    from P2VV.Utilities.Plotting import plot
     pdfOpts  = dict()
     if signal_MC:
         mass_obs = m
@@ -425,7 +425,7 @@ if fit_mass:
               )
     plots.append(ps)
     
-    from P2VV.GeneralUtils import SData
+    from P2VV.Utilities.SWeights import SData
     data_clone = data.Clone(data.GetName())
     sData = SData(Pdf = mass_pdf, Data = data_clone, Name = 'MassSPlot')
     single_bin_sig_sdata = sData.data(signal_name)
@@ -435,7 +435,7 @@ if fit_mass:
                    'full_bkg_sdata' : single_bin_bkg_sdata}
 
 if fit_mass and options.simultaneous:
-    from P2VV.GeneralUtils import getSplitPar
+    from P2VV.Utilities.General import getSplitPar
     # categories for splitting the PDF
     # get mass parameters that are split
     split_cats = [split_util.split_cats(data)]
@@ -464,7 +464,7 @@ if fit_mass and options.simultaneous:
     corr_hist_sWmass.SetContour(20)
     corr_hist_sWmass.Draw('colz')
     
-    from P2VV.GeneralUtils import SData
+    from P2VV.Utilities.SWeights import SData
     sData = SData(Pdf = sWeight_mass_pdf, Data = data, Name = 'SimulMassSPlot')
     sig_sdata_full = sData.data(signal_name)
     bkg_sdata_full = sData.data('background')
@@ -772,7 +772,7 @@ zoom_binning = RooBinning(len(zoom_bounds) - 1, zoom_bounds)
 zoom_binning.SetName('zoom')
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
-from P2VV.GeneralUtils import plot
+from P2VV.Utilities.Plotting import plot
 
 print 'plotting'
 

@@ -80,7 +80,7 @@ massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150.
 timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
 tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
 if trigger == 'ExclBiased' :
     cuts  = 'sel == 1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
@@ -186,7 +186,7 @@ else :
     print
 
 # moments builder with angular functions from physics PDF
-from P2VV.GeneralUtils import RealMomentsBuilder
+from P2VV.Utilities.DataMoments import RealMomentsBuilder
 if physPdf :
     from P2VV.RooFitWrappers import RealEffMoment
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,
@@ -292,7 +292,7 @@ if makePlots :
 
     # import plotting tools
     from P2VV.Load import LHCbStyle
-    from P2VV.GeneralUtils import plot
+    from P2VV.Utilities.Plotting import plot
     from ROOT import TCanvas, kBlue, kRed, kGreen, kFullDotLarge
     canvs = [ ]
 

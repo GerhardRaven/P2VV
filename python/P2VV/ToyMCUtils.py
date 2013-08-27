@@ -204,7 +204,7 @@ class SWeightTransform(object):
             if self.__result.status() == 0:
                 break
 
-        from P2VV.GeneralUtils import SData
+        from P2VV.Utilities.SWeights import SData
         sData = SData(Pdf = self.__pdf, Data = data, Name = 'MassSPlot')
         return sData.data(self.__comp)
 

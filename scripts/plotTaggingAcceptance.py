@@ -31,7 +31,7 @@ worksp = RooObject( workspace = 'JpsiKK' ).ws()
 # read data sets from file
 dataSets = { }
 from itertools import product
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 for cat in dataSetCats :
     dataSets[cat[0]] = readData( filePath = dataSetFilePath, dataSetName = dataSetName + '_' + cat[1],  NTuple = False )
 
