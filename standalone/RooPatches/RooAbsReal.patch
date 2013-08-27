@@ -1,5 +1,5 @@
 diff --git a/roofit/roofitcore/src/RooAbsReal.cxx b/roofit/roofitcore/src/RooAbsReal.cxx
-index 9cdd13a..78466fb 100644
+index 0e1b530..9c938ed 100644
 --- a/roofit/roofitcore/src/RooAbsReal.cxx
 +++ b/roofit/roofitcore/src/RooAbsReal.cxx
 @@ -2019,7 +2019,7 @@ RooPlot* RooAbsReal::plotOn(RooPlot *frame, PlotOpt o) const
@@ -11,7 +11,7 @@ index 9cdd13a..78466fb 100644
  
      if (projDataSel!=o.projData) delete projDataSel ;
         
-@@ -3493,6 +3493,14 @@ void RooAbsReal::logEvalError(const char* message, const char* serverValueString
+@@ -3465,6 +3465,14 @@ void RooAbsReal::logEvalError(const char* message, const char* serverValueString
    } else if (_evalErrorMode==CollectErrors) {
      _evalErrorList[this].first = oss2.str().c_str() ;
      _evalErrorList[this].second.push_back(ee) ;

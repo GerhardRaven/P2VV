@@ -1,5 +1,5 @@
 diff --git a/roofit/roofitcore/src/RooAbsData.cxx b/roofit/roofitcore/src/RooAbsData.cxx
-index af8a193..61cb9f9 100644
+index 9781622..7108fa5 100644
 --- a/roofit/roofitcore/src/RooAbsData.cxx
 +++ b/roofit/roofitcore/src/RooAbsData.cxx
 @@ -939,7 +939,7 @@ Double_t RooAbsData::moment(RooRealVar &var, Double_t order, Double_t offset, co
