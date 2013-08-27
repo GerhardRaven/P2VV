@@ -22,7 +22,7 @@ pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30M
 pdfConfig['angEffMomentsFile']    = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 
 # fit options
-fitOpts = dict(  NumCPU    = 6
+fitOpts = dict(  NumCPU    = 2
                , Optimize  = 2
                , Minimizer = 'Minuit2'
                , Offset    = True

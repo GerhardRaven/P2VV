@@ -15,31 +15,48 @@ class _util_parse_mixin( object ) :
             if par.GetName() == name : return par
         return None
 
-    def _parseArg( self, arg, kwargs, **parsDict ) :
-        def _create( arg, kwargs, **parsDict ) :
+    def getNamePrefix( self, kwargs ) :
+        namePF = kwargs.pop( 'ParNamePrefix', '' )
+        if not hasattr( self, '_namePF' ) : self._namePF = namePF
+        if self._namePF : return self._namePF + '_'
+        else :            return ''
+
+    def _parseArg( self, argName, kwargs, **parsDict ) :
+        def _create( argName, kwargs, **parsDict ) :
+            # get dictionary of parameters to construct the variable
+            if argName in kwargs :
+                argPars = kwargs.pop(argName)
+                parsDict.pop( argName, None )
+            else :
+                argPars = parsDict.pop( argName, { } )
+
+            # parse parameter dictionary
             import P2VV.RooFitWrappers
-            from copy import copy
-            _parsDict = copy(parsDict) # make sure we do not modify the input!!!
-            objType      = _parsDict.pop( 'ObjectType',   'RealVar' )
-            singleArgKey = _parsDict.pop( 'SingleArgKey', 'Value'   )
-            if arg in kwargs or arg in _parsDict :
-                argPars = kwargs.pop(arg) if arg in kwargs else _parsDict.pop(arg)
+            singleArgKey = parsDict.pop( 'SingleArgKey', 'Value' )
+            if argPars :
                 if isinstance( argPars, P2VV.RooFitWrappers.RooObject ) : return argPars
-                if type(argPars) == dict and 'ObjectType' in argPars : objType = argPars.pop('ObjectType')
-                _parsDict.update( argPars if type(argPars) == dict else { singleArgKey : argPars } )
-            if 'Name' not in _parsDict : _parsDict[ 'Name' ] = arg
+                parsDict.update( argPars if type(argPars) == dict else { singleArgKey : argPars } )
 
-            return vars(P2VV.RooFitWrappers)[objType](**_parsDict)
+            # construct variable name
+            if 'Name' not in parsDict : parsDict['Name'] = argName
+            if not parsDict.get( 'Observable', False ) :
+                namePF = parsDict.pop( 'NamePrefix', self._namePF )
+                if namePF : parsDict['Name'] = namePF + '_' + parsDict['Name']
 
-        # get object containter list
-        contList = parsDict.pop( 'ContainerList', None )
+            # create variable
+            objType = parsDict.pop( 'ObjectType', 'RealVar' )
+            return vars(P2VV.RooFitWrappers)[objType](**parsDict)
+
+        # get prefix for parameter names
+        self.getNamePrefix(kwargs)
 
         # create object
-        obj = _create( arg, kwargs, **parsDict )
+        contList = parsDict.pop( 'ContainerList', None )
+        obj = _create( argName, kwargs, **parsDict )
 
         # either put object in container list or set it as attribute
         if contList != None : contList.append(obj)
-        else : setattr( self, '_%s' % arg, obj )
+        else : setattr( self, '_%s' % argName, obj )
 
         # put object in parameters
         if not hasattr( self, '_params' ) : self._params = []

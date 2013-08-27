@@ -127,16 +127,16 @@ mumuMass   = pdfBuild['observables']['mumuMass']
 from P2VV.Load import LHCbStyle
 
 from P2VV.Parameterizations.MassPDFs import CB_Signal_Mass, DoubleCB_Signal_Mass, Linear_Background_Mass
-#mumuSig = CB_Signal_Mass(  Name        = 'sig_mumu'
-#                         , Prefix      = 'mumu_'
-#                         , mass        = mumuMass
+#mumuSig = CB_Signal_Mass(  Name             = 'sig_mumu'
+#                         , ParNamePrefix    = 'mumu'
+#                         , mass             = mumuMass
 #                         , mumu_m_sig_mean  = dict( Value = 3100., MinMax = ( 3050., 3150. ) )
 #                         , mumu_m_sig_sigma = dict( Value = 13.4,  MinMax = ( 12.5,  14.5  ) )
 #                         , mumu_m_sig_alpha = dict( Value = 1.7,   MinMax = ( 1.0,   2.0   ) )
 #                         , mumu_m_sig_n     = dict( Value = 2. )
 #                        )
 mumuSig = DoubleCB_Signal_Mass(  Name                = 'sig_mumu'
-                               , Prefix              = 'mumu_'
+                               , ParNamePrefix       = 'mumu'
                                , mass                = mumuMass
                                , mumu_m_sig_frac     = dict( Value = 0.81,   Error = 0.03, MinMax = ( 0.,    1.    ) )
                                , mumu_m_sig_mean     = dict( Value = 3099.7, Error = 0.1,  MinMax = ( 3050., 3150. ) )
