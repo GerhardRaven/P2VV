@@ -66,13 +66,25 @@ class Toy(object):
 
         __check_req_kw__('Observables', kwargs)
         __check_req_kw__('Pdf', kwargs)
+
+        observables = kwargs.pop('Observables')
+        obs_set = RooArgSet(*observables)
+        
         pdf = kwargs.pop('Pdf')
         genPdf = kwargs.pop('GenPdf', pdf)
-        observables = kwargs.pop('Observables')
-        obs_set = RooArgSet()
+
+        gen_obs_set = RooArgSet()
+        for o in list(observables) + list(genPdf.ConditionalObservables()):
+            gen_obs_set.add(o._target_())
+        gen_pdf_params = genPdf.getParameters(gen_obs_set).snapshot(True)
+
+        genPdf = genPdf.clone(genPdf.GetName() + "_toy_clone")
+        genPdf.recursiveRedirectServers(gen_pdf_params)
+
+        fit_obs_set = RooArgSet()
         for o in list(observables) + list(pdf.ConditionalObservables()):
-            obs_set.add(o._target_())
-        params = pdf.getParameters(obs_set)
+            fit_obs_set.add(o._target_())
+        params = pdf.getParameters(fit_obs_set)
 
         pdf_params = RooArgSet()
         for p in params:
@@ -87,7 +99,7 @@ class Toy(object):
         result_params = RooArgSet(pdf_params, "result_params")
 
         if self.__transform:
-            trans_params = self.__transform.gen_params(obs_set)
+            trans_params = self.__transform.gen_params(gen_obs_set)
             result_params.add(trans_params)
             
         # Some extra numbers of interest
@@ -125,7 +137,7 @@ class Toy(object):
             args = dict(NumEvents = self._options.nevents)
             if 'ProtoData' in kwargs:
                 args['ProtoData'] = kwargs.pop('ProtoData')
-            data = genPdf.generate(observables, **args)
+            data = genPdf.generate(obs_set, **args)
             if self.__transform:
                 data = self.__transform(data)
             
@@ -224,5 +236,5 @@ class SWeightTransform(object):
         if not self.__result:
             return []
         else:
-            return [p for p in result.__floatParsFinal()]
+            return [p for p in self.__result.floatParsFinal()]
 
