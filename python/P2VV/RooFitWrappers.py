@@ -978,7 +978,7 @@ class Pdf(RooObject):
     def setGlobalObservables(self, observables ) :
         self._globalObservables = observables
 
-    def __add_my_co_e_go__( self, **kwargs ) :
+    def _add_my_co_ec_go__( self, kwargs ) :
         condObs  = self.ConditionalObservables()
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'
@@ -1000,13 +1000,13 @@ class Pdf(RooObject):
 
     @wraps(RooAbsPdf.createNLL)
     def createNLL( self, data, **kwargs ) :
-        self._add_my_co_ec_go__(kwargs)
+        kwargs = self._add_my_co_ec_go__(kwargs)
         print 'INFO: createNLL with kwargs %s' % kwargs
         return self._var.createNLL( data, **kwargs )
 
     @wraps(RooAbsPdf.fitTo)
     def fitTo( self, data, **kwargs ) :
-        self._add_my_co_ec_go__(kwargs)
+        kwargs = self._add_my_co_ec_go__(kwargs)
         print 'INFO: fitTo: %s::%s %s' % ( data.IsA().GetName(),data.GetName(),', '.join( "%s = %s" % (k,v) for k,v in  kwargs.iteritems() ))
         return self._var.fitTo( data, **kwargs )
 
