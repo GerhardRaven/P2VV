@@ -44,7 +44,9 @@ class _util_parse_mixin( object ) :
             # construct variable name
             if 'Name' not in parsDict : parsDict['Name'] = argName
             namePF = self.getNamePrefix(kwargs)
-            namePF = ( parsDict.pop('NamePrefix') + '_' ) if 'NamePrefix' in parsDict else namePF
+            if 'NamePrefix' in parsDict :
+                namePF = parsDict.pop('NamePrefix')
+                if namePF : namePF += '_'
             if not parsDict.get( 'Observable', False ) and namePF : parsDict['Name'] = namePF + parsDict['Name']
 
             # create variable
