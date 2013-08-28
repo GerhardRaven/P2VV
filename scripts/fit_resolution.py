@@ -52,8 +52,6 @@ parser.add_option("--correct-errors", dest = "correct_errors", default = False, 
                   help = 'Apply the SumW2 error correction')
 parser.add_option("--add-background", dest = "add_background", default = False, action = 'store_true',
                   help = 'Add background to the time fit')
-parser.add_option("--scale-weights", dest = "scale_weights", default = False, action = 'store_true',
-                  help = 'Scale sWeights')
 
 (options, args) = parser.parse_args()
 
@@ -87,7 +85,7 @@ input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPresc
                                    'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
                                    'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
                                    'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_incl_Jpsi_Prescaled.root')},
-              'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_ntupleB_20130709_MagUpDown.root'),
+              'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_ntupleB_20130709_MagUpDown.root'),
                           'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012.root'),
                           'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
                           'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_Prescaled.root')},
@@ -536,26 +534,6 @@ elif fit_mass:
 
 corr_canvas.Update()
 
-if options.scale_weights:
-    from ROOT import RooCategory
-    sdata_obs = sig_sdata.get()
-    scaled_weight = RealVar('N_psi_ll_sw_scaled', Observable = True, MinMax = (-10, 10))
-    sdata_obs.add(scaled_weight._target_())
-    sig_sdata_clone = RooDataSet("scaled_ds", "scaled_ds", sdata_obs)
-    for i in range(sig_sdata.numEntries()):
-        r = sig_sdata.get(i)
-        for p in r:
-            if isinstance(p, RooCategory):
-                sdata_obs.find(p).setIndex(p.getIndex())
-            else:
-                sdata_obs.find(p).setVal(p.getVal())
-        
-        scaled_weight.setVal(sig_sdata.weight() / 2.)
-        sig_sdata_clone.add(sdata_obs)
-    
-    scaled_sig_sdata = RooDataSet('scaled_sig_sdata', 'scaled_sig_sdata', sig_sdata_clone,
-                                  sig_sdata_clone.get(), "", scaled_weight.GetName())
-
 # Define default components
 if signal_MC:
     components = [signal]
@@ -703,10 +681,7 @@ if options.add_background:
     fit_data = data
     fit_data_full = data
 else:
-    if options.scale_weights:
-        fit_data = scaled_sig_sdata
-    else:
-        fit_data = sig_sdata
+    fit_data = sig_sdata
     if options.simultaneous:
         fit_data_full = sig_sdata_full
 
@@ -757,7 +732,7 @@ if options.wpv and options.wpv_type == 'Mixing':
     zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
 elif signal_MC:
     bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.05 for i in range(12)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
-    zoom_bounds = array('d', [-0.1 + i * 0.005 for i in range(81)])
+    zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
 else:
     bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
     zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
@@ -831,6 +806,9 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             frame.SetName(plot_name)
         
         plots.append(ps)
+
+from P2VV.Utilities import Resolution as ResolutionUtils
+time_result.PrintSpecial(LaTeX = True, ParNames = ResolutionUtils.parNames)
 
 from P2VV.CacheUtils import WritableCacheFile
 with WritableCacheFile(cache_files, directory) as cache_file:

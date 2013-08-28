@@ -8,6 +8,10 @@ except ImportError:
 
 toy = Toy()
 parser = toy.parser()
+
+parser.add_option("--sfit", dest = "sFit", default = False,
+                  action = 'store_true', help = "Generate with cFit, fit with sFit")
+
 (options, args) = toy.configure()
 
 from ROOT import gROOT
@@ -111,10 +115,6 @@ components = [prompt, psi_ll, background, sig_wpv]
 gen_obs = (time_obs, mpsi, st)
 gen_pdf = buildPdf(Components = components, Observables = gen_obs, Name = 'gen_pdf')
 
-components = [prompt, psi_ll, sig_wpv]
-## PDF to fit with
-fit_pdf = buildPdf(Components = components, Observables = (time_obs,), Name = 'fit_pdf')
-
 ## Load parameter values
 from ROOT import TFile
 param_file = TFile.Open("gen_params.root")
@@ -139,9 +139,23 @@ fitOpts = dict(  Optimize  = 2
 
 toy.set_fit_opts(**fitOpts)
 
-from P2VV.ToyMCUtils import SWeightTransform
-mass_pdf = buildPdf(Components = (prompt, background), Observables = (mpsi,), Name = 'mass_pdf')
-toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts))
+if options.sFit:
+    # Components for sFit
+    components = [prompt, psi_ll, sig_wpv]
+
+    ## PDF for sFit
+    fit_pdf = buildPdf(Components = components, Observables = (time_obs,), Name = 'fit_pdf')
+
+    ## SWeights
+    from P2VV.ToyMCUtils import SWeightTransform
+    mass_pdf = buildPdf(Components = (prompt, background), Observables = (mpsi,), Name = 'mass_pdf')
+    toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts))
+else:
+    # Components for cFit
+    components = [prompt, psi_ll, background, sig_wpv]
+
+    ## PDF for cFit
+    fit_pdf = buildPdf(Components = components, Observables = (time_obs, mpsi), Name = 'fit_pdf')
 
 toy.run(Observables = gen_obs, Pdf = fit_pdf, GenPdf = gen_pdf)
 
