@@ -1,3 +1,17 @@
+import optparse
+import sys
+import os
+
+parser = optparse.OptionParser(usage = '%prog file year')
+(options, args) = parser.parse_args()
+
+if len(args) != 2:
+    print parser.usage
+    sys.exit(-2)
+
+input_filename = args[0]
+data_name = 'wpv_data_%s' % args[1]
+
 from P2VV.RooFitWrappers import *
 from P2VV.Load import P2VVLibrary
 from P2VV.Load import LHCbStyle
@@ -19,8 +33,8 @@ psi_t = Background_Time( Name = 'psi_t', time = t, resolutionModel = tres.model(
 psi_t = psi_t.pdf()
 
 from ROOT import TFile
-input_file = TFile.Open("wpv_test.root")
-sdata = input_file.Get("wpv_data")
+input_file = TFile(input_filename)
+sdata = input_file.Get(data_name)
 sdata_cut = sdata.reduce('time > %f' % t.getMin())
 
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
@@ -31,6 +45,13 @@ result = psi_t.fitTo(sdata_cut, **fitOpts)
 from ROOT import TCanvas
 canvas = TCanvas('canvas', 'canvas', 600, 400)
 frame = t.frame()
-sdata_cut.plotOn(frame)
+nBins = 50
+sdata_cut.plotOn(frame, Binning = nBins)
 psi_t.plotOn(frame)
+frame.GetXaxis().SetTitle('decay time [ps]')
+frame.GetYaxis().SetTitle('Candidates / (%3.2f ps)' % ((t.getMax() - t.getMin()) / float(nBins)))
 frame.Draw()
+
+
+from P2VV.Utilities import Resolution as ResolutionUtils
+result.PrintSpecial(LaTeX = True, ParNames = ResolutionUtils.parNames)
