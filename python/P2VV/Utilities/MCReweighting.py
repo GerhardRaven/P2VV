@@ -301,7 +301,7 @@ class matchMCphysics2Data():
     def setDataFitParameters(self, pars):
         from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
         amps = Amplitudes(AmbiguityParameters=False, ASParameterization='deltaPerp', AparParameterization='phase'
-                          ,prefix     = pars['prefix']
+                          ,ParNamePrefix = pars['prefix']
                           ,A0Mag2     = pars['A0Mag2']
                           ,A0Phase    = pars['A0Phase']
                           ,AperpMag2  = pars['AperpMag2']
@@ -314,8 +314,8 @@ class matchMCphysics2Data():
 
         for p in self._pdf.Parameters():
             key = p.GetName()
-            if   key.startswith('Re'):p.setVal( amps[ pars['prefix']+key[2:] ].Re.getVal() )
-            elif key.startswith('Im'):p.setVal( amps[ pars['prefix']+key[2:] ].Im.getVal() )
+            if   key.startswith('Re'):p.setVal( amps[ pars['prefix']+'_'+key[2:] ].Re.getVal() )
+            elif key.startswith('Im'):p.setVal( amps[ pars['prefix']+'_'+key[2:] ].Im.getVal() )
             else:                     p.setVal(       pars[key]                            )
 
     def calculateWeights(self,dataParameters):

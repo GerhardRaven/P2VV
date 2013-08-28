@@ -1185,7 +1185,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 self._sigTaggingPdf = TaggingPdf(  'tagCat_iTag'
                                                  , observables['tagCatOS'], observables['tagCatSS'] if SSTagging else None
                                                  , observables['iTagOS'], observables['iTagSS'] if SSTagging else None
-                                                 , NamePrefix    = 'sig'
+                                                 , ParNamePrefix = 'sig'
                                                  , TagCatCoefs   = [ sigPdf.tagCatCoefs(it)\
                                                                      for it in range( observables['tagCatOS'].numTypes() ) ]\
                                                                      if SSTagging else [ sigPdf.tagCatCoefs(0) ]
@@ -1626,7 +1626,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 self._bkgTaggingPdf = TaggingPdf(  'tagCat_iTag'
                                                  , observables['tagCatOS'], observables['tagCatSS'] if SSTagging else None
                                                  , observables['iTagOS'], observables['iTagSS'] if SSTagging else None
-                                                 , NamePrefix    = 'bkg'
+                                                 , ParNamePrefix = 'bkg'
                                                  , TaggedCatName = 'TagCat' if observables['tagCatOS'].numTypes() > 2 else 'Tagged'
                                                  , Data          = cbkgData
                                                  , RelativeCoefs = True if bkgTaggingPdf.endswith('Relative') else False

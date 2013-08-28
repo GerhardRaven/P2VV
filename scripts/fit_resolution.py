@@ -156,7 +156,7 @@ if args[1] == 'single':
                      BiasScaleFactor = False, Cache = False,
                      TimeResSFParam = options.sf_param, SplitMean = options.split_mean)
     sig_tres = TimeResolution(Name = 'tres', **tres_args)
-    bkg_tres = TimeResolution(Name = 'bkg_tres', ResolutionNamePrefix = 'bkg_', **tres_args)
+    bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 elif args[1] == 'double':
     mu = dict(MinMax = (-0.010, 0.010))
     mu['Constant'] = options.simultaneous and not options.split_mean
@@ -172,8 +172,7 @@ elif args[1] == 'double':
                               ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                               Fractions = [(2, 0.2)], SplitMean = options.split_mean)
     sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
-    tres_args['bkg_timeResMu'] = tres_args.pop('timeResMu')
-    bkg_tres = TimeResolution(Name = 'bkg_tres', ResolutionNamePrefix = 'bkg_', **tres_args)
+    bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 elif args[1] == 'triple':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = time_obs, sigmat = st, Cache = True,

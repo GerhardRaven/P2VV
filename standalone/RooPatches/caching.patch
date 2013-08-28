@@ -14,26 +14,8 @@ index 5722ee6..d355a51 100644
      
  protected:
    Double_t getCoefNorm(Int_t coefIdx, const RooArgSet* nset, const TNamed* rangeName) const ;
-diff --git a/roofit/roofitcore/src/RooAbsCachedReal.cxx b/roofit/roofitcore/src/RooAbsCachedReal.cxx
-index 8e86f09..73ed3ec 100644
---- a/roofit/roofitcore/src/RooAbsCachedReal.cxx
-+++ b/roofit/roofitcore/src/RooAbsCachedReal.cxx
-@@ -301,8 +301,11 @@ RooArgList RooAbsCachedReal::FuncCacheElem::containedArgs(Action)
- {
-   // Return list of contained RooAbsArg objects
-   RooArgList ret(*func()) ;
--
--  ret.add(*_paramTracker) ;
-+  if (sourceClone()) { 
-+      //cout << "RooAbsCacheReal::FuncCacheElem::containedArgs: adding sourceClone " << sourceClone()->GetName() << " at " << sourceClone() << endl;
-+      ret.add(*sourceClone()); 
-+  }
-+  ret.add(*paramTracker()) ;
-   if (_sourceClone) {
-     ret.add(*_sourceClone) ;
-   }
 diff --git a/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx b/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
-index 183c983..385eb6f 100644
+index adf2282..75050a3 100644
 --- a/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
 +++ b/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
 @@ -58,6 +58,7 @@
@@ -44,7 +26,7 @@ index 183c983..385eb6f 100644
  #include "RooTrace.h"
  #include "RooVectorDataStore.h" 
  
-@@ -689,6 +690,16 @@ void RooAbsOptTestStatistic::optimizeConstantTerms(Bool_t activate, Bool_t apply
+@@ -692,6 +693,16 @@ void RooAbsOptTestStatistic::optimizeConstantTerms(Bool_t activate, Bool_t apply
  	    }
  	  }
  	}

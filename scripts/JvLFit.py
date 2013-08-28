@@ -59,7 +59,7 @@ dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, Tr
 
 # fit options
 fitRange = ''
-fitOpts = dict(  NumCPU    = 6
+fitOpts = dict(  NumCPU    = 8
                , Optimize  = 2
                , Timer     = True
 #               , Verbose   = True

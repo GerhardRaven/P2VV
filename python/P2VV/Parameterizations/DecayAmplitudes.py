@@ -101,7 +101,7 @@ class AmplitudeSet( dict, _util_parse_mixin, _util_conditionalObs_mixin ) :
         if kw in self : return dict.__getitem__( self, kw )
         return getattr( self, '_' + kw )
 
-    def _createBinnedAmp( self, name, kwargs, title, initVals, minMaxs, category, prefix = '' ) :
+    def _createBinnedAmp( self, name, kwargs, title, initVals, minMaxs, category ) :
         # get initial values, minima and maxima for bin coefficients
         if hasattr( initVals, '__iter__' ) and len(initVals) == category.numTypes() : vals = initVals
         else : vals = category.numTypes() * [ initVals ]
@@ -116,8 +116,8 @@ class AmplitudeSet( dict, _util_parse_mixin, _util_conditionalObs_mixin ) :
         from P2VV.RooFitWrappers import RealVar
         while state :
             ind = state.getVal()
-            self._parseArg( '%s_bin%d' % (name, ind), kwargs, Name = '%s%s_bin%d' % (prefix, name, ind), Title = '%s %d' % (title, ind)
-                           , Value = vals[binIt], MinMax = minMax[binIt], ContainerList = coefs )
+            self._parseArg( '%s_bin%d' % ( name, ind ), kwargs, Title = '%s %d' % ( title, ind ), Value = vals[binIt]
+                           , MinMax = minMax[binIt], ContainerList = coefs )
             binIt += 1
             state = stateIt.Next()
         setattr( self, '_%sCoefs' % name, coefs )
@@ -282,7 +282,7 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
         ambiguityPars = kwargs.pop( 'AmbiguityParameters',  False       )
         ASParam       = kwargs.pop( 'ASParameterization',   'deltaPerp' )
         AparParam     = kwargs.pop( 'AparParameterization', 'phase'     )
-        prefix        = kwargs.pop( 'prefix',               ''          )
+        namePF        = self.getNamePrefix(kwargs)
 
         from math import pi
         deltaPar   = AparPh - A0Ph
@@ -300,99 +300,97 @@ class JpsiVPolarSWaveFrac_AmplitudeSet( AmplitudeSet ) :
         from P2VV.RooFitWrappers import ConvertPolAmp
 
         # A_0
-        self._parseArg( 'A0Mag2',  kwargs, Name = '%sA0Mag2' % (prefix), Title = '|A0|^2',  Value = A02, Error = A02Err, MinMax = ( 0., 1. ) )
-        self._parseArg( 'A0Phase', kwargs, Name = '%sA0Phase' % (prefix), Title = 'delta_0', Value = 0.,  Constant = True )
-        A0Amp = Polar2_Amplitude( '%sA0' % (prefix), self._A0Mag2, self._A0Phase, +1 )
+        self._parseArg( 'A0Mag2',  kwargs, Title = '|A0|^2',  Value = A02, Error = A02Err, MinMax = ( 0., 1. ) )
+        self._parseArg( 'A0Phase', kwargs, Title = 'delta_0', Value = 0.,  Constant = True )
+        A0Amp = Polar2_Amplitude( '%sA0' % namePF, self._A0Mag2, self._A0Phase, +1 )
 
         # A_perp
-        self._parseArg( 'AperpMag2',  kwargs, Name = '%sAperpMag2' % (prefix), Title = '|A_perp|^2', Value = Aperp2,    Error = Aperp2Err,  MinMax = (  0.,     1.     ) )
-        self._parseArg( 'AperpPhase', kwargs, Name = '%sAperpPhase' % (prefix), Title = 'delta_perp', Value = deltaPerp, Error = delPerpErr, MinMax = ( -RooInf, RooInf ) )
-        AperpAmp = Polar2_Amplitude( '%sAperp' % (prefix), self._AperpMag2, self._AperpPhase, -1 )
+        self._parseArg( 'AperpMag2',  kwargs, Title = '|A_perp|^2', Value = Aperp2,    Error = Aperp2Err,  MinMax = (  0.,     1.     ) )
+        self._parseArg( 'AperpPhase', kwargs, Title = 'delta_perp', Value = deltaPerp, Error = delPerpErr, MinMax = ( -RooInf, RooInf ) )
+        AperpAmp = Polar2_Amplitude( '%sAperp' % namePF, self._AperpMag2, self._AperpPhase, -1 )
 
         # A_par
         from P2VV.RooFitWrappers import ComplementCoef
-        self._AparMag2 = ComplementCoef(Name = '%sAparMag2' % prefix, Title = '|A_par|^2', Coefficients = [self._A0Mag2, self._AperpMag2])
+        self._AparMag2 = ComplementCoef(Name = '%sAparMag2' % namePF, Title = '|A_par|^2', Coefficients = [self._A0Mag2, self._AperpMag2])
         if AparParam in [ 'real', 'cos' ] :
             # Re(A_par)
             if AparParam == 'real' :
-                self._parseArg( 'ReApar', kwargs, Name = '%sReApar' % (prefix), Title = 'Re(A_par)', Value = sqrt(Apar2) * cos(deltaPar), MinMax = ( -1., 1. ) )
+                self._parseArg( 'ReApar', kwargs, Title = 'Re(A_par)', Value = sqrt(Apar2) * cos(deltaPar), MinMax = ( -1., 1. ) )
             else :
-                self._parseArg( 'cosAparPhase', kwargs, Name = '%scosAparPhase' % (prefix), Title = 'cos(delta_par)', Value = cos(deltaPar), MinMax = ( -1., 1. ) )
-                self._ReApar = ConvertPolAmp( Name = '%sReApar' % prefix, Title = 'Re(A_par)', Type = 'MagSqSinToReIm'
+                self._parseArg( 'cosAparPhase', kwargs, Title = 'cos(delta_par)', Value = cos(deltaPar), MinMax = ( -1., 1. ) )
+                self._ReApar = ConvertPolAmp( Name = '%sReApar' % namePF, Title = 'Re(A_par)', Type = 'MagSqSinToReIm'
                                              , Arguments = [ self._AparMag2, self._cosAparPhase ] )
 
             # Im(A_par)
             from P2VV.RooFitWrappers import Category, FormulaVar
-            self._ImAparSign = Category( '%sImAparSign' % (prefix), States = { 'plus' : +1, 'minus' : -1 } )
+            self._ImAparSign = Category( '%sImAparSign' % namePF, States = { 'plus' : +1, 'minus' : -1 } )
             if ambiguityPars : self._ImAparSign.setIndex(+1)
             else             : self._ImAparSign.setIndex(-1)
-            self._ImApar = FormulaVar( '%sImApar' % (prefix), '@2*sqrt(@0 - @1*@1)', [ self._AparMag2, self._ReApar, self._ImAparSign ]
+            self._ImApar = FormulaVar( '%sImApar' % namePF, '@2*sqrt(@0 - @1*@1)', [ self._AparMag2, self._ReApar, self._ImAparSign ]
                                       , Title = 'Im(A_par)' )
-            AparAmp = Carthesian_Amplitude( '%sApar' % (prefix), self._ReApar, self._ImApar, +1 )
+            AparAmp = Carthesian_Amplitude( '%sApar' % namePF, self._ReApar, self._ImApar, +1 )
 
         else :
             # delta_par
-            self._parseArg( 'AparPhase', kwargs, Name = '%sAparPhase' % (prefix), Title = 'delta_par', Value = deltaPar, Error = delParErr, MinMax = ( -RooInf, RooInf ) )
-            AparAmp = Polar2_Amplitude( '%sApar' % (prefix), self._AparMag2, self._AparPhase, +1 )
+            self._parseArg( 'AparPhase', kwargs, Title = 'delta_par', Value = deltaPar, Error = delParErr, MinMax = ( -RooInf, RooInf ) )
+            AparAmp = Polar2_Amplitude( '%sApar' % namePF, self._AparMag2, self._AparPhase, +1 )
 
         # A_S
         self._KKMassCat = kwargs.pop( 'KKMassCategory', None )
         if self._KKMassCat :
-            self._createBinnedAmp( 'C_SP', kwargs, 'S-P wave couping factor', C_SP, ( 0., 1. ), self._KKMassCat, prefix )
+            self._createBinnedAmp( 'C_SP', kwargs, 'S-P wave couping factor', C_SP, ( 0., 1. ), self._KKMassCat )
         else :
-            self._parseArg( 'C_SP', kwargs, Name = '%sC_SP' % prefix, Title = 'S-P wave couping factor', Value = C_SP, Error = C_SPErr
-                           , MinMax = ( 0., 1. ) )
+            self._parseArg( 'C_SP', kwargs, Title = 'S-P wave couping factor', Value = C_SP, Error = C_SPErr, MinMax = ( 0., 1. ) )
 
         if ASParam != 'ReIm' :
             if self._KKMassCat :
-                self._createBinnedAmp( 'f_S', kwargs, 'S wave fraction', f_S, ( 0., 1. ), self._KKMassCat, prefix )
+                self._createBinnedAmp( 'f_S', kwargs, 'S wave fraction', f_S, ( 0., 1. ), self._KKMassCat )
                 if ASParam == 'deltaPerp' :
-                    self._createBinnedAmp( 'ASOddPhase', kwargs, 'delta_S - delta_perp', deltaS, ( -2. * pi, 2. * pi ), self._KKMassCat
-                                          , prefix )
+                    self._createBinnedAmp( 'ASOddPhase', kwargs, 'delta_S - delta_perp', deltaS, ( -2. * pi, 2. * pi ), self._KKMassCat )
                 else :
-                    self._createBinnedAmp( 'ASPhase', kwargs, 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMassCat, prefix )
+                    self._createBinnedAmp( 'ASPhase', kwargs, 'delta_S', deltaS, ( -2. * pi, 2. * pi ), self._KKMassCat )
 
             else :
-                self._parseArg( 'f_S', kwargs, Name = '%sf_S' % (prefix), Title = 'S wave fraction', Value = f_S, Error = f_SErr, MinMax = ( 0., 1. ) )
+                self._parseArg( 'f_S', kwargs, Title = 'S wave fraction', Value = f_S, Error = f_SErr, MinMax = ( 0., 1. ) )
                 if ASParam == 'deltaPerp' :
-                    self._parseArg( 'ASOddPhase', kwargs, Name = '%sASOddPhase' % (prefix), Title = 'delta_S - delta_perp', Value = deltaS, Error = delSErr
+                    self._parseArg( 'ASOddPhase', kwargs, Title = 'delta_S - delta_perp', Value = deltaS, Error = delSErr
                                    , MinMax = ( -RooInf, RooInf ) )
                 else :
-                    self._parseArg( 'ASPhase', kwargs, Name = '%sASPhase' % (prefix), Title = 'delta_S', Value = deltaS, Error = delSErr, MinMax = ( -RooInf, RooInf ) )
+                    self._parseArg( 'ASPhase', kwargs, Title = 'delta_S', Value = deltaS, Error = delSErr, MinMax = ( -RooInf, RooInf ) )
 
-            self._ASMag2 = ConvertPolAmp( Name = '%sASMag2' % prefix, Title = 'Re(A_S)', Type = 'FracToMagSq', Arguments = [ self._f_S ] )
+            self._ASMag2 = ConvertPolAmp( Name = '%sASMag2' % namePF, Title = 'Re(A_S)', Type = 'FracToMagSq', Arguments = [ self._f_S ] )
             if ASParam == 'deltaPerp' :
-                self._ReAS = ConvertPolAmp( Name = '%sReAS' % prefix, Type = 'FracPolToReRelC', Title = 'Re(A_S)'
+                self._ReAS = ConvertPolAmp( Name = '%sReAS' % namePF, Type = 'FracPolToReRelC', Title = 'Re(A_S)'
                                            , Arguments = [ self._f_S, self._ASOddPhase, self._AperpPhase, self._C_SP ] )
-                self._ImAS = ConvertPolAmp( Name = '%sImAS' % prefix, Type = 'FracPolToImRelC', Title = 'Im(A_S)'
+                self._ImAS = ConvertPolAmp( Name = '%sImAS' % namePF, Type = 'FracPolToImRelC', Title = 'Im(A_S)'
                                            , Arguments = [ self._f_S, self._ASOddPhase, self._AperpPhase, self._C_SP ] )
 
             else :
-                self._ReAS = ConvertPolAmp( Name = '%sReAS' % prefix, Title = 'Re(A_S)', Type = 'FracPolToReC'
+                self._ReAS = ConvertPolAmp( Name = '%sReAS' % namePF, Title = 'Re(A_S)', Type = 'FracPolToReC'
                                            , Arguments = [ self._f_S, self._ASPhase, self._C_SP ] )
-                self._ImAS = ConvertPolAmp( Name = '%sImAS' % prefix, Title = 'Im(A_S)', Type = 'FracPolToImC'
+                self._ImAS = ConvertPolAmp( Name = '%sImAS' % namePF, Title = 'Im(A_S)', Type = 'FracPolToImC'
                                            , Arguments = [ self._f_S, self._ASPhase, self._C_SP ] )
 
         else :
             if self._KKMassCat :
                 self._createBinnedAmp( 'sqrtfS_Re', kwargs, 'sqrt(S wave fraction) * cos(delta_S)', sqrt(f_S) * cos(deltaS), ( -1., 1. )
-                                      , self._KKMassCat, prefix )
+                                      , self._KKMassCat )
                 self._createBinnedAmp( 'sqrtfS_Im', kwargs, 'sqrt(S wave fraction) * sin(delta_S)', sqrt(f_S) * sin(deltaS), ( -1., 1. )
-                                      , self._KKMassCat, prefix )
+                                      , self._KKMassCat )
             else :
-                self._parseArg( 'sqrtfS_Re', kwargs, Name = '%ssqrtfS_Re' % (prefix), Title = 'sqrt(S wave fraction) * cos(delta_S)', Value = sqrt(f_S) * cos(deltaS)
+                self._parseArg( 'sqrtfS_Re', kwargs, Title = 'sqrt(S wave fraction) * cos(delta_S)', Value = sqrt(f_S) * cos(deltaS)
                                , MinMax = ( -1., 1. ) )
-                self._parseArg( 'sqrtfS_Im', kwargs, Name = '%ssqrtfS_Im' % (prefix), Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(deltaS)
+                self._parseArg( 'sqrtfS_Im', kwargs, Title = 'sqrt(S wave fraction) * sin(delta_S)', Value = sqrt(f_S) * sin(deltaS)
                                , MinMax = ( -1., 1. ) )
 
-            self._ASMag2 = ConvertPolAmp( Name = '%sASMag2' % prefix, Title = '|A_S|^2', Type = 'CarthFracToMagSq'
+            self._ASMag2 = ConvertPolAmp( Name = '%sASMag2' % namePF, Title = '|A_S|^2', Type = 'CarthFracToMagSq'
                                          , Arguments = [ self._sqrtfS_Re, self._sqrtfS_Im ] )
-            self._ReAS = ConvertPolAmp( Name = '%sReAS' % prefix, Title = 'Re(A_S)', Type = 'FracCarthToReRelC'
+            self._ReAS = ConvertPolAmp( Name = '%sReAS' % namePF, Title = 'Re(A_S)', Type = 'FracCarthToReRelC'
                                        , Arguments = [ self._sqrtfS_Re, self._sqrtfS_Im, self._C_SP ] )
-            self._ImAS = ConvertPolAmp( Name = '%sImAS' % prefix, Title = 'Im(A_S)', Type = 'FracCarthToImRelC'
+            self._ImAS = ConvertPolAmp( Name = '%sImAS' % namePF, Title = 'Im(A_S)', Type = 'FracCarthToImRelC'
                                        , Arguments = [ self._sqrtfS_Re, self._sqrtfS_Im, self._C_SP ] )
 
-        ASAmp = Carthesian_Amplitude( '%sAS' % (prefix), self._ReAS, self._ImAS, -1
+        ASAmp = Carthesian_Amplitude( '%sAS' % namePF, self._ReAS, self._ImAS, -1
                                      , getattr( self, '_ASMag2', None ) 
                                      , getattr( self, '_ASPhase', None ) )
 

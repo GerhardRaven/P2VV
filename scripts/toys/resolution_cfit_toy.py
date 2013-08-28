@@ -61,7 +61,7 @@ sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
 
 # Resolution models
 tres_args['bkg_timeResMu'] = tres_args.pop('timeResMu')
-bkg_tres = TimeResolution(Name = 'bkg_tres', ResolutionNamePrefix = 'bkg_', **tres_args)
+bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
@@ -83,8 +83,8 @@ psi_t = psi_t.pdf()
 
 # Sigmat PDFs
 from P2VV.Parameterizations.SigmatPDFs import DoubleLogNormal
-sig_ln = DoubleLogNormal(st, Prefix = 'sig_')
-bkg_ln = DoubleLogNormal(st, Prefix = 'bkg_')
+sig_ln = DoubleLogNormal(st, ParNamePrefix = 'sig')
+bkg_ln = DoubleLogNormal(st, ParNamePrefix = 'bkg')
 
 # Background time pdf
 from P2VV.Parameterizations.TimePDFs import Prompt_Peak

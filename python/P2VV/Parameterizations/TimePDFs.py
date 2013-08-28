@@ -17,11 +17,10 @@ class BDecayBasisCoefficients ( _util_parse_mixin ) :
 
 class Coefficients_BDecayBasisCoefficients ( BDecayBasisCoefficients ) :
     def __init__( self, **kwargs ) :
-        pf = kwargs.pop( 'Prefix', '' )
-        cCosh = self._parseArg( 'cCosh', kwargs, Name = '%scCosh' % pf, Title = 'cosh coefficient', Value =  1., ObjectType = 'ConstVar' )
-        cCos  = self._parseArg( 'cCos',  kwargs, Name = '%scCos'  % pf, Title = 'cos coefficient',  Value =  0., MinMax = (-2., 2.) )
-        cSinh = self._parseArg( 'cSinh', kwargs, Name = '%scSinh' % pf, Title = 'sinh coefficient', Value = -1., MinMax = (-2., 2.) )
-        cSin  = self._parseArg( 'cSin',  kwargs, Name = '%scSin'  % pf, Title = 'sin coefficient',  Value =  0., MinMax = (-2., 2.) )
+        cCosh = self._parseArg( 'cCosh', kwargs, Title = 'cosh coefficient', Value =  1., ObjectType = 'ConstVar' )
+        cCos  = self._parseArg( 'cCos',  kwargs, Title = 'cos coefficient',  Value =  0., MinMax = (-2., 2.) )
+        cSinh = self._parseArg( 'cSinh', kwargs, Title = 'sinh coefficient', Value = -1., MinMax = (-2., 2.) )
+        cSin  = self._parseArg( 'cSin',  kwargs, Title = 'sin coefficient',  Value =  0., MinMax = (-2., 2.) )
         BDecayBasisCoefficients.__init__( self, **dict( cosh = cCosh, cos = cCos, sinh = cSinh, sin = cSin ) )
 
 class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
@@ -287,13 +286,12 @@ class Single_Exponent_Time( TimePdf ) :
 
 class Prompt_Peak( TimePdf ) :
     def __init__(self, time, resolutionModel, **kwargs) :
-        prefix = kwargs.pop('Prefix', '')
-        self._parseArg('%sprompt_tau' % prefix, kwargs, Title = 'lifetime', Unit = 'ps',
-                       Value = 0, Constant = True)
+        namePF = self.getNamePrefix(kwargs)
+        self._parseArg( 'prompt_tau', kwargs, Title = 'lifetime', Unit = 'ps', Value = 0, Constant = True )
 
         from P2VV.RooFitWrappers import Pdf
         from ROOT import RooDecay as Decay
-        TimePdf.__init__(self, pdf = Pdf( Name = prefix + kwargs.pop('Name', self.__class__.__name__)
+        TimePdf.__init__(self, pdf = Pdf( Name = namePF + kwargs.pop('Name', self.__class__.__name__)
                                           , Type = Decay
                                           , Parameters = (time, self._prompt_tau, resolutionModel, 'SingleSided')
                                           , ConditionalObservables = resolutionModel.ConditionalObservables()

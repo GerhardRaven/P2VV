@@ -35,15 +35,15 @@ class ShapeBuilder(object):
             m_sig_sigma = RealVar('wpv_m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (1, 20))
             from ROOT import RooGaussian as Gaussian
             self._sig_mass = Pdf(Name = 'wpv_sig_m', Type = Gaussian, Parameters = (masses['B'], m_sig_mean, m_sig_sigma ))
-            ## self._sig_mass = BMassPdf(masses['B'], Name = 'wpv_sig_mass', Prefix = "wpv_")
-            self._bkg_mass = BBkgPdf(masses['B'],  Name = 'wpv_bkg_mass', Prefix = "wpv_",
+            ## self._sig_mass = BMassPdf(masses['B'], Name = 'wpv_sig_mass', ParNamePrefix = "wpv")
+            self._bkg_mass = BBkgPdf(masses['B'],  Name = 'wpv_bkg_mass', ParNamePrefix = "wpv",
                                      wpv_m_bkg_exp = dict(Name = 'wpv_m_bkg_exp', Value = -0.0017, MinMax = (-0.01, -0.00001)))
             self._sig[masses['B']] = self._sig_mass
             self._psi[masses['B']] = self._bkg_mass.pdf()
             self._bkg[masses['B']] = self._bkg_mass.pdf()
         if 'jpsi' in masses:
-            self._sig_mpsi = PsiMassPdf(masses['jpsi'], Name = 'wpv_sig_mpsi', Prefix = "wpv_")
-            self._bkg_mpsi = PsiBkgPdf(masses['jpsi'], Name = 'wpv_bkg_mpsi', Prefix = "wpv_")
+            self._sig_mpsi = PsiMassPdf(masses['jpsi'], Name = 'wpv_sig_mpsi', ParNamePrefix = "wpv")
+            self._bkg_mpsi = PsiBkgPdf(masses['jpsi'], Name = 'wpv_bkg_mpsi', ParNamePrefix = "wpv")
             self._sig[masses['jpsi']] = self._sig_mpsi.pdf()
             self._psi[masses['jpsi']] = self._sig_mpsi.pdf()
             self._bkg[masses['jpsi']] = self._bkg_mpsi.pdf()
