@@ -151,20 +151,13 @@ class LP2011_Signal_Mass ( MassPdf ) :
         from P2VV.RooFitWrappers import Pdf, FormulaVar, SumPdf
         g1 = Pdf(  Name = '%sm_sig_1' % namePF
                  , Type = Gaussian
-                 , Parameters = ( mass, getattr( self, '_m_sig_mean' ), getattr( self, '_m_sig_sigma_1' ) )
-                )
+                 , Parameters = (mass, self._m_sig_mean, self._m_sig_sigma_1))
         g2 = Pdf(  Name = '%sm_sig_2' % namePF
                  , Type = Gaussian
-                 , Parameters = ( mass, getattr( self, '_m_sig_mean' )
-                                 , FormulaVar( '_%sm_sig_sigma_2' % namePF, '@0*@1', (  getattr( self, '_m_sig_sigma_sf' )
-                                                                                      , getattr( self, '_m_sig_sigma_1'  )
-                                                                                     )
-                                             )
-                                )
-                )
+                 , Parameters = (mass, self._m_sig_mean, FormulaVar('_%sm_sig_sigma_2' % namePF, '@0*@1',
+                                                                    (self._m_sig_sigma_sf, self._m_sig_sigma_1))))
         MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'LP2011_Signal_Mass' ), PDFs = ( g1, g2 )
-                                             , Yields = { g1.GetName() : getattr( self, '_m_sig_frac' ) } 
-                                            )
+                                             , Yields = { g1.GetName() : self._m_sig_frac })
                         )
         self._check_extraneous_kw( kwargs )
 
@@ -296,6 +289,7 @@ class Signal_PsiMass ( MassPdf ) :
 
 class DoubleCB_Psi_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
+        namePF = self.getNamePrefix(kwargs)
         self._parseArg( 'mpsi_mean', kwargs, Title = 'psi Mass core', Unit = 'MeV/c^2', Value = 3100., Error = 0.05
                        , MinMax = ( 3050., 3150. ) )
         self._parseArg( 'mpsi_sigma_1', kwargs, Title = 'psi Mass resolution 1', Unit = 'MeV/c^2', Value = 6.3, Error = 0.1
@@ -311,27 +305,15 @@ class DoubleCB_Psi_Mass ( MassPdf ) :
         from ROOT import RooCBShape as CrystalBall
         from P2VV.RooFitWrappers import Pdf, FormulaVar, SumPdf
         CB1 = Pdf( Name = '%smpsi_1' % namePF, Type = CrystalBall
-                  , Parameters = ( mass, getattr( self, '_mpsi_mean' ), getattr( self, '_mpsi_sigma_1' )
-                                  , getattr( self, '_mpsi_alpha_1' ), getattr( self, '_mpsi_n_1' )
-                                 )
-                 )
+                  , Parameters = ( mass, self._mpsi_mean, self._mpsi_sigma_1, self._mpsi_alpha_1, self._mpsi_n_1))
         CB2 = Pdf( Name = '%smpsi_2' % namePF, Type = CrystalBall
-                  , Parameters = ( mass, getattr( self, '_mpsi_mean' )
-                                  , FormulaVar( '_%smpsi_sigma_2' % namePF, '@0*@1'
-                                               , ( getattr( self, '_mpsi_sigma_sf' ), getattr( self, '_mpsi_sigma_1' ) )
-                                              )
-                                  , FormulaVar( '_%smpsi_alpha_2' % namePF, '@0*@1'
-                                               , ( getattr( self, '_mpsi_alpha_sf' ), getattr( self, '_mpsi_alpha_1' % namePF ) )
-                                              )
-                                  , getattr( self, '_mpsi_n_2' )
-                                 )
-                 )
-        MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'DoubleCB_Psi_Mass' ), PDFs = (CB1, CB2)
-                                             , Yields = { CB1.GetName() : getattr( self, '_mpsi_frac' ) }
-                                            )
-                        )
+                  , Parameters = ( mass, self._mpsi_mean
+                                  , FormulaVar('_%smpsi_sigma_2' % namePF, '@0*@1', (self._mpsi_sigma_sf, self._mpsi_sigma_1))
+                                  , FormulaVar('_%smpsi_alpha_2' % namePF, '@0*@1', (self._mpsi_alpha_sf, self._mpsi_alpha_1))
+                                  , self._mpsi_n_2))
+        MassPdf.__init__(self, pdf = SumPdf(Name = kwargs.pop('Name', 'DoubleCB_Psi_Mass'), PDFs = (CB1, CB2),
+                                            Yields = {CB1.GetName() : self._mpsi_frac}))
         self._check_extraneous_kw( kwargs )
-
 
 class Background_PsiMass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
@@ -341,7 +323,5 @@ class Background_PsiMass ( MassPdf ) :
         self._parseArg( 'mpsi_c', kwargs, Title = 'J/psi mass background slope', Unit = '1/MeV', Value = -0.01
                        , MinMax = ( -0.1, -0.000001 ) )
         MassPdf.__init__( self, pdf = Pdf( Name = kwargs.pop( 'Name', '%sBackground_PsiMass' % namePF ), Type = Exponential
-                                          , Parameters = [ mass, getattr( self, '_mpsi_c' ) ]
-                                         )
-                        )
+                                          , Parameters = [mass, self._mpsi_c]))
         self._check_extraneous_kw( kwargs )

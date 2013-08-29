@@ -137,6 +137,8 @@ class Toy(object):
             args = dict(NumEvents = self._options.nevents)
             if 'ProtoData' in kwargs:
                 args['ProtoData'] = kwargs.pop('ProtoData')
+            
+            genPdf.getParameters(obs_set).assignValueOnly(gen_pdf_params)
             data = genPdf.generate(obs_set, **args)
             if self.__transform:
                 data = self.__transform(data)

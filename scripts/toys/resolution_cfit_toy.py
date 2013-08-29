@@ -60,7 +60,6 @@ tres_args = dict(time = time_obs, sigmat = st, Cache = True, PerEventError = Tru
 sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
 
 # Resolution models
-tres_args['bkg_timeResMu'] = tres_args.pop('timeResMu')
 bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 
 # J/psi mass pdf
@@ -102,8 +101,8 @@ prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), psi_m, sig_ln.pdf()), Yield = (160160, 100, 500000))
 
 def make_wpv_pdf(prefix):
-    wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1))
-    wpv_sigma = RealVar('%swpv_sigma' % prefix, Value = 0.305, MinMax = (0.01, 10))
+    wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1), Constant = True)
+    wpv_sigma = RealVar('%swpv_sigma' % prefix, Value = 0.305, MinMax = (0.01, 10), Constant = True)
     return Pdf(Name = '%swpv_pdf' % prefix, Type = Gaussian, Parameters = (time_obs, wpv_mean, wpv_sigma))
 sig_wpv_pdf = make_wpv_pdf('sig_')
 
