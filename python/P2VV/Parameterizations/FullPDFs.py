@@ -441,9 +441,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 elif ws.cat( obsDict[name][0] ) : observables[name] = Category( obsDict[name][0] )
                 else : raise RuntimeError( 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: variable "%s" not in workspace' % name )
             else :
-                if name.startswith('tagCat') :
-                    observables[name] = None
-                    continue
+                #if name.startswith('tagCat') :
+                #    observables[name] = None
+                #    continue
 
                 if type( obsDict[name][2] ) != dict :
                     observables[name] = RealVar( obsDict[name][0], Title = obsDict[name][1], Unit = obsDict[name][2]

@@ -174,21 +174,12 @@ lambCPSqVal = 1. # 0.959**2
 phiCPVal    = 0.009
 
 if generateData or manualTagCatBins :
-    pdfConfig['tagCatsOS'] = [  ( 'Untagged',  0, 0.500001 )
-                              , ( 'TagCat1',   1, 0.499999 )
+    pdfConfig['tagCatsOS'] = [  ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.669, 0.0 )
+                              , ( 'Tagged',   1, 0.4999999, 0.392, 0.392, 0.0, 0.331, 0.0 )
                              ]
-    pdfConfig['tagCatsSS'] = [  ( 'Untagged',  0, 0.500001 )
-                              , ( 'TagCat1',   1, 0.499999 )
+    pdfConfig['tagCatsSS'] = [  ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.896, 0.0 )
+                              , ('Tagged',    1, 0.4999999, 0.359, 0.359, 0.0, 0.104, 0.0 )
                              ]
-    #pdfConfig['tagCatsOS'] = [  ( 'Untagged',  0, 0.500001 )
-    #                          , ( 'TagCat1',   1, 0.499999 )
-    #                          , ( 'TagCat2',   2, 0.40     )
-    #                          , ( 'TagCat3',   3, 0.25     )
-    #                         ]
-    #pdfConfig['tagCatsSS'] = [  ( 'Untagged',  0, 0.500001 )
-    #                          , ( 'TagCat1',   1, 0.499999 )
-    #                          , ( 'TagCat2',   2, 0.30     )
-    #                         ]
 
 pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
                                     if pdfConfig['timeEffType'] == 'fit' else\
