@@ -301,6 +301,13 @@ if generateData :
     # generate data
     nEvents = int( pdfConfig['numEvents'] * ( pdfConfig['signalFraction'] if pdfConfig['SFit'] else 1. ) )
     print 'JvLFit: generating %d events' % nEvents
+    import P2VV.Load.MultiCatGen
+    from ROOT import RooMsgService,RooFit
+    RooMsgService.instance().addStream(RooFit.INFO, Topic =  RooFit.Generation)
+    #from ROOT import RooAbsPdf
+    #cfg = RooAbsPdf.defaultGeneratorConfig()
+    #cfg.getConfigSection("RooFoamGenerator").setRealValue("chatLevel",1)
+    #cfg.Print()
     dataSet = pdf.generate( obsSetP2VV, nEvents )
 
     # additional observables
