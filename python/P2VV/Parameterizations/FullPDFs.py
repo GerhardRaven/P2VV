@@ -145,7 +145,7 @@ class PdfConfiguration( dict ) :
             if nameExpr and not nameExpr.match(parName) : continue
 
             parVals = self._parameters[parName]
-            if ( floating and not parVals[4] ) or ( not floating and parVals[4] ) : continue
+            if ( floating == True and not parVals[4] ) or ( floating == False and parVals[4] ) : continue
 
             cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
                       .format( parName, parVals[0], parVals[1], parVals[2], parVals[3], 'True' if parVals[4] else 'False' )
