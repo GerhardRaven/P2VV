@@ -697,6 +697,7 @@ class ComplementCoef( RooObject ) :
         name = kwargs.pop('Name')
         __check_name_syntax__(name)
 
+        from P2VV.Load import P2VVLibrary
 	coefs = kwargs.pop('Coefficients')  
 	try :
 		spec = 'RooComplementCoef::%s({%s})'%(name,','.join( i.GetName() for i in coefs ))
