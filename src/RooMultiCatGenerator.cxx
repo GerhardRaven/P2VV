@@ -91,7 +91,7 @@ RooMultiCatGenerator::RooMultiCatGenerator(const RooAbsReal &func, const RooArgS
       _super.setLabel( dynamic_cast<TObjString&>(***superIter).String() ); // this should assign _catVars...
       double n = marginal->getVal(); // fraction of events in this combination 
       if (!_realGenerators.empty()) n += _realGenerators.back().first;   // cumulative
-      cxcoutD(Generation) << "RooMultiCatGenerator::ctor() creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
+      cxcoutI(Generation) << "RooMultiCatGenerator: creating sampler for " << _realVars << " given " << _catVars << " = "  << dynamic_cast<TObjString&>(***superIter).String() << " ( level = " << n << " )" << endl;
       _realGenerators.push_back(make_pair(n, RooNumGenFactory::instance().createSampler(*_funcClone,_realVars,RooArgSet(),config, true /*verbose*/ ))); 
    }
    // Given that above we properly marginalized, the next line should be a no-op.

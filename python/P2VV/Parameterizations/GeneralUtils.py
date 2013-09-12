@@ -16,8 +16,12 @@ class _util_parse_mixin( object ) :
         return None
 
     def getNamePrefix( self, kwargs ) :
-        namePF = kwargs.pop( 'ParNamePrefix', '' )
-        if not hasattr( self, '_namePF' ) : self._namePF = namePF
+        if hasattr( self, '_namePF' ) :
+            assert 'ParNamePrefix' not in kwargs or kwargs['ParNamePrefix'] == self._namePF\
+                , 'P2VV -- ERROR: _util_parse_mixin.getNamePrefix: parameter name prefix from arguments is not equal to existing prefix'
+        else :
+            self._namePF = kwargs.pop( 'ParNamePrefix', None )
+
         if self._namePF : return self._namePF + '_'
         else :            return ''
 
@@ -39,16 +43,15 @@ class _util_parse_mixin( object ) :
 
             # construct variable name
             if 'Name' not in parsDict : parsDict['Name'] = argName
-            if not parsDict.get( 'Observable', False ) :
-                namePF = parsDict.pop( 'NamePrefix', self._namePF )
-                if namePF : parsDict['Name'] = namePF + '_' + parsDict['Name']
+            namePF = self.getNamePrefix(kwargs)
+            if 'NamePrefix' in parsDict :
+                namePF = parsDict.pop('NamePrefix')
+                if namePF : namePF += '_'
+            if not parsDict.get( 'Observable', False ) and namePF : parsDict['Name'] = namePF + parsDict['Name']
 
             # create variable
             objType = parsDict.pop( 'ObjectType', 'RealVar' )
             return vars(P2VV.RooFitWrappers)[objType](**parsDict)
-
-        # get prefix for parameter names
-        self.getNamePrefix(kwargs)
 
         # create object
         contList = parsDict.pop( 'ContainerList', None )
