@@ -17,6 +17,10 @@ def compareWeightedDistributions(tree, sTree, var, **kwargs):
     assymPlot =  kwargs.pop('assymPlot', False       )
     save      =  kwargs.pop('Save',      [False,'_'] )
 
+    from ROOT import RooDataSet
+    if type(tree)  == RooDataSet: tree  = tree.buildTree()
+    if type(sTree) == RooDataSet: sTree = sTree.buildTree()
+
     if rangeX:
         Xmin=str(rangeX[0])
         Xmax=str(rangeX[1])
@@ -309,22 +313,26 @@ class matchMCphysics2Data():
         angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
 
         # ntuple variables
-        B_P        = RealVar( 'B_P',        Title='B_P',          Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )  )
-        B_PT       = RealVar( 'B_PT',       Title='B_PT',         Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )  )
+        B_P        = RealVar( 'B_P',        Title='B_P',          Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
+        B_PT       = RealVar( 'B_Pt',       Title='B_Pt',         Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
+        Kplus_P    = RealVar( 'Kplus_P',    Title = 'Kplus_P',    Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
         Kplus_PX   = RealVar( 'Kplus_PX',   Title = 'Kplus_PX',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
         Kplus_PY   = RealVar( 'Kplus_PY',   Title = 'Kplus_PY',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
         Kplus_PZ   = RealVar( 'Kplus_PZ',   Title = 'Kplus_PZ',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        Kminus_P   = RealVar( 'Kminus_P',   Title = 'Kminus_P',   Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
         Kminus_PX  = RealVar( 'Kminus_PX',  Title = 'Kminus_PX',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
         Kminus_PY  = RealVar( 'Kminus_PY',  Title = 'Kminus_PY',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
         Kminus_PZ  = RealVar( 'Kminus_PZ',  Title = 'Kminus_PZ',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        muplus_P   = RealVar( 'muplus_P',   Title = 'muplus_P',   Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
         muplus_PX  = RealVar( 'muplus_PX',  Title = 'muplus_PX',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
         muplus_PY  = RealVar( 'muplus_PY',  Title = 'muplus_PY',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
         muplus_PZ  = RealVar( 'muplus_PZ',  Title = 'muplus_PZ',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        muminus_P  = RealVar( 'muminus_P',  Title = 'muminus_P',  Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
         muminus_PX = RealVar( 'muminus_PX', Title = 'muminus_PX', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
         muminus_PY = RealVar( 'muminus_PY', Title = 'muminus_PY', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
         muminus_PZ = RealVar( 'muminus_PZ', Title = 'muminus_PZ', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        ntupleVars = [ Kplus_PX, Kplus_PY, Kplus_PZ, Kminus_PX, Kminus_PY, Kminus_PZ, \
-                       muminus_PX, muminus_PY, muminus_PZ, muplus_PX, muplus_PY, muplus_PZ, B_P, B_PT]
+        ntupleVars = [ Kplus_P, Kplus_PX, Kplus_PY, Kplus_PZ, Kminus_P, Kminus_PX, Kminus_PY, Kminus_PZ,\
+                       muminus_P, muminus_PX, muminus_PY, muminus_PZ, muplus_P, muplus_PX, muplus_PY, muplus_PZ, B_P, B_PT]
 
         obsSet = [ trueTime if TIME else time ] + angles 
 
@@ -479,7 +487,7 @@ class matchMCphysics2Data():
             data.get(nev)
             denominators.append( self._pdf.getVal(normVars) )
         
-        print 'P2VV - INFO: Calculating nominators for phyisics matching weight'
+        print 'P2VV - INFO: Calculating nominators for phyisics matching weights'
         self.setDataFitParameters(dataParameters) 
         for nev in xrange(data.numEntries()):
             data.get(nev)
@@ -491,36 +499,33 @@ class matchMCphysics2Data():
 
   
     def combineWeights(self):  
-## This is still incomplete        
+        currentWeights = self._allWeights['weightsSet_%s'%(self._iterNumb)]
         if self._iterNumb==1:
-            self._allWeights['combWeight'] = self._allWeights['weightsSet_1']
-
-        elif self._iterNumb >=2:
-            assert len( self._allWeights['weightsSet_%s'%self._iterNumb] ) == len(self._allWeights['weightsSet_%s'%(self._iterNumb-1)]) 
-            combinedWeights = []
-            for ind in len( self._allWeights['weightsSet_1'] ):
-                rowProduct = 1
-                for subList in self._allWeights:
-                    rowProduct *= subList[ind]
-                combinedWeights.append(rowProduct)
-            self._allWeights['combWeight'] = combinedWeights
-        else: print 'P2VV - ERROR: Cannot combine weights'
-
+            self._combWeights = self._allWeights['weightsSet_1']
+        else:
+            assert len(self._combWeights)==len(currentWeights)
+            prod = []
+            for w1, w2 in zip(self._combWeights,currentWeights): prod.append(w1*w2)
+            self._combWeights = prod
+        
 
     def writeWeights(self, weightsName='weightPhys'):
         from ROOT import RooArgSet,RooRealVar,RooDataSet
-        physWeightVar = RooRealVar( weightsName, weightsName,        -1e3, 1e3           )
+        from P2VV.RooFitWrappers import RealVar
+        physWeightVar = RealVar(weightsName, Title=weightsName, Observable = False, MinMax = (-1e5, 1e7 ) )
+        #physWeightVar = RooRealVar( weightsName, weightsName,        -1e5, 1e3           )
         weightsSet    = RooDataSet( 'weightsSet', 'weightsSet', RooArgSet(physWeightVar) )
         
-        for weight in self._allWeights['combWeight']:
+        for weight in self._combWeights:
             physWeightVar.setVal( weight )
             weightsSet.add( RooArgSet(physWeightVar) )
-
-        weightsSet.Print()
-        #self._currentDataSet.merge( weightsSet )
-        weightsSet.merge( self._currentDataSet )
+        
+        #if self._iterNumb!=1:self._currentDataSet.reduce( RooArgSet(self._obsSet + self._ntupleVars) )
+        self._currentDataSet.merge( weightsSet )
         self._currentDataSet.SetName('MC_physicsReweighted_%s_iteration'%self._iterNumb )
         print 'P2VV - INFO: Phyisics matching weights added to dataset: '+'MC_physicsReweighted_%s_iteration'%self._iterNumb
+
+        self._weightsName = weightsName
 
 
     def getPdf(self):               return self._pdf
@@ -528,52 +533,41 @@ class matchMCphysics2Data():
     def getObservables(self):       return self._obsSet
     def getInitialMCafterSel(self): return self._initData
     def getNtupleVars(self):        return self._ntupleVars
-    def getAllWeights(self):        return self._allWeights
+    def getWeightName(self):        return self._weightsName
+    def getAllWeights(self):        
+        self._allWeights['combWeights'] = self._combWeights
+        return self._allWeights
 
 
 
 # Match MC to sWeighted data with horizontal reweighting of B_P and recalculate angles.
 class matchWeightedDistributions():
-    def __init__( self, outputname,  **kwargs ):
+    def __init__( self,  **kwargs ):
         print 'P2VV - INFO: Initialised kinematic reweighting class: matchWeightedDistributions().'
-        mcInfo      = kwargs.pop('mcInfo')
-        sDInfo      = kwargs.pop('sDInfo')
+        self._inTree      = kwargs.pop('inTree')
+        self._outTree     = kwargs.pop('outTree')
         self._nBins = kwargs.pop('nBins', '1000')
-        self._vars  = kwargs.pop('whichVars')
+        self._vars  = kwargs.pop('whichVars','Kminus_P')
         self._itNum = kwargs.pop('itNum')
 
-        self._tmc       = mcInfo['path']
-        self._tsD       = sDInfo['path']
-        self._tmcName   = mcInfo['name']
-        self._tsDName   = sDInfo['name']
-        self._tmcWeight = mcInfo['weight']
-        self._tsDWeight = sDInfo['weight']
-        self._outFile   = outputname
+        self._inWeightName   = kwargs['inWeightName']
+        self._outWeightName  = kwargs['outWeightName']
+        self._PhysWeightName = kwargs['PhysWeightName']
 
-        if self._vars=='KaonMomenta':
-            self._vars = dict( mc    = { 'vars':['Kminus_P'], 'where':mcInfo }
-                              ,sData = { 'vars':['Kminus_P'], 'where':sDInfo}
-                               )
-        elif self._vars:
-            self._vars['mc'].update( {'where':mcInfo} )
-            self._vars['sData'].update( {'where':sDInfo} )
-        else: print 'P2VV - ERROR: Do not know where to get input variables for calss matchWeightedDistributions'
+        from ROOT import RooDataSet
+        if type(self._inTree)  ==RooDataSet:self._inTree  = self._inTree.buildTree()
+        if type(self._outTree) ==RooDataSet:self._outTree = self._outTree.buildTree()
+
 
     def mimicWeights(self):
-        # TODO: THis is too complicated rewrite it.
-        from ROOT import TFile
-        mimicedVars = dict( mc={}, sData={} )
-        print 'P2VV - INFO: Mimicing weights of variables: ', self._vars['mc']['vars']
-        for varList in self._vars.keys():
-            t = TFile.Open( self._vars[varList]['where']['path'] ).Get( self._vars[varList]['where']['name'] )
-            w = self._vars[varList]['where']['weight']
-            b = self._nBins
-            mimicedVars[varList].update(dict( 
-                    (  v , self.MimicWeightedDistribution(t,v,w,b)  )for v in self._vars[varList]['vars']
-                ))
-        self._mimicedVars = mimicedVars
+        print 'P2VV - INFO: Mimicing weights of variables: ', self._vars
+        self._mimicedVars = dict( inDistr={}, outDistr={} )
+        for var in self._vars:
+            self._mimicedVars['inDistr'][var]  = self.MimicWeightedDistribution( self._inTree,  var, self._inWeightName , self._nBins )
+            self._mimicedVars['outDistr'][var] = self.MimicWeightedDistribution( self._outTree, var, self._outWeightName, self._nBins )
 
-    def MimicWeightedDistribution(self,t,var,wPref,Nbins=1000):
+
+    def MimicWeightedDistribution( self, t, var, wPref, Nbins=1000 ):
         #List of new mimiced distribution
         newDistribution = []
 
@@ -618,7 +612,26 @@ class matchWeightedDistributions():
 
         return newDistribution
 
-    def TransformAnglesWithMomentumWeight(self,t, pin,pout, outputname = "/tmp/test", Nbins= None):
+
+    def reweightMC( self, obsSet, copyVars = None):
+        self._obsSet = obsSet
+        self._copyVars = copyVars
+        self._muonSet, self._KaonSet, self._BmomSet = [], [],[]
+        for var in self._copyVars:
+            if var.GetName().startswith('mu'):
+                self._muonSet.append(var)
+            elif var.GetName().startswith('K'):
+                self._KaonSet.append(var)
+            elif var.GetName().startswith('B'):
+                self._BmomSet.append(var)
+            else: continue
+            
+        inDistrList  = self._mimicedVars['inDistr'][self._vars[0]]
+        outDistrList = self._mimicedVars['outDistr'][self._vars[0]]
+        self.TransformAnglesWithMomentumWeight(self._inTree, inDistrList, outDistrList, Nbins=self._nBins)
+
+
+    def TransformAnglesWithMomentumWeight(self,t, pin, pout, Nbins= None):
         """ t: TTree, pin: original momentum distribution (python list), pout : the momentum distribution you want (python list)
         Nbins controls the number of points for the transformation functions
         """
@@ -628,16 +641,18 @@ class matchWeightedDistributions():
         Udat = UniFunc(pout, nbinsmax = Nbins)
         Umc = UniFunc(pin, nbinsmax = Nbins)
 
-        print 'P2VV - INFO: Recalculating decay angles after kinematic distributions matching.'
-
         # Put the newly recalculated angles plus time and true time in a RooDataSet.
-        from ROOT import RooDataSet, RooArgSet
+        from ROOT import RooDataSet, RooArgSet, gROOT
         helcosthetaK = self._obsSet[1]
         helcosthetaL = self._obsSet[2]
-        helphi = self._obsSet[3]
-        time = self._obsSet[0]
-        obsSet = RooArgSet(helcosthetaK,helcosthetaL,helphi,time)
-        RewData = RooDataSet('MomRewMC_%s_Iter'%self._itNum, 'MomRewMC_%s_Iter'%self._itNum, obsSet)
+        helphi       = self._obsSet[3]
+        time         = self._obsSet[0]
+        recalculatedVars = RooArgSet( self._obsSet[1:4] + self._KaonSet + self._BmomSet ) 
+        physWeightsVar   = time.ws().obj(self._PhysWeightName)
+        
+        gROOT.cd('PyROOT:/') # This is necessary to create later a Ttree object later
+        recalculatedData = RooDataSet( 'MomRewMC_%s_Iter'%self._itNum, 'MomRewMC_%s_Iter'%self._itNum, recalculatedVars )
+        copiedData       = RooDataSet( 'copiedData', 'copiedData', self._inTree, RooArgSet(self._muonSet + [time,physWeightsVar])      )
 
         from ROOT import TDatabasePDG
 	MeV = 1000 # TDatabasePDG is in GeV, this is the factor needed to go to MeV
@@ -647,45 +662,59 @@ class matchWeightedDistributions():
         
         from ROOT import TVector3, TLorentzVector
         from math import sqrt
-        _VM2LV = lambda v,m : TLorentzVector( v, sqrt( m*m + v.Mag2() ) ) # TVector3,mass to TLorentzVector 
-        _E2V   = lambda entry, label : TVector3( getattr(entry,label+'_PX'),getattr(entry,label+'_PY'),getattr(entry,label+'_PZ')) # entry to TVenctor3
-  
+        _VM2LV  = lambda v,m : TLorentzVector( v, sqrt( m*m + v.Mag2() ) ) # TVector3,mass to TLorentzVector 
+        _E2V    = lambda entry, label : TVector3( getattr(entry,label+'_PX'),getattr(entry,label+'_PY'),getattr(entry,label+'_PZ')) # entry to TVenctor3
+        _B3PMAG = lambda K1,K2,mu1,mu2: (K1+K2+mu1+mu2).Mag() 
+        _BPT    = lambda K1,K2,mu1,mu2: sqrt( (K1+K2+mu1+mu2).x()**2 + (K1+K2+mu1+mu2).y()**2 )
+        
+        def setKaonMomVals( k1 ,k2 ):
+            for var in self._KaonSet:
+                if var.GetName().__contains__('plus'):
+                    if   var.GetName().__contains__('X'):var.setVal(  k1.x()  )
+                    elif var.GetName().__contains__('Y'):var.setVal(  k1.y()  )
+                    elif var.GetName().__contains__('Z'):var.setVal(  k1.z()  )
+                    else:                                var.setVal( k1.Mag() )
+                else:
+                    if   var.GetName().__contains__('X'):var.setVal(  k2.x()  )
+                    elif var.GetName().__contains__('Y'):var.setVal(  k2.y()  )
+                    elif var.GetName().__contains__('Z'):var.setVal(  k2.z()  )
+                    else:                                var.setVal( k2.Mag() )
+        assert(self._BmomSet[0].GetName()=='B_P' and self._BmomSet[1].GetName()=='B_Pt')# Important check
+      
+        print 'P2VV - INFO: Recalculating decay angles after kinematic distributions matching.'
         for entry in t:
             k1_3P = _E2V(entry,'Kplus')
             k2_3P = _E2V(entry,'Kminus')
             k1_3P.SetMag( Udat.inverse(Umc(k1_3P.Mag())) )
             k2_3P.SetMag( Udat.inverse(Umc(k2_3P.Mag())) )
             
-            cThK, cThL, phi = HelicityAngles( Kpl_P = _VM2LV( k1_3P, Mk ),
-                                              Kmi_P = _VM2LV( k2_3P, Mk ),
-                                              mPl_P = _VM2LV( _E2V( entry , 'muplus' ),   Mmu ),
-                                              mMi_P = _VM2LV( _E2V( entry , 'muminus' ),  Mmu )
+            mu1_3P = _E2V( entry , 'muplus' )
+            mu2_3P = _E2V( entry , 'muminus')
+           
+            cThK, cThL, phi = HelicityAngles( Kpl_P = _VM2LV( k1_3P,  Mk  ),
+                                              Kmi_P = _VM2LV( k2_3P,  Mk  ),
+                                              mPl_P = _VM2LV( mu1_3P, Mmu ),
+                                              mMi_P = _VM2LV( mu2_3P, Mmu )
                                                )
 
             helcosthetaK.setVal( cThK )
             helcosthetaL.setVal( cThL )
             helphi.setVal( phi )
-            if self._obsSet[0].GetName().startswith('true'): time.setVal(entry.truetime )
-            else: time.setVal(entry.time )
-            RewData.add(obsSet)
+            self._BmomSet[0].setVal( (k1_3P + k2_3P + mu1_3P + mu2_3P).Mag() )
+            self._BmomSet[1].setVal( (k1_3P + k2_3P + mu1_3P + mu2_3P).Pt()  )
+            setKaonMomVals( k1_3P, k2_3P )
 
-        from ROOT import TFile
-        f = TFile.Open(outputname, 'RECREATE')
-        f.cd()
-        RewData.Write()
-        f.Close()
+            recalculatedData.add( recalculatedVars )
+     
+        gROOT.cd('PyROOT:/')
+        recalculatedData.merge(copiedData )
+        self._recalculatedData = recalculatedData 
+        
 
-    def reweightMC(self, outPath=None, var=None, obsSet=None):
-        self._obsSet = obsSet
-        if not outPath:outPath= self._outFile
-        if not var:var='Kminus_P'
+    def getDataSet(self, tree=False): 
+        if tree: return self._recalculatedData.buildTree()
+        else:    return self._recalculatedData
 
-        from ROOT import TFile
-        tmc = TFile.Open(self._tmc).Get(self._tmcName)
-        mcList = self._mimicedVars['mc'][var]
-        sDList = self._mimicedVars['sData'][var]
-
-        self.TransformAnglesWithMomentumWeight(tmc,mcList,sDList,outputname=outPath,Nbins=self._nBins)
 
 
 class buildBs2JpsiKK2011sFit():
@@ -694,10 +723,9 @@ class buildBs2JpsiKK2011sFit():
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
         pdfConfig = PdfConfig()
     
-        pdfConfig['timeEffHistFile']      = kwargs.pop('timeEffHistFile', '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root')
-        pdfConfig['timeEffHistUBName']    = kwargs.pop('timeEffHistUBName','Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted')
-        pdfConfig['timeEffHistExclBName'] = kwargs.pop('timeEffHistExclBName', 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached')
-        pdfConfig['angEffMomentsFile']    = kwargs.pop('angEffMomentsFile', '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights')
+        pdfConfig['timeEffHistFile']      = kwargs.pop('timeEffHistFile')
+        pdfConfig['timeEffHistUBName']    = kwargs.pop('timeEffHistUBName')
+        pdfConfig['timeEffHistExclBName'] = kwargs.pop('timeEffHistExclBName')
     
         self._dataSetPath =  kwargs.pop('dataSetPath', None)
         self._dataSetName =  kwargs.pop('dataSetName', None)
@@ -730,7 +758,7 @@ class buildBs2JpsiKK2011sFit():
         # PDF options 
         pdfConfig['multiplyByTimeEff']    = 'signal'
         pdfConfig['timeEffType']          = 'paper2012'
-        pdfConfig['multiplyByAngEff']     = 'weights'
+        pdfConfig['multiplyByAngEff']     = '' #'weights'
         pdfConfig['parameterizeKKMass']   = 'simultaneous'
         pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
         pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
