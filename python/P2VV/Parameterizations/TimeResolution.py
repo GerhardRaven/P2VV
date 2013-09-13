@@ -191,7 +191,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                      Value = ((1 - fracs[0][1]) * sigmasSFs[1][1]
                                               + fracs[0][1] * sigmasSFs[0][1]),
                                               MinMax = (0.5, 5))
-                self._timeResSigmasSFs[1] = FormulaVar(namePF + Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
+            self._timeResSigmasSFs[1] = FormulaVar(namePF + Name + '_Comb', '(1 / (1 - @0)) * (@1 - @0 * @2)',
                                                    (self._timeResFracs[0], self._comb, self._timeResSigmasSFs[0]))
             if sf_param:
                 self._realVars = []

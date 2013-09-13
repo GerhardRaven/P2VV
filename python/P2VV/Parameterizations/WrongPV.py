@@ -160,9 +160,11 @@ class ShapeBuilder(object):
         for (p,o) in zip(self.__canvas.pads(len(obs)), obs):
             from P2VV.Utilities.Plotting import plot
             plot(p, o, pdf = self.__pdf, data = self._data
-                 , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+                 , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 50)
                  , pdfOpts  = dict(LineWidth = 2)
-                 , plotResidHist = True
+                 , plotResidHist = 'BX'
+                 , xTitle = '#mu^+#mu^- invariant mass [MeV/c^2]'
+                 , yTitle = 'Candidates / (%f MeV/c^2)' % ((o.getMax() - o.getMin()) / float(50))
                  , components = { 'wpv_bkg_*'   : dict( LineColor = kRed,   LineStyle = kDashed )
                                   , 'wpv_psi_*' : dict( LineColor = kGreen, LineStyle = kDashed )
                                   , 'wpv_sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
