@@ -1,6 +1,5 @@
 from array import array
 from math import exp, log, sqrt
-from RooFitWrappers import FormulaVar
 
 __keep = []
 __bin_counter = 0
@@ -425,7 +424,7 @@ class SolveSF(object):
     def __init__(self, data, sigmat):
         from ROOT import RooDataSet
         self.setData(data, sigmat)
-        from ROOT import RooRealVar, RooFormulaVar, RooArgList
+        from ROOT import RooRealVar, RooArgList
         self.__sf = 1.
         
         self.__min = 0.01

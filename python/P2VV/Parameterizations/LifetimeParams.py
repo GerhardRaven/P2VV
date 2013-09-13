@@ -32,7 +32,7 @@ class LifetimeParams ( _util_parse_mixin, _util_extConstraints_mixin ):
 
 class Gamma_LifetimeParams( LifetimeParams ) :
     def __init__( self, **kwargs ) :
-        from P2VV.RooFitWrappers import FormulaVar, ConstVar, Pdf
+        from P2VV.RooFitWrappers import Pdf
 
         self._parseArg( 'Gamma', kwargs, Title = 'Gamma', Unit = 'ps^{-1}', Value = GammaVal, Error = GammaErr, MinMax = ( 0.1, 10. ) )
         self._parseArg( 'dGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = DGammaVal, Error = DGammaErr
@@ -43,10 +43,11 @@ class Gamma_LifetimeParams( LifetimeParams ) :
 
         self._check_extraneous_kw( kwargs )
 
-        LifetimeParams.__init__( self
-                                 , MeanLifetime = FormulaVar( 'MeanLifetime', '1. / @0', [self._Gamma], Title = 'B Mean lifetime' )
-                                 , dGamma  = self._dGamma
-                                 , dM      = self._dM
+        LifetimeParams.__init__(  self
+                                , MeanLifetime = self._parseArg( 'MeanLifetime', kwargs, Formula = '1. / @0', Arguments = [self._Gamma]
+                                                                , ObjectType = 'FormulaVar', Title = 'B Mean lifetime' )
+                                , dGamma  = self._dGamma
+                                , dM      = self._dM
                                )
 
         if type(dMConstr) == str and dMConstr == 'fixed' :
@@ -58,8 +59,8 @@ class Gamma_LifetimeParams( LifetimeParams ) :
             from ROOT import RooGaussian as Gaussian
             self.addConstraint( Pdf(  Name = self._dM.GetName() + '_constraint', Type = Gaussian
                                     , Parameters = [  self._dM
-                                                    , ConstVar( Name = 'dM_mean',  Value = DMConstrVal )
-                                                    , ConstVar( Name = 'dM_sigma', Value = DMConstrErr )
+                                                    , self._parseArg( 'dM_mean',  kwargs, Value = DMConstrVal, ObjectType = 'ConstVar' )
+                                                    , self._parseArg( 'dM_sigma', kwargs, Value = DMConstrErr, ObjectType = 'ConstVar' )
                                                    ]
                                    )
                               )
@@ -67,8 +68,6 @@ class Gamma_LifetimeParams( LifetimeParams ) :
 
 class Tau_LifetimeParams( LifetimeParams ) :
     def __init__( self, **kwargs ) :
-        from P2VV.RooFitWrappers import FormulaVar
-
         self._parseArg( 'MeanLifetime', kwargs, Title = 'MeanLifetime', Unit = 'ps', Value = 1. / GammaVal, Error = GammaErr / GammaVal**2
                        , MinMax = ( 0.1, 10. ) )
         self._parseArg( 'dGamma', kwargs, Title = 'delta Gamma', Unit = 'ps^{-1}', Value = DGammaVal, Error = DGammaErr
