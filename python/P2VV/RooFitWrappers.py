@@ -445,16 +445,16 @@ class MappedCategory( Category ) :
 ##         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class Product(RooObject) :
-    def __init__(self,Name,fargs,**kwargs) :
+    def __init__(self,Name,Arguments,**kwargs) :
         __check_name_syntax__(Name)
-        spec =  "prod::%s(%s)"%(Name,','.join(i.GetName() for i in fargs))
+        spec =  "prod::%s(%s)"%(Name,','.join(i.GetName() for i in Arguments))
         self._declare( spec )
         self._init(Name,'RooProduct')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 
 class Addition(RooObject) :
-    def __init__(self,Name,fargs,**kwargs) :
+    def __init__(self,Name,Arguments,**kwargs) :
         # construct factory string on the fly...
         __check_name_syntax__(Name)
         def cn( x ) :
@@ -463,7 +463,7 @@ class Addition(RooObject) :
             except :
                 (a,b) = x
                 return '%s*%s' % ( a.GetName(),b.GetName() )
-        self._declare( "sum::%s(%s)" % ( Name,','.join( cn(i) for i in fargs ) ) )
+        self._declare( "sum::%s(%s)" % ( Name,','.join( cn(i) for i in Arguments ) ) )
         self._init(Name,'RooAddition')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -472,17 +472,17 @@ class FormulaVar (RooObject) :
                ,'Dependents' : lambda s : s.dependents()
                ,'Value'      : lambda s : s.getVal()
                }
-    def __init__(self, Name, formula, fargs, **kwargs):
+    def __init__(self, Name, Formula, Arguments, **kwargs):
         # construct factory string on the fly...
         __check_name_syntax__(Name)
         data = kwargs.pop('data', None)
         if not data:
-            spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs))
+            spec = "expr::%s('%s',{%s})" % (Name, Formula, ','.join(i.GetName() for i in Arguments))
             self._declare(spec)
             self._init(Name, 'RooFormulaVar')
         else:
             from ROOT import RooFormulaVar, RooArgList
-            form = RooFormulaVar(Name, Name, formula, RooArgList( fargs ) )
+            form = RooFormulaVar(Name, Name, Formula, RooArgList(Arguments) )
             form = data.addColumn(form)
             form = self._addObject(form)
             self._init(Name, 'RooRealVar')
@@ -518,15 +518,15 @@ class LinearVar(RooObject) :
     def __init__(self, **kwargs):
         # construct factory string on the fly...
         __check_req_kw__('Name', kwargs)
-        __check_req_kw__('Observable', kwargs )
+        __check_req_kw__('ObsVar', kwargs )
         __check_req_kw__('Slope', kwargs)
         __check_req_kw__('Offset', kwargs)
         __check_name_syntax__(kwargs['Name'])
         args = {}
-        for k in ['Name', 'Observable', 'Slope', 'Offset']:
+        for k in ['Name', 'ObsVar', 'Slope', 'Offset']:
             v = kwargs.pop(k)
             args[k] = v if type(v) == str else v.GetName()
-        self._declare("LinearVar::%(Name)s(%(Observable)s,%(Slope)s,%(Offset)s )" % args )
+        self._declare("LinearVar::%(Name)s(%(ObsVar)s,%(Slope)s,%(Offset)s )" % args )
         self._init(args['Name'], 'RooLinearVar')
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
@@ -551,16 +551,16 @@ class PolyVar(RooObject) :
     def __init__(self,**kwargs):
         # construct factory string on the fly...
         __check_req_kw__('Name', kwargs)
-        __check_req_kw__('Observable', kwargs )
+        __check_req_kw__('ObsVar', kwargs )
         __check_req_kw__('Coefficients', kwargs)
         __check_name_syntax__(kwargs['Name'])
         args = {}
-        for k in ['Name', 'Observable']:
+        for k in ['Name', 'ObsVar']:
             v = kwargs.pop(k)
             args[k] = v if type(v) == str else v.GetName()
         args['Coefficients'] = '{%s}' % ','.join([v if type(v) == str else v.GetName()
                                                   for v in kwargs.pop('Coefficients')])
-        self._declare("PolyVar::%(Name)s(%(Observable)s,%(Coefficients)s)" % args )
+        self._declare("PolyVar::%(Name)s(%(ObsVar)s,%(Coefficients)s)" % args )
         self._init(args['Name'], 'RooPolyVar')
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
@@ -1828,7 +1828,7 @@ class BinnedFun(RooObject):
         #       the right coefficient
         __check_mutually_exclusive_kw__(kwargs,('Histogram'),('Binning'))
         name = kwargs.pop('Name')
-        observable = kwargs.pop('Observable')
+        observable = kwargs.pop('ObsVar')
         hist = kwargs.pop('Histogram', None)
         histograms = kwargs.pop('Histograms', None)
         if hist:

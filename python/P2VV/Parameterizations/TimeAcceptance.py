@@ -59,6 +59,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         input_file = kwargs.pop('Input', 'acceptance.root')
         histogram = kwargs.pop('Histogram', 'BsHlt2DiMuonDetachedJPsiAcceptance_Data_Reweighted_sPlot_40bins')
         name = kwargs.pop('Name', 'Moriond2012_Acceptance')
+        namePF = self.getNamePrefix(kwargs)
         model = kwargs.pop('ResolutionModel')
         parameterization = kwargs.pop('Parameterization','BinnedFun')
 
@@ -81,11 +82,12 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             knots.append(rhe)
             self._coefficients = fitAverageExpToHist( _hist,knots,1.5)
 
-            from P2VV.RooFitWrappers import ConstVar
-            self._shape = CubicSplineFun(Name=name +'_shape'
-                                        , Observable = self._time
-                                        , Knots = knots
-                                        , Coefficients = [ ConstVar(Name = name+'_shape_%s' % i, Value = self._coefficients(i) ) for i in range(self._coefficients.GetNoElements()) ]
+            self._shape = CubicSplineFun(  Name = namePF + name +'_shape'
+                                         , Observable = self._time
+                                         , Knots = knots
+                                         , Coefficients = [ self._parseArg( name + '_shape_%s' % it, kwargs, Value = self._coefficients(it)
+                                                                           , ObjectType = 'ConstVar' )\
+                                                           for it in range( self._coefficients.GetNoElements() ) ]
                                         )
 
             if False :
@@ -100,15 +102,15 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
                 import code
                 code.interact(local=locals())
 
-            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name,
+            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = namePF + name,
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.ConditionalObservables(),
                                                                    ExternalConstraints = model.ExternalConstraints()))
         elif parameterization == 'BinnedFun' :
-            from P2VV.RooFitWrappers import BinnedFun, CubicSplineGaussModel
-            self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Histogram = self._hist )
-            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = name,
+            from P2VV.RooFitWrappers import CubicSplineGaussModel
+            self._shape = self._parseArg( name + '_shape', kwargs, ObsVar = self._time, Histogram = self._hist, ObjectType = 'BinnedFun' )
+            TimeAcceptance.__init__(self, Acceptance = CubicSplineGaussModel(Name = namePF + name,
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.ConditionalObservables(),
@@ -116,9 +118,9 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
 
         elif parameterization == 'BinnedPdf' :
             from P2VV.RooFitWrappers import BinnedPdf
-            self._shape = BinnedPdf(name + '_shape', Observable = self._time, Histogram = self._hist )
+            self._shape = BinnedPdf( namePF + name + '_shape', Observable = self._time, Histogram = self._hist )
             from P2VV.RooFitWrappers import EffResModel
-            TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = name,
+            TimeAcceptance.__init__(self, Acceptance = EffResModel(Name = namePF + name,
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.ConditionalObservables(),
@@ -140,6 +142,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         input_file = kwargs.pop('Input', 'acceptance.root')
         model = kwargs.pop('ResolutionModel')
         name = kwargs.pop('Name', 'Paper2012_BinnedFunAcceptance')
+        namePF = self.getNamePrefix(kwargs)
 
         with TFile.Open(input_file) as acceptance_file :
             if not acceptance_file:
@@ -156,7 +159,6 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
                     hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
                     histograms[s] = hist
 
-        from P2VV.RooFitWrappers import BinnedFun
         parameterization = kwargs.pop('Parameterization','CubicSplineGaussModel')
         assert parameterization in [ 'CubicSplineGaussModel','EffResModel' ]
         if parameterization == 'CubicSplineGaussModel' :
@@ -170,8 +172,9 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
             print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
             from P2VV.RooFitWrappers import EffResModel as AcceptanceModel
-        self._shape = BinnedFun(Name = name + '_shape', Observable = self._time, Category = cat, Histograms = histograms )
-        TimeAcceptance.__init__(self, Acceptance = AcceptanceModel( Name = name,
+        self._shape = self._parseArg( name + '_shape', kwargs, ObsVar = self._time, Category = cat, Histograms = histograms
+                                     , ObjectType = 'BinnedFun' )
+        TimeAcceptance.__init__(self, Acceptance = AcceptanceModel( Name = namePF + name,
                                                                    Efficiency = self._shape,
                                                                    ResolutionModel = model['model'],
                                                                    ConditionalObservables = model.ConditionalObservables() | set( [ cat ] ),
@@ -199,6 +202,7 @@ class Paper2012_mer_TimeAcceptance(TimeAcceptance):
         print 'P2VV - INFO: using time efficiency histograms file "%s"' % input_file
 
         acceptance_name = kwargs.pop('Name', 'Paper2012_FitAcceptance')
+        namePF = self.getNamePrefix(kwargs)
 
         data = kwargs.pop('Data')
 
@@ -243,7 +247,7 @@ class Paper2012_mer_TimeAcceptance(TimeAcceptance):
 
         from P2VV.RooFitWrappers import MultiHistEfficiencyModel
         ## FIXME: make sure all the bins are set constant if needed
-        mhe = MultiHistEfficiencyModel( Name = acceptance_name, Observable = self._time,
+        mhe = MultiHistEfficiencyModel( Name = namePF + acceptance_name, Observable = self._time,
                                        Bins = bin_spec, Relative = rel_spec,
                                        ConditionalCategories = True,
                                        FitAcceptance = fit, UseSingleBinConstraint = False,

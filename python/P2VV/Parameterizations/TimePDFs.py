@@ -26,15 +26,15 @@ class Coefficients_BDecayBasisCoefficients ( BDecayBasisCoefficients ) :
 class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__( self, AngFuncs, Amplitudes, CPParams, Order ) :
         def combine( tCoefType, angFuncs, amplitudes, CPParams, iIndex, jIndex ) :
-            from P2VV.RooFitWrappers import ConstVar, ConvertPolAmp, Product, Addition
+            from P2VV.RooFitWrappers import ConstVar
             one   = ConstVar( Name = 'one',   Value =  1 )
             minus = ConstVar( Name = 'minus', Value = -1 )
 
             # define functions which return Re(Ai* Aj), Im( Ai* Aj)
-            Re = lambda Ai, Aj : ConvertPolAmp( Name = 'Re_amps_%s_%s' % ( Ai, Aj ), Type = 'ProdCarthCToRe'
-                                               , Arguments = [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
-            Im = lambda Ai, Aj : ConvertPolAmp( Name = 'Im_amps_%s_%s' % ( Ai, Aj ), Type = 'ProdCarthCToIm'
-                                               , Arguments = [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+            Re = lambda Ai, Aj : self._parseArg( 'Re_amps_%s_%s' % ( Ai, Aj ), { }, Type = 'ProdCarthCToRe', ObjectType = 'ConvertPolAmp'
+                                                , Arguments = [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+            Im = lambda Ai, Aj : self._parseArg( 'Im_amps_%s_%s' % ( Ai, Aj ), { }, Type = 'ProdCarthCToIm', ObjectType = 'ConvertPolAmp'
+                                                , Arguments = [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
 
             # define functions which return the coefficients of the time dependence
             def CPVDec( termInd, iInd, jInd, amps, CPPar ) :
@@ -64,7 +64,8 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
                 if mix in [ one, minus ] : mix = None
 
                 facs = [ fac for fac in ( sign, dec, mix ) if fac ]
-                return Product( name, facs ) if len(facs) > 1 else facs[0] if len(facs) == 1 else one
+                return self._parseArg( name, { }, Arguments = facs, ObjectType = 'Product' ) if len(facs) > 1\
+                       else facs[0] if len(facs) == 1 else one
 
             def tCoef( tCType, iInd, jInd, amps, CPPar ) :
                 # build the coefficient of the time function:
@@ -88,7 +89,8 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
                         ]
                 assert any( comp for term in terms for comp in term )
 
-                add = lambda name, args : Addition( name, args ) if len(args) > 1 else args[0] if len(args) == 1 else None
+                add = lambda name, args : self._parseArg( name, { }, Arguments = args, ObjectType = 'Addition' ) if len(args) > 1\
+                                          else args[0] if len(args) == 1 else None
                 return (  add( 'Re_%s_%s_%s' % ( tCType, iInd, jInd ), [ term[0] for term in terms if term[0] ] )
                         , add( 'Im_%s_%s_%s' % ( tCType, iInd, jInd ), [ term[1] for term in terms if term[1] ] )
                        )
@@ -102,7 +104,7 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
             # (real part of) product of amplitude, time and angular (complex) factors:
             # Re(abc) = Re(a)Re(b)Re(c) - Im(a)Im(b)Re(c) - Re(a)Im(b)Im(c) - Im(a)Re(b)Im(c)
             # (there is a minus in case there are 2 imaginary contributions)
-            prod = lambda name, args : [ Product( name, args ) ] if all(args) else [ ]
+            prod = lambda name, args : [ self._parseArg( name, { }, Arguments = args, ObjectType = 'Product' ) ] if all(args) else [ ]
             return prod( 'ReReRe_%s_%s_%s' % ( tCoefType, amplitudes[iIndex], amplitudes[jIndex] ), [        reAmps , reTime, reAng ] ) \
                  + prod( 'ImImRe_%s_%s_%s' % ( tCoefType, amplitudes[iIndex], amplitudes[jIndex] ), [ minus, imAmps , imTime, reAng ] ) \
                  + prod( 'ReImIm_%s_%s_%s' % ( tCoefType, amplitudes[iIndex], amplitudes[jIndex] ), [ minus, reAmps , imTime, imAng ] ) \
@@ -114,13 +116,12 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
             from P2VV.Compatibility import cwr
 
         args = dict()
-        from P2VV.RooFitWrappers import Addition
         for tCoefType in [ 'cosh', 'sinh', 'cos', 'sin' ] :
             # NOTE: 'Amplitudes' must be traversed 'in order' : A0, Apar, Aperp, AS, so we cannot use Amplitudes.keys() out of the box
-            args[ tCoefType ] = Addition( '%sCoef' % tCoefType
-                                         , [ term for ( i, j ) in cwr( Order, 2 )\
-                                                  for term in combine( tCoefType, AngFuncs, Amplitudes, CPParams, i, j ) ]
-                                        )
+            args[ tCoefType ] = self._parseArg( '%sCoef' % tCoefType, { }, ObjectType = 'Addition'
+                                               , Arguments = [ term for ( i, j ) in cwr( Order, 2 )\
+                                                               for term in combine( tCoefType, AngFuncs, Amplitudes, CPParams, i, j ) ]
+                                              )
 
         BDecayBasisCoefficients.__init__( self, **args )
 
@@ -128,18 +129,20 @@ class JpsiphiBDecayBasisCoefficients( BDecayBasisCoefficients ) :
     def __init__(self,  angFuncs, Amplitudes,CP, itag, dilution, order ) :
         def combine( name, afun, A, CPparams, tag, i, j) :
             # TODO: deal with tag = None: create the untagged PDF in that case!
-            from P2VV.RooFitWrappers import ConstVar, FormulaVar, ConvertPolAmp, Product
+            from P2VV.RooFitWrappers import ConstVar, Product
             plus  = ConstVar( Name = 'plus',  Value =  1 )
             minus = ConstVar( Name = 'minus', Value = -1 )
             if type(CP['C'])==ConstVar and CP['C'].getVal() == 0 : 
                 Norm = [ ]
             else :
-                Norm = [ FormulaVar('Norm','1.0/(1.0+sign(@0)*@1)',[tag,CP['C']] ) ]
+                Norm = [ self._parseArg( 'Norm', kwargs, Formula = '1.0/(1.0+sign(@0)*@1)', Arguments = [ tag, CP['C'] ]
+                        , ObjectType = 'FormulaVar' ) ]
                 Norm[0].setAttribute("CacheAndTrack")
             # define functions which return Re(Conj(Ai) Aj), Im( Conj(Ai) Aj)
-            # TODO: replace by Addition & Product... why? (only parameters)
-            Re        = lambda ai, aj : ConvertPolAmp(Name='Re_c_%s_%s'%(ai,aj),Type='ProdCarthCToRe',Arguments=[ai.Re,ai.Im,aj.Re,aj.Im])
-            Im        = lambda ai, aj : ConvertPolAmp(Name='Im_c_%s_%s'%(ai,aj),Type='ProdCarthCToIm',Arguments=[ai.Re,ai.Im,aj.Re,aj.Im])
+            Re = lambda ai, aj : self._parseArg( 'Re_c_%s_%s' % ( ai, aj ), { }, Type = 'ProdCarthCToRe', ObjectType = 'ConvertPolAmp'
+                                                , Arguments=[ ai.Re,ai.Im,aj.Re,aj.Im ] )
+            Im = lambda ai, aj : self._parseArg( 'Im_c_%s_%s' % ( ai, aj ), { }, Type = 'ProdCarthCToIm', ObjectType = 'ConvertPolAmp'
+                                                , Arguments=[ ai.Re,ai.Im,aj.Re,aj.Im ] )
             # define functions which return the coefficients that define the time-dependence...
             _minus_if = lambda b, x : [ minus ] + x if b else  x 
             coef = { 'cosh' : lambda ai,aj,CP : ( plus if ai.CP == aj.CP else  CP['C']

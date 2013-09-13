@@ -78,8 +78,6 @@ class CPParam ( _util_parse_mixin ):
 
 class CDS_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
-        from math import cos, sin
-
         self._parseArg('C', kwargs,  Title = 'CPV param. C', Value = CVal, Error = CErr, MinMax = ( -1., 1. ) )
         self._parseArg('D', kwargs,  Title = 'CPV param. D', Value = DVal, Error = DErr, MinMax = ( -2., 2. ) )
         self._parseArg('S', kwargs,  Title = 'CPV param. S', Value = SVal, Error = SErr, MinMax = ( -2., 2. ) )
@@ -87,61 +85,58 @@ class CDS_CPParam( CPParam ) :
 
 class LambdaCarth_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
-        from P2VV.RooFitWrappers import FormulaVar
-        from math import cos, sin
-
         self._parseArg( 'ReLambdaCP', kwargs,  Title = 'CPV param. Re(lambda)', Value = ReLambVal, Error = ReLambErr
                        , MinMax = ( -RooInf, +RooInf ) )
         self._parseArg( 'ImLambdaCP', kwargs,  Title = 'CPV param. Im(lambda)', Value = ImLambVal, Error = ImLambErr
                        , MinMax = ( -RooInf, +RooInf ) )
 
-        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)', [ self._ReLambdaCP, self._ImLambdaCP ] )
-                             , D = FormulaVar('D', '-2. * @0 / (1. + @0*@0 + @1*@1)',             [ self._ReLambdaCP, self._ImLambdaCP ] )
-                             , S = FormulaVar('S', '2. * @1 / (1. + @0*@0 + @1*@1)',              [ self._ReLambdaCP, self._ImLambdaCP ] )
+        CPParam.__init__(self, C = self._parseArg( 'C', kwargs, Formula = '(1. - @0*@0 - @1*@1) / (1. + @0*@0 + @1*@1)'
+                                                  , Arguments = [ self._ReLambdaCP, self._ImLambdaCP ], ObjectType = 'FormulaVar' )
+                             , D = self._parseArg( 'D', kwargs, Formula = '-2. * @0 / (1. + @0*@0 + @1*@1)'
+                                                  , Arguments = [ self._ReLambdaCP, self._ImLambdaCP ], ObjectType = 'FormulaVar' )
+                             , S = self._parseArg( 'S', kwargs, Formula = '2. * @1 / (1. + @0*@0 + @1*@1)'
+                                                  , Arguments = [ self._ReLambdaCP, self._ImLambdaCP ], ObjectType = 'FormulaVar' )
                         )
         self._check_extraneous_kw( kwargs )
 
 
 class LambdaAbsArg_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
-        from P2VV.RooFitWrappers import FormulaVar
-        from math import pi
-
         self._parseArg( 'lambdaCP', kwargs,  Title = 'CPV param. |lambda|', Value = lambVal, Error = lambErr, MinMax = ( 0.,      5.    ) )
         self._parseArg( 'phiCP',    kwargs,  Title = 'CPV param. phi',      Value = phiVal,  Error = phiErr,  MinMax = (-RooInf, +RooInf) )
 
-        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0*@0) / (1. + @0*@0)',       [ self._lambdaCP              ] )
-                             , D = FormulaVar('D', '-2. * @0 * cos(@1) / (1. + @0*@0)', [ self._lambdaCP, self._phiCP ] )
-                             , S = FormulaVar('S', '-2. * @0 * sin(@1) / (1. + @0*@0)', [ self._lambdaCP, self._phiCP ] )
+        CPParam.__init__(self, C = self._parseArg( 'C', kwargs, Formula = '(1. - @0*@0) / (1. + @0*@0)'
+                                                  , Arguments = [ self._lambdaCP ], ObjectType = 'FormulaVar' )
+                             , D = self._parseArg( 'D', kwargs, Formula = '-2. * @0 * cos(@1) / (1. + @0*@0)'
+                                                  , Arguments = [ self._lambdaCP, self._phiCP ], ObjectType = 'FormulaVar' )
+                             , S = self._parseArg( 'S', kwargs, Formula = '-2. * @0 * sin(@1) / (1. + @0*@0)'
+                                                  , Arguments = [ self._lambdaCP, self._phiCP ], ObjectType = 'FormulaVar' )
                         )
         self._check_extraneous_kw( kwargs )
 
 
 class LambdaSqArg_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
-        from P2VV.RooFitWrappers import FormulaVar
-        from math import pi
-
         self._parseArg( 'lambdaCPSq', kwargs,  Title = 'CPV param. |lambda|^2', Value = lambSqVal, Error = lambSqErr
                        , MinMax = ( 0., 25. ) )
         self._parseArg( 'phiCP',      kwargs,  Title = 'CPV param. phi',        Value = phiVal,    Error = phiErr
                        , MinMax = ( -RooInf, +RooInf ) )
 
-        CPParam.__init__(self, C = FormulaVar('C', '(1. - @0) / (1. + @0)',                [ self._lambdaCPSq              ] )
-                             , D = FormulaVar('D', '-2. * sqrt(@0) * cos(@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
-                             , S = FormulaVar('S', '-2. * sqrt(@0) * sin(@1) / (1. + @0)', [ self._lambdaCPSq, self._phiCP ] )
+        CPParam.__init__(self, C = self._parseArg( 'C', kwargs, Formula = '(1. - @0) / (1. + @0)'
+                                                  , Arguments = [ self._lambdaCPSq ], ObjectType = 'FormulaVar' )
+                             , D = self._parseArg( 'D', kwargs, Formula = '-2. * sqrt(@0) * cos(@1) / (1. + @0)'
+                                                  , Arguments = [ self._lambdaCPSq, self._phiCP ], ObjectType = 'FormulaVar' )
+                             , S = self._parseArg( 'S', kwargs, Formula = '-2. * sqrt(@0) * sin(@1) / (1. + @0)'
+                                                  , Arguments = [ self._lambdaCPSq, self._phiCP ], ObjectType = 'FormulaVar' )
                         )
         self._check_extraneous_kw( kwargs )
 
 class LambdaArg_CPParam( CPParam ) :
     def __init__( self, **kwargs ) :
-        from P2VV.RooFitWrappers import FormulaVar,ConstVar
-        from math import pi
-
         self._parseArg( 'phiCP', kwargs, Title = 'CPV param. phi', Value = phiVal, Error = phiErr, MinMax = ( -RooInf, +RooInf ) )
-        CPParam.__init__(self, C = ConstVar( Name = 'C', Value = 0. )
-                             , D = FormulaVar('D', '-cos(@0) ', [ self._phiCP ] )
-                             , S = FormulaVar('S', '-sin(@0) ', [ self._phiCP ] )
+        CPParam.__init__(self, C = self._parseArg( 'C', kwargs, Value = 0., ObjectType = 'ConstVar' )
+                             , D = self._parseArg( 'D', kwargs, Formula = '-cos(@0)', Arguments = [self._phiCP], ObjectType = 'FormulaVar')
+                             , S = self._parseArg( 'S', kwargs, Formula = '-sin(@0)', Arguments = [self._phiCP], ObjectType = 'FormulaVar')
                         )
         self._check_extraneous_kw( kwargs )
 
@@ -158,75 +153,88 @@ class CPVDecay_CPParam( CPParam ) :
         RImDict   = { }
         try :   from itertools import combinations_with_replacement as cwr  # this requires python 2.7 or later
         except: from P2VV.Compatibility import cwr
-        from P2VV.RooFitWrappers import FormulaVar
         for ampComb in cwr( ampNames, 2 ) :
             eta0 = amps[ ampComb[0] ].CP
             eta1 = amps[ ampComb[1] ].CP
 
-            RPlusDict[ampComb] = tuple( [ FormulaVar(  '%sRPlus_%s_%s' % ( comp, ampComb[0], ampComb[1] )
-                                                     , '(%s@0*@1*%s(@2-@3)) / 2.'\
-                                                       % ( '1. + ' if comp == 'Re' and eta0 == eta1\
-                                                           else '1. - ' if comp == 'Re' and eta0 != eta1\
-                                                           else '' if eta0 == eta1 else '-'
-                                                          , func
-                                                         )
-                                                     , [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
-                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
-                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
-                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
-                                                       ]
-                                                    ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
+            RPlusDict[ampComb] = tuple( [ self._parseArg(  '%sRPlus_%s_%s' % ( comp, ampComb[0], ampComb[1] ), kwargs
+                                                         , Formula = '(%s@0*@1*%s(@2-@3)) / 2.'\
+                                                                     % ( '1. + ' if comp == 'Re' and eta0 == eta1\
+                                                                         else '1. - ' if comp == 'Re' and eta0 != eta1\
+                                                                         else '' if eta0 == eta1 else '-'
+                                                                        , func
+                                                                       )
+                                                         , Arguments = [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
+                                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
+                                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
+                                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
+                                                                       ]
+                                                         , ObjectType = 'FormulaVar'
+                                                        ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
                                       ] )
-            RMinDict[ampComb]  = tuple( [ FormulaVar(  '%sRMin_%s_%s' % ( comp, ampComb[0], ampComb[1] )
-                                                     , '(%s@0*@1*%s(@2-@3)) / 2.'\
-                                                       % ( '1. - ' if comp == 'Re' and eta0 == eta1\
-                                                           else '1. + ' if comp == 'Re' and eta0 != eta1\
-                                                           else '-' if eta0 == eta1 else ''
-                                                          , func
-                                                         )
-                                                     , [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
-                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
-                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
-                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
-                                                       ]
-                                                    ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
+            RMinDict[ampComb]  = tuple( [ self._parseArg(  '%sRMin_%s_%s' % ( comp, ampComb[0], ampComb[1] ), kwargs
+                                                         , Formula = '(%s@0*@1*%s(@2-@3)) / 2.'\
+                                                                     % ( '1. - ' if comp == 'Re' and eta0 == eta1\
+                                                                         else '1. + ' if comp == 'Re' and eta0 != eta1\
+                                                                         else '-' if eta0 == eta1 else ''
+                                                                        , func
+                                                                       )
+                                                         , Arguments = [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
+                                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
+                                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
+                                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
+                                                                       ]
+                                                         , ObjectType = 'FormulaVar'
+                                                        ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
                                       ] )
-            RReDict[ampComb]   = tuple( [ FormulaVar(  '%sRRe_%s_%s' % ( comp, ampComb[0], ampComb[1] )
-                                                     , '(%s@0*%s(@2) %s @1*%s(-@3)) / 2.'\
-                                                       % ( '' if eta0 > 0 else '-', func, '+' if eta1 > 0 else '-', func )
-                                                     , [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
-                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
-                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
-                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
-                                                       ]
-                                                    ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
+            RReDict[ampComb]   = tuple( [ self._parseArg(  '%sRRe_%s_%s' % ( comp, ampComb[0], ampComb[1] ), kwargs
+                                                         , Formula = '(%s@0*%s(@2) %s @1*%s(-@3)) / 2.'\
+                                                                     % ( '' if eta0 > 0 else '-', func, '+' if eta1 > 0 else '-', func )
+                                                         , Arguments = [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
+                                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
+                                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
+                                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
+                                                                       ]
+                                                         , ObjectType = 'FormulaVar'
+                                                        ) for ( comp, func ) in [ ( 'Re', 'cos' ), ( 'Im', 'sin' ) ]
                                       ] )
-            RImDict[ampComb]   = tuple( [ FormulaVar(  '%sRIm_%s_%s' % ( comp, ampComb[0], ampComb[1] )
-                                                     , '(%s@0*%s(@2) %s @1*%s(-@3)) / 2.'\
-                                                       % (  '-' if ( eta0 > 0 and comp == 'Re' ) or ( eta0 < 0 and comp == 'Im' ) else ''
-                                                          , func
-                                                          , '+' if ( eta1 > 0 and comp == 'Re' ) or ( eta1 < 0 and comp == 'Im' ) else '-'
-                                                          , func
-                                                         )
-                                                     , [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
-                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
-                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
-                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
-                                                       ]
-                                                    ) for ( comp, func ) in [ ( 'Re', 'sin' ), ( 'Im', 'cos' ) ]
+            RImDict[ampComb]   = tuple( [ self._parseArg(  '%sRIm_%s_%s' % ( comp, ampComb[0], ampComb[1] ), kwargs
+                                                         , Formula = '(%s@0*%s(@2) %s @1*%s(-@3)) / 2.'\
+                                                                     % (  '-' if ( eta0 > 0 and comp == 'Re' )\
+                                                                              or ( eta0 < 0 and comp == 'Im' ) else ''
+                                                                        , func
+                                                                        , '+' if ( eta1 > 0 and comp == 'Re' )\
+                                                                              or ( eta1 < 0 and comp == 'Im' ) else '-'
+                                                                        , func
+                                                                       )
+                                                         , Arguments = [  getattr( self, '_%s' % magNames[   ampComb[0] ] )
+                                                                        , getattr( self, '_%s' % magNames[   ampComb[1] ] )
+                                                                        , getattr( self, '_%s' % phaseNames[ ampComb[0] ] )
+                                                                        , getattr( self, '_%s' % phaseNames[ ampComb[1] ] )
+                                                                       ]
+                                                         , ObjectType = 'FormulaVar'
+                                                        ) for ( comp, func ) in [ ( 'Re', 'sin' ), ( 'Im', 'cos' ) ]
                                       ] )
 
         self._check_extraneous_kw( kwargs )
         CPParam.__init__(  self, AmplitudeNames = ampNames
-                         , C = FormulaVar( 'C', '(1. - @0*@0) / (1. + @0*@0)',       [  getattr( self, '_%s' % magNames['mix'] ) ] )
-                         , D = FormulaVar( 'D', '-2. * @0 * cos(@1) / (1. + @0*@0)', [  getattr( self, '_%s' % magNames['mix']   )
-                                                                                      , getattr( self, '_%s' % phaseNames['mix'] )
-                                                                                     ]
-                                         )
-                         , S = FormulaVar( 'S', '-2. * @0 * sin(@1) / (1. + @0*@0)', [  getattr( self, '_%s' % magNames['mix']   )
-                                                                                      , getattr( self, '_%s' % phaseNames['mix'] )
-                                                                                     ]
-                                         )
+                         , C = self._parseArg(  'C', kwargs
+                                              , Formula = '(1. - @0*@0) / (1. + @0*@0)'
+                                              , Arguments = [  getattr( self, '_%s' % magNames['mix'] ) ]
+                                              , ObjectType = 'FormulaVar'
+                                             )
+                         , D = self._parseArg(  'D', kwargs
+                                              , Formula = '-2. * @0 * cos(@1) / (1. + @0*@0)'
+                                              , Arguments = [ getattr( self, '_%s' % magNames['mix'] )
+                                                             , getattr( self, '_%s' % phaseNames['mix'] ) ]
+                                              , ObjectType = 'FormulaVar'
+                                             )
+                         , S = self._parseArg(  'S', kwargs
+                                              , Formula = '-2. * @0 * sin(@1) / (1. + @0*@0)'
+                                              , Arguments = [ getattr( self, '_%s' % magNames['mix'] )
+                                                             , getattr( self, '_%s' % phaseNames['mix'] ) ]
+                                              , ObjectType = 'FormulaVar'
+                                             )
                          , RPlusDict = RPlusDict
                          , RMinDict  = RMinDict
                          , RReDict   = RReDict

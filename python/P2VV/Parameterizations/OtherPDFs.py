@@ -8,7 +8,6 @@ class OtherPdf( _util_parse_mixin ) :
 
 class AmorosoPdf( OtherPdf ) :
     def __init__(self, obs,**kwargs) :
-        from P2VV.RooFitWrappers import FormulaVar
         suffix = kwargs.pop('Suffix', obs.GetName())
         self._a     = self._parseArg('a_%s'      % suffix, kwargs, Title = 'a',      Value = 0,     Constant = True)
         self._theta = self._parseArg('theta_%s'  % suffix, kwargs, Title = 'theta',  Value = 1,     Constant = True)
@@ -17,7 +16,8 @@ class AmorosoPdf( OtherPdf ) :
         offset      = self._parseArg('offset_%s' % suffix, kwargs, Title = 'offset', Value = 22200, MinMax = (20000, 30000))
         obs_offset = obs
         if offset.getVal() != 0:
-            obs_offset = FormulaVar('%s_offset' % obs.GetName(), '(@0 - @1) > 0 ? (@0 - @1) : 0.001', [obs, offset])
+            obs_offset = self._parseArg( '%s_offset' % obs.GetName(), kwargs, Formula = '(@0 - @1) > 0 ? (@0 - @1) : 0.001'
+                                        , Arguments = [obs, offset], ObjectType = 'FormulaVar' )
 
         from P2VV.RooFitWrappers import Pdf
         from ROOT import RooAmoroso as Amoroso

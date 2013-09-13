@@ -311,8 +311,7 @@ pdfPars = pdf.getParameters(fitData)
 # float/fix values of some parameters
 from math import sqrt
 if 'lamb' in constLambdaCP.lower() :
-    pdfBuild['lambdaCP'].setConstant('lambdaCPSq') if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
-        else pdfBuild['lambdaCP'].setConstant('lambdaCP')
+    pdfBuild['lambdaCP'].setConstant( 'lambdaCPSq' if pdfConfig['lambdaCPParam'] == 'lambSqPhi' else 'lambdaCP' )
     pdfBuild['lambdaCP'].parameter('lambdaCPSq').setVal(lambCPSqVal) if pdfConfig['lambdaCPParam'] == 'lambSqPhi'\
         else pdfBuild['lambdaCP'].parameter('lambdaCP').setVal( sqrt(lambCPSqVal) )
 if 'phi' in constLambdaCP.lower() :

@@ -333,6 +333,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     , 'tagPdfType', 'timeEffType', 'anglesEffType',  'readFromWS' ] :
             self[par] = getKWArg( self, { }, par )
 
+        from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
+        setParNamePrefix( self['parNamePrefix'] )
+        namePF = getParNamePrefix(True)
+
         self['condTagging'] = True if self['contEstWTag'] else self['condTagging']
 
         # create observables
@@ -352,7 +356,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # build signal PDFs
         from P2VV.RooFitWrappers import Component
         self['pdfComps'] = [ ]
-        self['pdfComps'].append( Component( 'sig', [ ], Yield = ( self['numEvents'] * self['sigFrac'], 0., self['numEvents'] ) ) )
+        self['pdfComps'].append( Component( namePF + 'sig', [ ], Yield = ( self['numEvents'] * self['sigFrac'], 0., self['numEvents'] ) ) )
 
         sigPdf = buildBs2JpsiphiSignalPdf(self)
         if self['timeEffType']   : sigPdf = multiplyByTimeAcceptance( sigPdf, self, data = self['signalData'] )
@@ -363,7 +367,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if not self['SFit'] : 
             # build background PDFs
-            self['pdfComps'].append( Component( 'bkg', [ ], Yield = (self['numEvents'] * (1. - self['sigFrac']), 0., self['numEvents']) ) )
+            self['pdfComps'].append( Component( namePF + 'bkg', [ ]
+                                    , Yield = ( self['numEvents'] * ( 1. - self['sigFrac'] ), 0., self['numEvents'] ) ) )
             self['pdfComps'][1] += buildBs2JpsiphiCombBkgTimePdf(self)
             self['pdfComps'][1] += buildBs2JpsiphiCombBkgAnglesPdf(self)
             if self['tagPdfType'] or not self['condTagging'] : self['pdfComps'][1] += buildTaggingPdf( self, data = self['signalData'] )
@@ -381,6 +386,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             splitCats   = [ [ self['observables']['KKMassCat'] ] ]
             splitParams = [ [ ] ]
             for amp in self['amplitudes'].parameters() :
+                if not amp.isFundamental() : continue
                 if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S', 'C_SP' ] ) : splitParams[0].append(amp)
 
             # build simultaneous PDF
@@ -399,12 +405,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         print '%d: %.4f%s' % ( iter, fac, '' if iter == len( self['CSPValues'] ) - 1 else ',' ),
                     print
 
-                from P2VV.Utilities.General import getSplitPar
                 splitCatPars = self['simulPdf'].getVariables()
                 splitCatIter = self['observables']['KKMassCat'].typeIterator()
                 splitCatState = splitCatIter.Next()
+                from P2VV.Utilities.General import getSplitPar
                 while splitCatState :
-                    C_SP = getSplitPar( 'C_SP', splitCatState.GetName(), splitCatPars )
+                    C_SP = getSplitPar( namePF + 'C_SP', splitCatState.GetName(), splitCatPars )
                     C_SP.setVal( self['CSPValues'][ splitCatState.getVal() ] )
                     C_SP.setConstant(True)
 
@@ -518,6 +524,11 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     constrainDeltaM    = getKWArg( self, kwargs, 'constrainDeltaM' )
     lambdaCPParam      = getKWArg( self, kwargs, 'lambdaCPParam' )
     timeEffType        = getKWArg( self, kwargs, 'timeEffType' )
+    parNamePrefix      = getKWArg( self, kwargs, 'parNamePrefix', '' )
+
+    from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
+    setParNamePrefix(parNamePrefix)
+    namePF = getParNamePrefix(True)
 
     print 120 * '='
     print 'P2VV - INFO: buildBs2JpsiphiSignalPdf(): building B_s^0 -> J/psi phi signal PDF'
@@ -586,13 +597,13 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                 timeResArgs['timeResMeanConstraint'] = 'fixed'
         elif 'nomean' in timeResType.lower() :
             from P2VV.RooFitWrappers import ConstVar
-            timeResArgs['timeResMean']   = ConstVar( Name = 'timeResMean',   Value = 0. )
-            timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+            timeResArgs['timeResMean']   = ConstVar( Name = namePF + 'timeResMean',   Value = 0. )
+            timeResArgs['timeResMeanSF'] = ConstVar( Name = namePF + 'timeResMeanSF', Value = 1. )
             timeResArgs['timeResSFConstraint'] = constrainTResScale
         elif 'constmean' in timeResType.lower() :
             from P2VV.RooFitWrappers import ConstVar
             timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
-            timeResArgs['timeResMeanSF'] = ConstVar( Name = 'timeResMeanSF', Value = 1. )
+            timeResArgs['timeResMeanSF'] = ConstVar( Name = namePF + 'timeResMeanSF', Value = 1. )
             timeResArgs['timeResMeanConstraint'] = constrainTResScale
             timeResArgs['timeResSFConstraint'] = constrainTResScale
         elif 'stlinear' in timeResType.lower():
@@ -657,10 +668,10 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
         if lambdaCPParam.endswith('PSWaves') :
             from ROOT import RooNumber
             RooInf = RooNumber.infinity()
-            rhoCP_P = RealVar( 'rhoCP_P', Title = 'CPV in decay param. |rho|', Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
-            rhoCP_S = RealVar( 'rhoCP_S', Title = 'CPV in decay param. |rho|', Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
-            phiCP_P = RealVar( 'phiCP_P', Title = 'CPV in decay param. phi',   Value = 0., Error = 0.1,  MinMax = (-RooInf, +RooInf) )
-            phiCP_S = RealVar( 'phiCP_S', Title = 'CPV in decay param. phi',   Value = 0., Error = 0.1,  MinMax = (-RooInf, +RooInf) )
+            rhoCP_P = RealVar( namePF + 'rhoCP_P', Title = 'CPV in decay |rho|', Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
+            rhoCP_S = RealVar( namePF + 'rhoCP_S', Title = 'CPV in decay |rho|', Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
+            phiCP_P = RealVar( namePF + 'phiCP_P', Title = 'CPV in decay phi',   Value = 0., Error = 0.1,  MinMax = (-RooInf, +RooInf) )
+            phiCP_S = RealVar( namePF + 'phiCP_S', Title = 'CPV in decay phi',   Value = 0., Error = 0.1,  MinMax = (-RooInf, +RooInf) )
             self['lambdaCP'] = CPParam(  AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self['amplitudes']
                                      , rhoCP_A0 = rhoCP_P, rhoCP_Apar = rhoCP_P, rhoCP_Aperp = rhoCP_P, rhoCP_AS = rhoCP_S
                                      , phiCP_A0 = phiCP_P, phiCP_Apar = phiCP_P, phiCP_Aperp = phiCP_P, phiCP_AS = phiCP_S
@@ -711,14 +722,14 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             asymVal = 0. #asymVal = -self['lambdaCP']['C'].getVal()
             asymErr = 0.1
             from P2VV.RooFitWrappers import RealVar
-            avgCEvenSum = RealVar( 'avgCEvenSum'    , Title = 'Sum of CP average even coefficients'
-                                                    , Value = 1., MinMax = (  0., 2. ) )
-            avgCOddSum  = RealVar( 'avgCOddSum'     , Title = 'Sum of CP average odd coefficients'
-                                                    , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
-            avgCEvenOS = RealVar( 'avgCEvenOSTagged', Title = 'CP average even coefficients OS tagged categories'
-                                                    , Value = 1., MinMax = (  0., 2. ) )
-            avgCOddOS  = RealVar( 'avgCOddOSTagged' , Title = 'CP average odd coefficients OS tagged categories'
-                                                    , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
+            avgCEvenSum = RealVar( namePF + 'avgCEvenSum', Title = 'Sum of CP average even coefficients'
+                                  , Value = 1., MinMax = (  0., 2. ) )
+            avgCOddSum  = RealVar( namePF + 'avgCOddSum', Title = 'Sum of CP average odd coefficients'
+                                  , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
+            avgCEvenOS  = RealVar( namePF + 'avgCEvenOSTagged', Title = 'CP average even coefficients OS tagged categories'
+                                  , Value = 1., MinMax = (  0., 2. ) )
+            avgCOddOS   = RealVar( namePF + 'avgCOddOSTagged' , Title = 'CP average odd coefficients OS tagged categories'
+                                  , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
             if not SSTagging :
                 # only opposite side tagging: replace tagging efficiency asymmetry parameters by asymmetry coefficients
                 tagCatsDictOS[ 'AvgCEvenSum' ] = avgCEvenSum
@@ -733,14 +744,14 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             else :
                 # both same side tagging and opposite side tagging: build coefficients for SS tagged categories
                 from P2VV.RooFitWrappers import RealVar
-                avgCEvenSS = RealVar( 'avgCEvenSSTagged', Title = 'CP average even coefficients SS tagged categories'
-                                                        , Value = 1., MinMax = (  0., 2. ) )
-                avgCOddSS  = RealVar( 'avgCOddSSTagged' , Title = 'CP average odd coefficients SS tagged categories'
-                                                        , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
-                avgCEven   = RealVar( 'avgCEvenTagged'  , Title = 'CP average even coefficients OS+SS tagged categories'
-                                                        , Value = 1., MinMax = (  0., 2. ) )
-                avgCOdd    = RealVar( 'avgCOddTagged'   , Title = 'CP average odd coefficients OS+SS tagged categories'
-                                                        , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
+                avgCEvenSS = RealVar( namePF + 'avgCEvenSSTagged', Title = 'CP average even coefficients SS tagged categories'
+                                     , Value = 1., MinMax = (  0., 2. ) )
+                avgCOddSS  = RealVar( namePF + 'avgCOddSSTagged', Title = 'CP average odd coefficients SS tagged categories'
+                                     , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
+                avgCEven   = RealVar( namePF + 'avgCEvenTagged', Title = 'CP average even coefficients OS+SS tagged categories'
+                                     , Value = 1., MinMax = (  0., 2. ) )
+                avgCOdd    = RealVar( namePF + 'avgCOddTagged', Title = 'CP average odd coefficients OS+SS tagged categories'
+                                     , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
 
                 # build dictionary with both opposite side and same side tagging categories parameters
                 tagCatsDict = dict(  NumTagCats0  = tagCatsDictOS['NumTagCats']
@@ -851,7 +862,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
 
     # build signal PDF
     from P2VV.RooFitWrappers import BTagDecay
-    self['sigBTagDecay'] = BTagDecay( 'sig_t_angles' if condTagging else 'sig_t_angles_tagCat_iTag', **args )
+    self['sigBTagDecay'] = BTagDecay( namePF + ( 'sig_t_angles' if condTagging else 'sig_t_angles_tagCat_iTag' ), **args )
 
     # collect python garbage
     import gc
@@ -864,9 +875,13 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
 def buildBs2JpsiphiCombBkgTimePdf( self, **kwargs ) :
     observables    = getKWArg( self, kwargs, 'observables' )
     timeResModel   = getKWArg( self, kwargs, 'timeResModel' )
+    parNamePrefix  = getKWArg( self, kwargs, 'parNamePrefix', '' )
+
+    from P2VV.Parameterizations.GeneralUtils import setParNamePrefix
+    setParNamePrefix(parNamePrefix)
 
     from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
-    self['backgroundTime'] = BackgroundTime( Name = 'bkg_t', time = observables['time'], resolutionModel = timeResModel['model'] )
+    self['backgroundTime'] = BackgroundTime( Name = namePF + 'bkg_t', time = observables['time'], resolutionModel = timeResModel['model'] )
     self['bkgTimePdf'] = self['backgroundTime'].pdf()
     return self['bkgTimePdf']
 
@@ -879,6 +894,11 @@ def buildBs2JpsiphiCombBkgAnglesPdf( self, **kwargs ) :
     transAngles     = getKWArg( self, kwargs, 'transAngles' )
     numAngleBins    = getKWArg( self, kwargs, 'numAngleBins' )
     fitOptions      = getKWArg( self, kwargs, 'fitOptions', { } )
+    parNamePrefix   = getKWArg( self, kwargs, 'parNamePrefix', '' )
+
+    from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
+    setParNamePrefix(parNamePrefix)
+    namePF = getParNamePrefix(True)
 
     if cbkgData and bkgAnglePdfType == 'histPdf' :
         # create a histogram from background data and use it for background angular PDF
@@ -938,7 +958,7 @@ def buildBs2JpsiphiCombBkgAnglesPdf( self, **kwargs ) :
 
             # create bin coefficients
             from P2VV.RooFitWrappers import RealVar
-            self['bkgAngCoefs'] = [ RealVar(  'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
+            self['bkgAngCoefs'] = [ RealVar(  namePF + 'bkg_angBin_%d_%d_%d' % ( bin0, bin1, bin2 )
                                             , Title    = 'Background angles bin %d-%d-%d' % ( bin0, bin1, bin2 )
                                             , Value    = 1. / cpsNumBins / cthNumBins / phiNumBins
                                             , MinMax   = ( 0., 1. )
@@ -949,11 +969,11 @@ def buildBs2JpsiphiCombBkgAnglesPdf( self, **kwargs ) :
                                   ]
 
             from P2VV.RooFitWrappers import ComplementCoef
-            self['bkgAngCoefs'][0] = ComplementCoef( Name = 'bkg_angBin_0_0_0', Coefficients = self['bkgAngCoefs'][ 1 : ] )
+            self['bkgAngCoefs'][0] = ComplementCoef( Name = namePF + 'bkg_angBin_0_0_0', Coefficients = self['bkgAngCoefs'][ 1 : ] )
 
             # create a BinnedPdf
             from P2VV.RooFitWrappers import BinnedPdf
-            self['bkg_angBins'] = BinnedPdf(  Name = 'bkg_angBins' if bkgAnglePdfType == 'hybrid' else 'bkg_angles'
+            self['bkg_angBins'] = BinnedPdf(  Name = namePF + ( 'bkg_angBins' if bkgAnglePdfType == 'hybrid' else 'bkg_angles' )
                                             , Observables = [ observables['cpsi'], observables['ctheta'], observables['phi'] ]
                                             , Binnings = [ cpsBins, cthBins, phiBins ]
                                             , Coefficients = self['bkgAngCoefs']
@@ -999,11 +1019,11 @@ def buildBs2JpsiphiCombBkgAnglesPdf( self, **kwargs ) :
                         coef.setVal(binInt)
 
             if bkgAnglePdfType == 'hybrid' :
-                self['bkgAngBinsFrac'] = RealVar(  'bkgAngBinsFrac'
-                                               , Title  = 'Binned PDF fraction in angular background'
-                                               , Value  = spikesFrac
-                                               , MinMax = ( 0., 1. )
-                                              )
+                self['bkgAngBinsFrac'] = RealVar(  namePF + 'bkgAngBinsFrac'
+                                                 , Title  = 'Binned PDF fraction in angular background'
+                                                 , Value  = spikesFrac
+                                                 , MinMax = ( 0., 1. )
+                                                )
 
         if bkgAnglePdfType in [ 'basis', 'hybrid' ] :
             if bkgAnglePdfType == 'basis' : nBins = [ 20, 20, 20 ]
@@ -1021,7 +1041,7 @@ def buildBs2JpsiphiCombBkgAnglesPdf( self, **kwargs ) :
                                                           , phi    = observables['phi']
                                                          )
                                           , **dict( (  'C%d%d%s' % ( inds[0], inds[1], cnvrtInd(inds[2]) )
-                                                     , {  'Name'    : 'bkg_angCoef_%s_%s_%s'\
+                                                     , {  'Name'    : namePF + 'bkg_angCoef_%s_%s_%s'\
                                                                       % ( inds[0], inds[1], cnvrtInd(inds[2]) )
                                                         , 'Value'   : 0.
                                                         , 'Error'   : 0.01
@@ -1031,12 +1051,12 @@ def buildBs2JpsiphiCombBkgAnglesPdf( self, **kwargs ) :
                                                     ) for inds in angPDFIndices
                                                   )
                                          )
-            self['bkg_angFuncs'] = angPdfTerms.buildSumPdf('bkg_angFuncs')
+            self['bkg_angFuncs'] = angPdfTerms.buildSumPdf( namePF + 'bkg_angFuncs' )
 
         # build total angular PDF
         if bkgAnglePdfType == 'hybrid' :
             from P2VV.RooFitWrappers import SumPdf
-            self['bkg_angles'] = SumPdf(  Name   = 'bkg_angles'
+            self['bkg_angles'] = SumPdf(  Name   = namePF + 'bkg_angles'
                                         , PDFs   = [ self['bkg_angBins'], self['bkg_angFuncs'] ]
                                         , Yields = { self['bkg_angBins'].GetName() : self['bkgAngBinsFrac'] }
                                        )
@@ -1059,25 +1079,29 @@ def buildBs2JpsiphiCombBkgAnglesPdf( self, **kwargs ) :
 
 # function to build a PDF for tagging observables
 def buildTaggingPdf( self, **kwargs ) :
-    parNamePrefix = getKWArg( self, kwargs, 'parNamePrefix' )
     data          = getKWArg( self, kwargs, 'data', None )
     observables   = getKWArg( self, kwargs, 'observables' )
     tagPdfType    = getKWArg( self, kwargs, 'tagPdfType' )
     SSTagging     = getKWArg( self, kwargs, 'SSTagging' )
     tagCatCoefs   = getKWArg( self, kwargs, 'tagCatCoefs', None )
     dilutions     = getKWArg( self, kwargs, 'dilutions', None )
+    parNamePrefix = getKWArg( self, kwargs, 'parNamePrefix', '' )
+
+    from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
+    setParNamePrefix(parNamePrefix)
+    namePF = getParNamePrefix(True)
 
     if data and pdfType == 'histPdf' :
         # create histogram from signal data and use the (fixed) bin coefficients for the PDF
         print 'P2VV - INFO: buildTaggingPdf(): creating tagging PDF from data'
         from P2VV.RooFitWrappers import HistPdf
         if not SSTagging :
-            pdf = HistPdf(  Name = 'tagCat_iTag'
+            pdf = HistPdf(  Name = namePF + 'tagCat_iTag'
                           , Observables = [ observables['tagCatOS'], observables['iTagOS'] ]
                           , Data = data
                          )
         else :
-            pdf = HistPdf(  Name = 'tagCat_iTag'
+            pdf = HistPdf(  Name = namePF + 'tagCat_iTag'
                           , Observables = [observables['tagCatOS'], observables['tagCatSS'], observables['iTagOS'], observables['iTagSS']]
                           , Data = data
                          )
@@ -1107,10 +1131,9 @@ def buildTaggingPdf( self, **kwargs ) :
             from P2VV.Parameterizations.FlavourTagging import TagCats_BinnedTaggingPdf as TaggingPdf
 
         # build PDF
-        self['taggingPdf'] = TaggingPdf(  'tagCat_iTag'
+        self['taggingPdf'] = TaggingPdf(  namePF + 'tagCat_iTag'
                                         , observables['tagCatOS'], observables['tagCatSS'] if SSTagging else None
                                         , observables['iTagOS'], observables['iTagSS'] if SSTagging else None
-                                        , ParNamePrefix = parNamePrefix
                                         , TagCatCoefs   = tagCatCoefs
                                         , TaggedCatName = 'TagCat' if observables['tagCatOS'].numTypes() > 2 else 'Tagged'
                                         , Data          = data
@@ -1133,6 +1156,10 @@ def buildTaggingCategories( self, **kwargs ) :
     condTagging      = getKWArg( self, kwargs, 'condTagging' )
     contEstWTag      = getKWArg( self, kwargs, 'contEstWTag' )
     data             = getKWArg( self, kwargs, 'data', None )
+    parNamePrefix    = getKWArg( self, kwargs, 'parNamePrefix', '' )
+
+    from P2VV.Parameterizations.GeneralUtils import setParNamePrefix
+    setParNamePrefix(parNamePrefix)
 
     print 120 * '='
     print 'P2VV - INFO: buildTaggingCategories(): building tagging categories'
@@ -1205,6 +1232,11 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
     timeEffType                  = getKWArg( self, kwargs, 'timeEffType' )
     timeEffHistExclBName         = getKWArg( self, kwargs, 'timeEffHistExclBName' )
     timeEffHistUBName            = getKWArg( self, kwargs, 'timeEffHistUBName' )
+    parNamePrefix                = getKWArg( self, kwargs, 'parNamePrefix', '' )
+
+    from P2VV.Parameterizations.GeneralUtils import setParNamePrefix
+    setParNamePrefix(parNamePrefix)
+
     time      = observables['time']
     hlt1ExclB = observables['hlt1ExclB']
     hlt2B     = observables['hlt2B']
