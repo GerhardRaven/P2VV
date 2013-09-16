@@ -181,7 +181,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                                            , Coefficients = [ self._sf2_offset, self._sf2_slope ] )
                 self._parseArg( 'sfc_slope', kwargs, Value = -3.41081, MinMax = (-20, 20) )
                 self._parseArg( 'sfc_offset', kwargs, Value = 1.43297, MinMax = (-20, 20) )
-                self._comb = self._parseArg( 'timeResComb_linear', kwargs, ObjectType = 'PolyVar', ObsVar = self.__st_placeholder,
+                self._comb = self._parseArg( 'timeResComb_linear', kwargs, ObjectType = 'PolyVar', ObsVar = self.__st_placeholder
                                             , Coefficients = [ self._sfc_offset, self._sfc_slope ] )
             else:
                 self._comb = self._parseArg(  'timeResComb', kwargs
