@@ -66,13 +66,25 @@ class Toy(object):
 
         __check_req_kw__('Observables', kwargs)
         __check_req_kw__('Pdf', kwargs)
+
+        observables = kwargs.pop('Observables')
+        obs_set = RooArgSet(*observables)
+        
         pdf = kwargs.pop('Pdf')
         genPdf = kwargs.pop('GenPdf', pdf)
-        observables = kwargs.pop('Observables')
-        obs_set = RooArgSet()
+
+        gen_obs_set = RooArgSet()
+        for o in list(observables) + list(genPdf.ConditionalObservables()):
+            gen_obs_set.add(o._target_())
+        gen_pdf_params = genPdf.getParameters(gen_obs_set).snapshot(True)
+
+        genPdf = genPdf.clone(genPdf.GetName() + "_toy_clone")
+        genPdf.recursiveRedirectServers(gen_pdf_params)
+
+        fit_obs_set = RooArgSet()
         for o in list(observables) + list(pdf.ConditionalObservables()):
-            obs_set.add(o._target_())
-        params = pdf.getParameters(obs_set)
+            fit_obs_set.add(o._target_())
+        params = pdf.getParameters(fit_obs_set)
 
         pdf_params = RooArgSet()
         for p in params:
@@ -87,8 +99,7 @@ class Toy(object):
         result_params = RooArgSet(pdf_params, "result_params")
 
         if self.__transform:
-            trans_params = self.__transform.parameters()
-            trans_params.remove(obs_set, False, True)
+            trans_params = self.__transform.gen_params(gen_obs_set)
             result_params.add(trans_params)
             
         # Some extra numbers of interest
@@ -126,7 +137,9 @@ class Toy(object):
             args = dict(NumEvents = self._options.nevents)
             if 'ProtoData' in kwargs:
                 args['ProtoData'] = kwargs.pop('ProtoData')
-            data = genPdf.generate(observables, **args)
+            
+            genPdf.getParameters(obs_set).assignValueOnly(gen_pdf_params)
+            data = genPdf.generate(obs_set, **args)
             if self.__transform:
                 data = self.__transform(data)
             
@@ -153,11 +166,14 @@ class Toy(object):
                     # This sets a symmetric error, but since we don't run Minos, that's ok
                     data_param.setError(result_param.getError())
             if self.__transform:
-                for trans_param in self.__transform.parameters():
-                    data_param = data_params.find(result_param.GetName())
-                    data_param.setVal(result_param.getVal())
-                    # This sets a symmetric error, but since we don't run Minos, that's ok
-                    data_param.setError(result_param.getError())
+                for trans_param in self.__transform.result_params():
+                    data_param = data_params.find(trans_param.GetName())
+                    if isinstance(trans_param, RooCategory):
+                        data_param.setIndex(trans_param.getIndex())
+                    else:
+                        data_param.setVal(trans_param.getVal())
+                        # This sets a symmetric error, but since we don't run Minos, that's ok
+                        data_param.setError(result_param.getError())
             
             self._data.fill()
 
@@ -185,11 +201,12 @@ class SWeightTransform(object):
         self.__comp = component
         self.__pdf = pdf
         self.__fit_opts = fit_opts
-
+        self.__result = None
+        
     def __call__(self, data):
         pdf_pars = self.__pdf.getParameters(data.get())
         if not hasattr(self, '__parameters'):
-            self.__parameters = pdf_pars
+            self.__parameters = pdf_pars.snapshot(True)
         else:
             for p in self.__parameters:
                 pdf_par = pdf_pars.find(p.GetName())
@@ -197,17 +214,29 @@ class SWeightTransform(object):
                 pdf_par.setError(p.getError())
             
         for i in range(3):
-            result = self.__pdf.fitTo(data, **self.__fit_opts)
-            if result.status() == 0:
+            self.__result = self.__pdf.fitTo(data, **self.__fit_opts)
+            if self.__result.status() == 0:
                 break
 
         from P2VV.Utilities.SWeights import SData
         sData = SData(Pdf = self.__pdf, Data = data, Name = 'MassSPlot')
         return sData.data(self.__comp)
 
-    def parameters(self):
+    def gen_params(self, observables = None):
         from ROOT import RooArgSet
         if hasattr(self, '__parameters'):
             return self.__parameters
         else:
-            return self.__pdf.getParameters(RooArgSet())
+            if observables and not isinstance(observables, RooArgSet):
+                obs = RooArgSet()
+                for o in observables:
+                    obs.add(o._target_() if hasattr(o, '_target_') else o)
+                observables = obs
+            return self.__pdf.getParameters(observables)
+
+    def result_params(self):
+        if not self.__result:
+            return []
+        else:
+            return [p for p in self.__result.floatParsFinal()]
+

@@ -8,6 +8,10 @@ except ImportError:
 
 toy = Toy()
 parser = toy.parser()
+
+parser.add_option("--sfit", dest = "sFit", default = False,
+                  action = 'store_true', help = "Generate with cFit, fit with sFit")
+
 (options, args) = toy.configure()
 
 from ROOT import gROOT
@@ -56,7 +60,6 @@ tres_args = dict(time = time_obs, sigmat = st, Cache = True, PerEventError = Tru
 sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
 
 # Resolution models
-tres_args['bkg_timeResMu'] = tres_args.pop('timeResMu')
 bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 
 # J/psi mass pdf
@@ -98,8 +101,8 @@ prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), psi_m, sig_ln.pdf()), Yield = (160160, 100, 500000))
 
 def make_wpv_pdf(prefix):
-    wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1))
-    wpv_sigma = RealVar('%swpv_sigma' % prefix, Value = 0.305, MinMax = (0.01, 10))
+    wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1), Constant = True)
+    wpv_sigma = RealVar('%swpv_sigma' % prefix, Value = 0.305, MinMax = (0.01, 10), Constant = True)
     return Pdf(Name = '%swpv_pdf' % prefix, Type = Gaussian, Parameters = (time_obs, wpv_mean, wpv_sigma))
 sig_wpv_pdf = make_wpv_pdf('sig_')
 
@@ -110,10 +113,6 @@ components = [prompt, psi_ll, background, sig_wpv]
 ## PDF to generate with
 gen_obs = (time_obs, mpsi, st)
 gen_pdf = buildPdf(Components = components, Observables = gen_obs, Name = 'gen_pdf')
-
-components = [prompt, psi_ll, sig_wpv]
-## PDF to fit with
-fit_pdf = buildPdf(Components = components, Observables = (time_obs,), Name = 'fit_pdf')
 
 ## Load parameter values
 from ROOT import TFile
@@ -139,9 +138,23 @@ fitOpts = dict(  Optimize  = 2
 
 toy.set_fit_opts(**fitOpts)
 
-from P2VV.ToyMCUtils import SWeightTransform
-mass_pdf = buildPdf(Components = (prompt, background), Observables = (mpsi,), Name = 'mass_pdf')
-toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts))
+if options.sFit:
+    # Components for sFit
+    components = [prompt, psi_ll, sig_wpv]
+
+    ## PDF for sFit
+    fit_pdf = buildPdf(Components = components, Observables = (time_obs,), Name = 'fit_pdf')
+
+    ## SWeights
+    from P2VV.ToyMCUtils import SWeightTransform
+    mass_pdf = buildPdf(Components = (prompt, background), Observables = (mpsi,), Name = 'mass_pdf')
+    toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts))
+else:
+    # Components for cFit
+    components = [prompt, psi_ll, background, sig_wpv]
+
+    ## PDF for cFit
+    fit_pdf = buildPdf(Components = components, Observables = (time_obs, mpsi), Name = 'fit_pdf')
 
 toy.run(Observables = gen_obs, Pdf = fit_pdf, GenPdf = gen_pdf)
 
